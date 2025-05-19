@@ -1,3 +1,7 @@
+// Copyright 2025 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package util
 
 func GetValue[T any](m map[string]any, key string) (vt T, ok bool) {
