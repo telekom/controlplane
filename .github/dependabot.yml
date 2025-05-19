@@ -12,12 +12,8 @@ updates:
   - package-ecosystem: "gomod"
     schedule:
       interval: "daily"
-    directories:
-      - common
-      - common-server
-      - identity
-      - gateway
-      - secret-manager
+    directories: 
+      - "/" # todo: add modules here
     groups:
       default: 
         update-types:
