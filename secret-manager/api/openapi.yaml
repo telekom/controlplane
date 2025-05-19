@@ -1,0 +1,385 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+openapi: 3.0.3
+info:
+  title: Secret Manager API
+  description: >
+    This API can be used to resolve secrets from references and returns its
+    actual confidential value.
+  version: 0.0.1
+  contact:
+    name: TARDIS
+    email: tadis@nop.telekom.de
+    url: https://developer.telekom.de/
+  license:
+    name: Apache 2.0
+  x-api-category: TARDIS
+servers:
+  - url: https://locahost:8080
+    description: For local development
+tags:
+  - name: secrets
+    description: Everything regarding storing and resolving secrets
+paths:
+  /v1/onboarding/environments/{envId}:
+    put:
+      operationId: upsertEnvironment
+      summary: Create or update an environment
+      description: >-
+        Create or update an environment that is identified by its reference in
+        the request body
+      tags:
+        - onboarding
+      parameters:
+        - name: envId
+          in: path
+          description: The id or reference to an environment
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/OnboardingResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+    delete:
+      operationId: deleteEnvironment
+      summary: Delete an environment
+      description: >-
+        Delete an environment that is identified by its reference in the request
+        body
+      tags:
+        - onboarding
+      parameters:
+        - name: envId
+          in: path
+          description: The id or reference to an environment
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+  /v1/onboarding/environments/{envId}/teams/{teamId}:
+    put:
+      operationId: upsertTeam
+      summary: Create or update a team
+      description: >-
+        Create or update a team that is identified by its reference in the
+        request body
+      tags:
+        - onboarding
+      parameters:
+        - name: envId
+          in: path
+          description: The id or reference to an environment
+          required: true
+          schema:
+            type: string
+        - name: teamId
+          in: path
+          description: The id or reference to a team
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/OnboardingResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+    delete:
+      operationId: deleteTeam
+      summary: Delete a team
+      description: >-
+        Delete a team that is identified by its reference in the request body
+      tags:
+        - onboarding
+      parameters:
+        - name: envId
+          in: path
+          description: The id or reference to an environment
+          required: true
+          schema:
+            type: string
+        - name: teamId
+          in: path
+          description: The id or reference to a team
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+  /v1/onboarding/environments/{envId}/teams/{teamId}/apps/{appId}:
+    put:
+      operationId: upsertApp
+      summary: Create or update an app
+      description: >-
+        Create or update an app that is identified by its reference in the
+        request body
+      tags:
+        - onboarding
+      parameters:
+        - name: envId
+          in: path
+          description: The id or reference to an environment
+          required: true
+          schema:
+            type: string
+        - name: teamId
+          in: path
+          description: The id or reference to a team
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          description: The id or reference to an app
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/OnboardingResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+    delete:
+      operationId: deleteApp
+      summary: Delete an app
+      description: >-
+        Delete an app that is identified by its reference in the request body
+      tags:
+        - onboarding
+      parameters:
+        - name: envId
+          in: path
+          description: The id or reference to an environment
+          required: true
+          schema:
+            type: string
+        - name: teamId
+          in: path
+          description: The id or reference to a team
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          description: The id or reference to an app
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+  /v1/secrets:
+    get:
+      operationId: listSecrets
+      summary: Get one or multiple secrets
+      description: >-
+        Get a list of secrets that are identified by the provided references in
+        the request body
+      tags:
+        - secrets
+      parameters:
+        - $ref: '#/components/parameters/QuerySecretId'
+      responses:
+        '200':
+          $ref: '#/components/responses/SecretListReponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+  /v1/secrets/{secretId}:
+    get:
+      operationId: getSecret
+      summary: Get a specific secret
+      description: Get a specific secret identified by its reference or ID
+      tags:
+        - secrets
+      parameters:
+        - $ref: '#/components/parameters/SecretId'
+      responses:
+        '200':
+          $ref: '#/components/responses/SecretResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+    put:
+      operationId: putSecret
+      summary: Create or update a secret
+      description: >-
+        Create or update a secret that is identified by its reference in the
+        request body
+      tags:
+        - secrets
+      parameters:
+        - $ref: '#/components/parameters/SecretId'
+      requestBody:
+        $ref: '#/components/requestBodies/SecretWriteRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SecretWriteResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+components:
+  parameters:
+    QuerySecretId:
+      name: secretId
+      in: query
+      description: The id or reference to a secret
+      schema:
+        type: array
+        items:
+          $ref: '#/components/schemas/SecretRef'
+    SecretId:
+      name: secretId
+      in: path
+      description: The id or reference to a secret
+      allowEmptyValue: false
+      required: true
+      schema:
+        $ref: '#/components/schemas/SecretRef'
+  responses:
+    NoContent:
+      description: Successful operation with no content
+    ErrorResponse:
+      description: In case of any error, this object is returned
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ApiProblem'
+    SecretResponse:
+      description: Successful retrieval of secrets
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Secret'
+    SecretWriteResponse:
+      description: Successful creation or update of a secret
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                $ref: '#/components/schemas/SecretRef'
+    SecretListReponse:
+      description: Successful retrieval of secrets
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - items
+            properties:
+              items:
+                type: array
+                description: A list of secrets
+                minItems: 1
+                maxItems: 10
+                items:
+                  $ref: '#/components/schemas/Secret'
+    OnboardingResponse:
+      description: Successful retrieval of secrets
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - items
+            properties:
+              items:
+                type: array
+                description: A list of available secret references
+                minItems: 0
+                maxItems: 10
+                items:
+                  $ref: '#/components/schemas/ListSecretItem'
+  requestBodies:
+    SecretWriteRequest:
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - value
+            properties:
+              value:
+                description: |
+                  This is the value of the secret.
+                  If set to `{{rotate}}`, the secret will be randomly generated
+                  and rotated. 
+                  Otherwise, you can set any string value.
+                example: "{{rotate}}"
+                type: string
+  schemas:
+    ApiProblem:
+      description: Based on https://www.rfc-editor.org/rfc/rfc9457.html
+      type: object
+      required:
+        - type
+        - status
+        - title
+        - detail
+      properties:
+        type:
+          type: string
+        status:
+          type: integer
+        title:
+          type: string
+        detail:
+          type: string
+        instance:
+          type: string 
+    SecretRef:
+      description: A reference to a secret
+      type: string
+    Secret:
+      type: object
+      required:
+        - id
+        - value
+      properties:
+        id:
+          $ref: '#/components/schemas/SecretRef'
+        value:
+          type: string
+          description: If empty, a random secret will be generated
+    ListSecretItem:
+      type: object
+      required:
+        - name
+        - id
+      properties:
+        name:
+          type: string
+          description: The name of the secret
+        id:
+          $ref: '#/components/schemas/SecretRef'

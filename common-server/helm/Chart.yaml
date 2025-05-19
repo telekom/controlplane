@@ -1,0 +1,10 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v2
+appVersion: 1.0.0
+description: A helm chart to deploy a generic common-server instance
+name: common-server
+type: application
+version: 1.0.0

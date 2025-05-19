@@ -1,0 +1,24 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# conjur policy load -b root -f root-policy.yaml
+
+- !host 
+  id: secrets-manager
+
+- !group secrets-managers
+
+- !grant 
+  role: !group secrets-managers
+  members: 
+    - !host secrets-manager
+
+- !permit
+  role: !group secrets-managers
+  privileges: [read, update, create, execute]
+  resource: !policy controlplane
+
+- !policy 
+  id: controlplane # CONJUR_ROOT_POLICY_PATH
+  owner: !group secrets-managers

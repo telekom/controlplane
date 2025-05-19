@@ -1,0 +1,38 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+address: ":8080"
+basepath: "/api"
+addGroupToPath: false
+resources:
+  - group: (.*).cp.ei.telekom.de
+    version: v1
+    resource: (.*)
+    actions:
+      - read-change
+  - group: admin.cp.ei.telekom.de
+    version: v1
+    resource: zones
+    secrets:
+      - spec.identityProvider.admin.password
+      - spec.gateway.admin.clientSecret
+    actions:
+      - read-only
+  - group: identity.cp.ei.telekom.de
+    version: v1
+    resource: clients
+    secrets:
+      - spec.clientSecret
+openapi:
+  title: "Dummy API"
+  version: "v1"
+  description: "Dummy API"
+  servers:
+    - url: "http://localhost:8080"
+      description: "Local Development"
+
+security:
+  enabled: false
+  defaultScope: "tardis:admin:obfuscated"
+  scopePrefix: "tardis:"

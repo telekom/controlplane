@@ -1,0 +1,110 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "app.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "app.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          command:
+            - /server
+          args:
+            - --configfile
+            - {{ .Values.configFile | default "config/config.yaml"}} 
+            - loglevel
+            - {{ .Values.logLevel | default "info" }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+          - name: app-config
+            mountPath: /config
+            readOnly: true
+          {{- if .Values.secretmanager.enabled }}
+          - name: secretmgr-token
+            mountPath: /var/run/secrets/secretmgr
+            readOnly: true
+          {{- end }}
+          {{- if and .Values.secretmanager.enabled .Values.secretmanager.trustmanager.enabled }}
+          - name: trust-bundle
+            mountPath: /var/run/secrets/trust-bundle
+            readOnly: true
+          {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: app-config
+          configMap:
+            name: {{ .Release.Name }}-config
+        {{- if .Values.secretmanager.enabled }}
+        - name: secretmgr-token
+          projected:
+            sources:
+            - serviceAccountToken:
+                path: token
+                expirationSeconds: 600
+                audience: secretmgr
+        {{- end }}
+        {{- if and .Values.secretmanager.enabled .Values.secretmanager.trustmanager.enabled }}
+        - name: trust-bundle
+          configMap:
+            name: secret-manager-trust-bundle
+        {{- end }}
+

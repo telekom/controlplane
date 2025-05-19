@@ -1,0 +1,10 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+resources:
+- service_account.yaml
+# The following resource are only needed when using the Kubernetes backend
+- secret_reader.yaml
+- secret_writer.yaml
+- clusterrole_binding.yaml
