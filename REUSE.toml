@@ -1,13 +1,47 @@
-# SPDX-FileCopyrightText: 2024 Deutsche Telekom AG
-#
-# SPDX-License-Identifier: CC0-1.0    
-
 # See https://reuse.software/spec-3.2/#reusetoml for specification
 version = 1
+SPDX-PackageName = "Controlplane"
+SPDX-PackageSupplier = "Deutsche Telekom AG <opensource@telekom.de>"
+SPDX-PackageDownloadLocation = "https://github.com/telekom/controlplane"
 
-## Example:
-# [[annotations]]
-# path = [".github/workflows/*.yml"]
-# precedence = "aggregate"
-# SPDX-FileCopyrightText = "2022 Free Software Foundation Europe e.V. <https://fsfe.org>"
-# SPDX-License-Identifier = "CC0-1.0"
+[[annotations]]
+path = "docs/img/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright 2025 Deutsche Telekom IT GmbH"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+path = ["**/go.mod", "**/go.sum"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright 2025 Deutsche Telekom IT GmbH"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ["LICENSE", "CODEOWNERS"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright 2025 Deutsche Telekom IT GmbH"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = [".pre-commit-config.yaml", "REUSE.toml"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright 2025 Deutsche Telekom IT GmbH"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "testdata/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright 2025 Deutsche Telekom IT GmbH"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ".github/dependabot.yml"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright 2025 Deutsche Telekom IT GmbH"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "**/*.go"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright 2025 Deutsche Telekom IT GmbH"
+SPDX-License-Identifier = "Apache-2.0"
