@@ -1,0 +1,41 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Run CI
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+    branches:
+      - "main"
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+  security-events: write
+  packages: write
+  actions: read
+
+jobs: 
+  prepare:
+    name: detect modules
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.detect-changes.outputs.modules }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2 # pin@v2.0.0
+        with:
+          fetch-depth: 0
+      - name: Detect Changes
+        id: detect-changes
+        continue-on-error: true
+        uses: ron96G/monutil@v1.3.0
+        with:
+          base-commit: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event_name == 'push' && github.event.before }}
+          head-commit: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'push' && github.sha }}
+
+  # todo: add the modules

@@ -1,0 +1,54 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: ORT scanning
+
+on:
+  workflow_dispatch:
+
+
+permissions:
+  contents: read
+
+
+jobs:
+  ort:
+    name: ORT scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Use HTTPS for Git cloning
+        run: git config --global url.https://github.com/.insteadOf ssh://git@github.com/
+      - name: Checkout project
+        uses: actions/checkout@v3
+      - name: Prepare ORT config
+        # This allows us to customize the default ORT config available at
+        # https://github.com/oss-review-toolkit/ort-config
+        # using our own config file stored in .github/ort/config.yml
+        # Note that this is the global config, not the repo specific one
+        run: |
+          # Move into default config dir
+          export ORT_CONFIG_DIR=$HOME/.ort/config
+          mkdir -p ${ORT_CONFIG_DIR}
+          cd ${ORT_CONFIG_DIR}
+          # Checkout default config repo
+          git init -q
+          git remote add origin https://github.com/oss-review-toolkit/ort-config.git
+          git fetch -q --depth 1 origin main
+          git checkout -q FETCH_HEAD
+          # Copy custom config into config dir
+          cp ${GITHUB_WORKSPACE}/.github/ort/config.yml ${ORT_CONFIG_DIR}
+      - name: Run GitHub Action for ORT
+        uses: oss-review-toolkit/ort-ci-github-action@v1
+        with:
+        #  fail-on: violations # todo: remove this when we have a working config
+          run: >
+            cache-dependencies,
+            cache-scan-results,
+            labels,
+            analyzer,
+            scanner,
+            advisor,
+            evaluator,
+            reporter,
+            upload-results

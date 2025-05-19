@@ -1,3 +1,11 @@
-# SPDX-FileCopyrightText: 2023 Deutsche Telekom AG
+# Copyright 2025 Deutsche Telekom IT GmbH
 #
-# SPDX-License-Identifier: CC0-1.0
+# SPDX-License-Identifier: Apache-2.0
+
+dist/
+
+# editor and IDE paraphernalia
+.idea
+
+# ignore test output
+gotest.log
