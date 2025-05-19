@@ -24,7 +24,7 @@ jobs:
     name: detect modules
     runs-on: ubuntu-latest
     outputs:
-      modules: ${{ steps.matrix.outputs.modules }}
+      modules: ${{ steps.detect-changes.outputs.modules }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2 # pin@v2.0.0
