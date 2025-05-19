@@ -305,7 +305,7 @@ jobs:
   build:
     name: "Build Image for ${{ inputs.module }}"
     if: ${{ inputs.run_build_image && (needs.static_checks.result != 'failure') && (needs.tests.result != 'failure') }}
-    needs: [static_checks, tests]
+    needs: [tests]
     runs-on: ubuntu-latest
     outputs:
       image_digest: ${{ steps.build_image_ko_step.outputs.digest }}
