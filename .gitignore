@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 dist/
+**/bin/
 
 # editor and IDE paraphernalia
 .idea

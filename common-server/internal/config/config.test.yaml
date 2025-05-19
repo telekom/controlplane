@@ -1,0 +1,26 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+address: ":8080"
+basepath: "/api"
+addGroupToPath: true
+resources:
+  - id: tests
+    group: test.group
+    version: v1
+    resource: tests
+    allowedSorts:
+      - metadata.creationTimestamp
+openapi:
+  title: "Test API"
+  version: "v1"
+  description: "Test API"
+  servers:
+    - url: "http://localhost:8080"
+      description: "Test"
+
+security:
+  enabled: true
+  defaultScope: "admin:read"
+  scopePrefix: "read"

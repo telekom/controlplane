@@ -1,0 +1,132 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+replicaCount: 1
+
+image:
+  repository: mtr.devops.telekom.de/tardis-internal/hyperion/common-server
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "snapshot-main"
+
+imagePullSecrets:
+  - name: eni-pull-mtr-devops-tardis-internal-secret
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: "triton-ingress"
+  annotations:
+    kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  hosts:
+    - host: approvals-api.dev.dhei.telekom.de 
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls:
+    - hosts:
+        - approvals-api.dev.dhei.telekom.de 
+
+metrics:
+  enabled: true
+
+secretmanager:
+  enabled: false
+  trustmanager:
+    enabled: true
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+logLevel: "info"
+
+config: 
+  address: ":8080"
+  basepath: "/api"
+  resources:
+    - id: approvals
+      group: approval.cp.ei.telekom.de
+      version: v1
+      resource: approvals
+
+  openapi:
+    title: "Approvals API"
+    version: "v1"
+    description: "Approvals API"
+    servers:
+      - url: "https://approvals-api.dev.dhei.telekom.de"
+        description: "Development"
+
+  predefined:
+    - ref: approvals
+      name: grants
+      filters:
+        - path: spec.state
+          op: ==
+          value: Pending
+        - path: spec.requester.properties.basePath
+          op: ==
+          value: $<basePath>
+      patches:
+        - path: spec.decider.name
+          op: replace
+          value: $<deciderName>
+        - path: spec.state
+          op: replace
+          value: Granted
+
+rbac:
+  rules:
+    - apiGroups: ["apiextensions.k8s.io"]
+      resources: ["customresourcedefinitions"]
+      verbs: ["list"]
+    - apiGroups: ["approval.cp.ei.telekom.de"]
+      resources: ["*"]
+      verbs: ["*"]

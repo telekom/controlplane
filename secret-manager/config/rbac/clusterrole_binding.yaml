@@ -1,0 +1,29 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: secret-manager-writer-binding
+subjects:
+  - kind: ServiceAccount
+    name: secret-manager
+    namespace: system
+roleRef:
+  kind: ClusterRole
+  name: secret-manager-writer
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: secret-manager-reader-binding
+subjects:
+  - kind: ServiceAccount
+    name: secret-manager
+    namespace: system
+roleRef:
+  kind: ClusterRole
+  name: secret-manager-reader
+  apiGroup: rbac.authorization.k8s.io

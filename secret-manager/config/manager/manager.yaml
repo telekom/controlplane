@@ -1,0 +1,98 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: secret-manager
+  namespace: system
+  labels:
+    app.kubernetes.io/name: secret-manager
+spec:
+  ports:
+  - name: https
+    port: 443
+    targetPort: 8443
+  selector:
+    app.kubernetes.io/name: secret-manager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secret-manager
+  namespace: system
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: secret-manager
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        app.kubernetes.io/name: secret-manager
+    spec:
+      securityContext:
+        fsGroup: 65534
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+      containers:
+      - name: manager
+        command:
+        - /server 
+        args:
+        - --address
+        - :8443
+        - --configfile
+        - /etc/secret-manager/config.yaml
+        image: placeholder:latest
+        env: []
+        envFrom: []
+        ports:
+        - name: https
+          containerPort: 8443
+          protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - "ALL"
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 8443
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /readyz
+            port: 8443
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 32Mi
+        volumeMounts:
+        - name: secret-manager-config
+          mountPath: /etc/secret-manager
+          readOnly: true
+      serviceAccountName: secret-manager
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: secret-manager-config
+        configMap:
+          name: secret-manager-config

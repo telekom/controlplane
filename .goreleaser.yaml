@@ -7,7 +7,29 @@ version: 2
 before:
   hooks: []
 
-builds: []
+env:
+  - CGO_ENABLED=0
+  - GO111MODULE=on
+
+builds:
+  - id: common-server
+    dir: common-server
+    main: cmd/server/server.go
+    binary: common-server
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+  - id: secret-manager
+    dir: secret-manager
+    main: cmd/server/server.go
+    binary: secret-manager
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
 
 archives:
   - formats: [tar.gz]
@@ -45,4 +67,22 @@ release:
 sboms:
   - artifacts: archive
 
-kos: []
+kos: 
+  - id: common-server
+    build: common-server
+    main: .
+    working_dir: common-server/cmd/server
+    repositories:
+      - ghcr.io/telekom/controlplane/common-server
+    labels:
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+  - id: secret-manager
+    build: secret-manager
+    main: .
+    working_dir: secret-manager/cmd/server
+    repositories:
+      - ghcr.io/telekom/controlplane/secret-manager
+    labels:
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"

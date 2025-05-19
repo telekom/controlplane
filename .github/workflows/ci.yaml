@@ -38,4 +38,31 @@ jobs:
           base-commit: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event_name == 'push' && github.event.before }}
           head-commit: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'push' && github.sha }}
 
-  # todo: add the modules
+  common:
+    name: Common
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: common
+      run_check_generated_files: false
+      run_build_image: false
+      run_tests: true
+
+  common-server:
+    name: Common Server
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: common-server
+      run_check_generated_files: false
+      run_build_image: true
+      run_tests: true
+      ko_build_path: "cmd/server/server.go"
+
+  secret-manager:
+    name: Secret Manager
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: secret-manager
+      run_check_generated_files: false
+      run_build_image: true
+      run_tests: true
+      ko_build_path: "cmd/server/server.go"

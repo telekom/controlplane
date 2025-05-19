@@ -1,0 +1,23 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-traffic
+  namespace: system
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: secret-manager
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            github.com/telekom/controlplane/secret-manager: enabled  # Only from namespaces with this label 
+      ports:
+        - port: 8443
+          protocol: TCP

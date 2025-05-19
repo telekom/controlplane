@@ -11,9 +11,11 @@ updates:
       interval: weekly
   - package-ecosystem: "gomod"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     directories: 
-      - "/" # todo: add modules here
+      - common
+      - common-server
+      - secret-manager
     groups:
       default: 
         update-types:
