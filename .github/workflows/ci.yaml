@@ -19,7 +19,7 @@ permissions:
   packages: write
   actions: read
 
-jobs:
+jobs: 
   prepare:
     name: detect modules
     runs-on: ubuntu-latest
@@ -32,6 +32,7 @@ jobs:
           fetch-depth: 0
       - name: Detect Changes
         id: detect-changes
+        continue-on-error: true
         uses: ron96G/monutil@v1.3.0
         with:
           base-commit: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event_name == 'push' && github.event.before }}
