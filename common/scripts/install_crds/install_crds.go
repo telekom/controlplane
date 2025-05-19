@@ -14,7 +14,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
 )
 
-const reStr = "github.com/telekom/controlplane/.*"
+const reStr = `^github\.com/telekom/controlplane/.*$`
 
 func main() {
 	paths := testutil.GetCrdPathsOrDie(reStr)
