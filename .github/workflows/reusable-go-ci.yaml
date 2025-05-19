@@ -371,7 +371,7 @@ jobs:
     steps:
       # No checkout or Go setup needed if only running Trivy on a remote image
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.30.0
         with:
           image-ref: ${{ inputs.container_registry }}/${{ inputs.github_repository }}/${{ inputs.module }}@${{ needs.build.outputs.image_digest }}
           exit-code: "1"
