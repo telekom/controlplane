@@ -77,6 +77,12 @@ kos:
     labels:
       org.opencontainers.image.source: https://github.com/telekom/controlplane
       org.opencontainers.image.version: "{{.Version}}"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
   - id: secret-manager
     build: secret-manager
     main: .
@@ -86,3 +92,9 @@ kos:
     labels:
       org.opencontainers.image.source: https://github.com/telekom/controlplane
       org.opencontainers.image.version: "{{.Version}}"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true

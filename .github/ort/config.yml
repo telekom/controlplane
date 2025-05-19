@@ -31,14 +31,14 @@ ort:
             directory: /home/ort/.ort/scanner/results
             compression: false
       # Read/write results to OpenSource@DTIT ORT cache on artifactory
-      # artifactory:
-      #   backend:
-      #     httpFileStorage:
-      #       url: "https://artifactory.devops.telekom.de/artifactory/open-source-dtit-ort-generic/ort/scan-results"
-      #       headers:
-      #         Authorization: "Bearer ${ORT_ARTIFACTORY_TOKEN}"
-    storageReaders: ["local"] # ["local", "artifactory"]
-    storageWriters: ["local"] # ["artifactory", "local"]
+      artifactory:
+        backend:
+          httpFileStorage:
+            url: "https://artifactory.devops.telekom.de/artifactory/open-source-dtit-ort-generic/ort/scan-results"
+            headers:
+              Authorization: "Bearer ${ORT_ARTIFACTORY_TOKEN}"
+    storageReaders: ["local", "artifactory"]
+    storageWriters: ["artifactory", "local"]
     skipExcluded: true
     skipConcluded: true
   advisor:
