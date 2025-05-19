@@ -44,7 +44,8 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           install-only: true
-      - uses: cycjimmy/semantic-release-action@v4
+      - name: Run Semantic Release
+        uses: cycjimmy/semantic-release-action@v4
         with:
           extra_plugins: |
             @semantic-release/changelog
@@ -52,3 +53,9 @@ jobs:
             @semantic-release/git
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          args: release --release-notes /tmp/release-notes.md --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
