@@ -1,0 +1,29 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: approval.cp.ei.telekom.de/v1
+kind: ApprovalRequest
+metadata:
+  labels:
+    app.kubernetes.io/name: approval
+    app.kubernetes.io/managed-by: kustomize
+    cp.ei.telekom.de/environment: default
+  name: foo-bar-v1--my-manual-app
+spec:
+  requester:
+    email: workspace-b@telekom.de
+    name: Workspace-b
+
+  target:
+    kind: ApiExposure
+    name: foo-bar-v1
+    namespace: default
+  source:
+    kind: ApiSubscription
+    name: my-app--foo-bar-v1
+    namespace: default
+
+  strategy: simple
+  state: pending
+  reason: "I need to access the API foo-bar-v1"
