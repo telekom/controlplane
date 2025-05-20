@@ -11,6 +11,9 @@ env:
   - CGO_ENABLED=0
   - GO111MODULE=on
 
+snapshot:
+  version_template: "SNAPSHOT-{{.ShortCommit}}"
+
 builds:
   - id: common-server
     dir: common-server
@@ -75,9 +78,14 @@ kos:
     repositories:
       - ghcr.io/telekom/controlplane/common-server
     labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
       org.opencontainers.image.source: https://github.com/telekom/controlplane
       org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
     user: 65532:65532
+    base_image: gcr.io/distroless/static:nonroot
     tags:
       - latest
       - "{{.Tag}}"
@@ -90,8 +98,13 @@ kos:
     repositories:
       - ghcr.io/telekom/controlplane/secret-manager
     labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
       org.opencontainers.image.source: https://github.com/telekom/controlplane
       org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    base_image: gcr.io/distroless/static:nonroot
     user: 65532:65532
     tags:
       - latest
