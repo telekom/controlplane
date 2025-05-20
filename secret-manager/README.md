@@ -20,7 +20,7 @@ The following problems are solved:
 
 The following diagram provides a high-level overview of how the SM is integrated into the Controlplane.
 
-![Architecture Diagram](/docs/overview.drawio.svg)
+![Architecture Diagram](docs/overview.drawio.svg)
 
 
 

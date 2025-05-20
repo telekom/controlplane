@@ -5,7 +5,7 @@ SPDX-PackageSupplier = "Deutsche Telekom AG <opensource@telekom.de>"
 SPDX-PackageDownloadLocation = "https://github.com/telekom/controlplane"
 
 [[annotations]]
-path = "docs/img/**"
+path = "**/docs/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "Copyright 2025 Deutsche Telekom IT GmbH"
 SPDX-License-Identifier = "CC-BY-4.0"
