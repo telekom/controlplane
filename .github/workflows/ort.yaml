@@ -41,7 +41,9 @@ jobs:
       - name: Run GitHub Action for ORT
         uses: oss-review-toolkit/ort-ci-github-action@v1
         with:
-        #  fail-on: violations # todo: remove this when we have a working config
+          #  fail-on: violations # todo: remove this when we have a working config
+          docker-cli-args: >-
+            -e ORT_ARTIFACTORY_TOKEN=${{ secrets.ORT_ARTIFACTORY_TOKEN }}
           run: >
             cache-dependencies,
             cache-scan-results,
