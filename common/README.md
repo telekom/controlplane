@@ -4,7 +4,22 @@ Copyright 2025 Deutsche Telekom IT GmbH
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# Common
+<p align="center">
+  <img src="./docs/icon.jpeg" alt="Common Library logo" width="200">
+  <h1 align="center">Common</h1>
+</p>
+
+<p align="center">
+  The common module provides shared functionality for all Operators implemented in the Controlplane.
+</p>
+
+<p align="center">
+  <a href="#about">About</a> •
+  <a href="#getting-started">Getting Started</a>
+</p>
+
+
+## About
 
 This module provides shared functionality for all [Operators](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/) implemented using [kubebuilder](https://github.com/kubernetes-sigs/kubebuilder).
 It contains the following components:
@@ -58,3 +73,5 @@ The following conditions are used:
 
 - **install_crds**: See [install_crds](scripts/install_crds/README.md) for more information
 
+
+## Getting Started
