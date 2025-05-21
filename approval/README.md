@@ -4,14 +4,24 @@ Copyright 2025 Deutsche Telekom IT GmbH
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# Approval
-![approval_icon](docs/img/approval_icon.png)
+<p align="center">
+  <h1 align="center">Approval</h1>
+</p>
 
-The Approval domain provides an approval workflows for any subscription requests such as `APISubscription` in `API` domain. 
+<p align="center">
+  The Approval domain provides an approval workflows for any subscription requests such as `APISubscription` in `API` domain.
+   It enables the creation, tracking and managing of access requests.
+</p>
 
-It enables the creation, tracking and managing of access requests.
+<p align="center">
+  <a href="#about">About</a> •
+  <a href="#features">Features</a> •
+  <a href="#integration">Integration</a> •
+   <a href="#getting-started">Getting Started</a>
+</p>
 
-## Description
+
+## About
 
 This project defines custom resources (`Approval` and `ApprovalRequest`) to handle access approvals. 
 
@@ -104,7 +114,7 @@ The following features are sill in development and not yet fully implemented:
 -  Integration of `Expired` state.
 -  Seperated `ApprovalLog` resource for more detailed history of the approval process. Currently, the latest `Approval` only state the last state. 
 
-## Getting Started
+## Integration
 
 ### Integration to any Subscription-like CRD
 
@@ -143,7 +153,7 @@ Nevertheless, here is a short summary of key integration steps:
    If the results says, that the subscription should not be further processed (i.e. `builder.ApprovalResultDenied` and `builder.ApprovalResultPending`), append the status to the status of the `Subscription` resource and return the reconciler.
    If the result is `builder.ApprovalResultGranted`, you can proceed with the subscription process (i.e. continue with the reconciler loop).
 
-## Getting Started with the Makefile
+## Getting Started
 ### To Run the Test
 
 It will install the required dependencies if not already installed and run the tests.
