@@ -1,0 +1,31 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# permissions for end users to edit clients.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: identity-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: client-editor-role
+rules:
+- apiGroups:
+  - identity.cp.ei.telekom.de
+  resources:
+  - clients
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - identity.cp.ei.telekom.de
+  resources:
+  - clients/status
+  verbs:
+  - get

@@ -51,6 +51,15 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: identity
+    dir: identity
+    main: cmd/main.go
+    binary: identity
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
 
 archives:
   - formats: [tar.gz]
@@ -167,3 +176,11 @@ kos:
       - "{{.Tag}}"
       - "{{if not .Prerelease}}stable{{end}}"
     bare: true
+  - id: identity
+    build: identity
+    main: .
+    working_dir: identity/cmd
+    repositories:
+      - ghcr.io/telekom/controlplane/identity
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <
