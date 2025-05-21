@@ -113,11 +113,14 @@ Take a look at the following diagrams for illustration, taken from [`internal/fs
 ![Approval State Machine for Simple Approval](docs/img/approval_fsm_simple.drawio.svg)
 ![Approval State Machine for FourEyes Approval](docs/img/approval_fsm_foureyes.drawio.svg)
 
-### Not Implemented
-The following features are sill in development and not yet fully implemented:
-- `FourEyes` strategy: Integration of `SemiGranted` state
--  Integration of `Expired` state.
--  Seperated `ApprovalLog` resource for more detailed history of the approval process. Currently, the latest `Approval` only state the last state. 
+## Roadmap
+
+Certain features are partly present in the source code, but not ready for production use yet.
+The following features are planned to be further implemented:
+
+- `FourEyes` strategy: Integration of `SemiGranted` state into the `Approval` Flow.
+-  APIs should be able to expire after a configured date. The integration of `Expired` state into the `Approval` Flow.
+-  Seperated `ApprovalLog` resource for more detailed history of the approval process (Currently, the latest `Approval` only state the last state).
 
 ## Integration
 
