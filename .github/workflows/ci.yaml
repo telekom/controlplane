@@ -72,7 +72,7 @@ jobs:
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
       module: approval
-      run_check_generated_files: false
+      run_check_generated_files: true
       run_build_image: true
       run_tests: true
       ko_build_path: "cmd/main.go"
