@@ -11,7 +11,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/secret-manager/api"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -89,7 +88,7 @@ func (s *SecretManagerResolver) ReplaceAllFromBytes(ctx context.Context, b []byt
 		}
 
 		possibleSecret := result.String()
-		secretRef, ok := api.FromRef(possibleSecret)
+		secretRef, ok := secrets.FromRef(possibleSecret)
 		if !ok {
 			log.V(1).Info("Secret is not a placeholder, skipping ...")
 			continue
@@ -120,7 +119,7 @@ func (s *SecretManagerResolver) ReplaceAllFromMap(ctx context.Context, m map[str
 			continue
 		}
 		possibleSecret := result
-		secretRef, ok := api.FromRef(possibleSecret)
+		secretRef, ok := secrets.FromRef(possibleSecret)
 		if !ok {
 			log.V(1).Info("Secret is not a placeholder, skipping ...")
 			continue
