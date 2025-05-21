@@ -38,7 +38,7 @@ The following diagram illustrates the overall interaction of the Approval domain
 - **Decider**: The user reviews and approves/rejects the request. He is also the owner of the `Exposure`
 
 ### Components
-- **`Approval`**: The CRD that represents the approval process. It contains information about the request, the decider, and the approval strategy.
+- **`Approval` & `ApprovalRequest`**: The CRD that represents the approval process. It contains information about the request, the decider, and the approval strategy.
 - **`Exposure`**: The CRD that represents the resource that is being requested for access.
 - **`Subscription`**: The CRD that represents the request for access to an `Exposure`.
 
@@ -46,7 +46,7 @@ The following diagram illustrates the overall interaction of the Approval domain
 
 ### Actions
 Actions are abstract representations of features handled by the `Operator`.
-- **Create Approval**: The Creation of a `Subscription` resource triggers the creation of an `Approval` resource.
+- **ApprovalBuilder.Build**: The Creation of a `Subscription` resource triggers the creation of an `Approval` resource with the [ApprovalBuilder](api/v1/builder/builder.go).
 - **Waiting for Decision**: The `Approval` resource is in a `Pending` state (depending on the approval strategy) until decider makes a decision.
 - **Update state of Approval**: Sets the state of the `Approval` resource. Details can be found in [Approval State](#approval-states).
 
@@ -54,7 +54,7 @@ Actions are abstract representations of features handled by the `Operator`.
 
 ### Approval Workflow
 
-The Approval Workflow describes the process of creating, updating and managing API access requests. The see following diagram illustrates the workflow:
+The Approval Workflow describes the process of creating, updating and managing API access requests. The see following diagram illustrates the workflow. The steps are explained below.
 
 ![Approval Workflow](docs/img/approval_flow.drawio.svg)
 
