@@ -129,7 +129,7 @@ Nevertheless, here is a short summary of key integration steps:
     package v1
     
     import (
-        "../common/pkg/types" //the common package included in this repo
+        "github.com/telekom/controlplane/common/pkg/types"
     )
     
     type SubscriptionStatus struct { //your new CRD, scaffolded by kubebuilder
