@@ -52,6 +52,11 @@ Actions are abstract representations of features handled by the `Operator`.
 
 ## Features
 
+* **Approval Workflow**: This domain support the process of creating, updating and managing access requests. For more details, see [Approval Workflow](#approval-workflow).
+* **Approval Strategies**: The `Approval` resource supports three approval strategies: `Auto`, `Simple`, and `FourEyes`. For more details, see [Approval Strategies](#approval-strategies).
+* **Approval States**: 
+  - The `Approval` resource has several states that represent the current status of the approval process. For more details, see [Approval States](#approval-states).
+
 ### Approval Workflow
 
 The Approval Workflow describes the process of creating, updating and managing API access requests. The see following diagram illustrates the workflow. The steps are explained below.
@@ -102,7 +107,7 @@ The `Approval` resource can be in one of the following states:
 
 Take a look at the following diagrams for illustration, taken from [`internal/fsm` (link)](internal/fsm). 
 
-> Please note, that a list of available transitions is in the `Status` resource itself. Also, the diagram for the `ApprovalRequest` slightly differs due to no need for `Suspend` and `Resume` actions. These a directly done on the `Approval` resource.
+> Please note, that a list of available transitions is in the `Status` resource itself. Also, the diagram for the `ApprovalRequest` slightly differs due to no need for `Suspend` and `Resume` actions. These are directly done on the `Approval` resource.
 
 ![Approval State Machine for Auto Approval](docs/img/approval_fsm_auto.drawio.svg)
 ![Approval State Machine for Simple Approval](docs/img/approval_fsm_simple.drawio.svg)
