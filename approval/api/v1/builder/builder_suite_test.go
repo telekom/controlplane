@@ -63,7 +63,7 @@ var _ = BeforeSuite(func() {
 
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
-	ctx, cancel = context.WithCancel(context.Background())
+	ctx, cancel = context.WithCancel(context.TODO())
 
 	err = (&crscheme.Builder{
 		GroupVersion: schema.GroupVersion{
@@ -124,6 +124,8 @@ var _ = BeforeSuite(func() {
 		err = k8sm.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
+
+	Expect(k8sm.GetCache().WaitForCacheSync(ctx)).To(BeTrue(), "cache sync error")
 
 })
 
