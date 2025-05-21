@@ -77,10 +77,9 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 	testutil.PkgModCrdsSubpath = "pkg/test/testdata/crds"
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: append(
-			testutil.GetCrdPathsOrDie("github.com/telekom/controlplane/common"),
-			filepath.Join("..", "..", "..", "config", "crd", "bases"),
-		),
+		CRDDirectoryPaths: []string{
+			filepath.Join("..", "..", "..", "..", "common", "pkg", "test", "testdata", "crds"),
+			filepath.Join("..", "..", "..", "config", "crd", "bases")},
 		ErrorIfCRDPathMissing: true,
 
 		// The BinaryAssetsDirectory is only required if you want to run the tests directly

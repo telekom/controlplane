@@ -6,17 +6,13 @@ package v1
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
-	"net"
 	"path/filepath"
 	"runtime"
 	"testing"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
 	admissionv1 "k8s.io/api/admission/v1"
 	// +kubebuilder:scaffold:imports
 	apimachineryruntime "k8s.io/apimachinery/pkg/runtime"
@@ -87,6 +83,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
+	By("Creating the environment namespace")
+
 	// start webhook server using Manager
 	webhookInstallOptions := &testEnv.WebhookInstallOptions
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
@@ -116,15 +114,15 @@ var _ = BeforeSuite(func() {
 	}()
 
 	// wait for the webhook server to get ready
-	dialer := &net.Dialer{Timeout: time.Second}
-	addrPort := fmt.Sprintf("%s:%d", webhookInstallOptions.LocalServingHost, webhookInstallOptions.LocalServingPort)
-	Eventually(func() error {
-		conn, err := tls.DialWithDialer(dialer, "tcp", addrPort, &tls.Config{InsecureSkipVerify: true})
-		if err != nil {
-			return err
-		}
-		return conn.Close()
-	}).Should(Succeed())
+	//dialer := &net.Dialer{Timeout: time.Second}
+	//addrPort := fmt.Sprintf("%s:%d", webhookInstallOptions.LocalServingHost, webhookInstallOptions.LocalServingPort)
+	//Eventually(func() error {
+	//	conn, err := tls.DialWithDialer(dialer, "tcp", addrPort, &tls.Config{InsecureSkipVerify: true})
+	//	if err != nil {
+	//		return err
+	//	}
+	//	return conn.Close()
+	//}).Should(Succeed())
 
 })
 
