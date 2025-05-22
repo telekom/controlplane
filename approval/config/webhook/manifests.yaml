@@ -1,0 +1,96 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: mutating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-approval-cp-ei-telekom-de-v1-approval
+  failurePolicy: Fail
+  name: mapproval.kb.io
+  rules:
+  - apiGroups:
+    - approval.cp.ei.telekom.de
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - approvals
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-approval-cp-ei-telekom-de-v1-approvalrequest
+  failurePolicy: Fail
+  name: mapprovalrequest.kb.io
+  rules:
+  - apiGroups:
+    - approval.cp.ei.telekom.de
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - approvalrequests
+  sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-approval-cp-ei-telekom-de-v1-approval
+  failurePolicy: Fail
+  name: vapproval.kb.io
+  rules:
+  - apiGroups:
+    - approval.cp.ei.telekom.de
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - approvals
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-approval-cp-ei-telekom-de-v1-approvalrequest
+  failurePolicy: Fail
+  name: vapprovalrequest.kb.io
+  rules:
+  - apiGroups:
+    - approval.cp.ei.telekom.de
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - approvalrequests
+  sideEffects: None

@@ -1,0 +1,27 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# permissions for end users to view approvalrequests.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: approval
+    app.kubernetes.io/managed-by: kustomize
+  name: approvalrequest-viewer-role
+rules:
+- apiGroups:
+  - approval.cp.ei.telekom.de
+  resources:
+  - approvalrequests
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - approval.cp.ei.telekom.de
+  resources:
+  - approvalrequests/status
+  verbs:
+  - get
