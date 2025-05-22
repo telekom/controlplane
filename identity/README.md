@@ -1,119 +1,155 @@
 <!--
-Copyright 2025 Deutsche Telekom IT GmbH
-SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 Deutsche Telekom AG
+
+SPDX-License-Identifier: CC0-1.0
 -->
 
-# identity-operator
-// TODO(user): Add simple overview of use/purpose
+<p align="center">
+  <h1 align="center">Identity</h1>
+</p>
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+<p align="center">
+  Kubernetes operator for managing identity and access management resources with Keycloak
+</p>
 
-## Getting Started
+<p align="center">
+  <a href="#reconciliation"> Reconciliation Flow</a> •
+  <a href="#dependencies">Dependencies</a> •
+  <a href="#model">Model</a> •
+  <a href="#crds">CRDs</a>
+</p>
 
-### Prerequisites
-- go version v1.22.0+
-- docker version 17.03+.
-- kubectl version v1.11.3+.
-- Access to a Kubernetes v1.11.3+ cluster.
+## About
 
-### To Deploy on the cluster
-**Build and push your image to the location specified by `IMG`:**
+The Identity operator provides a Kubernetes-native way to manage identity and access management resources through Keycloak integration. It extends Kubernetes with custom resources to create and manage identity providers, realms, and clients in a declarative way.
 
-```sh
-make docker-build docker-push IMG=<some-registry>/identity-operator:tag
-```
+This operator is part of the Deutsche Telekom Control Plane (CP) platform, enabling seamless IAM integration for cloud-native applications. It abstracts the complexity of Keycloak administration, allowing platform administrators and application teams to define and manage identity resources using Kubernetes manifests.
 
-**NOTE:** This image ought to be published in the personal registry you specified.
-And it is required to have access to pull the image from the working environment.
-Make sure you have the proper permission to the registry if the above commands don’t work.
 
-**Install the CRDs into the cluster:**
+## Reconciliation Flow
+The diagram below shows the general Reconciliation flow.
+# ![Flow](./docs/identity_overview.drawio.svg)
 
-```sh
-make install
-```
 
-**Deploy the Manager to the cluster with the image specified by `IMG`:**
+### Workflow
+The Identity operator follows a hierarchical reconciliation pattern for IAM resource management:
 
-```sh
-make deploy IMG=<some-registry>/identity-operator:tag
-```
+1. **IdentityProvider Reconciliation**: The operator connects to the configured Keycloak instance using the admin credentials provided in the IdentityProvider CR. It validates the connection and updates the status with configuration details.
 
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
-privileges or be logged in as admin.
+2. **Realm Reconciliation**: When a Realm CR is created that references an IdentityProvider, the operator creates or updates the corresponding realm in Keycloak. It obtains the admin credentials from the referenced IdentityProvider resource.
 
-**Create instances of your solution**
-You can apply the samples (examples) from the config/sample:
+3. **Client Reconciliation**: Client resources reference a Realm and define OAuth/OIDC client configurations. The operator manages the corresponding Keycloak client, creating or updating it based on the provided specifications.
 
-```sh
-kubectl apply -k config/samples/
-```
+The controller implements a declarative approach, continuously reconciling the desired state (defined in the CRs) with the actual state in Keycloak. It handles retries and error conditions to ensure eventual consistency.
 
->**NOTE**: Ensure that the samples has default values to test it out.
+## Dependencies
+- [Keycloak](https://www.keycloak.org/) - Open source identity and access management server
+- [Controller-Runtime](https://github.com/kubernetes-sigs/controller-runtime) - Library for building Kubernetes operators
+- [Common](../common/) - Deutsche Telekom Control Plane common library
+## Model
+The Identity operator provides a set of Custom Resource Definitions (CRDs) that represent identity and access management resources. These resources form a hierarchical relationship, with each tier referencing the resource above it.
 
-### To Uninstall
-**Delete the instances (CRs) from the cluster:**
+Core models in this project are:
+- **IdentityProvider**: Represents a Keycloak instance with administrative credentials for managing realms and clients.
+- **Realm**: Represents a security domain within Keycloak that contains a set of users, clients, and configurations.
+- **Client**: Represents an OIDC/OAuth client application that can authenticate users and obtain token-based authentication.
 
-```sh
-kubectl delete -k config/samples/
-```
+Each resource includes status conditions that reflect the state of reconciliation with the actual Keycloak instance.
 
-**Delete the APIs(CRDs) from the cluster:**
+## CRDs
+The Identity operator defines three main Custom Resource Definitions (CRDs) that represent the identity and access management resources in Kubernetes:
 
-```sh
-make uninstall
-```
+1. **IdentityProvider** - A connection to a Keycloak instance with admin credentials
+2. **Realm** - A security domain within Keycloak
+3. **Client** - An OAuth/OIDC client application
 
-**UnDeploy the controller from the cluster:**
+You can find the custom resource definitions in the [config/crd directory](./config/crd/).
 
-```sh
-make undeploy
-```
+### IdentityProvider
+The IdentityProvider CRD represents a connection to a Keycloak instance. It contains the necessary information to authenticate with Keycloak as an administrator, allowing the operator to manage realms and clients.
 
-## Project Distribution
+A simple example IdentityProvider would look like this:
 
-Following are the steps to build the installer and distribute this project to users.
+<details>
+  <summary>Example IdentityProvider</summary>
 
-1. Build the installer for the image built and published in the registry:
+  ```yaml
+  apiVersion: identity.cp.ei.telekom.de/v1
+  kind: IdentityProvider
+  metadata:
+    name: idp-germany
+    namespace: default
+    labels:
+      app.kubernetes.io/name: idp-germany
+      cp.ei.telekom.de/zone: dataplane1
+      cp.ei.telekom.de/environment: poc
+  spec:
+    adminUrl: "https://keycloak.example.com/auth/admin/realms/"
+    adminClientId: "admin-cli"
+    adminUserName: "admin"
+    adminPassword: "password"
+  ```
+</details><br />
 
-```sh
-make build-installer IMG=<some-registry>/identity-operator:tag
-```
+### Realm
+The Realm CRD represents a security domain within Keycloak. It references an IdentityProvider resource and is used to create and manage a realm in the referenced Keycloak instance.
 
-NOTE: The makefile target mentioned above generates an 'install.yaml'
-file in the dist directory. This file contains all the resources built
-with Kustomize, which are necessary to install this project without
-its dependencies.
+A simple example Realm would look like this:
 
-2. Using the installer
+<details>
+  <summary>Example Realm</summary>
 
-Users can just run kubectl apply -f <URL for YAML BUNDLE> to install the project, i.e.:
+  ```yaml
+  apiVersion: identity.cp.ei.telekom.de/v1
+  kind: Realm
+  metadata:
+    name: realm-germany
+    namespace: default
+    labels:
+      app.kubernetes.io/name: realm-germany
+      cp.ei.telekom.de/zone: dataplane1
+      cp.ei.telekom.de/environment: poc
+  spec:
+    identityProvider:
+      name: idp-germany
+      namespace: default
+  ```
+</details><br />
 
-```sh
-kubectl apply -f https://raw.githubusercontent.com/<org>/identity-operator/<tag or branch>/dist/install.yaml
-```
+### Client
+The Client CRD represents an OAuth/OIDC client application within a realm. It references a Realm resource and is used to create and manage a client in the referenced realm.
 
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
+A simple example Client would look like this:
 
-**NOTE:** Run `make help` for more information on all potential `make` targets
+<details>
+  <summary>Example Client</summary>
 
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
+  ```yaml
+  apiVersion: identity.cp.ei.telekom.de/v1
+  kind: Client
+  metadata:
+    name: client-germany
+    namespace: default
+    labels:
+      app.kubernetes.io/name: client-germany
+      cp.ei.telekom.de/zone: dataplane1
+      cp.ei.telekom.de/environment: poc
+  spec:
+    realm:
+      name: realm-germany
+      namespace: default
+    clientId: "client-germany"
+    clientSecret: "topsecret"
+  ```
+</details><br />
 
-## License
+## Code of Conduct
 
-Copyright 2025.
+This project has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) in version 2.1 as our code of conduct. Please see the details in our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). All contributors must abide by the code of conduct.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+By participating in this project, you agree to abide by its [Code of Conduct](./CODE_OF_CONDUCT.md) at all times.
 
-    http://www.apache.org/licenses/LICENSE-2.0
+## Licensing
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
+This project follows the [REUSE standard for software licensing](https://reuse.software/). You can find a guide for developers at https://telekom.github.io/reuse-template/.   
+Each file contains copyright and license information, and license texts can be found in the [./LICENSES](./LICENSES) folder. For more information visit https://reuse.software/.
