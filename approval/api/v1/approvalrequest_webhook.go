@@ -73,7 +73,7 @@ func (ar *ApprovalRequest) ValidateUpdate(_ context.Context, _ runtime.Object, n
 		arObj.Spec.State = ApprovalStateGranted
 	}
 
-	if arObj.StateChanged() && ar.Status.AvailableTransitions != nil {
+	if arObj.StateChanged() && arObj.Status.AvailableTransitions != nil {
 		if !arObj.Status.AvailableTransitions.HasState(arObj.Spec.State) {
 			err = apierrors.NewBadRequest("Invalid state transition")
 		}
