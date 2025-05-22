@@ -5,10 +5,10 @@
 replicaCount: 1
 
 image:
-  repository: mtr.devops.telekom.de/tardis-internal/hyperion/common-server
+  repository: ghcr.io/telekom/controlplane/common-server
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "snapshot-main"
+  tag: stable
 
 imagePullSecrets:
   - name: eni-pull-mtr-devops-tardis-internal-secret
