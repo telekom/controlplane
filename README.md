@@ -110,7 +110,8 @@ The diagram below shows the general flow and interfaces between the most importa
 # ![Architecture](./docs//img/CP_Architecture.drawio.svg)
 
 ## Getting started
-A comprehensive guide on how to get started with the installation of the Open Telekom Integration Platform is available here: [Getting Started](./docs/files/getting_started.md)
+If you want to learn more about how to install and run the Control Plane in a Kubernetes environment in general, visit: [Installing Control Plane](./docs/files/installation.md)  
+But if you want to get started right away with a non-productive local environment and try out the Control Plane, we recommend visting: [Local installation (Quickstart)](./docs/files/quickstart.md).
 
 ## Code of Conduct
 
