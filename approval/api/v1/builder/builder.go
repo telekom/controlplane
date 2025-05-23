@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	. "github.com/telekom/controlplane/approval/api/v1"
+	v1 "github.com/telekom/controlplane/approval/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -25,7 +25,7 @@ import (
 type ApprovalResult string
 
 var (
-	DefaultStrategy ApprovalStrategy = ApprovalStrategySimple
+	DefaultStrategy v1.ApprovalStrategy = v1.ApprovalStrategySimple
 
 	// ApprovalResultGranted is returned when the approval is granted
 	ApprovalResultGranted ApprovalResult = "Granted"
@@ -39,14 +39,14 @@ var (
 
 type ApprovalBuilder interface {
 	WithHashValue(hashValue any) ApprovalBuilder
-	WithRequester(requester *Requester) ApprovalBuilder
-	WithStrategy(strategy ApprovalStrategy) ApprovalBuilder
-	WithDecider(decider Decider) ApprovalBuilder
+	WithRequester(requester *v1.Requester) ApprovalBuilder
+	WithStrategy(strategy v1.ApprovalStrategy) ApprovalBuilder
+	WithDecider(decider v1.Decider) ApprovalBuilder
 	WithAction(action string) ApprovalBuilder
 	Build(ctx context.Context) (ApprovalResult, error)
 
-	GetApprovalRequest() *ApprovalRequest
-	GetApproval() *Approval
+	GetApprovalRequest() *v1.ApprovalRequest
+	GetApproval() *v1.Approval
 	GetOwner() types.Object
 }
 
@@ -56,8 +56,8 @@ type approvalBuilder struct {
 	ran      atomic.Bool
 	Client   cclient.JanitorClient
 	Owner    types.Object
-	Request  *ApprovalRequest
-	Approval *Approval
+	Request  *v1.ApprovalRequest
+	Approval *v1.Approval
 
 	hashValue any
 }
@@ -67,16 +67,16 @@ func NewApprovalBuilder(client cclient.JanitorClient, owner types.Object) Approv
 	return &approvalBuilder{
 		Client: client,
 		Owner:  owner,
-		Request: &ApprovalRequest{
-			Spec: ApprovalRequestSpec{
-				State:    ApprovalStatePending,
+		Request: &v1.ApprovalRequest{
+			Spec: v1.ApprovalRequestSpec{
+				State:    v1.ApprovalStatePending,
 				Strategy: DefaultStrategy,
-				Decider:  Decider{},
+				Decider:  v1.Decider{},
 			},
 		},
-		Approval: &Approval{
+		Approval: &v1.Approval{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      ApprovalName(ownerKind, owner.GetName()),
+				Name:      v1.ApprovalName(ownerKind, owner.GetName()),
 				Namespace: owner.GetNamespace(),
 			},
 		},
@@ -92,12 +92,12 @@ func (b *approvalBuilder) WithHashValue(hashValue any) ApprovalBuilder {
 }
 
 func (b *approvalBuilder) setWithHash() {
-	b.Request.Name = ApprovalRequestName(b.Owner, b.hashValue)
+	b.Request.Name = v1.ApprovalRequestName(b.Owner, b.hashValue)
 	b.Request.Namespace = b.Owner.GetNamespace()
 	b.Request.Spec.Resource = *types.TypedObjectRefFromObject(b.Owner, b.Client.Scheme())
 }
 
-func (b *approvalBuilder) WithRequester(requester *Requester) ApprovalBuilder {
+func (b *approvalBuilder) WithRequester(requester *v1.Requester) ApprovalBuilder {
 	b.Request.Spec.Requester = *requester
 	return b
 }
@@ -109,13 +109,13 @@ func (b *approvalBuilder) requireRequester() error {
 	return nil
 }
 
-func (b *approvalBuilder) WithStrategy(strategy ApprovalStrategy) ApprovalBuilder {
+func (b *approvalBuilder) WithStrategy(strategy v1.ApprovalStrategy) ApprovalBuilder {
 	b.Request.Spec.Strategy = strategy
 	return b
 }
 
-func (b *approvalBuilder) WithDecider(decider Decider) ApprovalBuilder {
-	b.Request.Spec.Decider = decider
+func (b *approvalBuilder) WithDecider(Decider v1.Decider) ApprovalBuilder {
+	b.Request.Spec.Decider = Decider
 	return b
 }
 
@@ -139,7 +139,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (ApprovalResult, error) {
 
 	approvalReq := b.Request.DeepCopy()
 	mutate := func() error {
-		if approvalReq.Spec.State != "" && approvalReq.Spec.State != ApprovalStatePending {
+		if approvalReq.Spec.State != "" && approvalReq.Spec.State != v1.ApprovalStatePending {
 			return nil // no need to create approval request as it already exists
 		}
 
@@ -149,8 +149,8 @@ func (b *approvalBuilder) Build(ctx context.Context) (ApprovalResult, error) {
 
 		approvalReq.Spec = b.Request.Spec
 
-		if approvalReq.Spec.Strategy == ApprovalStrategyAuto {
-			approvalReq.Spec.State = ApprovalStateGranted
+		if approvalReq.Spec.Strategy == v1.ApprovalStrategyAuto {
+			approvalReq.Spec.State = v1.ApprovalStateGranted
 		}
 		return nil
 	}
@@ -163,7 +163,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (ApprovalResult, error) {
 	b.Owner.SetCondition(condition.NewProcessingCondition("ApprovalPending", "Approval is pending"))
 	b.Owner.SetCondition(condition.NewNotReadyCondition("ApprovalPending", "Approval is pending"))
 
-	_, err = b.Client.Cleanup(ctx, &ApprovalRequestList{}, cclient.OwnedBy(b.Owner))
+	_, err = b.Client.Cleanup(ctx, &v1.ApprovalRequestList{}, cclient.OwnedBy(b.Owner))
 	if err != nil {
 		return ApprovalResultPending, errors.Wrap(err, "failed to cleanup approval-requests")
 	}
@@ -180,7 +180,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (ApprovalResult, error) {
 	} else {
 		log.V(5).Info("Approval exists")
 
-		if b.Approval.Spec.State != ApprovalStateGranted {
+		if b.Approval.Spec.State != v1.ApprovalStateGranted {
 			log.V(5).Info("Approval is not granted and must not be provisioned")
 			b.Owner.SetCondition(condition.NewNotReadyCondition("NoApproval", "Approval is either rejected or suspended"))
 			b.Owner.SetCondition(condition.NewBlockedCondition("Approval is either rejected or suspended"))
@@ -197,7 +197,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (ApprovalResult, error) {
 		}
 	}
 
-	if b.Approval.Spec.State == ApprovalStateGranted {
+	if b.Approval.Spec.State == v1.ApprovalStateGranted {
 		b.Owner.SetCondition(condition.NewReadyCondition("ApprovalGranted", "Approval is granted"))
 		b.Owner.SetCondition(condition.NewProcessingCondition("ApprovalGranted", "Approval is granted"))
 		return ApprovalResultGranted, nil
@@ -206,11 +206,11 @@ func (b *approvalBuilder) Build(ctx context.Context) (ApprovalResult, error) {
 	return ApprovalResultDenied, nil
 }
 
-func (b *approvalBuilder) GetApprovalRequest() *ApprovalRequest {
+func (b *approvalBuilder) GetApprovalRequest() *v1.ApprovalRequest {
 	return b.Request
 }
 
-func (b *approvalBuilder) GetApproval() *Approval {
+func (b *approvalBuilder) GetApproval() *v1.Approval {
 	return b.Approval
 }
 

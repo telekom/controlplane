@@ -5,13 +5,13 @@
 package fsm
 
 import (
-	. "github.com/telekom/controlplane/approval/api/v1"
+	v1 "github.com/telekom/controlplane/approval/api/v1"
 )
 
 type Transition struct {
-	Action ApprovalAction  `json:"action"`
-	Src    []ApprovalState `json:"src"`
-	Dst    ApprovalState   `json:"dst"`
+	Action v1.ApprovalAction  `json:"action"`
+	Src    []v1.ApprovalState `json:"src"`
+	Dst    v1.ApprovalState   `json:"dst"`
 }
 
 type Transitions []Transition
@@ -20,7 +20,7 @@ type FSM struct {
 	Transitions Transitions
 }
 
-func (f *FSM) NextState(action ApprovalAction, state ApprovalState) (ApprovalState, bool) {
+func (f *FSM) NextState(action v1.ApprovalAction, state v1.ApprovalState) (v1.ApprovalState, bool) {
 	for _, t := range f.Transitions {
 		if t.Action == action {
 			for _, s := range t.Src {
@@ -33,19 +33,19 @@ func (f *FSM) NextState(action ApprovalAction, state ApprovalState) (ApprovalSta
 	return state, false
 }
 
-func (f *FSM) AvailableTransitions(state ApprovalState) []AvailableTransition {
-	var result []AvailableTransition
+func (f *FSM) AvailableTransitions(state v1.ApprovalState) []v1.AvailableTransition {
+	var result []v1.AvailableTransition
 	for _, t := range f.Transitions {
 		for _, s := range t.Src {
 			if s == state {
-				result = append(result, AvailableTransition{Action: t.Action, To: t.Dst})
+				result = append(result, v1.AvailableTransition{Action: t.Action, To: t.Dst})
 			}
 		}
 	}
 	return result
 }
 
-func (f *FSM) CanTransition(action ApprovalAction, state ApprovalState) bool {
+func (f *FSM) CanTransition(action v1.ApprovalAction, state v1.ApprovalState) bool {
 	for _, t := range f.Transitions {
 		if t.Action == action {
 			for _, s := range t.Src {

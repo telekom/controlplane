@@ -104,102 +104,64 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 	})
 
 	It("should successfully reconcile the granted approval", func() {
-
 		By("Granted")
-		fetchedApproval := &approvalv1.Approval{}
-		err := k8sClient.Get(ctx, typeNamespacedName, fetchedApproval)
-		Expect(err).NotTo(HaveOccurred())
-
-		fetchedApproval.Spec.State = approvalv1.ApprovalStateGranted
-
-		// Update Approval
-		Expect(k8sClient.Update(ctx, fetchedApproval)).Should(Succeed())
-
-		fetchedUpdatedApproval := &approvalv1.Approval{}
-
-		Eventually(func(g Gomega) {
-			err = k8sClient.Get(ctx, typeNamespacedName, fetchedUpdatedApproval)
-			g.Expect(err).NotTo(HaveOccurred())
-
-			processingCondition := meta.FindStatusCondition(fetchedUpdatedApproval.Status.Conditions, condition.ConditionTypeProcessing)
-			readyCondition := meta.FindStatusCondition(fetchedUpdatedApproval.Status.Conditions, condition.ConditionTypeReady)
-
-			g.Expect(processingCondition).ToNot(BeNil())
-			g.Expect(processingCondition.Status).To(Equal(metav1.ConditionFalse))
-			g.Expect(processingCondition.Message).To(Equal("Approval granted"))
-
-			g.Expect(readyCondition).ToNot(BeNil())
-			g.Expect(readyCondition.Status).To(Equal(metav1.ConditionTrue))
-			g.Expect(readyCondition.Message).To(Equal("Approval has been granted"))
-
-		}, timeout, interval).Should(Succeed())
-
+		checkApprovalStatus(typeNamespacedName, approvalv1.ApprovalStateGranted,
+			metav1.ConditionFalse, metav1.ConditionTrue,
+			"Approval granted", "Approval has been granted",
+			"Done", "Approved")
 	})
 
 	It("should successfully reconcile the rejected approval", func() {
-
 		By("Rejected")
-		fetchedApproval := &approvalv1.Approval{}
-		err := k8sClient.Get(ctx, typeNamespacedName, fetchedApproval)
-		Expect(err).NotTo(HaveOccurred())
-
-		fetchedApproval.Spec.State = approvalv1.ApprovalStateRejected
-
-		// Update Approval
-		Expect(k8sClient.Update(ctx, fetchedApproval)).Should(Succeed())
-
-		fetchedUpdatedApproval := &approvalv1.Approval{}
-
-		Eventually(func(g Gomega) {
-			err := k8sClient.Get(ctx, typeNamespacedName, fetchedUpdatedApproval)
-			g.Expect(err).NotTo(HaveOccurred())
-
-			processingCondition := meta.FindStatusCondition(fetchedUpdatedApproval.Status.Conditions, condition.ConditionTypeProcessing)
-			readyCondition := meta.FindStatusCondition(fetchedUpdatedApproval.Status.Conditions, condition.ConditionTypeReady)
-
-			g.Expect(processingCondition).ToNot(BeNil())
-			g.Expect(processingCondition.Status).To(Equal(metav1.ConditionFalse))
-			g.Expect(processingCondition.Message).To(Equal("Approval rejected"))
-
-			g.Expect(readyCondition).ToNot(BeNil())
-			g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
-			g.Expect(readyCondition.Message).To(Equal("Approval has been rejected"))
-
-		}, timeout, interval).Should(Succeed())
+		checkApprovalStatus(typeNamespacedName, approvalv1.ApprovalStateRejected,
+			metav1.ConditionFalse, metav1.ConditionFalse,
+			"Approval rejected", "Approval has been rejected",
+			"Done", "Rejected")
 
 	})
 
 	It("should successfully reconcile the suspended approval", func() {
-
 		By("Suspended")
-		fetchedApproval := &approvalv1.Approval{}
-		err := k8sClient.Get(ctx, typeNamespacedName, fetchedApproval)
-		Expect(err).NotTo(HaveOccurred())
-
-		fetchedApproval.Spec.State = approvalv1.ApprovalStateSuspended
-
-		// Update Approval
-		Expect(k8sClient.Update(ctx, fetchedApproval)).Should(Succeed())
-
-		fetchedUpdatedApproval := &approvalv1.Approval{}
-
-		Eventually(func(g Gomega) {
-			err := k8sClient.Get(ctx, typeNamespacedName, fetchedUpdatedApproval)
-			g.Expect(err).NotTo(HaveOccurred())
-
-			processingCondition := meta.FindStatusCondition(fetchedUpdatedApproval.Status.Conditions, condition.ConditionTypeProcessing)
-			readyCondition := meta.FindStatusCondition(fetchedUpdatedApproval.Status.Conditions, condition.ConditionTypeReady)
-
-			g.Expect(processingCondition).ToNot(BeNil())
-			g.Expect(processingCondition.Status).To(Equal(metav1.ConditionTrue))
-			g.Expect(processingCondition.Reason).To(Equal("Suspended"))
-			g.Expect(processingCondition.Message).To(Equal("Approval is suspended"))
-
-			g.Expect(readyCondition).ToNot(BeNil())
-			g.Expect(readyCondition.Status).To(Equal(metav1.ConditionTrue))
-			g.Expect(readyCondition.Message).To(Equal("Approval is suspended"))
-
-		}, timeout, interval).Should(Succeed())
+		checkApprovalStatus(typeNamespacedName, approvalv1.ApprovalStateSuspended,
+			metav1.ConditionTrue, metav1.ConditionTrue,
+			"Approval is suspended", "Approval is suspended",
+			"Suspended", "Suspended")
 
 	})
 })
+
+func checkApprovalStatus(typeNamespacedName types.NamespacedName, state approvalv1.ApprovalState,
+	expectedProcessingStatus, expectedReadyStatus metav1.ConditionStatus,
+	expectedProcessingMessage, expectedReadyMessage,
+	expectedProcessingReason, expectedReadyReason string,
+) {
+	fetchedApproval := &approvalv1.Approval{}
+	err := k8sClient.Get(ctx, typeNamespacedName, fetchedApproval)
+	Expect(err).NotTo(HaveOccurred())
+
+	fetchedApproval.Spec.State = state
+
+	// Update Approval
+	Expect(k8sClient.Update(ctx, fetchedApproval)).Should(Succeed())
+
+	fetchedUpdatedApproval := &approvalv1.Approval{}
+
+	Eventually(func(g Gomega) {
+		err = k8sClient.Get(ctx, typeNamespacedName, fetchedUpdatedApproval)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		processingCondition := meta.FindStatusCondition(fetchedUpdatedApproval.Status.Conditions, condition.ConditionTypeProcessing)
+		readyCondition := meta.FindStatusCondition(fetchedUpdatedApproval.Status.Conditions, condition.ConditionTypeReady)
+
+		g.Expect(processingCondition).ToNot(BeNil())
+		g.Expect(processingCondition.Reason).To(Equal(expectedProcessingReason))
+		g.Expect(processingCondition.Status).To(Equal(expectedProcessingStatus))
+		g.Expect(processingCondition.Message).To(Equal(expectedProcessingMessage))
+
+		g.Expect(readyCondition).ToNot(BeNil())
+		g.Expect(readyCondition.Reason).To(Equal(expectedReadyReason))
+		g.Expect(readyCondition.Status).To(Equal(expectedReadyStatus))
+		g.Expect(readyCondition.Message).To(Equal(expectedReadyMessage))
+
+	}, timeout, interval).Should(Succeed())
+}
