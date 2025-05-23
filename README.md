@@ -65,7 +65,7 @@ Secret management involves securely storing, accessing, and distributing sensiti
 * Approval API: API for handling approval processes and workflows.
 * Team API: API for team management and related actions.
 * Catalog API: API to access and manage an API catalog
-* ControlPlane API
+* ControlPlane API: API for accessing controlplane information
 
 </details>
 
