@@ -104,12 +104,12 @@ The following API Servers run on the control plane:
 
 The Control Plane requires the following infrastructure components in order to operate correctly:
 
-- **Kubernetes**: The Open Telekom Integration Platform Control Plane is designed to be deployed on Kubernetes. Currently, it is tested with Kubernetes version 1.31.
+- **Kubernetes**: The Open Telekom Integration Platform Control Plane is designed to be deployed on [Kubernetes](https://kubernetes.io/). Currently, it is tested with Kubernetes version 1.31.
 - **cert-manager**: [cert-manager](https://cert-manager.io/docs/) creates TLS certificates for workloads in your Kubernetes cluster and renews the certificates before they expire.
 - **trust-manager**: [trust-manager](https://cert-manager.io/docs/trust/trust-manager/) is the easiest way to manage trust bundles in Kubernetes clusters.
-**Prometheus CRDs**: By default, Prometheus based monitoring is enabled and hence needs the CRDs to be installed in the Control Plane
-- **API Management component**
-- **Identity Management component**
+**Prometheus CRDs**: By default, Prometheus based monitoring is enabled ([kubebuilder](https://book.kubebuilder.io/reference/metrics) default) and hence needs the CRDs to be installed in the Control Plane
+- **API Management component**: [Gateway](https://github.com/telekom/gateway-kong-charts) is a [kong](https://konghq.com/products/kong-gateway)-based managed gateway catering Hybrid API management of the Open Telekom Integration Platform.
+- **Identity Management component**: [Iris](https://github.com/telekom/identity-iris-keycloak-charts) is the [keycloak](https://www.keycloak.org/)-based Machine-to-Machine (M2M) Identity Provider of the Open Telekom Integration Platform. It enables the authentication and the authorization of consumers to access a subscribed service.
 
 ## Architecture
 The diagram below shows the general flow and interfaces between the most important components of The Rover Control Plane.
