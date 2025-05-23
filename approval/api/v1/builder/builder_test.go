@@ -191,6 +191,12 @@ var _ = Describe("Approval Builder", Ordered, func() {
 
 			res, err := builder.Build(ctx)
 			Expect(err).NotTo(HaveOccurred())
+			// This check is subject to a race condition.
+			// The mutator hook within the builder is not run at time of this check.
+			// Therefore, the changes within the mutator are not _always_ in the mocked k8s cluster.
+			// About 1 out of 5 runs, the mutator is not able to change the State to Granted due to the ApprovalStrategyAuto.
+			// Adding k8sm.GetCache().WaitForCacheSync(ctx)) might not work, since the k8sClient.Get is run within the builder.
+			Expect(k8sm.GetCache().WaitForCacheSync(ctx)).To(BeTrue(), "cache not synced")
 			Expect(res).To(Equal(ApprovalResultGranted))
 
 			Eventually(func(g Gomega) {
