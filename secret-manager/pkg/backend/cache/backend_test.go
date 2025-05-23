@@ -25,7 +25,7 @@ var _ = Describe("Cached Backend", func() {
 		BeforeEach(func() {
 			t := GinkgoT()
 			mockBackend = &mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]{}
-			mockBackend.Mock.Test(t)
+			mockBackend.Test(t)
 			t.Cleanup(func() { mockBackend.AssertExpectations(t) })
 
 			cachedBackend = cache.NewCachedBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]](mockBackend, 10*time.Second)
