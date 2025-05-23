@@ -1,0 +1,58 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: mutating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-organization-cp-ei-telekom-de-v1-team
+  failurePolicy: Fail
+  name: mteam-v1.kb.io
+  rules:
+  - apiGroups:
+    - organization.cp.ei.telekom.de
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - teams
+  sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-organization-cp-ei-telekom-de-v1-team
+  failurePolicy: Fail
+  name: vteam-v1.kb.io
+  rules:
+  - apiGroups:
+    - organization.cp.ei.telekom.de
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - teams
+  sideEffects: None
