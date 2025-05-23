@@ -332,7 +332,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Setup Ko
-        uses: ko-build/setup-ko@v0.8
+        uses: ko-build/setup-ko@v0.9
 
       - name: Inject slug vars
         uses: rlespinasse/github-slug-action@v5
