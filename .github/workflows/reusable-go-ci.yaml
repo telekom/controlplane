@@ -277,7 +277,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@4dd16135b69a43b6c8efb853346f8437d92d3c93 # pinv3.26.6
+        uses: github/codeql-action/init@ff0a06e83cb2de871e5a09832bc6a81e7276941f # pinv3.28.18
         with:
           languages: go
           build-mode: manual # Set to manual as we provide a build step
@@ -298,7 +298,7 @@ jobs:
           fi
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@4dd16135b69a43b6c8efb853346f8437d92d3c93 # pinv3.26.6
+        uses: github/codeql-action/analyze@ff0a06e83cb2de871e5a09832bc6a81e7276941f # pinv3.28.18
         with:
           category: "/language:go"
 
