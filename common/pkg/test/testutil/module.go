@@ -7,6 +7,7 @@ package testutil
 import (
 	"fmt"
 	"go/build"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -17,7 +18,7 @@ import (
 )
 
 var (
-	PkgModCrdsSubpath = "crds"
+	PkgModCrdsSubpath = "config/crd/bases"
 	IgnoreOwnModPath  = true
 )
 
@@ -75,10 +76,20 @@ func getCrdPaths(goModFilePath, modPathRE string) (paths []string, err error) {
 		if IgnoreOwnModPath && strings.HasPrefix(req.Mod.Path, ownModPath) {
 			continue
 		}
-		if re.MatchString(req.Mod.Path) {
-			crdFilepath := filepath.Join(goPath, "pkg/mod", fmt.Sprintf("%s@%s", req.Mod.Path, req.Mod.Version), PkgModCrdsSubpath)
-			paths = append(paths, crdFilepath)
+
+		if !re.MatchString(req.Mod.Path) {
+			continue
 		}
+
+		if isReplaced, newPath := findReplacePath(modFile, req.Mod.Path); isReplaced {
+			log.Printf("Module %s has been replaced. Trying relative path %s", req.Mod.Path, newPath)
+			crdFilepath := filepath.Join(newPath, PkgModCrdsSubpath)
+			paths = append(paths, crdFilepath)
+			continue
+		}
+
+		crdFilepath := filepath.Join(goPath, "pkg/mod", fmt.Sprintf("%s@%s", req.Mod.Path, req.Mod.Version), PkgModCrdsSubpath)
+		paths = append(paths, crdFilepath)
 	}
 	return paths, nil
 }
@@ -103,4 +114,14 @@ func findNextFileMatch(filename string) (string, error) {
 
 		wd = filepath.Dir(wd)
 	}
+}
+
+func findReplacePath(modFile *modfile.File, modPath string) (bool, string) {
+	for _, rep := range modFile.Replace {
+		if rep.Old.Path == modPath {
+			return true, rep.New.Path
+		}
+	}
+
+	return false, ""
 }

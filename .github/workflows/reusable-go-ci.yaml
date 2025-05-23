@@ -79,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pin@v4.2.2
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -124,7 +124,7 @@ jobs:
       test_reports_artifact_id: ${{ steps.upload_test_reports_artifact_step.outputs.artifact-id }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pin@v4.2.2
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -224,7 +224,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pin@v4.2.2
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -256,7 +256,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pin@v4.2.2
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # pin@v2.7.0
         with:
           fetch-depth: 0 # CodeQL requires full history
 
@@ -277,7 +277,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@4dd16135b69a43b6c8efb853346f8437d92d3c93 # pinv3.26.6
+        uses: github/codeql-action/init@ff0a06e83cb2de871e5a09832bc6a81e7276941f # pinv3.28.18
         with:
           languages: go
           build-mode: manual # Set to manual as we provide a build step
@@ -298,7 +298,7 @@ jobs:
           fi
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@4dd16135b69a43b6c8efb853346f8437d92d3c93 # pinv3.26.6
+        uses: github/codeql-action/analyze@ff0a06e83cb2de871e5a09832bc6a81e7276941f # pinv3.28.18
         with:
           category: "/language:go"
 
@@ -311,7 +311,7 @@ jobs:
       image_digest: ${{ steps.build_image_ko_step.outputs.digest }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pin@v4.2.2
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -332,7 +332,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Setup Ko
-        uses: ko-build/setup-ko@v0.8
+        uses: ko-build/setup-ko@v0.9
 
       - name: Inject slug vars
         uses: rlespinasse/github-slug-action@v5
@@ -371,7 +371,7 @@ jobs:
     steps:
       # No checkout or Go setup needed if only running Trivy on a remote image
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.30.0
         with:
           image-ref: ${{ inputs.container_registry }}/${{ inputs.github_repository }}/${{ inputs.module }}@${{ needs.build.outputs.image_digest }}
           exit-code: "1"

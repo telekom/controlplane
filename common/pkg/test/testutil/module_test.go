@@ -32,7 +32,7 @@ var _ = Describe("Module", func() {
 			paths, err := GetCrdPaths(dummyModPathRE)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(paths).To(HaveLen(1))
-			expectedPattern := filepath.Join(goPathOrDefault(), "pkg/mod/"+dummyModPathRE) + `@v\d{1,2}\.\d{1,2}\.\d{1,2}` + "/crds"
+			expectedPattern := filepath.Join(goPathOrDefault(), "pkg/mod/"+dummyModPathRE) + `@v\d{1,2}\.\d{1,2}\.\d{1,2}` + "/config/crd/bases"
 			Expect(paths[0]).To(MatchRegexp(expectedPattern))
 		})
 	})
@@ -43,7 +43,7 @@ var _ = Describe("Module", func() {
 
 			paths := GetCrdPathsOrDie(dummyModPathRE)
 			Expect(paths).To(HaveLen(1))
-			expectedPattern := filepath.Join(goPathOrDefault(), "pkg/mod/"+dummyModPathRE) + `@v\d{1,2}\.\d{1,2}\.\d{1,2}` + "/crds"
+			expectedPattern := filepath.Join(goPathOrDefault(), "pkg/mod/"+dummyModPathRE) + `@v\d{1,2}\.\d{1,2}\.\d{1,2}` + "/config/crd/bases"
 			Expect(paths[0]).To(MatchRegexp(expectedPattern))
 		})
 	})
