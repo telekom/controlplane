@@ -87,6 +87,10 @@ The following operators run on the control plane:
 These operators work alongside the Kubernetes API server and etcd, watching for changes to custom resources and ensuring the actual state of their managed components aligns with the desired configuration.
 
 ### API Servers
+API Servers are  RESTful APIs for managing Kubernetes custom resources. They provide a standardized HTTP-based interfaces to create, read, update, and delete (CRUD) custom-defined objects within the Kubernetes cluster. These custom resources are typically defined using Custom Resource Definitions (CRDs) and extend the Kubernetes API with domain-specific objects (e.g., Application, Gateway, Organization). The API follows REST principles and standard HTTP methods (GET, POST, PUT, DELETE) to interact with resources. It supports authentication and authorization, enabling automation and integration with UIs and external systems.
+
+The following API Servers run on the control plane:
+
 - [Secret Manager](./secret-manager): RESTful API for managing secrets. It allows you to store, retrieve, and delete secrets securely.
 - [Rover-Server](./rover-server): RESTful API for managing Rover resources such as Rover Exposures and Subscriptions as well as ApiSpecifications
 - [Organization-Server](./organization-server): RESTful API for managing Organization resources such as Groups and Teams
