@@ -59,12 +59,14 @@ Secret management involves securely storing, accessing, and distributing sensiti
 </details>
 <br />
 <details>
-<summary><strong>REST APIs for Key Actions</strong></summary> 
+<summary><strong>REST APIs for Key Actions</strong></summary>
+
 * Rover API: API to interact with and manage Rover functionalities.
 * Approval API: API for handling approval processes and workflows.
 * Team API: API for team management and related actions.
 * Catalog API: API to access and manage an API catalog
 * ControlPlane API
+
 </details>
 
 ## Components
