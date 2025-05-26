@@ -60,6 +60,15 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: organization
+    dir: organization
+    main: cmd/main.go
+    binary: organization
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
 
 archives:
   - formats: [tar.gz]
