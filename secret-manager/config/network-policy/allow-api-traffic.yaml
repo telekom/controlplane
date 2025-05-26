@@ -17,7 +17,7 @@ spec:
     - from:
       - namespaceSelector:
           matchLabels:
-            github.com/telekom/controlplane/secret-manager: enabled  # Only from namespaces with this label 
+            cp.ei.telekom.de/secret-manager: enabled  # Only from namespaces with this label 
       ports:
         - port: 8443
           protocol: TCP
