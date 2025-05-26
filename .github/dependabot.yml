@@ -16,6 +16,7 @@ updates:
       - common
       - common-server
       - secret-manager
+      - organization
     groups:
       default: 
         update-types:
