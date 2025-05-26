@@ -46,8 +46,6 @@ spec:
         runAsUser: 65534
       containers:
       - name: manager
-        command:
-        - /server 
         args:
         - --address
         - :8443
