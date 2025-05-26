@@ -19,9 +19,9 @@ import (
 var approvalrequestlog = logf.Log.WithName("approvalrequest-resource")
 
 // SetupWebhookWithManager will setup the manager to manage the webhooks
-func (r *ApprovalRequest) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (ar *ApprovalRequest) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+		For(ar).
 		Complete()
 }
 
@@ -30,15 +30,15 @@ func (r *ApprovalRequest) SetupWebhookWithManager(mgr ctrl.Manager) error {
 var _ webhook.CustomDefaulter = &ApprovalRequest{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (_ *ApprovalRequest) Default(_ context.Context, obj runtime.Object) error {
-	ar := obj.(*ApprovalRequest)
-	approvalrequestlog.Info("default", "name", ar.Name)
+func (ar *ApprovalRequest) Default(_ context.Context, obj runtime.Object) error {
+	arObj := obj.(*ApprovalRequest)
+	approvalrequestlog.Info("default", "name", arObj.Name)
 
-	if ar.Spec.Strategy == "" {
-		ar.Spec.Strategy = ApprovalStrategySimple
+	if arObj.Spec.Strategy == "" {
+		arObj.Spec.Strategy = ApprovalStrategySimple
 	}
-	if ar.Spec.Strategy == ApprovalStrategyAuto {
-		ar.Spec.State = ApprovalStateGranted
+	if arObj.Spec.Strategy == ApprovalStrategyAuto {
+		arObj.Spec.State = ApprovalStateGranted
 	}
 	return nil
 }
@@ -51,30 +51,30 @@ func (_ *ApprovalRequest) Default(_ context.Context, obj runtime.Object) error {
 var _ webhook.CustomValidator = &ApprovalRequest{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (_ *ApprovalRequest) ValidateCreate(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
-	ar := obj.(*ApprovalRequest)
-	approvalrequestlog.Info("validate create", "name", ar.Name)
+func (ar *ApprovalRequest) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+	arObj := obj.(*ApprovalRequest)
+	approvalrequestlog.Info("validate create", "name", arObj.Name)
 
-	if ar.Spec.Strategy == ApprovalStrategyAuto && ar.Spec.State != ApprovalStateGranted {
+	if arObj.Spec.Strategy == ApprovalStrategyAuto && arObj.Spec.State != ApprovalStateGranted {
 		warnings = append(warnings, "Request is auto approved and should be granted")
-		ar.Spec.State = ApprovalStateGranted
+		arObj.Spec.State = ApprovalStateGranted
 	}
 
 	return warnings, err
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (_ *ApprovalRequest) ValidateUpdate(_ context.Context, _ runtime.Object, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	ar := newObj.(*ApprovalRequest)
-	approvalrequestlog.Info("validate update", "name", ar.Name)
+func (ar *ApprovalRequest) ValidateUpdate(_ context.Context, _ runtime.Object, newObj runtime.Object) (warnings admission.Warnings, err error) {
+	arObj := newObj.(*ApprovalRequest)
+	approvalrequestlog.Info("validate update", "name", arObj.Name)
 
-	if ar.Spec.Strategy == ApprovalStrategyAuto && ar.Spec.State != ApprovalStateGranted {
+	if arObj.Spec.Strategy == ApprovalStrategyAuto && arObj.Spec.State != ApprovalStateGranted {
 		warnings = append(warnings, "Request is auto approved and should be granted")
-		ar.Spec.State = ApprovalStateGranted
+		arObj.Spec.State = ApprovalStateGranted
 	}
 
-	if ar.StateChanged() && ar.Status.AvailableTransitions != nil {
-		if !ar.Status.AvailableTransitions.HasState(ar.Spec.State) {
+	if arObj.StateChanged() && arObj.Status.AvailableTransitions != nil {
+		if !arObj.Status.AvailableTransitions.HasState(arObj.Spec.State) {
 			err = apierrors.NewBadRequest("Invalid state transition")
 		}
 	}
@@ -83,7 +83,8 @@ func (_ *ApprovalRequest) ValidateUpdate(_ context.Context, _ runtime.Object, ne
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *ApprovalRequest) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
-	approvalrequestlog.Info("validate delete", "name", r.Name)
+func (ar *ApprovalRequest) ValidateDelete(_ context.Context, delObj runtime.Object) (admission.Warnings, error) {
+	arObj := delObj.(*ApprovalRequest)
+	approvalrequestlog.Info("validate delete", "name", arObj.Name)
 	return nil, nil
 }

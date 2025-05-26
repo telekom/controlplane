@@ -5,31 +5,31 @@
 package approvalrequest
 
 import (
-	. "github.com/telekom/controlplane/approval/api/v1"
+	v1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/approval/internal/fsm"
 )
 
 var auto = fsm.Transitions{}
 
 var simple = fsm.Transitions{
-	{Action: ApprovalActionAllow, Src: []ApprovalState{ApprovalStatePending}, Dst: ApprovalStateGranted},
-	{Action: ApprovalActionDeny, Src: []ApprovalState{ApprovalStatePending}, Dst: ApprovalStateRejected},
+	{Action: v1.ApprovalActionAllow, Src: []v1.ApprovalState{v1.ApprovalStatePending}, Dst: v1.ApprovalStateGranted},
+	{Action: v1.ApprovalActionDeny, Src: []v1.ApprovalState{v1.ApprovalStatePending}, Dst: v1.ApprovalStateRejected},
 }
 
 var fourEyes = fsm.Transitions{
-	{Action: ApprovalActionAllow, Src: []ApprovalState{ApprovalStatePending}, Dst: ApprovalStateSemigranted},
-	{Action: ApprovalActionDeny, Src: []ApprovalState{ApprovalStatePending, ApprovalStateSemigranted}, Dst: ApprovalStateRejected},
-	{Action: ApprovalActionAllow, Src: []ApprovalState{ApprovalStateSemigranted}, Dst: ApprovalStateGranted},
+	{Action: v1.ApprovalActionAllow, Src: []v1.ApprovalState{v1.ApprovalStatePending}, Dst: v1.ApprovalStateSemigranted},
+	{Action: v1.ApprovalActionDeny, Src: []v1.ApprovalState{v1.ApprovalStatePending, v1.ApprovalStateSemigranted}, Dst: v1.ApprovalStateRejected},
+	{Action: v1.ApprovalActionAllow, Src: []v1.ApprovalState{v1.ApprovalStateSemigranted}, Dst: v1.ApprovalStateGranted},
 }
 
-var transitionMap = map[ApprovalStrategy]fsm.Transitions{
-	ApprovalStrategySimple:   simple,
-	ApprovalStrategyFourEyes: fourEyes,
-	ApprovalStrategyAuto:     auto,
+var transitionMap = map[v1.ApprovalStrategy]fsm.Transitions{
+	v1.ApprovalStrategySimple:   simple,
+	v1.ApprovalStrategyFourEyes: fourEyes,
+	v1.ApprovalStrategyAuto:     auto,
 }
 
-var ApprovalStrategyFSM = map[ApprovalStrategy]*fsm.FSM{
-	ApprovalStrategySimple:   {Transitions: transitionMap[ApprovalStrategySimple]},
-	ApprovalStrategyFourEyes: {Transitions: transitionMap[ApprovalStrategyFourEyes]},
-	ApprovalStrategyAuto:     {Transitions: transitionMap[ApprovalStrategyAuto]},
+var ApprovalStrategyFSM = map[v1.ApprovalStrategy]*fsm.FSM{
+	v1.ApprovalStrategySimple:   {Transitions: transitionMap[v1.ApprovalStrategySimple]},
+	v1.ApprovalStrategyFourEyes: {Transitions: transitionMap[v1.ApprovalStrategyFourEyes]},
+	v1.ApprovalStrategyAuto:     {Transitions: transitionMap[v1.ApprovalStrategyAuto]},
 }
