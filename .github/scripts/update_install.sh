@@ -4,6 +4,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# This script should only be run in a CI environment when a new release is created.
+# It will update the install-files to point to the newly released version.
+# See `.releaserc.mjs` for more information on how its integrated with semantic-release.
+
 set -e
 
 KUSTOMIZATION_FILE="install/kustomization.yaml"

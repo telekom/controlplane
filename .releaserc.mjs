@@ -20,7 +20,7 @@ export default {
         '@semantic-release/release-notes-generator',
         '@semantic-release/changelog',
         ['@semantic-release/exec', {
-            prepareCmd: `bash ./update_install.sh "\${nextRelease.gitTag}"`,
+            prepareCmd: `bash ./.github/scripts/update_install.sh "\${nextRelease.gitTag}"`,
             publishCmd: `echo "\${nextRelease.notes}" > /tmp/release-notes.md`,
         }],
         ['@semantic-release/git', {
