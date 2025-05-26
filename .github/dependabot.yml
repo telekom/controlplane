@@ -17,6 +17,13 @@ updates:
       - common-server
       - secret-manager
       - organization
+      - gateway
+      - identity
+      - admin
+      - application
+      - stargate
+      - rover
+      - approval
     groups:
       default: 
         update-types:
