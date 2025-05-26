@@ -74,6 +74,8 @@ Secret management involves securely storing, accessing, and distributing sensiti
 ### Operators
 In addition to the core components, the control plane may also run custom operators. These are specialized control loops designed to manage complex domain-specific applications and configurations. These operators extend Kubernetes functionality using the [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/), combining custom resource definitions (CRDs) with controllers that automate lifecycle management.
 
+Each operator encapsulates a distinct domain of responsibility, operating independently with minimal interdependencies, which promotes modularity, simplifies maintenance, and enhances the scalability of the overall control plane architecture.
+
 The following operators run on the control plane:
 - [Rover Operator](./rover): Manages the lifecycle of Rover-domain resources such as Rovers and ApiSpecifications.
 - [Application Operator](./application) Manages the lifecycle of resources of kind Application.
@@ -108,7 +110,7 @@ The Control Plane requires the following infrastructure components in order to o
 - **cert-manager**: [cert-manager](https://cert-manager.io/docs/) creates TLS certificates for workloads in your Kubernetes cluster and renews the certificates before they expire.
 - **trust-manager**: [trust-manager](https://cert-manager.io/docs/trust/trust-manager/) is the easiest way to manage trust bundles in Kubernetes clusters.
 **Prometheus CRDs**: By default, Prometheus based monitoring is enabled ([kubebuilder](https://book.kubebuilder.io/reference/metrics) default) and hence needs the CRDs to be installed in the Control Plane
-- **API Management component**: [Gateway](https://github.com/telekom/gateway-kong-charts) is a [kong](https://konghq.com/products/kong-gateway)-based managed gateway catering Hybrid API management of the Open Telekom Integration Platform.
+- **API Management component**: [Gateway](https://github.com/telekom/gateway-kong-charts) is a [kong](https://konghq.com/products/kong-gateway)-based managed gateway of the Open Telekom Integration Platform, providing Hybrid API management.
 - **Identity Management component**: [Iris](https://github.com/telekom/identity-iris-keycloak-charts) is the [keycloak](https://www.keycloak.org/)-based Machine-to-Machine (M2M) Identity Provider of the Open Telekom Integration Platform. It enables the authentication and the authorization of consumers to access a subscribed service.
 
 ## Architecture
