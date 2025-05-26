@@ -79,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # pin@v2.7.0
+        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -124,7 +124,7 @@ jobs:
       test_reports_artifact_id: ${{ steps.upload_test_reports_artifact_step.outputs.artifact-id }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # pin@v2.7.0
+        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -203,7 +203,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # pin@v2.7.0
+        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -235,7 +235,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # pin@v2.7.0
+        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # pin@v2.7.0
         with:
           fetch-depth: 0 # CodeQL requires full history
 
@@ -290,7 +290,7 @@ jobs:
       image_digest: ${{ steps.build_image_ko_step.outputs.digest }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # pin@v2.7.0
+        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
