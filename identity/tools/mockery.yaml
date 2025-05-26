@@ -1,0 +1,26 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+with-expecter: True
+mockname: "Mock{{.InterfaceName}}"
+dir: "../test/mocks"
+outpkg: "mocks"
+filename: "mock_{{.InterfaceName}}.go"
+packages:
+  cp.ei.telekom.de/identity/pkg/api:
+    # place your package-specific config here
+    config:
+    interfaces:
+      # select the interfaces you want mocked
+      KeycloakClient:
+        # Modify package-level config for this specific interface (if applicable)
+        config:
+  cp.ei.telekom.de/identity/pkg/keycloak:
+    # place your package-specific config here
+    config:
+    interfaces:
+      # select the interfaces you want mocked
+      RealmClient:
+        # Modify package-level config for this specific interface (if applicable)
+        config:

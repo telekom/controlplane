@@ -86,3 +86,13 @@ jobs:
       run_build_image: true
       run_tests: true
       ko_build_path: "cmd/main.go"
+
+  identity:
+    name: Identity
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: identity
+      run_check_generated_files: true
+      run_build_image: true
+      run_tests: true
+      ko_build_path: "cmd/main.go"
