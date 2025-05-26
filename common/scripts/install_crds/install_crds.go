@@ -22,9 +22,9 @@ func main() {
 		log.Print("Nothing to apply")
 	}
 	for _, path := range paths {
-		log.Printf("Applying CRD: %s", path)
+		log.Printf("Applying CRD(s): %s", path)
 		if _, err := os.Stat(path); err != nil {
-			log.Printf("CRD file not found: %s", path)
+			log.Printf("CRD file(s) not found: %s", path)
 			continue
 		}
 		cmd := exec.Command("kubectl", "apply", "-f", path)

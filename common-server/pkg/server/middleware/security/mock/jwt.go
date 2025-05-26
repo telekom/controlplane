@@ -28,12 +28,12 @@ func parseMockToken(rawToken string) (*jwt.Token, error) {
 func getBearerToken(c *fiber.Ctx) (string, error) {
 	header := c.Get("Authorization")
 	if header == "" {
-		return "", fmt.Errorf("Authorization header not found")
+		return "", fmt.Errorf("authorization header not found")
 	}
 
 	parts := strings.Split(header, " ")
 	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-		return "", fmt.Errorf("Invalid Authorization header")
+		return "", fmt.Errorf("invalid Authorization header")
 	}
 
 	return parts[1], nil
