@@ -25,7 +25,7 @@ SPDX-License-Identifier: Apache-2.0
 
 This project defines custom resources (`Approval` and `ApprovalRequest`) to handle access approvals. 
 
-It supports various approval strategies (e.g., `Auto`, `Simple`, `FourEyes`) and tracks the state of them. 
+It supports various approval strategies (e.g., `Auto`, `Simple` and `FourEyes`) and tracks the state of them. 
 
 The solution is designed to integrate seamlessly with any Subscription-like CRDs (like `ApiSubscriptions` in our `API domain`), enabling control over your resource access.
 
@@ -34,15 +34,16 @@ The following diagram illustrates the overall interaction of the Approval domain
 ![Approval Domain Overview](docs/img/approval_domain_overview.drawio.svg)
 
 ### Actors
-- **Requester**: The user that initiates the `Subscription` request for access to a `Exposure` (i.e. an exposed / subscribable resource). 
+- **Requester**: The user that initiates the `Subscription` request for access to an `Exposure` (i.e. an exposed / subscribable resource). 
 - **Decider**: The user reviews and approves/rejects the request. He is also the owner of the `Exposure`
 
 ### Components
 - **`Approval` & `ApprovalRequest`**: The CRD that represents the approval process. It contains information about the request, the decider, and the approval strategy.
-- **`Exposure`**: The CRD that represents the resource that is being requested for access.
-- **`Subscription`**: The CRD that represents the request for access to an `Exposure`.
+- **`Exposure`**: The CRD which represents the resource that access is being requested for.
+- **`Subscription`**: The CRD which represents the request for access to an `Exposure`.
 
-> **Note**: For more details about `Exposure` and `Subscription`, please refer to the API domain.
+> [!Note]
+> For more details about `Exposure` and `Subscription`, please refer to the API domain.
 
 ### Actions
 Actions are abstract representations of features handled by the `Operator`.
@@ -53,7 +54,7 @@ Actions are abstract representations of features handled by the `Operator`.
 ## Features
 
 * **Approval Workflow**: This domain support the process of creating, updating and managing access requests. For more details, see [Approval Workflow](#approval-workflow).
-* **Approval Strategies**: The `Approval` resource supports three approval strategies: `Auto`, `Simple`, and `FourEyes`. For more details, see [Approval Strategies](#approval-strategies).
+* **Approval Strategies**: The `Approval` resource supports three approval strategies: `Auto`, `Simple` and `FourEyes`. For more details, see [Approval Strategies](#approval-strategies).
 * **Approval States**: 
   - The `Approval` resource has several states that represent the current status of the approval process. For more details, see [Approval States](#approval-states).
 
@@ -67,16 +68,16 @@ The Approval Workflow describes the process of creating, updating and managing A
 
 1. **Request Creation**: A user (requester) creates any `Subscription` resource, such as `ApiSubscriptions`. 
 The operator of the corresponding domain has to create an `ApprovalRequest` and updates it on any changes.
-The `Subcsription` has needs to be blocked until the `Approval` is granted.
+The `Subscription` needs to be blocked until the `Approval` is granted.
 
 2. **ApprovalRequest**: 
 The `ApprovalRequest` is created and contains information about the request, including the requester, the requested API, and the approval strategy.
-It initially has a status of `Pending`, create the `Approval` resource and  is associated with the that resource by containing a reference to the `Approval` resource.
+It initially has the status of `Pending`, creates the `Approval` resource and contains a reference to the `Approval` resource.
 
-3. **ApprovalRequest by Decider**: The decider, can then review the request and decide whether to approve or reject it. 
-The decider is the owner-team of the application containing the Application to be subscribed to.
+3. **ApprovalRequest by Decider**: The decider can then review the request and decide whether to approve or reject it. 
+The decider is the owner-team of the application containing the `Exposure` to be subscribed to.
 Depending on the outcome, the `ApprovalRequest` status is updated to `Granted` or `Rejected` and the `Approval` resource is updated accordingly.
-If the latest `ApprovalRequests` is granted, then both the `Approval` and `ApprovalRequest` resources contain the same data.
+If the latest `ApprovalRequest` is granted, then both the `Approval` and `ApprovalRequest` resources contain the same data.
 
 4. **Approval changes**: Once the `ApprovalRequest` is approved, the `Approval` resource is created and contains information about the approval, including the decider, the approval strategy, and the status of the request.
 It contains the currently approved state. Furthermore, the `Approval` links to an `ApprovalLog` that contains the history of the approval process, including the status changes and any comments made by the decider.
@@ -107,7 +108,8 @@ The `Approval` resource can be in one of the following states:
 
 Take a look at the following diagrams for illustration, taken from [`internal/fsm` (link)](internal/fsm). 
 
-> Please note, that a list of available transitions is in the `Status` resource itself. Also, the diagram for the `ApprovalRequest` slightly differs due to no need for `Suspend` and `Resume` actions. These are directly done on the `Approval` resource.
+> [!Note]
+> A list of available transitions is in the `Status` resource itself. Also, the diagram for the `ApprovalRequest` slightly differs due to no need for `Suspend` and `Resume` actions. These are directly done on the `Approval` resource.
 
 ![Approval State Machine for Auto Approval](docs/img/approval_fsm_auto.drawio.svg)
 ![Approval State Machine for Simple Approval](docs/img/approval_fsm_simple.drawio.svg)
@@ -188,8 +190,8 @@ make install
 make deploy IMG=<some-registry>/approval:tag
 ```
 
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
-> privileges or be logged in as admin.
+> [!Note]
+> If you encounter RBAC errors, you may need to grant yourself cluster-admin  privileges or be logged in as admin.
 
 **Create instances of your solution**
 You can apply the samples (examples) from the config/sample:
@@ -198,7 +200,8 @@ You can apply the samples (examples) from the config/sample:
 kubectl apply -k config/samples/
 ```
 
->**NOTE**: Ensure that the samples has default values to test it out.
+> [!Note]
+> Ensure that the samples has default values to test it out.
 
 ### To Uninstall
 **Delete the instances (CRs) from the cluster:**
