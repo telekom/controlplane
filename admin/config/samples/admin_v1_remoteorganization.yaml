@@ -1,0 +1,21 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: admin.cp.ei.telekom.de/v1
+kind: RemoteOrganization
+metadata:
+  labels:
+    app.kubernetes.io/name: admin
+    app.kubernetes.io/managed-by: kustomize
+    cp.ei.telekom.de/environment: poc
+  name: esp-cp
+spec:
+  id: "esp"
+  clientId: "my-cp-api-client"
+  clientSecret: "my-cp-api-secret"
+  issuerUrl: "https://todo"
+  url: "https://cp-api-url"
+  zone: 
+    name: dataplane2
+    namespace: poc
