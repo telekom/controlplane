@@ -17,7 +17,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	"github.com/telekom/controlplane/organization/internal/secret"
 	"github.com/telekom/controlplane/organization/internal/secret/mock"
 	corev1 "k8s.io/api/core/v1"
@@ -69,7 +68,11 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: append(
-			testutil.GetCrdPathsOrDie("github.com/telekom/controlplane/(admin|gateway|identity)/api"),
+			[]string{
+				filepath.Join("..", "..", "..", "..", "admin", "config", "crd", "bases"),
+				filepath.Join("..", "..", "..", "..", "gateway", "config", "crd", "bases"),
+				filepath.Join("..", "..", "..", "..", "identity", "config", "crd", "bases"),
+			},
 			filepath.Join("..", "..", "..", "config", "crd", "bases")),
 		ErrorIfCRDPathMissing: true,
 		BinaryAssetsDirectory: filepath.Join("..", "..", "..", "bin", "k8s",
