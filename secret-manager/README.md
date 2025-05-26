@@ -23,7 +23,9 @@ SPDX-License-Identifier: Apache-2.0
 
 Secret Manager (SM) is a REST-ful API for managing secrets. It allows you to store, retrieve, and delete secrets securely. 
 
-> **Note**: The main goal of this is to obfuscate the secrets in Custom-Resources (CR) with placeholders "secret references".
+> [!Note]: 
+> The main goal of this is to obfuscate the secrets in Custom-Resources (CR) with placeholders "secret references".
+
 
 The following problems are solved:
 
@@ -75,7 +77,11 @@ For more details on the configuration, see the [Server Configuration](#server-co
 
 ## Getting Started
 
-### Server Configuration
+### Server
+
+The following section describes how to set up the SM server.
+
+#### Configuration
 An example configuration can be found [./config/default/config.yaml](./config/default/config.yaml).
 
 ```yaml
@@ -94,8 +100,11 @@ security:
     - onboarding_write
 ```
 
-#### Starting the Server
+#### Starting
 To start the server, you need to provide the configuration file as a command line argument.
+
+> [!Note]:
+> The backend flag `-backend` will override the backend type defined in the configuration file if the flag is used.
 
 Example for Kubernetes:
 
@@ -112,15 +121,47 @@ go run ./cmd/server/server.go -backend conjur -configfile ./config/default/confi
 For loading the Conjur configuration [github.com/cyberark/conjur-api-go](https://github.com/cyberark/conjur-api-go) is used. 
 Configuration is done using environment variables. Please refer to their documentation for more information on how to set up the Conjur backend.
 
-
 ### Client Configuration
 
-For developing and integration purposes, we have included a client that can be used to test the SM. 
-
+For developing and integration purposes, we have included a client that can be used to test the SM in cluster.
+You can find the client in the [cmd/client](./cmd/client) directory.
 
 ### Code Integration
 We've included an [OpenAPI spec](./api/openapi.yaml) that can be used to generate client code for the SM.
 
-However, we also provide a basic go implementation that can be used to integrate the SM into your code.
+However, we also provide a basic go implementation that can be used to **easily** integrate the SM into your code.
+Please take a look at that [api/README.md](./api/README.md) for more information on how to use. 
 
+
+Example taken from the [Identity Domain](../identity):
+
+```go
+package client
+
+import (
+	secrets "github.com/telekom/controlplane/secret-manager/api"
+)
+
+func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.Client) (err error) {
+	/*
+	    Handler Code
+	 */
+
+  client.Spec.ClientSecret, err = secrets.Get(ctx, client.Spec.ClientSecret)
+  if err != nil {
+    return errors.Wrap(err, "failed to get client secret from secret-manager")
+  }
+    /*
+       Handler Code
+        
+     */
+}
+```
+
+If you want to use the onboarding functionality, take a look at the code base from [Organization Domain](../organization/README.md) and the [Admin Domain](../admin/README.md) for examples how to use it.
+Additionally, the [Organization Domain](../organization/README.md) also uses the rotation functionality.
+
+### Deployment Integration
+To integrate the following [Deployment and Namespaces Patches](./config/patches) into your custom operator deployment, so that the new operator can communicate with the SM.
+Otherwise the communication to the SM wil be blocked on a [network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) level in k8s. 
 
