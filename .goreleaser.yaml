@@ -69,6 +69,15 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: admin
+    dir: admin
+    main: cmd/main.go
+    binary: admin
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
 
 archives:
   - formats: [tar.gz]
@@ -210,6 +219,25 @@ kos:
     working_dir: organization/cmd
     repositories:
       - ghcr.io/telekom/controlplane/organization
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: admin
+    build: admin
+    main: .
+    working_dir: admin/cmd
+    repositories:
+      - ghcr.io/telekom/controlplane/admin
     labels:
       org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
       org.opencontainers.image.url: "https://developer.telekom.de/"
