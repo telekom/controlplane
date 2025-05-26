@@ -50,7 +50,9 @@ function install_cert_manager() {
 
     helm repo add jetstack https://charts.jetstack.io --force-update
 
-    helm upgrade cert-manager jetstack/cert-manager \
+    helm --kube-context "$ACTIVE_KUBE_CONTEXT" \
+        upgrade cert-manager jetstack/cert-manager \
+        --install \
         --namespace cert-manager \
         --create-namespace \
         --version $version \
@@ -64,7 +66,8 @@ function install_trust_manager() {
 
     helm repo add jetstack https://charts.jetstack.io --force-update
 
-    helm upgrade trust-manager jetstack/trust-manager \
+    helm --kube-context "$ACTIVE_KUBE_CONTEXT" \
+        upgrade trust-manager jetstack/trust-manager \
         --install \
         --namespace cert-manager \
         --version $version \
@@ -98,7 +101,9 @@ function main() {
     check_binary_exists "helm"
     check_binary_exists "jq"
 
-    request_user_input "Install on which Kubernetes context?" "$ACTIVE_KUBE_CONTEXT"
+    ACTIVE_KUBE_CONTEXT=$(request_user_input "Install on which Kubernetes context?" "$ACTIVE_KUBE_CONTEXT")
+
+    echo "Using Kubernetes context: $ACTIVE_KUBE_CONTEXT"
 
     # Install Cert-Manager
     install_cert_manager "$CERT_MANAGER_VERSION"
