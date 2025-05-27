@@ -18,8 +18,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
-	"github.com/telekom/controlplane/common/pkg/test/testutil"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -74,9 +72,16 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: append(
-			testutil.GetCrdPathsOrDie("github.com/telekom/controlplane/(api|application|organization)/api"),
+			make([]string, 0),
 			filepath.Join("..", "..", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "api", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "application", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "organization", "config", "crd", "bases"),
 		),
+		//CRDDirectoryPaths: append(
+		//	testutil.GetCrdPathsOrDie("github.com/telekom/controlplane/(api|application|organization)/api"),
+		//	filepath.Join("..", "..", "config", "crd", "bases"),
+		//),
 		ErrorIfCRDPathMissing: true,
 		BinaryAssetsDirectory: filepath.Join("..", "..", "bin", "k8s",
 			fmt.Sprintf("%s-%s-%s", os.Getenv("ENVTEST_K8S_VERSION"), runtime.GOOS, runtime.GOARCH)),
