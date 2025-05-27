@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-module github.com/telekom/controlplane/orgazation/api
+module github.com/telekom/controlplane/organization/api
 
 go 1.24.2
 
 require (
 	github.com/telekom/controlplane/common v0.0.0
-	k8s.io/apimachinery v0.33.0
-	sigs.k8s.io/controller-runtime v0.20.4
+	k8s.io/apimachinery v0.33.1
+	sigs.k8s.io/controller-runtime v0.21.0
 )
 
 replace github.com/telekom/controlplane/common => ../../common

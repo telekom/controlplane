@@ -19,10 +19,11 @@ require (
 	github.com/telekom/controlplane/common v1.14.0
 	github.com/telekom/controlplane/gateway/api v0.0.0
 	github.com/telekom/controlplane/identity/api v0.0.0
+	github.com/telekom/controlplane/organization/api v0.0.0
 	github.com/telekom/controlplane/secret-manager v0.0.0
-	k8s.io/api v0.33.0
+	k8s.io/api v0.33.1
 	k8s.io/apimachinery v0.33.1
-	k8s.io/client-go v0.33.0
+	k8s.io/client-go v0.33.1
 	sigs.k8s.io/controller-runtime v0.21.0
 )
 
@@ -32,6 +33,7 @@ replace (
 	github.com/telekom/controlplane/common-server => ../common-server
 	github.com/telekom/controlplane/gateway/api => ../gateway/api
 	github.com/telekom/controlplane/identity/api => ../identity/api
+	github.com/telekom/controlplane/organization/api => ./api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
 )
 
@@ -96,7 +98,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac // indirect
-	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
