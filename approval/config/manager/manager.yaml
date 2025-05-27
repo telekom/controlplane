@@ -62,12 +62,10 @@ spec:
         # seccompProfile:
         #   type: RuntimeDefault
       containers:
-      - command:
-        - /manager
-        args:
+      - args:
           - --leader-elect
           - --health-probe-bind-address=:8081
-        image: controller:latest
+        image: ghcr.io/telekom/controlplane/approval:stable
         name: manager
         securityContext:
           allowPrivilegeEscalation: false
