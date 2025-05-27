@@ -9,7 +9,7 @@ SPDX-License-Identifier: Apache-2.0
 </p>
 
 <p align="center">
-  Secret Manager (SM) is a REST-ful API for managing secrets. It allows to store, retrieve, and delete secrets securely.
+  Secret Manager (SM) is a RESTful API for managing secrets. It allows for storing, retrieving, and deleting secrets securely.
 </p>
 
 <p align="center">
@@ -21,9 +21,9 @@ SPDX-License-Identifier: Apache-2.0
 
 ## About
 
-Secret Manager (SM) is a REST-ful API for managing secrets. It allows you to store, retrieve, and delete secrets securely. 
+Secret Manager (SM) is a RESTful API for managing secrets. It allows you to store, retrieve, and delete secrets securely. 
 
-> [!Note]: 
+> [!NOTE]
 > The main goal of this is to obfuscate the secrets in Custom-Resources (CR) with placeholders "secret references".
 
 
@@ -31,7 +31,7 @@ Secret Manager (SM) is a REST-ful API for managing secrets. It allows you to sto
 
 The general flow is as follows:
 1. Any domain can access the SM to store a secret, if configured to do so by calling various endpoints depending on the purpose.
-2. In the request, the domain will send a reference **secretID** which is a unique identifier for the secret.
+2. In the request, the domain will send a reference **secretID**, which is a unique identifier for the secret.
 3. The secret manager will then store/receive the secret in the configured backend.
 4. The secret manager will return a reference **secretID** to the domain operators.
 5. The domain operators will then use this reference in their Custom-Resources (CRs) instead of the actual secret.
@@ -62,15 +62,15 @@ Currently, the SM supports the following backends.
 This backend uses [Kubernetes Secrets](https://kubernetes.io/docs/concepts/configuration/secret/) to store secrets. 
 It will therefore work with any Kubernetes cluster. 
 
-The **upside** of this backend is that it is easy to set up and does not require any additional components. It is also enables fast development and testing cycles.
-The **downside** of this backend is that the secrets are stored in Kubernetes and therefore visible for anyone with access to the Kubernetes cluster.
+The **upside** of this backend is that it is easy to set up and does not require any additional components. It also enables fast development and testing cycles.
+The **downside** of this backend is that the secrets are stored in Kubernetes and therefore visible to anyone with access to the Kubernetes cluster.
 
 For more information about the Kubernetes implementation, see the [Kubernetes Backend](./pkg/backend/kubernetes/README.md) documentation.
 
 ### Conjur
 
 This backend uses [Conjur](https://www.conjur.org/) to store secrets. 
-It is a more secure option than the Kubernetes backend, as it provides a more fine-grained access control and auditing capabilities.
+It is a more secure option than the Kubernetes backend, as it provides more fine-grained access control and auditing capabilities.
 
 For more information about the Conjur implementation, see the [Conjur Backend](./pkg/backend/conjur/README.md) documentation.
 
@@ -83,13 +83,13 @@ We have implemented a simple access control mechanism that allows you to define 
 * `secrets_read`: Allows GET requests to the SM.
 * `secrets_write`: Allows PUT/DELETE requests to the SM.
 * `onboarding_write`: Allows access to `v1/onboarding` endpoints. This is used to onboard new teams, groups and environments.
-  * For more information about team/groups and environments, see [Organization](../organization/README.md) and [Admin](../admin/README.md) domain respectively.
+  * For more information about teams/groups and environments, see [Organization](../organization/README.md) and [Admin](../admin/README.md) domains, respectively.
 
 For more details on how to configure, see the [Server Configuration](#server-configuration) section.
 
 ### Network Policies
 
-Additional, traffic towards the SM is further protected by [Kubernetes Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/),
+Additionally, traffic towards the SM is further protected by [Kubernetes Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/),
 so that only the services that are registered in advance can access the SM.
 See the [Deployment Integration](#deployment-integration) section for more information on how to integrate the SM into your custom operator deployment.
 
@@ -119,9 +119,9 @@ security:
 ```
 
 #### Starting
-To start the server, you need to provide the configuration file as a command line argument.
+To start the server, you need to provide the configuration file as a command-line argument.
 
-> [!Note]:
+> [!NOTE]
 > The backend flag `-backend` will override the backend type defined in the configuration file if the flag is used.
 
 Example for Kubernetes:
@@ -141,14 +141,14 @@ Configuration is done using environment variables. Please refer to their documen
 
 ### Client Configuration
 
-For developing and integration purposes, we have included a client that can be used to test the SM in cluster.
+For developing and integration purposes, we have included a client that can be used to test the SM in the cluster.
 You can find the client in the [cmd/client](./cmd/client) directory.
 
 ### Code Integration
 We've included an [OpenAPI spec](./api/openapi.yaml) that can be used to generate client code for the SM.
 
-However, we also provide a basic go implementation that can be used to **easily** integrate the SM into your code.
-Please take a look at that [api/README.md](./api/README.md) for more information on how to use. 
+However, we also provide a basic Go implementation that can be used to **easily** integrate the SM into your code.
+Please take a look at that [api/README.md](./api/README.md) for more information on how to use it. 
 
 
 Example taken from the [Identity Domain](../identity):
@@ -176,7 +176,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 }
 ```
 
-If you want to use the onboarding functionality, take a look at the code base from [Organization Domain](../organization/README.md) and the [Admin Domain](../admin/README.md) for examples how to use it.
+If you want to use the onboarding functionality, take a look at the code base from [Organization Domain](../organization/README.md) and the [Admin Domain](../admin/README.md) for examples on how to use it.
 Additionally, the [Organization Domain](../organization/README.md) also uses the rotation functionality.
 
 ### Deployment Integration
