@@ -18,7 +18,10 @@ require (
 	sigs.k8s.io/controller-runtime v0.21.0
 )
 
-replace github.com/telekom/controlplane/common => ../common
+replace (
+	github.com/telekom/controlplane/approval/api => ./api
+	github.com/telekom/controlplane/common => ../common
+)
 
 replace github.com/telekom/controlplane/approval/api => ./api
 
