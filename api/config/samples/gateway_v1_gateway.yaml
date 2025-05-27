@@ -1,0 +1,41 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: gateway.cp.ei.telekom.de/v1
+kind: Gateway
+metadata:
+  labels:
+    app.kubernetes.io/name: gateway
+    app.kubernetes.io/managed-by: kustomize
+    cp.ei.telekom.de/zone: zone-a
+    cp.ei.telekom.de/environment: poc
+  name: api
+  namespace: poc--zone-a
+spec:
+  url: http://localhost:8000
+  issuerUrl: https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc
+  admin:
+    url: http://localhost:8001
+    clientId: rover
+    clientSecret: XJyMENQI7HbZheaH0p7AALEyeKqGiesX
+    issuerUrl: https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/rover
+---
+apiVersion: gateway.cp.ei.telekom.de/v1
+kind: Gateway
+metadata:
+  labels:
+    app.kubernetes.io/name: gateway
+    app.kubernetes.io/managed-by: kustomize
+    cp.ei.telekom.de/zone: zone-b
+    cp.ei.telekom.de/environment: poc
+  name: api
+  namespace: poc--zone-b
+spec:
+  url: http://localhost:8000
+  issuerUrl: https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc
+  admin:
+    url: http://localhost:8001
+    clientId: rover
+    clientSecret: XJyMENQI7HbZheaH0p7AALEyeKqGiesX
+    issuerUrl: https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/rover

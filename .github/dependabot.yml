@@ -21,7 +21,7 @@ updates:
       - identity
       - admin
       - application
-      - stargate
+      - api
       - rover
       - approval
     groups:
