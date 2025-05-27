@@ -1,0 +1,12 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+## Append samples of your project ##
+resources:
+- rover_v1_rover.yaml
+- rover_v1_apispecification.yaml
+
+commonLabels:
+  cp.ei.telekom.de/environment: poc
+#+kubebuilder:scaffold:manifestskustomizesamples

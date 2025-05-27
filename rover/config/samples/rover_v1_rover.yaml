@@ -1,0 +1,26 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: rover.cp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  labels:
+    app.kubernetes.io/name: rover
+    app.kubernetes.io/managed-by: kustomize
+    cp.ei.telekom.de/environment: poc
+  name: rover-sample
+spec:
+  zone: dataplane1
+  exposures:
+    - api:
+        basePath: /eni/foo/v2
+        upstream: http://foo-service:8080
+        visibility: world
+        approval: auto
+  subscriptions:
+    - api:
+        basePath: /eni/foo/v2
+        oauth2Scopes: 
+          - read
+          - write
