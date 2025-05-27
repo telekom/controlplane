@@ -27,13 +27,25 @@ Secret Manager (SM) is a REST-ful API for managing secrets. It allows you to sto
 > The main goal of this is to obfuscate the secrets in Custom-Resources (CR) with placeholders "secret references".
 
 
+![about](docs/about.drawio.svg)
+
+The general flow is as follows:
+1. Any domain can access the SM to store a secret, if configured to do so by calling various endpoints depending on the purpose.
+2. In the request, the domain will send a reference **secretID** which is a unique identifier for the secret.
+3. The secret manager will then store/receive the secret in the configured backend.
+4. The secret manager will return a reference **secretID** to the domain operators.
+5. The domain operators will then use this reference in their Custom-Resources (CRs) instead of the actual secret.
+
+
 The following problems are solved:
 
-1. **Secret obfuscation:** The SM is used to replace secrets in CRs with a placeholder and if they secret is needed, retrieve it (jit).
-2. **Secret onboarding:** The SM provides a unified API for onboarding new entities and secrets.
-3. **Secret storage:** The SM provides a unified API for storing secrets in different backends.
-4. **Secret retrieval:** The SM provides a unified API for retrieving secrets using references (IDs) to secrets.
-5. **Auditing:** As the SM is a single point of access for secrets, it can provide auditing capabilities for secret access.
+* **Secret obfuscation:** The SM is used to replace secrets in CRs with a placeholder and if they secret is needed, retrieve it (jit).
+* **Secret onboarding:** The SM provides a unified API for onboarding new entities and secrets.
+* **Secret storage:** The SM provides a unified API for storing secrets in different backends.
+* **Secret retrieval:** The SM provides a unified API for retrieving secrets using references (IDs) to secrets.
+* **Auditing:** As the SM is a single point of access for secrets, it can provide auditing capabilities for secret access.
+
+## Architecture
 
 The following diagram provides a high-level overview of how the SM is integrated into the Controlplane.
 
@@ -73,7 +85,13 @@ We have implemented a simple access control mechanism that allows you to define 
 * `onboarding_write`: Allows access to `v1/onboarding` endpoints. This is used to onboard new teams, groups and environments.
   * For more information about team/groups and environments, see [Organization](../organization/README.md) and [Admin](../admin/README.md) domain respectively.
 
-For more details on the configuration, see the [Server Configuration](#server-configuration) section.
+For more details on how to configure, see the [Server Configuration](#server-configuration) section.
+
+### Network Policies
+
+Additional, traffic towards the SM is further protected by [Kubernetes Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/),
+so that only the services that are registered in advance can access the SM.
+See the [Deployment Integration](#deployment-integration) section for more information on how to integrate the SM into your custom operator deployment.
 
 ## Getting Started
 
@@ -89,7 +107,7 @@ backend:
   type: conjur
 
 security:
-  enabled: true  # 
+  enabled: true  # enables the security features of the SM
   access_config:  # defines a list of services that are allowed to access the SM
   - service_account_name: default
     deployment_name: secret-client-shell
@@ -163,5 +181,5 @@ Additionally, the [Organization Domain](../organization/README.md) also uses the
 
 ### Deployment Integration
 To integrate the following [Deployment and Namespaces Patches](./config/patches) into your custom operator deployment, so that the new operator can communicate with the SM.
-Otherwise the communication to the SM wil be blocked on a [network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) level in k8s. 
+Otherwise, the communication to the SM wil be blocked on a [network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) level in k8s. 
 
