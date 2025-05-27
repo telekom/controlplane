@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	PkgModCrdsSubpath = "config/crd/bases"
+	PkgModCrdsSubpath = "../config/crd/bases"
 	IgnoreOwnModPath  = true
 )
 

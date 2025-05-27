@@ -13,8 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/telekom/controlplane/common/pkg/test/testutil"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -61,8 +59,11 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: append(
-			testutil.GetCrdPathsOrDie("^cp.ei.telekom.de/(admin|gateway|identity)/$"),
+			make([]string, 0),
 			filepath.Join("..", "..", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "admin", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "gateway", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "identity", "config", "crd", "bases"),
 		),
 		ErrorIfCRDPathMissing: true,
 

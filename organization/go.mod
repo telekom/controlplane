@@ -15,7 +15,7 @@ require (
 	github.com/onsi/gomega v1.37.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.10.0
-	github.com/telekom/controlplane/admin v0.0.0
+	github.com/telekom/controlplane/admin/api v0.0.0
 	github.com/telekom/controlplane/common v1.14.0
 	github.com/telekom/controlplane/gateway/api v0.0.0
 	github.com/telekom/controlplane/identity/api v0.0.0
@@ -27,7 +27,7 @@ require (
 )
 
 replace (
-	github.com/telekom/controlplane/admin => ../admin
+	github.com/telekom/controlplane/admin/api => ../admin/api
 	github.com/telekom/controlplane/common => ../common
 	github.com/telekom/controlplane/common-server => ../common-server
 	github.com/telekom/controlplane/gateway/api => ../gateway/api
