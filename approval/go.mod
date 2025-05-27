@@ -23,6 +23,8 @@ replace (
 	github.com/telekom/controlplane/common => ../common
 )
 
+replace github.com/telekom/controlplane/approval/api => ./api
+
 require (
 	cel.dev/expr v0.19.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
