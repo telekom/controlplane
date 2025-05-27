@@ -1,0 +1,18 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: identity.cp.ei.telekom.de/v1
+kind: Realm
+metadata:
+  labels:
+    app.kubernetes.io/name: realm-germany
+    app.kubernetes.io/managed-by: kustomize
+    cp.ei.telekom.de/zone: dataplane1
+    cp.ei.telekom.de/environment: poc
+  name: realm-germany
+  namespace: default
+spec:
+  identityProvider:
+    name: idp-germany
+    namespace: default
