@@ -4,16 +4,115 @@ Copyright 2025 Deutsche Telekom IT GmbH
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# organization-operator
-// TODO(user): Add simple overview of use/purpose
+[![Run CI](https://github.com/telekom/controlplane/actions/workflows/ci.yaml/badge.svg)](https://github.com/telekom/controlplane/actions/workflows/ci.yaml)
+[![REUSE Compliance Check](https://github.com/telekom/controlplane/actions/workflows/reuse-compliance.yml/badge.svg)](https://github.com/telekom/controlplane/actions/workflows/reuse-compliance.yml)
+[![ORT scanning](https://github.com/telekom/controlplane/actions/workflows/ort.yaml/badge.svg)](https://github.com/telekom/controlplane/actions/workflows/ort.yaml)
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+[![Go Version](https://img.shields.io/badge/go-1.24+-blue)](https://golang.org/dl/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSES)
+
+<p align="center">
+  <h1 align="center">Organization</h1>
+
+<p align="center">
+  The Organization domain is responsible for managing the lifecycle of Organization-domain resources such as 
+  Groups and Teams.
+</p>
+
+<p align="center">
+  <a href="#about">📖 About</a> •
+  <a href="#features">✨ Features</a> •
+  <a href="#crds">📄 CRDs</a> •
+  <a href="#getting-started">🚀 Getting Started</a> •
+  <a href="#contributing">🤝 Contributing</a> •
+  <a href="#code-of-conduct">📜 Code of Conduct</a> •
+  <a href="#licensing">📝 Licensing</a>
+</p>
+
+## About
+
+This repository contains the implementation of the Organization domain, which is responsible for managing the lifecycle 
+of Organization-domain resources such as Groups and Teams.
+
+The following diagram illustrates the reconciler process of the Organization domain:
+
+<div align="center">
+    <img src="docs/reconciler-process.png" />
+</div>
+
+## Features
+
+- **Group Management**: Provides Administrative tools for efficient organization management.
+- **Team Management**: Provides team management capabilities within the control plane.
+
+## CRDs
+
+The Organization domain defines the following Custom Resource Definitions (CRDs) as an API:
+
+<details>
+<summary>
+<strong>Group</strong>
+This CRD represents an organizational group, which is a logical unit that contains multiple Teams. 
+You can think of a Group as a higher-level organizational structure that can contain multiple Teams, allowing for better 
+organization and management of resources within the Control Plane. The group has a display name and a description.
+
+</summary>  
+
+```yaml
+apiVersion: organization.cp.ei.telekom.de/v1
+kind: Group
+metadata:
+  labels:
+    app.kubernetes.io/name: organization-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: group-sample
+spec:
+  displayName: group-sample
+  description: "This is a sample group"
+```
+
+</details>
+<br />
+
+<details>
+<summary>
+<strong>Team</strong>
+This CRD represents an organizational team, which is a logical unit that contains multiple users.
+You can think of a Team as a structure that can contain multiple users that all work on a project. They can be part of 
+one (or more) groups. The Team has a name, a description and an email. It is associated with a Group and can have 
+multiple members, who are represented by their names and emails. 
+
+</summary>  
+
+```yaml
+apiVersion: organization.cp.ei.telekom.de/v1
+kind: Team
+metadata:
+  labels:
+    cp.ei.telekom.de/environment: default
+  name: team-sample
+  namespace: default
+spec:
+  name: team-sample
+  description: "This is a sample team."
+  group: group-sample
+  email: team-sample-mail@example.com
+  members:
+    - name: user1
+      email: user1@example.com
+```
+
+</details>
+<br />
 
 ## Getting Started
+If you want to learn more about how to install and run the Control Plane in a Kubernetes environment in general, 
+visit: [Installing Control Plane](../docs/files/installation.md)  
+But if you want to get started right away with a non-productive local environment and try out the Control Plane, we 
+recommend visting: [Local installation (Quickstart)](../docs/files/quickstart.md).
 
 ### Prerequisites
-- go version v1.23.0+
+- go version v1.24.0+
 - docker version 17.03+.
 - kubectl version v1.11.3+.
 - Access to a Kubernetes v1.11.3+ cluster.
@@ -116,26 +215,24 @@ the '--force' flag and manually ensure that any custom configuration
 previously added to 'dist/chart/values.yaml' or 'dist/chart/manager/manager.yaml'
 is manually re-applied afterwards.
 
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
-
+More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 **NOTE:** Run `make help` for more information on all potential `make` targets
 
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
-## License
+## Contributing
+We welcome contributions to this project! If you would like to contribute, please see the details in our 
+[CONTRIBUTING.md](../CONTRIBUTING.md).
 
-Copyright 2025.
+## Code of Conduct
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+This project has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) in version 2.1 as our code of conduct. Please see the details 
+in our [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md). All contributors must abide by the code of conduct.
 
-    http://www.apache.org/licenses/LICENSE-2.0
+By participating in this project, you agree to abide by its [Code of Conduct](../CODE_OF_CONDUCT.md) at all times.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+## Licensing
 
+This project follows the [REUSE standard for software licensing](https://reuse.software/).    
+Each file contains copyright and license information, and license texts can be found in the [./LICENSES](../LICENSES) 
+folder. For more information visit https://reuse.software/.    
+You can find a guide for developers at https://telekom.github.io/reuse-template/.
