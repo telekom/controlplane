@@ -165,7 +165,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 	    Handler Code
 	 */
 
-  client.Spec.ClientSecret, err = secrets.Get(ctx, client.Spec.ClientSecret)
+  secret, err = secrets.Get(ctx, client.Spec.ClientSecret)
   if err != nil {
     return errors.Wrap(err, "failed to get client secret from secret-manager")
   }
