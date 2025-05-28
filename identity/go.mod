@@ -8,13 +8,14 @@ go 1.24.2
 
 require (
 	github.com/telekom/controlplane/common v0.0.0
+	github.com/telekom/controlplane/common-server v0.0.0 // indirect
 	github.com/telekom/controlplane/identity/api v0.0.0
 	github.com/telekom/controlplane/secret-manager v0.0.0
 )
 
 replace (
 	github.com/telekom/controlplane/common => ../common
-	github.com/telekom/controlplane/common-server => ../common-server
+	github.com/telekom/controlplane/common-server => ../common-server // indirect
 	github.com/telekom/controlplane/identity/api => ./api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
 )
@@ -104,7 +105,6 @@ require (
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/telekom/controlplane/common-server v0.0.0 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect

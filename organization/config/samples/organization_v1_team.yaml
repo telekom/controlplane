@@ -1,0 +1,19 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: organization.cp.ei.telekom.de/v1
+kind: Team
+metadata:
+  labels:
+    cp.ei.telekom.de/environment: default
+  name: team-sample
+  namespace: default
+spec:
+  name: team-sample
+  description: "This is a sample team."
+  group: group-sample
+  email: team-sample-mail@example.com
+  members:
+    - name: user1
+      email: user1@example.com

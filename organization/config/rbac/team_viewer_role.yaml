@@ -1,0 +1,33 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# This rule is not used by the project organization-operator itself.
+# It is provided to allow the cluster admin to help manage permissions for users.
+#
+# Grants read-only access to organization.cp.ei.telekom.de resources.
+# This role is intended for users who need visibility into these resources
+# without permissions to modify them. It is ideal for monitoring purposes and limited-access viewing.
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: organization-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: team-viewer-role
+rules:
+- apiGroups:
+  - organization.cp.ei.telekom.de
+  resources:
+  - teams
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - organization.cp.ei.telekom.de
+  resources:
+  - teams/status
+  verbs:
+  - get

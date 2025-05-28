@@ -7,20 +7,24 @@ module github.com/telekom/controlplane/approval
 go 1.24.2
 
 require (
+	github.com/telekom/controlplane/approval/api v0.0.0
+	github.com/telekom/controlplane/common v0.0.0
+)
+
+require (
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
 	github.com/pkg/errors v0.9.1
-	github.com/telekom/controlplane/approval/api v0.0.0
-	github.com/telekom/controlplane/common v0.0.0
 	k8s.io/apimachinery v0.33.1
 	k8s.io/client-go v0.33.1
 	k8s.io/utils v0.0.0-20241104163129-6fe5fd82f078
 	sigs.k8s.io/controller-runtime v0.21.0
 )
 
-replace github.com/telekom/controlplane/common => ../common
-
-replace github.com/telekom/controlplane/approval/api => ./api
+replace (
+	github.com/telekom/controlplane/approval/api => ./api
+	github.com/telekom/controlplane/common => ../common
+)
 
 require (
 	cel.dev/expr v0.19.1 // indirect
