@@ -5,8 +5,8 @@
 domain: cp.ei.telekom.de
 layout:
 - go.kubebuilder.io/v4
-projectName: api-operator
-repo: cp.ei.telekom.de/api
+projectName: api
+repo: github.com/telekom/controlplane/api
 resources:
 - api:
     crdVersion: v1
@@ -15,7 +15,7 @@ resources:
   domain: cp.ei.telekom.de
   group: api
   kind: Api
-  path: cp.ei.telekom.de/api/api/v1
+  path: github.com/telekom/controlplane/api/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -24,7 +24,7 @@ resources:
   domain: cp.ei.telekom.de
   group: api
   kind: ApiExposure
-  path: cp.ei.telekom.de/api/api/v1
+  path: github.com/telekom/controlplane/api/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -33,7 +33,7 @@ resources:
   domain: cp.ei.telekom.de
   group: api
   kind: ApiSubscription
-  path: cp.ei.telekom.de/api/api/v1
+  path: github.com/telekom/controlplane/api/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -42,6 +42,6 @@ resources:
   domain: cp.ei.telekom.de
   group: api
   kind: RemoteApiSubscription
-  path: cp.ei.telekom.de/api/api/v1
+  path: github.com/telekom/controlplane/api/api/v1
   version: v1
 version: "3"
