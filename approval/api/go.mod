@@ -19,6 +19,8 @@ require (
 	sigs.k8s.io/controller-runtime v0.21.0
 )
 
+replace github.com/telekom/controlplane/common => ../../common
+
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
