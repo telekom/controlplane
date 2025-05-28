@@ -2,25 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-with-expecter: True
-mockname: "Mock{{.InterfaceName}}"
-dir: "../test/mocks"
-outpkg: "mocks"
+structname: Mock{{.InterfaceName}}
+dir: ../test/mocks
+pkgname: mocks
 filename: "mock_{{.InterfaceName}}.go"
+template: testify
+template-data:
+  unroll-variadic: true
 packages:
-  cp.ei.telekom.de/identity/pkg/api:
-    # place your package-specific config here
-    config:
+  github.com/telekom/controlplane/identity/pkg/api:
     interfaces:
       # select the interfaces you want mocked
-      KeycloakClient:
-        # Modify package-level config for this specific interface (if applicable)
-        config:
-  cp.ei.telekom.de/identity/pkg/keycloak:
-    # place your package-specific config here
-    config:
+      KeycloakClient: {} # Modify package-level config for this specific interface (if applicable)
+  github.com/telekom/controlplane/identity/pkg/keycloak:
     interfaces:
       # select the interfaces you want mocked
-      RealmClient:
-        # Modify package-level config for this specific interface (if applicable)
-        config:
+      RealmClient: {} # Modify package-level config for this specific interface (if applicable)
