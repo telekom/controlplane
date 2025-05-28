@@ -6,11 +6,12 @@ package application
 
 import (
 	"context"
+	"fmt"
+
 	"strings"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/telekom/controlplane/common/pkg/client"
@@ -22,10 +23,15 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	secretmanager "github.com/telekom/controlplane/secret-manager/api"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+)
+
+const (
+	ClientSecret = "clientSecret"
 )
 
 func HandleApplication(ctx context.Context, c client.JanitorClient, owner *roverv1.Rover) error {
-
 	environment := contextutil.EnvFromContextOrDie(ctx)
 	zoneRef := types.ObjectRef{
 		Name:      owner.Spec.Zone,
@@ -52,10 +58,15 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
-		// TODO: This should be solved using a default-webhook
-		secret := application.Spec.Secret
-		if secret == "" {
-			secret = string(uuid.NewUUID())
+		// handle the application secret
+		availableSecrets, err := secretmanager.API().UpsertApplication(ctx, environment, team.GetName(), application.GetName())
+		if err != nil {
+			return wrapCommunicationError(err, "upsert team")
+		}
+
+		clientSecretRef, ok := secretmanager.FindSecretId(availableSecrets, ClientSecret)
+		if !ok {
+			return wrapCommunicationError(fmt.Errorf("secret %s not found", ClientSecret), "searching for application secret ref")
 		}
 
 		application.Spec = applicationv1.ApplicationSpec{
@@ -64,7 +75,7 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 			Zone:          zoneRef,
 			NeedsClient:   needsClient,
 			NeedsConsumer: needsClient,
-			Secret:        secret,
+			Secret:        clientSecretRef,
 		}
 
 		application.Labels = map[string]string{
@@ -111,4 +122,8 @@ func findTeam(ctx context.Context, c client.JanitorClient, owner *roverv1.Rover)
 	}
 
 	return team, nil
+}
+
+func wrapCommunicationError(err error, purposeOfCommunication string) error {
+	return k8serrors.NewInternalError(fmt.Errorf("failure during communication with secret-manager when doing '%s': '%w'", purposeOfCommunication, err))
 }

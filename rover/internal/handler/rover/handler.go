@@ -6,16 +6,15 @@ package rover
 
 import (
 	"context"
+	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/api"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/application"
 
 	"github.com/pkg/errors"
+	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	apiapi "github.com/telekom/controlplane/api/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
@@ -24,12 +23,6 @@ var _ handler.Handler[*roverv1.Rover] = (*RoverHandler)(nil)
 type RoverHandler struct{}
 
 func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rover) error {
-
-	log := log.FromContext(ctx)
-	log.Info("RoverHandler CreateOrUpdate", "rover", roverObj)
-
-	roverObj.Status = roverv1.RoverStatus{}
-
 	c := client.ClientFromContextOrDie(ctx)
 	c.AddKnownTypeToState(&apiapi.ApiExposure{})
 	c.AddKnownTypeToState(&apiapi.ApiSubscription{})
@@ -41,6 +34,7 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 	}
 
 	// Handle exposures
+	roverObj.Status.ApiExposures = make([]types.ObjectRef, 0, len(roverObj.Spec.Exposures))
 	for _, exp := range roverObj.Spec.Exposures {
 		switch exp.Type() {
 		case roverv1.TypeApi:
@@ -58,6 +52,7 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 	}
 
 	// Handle subscriptions
+	roverObj.Status.ApiSubscriptions = make([]types.ObjectRef, 0, len(roverObj.Spec.Subscriptions))
 	for _, sub := range roverObj.Spec.Subscriptions {
 		switch sub.Type() {
 		case roverv1.TypeApi:

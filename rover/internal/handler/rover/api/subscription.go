@@ -24,7 +24,7 @@ import (
 func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rover.Rover, sub *rover.ApiSubscription) error {
 
 	log := log.FromContext(ctx)
-	log.Info("Handle APISusbcription, CreateOrUpdate", "subscription", sub)
+	log.V(1).Info("Handle APISusbcription", "basePath", sub.BasePath)
 
 	name := MakeName(owner.Name, sub.BasePath, sub.Organization)
 
