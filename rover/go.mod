@@ -18,7 +18,6 @@ require (
 )
 
 require (
-	cp.ei.telekom.de/secret-manager/api v1.1.1
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
 	github.com/pb33f/libopenapi v0.18.6
@@ -45,7 +44,6 @@ replace (
 
 require (
 	cel.dev/expr v0.19.1 // indirect
-	cp.ei.telekom.de/common-server v1.0.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect

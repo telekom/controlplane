@@ -4,7 +4,7 @@
 
 // Package v1 contains API Schema definitions for the application v1 API group
 // +kubebuilder:object:generate=true
-// +groupName=application.github.com/telekom/controlplane
+// +groupName=application.cp.ei.telekom.de
 package v1
 
 import (
