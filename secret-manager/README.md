@@ -39,7 +39,7 @@ The general flow is as follows:
 
 The following problems are solved:
 
-* **Secret obfuscation:** The SM is used to replace secrets in CRs with a placeholder and if they secret is needed, retrieve it (jit).
+* **Secret obfuscation:** The SM is used to replace secrets in CRs with a placeholder and if the secret is needed, retrieve it (jit).
 * **Secret onboarding:** The SM provides a unified API for onboarding new entities and secrets.
 * **Secret storage:** The SM provides a unified API for storing secrets in different backends.
 * **Secret retrieval:** The SM provides a unified API for retrieving secrets using references (IDs) to secrets.
@@ -181,5 +181,5 @@ Additionally, the [Organization Domain](../organization/README.md) also uses the
 
 ### Deployment Integration
 To integrate the following [Deployment and Namespaces Patches](./config/patches) into your custom operator deployment, so that the new operator can communicate with the SM.
-Otherwise, the communication to the SM wil be blocked on a [network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) level in k8s. 
+Otherwise, the communication to the SM will be blocked on a [network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) level in k8s. 
 
