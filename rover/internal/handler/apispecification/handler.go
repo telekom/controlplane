@@ -8,17 +8,15 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	apiapi "github.com/telekom/controlplane/api/api/v1"
 	rover "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 var _ handler.Handler[*rover.ApiSpecification] = (*ApiSpecificationHandler)(nil)
@@ -27,15 +25,11 @@ type ApiSpecificationHandler struct{}
 
 func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *rover.ApiSpecification) error {
 
-	log := log.FromContext(ctx)
-	log.Info("ApiSpecificationHandler CreateOrUpdate", "apispecification", apiSpec)
-
 	apiSpec.SetCondition(condition.NewProcessingCondition("Provisioning", "Provisioning API"))
 
 	c := client.ClientFromContextOrDie(ctx)
 
 	// Parsing APiSpecification
-	log.Info("Parsing APiSpecification", "apispecification", apiSpec)
 	parsedApi, err := ParseSpecification(ctx, apiSpec.Spec.Specification)
 	if err != nil {
 		return err
@@ -55,7 +49,6 @@ func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *r
 	mutator := func() error {
 		err := controllerutil.SetControllerReference(apiSpec, api, c.Scheme())
 		if err != nil {
-			log.Error(err, "❌ failed to set controller reference")
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
@@ -70,7 +63,6 @@ func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *r
 
 	_, err = c.CreateOrUpdate(ctx, api, mutator)
 	if err != nil {
-		log.Error(err, "❌ failed to create or update api")
 		return errors.Wrap(err, "failed to create or update api")
 	}
 

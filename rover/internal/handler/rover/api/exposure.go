@@ -24,7 +24,7 @@ import (
 func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Rover, exp *rover.ApiExposure) error {
 
 	log := log.FromContext(ctx)
-	log.Info("Handle APIExposure, CreateOrUpdate", "exposure", exp)
+	log.V(1).Info("Handle APIExposure", "basePath", exp.BasePath)
 
 	name := MakeName(owner.Name, exp.BasePath, "")
 
@@ -76,7 +76,5 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		Name:      apiExposure.Name,
 		Namespace: apiExposure.Namespace,
 	})
-	log.V(1).Info("Created APIExposure", "exposure", apiExposure)
-
 	return err
 }
