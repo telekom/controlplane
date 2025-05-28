@@ -6,8 +6,6 @@ module github.com/telekom/controlplane/approval/api
 
 go 1.24.2
 
-replace github.com/telekom/controlplane/common => ../../common
-
 require (
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
