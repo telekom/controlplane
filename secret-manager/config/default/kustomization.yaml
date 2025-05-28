@@ -21,8 +21,19 @@ resources:
 - ../network-policy
 - ../prometheus
 
-# components: # This should be set in the argocd application config
-# - ../argocd
+# Default configuration
+# Use your own kustomization file to override the default configuration.
+configMapGenerator:
+- name: secret-manager-config
+  options:
+    disableNameSuffixHash: true
+  literals:
+  - config.yaml= # the server will use its default configuration if this is empty.
+- name: secret-manager-env
+  options:
+    disableNameSuffixHash: true
+  literals:
+    - KUBERNETES_INSECURE_SKIP_VERIFY=false # this will disable the TLS verification for the Kubernetes API server.
 
 patches:
 # This is only needed when using the cert-manager to issue certificates.

@@ -53,7 +53,9 @@ spec:
         - /etc/secret-manager/config.yaml
         image: ghcr.io/telekom/controlplane/secret-manager:stable
         env: []
-        envFrom: []
+        envFrom:
+        - configMapRef:
+            name: secret-manager-env
         ports:
         - name: https
           containerPort: 8443

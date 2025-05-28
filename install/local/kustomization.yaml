@@ -16,10 +16,17 @@ resources:
 configMapGenerator:
 - name: secret-manager-config
   namespace: secret-manager-system
+  behavior: replace
   files:
     - config.yaml=secret-manager-config.yaml
   options:
     disableNameSuffixHash: true
+- name: secret-manager-env
+  behavior: merge
+  options:
+    disableNameSuffixHash: true
+  literals:
+    - KUBERNETES_INSECURE_SKIP_VERIFY=true
 
 images:
 - name: ghcr.io/telekom/controlplane/approval

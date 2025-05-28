@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -39,12 +40,14 @@ func getClusterInfo() (c clusterInfo, err error) {
 	if err != nil {
 		return c, errors.Wrap(err, "failed to get CA pool")
 	}
+	// default is false if the environment variable is not set or invalid
+	insecureSkipVerify, _ := strconv.ParseBool(os.Getenv("KUBERNETES_INSECURE_SKIP_VERIFY"))
 	client := http.Client{
 		Timeout: 1 * time.Second,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				MinVersion:         tls.VersionTLS13,
-				InsecureSkipVerify: false,
+				InsecureSkipVerify: insecureSkipVerify,
 				RootCAs:            caPool,
 			},
 		},
