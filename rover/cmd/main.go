@@ -37,7 +37,7 @@ import (
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	//+kubebuilder:scaffold:imports
 
-	secretmetrics "cp.ei.telekom.de/secret-manager/api/metrics"
+	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
 )
 
 var (
