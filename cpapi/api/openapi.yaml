@@ -1,0 +1,387 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+openapi: "3.0.1"
+info:
+  title: "Controlplane Api"
+  description: "API of the TARDIS control plane. With this API configuration connectivity between different Tardis instances in ensured"
+  contact:
+    name: "TARDIS"
+    url: "https://developer.telekom.de/docs/src/tardis_customer_handbook/support/"
+    email: "FMB_TARDIS_Support@telekom.de"
+  version: "1.0.0"
+  x-api-category: "TARDIS"
+  x-vendor: false
+servers:
+  - url: "https://api.telekom.de/controlplane/v1"
+tags:
+  - name: "RemoteSubscription"
+    description: "Manage remoteSubscriptions"
+paths:
+  /remoteSubscriptions/{remoteSubscriptionId}:
+    put:
+      tags:
+        - "RemoteSubscription"
+      summary: "Create/Update a RemoteSubscription"
+      description: "Creating a RemoteSubscription or updating an existing RemoteSubscription."
+      operationId: "createOrUpdateRemoteSubscription"
+      parameters:
+        - $ref: "#/components/parameters/RemoteSubscriptionId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoteSubscriptionSpec"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteSubscriptionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - "RemoteSubscription"
+      summary: "Delete a RemoteSubscription"
+      description: "Delete an existing RemoteSubscription."
+      operationId: "deleteRemoteSubscription"
+      parameters:
+        - $ref: "#/components/parameters/RemoteSubscriptionId"
+      responses:
+        "204":
+          description: "DELETED"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /remoteSubscriptions/{remoteSubscriptionId}/status:
+    put:
+      tags:
+        - "RemoteSubscription"
+      summary: "Update a RemoteSubscriptionStatus"
+      operationId: updateRemoteSubscriptionStatus
+      description: Update the status of a RemoteSubscription.
+      parameters:
+        - $ref: "#/components/parameters/RemoteSubscriptionId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoteSubscriptionStatus'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemoteSubscriptionResponse'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "500":
+          $ref: "#/components/responses/ServerError"
+components:
+  schemas:
+    Error:
+      description: "RFC-7807 conform object sent on any error"
+      type: "object"
+      required:
+        - "type"
+        - "title"
+      properties:
+        type:
+          type: "string"
+        title:
+          type: "string"
+        status:
+          type: "number"
+        detail:
+          type: "string"
+        instance:
+          type: "string"
+        errorCode:
+          type: "string"
+        fields:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/FieldProblem"
+    FieldProblem:
+      type: "object"
+      required:
+        - "title"
+      properties:
+        title:
+          type: "string"
+        detail:
+          type: "string"
+        path:
+          type: "string"
+    Response:
+      type: object
+      required:
+        - id
+        - updated
+      properties:
+        id:
+          type: string
+          example: "team123--my-api-v1"
+        updated:
+          type: boolean
+    Team:
+      type: object
+      properties:
+        name:
+          description: > 
+            The name of the Team that is used to subscribe.
+            **Note:** This needs to exactly match the team used on the source CP.
+          type: string
+        email:
+          description: >
+              The email address that can be used in case the provider wants to contact the subscribing team.
+          type: string
+      required:
+        - name
+        - email
+    Requester:
+      type: object
+      properties:
+        application:
+          description: >
+            The name of the Application that is used to subscribe.
+            **Note:** This needs to exactly match the application used on the source CP.
+          type: string
+        team:
+          $ref: "#/components/schemas/Team"
+      required:
+        - application
+        - team
+
+    SecurityOauth2:
+      type: object
+      properties:
+        scopes:
+          items:
+            type: string
+          type: array
+    Security:
+      type: object
+      properties:
+        oauth2:
+          $ref: "#/components/schemas/SecurityOauth2"
+    RemoteSubscriptionSpec:
+      type: object
+      properties:
+        apiBasePath:
+          description: The basePath of the API that you want to subscribe to
+          type: string
+        requester:
+          $ref: "#/components/schemas/Requester"
+        security:
+          $ref: "#/components/schemas/Security"
+      required:
+        - apiBasePath
+        - requester
+    RemoteSubscriptionResponse:
+      type: "object"
+      readOnly: true
+      required:
+        - "id"
+        - "updated"
+      allOf:
+        - $ref: "#/components/schemas/Response"
+    StatusCondition:
+      description: >
+        **Note:** This is a 1:1 copy of the StatusCondition from the Kubernetes API.
+        Condition contains details for one aspect of the current state of this API Resource
+      properties:
+        lastTransitionTime:
+          description: >-
+            lastTransitionTime is the last time the condition transitioned
+            from one status to another.
+            
+            This should be when the underlying condition changed.  If that
+            is not known, then using the time when the API field changed
+            is acceptable.
+          format: date-time
+          type: string
+        message:
+          description: >-
+            message is a human readable message indicating details about
+            the transition.
+            
+            This may be an empty string.
+          maxLength: 32768
+          type: string
+        observedGeneration:
+          description: >-
+            observedGeneration represents the .metadata.generation that
+            the condition was set based upon.
+            
+            For instance, if .metadata.generation is currently 12, but the
+            .status.conditions[x].observedGeneration is 9, the condition
+            is out of date
+            
+            with respect to the current state of the instance.
+          format: int64
+          minimum: 0
+          type: integer
+        reason:
+          description: >-
+            reason contains a programmatic identifier indicating the
+            reason for the condition's last transition.
+            
+            Producers of specific condition types may define expected
+            values and meanings for this field,
+            
+            and whether the values are considered a guaranteed API.
+            
+            The value should be a CamelCase string.
+            
+            This field may not be empty.
+          maxLength: 1024
+          minLength: 1
+          pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+          type: string
+        status:
+          description: status of the condition, one of True, False, Unknown.
+          enum:
+            - 'True'
+            - 'False'
+            - Unknown
+          type: string
+        type:
+          description: >-
+            type of condition in CamelCase or in
+            foo.example.com/CamelCase.
+            
+            ---
+            
+            Many .condition.type values are consistent across resources
+            like Available, but because arbitrary conditions can be
+            
+            useful (see .node.status.conditions), the ability to
+            deconflict is important.
+            
+            The regex it matches is
+            (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+          maxLength: 316
+          pattern: >-
+            ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+          type: string
+      required:
+        - lastTransitionTime
+        - message
+        - reason
+        - status
+        - type
+      type: object
+    ApprovalInfo:
+      type: object
+      properties:
+        state:
+          description: The current state of the approval
+          type: string
+          enum:
+            - Granted
+            - Pending
+            - Rejected
+            - Suspended
+        message:
+          description: An optional message from the Decider to the Requester.
+          type: string
+      required:
+        - state
+        - message
+    RemoteSubscriptionStatus:
+      description: >-
+        RemoteSubscriptionStatus defines the state of
+        RemoteSubscription
+      properties:
+        conditions:
+          items:
+            $ref: '#/components/schemas/StatusCondition'
+          type: array
+        approval:
+          $ref: '#/components/schemas/ApprovalInfo'
+        approvalRequest:
+          $ref: '#/components/schemas/ApprovalInfo'
+        gatewayUrl:
+          description: The URL for the subscribed API.
+          type: string
+      required:
+        - conditions
+        - gatewayUrl
+      type: object
+  responses:
+    BadRequest:
+      description: "BAD_REQUEST"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: "UNAUTHORIZED"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: "FORBIDDEN"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: "NOT_FOUND"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    UnsupportedMediaType:
+      description: "UNSUPPORTED_MEDIATYPE"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ServerError:
+      description: "SERVER_ERROR"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  parameters:
+    RemoteSubscriptionId:
+      name: "remoteSubscriptionId"
+      in: "path"
+      description: "Unique resource id of this remoteSubscription"
+      required: true
+      schema:
+        type: "string"

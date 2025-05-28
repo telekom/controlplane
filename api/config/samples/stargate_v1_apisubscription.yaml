@@ -1,0 +1,35 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: api.cp.ei.telekom.de/v1
+kind: ApiSubscription
+metadata:
+  labels:
+    app.kubernetes.io/name: api-operator
+    app.kubernetes.io/managed-by: kustomize
+    cp.ei.telekom.de/environment: poc
+    cp.ei.telekom.de/zone: zone-b
+    cp.ei.telekom.de/basepath: eni-elmar-myapi-v1
+  name: my-app--eni-elmar-myapi-v1
+spec:
+  apiBasePath: "/eni/elmar/myapi/v1"
+  zone: 
+    name: zone-b
+    namespace: poc
+---
+apiVersion: api.cp.ei.telekom.de/v1
+kind: ApiSubscription
+metadata:
+  labels:
+    app.kubernetes.io/name: api-operator
+    app.kubernetes.io/managed-by: kustomize
+    cp.ei.telekom.de/environment: poc
+    cp.ei.telekom.de/zone: zone-a
+    cp.ei.telekom.de/basepath: eni-elmar-myapi-v1
+  name: my-second-app--eni-elmar-myapi-v1
+spec:
+  apiBasePath: "/eni/elmar/myapi/v1"
+  zone: 
+    name: zone-a
+    namespace: poc

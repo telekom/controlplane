@@ -1,0 +1,19 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: api.cp.ei.telekom.de/v1
+kind: Api
+metadata:
+  labels:
+    app.kubernetes.io/name: api-operator
+    app.kubernetes.io/managed-by: kustomize
+    cp.ei.telekom.de/environment: poc
+    cp.ei.telekom.de/basepath: eni-elmar-myapi-v1
+  name: eni-hyperion-resolver-v1
+spec:
+  basePath: "/eni/elmar/myapi/v1"
+  name: "eni-elmar-myapi-v1"
+  category: "SYSTEM"
+  version: "v1"
+  xVendor: false

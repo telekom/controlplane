@@ -1,0 +1,99 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - admin.cp.ei.telekom.de
+  resources:
+  - zones
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - gateway.cp.ei.telekom.de
+  resources:
+  - consumers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - identity.cp.ei.telekom.de
+  resources:
+  - clients
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - organization.cp.ei.telekom.de
+  resources:
+  - groups
+  - teams
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - organization.cp.ei.telekom.de
+  resources:
+  - groups/finalizers
+  - teams/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - organization.cp.ei.telekom.de
+  resources:
+  - groups/status
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - organization.cp.ei.telekom.de
+  resources:
+  - teams/status
+  verbs:
+  - get
+  - patch
+  - update

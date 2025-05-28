@@ -42,7 +42,69 @@ builds:
     goarch:
       - amd64
       - arm64
-
+  - id: gateway
+    dir: gateway
+    main: cmd/main.go
+    binary: gateway
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+  - id: identity
+    dir: identity
+    main: cmd/main.go
+    binary: identity
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+  - id: organization
+    dir: organization
+    main: cmd/main.go
+    binary: organization
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+  - id: admin
+    dir: admin
+    main: cmd/main.go
+    binary: admin
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+  - id: application
+    dir: application
+    main: cmd/main.go
+    binary: application
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+  - id: api
+    dir: api
+    main: cmd/main.go
+    binary: api
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+  - id: rover
+    dir: rover
+    main: cmd/main.go
+    binary: rover
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
 archives:
   - formats: [tar.gz]
     name_template: >-
@@ -126,6 +188,139 @@ kos:
     working_dir: approval/cmd
     repositories:
       - ghcr.io/telekom/controlplane/approval
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: gateway
+    build: gateway
+    main: .
+    working_dir: gateway/cmd
+    repositories:
+      - ghcr.io/telekom/controlplane/gateway
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: identity
+    build: identity
+    main: .
+    working_dir: identity/cmd
+    repositories:
+      - ghcr.io/telekom/controlplane/identity
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: organization
+    build: organization
+    main: .
+    working_dir: organization/cmd
+    repositories:
+      - ghcr.io/telekom/controlplane/organization
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: admin
+    build: admin
+    main: .
+    working_dir: admin/cmd
+    repositories:
+      - ghcr.io/telekom/controlplane/admin
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: application
+    build: application
+    main: .
+    working_dir: application/cmd
+    repositories:
+      - ghcr.io/telekom/controlplane/application
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: api
+    build: api
+    main: .
+    working_dir: api/cmd
+    repositories:
+      - ghcr.io/telekom/controlplane/api
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: rover
+    build: rover
+    main: .
+    working_dir: rover/cmd
+    repositories:
+      - ghcr.io/telekom/controlplane/rover
     labels:
       org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
       org.opencontainers.image.url: "https://developer.telekom.de/"

@@ -1,0 +1,36 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: admin.cp.ei.telekom.de/v1
+kind: Zone
+metadata:
+  labels:
+    app.kubernetes.io/name: admin
+    app.kubernetes.io/managed-by: kustomize
+    cp.ei.telekom.de/environment: test-env
+  name: zone-a
+  namespace: default
+spec:
+  identityProvider:
+    admin:
+#      url: https://iris-integration.test.dhei.telekom.de/auth/admin/realms
+      clientId: admin-cli
+      userName: admin
+      password: somePassword
+    url: https://iris-integration.test.dhei.telekom.de/
+  gateway:
+    admin:
+      clientSecret: someRoverSecret
+      url: https://stargate-admin-distcp2-dataplane1.dev.dhei.telekom.de/admin-api
+    url: https://stargate-admin-distcp2-dataplane1.dev.dhei.telekom.de/
+  redis:
+    host: bla
+    port: 0
+    password: password
+  teamApis:
+    apis:
+      - name: my-first-team-api
+        path: /my/first/team/api
+        url: https://somewhere.com/other/api/path
+

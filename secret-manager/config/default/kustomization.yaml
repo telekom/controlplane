@@ -30,13 +30,6 @@ patches:
   target:
     kind: Deployment
 
-configMapGenerator:
-- name: secret-manager-config
-  files:
-    - config.yaml
-  options:
-    disableNameSuffixHash: true
-
 # This is only needed when using the cert-manager to issue certificates.
 replacements:
 - source:

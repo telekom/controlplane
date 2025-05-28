@@ -17,4 +17,4 @@ spec:
       key: trust-bundle.pem
     namespaceSelector:
       matchLabels:
-        github.com/telekom/controlplane/secret-manager: enabled
+        cp.ei.telekom.de/secret-manager: enabled

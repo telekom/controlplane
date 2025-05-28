@@ -1,0 +1,23 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: gateway.cp.ei.telekom.de/v1
+kind: Route
+metadata:
+  labels:
+    app.kubernetes.io/name: stargate
+    app.kubernetes.io/managed-by: kustomize
+    cp.ei.telekom.de/environment: default
+    gateway: stargate
+    path: foo-v1
+  name: route-sample
+spec:
+  gateway: stargate
+  path: /foo/v1
+  upstreams:
+  - scheme: http
+    host: httpbin.org
+    port: 80
+    path: /anything
+    weight: 100

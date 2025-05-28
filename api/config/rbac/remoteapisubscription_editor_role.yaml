@@ -1,0 +1,31 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# permissions for end users to edit remoteapisubscriptions.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: api-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: remoteapisubscription-editor-role
+rules:
+- apiGroups:
+  - api.cp.ei.telekom.de
+  resources:
+  - remoteapisubscriptions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - api.cp.ei.telekom.de
+  resources:
+  - remoteapisubscriptions/status
+  verbs:
+  - get

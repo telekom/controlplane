@@ -1,0 +1,31 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# This rule is not used by the project organization-operator itself.
+# It is provided to allow the cluster admin to help manage permissions for users.
+#
+# Grants full permissions ('*') over organization.cp.ei.telekom.de.
+# This role is intended for users authorized to modify roles and bindings within the cluster,
+# enabling them to delegate specific permissions to other users or groups as needed.
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: organization-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: team-admin-role
+rules:
+- apiGroups:
+  - organization.cp.ei.telekom.de
+  resources:
+  - teams
+  verbs:
+  - '*'
+- apiGroups:
+  - organization.cp.ei.telekom.de
+  resources:
+  - teams/status
+  verbs:
+  - get

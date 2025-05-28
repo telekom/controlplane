@@ -1,0 +1,18 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+resources:
+# - https://github.com/telekom/controlplane//approval/config/default/?timeout=120&ref=v0.3.0
+- https://github.com/telekom/controlplane//secret-manager/config/default/?timeout=120&ref=v0.3.0
+
+images:
+- name: ghcr.io/telekom/controlplane/approval
+  newName: ghcr.io/telekom/controlplane/approval
+  newTag: v0.3.0
+- name: ghcr.io/telekom/controlplane/gateway
+  newName: ghcr.io/telekom/controlplane/gateway
+  newTag: v0.3.0
+- name: ghcr.io/telekom/controlplane/secret-manager
+  newName: ghcr.io/telekom/controlplane/secret-manager
+  newTag: v0.3.0

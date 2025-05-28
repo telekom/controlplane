@@ -1,0 +1,37 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# This patch will configure the necessary service account token projection for the secret manager client
+- op: add
+  path: /spec/template/spec/volumes/0
+  value:
+    name: secretmgr-token
+    projected:
+      sources:
+      - serviceAccountToken:
+          path: token
+          expirationSeconds: 600
+          audience: secretmgr
+- op: add
+  path: /spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: secretmgr-token
+    mountPath: /var/run/secrets/secretmgr
+    readOnly: true
+
+# This patch will add the trust-manager bundle to the deployment
+# Only if trust-manager is installed, see https://cert-manager.io/docs/trust/trust-manager
+- op: add
+  path: /spec/template/spec/volumes/0
+  value:
+    name: trust-bundle
+    configMap:
+      name: secret-manager-trust-bundle
+
+- op: add
+  path: /spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: trust-bundle
+    mountPath: /var/run/secrets/trust-bundle
+    readOnly: true
