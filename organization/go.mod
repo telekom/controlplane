@@ -6,21 +6,21 @@ module github.com/telekom/controlplane/organization
 
 go 1.24.2
 
-toolchain go1.24.3
-
-godebug default=go1.23
+require (
+	github.com/telekom/controlplane/admin/api v0.0.0
+	github.com/telekom/controlplane/common v0.0.0
+	github.com/telekom/controlplane/common-server v0.0.0 // indirect
+	github.com/telekom/controlplane/gateway/api v0.0.0
+	github.com/telekom/controlplane/identity/api v0.0.0
+	github.com/telekom/controlplane/organization/api v0.0.0
+	github.com/telekom/controlplane/secret-manager v0.0.0
+)
 
 require (
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.10.0
-	github.com/telekom/controlplane/admin/api v0.0.0
-	github.com/telekom/controlplane/common v1.14.0
-	github.com/telekom/controlplane/gateway/api v0.0.0
-	github.com/telekom/controlplane/identity/api v0.0.0
-	github.com/telekom/controlplane/organization/api v0.0.0
-	github.com/telekom/controlplane/secret-manager v0.0.0
 	k8s.io/api v0.33.1
 	k8s.io/apimachinery v0.33.1
 	k8s.io/client-go v0.33.1
@@ -30,7 +30,7 @@ require (
 replace (
 	github.com/telekom/controlplane/admin/api => ../admin/api
 	github.com/telekom/controlplane/common => ../common
-	github.com/telekom/controlplane/common-server => ../common-server
+	github.com/telekom/controlplane/common-server => ../common-server // indirect
 	github.com/telekom/controlplane/gateway/api => ../gateway/api
 	github.com/telekom/controlplane/identity/api => ../identity/api
 	github.com/telekom/controlplane/organization/api => ./api
@@ -83,7 +83,6 @@ require (
 	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
-	github.com/telekom/controlplane/common-server v0.0.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.58.0 // indirect

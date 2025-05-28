@@ -7,16 +7,19 @@ module github.com/telekom/controlplane/rover
 go 1.24.2
 
 require (
-	github.com/onsi/ginkgo/v2 v2.23.4
-	github.com/onsi/gomega v1.37.0
-	github.com/pb33f/libopenapi v0.18.6
-	github.com/pkg/errors v0.9.1
 	github.com/telekom/controlplane/admin/api v0.0.0
 	github.com/telekom/controlplane/api/api v0.0.0
 	github.com/telekom/controlplane/application/api v0.0.0
 	github.com/telekom/controlplane/common v0.0.0
 	github.com/telekom/controlplane/organization/api v0.0.0
 	github.com/telekom/controlplane/rover/api v0.0.0
+)
+
+require (
+	github.com/onsi/ginkgo/v2 v2.23.4
+	github.com/onsi/gomega v1.37.0
+	github.com/pb33f/libopenapi v0.18.6
+	github.com/pkg/errors v0.9.1
 	go.uber.org/zap v1.27.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.33.0
@@ -29,9 +32,7 @@ replace (
 	github.com/telekom/controlplane/admin/api => ../admin/api
 	github.com/telekom/controlplane/api/api => ../api/api
 	github.com/telekom/controlplane/application/api => ../application/api
-	github.com/telekom/controlplane/common v0.0.0 => ../common
-	github.com/telekom/controlplane/gateway/api => ../gateway/api
-	github.com/telekom/controlplane/identity/api => ../identity/api
+	github.com/telekom/controlplane/common => ../common
 	github.com/telekom/controlplane/organization/api => ../organization/api
 	github.com/telekom/controlplane/rover/api => ./api
 )
@@ -96,7 +97,6 @@ require (
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
-	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/oauth2 v0.27.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
