@@ -6,13 +6,7 @@ module github.com/telekom/controlplane/api
 
 go 1.24.2
 
-toolchain go1.24.3
-
 require (
-	github.com/google/uuid v1.6.0
-	github.com/onsi/ginkgo/v2 v2.23.4
-	github.com/onsi/gomega v1.37.0
-	github.com/pkg/errors v0.9.1
 	github.com/telekom/controlplane/admin/api v0.0.0
 	github.com/telekom/controlplane/api/api v0.0.0
 	github.com/telekom/controlplane/application/api v0.0.0
@@ -21,15 +15,6 @@ require (
 	github.com/telekom/controlplane/cpapi/api v0.0.0
 	github.com/telekom/controlplane/gateway/api v0.0.0
 	github.com/telekom/controlplane/identity/api v0.0.0
-	k8s.io/api v0.33.1
-	k8s.io/apimachinery v0.33.1
-	k8s.io/client-go v0.33.1
-	sigs.k8s.io/controller-runtime v0.21.0
-)
-
-require (
-	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
-	github.com/oapi-codegen/runtime v1.1.1 // indirect
 )
 
 replace (
@@ -44,8 +29,20 @@ replace (
 )
 
 require (
+	github.com/google/uuid v1.6.0
+	github.com/onsi/ginkgo/v2 v2.23.4
+	github.com/onsi/gomega v1.37.0
+	github.com/pkg/errors v0.9.1
+	k8s.io/api v0.33.1
+	k8s.io/apimachinery v0.33.1
+	k8s.io/client-go v0.33.1
+	sigs.k8s.io/controller-runtime v0.21.0
+)
+
+require (
 	cel.dev/expr v0.19.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -77,6 +74,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/oapi-codegen/runtime v1.1.1 // indirect
 	github.com/prometheus/client_golang v1.22.0 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
@@ -98,7 +96,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
-	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/oauth2 v0.27.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect

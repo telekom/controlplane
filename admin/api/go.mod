@@ -6,8 +6,6 @@ module github.com/telekom/controlplane/admin/api
 
 go 1.24.2
 
-toolchain go1.24.3
-
 require (
 	github.com/telekom/controlplane/common v0.0.0
 	k8s.io/apimachinery v0.33.0
