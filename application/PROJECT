@@ -2,17 +2,17 @@
 # This file is used to track the info used to scaffold your project
 # and allow the plugins properly work.
 # More info: https://book.kubebuilder.io/reference/project-config.html
-domain: github.com/telekom/controlplane
+domain: cp.ei.telekom.de
 layout:
 - go.kubebuilder.io/v4
-projectName: application-operator
+projectName: application
 repo: github.com/telekom/controlplane/application
 resources:
 - api:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: github.com/telekom/controlplane
+  domain: cp.ei.telekom.de
   group: application
   kind: Application
   path: github.com/telekom/controlplane/application/api/v1
