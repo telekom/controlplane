@@ -22,14 +22,14 @@ SPDX-License-Identifier: CC0-1.0
 
 ## About
 
-The Application operator provides a Kubernetes-native way to manage Tardis applications. A Tardis application is an abstraction representing a users Rover file. Once this Rover file is applied, the created Application logically encapsulates all the exposures and subscriptions. The Application can also contain an Identity client, that can be used to access the subscriptions. The operator extends Kubernetes with custom resources to create and manage Applications in a declarative way.
+The Application operator provides a Kubernetes-native way to manage Tardis applications. A Tardis application is an abstraction representing a users Rover file. Once this Rover file is applied, the created Application logically encapsulates all the exposures and subscriptions. The Application can also contain an Identity client and Gateway consumer, that can be used to access the subscriptions. The operator extends Kubernetes with custom resources to manage Applications.
 
 This operator is part of the Deutsche Telekom Control Plane (CP) platform.
 
 
 ## Reconciliation Flow
 The diagram below shows the general Reconciliation flow.
-# ![Flow](./docs/identity_overview.drawio.svg)
+# ![Flow](./docs/application flow.drawio.svg)
 
 
 ### Workflow
@@ -43,7 +43,7 @@ The controller implements a declarative approach, continuously reconciling the d
 - [Controller-Runtime](https://github.com/kubernetes-sigs/controller-runtime) - Library for building Kubernetes operators
 - [Common](../common/) - Deutsche Telekom Control Plane common library
 
-## Model
+## CRDs
 The Application operator provides a single Custom Resource Definition (CRD) that represent the Tardis Application. 
 
 Structure: 
@@ -85,13 +85,62 @@ A simple example Application would look like this:
   ```
 </details><br />
 
-## Code of Conduct
+## Getting Started
+### To Run the Test
 
-This project has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) in version 2.1 as our code of conduct. Please see the details in our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). All contributors must abide by the code of conduct.
+It will install the required dependencies if not already installed and run the tests.
 
-By participating in this project, you agree to abide by its [Code of Conduct](./CODE_OF_CONDUCT.md) at all times.
+```sh
+make test
+```
 
-## Licensing
+### To Deploy on the cluster
+**NOTE:**This image needs to be built beforehand.
+This image ought to be published in the personal registry you specified.
+And it is required to have access to pull the image from the working environment.
+Make sure you have the proper permission to the registry if the above commands don’t work.
 
-This project follows the [REUSE standard for software licensing](https://reuse.software/). You can find a guide for developers at https://telekom.github.io/reuse-template/.   
-Each file contains copyright and license information, and license texts can be found in the [./LICENSES](./LICENSES) folder. For more information visit https://reuse.software/.
+**Install the CRDs into the cluster:**
+
+```sh
+make install
+```
+
+**Deploy the Manager to the cluster with the image specified by `IMG`:**
+
+```sh
+make deploy IMG=<some-registry>/application:tag
+```
+
+> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
+> privileges or be logged in as admin.
+
+**Create instances of your solution**
+You can apply the samples (examples) from the config/sample:
+
+```sh
+kubectl apply -k config/samples/
+```
+
+>**NOTE**: Ensure that the samples has default values to test it out.
+
+### To Uninstall
+**Delete the instances (CRs) from the cluster:**
+
+```sh
+kubectl delete -k config/samples/
+```
+
+**Delete the APIs(CRDs) from the cluster:**
+
+```sh
+make uninstall
+```
+
+**UnDeploy the controller from the cluster:**
+
+```sh
+make undeploy
+```
+
+on the cluster
