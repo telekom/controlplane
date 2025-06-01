@@ -62,16 +62,14 @@ spec:
         # seccompProfile:
         #   type: RuntimeDefault
       containers:
-        - command:
-            - /manager
-          args:
+        - args:
             - --leader-elect
             - --health-probe-bind-address=:8081
             - --metrics-bind-address=:8080
           env:
             - name: CLIENT_TIMEOUT
               value: 10s
-          image: controller:latest
+          image: ghcr.io/telekom/controlplane/rover:stable
           name: manager
           securityContext:
             allowPrivilegeEscalation: false
@@ -100,8 +98,6 @@ spec:
               cpu: 10m
               memory: 64Mi
           volumeMounts: []
-      imagePullSecrets:
-        - name: mtr-secret
       volumes: []
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10

@@ -3,53 +3,56 @@
 # SPDX-License-Identifier: Apache-2.0
 
 resources:
-- ../../secret-manager/config/default
-- ../../identity/config/default
-- ../../gateway/config/default
-- ../../approval/config/default
-# - ../../rover/config/default
-# - ../../application/config/default
-# - ../../organization/config/default
-# - ../../api/config/default
-
+  - ../../secret-manager/config/default
+  - ../../identity/config/default
+  - ../../gateway/config/default
+  - ../../approval/config/default
+  - ../../rover/config/default
+  - ../../application/config/default
+  - ../../organization/config/default
+  - ../../api/config/default
+  - ../../admin/config/default
 
 configMapGenerator:
-- name: secret-manager-config
-  namespace: secret-manager-system
-  behavior: replace
-  files:
-    - config.yaml=secret-manager-config.yaml
-  options:
-    disableNameSuffixHash: true
-- name: secret-manager-env
-  behavior: merge
-  options:
-    disableNameSuffixHash: true
-  literals:
-    - KUBERNETES_INSECURE_SKIP_VERIFY=true
+  - name: secret-manager-config
+    namespace: secret-manager-system
+    behavior: replace
+    files:
+      - config.yaml=secret-manager-config.yaml
+    options:
+      disableNameSuffixHash: true
+  - name: secret-manager-env
+    behavior: merge
+    options:
+      disableNameSuffixHash: true
+    literals: []
 
+# TODO: change feat-installation back to latest
 images:
-- name: ghcr.io/telekom/controlplane/approval
-  newName: ghcr.io/telekom/controlplane/approval
-  newTag: main
-- name: ghcr.io/telekom/controlplane/gateway
-  newName: ghcr.io/telekom/controlplane/gateway
-  newTag: main
-- name: ghcr.io/telekom/controlplane/identity
-  newName: ghcr.io/telekom/controlplane/identity
-  newTag: main
-- name: ghcr.io/telekom/controlplane/secret-manager
-  newName: ghcr.io/telekom/controlplane/secret-manager
-  newTag: main
-# - name: ghcr.io/telekom/controlplane/rover
-#   newName: ghcr.io/telekom/controlplane/rover
-#   newTag: main
-# - name: ghcr.io/telekom/controlplane/application
-#   newName: ghcr.io/telekom/controlplane/application
-#   newTag: main
-# - name: ghcr.io/telekom/controlplane/api
-#   newName: ghcr.io/telekom/controlplane/api
-#   newTag: main
-# - name: ghcr.io/telekom/controlplane/organization
-#   newName: ghcr.io/telekom/controlplane/organization
-#   newTag: main
+  - name: ghcr.io/telekom/controlplane/approval
+    newName: ghcr.io/telekom/controlplane/approval
+    newTag: feat-installation
+  - name: ghcr.io/telekom/controlplane/gateway
+    newName: ghcr.io/telekom/controlplane/gateway
+    newTag: feat-installation
+  - name: ghcr.io/telekom/controlplane/identity
+    newName: ghcr.io/telekom/controlplane/identity
+    newTag: feat-installation
+  - name: ghcr.io/telekom/controlplane/secret-manager
+    newName: ghcr.io/telekom/controlplane/secret-manager
+    newTag: feat-installation
+  - name: ghcr.io/telekom/controlplane/rover
+    newName: ghcr.io/telekom/controlplane/rover
+    newTag: feat-installation
+  - name: ghcr.io/telekom/controlplane/application
+    newName: ghcr.io/telekom/controlplane/application
+    newTag: feat-installation
+  - name: ghcr.io/telekom/controlplane/api
+    newName: ghcr.io/telekom/controlplane/api
+    newTag: feat-installation
+  - name: ghcr.io/telekom/controlplane/organization
+    newName: ghcr.io/telekom/controlplane/organization
+    newTag: feat-installation
+  - name: ghcr.io/telekom/controlplane/admin
+    newName: ghcr.io/telekom/controlplane/admin
+    newTag: feat-installation

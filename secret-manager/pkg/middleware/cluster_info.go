@@ -5,21 +5,15 @@
 package middleware
 
 import (
-	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"net/http"
-	"os"
-	"strconv"
-	"time"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/secret-manager/api/util"
 )
 
 var (
-	KubernetesWellKnownConfig   = "https://kubernetes.default.svc/.well-known/openid-configuration"
-	ServiceAccountTokenFilepath = "/var/run/secrets/kubernetes.io/serviceaccount/token" //nolint:gosec
-	ServiceAccountCAFilepath    = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+	KubernetesWellKnownConfig = "https://kubernetes.default.svc/.well-known/openid-configuration"
 )
 
 type clusterInfo struct {
@@ -28,38 +22,18 @@ type clusterInfo struct {
 }
 
 func getClusterInfo() (c clusterInfo, err error) {
-	token, err := os.ReadFile(ServiceAccountTokenFilepath)
+	client, err := GetKubernetesHttpClient()
 	if err != nil {
-		return c, errors.Wrap(err, "failed to read service account token")
+		return c, errors.Wrap(err, "failed to get Kubernetes HTTP client")
 	}
-	req, _ := http.NewRequest(http.MethodGet, KubernetesWellKnownConfig, nil)
-	req.Header.Set("Authorization", "Bearer "+string(token))
-	req.Header.Set("Accept", "application/json")
-
-	caPool, err := util.GetCert(ServiceAccountCAFilepath)
-	if err != nil {
-		return c, errors.Wrap(err, "failed to get CA pool")
-	}
-	// default is false if the environment variable is not set or invalid
-	insecureSkipVerify, _ := strconv.ParseBool(os.Getenv("KUBERNETES_INSECURE_SKIP_VERIFY"))
-	client := http.Client{
-		Timeout: 1 * time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				MinVersion:         tls.VersionTLS13,
-				InsecureSkipVerify: insecureSkipVerify,
-				RootCAs:            caPool,
-			},
-		},
-	}
-	res, err := client.Do(req)
+	res, err := client.Get(KubernetesWellKnownConfig)
 	if err != nil {
 		return c, errors.Wrap(err, "failed to perform HTTP request to Kubernetes API")
 	}
 	defer res.Body.Close() //nolint:errcheck
 
 	if res.StatusCode != http.StatusOK {
-		return c, errors.New("failed to get cluster issuer")
+		return c, fmt.Errorf("unexpected status code %d from Kubernetes API: %s", res.StatusCode, res.Status)
 	}
 
 	if err := json.NewDecoder(res.Body).Decode(&c); err != nil {
