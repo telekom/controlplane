@@ -23,7 +23,7 @@ SPDX-License-Identifier: CC0-1.0
 ## About
 This repository contains the implementation of the Api domain, which is responsible for managing the whole ifecycle of an API. 
 
-The following diagram illustrates the architecture of the Gateway domain:
+The following diagram illustrates the architecture of the Api domain:
 <div align="center">
     <img src="docs/img/api_overview.drawio.svg" />
 </div>
