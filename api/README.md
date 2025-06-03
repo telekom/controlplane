@@ -1,120 +1,146 @@
 <!--
-SPDX-FileCopyrightText: 2025 Deutsche Telekom AG
+SPDX-FileCopyrightText: 2024 Deutsche Telekom AG
 
-SPDX-License-Identifier: CC0-1.0
+SPDX-License-Identifier: CC0-1.0    
 -->
 
-# api-operator
-// TODO(user): Add simple overview of use/purpose
+<p align="center">
+  <h1 align="center">API</h1>
+</p>
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+<p align="center">
+  The Api domain is responsible for all Api-related resources: the Api itself as well as its Exposure and Subscription.
+</p>
 
-## Getting Started
+<p align="center">
+  <a href="#about"> About</a> •
+  <a href="#features"> Features</a> •
+  <a href="#dependencies">Dependencies</a> •
+  <a href="#crds">CRDs</a> •
+  <a href="#getting-started"> Getting started</a> •
+</p>
 
-### Prerequisites
-- go version v1.22.0+
-- docker version 17.03+.
-- kubectl version v1.11.3+.
-- Access to a Kubernetes v1.11.3+ cluster.
+## About
+This repository contains the implementation of the Api domain, which is responsible for managing the whole ifecycle of an API. 
 
-### To Deploy on the cluster
-**Build and push your image to the location specified by `IMG`:**
+The following diagram illustrates the architecture of the Gateway domain:
+<div align="center">
+    <img src="docs/img/api_overview.drawio.svg.drawio" />
+</div>
 
-```sh
-make docker-build docker-push IMG=<some-registry>/api-operator:tag
+## Features
+
+- **Api Management**: Manage the whole API lifecycle, including registering, exposing and subscribing.
+
+## Dependencies
+- [Common](../common)
+- [Admin](../admin)
+- [Application](../application)
+- [Approval](../approval)
+- [Gateway](../gateway)
+- [Identity](../identity)
+- [ControlplaneApi](../cpapi)
+
+## CRDs
+All CRDs can be found here: [CRDs](./config/crd/bases/)
+The Api domain defines the following Custom Resources (CRDs) APIs:
+
+<details>
+<summary>
+<strong>Api</strong>
+This CRD represents a registered API, uniquely identified by its basePath.
+Example Api resource:
+</summary>  
+
+```yaml
+apiVersion: api.cp.ei.telekom.de/v1
+kind: Api
+metadata:
+  labels:
+    cp.ei.telekom.de/environment: default
+  name: group-team-api-v1
+  namespace: zone-namespace
+spec:
+  basePath: /group/team/api/v1
+  category: other
+  name: group-team-api-v1
+  version: 1.0.0
+  xVendor: false
 ```
+</details>
+<br />
 
-**NOTE:** This image ought to be published in the personal registry you specified.
-And it is required to have access to pull the image from the working environment.
-Make sure you have the proper permission to the registry if the above commands don’t work.
+<details>
+<summary>
+<strong>ApiExposure</strong>
+This CRD represents an API exposed on the Gateway.
+Example ApiExposure resource:
+</summary>  
 
-**Install the CRDs into the cluster:**
-
-```sh
-make install
+```yaml
+apiVersion: stargate.cp.ei.telekom.de/v1
+kind: ApiExposure
+metadata:
+  labels:
+    cp.ei.telekom.de/application: applicationName
+    cp.ei.telekom.de/basepath: group-team-api-v1
+    cp.ei.telekom.de/environment: env
+    cp.ei.telekom.de/zone: zoneName
+  name: applicationName--group-team-api-v1
+  namespace: env--group--team
+spec:
+  apiBasePath: /group/team/api/v1
+  approval: Simple
+  upstreams:
+    - url: https://my-upstream-url
+      weight: 100
+  visibility: World
+  zone:
+    name: zoneName
+    namespace: env
 ```
+</details>
+<br />
 
-**Deploy the Manager to the cluster with the image specified by `IMG`:**
+<details>
+<summary>
+<strong>ApiSubscription</strong>
+This CRD represents a subscription to an exposed API.
+Example ApiSubscription resource:
+</summary>  
 
-```sh
-make deploy IMG=<some-registry>/api-operator:tag
+```yaml
+apiVersion: stargate.cp.ei.telekom.de/v1
+kind: ApiSubscription
+metadata:
+  labels:
+    cp.ei.telekom.de/application: subscribing-application
+    cp.ei.telekom.de/basepath: group-team-api-v1
+    cp.ei.telekom.de/environment: env
+    cp.ei.telekom.de/zone: zoneName
+  name: subscribing-application--group-team-api-v1
+  namespace: env--group--team
+spec:
+  apiBasePath: /group/team/api/v1
+  requestor:
+    application:
+      name: subscribing-application
+      namespace: env--group--team
+  security: {}
+  zone:
+    name: zoneName
+    namespace: env
 ```
+</details>
+<br />
 
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
-privileges or be logged in as admin.
+## Code of Conduct
 
-**Create instances of your solution**
-You can apply the samples (examples) from the config/sample:
+This project has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) in version 2.1 as our code of conduct. Please see the details in our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). All contributors must abide by the code of conduct.
 
-```sh
-kubectl apply -k config/samples/
-```
+By participating in this project, you agree to abide by its [Code of Conduct](./CODE_OF_CONDUCT.md) at all times.
 
->**NOTE**: Ensure that the samples has default values to test it out.
+## Licensing
 
-### To Uninstall
-**Delete the instances (CRs) from the cluster:**
-
-```sh
-kubectl delete -k config/samples/
-```
-
-**Delete the APIs(CRDs) from the cluster:**
-
-```sh
-make uninstall
-```
-
-**UnDeploy the controller from the cluster:**
-
-```sh
-make undeploy
-```
-
-## Project Distribution
-
-Following are the steps to build the installer and distribute this project to users.
-
-1. Build the installer for the image built and published in the registry:
-
-```sh
-make build-installer IMG=<some-registry>/api-operator:tag
-```
-
-NOTE: The makefile target mentioned above generates an 'install.yaml'
-file in the dist directory. This file contains all the resources built
-with Kustomize, which are necessary to install this project without
-its dependencies.
-
-2. Using the installer
-
-Users can just run kubectl apply -f <URL for YAML BUNDLE> to install the project, i.e.:
-
-```sh
-kubectl apply -f https://raw.githubusercontent.com/<org>/api-operator/<tag or branch>/dist/install.yaml
-```
-
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
-
-**NOTE:** Run `make help` for more information on all potential `make` targets
-
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
-
-## License
-
-Copyright 2024.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
+This project follows the [REUSE standard for software licensing](https://reuse.software/). You can find a guide for developers at https://telekom.github.io/reuse-template/.   
+Each file contains copyright and license information, and license texts can be found in the [./LICENSES](./LICENSES) folder. For more information visit https://reuse.software/.
