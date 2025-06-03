@@ -25,7 +25,7 @@ This repository contains the implementation of the Api domain, which is responsi
 
 The following diagram illustrates the architecture of the Gateway domain:
 <div align="center">
-    <img src="docs/img/api_overview.drawio.svg.drawio" />
+    <img src="docs/img/api_overview.drawio.svg" />
 </div>
 
 ## Features
