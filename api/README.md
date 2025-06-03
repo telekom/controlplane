@@ -42,15 +42,15 @@ The following diagram illustrates the architecture of the Gateway domain:
 - [ControlplaneApi](../cpapi)
 
 ## CRDs
-All CRDs can be found here: [CRDs](./config/crd/bases/)
-The Api domain defines the following Custom Resources (CRDs) APIs:
+All CRDs can be found here: [CRDs](./config/crd/bases/).
+<p>The Api domain defines the following Custom Resources (CRDs) APIs:</p>
 
 <details>
 <summary>
 <strong>Api</strong>
 This CRD represents a registered API, uniquely identified by its basePath.
-Example Api resource:
 </summary>  
+Example resource of kind Api:
 
 ```yaml
 apiVersion: api.cp.ei.telekom.de/v1
@@ -74,8 +74,8 @@ spec:
 <summary>
 <strong>ApiExposure</strong>
 This CRD represents an API exposed on the Gateway.
-Example ApiExposure resource:
 </summary>  
+Example resource of kind ApiExposure:
 
 ```yaml
 apiVersion: stargate.cp.ei.telekom.de/v1
@@ -106,8 +106,8 @@ spec:
 <summary>
 <strong>ApiSubscription</strong>
 This CRD represents a subscription to an exposed API.
-Example ApiSubscription resource:
-</summary>  
+</summary>
+Example resource of kind ApiSubscription: 
 
 ```yaml
 apiVersion: stargate.cp.ei.telekom.de/v1
