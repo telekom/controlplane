@@ -12,12 +12,16 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/telekom/controlplane/secret-manager/api"
+	"github.com/telekom/controlplane/secret-manager/api/accesstoken"
 	"github.com/telekom/controlplane/secret-manager/api/gen"
 	"go.uber.org/zap"
 )
 
 var (
-	url         string
+	url       string
+	token     string
+	tokenFile string
+
 	secretID    string
 	secretValue string
 	rotate      bool
@@ -33,6 +37,9 @@ var (
 
 func init() {
 	flag.StringVar(&url, "url", "", "API URL")
+	flag.StringVar(&token, "token", "", "API Token")
+	flag.StringVar(&tokenFile, "token-file", "", "API Token File")
+
 	flag.StringVar(&secretID, "id", "", "Secret ID")
 	flag.StringVar(&secretValue, "value", "", "Secret Value")
 	flag.BoolVar(&rotate, "rotate", false, "Rotate Secret")
@@ -52,6 +59,11 @@ func main() {
 	opts := []api.Option{}
 	if url != "" {
 		opts = append(opts, api.WithURL(url))
+	}
+	if token != "" {
+		opts = append(opts, api.WithAccessToken(accesstoken.NewStaticAccessToken(token)))
+	} else if tokenFile != "" {
+		opts = append(opts, api.WithAccessToken(accesstoken.NewAccessToken(tokenFile)))
 	}
 
 	onboardingApi = api.NewOnboarding(opts...)

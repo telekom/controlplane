@@ -22,6 +22,8 @@ var approvalrequestlog = logf.Log.WithName("approvalrequest-resource")
 func (ar *ApprovalRequest) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(ar).
+		WithDefaulter(ar).
+		WithValidator(ar).
 		Complete()
 }
 

@@ -8,7 +8,7 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - admin.github.com/telekom/controlplane
+  - admin.cp.ei.telekom.de
   resources:
   - zones
   verbs:

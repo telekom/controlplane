@@ -13,7 +13,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-rover-cp.ei-telekom-de-v1-rover
+      path: /mutate-rover-cp-ei-telekom-de-v1-rover
   failurePolicy: Fail
   name: mrover.kb.io
   rules:
@@ -39,7 +39,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rover-cp.ei-telekom-de-v1-rover
+      path: /validate-rover-cp-ei-telekom-de-v1-rover
   failurePolicy: Fail
   name: vrover.kb.io
   rules:

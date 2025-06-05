@@ -7,7 +7,7 @@ layout:
 - go.kubebuilder.io/v4
 plugins:
   grafana.kubebuilder.io/v1-alpha: {}
-projectName: identity-operator
+projectName: identity
 repo: github.com/telekom/controlplane/identity
 resources:
 - api:
