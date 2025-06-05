@@ -27,32 +27,31 @@ configMapGenerator:
       disableNameSuffixHash: true
     literals: []
 
-# TODO: change feat-installation back to latest
 images:
   - name: ghcr.io/telekom/controlplane/approval
     newName: ghcr.io/telekom/controlplane/approval
-    newTag: feat-installation
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/gateway
     newName: ghcr.io/telekom/controlplane/gateway
-    newTag: feat-installation
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/identity
     newName: ghcr.io/telekom/controlplane/identity
-    newTag: feat-installation
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/secret-manager
     newName: ghcr.io/telekom/controlplane/secret-manager
-    newTag: feat-installation
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/rover
     newName: ghcr.io/telekom/controlplane/rover
-    newTag: feat-installation
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/application
     newName: ghcr.io/telekom/controlplane/application
-    newTag: feat-installation
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/api
     newName: ghcr.io/telekom/controlplane/api
-    newTag: feat-installation
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/organization
     newName: ghcr.io/telekom/controlplane/organization
-    newTag: feat-installation
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/admin
     newName: ghcr.io/telekom/controlplane/admin
-    newTag: feat-installation
+    newTag: latest

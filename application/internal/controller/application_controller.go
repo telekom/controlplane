@@ -29,17 +29,17 @@ type ApplicationReconciler struct {
 	cc.Controller[*applicationv1.Application]
 }
 
-// +kubebuilder:rbac:groups=application.github.com/telekom/,resources=applications,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=application.github.com/telekom/,resources=applications/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=application.github.com/telekom/,resources=applications/finalizers,verbs=update
+// +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications/finalizers,verbs=update
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
 
-// +kubebuilder:rbac:groups=identity.github.com/telekom/,resources=clients,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=identity.github.com/telekom/,resources=realms,verbs=get;list;watch
-// +kubebuilder:rbac:groups=gateway.github.com/telekom/,resources=consumers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=gateway.github.com/telekom/,resources=gateways,verbs=get;list;watch
-// +kubebuilder:rbac:groups=admin.github.com/telekom/,resources=zones,verbs=get;list;watch
+// +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=clients,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=realms,verbs=get;list;watch
+// +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=consumers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=gateways,verbs=get;list;watch
+// +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 
 func (r *ApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &applicationv1.Application{})
