@@ -14,12 +14,12 @@ spec:
       clientId: admin-cli
       userName: admin
       password: somePassword
-    url: https://iris-integration.test.dhei.telekom.de/
+    url: https://my-idp.example.com
   gateway:
     admin:
-      clientSecret: someRoverSecret
-      url: https://stargate-admin-distcp2-dataplane1.dev.dhei.telekom.de/admin-api
-    url: https://stargate-distcp2-dataplane1.dev.dhei.telekom.de/
+      clientSecret: someSecret
+      url: https://my-gateway-admin.example.com/admin-api
+    url: https://my-gateway.example.com
   redis:
     host: foo
     password: topsecret
