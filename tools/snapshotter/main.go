@@ -82,6 +82,7 @@ var (
 	}
 
 	diffDetected = false // used to indicate if a diff was detected in the route state
+	maxRoutes    = 1000
 )
 
 func init() {
@@ -249,7 +250,7 @@ func main() {
 	}
 
 	if allRoutes {
-		routeNames, err := getters.ListRouteNames(ctx, environment, zone)
+		routeNames, err := getters.ListRouteNames(ctx, environment, zone, maxRoutes)
 		if err != nil {
 			panic(errors.Wrap(err, "failed to list routes"))
 		}
@@ -272,7 +273,9 @@ func main() {
 }
 
 func forRoute(routeName string) {
-	defer waitGroup.Done()
+	if parallel {
+		defer waitGroup.Done()
+	}
 
 	// collect route state
 	currentState := &state.RouteState{
@@ -283,7 +286,8 @@ func forRoute(routeName string) {
 
 	err := collectStateOfRoute(ctx, currentState)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to collect state of route"))
+		fmt.Fprintf(os.Stderr, "failed to collect state of route: %v\n", err)
+		return
 	}
 
 	filename := fmt.Sprintf("%s-route-state.yaml", routeName)
@@ -292,7 +296,8 @@ func forRoute(routeName string) {
 	// decode base64 content in plugins
 	err = state.DecodeBase64Content(currentState, base64ContentPatterns...)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to decode base64 content in route state"))
+		fmt.Fprintf(os.Stderr, "failed to decode base64 content in route state: %v\n", err)
+		return
 	}
 
 	// setup initial snapshot
@@ -305,23 +310,27 @@ func forRoute(routeName string) {
 	// compare current state with snapshot
 	snapshottedStateBytes, err := os.ReadFile(filepath)
 	if err != nil {
-		panic(errors.Wrapf(err, "failed to read snapshot file %s", filepath))
+		fmt.Fprintf(os.Stderr, "failed to read snapshot file %s: %v\n", filepath, err)
+		return
 	}
 	snapshottedState := &state.RouteState{}
 	err = yaml.Unmarshal(snapshottedStateBytes, snapshottedState)
 	if err != nil {
-		panic(errors.Wrapf(err, "failed to unmarshal snapshotted route state from %s", filepath))
+		fmt.Fprintf(os.Stderr, "failed to unmarshal snapshotted route state from %s: %v\n", filepath, err)
+		return
 	}
 
 	// obfuscate sensitive or dynamic data
 	err = state.Obfuscate(currentState, obfuscationTargets...)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to obfuscate route state"))
+		fmt.Fprintf(os.Stderr, "failed to obfuscate route state: %v\n", err)
+		return
 	}
 
 	err = state.Obfuscate(snapshottedState, obfuscationTargets...)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to obfuscate snapshotted route state"))
+		fmt.Fprintf(os.Stderr, "failed to obfuscate snapshotted route state: %v\n", err)
+		return
 	}
 
 	dmp := diffmatchpatch.New()

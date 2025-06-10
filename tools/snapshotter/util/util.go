@@ -5,10 +5,11 @@
 package util
 
 import (
+	"cmp"
 	"fmt"
 	"os"
 	"reflect"
-	"sort"
+	"slices"
 )
 
 type Response interface {
@@ -79,25 +80,36 @@ func deepSort(v reflect.Value) {
 			deepSort(v.Field(i))
 		}
 	case reflect.Slice:
-		// Sort slice if element is comparable (int, string, etc.)
 		if v.Len() == 0 {
 			return
 		}
-		elemKind := v.Type().Elem().Kind()
-		switch elemKind {
-		case reflect.Int:
-			sort.Slice(v.Interface(), func(i, j int) bool {
-				return v.Index(i).Int() < v.Index(j).Int()
+
+		elKind := v.Type().Elem().Kind()
+		if elKind == reflect.String {
+			slices.Sort(v.Interface().([]string))
+		}
+		if elKind == reflect.Int {
+			slices.Sort(v.Interface().([]int))
+		}
+		if elKind == reflect.Interface {
+			// Sort interfaces by string representation
+			slices.SortFunc(v.Interface().([]any), func(a, b any) int {
+				return cmp.Compare(fmt.Sprintf("%v", a), fmt.Sprintf("%v", b))
 			})
-		case reflect.String:
-			sort.Slice(v.Interface(), func(i, j int) bool {
-				return v.Index(i).String() < v.Index(j).String()
-			})
-		case reflect.Struct, reflect.Ptr:
+		}
+
+		if elKind == reflect.Slice || elKind == reflect.Map || elKind == reflect.Struct {
 			// Recursively sort elements
 			for i := range v.Len() {
 				deepSort(v.Index(i))
 			}
+		}
+
+	case reflect.Map:
+		// Sort map values recursively
+		for _, key := range v.MapKeys() {
+			val := v.MapIndex(key)
+			deepSort(val)
 		}
 	}
 }

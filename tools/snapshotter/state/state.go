@@ -5,6 +5,7 @@
 package state
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -47,6 +48,7 @@ func (s *RouteState) Print(w io.Writer) error {
 }
 
 func (s *RouteState) String() string {
+	util.DeepSort(s)
 	data, err := yaml.Marshal(s)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to marshal route state: %v", err))
@@ -55,7 +57,6 @@ func (s *RouteState) String() string {
 }
 
 func (s *RouteState) Write(filename string) error {
-	util.DeepSort(s)
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return errors.Wrapf(err, "failed to open file %s for writing", filename)
@@ -75,6 +76,9 @@ func Obfuscate(s *RouteState, targets ...ObfuscationTarget) error {
 		return errors.Wrap(err, "failed to marshal route state to JSON")
 	}
 	b, err = ObfuscateBytes(b, targets...)
+	if err != nil {
+		return errors.Wrap(err, "failed to obfuscate route state")
+	}
 	err = json.Unmarshal(b, &s)
 	if err != nil {
 		return errors.Wrap(err, "failed to unmarshal obfuscated route state")
@@ -139,6 +143,9 @@ func DecodeBase64ContentBytes(b []byte, patterns ...string) ([]byte, error) {
 				return nil, errors.Wrapf(err, "failed to decode base64 content for pattern %s", pattern)
 			}
 
+			// Escape quotes in the decoded content
+			decodedContent = bytes.ReplaceAll(decodedContent, []byte(`"`), []byte(`\"`))
+			// Merge the decoded content back into the original JSON string.
 			before, _, _ := strings.Cut(pattern, "(")
 			newValue := before + string(decodedContent)
 			b = re.ReplaceAll(b, []byte(newValue))

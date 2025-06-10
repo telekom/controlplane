@@ -64,8 +64,11 @@ func GetRealmGateway(ctx context.Context, realm *gatewayv1.Realm) (*gatewayv1.Ga
 	return gateway, nil
 }
 
-func ListRouteNames(ctx context.Context, environment, zone string) ([]string, error) {
-	routes, err := KongClient.ListRouteWithResponse(ctx, &kong.ListRouteParams{})
+func ListRouteNames(ctx context.Context, environment, zone string, maxItems int) ([]string, error) {
+	routes, err := KongClient.ListRouteWithResponse(ctx, &kong.ListRouteParams{
+		Offset: nil,
+		Size:   &maxItems,
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list routes")
 	}
