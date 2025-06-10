@@ -16,10 +16,10 @@ import (
 )
 
 const (
-	namespace = "identity-operator-system"
+	namespace = "identity-system"
 
 	// projectimage stores the name of the image used in the example
-	projectimage = "example.com/identity-operator:v0.0.1"
+	projectimage = "example.com/identity:v0.0.1"
 	envimage     = "IMG=" + projectimage
 )
 
