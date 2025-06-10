@@ -256,8 +256,12 @@ func main() {
 		}
 
 		for _, routeName := range routeNames {
-			waitGroup.Add(1)
-			go forRoute(routeName)
+			if parallel {
+				waitGroup.Add(1)
+				go forRoute(routeName)
+			} else {
+				forRoute(routeName)
+			}
 		}
 		if parallel {
 			waitGroup.Wait()
