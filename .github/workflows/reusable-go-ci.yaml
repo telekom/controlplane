@@ -25,7 +25,7 @@ on:
         description: "Set to true to build the container image using Ko"
         required: false
         type: boolean
-        default: true
+        default: ${{ github.event_name == 'push' }}
       ko_build_path:
         description: "Path to the main package for ko build (e.g., cmd/main.go or ./cmd/server)"
         required: false
@@ -146,6 +146,8 @@ jobs:
 
       - name: Set up gotestfmt
         uses: gotesttools/gotestfmt-action@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and test module
         shell: bash
@@ -194,29 +196,6 @@ jobs:
           check_name: "Test Report (${{ inputs.module }})"
           comment: true
           include_passed: true
-
-      - name: Prepare coverage comment
-        id: prepare_coverage_comment_step
-        if: ${{ always() && (github.event_name == 'pull_request') }}
-        uses: irongut/CodeCoverageSummary@v1.3.0
-        with:
-          filename: ${{ inputs.module }}/cobertura.xml
-          badge: true
-          fail_below_min: false
-          format: markdown
-          indicators: true
-          output: both
-          thresholds: "60 80"
-
-      - name: Add Coverage PR Comment
-        if: ${{ always() && (github.event_name == 'pull_request') }}
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: module-coverage-${{ inputs.module }}
-          message: |
-            **Coverage for ${{ inputs.module }}**
-            ${{ steps.prepare_coverage_comment_step.outputs.markdown }}
-            Download the latest HTML coverage report for ${{ inputs.module }} [here](${{ github.server_url }}/${{ inputs.github_repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload_test_reports_artifact_step.outputs.artifact-id }}).
 
   source_scan:
     name: "Source Vulnerability Scan for ${{ inputs.module }}"
