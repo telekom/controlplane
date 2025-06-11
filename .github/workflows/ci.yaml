@@ -45,7 +45,6 @@ jobs:
       module: common
       run_check_generated_files: false
       run_build_image: false
-      run_tests: true
 
   common-server:
     name: Common Server
@@ -53,8 +52,6 @@ jobs:
     with:
       module: common-server
       run_check_generated_files: false
-      run_build_image: true
-      run_tests: true
       ko_build_path: "cmd/server/server.go"
 
   secret-manager:
@@ -63,8 +60,6 @@ jobs:
     with:
       module: secret-manager
       run_check_generated_files: false
-      run_build_image: true
-      run_tests: true
       ko_build_path: "cmd/server/server.go"
 
   approval:
@@ -73,8 +68,6 @@ jobs:
     with:
       module: approval
       run_check_generated_files: true
-      run_build_image: true
-      run_tests: true
       ko_build_path: "cmd/main.go"
 
   gateway:
@@ -83,8 +76,6 @@ jobs:
     with:
       module: gateway
       run_check_generated_files: true
-      run_build_image: true
-      run_tests: true
       ko_build_path: "cmd/main.go"
 
   identity:
@@ -93,8 +84,6 @@ jobs:
     with:
       module: identity
       run_check_generated_files: true
-      run_build_image: true
-      run_tests: true
       ko_build_path: "cmd/main.go"
 
   organization:
@@ -103,8 +92,6 @@ jobs:
     with:
       module: organization
       run_check_generated_files: true
-      run_build_image: true
-      run_tests: true
       ko_build_path: "cmd/main.go"
 
   admin:
@@ -113,8 +100,6 @@ jobs:
     with:
       module: admin
       run_check_generated_files: true
-      run_build_image: true
-      run_tests: true
       ko_build_path: "cmd/main.go"
 
   application:
@@ -123,8 +108,6 @@ jobs:
     with:
       module: application
       run_check_generated_files: true
-      run_build_image: true
-      run_tests: true
       ko_build_path: "cmd/main.go"
 
   api:
@@ -133,8 +116,6 @@ jobs:
     with:
       module: api
       run_check_generated_files: true
-      run_build_image: true
-      run_tests: true
       ko_build_path: "cmd/main.go"
 
   rover:
@@ -143,6 +124,4 @@ jobs:
     with:
       module: rover
       run_check_generated_files: true
-      run_build_image: true
-      run_tests: true
       ko_build_path: "cmd/main.go"
