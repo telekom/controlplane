@@ -17,10 +17,14 @@ type Response interface {
 }
 
 func MustBe2xx(res Response, context string) {
-	if res.StatusCode() < 200 || res.StatusCode() >= 300 {
+	if !Is2xx(res) {
 		fmt.Fprintf(os.Stderr, "Error: %s returned status code %d\n", context, res.StatusCode())
 		os.Exit(1)
 	}
+}
+
+func Is2xx(res Response) bool {
+	return res.StatusCode() >= 200 && res.StatusCode() < 300
 }
 
 func Must(err error) {

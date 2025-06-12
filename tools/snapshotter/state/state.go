@@ -31,6 +31,8 @@ type RouteState struct {
 	Route    *kong.Route    `yaml:"route" json:"route"`
 	Plugins  []kong.Plugin  `yaml:"plugins" json:"plugins"`
 	Consumer *kong.Consumer `yaml:"consumer,omitempty" json:"consumer,omitempty"`
+	Upstream *kong.Upstream `yaml:"upstream,omitempty" json:"upstream,omitempty"`
+	Targets  []kong.Target  `yaml:"targets,omitempty" json:"targets,omitempty"`
 }
 
 type ObfuscationTarget struct {

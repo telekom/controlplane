@@ -197,6 +197,21 @@ func collectStateOfRoute(ctx context.Context, state *state.RouteState) error {
 	util.MustBe2xx(plugins, "Plugins for Route")
 	state.Plugins = *plugins.JSON200.Data
 
+	upstream, err := getters.KongClient.GetUpstreamWithResponse(ctx, state.RouteName) // per convention, the upstream name is the same as the route name
+	if err != nil {
+		return errors.Wrap(err, "failed to get upstream for route")
+	}
+	if util.Is2xx(upstream) { // upstream may not exist for some routes
+		state.Upstream = upstream.JSON200
+
+		targets, err := getters.KongClient.ListTargetsForUpstreamWithResponse(ctx, *upstream.JSON200.Id, &kong.ListTargetsForUpstreamParams{})
+		if err != nil {
+			return errors.Wrap(err, "failed to list targets for upstream")
+		}
+		util.MustBe2xx(targets, "Targets for Upstream")
+		state.Targets = *targets.JSON200.Data
+	}
+
 	return nil
 }
 
@@ -258,9 +273,9 @@ func main() {
 		for _, routeName := range routeNames {
 			if parallel {
 				waitGroup.Add(1)
-				go forRoute(routeName)
+				go forRoute(ctx, routeName)
 			} else {
-				forRoute(routeName)
+				forRoute(ctx, routeName)
 			}
 		}
 		if parallel {
@@ -268,7 +283,7 @@ func main() {
 		}
 
 	} else {
-		forRoute(routeName)
+		forRoute(ctx, routeName)
 	}
 
 	if diffDetected {
@@ -276,7 +291,7 @@ func main() {
 	}
 }
 
-func forRoute(routeName string) {
+func forRoute(ctx context.Context, routeName string) {
 	if parallel {
 		defer waitGroup.Done()
 	}
