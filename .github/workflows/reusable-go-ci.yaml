@@ -114,7 +114,7 @@ jobs:
         with:
           version: v2.1
           working-directory: ${{ inputs.module }}
-          args: --timeout 5m --issues-exit-code=0 --config ../.golangci.yml 
+          args: --timeout 5m --config ../.golangci.yml 
 
   tests:
     name: "Tests & Coverage for ${{ inputs.module }}"
