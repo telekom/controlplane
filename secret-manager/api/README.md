@@ -54,14 +54,14 @@ onboardingApi.UpsertApplication(ctx, "poc", "eni--hyperion", "my-foo-app")
 
 ## Vocabulary
 
-| Name | Description |
-| ---- | ----------- |
-| `environment` | The environment is the top level organizational structure. |
-| `team` | The team is the second level organizational structure. It is dynamically configured per onboarded team. |
-| `application` | The application is the third level organizational structure. It is dynamically configured per onboarded application of a team. |
-|------------|-----------------|
-| `secret` | The secret is the actual secret value. It can be owned by any structurical element. |
-| `secretId` | The secret ID is the unique identifier of the secret. It is used to reference the secret in the API. |
-| `secretName` | The secret name that is part of the secret ID. It is used to identity the secret in the context of the structural element.
-| `secretPlaceholder` or `secretRef` | The secret placeholder is a variation of the secret ID using prefix and suffix tags. It is used to immidiately identify the secret. |
-|------------|-----------------|
+| Name                               | Description                                                                                                                         |
+|------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `environment`                      | The environment is the top level organizational structure.                                                                          |
+| `team`                             | The team is the second level organizational structure. It is dynamically configured per onboarded team.                             |
+| `application`                      | The application is the third level organizational structure. It is dynamically configured per onboarded application of a team.      |
+| ------------                       | -----------------                                                                                                                   |
+| `secret`                           | The secret is the actual secret value. It can be owned by any structural element.                                                   |
+| `secretId`                         | The secret ID is the unique identifier of the secret. It is used to reference the secret in the API.                                |
+| `secretName`                       | The secret name that is part of the secret ID. It is used to identity the secret in the context of the structural element.          |
+| `secretPlaceholder` or `secretRef` | The secret placeholder is a variation of the secret ID using prefix and suffix tags. It is used to immediately identify the secret. |
+| ------------                       | -----------------                                                                                                                   |
