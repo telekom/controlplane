@@ -201,12 +201,69 @@ spec:
 
 ### Features
 
+Features are the core components of the Gateway domain, providing the functionality to configure the actual API Gateway.
+
+Each `Feature` needs to implement the [`Feature` interface](internal/features/builder.go).
+
+The so-called `FeaturesTypes` that are implemented are listed in [api/v1/features.go](api/v1/features.go) as constants.
+These are used to identify the features during the configuration process.
+
+> [!NOTE]
+> New features should have unique `FeatureType` constants in [api/v1/features.go](api/v1/features.go) and referenced when using the [Feature-Builder](#feature-builder).
+
+
+#### Feature Priorities
+
+The priority values of the features are used to determine the order in which the features are applied to the API Gateway configuration.
+Some features are mandatory by others and must be applied first.
+
+> [!NOTE]
+> Priorities can also be relative to each other to fine-tune the order of application.
+
+The following table lists a **subset** of features and their priorities.
+
+
+| Feature          | Priority                                   |
+|------------------|--------------------------------------------|
+| PassThrough      | 0                                          |
+| AccessControl    | 10                                         |
+| RateLimit        | 10                                         |
+| ExternalIDP      | InstanceCustomScopesFeature - 1 (98)       |
+| CustomScopes     | InstanceLastMileSecurityFeature - 1 (99)   |
+| LastMileSecurity | 100                                        |
+
 ### Feature-Builder
+
+The `FeatureBuilder` is responsible for building the configuration of the API Gateway based on the defined features.
+Currently, it is tightly coupled with [our Kong Gateway](https://github.com/telekom/Open-Telekom-Integration-Platform/blob/main/docs/repository_overview.md#gateway) extension.
+However, extending it to support other API Gateway technologies is possible.
+
+The `FeatureBuilder` also constructs the required [plugins](pkg/kong/client/plugin) and provides access to them via its interface.
+So `Feature` developers do not need to worry about that and can expect that the plugins are available.
+
+For information about the process flow of the `FeatureBuilder`, see the [internal/features/builder.go](internal/features/builder.go).
+
+>[!WARNING]
+> If one feature fails to be applied, the builder will stop processing and the `v1.Route` resource will result in an error in the operator.
+
+The `FeatureBuilder` uses `context.Context` to create clients, loggers or access the run-time components such as the environment.
+Otherwise, when referring to builder-context, it is the variables of the current `FeatureBuilder` object.
 
 ### Api-Client
 
 ### Plugins
+Kong Gateway can be configured with various plugins in mind. Here is a list of plugins that are currently supported:
 
+* [ACL](https://docs.konghq.com/hub/kong-inc/acl/)
+* [JWT](https://docs.konghq.com/hub/kong-inc/jwt/)
+* [Rate Limiting](https://docs.konghq.com/hub/kong-inc/rate-limiting/)
+* [Request Transformer](https://docs.konghq.com/hub/kong-inc/request-transformer/)
+* [Jumper](https://github.com/telekom/gateway-jumper)
+
+Various `Features` require different plugin configurations, which are applied by the `FeatureBuilder`.
+Hence, the operator expects, that the plugins are available in the Kong Gateway instance.
+
+The implementation of the plugins is done in the [pkg/kong/client/plugin](pkg/kong/client/plugin) package.
 
 ## Getting Started
 
