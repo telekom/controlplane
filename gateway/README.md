@@ -264,6 +264,12 @@ Various `Features` require different plugin configurations, which are applied by
 Hence, the operator expects, that the plugins are available in the Kong Gateway instance.
 
 The implementation of the plugins is done in the [pkg/kong/client/plugin](pkg/kong/client/plugin) package.
+Since the Kong Client works on JSON objects, the plugins should use the `CustomPlugin` [types.go](pkg/kong/client/types.go) interface to define their 
+configuration. This make handling plugins much more easier, and developers do not have to consider mutating JSON objects directly.
+
+>[!NOTE]
+> If you implement new Plugins, the need to be registered in the FeatureBuilder to be able to work with as well.
+
 
 ## Getting Started
 
