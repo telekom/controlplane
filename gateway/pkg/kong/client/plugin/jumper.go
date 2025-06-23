@@ -17,6 +17,7 @@ type OauthCredentials struct {
 	ClientId     string `json:"clientId,omitempty"`
 	ClientSecret string `json:"clientSecret,omitempty"`
 	Scopes       string `json:"scopes,omitempty"`
+	TokenRequest string `json:"tokenRequest,omitempty"`
 }
 
 type BasicAuthCredentials struct {

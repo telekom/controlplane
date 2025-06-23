@@ -327,6 +327,63 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			Expect(true).To(BeTrue())
 		})
 
+		It("should correctly apply the ExternalIDP feature (real-route)", func() {
+			externalIDPRoute := route.DeepCopy()
+			externalIDPRoute.Spec.PassThrough = false
+			externalIDPRoute.Spec.Upstreams[0] = gatewayv1.Upstream{
+				Scheme:        "http",
+				Host:          "upstream.url",
+				Port:          8080,
+				Path:          "/api/v1",
+				TokenEndpoint: "https://example.com/tokenEndpoint",
+				ClientId:      "gateway",
+				ClientSecret:  "topsecret",
+				TokenRequest:  "header",
+			}
+
+			builder := features.NewFeatureBuilder(mockKc, externalIDPRoute, realm, gateway)
+
+			builder.EnableFeature(feature.InstanceExternalIDPFeature)
+			builder.AddAllowedConsumers(NewMockConsumeRoute(*types.ObjectRefFromObject(externalIDPRoute)))
+
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, externalIDPRoute, gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any()).Return(nil).Times(1)
+
+			By("building the features")
+			err := builder.Build(ctx)
+			Expect(err).ToNot(HaveOccurred())
+
+			b, ok := builder.(*features.Builder)
+			Expect(ok).To(BeTrue())
+
+			By("Checking that the plugins are set")
+			Expect(b.Plugins).To(HaveLen(1))
+
+			By("checking the request-transformer plugin")
+			rtPlugin, ok := b.Plugins["request-transformer"].(*plugin.RequestTransformerPlugin)
+			Expect(ok).To(BeTrue())
+
+			By("checking the request-transformer plugin config")
+			Expect(rtPlugin.Config.Append.Headers.Get("token_endpoint")).To(Equal("https://example.com/tokenEndpoint"))
+
+			By("checking the jumper plugin")
+			jumperConfig := b.JumperConfig()
+			Expect(jumperConfig.OAuth).To(HaveKeyWithValue(plugin.ConsumerId("default"), plugin.OauthCredentials{
+				ClientId:     "gateway",
+				ClientSecret: "topsecret",
+				TokenRequest: "body",
+			}))
+
+			Expect(jumperConfig.OAuth).To(HaveKeyWithValue(plugin.ConsumerId("test-consumer-name"), plugin.OauthCredentials{
+				Scopes:       "", //todo check how scopes are set
+				ClientId:     "gateway",
+				ClientSecret: "topsecret",
+				TokenRequest: "header",
+			}))
+
+		})
+
 		// TBD other features
 
 	})

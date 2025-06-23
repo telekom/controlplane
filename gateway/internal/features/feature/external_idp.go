@@ -7,12 +7,19 @@ package feature
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
+	secretManagerApi "github.com/telekom/controlplane/secret-manager/api"
 )
 
 var _ features.Feature = &ExternalIDPFeature{}
+
+// defaultKey for provider (exposure) config.
+// Used as a fallback in Jumper if no consumer key is found
+const defaultKey = "default"
+const defaultTokenRequest = "body"
 
 // ExternalIDPFeature takes precedence over CustomScopesFeature
 type ExternalIDPFeature struct {
@@ -33,33 +40,56 @@ func (f *ExternalIDPFeature) Priority() int {
 
 func (f *ExternalIDPFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
 	route := builder.GetRoute()
-	hasExternalIdpConfigured := true
-
-	return !route.Spec.PassThrough && hasExternalIdpConfigured && !route.IsProxy()
+	hasExternalTokenEndpoint := false
+	for i := range route.Spec.Upstreams {
+		if route.Spec.Upstreams[i].TokenEndpoint != "" {
+			hasExternalTokenEndpoint = true
+			break
+		}
+	}
+	return !route.Spec.PassThrough && hasExternalTokenEndpoint && !route.IsProxy()
 }
 
 func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
 	rtpPlugin := builder.RequestTransformerPlugin()
-
-	// TODO: get from route or somewhere
-	rtpPlugin.Config.Append.AddHeader("token_endpoint", "https://example.com/token")
-
+	route := builder.GetRoute()
 	jumperConfig := builder.JumperConfig()
+	var upstream gatewayv1.Upstream
 
-	for _, consumer := range builder.GetAllowedConsumers() { // TODO: implement
+	for i := range route.Spec.Upstreams {
+		if route.Spec.Upstreams[i].TokenEndpoint != "" {
+			rtpPlugin.Config.Append.AddHeader("token_endpoint", route.Spec.Upstreams[i].TokenEndpoint)
+			upstream = route.Spec.Upstreams[i]
+			builder.SetUpstream(upstream)
+			break
+		}
+	}
 
-		// TODO: handle default
-		jumperConfig.OAuth[plugin.ConsumerId("default")] = plugin.OauthCredentials{
-			ClientId:     "default_client_id",
-			ClientSecret: "default_client_secret",
+	for _, consumer := range builder.GetAllowedConsumers() {
+		secret := upstream.ClientSecret
+		if secret != "" {
+			secret, err = secretManagerApi.Get(ctx, upstream.ClientSecret)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get secret for consumer %s and upstream %s", consumer.Spec.ConsumerName, upstream.IssuerUrl)
+			}
+
 		}
 
-		// TODO: implement
-		jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = plugin.OauthCredentials{
-			Scopes:       "custom_scope",
-			ClientId:     "client_id",
-			ClientSecret: "client_secret",
+		oauth := plugin.OauthCredentials{
+			Scopes:       jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)].Scopes,
+			ClientId:     upstream.ClientId,
+			ClientSecret: secret,
+			TokenRequest: upstream.TokenRequest,
 		}
+
+		jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = oauth
+
+		jumperConfig.OAuth[defaultKey] = plugin.OauthCredentials{
+			ClientId:     upstream.ClientId,
+			ClientSecret: secret,
+			TokenRequest: defaultTokenRequest,
+		}
+
 	}
 
 	return nil
