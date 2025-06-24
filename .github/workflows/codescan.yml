@@ -1,0 +1,167 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Scan Code
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  schedule:
+    - cron: '45 18 * * 2'
+
+jobs:
+  common:
+    name: Common
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: common
+      # do not build or test the module
+      run_tests: false
+      run_build_image: false
+      # do run all checks and scanners on the code
+      run_check_generated_files: false
+      run_vulnerability_check: true
+      run_code_analysis: true
+      run_lint: true
+
+  common-server:
+    name: Common Server
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: common-server
+      # do not build or test the module
+      run_tests: false
+      run_build_image: false
+      # do run all checks and scanners on the code
+      run_check_generated_files: false
+      run_vulnerability_check: true
+      run_code_analysis: true
+      run_lint: true
+
+  secret-manager:
+    name: Secret Manager
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: secret-manager
+      # do not build or test the module
+      run_tests: false
+      run_build_image: false
+      # do run all checks and scanners on the code
+      run_check_generated_files: false
+      run_vulnerability_check: true
+      run_code_analysis: true
+      run_lint: true
+
+  approval:
+    name: Approval
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: approval
+      # do not build or test the module
+      run_tests: false
+      run_build_image: false
+      # do run all checks and scanners on the code
+      run_check_generated_files: false
+      run_vulnerability_check: true
+      run_code_analysis: true
+      run_lint: true
+
+  gateway:
+    name: Gateway
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: gateway
+      # do not build or test the module
+      run_tests: false
+      run_build_image: false
+      # do run all checks and scanners on the code
+      run_check_generated_files: false
+      run_vulnerability_check: true
+      run_code_analysis: true
+      run_lint: true
+
+  identity:
+    name: Identity
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: identity
+      # do not build or test the module
+      run_tests: false
+      run_build_image: false
+      # do run all checks and scanners on the code
+      run_check_generated_files: false
+      run_vulnerability_check: true
+      run_code_analysis: true
+      run_lint: true
+
+  organization:
+    name: Organization
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: organization
+      # do not build or test the module
+      run_tests: false
+      run_build_image: false
+      # do run all checks and scanners on the code
+      run_check_generated_files: false
+      run_vulnerability_check: true
+      run_code_analysis: true
+      run_lint: true
+
+  admin:
+    name: Admin
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: admin
+      # do not build or test the module
+      run_tests: false
+      run_build_image: false
+      # do run all checks and scanners on the code
+      run_check_generated_files: false
+      run_vulnerability_check: true
+      run_code_analysis: true
+      run_lint: true
+
+  application:
+    name: Application
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: application
+      # do not build or test the module
+      run_tests: false
+      run_build_image: false
+      # do run all checks and scanners on the code
+      run_check_generated_files: false
+      run_vulnerability_check: true
+      run_code_analysis: true
+      run_lint: true
+
+  api:
+    name: Api
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: api
+      # do not build or test the module
+      run_tests: false
+      run_build_image: false
+      # do run all checks and scanners on the code
+      run_check_generated_files: false
+      run_vulnerability_check: true
+      run_code_analysis: true
+      run_lint: true
+
+  rover:
+    name: Rover
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: rover
+      # do not build or test the module
+      run_tests: false
+      run_build_image: false
+      # do run all checks and scanners on the code
+      run_check_generated_files: false
+      run_vulnerability_check: true
+      run_code_analysis: true
+      run_lint: true
