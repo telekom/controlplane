@@ -50,10 +50,23 @@ func AsUpstreamForRealRoute(
 		return ups, errors.Wrapf(err, "failed to parse URL %s", rawUrl)
 	}
 
-	return gatewayapi.Upstream{
+	upstream := gatewayapi.Upstream{
 		Scheme: url.Scheme,
 		Host:   url.Hostname(),
 		Port:   gatewayapi.GetPortOrDefaultFromScheme(url),
 		Path:   url.Path,
-	}, nil
+	}
+
+	if HasExternalIdp(apiExposure) {
+		upstream.ClientId = apiExposure.Spec.ExternalIdp.ClientId
+		upstream.ClientSecret = apiExposure.Spec.ExternalIdp.ClientSecret
+		upstream.TokenEndpoint = apiExposure.Spec.ExternalIdp.TokenEndpoint
+		upstream.TokenRequest = apiExposure.Spec.ExternalIdp.TokenEndpoint
+	}
+
+	return upstream, nil
+}
+
+func HasExternalIdp(exposure *apiapi.ApiExposure) bool {
+	return exposure.Spec.ExternalIdp != apiapi.ExternalIdp{} || exposure.Spec.ExternalIdp.TokenEndpoint != ""
 }
