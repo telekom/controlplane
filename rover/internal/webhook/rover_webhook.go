@@ -7,6 +7,8 @@ package webhook
 import (
 	"context"
 	"fmt"
+	apiapi "github.com/telekom/controlplane/api/api/v1"
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"reflect"
 	"strings"
 
@@ -108,6 +110,9 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime
 		if _, err = r.ValidateSubscription(ctx, environment, sub); err != nil {
 			return nil, err
 		}
+		if _, err = r.ValidateSubscriptionVisibility(ctx, sub, rover); err != nil {
+			return nil, err
+		}
 	}
 
 	for _, exposure := range rover.Spec.Exposures {
@@ -154,6 +159,56 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, environment strin
 	}
 
 	return
+}
+
+func (r *RoverValidator) ValidateSubscriptionVisibility(ctx context.Context, sub roverv1.Subscription, rover *roverv1.Rover) (warnings admission.Warnings, err error) {
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+
+	apiExposureList := &apiapi.ApiExposureList{}
+	err = scopedClient.List(ctx, apiExposureList,
+		client.MatchingLabels{apiapi.BasePathLabelKey: sub.Api.BasePath},
+		client.MatchingFields{"status.active": "true"})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(apiExposureList.Items) == 0 {
+		return nil, apierrors.NewBadRequest("Active Api Exposure for this subscription not found")
+	}
+
+	exposure := &apiExposureList.Items[0]
+	exposureVisibility := exposure.Spec.Visibility
+
+	// any subscription is valid for a WORLD exposure
+	if exposureVisibility == apiapi.VisibilityWorld {
+		return nil, nil
+	}
+
+	// get the subscription zone
+	subZone := &adminv1.Zone{}
+	err = scopedClient.Get(ctx, client.ObjectKey{
+		Namespace: "default",
+		Name:      rover.Spec.Zone,
+	}, subZone)
+	if err != nil {
+		return nil, apierrors.NewBadRequest("Zone '" + rover.Spec.Zone + "' not found")
+	}
+
+	// only same zone
+	if exposureVisibility == apiapi.VisibilityZone {
+		if exposure.Spec.Zone.GetName() != subZone.GetName() {
+			return nil, apierrors.NewBadRequest("Exposure visibility is ZONE and it doesnt match the subscription zone '" + subZone.GetName() + "'")
+		}
+	}
+
+	// only enterprise zones
+	if exposureVisibility == apiapi.VisibilityEnterprise {
+		if subZone.Spec.Visibility != adminv1.ZoneVisibilityEnterprise {
+			return nil, apierrors.NewBadRequest(fmt.Sprintf("Api is exposed with visibility '%s', but subscriptions is from zone with visibility '%s'", apiapi.VisibilityEnterprise, subZone.Spec.Visibility))
+		}
+	}
+	return nil, nil
 }
 
 // MustNotHaveDuplicates checks if there are no duplicates in the subscriptions and exposures

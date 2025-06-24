@@ -10,6 +10,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type ZoneVisibility string
+
+const (
+	ZoneVisibilityWorld      ZoneVisibility = "World"
+	ZoneVisibilityEnterprise ZoneVisibility = "Enterprise"
+)
+
 type RedisConfig struct {
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
@@ -54,6 +61,7 @@ type ZoneSpec struct {
 	Gateway          GatewayConfig          `json:"gateway"`
 	Redis            RedisConfig            `json:"redis"`
 	TeamApis         *TeamApiConfig         `json:"teamApis,omitempty"`
+	Visibility       ZoneVisibility         `json:"visibility"`
 }
 
 type Links struct {
