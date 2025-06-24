@@ -8,19 +8,19 @@ metadata:
   labels:
     app.kubernetes.io/name: rover
     app.kubernetes.io/managed-by: kustomize
-    cp.ei.telekom.de/environment: poc
+    cp.ei.telekom.de/environment: foo
   name: rover-sample
 spec:
-  zone: dataplane1
+  zone: zone-a
   exposures:
     - api:
         basePath: /eni/foo/v2
         upstream: http://foo-service:8080
-        visibility: world
-        approval: auto
+        visibility: World
+        approval: Auto
   subscriptions:
     - api:
         basePath: /eni/foo/v2
-        oauth2Scopes: 
+        oauth2Scopes:
           - read
           - write

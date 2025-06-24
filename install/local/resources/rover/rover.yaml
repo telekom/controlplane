@@ -1,0 +1,22 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: rover.cp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: rover-sample
+spec:
+  zone: zone-a
+  exposures:
+    - api:
+        basePath: /eni/foo/v2
+        upstream: https://httpbin.org/anything
+        visibility: World
+        approval: Auto
+  subscriptions:
+    - api:
+        basePath: /eni/foo/v2
+        oauth2Scopes:
+          - read
+          - write

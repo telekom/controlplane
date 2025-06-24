@@ -3,13 +3,55 @@
 # SPDX-License-Identifier: Apache-2.0
 
 resources:
-- ../../secret-manager/config/default
-
+  - ../../secret-manager/config/default
+  - ../../identity/config/default
+  - ../../gateway/config/default
+  - ../../approval/config/default
+  - ../../rover/config/default
+  - ../../application/config/default
+  - ../../organization/config/default
+  - ../../api/config/default
+  - ../../admin/config/default
 
 configMapGenerator:
-- name: secret-manager-config
-  namespace: secret-manager-system
-  files:
-    - secret-manager-config.yaml
-  options:
-    disableNameSuffixHash: true
+  - name: secret-manager-config
+    namespace: secret-manager-system
+    behavior: replace
+    files:
+      - config.yaml=secret-manager-config.yaml
+    options:
+      disableNameSuffixHash: true
+  - name: secret-manager-env
+    behavior: merge
+    options:
+      disableNameSuffixHash: true
+    literals: []
+
+images:
+  - name: ghcr.io/telekom/controlplane/approval
+    newName: ghcr.io/telekom/controlplane/approval
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/gateway
+    newName: ghcr.io/telekom/controlplane/gateway
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/identity
+    newName: ghcr.io/telekom/controlplane/identity
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/secret-manager
+    newName: ghcr.io/telekom/controlplane/secret-manager
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/rover
+    newName: ghcr.io/telekom/controlplane/rover
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/application
+    newName: ghcr.io/telekom/controlplane/application
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/api
+    newName: ghcr.io/telekom/controlplane/api
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/organization
+    newName: ghcr.io/telekom/controlplane/organization
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/admin
+    newName: ghcr.io/telekom/controlplane/admin
+    newTag: latest

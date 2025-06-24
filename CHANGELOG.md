@@ -1,3 +1,10 @@
+# [0.4.0](https://github.com/telekom/controlplane/compare/v0.3.0...v0.4.0) (2025-06-11)
+
+
+### Features
+
+* **installation:** added installation script and instructions; smaller code-adjustments to support installation ([6b54c63](https://github.com/telekom/controlplane/commit/6b54c63686df9e8450d6b7e749761c6166ec99de))
+
 # [0.3.0](https://github.com/telekom/controlplane/compare/v0.2.1...v0.3.0) (2025-05-28)
 
 
