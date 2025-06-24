@@ -8,7 +8,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
   - package-ecosystem: "gomod"
     schedule:
       interval: "weekly"
@@ -25,7 +25,7 @@ updates:
       - rover
       - approval
     groups:
-      default: 
+      minor-updates:
         update-types:
           - patch
           - minor
