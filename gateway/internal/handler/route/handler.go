@@ -7,6 +7,8 @@ package route
 import (
 	"context"
 
+	"strings"
+
 	"github.com/pkg/errors"
 	cc "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -17,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	"github.com/telekom/controlplane/gateway/internal/handler/gateway"
 	"github.com/telekom/controlplane/gateway/internal/handler/realm"
+	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -68,7 +71,7 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 		}
 		log.Info("Found consumers", "count", len(routeConsumers.Items))
 		for _, consumer := range routeConsumers.Items {
-			builder.AddAllowedConsumers(&consumer)
+			builder.JumperConfig().OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = plugin.OauthCredentials{Scopes: strings.Join(consumer.Spec.Oauth2Scopes, " ")}
 		}
 	}
 
@@ -143,7 +146,7 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 	builder.EnableFeature(feature.InstanceAccessControlFeature)
 	builder.EnableFeature(feature.InstancePassThroughFeature)
 	builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
-	// builder.EnableFeature(feature.InstanceCustomScopesFeature)
+	builder.EnableFeature(feature.InstanceCustomScopesFeature)
 	// builder.EnableFeature(feature.InstanceExternalIDPFeature)
 	// builder.EnableFeature(feature.InstanceRateLimitFeature)
 

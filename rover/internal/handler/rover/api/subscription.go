@@ -50,7 +50,11 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 			ApiBasePath: sub.BasePath,
 			Zone:        zoneRef,
 			Security: &apiapi.Security{
-				Oauth2Scopes: sub.OAuth2Scopes,
+				Authentication: &apiapi.Authentication{
+					OAuth2: &apiapi.OAuth2{
+						Scopes: sub.Security.Authentication.OAuth2.Scopes,
+					},
+				},
 			},
 			Organization: sub.Organization,
 			Requestor: apiapi.Requestor{

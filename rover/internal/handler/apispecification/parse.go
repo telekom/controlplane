@@ -26,9 +26,15 @@ var (
 func ParseSpecification(ctx context.Context, spec string) (*apiapi.Api, error) {
 	api := &apiapi.Api{}
 	api.Spec = apiapi.ApiSpec{
-		Oauth2Scopes: []string{},
-		XVendor:      false,
-		Category:     "other",
+		Security: &apiapi.Security{
+			Authentication: &apiapi.Authentication{
+				OAuth2: &apiapi.OAuth2{
+					Scopes: []string{},
+				},
+			},
+		},
+		XVendor:  false,
+		Category: "other",
 	}
 	log := log.FromContext(ctx)
 
@@ -118,5 +124,5 @@ func setSecurityValues(api *apiapi.Api, security []*base.SecurityRequirement) {
 	if len(security) == 0 {
 		return
 	}
-	api.Spec.Oauth2Scopes = security[0].Requirements.Value("oauth2")
+	api.Spec.Security.Authentication.OAuth2.Scopes = security[0].Requirements.Value("oauth2")
 }

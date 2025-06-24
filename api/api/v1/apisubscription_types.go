@@ -23,10 +23,6 @@ type Requestor struct {
 	Application ctypes.ObjectRef `json:"application"`
 }
 
-type Security struct {
-	Oauth2Scopes []string `json:"oauth2Scopes,omitempty"`
-}
-
 // ApiSubscriptionStatus defines the observed state of ApiSubscription
 type ApiSubscriptionStatus struct {
 	// +listType=map

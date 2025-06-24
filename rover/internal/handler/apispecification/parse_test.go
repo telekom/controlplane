@@ -86,7 +86,7 @@ servers:
 			Expect(api.Spec.Version).To(Equal("1.0.0"))
 			Expect(api.Spec.Category).To(Equal("test"))
 			Expect(api.Spec.XVendor).To(BeTrue())
-			Expect(api.Spec.Oauth2Scopes).To(ConsistOf("read", "write"))
+			Expect(api.Spec.Security.Authentication.OAuth2.Scopes).To(ConsistOf("read", "write"))
 		})
 
 		It("should successfully parse the v3.0 spec", func() {
@@ -98,7 +98,7 @@ servers:
 			Expect(api.Spec.Version).To(Equal("1.0.0"))
 			Expect(api.Spec.Category).To(Equal("test"))
 			Expect(api.Spec.XVendor).To(BeTrue())
-			Expect(api.Spec.Oauth2Scopes).To(ConsistOf("read", "write"))
+			Expect(api.Spec.Security.Authentication.OAuth2.Scopes).To(ConsistOf("read", "write"))
 		})
 
 		It("should successfully parse the v3.1 spec", func() {
@@ -110,7 +110,7 @@ servers:
 			Expect(api.Spec.Version).To(Equal("1.0.0"))
 			Expect(api.Spec.Category).To(Equal("test"))
 			Expect(api.Spec.XVendor).To(BeTrue())
-			Expect(api.Spec.Oauth2Scopes).To(ConsistOf("read", "write"))
+			Expect(api.Spec.Security.Authentication.OAuth2.Scopes).To(ConsistOf("read", "write"))
 		})
 
 		It("should successfully parse the spec without scopes, category, vendor", func() {
@@ -122,7 +122,7 @@ servers:
 			Expect(api.Spec.Version).To(Equal("1.0.0"))
 			Expect(api.Spec.Category).To(Equal("other"))
 			Expect(api.Spec.XVendor).To(BeFalse())
-			Expect(api.Spec.Oauth2Scopes).To(HaveLen(0))
+			Expect(api.Spec.Security.Authentication.OAuth2.Scopes).To(HaveLen(0))
 		})
 
 	})

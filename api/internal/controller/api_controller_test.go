@@ -25,12 +25,18 @@ func NewApi(apiBasePath string) *apiv1.Api {
 			},
 		},
 		Spec: apiv1.ApiSpec{
-			Name:         labelutil.NormalizeValue(apiBasePath),
-			Version:      "v1",
-			BasePath:     apiBasePath,
-			Category:     "other",
-			Oauth2Scopes: []string{"scope1", "scope2"},
-			XVendor:      false,
+			Name:     labelutil.NormalizeValue(apiBasePath),
+			Version:  "v1",
+			BasePath: apiBasePath,
+			Category: "other",
+			Security: &apiv1.Security{
+				Authentication: &apiv1.Authentication{
+					OAuth2: &apiv1.OAuth2{
+						Scopes: []string{"scope1", "scope2"},
+					},
+				},
+			},
+			XVendor: false,
 		},
 	}
 }

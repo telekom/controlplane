@@ -14,6 +14,7 @@ import (
 type ConsumeRouteSpec struct {
 	Route        types.ObjectRef `json:"route"`
 	ConsumerName string          `json:"consumerName"`
+	Oauth2Scopes []string        `json:"oauth2Scopes,omitempty"`
 }
 
 // ConsumeRouteStatus defines the observed state of ConsumeRoute

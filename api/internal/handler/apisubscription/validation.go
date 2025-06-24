@@ -51,6 +51,56 @@ func ApiMustExist(ctx context.Context, obj types.Object) (bool, *apiapi.Api, err
 	return true, &apiList.Items[0], nil
 }
 
+// Scopes must exist in the Api specification
+func ScopesMustExist(ctx context.Context, apiSub *apiapi.ApiSubscription) (bool, error) {
+	log := log.FromContext(ctx)
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+
+	api := &apiapi.Api{}
+	err := scopedClient.Get(ctx, client.ObjectKey{
+		Name:      apiSub.GetLabels()[apiapi.BasePathLabelKey],
+		Namespace: apiSub.GetNamespace(),
+	}, api)
+	if err != nil {
+		return false, errors.Wrapf(err,
+			"failed to get Api for ApiSubscription: %s in namespace: %s", apiSub.GetName(), apiSub.GetNamespace())
+	}
+
+	if len(api.Spec.Security.Authentication.OAuth2.Scopes) == 0 {
+		log.Info("❌ No scopes defined in Api specification. ApiSubscription is blocked")
+		apiSub.SetCondition(condition.NewNotReadyCondition("NoScopesDefined", "No scopes defined in Api specification"))
+		apiSub.SetCondition(condition.NewBlockedCondition(
+			"No scopes defined in Api specification. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
+		return false, nil
+	}
+
+	// Check if scopes are a subset of the Api specification
+	for _, scope := range apiSub.Spec.Security.Authentication.OAuth2.Scopes {
+		if !IsScopeDefined(api.Spec.Security.Authentication.OAuth2.Scopes, scope) {
+			log.Info("❌ Scope is not defined in Api specification. ApiSubscription is blocked", "scope", scope)
+
+			// If scope is not defined in the Api specification, set conditions and return
+			apiSub.SetCondition(condition.NewNotReadyCondition("ScopeNotDefined", "Scope is not defined in Api specification"))
+			apiSub.SetCondition(condition.NewBlockedCondition(
+				"Scope is not defined in Api specification. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
+
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// Helper function to check if a scope is defined in the list of OAuth2 scopes
+func IsScopeDefined(scopes []string, scope string) bool {
+	for _, definedScope := range scopes {
+		if definedScope == scope {
+			return true
+		}
+	}
+	return false
+}
+
 func ApiExposureMustExist(ctx context.Context, obj types.Object) (bool, *apiapi.ApiExposure, error) {
 	log := log.FromContext(ctx)
 	scopedClient := cclient.ClientFromContextOrDie(ctx)

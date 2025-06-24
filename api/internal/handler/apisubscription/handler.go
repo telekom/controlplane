@@ -6,6 +6,7 @@ package apisubscription
 
 import (
 	"context"
+	"encoding/json"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -109,6 +110,20 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		return nil
 	}
 
+	// Scopes
+	// check if scopes exist and scopes are subset from api
+	if apiSub.Spec.Security != nil && apiSub.Spec.Security.Authentication.OAuth2.Scopes != nil {
+		scopesExist, err := ScopesMustExist(ctx, apiSub)
+		if err != nil {
+			return errors.Wrapf(err, "failed to check scopes for ApiSubscription: %s in namespace: %s",
+				apiSub.Name, apiSub.Namespace)
+		}
+		if !scopesExist {
+			log.Info("❌ One or more scopes which are defined in ApiSubscription are not defined in the Api")
+			return nil
+		}
+	}
+
 	// Approval
 
 	requester := &approvalapi.Requester{ // TODO: get from somewhere (Team?)
@@ -119,16 +134,49 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	properties := map[string]any{
 		"basePath": apiSub.Spec.ApiBasePath,
 	}
-	if apiSub.Spec.Security != nil {
-		properties["scopes"] = apiSub.Spec.Security.Oauth2Scopes
+
+	approvalBuilder := builder.NewApprovalBuilder(scopedClient, apiSub)
+
+	approvalReq := approvalBuilder.GetApprovalRequest()
+
+	// add scopes to approval, if scopes changed, update the approval
+	if apiSub.Spec.Security != nil && apiSub.Spec.Security.Authentication.OAuth2.Scopes != nil {
+		//check if approval request already exists
+		if approvalReq.Spec.State != "" && approvalReq.Spec.State != approvalapi.ApprovalStatePending {
+			// Check if existing scopes in the approval request are a subset of the new scopes
+			if approvalReq.Spec.Requester.Properties.Raw != nil {
+				var propertiesMap map[string]interface{}
+				err := json.Unmarshal(approvalReq.Spec.Requester.Properties.Raw, &propertiesMap)
+				if err != nil {
+					return errors.Wrap(err, "failed to unmarshal approval request properties")
+				}
+				if propertiesMap["scopes"] != nil {
+					existingScopes, ok := propertiesMap["scopes"].([]string)
+					if ok {
+						for _, scope := range existingScopes {
+							if !Contains(apiSub.Spec.Security.Authentication.OAuth2.Scopes, scope) {
+								//scopes changed -> set ApprovalRequest to pending
+								approvalReq.Spec.State = approvalapi.ApprovalStatePending
+							}
+						}
+					} else {
+						return errors.New("existing scopes in approval request are not of type []string")
+					}
+				}
+			}
+
+		}
+
+		// Set the scopes in the properties
+		properties["scopes"] = apiSub.Spec.Security.Authentication.OAuth2.Scopes
 	}
+
 	err = requester.SetProperties(properties)
 	if err != nil {
 		return errors.Wrapf(err, "unable to approvalRequest properties for apiSubscription: %s in namespace: %s",
 			apiSub.Name, apiSub.Namespace)
 	}
 
-	approvalBuilder := builder.NewApprovalBuilder(scopedClient, apiSub)
 	approvalBuilder.WithHashValue(requester.Properties)
 	approvalBuilder.WithRequester(requester)
 	approvalBuilder.WithStrategy(approvalapi.ApprovalStrategy(apiExposure.Spec.Approval))
@@ -202,6 +250,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		routeConsumer.Spec = gatewayapi.ConsumeRouteSpec{
 			Route:        *types.ObjectRefFromObject(route),
 			ConsumerName: application.Status.ClientId,
+			Oauth2Scopes: apiSub.Spec.Security.Authentication.OAuth2.Scopes,
 		}
 
 		return nil
@@ -218,6 +267,16 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	apiSub.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
 
 	return nil
+}
+
+// Contains checks if a slice contains a specific element.
+func Contains(slice []string, item string) bool {
+	for _, element := range slice {
+		if element == item {
+			return true
+		}
+	}
+	return false
 }
 
 func (h *ApiSubscriptionHandler) Delete(ctx context.Context, apiSub *apiapi.ApiSubscription) error {

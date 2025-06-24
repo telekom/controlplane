@@ -90,6 +90,7 @@ type ApiExposure struct {
 	// +kubebuilder:validation:Enum=Auto;Simple;FourEyes
 	// +kubebuilder:default=Auto
 	Approval ApprovalStrategy `json:"approval"`
+	Security *Security        `json:"security,omitempty"`
 }
 
 type EventExposure struct {
@@ -102,8 +103,26 @@ type ApiSubscription struct {
 	BasePath string `json:"basePath"`
 	// Organization is the organization that owns the API
 	// Defaults to local organization
-	Organization string   `json:"organization,omitempty"`
-	OAuth2Scopes []string `json:"oauth2Scopes,omitempty"`
+	Organization string    `json:"organization,omitempty"`
+	Security     *Security `json:"security,omitempty"`
+}
+
+type Security struct {
+	Authentication *Authentication `json:"authentication,omitempty"`
+}
+
+type Authentication struct {
+	OAuth2    *OAuth2    `json:"oauth2,omitempty"`
+	BasicAuth *BasicAuth `json:"basicAuth,omitempty"`
+}
+
+type OAuth2 struct {
+	Scopes []string `json:"oauth2Scopes,omitempty"`
+}
+
+type BasicAuth struct {
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
 }
 
 type EventSubscription struct {

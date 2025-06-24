@@ -369,8 +369,14 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				Subscriptions: []roverv1.Subscription{
 					{
 						Api: &roverv1.ApiSubscription{
-							BasePath:     BasePath,
-							OAuth2Scopes: []string{"tardis:user:read"},
+							BasePath: BasePath,
+							Security: &roverv1.Security{
+								Authentication: &roverv1.Authentication{
+									OAuth2: &roverv1.OAuth2{
+										Scopes: []string{"tardis:user:read"},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -398,7 +404,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				}, apiSubscription)
 
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(apiSubscription.Spec.Security.Oauth2Scopes[0]).To(Equal("tardis:user:read"))
+				g.Expect(apiSubscription.Spec.Security.Authentication.OAuth2.Scopes[0]).To(Equal("tardis:user:read"))
 
 			}, timeout, interval).Should(Succeed())
 

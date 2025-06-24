@@ -7,7 +7,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -84,7 +83,7 @@ var _ = BeforeSuite(func() {
 		//),
 		ErrorIfCRDPathMissing: true,
 		BinaryAssetsDirectory: filepath.Join("..", "..", "bin", "k8s",
-			fmt.Sprintf("%s-%s-%s", os.Getenv("ENVTEST_K8S_VERSION"), runtime.GOOS, runtime.GOARCH)),
+			fmt.Sprintf("%s-%s-%s", "1.31.0", runtime.GOOS, runtime.GOARCH)),
 	}
 
 	// cfg is defined in this file globally.
