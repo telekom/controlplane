@@ -6,6 +6,7 @@ package apisubscription
 
 import (
 	"context"
+	"slices"
 
 	"github.com/pkg/errors"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
@@ -76,7 +77,7 @@ func ScopesMustExist(ctx context.Context, apiSub *apiapi.ApiSubscription) (bool,
 
 	// Check if scopes are a subset of the Api specification
 	for _, scope := range apiSub.Spec.Security.Authentication.OAuth2.Scopes {
-		if !IsScopeDefined(api.Spec.Security.Authentication.OAuth2.Scopes, scope) {
+		if !slices.Contains(api.Spec.Security.Authentication.OAuth2.Scopes, scope) {
 			log.Info("❌ Scope is not defined in Api specification. ApiSubscription is blocked", "scope", scope)
 
 			// If scope is not defined in the Api specification, set conditions and return
@@ -89,16 +90,6 @@ func ScopesMustExist(ctx context.Context, apiSub *apiapi.ApiSubscription) (bool,
 	}
 
 	return true, nil
-}
-
-// Helper function to check if a scope is defined in the list of OAuth2 scopes
-func IsScopeDefined(scopes []string, scope string) bool {
-	for _, definedScope := range scopes {
-		if definedScope == scope {
-			return true
-		}
-	}
-	return false
 }
 
 func ApiExposureMustExist(ctx context.Context, obj types.Object) (bool, *apiapi.ApiExposure, error) {

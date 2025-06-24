@@ -7,6 +7,7 @@ package apisubscription
 import (
 	"context"
 	"encoding/json"
+	"slices"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -154,7 +155,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 					existingScopes, ok := propertiesMap["scopes"].([]string)
 					if ok {
 						for _, scope := range existingScopes {
-							if !Contains(apiSub.Spec.Security.Authentication.OAuth2.Scopes, scope) {
+							if !slices.Contains(apiSub.Spec.Security.Authentication.OAuth2.Scopes, scope) {
 								//scopes changed -> set ApprovalRequest to pending
 								approvalReq.Spec.State = approvalapi.ApprovalStatePending
 							}
@@ -267,16 +268,6 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	apiSub.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
 
 	return nil
-}
-
-// Contains checks if a slice contains a specific element.
-func Contains(slice []string, item string) bool {
-	for _, element := range slice {
-		if element == item {
-			return true
-		}
-	}
-	return false
 }
 
 func (h *ApiSubscriptionHandler) Delete(ctx context.Context, apiSub *apiapi.ApiSubscription) error {

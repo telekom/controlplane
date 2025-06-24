@@ -71,7 +71,10 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 		}
 		log.Info("Found consumers", "count", len(routeConsumers.Items))
 		for _, consumer := range routeConsumers.Items {
-			builder.JumperConfig().OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = plugin.OauthCredentials{Scopes: strings.Join(consumer.Spec.Oauth2Scopes, " ")}
+			builder.AddAllowedConsumers(&consumer)
+			if consumer.Spec.Oauth2Scopes == nil {
+				builder.JumperConfig().OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = plugin.OauthCredentials{Scopes: strings.Join(consumer.Spec.Oauth2Scopes, " ")}
+			}
 		}
 	}
 
