@@ -27,7 +27,7 @@ permissions:
 jobs:
   common-server-chart:
     name: Publish Common Server Chart
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.chart_path == 'common-server/helm' || github.event_name == 'push' && contains(github.event.head_commit.modified, 'common-server/helm/')
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.chart_path == 'common-server/helm' || github.event_name == 'push'
     uses: ./.github/workflows/helm-release.yaml
     with:
       chart_path: 'common-server/helm'
