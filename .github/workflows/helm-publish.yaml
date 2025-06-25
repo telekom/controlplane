@@ -14,6 +14,11 @@ on:
       version:
         description: 'Chart version to use (overrides Chart.yaml)'
         required: false
+  push:
+    paths:
+      - 'common-server/helm/**'
+      - '.github/workflows/helm-publish.yaml'
+      - '.github/workflows/helm-release.yaml'
 
 permissions:
   packages: write
