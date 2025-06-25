@@ -113,7 +113,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	// Scopes
 	// check if scopes exist and scopes are subset from api
-	if apiSub.Spec.Security != nil && apiSub.Spec.Security.Authentication.OAuth2.Scopes != nil {
+	if apiSub.Spec.Security.Authentication.OAuth2.Scopes != nil {
 		scopesExist, err := ScopesMustExist(ctx, apiSub)
 		if err != nil {
 			return errors.Wrapf(err, "failed to check scopes for ApiSubscription: %s in namespace: %s",
@@ -141,7 +141,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	approvalReq := approvalBuilder.GetApprovalRequest()
 
 	// add scopes to approval, if scopes changed, update the approval
-	if apiSub.Spec.Security != nil && apiSub.Spec.Security.Authentication.OAuth2.Scopes != nil {
+	if apiSub.Spec.Security.Authentication.OAuth2.Scopes != nil {
 		//check if approval request already exists
 		if approvalReq.Spec.State != "" && approvalReq.Spec.State != approvalapi.ApprovalStatePending {
 			// Check if existing scopes in the approval request are a subset of the new scopes

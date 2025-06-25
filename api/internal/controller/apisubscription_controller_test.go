@@ -66,9 +66,9 @@ func NewApiSubscription(apiBasePath, zoneName, appName string) *apiapi.ApiSubscr
 		Spec: apiapi.ApiSubscriptionSpec{
 			ApiBasePath:  apiBasePath,
 			Organization: "",
-			Security: &apiapi.Security{
-				Authentication: &apiapi.Authentication{
-					OAuth2: &apiapi.OAuth2{
+			Security: apiapi.Security{
+				Authentication: apiapi.Authentication{
+					OAuth2: apiapi.OAuth2{
 						Scopes: []string{"scope1", "scope2"},
 					},
 				},
