@@ -118,7 +118,7 @@ func WithInClusterIssuer() KubernetesAuthOption {
 			jwksURL := c.Issuer + path
 			res, err := httpClient.Get(jwksURL)
 			if err == nil {
-				res.Body.Close()
+				res.Body.Close() //nolint:errcheck
 				if res.StatusCode == 200 {
 					o.JWKSOpts[jwksURL] = opts
 					break // stop at the first available path
