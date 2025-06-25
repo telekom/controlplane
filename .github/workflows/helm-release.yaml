@@ -1,0 +1,77 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Reusable Helm Chart Publishing
+
+on:
+  workflow_call:
+    inputs:
+      chart_path:
+        description: 'Path to the Helm chart directory'
+        required: true
+        type: string
+      version:
+        description: 'Chart version to use (overrides Chart.yaml)'
+        required: false
+        type: string
+    
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  publish-helm-chart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+
+      - name: Login to GHCR
+        run: |
+          helm registry login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lint Helm Chart
+        run: |
+          helm lint ${{ inputs.chart_path }}
+
+      - name: Inject slug vars
+        uses: rlespinasse/github-slug-action@v5
+
+      - name: Extract Version Information
+        id: version
+        run: |
+          # Use input version if provided
+          if [ -n "${{ inputs.version }}" ]; then
+            effective_version="${{ inputs.version }}"
+          else
+            effective_version="${GITHUB_REF_SLUG}"
+          fi
+
+          echo "Using version: $effective_version"
+          echo "version=$effective_version" >> $GITHUB_OUTPUT
+          echo "app_version=$effective_version" >> $GITHUB_OUTPUT
+
+      - name: Package Helm Chart
+        run: |
+          helm package ${{ inputs.chart_path }} \
+            --version ${{ steps.version.outputs.version }} \
+            --app-version ${{ steps.version.outputs.app_version }} \
+            --destination charts
+
+      - name: Push Helm Chart to GHCR
+        uses: stefanprodan/helm-gh-pages@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          charts_dir: charts
+          charts_url: https://ghcr.io/${{ github.repository }}/charts
+          repository: ${{ github.repository }}
+          branch: gh-pages
+          update_repo_index: true

@@ -1,0 +1,29 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Publish Helm Charts (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      chart_path:
+        description: 'Path to the Helm chart directory (e.g., common-server/helm)'
+        required: true
+        default: 'common-server/helm'
+      version:
+        description: 'Chart version to use (overrides Chart.yaml)'
+        required: false
+
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  common-server-chart:
+    name: Publish Common Server Chart
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.chart_path == 'common-server/helm' || github.event_name == 'push' && contains(github.event.head_commit.modified, 'common-server/helm/')
+    uses: ./.github/workflows/helm-release.yaml
+    with:
+      chart_path: 'common-server/helm'
+      version: ${{ github.event.inputs.version }}

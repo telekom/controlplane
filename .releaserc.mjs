@@ -20,13 +20,17 @@ export default {
         '@semantic-release/release-notes-generator',
         '@semantic-release/changelog',
         ['@semantic-release/exec', {
-            prepareCmd: `bash ./.github/scripts/update_install.sh "\${nextRelease.gitTag}"`,
+            prepareCmd: `
+                bash ./.github/scripts/update_install.sh "\${nextRelease.gitTag}"
+                bash ./.github/scripts/update_chart_version.sh common-server/helm "\${nextRelease.gitTag}"
+            `,
             publishCmd: `echo "\${nextRelease.notes}" > /tmp/release-notes.md`,
         }],
         ['@semantic-release/git', {
             assets: [
                 'CHANGELOG.md',
                 'install/kustomization.yaml',
+                'common-server/helm/Chart.yaml',
             ],
         }],
     ],
