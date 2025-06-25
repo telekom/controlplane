@@ -165,7 +165,7 @@ func (c *ConjurOnboarder) DeleteTeam(ctx context.Context, env, teamId string) er
 	log.Info("Deleting team", "env", env, "team", teamId, "policyPath", policyPath)
 
 	mutator := func(ctx context.Context) error {
-		return c.deletePolicy(ctx, policyPath, env)
+		return c.deletePolicy(ctx, policyPath, teamId)
 	}
 	err := c.MaybeRunWithBouncer(ctx, policyPath, mutator)
 	if err != nil {
