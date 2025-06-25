@@ -83,4 +83,3 @@ jobs:
           charts_url: https://ghcr.io/${{ github.repository }}/charts
           repository: ${{ github.repository }}
           branch: gh-pages
-          update_repo_index: true
