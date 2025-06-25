@@ -149,19 +149,43 @@ func (c *ConjurOnboarder) DeleteEnvironment(ctx context.Context, env string) err
 	policyPath := RootPolicyPath
 	log.Info("Deleting environment", "env", env, "policyPath", policyPath)
 
-	return c.deletePolicy(ctx, policyPath, env)
+	mutator := func(ctx context.Context) error {
+		return c.deletePolicy(ctx, policyPath, env)
+	}
+	err := c.MaybeRunWithBouncer(ctx, policyPath, mutator)
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete environment %s", env)
+	}
+	return nil
 }
+
 func (c *ConjurOnboarder) DeleteTeam(ctx context.Context, env, teamId string) error {
 	log := logr.FromContextOrDiscard(ctx)
 	policyPath := RootPolicyPath + "/" + env
 	log.Info("Deleting team", "env", env, "team", teamId, "policyPath", policyPath)
-	return c.deletePolicy(ctx, policyPath, teamId)
+
+	mutator := func(ctx context.Context) error {
+		return c.deletePolicy(ctx, policyPath, env)
+	}
+	err := c.MaybeRunWithBouncer(ctx, policyPath, mutator)
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete team %s in environment %s", teamId, env)
+	}
+	return nil
 }
 func (c *ConjurOnboarder) DeleteApplication(ctx context.Context, env, teamId, appId string) error {
 	log := logr.FromContextOrDiscard(ctx)
 	policyPath := RootPolicyPath + "/" + env + "/" + teamId
 	log.Info("Deleting application", "env", env, "team", teamId, "app", appId, "policyPath", policyPath)
-	return c.deletePolicy(ctx, policyPath, appId)
+
+	mutator := func(ctx context.Context) error {
+		return c.deletePolicy(ctx, policyPath, appId)
+	}
+	err := c.MaybeRunWithBouncer(ctx, policyPath, mutator)
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete application %s in team %s in environment %s", appId, teamId, env)
+	}
+	return nil
 }
 
 func (c *ConjurOnboarder) deletePolicy(ctx context.Context, policyPath, policyKey string) error {

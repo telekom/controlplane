@@ -29,6 +29,15 @@ const (
 	AccessTypeAppOnboardingWrite AccessType = "onboarding_write"
 )
 
+var (
+	// A list of known paths that Kubernetes uses to expose JWKS.
+	// The order is important, as first available path will be used.
+	KubernetesJwksPaths = []string{
+		"/keys",
+		"/openid/v1/jwks",
+	}
+)
+
 type AccessTypeSet map[AccessType]struct{}
 
 func (ats AccessTypeSet) Has(at AccessType) bool {
@@ -98,14 +107,22 @@ func WithInClusterIssuer() KubernetesAuthOption {
 			panic(err)
 		}
 		o.TrustedIssuers = append(o.TrustedIssuers, c.Issuer)
-		jwksUrl := c.Issuer + "/openid/v1/jwks" // "/keys"
 		httpClient, err := GetKubernetesHttpClient()
 		if err != nil {
 			panic(fmt.Errorf("failed to get Kubernetes HTTP client: %w", err))
 		}
 		opts := keyFuncOptions
 		opts.Client = httpClient
-		o.JWKSOpts[jwksUrl] = opts
+
+		for _, path := range KubernetesJwksPaths {
+			jwksURL := c.Issuer + path
+			res, err := httpClient.Get(jwksURL)
+			if err == nil && res.StatusCode == 200 {
+				o.JWKSOpts[jwksURL] = opts
+				break // stop at the first available path
+			}
+			// continue to next path if the current one is not available
+		}
 	}
 }
 
@@ -145,7 +162,8 @@ func NewKubernetesAuthz(opts ...KubernetesAuthOption) fiber.Handler {
 			if errors.As(err, &pErr) {
 				return pErr
 			}
-			return problems.Unauthorized("Failed to authenticate", err.Error())
+			logr.FromContextOrDiscard(c.UserContext()).Error(err, "Failed to authenticate")
+			return problems.Unauthorized("Failed to authenticate", "Invalid token")
 		},
 	})
 }
