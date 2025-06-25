@@ -62,6 +62,10 @@ func NewMockConsumeRoute(routeRef types.ObjectRef) *gatewayv1.ConsumeRoute {
 		Spec: gatewayv1.ConsumeRouteSpec{
 			ConsumerName: "test-consumer-name",
 			Route:        routeRef,
+			Oauth2Scopes: []string{
+				"scope1",
+				"scope2",
+			},
 		},
 	}
 }
@@ -126,10 +130,11 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			builder.EnableFeature(feature.InstancePassThroughFeature)
 			builder.EnableFeature(feature.InstanceAccessControlFeature)
 			builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
+			builder.EnableFeature(feature.InstanceCustomScopesFeature)
 
 			b, ok := builder.(*features.Builder)
 			Expect(ok).To(BeTrue())
-			Expect(b.Features).To(HaveLen(3))
+			Expect(b.Features).To(HaveLen(4))
 		})
 
 	})
@@ -320,6 +325,29 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			Expect(rtPlugin.Config.Append.Headers.Get("issuer")).To(Equal("https://upstream.issuer.url"))
 			Expect(rtPlugin.Config.Append.Headers.Get("client_id")).To(Equal("gateway"))
 			Expect(rtPlugin.Config.Append.Headers.Get("client_secret")).To(Equal("topsecret"))
+		})
+
+		It("should apply the CustomScopes feature", func() {
+			scopesRoute := route.DeepCopy()
+			builder := features.NewFeatureBuilder(mockKc, scopesRoute, realm, gateway)
+			builder.AddAllowedConsumers(NewMockConsumeRoute(*types.ObjectRefFromObject(scopesRoute)))
+			builder.EnableFeature(feature.InstanceCustomScopesFeature)
+
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, scopesRoute, gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any()).Return(nil).Times(1)
+
+			By("building the features")
+			err := builder.Build(ctx)
+			Expect(err).ToNot(HaveOccurred())
+
+			b, ok := builder.(*features.Builder)
+			Expect(ok).To(BeTrue())
+
+			By("Checking that jumperConfig is filled with the scopes")
+			Expect(b.JumperConfig).ToNot(BeNil())
+			Expect(b.JumperConfig().OAuth).To(HaveLen(2))
+			Expect(b.JumperConfig().OAuth[plugin.ConsumerId(scopesRoute.Name)]).To(ContainElement("scope1"))
+			Expect(b.JumperConfig().OAuth[plugin.ConsumerId(scopesRoute.Name)]).To(ContainElement("scope2"))
 		})
 
 		It("should correctly apply the RateLimit feature", func() {

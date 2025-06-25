@@ -31,6 +31,18 @@ info:
   x-vendor: true
 servers:
   - url: http://localhost:8080/eni/api/v1
+components:
+      securitySchemes:
+        oAuth2:
+          type: "oauth2"
+          description: "dummy oauth2"
+          flows:
+            clientCredentials:
+              tokenUrl: "http://localhost:8080/proxy/auth/realms/default/protocol/openid-connect/token"
+              scopes:
+                read: "read dummy"
+                write: "write dummy"
+                admin: "admin dummy"
 `
 
 		ctx := context.Background()

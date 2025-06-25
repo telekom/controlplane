@@ -161,7 +161,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 							}
 						}
 					} else {
-						return errors.New("existing scopes in approval request are not of type []string")
+						return errors.Wrap(err, "existing scopes in approval request are not of type []string")
 					}
 				}
 			}

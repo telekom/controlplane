@@ -55,16 +55,15 @@ func ApiMustExist(ctx context.Context, obj types.Object) (bool, *apiapi.Api, err
 // Scopes must exist in the Api specification
 func ScopesMustExist(ctx context.Context, apiSub *apiapi.ApiSubscription) (bool, error) {
 	log := log.FromContext(ctx)
-	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
-	api := &apiapi.Api{}
-	err := scopedClient.Get(ctx, client.ObjectKey{
-		Name:      apiSub.GetLabels()[apiapi.BasePathLabelKey],
-		Namespace: apiSub.GetNamespace(),
-	}, api)
+	exists, api, err := ApiMustExist(ctx, apiSub)
 	if err != nil {
-		return false, errors.Wrapf(err,
-			"failed to get Api for ApiSubscription: %s in namespace: %s", apiSub.GetName(), apiSub.GetNamespace())
+		return false, err
+	}
+
+	if !exists {
+		log.Info("failed to get Api for ApiSubscription:", "apiSub", apiSub.Name)
+		return false, nil
 	}
 
 	if len(api.Spec.Security.Authentication.OAuth2.Scopes) == 0 {

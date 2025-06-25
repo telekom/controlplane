@@ -53,10 +53,26 @@ spec:
                 type: string
               name:
                 type: string
-              oauth2Scopes:
-                items:
-                  type: string
-                type: array
+              security:
+                properties:
+                  authentication:
+                    properties:
+                      basicAuth:
+                        properties:
+                          password:
+                            type: string
+                          username:
+                            type: string
+                        type: object
+                      oauth2:
+                        properties:
+                          oauth2Scopes:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                    type: object
+                type: object
               version:
                 type: string
               xVendor:
