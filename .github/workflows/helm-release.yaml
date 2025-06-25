@@ -76,10 +76,7 @@ jobs:
             --destination charts
 
       - name: Push Helm Chart to GHCR
-        uses: stefanprodan/helm-gh-pages@master
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          charts_dir: charts
-          charts_url: https://ghcr.io/${{ github.repository }}/charts
-          repository: ${{ github.repository }}
-          branch: gh-pages
+        run: |
+          helm push charts/*.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
