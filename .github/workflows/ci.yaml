@@ -19,6 +19,10 @@ permissions:
   packages: write
   actions: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs: 
   prepare:
     name: detect modules

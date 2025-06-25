@@ -24,6 +24,10 @@ permissions:
   packages: write
   contents: read
 
+concurrency:
+  group: helm-publish-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   common-server-chart:
     name: Publish Common Server Chart
