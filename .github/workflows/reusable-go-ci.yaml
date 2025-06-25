@@ -194,7 +194,7 @@ jobs:
         with:
           report_paths: "${{ inputs.module }}/junit.xml"
           check_name: "Test Report (${{ inputs.module }})"
-          comment: true
+          comment: false
           include_passed: true
 
   source_scan:
