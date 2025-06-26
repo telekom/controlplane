@@ -39,7 +39,7 @@ spec:
               protocol: TCP
           args:
             - --configfile
-            - {{ .Values.configFile | default "config/config.yaml"}} 
+            - {{ .Values.configFile | default "/etc/common-server/config.yaml"}} 
             - loglevel
             - {{ .Values.logLevel | default "info" }}
           livenessProbe:
@@ -58,7 +58,7 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
           - name: app-config
-            mountPath: /config
+            mountPath: /etc/common-server
             readOnly: true
           {{- if .Values.secretmanager.enabled }}
           - name: secretmgr-token

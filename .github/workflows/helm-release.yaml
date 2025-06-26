@@ -77,6 +77,6 @@ jobs:
 
       - name: Push Helm Chart to GHCR
         run: |
-          helm push charts/*.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
+          helm push charts/*.tgz oci://ghcr.io/${{ github.repository_owner }}/o28m-charts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
