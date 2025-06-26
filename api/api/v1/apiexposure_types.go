@@ -18,27 +18,6 @@ const (
 	ApprovalStrategyFourEyes ApprovalStrategy = "FourEyes"
 )
 
-// ExternalIdp defines the configuration for external IDP authentication
-type ExternalIdp struct {
-	// ExternalIdpConfig defines the configuration for external IDP authentication
-	// TokenEndpoint is the URL to the token endpoint for external IDP authentication
-	TokenEndpoint string `json:"tokenEndpoint,omitempty"`
-	// TokenRequest is the type of token request, "body" or "header"
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=body;header
-	TokenRequest string `json:"tokenRequest,omitempty"`
-
-	// ToDo might be moved to `oauth2` structure instead
-	// ClientId for the external IDP authentication
-	ClientId string `json:"clientId,omitempty"`
-
-	// ClientSecret for the external IDP authentication
-	ClientSecret string `json:"clientSecret,omitempty"`
-
-	// Scopes for the external IDP authentication
-	Scopes []string `json:"scopes,omitempty"`
-}
-
 // ApiExposureSpec defines the desired state of ApiExposure
 type ApiExposureSpec struct {
 	ApiBasePath string     `json:"apiBasePath"`
@@ -50,7 +29,9 @@ type ApiExposureSpec struct {
 	Approval ApprovalStrategy `json:"approval"`
 	Zone     ctypes.ObjectRef `json:"zone"`
 
-	ExternalIdp ExternalIdp `json:"externalIdp,omitempty"`
+	// TokenEndpoint is the URL to the token endpoint for external IDP authentication
+	TokenEndpoint string   `json:"tokenEndpoint,omitempty"`
+	Security      Security `json:"security,omitempty"`
 }
 
 type Upstream struct {

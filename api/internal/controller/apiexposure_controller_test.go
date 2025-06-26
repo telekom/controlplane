@@ -11,6 +11,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -156,9 +157,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				route := &gatewayapi.Route{}
 				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), route)
 				g.Expect(err).ToNot(HaveOccurred())
-
 			}, timeout, interval).Should(Succeed())
-
 		})
 	})
 
@@ -215,4 +214,79 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 
 		})
 	})
+
+	Context("ApiExposure with ExternalIDP Configured", Ordered, func() {
+
+		var thirdApiExposure *apiv1.ApiExposure
+
+		BeforeAll(func() {
+			By("Creating the second APIExposure")
+			thirdApiExposure = NewApiExposure(apiBasePath, zoneName)
+			thirdApiExposure.Name = "third-api"
+			thirdApiExposure.Spec.TokenEndpoint = "example.com/token"
+		})
+
+		It("should reject invalid config", func() {
+			By("Creating the second APIExposure resource")
+			thirdApiExposure.Spec.Security.Oauth2 = apiv1.Oauth2{
+				Scopes:       []string{"team:scope", "api:scope"},
+				TokenRequest: "sky",
+			}
+			err := k8sClient.Create(ctx, thirdApiExposure)
+			Expect(err).To(HaveOccurred())
+			Expect(apierrors.IsInvalid(err)).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring("Unsupported value: \"sky\": supported values: \"body\", \"header\""))
+
+			thirdApiExposure.Spec.Security.Oauth2 = apiv1.Oauth2{
+				Scopes:    []string{"team:scope", "api:scope"},
+				GrantType: "not_a_valid_grant_type",
+			}
+			err = k8sClient.Create(ctx, thirdApiExposure)
+			Expect(err).To(HaveOccurred())
+			Expect(apierrors.IsInvalid(err)).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring("Unsupported value: \"not_a_valid_grant_type\": supported values: \"client_credentials\", \"authorization_code\", \"password\""))
+		})
+		It("should successfully provision the resource", func() {
+			By("Creating the second APIExposure resource")
+			thirdApiExposure.Spec.Security.Oauth2 = apiv1.Oauth2{
+				Scopes:       []string{"team:scope", "api:scope"},
+				TokenRequest: "header",
+				ClientId:     "team",
+				ClientSecret: "******",
+				GrantType:    "client_credentials",
+			}
+			err := k8sClient.Create(ctx, thirdApiExposure)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Checking if the resource has the expected state")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(thirdApiExposure), thirdApiExposure)
+				g.Expect(err).ToNot(HaveOccurred())
+				route := &gatewayapi.Route{}
+				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), route)
+				g.Expect(err).ToNot(HaveOccurred())
+				checkUpstream(g, route, &gatewayapi.Upstream{
+					ClientId:      "team",
+					ClientSecret:  "******",
+					TokenEndpoint: "example.com/token",
+					TokenRequest:  "header",
+					GrantType:     "client_credentials",
+					Scopes:        []string{"team:scope", "api:scope"},
+				})
+
+			}, timeout, interval).Should(Succeed())
+		})
+
+	})
+
 })
+
+func checkUpstream(g Gomega, route *gatewayapi.Route, expectedUpstreamObj *gatewayapi.Upstream) {
+	g.Expect(route.Spec.Upstreams).To(HaveLen(1))
+	g.Expect(route.Spec.Upstreams[0].ClientId).To(Equal(expectedUpstreamObj.ClientId))
+	g.Expect(route.Spec.Upstreams[0].ClientSecret).To(Equal(expectedUpstreamObj.ClientSecret))
+	g.Expect(route.Spec.Upstreams[0].TokenEndpoint).To(Equal(expectedUpstreamObj.TokenEndpoint))
+	g.Expect(route.Spec.Upstreams[0].TokenRequest).To(Equal(expectedUpstreamObj.TokenRequest))
+	g.Expect(route.Spec.Upstreams[0].GrantType).To(Equal(expectedUpstreamObj.GrantType))
+	g.Expect(route.Spec.Upstreams[0].Scopes).To(Equal(expectedUpstreamObj.Scopes))
+}

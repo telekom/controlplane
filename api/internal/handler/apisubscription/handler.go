@@ -120,7 +120,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		"basePath": apiSub.Spec.ApiBasePath,
 	}
 	if apiSub.Spec.Security != nil {
-		properties["scopes"] = apiSub.Spec.Security.Oauth2Scopes
+		properties["scopes"] = apiSub.Spec.Security.Oauth2.Scopes
 	}
 	err = requester.SetProperties(properties)
 	if err != nil {
