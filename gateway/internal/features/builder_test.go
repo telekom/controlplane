@@ -329,11 +329,14 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 
 		It("should apply the CustomScopes feature", func() {
 			scopesRoute := route.DeepCopy()
+			consumeRoute := NewMockConsumeRoute(*types.ObjectRefFromObject(scopesRoute))
 			builder := features.NewFeatureBuilder(mockKc, scopesRoute, realm, gateway)
-			builder.AddAllowedConsumers(NewMockConsumeRoute(*types.ObjectRefFromObject(scopesRoute)))
+			builder.AddAllowedConsumers(consumeRoute)
 			builder.EnableFeature(feature.InstanceCustomScopesFeature)
+			builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
 
 			mockKc.EXPECT().CreateOrReplaceRoute(ctx, scopesRoute, gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
 			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 			By("building the features")
@@ -345,9 +348,7 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 
 			By("Checking that jumperConfig is filled with the scopes")
 			Expect(b.JumperConfig).ToNot(BeNil())
-			Expect(b.JumperConfig().OAuth).To(HaveLen(2))
-			Expect(b.JumperConfig().OAuth[plugin.ConsumerId(scopesRoute.Name)]).To(ContainElement("scope1"))
-			Expect(b.JumperConfig().OAuth[plugin.ConsumerId(scopesRoute.Name)]).To(ContainElement("scope2"))
+			Expect(b.JumperConfig().OAuth[plugin.ConsumerId(consumeRoute.Spec.ConsumerName)].Scopes).To(Equal("scope1 scope2"))
 		})
 
 		It("should correctly apply the RateLimit feature", func() {
