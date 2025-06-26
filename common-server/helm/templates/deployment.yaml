@@ -37,8 +37,6 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
-          command:
-            - /server
           args:
             - --configfile
             - {{ .Values.configFile | default "config/config.yaml"}} 
