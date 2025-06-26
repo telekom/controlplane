@@ -266,12 +266,12 @@ jobs:
         working-directory: ${{ inputs.module }}
         run: |
           echo "Attempting to build ${{ inputs.module }} for CodeQL analysis..."
-          if [ -f Makefile ] && grep -q -E "^build[:[:space:]]" Makefile; then
-            echo "Found Makefile with build target. Running make build..."
-            make build
-          elif [ -f go.mod ]; then
+          if [ -f go.mod ]; then
             echo "Found go.mod. Running go build ./..."
             go build ./...
+          elif [ -f Makefile ] && grep -q -E "^build[:[:space:]]" Makefile; then
+            echo "Found Makefile with build target. Running make build..."
+            make build
           else
             echo "WARNING: No Makefile with a 'build' target or go.mod found in ${{ inputs.module }}. CodeQL may not analyze effectively."
           fi
