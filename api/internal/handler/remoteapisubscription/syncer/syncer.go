@@ -80,12 +80,11 @@ func (c *syncerClient) Send(ctx context.Context, resource *apiv1.RemoteApiSubscr
 			},
 		},
 	}
-	if resource.Spec.Security != nil {
-		body.Security = &cpv1.Security{
-			Oauth2: &cpv1.SecurityOauth2{
-				Scopes: &resource.Spec.Security.Authentication.OAuth2.Scopes,
-			},
-		}
+
+	body.Security = &cpv1.Security{
+		Oauth2: &cpv1.SecurityOauth2{
+			Scopes: &resource.Spec.Security.Authentication.OAuth2.Scopes,
+		},
 	}
 
 	resourceId := MakeResourceId(resource)
