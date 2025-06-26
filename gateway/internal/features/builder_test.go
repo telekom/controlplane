@@ -327,7 +327,7 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			Expect(true).To(BeTrue())
 		})
 
-		It("should correctly apply the ExternalIDP feature (real-route)", func() {
+		It("should correctly apply the ExternalIDP feature", func() {
 			externalIDPRoute := route.DeepCopy()
 			externalIDPRoute.Spec.PassThrough = false
 			externalIDPRoute.Spec.Upstreams[0] = gatewayv1.Upstream{
@@ -338,14 +338,22 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 				TokenEndpoint: "https://example.com/tokenEndpoint",
 				ClientId:      "gateway",
 				ClientSecret:  "topsecret",
-				TokenRequest:  "header",
+				GrantType:     "client_credentials",
+				Scopes:        []string{"admin:application"},
 			}
 
 			builder := features.NewFeatureBuilder(mockKc, externalIDPRoute, realm, gateway)
-
 			builder.EnableFeature(feature.InstanceExternalIDPFeature)
-			builder.AddAllowedConsumers(NewMockConsumeRoute(*types.ObjectRefFromObject(externalIDPRoute)))
 
+			By("defining the consumer oauth config")
+			consumerRoute := NewMockConsumeRoute(*types.ObjectRefFromObject(externalIDPRoute))
+			consumerRoute.Spec.OauthConfig.Scopes = []string{"team:application"}
+			consumerRoute.Spec.OauthConfig.ClientId = "test-user"
+			consumerRoute.Spec.OauthConfig.ClientSecret = "******"
+			consumerRoute.Spec.OauthConfig.GrantType = "client_credentials"
+			builder.AddAllowedConsumers(consumerRoute)
+
+			By("mocking kong client calls")
 			mockKc.EXPECT().CreateOrReplaceRoute(ctx, externalIDPRoute, gomock.Any()).Return(nil).Times(1)
 			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
 			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any()).Return(nil).Times(1)
@@ -370,16 +378,17 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			By("checking the jumper plugin")
 			jumperConfig := b.JumperConfig()
 			Expect(jumperConfig.OAuth).To(HaveKeyWithValue(plugin.ConsumerId("default"), plugin.OauthCredentials{
+				Scopes:       "admin:application",
 				ClientId:     "gateway",
 				ClientSecret: "topsecret",
-				TokenRequest: "body",
+				GrantType:    "client_credentials",
 			}))
 
 			Expect(jumperConfig.OAuth).To(HaveKeyWithValue(plugin.ConsumerId("test-consumer-name"), plugin.OauthCredentials{
-				Scopes:       "", //todo check how scopes are set
-				ClientId:     "gateway",
-				ClientSecret: "topsecret",
-				TokenRequest: "header",
+				Scopes:       "team:application",
+				ClientId:     "test-user",
+				ClientSecret: "******",
+				GrantType:    "client_credentials",
 			}))
 
 		})

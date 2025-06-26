@@ -6,6 +6,7 @@ package util
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 
 	"github.com/pkg/errors"
@@ -61,12 +62,13 @@ func AsUpstreamForRealRoute(
 		upstream.ClientId = apiExposure.Spec.ExternalIdp.ClientId
 		upstream.ClientSecret = apiExposure.Spec.ExternalIdp.ClientSecret
 		upstream.TokenEndpoint = apiExposure.Spec.ExternalIdp.TokenEndpoint
-		upstream.TokenRequest = apiExposure.Spec.ExternalIdp.TokenEndpoint
+		upstream.TokenRequest = apiExposure.Spec.ExternalIdp.TokenRequest
+		upstream.Scopes = apiExposure.Spec.ExternalIdp.Scopes
 	}
 
 	return upstream, nil
 }
 
 func HasExternalIdp(exposure *apiapi.ApiExposure) bool {
-	return exposure.Spec.ExternalIdp != apiapi.ExternalIdp{} || exposure.Spec.ExternalIdp.TokenEndpoint != ""
+	return exposure.Spec.ExternalIdp.TokenEndpoint != ""
 }

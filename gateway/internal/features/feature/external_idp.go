@@ -6,6 +6,7 @@ package feature
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -18,7 +19,7 @@ var _ features.Feature = &ExternalIDPFeature{}
 
 // defaultKey for provider (exposure) config.
 // Used as a fallback in Jumper if no consumer key is found
-const defaultKey = "default"
+const defaultKey = plugin.ConsumerId("default")
 const defaultTokenRequest = "body"
 
 // ExternalIDPFeature takes precedence over CustomScopesFeature
@@ -65,31 +66,46 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 		}
 	}
 
+	providerSecret := upstream.ClientSecret
+	if providerSecret != "" {
+		providerSecret, err = secretManagerApi.Get(ctx, upstream.ClientSecret)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get provider secret for upstream %s", upstream.IssuerUrl)
+		}
+
+	}
+
+	providerOauth := jumperConfig.OAuth[defaultKey]
+	if providerOauth.Scopes == "" && len(upstream.Scopes) > 0 {
+		providerOauth.Scopes = strings.Join(upstream.Scopes, " ")
+	}
+	providerOauth.Scopes = strings.Join(upstream.Scopes, " ")
+	providerOauth.ClientId = upstream.ClientId
+	providerOauth.ClientSecret = providerSecret
+	providerOauth.TokenRequest = upstream.TokenRequest
+	providerOauth.GrantType = upstream.GrantType
+
+	jumperConfig.OAuth[defaultKey] = providerOauth
+
 	for _, consumer := range builder.GetAllowedConsumers() {
-		secret := upstream.ClientSecret
-		if secret != "" {
-			secret, err = secretManagerApi.Get(ctx, upstream.ClientSecret)
+		consumerSecret := consumer.Spec.OauthConfig.ClientSecret
+		if consumerSecret != "" {
+			consumerSecret, err = secretManagerApi.Get(ctx, consumerSecret)
 			if err != nil {
-				return errors.Wrapf(err, "failed to get secret for consumer %s and upstream %s", consumer.Spec.ConsumerName, upstream.IssuerUrl)
+				return errors.Wrapf(err, "cannot get consumer secret for consumer %s", consumer.Spec.ConsumerName)
 			}
-
 		}
 
-		oauth := plugin.OauthCredentials{
-			Scopes:       jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)].Scopes,
-			ClientId:     upstream.ClientId,
-			ClientSecret: secret,
-			TokenRequest: upstream.TokenRequest,
+		consumerOauth := jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)]
+		if consumerOauth.Scopes == "" && len(consumer.Spec.OauthConfig.Scopes) > 0 {
+			consumerOauth.Scopes = strings.Join(consumer.Spec.OauthConfig.Scopes, " ")
 		}
+		consumerOauth.ClientId = consumer.Spec.OauthConfig.ClientId
+		consumerOauth.ClientSecret = consumerSecret
+		consumerOauth.TokenRequest = consumer.Spec.OauthConfig.TokenRequest
+		consumerOauth.GrantType = consumer.Spec.OauthConfig.GrantType
 
-		jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = oauth
-
-		jumperConfig.OAuth[defaultKey] = plugin.OauthCredentials{
-			ClientId:     upstream.ClientId,
-			ClientSecret: secret,
-			TokenRequest: defaultTokenRequest,
-		}
-
+		jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = consumerOauth
 	}
 
 	return nil

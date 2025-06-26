@@ -44,6 +44,36 @@ spec:
             properties:
               consumerName:
                 type: string
+              oauthConfig:
+                properties:
+                  clientId:
+                    description: ClientId is the client ID for the external IDP authentication
+                    type: string
+                  clientSecret:
+                    description: ClientSecret is the client secret for the external
+                      IDP authentication
+                    type: string
+                  grantType:
+                    description: GrantType is the grant type for the external IDP
+                      authentication
+                    enum:
+                    - client_credentials
+                    - authorization_code
+                    - password
+                    type: string
+                  scopes:
+                    description: Scopes for the external IDP authentication
+                    items:
+                      type: string
+                    type: array
+                  tokenRequest:
+                    description: TokenRequest is the type of token request, "body"
+                      or "header"
+                    enum:
+                    - body
+                    - header
+                    type: string
+                type: object
               route:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object
@@ -65,6 +95,7 @@ spec:
                 type: object
             required:
             - consumerName
+            - oauthConfig
             - route
             type: object
           status:

@@ -10,10 +10,31 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type OauthConfig struct {
+	// TokenRequest is the type of token request, "body" or "header"
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=body;header
+	TokenRequest string `json:"tokenRequest,omitempty"`
+	// GrantType is the grant type for the external IDP authentication
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
+	GrantType string `json:"grantType,omitempty"`
+	// ClientId is the client ID for the external IDP authentication
+	// +kubebuilder:validation:Optional
+	ClientId string `json:"clientId,omitempty"`
+	// ClientSecret is the client secret for the external IDP authentication
+	// +kubebuilder:validation:Optional
+	ClientSecret string `json:"clientSecret,omitempty"`
+	// Scopes for the external IDP authentication
+	// +kubebuilder:validation:Optional
+	Scopes []string `json:"scopes,omitempty"`
+}
+
 // ConsumeRouteSpec defines the desired state of ConsumeRoute
 type ConsumeRouteSpec struct {
 	Route        types.ObjectRef `json:"route"`
 	ConsumerName string          `json:"consumerName"`
+	OauthConfig  OauthConfig     `json:"oauthConfig"`
 }
 
 // ConsumeRouteStatus defines the observed state of ConsumeRoute

@@ -34,6 +34,9 @@ type ExternalIdp struct {
 
 	// ClientSecret for the external IDP authentication
 	ClientSecret string `json:"clientSecret,omitempty"`
+
+	// Scopes for the external IDP authentication
+	Scopes []string `json:"scopes,omitempty"`
 }
 
 // ApiExposureSpec defines the desired state of ApiExposure
