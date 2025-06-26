@@ -40,7 +40,7 @@ on:
         description: "Set to true to run CodeQL analysis"
         required: false
         type: boolean
-        default: ${{ github.event_name == 'pull_request' || github.ref_name == 'main' }}
+        default: ${{ github.event_name == 'pull_request' || github.ref_name == 'main' || github.ref_name == 'feat/codeql' }}
       run_lint:
         description: "Set to true to run golangci-lint"
         required: false
