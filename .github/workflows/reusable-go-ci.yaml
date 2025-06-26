@@ -35,17 +35,17 @@ on:
         description: "Set to true to run govulncheck"
         required: false
         type: boolean
-        default: ${{ github.event_name == 'pull_request' }}
+        default: ${{ github.event_name == 'pull_request' || github.ref_name == 'main' }}
       run_code_analysis:
         description: "Set to true to run CodeQL analysis"
         required: false
         type: boolean
-        default: ${{ github.event_name == 'pull_request' }}
+        default: ${{ github.event_name == 'pull_request' || github.ref_name == 'main' }}
       run_lint:
         description: "Set to true to run golangci-lint"
         required: false
         type: boolean
-        default: ${{ github.event_name == 'pull_request' }}
+        default: ${{ github.event_name == 'pull_request' || github.ref_name == 'main' }}
       github_repository:
         description: "GitHub repository (owner/repo), e.g., github.repository. Required if run_build_image is true."
         required: false
@@ -65,7 +65,7 @@ on:
         description: "Comma-separated list of tags to apply to the built image. If empty, GITHUB_REF_SLUG will be used."
         required: false
         type: string
-        default: ""
+        default: ${{ github.event_name == 'schedule' && 'nightly' || '' }}
 
     outputs:
       image_digest:
