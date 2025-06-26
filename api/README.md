@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2024 Deutsche Telekom AG
+SPDX-FileCopyrightText: 2025 Deutsche Telekom AG
 
 SPDX-License-Identifier: CC0-1.0    
 -->
@@ -21,7 +21,7 @@ SPDX-License-Identifier: CC0-1.0
 </p>
 
 ## About
-This repository contains the implementation of the Api domain, which is responsible for managing the whole ifecycle of an API. 
+This repository contains the implementation of the Api domain, which is responsible for managing the whole lifecycle of an API. 
 
 The following diagram illustrates the architecture of the Api domain:
 <div align="center">
