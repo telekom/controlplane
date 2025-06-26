@@ -57,10 +57,10 @@ jobs:
               # If it's a valid semver (like v1.2.3 or 1.2.3)
               effective_version="${GITHUB_REF_SLUG}"
             else
-              # For branch names that aren't semver compliant, use 0.0.0-branchname format
-              # Replace any characters that aren't semver compatible with dashes
-              cleaned_ref=$(echo "${GITHUB_REF_SLUG}" | sed -E 's/[^a-zA-Z0-9\.\-]/-/g')
-              effective_version="0.0.0-${cleaned_ref}"
+              # For branch names that aren't semver compliant, use 0.0.0-commit_hash format
+              # Get the short commit hash to make the version unique
+              commit_hash=$(git rev-parse --short HEAD)
+              effective_version="0.0.0-${commit_hash}"
             fi
           fi
 
