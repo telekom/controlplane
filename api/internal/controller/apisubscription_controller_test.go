@@ -19,7 +19,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityapi "github.com/telekom/controlplane/identity/api/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -204,14 +203,11 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 	AfterAll(func() {
 		By("Deleting the Application")
 		err := k8sClient.Delete(ctx, application)
-		if !errors.IsNotFound(err) {
-			Expect(err).ToNot(HaveOccurred())
-		}
+		Expect(err).ToNot(HaveOccurred())
+
 		By("Cleaning up and deleting all resources")
 		err = k8sClient.Delete(ctx, api)
-		if !errors.IsNotFound(err) {
-			Expect(err).ToNot(HaveOccurred())
-		}
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Context("Creating and Updating", func() {
@@ -446,76 +442,51 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 			}, timeout, interval).Should(Succeed())
 		})
 	})
-	Context("oauth2 configuration in api subscription", func() {
 
-		It("should apply those configs to ConsumeRoute", func() {
-			By("Creating a New Application")
-			appName := "oauth2-app"
-			CreateApplication(appName)
+	Context("Gateway Features", Ordered, func() {
+		Context("oauth2 configuration to consumer route", func() {
+			var securityApiSubscription *apiapi.ApiSubscription
 
-			By("applying oauth2 security to the ApiSubscription")
-			securityApiSubscription := NewApiSubscription(apiBasePath, otherZoneName, appName)
-			securityApiSubscription.Spec.Security.Oauth2 = apiapi.Oauth2{
-				Scopes:       []string{"read", "write"},
-				TokenRequest: "body",
-				ClientId:     "custom-client-id",
-				ClientSecret: "******",
-				GrantType:    "client_credentials",
-			}
-			err := k8sClient.Create(ctx, securityApiSubscription)
-			Expect(err).ToNot(HaveOccurred())
+			BeforeEach(func() {
+				securityApiSubscription = NewApiSubscription(apiBasePath, otherZoneName, appName)
+				securityApiSubscription.ObjectMeta.Name = securityApiSubscription.Name + "-security"
+			})
 
-			By("Checking if the resource the approval is pending")
-			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(securityApiSubscription), securityApiSubscription)
-				g.Expect(err).ToNot(HaveOccurred())
-				By("Checking the conditions")
-				processingCondition := meta.FindStatusCondition(securityApiSubscription.Status.Conditions, condition.ConditionTypeProcessing)
-				g.Expect(processingCondition).ToNot(BeNil())
-				g.Expect(processingCondition.Status).To(Equal(metav1.ConditionTrue))
-				g.Expect(processingCondition.Reason).To(Equal("ApprovalPending"))
-			}, timeout, interval).Should(Succeed())
+			AfterEach(func() {
+				err := k8sClient.Delete(ctx, securityApiSubscription)
+				Expect(err).ToNot(HaveOccurred())
+			})
 
-			By("Progressing the Approval resources")
-			err = k8sClient.Get(ctx, client.ObjectKeyFromObject(securityApiSubscription), securityApiSubscription)
-			Expect(err).ToNot(HaveOccurred())
-			approvalReq := ProgressApprovalRequest(securityApiSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
-			ProgressApproval(securityApiSubscription, approvalapi.ApprovalStateGranted, approvalReq)
-			Expect(err).ToNot(HaveOccurred())
+			It("should apply those configs to ConsumeRoute", func() {
+				By("applying oauth2 security to the ApiSubscription")
+				securityApiSubscription.Spec.Security.Oauth2 = apiapi.Oauth2{
+					Scopes:       []string{"read", "write"},
+					TokenRequest: "body",
+					ClientId:     "custom-client-id",
+					ClientSecret: "******",
+					GrantType:    "client_credentials",
+				}
+				EventuallyCreateAndApproveApiSubscription(securityApiSubscription)
 
-			By("Checking if the resource is ready")
-			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(securityApiSubscription), securityApiSubscription)
-				g.Expect(err).ToNot(HaveOccurred())
-				By("Checking the conditions")
-				processingCondition := meta.FindStatusCondition(securityApiSubscription.Status.Conditions, condition.ConditionTypeReady)
-				g.Expect(processingCondition).ToNot(BeNil())
-				g.Expect(processingCondition.Status).To(Equal(metav1.ConditionTrue))
-				g.Expect(processingCondition.Reason).To(Equal("Provisioned"))
-			}, timeout, interval).Should(Succeed())
+				By("Checking if the resource has the expected state")
+				consumeRoute := &gatewayapi.ConsumeRoute{}
+				Eventually(func(g Gomega) {
+					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(securityApiSubscription), securityApiSubscription)
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(securityApiSubscription.Status.Route).ToNot(BeNil())
+					g.Expect(securityApiSubscription.Status.ConsumeRoute).ToNot(BeNil())
 
-			By("Checking if the resource has the expected state")
-			consumeRoute := &gatewayapi.ConsumeRoute{}
-			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(securityApiSubscription), securityApiSubscription)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(securityApiSubscription.Status.Route).ToNot(BeNil())
-				g.Expect(securityApiSubscription.Status.ConsumeRoute).ToNot(BeNil())
+					err = k8sClient.Get(ctx, securityApiSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(consumeRoute.Spec.OauthConfig.Scopes).To(Equal([]string{"read", "write"}))
+					g.Expect(consumeRoute.Spec.OauthConfig.TokenRequest).To(Equal("body"))
+					g.Expect(consumeRoute.Spec.OauthConfig.ClientId).To(Equal("custom-client-id"))
+					g.Expect(consumeRoute.Spec.OauthConfig.ClientSecret).To(Equal("******"))
+					g.Expect(consumeRoute.Spec.OauthConfig.GrantType).To(Equal("client_credentials"))
+					g.Expect(consumeRoute.Spec.Route).To(Equal(*securityApiSubscription.Status.Route))
 
-				err = k8sClient.Get(ctx, securityApiSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(consumeRoute.Spec.OauthConfig.Scopes).To(Equal([]string{"read", "write"}))
-				g.Expect(consumeRoute.Spec.OauthConfig.TokenRequest).To(Equal("body"))
-				g.Expect(consumeRoute.Spec.OauthConfig.ClientId).To(Equal("custom-client-id"))
-				g.Expect(consumeRoute.Spec.OauthConfig.ClientSecret).To(Equal("******"))
-				g.Expect(consumeRoute.Spec.OauthConfig.GrantType).To(Equal("client_credentials"))
-				g.Expect(consumeRoute.Spec.Route).To(Equal(*securityApiSubscription.Status.Route))
-
-			}, timeout, interval).Should(Succeed())
-
-			By("Deleting the Application")
-			err = k8sClient.Delete(ctx, application)
-			Expect(err).ToNot(HaveOccurred())
+				}, timeout, interval).Should(Succeed())
+			})
 		})
 	})
 })
@@ -675,3 +646,37 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 		})
 	})
 })
+
+func EventuallyCreateAndApproveApiSubscription(apiSubscription *apiapi.ApiSubscription) {
+	err := k8sClient.Create(ctx, apiSubscription)
+	Expect(err).ToNot(HaveOccurred())
+
+	By("Checking if the resource the approval is pending")
+	Eventually(func(g Gomega) {
+		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
+		g.Expect(err).ToNot(HaveOccurred())
+		By("Checking the conditions")
+		processingCondition := meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeProcessing)
+		g.Expect(processingCondition).ToNot(BeNil())
+		g.Expect(processingCondition.Status).To(Equal(metav1.ConditionTrue))
+		g.Expect(processingCondition.Reason).To(Equal("ApprovalPending"))
+	}, timeout, interval).Should(Succeed())
+
+	By("Progressing the Approval resources")
+	err = k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
+	Expect(err).ToNot(HaveOccurred())
+	approvalReq := ProgressApprovalRequest(apiSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
+	ProgressApproval(apiSubscription, approvalapi.ApprovalStateGranted, approvalReq)
+	Expect(err).ToNot(HaveOccurred())
+
+	By("Checking if the resource is ready")
+	Eventually(func(g Gomega) {
+		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
+		g.Expect(err).ToNot(HaveOccurred())
+		By("Checking the conditions")
+		processingCondition := meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeReady)
+		g.Expect(processingCondition).ToNot(BeNil())
+		g.Expect(processingCondition.Status).To(Equal(metav1.ConditionTrue))
+		g.Expect(processingCondition.Reason).To(Equal("Provisioned"))
+	}, timeout, interval).Should(Succeed())
+}
