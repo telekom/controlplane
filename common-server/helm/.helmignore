@@ -22,3 +22,4 @@
 *.tmproj
 .vscode/
 doc.yml
+*.license

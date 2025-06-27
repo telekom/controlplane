@@ -1,7 +1,3 @@
-# Copyright 2025 Deutsche Telekom IT GmbH
-#
-# SPDX-License-Identifier: Apache-2.0
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -41,11 +37,9 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
-          command:
-            - /server
           args:
             - --configfile
-            - {{ .Values.configFile | default "config/config.yaml"}} 
+            - {{ .Values.configFile | default "/etc/common-server/config.yaml"}} 
             - loglevel
             - {{ .Values.logLevel | default "info" }}
           livenessProbe:
@@ -64,7 +58,7 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
           - name: app-config
-            mountPath: /config
+            mountPath: /etc/common-server
             readOnly: true
           {{- if .Values.secretmanager.enabled }}
           - name: secretmgr-token
@@ -107,4 +101,3 @@ spec:
           configMap:
             name: secret-manager-trust-bundle
         {{- end }}
-

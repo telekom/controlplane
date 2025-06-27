@@ -10,8 +10,7 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: stable
 
-imagePullSecrets:
-  - name: eni-pull-mtr-devops-tardis-internal-secret
+imagePullSecrets: []
 
 nameOverride: ""
 fullnameOverride: ""
@@ -44,19 +43,18 @@ service:
 
 ingress:
   enabled: true
-  className: "triton-ingress"
   annotations:
     kubernetes.io/tls-acme: "true"
     nginx.ingress.kubernetes.io/backend-protocol: HTTP
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
   hosts:
-    - host: approvals-api.dev.dhei.telekom.de 
+    - host: <your-api-host> # TODO: Set your ingress host, e.g. my-api.example.com
       paths:
         - path: /
           pathType: ImplementationSpecific
   tls:
     - hosts:
-        - approvals-api.dev.dhei.telekom.de 
+        - <your-api-host> # TODO: Set your ingress TLS host, e.g. my-api.example.com
 
 metrics:
   enabled: true
@@ -67,17 +65,18 @@ secretmanager:
     enabled: true
 
 resources:
+  # Adjust as needed for your workload.
   limits:
-    cpu: 1000m
-    memory: 512Mi
-  requests:
-    cpu: 250m
+    cpu: 500m
     memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi
 
 autoscaling:
   enabled: false
   minReplicas: 1
-  maxReplicas: 100
+  maxReplicas: 10
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
@@ -90,43 +89,43 @@ logLevel: "info"
 config: 
   address: ":8080"
   basepath: "/api"
-  resources:
-    - id: approvals
-      group: approval.cp.ei.telekom.de
-      version: v1
-      resource: approvals
+  resources: [] # TODO: Define your resources here
+    # - group: approval.cp.ei.telekom.de
+    #   version: v1
+    #   resource: approvals
 
   openapi:
-    title: "Approvals API"
+    title: "Control Plane API"
+    description: "API for managing control plane resources"
     version: "v1"
-    description: "Approvals API"
     servers:
-      - url: "https://approvals-api.dev.dhei.telekom.de"
+      - url: "https://<your-api-host>" # TODO: Set your API server URL
         description: "Development"
 
-  predefined:
-    - ref: approvals
-      name: grants
-      filters:
-        - path: spec.state
-          op: ==
-          value: Pending
-        - path: spec.requester.properties.basePath
-          op: ==
-          value: $<basePath>
-      patches:
-        - path: spec.decider.name
-          op: replace
-          value: $<deciderName>
-        - path: spec.state
-          op: replace
-          value: Granted
+  predefined: [] # TODO: Define your predefined resources here
+
+    # - ref: approvals # This references the previously defined resource
+    #   name: grants
+    #   filters:
+    #     - path: spec.state
+    #       op: ==
+    #       value: Pending
+    #     - path: spec.requester.properties.basePath
+    #       op: ==
+    #       value: $<basePath>
+    #   patches:
+    #     - path: spec.decider.name
+    #       op: replace
+    #       value: $<deciderName>
+    #     - path: spec.state
+    #       op: replace
+    #       value: Granted
 
 rbac:
   rules:
     - apiGroups: ["apiextensions.k8s.io"]
       resources: ["customresourcedefinitions"]
       verbs: ["list"]
-    - apiGroups: ["approval.cp.ei.telekom.de"]
+    - apiGroups: ["*"] # TODO: Adjust API groups as needed
       resources: ["*"]
       verbs: ["*"]
