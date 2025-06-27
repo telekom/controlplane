@@ -370,9 +370,9 @@ var _ = Describe("Rover Controller", Ordered, func() {
 					{
 						Api: &roverv1.ApiSubscription{
 							BasePath: BasePath,
-							Security: &roverv1.Security{
-								Authentication: &roverv1.Authentication{
-									OAuth2: &roverv1.OAuth2{
+							Security: roverv1.Security{
+								Authentication: roverv1.Authentication{
+									OAuth2: roverv1.OAuth2{
 										Scopes: []string{"tardis:user:read"},
 									},
 								},

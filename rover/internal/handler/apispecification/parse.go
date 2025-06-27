@@ -61,7 +61,7 @@ func ParseSpecification(ctx context.Context, spec string) (*apiapi.Api, error) {
 		setExtensionValues(api, model.Model.Info.Extensions)
 
 		if model.Model.SecurityDefinitions != nil {
-			setSecurityValues(api, model.Model.SecurityDefinitions.Definitions)
+			setSecurityDefinitionsValues(api, model.Model.SecurityDefinitions.Definitions)
 		}
 
 		return api, nil
@@ -127,7 +127,7 @@ func setExtensionValues(api *apiapi.Api, extensionMap *orderedmap.Map[string, *y
 	}
 }
 
-func setSecurityValues(api *apiapi.Api, Definitions *orderedmap.Map[string, *v2.SecurityScheme]) {
+func setSecurityDefinitionsValues(api *apiapi.Api, Definitions *orderedmap.Map[string, *v2.SecurityScheme]) {
 	if Definitions.Len() == 0 {
 		return
 	}
