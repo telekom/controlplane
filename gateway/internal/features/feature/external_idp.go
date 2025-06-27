@@ -20,7 +20,6 @@ var _ features.Feature = &ExternalIDPFeature{}
 // defaultKey for provider (exposure) config.
 // Used as a fallback in Jumper if no consumer key is found
 const defaultKey = plugin.ConsumerId("default")
-const defaultTokenRequest = "body"
 
 // ExternalIDPFeature takes precedence over CustomScopesFeature
 type ExternalIDPFeature struct {
