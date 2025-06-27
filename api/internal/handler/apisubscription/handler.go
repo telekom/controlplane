@@ -202,6 +202,13 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		routeConsumer.Spec = gatewayapi.ConsumeRouteSpec{
 			Route:        *types.ObjectRefFromObject(route),
 			ConsumerName: application.Status.ClientId,
+			OauthConfig: gatewayapi.OauthConfig{
+				TokenRequest: apiSub.Spec.Security.Oauth2.TokenRequest,
+				GrantType:    apiSub.Spec.Security.Oauth2.GrantType,
+				ClientId:     apiSub.Spec.Security.Oauth2.ClientId,
+				ClientSecret: apiSub.Spec.Security.Oauth2.ClientSecret,
+				Scopes:       apiSub.Spec.Security.Oauth2.Scopes,
+			},
 		}
 
 		return nil
