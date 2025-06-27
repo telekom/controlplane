@@ -90,6 +90,14 @@ spec:
                       type: string
                     clientSecret:
                       type: string
+                    grantType:
+                      description: GrantType is the grant type for the external IDP
+                        authentication
+                      enum:
+                      - client_credentials
+                      - authorization_code
+                      - password
+                      type: string
                     host:
                       type: string
                     issuerUrl:
@@ -99,6 +107,23 @@ spec:
                     port:
                       type: integer
                     scheme:
+                      type: string
+                    scopes:
+                      description: Scopes for the external IDP authentication
+                      items:
+                        type: string
+                      type: array
+                    tokenEndpoint:
+                      description: |-
+                        ExternalIDP configuration
+                        TokenEndpoint is the URL to the token endpoint for external IDP authentication
+                      type: string
+                    tokenRequest:
+                      description: TokenRequest is the type of token request, "body"
+                        or "header"
+                      enum:
+                      - body
+                      - header
                       type: string
                   required:
                   - host

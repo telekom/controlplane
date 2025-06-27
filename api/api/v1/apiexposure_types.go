@@ -28,6 +28,10 @@ type ApiExposureSpec struct {
 	// +kubebuilder:default=Auto
 	Approval ApprovalStrategy `json:"approval"`
 	Zone     ctypes.ObjectRef `json:"zone"`
+
+	// TokenEndpoint is the URL to the token endpoint for external IDP authentication
+	TokenEndpoint string   `json:"tokenEndpoint,omitempty"`
+	Security      Security `json:"security,omitempty"`
 }
 
 type Upstream struct {

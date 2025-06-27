@@ -24,7 +24,20 @@ type Requestor struct {
 }
 
 type Security struct {
-	Oauth2Scopes []string `json:"oauth2Scopes,omitempty"`
+	Oauth2 Oauth2 `json:"oauth2,omitempty"`
+}
+
+type Oauth2 struct {
+	Scopes []string `json:"scopes,omitempty"`
+	// TokenRequest is the type of token request, "body" or "header"
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=body;header
+	TokenRequest string `json:"tokenRequest,omitempty"`
+	ClientId     string `json:"clientId,omitempty"`
+	ClientSecret string `json:"clientSecret,omitempty"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
+	GrantType string `json:"grantType,omitempty"`
 }
 
 // ApiSubscriptionStatus defines the observed state of ApiSubscription

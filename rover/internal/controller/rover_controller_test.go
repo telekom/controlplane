@@ -398,7 +398,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				}, apiSubscription)
 
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(apiSubscription.Spec.Security.Oauth2Scopes[0]).To(Equal("tardis:user:read"))
+				g.Expect(apiSubscription.Spec.Security.Oauth2.Scopes[0]).To(Equal("tardis:user:read"))
 
 			}, timeout, interval).Should(Succeed())
 

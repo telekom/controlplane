@@ -56,6 +56,37 @@ spec:
                 - Simple
                 - FourEyes
                 type: string
+              security:
+                properties:
+                  oauth2:
+                    properties:
+                      clientId:
+                        type: string
+                      clientSecret:
+                        type: string
+                      grantType:
+                        enum:
+                        - client_credentials
+                        - authorization_code
+                        - password
+                        type: string
+                      scopes:
+                        items:
+                          type: string
+                        type: array
+                      tokenRequest:
+                        description: TokenRequest is the type of token request, "body"
+                          or "header"
+                        enum:
+                        - body
+                        - header
+                        type: string
+                    type: object
+                type: object
+              tokenEndpoint:
+                description: TokenEndpoint is the URL to the token endpoint for external
+                  IDP authentication
+                type: string
               upstreams:
                 items:
                   properties:

@@ -120,7 +120,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		"basePath": apiSub.Spec.ApiBasePath,
 	}
 	if apiSub.Spec.Security != nil {
-		properties["scopes"] = apiSub.Spec.Security.Oauth2Scopes
+		properties["scopes"] = apiSub.Spec.Security.Oauth2.Scopes
 	}
 	err = requester.SetProperties(properties)
 	if err != nil {
@@ -202,6 +202,13 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		routeConsumer.Spec = gatewayapi.ConsumeRouteSpec{
 			Route:        *types.ObjectRefFromObject(route),
 			ConsumerName: application.Status.ClientId,
+			OauthConfig: gatewayapi.OauthConfig{
+				TokenRequest: apiSub.Spec.Security.Oauth2.TokenRequest,
+				GrantType:    apiSub.Spec.Security.Oauth2.GrantType,
+				ClientId:     apiSub.Spec.Security.Oauth2.ClientId,
+				ClientSecret: apiSub.Spec.Security.Oauth2.ClientSecret,
+				Scopes:       apiSub.Spec.Security.Oauth2.Scopes,
+			},
 		}
 
 		return nil

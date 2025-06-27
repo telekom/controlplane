@@ -20,6 +20,20 @@ type Upstream struct {
 	IssuerUrl    string `json:"issuerUrl,omitempty"`
 	ClientId     string `json:"clientId,omitempty"`
 	ClientSecret string `json:"clientSecret,omitempty"`
+
+	// ExternalIDP configuration
+	// TokenEndpoint is the URL to the token endpoint for external IDP authentication
+	TokenEndpoint string `json:"tokenEndpoint,omitempty"`
+	// TokenRequest is the type of token request, "body" or "header"
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=body;header
+	TokenRequest string `json:"tokenRequest,omitempty"`
+	// Scopes for the external IDP authentication
+	Scopes []string `json:"scopes,omitempty"`
+	// GrantType is the grant type for the external IDP authentication
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
+	GrantType string `json:"grantType,omitempty"`
 }
 
 func (u Upstream) GetScheme() string {
