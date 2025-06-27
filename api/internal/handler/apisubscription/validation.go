@@ -53,24 +53,11 @@ func ApiMustExist(ctx context.Context, obj types.Object) (bool, *apiapi.Api, err
 }
 
 // Scopes must exist in the Api specification
-func ScopesMustExist(ctx context.Context, apiSub *apiapi.ApiSubscription) (bool, error) {
+func ScopesMustExist(ctx context.Context, api *apiapi.Api, apiSub *apiapi.ApiSubscription) (bool, error) {
 	log := log.FromContext(ctx)
 
-	exists, api, err := ApiMustExist(ctx, apiSub)
-	if err != nil {
-		return false, err
-	}
-
-	if !exists {
-		log.Info("failed to get Api for ApiSubscription:", "apiSub", apiSub.Name)
-		return false, nil
-	}
-
 	if len(api.Spec.Security.Authentication.OAuth2.Scopes) == 0 {
-		log.Info("❌ No scopes defined in Api specification. ApiSubscription is blocked")
-		apiSub.SetCondition(condition.NewNotReadyCondition("NoScopesDefined", "No scopes defined in Api specification"))
-		apiSub.SetCondition(condition.NewBlockedCondition(
-			"No scopes defined in Api specification. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
+		log.Info("❌ ApiSpecification does not define any scopes. ApiSubscription is blocked")
 		return false, nil
 	}
 
@@ -78,11 +65,6 @@ func ScopesMustExist(ctx context.Context, apiSub *apiapi.ApiSubscription) (bool,
 	for _, scope := range apiSub.Spec.Security.Authentication.OAuth2.Scopes {
 		if !slices.Contains(api.Spec.Security.Authentication.OAuth2.Scopes, scope) {
 			log.Info("❌ Scope is not defined in Api specification. ApiSubscription is blocked", "scope", scope)
-
-			// If scope is not defined in the Api specification, set conditions and return
-			apiSub.SetCondition(condition.NewNotReadyCondition("ScopeNotDefined", "Scope is not defined in Api specification"))
-			apiSub.SetCondition(condition.NewBlockedCondition(
-				"Scope is not defined in Api specification. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
 
 			return false, nil
 		}

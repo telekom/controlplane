@@ -36,7 +36,8 @@ func CreateApplication(name string) *applicationapi.Application {
 			},
 		},
 		Spec: applicationapi.ApplicationSpec{
-			// TODO: Add fields here
+			Team:      "Hyperion",
+			TeamEmail: "hyperion@test.de",
 		},
 	}
 

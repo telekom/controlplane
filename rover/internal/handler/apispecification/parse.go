@@ -28,8 +28,8 @@ func ParseSpecification(ctx context.Context, spec string) (*apiapi.Api, error) {
 	api := &apiapi.Api{}
 	api.Spec = apiapi.ApiSpec{
 		Security: &apiapi.Security{
-			Authentication: &apiapi.Authentication{
-				OAuth2: &apiapi.OAuth2{
+			Authentication: apiapi.Authentication{
+				OAuth2: apiapi.OAuth2{
 					Scopes: []string{},
 				},
 			},

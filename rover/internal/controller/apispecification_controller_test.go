@@ -30,7 +30,7 @@ info:
   x-api-category: Test
   x-vendor: true
 servers:
-  - url: http://localhost:8080/eni/api/v1y
+  - url: http://localhost:8080/eni/api/v1
 components:
   securitySchemes:
     oAuth2:
