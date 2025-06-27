@@ -72,10 +72,23 @@ spec:
               security:
                 description: Security is the security configuration for the subscription
                 properties:
-                  oauth2Scopes:
-                    items:
-                      type: string
-                    type: array
+                  authentication:
+                    properties:
+                      basicAuth:
+                        properties:
+                          password:
+                            type: string
+                          username:
+                            type: string
+                        type: object
+                      oauth2:
+                        properties:
+                          oauth2Scopes:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                    type: object
                 type: object
               sourceOrganization:
                 type: string

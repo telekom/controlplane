@@ -58,6 +58,26 @@ spec:
                           description: BasePath is the base path of the API
                           pattern: ^/.*$
                           type: string
+                        security:
+                          properties:
+                            authentication:
+                              properties:
+                                basicAuth:
+                                  properties:
+                                    password:
+                                      type: string
+                                    username:
+                                      type: string
+                                  type: object
+                                oauth2:
+                                  properties:
+                                    oauth2Scopes:
+                                      items:
+                                        type: string
+                                      type: array
+                                  type: object
+                              type: object
+                          type: object
                         upstream:
                           format: uri
                           type: string
@@ -92,15 +112,31 @@ spec:
                           description: BasePath is the base path of the API
                           pattern: ^/.*$
                           type: string
-                        oauth2Scopes:
-                          items:
-                            type: string
-                          type: array
                         organization:
                           description: |-
                             Organization is the organization that owns the API
                             Defaults to local organization
                           type: string
+                        security:
+                          properties:
+                            authentication:
+                              properties:
+                                basicAuth:
+                                  properties:
+                                    password:
+                                      type: string
+                                    username:
+                                      type: string
+                                  type: object
+                                oauth2:
+                                  properties:
+                                    oauth2Scopes:
+                                      items:
+                                        type: string
+                                      type: array
+                                  type: object
+                              type: object
+                          type: object
                       required:
                       - basePath
                       type: object

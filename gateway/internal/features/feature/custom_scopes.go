@@ -6,6 +6,7 @@ package feature
 
 import (
 	"context"
+	"strings"
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
@@ -44,7 +45,7 @@ func (f *CustomScopesFeature) Apply(ctx context.Context, builder features.Featur
 
 	for _, consumer := range builder.GetAllowedConsumers() { // TODO: implement
 		jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = plugin.OauthCredentials{
-			Scopes: "custom_scope",
+			Scopes: strings.Join(consumer.Spec.Oauth2Scopes, " "),
 		}
 	}
 

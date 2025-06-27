@@ -6,6 +6,7 @@ package apisubscription
 
 import (
 	"context"
+	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -109,19 +110,34 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		return nil
 	}
 
+	// Scopes
+	// check if scopes exist and scopes are subset from api
+	if apiSub.Spec.Security.Authentication.OAuth2.Scopes != nil {
+		scopesExist, err := ScopesMustExist(ctx, api, apiSub)
+		if err != nil {
+			return errors.Wrapf(err, "failed to check scopes for ApiSubscription: %s in namespace: %s",
+				apiSub.Name, apiSub.Namespace)
+		}
+		if !scopesExist {
+			log.Info("❌ One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification")
+			apiSub.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification"))
+			apiSub.SetCondition(condition.NewBlockedCondition("One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
+			return nil
+		}
+	}
+
 	// Approval
 
-	requester := &approvalapi.Requester{ // TODO: get from somewhere (Team?)
-		Name:   "Ron",
-		Email:  "ron.gummich@telekom.de",
-		Reason: "I need access to this API!!",
+	requester := &approvalapi.Requester{
+		Name:   application.Spec.Team,
+		Email:  application.Spec.TeamEmail,
+		Reason: fmt.Sprintf("Team %s requested access to your API %s from zone %s", application.Spec.Team, api.Name, apiSub.Spec.Zone.Name),
 	}
 	properties := map[string]any{
 		"basePath": apiSub.Spec.ApiBasePath,
+		"scopes":   apiSub.Spec.Security.Authentication.OAuth2.Scopes,
 	}
-	if apiSub.Spec.Security != nil {
-		properties["scopes"] = apiSub.Spec.Security.Oauth2Scopes
-	}
+
 	err = requester.SetProperties(properties)
 	if err != nil {
 		return errors.Wrapf(err, "unable to approvalRequest properties for apiSubscription: %s in namespace: %s",
@@ -202,6 +218,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		routeConsumer.Spec = gatewayapi.ConsumeRouteSpec{
 			Route:        *types.ObjectRefFromObject(route),
 			ConsumerName: application.Status.ClientId,
+			Oauth2Scopes: apiSub.Spec.Security.Authentication.OAuth2.Scopes,
 		}
 
 		return nil

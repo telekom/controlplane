@@ -44,6 +44,10 @@ spec:
             properties:
               consumerName:
                 type: string
+              oauth2Scopes:
+                items:
+                  type: string
+                type: array
               route:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object
