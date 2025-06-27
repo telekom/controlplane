@@ -157,7 +157,9 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				route := &gatewayapi.Route{}
 				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), route)
 				g.Expect(err).ToNot(HaveOccurred())
+
 			}, timeout, interval).Should(Succeed())
+
 		})
 	})
 
@@ -265,28 +267,16 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				route := &gatewayapi.Route{}
 				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), route)
 				g.Expect(err).ToNot(HaveOccurred())
-				checkUpstream(g, route, &gatewayapi.Upstream{
-					ClientId:      "team",
-					ClientSecret:  "******",
-					TokenEndpoint: "example.com/token",
-					TokenRequest:  "header",
-					GrantType:     "client_credentials",
-					Scopes:        []string{"team:scope", "api:scope"},
-				})
-
+				g.Expect(route.Spec.Upstreams).To(HaveLen(1))
+				g.Expect(route.Spec.Upstreams[0].ClientId).To(Equal("team"))
+				g.Expect(route.Spec.Upstreams[0].ClientSecret).To(Equal("******"))
+				g.Expect(route.Spec.Upstreams[0].TokenEndpoint).To(Equal("example.com/token"))
+				g.Expect(route.Spec.Upstreams[0].TokenRequest).To(Equal("header"))
+				g.Expect(route.Spec.Upstreams[0].GrantType).To(Equal("client_credentials"))
+				g.Expect(route.Spec.Upstreams[0].Scopes).To(Equal([]string{"team:scope", "api:scope"}))
 			}, timeout, interval).Should(Succeed())
 		})
 
 	})
 
 })
-
-func checkUpstream(g Gomega, route *gatewayapi.Route, expectedUpstreamObj *gatewayapi.Upstream) {
-	g.Expect(route.Spec.Upstreams).To(HaveLen(1))
-	g.Expect(route.Spec.Upstreams[0].ClientId).To(Equal(expectedUpstreamObj.ClientId))
-	g.Expect(route.Spec.Upstreams[0].ClientSecret).To(Equal(expectedUpstreamObj.ClientSecret))
-	g.Expect(route.Spec.Upstreams[0].TokenEndpoint).To(Equal(expectedUpstreamObj.TokenEndpoint))
-	g.Expect(route.Spec.Upstreams[0].TokenRequest).To(Equal(expectedUpstreamObj.TokenRequest))
-	g.Expect(route.Spec.Upstreams[0].GrantType).To(Equal(expectedUpstreamObj.GrantType))
-	g.Expect(route.Spec.Upstreams[0].Scopes).To(Equal(expectedUpstreamObj.Scopes))
-}
