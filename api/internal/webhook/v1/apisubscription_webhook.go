@@ -57,8 +57,6 @@ func (d *ApiSubscriptionCustomDefaulter) Default(_ context.Context, obj runtime.
 	}
 	apisubscriptionlog.Info("Defaulting for ApiSubscription", "name", apisubscription.GetName())
 
-	// TODO(user): fill in your defaulting logic.
-
 	return nil
 }
 
@@ -118,19 +116,15 @@ func getEnvironment(object client.Object) (string, bool) {
 	e, ok := labels[config.EnvironmentLabelKey]
 	return e, ok
 }
-
 func validateCreateOrUpdate(ctx context.Context, c client.Client, sub apiv1.ApiSubscription) (admission.Warnings, error) {
 	apisubscriptionlog.Info("Validate for ApiSubscription upon creation", "name", sub.GetName())
-	apisubscriptionlog.Info("Client is ", "client", c)
 
 	env, found := getEnvironment(&sub)
 	if !found {
 		return nil, apierrors.NewBadRequest("Environment validation failed - label is not present on subscription")
 	}
 
-	apisubscriptionlog.Info("Environment is ", "env", env)
 	scopedClient := cclient.NewScopedClient(c, env)
-	apisubscriptionlog.Info("Scoped client is ", "scoped client", scopedClient)
 
 	apiExposureList := &apiv1.ApiExposureList{}
 	err := scopedClient.List(ctx, apiExposureList,
