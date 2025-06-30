@@ -35,17 +35,17 @@ on:
         description: "Set to true to run govulncheck"
         required: false
         type: boolean
-        default: ${{ github.event_name == 'pull_request' }}
+        default: ${{ github.event_name == 'pull_request' || github.ref_name == 'main' }}
       run_code_analysis:
         description: "Set to true to run CodeQL analysis"
         required: false
         type: boolean
-        default: ${{ github.event_name == 'pull_request' }}
+        default: ${{ github.event_name == 'pull_request' || github.ref_name == 'main' }}
       run_lint:
         description: "Set to true to run golangci-lint"
         required: false
         type: boolean
-        default: ${{ github.event_name == 'pull_request' }}
+        default: ${{ github.event_name == 'pull_request' || github.ref_name == 'main' }}
       github_repository:
         description: "GitHub repository (owner/repo), e.g., github.repository. Required if run_build_image is true."
         required: false
@@ -65,7 +65,7 @@ on:
         description: "Comma-separated list of tags to apply to the built image. If empty, GITHUB_REF_SLUG will be used."
         required: false
         type: string
-        default: ""
+        default: ${{ github.event_name == 'schedule' && 'nightly' || '' }}
 
     outputs:
       image_digest:
@@ -79,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # pin@v2.7.0
+        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -124,7 +124,7 @@ jobs:
       test_reports_artifact_id: ${{ steps.upload_test_reports_artifact_step.outputs.artifact-id }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # pin@v2.7.0
+        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -194,7 +194,7 @@ jobs:
         with:
           report_paths: "${{ inputs.module }}/junit.xml"
           check_name: "Test Report (${{ inputs.module }})"
-          comment: true
+          comment: false
           include_passed: true
 
   source_scan:
@@ -203,7 +203,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # pin@v2.7.0
+        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -235,7 +235,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # pin@v2.7.0
+        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # pin@v2.7.0
         with:
           fetch-depth: 0 # CodeQL requires full history
 
@@ -256,7 +256,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@ff0a06e83cb2de871e5a09832bc6a81e7276941f # pinv3.28.18
+        uses: github/codeql-action/init@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # pinv3.29.0
         with:
           languages: go
           build-mode: manual # Set to manual as we provide a build step
@@ -266,18 +266,18 @@ jobs:
         working-directory: ${{ inputs.module }}
         run: |
           echo "Attempting to build ${{ inputs.module }} for CodeQL analysis..."
-          if [ -f Makefile ] && grep -q -E "^build[:[:space:]]" Makefile; then
-            echo "Found Makefile with build target. Running make build..."
-            make build
-          elif [ -f go.mod ]; then
+          if [ -f go.mod ]; then
             echo "Found go.mod. Running go build ./..."
             go build ./...
+          elif [ -f Makefile ] && grep -q -E "^build[:[:space:]]" Makefile; then
+            echo "Found Makefile with build target. Running make build..."
+            make build
           else
             echo "WARNING: No Makefile with a 'build' target or go.mod found in ${{ inputs.module }}. CodeQL may not analyze effectively."
           fi
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@ff0a06e83cb2de871e5a09832bc6a81e7276941f # pinv3.28.18
+        uses: github/codeql-action/analyze@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # pinv3.29.0
         with:
           category: "/language:go"
 
@@ -290,7 +290,7 @@ jobs:
       image_digest: ${{ steps.build_image_ko_step.outputs.digest }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # pin@v2.7.0
+        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -350,7 +350,7 @@ jobs:
     steps:
       # No checkout or Go setup needed if only running Trivy on a remote image
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.31.0
         with:
           image-ref: ${{ inputs.container_registry }}/${{ inputs.github_repository }}/${{ inputs.module }}@${{ needs.build.outputs.image_digest }}
           exit-code: "1"

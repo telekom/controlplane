@@ -151,7 +151,7 @@ func (s *secretManagerAPI) Get(ctx context.Context, secretID string) (value stri
 		if err := json.Unmarshal(res.Body, &err); err != nil {
 			return "", err
 		}
-		return "", fmt.Errorf("Error %s: %s", err.Type, err.Detail)
+		return "", fmt.Errorf("error %s: %s", err.Type, err.Detail)
 	}
 }
 func (s *secretManagerAPI) Set(ctx context.Context, secretID string, secretValue string) (newID string, err error) {
@@ -174,7 +174,7 @@ func (s *secretManagerAPI) Set(ctx context.Context, secretID string, secretValue
 		if err := json.Unmarshal(res.Body, &err); err != nil {
 			return "", err
 		}
-		return "", fmt.Errorf("Error %s: %s", err.Type, err.Detail)
+		return "", fmt.Errorf("error %s: %s", err.Type, err.Detail)
 	}
 }
 
@@ -199,7 +199,7 @@ func (s *secretManagerAPI) UpsertEnvironment(ctx context.Context, envID string) 
 		if err := json.Unmarshal(res.Body, &err); err != nil {
 			return nil, err
 		}
-		return nil, fmt.Errorf("Error %s: %s", err.Type, err.Detail)
+		return nil, fmt.Errorf("error %s: %s", err.Type, err.Detail)
 	}
 }
 
@@ -220,7 +220,7 @@ func (s *secretManagerAPI) UpsertTeam(ctx context.Context, envID, teamID string)
 		if err := json.Unmarshal(res.Body, &err); err != nil {
 			return nil, err
 		}
-		return nil, fmt.Errorf("Error %s: %s", err.Type, err.Detail)
+		return nil, fmt.Errorf("error %s: %s", err.Type, err.Detail)
 	}
 }
 
@@ -241,7 +241,7 @@ func (s *secretManagerAPI) UpsertApplication(ctx context.Context, envID, teamID,
 		if err := json.Unmarshal(res.Body, &err); err != nil {
 			return nil, err
 		}
-		return nil, fmt.Errorf("Error %s: %s", err.Type, err.Detail)
+		return nil, fmt.Errorf("error %s: %s", err.Type, err.Detail)
 	}
 }
 
@@ -262,7 +262,7 @@ func (s *secretManagerAPI) DeleteEnvironment(ctx context.Context, envID string) 
 		if err := json.Unmarshal(res.Body, &err); err != nil {
 			return err
 		}
-		return fmt.Errorf("Error %s: %s", err.Type, err.Detail)
+		return fmt.Errorf("error %s: %s", err.Type, err.Detail)
 	}
 }
 
@@ -283,7 +283,7 @@ func (s *secretManagerAPI) DeleteTeam(ctx context.Context, envID, teamID string)
 		if err := json.Unmarshal(res.Body, &err); err != nil {
 			return err
 		}
-		return fmt.Errorf("Error %s: %s", err.Type, err.Detail)
+		return fmt.Errorf("error %s: %s", err.Type, err.Detail)
 	}
 }
 
@@ -304,7 +304,7 @@ func (s *secretManagerAPI) DeleteApplication(ctx context.Context, envID, teamID,
 		if err := json.Unmarshal(res.Body, &err); err != nil {
 			return err
 		}
-		return fmt.Errorf("Error %s: %s", err.Type, err.Detail)
+		return fmt.Errorf("error %s: %s", err.Type, err.Detail)
 	}
 }
 
