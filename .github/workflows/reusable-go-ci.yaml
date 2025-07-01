@@ -256,7 +256,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # pinv3.29.0
+        uses: github/codeql-action/init@39edc492dbe16b1465b0cafca41432d857bdb31a # pinv3.29.1
         with:
           languages: go
           build-mode: manual # Set to manual as we provide a build step
@@ -266,18 +266,18 @@ jobs:
         working-directory: ${{ inputs.module }}
         run: |
           echo "Attempting to build ${{ inputs.module }} for CodeQL analysis..."
-          if [ -f Makefile ] && grep -q -E "^build[:[:space:]]" Makefile; then
-            echo "Found Makefile with build target. Running make build..."
-            make build
-          elif [ -f go.mod ]; then
+          if [ -f go.mod ]; then
             echo "Found go.mod. Running go build ./..."
             go build ./...
+          elif [ -f Makefile ] && grep -q -E "^build[:[:space:]]" Makefile; then
+            echo "Found Makefile with build target. Running make build..."
+            make build
           else
             echo "WARNING: No Makefile with a 'build' target or go.mod found in ${{ inputs.module }}. CodeQL may not analyze effectively."
           fi
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # pinv3.29.0
+        uses: github/codeql-action/analyze@39edc492dbe16b1465b0cafca41432d857bdb31a # pinv3.29.1
         with:
           category: "/language:go"
 
