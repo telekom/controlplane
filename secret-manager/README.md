@@ -63,7 +63,7 @@ This backend uses [Kubernetes Secrets](https://kubernetes.io/docs/concepts/confi
 It will therefore work with any Kubernetes cluster. 
 
 The **upside** of this backend is that it is easy to set up and does not require any additional components. It also enables fast development and testing cycles.
-The **downside** of this backend is that the secrets are stored in Kubernetes and therefore visible to anyone with access to the Kubernetes cluster.
+The **downside** of this backend is that the secrets are stored in Kubernetes and are therefore visible to anyone with access to the `core.v1/secrets` resource in the cluster. Using RBAC, you can restrict this permission for users as needed.
 
 For more information about the Kubernetes implementation, see the [Kubernetes Backend](./pkg/backend/kubernetes/README.md) documentation.
 
@@ -71,6 +71,7 @@ For more information about the Kubernetes implementation, see the [Kubernetes Ba
 
 This backend uses [Conjur](https://www.conjur.org/) to store secrets. 
 It is a more secure option than the Kubernetes backend, as it provides more fine-grained access control and auditing capabilities.
+To further tighten the security, we recommend using [JWTs](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#openid-connect-tokens) signed by the cluster.
 
 For more information about the Conjur implementation, see the [Conjur Backend](./pkg/backend/conjur/README.md) documentation.
 
@@ -85,7 +86,7 @@ We have implemented a simple access control mechanism that allows you to define 
 * `onboarding_write`: Allows access to `v1/onboarding` endpoints. This is used to onboard new teams, groups and environments.
   * For more information about teams/groups and environments, see [Organization](../organization/README.md) and [Admin](../admin/README.md) domains, respectively.
 
-For more details on how to configure, see the [Server Configuration](#server-configuration) section.
+For more details on how to configure, see the [Server](#server) section.
 
 ### Network Policies
 
@@ -100,7 +101,7 @@ See the [Deployment Integration](#deployment-integration) section for more infor
 The following section describes how to set up the SM server.
 
 #### Configuration
-An example configuration can be found [./config/default/config.yaml](./config/default/config.yaml).
+An example configuration can be found in the following directory [./config/default](./config/default).
 
 ```yaml
 backend:
@@ -151,7 +152,7 @@ However, we also provide a basic Go implementation that can be used to **easily*
 Please take a look at that [api/README.md](./api/README.md) for more information on how to use it. 
 
 
-Example taken from the [Identity Domain](../identity):
+Example taken from the [Identity Domain: identity/internal/handler/client/handler.go](../identity/internal/handler/client/handler.go):
 
 ```go
 package client
