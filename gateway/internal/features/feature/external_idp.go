@@ -78,7 +78,6 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	if providerOauth.Scopes == "" && len(upstream.Scopes) > 0 {
 		providerOauth.Scopes = strings.Join(upstream.Scopes, " ")
 	}
-	providerOauth.Scopes = strings.Join(upstream.Scopes, " ")
 	providerOauth.ClientId = upstream.ClientId
 	providerOauth.ClientSecret = providerSecret
 	providerOauth.TokenRequest = upstream.TokenRequest
