@@ -27,6 +27,14 @@ configMapGenerator:
       disableNameSuffixHash: true
     literals: []
 
+patches:
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
+
 images:
   - name: ghcr.io/telekom/controlplane/approval
     newName: ghcr.io/telekom/controlplane/approval
@@ -47,8 +55,8 @@ images:
     newName: ghcr.io/telekom/controlplane/application
     newTag: latest
   - name: ghcr.io/telekom/controlplane/api
-    newName: ghcr.io/telekom/controlplane/api
-    newTag: latest
+    newName: ko.local
+    newTag: testing
   - name: ghcr.io/telekom/controlplane/organization
     newName: ghcr.io/telekom/controlplane/organization
     newTag: latest
