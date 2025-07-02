@@ -14,13 +14,22 @@ spec:
     kind: Rover
     listKind: RoverList
     plural: rovers
+    shortNames:
+    - rvr
     singular: rover
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - description: Zone the Rover belongs to
+      jsonPath: .spec.zone
+      name: Zone
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
-        description: Rover is the Schema for the rovers API
+        description: |-
+          Rover is the Schema for the rovers API
+          Rover resources define API exposures and subscriptions for applications
         properties:
           apiVersion:
             description: |-
@@ -40,49 +49,351 @@ spec:
           metadata:
             type: object
           spec:
-            description: RoverSpec defines the desired state of Rover
+            description: Spec defines the desired state of the Rover resource
             properties:
               exposures:
+                description: Exposures is a list of APIs and Events that this Rover
+                  exposes to consumers
                 items:
+                  description: Exposure defines a service that is exposed by this
+                    Rover
                   properties:
                     api:
+                      description: Api defines an API-based service exposure configuration
                       properties:
                         approval:
-                          default: Auto
-                          enum:
-                          - Auto
-                          - Simple
-                          - FourEyes
-                          type: string
+                          description: Approval defines the approval workflow required
+                            for this API exposure
+                          properties:
+                            strategy:
+                              default: Auto
+                              description: Strategy defines the approval process required
+                                for this API
+                              enum:
+                              - Auto
+                              - Simple
+                              - FourEyes
+                              type: string
+                            trustedTeams:
+                              description: TrustedTeams identifies teams that are
+                                trusted for approving this API
+                              items:
+                                description: TrustedTeam identifies a team that is
+                                  trusted for approvals
+                                properties:
+                                  group:
+                                    description: Group identifies the organizational
+                                      group for this trusted team
+                                    minLength: 1
+                                    type: string
+                                  team:
+                                    description: Team identifies the specific team
+                                      within the group
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - group
+                                - team
+                                type: object
+                              type: array
+                          required:
+                          - strategy
+                          type: object
                         basePath:
-                          description: BasePath is the base path of the API
+                          description: BasePath is the base path of the API (must
+                            start with /)
                           pattern: ^/.*$
                           type: string
                         security:
+                          description: Security defines optional security configuration
+                            for this API
                           properties:
-                            authentication:
+                            h2m:
+                              description: H2M defines human-to-machine authentication
+                                configuration
+                              type: object
+                            m2m:
+                              description: M2M defines machine-to-machine authentication
+                                configuration
                               properties:
-                                basicAuth:
+                                basic:
+                                  description: Basic defines basic authentication
+                                    configuration
                                   properties:
                                     password:
+                                      description: Password for basic authentication
+                                      minLength: 1
                                       type: string
                                     username:
+                                      description: Username for basic authentication
+                                      minLength: 1
                                       type: string
+                                  required:
+                                  - password
+                                  - username
                                   type: object
-                                oauth2:
+                                externalIDP:
+                                  description: ExternalIDP defines external identity
+                                    provider configuration
                                   properties:
-                                    oauth2Scopes:
+                                    basic:
+                                      description: Basic defines basic auth credentials
+                                        for the OAuth2 token request
+                                      properties:
+                                        password:
+                                          description: Password for basic authentication
+                                          minLength: 1
+                                          type: string
+                                        username:
+                                          description: Username for basic authentication
+                                          minLength: 1
+                                          type: string
+                                      required:
+                                      - password
+                                      - username
+                                      type: object
+                                    client:
+                                      description: Client defines client credentials
+                                        for the OAuth2 token request
+                                      properties:
+                                        clientId:
+                                          description: ClientId identifies the client
+                                            for OAuth2 client credentials flow
+                                          minLength: 1
+                                          type: string
+                                        clientSecret:
+                                          description: ClientSecret is the secret
+                                            associated with the client ID
+                                          minLength: 1
+                                          type: string
+                                        scopes:
+                                          description: Scopes defines the OAuth2 scopes
+                                            to request in the token
+                                          items:
+                                            type: string
+                                          type: array
+                                      required:
+                                      - clientId
+                                      - clientSecret
+                                      type: object
+                                    tokenEndpoint:
+                                      description: TokenEndpoint is the URL for the
+                                        OAuth2 token endpoint
+                                      format: uri
+                                      type: string
+                                  required:
+                                  - tokenEndpoint
+                                  type: object
+                                  x-kubernetes-validations:
+                                  - message: Only one of basic or client credentials
+                                      can be provided (XOR relationship)
+                                    rule: self == null || (self.basic == null && self.client
+                                      != null) || (self.basic != null && self.client
+                                      == null)
+                                scopes:
+                                  description: Scopes defines additional OAuth2 scopes
+                                    that are added to the LMS token
+                                  items:
+                                    type: string
+                                  type: array
+                              type: object
+                              x-kubernetes-validations:
+                              - message: Only one of externalIDP or basic authentication
+                                  can be provided (XOR relationship)
+                                rule: self == null || (self.externalIDP == null &&
+                                  self.basic != null) || (self.externalIDP != null
+                                  && self.basic == null)
+                          type: object
+                          x-kubernetes-validations:
+                          - message: Only one of m2m or h2m authentication can be
+                              provided (XOR relationship)
+                            rule: self == null || (self.m2m == null && self.h2m !=
+                              null) || (self.m2m != null && self.h2m == null)
+                        traffic:
+                          description: Traffic defines optional traffic management
+                            configuration for this API
+                          properties:
+                            failover:
+                              description: Failover defines disaster recovery configuration
+                                for this API
+                              properties:
+                                zones:
+                                  description: Zones is a list of zone names to use
+                                    for failover if the primary zone is unavailable
+                                  items:
+                                    type: string
+                                  minItems: 1
+                                  type: array
+                              type: object
+                            loadBalancing:
+                              description: LoadBalancing defines how traffic is distributed
+                                among multiple upstream servers
+                              properties:
+                                strategy:
+                                  description: Strategy defines the algorithm used
+                                    for distributing traffic (round-robin, least-connections,
+                                    ip-hash)
+                                  enum:
+                                  - round-robin
+                                  - least-connections
+                                  - ip-hash
+                                  type: string
+                              type: object
+                            rateLimit:
+                              description: RateLimit defines request rate limiting
+                                for this API
+                              properties:
+                                consumers:
+                                  description: Consumers defines rate limits applied
+                                    to API consumers (clients)
+                                  properties:
+                                    default:
+                                      description: Default defines the rate limit
+                                        applied to all consumers not specifically
+                                        overridden
+                                      properties:
+                                        hour:
+                                          description: Hour defines the maximum number
+                                            of requests allowed per hour
+                                          minimum: 0
+                                          type: integer
+                                        minute:
+                                          description: Minute defines the maximum
+                                            number of requests allowed per minute
+                                          minimum: 0
+                                          type: integer
+                                        second:
+                                          description: Second defines the maximum
+                                            number of requests allowed per second
+                                          minimum: 0
+                                          type: integer
+                                      type: object
+                                    overrides:
+                                      additionalProperties:
+                                        description: RateLimitConfig defines rate
+                                          limits for different time windows
+                                        properties:
+                                          hour:
+                                            description: Hour defines the maximum
+                                              number of requests allowed per hour
+                                            minimum: 0
+                                            type: integer
+                                          minute:
+                                            description: Minute defines the maximum
+                                              number of requests allowed per minute
+                                            minimum: 0
+                                            type: integer
+                                          second:
+                                            description: Second defines the maximum
+                                              number of requests allowed per second
+                                            minimum: 0
+                                            type: integer
+                                        type: object
+                                      description: Overrides defines consumer-specific
+                                        rate limits, keyed by consumer identifier
+                                      type: object
+                                  type: object
+                                provider:
+                                  description: Provider defines rate limits applied
+                                    by the API provider (owner)
+                                  properties:
+                                    hour:
+                                      description: Hour defines the maximum number
+                                        of requests allowed per hour
+                                      minimum: 0
+                                      type: integer
+                                    minute:
+                                      description: Minute defines the maximum number
+                                        of requests allowed per minute
+                                      minimum: 0
+                                      type: integer
+                                    second:
+                                      description: Second defines the maximum number
+                                        of requests allowed per second
+                                      minimum: 0
+                                      type: integer
+                                  type: object
+                              type: object
+                          type: object
+                        transformation:
+                          description: Transformation defines optional request/response
+                            transformations for this API
+                          properties:
+                            request:
+                              description: Request defines transformations applied
+                                to incoming API requests
+                              properties:
+                                headers:
+                                  description: Headers defines HTTP header modifications
+                                    for requests
+                                  properties:
+                                    add:
+                                      description: Add is a list of HTTP headers to
+                                        add to the request/response
                                       items:
                                         type: string
+                                      minItems: 1
+                                      type: array
+                                    remove:
+                                      description: Remove is a list of HTTP header
+                                        names to remove
+                                      items:
+                                        type: string
+                                      minItems: 1
+                                      type: array
+                                  type: object
+                              type: object
+                            response:
+                              description: Response defines transformations applied
+                                to outgoing API responses
+                              properties:
+                                headers:
+                                  description: Headers defines HTTP header modifications
+                                    for requests
+                                  properties:
+                                    add:
+                                      description: Add is a list of HTTP headers to
+                                        add to the request/response
+                                      items:
+                                        type: string
+                                      minItems: 1
+                                      type: array
+                                    remove:
+                                      description: Remove is a list of HTTP header
+                                        names to remove
+                                      items:
+                                        type: string
+                                      minItems: 1
                                       type: array
                                   type: object
                               type: object
                           type: object
-                        upstream:
-                          format: uri
-                          type: string
+                        upstreams:
+                          description: Upstreams defines the backend service endpoints
+                            for this API
+                          items:
+                            description: Upstream defines a backend service endpoint
+                              for an API
+                            properties:
+                              url:
+                                description: URL is the endpoint URL for the backend
+                                  service
+                                format: uri
+                                type: string
+                              weight:
+                                description: Weight defines the load balancing weight
+                                  for this upstream (when multiple upstreams)
+                                minimum: 0
+                                type: integer
+                            required:
+                            - url
+                            type: object
+                          minItems: 1
+                          type: array
                         visibility:
                           default: Enterprise
+                          description: Visibility defines the access scope for this
+                            API
                           enum:
                           - World
                           - Zone
@@ -91,73 +402,188 @@ spec:
                       required:
                       - approval
                       - basePath
-                      - upstream
+                      - upstreams
                       - visibility
                       type: object
                     event:
+                      description: Event defines an Event-based service exposure configuration
                       properties:
                         eventType:
+                          description: EventType identifies the type of event that
+                            is published
+                          minLength: 1
                           type: string
                       required:
                       - eventType
                       type: object
                   type: object
+                  x-kubernetes-validations:
+                  - message: At least one of api or event must be specified
+                    rule: self == null || self.api != null || self.event != null
+                  - message: Only one of api or event can be specified (XOR relationship)
+                    rule: self == null || (self.api == null && self.event != null)
+                      || (self.api != null && self.event == null)
                 type: array
               subscriptions:
+                description: Subscriptions is a list of APIs and Events that this
+                  Rover consumes from providers
                 items:
+                  description: Subscription defines a service that this Rover consumes
                   properties:
                     api:
+                      description: Api defines an API-based service subscription configuration
                       properties:
                         basePath:
-                          description: BasePath is the base path of the API
+                          description: BasePath is the base path of the API to consume
+                            (must start with /)
                           pattern: ^/.*$
                           type: string
                         organization:
                           description: |-
                             Organization is the organization that owns the API
-                            Defaults to local organization
+                            Defaults to local organization if not specified
                           type: string
                         security:
+                          description: Security defines the security configuration
+                            for the Rover
                           properties:
-                            authentication:
+                            h2m:
+                              description: H2M defines human-to-machine authentication
+                                configuration
+                              type: object
+                            m2m:
+                              description: M2M defines machine-to-machine authentication
+                                configuration
                               properties:
-                                basicAuth:
+                                basic:
+                                  description: Basic defines basic authentication
+                                    configuration
                                   properties:
                                     password:
+                                      description: Password for basic authentication
+                                      minLength: 1
                                       type: string
                                     username:
+                                      description: Username for basic authentication
+                                      minLength: 1
                                       type: string
+                                  required:
+                                  - password
+                                  - username
                                   type: object
-                                oauth2:
+                                externalIDP:
+                                  description: ExternalIDP defines external identity
+                                    provider configuration
                                   properties:
-                                    oauth2Scopes:
-                                      items:
-                                        type: string
-                                      type: array
+                                    basic:
+                                      description: Basic defines basic auth credentials
+                                        for the OAuth2 token request
+                                      properties:
+                                        password:
+                                          description: Password for basic authentication
+                                          minLength: 1
+                                          type: string
+                                        username:
+                                          description: Username for basic authentication
+                                          minLength: 1
+                                          type: string
+                                      required:
+                                      - password
+                                      - username
+                                      type: object
+                                    client:
+                                      description: Client defines client credentials
+                                        for the OAuth2 token request
+                                      properties:
+                                        clientId:
+                                          description: ClientId identifies the client
+                                            for OAuth2 client credentials flow
+                                          minLength: 1
+                                          type: string
+                                        clientSecret:
+                                          description: ClientSecret is the secret
+                                            associated with the client ID
+                                          minLength: 1
+                                          type: string
+                                        scopes:
+                                          description: Scopes defines the OAuth2 scopes
+                                            to request in the token
+                                          items:
+                                            type: string
+                                          type: array
+                                      required:
+                                      - clientId
+                                      - clientSecret
+                                      type: object
+                                    tokenEndpoint:
+                                      description: TokenEndpoint is the URL for the
+                                        OAuth2 token endpoint
+                                      format: uri
+                                      type: string
+                                  required:
+                                  - tokenEndpoint
                                   type: object
+                                  x-kubernetes-validations:
+                                  - message: Only one of basic or client credentials
+                                      can be provided (XOR relationship)
+                                    rule: self == null || (self.basic == null && self.client
+                                      != null) || (self.basic != null && self.client
+                                      == null)
+                                scopes:
+                                  description: Scopes defines additional OAuth2 scopes
+                                    that are added to the LMS token
+                                  items:
+                                    type: string
+                                  type: array
                               type: object
+                              x-kubernetes-validations:
+                              - message: Only one of externalIDP or basic authentication
+                                  can be provided (XOR relationship)
+                                rule: self == null || (self.externalIDP == null &&
+                                  self.basic != null) || (self.externalIDP != null
+                                  && self.basic == null)
                           type: object
+                          x-kubernetes-validations:
+                          - message: Only one of m2m or h2m authentication can be
+                              provided (XOR relationship)
+                            rule: self == null || (self.m2m == null && self.h2m !=
+                              null) || (self.m2m != null && self.h2m == null)
                       required:
                       - basePath
                       type: object
                     event:
+                      description: Event defines an Event-based service subscription
+                        configuration
                       properties:
                         eventType:
+                          description: EventType identifies the type of event to subscribe
+                            to
+                          minLength: 1
                           type: string
                       required:
                       - eventType
                       type: object
                   type: object
+                  x-kubernetes-validations:
+                  - message: At least one of api or event must be specified
+                    rule: self == null || self.api != null || self.event != null
+                  - message: Only one of api or event can be specified (XOR relationship)
+                    rule: self == null || (self.api == null && self.event != null)
+                      || (self.api != null && self.event == null)
                 type: array
               zone:
+                description: Zone identifies the deployment zone for this Rover resource
+                minLength: 1
                 type: string
             required:
             - zone
             type: object
           status:
-            description: RoverStatus defines the observed state of Rover
+            description: Status contains the observed state of the Rover resource
             properties:
               apiExposures:
+                description: ApiExposures are references to ApiExposure resources
+                  created by this Rover
                 items:
                   description: |-
                     ObjectRef is a reference to a Kubernetes object
@@ -179,6 +605,8 @@ spec:
                   type: object
                 type: array
               apiSubscriptions:
+                description: ApiSubscriptions are references to ApiSubscription resources
+                  created by this Rover
                 items:
                   description: |-
                     ObjectRef is a reference to a Kubernetes object
@@ -200,9 +628,8 @@ spec:
                   type: object
                 type: array
               application:
-                description: |-
-                  ObjectRef is a reference to a Kubernetes object
-                  It is similar to types.NamespacedName but has the required json tags for serialization
+                description: Application is a reference to the Application resource
+                  associated with this Rover
                 properties:
                   name:
                     type: string
@@ -219,6 +646,8 @@ spec:
                 - namespace
                 type: object
               conditions:
+                description: Conditions represent the latest available observations
+                  of the Rover's state
                 items:
                   description: Condition contains details for one aspect of the current
                     state of this API Resource.
@@ -278,6 +707,10 @@ spec:
                 - type
                 x-kubernetes-list-type: map
             type: object
+        required:
+        - metadata
+        - spec
+        - status
         type: object
     served: true
     storage: true

@@ -45,7 +45,7 @@ func (f *CustomScopesFeature) Apply(ctx context.Context, builder features.Featur
 
 	for _, consumer := range builder.GetAllowedConsumers() { // TODO: implement
 		jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = plugin.OauthCredentials{
-			Scopes: strings.Join(consumer.Spec.Oauth2Scopes, " "),
+			Scopes: strings.Join(consumer.Spec.Security.M2M.Scopes, " "),
 		}
 	}
 

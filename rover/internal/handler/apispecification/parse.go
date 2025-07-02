@@ -27,15 +27,13 @@ var (
 func ParseSpecification(ctx context.Context, spec string) (*apiapi.Api, error) {
 	api := &apiapi.Api{}
 	api.Spec = apiapi.ApiSpec{
-		Security: &apiapi.Security{
-			Authentication: apiapi.Authentication{
-				OAuth2: apiapi.OAuth2{
-					Scopes: []string{},
-				},
-			},
-		},
 		XVendor:  false,
 		Category: "other",
+		Security: apiapi.Security{
+			M2M: &apiapi.Machine2MachineAuthentication{
+				Scopes: []string{},
+			},
+		},
 	}
 	log := log.FromContext(ctx)
 
@@ -140,7 +138,7 @@ func setSecurityDefinitionsValues(api *apiapi.Api, Definitions *orderedmap.Map[s
 			for scopePair := definition.Scopes.Values.First(); scopePair != nil; scopePair = scopePair.Next() {
 
 				//append scope to the api security authentication oauth2 scopes
-				api.Spec.Security.Authentication.OAuth2.Scopes = append(api.Spec.Security.Authentication.OAuth2.Scopes, scopePair.Key())
+				api.Spec.SubscriberSecurity.M2M.Scopes = append(api.Spec.SubscriberSecurity.M2M.Scopes, scopePair.Key())
 			}
 		}
 	}
@@ -159,7 +157,7 @@ func setSecuritySchemeValues(api *apiapi.Api, SecuritySchemes *orderedmap.Map[st
 			for scopePair := scheme.Flows.ClientCredentials.Scopes.First(); scopePair != nil; scopePair = scopePair.Next() {
 
 				//append scope to the api security authentication oauth2 scopes
-				api.Spec.Security.Authentication.OAuth2.Scopes = append(api.Spec.Security.Authentication.OAuth2.Scopes, scopePair.Key())
+				api.Spec.SubscriberSecurity.M2M.Scopes = append(api.Spec.SubscriberSecurity.M2M.Scopes, scopePair.Key())
 			}
 
 		}

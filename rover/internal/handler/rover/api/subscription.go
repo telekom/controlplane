@@ -49,11 +49,9 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 		apiSubscription.Spec = apiapi.ApiSubscriptionSpec{
 			ApiBasePath: sub.BasePath,
 			Zone:        zoneRef,
-			Security: apiapi.Security{
-				Authentication: apiapi.Authentication{
-					OAuth2: apiapi.OAuth2{
-						Scopes: sub.Security.Authentication.OAuth2.Scopes,
-					},
+			Security: apiapi.SubscriberSecurity{
+				M2M: &apiapi.SubscriberMachine2MachineAuthentication{
+					Scopes: sub.Security.M2M.Scopes,
 				},
 			},
 			Organization: sub.Organization,

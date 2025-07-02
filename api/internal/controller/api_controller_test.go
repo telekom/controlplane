@@ -29,11 +29,9 @@ func NewApi(apiBasePath string) *apiv1.Api {
 			Version:  "v1",
 			BasePath: apiBasePath,
 			Category: "other",
-			Security: &apiv1.Security{
-				Authentication: apiv1.Authentication{
-					OAuth2: apiv1.OAuth2{
-						Scopes: []string{"scope1", "scope2"},
-					},
+			SubscriberSecurity: apiv1.SubscriberSecurity{
+				M2M: &apiv1.SubscriberMachine2MachineAuthentication{
+					Scopes: []string{"scope1", "scope2"},
 				},
 			},
 			XVendor: false,

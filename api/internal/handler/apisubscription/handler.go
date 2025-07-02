@@ -112,7 +112,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	// Scopes
 	// check if scopes exist and scopes are subset from api
-	if apiSub.Spec.Security.Authentication.OAuth2.Scopes != nil {
+	if apiSub.Spec.Security.M2M.Scopes != nil {
 		scopesExist, err := ScopesMustExist(ctx, api, apiSub)
 		if err != nil {
 			return errors.Wrapf(err, "failed to check scopes for ApiSubscription: %s in namespace: %s",
@@ -135,7 +135,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	}
 	properties := map[string]any{
 		"basePath": apiSub.Spec.ApiBasePath,
-		"scopes":   apiSub.Spec.Security.Authentication.OAuth2.Scopes,
+		"scopes":   apiSub.Spec.Security.M2M.Scopes,
 	}
 
 	err = requester.SetProperties(properties)
@@ -218,7 +218,11 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		routeConsumer.Spec = gatewayapi.ConsumeRouteSpec{
 			Route:        *types.ObjectRefFromObject(route),
 			ConsumerName: application.Status.ClientId,
-			Oauth2Scopes: apiSub.Spec.Security.Authentication.OAuth2.Scopes,
+			Security: gatewayapi.SubscriberSecurity{
+				M2M: &gatewayapi.SubscriberMachine2MachineAuthentication{
+					Scopes: apiSub.Spec.Security.M2M.Scopes,
+				},
+			},
 		}
 
 		return nil

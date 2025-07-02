@@ -12,9 +12,9 @@ import (
 
 // ConsumeRouteSpec defines the desired state of ConsumeRoute
 type ConsumeRouteSpec struct {
-	Route        types.ObjectRef `json:"route"`
-	ConsumerName string          `json:"consumerName"`
-	Oauth2Scopes []string        `json:"oauth2Scopes,omitempty"`
+	Route        types.ObjectRef    `json:"route"`
+	ConsumerName string             `json:"consumerName"`
+	Security     SubscriberSecurity `json:"security,omitempty"`
 }
 
 // ConsumeRouteStatus defines the observed state of ConsumeRoute

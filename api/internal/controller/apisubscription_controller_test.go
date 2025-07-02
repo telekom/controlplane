@@ -67,11 +67,9 @@ func NewApiSubscription(apiBasePath, zoneName, appName string) *apiapi.ApiSubscr
 		Spec: apiapi.ApiSubscriptionSpec{
 			ApiBasePath:  apiBasePath,
 			Organization: "",
-			Security: apiapi.Security{
-				Authentication: apiapi.Authentication{
-					OAuth2: apiapi.OAuth2{
-						Scopes: []string{"scope1", "scope2"},
-					},
+			Security: apiapi.SubscriberSecurity{
+				M2M: &apiapi.SubscriberMachine2MachineAuthentication{
+					Scopes: []string{"scope1", "scope2"},
 				},
 			},
 			Requestor: apiapi.Requestor{
@@ -320,8 +318,8 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				err = k8sClient.Get(ctx, apiSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(consumeRoute.Spec.Route).To(Equal(*apiSubscription.Status.Route))
-				g.Expect(consumeRoute.Spec.Oauth2Scopes[0]).To(Equal("scope1"))
-				g.Expect(consumeRoute.Spec.Oauth2Scopes[1]).To(Equal("scope2"))
+				g.Expect(consumeRoute.Spec.Security.M2M.Scopes[0]).To(Equal("scope1"))
+				g.Expect(consumeRoute.Spec.Security.M2M.Scopes[1]).To(Equal("scope2"))
 
 			}, timeout, interval).Should(Succeed())
 		})
