@@ -55,8 +55,8 @@ images:
     newName: ghcr.io/telekom/controlplane/application
     newTag: latest
   - name: ghcr.io/telekom/controlplane/api
-    newName: ko.local
-    newTag: testing
+    newName: ghcr.io/telekom/controlplane/api
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/organization
     newName: ghcr.io/telekom/controlplane/organization
     newTag: latest
