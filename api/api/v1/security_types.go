@@ -30,7 +30,7 @@ type SubscriberSecurity struct {
 
 // Machine2MachineAuthentication defines the authentication methods for machine-to-machine communication
 // Either externalIDP, basic, or only scopes can be provided
-// +kubebuilder:validation:XValidation:rule="self == null || (has(self.externalIDP) ? (!has(self.basic)) : true)", message="ExternalIDP and basic authentication cannot be used together"
+// +kubebuilder:validation:XValidation:rule="self == null || (has(self.externalIDP) ? (!has(self.basic)) : true)", message="ExternalIDPConfig and basic authentication cannot be used together"
 // +kubebuilder:validation:XValidation:rule="self == null || has(self.externalIDP) || has(self.basic) || has(self.scopes)", message="At least one of externalIDP, basic, or scopes must be provided"
 type Machine2MachineAuthentication struct {
 	// ExternalIDP defines external identity provider configuration

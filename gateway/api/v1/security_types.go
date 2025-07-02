@@ -53,11 +53,11 @@ type SubscriberHuman2MachineAuthentication struct {
 
 // Machine2MachineAuthentication defines the authentication methods for machine-to-machine communication
 // Either externalIDP, basic, or only scopes can be provided
-// +kubebuilder:validation:XValidation:rule="self == null || (has(self.externalIDP) ? (!has(self.basic)) : true)", message="ExternalIDP and basic authentication cannot be used together"
+// +kubebuilder:validation:XValidation:rule="self == null || (has(self.externalIDP) ? (!has(self.basic)) : true)", message="ExternalIDPConfig and basic authentication cannot be used together"
 type Machine2MachineAuthentication struct {
-	// ExternalIDP defines external identity provider configuration
+	// ExternalIDPConfig defines external identity provider configuration
 	// +kubebuilder:validation:Optional
-	ExternalIDP *ExternalIdentityProvider `json:"externalIDP,omitempty"`
+	ExternalIDPConfig *ExternalIdentityProviderConfig `json:"externalIDP,omitempty"`
 
 	// Client defines client credentials for OAuth2
 	Client OAuth2ClientCredentials `json:"client,omitempty"`
@@ -77,8 +77,8 @@ type Human2MachineAuthentication struct {
 	// Future authentication methods will be added here
 }
 
-// ExternalIdentityProvider defines the external identity provider configuration
-type ExternalIdentityProvider struct {
+// ExternalIdentityProviderConfig defines the external identity provider configuration
+type ExternalIdentityProviderConfig struct {
 	// TokenEndpoint is the URL for the OAuth2 token endpoint
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Format=uri
@@ -92,9 +92,6 @@ type ExternalIdentityProvider struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
 	GrantType string `json:"grantType,omitempty"`
-
-	// Client defines client credentials for OAuth2 for the external IDP authentication
-	Client *OAuth2ClientCredentials `json:"client,omitempty"`
 }
 
 // BasicAuthCredentials defines username/password credentials

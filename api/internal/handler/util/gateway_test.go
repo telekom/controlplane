@@ -12,7 +12,7 @@ import (
 
 var _ = Describe("Gateway Util", func() {
 	Context("HasExternalIDP", func() {
-		It("should return true if ExternalIDP exists", func() {
+		It("should return true if ExternalIDPConfig exists", func() {
 
 			exposure := &apiapi.ApiExposure{}
 			Expect(HasExternalIdp(exposure)).To(BeFalse())

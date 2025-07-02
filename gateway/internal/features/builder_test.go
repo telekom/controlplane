@@ -62,6 +62,11 @@ func NewMockConsumeRoute(routeRef types.ObjectRef) *gatewayv1.ConsumeRoute {
 		Spec: gatewayv1.ConsumeRouteSpec{
 			ConsumerName: "test-consumer-name",
 			Route:        routeRef,
+			Security: &gatewayv1.Security{
+				M2M: &gatewayv1.Machine2MachineAuthentication{
+					ExternalIDPConfig: &gatewayv1.ExternalIdentityProviderConfig{},
+				},
+			},
 		},
 	}
 }
@@ -284,10 +289,14 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 				Path:      "/api/v1",
 				IssuerUrl: "https://upstream.issuer.url",
 
-				Security: gatewayv1.Security{Oauth: gatewayv1.Oauth{
-					ClientId:     "gateway",
-					ClientSecret: "topsecret",
-				}},
+				Security: &gatewayv1.Security{
+					M2M: &gatewayv1.Machine2MachineAuthentication{
+						Client: gatewayv1.OAuth2ClientCredentials{
+							ClientId:     "gateway",
+							ClientSecret: "topsecret",
+						},
+					},
+				},
 			}
 
 			builder := features.NewFeatureBuilder(mockKc, lmsRoute, realm, gateway)
@@ -330,21 +339,29 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			Expect(true).To(BeTrue())
 		})
 
-		It("should correctly apply the ExternalIDP feature", func() {
+		It("should correctly apply the ExternalIDPConfig feature", func() {
 			externalIDPRoute := route.DeepCopy()
 			externalIDPRoute.Spec.PassThrough = false
 			externalIDPRoute.Spec.Upstreams[0] = gatewayv1.Upstream{
-				Scheme:        "http",
-				Host:          "upstream.url",
-				Port:          8080,
-				Path:          "/api/v1",
-				TokenEndpoint: "https://example.com/tokenEndpoint",
-				Security: gatewayv1.Security{Oauth: gatewayv1.Oauth{
-					ClientId:     "gateway",
-					ClientSecret: "topsecret",
-					GrantType:    "client_credentials",
-					Scopes:       []string{"admin:application"},
-				}},
+				Scheme: "http",
+				Host:   "upstream.url",
+				Port:   8080,
+				Path:   "/api/v1",
+				Security: &gatewayv1.Security{
+					M2M: &gatewayv1.Machine2MachineAuthentication{
+						ExternalIDPConfig: &gatewayv1.ExternalIdentityProviderConfig{
+							TokenEndpoint: "https://example.com/tokenEndpoint",
+							TokenRequest:  "",
+							GrantType:     "client_credentials",
+						},
+						Client: gatewayv1.OAuth2ClientCredentials{
+							ClientId:     "gateway",
+							ClientSecret: "topsecret",
+							Scopes:       []string{"idp:user"},
+						},
+						Scopes: []string{"admin:application"},
+					},
+				},
 			}
 
 			builder := features.NewFeatureBuilder(mockKc, externalIDPRoute, realm, gateway)
@@ -352,10 +369,11 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 
 			By("defining the consumer oauth config")
 			consumerRoute := NewMockConsumeRoute(*types.ObjectRefFromObject(externalIDPRoute))
-			consumerRoute.Spec.Security.Oauth.Scopes = []string{"team:application"}
-			consumerRoute.Spec.Security.Oauth.ClientId = "test-user"
-			consumerRoute.Spec.Security.Oauth.ClientSecret = "******"
-			consumerRoute.Spec.Security.Oauth.GrantType = "client_credentials"
+			consumerRoute.Spec.Security.M2M.Scopes = []string{"team:application"}
+			consumerRoute.Spec.Security.M2M.Client.ClientId = "test-user"
+			consumerRoute.Spec.Security.M2M.Client.ClientSecret = "******"
+			consumerRoute.Spec.Security.M2M.Client.Scopes = []string{"idp:group"}
+			consumerRoute.Spec.Security.M2M.ExternalIDPConfig.GrantType = "client_credentials"
 			builder.AddAllowedConsumers(consumerRoute)
 
 			By("mocking kong client calls")
@@ -383,14 +401,14 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			By("checking the jumper plugin")
 			jumperConfig := b.JumperConfig()
 			Expect(jumperConfig.OAuth).To(HaveKeyWithValue(plugin.ConsumerId("default"), plugin.OauthCredentials{
-				Scopes:       "admin:application",
+				Scopes:       "idp:user",
 				ClientId:     "gateway",
 				ClientSecret: "topsecret",
 				GrantType:    "client_credentials",
 			}))
 
 			Expect(jumperConfig.OAuth).To(HaveKeyWithValue(plugin.ConsumerId("test-consumer-name"), plugin.OauthCredentials{
-				Scopes:       "team:application",
+				Scopes:       "idp:group",
 				ClientId:     "test-user",
 				ClientSecret: "******",
 				GrantType:    "client_credentials",

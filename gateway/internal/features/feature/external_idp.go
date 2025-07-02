@@ -44,8 +44,8 @@ func (f *ExternalIDPFeature) IsUsed(_ context.Context, builder features.Features
 	for i := range route.Spec.Upstreams {
 		if route.Spec.Upstreams[i].Security != nil {
 			if route.Spec.Upstreams[i].Security.M2M != nil {
-				if route.Spec.Upstreams[i].Security.M2M.ExternalIDP != nil {
-					if route.Spec.Upstreams[i].Security.M2M.ExternalIDP.TokenEndpoint != "" {
+				if route.Spec.Upstreams[i].Security.M2M.ExternalIDPConfig != nil {
+					if route.Spec.Upstreams[i].Security.M2M.ExternalIDPConfig.TokenEndpoint != "" {
 						hasExternalTokenEndpoint = true
 						break
 					}
@@ -63,8 +63,8 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	var upstream gatewayv1.Upstream
 
 	for i := range route.Spec.Upstreams {
-		if route.Spec.Upstreams[i].Security.M2M.ExternalIDP.TokenEndpoint != "" {
-			rtpPlugin.Config.Append.AddHeader("token_endpoint", route.Spec.Upstreams[i].Security.M2M.ExternalIDP.TokenEndpoint)
+		if route.Spec.Upstreams[i].Security.M2M.ExternalIDPConfig.TokenEndpoint != "" {
+			rtpPlugin.Config.Append.AddHeader("token_endpoint", route.Spec.Upstreams[i].Security.M2M.ExternalIDPConfig.TokenEndpoint)
 			upstream = route.Spec.Upstreams[i]
 			builder.SetUpstream(upstream)
 			break
@@ -86,13 +86,13 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	}
 	providerOauth.ClientId = upstream.Security.M2M.Client.ClientId
 	providerOauth.ClientSecret = providerSecret
-	providerOauth.TokenRequest = upstream.Security.M2M.ExternalIDP.TokenRequest
-	providerOauth.GrantType = upstream.Security.M2M.ExternalIDP.GrantType
+	providerOauth.TokenRequest = upstream.Security.M2M.ExternalIDPConfig.TokenRequest
+	providerOauth.GrantType = upstream.Security.M2M.ExternalIDPConfig.GrantType
 
 	jumperConfig.OAuth[defaultProviderKey] = providerOauth
 
 	for _, consumer := range builder.GetAllowedConsumers() {
-		consumerSecret := consumer.Spec.Security.M2M.ExternalIDP.Client.ClientSecret
+		consumerSecret := consumer.Spec.Security.M2M.Client.ClientSecret
 		if consumerSecret != "" {
 			consumerSecret, err = secretManagerApi.Get(ctx, consumerSecret)
 			if err != nil {
@@ -104,10 +104,10 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 		if consumerOauth.Scopes == "" && len(consumer.Spec.Security.M2M.Client.Scopes) > 0 {
 			consumerOauth.Scopes = strings.Join(consumer.Spec.Security.M2M.Client.Scopes, " ")
 		}
-		consumerOauth.ClientId = consumer.Spec.Security.M2M.ExternalIDP.Client.ClientId
+		consumerOauth.ClientId = consumer.Spec.Security.M2M.Client.ClientId
 		consumerOauth.ClientSecret = consumerSecret
-		consumerOauth.TokenRequest = consumer.Spec.Security.M2M.ExternalIDP.TokenRequest
-		consumerOauth.GrantType = consumer.Spec.Security.M2M.ExternalIDP.GrantType
+		consumerOauth.TokenRequest = consumer.Spec.Security.M2M.ExternalIDPConfig.TokenRequest
+		consumerOauth.GrantType = consumer.Spec.Security.M2M.ExternalIDPConfig.GrantType
 
 		jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = consumerOauth
 	}

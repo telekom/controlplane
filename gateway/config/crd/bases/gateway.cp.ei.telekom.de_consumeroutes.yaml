@@ -113,33 +113,9 @@ spec:
                         - clientSecret
                         type: object
                       externalIDP:
-                        description: ExternalIDP defines external identity provider
+                        description: ExternalIDPConfig defines external identity provider
                           configuration
                         properties:
-                          client:
-                            description: Client defines client credentials for OAuth2
-                              for the external IDP authentication
-                            properties:
-                              clientId:
-                                description: ClientId identifies the client for OAuth2
-                                  client credentials flow
-                                minLength: 1
-                                type: string
-                              clientSecret:
-                                description: ClientSecret is the secret associated
-                                  with the client ID
-                                minLength: 1
-                                type: string
-                              scopes:
-                                description: Scopes defines the OAuth2 scopes to request
-                                  in the token
-                                items:
-                                  type: string
-                                type: array
-                            required:
-                            - clientId
-                            - clientSecret
-                            type: object
                           grantType:
                             description: GrantType is the grant type for the external
                               IDP authentication
@@ -172,8 +148,8 @@ spec:
                         type: array
                     type: object
                     x-kubernetes-validations:
-                    - message: ExternalIDP and basic authentication cannot be used
-                        together
+                    - message: ExternalIDPConfig and basic authentication cannot be
+                        used together
                       rule: 'self == null || (has(self.externalIDP) ? (!has(self.basic))
                         : true)'
                 type: object

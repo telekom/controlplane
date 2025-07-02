@@ -162,8 +162,8 @@ spec:
                         type: array
                     type: object
                     x-kubernetes-validations:
-                    - message: ExternalIDP and basic authentication cannot be used
-                        together
+                    - message: ExternalIDPConfig and basic authentication cannot be
+                        used together
                       rule: 'self == null || (has(self.externalIDP) ? (!has(self.basic))
                         : true)'
                     - message: At least one of externalIDP, basic, or scopes must

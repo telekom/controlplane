@@ -217,7 +217,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 		})
 	})
 
-	Context("ApiExposure with ExternalIDP Configured", Ordered, func() {
+	Context("ApiExposure with ExternalIDPConfig Configured", Ordered, func() {
 
 		var thirdApiExposure *apiv1.ApiExposure
 
@@ -288,9 +288,9 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				g.Expect(route.Spec.Upstreams[0].Security.M2M.Client.ClientSecret).To(Equal("******"))
 				g.Expect(route.Spec.Upstreams[0].Security.M2M.Client.Scopes).To(Equal([]string{"team:scope", "api:scope"}))
 
-				g.Expect(route.Spec.Upstreams[0].Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://example.com/token"))
-				g.Expect(route.Spec.Upstreams[0].Security.M2M.ExternalIDP.TokenRequest).To(Equal("header"))
-				g.Expect(route.Spec.Upstreams[0].Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
+				g.Expect(route.Spec.Upstreams[0].Security.M2M.ExternalIDPConfig.TokenEndpoint).To(Equal("https://example.com/token"))
+				g.Expect(route.Spec.Upstreams[0].Security.M2M.ExternalIDPConfig.TokenRequest).To(Equal("header"))
+				g.Expect(route.Spec.Upstreams[0].Security.M2M.ExternalIDPConfig.GrantType).To(Equal("client_credentials"))
 				g.Expect(route.Spec.Upstreams[0].Security.M2M.Client.Scopes).To(Equal([]string{"team:scope", "api:scope"}))
 			}, timeout, interval).Should(Succeed())
 		})

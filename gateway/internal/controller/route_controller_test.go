@@ -118,7 +118,7 @@ var _ = Describe("Route Controller", Ordered, func() {
 				By("Initializing the configuration for the Route")
 				route.Spec.Upstreams[0].Security = &gatewayv1.Security{
 					M2M: &gatewayv1.Machine2MachineAuthentication{
-						ExternalIDP: &gatewayv1.ExternalIdentityProvider{
+						ExternalIDPConfig: &gatewayv1.ExternalIdentityProviderConfig{
 							TokenEndpoint: "https://example.com/endpoint",
 						},
 						Client: gatewayv1.OAuth2ClientCredentials{
@@ -130,7 +130,7 @@ var _ = Describe("Route Controller", Ordered, func() {
 			})
 			It("should not accept a Route with TokenRequest=\"sky\"", func() {
 				By("Creating the Route with TokenRequest=\"sky\"")
-				route.Spec.Upstreams[0].Security.M2M.ExternalIDP.TokenRequest = "sky"
+				route.Spec.Upstreams[0].Security.M2M.ExternalIDPConfig.TokenRequest = "sky"
 				err := k8sClient.Create(ctx, route)
 				Expect(err).To(HaveOccurred())
 				Expect(apierrors.IsInvalid(err)).To(BeTrue())
@@ -139,7 +139,7 @@ var _ = Describe("Route Controller", Ordered, func() {
 
 			It("should not accept a Route with GrantType=\"not_required\"", func() {
 				By("Creating the Route with GrantType=\"not_required\"")
-				route.Spec.Upstreams[0].Security.M2M.ExternalIDP.GrantType = "not_required"
+				route.Spec.Upstreams[0].Security.M2M.ExternalIDPConfig.GrantType = "not_required"
 				err := k8sClient.Create(ctx, route)
 				Expect(err).To(HaveOccurred())
 				Expect(apierrors.IsInvalid(err)).To(BeTrue())

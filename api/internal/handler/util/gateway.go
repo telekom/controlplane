@@ -69,7 +69,7 @@ func AsUpstreamForRealRoute(
 		// ToDo Refactor
 		upstream.Security = &gatewayapi.Security{
 			M2M: &gatewayapi.Machine2MachineAuthentication{
-				ExternalIDP: &gatewayapi.ExternalIdentityProvider{
+				ExternalIDPConfig: &gatewayapi.ExternalIdentityProviderConfig{
 					TokenEndpoint: apiExposure.Spec.Security.M2M.ExternalIDP.TokenEndpoint,
 					TokenRequest:  apiExposure.Spec.Security.M2M.ExternalIDP.TokenRequest,
 					GrantType:     apiExposure.Spec.Security.M2M.ExternalIDP.GrantType,
