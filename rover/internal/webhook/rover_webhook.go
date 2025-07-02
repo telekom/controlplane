@@ -7,9 +7,7 @@ package webhook
 import (
 	"context"
 	"fmt"
-	client2 "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
-	"github.com/telekom/controlplane/rover/internal/webhook/validators"
 	"reflect"
 	"strings"
 
@@ -110,17 +108,6 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime
 		if _, err = r.ValidateSubscription(ctx, environment, sub); err != nil {
 			return nil, err
 		}
-		if sub.Api != nil {
-			// call api subscription webhook
-			accepted, err := validators.CallApiSubscriptionWebhook(ctx, client2.NewScopedClient(r.client, environment), *rover, *sub.Api)
-			if err != nil {
-				return nil, err
-			}
-			if !accepted {
-				return nil, apierrors.NewBadRequest("ApiSubscription is invalid - rejected")
-			}
-		}
-
 	}
 
 	for _, exposure := range rover.Spec.Exposures {

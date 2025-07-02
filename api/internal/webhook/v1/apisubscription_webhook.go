@@ -12,6 +12,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -133,12 +134,12 @@ func validateCreateOrUpdate(ctx context.Context, c client.Client, sub apiv1.ApiS
 
 	if err != nil {
 		apisubscriptionlog.Error(err, "unable to list ApiExposure", "name", sub.Spec.ApiBasePath)
-		return nil, apierrors.NewBadRequest("Active Api Exposure for this subscription not found")
+		return nil, apierrors.NewNotFound(schema.GroupResource{Group: apiv1.GroupVersion.Group, Resource: "ApiExposure"}, "Active Api Exposure for this subscription not found due to error")
 	}
 
 	if len(apiExposureList.Items) == 0 {
 		apisubscriptionlog.Error(err, "unable to list ApiExposure", "name", sub.Spec.ApiBasePath)
-		return nil, apierrors.NewBadRequest("Active Api Exposure for this subscription not found")
+		return nil, apierrors.NewNotFound(schema.GroupResource{Group: apiv1.GroupVersion.Group, Resource: "ApiExposure"}, "Active Api Exposure for this subscription not found")
 	}
 
 	exposure := &apiExposureList.Items[0]

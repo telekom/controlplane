@@ -168,7 +168,3 @@ func (r *RoverList) GetItems() []types.Object {
 func init() {
 	SchemeBuilder.Register(&Rover{}, &RoverList{})
 }
-
-func (rs *RoverStatus) IsEmpty() bool {
-	return rs.Conditions == nil || len(rs.Conditions) == 0
-}
