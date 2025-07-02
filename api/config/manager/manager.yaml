@@ -67,6 +67,7 @@ spec:
             - --health-probe-bind-address=:8081
           image: ghcr.io/telekom/controlplane/api:stable
           name: manager
+          imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

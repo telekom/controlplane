@@ -19,7 +19,7 @@ var _ features.Feature = &ExternalIDPFeature{}
 
 // defaultKey for provider (exposure) config.
 // Used as a fallback in Jumper if no consumer key is found
-const defaultKey = plugin.ConsumerId("default")
+const defaultProviderKey = plugin.ConsumerId("default")
 
 // ExternalIDPFeature takes precedence over CustomScopesFeature
 type ExternalIDPFeature struct {
@@ -38,13 +38,19 @@ func (f *ExternalIDPFeature) Priority() int {
 	return f.priority
 }
 
-func (f *ExternalIDPFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
+func (f *ExternalIDPFeature) IsUsed(_ context.Context, builder features.FeaturesBuilder) bool {
 	route := builder.GetRoute()
 	hasExternalTokenEndpoint := false
 	for i := range route.Spec.Upstreams {
-		if route.Spec.Upstreams[i].TokenEndpoint != "" {
-			hasExternalTokenEndpoint = true
-			break
+		if route.Spec.Upstreams[i].Security != nil {
+			if route.Spec.Upstreams[i].Security.M2M != nil {
+				if route.Spec.Upstreams[i].Security.M2M.ExternalIDP != nil {
+					if route.Spec.Upstreams[i].Security.M2M.ExternalIDP.TokenEndpoint != "" {
+						hasExternalTokenEndpoint = true
+						break
+					}
+				}
+			}
 		}
 	}
 	return !route.Spec.PassThrough && hasExternalTokenEndpoint && !route.IsProxy()
@@ -57,36 +63,36 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	var upstream gatewayv1.Upstream
 
 	for i := range route.Spec.Upstreams {
-		if route.Spec.Upstreams[i].TokenEndpoint != "" {
-			rtpPlugin.Config.Append.AddHeader("token_endpoint", route.Spec.Upstreams[i].TokenEndpoint)
+		if route.Spec.Upstreams[i].Security.M2M.ExternalIDP.TokenEndpoint != "" {
+			rtpPlugin.Config.Append.AddHeader("token_endpoint", route.Spec.Upstreams[i].Security.M2M.ExternalIDP.TokenEndpoint)
 			upstream = route.Spec.Upstreams[i]
 			builder.SetUpstream(upstream)
 			break
 		}
 	}
 
-	providerSecret := upstream.ClientSecret
+	providerSecret := upstream.Security.M2M.Client.ClientSecret
 	if providerSecret != "" {
-		providerSecret, err = secretManagerApi.Get(ctx, upstream.ClientSecret)
+		providerSecret, err = secretManagerApi.Get(ctx, providerSecret)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get provider secret for upstream %s", upstream.IssuerUrl)
 		}
 
 	}
 
-	providerOauth := jumperConfig.OAuth[defaultKey]
-	if providerOauth.Scopes == "" && len(upstream.Scopes) > 0 {
-		providerOauth.Scopes = strings.Join(upstream.Scopes, " ")
+	providerOauth := jumperConfig.OAuth[defaultProviderKey]
+	if providerOauth.Scopes == "" && len(upstream.Security.M2M.Client.Scopes) > 0 {
+		providerOauth.Scopes = strings.Join(upstream.Security.M2M.Client.Scopes, " ")
 	}
-	providerOauth.ClientId = upstream.ClientId
+	providerOauth.ClientId = upstream.Security.M2M.Client.ClientId
 	providerOauth.ClientSecret = providerSecret
-	providerOauth.TokenRequest = upstream.TokenRequest
-	providerOauth.GrantType = upstream.GrantType
+	providerOauth.TokenRequest = upstream.Security.M2M.ExternalIDP.TokenRequest
+	providerOauth.GrantType = upstream.Security.M2M.ExternalIDP.GrantType
 
-	jumperConfig.OAuth[defaultKey] = providerOauth
+	jumperConfig.OAuth[defaultProviderKey] = providerOauth
 
 	for _, consumer := range builder.GetAllowedConsumers() {
-		consumerSecret := consumer.Spec.OauthConfig.ClientSecret
+		consumerSecret := consumer.Spec.Security.M2M.ExternalIDP.Client.ClientSecret
 		if consumerSecret != "" {
 			consumerSecret, err = secretManagerApi.Get(ctx, consumerSecret)
 			if err != nil {
@@ -95,13 +101,13 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 		}
 
 		consumerOauth := jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)]
-		if consumerOauth.Scopes == "" && len(consumer.Spec.OauthConfig.Scopes) > 0 {
-			consumerOauth.Scopes = strings.Join(consumer.Spec.OauthConfig.Scopes, " ")
+		if consumerOauth.Scopes == "" && len(consumer.Spec.Security.M2M.Client.Scopes) > 0 {
+			consumerOauth.Scopes = strings.Join(consumer.Spec.Security.M2M.Client.Scopes, " ")
 		}
-		consumerOauth.ClientId = consumer.Spec.OauthConfig.ClientId
+		consumerOauth.ClientId = consumer.Spec.Security.M2M.ExternalIDP.Client.ClientId
 		consumerOauth.ClientSecret = consumerSecret
-		consumerOauth.TokenRequest = consumer.Spec.OauthConfig.TokenRequest
-		consumerOauth.GrantType = consumer.Spec.OauthConfig.GrantType
+		consumerOauth.TokenRequest = consumer.Spec.Security.M2M.ExternalIDP.TokenRequest
+		consumerOauth.GrantType = consumer.Spec.Security.M2M.ExternalIDP.GrantType
 
 		jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = consumerOauth
 	}

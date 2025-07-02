@@ -225,38 +225,54 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 			By("Creating the second APIExposure")
 			thirdApiExposure = NewApiExposure(apiBasePath, zoneName)
 			thirdApiExposure.Name = "third-api"
-			thirdApiExposure.Spec.TokenEndpoint = "example.com/token"
+			thirdApiExposure.Spec.Security = &apiv1.Security{
+				M2M: &apiv1.Machine2MachineAuthentication{
+					ExternalIDP: &apiv1.ExternalIdentityProvider{
+						TokenEndpoint: "https://example.com/token",
+						Client: &apiv1.OAuth2ClientCredentials{
+							ClientId:     "client-id",
+							ClientSecret: "******",
+						},
+					},
+				},
+			}
 		})
 
 		It("should reject invalid config", func() {
 			By("Creating the second APIExposure resource")
-			thirdApiExposure.Spec.Security.Oauth2 = apiv1.Oauth2{
-				Scopes:       []string{"team:scope", "api:scope"},
-				TokenRequest: "sky",
+			thirdApiExposure.Spec.Security.M2M = &apiv1.Machine2MachineAuthentication{
+				ExternalIDP: &apiv1.ExternalIdentityProvider{
+					TokenRequest: "sky",
+				},
+				Scopes: []string{"team:scope", "api:scope"},
 			}
 			err := k8sClient.Create(ctx, thirdApiExposure)
 			Expect(err).To(HaveOccurred())
 			Expect(apierrors.IsInvalid(err)).To(BeTrue())
 			Expect(err.Error()).To(ContainSubstring("Unsupported value: \"sky\": supported values: \"body\", \"header\""))
 
-			thirdApiExposure.Spec.Security.Oauth2 = apiv1.Oauth2{
-				Scopes:    []string{"team:scope", "api:scope"},
-				GrantType: "not_a_valid_grant_type",
-			}
+			thirdApiExposure.Spec.Security.M2M.ExternalIDP.GrantType = "not_a_valid_grant_type"
 			err = k8sClient.Create(ctx, thirdApiExposure)
 			Expect(err).To(HaveOccurred())
 			Expect(apierrors.IsInvalid(err)).To(BeTrue())
 			Expect(err.Error()).To(ContainSubstring("Unsupported value: \"not_a_valid_grant_type\": supported values: \"client_credentials\", \"authorization_code\", \"password\""))
 		})
+
 		It("should successfully provision the resource", func() {
 			By("Creating the second APIExposure resource")
-			thirdApiExposure.Spec.Security.Oauth2 = apiv1.Oauth2{
-				Scopes:       []string{"team:scope", "api:scope"},
-				TokenRequest: "header",
-				ClientId:     "team",
-				ClientSecret: "******",
-				GrantType:    "client_credentials",
+			thirdApiExposure.Spec.Security.M2M = &apiv1.Machine2MachineAuthentication{
+				ExternalIDP: &apiv1.ExternalIdentityProvider{
+					TokenEndpoint: "https://example.com/token",
+					TokenRequest:  "header",
+					GrantType:     "client_credentials",
+					Client: &apiv1.OAuth2ClientCredentials{
+						ClientId:     "team",
+						ClientSecret: "******",
+						Scopes:       []string{"team:scope", "api:scope"},
+					},
+				},
 			}
+
 			err := k8sClient.Create(ctx, thirdApiExposure)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -268,12 +284,14 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), route)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(route.Spec.Upstreams).To(HaveLen(1))
-				g.Expect(route.Spec.Upstreams[0].ClientId).To(Equal("team"))
-				g.Expect(route.Spec.Upstreams[0].ClientSecret).To(Equal("******"))
-				g.Expect(route.Spec.Upstreams[0].TokenEndpoint).To(Equal("example.com/token"))
-				g.Expect(route.Spec.Upstreams[0].TokenRequest).To(Equal("header"))
-				g.Expect(route.Spec.Upstreams[0].GrantType).To(Equal("client_credentials"))
-				g.Expect(route.Spec.Upstreams[0].Scopes).To(Equal([]string{"team:scope", "api:scope"}))
+				g.Expect(route.Spec.Upstreams[0].Security.M2M.Client.ClientId).To(Equal("team"))
+				g.Expect(route.Spec.Upstreams[0].Security.M2M.Client.ClientSecret).To(Equal("******"))
+				g.Expect(route.Spec.Upstreams[0].Security.M2M.Client.Scopes).To(Equal([]string{"team:scope", "api:scope"}))
+
+				g.Expect(route.Spec.Upstreams[0].Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://example.com/token"))
+				g.Expect(route.Spec.Upstreams[0].Security.M2M.ExternalIDP.TokenRequest).To(Equal("header"))
+				g.Expect(route.Spec.Upstreams[0].Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
+				g.Expect(route.Spec.Upstreams[0].Security.M2M.Client.Scopes).To(Equal([]string{"team:scope", "api:scope"}))
 			}, timeout, interval).Should(Succeed())
 		})
 

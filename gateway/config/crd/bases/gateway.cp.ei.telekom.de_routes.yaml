@@ -86,18 +86,6 @@ spec:
               upstreams:
                 items:
                   properties:
-                    clientId:
-                      type: string
-                    clientSecret:
-                      type: string
-                    grantType:
-                      description: GrantType is the grant type for the external IDP
-                        authentication
-                      enum:
-                      - client_credentials
-                      - authorization_code
-                      - password
-                      type: string
                     host:
                       type: string
                     issuerUrl:
@@ -108,23 +96,125 @@ spec:
                       type: integer
                     scheme:
                       type: string
-                    scopes:
-                      description: Scopes for the external IDP authentication
-                      items:
-                        type: string
-                      type: array
-                    tokenEndpoint:
-                      description: |-
-                        ExternalIDP configuration
-                        TokenEndpoint is the URL to the token endpoint for external IDP authentication
-                      type: string
-                    tokenRequest:
-                      description: TokenRequest is the type of token request, "body"
-                        or "header"
-                      enum:
-                      - body
-                      - header
-                      type: string
+                    security:
+                      description: Security is the security configuration for the
+                        upstream if external IDP authentication is required
+                      properties:
+                        h2m:
+                          description: H2M defines human-to-machine authentication
+                            configuration
+                          type: object
+                        m2m:
+                          description: M2M defines machine-to-machine authentication
+                            configuration
+                          properties:
+                            basic:
+                              description: Basic defines basic authentication configuration
+                              properties:
+                                password:
+                                  description: Password for basic authentication
+                                  minLength: 1
+                                  type: string
+                                username:
+                                  description: Username for basic authentication
+                                  minLength: 1
+                                  type: string
+                              required:
+                              - password
+                              - username
+                              type: object
+                            client:
+                              description: Client defines client credentials for OAuth2
+                              properties:
+                                clientId:
+                                  description: ClientId identifies the client for
+                                    OAuth2 client credentials flow
+                                  minLength: 1
+                                  type: string
+                                clientSecret:
+                                  description: ClientSecret is the secret associated
+                                    with the client ID
+                                  minLength: 1
+                                  type: string
+                                scopes:
+                                  description: Scopes defines the OAuth2 scopes to
+                                    request in the token
+                                  items:
+                                    type: string
+                                  type: array
+                              required:
+                              - clientId
+                              - clientSecret
+                              type: object
+                            externalIDP:
+                              description: ExternalIDP defines external identity provider
+                                configuration
+                              properties:
+                                client:
+                                  description: Client defines client credentials for
+                                    OAuth2 for the external IDP authentication
+                                  properties:
+                                    clientId:
+                                      description: ClientId identifies the client
+                                        for OAuth2 client credentials flow
+                                      minLength: 1
+                                      type: string
+                                    clientSecret:
+                                      description: ClientSecret is the secret associated
+                                        with the client ID
+                                      minLength: 1
+                                      type: string
+                                    scopes:
+                                      description: Scopes defines the OAuth2 scopes
+                                        to request in the token
+                                      items:
+                                        type: string
+                                      type: array
+                                  required:
+                                  - clientId
+                                  - clientSecret
+                                  type: object
+                                grantType:
+                                  description: GrantType is the grant type for the
+                                    external IDP authentication
+                                  enum:
+                                  - client_credentials
+                                  - authorization_code
+                                  - password
+                                  type: string
+                                tokenEndpoint:
+                                  description: TokenEndpoint is the URL for the OAuth2
+                                    token endpoint
+                                  format: uri
+                                  type: string
+                                tokenRequest:
+                                  description: TokenRequest is the type of token request,
+                                    "body" or "header"
+                                  enum:
+                                  - body
+                                  - header
+                                  type: string
+                              required:
+                              - tokenEndpoint
+                              type: object
+                            scopes:
+                              description: Scopes defines additional OAuth2 scopes
+                                that are added to the LMS token
+                              items:
+                                type: string
+                              maxItems: 10
+                              type: array
+                          type: object
+                          x-kubernetes-validations:
+                          - message: ExternalIDP and basic authentication cannot be
+                              used together
+                            rule: 'self == null || (has(self.externalIDP) ? (!has(self.basic))
+                              : true)'
+                      type: object
+                      x-kubernetes-validations:
+                      - message: Only one of m2m or h2m authentication can be provided
+                          (XOR relationship)
+                        rule: self == null || has(self.m2m) != has(self.h2m)
                   required:
                   - host
                   - path

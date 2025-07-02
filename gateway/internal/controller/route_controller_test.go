@@ -113,24 +113,38 @@ var _ = Describe("Route Controller", Ordered, func() {
 			}, timeout, interval).Should(Succeed())
 		})
 
-		It("should not accept a Route with TokenRequest=\"sky\"", func() {
-			By("Creating the Route with TokenRequest=\"sky\"")
-			route.Spec.Upstreams[0].TokenRequest = "sky"
-			err := k8sClient.Create(ctx, route)
-			Expect(err).To(HaveOccurred())
-			Expect(apierrors.IsInvalid(err)).To(BeTrue())
-			Expect(err.Error()).To(Equal("Route.gateway.cp.ei.telekom.de \"test-v1\" is invalid: spec.upstreams[0].tokenRequest: Unsupported value: \"sky\": supported values: \"body\", \"header\""))
+		Context("with an externalIDP Route", func() {
+			BeforeEach(func() {
+				By("Initializing the configuration for the Route")
+				route.Spec.Upstreams[0].Security = &gatewayv1.Security{
+					M2M: &gatewayv1.Machine2MachineAuthentication{
+						ExternalIDP: &gatewayv1.ExternalIdentityProvider{
+							TokenEndpoint: "https://example.com/endpoint",
+						},
+						Client: gatewayv1.OAuth2ClientCredentials{
+							ClientId:     "example-client-id",
+							ClientSecret: "******",
+						},
+					},
+				}
+			})
+			It("should not accept a Route with TokenRequest=\"sky\"", func() {
+				By("Creating the Route with TokenRequest=\"sky\"")
+				route.Spec.Upstreams[0].Security.M2M.ExternalIDP.TokenRequest = "sky"
+				err := k8sClient.Create(ctx, route)
+				Expect(err).To(HaveOccurred())
+				Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				Expect(err.Error()).To(ContainSubstring("Route.gateway.cp.ei.telekom.de \"test-v1\" is invalid: [spec.upstreams[0].security.m2m.externalIDP.tokenRequest: Unsupported value: \"sky\": supported values: \"body\", \"header\""))
+			})
 
-			route.Spec.Upstreams[0].TokenRequest = ""
-		})
-
-		It("should not accept a Route with GrantType=\"not_required\"", func() {
-			By("Creating the Route with GrantType=\"not_required\"")
-			route.Spec.Upstreams[0].GrantType = "not_required"
-			err := k8sClient.Create(ctx, route)
-			Expect(err).To(HaveOccurred())
-			Expect(apierrors.IsInvalid(err)).To(BeTrue())
-			Expect(err.Error()).To(Equal("Route.gateway.cp.ei.telekom.de \"test-v1\" is invalid: spec.upstreams[0].grantType: Unsupported value: \"not_required\": supported values: \"client_credentials\", \"authorization_code\", \"password\""))
+			It("should not accept a Route with GrantType=\"not_required\"", func() {
+				By("Creating the Route with GrantType=\"not_required\"")
+				route.Spec.Upstreams[0].Security.M2M.ExternalIDP.GrantType = "not_required"
+				err := k8sClient.Create(ctx, route)
+				Expect(err).To(HaveOccurred())
+				Expect(apierrors.IsInvalid(err)).To(BeTrue())
+				Expect(err.Error()).To(ContainSubstring("Route.gateway.cp.ei.telekom.de \"test-v1\" is invalid: [spec.upstreams[0].security.m2m.externalIDP.grantType: Unsupported value: \"not_required\": supported values: \"client_credentials\", \"authorization_code\", \"password\""))
+			})
 		})
 
 	})

@@ -80,10 +80,10 @@ func (c *syncerClient) Send(ctx context.Context, resource *apiv1.RemoteApiSubscr
 			},
 		},
 	}
-	if resource.Spec.Security != nil {
+	if resource.Spec.Security.M2M != nil {
 		body.Security = &cpv1.Security{
 			Oauth2: &cpv1.SecurityOauth2{
-				Scopes: &resource.Spec.Security.Oauth2.Scopes,
+				Scopes: &resource.Spec.Security.M2M.Client.Scopes,
 			},
 		}
 	}

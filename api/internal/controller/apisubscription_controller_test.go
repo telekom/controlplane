@@ -65,7 +65,15 @@ func NewApiSubscription(apiBasePath, zoneName, appName string) *apiapi.ApiSubscr
 		Spec: apiapi.ApiSubscriptionSpec{
 			ApiBasePath:  apiBasePath,
 			Organization: "",
-			Security:     &apiapi.Security{},
+			Security: &apiapi.SubscriberSecurity{
+				M2M: &apiapi.SubscriberMachine2MachineAuthentication{
+					Client: &apiapi.OAuth2ClientCredentials{
+						ClientId:     "client_id",
+						ClientSecret: "******",
+					},
+					Scopes: []string{"scope1", "scope2"},
+				},
+			},
 			Requestor: apiapi.Requestor{
 				Application: types.ObjectRef{
 					Name:      appName,
@@ -459,12 +467,13 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 
 			It("should apply those configs to ConsumeRoute", func() {
 				By("applying oauth2 security to the ApiSubscription")
-				securityApiSubscription.Spec.Security.Oauth2 = apiapi.Oauth2{
-					Scopes:       []string{"read", "write"},
-					TokenRequest: "body",
-					ClientId:     "custom-client-id",
-					ClientSecret: "******",
-					GrantType:    "client_credentials",
+				securityApiSubscription.Spec.Security.M2M = &apiapi.SubscriberMachine2MachineAuthentication{
+					Client: &apiapi.OAuth2ClientCredentials{
+						ClientId:     "custom-client-id",
+						ClientSecret: "******",
+						Scopes:       []string{"eIDP:allow"},
+					},
+					Scopes: []string{"app:read", "app:write"},
 				}
 				EventuallyCreateAndApproveApiSubscription(securityApiSubscription)
 
@@ -478,11 +487,10 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 
 					err = k8sClient.Get(ctx, securityApiSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
 					g.Expect(err).ToNot(HaveOccurred())
-					g.Expect(consumeRoute.Spec.OauthConfig.Scopes).To(Equal([]string{"read", "write"}))
-					g.Expect(consumeRoute.Spec.OauthConfig.TokenRequest).To(Equal("body"))
-					g.Expect(consumeRoute.Spec.OauthConfig.ClientId).To(Equal("custom-client-id"))
-					g.Expect(consumeRoute.Spec.OauthConfig.ClientSecret).To(Equal("******"))
-					g.Expect(consumeRoute.Spec.OauthConfig.GrantType).To(Equal("client_credentials"))
+					g.Expect(consumeRoute.Spec.Security.M2M.Client.Scopes).To(Equal([]string{"eIDP:allow"}))
+					g.Expect(consumeRoute.Spec.Security.M2M.Client.ClientId).To(Equal("custom-client-id"))
+					g.Expect(consumeRoute.Spec.Security.M2M.Client.ClientSecret).To(Equal("******"))
+					g.Expect(consumeRoute.Spec.Security.M2M.Scopes).To(Equal([]string{"app:read", "app:write"}))
 					g.Expect(consumeRoute.Spec.Route).To(Equal(*securityApiSubscription.Status.Route))
 
 				}, timeout, interval).Should(Succeed())

@@ -72,31 +72,70 @@ spec:
               security:
                 description: Security is the security configuration for the subscription
                 properties:
-                  oauth2:
+                  h2m:
+                    description: H2M defines human-to-machine authentication configuration
+                    type: object
+                  m2m:
+                    description: M2M defines machine-to-machine authentication configuration
                     properties:
-                      clientId:
-                        type: string
-                      clientSecret:
-                        type: string
-                      grantType:
-                        enum:
-                        - client_credentials
-                        - authorization_code
+                      basic:
+                        description: Basic defines basic authentication configuration
+                        properties:
+                          password:
+                            description: Password for basic authentication
+                            minLength: 1
+                            type: string
+                          username:
+                            description: Username for basic authentication
+                            minLength: 1
+                            type: string
+                        required:
                         - password
-                        type: string
+                        - username
+                        type: object
+                      client:
+                        description: Client defines client credentials for OAuth2
+                        properties:
+                          clientId:
+                            description: ClientId identifies the client for OAuth2
+                              client credentials flow
+                            minLength: 1
+                            type: string
+                          clientSecret:
+                            description: ClientSecret is the secret associated with
+                              the client ID
+                            minLength: 1
+                            type: string
+                          scopes:
+                            description: Scopes defines the OAuth2 scopes to request
+                              in the token
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - clientId
+                        - clientSecret
+                        type: object
                       scopes:
+                        description: Scopes defines additional OAuth2 scopes that
+                          are added to the LMS token
                         items:
                           type: string
+                        maxItems: 10
                         type: array
-                      tokenRequest:
-                        description: TokenRequest is the type of token request, "body"
-                          or "header"
-                        enum:
-                        - body
-                        - header
-                        type: string
                     type: object
+                    x-kubernetes-validations:
+                    - message: Client and basic authentication cannot be used together
+                      rule: 'self == null || (has(self.client) ? (!has(self.basic))
+                        : true)'
+                    - message: At least one of client, basic, or scopes must be provided
+                      rule: self == null || has(self.client) || has(self.basic) ||
+                        has(self.scopes)
                 type: object
+                x-kubernetes-validations:
+                - message: Only one of m2m or h2m authentication can be provided (XOR
+                    relationship)
+                  rule: self == null || has(self.m2m) != has(self.h2m)
               sourceOrganization:
                 type: string
               targetOrganization:

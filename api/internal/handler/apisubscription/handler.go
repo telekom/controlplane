@@ -119,8 +119,8 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	properties := map[string]any{
 		"basePath": apiSub.Spec.ApiBasePath,
 	}
-	if apiSub.Spec.Security != nil {
-		properties["scopes"] = apiSub.Spec.Security.Oauth2.Scopes
+	if util.HasM2M(apiSub) {
+		properties["scopes"] = apiSub.Spec.Security.M2M.Scopes
 	}
 	err = requester.SetProperties(properties)
 	if err != nil {
@@ -202,15 +202,16 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		routeConsumer.Spec = gatewayapi.ConsumeRouteSpec{
 			Route:        *types.ObjectRefFromObject(route),
 			ConsumerName: application.Status.ClientId,
-			OauthConfig: gatewayapi.OauthConfig{
-				TokenRequest: apiSub.Spec.Security.Oauth2.TokenRequest,
-				GrantType:    apiSub.Spec.Security.Oauth2.GrantType,
-				ClientId:     apiSub.Spec.Security.Oauth2.ClientId,
-				ClientSecret: apiSub.Spec.Security.Oauth2.ClientSecret,
-				Scopes:       apiSub.Spec.Security.Oauth2.Scopes,
-			},
 		}
 
+		if apiSub.Spec.Security != nil {
+			routeConsumer.Spec.Security = &gatewayapi.Security{
+				M2M: &gatewayapi.Machine2MachineAuthentication{
+					Client: toGatewayClient(apiSub.Spec.Security.M2M.Client),
+					Scopes: apiSub.Spec.Security.M2M.Scopes,
+				},
+			}
+		}
 		return nil
 	}
 
@@ -225,6 +226,18 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	apiSub.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
 
 	return nil
+}
+
+func toGatewayClient(client *apiapi.OAuth2ClientCredentials) gatewayapi.OAuth2ClientCredentials {
+	if client == nil {
+		return gatewayapi.OAuth2ClientCredentials{}
+	}
+
+	return gatewayapi.OAuth2ClientCredentials{
+		ClientId:     client.ClientId,
+		ClientSecret: client.ClientSecret,
+		Scopes:       client.Scopes,
+	}
 }
 
 func (h *ApiSubscriptionHandler) Delete(ctx context.Context, apiSub *apiapi.ApiSubscription) error {

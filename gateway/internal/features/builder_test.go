@@ -278,13 +278,16 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			lmsRoute := route.DeepCopy()
 			lmsRoute.Spec.PassThrough = false
 			lmsRoute.Spec.Upstreams[0] = gatewayv1.Upstream{
-				Scheme:       "http",
-				Host:         "upstream.url",
-				Port:         8080,
-				Path:         "/api/v1",
-				IssuerUrl:    "https://upstream.issuer.url",
-				ClientId:     "gateway",
-				ClientSecret: "topsecret",
+				Scheme:    "http",
+				Host:      "upstream.url",
+				Port:      8080,
+				Path:      "/api/v1",
+				IssuerUrl: "https://upstream.issuer.url",
+
+				Security: gatewayv1.Security{Oauth: gatewayv1.Oauth{
+					ClientId:     "gateway",
+					ClientSecret: "topsecret",
+				}},
 			}
 
 			builder := features.NewFeatureBuilder(mockKc, lmsRoute, realm, gateway)
@@ -336,10 +339,12 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 				Port:          8080,
 				Path:          "/api/v1",
 				TokenEndpoint: "https://example.com/tokenEndpoint",
-				ClientId:      "gateway",
-				ClientSecret:  "topsecret",
-				GrantType:     "client_credentials",
-				Scopes:        []string{"admin:application"},
+				Security: gatewayv1.Security{Oauth: gatewayv1.Oauth{
+					ClientId:     "gateway",
+					ClientSecret: "topsecret",
+					GrantType:    "client_credentials",
+					Scopes:       []string{"admin:application"},
+				}},
 			}
 
 			builder := features.NewFeatureBuilder(mockKc, externalIDPRoute, realm, gateway)
@@ -347,10 +352,10 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 
 			By("defining the consumer oauth config")
 			consumerRoute := NewMockConsumeRoute(*types.ObjectRefFromObject(externalIDPRoute))
-			consumerRoute.Spec.OauthConfig.Scopes = []string{"team:application"}
-			consumerRoute.Spec.OauthConfig.ClientId = "test-user"
-			consumerRoute.Spec.OauthConfig.ClientSecret = "******"
-			consumerRoute.Spec.OauthConfig.GrantType = "client_credentials"
+			consumerRoute.Spec.Security.Oauth.Scopes = []string{"team:application"}
+			consumerRoute.Spec.Security.Oauth.ClientId = "test-user"
+			consumerRoute.Spec.Security.Oauth.ClientSecret = "******"
+			consumerRoute.Spec.Security.Oauth.GrantType = "client_credentials"
 			builder.AddAllowedConsumers(consumerRoute)
 
 			By("mocking kong client calls")

@@ -34,9 +34,16 @@ func AsUpstreamForProxyRoute(ctx context.Context, realm *gatewayapi.Realm, apiBa
 	if err != nil {
 		return ups, errors.Wrapf(err, "failed to construct upstream for realm %s", realm.Name)
 	}
-	ups.ClientId = identityClient.Spec.ClientId
-	ups.ClientSecret = identityClient.Spec.ClientSecret
+
 	ups.IssuerUrl = identityClient.Status.IssuerUrl
+	ups.Security = &gatewayapi.Security{
+		M2M: &gatewayapi.Machine2MachineAuthentication{
+			Client: gatewayapi.OAuth2ClientCredentials{
+				ClientId:     identityClient.Spec.ClientId,
+				ClientSecret: identityClient.Spec.ClientSecret,
+			},
+		},
+	}
 
 	return
 }
@@ -58,18 +65,38 @@ func AsUpstreamForRealRoute(
 	}
 
 	if HasExternalIdp(apiExposure) {
-		upstream.TokenEndpoint = apiExposure.Spec.TokenEndpoint
-		upstream.ClientId = apiExposure.Spec.Security.Oauth2.ClientId
-		upstream.ClientSecret = apiExposure.Spec.Security.Oauth2.ClientSecret
-		upstream.TokenRequest = apiExposure.Spec.Security.Oauth2.TokenRequest
-		upstream.Scopes = apiExposure.Spec.Security.Oauth2.Scopes
-		upstream.GrantType = apiExposure.Spec.Security.Oauth2.GrantType
-
+		// client
+		// ToDo Refactor
+		upstream.Security = &gatewayapi.Security{
+			M2M: &gatewayapi.Machine2MachineAuthentication{
+				ExternalIDP: &gatewayapi.ExternalIdentityProvider{
+					TokenEndpoint: apiExposure.Spec.Security.M2M.ExternalIDP.TokenEndpoint,
+					TokenRequest:  apiExposure.Spec.Security.M2M.ExternalIDP.TokenRequest,
+					GrantType:     apiExposure.Spec.Security.M2M.ExternalIDP.GrantType,
+				},
+				Client: gatewayapi.OAuth2ClientCredentials{
+					ClientId:     apiExposure.Spec.Security.M2M.ExternalIDP.Client.ClientId,
+					ClientSecret: apiExposure.Spec.Security.M2M.ExternalIDP.Client.ClientSecret,
+					Scopes:       apiExposure.Spec.Security.M2M.ExternalIDP.Client.Scopes,
+				},
+			},
+		}
 	}
 
 	return upstream, nil
 }
 
 func HasExternalIdp(exposure *apiapi.ApiExposure) bool {
-	return exposure.Spec.TokenEndpoint != ""
+
+	if exposure.Spec.Security == nil {
+		return false
+	}
+	if exposure.Spec.Security.M2M == nil {
+		return false
+	}
+	if exposure.Spec.Security.M2M.ExternalIDP == nil {
+		return false
+	}
+
+	return exposure.Spec.Security.M2M.ExternalIDP.TokenEndpoint != ""
 }

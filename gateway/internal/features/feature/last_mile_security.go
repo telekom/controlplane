@@ -54,8 +54,8 @@ func (f *LastMileSecurityFeature) Apply(ctx context.Context, builder features.Fe
 
 		rtpPlugin.Config.Append.
 			AddHeader("issuer", route.Spec.Upstreams[0].IssuerUrl).
-			AddHeader("client_id", route.Spec.Upstreams[0].ClientId).
-			AddHeader("client_secret", route.Spec.Upstreams[0].ClientSecret).
+			AddHeader("client_id", route.Spec.Upstreams[0].Security.M2M.Client.ClientId).
+			AddHeader("client_secret", route.Spec.Upstreams[0].Security.M2M.Client.ClientSecret).
 			AddHeader("remote_api_url", CreateRemoteApiUrl(route)).
 			AddHeader(plugin.JumperConfigKey, plugin.ToBase64OrDie(builder.JumperConfig()))
 
