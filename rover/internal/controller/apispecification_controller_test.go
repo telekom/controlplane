@@ -103,7 +103,7 @@ components:
 				g.Expect(api.Spec.Version).To(Equal("1.0.0"))
 				g.Expect(api.Spec.XVendor).To(Equal(true))
 				g.Expect(api.Spec.Category).To(Equal("other"))
-				g.Expect(api.Spec.Security.M2M.Scopes).To(ConsistOf("read", "write"))
+				g.Expect(api.Spec.SubscriberSecurity.M2M.Scopes).To(ConsistOf("read", "write"))
 
 			}, timeout, interval).Should(Succeed())
 		})

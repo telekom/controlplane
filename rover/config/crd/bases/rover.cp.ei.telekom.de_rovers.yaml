@@ -14,8 +14,6 @@ spec:
     kind: Rover
     listKind: RoverList
     plural: rovers
-    shortNames:
-    - rvr
     singular: rover
   scope: Namespaced
   versions:
@@ -66,7 +64,7 @@ spec:
                             for this API exposure
                           properties:
                             strategy:
-                              default: Auto
+                              default: Simple
                               description: Strategy defines the approval process required
                                 for this API
                               enum:
@@ -75,8 +73,9 @@ spec:
                               - FourEyes
                               type: string
                             trustedTeams:
-                              description: TrustedTeams identifies teams that are
-                                trusted for approving this API
+                              description: |-
+                                TrustedTeams identifies teams that are trusted for approving this API
+                                Per default your own team is trusted
                               items:
                                 description: TrustedTeam identifies a team that is
                                   trusted for approvals
@@ -95,6 +94,8 @@ spec:
                                 - group
                                 - team
                                 type: object
+                              maxItems: 10
+                              minItems: 0
                               type: array
                           required:
                           - strategy
@@ -159,22 +160,18 @@ spec:
                                         clientId:
                                           description: ClientId identifies the client
                                             for OAuth2 client credentials flow
-                                          minLength: 1
                                           type: string
                                         clientSecret:
                                           description: ClientSecret is the secret
                                             associated with the client ID
-                                          minLength: 1
                                           type: string
                                         scopes:
                                           description: Scopes defines the OAuth2 scopes
                                             to request in the token
                                           items:
                                             type: string
+                                          maxItems: 10
                                           type: array
-                                      required:
-                                      - clientId
-                                      - clientSecret
                                       type: object
                                     tokenEndpoint:
                                       description: TokenEndpoint is the URL for the
@@ -187,28 +184,30 @@ spec:
                                   x-kubernetes-validations:
                                   - message: Only one of basic or client credentials
                                       can be provided (XOR relationship)
-                                    rule: self == null || (self.basic == null && self.client
-                                      != null) || (self.basic != null && self.client
-                                      == null)
+                                    rule: self == null || (!has(self.basic) && has(self.client))
+                                      || (has(self.basic) &&  !has(self.client))
                                 scopes:
                                   description: Scopes defines additional OAuth2 scopes
                                     that are added to the LMS token
                                   items:
                                     type: string
+                                  maxItems: 10
                                   type: array
                               type: object
                               x-kubernetes-validations:
-                              - message: Only one of externalIDP or basic authentication
-                                  can be provided (XOR relationship)
-                                rule: self == null || (self.externalIDP == null &&
-                                  self.basic != null) || (self.externalIDP != null
-                                  && self.basic == null)
+                              - message: ExternalIDP and basic authentication cannot
+                                  be used together
+                                rule: 'self == null || (has(self.externalIDP) ? (!has(self.basic))
+                                  : true)'
+                              - message: At least one of externalIDP, basic, or scopes
+                                  must be provided
+                                rule: self == null || has(self.externalIDP) || has(self.basic)
+                                  || has(self.scopes)
                           type: object
                           x-kubernetes-validations:
                           - message: Only one of m2m or h2m authentication can be
                               provided (XOR relationship)
-                            rule: self == null || (self.m2m == null && self.h2m !=
-                              null) || (self.m2m != null && self.h2m == null)
+                            rule: self == null || has(self.m2m) != has(self.h2m)
                         traffic:
                           description: Traffic defines optional traffic management
                             configuration for this API
@@ -222,6 +221,7 @@ spec:
                                     for failover if the primary zone is unavailable
                                   items:
                                     type: string
+                                  maxItems: 10
                                   minItems: 1
                                   type: array
                               type: object
@@ -231,12 +231,10 @@ spec:
                               properties:
                                 strategy:
                                   description: Strategy defines the algorithm used
-                                    for distributing traffic (round-robin, least-connections,
-                                    ip-hash)
+                                    for distributing traffic (RoundRobin, LeastConnections)
                                   enum:
-                                  - round-robin
-                                  - least-connections
-                                  - ip-hash
+                                  - RoundRobin
+                                  - LeastConnections
                                   type: string
                               type: object
                             rateLimit:
@@ -332,6 +330,7 @@ spec:
                                         add to the request/response
                                       items:
                                         type: string
+                                      maxItems: 5
                                       minItems: 1
                                       type: array
                                     remove:
@@ -339,30 +338,7 @@ spec:
                                         names to remove
                                       items:
                                         type: string
-                                      minItems: 1
-                                      type: array
-                                  type: object
-                              type: object
-                            response:
-                              description: Response defines transformations applied
-                                to outgoing API responses
-                              properties:
-                                headers:
-                                  description: Headers defines HTTP header modifications
-                                    for requests
-                                  properties:
-                                    add:
-                                      description: Add is a list of HTTP headers to
-                                        add to the request/response
-                                      items:
-                                        type: string
-                                      minItems: 1
-                                      type: array
-                                    remove:
-                                      description: Remove is a list of HTTP header
-                                        names to remove
-                                      items:
-                                        type: string
+                                      maxItems: 5
                                       minItems: 1
                                       type: array
                                   type: object
@@ -381,9 +357,11 @@ spec:
                                 format: uri
                                 type: string
                               weight:
+                                default: 1
                                 description: Weight defines the load balancing weight
                                   for this upstream (when multiple upstreams)
-                                minimum: 0
+                                maximum: 100
+                                minimum: 1
                                 type: integer
                             required:
                             - url
@@ -419,10 +397,10 @@ spec:
                   type: object
                   x-kubernetes-validations:
                   - message: At least one of api or event must be specified
-                    rule: self == null || self.api != null || self.event != null
+                    rule: self == null || has(self.api) || has(self.event)
                   - message: Only one of api or event can be specified (XOR relationship)
-                    rule: self == null || (self.api == null && self.event != null)
-                      || (self.api != null && self.event == null)
+                    rule: self == null || (!has(self.api) && has(self.event)) || (has(self.api)
+                      && !has(self.event))
                 type: array
               subscriptions:
                 description: Subscriptions is a list of APIs and Events that this
@@ -444,8 +422,8 @@ spec:
                             Defaults to local organization if not specified
                           type: string
                         security:
-                          description: Security defines the security configuration
-                            for the Rover
+                          description: Security defines optional security configuration
+                            for this API
                           properties:
                             h2m:
                               description: H2M defines human-to-machine authentication
@@ -471,83 +449,117 @@ spec:
                                   - password
                                   - username
                                   type: object
-                                externalIDP:
-                                  description: ExternalIDP defines external identity
-                                    provider configuration
+                                client:
+                                  description: Client defines client credentials for
+                                    OAuth2
                                   properties:
-                                    basic:
-                                      description: Basic defines basic auth credentials
-                                        for the OAuth2 token request
-                                      properties:
-                                        password:
-                                          description: Password for basic authentication
-                                          minLength: 1
-                                          type: string
-                                        username:
-                                          description: Username for basic authentication
-                                          minLength: 1
-                                          type: string
-                                      required:
-                                      - password
-                                      - username
-                                      type: object
-                                    client:
-                                      description: Client defines client credentials
-                                        for the OAuth2 token request
-                                      properties:
-                                        clientId:
-                                          description: ClientId identifies the client
-                                            for OAuth2 client credentials flow
-                                          minLength: 1
-                                          type: string
-                                        clientSecret:
-                                          description: ClientSecret is the secret
-                                            associated with the client ID
-                                          minLength: 1
-                                          type: string
-                                        scopes:
-                                          description: Scopes defines the OAuth2 scopes
-                                            to request in the token
-                                          items:
-                                            type: string
-                                          type: array
-                                      required:
-                                      - clientId
-                                      - clientSecret
-                                      type: object
-                                    tokenEndpoint:
-                                      description: TokenEndpoint is the URL for the
-                                        OAuth2 token endpoint
-                                      format: uri
+                                    clientId:
+                                      description: ClientId identifies the client
+                                        for OAuth2 client credentials flow
                                       type: string
-                                  required:
-                                  - tokenEndpoint
+                                    clientSecret:
+                                      description: ClientSecret is the secret associated
+                                        with the client ID
+                                      type: string
+                                    scopes:
+                                      description: Scopes defines the OAuth2 scopes
+                                        to request in the token
+                                      items:
+                                        type: string
+                                      maxItems: 10
+                                      type: array
                                   type: object
-                                  x-kubernetes-validations:
-                                  - message: Only one of basic or client credentials
-                                      can be provided (XOR relationship)
-                                    rule: self == null || (self.basic == null && self.client
-                                      != null) || (self.basic != null && self.client
-                                      == null)
                                 scopes:
                                   description: Scopes defines additional OAuth2 scopes
                                     that are added to the LMS token
                                   items:
                                     type: string
+                                  maxItems: 10
                                   type: array
                               type: object
                               x-kubernetes-validations:
-                              - message: Only one of externalIDP or basic authentication
-                                  can be provided (XOR relationship)
-                                rule: self == null || (self.externalIDP == null &&
-                                  self.basic != null) || (self.externalIDP != null
-                                  && self.basic == null)
+                              - message: Client and basic authentication cannot be
+                                  used together
+                                rule: 'self == null || (has(self.client) ? (!has(self.basic))
+                                  : true)'
+                              - message: At least one of client, basic, or scopes
+                                  must be provided
+                                rule: self == null || has(self.client) || has(self.basic)
+                                  || has(self.scopes)
                           type: object
                           x-kubernetes-validations:
                           - message: Only one of m2m or h2m authentication can be
                               provided (XOR relationship)
-                            rule: self == null || (self.m2m == null && self.h2m !=
-                              null) || (self.m2m != null && self.h2m == null)
+                            rule: self == null || has(self.m2m) != has(self.h2m)
+                        traffic:
+                          description: Traffic defines optional traffic management
+                            configuration for this API
+                          properties:
+                            failover:
+                              description: Failover defines disaster recovery configuration
+                                for this API
+                              properties:
+                                zones:
+                                  description: Zones is a list of zone names to use
+                                    for failover if the primary zone is unavailable
+                                  items:
+                                    type: string
+                                  maxItems: 10
+                                  minItems: 1
+                                  type: array
+                              type: object
+                            rateLimit:
+                              description: RateLimit defines request rate limiting
+                                for this API
+                              properties:
+                                hour:
+                                  description: Hour defines the maximum number of
+                                    requests allowed per hour
+                                  minimum: 0
+                                  type: integer
+                                minute:
+                                  description: Minute defines the maximum number of
+                                    requests allowed per minute
+                                  minimum: 0
+                                  type: integer
+                                second:
+                                  description: Second defines the maximum number of
+                                    requests allowed per second
+                                  minimum: 0
+                                  type: integer
+                              type: object
+                          type: object
+                        transformation:
+                          description: Transformation defines optional request/response
+                            transformations for this API
+                          properties:
+                            request:
+                              description: Request defines transformations applied
+                                to incoming API requests
+                              properties:
+                                headers:
+                                  description: Headers defines HTTP header modifications
+                                    for requests
+                                  properties:
+                                    add:
+                                      description: Add is a list of HTTP headers to
+                                        add to the request/response
+                                      items:
+                                        type: string
+                                      maxItems: 5
+                                      minItems: 1
+                                      type: array
+                                    remove:
+                                      description: Remove is a list of HTTP header
+                                        names to remove
+                                      items:
+                                        type: string
+                                      maxItems: 5
+                                      minItems: 1
+                                      type: array
+                                  type: object
+                              type: object
+                          type: object
                       required:
                       - basePath
                       type: object
@@ -566,10 +578,10 @@ spec:
                   type: object
                   x-kubernetes-validations:
                   - message: At least one of api or event must be specified
-                    rule: self == null || self.api != null || self.event != null
+                    rule: self == null || has(self.api) || has(self.event)
                   - message: Only one of api or event can be specified (XOR relationship)
-                    rule: self == null || (self.api == null && self.event != null)
-                      || (self.api != null && self.event == null)
+                    rule: (has(self.api) && !has(self.event)) || (!has(self.api) &&
+                      has(self.event))
                 type: array
               zone:
                 description: Zone identifies the deployment zone for this Rover resource
@@ -708,9 +720,7 @@ spec:
                 x-kubernetes-list-type: map
             type: object
         required:
-        - metadata
         - spec
-        - status
         type: object
     served: true
     storage: true

@@ -29,8 +29,8 @@ func ParseSpecification(ctx context.Context, spec string) (*apiapi.Api, error) {
 	api.Spec = apiapi.ApiSpec{
 		XVendor:  false,
 		Category: "other",
-		Security: apiapi.Security{
-			M2M: &apiapi.Machine2MachineAuthentication{
+		SubscriberSecurity: apiapi.SubscriberSecurity{
+			M2M: &apiapi.SubscriberMachine2MachineAuthentication{
 				Scopes: []string{},
 			},
 		},

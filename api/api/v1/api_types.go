@@ -19,7 +19,6 @@ type ApiSpec struct {
 	Version            string             `json:"version"`
 	BasePath           string             `json:"basePath"`
 	Category           string             `json:"category"`
-	Security           Security           `json:"security,omitempty"`
 	SubscriberSecurity SubscriberSecurity `json:"SubscriberSecurity,omitempty"`
 	XVendor            bool               `json:"xVendor"`
 }
