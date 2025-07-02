@@ -80,7 +80,7 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 		} else if statusErr.ErrStatus.Reason == metav1.StatusReasonNotFound {
 			errorMessage := "Create or update ApiSubscription failed. Webhook validation error - NotFound."
 			log.V(0).Error(err, errorMessage)
-			owner.SetCondition(condition.NewBlockedCondition("Blocked due to missing ApiExposure for subscription to basepath '" + sub.BasePath + "'"))
+			owner.SetCondition(condition.NewBlockedCondition("Blocked due to missing ApiExposure for subscription to basePath '" + sub.BasePath + "'"))
 			return errors.Wrap(err, errorMessage)
 		}
 	} else if err != nil {
