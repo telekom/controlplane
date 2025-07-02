@@ -140,6 +140,8 @@ go run ./cmd/server/server.go -backend conjur -configfile ./config/default/confi
 For loading the Conjur configuration [github.com/cyberark/conjur-api-go](https://github.com/cyberark/conjur-api-go) is used. 
 Configuration is done using environment variables. Please refer to their documentation for more information on how to set up the Conjur backend.
 
+Furthermore, you need to setup https://github.com/cyberark/conjur-authn-k8s-client as a sidecar and mount the access token.
+
 ### Client Configuration
 
 For developing and integration purposes, we have included a client that can be used to test the SM in the cluster.
