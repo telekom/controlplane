@@ -248,6 +248,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 			}
 
 			updateSpec = roverv1.RoverSpec{
+				Zone:          fetchedRover.Spec.Zone,
 				Exposures:     updateExposures,
 				Subscriptions: updateSubscriptions,
 			}
@@ -327,6 +328,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 		It("should successfully handle remote subscription and reconcile the resource", func() {
 
 			Spec := roverv1.RoverSpec{
+				Zone: testEnvironment,
 				Subscriptions: []roverv1.Subscription{
 					{
 						Api: &roverv1.ApiSubscription{
@@ -389,6 +391,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 		It("should successfully handle scopes and reconcile the resource", func() {
 
 			Spec := roverv1.RoverSpec{
+				Zone: testEnvironment,
 				Subscriptions: []roverv1.Subscription{
 					{
 						Api: &roverv1.ApiSubscription{

@@ -12,11 +12,11 @@ import (
 
 // ApiSubscriptionSpec defines the desired state of ApiSubscription
 type ApiSubscriptionSpec struct {
-	ApiBasePath  string             `json:"apiBasePath"`
-	Security     SubscriberSecurity `json:"security,omitempty"`
-	Organization string             `json:"organization,omitempty"`
-	Requestor    Requestor          `json:"requestor"`
-	Zone         ctypes.ObjectRef   `json:"zone"`
+	ApiBasePath  string              `json:"apiBasePath"`
+	Security     *SubscriberSecurity `json:"security,omitempty"`
+	Organization string              `json:"organization,omitempty"`
+	Requestor    Requestor           `json:"requestor"`
+	Zone         ctypes.ObjectRef    `json:"zone"`
 }
 
 type Requestor struct {

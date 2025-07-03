@@ -4,7 +4,7 @@
 
 package v1
 
-// Security defines the security configuration for the Rover
+// Security defines the security configuration for the gateway
 // Security is optional, but if provided, exactly one of m2m or h2m must be set
 // +kubebuilder:validation:XValidation:rule="self == null || has(self.m2m) != has(self.h2m)", message="Only one of m2m or h2m authentication can be provided (XOR relationship)"
 type Security struct {

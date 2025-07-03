@@ -14,6 +14,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/util"
 
 	rover "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,17 +48,20 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 		apiSubscription.Spec = apiapi.ApiSubscriptionSpec{
-			ApiBasePath: sub.BasePath,
-			Zone:        zoneRef,
-			Security: apiapi.SubscriberSecurity{
-				M2M: &apiapi.SubscriberMachine2MachineAuthentication{
-					Scopes: sub.Security.M2M.Scopes,
-				},
-			},
+			ApiBasePath:  sub.BasePath,
+			Zone:         zoneRef,
 			Organization: sub.Organization,
 			Requestor: apiapi.Requestor{
 				Application: *owner.Status.Application,
 			},
+		}
+
+		if util.SubscriptionHasM2M(sub) {
+			apiSubscription.Spec.Security = &apiapi.SubscriberSecurity{
+				M2M: &apiapi.SubscriberMachine2MachineAuthentication{
+					Scopes: sub.Security.M2M.Scopes,
+				},
+			}
 		}
 
 		apiSubscription.Labels = map[string]string{

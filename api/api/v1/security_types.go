@@ -16,8 +16,8 @@ type Security struct {
 	H2M *Human2MachineAuthentication `json:"h2m,omitempty"`
 }
 
-// Security defines the security configuration for the Rover
-// Security is optional, but if provided, exactly one of m2m or h2m must be set
+// SubscriberSecurity defines the security configuration for the Rover
+// SubscriberSecurity is optional, but if provided, exactly one of m2m or h2m must be set
 // +kubebuilder:validation:XValidation:rule="self == null || has(self.m2m) != has(self.h2m)", message="Only one of m2m or h2m authentication can be provided (XOR relationship)"
 type SubscriberSecurity struct {
 	// M2M defines machine-to-machine authentication configuration
@@ -75,7 +75,7 @@ type SubscriberHuman2MachineAuthentication struct {
 }
 
 // ExternalIdentityProvider defines configuration for using an external identity provider
-// +kubebuilder:validation:XValidation:rule="self == null || (self.basic == null && self.client != null) || (self.basic != null && self.client == null)", message="Only one of basic or client credentials can be provided (XOR relationship)"
+// +kubebuilder:validation:XValidation:rule="self == null || has(self.basic) != has(self.client)", message="Only one of basic or client credentials can be provided (XOR relationship)"
 type ExternalIdentityProvider struct {
 	// TokenEndpoint is the URL for the OAuth2 token endpoint
 	// +kubebuilder:validation:Required

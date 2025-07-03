@@ -20,7 +20,7 @@ type RemoteApiSubscriptionSpec struct {
 	// Requester is the entity that is requesting the subscription
 	Requester RemoteRequester `json:"requester"`
 	// Security is the security configuration for the subscription
-	Security SubscriberSecurity `json:"security,omitempty"`
+	Security *SubscriberSecurity `json:"security,omitempty"`
 }
 
 type RemoteRequester struct {

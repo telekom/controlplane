@@ -29,7 +29,7 @@ func NewApi(apiBasePath string) *apiv1.Api {
 			Version:  "v1",
 			BasePath: apiBasePath,
 			Category: "other",
-			SubscriberSecurity: apiv1.SubscriberSecurity{
+			SubscriberSecurity: &apiv1.SubscriberSecurity{
 				M2M: &apiv1.SubscriberMachine2MachineAuthentication{
 					Scopes: []string{"scope1", "scope2"},
 				},

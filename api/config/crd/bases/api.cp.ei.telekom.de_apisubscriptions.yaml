@@ -72,8 +72,8 @@ spec:
                 type: object
               security:
                 description: |-
-                  Security defines the security configuration for the Rover
-                  Security is optional, but if provided, exactly one of m2m or h2m must be set
+                  SubscriberSecurity defines the security configuration for the Rover
+                  SubscriberSecurity is optional, but if provided, exactly one of m2m or h2m must be set
                 properties:
                   h2m:
                     description: H2M defines human-to-machine authentication configuration

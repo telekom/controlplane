@@ -15,12 +15,13 @@ var BasePathLabelKey = config.BuildLabelKey("basepath")
 
 // ApiSpec defines the desired state of Api
 type ApiSpec struct {
-	Name               string             `json:"name"`
-	Version            string             `json:"version"`
-	BasePath           string             `json:"basePath"`
-	Category           string             `json:"category"`
-	SubscriberSecurity SubscriberSecurity `json:"SubscriberSecurity,omitempty"`
-	XVendor            bool               `json:"xVendor"`
+	Name               string              `json:"name"`
+	Version            string              `json:"version"`
+	BasePath           string              `json:"basePath"`
+	Category           string              `json:"category"`
+	Security           *Security           `json:"security,omitempty"`
+	SubscriberSecurity *SubscriberSecurity `json:"SubscriberSecurity,omitempty"`
+	XVendor            bool                `json:"xVendor"`
 }
 
 // ApiStatus defines the observed state of Api

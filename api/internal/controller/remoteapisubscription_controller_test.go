@@ -69,7 +69,7 @@ func NewRemoteApiSubscription(apiBasePath, appName string) *apiapi.RemoteApiSubs
 			ApiBasePath:        apiBasePath,
 			TargetOrganization: "esp",
 			SourceOrganization: "ger",
-			Security: apiapi.SubscriberSecurity{
+			Security: &apiapi.SubscriberSecurity{
 				M2M: &apiapi.SubscriberMachine2MachineAuthentication{
 					Scopes: []string{"scope1", "scope2"},
 				},
