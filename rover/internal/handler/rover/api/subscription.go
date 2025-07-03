@@ -47,15 +47,22 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 		apiSubscription.Spec = apiapi.ApiSubscriptionSpec{
-			ApiBasePath: sub.BasePath,
-			Zone:        zoneRef,
-			Security: &apiapi.Security{
-				Oauth2Scopes: sub.OAuth2Scopes,
-			},
+			ApiBasePath:  sub.BasePath,
+			Zone:         zoneRef,
+			Security:     &apiapi.Security{},
 			Organization: sub.Organization,
 			Requestor: apiapi.Requestor{
 				Application: *owner.Status.Application,
 			},
+		}
+
+		failoverZones, hasFailover := getFailoverZones(environment, sub.Traffic.Failover)
+		if hasFailover {
+			apiSubscription.Spec.Traffic = apiapi.Traffic{
+				Failover: &apiapi.Failover{
+					Zones: failoverZones,
+				},
+			}
 		}
 
 		apiSubscription.Labels = map[string]string{

@@ -37,7 +37,8 @@ func (f *LastMileSecurityFeature) Priority() int {
 
 func (f *LastMileSecurityFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
 	route := builder.GetRoute()
-	return !route.Spec.PassThrough
+	noFailover := route.Spec.Traffic.Failover == nil
+	return !route.Spec.PassThrough && noFailover
 }
 
 func (f *LastMileSecurityFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
@@ -47,17 +48,17 @@ func (f *LastMileSecurityFeature) Apply(ctx context.Context, builder features.Fe
 
 	rtpPlugin := builder.RequestTransformerPlugin()
 
-	builder.SetUpstream(client.NewUpstreamOrDie("http://localhost:8080/proxy"))
+	builder.SetUpstream(client.NewUpstreamOrDie(plugin.LocalhostProxyUrl))
 
 	if route.IsProxy() {
 		// Proxy Route
 
+		upstream := route.Spec.Upstreams[0]
 		rtpPlugin.Config.Append.
-			AddHeader("issuer", route.Spec.Upstreams[0].IssuerUrl).
-			AddHeader("client_id", route.Spec.Upstreams[0].ClientId).
-			AddHeader("client_secret", route.Spec.Upstreams[0].ClientSecret).
-			AddHeader("remote_api_url", CreateRemoteApiUrl(route)).
-			AddHeader(plugin.JumperConfigKey, plugin.ToBase64OrDie(builder.JumperConfig()))
+			AddHeader("issuer", upstream.IssuerUrl).
+			AddHeader("client_id", upstream.ClientId).
+			AddHeader("client_secret", upstream.ClientSecret).
+			AddHeader("remote_api_url", CreateRemoteApiUrl(route))
 
 	} else {
 		// Real Route
@@ -70,8 +71,7 @@ func (f *LastMileSecurityFeature) Apply(ctx context.Context, builder features.Fe
 		rtpPlugin.Config.Append.
 			AddHeader("remote_api_url", CreateRemoteApiUrl(route)).
 			AddHeader("api_base_path", route.Spec.Upstreams[0].Path).
-			AddHeader("access_token_forwarding", "false").
-			AddHeader(plugin.JumperConfigKey, plugin.ToBase64OrDie(builder.JumperConfig()))
+			AddHeader("access_token_forwarding", "false")
 
 		// We could use append here but then in a cross-CP mesh scenario we would have multiple headers like "realm1,realm2"
 		// Add them if they are not present yet

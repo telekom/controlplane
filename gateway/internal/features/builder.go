@@ -47,6 +47,7 @@ type FeaturesBuilder interface {
 	JwtPlugin() *plugin.JwtPlugin
 	RateLimitPlugin() *plugin.RateLimitPlugin
 	JumperConfig() *plugin.JumperConfig
+	RoutingConfigs() *plugin.RoutingConfigs
 
 	Build(context.Context) error
 }
@@ -71,6 +72,9 @@ type Builder struct {
 
 	// jumperConfig is a special plugin that is always required by the API Gateway
 	jumperConfig *plugin.JumperConfig
+
+	// routingConfig is used to configure the routing behavior of the API Gateway in case of failover
+	routingConfigs *plugin.RoutingConfigs
 
 	// Features that are enabled for this builder
 	Features map[gatewayv1.FeatureType]Feature
@@ -185,6 +189,13 @@ func (b *Builder) JumperConfig() *plugin.JumperConfig {
 	return b.jumperConfig
 }
 
+func (b *Builder) RoutingConfigs() *plugin.RoutingConfigs {
+	if b.routingConfigs == nil {
+		b.routingConfigs = &plugin.RoutingConfigs{}
+	}
+	return b.routingConfigs
+}
+
 func (b *Builder) SetUpstream(upstream client.Upstream) {
 	b.Upstream = upstream
 }
@@ -210,6 +221,15 @@ func (b *Builder) Build(ctx context.Context) error {
 
 	// In case a plugin was used before but is not used anymore, we need to remove it
 	b.Route.Status.Properties = map[string]string{}
+
+	// Ensure that the Routing and JumperConfig are set last
+	// ! We must ensure that the default (empty) value is null. Otherwise, Jumper will not work properly.
+	if b.routingConfigs != nil {
+		b.RequestTransformerPlugin().Config.Append.AddHeader(plugin.RoutingConfigKey, plugin.ToBase64OrDie(b.routingConfigs))
+	}
+	if b.jumperConfig != nil {
+		b.RequestTransformerPlugin().Config.Append.AddHeader(plugin.JumperConfigKey, plugin.ToBase64OrDie(b.jumperConfig))
+	}
 
 	err := b.kc.CreateOrReplaceRoute(ctx, b.Route, b.Upstream)
 	if err != nil {

@@ -83,6 +83,41 @@ spec:
                 - name
                 - namespace
                 type: object
+              traffic:
+                properties:
+                  failover:
+                    properties:
+                      targetZoneName:
+                        type: string
+                      upstreams:
+                        items:
+                          properties:
+                            clientId:
+                              type: string
+                            clientSecret:
+                              type: string
+                            host:
+                              type: string
+                            issuerUrl:
+                              type: string
+                            path:
+                              type: string
+                            port:
+                              type: integer
+                            scheme:
+                              type: string
+                          required:
+                          - host
+                          - path
+                          - port
+                          - scheme
+                          type: object
+                        type: array
+                    required:
+                    - targetZoneName
+                    - upstreams
+                    type: object
+                type: object
               upstreams:
                 items:
                   properties:
@@ -111,6 +146,7 @@ spec:
             - downstreams
             - passThrough
             - realm
+            - traffic
             - upstreams
             type: object
           status:

@@ -291,7 +291,8 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				apiExpRoute := apiExposure.Status.Route
 
 				By("Checking if the route is the real-route")
-				g.Expect(apiSubRoute).To(Equal(apiExpRoute))
+				g.Expect(apiSubRoute.Name).To(Equal(apiExpRoute.Name))
+				g.Expect(apiSubRoute.Namespace).To(Equal(apiExpRoute.Namespace))
 
 			}, timeout, interval).Should(Succeed())
 		})
@@ -599,4 +600,8 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 
 		})
 	})
+})
+
+var _ = Describe("Failover Flow", Ordered, func() {
+
 })

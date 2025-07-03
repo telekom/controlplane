@@ -16,12 +16,6 @@ import (
 
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-
-	secretmanager "github.com/telekom/controlplane/secret-manager/api"
-	smfake "github.com/telekom/controlplane/secret-manager/api/fake"
-	"github.com/telekom/controlplane/secret-manager/api/gen"
-
-	mock "github.com/stretchr/testify/mock"
 )
 
 var _ = Describe("Rover Controller", Ordered, func() {
@@ -35,7 +29,6 @@ var _ = Describe("Rover Controller", Ordered, func() {
 
 	ctx := context.Background()
 	var team *organizationv1.Team
-	var mockSecretManager = &smfake.MockSecretManager{}
 
 	typeNamespacedName := client.ObjectKey{
 		Name:      resourceName,
@@ -53,11 +46,6 @@ var _ = Describe("Rover Controller", Ordered, func() {
 
 		By("Creating the team Namespace")
 		createNamespace(teamNamespace)
-
-		By("Mocking Secret Manager")
-		secretmanager.API = func() secretmanager.SecretManager {
-			return mockSecretManager
-		}
 	})
 
 	AfterEach(func() {
@@ -82,14 +70,22 @@ var _ = Describe("Rover Controller", Ordered, func() {
 
 		It("should successfully reconcile the resource", func() {
 
-			Spec := roverv1.RoverSpec{
+			spec := roverv1.RoverSpec{
+				Zone:         "test",
+				ClientSecret: "topsecret",
 				Exposures: []roverv1.Exposure{
 					{
 						Api: &roverv1.ApiExposure{
-							BasePath:   BasePath,
-							Upstream:   upstream,
+							BasePath: BasePath,
+							Upstreams: []roverv1.Upstream{
+								{
+									URL: upstream,
+								},
+							},
 							Visibility: roverv1.VisibilityWorld,
-							Approval:   roverv1.ApprovalStrategyFourEyes,
+							Approval: roverv1.Approval{
+								Strategy: roverv1.ApprovalStrategyFourEyes,
+							},
 						},
 					},
 				},
@@ -102,19 +98,11 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				},
 			}
 
-			rover := createRover(resourceName, teamNamespace, testEnvironment, Spec)
+			rover := createRover(resourceName, teamNamespace, testEnvironment, spec)
 
 			By("creating the custom resource for the Kind Rover")
 
 			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
-
-			// mocking the call and response to secret manager
-			mockedSecrets := make([]gen.ListSecretItem, 1)
-			mockedSecrets[0] = gen.ListSecretItem{
-				Id:   testEnvironment + ":" + team.Name + "::clientSecret:d174a02b9776",
-				Name: "clientSecret",
-			}
-			mockSecretManager.EXPECT().UpsertApplication(mock.Anything, testEnvironment, team.Name, "test-resource").Return(mockedSecrets, nil)
 
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKey{
@@ -137,7 +125,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				g.Expect(application.Spec.Secret).To(Not(BeEmpty()))
 				g.Expect(application.Spec.Team).To(Equal(team.Name))
 				g.Expect(application.Spec.TeamEmail).To(Equal(team.Spec.Email))
-				g.Expect(application.Spec.Secret).To(Equal("$<test:eni--hyperion::clientSecret:d174a02b9776>"))
+				g.Expect(application.Spec.Secret).To(Equal("topsecret"))
 
 				apiExposure := &apiapi.ApiExposure{}
 				err = k8sClient.Get(ctx, client.ObjectKey{
@@ -178,13 +166,21 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				},
 			}
 			updateSpec := roverv1.RoverSpec{
+				Zone:         "test",
+				ClientSecret: "topsecret",
 				Exposures: []roverv1.Exposure{
 					{
 						Api: &roverv1.ApiExposure{
-							BasePath:   BasePath,
-							Upstream:   upstream,
+							BasePath: BasePath,
+							Upstreams: []roverv1.Upstream{
+								{
+									URL: upstream,
+								},
+							},
 							Visibility: roverv1.VisibilityWorld,
-							Approval:   roverv1.ApprovalStrategyFourEyes,
+							Approval: roverv1.Approval{
+								Strategy: roverv1.ApprovalStrategyFourEyes,
+							},
 						},
 					},
 				},
@@ -217,15 +213,23 @@ var _ = Describe("Rover Controller", Ordered, func() {
 			updateExposures := []roverv1.Exposure{
 				{
 					Api: &roverv1.ApiExposure{
-						BasePath:   BasePath,
-						Upstream:   "https://my.new.upstream.de",
+						BasePath: BasePath,
+						Upstreams: []roverv1.Upstream{
+							{
+								URL: "https://my.new.upstream.de",
+							},
+						},
 						Visibility: roverv1.VisibilityEnterprise,
-						Approval:   roverv1.ApprovalStrategySimple,
+						Approval: roverv1.Approval{
+							Strategy: roverv1.ApprovalStrategySimple,
+						},
 					},
 				},
 			}
 
 			updateSpec = roverv1.RoverSpec{
+				Zone:          "test",
+				ClientSecret:  "topsecret",
 				Exposures:     updateExposures,
 				Subscriptions: updateSubscriptions,
 			}
@@ -251,11 +255,14 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(apiExposure.Spec.Visibility).To(Equal(apiapi.VisibilityEnterprise))
 				g.Expect(apiExposure.Spec.Approval).To(Equal(apiapi.ApprovalStrategySimple))
+				g.Expect(apiExposure.Spec.Upstreams).To(HaveLen(1))
 				g.Expect(apiExposure.Spec.Upstreams[0].Url).To(Equal("https://my.new.upstream.de"))
 			})
 
 			By("deleting exposures and subscriptions")
 			updateSpec = roverv1.RoverSpec{
+				Zone:          "test",
+				ClientSecret:  "topsecret",
 				Exposures:     []roverv1.Exposure{},
 				Subscriptions: []roverv1.Subscription{},
 			}
@@ -303,7 +310,9 @@ var _ = Describe("Rover Controller", Ordered, func() {
 
 		It("should successfully handle remote subscription and reconcile the resource", func() {
 
-			Spec := roverv1.RoverSpec{
+			spec := roverv1.RoverSpec{
+				Zone:         "test",
+				ClientSecret: "topsecret",
 				Subscriptions: []roverv1.Subscription{
 					{
 						Api: &roverv1.ApiSubscription{
@@ -314,7 +323,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				},
 			}
 
-			rover := createRover(resourceName, teamNamespace, testEnvironment, Spec)
+			rover := createRover(resourceName, teamNamespace, testEnvironment, spec)
 
 			By("creating the custom resource for the Kind Rover")
 
@@ -366,11 +375,12 @@ var _ = Describe("Rover Controller", Ordered, func() {
 		It("should successfully handle scopes and reconcile the resource", func() {
 
 			Spec := roverv1.RoverSpec{
+				Zone:         "test",
+				ClientSecret: "topsecret",
 				Subscriptions: []roverv1.Subscription{
 					{
 						Api: &roverv1.ApiSubscription{
-							BasePath:     BasePath,
-							OAuth2Scopes: []string{"tardis:user:read"},
+							BasePath: BasePath,
 						},
 					},
 				},
@@ -398,7 +408,6 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				}, apiSubscription)
 
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(apiSubscription.Spec.Security.Oauth2Scopes[0]).To(Equal("tardis:user:read"))
 
 			}, timeout, interval).Should(Succeed())
 
