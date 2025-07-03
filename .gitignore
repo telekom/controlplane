@@ -4,6 +4,7 @@
 
 dist/
 **/bin/
+charts
 
 # editor and IDE paraphernalia
 .idea
