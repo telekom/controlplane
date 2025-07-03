@@ -20,13 +20,15 @@ type Feature interface {
 	// Name of the feature
 	Name() gatewayv1.FeatureType
 	// Priority of this feature in the feature-chain
-	// The higher the priority, the later the feature is applied
-	// Feature can have a relative priority to other features
+	// The higher the priority value, the later the feature is applied. Or, in other words, the lower the priority value, the earlier the feature is applied.
+	// Features can have a relative priority to other features to indicate that some features should be applied before or after others.
 	Priority() int
-	// IsUsed checks if the feature is used in the current builder-context
+	// IsUsed checks if the feature is already used in the current builder-context before applying it.
+	// The business-context (context.Context) is available to check/create runtime components such as the environment or loggers.
 	IsUsed(ctx context.Context, builder FeaturesBuilder) bool
 	// Apply applies the feature to the current builder-context
 	// It may modify the plugins and upstream of the builder-context
+	// The business-context (context.Context) is available to check/create runtime components such as the environment or loggers.
 	Apply(ctx context.Context, builder FeaturesBuilder) error
 }
 
@@ -52,17 +54,26 @@ type FeaturesBuilder interface {
 var _ FeaturesBuilder = &Builder{}
 
 type Builder struct {
+	// kc is the Kong client used to interact with the Kong Gateway
 	kc client.KongClient
 
+	// AllowedConsumers are the consumers that are allowed to consume the passed route
 	AllowedConsumers []*gatewayv1.ConsumeRoute
 	Route            *gatewayv1.Route
-	Realm            *gatewayv1.Realm
-	Gateway          *gatewayv1.Gateway
 
-	Upstream     client.Upstream
-	Plugins      map[string]client.CustomPlugin
+	Realm   *gatewayv1.Realm
+	Gateway *gatewayv1.Gateway
+
+	Upstream client.Upstream
+
+	// Plugins that are stored in the builder and to be configured by the builders for the route
+	Plugins map[string]client.CustomPlugin
+
+	// jumperConfig is a special plugin that is always required by the API Gateway
 	jumperConfig *plugin.JumperConfig
-	Features     map[gatewayv1.FeatureType]Feature
+
+	// Features that are enabled for this builder
+	Features map[gatewayv1.FeatureType]Feature
 }
 
 var NewFeatureBuilder = func(kc client.KongClient, route *gatewayv1.Route, realm *gatewayv1.Realm, gateway *gatewayv1.Gateway) FeaturesBuilder {
