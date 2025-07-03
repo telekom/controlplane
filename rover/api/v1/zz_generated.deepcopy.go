@@ -147,11 +147,7 @@ func (in *ApiSubscription) DeepCopyInto(out *ApiSubscription) {
 		*out = new(Transformation)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.Traffic != nil {
-		in, out := &in.Traffic, &out.Traffic
-		*out = new(SubscriberTraffic)
-		(*in).DeepCopyInto(*out)
-	}
+	in.Traffic.DeepCopyInto(&out.Traffic)
 	if in.Security != nil {
 		in, out := &in.Security, &out.Security
 		*out = new(SubscriberSecurity)

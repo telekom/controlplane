@@ -51,7 +51,31 @@ func NewJumperConfig() *JumperConfig {
 	}
 }
 
-func ToBase64OrDie(cfg *JumperConfig) string {
+type RoutingConfigs []*RoutingConfig
+
+func (rcs *RoutingConfigs) Add(config *RoutingConfig) {
+	*rcs = append(*rcs, config)
+}
+
+type RoutingConfig struct {
+	OAuth     map[ConsumerId]OauthCredentials     `json:"oauth,omitempty"`
+	BasicAuth map[ConsumerId]BasicAuthCredentials `json:"basicAuth,omitempty"`
+
+	LoadBalancing LoadBalancingConfig `json:"loadBalancing,omitzero"`
+	RemoteApiUrl  string              `json:"remoteApiUrl,omitzero"`
+	ApiBasePath   string              `json:"apiBasePath,omitzero"`
+	Realm         string              `json:"realm,omitempty"`
+	Environment   string              `json:"environment,omitempty"`
+	Issuer        string              `json:"issuer,omitempty"`
+	ClientId      string              `json:"clientId,omitempty"`
+	ClientSecret  string              `json:"clientSecret,omitempty"`
+	// TargetZoneName is used to determine if the zone is currently available using zoneHealthCheckService
+	TargetZoneName string `json:"targetZoneName,omitempty"`
+}
+
+type LoadBalancingConfig struct{}
+
+func ToBase64OrDie[T any](cfg T) string {
 	b, err := json.Marshal(cfg)
 	if err != nil {
 		panic(err)
@@ -60,7 +84,7 @@ func ToBase64OrDie(cfg *JumperConfig) string {
 	return base64Str
 }
 
-func FromBase64(base64Str string) (*JumperConfig, error) {
+func FromBase64[T any](base64Str string) (*T, error) {
 	b, err := base64.StdEncoding.DecodeString(base64Str)
 	if err != nil {
 		return nil, err
@@ -69,7 +93,7 @@ func FromBase64(base64Str string) (*JumperConfig, error) {
 		return nil, errors.New("empty base64 string")
 	}
 
-	var cfg *JumperConfig
+	var cfg *T
 	err = json.Unmarshal(b, &cfg)
 	if err != nil {
 		return nil, err

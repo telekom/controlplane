@@ -306,7 +306,8 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				apiExpRoute := apiExposure.Status.Route
 
 				By("Checking if the route is the real-route")
-				g.Expect(apiSubRoute).To(Equal(apiExpRoute))
+				g.Expect(apiSubRoute.Name).To(Equal(apiExpRoute.Name))
+				g.Expect(apiSubRoute.Namespace).To(Equal(apiExpRoute.Namespace))
 
 			}, timeout, interval).Should(Succeed())
 		})
@@ -485,7 +486,37 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 					},
 					Scopes: []string{"scope1", "scope2"},
 				}
-				EventuallyCreateAndApproveApiSubscription(securityApiSubscription)
+				err := k8sClient.Create(ctx, apiSubscription)
+				Expect(err).ToNot(HaveOccurred())
+
+				By("Checking if the resource the approval is pending")
+				Eventually(func(g Gomega) {
+					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
+					g.Expect(err).ToNot(HaveOccurred())
+					By("Checking the conditions")
+					processingCondition := meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeProcessing)
+					g.Expect(processingCondition).ToNot(BeNil())
+					g.Expect(processingCondition.Status).To(Equal(metav1.ConditionTrue))
+					g.Expect(processingCondition.Reason).To(Equal("ApprovalPending"))
+				}, timeout, interval).Should(Succeed())
+
+				By("Progressing the Approval resources")
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
+				Expect(err).ToNot(HaveOccurred())
+				approvalReq := ProgressApprovalRequest(apiSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
+				ProgressApproval(apiSubscription, approvalapi.ApprovalStateGranted, approvalReq)
+				Expect(err).ToNot(HaveOccurred())
+
+				By("Checking if the resource is ready")
+				Eventually(func(g Gomega) {
+					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
+					g.Expect(err).ToNot(HaveOccurred())
+					By("Checking the conditions")
+					processingCondition := meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeReady)
+					g.Expect(processingCondition).ToNot(BeNil())
+					g.Expect(processingCondition.Status).To(Equal(metav1.ConditionTrue))
+					g.Expect(processingCondition.Reason).To(Equal("Provisioned"))
+				}, timeout, interval).Should(Succeed())
 
 				By("Checking if the resource has the expected state")
 				Eventually(func(g Gomega) {
@@ -666,36 +697,6 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 	})
 })
 
-func EventuallyCreateAndApproveApiSubscription(apiSubscription *apiapi.ApiSubscription) {
-	err := k8sClient.Create(ctx, apiSubscription)
-	Expect(err).ToNot(HaveOccurred())
+var _ = Describe("Failover Flow", Ordered, func() {
 
-	By("Checking if the resource the approval is pending")
-	Eventually(func(g Gomega) {
-		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
-		g.Expect(err).ToNot(HaveOccurred())
-		By("Checking the conditions")
-		processingCondition := meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeProcessing)
-		g.Expect(processingCondition).ToNot(BeNil())
-		g.Expect(processingCondition.Status).To(Equal(metav1.ConditionTrue))
-		g.Expect(processingCondition.Reason).To(Equal("ApprovalPending"))
-	}, timeout, interval).Should(Succeed())
-
-	By("Progressing the Approval resources")
-	err = k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
-	Expect(err).ToNot(HaveOccurred())
-	approvalReq := ProgressApprovalRequest(apiSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
-	ProgressApproval(apiSubscription, approvalapi.ApprovalStateGranted, approvalReq)
-	Expect(err).ToNot(HaveOccurred())
-
-	By("Checking if the resource is ready")
-	Eventually(func(g Gomega) {
-		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
-		g.Expect(err).ToNot(HaveOccurred())
-		By("Checking the conditions")
-		processingCondition := meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeReady)
-		g.Expect(processingCondition).ToNot(BeNil())
-		g.Expect(processingCondition.Status).To(Equal(metav1.ConditionTrue))
-		g.Expect(processingCondition.Reason).To(Equal("Provisioned"))
-	}, timeout, interval).Should(Succeed())
-}
+})

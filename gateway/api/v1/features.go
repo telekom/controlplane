@@ -19,4 +19,5 @@ const (
 	FeatureTypeExternalIDP      FeatureType = "ExternalIDP"      // depends on LastMileSecurity
 	FeatureTypeCustomScopes     FeatureType = "CustomScopes"     // depends on LastMileSecurity
 	FeatureTypeLoadBalancing    FeatureType = "LoadBalancing"    // depends on LastMileSecurity
+	FeatureTypeFailover         FeatureType = "Failover"         // depends on LastMileSecurity
 )

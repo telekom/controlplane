@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/common/pkg/types"
 	rover "github.com/telekom/controlplane/rover/api/v1"
 )
 
@@ -39,4 +40,19 @@ func toApiBasic(basic *rover.BasicAuthCredentials) *apiapi.BasicAuthCredentials 
 		Username: basic.Username,
 		Password: basic.Password,
 	}
+}
+
+func getFailoverZones(env string, failoverCfg *rover.Failover) ([]types.ObjectRef, bool) {
+	if failoverCfg == nil || len(failoverCfg.Zones) == 0 {
+		return nil, false
+	}
+
+	failoverZones := make([]types.ObjectRef, len(failoverCfg.Zones))
+	for i, zone := range failoverCfg.Zones {
+		failoverZones[i] = types.ObjectRef{
+			Name:      zone,
+			Namespace: env,
+		}
+	}
+	return failoverZones, true
 }

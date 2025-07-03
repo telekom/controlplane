@@ -82,6 +82,21 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 				}
 			}
 		}
+		failoverZones, hasFailover := getFailoverZones(environment, exp.Traffic.Failover)
+		if hasFailover {
+			apiExposure.Spec.Traffic = apiapi.Traffic{
+				Failover: &apiapi.Failover{
+					Zones: failoverZones,
+				},
+			}
+		}
+
+		for i, upstream := range exp.Upstreams {
+			apiExposure.Spec.Upstreams[i] = apiapi.Upstream{
+				Url:    upstream.URL,
+				Weight: upstream.Weight,
+			}
+		}
 
 		return nil
 	}

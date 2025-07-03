@@ -48,6 +48,7 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 		apiSubscription.Spec = apiapi.ApiSubscriptionSpec{
 			ApiBasePath:  sub.BasePath,
 			Zone:         zoneRef,
+			Security:     &apiapi.SubscriberSecurity{},
 			Organization: sub.Organization,
 			Requestor: apiapi.Requestor{
 				Application: *owner.Status.Application,
@@ -62,12 +63,21 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 					Scopes: sub.Security.M2M.Scopes,
 				},
 			}
-		}
 
-		apiSubscription.Labels = map[string]string{
-			apiapi.BasePathLabelKey:             labelutil.NormalizeValue(sub.BasePath),
-			config.BuildLabelKey("zone"):        labelutil.NormalizeValue(zoneRef.Name),
-			config.BuildLabelKey("application"): labelutil.NormalizeValue(owner.Name),
+			failoverZones, hasFailover := getFailoverZones(environment, sub.Traffic.Failover)
+			if hasFailover {
+				apiSubscription.Spec.Traffic = apiapi.Traffic{
+					Failover: &apiapi.Failover{
+						Zones: failoverZones,
+					},
+				}
+			}
+
+			apiSubscription.Labels = map[string]string{
+				apiapi.BasePathLabelKey:             labelutil.NormalizeValue(sub.BasePath),
+				config.BuildLabelKey("zone"):        labelutil.NormalizeValue(zoneRef.Name),
+				config.BuildLabelKey("application"): labelutil.NormalizeValue(owner.Name),
+			}
 		}
 
 		return nil

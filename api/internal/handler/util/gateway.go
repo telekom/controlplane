@@ -9,7 +9,6 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
-	apiapi "github.com/telekom/controlplane/api/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityapi "github.com/telekom/controlplane/identity/api/v1"
@@ -42,9 +41,7 @@ func AsUpstreamForProxyRoute(ctx context.Context, realm *gatewayapi.Realm, apiBa
 }
 
 func AsUpstreamForRealRoute(
-	ctx context.Context, apiExposure *apiapi.ApiExposure) (ups gatewayapi.Upstream, err error) {
-
-	rawUrl := apiExposure.Spec.Upstreams[0].Url
+	ctx context.Context, rawUrl string) (ups gatewayapi.Upstream, err error) {
 	url, err := url.Parse(rawUrl)
 	if err != nil {
 		return ups, errors.Wrapf(err, "failed to parse URL %s", rawUrl)

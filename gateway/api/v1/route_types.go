@@ -13,8 +13,7 @@ import (
 )
 
 type Upstream struct {
-	Url    string `json:"url"`
-	Weight int    `json:"weight,omitempty"`
+	Weight int `json:"weight,omitempty"`
 	// TODO remove parts and only keep Url
 	Scheme       string `json:"scheme"`
 	Host         string `json:"host"`
@@ -41,6 +40,10 @@ func (u Upstream) GetPath() string {
 	return u.Path
 }
 
+func (u Upstream) Url() string {
+	return u.Scheme + "://" + u.Host + ":" + strconv.Itoa(u.Port) + u.Path
+}
+
 type Downstream struct {
 	Host      string `json:"host"`
 	Port      int    `json:"port"`
@@ -62,6 +65,8 @@ type RouteSpec struct {
 	PassThrough bool         `json:"passThrough"`
 	Upstreams   []Upstream   `json:"upstreams"`
 	Downstreams []Downstream `json:"downstreams"`
+
+	Traffic Traffic `json:"traffic"`
 
 	// Security is the security configuration for the route
 	// +kubebuilder:validation:Optional
@@ -100,6 +105,15 @@ func (route *Route) HasM2MExternalIdpBasic() bool {
 		return false
 	}
 	return route.Spec.Security.M2M.ExternalIDP.Basic != nil
+}
+
+type Traffic struct {
+	Failover *Failover `json:"failover,omitempty"`
+}
+
+type Failover struct {
+	TargetZoneName string     `json:"targetZoneName"`
+	Upstreams      []Upstream `json:"upstreams"`
 }
 
 // RouteStatus defines the observed state of Route

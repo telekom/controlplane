@@ -23,7 +23,6 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	secretmanager "github.com/telekom/controlplane/secret-manager/api"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -58,24 +57,13 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
-		// handle the application secret
-		availableSecrets, err := secretmanager.API().UpsertApplication(ctx, environment, team.GetName(), application.GetName())
-		if err != nil {
-			return wrapCommunicationError(err, "upsert team")
-		}
-
-		clientSecretRef, ok := secretmanager.FindSecretId(availableSecrets, ClientSecret)
-		if !ok {
-			return wrapCommunicationError(fmt.Errorf("secret %s not found", ClientSecret), "searching for application secret ref")
-		}
-
 		application.Spec = applicationv1.ApplicationSpec{
 			Team:          team.Name,
 			TeamEmail:     team.Spec.Email,
 			Zone:          zoneRef,
 			NeedsClient:   needsClient,
 			NeedsConsumer: needsClient,
-			Secret:        clientSecretRef,
+			Secret:        owner.Spec.ClientSecret,
 		}
 
 		application.Labels = map[string]string{

@@ -168,6 +168,39 @@ spec:
                       rule: self == null || has(self.externalIDP) || has(self.basic)
                         || has(self.scopes)
                 type: object
+              traffic:
+                properties:
+                  failover:
+                    description: Failover defines the failover configuration for the
+                      API exposure.
+                    properties:
+                      zone:
+                        description: Zone is the zone to which the traffic should
+                          be failed over in case of an error.
+                        items:
+                          description: |-
+                            ObjectRef is a reference to a Kubernetes object
+                            It is similar to types.NamespacedName but has the required json tags for serialization
+                          properties:
+                            name:
+                              type: string
+                            namespace:
+                              type: string
+                            uid:
+                              description: |-
+                                UID is a type that holds unique ID values, including UUIDs.  Because we
+                                don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                                intent and helps make sure that UIDs and names do not get conflated.
+                              type: string
+                          required:
+                          - name
+                          - namespace
+                          type: object
+                        type: array
+                    required:
+                    - zone
+                    type: object
+                type: object
               upstreams:
                 items:
                   properties:
@@ -207,6 +240,7 @@ spec:
             required:
             - apiBasePath
             - approval
+            - traffic
             - upstreams
             - visibility
             - zone
@@ -275,6 +309,25 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              failoverRoute:
+                description: |-
+                  ObjectRef is a reference to a Kubernetes object
+                  It is similar to types.NamespacedName but has the required json tags for serialization
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
               route:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object

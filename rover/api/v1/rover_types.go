@@ -89,6 +89,12 @@ type RoverSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	Zone string `json:"zone"`
+
+	// ClientSecret is the secret used for client authentication
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	ClientSecret string `json:"clientSecret"`
+
 	// Exposures is a list of APIs and Events that this Rover exposes to consumers
 	// +kubebuilder:validation:Optional
 	Exposures []Exposure `json:"exposures,omitempty"`
@@ -214,10 +220,10 @@ type ApiExposure struct {
 
 	// Transformation defines optional request/response transformations for this API
 	// +kubebuilder:validation:Optional
-	Transformation Transformation `json:"transformation,omitempty"`
+	Transformation Transformation `json:"transformation"`
 	// Traffic defines optional traffic management configuration for this API
 	// +kubebuilder:validation:Optional
-	Traffic Traffic `json:"traffic,omitempty"`
+	Traffic Traffic `json:"traffic"`
 	// Security defines optional security configuration for this API
 	// +kubebuilder:validation:Optional
 	Security *Security `json:"security,omitempty"`
@@ -247,7 +253,7 @@ type ApiSubscription struct {
 	Transformation *Transformation `json:"transformation,omitempty"`
 	// Traffic defines optional traffic management configuration for this API
 	// +kubebuilder:validation:Optional
-	Traffic *SubscriberTraffic `json:"traffic,omitempty"`
+	Traffic SubscriberTraffic `json:"traffic"`
 	// Security defines optional security configuration for this API
 	// +kubebuilder:validation:Optional
 	Security *SubscriberSecurity `json:"security,omitempty"`
@@ -373,6 +379,7 @@ type LoadBalancing struct {
 	// Strategy defines the algorithm used for distributing traffic (RoundRobin, LeastConnections)
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum=RoundRobin;LeastConnections
+	// +kubebuilder:default=RoundRobin
 	Strategy LoadBalancingStrategy `json:"strategy,omitempty"`
 }
 
@@ -430,7 +437,6 @@ type SubscriberMachine2MachineAuthentication struct {
 type Failover struct {
 	// Zones is a list of zone names to use for failover if the primary zone is unavailable
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=10
 	Zones []string `json:"zones,omitempty"`
 }
