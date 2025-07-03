@@ -92,7 +92,9 @@ var _ = Describe("Plugin", func() {
 
 			encoded, err := m.MarshalJSON()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(string(encoded)).To(Equal(`["key1:value1","key2:value2"]`))
+			Expect(string(encoded)).To(SatisfyAny(
+				Equal(`["key2:value2","key1:value1"]`),
+				Equal(`["key1:value1","key2:value2"]`)))
 		})
 
 		It("should correctly decode a string map", func() {

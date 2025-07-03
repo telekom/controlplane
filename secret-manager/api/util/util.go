@@ -80,7 +80,11 @@ func GetCert(filepath string) (*x509.CertPool, error) {
 		return nil, errors.Wrap(err, "failed to read CA certificate")
 	}
 
-	caCertPool := x509.NewCertPool()
+	caCertPool, err := x509.SystemCertPool()
+	if err != nil {
+		fmt.Println("ℹ️\tInfo: Using empty cert pool, system cert pool not available")
+		caCertPool = x509.NewCertPool()
+	}
 	if !caCertPool.AppendCertsFromPEM(caCert) {
 		return nil, errors.New("failed to append CA certificate to pool")
 	}
