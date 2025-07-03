@@ -6,6 +6,7 @@ package feature
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -38,21 +39,17 @@ func (f *ExternalIDPFeature) Priority() int {
 	return f.priority
 }
 
-func (f *ExternalIDPFeature) IsUsed(_ context.Context, builder features.FeaturesBuilder) bool {
+func (f *ExternalIDPFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
 	route := builder.GetRoute()
-	hasExternalTokenEndpoint := false
-	for i := range route.Spec.Upstreams {
-		if route.Spec.Upstreams[i].Security != nil {
-			if route.Spec.Upstreams[i].Security.M2M != nil {
-				if route.Spec.Upstreams[i].Security.M2M.ExternalIDPConfig != nil {
-					if route.Spec.Upstreams[i].Security.M2M.ExternalIDPConfig.TokenEndpoint != "" {
-						hasExternalTokenEndpoint = true
-						break
-					}
-				}
-			}
-		}
+	if route == nil {
+		return false
 	}
+	upstream := getFirstUpstreamWithIDPConfig(&route.Spec.Upstreams)
+	if upstream == nil {
+		return false
+	}
+	hasExternalTokenEndpoint := upstream.Security.M2M.ExternalIDPConfig.TokenEndpoint != ""
+
 	return !route.Spec.PassThrough && hasExternalTokenEndpoint && !route.IsProxy()
 }
 
@@ -60,16 +57,13 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	rtpPlugin := builder.RequestTransformerPlugin()
 	route := builder.GetRoute()
 	jumperConfig := builder.JumperConfig()
-	var upstream gatewayv1.Upstream
 
-	for i := range route.Spec.Upstreams {
-		if route.Spec.Upstreams[i].Security.M2M.ExternalIDPConfig.TokenEndpoint != "" {
-			rtpPlugin.Config.Append.AddHeader("token_endpoint", route.Spec.Upstreams[i].Security.M2M.ExternalIDPConfig.TokenEndpoint)
-			upstream = route.Spec.Upstreams[i]
-			builder.SetUpstream(upstream)
-			break
-		}
+	upstream := getFirstUpstreamWithIDPConfig(&route.Spec.Upstreams)
+	if upstream == nil {
+		return fmt.Errorf("no upstream with external IDP config found for route %s", route.Name)
 	}
+	builder.SetUpstream(upstream)
+	rtpPlugin.Config.Append.AddHeader("token_endpoint", upstream.Security.M2M.ExternalIDPConfig.TokenEndpoint)
 
 	providerSecret := upstream.Security.M2M.Client.ClientSecret
 	if providerSecret != "" {
@@ -112,5 +106,16 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 		jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = consumerOauth
 	}
 
+	return nil
+}
+
+func getFirstUpstreamWithIDPConfig(upstreams *[]gatewayv1.Upstream) *gatewayv1.Upstream {
+	for i := range *upstreams {
+		if (*upstreams)[i].IsM2MPresent() {
+			if (*upstreams)[i].Security.M2M.ExternalIDPConfig != nil {
+				return &(*upstreams)[i]
+			}
+		}
+	}
 	return nil
 }

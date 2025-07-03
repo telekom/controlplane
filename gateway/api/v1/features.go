@@ -15,7 +15,7 @@ const (
 
 // Dependent Features
 const (
-	FeatureTypeLastMileSecurity FeatureType = "LastMileSecurity"  // depends on AccessControl
-	FeatureTypeExternalIDP      FeatureType = "ExternalIDPConfig" // depends on LastMileSecurity
-	FeatureTypeCustomScopes     FeatureType = "CustomScopes"      // depends on LastMileSecurity
+	FeatureTypeLastMileSecurity FeatureType = "LastMileSecurity" // depends on AccessControl
+	FeatureTypeExternalIDP      FeatureType = "ExternalIDP"      // depends on LastMileSecurity
+	FeatureTypeCustomScopes     FeatureType = "CustomScopes"     // depends on LastMileSecurity
 )

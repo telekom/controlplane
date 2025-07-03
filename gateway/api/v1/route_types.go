@@ -19,7 +19,7 @@ type Upstream struct {
 	Path      string `json:"path"`
 	IssuerUrl string `json:"issuerUrl,omitempty"`
 
-	// Security is the security configuration for the upstream if external IDP authentication is required
+	// Security is the security configuration for the upstream
 	// +kubebuilder:validation:Optional
 	Security *Security `json:"security,omitempty"`
 }
@@ -38,6 +38,18 @@ func (u Upstream) GetPort() int {
 
 func (u Upstream) GetPath() string {
 	return u.Path
+}
+
+func (u Upstream) IsM2MPresent() bool {
+	if u.Security == nil {
+		return false
+	}
+
+	if u.Security.M2M == nil {
+		return false
+	}
+
+	return true
 }
 
 type Downstream struct {

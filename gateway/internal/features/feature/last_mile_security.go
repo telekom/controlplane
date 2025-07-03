@@ -52,10 +52,14 @@ func (f *LastMileSecurityFeature) Apply(ctx context.Context, builder features.Fe
 	if route.IsProxy() {
 		// Proxy Route
 
+		if route.Spec.Upstreams[0].IsM2MPresent() {
+			rtpPlugin.Config.Append.
+				AddHeader("client_id", route.Spec.Upstreams[0].Security.M2M.Client.ClientId).
+				AddHeader("client_secret", route.Spec.Upstreams[0].Security.M2M.Client.ClientSecret)
+		}
+
 		rtpPlugin.Config.Append.
 			AddHeader("issuer", route.Spec.Upstreams[0].IssuerUrl).
-			AddHeader("client_id", route.Spec.Upstreams[0].Security.M2M.Client.ClientId).
-			AddHeader("client_secret", route.Spec.Upstreams[0].Security.M2M.Client.ClientSecret).
 			AddHeader("remote_api_url", CreateRemoteApiUrl(route)).
 			AddHeader(plugin.JumperConfigKey, plugin.ToBase64OrDie(builder.JumperConfig()))
 

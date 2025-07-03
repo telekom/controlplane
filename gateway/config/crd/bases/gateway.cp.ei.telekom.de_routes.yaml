@@ -98,7 +98,7 @@ spec:
                       type: string
                     security:
                       description: Security is the security configuration for the
-                        upstream if external IDP authentication is required
+                        upstream
                       properties:
                         h2m:
                           description: H2M defines human-to-machine authentication
