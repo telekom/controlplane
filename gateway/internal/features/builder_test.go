@@ -284,13 +284,19 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			lmsRoute := route.DeepCopy()
 			lmsRoute.Spec.PassThrough = false
 			lmsRoute.Spec.Upstreams[0] = gatewayv1.Upstream{
-				Scheme:       "http",
-				Host:         "upstream.url",
-				Port:         8080,
-				Path:         "/api/v1",
-				IssuerUrl:    "https://upstream.issuer.url",
-				ClientId:     "gateway",
-				ClientSecret: "topsecret",
+				Scheme:    "http",
+				Host:      "upstream.url",
+				Port:      8080,
+				Path:      "/api/v1",
+				IssuerUrl: "https://upstream.issuer.url",
+				Security: &gatewayv1.Security{
+					M2M: &gatewayv1.Machine2MachineAuthentication{
+						Client: &gatewayv1.OAuth2ClientCredentials{
+							ClientId:     "gateway",
+							ClientSecret: "topsecret",
+						},
+					},
+				},
 			}
 
 			builder := features.NewFeatureBuilder(mockKc, lmsRoute, realm, gateway)
