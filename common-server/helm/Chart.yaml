@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v2
-appVersion: 0.1.0
+appVersion: 0.5.0
 description: A helm chart to deploy a generic common-server instance
 name: common-server
 type: application
-version: 0.1.0
+version: 0.5.0
 icon: https://raw.githubusercontent.com/telekom/controlplane/refs/heads/main/docs/img/Open-Telekom-Integration-Platform_Visual.svg
