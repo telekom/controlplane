@@ -50,8 +50,31 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 	}
 
 	needsClient := len(owner.Spec.Subscriptions) > 0
+	var subscriberFailoverZones []types.ObjectRef
+	if needsClient {
+		for _, subscription := range owner.Spec.Subscriptions {
+			switch subscription.Type() {
+			case roverv1.TypeApi:
+				if subscription.Api.Traffic.Failover != nil {
+					for _, zoneName := range subscription.Api.Traffic.Failover.Zones {
+						zoneRef := types.ObjectRef{
+							Name:      zoneName,
+							Namespace: environment,
+						}
+						subscriberFailoverZones = append(subscriberFailoverZones, zoneRef)
+					}
+				}
+			}
+		}
+	}
 
 	mutator := func() error {
+		application.Labels = map[string]string{
+			config.BuildLabelKey("zone"):        labelutil.NormalizeValue(zoneRef.Name),
+			config.BuildLabelKey("application"): labelutil.NormalizeValue(owner.Name),
+			config.BuildLabelKey("team"):        labelutil.NormalizeValue(team.Name),
+		}
+
 		err := controllerutil.SetControllerReference(owner, application, c.Scheme())
 		if err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
@@ -64,11 +87,7 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 			NeedsClient:   needsClient,
 			NeedsConsumer: needsClient,
 			Secret:        owner.Spec.ClientSecret,
-		}
-
-		application.Labels = map[string]string{
-			config.BuildLabelKey("zone"):        labelutil.NormalizeValue(zoneRef.Name),
-			config.BuildLabelKey("application"): labelutil.NormalizeValue(owner.Name),
+			FailoverZones: subscriberFailoverZones,
 		}
 
 		return nil
