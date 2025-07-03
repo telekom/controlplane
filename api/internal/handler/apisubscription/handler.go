@@ -221,14 +221,16 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			ConsumerName: application.Status.ClientId,
 		}
 
-		if util.HasM2M(apiSub) {
+		if util.HasM2MClient(apiSub) {
 			routeConsumer.Spec.Security = &gatewayapi.SubscriberSecurity{
 				M2M: &gatewayapi.SubscriberMachine2MachineAuthentication{
+					ExternalIDP: &gatewayapi.SubscriberExternalIdentityProvider{
+						Client: util.OAuth2ClientToGatewayOAuth2Client(apiSub.Spec.Security.M2M.Client),
+					},
 					Scopes: apiSub.Spec.Security.M2M.Scopes,
 				},
 			}
 		}
-
 		return nil
 	}
 
