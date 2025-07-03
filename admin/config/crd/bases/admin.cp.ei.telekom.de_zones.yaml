@@ -117,10 +117,13 @@ spec:
                 required:
                 - apis
                 type: object
+              visibility:
+                type: string
             required:
             - gateway
             - identityProvider
             - redis
+            - visibility
             type: object
           status:
             description: ZoneStatus defines the observed state of Zone

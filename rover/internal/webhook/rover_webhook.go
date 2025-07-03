@@ -7,6 +7,7 @@ package webhook
 import (
 	"context"
 	"fmt"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"reflect"
 	"strings"
 
@@ -85,12 +86,11 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime
 		return nil, apierrors.NewBadRequest("not a rover")
 	}
 
-	roverlog.Info("validate create or update", "name", rover.GetName())
-
 	environment, ok := controller.GetEnvironment(rover)
 	if !ok {
 		return nil, apierrors.NewBadRequest("environment not found")
 	}
+	ctx = contextutil.WithEnv(ctx, environment)
 
 	zoneRef := client.ObjectKey{
 		Name:      rover.Spec.Zone,
