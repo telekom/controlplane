@@ -204,10 +204,10 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			ConsumerName: application.Status.ClientId,
 		}
 
-		if apiSub.Spec.Security != nil {
+		if util.HasM2MClient(apiSub) {
 			routeConsumer.Spec.Security = &gatewayapi.Security{
 				M2M: &gatewayapi.Machine2MachineAuthentication{
-					Client: toGatewayClient(apiSub.Spec.Security.M2M.Client),
+					Client: util.OAuth2ClientToGatewayOAuth2Client(apiSub.Spec.Security.M2M.Client),
 					Scopes: apiSub.Spec.Security.M2M.Scopes,
 				},
 			}
@@ -226,18 +226,6 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	apiSub.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
 
 	return nil
-}
-
-func toGatewayClient(client *apiapi.OAuth2ClientCredentials) gatewayapi.OAuth2ClientCredentials {
-	if client == nil {
-		return gatewayapi.OAuth2ClientCredentials{}
-	}
-
-	return gatewayapi.OAuth2ClientCredentials{
-		ClientId:     client.ClientId,
-		ClientSecret: client.ClientSecret,
-		Scopes:       client.Scopes,
-	}
 }
 
 func (h *ApiSubscriptionHandler) Delete(ctx context.Context, apiSub *apiapi.ApiSubscription) error {

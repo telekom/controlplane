@@ -35,7 +35,6 @@ func AsUpstreamForProxyRoute(ctx context.Context, realm *gatewayapi.Realm, apiBa
 		return ups, errors.Wrapf(err, "failed to construct upstream for realm %s", realm.Name)
 	}
 
-	ups.IssuerUrl = identityClient.Status.IssuerUrl
 	ups.Security = &gatewayapi.Security{
 		M2M: &gatewayapi.Machine2MachineAuthentication{
 			Client: gatewayapi.OAuth2ClientCredentials{
@@ -44,6 +43,7 @@ func AsUpstreamForProxyRoute(ctx context.Context, realm *gatewayapi.Realm, apiBa
 			},
 		},
 	}
+	ups.IssuerUrl = identityClient.Status.IssuerUrl
 
 	return
 }
@@ -65,8 +65,6 @@ func AsUpstreamForRealRoute(
 	}
 
 	if HasExternalIdp(apiExposure) {
-		// client
-		// ToDo Refactor
 		upstream.Security = &gatewayapi.Security{
 			M2M: &gatewayapi.Machine2MachineAuthentication{
 				ExternalIDPConfig: &gatewayapi.ExternalIdentityProviderConfig{
@@ -86,17 +84,14 @@ func AsUpstreamForRealRoute(
 	return upstream, nil
 }
 
-func HasExternalIdp(exposure *apiapi.ApiExposure) bool {
-
-	if exposure.Spec.Security == nil {
-		return false
-	}
-	if exposure.Spec.Security.M2M == nil {
-		return false
-	}
-	if exposure.Spec.Security.M2M.ExternalIDP == nil {
-		return false
+func OAuth2ClientToGatewayOAuth2Client(client *apiapi.OAuth2ClientCredentials) gatewayapi.OAuth2ClientCredentials {
+	if client == nil {
+		return gatewayapi.OAuth2ClientCredentials{}
 	}
 
-	return exposure.Spec.Security.M2M.ExternalIDP.TokenEndpoint != ""
+	return gatewayapi.OAuth2ClientCredentials{
+		ClientId:     client.ClientId,
+		ClientSecret: client.ClientSecret,
+		Scopes:       client.Scopes,
+	}
 }
