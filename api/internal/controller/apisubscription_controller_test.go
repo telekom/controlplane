@@ -35,7 +35,13 @@ func CreateApplication(name string) *applicationapi.Application {
 			},
 		},
 		Spec: applicationapi.ApplicationSpec{
-			// TODO: Add fields here
+			Team:      "test-team",
+			TeamEmail: "tester@example.com",
+			Secret:    "topsecret",
+			Zone: types.ObjectRef{
+				Name:      "test",
+				Namespace: testEnvironment,
+			},
 		},
 	}
 
