@@ -201,6 +201,7 @@ func createTeamApiRoute(ctx context.Context, handlingContext HandlingContext, te
 			PassThrough: false,
 			Upstreams:   []gatewayapi.Upstream{upstream},
 			Downstreams: []gatewayapi.Downstream{downstream},
+			Traffic:     gatewayapi.Traffic{},
 		}
 
 		return nil

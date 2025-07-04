@@ -44,6 +44,17 @@ func (rcs *RoutingConfigs) Add(config *RoutingConfig) {
 	*rcs = append(*rcs, config)
 }
 
+func (rcs *RoutingConfigs) Get(index int) *RoutingConfig {
+	if index < 0 || index >= len(*rcs) {
+		return nil
+	}
+	return (*rcs)[index]
+}
+
+func (rcs *RoutingConfigs) Len() int {
+	return len(*rcs)
+}
+
 type RoutingConfig struct {
 	OAuth     map[ConsumerId]OauthCredentials     `json:"oauth,omitempty"`
 	BasicAuth map[ConsumerId]BasicAuthCredentials `json:"basicAuth,omitempty"`
