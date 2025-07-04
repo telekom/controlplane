@@ -23,7 +23,6 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	secretmanager "github.com/telekom/controlplane/secret-manager/api"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -51,22 +50,34 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 	}
 
 	needsClient := len(owner.Spec.Subscriptions) > 0
+	var subscriberFailoverZones []types.ObjectRef
+	if needsClient {
+		for _, subscription := range owner.Spec.Subscriptions {
+			switch subscription.Type() {
+			case roverv1.TypeApi:
+				if subscription.Api.Traffic.Failover != nil {
+					for _, zoneName := range subscription.Api.Traffic.Failover.Zones {
+						zoneRef := types.ObjectRef{
+							Name:      zoneName,
+							Namespace: environment,
+						}
+						subscriberFailoverZones = append(subscriberFailoverZones, zoneRef)
+					}
+				}
+			}
+		}
+	}
 
 	mutator := func() error {
+		application.Labels = map[string]string{
+			config.BuildLabelKey("zone"):        labelutil.NormalizeValue(zoneRef.Name),
+			config.BuildLabelKey("application"): labelutil.NormalizeValue(owner.Name),
+			config.BuildLabelKey("team"):        labelutil.NormalizeValue(team.Name),
+		}
+
 		err := controllerutil.SetControllerReference(owner, application, c.Scheme())
 		if err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
-		}
-
-		// handle the application secret
-		availableSecrets, err := secretmanager.API().UpsertApplication(ctx, environment, team.GetName(), application.GetName())
-		if err != nil {
-			return wrapCommunicationError(err, "upsert team")
-		}
-
-		clientSecretRef, ok := secretmanager.FindSecretId(availableSecrets, ClientSecret)
-		if !ok {
-			return wrapCommunicationError(fmt.Errorf("secret %s not found", ClientSecret), "searching for application secret ref")
 		}
 
 		application.Spec = applicationv1.ApplicationSpec{
@@ -75,12 +86,8 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 			Zone:          zoneRef,
 			NeedsClient:   needsClient,
 			NeedsConsumer: needsClient,
-			Secret:        clientSecretRef,
-		}
-
-		application.Labels = map[string]string{
-			config.BuildLabelKey("zone"):        labelutil.NormalizeValue(zoneRef.Name),
-			config.BuildLabelKey("application"): labelutil.NormalizeValue(owner.Name),
+			Secret:        owner.Spec.ClientSecret,
+			FailoverZones: subscriberFailoverZones,
 		}
 
 		return nil

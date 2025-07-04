@@ -38,6 +38,10 @@ func (u Upstream) GetPath() string {
 	return u.Path
 }
 
+func (u Upstream) Url() string {
+	return u.Scheme + "://" + u.Host + ":" + strconv.Itoa(u.Port) + u.Path
+}
+
 type Downstream struct {
 	Host      string `json:"host"`
 	Port      int    `json:"port"`
@@ -59,6 +63,17 @@ type RouteSpec struct {
 	PassThrough bool         `json:"passThrough"`
 	Upstreams   []Upstream   `json:"upstreams"`
 	Downstreams []Downstream `json:"downstreams"`
+
+	Traffic Traffic `json:"traffic"`
+}
+
+type Traffic struct {
+	Failover *Failover `json:"failover,omitempty"`
+}
+
+type Failover struct {
+	TargetZoneName string     `json:"targetZoneName"`
+	Upstreams      []Upstream `json:"upstreams"`
 }
 
 // RouteStatus defines the observed state of Route

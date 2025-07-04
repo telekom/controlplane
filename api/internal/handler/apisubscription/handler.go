@@ -18,7 +18,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -171,20 +170,57 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      labelutil.NormalizeValue(apiSub.Spec.ApiBasePath),
+			Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath, contextutil.EnvFromContextOrDie(ctx)),
 			Namespace: subscriptionZone.Status.Namespace,
 		},
 	}
 
 	// ProxyRoute is only needed if subscriptionZone is different from exposureZone
-	if !apiSub.Spec.Zone.Equals(&apiExposure.Spec.Zone) {
-		route, err = util.CreateProxyRoute(ctx, apiSub.Spec.Zone, apiExposure.Spec.Zone, apiSub.Spec.ApiBasePath, contextutil.EnvFromContextOrDie(ctx))
+	sameZone := apiSub.Spec.Zone.Equals(&apiExposure.Spec.Zone)
+	// ProxyRoute is only needed if subscriptionZone is not used as failover zone
+	failoverProxyRouteExists := apiExposure.HasFailover() && apiExposure.Spec.Traffic.Failover.ContainsZone(apiSub.Spec.Zone)
+
+	if !sameZone && !failoverProxyRouteExists {
+		log.Info("Creating proxy route for ApiSubscription", "zone", apiSub.Spec.Zone.Name)
+		options := []util.CreateRouteOption{}
+		// Only add failover zone if the ApiExposure actually has a failover zone configured
+		if apiExposure.HasFailover() {
+			failoverZone := apiExposure.Spec.Traffic.Failover.Zones[0]
+			options = append(options, util.WithFailoverZone(failoverZone))
+		}
+
+		route, err = util.CreateProxyRoute(ctx, apiSub.Spec.Zone, apiExposure.Spec.Zone, apiSub.Spec.ApiBasePath,
+			contextutil.EnvFromContextOrDie(ctx),
+			options...,
+		)
 		if err != nil {
-			return errors.Wrapf(err, "failed to create proxy route")
+			return errors.Wrapf(err, "failed to create proxy route for zone %s", apiSub.Spec.Zone.Name)
 		}
 	}
 
 	apiSub.Status.Route = types.ObjectRefFromObject(route)
+
+	// Create the proxy-routes used for failover
+	if apiSub.HasFailover() {
+		apiSub.Status.FailoverRoutes = make([]types.ObjectRef, 0, len(apiSub.Spec.Traffic.Failover.Zones))
+		for _, subFailoverZone := range apiSub.Spec.Traffic.Failover.Zones {
+			options := []util.CreateRouteOption{}
+			if apiExposure.HasFailover() {
+				expFailoverZone := apiExposure.Spec.Traffic.Failover.Zones[0]
+				options = append(options, util.WithFailoverZone(expFailoverZone))
+			}
+
+			log.Info("Creating proxy route for failover zone", "zone", subFailoverZone)
+			route, err = util.CreateProxyRoute(ctx, subFailoverZone, apiExposure.Spec.Zone, apiSub.Spec.ApiBasePath,
+				contextutil.EnvFromContextOrDie(ctx),
+				options...,
+			)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create proxy route for zone %s in failover scenario", apiSub.Spec.Zone)
+			}
+			apiSub.Status.FailoverRoutes = append(apiSub.Status.FailoverRoutes, *types.ObjectRefFromObject(route))
+		}
+	}
 
 	routeConsumer := &gatewayapi.ConsumeRoute{
 		ObjectMeta: metav1.ObjectMeta{
@@ -224,6 +260,13 @@ func (h *ApiSubscriptionHandler) Delete(ctx context.Context, apiSub *apiapi.ApiS
 	err := util.CleanupProxyRoute(ctx, apiSub.Status.Route)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete route")
+	}
+
+	for _, failoverRoute := range apiSub.Status.FailoverRoutes {
+		err := util.CleanupProxyRoute(ctx, &failoverRoute)
+		if err != nil {
+			return errors.Wrapf(err, "failed to delete failover route")
+		}
 	}
 	return nil
 }

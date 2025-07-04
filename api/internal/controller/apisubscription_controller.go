@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -25,6 +26,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/config"
 	ccontroller "github.com/telekom/controlplane/common/pkg/controller"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 
 	"github.com/telekom/controlplane/api/internal/handler/apisubscription"
 )
@@ -82,6 +84,14 @@ func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&applicationapi.Application{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToApiSubscription),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
+		Watches(&gatewayv1.Route{},
+			handler.EnqueueRequestsFromMapFunc(r.MapRouteToApiSubscription),
+			builder.WithPredicates(DeleteOnlyPredicate{}),
+		).
+		Watches(&gatewayv1.ConsumeRoute{},
+			handler.EnqueueRequestsFromMapFunc(r.MapConsumeRouteToApiSubscription),
+			builder.WithPredicates(DeleteOnlyPredicate{}),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 10,
@@ -174,4 +184,37 @@ func (r *ApiSubscriptionReconciler) MapApplicationToApiSubscription(ctx context.
 	}
 
 	return reqs
+}
+
+func (r *ApiSubscriptionReconciler) MapRouteToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
+
+	return nil
+}
+
+func (r *ApiSubscriptionReconciler) MapConsumeRouteToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
+
+	return nil
+}
+
+var _ predicate.Predicate = DeleteOnlyPredicate{}
+
+// DeleteOnlyPredicate implements a predicate that only processes DELETE events
+type DeleteOnlyPredicate struct {
+	predicate.Funcs
+}
+
+func (DeleteOnlyPredicate) Create(e event.CreateEvent) bool {
+	return false
+}
+
+func (DeleteOnlyPredicate) Delete(e event.DeleteEvent) bool {
+	return true
+}
+
+func (DeleteOnlyPredicate) Update(e event.UpdateEvent) bool {
+	return false
+}
+
+func (DeleteOnlyPredicate) Generic(e event.GenericEvent) bool {
+	return false
 }

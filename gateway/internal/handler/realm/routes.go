@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"path"
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/client"
@@ -86,7 +87,7 @@ func CreateRoute(ctx context.Context, realm *gatewayv1.Realm, routeType RouteTyp
 				{
 					Host:      url.Hostname(),
 					Port:      gatewayv1.GetPortOrDefaultFromScheme(url),
-					Path:      fmt.Sprintf(cfg.DownstreamPathFormat, realm.Name),
+					Path:      path.Join(url.Path, fmt.Sprintf(cfg.DownstreamPathFormat, realm.Name)),
 					IssuerUrl: "",
 				},
 			},

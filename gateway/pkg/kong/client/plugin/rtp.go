@@ -10,7 +10,10 @@ import (
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 )
 
-const JumperConfigKey = "jumper_config"
+const (
+	JumperConfigKey  = "jumper_config"
+	RoutingConfigKey = "routing_config"
+)
 
 var _ client.CustomPlugin = &RequestTransformerPlugin{}
 

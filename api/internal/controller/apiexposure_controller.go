@@ -11,6 +11,7 @@ import (
 	"github.com/telekom/controlplane/api/internal/handler/apiexposure"
 	"github.com/telekom/controlplane/common/pkg/config"
 	ccontroller "github.com/telekom/controlplane/common/pkg/controller"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -62,6 +63,10 @@ func (r *ApiExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&apiapi.ApiExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiExposureToApiExposure),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
+		Watches(&gatewayv1.Route{},
+			handler.EnqueueRequestsFromMapFunc(r.MapRouteToApiExposure),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 10,
@@ -125,4 +130,8 @@ func (r *ApiExposureReconciler) MapApiExposureToApiExposure(ctx context.Context,
 	}
 
 	return reqs
+}
+
+func (r *ApiExposureReconciler) MapRouteToApiExposure(ctx context.Context, obj client.Object) []reconcile.Request {
+	return nil
 }
