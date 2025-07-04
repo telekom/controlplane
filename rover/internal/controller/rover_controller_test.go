@@ -83,13 +83,20 @@ var _ = Describe("Rover Controller", Ordered, func() {
 		It("should successfully reconcile the resource", func() {
 
 			Spec := roverv1.RoverSpec{
+				Zone: testEnvironment,
 				Exposures: []roverv1.Exposure{
 					{
 						Api: &roverv1.ApiExposure{
-							BasePath:   BasePath,
-							Upstream:   upstream,
+							BasePath: BasePath,
+							Upstreams: []roverv1.Upstream{
+								{
+									URL: upstream,
+								},
+							},
 							Visibility: roverv1.VisibilityWorld,
-							Approval:   roverv1.ApprovalStrategyFourEyes,
+							Approval: roverv1.Approval{
+								Strategy: roverv1.ApprovalStrategyFourEyes,
+							},
 						},
 					},
 				},
@@ -178,13 +185,21 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				},
 			}
 			updateSpec := roverv1.RoverSpec{
+				Zone: testEnvironment,
 				Exposures: []roverv1.Exposure{
 					{
 						Api: &roverv1.ApiExposure{
-							BasePath:   BasePath,
-							Upstream:   upstream,
+							BasePath: BasePath,
+							Upstreams: []roverv1.Upstream{
+								{
+									URL: upstream,
+								},
+							},
+
 							Visibility: roverv1.VisibilityWorld,
-							Approval:   roverv1.ApprovalStrategyFourEyes,
+							Approval: roverv1.Approval{
+								Strategy: roverv1.ApprovalStrategyFourEyes,
+							},
 						},
 					},
 				},
@@ -217,15 +232,23 @@ var _ = Describe("Rover Controller", Ordered, func() {
 			updateExposures := []roverv1.Exposure{
 				{
 					Api: &roverv1.ApiExposure{
-						BasePath:   BasePath,
-						Upstream:   "https://my.new.upstream.de",
+						BasePath: BasePath,
+						Upstreams: []roverv1.Upstream{
+							{
+								URL: "https://my.new.upstream.de",
+							},
+						},
+
 						Visibility: roverv1.VisibilityEnterprise,
-						Approval:   roverv1.ApprovalStrategySimple,
+						Approval: roverv1.Approval{
+							Strategy: roverv1.ApprovalStrategySimple,
+						},
 					},
 				},
 			}
 
 			updateSpec = roverv1.RoverSpec{
+				Zone:          fetchedRover.Spec.Zone,
 				Exposures:     updateExposures,
 				Subscriptions: updateSubscriptions,
 			}
@@ -256,6 +279,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 
 			By("deleting exposures and subscriptions")
 			updateSpec = roverv1.RoverSpec{
+				Zone:          testEnvironment,
 				Exposures:     []roverv1.Exposure{},
 				Subscriptions: []roverv1.Subscription{},
 			}
@@ -304,6 +328,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 		It("should successfully handle remote subscription and reconcile the resource", func() {
 
 			Spec := roverv1.RoverSpec{
+				Zone: testEnvironment,
 				Subscriptions: []roverv1.Subscription{
 					{
 						Api: &roverv1.ApiSubscription{
@@ -366,11 +391,17 @@ var _ = Describe("Rover Controller", Ordered, func() {
 		It("should successfully handle scopes and reconcile the resource", func() {
 
 			Spec := roverv1.RoverSpec{
+				Zone: testEnvironment,
 				Subscriptions: []roverv1.Subscription{
 					{
 						Api: &roverv1.ApiSubscription{
-							BasePath:     BasePath,
-							OAuth2Scopes: []string{"tardis:user:read"},
+							BasePath: BasePath,
+							Security: &roverv1.SubscriberSecurity{
+								M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+
+									Scopes: []string{"tardis:user:read"},
+								},
+							},
 						},
 					},
 				},
@@ -398,7 +429,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				}, apiSubscription)
 
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(apiSubscription.Spec.Security.Oauth2Scopes[0]).To(Equal("tardis:user:read"))
+				g.Expect(apiSubscription.Spec.Security.M2M.Scopes[0]).To(Equal("tardis:user:read"))
 
 			}, timeout, interval).Should(Succeed())
 

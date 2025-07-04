@@ -6,6 +6,7 @@ package feature
 
 import (
 	"context"
+	"strings"
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
@@ -42,10 +43,17 @@ func (f *CustomScopesFeature) Apply(ctx context.Context, builder features.Featur
 		return nil
 	}
 
-	for _, consumer := range builder.GetAllowedConsumers() { // TODO: implement
-		jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = plugin.OauthCredentials{
-			Scopes: "custom_scope",
+	for _, consumer := range builder.GetAllowedConsumers() {
+
+		if consumer.Spec.Security != nil && consumer.Spec.Security.M2M != nil {
+			if len(consumer.Spec.Security.M2M.Scopes) > 0 {
+				// Join scopes with a space, as Kong expects a single string with space-separated scopes
+				jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = plugin.OauthCredentials{
+					Scopes: strings.Join(consumer.Spec.Security.M2M.Scopes, " "),
+				}
+			}
 		}
+
 	}
 
 	return nil

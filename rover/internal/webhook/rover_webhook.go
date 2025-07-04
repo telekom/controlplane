@@ -148,7 +148,7 @@ func (r *RoverValidator) ValidateSubscription(ctx context.Context, environment s
 
 func (r *RoverValidator) ValidateExposure(ctx context.Context, environment string, exposure roverv1.Exposure) (warnings admission.Warnings, err error) {
 	if exposure.Api != nil {
-		if strings.Contains(exposure.Api.Upstream, "localhost") {
+		if strings.Contains(exposure.Api.Upstreams[0].URL, "localhost") {
 			return nil, apierrors.NewBadRequest("upstream must not contain localhost")
 		}
 	}
