@@ -26,12 +26,12 @@ func AsUpstreamForProxyRoute(ctx context.Context, realm *gatewayapi.Realm, apiBa
 		},
 	}
 	if err := c.Get(ctx, client.ObjectKeyFromObject(identityClient), identityClient); err != nil {
-		return ups, errors.Wrapf(err, "failed to get gateway client for %s", realm.Namespace)
+		return ups, errors.Wrapf(err, "failed to get gateway client for %s/%s", realm.Name, realm.Namespace)
 	}
 
 	ups, err = realm.AsUpstream(apiBasePath)
 	if err != nil {
-		return ups, errors.Wrapf(err, "failed to construct upstream for realm %s", realm.Name)
+		return ups, errors.Wrapf(err, "failed to construct upstream for realm %s/%s", realm.Name, realm.Namespace)
 	}
 	ups.ClientId = identityClient.Spec.ClientId
 	ups.ClientSecret = identityClient.Spec.ClientSecret

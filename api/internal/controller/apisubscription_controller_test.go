@@ -109,7 +109,7 @@ func CreateGatewayClient(zone *adminapi.Zone) *identityapi.Client {
 	Expect(err).ToNot(HaveOccurred())
 
 	gwClient.Status = identityapi.ClientStatus{
-		IssuerUrl: "http://localhost:8080/auth/realms/test",
+		IssuerUrl: fmt.Sprintf("http://my-issuer.%s:8080/auth/realms/%s", zone.Name, testEnvironment),
 	}
 	err = k8sClient.Status().Update(ctx, gwClient)
 	Expect(err).ToNot(HaveOccurred())
@@ -381,7 +381,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				err = k8sClient.Get(ctx, apiSubRoute.K8s(), route)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				g.Expect(route.Spec.Upstreams[0].IssuerUrl).To(Equal("http://localhost:8080/auth/realms/test"))
+				g.Expect(route.Spec.Upstreams[0].IssuerUrl).To(Equal("http://my-issuer.apisub-test:8080/auth/realms/test"))
 
 			}, timeout, interval).Should(Succeed())
 		})
@@ -608,6 +608,241 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 	})
 })
 
-var _ = Describe("Failover Flow", Ordered, func() {
+var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, func() {
+	// Scenario 1:
+	// ApiSubscription is in the same zone as the ApiExposure failover zone
+	// Normal-Flow: consumerZone -> providerZone -> providerApi
+	// Failover-Flow: consumerZone == providerFailoverZone -> providerApi
+	// Scenario 2:
+	// ApiSubscription is in a different zonen as the ApiExposure failover zone
+	// Normal-Flow: consumerZone -> providerZone -> providerApi
+	// Failover-Flow: consumerZone -> providerFailoverZone -> providerApi
+
+	var apiBasePath = "/apisub/failovertest/v1"
+
+	// Provider side
+	var api *apiapi.Api
+	var apiExposure *apiapi.ApiExposure
+
+	// Provider/Exposure zone
+	var providerZoneName = "provider-zone"
+	var providerZone *adminapi.Zone
+
+	// Failover zone for Provider
+	var failoverZoneName = "apisub-failover-zone"
+	var failoverZone *adminapi.Zone
+
+	// Consumer side
+	var appName = "failover-test-app"
+	var application *applicationapi.Application
+
+	BeforeAll(func() {
+		By("Creating the provider zone")
+		providerZone = CreateZone(providerZoneName)
+		CreateGatewayClient(providerZone)
+
+		By("Creating the failover zone")
+		failoverZone = CreateZone(failoverZoneName)
+		CreateGatewayClient(failoverZone)
+
+		By("Creating the provider Realm")
+		providerRealm := NewRealm(testEnvironment, providerZone.Name)
+		err := k8sClient.Create(ctx, providerRealm)
+		Expect(err).ToNot(HaveOccurred())
+
+		By("Creating the failover Realm")
+		failoverRealm := NewRealm(testEnvironment, failoverZone.Name)
+		err = k8sClient.Create(ctx, failoverRealm)
+		Expect(err).ToNot(HaveOccurred())
+
+		By("Creating the Application")
+		application = CreateApplication(appName)
+
+		By("Initializing the API")
+		api = NewApi(apiBasePath)
+		err = k8sClient.Create(ctx, api)
+		Expect(err).ToNot(HaveOccurred())
+
+		By("Creating APIExposure with failover configuration")
+		apiExposure = NewApiExposure(apiBasePath, providerZoneName)
+		apiExposure.Spec.Traffic = apiapi.Traffic{
+			Failover: &apiapi.Failover{
+				Zones: []types.ObjectRef{
+					{
+						Name:      failoverZone.Name,
+						Namespace: failoverZone.Namespace,
+					},
+				},
+			},
+		}
+		err = k8sClient.Create(ctx, apiExposure)
+		Expect(err).ToNot(HaveOccurred())
+
+		By("Checking if APIExposure is created with proper failover configuration")
+		Eventually(func(g Gomega) {
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(apiExposure.Status.Active).To(BeTrue())
+			g.Expect(apiExposure.Status.Route).ToNot(BeNil())
+			g.Expect(apiExposure.Status.FailoverRoute).ToNot(BeNil())
+		}, timeout, interval).Should(Succeed())
+	})
+
+	Context("Same Zone as ApiExposure Failover Zone", func() {
+		var sameZoneSubscription *apiapi.ApiSubscription
+
+		BeforeAll(func() {
+			By("Creating ApiSubscription in the failover zone")
+			sameZoneSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
+			sameZoneSubscription.Name = "failover-same-zone-subscription"
+			sameZoneSubscription.Spec.Zone = types.ObjectRef{
+				Name:      failoverZoneName,
+				Namespace: testEnvironment,
+			}
+			err := k8sClient.Create(ctx, sameZoneSubscription)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should be approved when subscription is created", func() {
+			By("Checking if approval request is created")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(sameZoneSubscription), sameZoneSubscription)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(sameZoneSubscription.Status.ApprovalRequest).ToNot(BeNil())
+			}, timeout, interval).Should(Succeed())
+
+			By("Approving the subscription")
+			approvalReq := ProgressApprovalRequest(sameZoneSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
+			ProgressApproval(sameZoneSubscription, approvalapi.ApprovalStateGranted, approvalReq)
+		})
+
+		It("should create a route for the ApiSubscription in the failover zone", func() {
+			By("Checking route configuration")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(sameZoneSubscription), sameZoneSubscription)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(sameZoneSubscription.Status.Route).ToNot(BeNil())
+
+				route := &gatewayapi.Route{}
+				err = k8sClient.Get(ctx, sameZoneSubscription.Status.Route.K8s(), route)
+				g.Expect(err).ToNot(HaveOccurred())
+
+				// Verify route has proper downstream configuration
+				g.Expect(route.Spec.Downstreams[0].Url()).To(Equal("https://my-gateway.apisub-failover-zone:8080/apisub/failovertest/v1"))
+				g.Expect(route.Spec.Downstreams[0].IssuerUrl).To(Equal("http://my-issuer.apisub-failover-zone:8080/auth/realms/test"))
+
+				// Verify route has proper upstream configuration pointing to provider zone
+				g.Expect(route.Spec.Upstreams[0].Url()).To(Equal("http://my-gateway.provider-zone:8080/apisub/failovertest/v1"))
+				g.Expect(route.Spec.Upstreams[0].IssuerUrl).To(Equal("http://my-issuer.provider-zone:8080/auth/realms/test"))
+
+				// Verify route has proper failover configuration pointing to provider API
+				g.Expect(route.Spec.Traffic.Failover).ToNot(BeNil())
+				g.Expect(route.Spec.Traffic.Failover.TargetZoneName).To(Equal(providerZone.Name))
+				g.Expect(route.Spec.Traffic.Failover.Upstreams[0].IssuerUrl).To(Equal(""))
+				g.Expect(route.Spec.Traffic.Failover.Upstreams[0].Url()).To(Equal("http://my-provider-api:8080/api/v1"))
+
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should create a consume route for the ApiSubscription", func() {
+			By("Checking consume route creation")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(sameZoneSubscription), sameZoneSubscription)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(sameZoneSubscription.Status.ConsumeRoute).ToNot(BeNil())
+
+				consumeRoute := &gatewayapi.ConsumeRoute{}
+				err = k8sClient.Get(ctx, sameZoneSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(consumeRoute.Spec.Route).To(Equal(*sameZoneSubscription.Status.Route))
+				g.Expect(consumeRoute.Spec.ConsumerName).To(Equal(application.Status.ClientId))
+			}, timeout, interval).Should(Succeed())
+		})
+	})
+
+	Context("Different Zone than ApiExposure Failover Zone", func() {
+		var differentZoneName = "different-zone"
+		var differentZone *adminapi.Zone
+		var differentZoneSubscription *apiapi.ApiSubscription
+
+		BeforeAll(func() {
+			By("Creating a different zone")
+			differentZone = CreateZone(differentZoneName)
+			CreateGatewayClient(differentZone)
+
+			By("Creating the Realm for different zone")
+			differentRealm := NewRealm(testEnvironment, differentZone.Name)
+			err := k8sClient.Create(ctx, differentRealm)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Creating ApiSubscription in a different zone")
+			differentZoneSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
+			differentZoneSubscription.Name = "failover-different-zone-subscription"
+			differentZoneSubscription.Spec.Zone = types.ObjectRef{
+				Name:      differentZoneName,
+				Namespace: testEnvironment,
+			}
+			err = k8sClient.Create(ctx, differentZoneSubscription)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should be approved when subscription is created", func() {
+			By("Checking if approval request is created")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(differentZoneSubscription), differentZoneSubscription)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(differentZoneSubscription.Status.ApprovalRequest).ToNot(BeNil())
+			}, timeout, interval).Should(Succeed())
+
+			By("Approving the subscription")
+			approvalReq := ProgressApprovalRequest(differentZoneSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
+			ProgressApproval(differentZoneSubscription, approvalapi.ApprovalStateGranted, approvalReq)
+		})
+
+		It("should create a proxy route with failover that points to the Api-Provider failover zone", func() {
+			By("Checking route configuration")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(differentZoneSubscription), differentZoneSubscription)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(differentZoneSubscription.Status.Route).ToNot(BeNil())
+
+				route := &gatewayapi.Route{}
+				err = k8sClient.Get(ctx, differentZoneSubscription.Status.Route.K8s(), route)
+				g.Expect(err).ToNot(HaveOccurred())
+
+				// Verify route has proper downstream configuration
+				g.Expect(route.Spec.Downstreams[0].Url()).To(Equal("https://my-gateway.different-zone:8080/apisub/failovertest/v1"))
+				g.Expect(route.Spec.Downstreams[0].IssuerUrl).To(Equal("http://my-issuer.different-zone:8080/auth/realms/test"))
+
+				// Verify route has proper upstream configuration pointing to provider zone
+				g.Expect(route.Spec.Upstreams[0].Url()).To(Equal("http://my-gateway.provider-zone:8080/apisub/failovertest/v1"))
+				g.Expect(route.Spec.Upstreams[0].IssuerUrl).To(Equal("http://my-issuer.provider-zone:8080/auth/realms/test"))
+
+				// Verify route has proper failover configuration pointing to provider failover zone
+				g.Expect(route.Labels[config.BuildLabelKey("type")]).To(Equal("proxy"))
+				g.Expect(route.Spec.Traffic.Failover).ToNot(BeNil())
+				g.Expect(route.Spec.Traffic.Failover.TargetZoneName).To(Equal(providerZone.Name))
+				g.Expect(route.Spec.Traffic.Failover.Upstreams[0].IssuerUrl).To(Equal("http://my-issuer.apisub-failover-zone:8080/auth/realms/test"))
+				g.Expect(route.Spec.Traffic.Failover.Upstreams[0].Url()).To(Equal("http://my-gateway.apisub-failover-zone:8080/apisub/failovertest/v1"))
+
+				g.Expect(route.Labels[config.BuildLabelKey("failover.zone")]).To(Equal(labelutil.NormalizeValue(failoverZone.Name)))
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should create a consume route for the ApiSubscription", func() {
+			By("Checking consume route creation")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(differentZoneSubscription), differentZoneSubscription)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(differentZoneSubscription.Status.ConsumeRoute).ToNot(BeNil())
+
+				consumeRoute := &gatewayapi.ConsumeRoute{}
+				err = k8sClient.Get(ctx, differentZoneSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(consumeRoute.Spec.Route).To(Equal(*differentZoneSubscription.Status.Route))
+				g.Expect(consumeRoute.Spec.ConsumerName).To(Equal(application.Status.ClientId))
+			}, timeout, interval).Should(Succeed())
+		})
+	})
 
 })
