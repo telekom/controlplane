@@ -100,11 +100,16 @@ spec:
                       type: integer
                     scheme:
                       type: string
+                    url:
+                      type: string
+                    weight:
+                      type: integer
                   required:
                   - host
                   - path
                   - port
                   - scheme
+                  - url
                   type: object
                 type: array
             required:

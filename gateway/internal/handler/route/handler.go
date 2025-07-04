@@ -143,6 +143,7 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 	builder.EnableFeature(feature.InstanceAccessControlFeature)
 	builder.EnableFeature(feature.InstancePassThroughFeature)
 	builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
+	builder.EnableFeature(feature.InstanceLoadBalancingFeature)
 	// builder.EnableFeature(feature.InstanceCustomScopesFeature)
 	// builder.EnableFeature(feature.InstanceExternalIDPFeature)
 	// builder.EnableFeature(feature.InstanceRateLimitFeature)
