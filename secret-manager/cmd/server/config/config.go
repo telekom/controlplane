@@ -48,7 +48,11 @@ type ServerConfig struct {
 
 func ReadConfig(r io.Reader) (*ServerConfig, error) {
 	cfg := DefaultConfig()
-	if err := yaml.NewDecoder(r).Decode(cfg); err != nil {
+	content, err := io.ReadAll(r)
+	if err != nil {
+		return cfg, err
+	}
+	if err := yaml.Unmarshal(content, &cfg); err != nil {
 		return nil, err
 	}
 	return cfg, nil

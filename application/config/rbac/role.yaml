@@ -8,7 +8,7 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - admin.github.com/telekom/
+  - admin.cp.ei.telekom.de
   resources:
   - zones
   verbs:
@@ -16,7 +16,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - application.github.com/telekom/
+  - application.cp.ei.telekom.de
   resources:
   - applications
   verbs:
@@ -28,13 +28,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - application.github.com/telekom/
+  - application.cp.ei.telekom.de
   resources:
   - applications/finalizers
   verbs:
   - update
 - apiGroups:
-  - application.github.com/telekom/
+  - application.cp.ei.telekom.de
   resources:
   - applications/status
   verbs:
@@ -49,7 +49,7 @@ rules:
   - create
   - patch
 - apiGroups:
-  - gateway.github.com/telekom/
+  - gateway.cp.ei.telekom.de
   resources:
   - consumers
   verbs:
@@ -61,7 +61,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - gateway.github.com/telekom/
+  - gateway.cp.ei.telekom.de
   resources:
   - gateways
   verbs:
@@ -69,7 +69,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - identity.github.com/telekom/
+  - identity.cp.ei.telekom.de
   resources:
   - clients
   verbs:
@@ -81,7 +81,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - identity.github.com/telekom/
+  - identity.cp.ei.telekom.de
   resources:
   - realms
   verbs:

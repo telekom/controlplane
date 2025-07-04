@@ -6,63 +6,73 @@ namespace: secret-manager-system
 
 # Labels to add to all resources and selectors.
 labels:
-- includeSelectors: true
-  pairs:
-    domain: secret-management
-    app.kubernetes.io/instance: secret-manager
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/name: secret-manager
-    app.kubernetes.io/part-of: secret-management
-    
-resources:
-- ../manager
-- ../rbac
-- ../certmanager
-- ../network-policy
-- ../prometheus
+  - includeSelectors: true
+    pairs:
+      domain: secret-management
+      app.kubernetes.io/instance: secret-manager
+      app.kubernetes.io/managed-by: kustomize
+      app.kubernetes.io/name: secret-manager
+      app.kubernetes.io/part-of: secret-management
 
-# components: # This should be set in the argocd application config
-# - ../argocd
+resources:
+  - ../manager
+  - ../rbac
+  - ../certmanager
+  - ../network-policy
+  - ../prometheus
+
+# Default configuration
+# Use your own kustomization file to override the default configuration.
+configMapGenerator:
+  - name: secret-manager-config
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - config.yaml= # the server will use its default configuration if this is empty.
+  - name: secret-manager-env
+    options:
+      disableNameSuffixHash: true
+    literals: []
 
 patches:
-# This is only needed when using the cert-manager to issue certificates.
-- path: deployment_patch.yaml
-  target:
-    kind: Deployment
+  # This is only needed when using the cert-manager to issue certificates.
+  - path: deployment_patch.yaml
+    target:
+      kind: Deployment
 
 # This is only needed when using the cert-manager to issue certificates.
 replacements:
-- source:
-    kind: Service
-    version: v1
-    name: secret-manager
-    fieldPath: .metadata.name
-  targets:
-    - select:
-        kind: Certificate
-        group: cert-manager.io
-        version: v1
-      fieldPaths:
-        - .spec.dnsNames.0
-        - .spec.dnsNames.1
-      options:
-        delimiter: '.'
-        index: 0
-        create: true
-- source:
-    kind: Service
-    version: v1
-    name: secret-manager
-    fieldPath: .metadata.namespace
-  targets:
-    - select:
-        kind: Certificate
-        group: cert-manager.io
-        version: v1
-      fieldPaths:
-        - .spec.dnsNames.0
-        - .spec.dnsNames.1
-      options:
-        delimiter: '.'
-        index: 1
-        create: true
+  - source:
+      kind: Service
+      version: v1
+      name: secret-manager
+      fieldPath: .metadata.name
+    targets:
+      - select:
+          kind: Certificate
+          group: cert-manager.io
+          version: v1
+        fieldPaths:
+          - .spec.dnsNames.0
+          - .spec.dnsNames.1
+        options:
+          delimiter: "."
+          index: 0
+          create: true
+  - source:
+      kind: Service
+      version: v1
+      name: secret-manager
+      fieldPath: .metadata.namespace
+    targets:
+      - select:
+          kind: Certificate
+          group: cert-manager.io
+          version: v1
+        fieldPaths:
+          - .spec.dnsNames.0
+          - .spec.dnsNames.1
+        options:
+          delimiter: "."
+          index: 1
+          create: true

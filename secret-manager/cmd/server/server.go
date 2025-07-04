@@ -52,7 +52,7 @@ func init() {
 	flag.StringVar(&tlsKey, "tls-key", "/etc/tls/tls.key", "path to TLS key")
 	flag.StringVar(&address, "address", ":8443", "server address")
 	flag.StringVar(&configFile, "configfile", "", "path to config file")
-	flag.StringVar(&backendType, "backend", "", "backend type (kubernetes, conjur, encrypt)")
+	flag.StringVar(&backendType, "backend", "", "backend type (kubernetes, conjur)")
 }
 
 func setupLog(logLevel string) logr.Logger {

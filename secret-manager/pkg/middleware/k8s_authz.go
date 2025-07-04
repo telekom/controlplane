@@ -7,9 +7,12 @@ package middleware
 import (
 	"errors"
 	"fmt"
+	"log"
 	"slices"
 	"strings"
+	"time"
 
+	"github.com/MicahParks/keyfunc/v2"
 	"github.com/go-logr/logr"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
@@ -24,6 +27,15 @@ const (
 	AccessTypeSecretsRead        AccessType = "secrets_read"
 	AccessTypeSecretsWrite       AccessType = "secrets_write"
 	AccessTypeAppOnboardingWrite AccessType = "onboarding_write"
+)
+
+var (
+	// A list of known paths that Kubernetes uses to expose JWKS.
+	// The order is important, as first available path will be used.
+	KubernetesJwksPaths = []string{
+		"/keys",
+		"/openid/v1/jwks",
+	}
 )
 
 type AccessTypeSet map[AccessType]struct{}
@@ -43,7 +55,7 @@ type ServiceAccessConfig struct {
 }
 
 type KubernetesAuthzOptions struct {
-	JWKSetURLs     []string
+	JWKSOpts       map[string]keyfunc.Options
 	TrustedIssuers []string
 	Audience       string
 	AccessConfig   []ServiceAccessConfig
@@ -70,9 +82,21 @@ func WithTrustedIssuers(issuers ...string) KubernetesAuthOption {
 	}
 }
 
+var keyFuncOptions = keyfunc.Options{
+	RefreshErrorHandler: func(err error) {
+		log.Printf("Failed to perform background refresh of JWK Set: %s.", err)
+	},
+	RefreshInterval:   time.Hour,
+	RefreshRateLimit:  time.Minute * 5,
+	RefreshTimeout:    time.Second * 10,
+	RefreshUnknownKID: true,
+}
+
 func WithJWKSetURLs(urls ...string) KubernetesAuthOption {
 	return func(o *KubernetesAuthzOptions) {
-		o.JWKSetURLs = append(o.JWKSetURLs, urls...)
+		for _, url := range urls {
+			o.JWKSOpts[url] = keyFuncOptions
+		}
 	}
 }
 
@@ -83,9 +107,25 @@ func WithInClusterIssuer() KubernetesAuthOption {
 			panic(err)
 		}
 		o.TrustedIssuers = append(o.TrustedIssuers, c.Issuer)
-		// Workaround as the returned jwks URL is not reachable
-		jwksUrl := c.Issuer + "/keys"
-		o.JWKSetURLs = append(o.JWKSetURLs, jwksUrl)
+		httpClient, err := GetKubernetesHttpClient()
+		if err != nil {
+			panic(fmt.Errorf("failed to get Kubernetes HTTP client: %w", err))
+		}
+		opts := keyFuncOptions
+		opts.Client = httpClient
+
+		for _, path := range KubernetesJwksPaths {
+			jwksURL := c.Issuer + path
+			res, err := httpClient.Get(jwksURL)
+			if err == nil {
+				res.Body.Close() //nolint:errcheck
+				if res.StatusCode == 200 {
+					o.JWKSOpts[jwksURL] = opts
+					break // stop at the first available path
+				}
+			}
+			// continue to next path if the current one is not available
+		}
 	}
 }
 
@@ -110,9 +150,14 @@ func NewKubernetesAuthz(opts ...KubernetesAuthOption) fiber.Handler {
 		}
 	}
 
+	jwks, err := keyfunc.GetMultiple(options.JWKSOpts, keyfunc.MultipleOptions{})
+	if err != nil {
+		panic(fmt.Errorf("failed to get JWKs: %w", err))
+	}
+
 	return jwtware.New(jwtware.Config{
 		ContextKey:     "user",
-		JWKSetURLs:     options.JWKSetURLs,
+		KeyFunc:        jwks.Keyfunc,
 		SuccessHandler: newSuccessHandler(options),
 		Claims:         &ServiceAccountTokenClaims{},
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
@@ -120,14 +165,15 @@ func NewKubernetesAuthz(opts ...KubernetesAuthOption) fiber.Handler {
 			if errors.As(err, &pErr) {
 				return pErr
 			}
-			return problems.Unauthorized("Failed to authenticate", err.Error())
+			logr.FromContextOrDiscard(c.UserContext()).Error(err, "Failed to authenticate")
+			return problems.Unauthorized("Failed to authenticate", "Invalid token")
 		},
 	})
 }
 
 func defaultOpts() *KubernetesAuthzOptions {
 	return &KubernetesAuthzOptions{
-		JWKSetURLs:     []string{},
+		JWKSOpts:       make(map[string]keyfunc.Options),
 		TrustedIssuers: []string{},
 		Audience:       "secret-manager",
 		AccessConfig:   []ServiceAccessConfig{},

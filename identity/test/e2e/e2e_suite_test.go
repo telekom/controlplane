@@ -15,6 +15,6 @@ import (
 // Run e2e tests using the Ginkgo runner.
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
-	_, _ = fmt.Fprintf(GinkgoWriter, "Starting identity-operator suite\n")
+	_, _ = fmt.Fprintf(GinkgoWriter, "Starting identity suite\n")
 	RunSpecs(t, "e2e suite")
 }

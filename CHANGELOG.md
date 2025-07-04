@@ -1,3 +1,23 @@
+# [0.5.0](https://github.com/telekom/controlplane/compare/v0.4.0...v0.5.0) (2025-07-03)
+
+
+### Bug Fixes
+
+* **secret-manager:** k8s jwks; bouncer for deletion; system certpool ([#58](https://github.com/telekom/controlplane/issues/58)) ([55f313b](https://github.com/telekom/controlplane/commit/55f313b2063528c702d27a1e9c0de9c42a81c71a))
+
+
+### Features
+
+* **codeql:** Use go build ./... for codeql to make sure all sources are compiled for analysis ([#63](https://github.com/telekom/controlplane/issues/63)) ([2fa5b15](https://github.com/telekom/controlplane/commit/2fa5b15167e2aced4cf9eddc315312a728f7bcde))
+* **tool:** added snapshot tool ([#49](https://github.com/telekom/controlplane/issues/49)) ([019a771](https://github.com/telekom/controlplane/commit/019a771a07ca62f809e4b68cae5786b4dcb74fc9))
+
+# [0.4.0](https://github.com/telekom/controlplane/compare/v0.3.0...v0.4.0) (2025-06-11)
+
+
+### Features
+
+* **installation:** added installation script and instructions; smaller code-adjustments to support installation ([6b54c63](https://github.com/telekom/controlplane/commit/6b54c63686df9e8450d6b7e749761c6166ec99de))
+
 # [0.3.0](https://github.com/telekom/controlplane/compare/v0.2.1...v0.3.0) (2025-05-28)
 
 
