@@ -145,8 +145,8 @@ var _ = Describe("Util Tests", func() {
 			Expect(upstream.Path).To(Equal("/api/test/v1"))
 
 			Expect(upstream.IssuerUrl).To(Equal("http://issuer.provider.de:8080/auth/realms/test"))
-			Expect(upstream.ClientId).To(Equal("gateway"))
-			Expect(upstream.ClientSecret).To(Equal("topsecret"))
+			Expect(upstream.Security.M2M.Client.ClientId).To(Equal("gateway"))
+			Expect(upstream.Security.M2M.Client.ClientSecret).To(Equal("topsecret"))
 		})
 
 		It("should create a Proxy-Route with the correct virtual-host as downstream", func() {
@@ -170,8 +170,8 @@ var _ = Describe("Util Tests", func() {
 			Expect(upstream.Path).To(Equal("/api/test/v1"))
 
 			Expect(upstream.IssuerUrl).To(Equal("http://issuer.consumer.de:8080/auth/realms/test"))
-			Expect(upstream.ClientId).To(Equal("gateway"))
-			Expect(upstream.ClientSecret).To(Equal("topsecret"))
+			Expect(upstream.Security.M2M.Client.ClientId).To(Equal("gateway"))
+			Expect(upstream.Security.M2M.Client.ClientSecret).To(Equal("topsecret"))
 		})
 
 	})

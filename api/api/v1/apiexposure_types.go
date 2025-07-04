@@ -28,6 +28,8 @@ type ApiExposureSpec struct {
 	// +kubebuilder:default=Auto
 	Approval ApprovalStrategy `json:"approval"`
 	Zone     ctypes.ObjectRef `json:"zone"`
+
+	Security *Security `json:"security,omitempty"`
 }
 
 type Upstream struct {

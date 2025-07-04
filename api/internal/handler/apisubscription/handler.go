@@ -6,6 +6,7 @@ package apisubscription
 
 import (
 	"context"
+	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -111,16 +112,32 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	// Approval
 
-	requester := &approvalapi.Requester{ // TODO: get from somewhere (Team?)
-		Name:   "Ron",
-		Email:  "ron.gummich@telekom.de",
-		Reason: "I need access to this API!!",
+	requester := &approvalapi.Requester{
+		Name:   application.Spec.Team,
+		Email:  application.Spec.TeamEmail,
+		Reason: fmt.Sprintf("Team %s requested access to your API %s from zone %s", application.Spec.Team, api.Name, apiSub.Spec.Zone.Name),
 	}
 	properties := map[string]any{
 		"basePath": apiSub.Spec.ApiBasePath,
 	}
-	if apiSub.Spec.Security != nil {
-		properties["scopes"] = apiSub.Spec.Security.Oauth2Scopes
+
+	// Scopes
+	// check if scopes exist and scopes are subset from api
+	if util.HasM2M(apiSub) {
+		if apiSub.Spec.Security.M2M.Scopes != nil {
+			scopesExist, err := ScopesMustExist(ctx, api, apiSub)
+			if err != nil {
+				return errors.Wrapf(err, "failed to check scopes for ApiSubscription: %s in namespace: %s",
+					apiSub.Name, apiSub.Namespace)
+			}
+			if !scopesExist {
+				log.Info("❌ One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification")
+				apiSub.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification"))
+				apiSub.SetCondition(condition.NewBlockedCondition("One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
+				return nil
+			}
+		}
+		properties["scopes"] = apiSub.Spec.Security.M2M.Scopes
 	}
 	err = requester.SetProperties(properties)
 	if err != nil {
@@ -204,6 +221,16 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			ConsumerName: application.Status.ClientId,
 		}
 
+		if util.HasM2MClient(apiSub) {
+			routeConsumer.Spec.Security = &gatewayapi.SubscriberSecurity{
+				M2M: &gatewayapi.SubscriberMachine2MachineAuthentication{
+					ExternalIDP: &gatewayapi.SubscriberExternalIdentityProvider{
+						Client: util.OAuth2ClientToGatewayOAuth2Client(apiSub.Spec.Security.M2M.Client),
+					},
+					Scopes: apiSub.Spec.Security.M2M.Scopes,
+				},
+			}
+		}
 		return nil
 	}
 

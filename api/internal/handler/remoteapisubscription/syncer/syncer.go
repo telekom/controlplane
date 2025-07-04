@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/api/internal/handler/util"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -80,10 +81,10 @@ func (c *syncerClient) Send(ctx context.Context, resource *apiv1.RemoteApiSubscr
 			},
 		},
 	}
-	if resource.Spec.Security != nil {
+	if util.HasM2MRemote(resource) {
 		body.Security = &cpv1.Security{
 			Oauth2: &cpv1.SecurityOauth2{
-				Scopes: &resource.Spec.Security.Oauth2Scopes,
+				Scopes: &resource.Spec.Security.M2M.Scopes,
 			},
 		}
 	}

@@ -34,8 +34,15 @@ func AsUpstreamForProxyRoute(ctx context.Context, realm *gatewayapi.Realm, apiBa
 	if err != nil {
 		return ups, errors.Wrapf(err, "failed to construct upstream for realm %s", realm.Name)
 	}
-	ups.ClientId = identityClient.Spec.ClientId
-	ups.ClientSecret = identityClient.Spec.ClientSecret
+
+	ups.Security = &gatewayapi.Security{
+		M2M: &gatewayapi.Machine2MachineAuthentication{
+			Client: &gatewayapi.OAuth2ClientCredentials{
+				ClientId:     identityClient.Spec.ClientId,
+				ClientSecret: identityClient.Spec.ClientSecret,
+			},
+		},
+	}
 	ups.IssuerUrl = identityClient.Status.IssuerUrl
 
 	return
@@ -50,10 +57,41 @@ func AsUpstreamForRealRoute(
 		return ups, errors.Wrapf(err, "failed to parse URL %s", rawUrl)
 	}
 
-	return gatewayapi.Upstream{
+	upstream := gatewayapi.Upstream{
 		Scheme: url.Scheme,
 		Host:   url.Hostname(),
 		Port:   gatewayapi.GetPortOrDefaultFromScheme(url),
 		Path:   url.Path,
-	}, nil
+	}
+
+	if HasExternalIdp(apiExposure) {
+		upstream.Security = &gatewayapi.Security{
+			M2M: &gatewayapi.Machine2MachineAuthentication{
+				ExternalIDP: &gatewayapi.ExternalIdentityProvider{
+					TokenEndpoint: apiExposure.Spec.Security.M2M.ExternalIDP.TokenEndpoint,
+					TokenRequest:  apiExposure.Spec.Security.M2M.ExternalIDP.TokenRequest,
+					GrantType:     apiExposure.Spec.Security.M2M.ExternalIDP.GrantType,
+					Client: &gatewayapi.OAuth2ClientCredentials{
+						ClientId:     apiExposure.Spec.Security.M2M.ExternalIDP.Client.ClientId,
+						ClientSecret: apiExposure.Spec.Security.M2M.ExternalIDP.Client.ClientSecret,
+						Scopes:       apiExposure.Spec.Security.M2M.ExternalIDP.Client.Scopes,
+					},
+				},
+			},
+		}
+	}
+
+	return upstream, nil
+}
+
+func OAuth2ClientToGatewayOAuth2Client(client *apiapi.OAuth2ClientCredentials) *gatewayapi.OAuth2ClientCredentials {
+	if client == nil {
+		return nil
+	}
+
+	return &gatewayapi.OAuth2ClientCredentials{
+		ClientId:     client.ClientId,
+		ClientSecret: client.ClientSecret,
+		Scopes:       client.Scopes,
+	}
 }

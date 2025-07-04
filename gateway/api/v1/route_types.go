@@ -13,13 +13,15 @@ import (
 )
 
 type Upstream struct {
-	Scheme       string `json:"scheme"`
-	Host         string `json:"host"`
-	Port         int    `json:"port"`
-	Path         string `json:"path"`
-	IssuerUrl    string `json:"issuerUrl,omitempty"`
-	ClientId     string `json:"clientId,omitempty"`
-	ClientSecret string `json:"clientSecret,omitempty"`
+	Scheme    string `json:"scheme"`
+	Host      string `json:"host"`
+	Port      int    `json:"port"`
+	Path      string `json:"path"`
+	IssuerUrl string `json:"issuerUrl,omitempty"`
+
+	// Security is the security configuration for the upstream
+	// +kubebuilder:validation:Optional
+	Security *Security `json:"security,omitempty"`
 }
 
 func (u Upstream) GetScheme() string {
