@@ -6,6 +6,8 @@ package apisubscription
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -111,16 +113,39 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	// Approval
 
-	requester := &approvalapi.Requester{ // TODO: get from somewhere (Team?)
-		Name:   "Ron",
-		Email:  "ron.gummich@telekom.de",
-		Reason: "I need access to this API!!",
+	requester := &approvalapi.Requester{
+		Name:   application.Spec.Team,
+		Email:  application.Spec.TeamEmail,
+		Reason: fmt.Sprintf("Team %s requested access to your API %s from zone %s", application.Spec.Team, api.Name, apiSub.Spec.Zone.Name),
 	}
 	properties := map[string]any{
 		"basePath": apiSub.Spec.ApiBasePath,
 	}
-	if apiSub.Spec.Security != nil {
-		properties["scopes"] = apiSub.Spec.Security.Oauth2Scopes
+
+	// Scopes
+	// check if scopes exist and scopes are subset from api
+	if apiSub.Spec.HasM2M() {
+		if apiSub.Spec.Security.M2M.Scopes != nil {
+
+			if len(api.Spec.Oauth2Scopes) == 0 {
+				log.Info("❌ Api does not define any Oauth2 scopes")
+				apiSub.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Api does not define any Oauth2 scopes"))
+				apiSub.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
+				return nil
+			} else {
+				scopesExist, invalidScopes := ScopesMustExist(ctx, api, apiSub)
+				if !scopesExist {
+					log.Info("❌ One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification")
+					var message = fmt.Sprintf("Available scopes: %s | Invalid scopes: %s", strings.Join(api.Spec.Oauth2Scopes, ", "), strings.Join(invalidScopes, ", "))
+					log.Info(message)
+					apiSub.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification"))
+					apiSub.SetCondition(condition.NewBlockedCondition("One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
+					return nil
+				}
+			}
+
+		}
+		properties["scopes"] = apiSub.Spec.Security.M2M.Scopes
 	}
 	err = requester.SetProperties(properties)
 	if err != nil {
@@ -202,6 +227,14 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		routeConsumer.Spec = gatewayapi.ConsumeRouteSpec{
 			Route:        *types.ObjectRefFromObject(route),
 			ConsumerName: application.Status.ClientId,
+		}
+
+		if apiSub.Spec.HasM2M() {
+			routeConsumer.Spec.Security = &gatewayapi.ConsumerSecurity{
+				M2M: &gatewayapi.ConsumerMachine2MachineAuthentication{
+					Scopes: apiSub.Spec.Security.M2M.Scopes,
+				},
+			}
 		}
 
 		return nil

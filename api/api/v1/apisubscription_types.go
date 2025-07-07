@@ -12,19 +12,31 @@ import (
 
 // ApiSubscriptionSpec defines the desired state of ApiSubscription
 type ApiSubscriptionSpec struct {
-	ApiBasePath  string           `json:"apiBasePath"`
-	Security     *Security        `json:"security,omitempty"`
-	Organization string           `json:"organization,omitempty"`
-	Requestor    Requestor        `json:"requestor"`
-	Zone         ctypes.ObjectRef `json:"zone"`
+	ApiBasePath  string              `json:"apiBasePath"`
+	Security     *SubscriberSecurity `json:"security,omitempty"`
+	Organization string              `json:"organization,omitempty"`
+	Requestor    Requestor           `json:"requestor"`
+	Zone         ctypes.ObjectRef    `json:"zone"`
+}
+
+func (apiSpec *ApiSubscriptionSpec) HasM2M() bool {
+	if apiSpec.Security == nil {
+		return false
+	}
+
+	return apiSpec.Security.M2M != nil
+}
+
+func (apiSpec *ApiSubscriptionSpec) HasM2MClient() bool {
+	if !apiSpec.HasM2M() {
+		return false
+	}
+
+	return apiSpec.Security.M2M.Client != nil
 }
 
 type Requestor struct {
 	Application ctypes.ObjectRef `json:"application"`
-}
-
-type Security struct {
-	Oauth2Scopes []string `json:"oauth2Scopes,omitempty"`
 }
 
 // ApiSubscriptionStatus defines the observed state of ApiSubscription

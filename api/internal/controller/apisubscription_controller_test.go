@@ -5,6 +5,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -35,7 +36,8 @@ func CreateApplication(name string) *applicationapi.Application {
 			},
 		},
 		Spec: applicationapi.ApplicationSpec{
-			// TODO: Add fields here
+			Team:      "Hyperion",
+			TeamEmail: "hyperion@test.de",
 		},
 	}
 
@@ -65,7 +67,11 @@ func NewApiSubscription(apiBasePath, zoneName, appName string) *apiapi.ApiSubscr
 		Spec: apiapi.ApiSubscriptionSpec{
 			ApiBasePath:  apiBasePath,
 			Organization: "",
-			Security:     &apiapi.Security{},
+			Security: &apiapi.SubscriberSecurity{
+				M2M: &apiapi.SubscriberMachine2MachineAuthentication{
+					Scopes: []string{"scope1", "scope2"},
+				},
+			},
 			Requestor: apiapi.Requestor{
 				Application: types.ObjectRef{
 					Name:      appName,
@@ -269,6 +275,10 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				g.Expect(readyCondition).ToNot(BeNil())
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
 				g.Expect(readyCondition.Reason).To(Equal("ApprovalPending"))
+				var propertiesMap map[string]interface{}
+				err = json.Unmarshal(approvalRequest.Spec.Requester.Properties.Raw, &propertiesMap)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(propertiesMap["scopes"]).To(HaveLen(2))
 
 			}, timeout, interval).Should(Succeed())
 		})
@@ -308,6 +318,9 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				err = k8sClient.Get(ctx, apiSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(consumeRoute.Spec.Route).To(Equal(*apiSubscription.Status.Route))
+				g.Expect(consumeRoute.Spec.Security.M2M.Scopes[0]).To(Equal("scope1"))
+				g.Expect(consumeRoute.Spec.Security.M2M.Scopes[1]).To(Equal("scope2"))
+				g.Expect(consumeRoute.Spec.Security.M2M.Scopes).To(ConsistOf("scope1", "scope2"))
 
 			}, timeout, interval).Should(Succeed())
 		})
