@@ -72,9 +72,6 @@ spec:
               security:
                 description: Security is the security configuration for the subscription
                 properties:
-                  h2m:
-                    description: H2M defines human-to-machine authentication configuration
-                    type: object
                   m2m:
                     description: M2M defines machine-to-machine authentication configuration
                     properties:
@@ -132,10 +129,6 @@ spec:
                       rule: self == null || has(self.client) || has(self.basic) ||
                         has(self.scopes)
                 type: object
-                x-kubernetes-validations:
-                - message: Only one of m2m or h2m authentication can be provided (XOR
-                    relationship)
-                  rule: self == null || has(self.m2m) != has(self.h2m)
               sourceOrganization:
                 type: string
               targetOrganization:

@@ -62,8 +62,8 @@ func NewMockConsumeRoute(routeRef types.ObjectRef) *gatewayv1.ConsumeRoute {
 		Spec: gatewayv1.ConsumeRouteSpec{
 			ConsumerName: "test-consumer-name",
 			Route:        routeRef,
-			Security: &gatewayv1.SubscriberSecurity{
-				M2M: &gatewayv1.SubscriberMachine2MachineAuthentication{
+			Security: &gatewayv1.ConsumerSecurity{
+				M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
 					Scopes: []string{"scope1", "scope2"},
 				},
 			},

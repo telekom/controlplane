@@ -6,26 +6,18 @@ package v1
 
 // Security defines the security configuration for the gateway
 // Security is optional, but if provided, exactly one of m2m or h2m must be set
-// +kubebuilder:validation:XValidation:rule="self == null || has(self.m2m) != has(self.h2m)", message="Only one of m2m or h2m authentication can be provided (XOR relationship)"
 type Security struct {
 	// M2M defines machine-to-machine authentication configuration
 	// +kubebuilder:validation:Optional
 	M2M *Machine2MachineAuthentication `json:"m2m,omitempty"`
-	// H2M defines human-to-machine authentication configuration
-	// +kubebuilder:validation:Optional
-	H2M *Human2MachineAuthentication `json:"h2m,omitempty"`
 }
 
 // Security defines the security configuration for the Rover
 // Security is optional, but if provided, exactly one of m2m or h2m must be set
-// +kubebuilder:validation:XValidation:rule="self == null || has(self.m2m) != has(self.h2m)", message="Only one of m2m or h2m authentication can be provided (XOR relationship)"
-type SubscriberSecurity struct {
+type ConsumerSecurity struct {
 	// M2M defines machine-to-machine authentication configuration
 	// +kubebuilder:validation:Optional
-	M2M *SubscriberMachine2MachineAuthentication `json:"m2m,omitempty"`
-	// H2M defines human-to-machine authentication configuration
-	// +kubebuilder:validation:Optional
-	H2M *SubscriberHuman2MachineAuthentication `json:"h2m,omitempty"`
+	M2M *ConsumerMachine2MachineAuthentication `json:"m2m,omitempty"`
 }
 
 // Machine2MachineAuthentication defines the authentication methods for machine-to-machine communication
@@ -45,11 +37,11 @@ type Machine2MachineAuthentication struct {
 	Scopes []string `json:"scopes,omitempty"`
 }
 
-// SubscriberMachine2MachineAuthentication defines the authentication methods for machine-to-machine communication for subscribers
+// ConsumerMachine2MachineAuthentication defines the authentication methods for machine-to-machine communication for consumers
 // Either client, basic, or only scopes can be provided
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.client) ? (!has(self.basic)) : true)", message="Client and basic authentication cannot be used together"
 // +kubebuilder:validation:XValidation:rule="self == null || has(self.client) || has(self.basic) || has(self.scopes)", message="At least one of client, basic, or scopes must be provided"
-type SubscriberMachine2MachineAuthentication struct {
+type ConsumerMachine2MachineAuthentication struct {
 	// Client defines client credentials for OAuth2
 	// +kubebuilder:validation:Optional
 	Client *OAuth2ClientCredentials `json:"client,omitempty"`
@@ -60,18 +52,6 @@ type SubscriberMachine2MachineAuthentication struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10
 	Scopes []string `json:"scopes,omitempty"`
-}
-
-// Human2MachineAuthentication defines the authentication methods for human-to-machine communication
-type Human2MachineAuthentication struct {
-	// +kubebuilder:validation:Optional
-	// Future authentication methods will be added here
-}
-
-// SubscriberHuman2MachineAuthentication defines the authentication methods for human-to-machine communication for subscribers
-type SubscriberHuman2MachineAuthentication struct {
-	// +kubebuilder:validation:Optional
-	// Future authentication methods will be added here
 }
 
 // ExternalIdentityProvider defines configuration for using an external identity provider

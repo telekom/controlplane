@@ -320,6 +320,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				g.Expect(consumeRoute.Spec.Route).To(Equal(*apiSubscription.Status.Route))
 				g.Expect(consumeRoute.Spec.Security.M2M.Scopes[0]).To(Equal("scope1"))
 				g.Expect(consumeRoute.Spec.Security.M2M.Scopes[1]).To(Equal("scope2"))
+				g.Expect(consumeRoute.Spec.Security.M2M.Scopes).To(ConsistOf("scope1", "scope2"))
 
 			}, timeout, interval).Should(Succeed())
 		})

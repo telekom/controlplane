@@ -53,21 +53,19 @@ func ApiMustExist(ctx context.Context, obj types.Object) (bool, *apiapi.Api, err
 }
 
 // Scopes must exist in the Api specification
-func ScopesMustExist(ctx context.Context, api *apiapi.Api, apiSub *apiapi.ApiSubscription) (bool, error) {
-	log := log.FromContext(ctx)
+func ScopesMustExist(ctx context.Context, api *apiapi.Api, apiSub *apiapi.ApiSubscription) (bool, []string) {
 
-	if len(api.Spec.SubscriberSecurity.M2M.Scopes) == 0 {
-		log.Info("❌ ApiSpecification does not define any scopes. ApiSubscription is blocked")
-		return false, nil
-	}
+	var invalidScopes []string
 
 	// Check if scopes are a subset of the Api specification
 	for _, scope := range apiSub.Spec.Security.M2M.Scopes {
-		if !slices.Contains(api.Spec.SubscriberSecurity.M2M.Scopes, scope) {
-			log.Info("❌ Scope is not defined in Api specification. ApiSubscription is blocked", "scope", scope)
-
-			return false, nil
+		if !slices.Contains(api.Spec.Oauth2Scopes, scope) {
+			invalidScopes = append(invalidScopes, scope)
 		}
+	}
+
+	if len(invalidScopes) > 0 {
+		return false, invalidScopes
 	}
 
 	return true, nil
