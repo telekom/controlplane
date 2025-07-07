@@ -18,6 +18,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -302,4 +303,46 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, ups
 	}
 
 	return route, nil
+}
+
+func CreateConsumeRoute(ctx context.Context, parent *apiapi.ApiSubscription, downstreamZoneRef types.ObjectRef, routeRef types.ObjectRef, clientId string) (*gatewayapi.ConsumeRoute, error) {
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+
+	name := downstreamZoneRef.Name + "--" + parent.GetName()
+	routeConsumer := &gatewayapi.ConsumeRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: parent.GetNamespace(),
+		},
+	}
+
+	mutate := func() error {
+		if err := controllerutil.SetControllerReference(parent, routeConsumer, scopedClient.Scheme()); err != nil {
+			return errors.Wrapf(err, "failed to set owner-reference on %v", routeConsumer)
+		}
+		routeConsumer.Labels = parent.GetLabels()
+
+		routeConsumer.Spec = gatewayapi.ConsumeRouteSpec{
+			Route:        routeRef,
+			ConsumerName: clientId,
+		}
+
+		if parent.Spec.HasM2M() {
+			routeConsumer.Spec.Security = &gatewayapi.ConsumerSecurity{
+				M2M: &gatewayapi.ConsumerMachine2MachineAuthentication{
+					Scopes: parent.Spec.Security.M2M.Scopes,
+				},
+			}
+		}
+
+		return nil
+	}
+
+	_, err := scopedClient.CreateOrUpdate(ctx, routeConsumer, mutate)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Unable to create ConsumeRoute %s in namespace: %s",
+			parent.GetName(), parent.GetNamespace())
+	}
+
+	return routeConsumer, nil
 }
