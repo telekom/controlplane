@@ -42,12 +42,15 @@ type ApiSubscriptionStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
-	Route                 *ctypes.ObjectRef  `json:"route,omitempty"`
+	Route        *ctypes.ObjectRef `json:"route,omitempty"`
+	ConsumeRoute *ctypes.ObjectRef `json:"consumeRoute,omitempty"`
+
+	FailoverConsumeRoutes []ctypes.ObjectRef `json:"failoverConsumeRoutes,omitempty"`
 	FailoverRoutes        []ctypes.ObjectRef `json:"failoverRoutes,omitempty"`
-	ConsumeRoute          *ctypes.ObjectRef  `json:"consumeRoute,omitempty"`
-	Approval              *ctypes.ObjectRef  `json:"approval,omitempty"`
-	ApprovalRequest       *ctypes.ObjectRef  `json:"approvalRequest,omitempty"`
-	RemoteApiSubscription *ctypes.ObjectRef  `json:"remoteApiSubscription,omitempty"`
+
+	Approval              *ctypes.ObjectRef `json:"approval,omitempty"`
+	ApprovalRequest       *ctypes.ObjectRef `json:"approvalRequest,omitempty"`
+	RemoteApiSubscription *ctypes.ObjectRef `json:"remoteApiSubscription,omitempty"`
 }
 
 // +kubebuilder:object:root=true

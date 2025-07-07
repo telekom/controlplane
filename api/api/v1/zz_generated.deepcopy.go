@@ -322,16 +322,23 @@ func (in *ApiSubscriptionStatus) DeepCopyInto(out *ApiSubscriptionStatus) {
 		in, out := &in.Route, &out.Route
 		*out = (*in).DeepCopy()
 	}
+	if in.ConsumeRoute != nil {
+		in, out := &in.ConsumeRoute, &out.ConsumeRoute
+		*out = (*in).DeepCopy()
+	}
+	if in.FailoverConsumeRoutes != nil {
+		in, out := &in.FailoverConsumeRoutes, &out.FailoverConsumeRoutes
+		*out = make([]types.ObjectRef, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	if in.FailoverRoutes != nil {
 		in, out := &in.FailoverRoutes, &out.FailoverRoutes
 		*out = make([]types.ObjectRef, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
-	}
-	if in.ConsumeRoute != nil {
-		in, out := &in.ConsumeRoute, &out.ConsumeRoute
-		*out = (*in).DeepCopy()
 	}
 	if in.Approval != nil {
 		in, out := &in.Approval, &out.Approval

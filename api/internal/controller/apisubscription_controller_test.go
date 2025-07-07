@@ -614,9 +614,12 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 	// Normal-Flow: consumerZone -> providerZone -> providerApi
 	// Failover-Flow: consumerZone == providerFailoverZone -> providerApi
 	// Scenario 2:
-	// ApiSubscription is in a different zonen as the ApiExposure failover zone
+	// ApiSubscription is in a different zone as the ApiExposure failover zone
 	// Normal-Flow: consumerZone -> providerZone -> providerApi
 	// Failover-Flow: consumerZone -> providerFailoverZone -> providerApi
+	// Scenario 3:
+	// ApiSubscription with multiple failover zones configured
+	// Tests creation of multiple failover routes and consume routes
 
 	var apiBasePath = "/apisub/failovertest/v1"
 
@@ -845,4 +848,144 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 		})
 	})
 
+	Context("ApiSubscription with Multiple Failover Zones", func() {
+		var multiFailoverZoneName1 = "multi-failover-zone1"
+		var multiFailoverZoneName2 = "multi-failover-zone2"
+		var multiFailoverZone1, multiFailoverZone2 *adminapi.Zone
+		var multiFailoverSubscription *apiapi.ApiSubscription
+
+		BeforeAll(func() {
+			By("Creating multiple failover zones")
+			multiFailoverZone1 = CreateZone(multiFailoverZoneName1)
+			multiFailoverZone2 = CreateZone(multiFailoverZoneName2)
+			CreateGatewayClient(multiFailoverZone1)
+			CreateGatewayClient(multiFailoverZone2)
+
+			By("Creating the Realms for failover zones")
+			realm1 := NewRealm(testEnvironment, multiFailoverZone1.Name)
+			realm2 := NewRealm(testEnvironment, multiFailoverZone2.Name)
+			err := k8sClient.Create(ctx, realm1)
+			Expect(err).ToNot(HaveOccurred())
+			err = k8sClient.Create(ctx, realm2)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Creating ApiSubscription with multiple failover zones")
+			multiFailoverSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
+			multiFailoverSubscription.Name = "multi-failover-zone-subscription"
+			multiFailoverSubscription.Spec.Zone = types.ObjectRef{
+				Name:      "different-zone",
+				Namespace: testEnvironment,
+			}
+			// Configure multiple failover zones
+			multiFailoverSubscription.Spec.Traffic = apiapi.Traffic{
+				Failover: &apiapi.Failover{
+					Zones: []types.ObjectRef{
+						{
+							Name:      multiFailoverZoneName1,
+							Namespace: testEnvironment,
+						},
+						{
+							Name:      multiFailoverZoneName2,
+							Namespace: testEnvironment,
+						},
+					},
+				},
+			}
+			err = k8sClient.Create(ctx, multiFailoverSubscription)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should be approved when subscription is created", func() {
+			By("Checking if approval request is created")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(multiFailoverSubscription), multiFailoverSubscription)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(multiFailoverSubscription.Status.ApprovalRequest).ToNot(BeNil())
+			}, timeout, interval).Should(Succeed())
+
+			By("Approving the subscription")
+			approvalReq := ProgressApprovalRequest(multiFailoverSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
+			ProgressApproval(multiFailoverSubscription, approvalapi.ApprovalStateGranted, approvalReq)
+		})
+
+		It("should create a main route for the subscription zone", func() {
+			By("Checking route configuration")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(multiFailoverSubscription), multiFailoverSubscription)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(multiFailoverSubscription.Status.Route).ToNot(BeNil())
+
+				route := &gatewayapi.Route{}
+				err = k8sClient.Get(ctx, multiFailoverSubscription.Status.Route.K8s(), route)
+				g.Expect(err).ToNot(HaveOccurred())
+
+				// Verify main route has proper downstream configuration
+				g.Expect(route.Spec.Downstreams[0].Url()).To(Equal("https://my-gateway.different-zone:8080/apisub/failovertest/v1"))
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should create a consume route for the main route", func() {
+			By("Checking consume route creation")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(multiFailoverSubscription), multiFailoverSubscription)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(multiFailoverSubscription.Status.ConsumeRoute).ToNot(BeNil())
+
+				consumeRoute := &gatewayapi.ConsumeRoute{}
+				err = k8sClient.Get(ctx, multiFailoverSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(consumeRoute.Spec.Route).To(Equal(*multiFailoverSubscription.Status.Route))
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should create failover routes for each configured failover zone", func() {
+			By("Checking failover routes")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(multiFailoverSubscription), multiFailoverSubscription)
+				g.Expect(err).ToNot(HaveOccurred())
+
+				// Verify that two failover routes are created
+				g.Expect(multiFailoverSubscription.Status.FailoverRoutes).To(HaveLen(2))
+
+				// Check first failover route
+				route1 := &gatewayapi.Route{}
+				err = k8sClient.Get(ctx, multiFailoverSubscription.Status.FailoverRoutes[0].K8s(), route1)
+				g.Expect(err).ToNot(HaveOccurred())
+
+				// Check second failover route
+				route2 := &gatewayapi.Route{}
+				err = k8sClient.Get(ctx, multiFailoverSubscription.Status.FailoverRoutes[1].K8s(), route2)
+				g.Expect(err).ToNot(HaveOccurred())
+
+				// Verify that the routes were created in the correct zones
+				g.Expect(route1.Namespace).To(Equal("test--multi-failover-zone1"))
+				g.Expect(route2.Namespace).To(Equal("test--multi-failover-zone2"))
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should create consume routes for each failover route", func() {
+			By("Checking failover consume routes")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(multiFailoverSubscription), multiFailoverSubscription)
+				g.Expect(err).ToNot(HaveOccurred())
+
+				// Verify that two failover consume routes are created
+				g.Expect(multiFailoverSubscription.Status.FailoverConsumeRoutes).To(HaveLen(2))
+
+				// Check first failover consume route
+				consumeRoute1 := &gatewayapi.ConsumeRoute{}
+				err = k8sClient.Get(ctx, multiFailoverSubscription.Status.FailoverConsumeRoutes[0].K8s(), consumeRoute1)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(consumeRoute1.Spec.Route).To(Equal(multiFailoverSubscription.Status.FailoverRoutes[0]))
+				g.Expect(consumeRoute1.Spec.ConsumerName).To(Equal(application.Status.ClientId))
+
+				// Check second failover consume route
+				consumeRoute2 := &gatewayapi.ConsumeRoute{}
+				err = k8sClient.Get(ctx, multiFailoverSubscription.Status.FailoverConsumeRoutes[1].K8s(), consumeRoute2)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(consumeRoute2.Spec.Route).To(Equal(multiFailoverSubscription.Status.FailoverRoutes[1]))
+				g.Expect(consumeRoute2.Spec.ConsumerName).To(Equal(application.Status.ClientId))
+			}, timeout, interval).Should(Succeed())
+		})
+	})
 })

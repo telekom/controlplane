@@ -19,7 +19,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
@@ -197,12 +196,18 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			return errors.Wrapf(err, "failed to create proxy route for zone %s", apiSub.Spec.Zone.Name)
 		}
 	}
-
 	apiSub.Status.Route = types.ObjectRefFromObject(route)
 
+	consumeRoute, err := util.CreateConsumeRoute(ctx, apiSub, apiSub.Spec.Zone, *types.ObjectRefFromObject(route), application.Status.ClientId)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create normal ConsumeRoute")
+	}
+	apiSub.Status.ConsumeRoute = types.ObjectRefFromObject(consumeRoute)
+
 	// Create the proxy-routes used for failover
+	apiSub.Status.FailoverRoutes = []types.ObjectRef{}
+	apiSub.Status.FailoverConsumeRoutes = []types.ObjectRef{}
 	if apiSub.HasFailover() {
-		apiSub.Status.FailoverRoutes = make([]types.ObjectRef, 0, len(apiSub.Spec.Traffic.Failover.Zones))
 		for _, subFailoverZone := range apiSub.Spec.Traffic.Failover.Zones {
 			options := []util.CreateRouteOption{}
 			if apiExposure.HasFailover() {
@@ -219,37 +224,16 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 				return errors.Wrapf(err, "failed to create proxy route for zone %s in failover scenario", apiSub.Spec.Zone)
 			}
 			apiSub.Status.FailoverRoutes = append(apiSub.Status.FailoverRoutes, *types.ObjectRefFromObject(route))
+
+			log.Info("Creating failover ConsumeRoute for zone", "zone", subFailoverZone)
+			consumeRoute, err = util.CreateConsumeRoute(ctx, apiSub, subFailoverZone, *types.ObjectRefFromObject(route), application.Status.ClientId)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create failover ConsumeRoute for zone %s", subFailoverZone.Name)
+			}
+			apiSub.Status.FailoverConsumeRoutes = append(apiSub.Status.FailoverConsumeRoutes, *types.ObjectRefFromObject(consumeRoute))
 		}
 	}
 
-	routeConsumer := &gatewayapi.ConsumeRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      apiSub.Name,
-			Namespace: apiSub.Namespace,
-		},
-	}
-
-	mutate := func() error {
-		if err := controllerutil.SetControllerReference(apiSub, routeConsumer, scopedClient.Scheme()); err != nil {
-			return errors.Wrapf(err, "failed to set owner-reference on %v", routeConsumer)
-		}
-		routeConsumer.Labels = apiSub.Labels
-
-		routeConsumer.Spec = gatewayapi.ConsumeRouteSpec{
-			Route:        *types.ObjectRefFromObject(route),
-			ConsumerName: application.Status.ClientId,
-		}
-
-		return nil
-	}
-
-	_, err = scopedClient.CreateOrUpdate(ctx, routeConsumer, mutate)
-	if err != nil {
-		return errors.Wrapf(err, "Unable to create consume route for Apisubscription:  %s in namespace: %s",
-			apiSub.Name, apiSub.Namespace)
-	}
-
-	apiSub.Status.ConsumeRoute = types.ObjectRefFromObject(routeConsumer)
 	apiSub.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
 	apiSub.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
 
