@@ -67,7 +67,7 @@ func mapToLoadBalancingServers(upstreams []gatewayv1.Upstream) plugin.LoadBalanc
 
 func mapToLoadBalancingServer(upstream gatewayv1.Upstream) plugin.LoadBalancingServer {
 	return plugin.LoadBalancingServer{
-		Upstream: upstream.Url,
+		Upstream: upstream.Url(),
 		Weight:   upstream.Weight,
 	}
 }

@@ -32,7 +32,6 @@ func NewRoute(name string, realmRef types.ObjectRef) *gatewayv1.Route {
 			PassThrough: false,
 			Upstreams: []gatewayv1.Upstream{
 				{
-					Url: "http://upstream.url:8080/api/v1",
 					// Default is used for Weight
 					Scheme: "http",
 					Host:   "upstream.url",
@@ -56,7 +55,6 @@ func NewLoadBalancingRoute(name string, realmRef types.ObjectRef) *gatewayv1.Rou
 	route := NewRoute(name, realmRef)
 	route.Spec.Upstreams = []gatewayv1.Upstream{
 		{
-			Url:    "http://upstream.url:8080/api/v1",
 			Weight: 2,
 			Scheme: "http",
 			Host:   "upstream.url",
@@ -64,7 +62,6 @@ func NewLoadBalancingRoute(name string, realmRef types.ObjectRef) *gatewayv1.Rou
 			Path:   "/api/v1",
 		},
 		{
-			Url:    "http://upstream2.url:8080/api/v1",
 			Weight: 1,
 			Scheme: "http",
 			Host:   "upstream2.url",

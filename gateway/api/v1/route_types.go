@@ -13,8 +13,7 @@ import (
 )
 
 type Upstream struct {
-	Weight int `json:"weight,omitempty"`
-	// TODO remove parts and only keep Url
+	Weight       int    `json:"weight,omitempty"`
 	Scheme       string `json:"scheme"`
 	Host         string `json:"host"`
 	Port         int    `json:"port"`

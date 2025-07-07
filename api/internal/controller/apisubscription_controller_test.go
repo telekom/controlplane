@@ -39,6 +39,7 @@ func CreateApplication(name string) *applicationapi.Application {
 		Spec: applicationapi.ApplicationSpec{
 			Team:      "Hyperion",
 			TeamEmail: "hyperion@test.de",
+			Secret:    "topsecret",
 		},
 	}
 
