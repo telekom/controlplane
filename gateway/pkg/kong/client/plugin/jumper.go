@@ -11,6 +11,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const LocalhostProxyUrl = "http://localhost:8080/proxy"
+
 type ConsumerId string
 
 type OauthCredentials struct {
@@ -24,9 +26,19 @@ type BasicAuthCredentials struct {
 	Password string `json:"password"`
 }
 
+type LoadBalancing struct {
+	Servers []LoadBalancingServer `json:"servers"`
+}
+
+type LoadBalancingServer struct {
+	Upstream string `json:"upstream"`
+	Weight   int    `json:"weight,omitempty"`
+}
+
 type JumperConfig struct {
-	OAuth     map[ConsumerId]OauthCredentials     `json:"oauth,omitempty"`
-	BasicAuth map[ConsumerId]BasicAuthCredentials `json:"basicAuth,omitempty"`
+	OAuth         map[ConsumerId]OauthCredentials     `json:"oauth,omitempty"`
+	BasicAuth     map[ConsumerId]BasicAuthCredentials `json:"basicAuth,omitempty"`
+	LoadBalancing *LoadBalancing                      `json:"loadBalancing,omitempty"`
 }
 
 func NewJumperConfig() *JumperConfig {

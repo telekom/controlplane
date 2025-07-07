@@ -32,6 +32,8 @@ func NewRoute(name string, realmRef types.ObjectRef) *gatewayv1.Route {
 			PassThrough: false,
 			Upstreams: []gatewayv1.Upstream{
 				{
+					Url: "http://upstream.url:8080/api/v1",
+					// Default is used for Weight
 					Scheme: "http",
 					Host:   "upstream.url",
 					Port:   8080,
@@ -50,12 +52,36 @@ func NewRoute(name string, realmRef types.ObjectRef) *gatewayv1.Route {
 	}
 }
 
+func NewLoadBalancingRoute(name string, realmRef types.ObjectRef) *gatewayv1.Route {
+	route := NewRoute(name, realmRef)
+	route.Spec.Upstreams = []gatewayv1.Upstream{
+		{
+			Url:    "http://upstream.url:8080/api/v1",
+			Weight: 2,
+			Scheme: "http",
+			Host:   "upstream.url",
+			Port:   8080,
+			Path:   "/api/v1",
+		},
+		{
+			Url:    "http://upstream2.url:8080/api/v1",
+			Weight: 1,
+			Scheme: "http",
+			Host:   "upstream2.url",
+			Port:   8080,
+			Path:   "/api/v1",
+		},
+	}
+	return route
+}
+
 var _ = Describe("Route Controller", Ordered, func() {
 
 	var gateway *gatewayv1.Gateway
 	var realm *gatewayv1.Realm
 
 	var route *gatewayv1.Route
+	var loadBalancingRoute *gatewayv1.Route
 
 	BeforeAll(func() {
 		By("Creating the Gateway and Realm")
@@ -68,9 +94,9 @@ var _ = Describe("Route Controller", Ordered, func() {
 		err = k8sClient.Create(ctx, realm)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Initializing the Route")
+		By("Initializing the Routes")
 		route = NewRoute("test-v1", *types.ObjectRefFromObject(realm))
-
+		loadBalancingRoute = NewLoadBalancingRoute("test-v2", *types.ObjectRefFromObject(realm))
 	})
 
 	AfterAll(func() {
@@ -86,31 +112,45 @@ var _ = Describe("Route Controller", Ordered, func() {
 	Context("Handling a Route", func() {
 		It("should successfully provision the Route", func() {
 
-			By("Creating the Route")
-			err := k8sClient.Create(ctx, route)
-			Expect(err).NotTo(HaveOccurred())
+			By("Creating the regular Route")
+			assertRouteIsCreated(route)
 
-			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)
-				g.Expect(err).NotTo(HaveOccurred())
-
-				By("Checking if the Route is ready")
-				g.Expect(meta.IsStatusConditionTrue(route.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
-
-			}, timeout, interval).Should(Succeed())
-
+			By("Creating the Route with load balancing")
+			assertRouteIsCreated(loadBalancingRoute)
 		})
 
 		It("should successfully delete the Route", func() {
 			By("setting up the mocks")
 			GetMockClientFor(gateway).EXPECT().DeleteRoute(gomock.Any(), gomock.Any()).Return(nil).MinTimes(1)
 
-			err := k8sClient.Delete(ctx, route)
-			Expect(err).NotTo(HaveOccurred())
-			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)
-				g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
-			}, timeout, interval).Should(Succeed())
+			By("Deleting the regular Route")
+			assertRouteIsDeleted(route)
+
+			By("Deleting the Route with load balancing")
+			assertRouteIsDeleted(loadBalancingRoute)
 		})
 	})
 })
+
+func assertRouteIsCreated(route *gatewayv1.Route) {
+	err := k8sClient.Create(ctx, route)
+	Expect(err).NotTo(HaveOccurred())
+
+	Eventually(func(g Gomega) {
+		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		By("Checking if the Route is ready")
+		g.Expect(meta.IsStatusConditionTrue(route.GetConditions(), condition.ConditionTypeReady)).To(BeTrue())
+
+	}, timeout, interval).Should(Succeed())
+}
+
+func assertRouteIsDeleted(route *gatewayv1.Route) {
+	err := k8sClient.Delete(ctx, route)
+	Expect(err).NotTo(HaveOccurred())
+	Eventually(func(g Gomega) {
+		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(route), route)
+		g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+	}, timeout, interval).Should(Succeed())
+}
