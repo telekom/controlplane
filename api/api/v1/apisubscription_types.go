@@ -19,6 +19,22 @@ type ApiSubscriptionSpec struct {
 	Zone         ctypes.ObjectRef    `json:"zone"`
 }
 
+func (apiSpec *ApiSubscriptionSpec) HasM2M() bool {
+	if apiSpec.Security == nil {
+		return false
+	}
+
+	return apiSpec.Security.M2M != nil
+}
+
+func (apiSpec *ApiSubscriptionSpec) HasM2MClient() bool {
+	if !apiSpec.HasM2M() {
+		return false
+	}
+
+	return apiSpec.Security.M2M.Client != nil
+}
+
 type Requestor struct {
 	Application ctypes.ObjectRef `json:"application"`
 }

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package util
+package v1_test
 
 import (
 	"testing"
@@ -14,5 +14,5 @@ import (
 func TestUtil(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	RunSpecs(t, "Util Suite")
+	RunSpecs(t, "v1 Suite")
 }

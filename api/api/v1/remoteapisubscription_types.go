@@ -23,6 +23,14 @@ type RemoteApiSubscriptionSpec struct {
 	Security *SubscriberSecurity `json:"security,omitempty"`
 }
 
+func (rmSub *RemoteApiSubscriptionSpec) HasM2M() bool {
+	if rmSub.Security == nil {
+		return false
+	}
+
+	return rmSub.Security.M2M != nil
+}
+
 type RemoteRequester struct {
 	// Application is the name of the application that is requesting the subscription
 	Application string `json:"application"`

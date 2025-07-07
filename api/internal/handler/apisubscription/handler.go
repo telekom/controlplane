@@ -124,7 +124,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	// Scopes
 	// check if scopes exist and scopes are subset from api
-	if util.HasM2M(apiSub) {
+	if apiSub.Spec.HasM2M() {
 		if apiSub.Spec.Security.M2M.Scopes != nil {
 
 			if len(api.Spec.Oauth2Scopes) == 0 {
@@ -229,7 +229,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			ConsumerName: application.Status.ClientId,
 		}
 
-		if util.HasM2M(apiSub) {
+		if apiSub.Spec.HasM2M() {
 			routeConsumer.Spec.Security = &gatewayapi.ConsumerSecurity{
 				M2M: &gatewayapi.ConsumerMachine2MachineAuthentication{
 					Scopes: apiSub.Spec.Security.M2M.Scopes,

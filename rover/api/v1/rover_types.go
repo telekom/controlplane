@@ -253,6 +253,22 @@ type ApiSubscription struct {
 	Security *SubscriberSecurity `json:"security,omitempty"`
 }
 
+func (apiSub *ApiSubscription) HasM2M() bool {
+	if apiSub.Security == nil {
+		return false
+	}
+
+	return apiSub.Security.M2M != nil
+}
+
+func (apiSub *ApiSubscription) HasM2MClient() bool {
+	if !apiSub.HasM2M() {
+		return false
+	}
+
+	return apiSub.Security.M2M.Client != nil
+}
+
 // EventSubscription defines an event that this Rover subscribes to
 type EventSubscription struct {
 	// EventType identifies the type of event to subscribe to

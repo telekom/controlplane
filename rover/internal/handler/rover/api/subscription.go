@@ -14,8 +14,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-	"github.com/telekom/controlplane/rover/internal/handler/rover/util"
-
 	rover "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -56,7 +54,7 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 			},
 		}
 
-		if util.SubscriptionHasM2M(sub) {
+		if sub.HasM2M() {
 			apiSubscription.Spec.Security = &apiapi.SubscriberSecurity{
 				M2M: &apiapi.SubscriberMachine2MachineAuthentication{
 					Scopes: sub.Security.M2M.Scopes,

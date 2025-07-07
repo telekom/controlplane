@@ -32,8 +32,8 @@ images:
     newName: ghcr.io/telekom/controlplane/approval
     newTag: latest
   - name: ghcr.io/telekom/controlplane/gateway
-    newName: ghcr.io/telekom/controlplane/gateway
-    newTag: latest
+    newName: kind.local/main.go
+    newTag: gateway_idp
   - name: ghcr.io/telekom/controlplane/identity
     newName: ghcr.io/telekom/controlplane/identity
     newTag: latest
@@ -47,8 +47,8 @@ images:
     newName: ghcr.io/telekom/controlplane/application
     newTag: latest
   - name: ghcr.io/telekom/controlplane/api
-    newName: ghcr.io/telekom/controlplane/api
-    newTag: latest
+    newName: kind.local/main.go
+    newTag: api_idp
   - name: ghcr.io/telekom/controlplane/organization
     newName: ghcr.io/telekom/controlplane/organization
     newTag: latest
