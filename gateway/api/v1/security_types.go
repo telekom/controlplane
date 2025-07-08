@@ -28,6 +28,10 @@ type Machine2MachineAuthentication struct {
 	// ExternalIDP defines external identity provider configuration
 	// +kubebuilder:validation:Optional
 	ExternalIDP *ExternalIdentityProvider `json:"externalIDP,omitempty"`
+
+	// Client defines client credentials for OAuth2 for LMS from the **internal** IDP
+	Client *OAuth2ClientCredentials `json:"client,omitempty"`
+
 	// Basic defines basic authentication configuration
 	// +kubebuilder:validation:Optional
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
@@ -39,12 +43,12 @@ type Machine2MachineAuthentication struct {
 
 // ConsumerMachine2MachineAuthentication defines the authentication methods for machine-to-machine communication for consumers
 // Either client, basic, or only scopes can be provided
-// +kubebuilder:validation:XValidation:rule="self == null || (has(self.client) ? (!has(self.basic)) : true)", message="Client and basic authentication cannot be used together"
-// +kubebuilder:validation:XValidation:rule="self == null || has(self.client) || has(self.basic) || has(self.scopes)", message="At least one of client, basic, or scopes must be provided"
+// +kubebuilder:validation:XValidation:rule="self == null || (has(self.externalIDP) ? (!has(self.basic)) : true)", message="externalIDP and basic authentication cannot be used together"
+// +kubebuilder:validation:XValidation:rule="self == null || has(self.externalIDP) || has(self.basic) || has(self.scopes)", message="At least one of externalIDP, basic, or scopes must be provided"
 type ConsumerMachine2MachineAuthentication struct {
 	// Client defines client credentials for OAuth2
 	// +kubebuilder:validation:Optional
-	Client *OAuth2ClientCredentials `json:"client,omitempty"`
+	ExternalIDP *ConsumerExternalIdentityProvider `json:"externalIDP,omitempty"`
 	// Basic defines basic authentication configuration
 	// +kubebuilder:validation:Optional
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
@@ -54,17 +58,38 @@ type ConsumerMachine2MachineAuthentication struct {
 	Scopes []string `json:"scopes,omitempty"`
 }
 
+// Human2MachineAuthentication defines the authentication methods for human-to-machine communication
+type Human2MachineAuthentication struct {
+	// +kubebuilder:validation:Optional
+	// Future authentication methods will be added here
+}
+
 // ExternalIdentityProvider defines configuration for using an external identity provider
-// +kubebuilder:validation:XValidation:rule="self == null || (self.basic == null && self.client != null) || (self.basic != null && self.client == null)", message="Only one of basic or client credentials can be provided (XOR relationship)"
+// +kubebuilder:validation:XValidation:rule="self == null || has(self.basic) != has(self.client)", message="Only one of basic or client credentials can be provided (XOR relationship)"
 type ExternalIdentityProvider struct {
 	// TokenEndpoint is the URL for the OAuth2 token endpoint
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Format=uri
 	TokenEndpoint string `json:"tokenEndpoint"`
 
+	// TokenRequest is the type of token request, "body" or "header"
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=body;header
+	TokenRequest string `json:"tokenRequest,omitempty"`
+	// GrantType is the grant type for the external IDP authentication
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
+	GrantType string `json:"grantType,omitempty"`
+
 	// Basic defines basic auth credentials for the OAuth2 token request
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
 	// Client defines client credentials for the OAuth2 token request
+	Client *OAuth2ClientCredentials `json:"client,omitempty"`
+}
+
+// ConsumerExternalIdentityProvider defines the external identity provider configuration
+type ConsumerExternalIdentityProvider struct {
+	// Client defines client credentials for OAuth2 for external IDP
 	Client *OAuth2ClientCredentials `json:"client,omitempty"`
 }
 

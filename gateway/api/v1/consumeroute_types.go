@@ -17,6 +17,27 @@ type ConsumeRouteSpec struct {
 	Security     *ConsumerSecurity `json:"security,omitempty"`
 }
 
+func (consumeRouteSpec *ConsumeRouteSpec) HasM2M() bool {
+	if consumeRouteSpec.Security == nil {
+		return false
+	}
+	return consumeRouteSpec.Security.M2M != nil
+}
+
+func (consumeRouteSpec *ConsumeRouteSpec) HasM2MExternalIdp() bool {
+	if !consumeRouteSpec.HasM2M() {
+		return false
+	}
+	return consumeRouteSpec.Security.M2M.ExternalIDP != nil
+}
+
+func (consumeRouteSpec *ConsumeRouteSpec) HasM2MExternalIdpClient() bool {
+	if !consumeRouteSpec.HasM2MExternalIdp() {
+		return false
+	}
+	return consumeRouteSpec.Security.M2M.ExternalIDP.Client != nil
+}
+
 // ConsumeRouteStatus defines the observed state of ConsumeRoute
 type ConsumeRouteStatus struct {
 	// +listType=map

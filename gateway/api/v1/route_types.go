@@ -62,6 +62,34 @@ type RouteSpec struct {
 	PassThrough bool         `json:"passThrough"`
 	Upstreams   []Upstream   `json:"upstreams"`
 	Downstreams []Downstream `json:"downstreams"`
+
+	// Security is the security configuration for the route
+	// +kubebuilder:validation:Optional
+	Security *Security `json:"security,omitempty"`
+}
+
+func (routeSpec *RouteSpec) HasM2M() bool {
+	if routeSpec.Security == nil {
+		return false
+	}
+	return routeSpec.Security.M2M != nil
+}
+
+func (routeSpec *RouteSpec) HasM2MExternalIdp() bool {
+	if !routeSpec.HasM2M() {
+		return false
+	}
+	return routeSpec.Security.M2M.ExternalIDP != nil
+}
+
+func (routeSpec *RouteSpec) HasM2MExternalIdpClient() bool {
+	if !routeSpec.HasM2M() {
+		return false
+	}
+	if !routeSpec.HasM2MExternalIdp() {
+		return false
+	}
+	return routeSpec.Security.M2M.ExternalIDP.Client != nil
 }
 
 // RouteStatus defines the observed state of Route
