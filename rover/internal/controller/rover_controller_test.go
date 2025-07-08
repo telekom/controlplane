@@ -521,7 +521,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				err = k8sClient.Get(ctx, client.ObjectKey{
 					Name:      "test-resource--eni-api-v1",
 					Namespace: teamNamespace,
-				}, apiSubscription)
+				}, apiExposure)
 
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("clientID"))
