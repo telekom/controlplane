@@ -43,12 +43,12 @@ type Machine2MachineAuthentication struct {
 
 // ConsumerMachine2MachineAuthentication defines the authentication methods for machine-to-machine communication for consumers
 // Either client, basic, or only scopes can be provided
-// +kubebuilder:validation:XValidation:rule="self == null || (has(self.externalIDP) ? (!has(self.basic)) : true)", message="externalIDP and basic authentication cannot be used together"
-// +kubebuilder:validation:XValidation:rule="self == null || has(self.externalIDP) || has(self.basic) || has(self.scopes)", message="At least one of externalIDP, basic, or scopes must be provided"
+// +kubebuilder:validation:XValidation:rule="self == null || (has(self.client) ? (!has(self.basic)) : true)", message="Client and basic authentication cannot be used together"
+// +kubebuilder:validation:XValidation:rule="self == null || has(self.client) || has(self.basic) || has(self.scopes)", message="At least one of client, basic, or scopes must be provided"
 type ConsumerMachine2MachineAuthentication struct {
 	// Client defines client credentials for OAuth2
 	// +kubebuilder:validation:Optional
-	ExternalIDP *ConsumerExternalIdentityProvider `json:"externalIDP,omitempty"`
+	Client *OAuth2ClientCredentials `json:"client,omitempty"`
 	// Basic defines basic authentication configuration
 	// +kubebuilder:validation:Optional
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
@@ -56,12 +56,6 @@ type ConsumerMachine2MachineAuthentication struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10
 	Scopes []string `json:"scopes,omitempty"`
-}
-
-// Human2MachineAuthentication defines the authentication methods for human-to-machine communication
-type Human2MachineAuthentication struct {
-	// +kubebuilder:validation:Optional
-	// Future authentication methods will be added here
 }
 
 // ExternalIdentityProvider defines configuration for using an external identity provider
@@ -84,12 +78,6 @@ type ExternalIdentityProvider struct {
 	// Basic defines basic auth credentials for the OAuth2 token request
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
 	// Client defines client credentials for the OAuth2 token request
-	Client *OAuth2ClientCredentials `json:"client,omitempty"`
-}
-
-// ConsumerExternalIdentityProvider defines the external identity provider configuration
-type ConsumerExternalIdentityProvider struct {
-	// Client defines client credentials for OAuth2 for external IDP
 	Client *OAuth2ClientCredentials `json:"client,omitempty"`
 }
 

@@ -68,28 +68,28 @@ type RouteSpec struct {
 	Security *Security `json:"security,omitempty"`
 }
 
-func (routeSpec *RouteSpec) HasM2M() bool {
-	if routeSpec.Security == nil {
+func (route *Route) HasM2M() bool {
+	if route.Spec.Security == nil {
 		return false
 	}
-	return routeSpec.Security.M2M != nil
+	return route.Spec.Security.M2M != nil
 }
 
-func (routeSpec *RouteSpec) HasM2MExternalIdp() bool {
-	if !routeSpec.HasM2M() {
+func (route *Route) HasM2MExternalIdp() bool {
+	if !route.HasM2M() {
 		return false
 	}
-	return routeSpec.Security.M2M.ExternalIDP != nil
+	return route.Spec.Security.M2M.ExternalIDP != nil
 }
 
-func (routeSpec *RouteSpec) HasM2MExternalIdpClient() bool {
-	if !routeSpec.HasM2M() {
+func (route *Route) HasM2MExternalIdpClient() bool {
+	if !route.HasM2M() {
 		return false
 	}
-	if !routeSpec.HasM2MExternalIdp() {
+	if !route.HasM2MExternalIdp() {
 		return false
 	}
-	return routeSpec.Security.M2M.ExternalIDP.Client != nil
+	return route.Spec.Security.M2M.ExternalIDP.Client != nil
 }
 
 // RouteStatus defines the observed state of Route

@@ -23,12 +23,12 @@ type RemoteApiSubscriptionSpec struct {
 	Security *SubscriberSecurity `json:"security,omitempty"`
 }
 
-func (rmSub *RemoteApiSubscriptionSpec) HasM2M() bool {
-	if rmSub.Security == nil {
+func (rmSub *RemoteApiSubscription) HasM2M() bool {
+	if rmSub.Spec.Security == nil {
 		return false
 	}
 
-	return rmSub.Security.M2M != nil
+	return rmSub.Spec.Security.M2M != nil
 }
 
 type RemoteRequester struct {

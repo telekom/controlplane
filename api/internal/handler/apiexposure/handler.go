@@ -192,7 +192,7 @@ func createRealRoute(ctx context.Context, obj *apiapi.ApiExposure) error {
 			},
 		}
 
-		if obj.Spec.HasExternalIdp() {
+		if obj.HasExternalIdp() {
 			route.Spec.Security = &gatewayapi.Security{
 				M2M: &gatewayapi.Machine2MachineAuthentication{
 					ExternalIDP: &gatewayapi.ExternalIdentityProvider{

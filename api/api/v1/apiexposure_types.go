@@ -32,19 +32,19 @@ type ApiExposureSpec struct {
 	Security *Security `json:"security,omitempty"`
 }
 
-func (exposureSpec *ApiExposureSpec) HasExternalIdp() bool {
+func (exposure *ApiExposure) HasExternalIdp() bool {
 
-	if exposureSpec.Security == nil {
+	if exposure.Spec.Security == nil {
 		return false
 	}
-	if exposureSpec.Security.M2M == nil {
+	if exposure.Spec.Security.M2M == nil {
 		return false
 	}
-	if exposureSpec.Security.M2M.ExternalIDP == nil {
+	if exposure.Spec.Security.M2M.ExternalIDP == nil {
 		return false
 	}
 
-	return exposureSpec.Security.M2M.ExternalIDP.TokenEndpoint != ""
+	return exposure.Spec.Security.M2M.ExternalIDP.TokenEndpoint != ""
 }
 
 type Upstream struct {

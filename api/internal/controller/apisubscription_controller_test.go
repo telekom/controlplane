@@ -7,6 +7,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -487,18 +488,19 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				EventuallyCreateAndApproveApiSubscription(securityApiSubscription)
 
 				By("Checking if the resource has the expected state")
-				consumeRoute := &gatewayapi.ConsumeRoute{}
 				Eventually(func(g Gomega) {
+					consumeRoute := &gatewayapi.ConsumeRoute{}
 					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(securityApiSubscription), securityApiSubscription)
 					g.Expect(err).ToNot(HaveOccurred())
 					g.Expect(securityApiSubscription.Status.Route).ToNot(BeNil())
 					g.Expect(securityApiSubscription.Status.ConsumeRoute).ToNot(BeNil())
 
+					time.Sleep(2 * time.Second) // wait for the controller to process the changes
 					err = k8sClient.Get(ctx, securityApiSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
 					g.Expect(err).ToNot(HaveOccurred())
-					g.Expect(consumeRoute.Spec.Security.M2M.ExternalIDP.Client.Scopes).To(Equal([]string{"eIDP:allow"}))
-					g.Expect(consumeRoute.Spec.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("custom-client-id"))
-					g.Expect(consumeRoute.Spec.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("******"))
+					g.Expect(consumeRoute.Spec.Security.M2M.Client.Scopes).To(Equal([]string{"eIDP:allow"}))
+					g.Expect(consumeRoute.Spec.Security.M2M.Client.ClientId).To(Equal("custom-client-id"))
+					g.Expect(consumeRoute.Spec.Security.M2M.Client.ClientSecret).To(Equal("******"))
 					g.Expect(consumeRoute.Spec.Security.M2M.Scopes).To(Equal([]string{"scope1", "scope2"}))
 					g.Expect(consumeRoute.Spec.Route).To(Equal(*securityApiSubscription.Status.Route))
 

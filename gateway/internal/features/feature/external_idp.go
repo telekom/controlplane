@@ -44,7 +44,7 @@ func (f *ExternalIDPFeature) IsUsed(ctx context.Context, builder features.Featur
 		return false
 	}
 
-	if !route.Spec.HasM2MExternalIdp() {
+	if !route.HasM2MExternalIdp() {
 		return false
 	}
 
@@ -58,8 +58,8 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	route := builder.GetRoute()
 	jumperConfig := builder.JumperConfig()
 
-	upstream := route.Spec.Upstreams[0]
-	builder.SetUpstream(upstream)
+	//upstream := route.Spec.Upstreams[0]
+	//builder.SetUpstream(upstream)
 	rtpPlugin.Config.Append.AddHeader("token_endpoint", route.Spec.Security.M2M.ExternalIDP.TokenEndpoint)
 
 	providerOauth, err := extendOauth(ctx, jumperConfig.OAuth[defaultProviderKey], route.Spec.Security.M2M.ExternalIDP, route.Spec.Security.M2M.ExternalIDP.Client)
@@ -69,14 +69,16 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	jumperConfig.OAuth[defaultProviderKey] = providerOauth
 
 	for _, consumer := range builder.GetAllowedConsumers() {
-		if !consumer.Spec.HasM2MExternalIdp() {
+		if !consumer.HasM2MClient() {
 			continue
 		}
-		oauth, err := extendOauth(ctx, jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)], route.Spec.Security.M2M.ExternalIDP, consumer.Spec.Security.M2M.ExternalIDP.Client)
+		oauth, err := extendOauth(ctx, jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)], route.Spec.Security.M2M.ExternalIDP, consumer.Spec.Security.M2M.Client)
 		if err != nil {
 			return errors.Wrapf(err, "cannot get consumer secret for consumer %s", consumer.Spec.ConsumerName)
 		}
 		jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = oauth
+		// ToDo: password flow for basic auth
+		// ToDo: scopes for consumer
 	}
 
 	return nil

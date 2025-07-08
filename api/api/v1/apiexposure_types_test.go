@@ -15,22 +15,22 @@ var _ = Describe("Gateway Util", func() {
 		It("should return true if ExternalIDPConfig exists", func() {
 
 			exposure := &apiapi.ApiExposure{}
-			Expect(exposure.Spec.HasExternalIdp()).To(BeFalse())
+			Expect(exposure.HasExternalIdp()).To(BeFalse())
 
 			exposure.Spec = apiapi.ApiExposureSpec{}
-			Expect(exposure.Spec.HasExternalIdp()).To(BeFalse())
+			Expect(exposure.HasExternalIdp()).To(BeFalse())
 
 			exposure.Spec.Security = &apiapi.Security{}
-			Expect(exposure.Spec.HasExternalIdp()).To(BeFalse())
+			Expect(exposure.HasExternalIdp()).To(BeFalse())
 
 			exposure.Spec.Security.M2M = &apiapi.Machine2MachineAuthentication{}
-			Expect(exposure.Spec.HasExternalIdp()).To(BeFalse())
+			Expect(exposure.HasExternalIdp()).To(BeFalse())
 
 			exposure.Spec.Security.M2M.ExternalIDP = &apiapi.ExternalIdentityProvider{}
-			Expect(exposure.Spec.HasExternalIdp()).To(BeFalse())
+			Expect(exposure.HasExternalIdp()).To(BeFalse())
 
 			exposure.Spec.Security.M2M.ExternalIDP.TokenEndpoint = "https://example.com/token"
-			Expect(exposure.Spec.HasExternalIdp()).To(BeTrue())
+			Expect(exposure.HasExternalIdp()).To(BeTrue())
 		})
 	})
 })

@@ -86,33 +86,28 @@ spec:
                         - password
                         - username
                         type: object
-                      externalIDP:
+                      client:
                         description: Client defines client credentials for OAuth2
                         properties:
-                          client:
-                            description: Client defines client credentials for OAuth2
-                              for external IDP
-                            properties:
-                              clientId:
-                                description: ClientId identifies the client for OAuth2
-                                  client credentials flow
-                                minLength: 1
-                                type: string
-                              clientSecret:
-                                description: ClientSecret is the secret associated
-                                  with the client ID
-                                minLength: 1
-                                type: string
-                              scopes:
-                                description: Scopes defines the OAuth2 scopes to request
-                                  in the token
-                                items:
-                                  type: string
-                                type: array
-                            required:
-                            - clientId
-                            - clientSecret
-                            type: object
+                          clientId:
+                            description: ClientId identifies the client for OAuth2
+                              client credentials flow
+                            minLength: 1
+                            type: string
+                          clientSecret:
+                            description: ClientSecret is the secret associated with
+                              the client ID
+                            minLength: 1
+                            type: string
+                          scopes:
+                            description: Scopes defines the OAuth2 scopes to request
+                              in the token
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - clientId
+                        - clientSecret
                         type: object
                       scopes:
                         description: Scopes defines additional OAuth2 scopes that
@@ -123,14 +118,12 @@ spec:
                         type: array
                     type: object
                     x-kubernetes-validations:
-                    - message: externalIDP and basic authentication cannot be used
-                        together
-                      rule: 'self == null || (has(self.externalIDP) ? (!has(self.basic))
+                    - message: Client and basic authentication cannot be used together
+                      rule: 'self == null || (has(self.client) ? (!has(self.basic))
                         : true)'
-                    - message: At least one of externalIDP, basic, or scopes must
-                        be provided
-                      rule: self == null || has(self.externalIDP) || has(self.basic)
-                        || has(self.scopes)
+                    - message: At least one of client, basic, or scopes must be provided
+                      rule: self == null || has(self.client) || has(self.basic) ||
+                        has(self.scopes)
                 type: object
             required:
             - consumerName

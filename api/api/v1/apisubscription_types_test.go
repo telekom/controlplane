@@ -15,16 +15,16 @@ var _ = Describe("Subscription Util", func() {
 		It("should return true if SubscriberMachine2MachineAuthentication exists", func() {
 
 			subscription := &apiapi.ApiSubscription{}
-			Expect(subscription.Spec.HasM2M()).To(BeFalse())
+			Expect(subscription.HasM2M()).To(BeFalse())
 
 			subscription.Spec = apiapi.ApiSubscriptionSpec{}
-			Expect(subscription.Spec.HasM2M()).To(BeFalse())
+			Expect(subscription.HasM2M()).To(BeFalse())
 
 			subscription.Spec.Security = &apiapi.SubscriberSecurity{}
-			Expect(subscription.Spec.HasM2M()).To(BeFalse())
+			Expect(subscription.HasM2M()).To(BeFalse())
 
 			subscription.Spec.Security.M2M = &apiapi.SubscriberMachine2MachineAuthentication{}
-			Expect(subscription.Spec.HasM2M()).To(BeTrue())
+			Expect(subscription.HasM2M()).To(BeTrue())
 		})
 	})
 
@@ -32,19 +32,19 @@ var _ = Describe("Subscription Util", func() {
 		It("should return true if SubscriberMachine2MachineAuthentication exists", func() {
 
 			subscription := &apiapi.ApiSubscription{}
-			Expect(subscription.Spec.HasM2MClient()).To(BeFalse())
+			Expect(subscription.HasM2MClient()).To(BeFalse())
 
 			subscription.Spec = apiapi.ApiSubscriptionSpec{}
-			Expect(subscription.Spec.HasM2MClient()).To(BeFalse())
+			Expect(subscription.HasM2MClient()).To(BeFalse())
 
 			subscription.Spec.Security = &apiapi.SubscriberSecurity{}
-			Expect(subscription.Spec.HasM2MClient()).To(BeFalse())
+			Expect(subscription.HasM2MClient()).To(BeFalse())
 
 			subscription.Spec.Security.M2M = &apiapi.SubscriberMachine2MachineAuthentication{}
-			Expect(subscription.Spec.HasM2MClient()).To(BeFalse())
+			Expect(subscription.HasM2MClient()).To(BeFalse())
 
 			subscription.Spec.Security.M2M.Client = &apiapi.OAuth2ClientCredentials{}
-			Expect(subscription.Spec.HasM2MClient()).To(BeTrue())
+			Expect(subscription.HasM2MClient()).To(BeTrue())
 		})
 	})
 })

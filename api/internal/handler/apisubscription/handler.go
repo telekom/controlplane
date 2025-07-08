@@ -124,7 +124,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	// Scopes
 	// check if scopes exist and scopes are subset from api
-	if apiSub.Spec.HasM2M() {
+	if apiSub.HasM2M() {
 		if apiSub.Spec.Security.M2M.Scopes != nil {
 
 			if len(api.Spec.Oauth2Scopes) == 0 {
@@ -229,7 +229,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			ConsumerName: application.Status.ClientId,
 		}
 
-		if apiSub.Spec.HasM2M() {
+		if apiSub.HasM2M() {
 			routeConsumer.Spec.Security = &gatewayapi.ConsumerSecurity{
 				M2M: &gatewayapi.ConsumerMachine2MachineAuthentication{
 					Scopes: apiSub.Spec.Security.M2M.Scopes,
@@ -237,19 +237,21 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			}
 		}
 
-		if apiSub.Spec.HasM2MClient() {
-			if !routeConsumer.Spec.HasM2M() {
+		if strings.Contains(apiSub.GetName(), "security") {
+			log.Info("🧹 In this case we would also try to delete the child route")
+		}
+
+		if apiSub.HasM2MClient() {
+			if !routeConsumer.HasM2M() {
 				routeConsumer.Spec.Security = &gatewayapi.ConsumerSecurity{
 					M2M: &gatewayapi.ConsumerMachine2MachineAuthentication{},
 				}
 			}
 
-			routeConsumer.Spec.Security.M2M.ExternalIDP = &gatewayapi.ConsumerExternalIdentityProvider{
-				Client: &gatewayapi.OAuth2ClientCredentials{
-					ClientId:     apiSub.Spec.Security.M2M.Client.ClientId,
-					ClientSecret: apiSub.Spec.Security.M2M.Client.ClientSecret,
-					Scopes:       apiSub.Spec.Security.M2M.Client.Scopes,
-				},
+			routeConsumer.Spec.Security.M2M.Client = &gatewayapi.OAuth2ClientCredentials{
+				ClientId:     apiSub.Spec.Security.M2M.Client.ClientId,
+				ClientSecret: apiSub.Spec.Security.M2M.Client.ClientSecret,
+				Scopes:       apiSub.Spec.Security.M2M.Client.Scopes,
 			}
 		}
 
