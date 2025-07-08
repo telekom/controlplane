@@ -31,8 +31,8 @@ var _ = Describe("FeatureBuilder externalIDP", Ordered, func() {
 			mockKc = mock.NewMockKongClient(mockCtrl)
 		})
 
-		It("should correctly apply the ExternalIDPConfig feature", func() {
-			externalIDPRoute := externalIDPProviderRoute()
+		It("should apply the ExternalIDPConfig with Oauth", func() {
+			externalIDPRoute := externalIDPProviderRouteOAuth()
 			configureExternalIDPMocks(ctx, externalIDPRoute)
 
 			By("building the features")
@@ -86,11 +86,61 @@ var _ = Describe("FeatureBuilder externalIDP", Ordered, func() {
 
 		})
 
+		It("should apply the ExternalIDPConfig with Basic", func() {
+			externalIDPRoute := externalIDPProviderRouteBasic()
+			configureExternalIDPMocks(ctx, externalIDPRoute)
+
+			By("building the features")
+			builder := features.NewFeatureBuilder(mockKc, externalIDPRoute, realm, gateway)
+			builder.EnableFeature(feature.InstanceExternalIDPFeature)
+			builder.SetUpstream(externalIDPRoute.Spec.Upstreams[0])
+
+			By("defining the consumer oauth config")
+			consumerRoute := NewMockConsumeRoute(*types.ObjectRefFromObject(externalIDPRoute))
+			consumerRoute.Spec.Security.M2M.Scopes = []string{"team:application"}
+			consumerRoute.Spec.Security.M2M.Basic = &gatewayv1.BasicAuthCredentials{
+				Username: "test-user",
+				Password: "******",
+			}
+			builder.AddAllowedConsumers(consumerRoute)
+
+			err := builder.Build(ctx)
+			Expect(err).ToNot(HaveOccurred())
+
+			b, ok := builder.(*features.Builder)
+			Expect(ok).To(BeTrue())
+
+			By("Checking that the plugins are set")
+			Expect(b.Plugins).To(HaveLen(1))
+
+			By("checking the request-transformer plugin")
+			rtPlugin, ok := b.Plugins["request-transformer"].(*plugin.RequestTransformerPlugin)
+			Expect(ok).To(BeTrue())
+
+			By("checking the request-transformer plugin config")
+			Expect(rtPlugin.Config.Append.Headers.Get("token_endpoint")).To(Equal("https://example.com/tokenEndpoint"))
+
+			By("checking the jumper plugin")
+			jumperConfig := builder.JumperConfig()
+			Expect(jumperConfig.BasicAuth).To(HaveKeyWithValue(plugin.ConsumerId("default"), plugin.BasicAuthCredentials{
+				Username:  "user",
+				Password:  "*** ***",
+				GrantType: "password",
+			}))
+
+			Expect(jumperConfig.BasicAuth).To(HaveKeyWithValue(plugin.ConsumerId("test-consumer-name"), plugin.BasicAuthCredentials{
+				Username:  "test-user",
+				Password:  "******",
+				GrantType: "password",
+			}))
+
+		})
+
 	})
 
 })
 
-func externalIDPProviderRoute() *gatewayv1.Route {
+func externalIDPProviderRouteOAuth() *gatewayv1.Route {
 	eIDPRoute := route.DeepCopy()
 	eIDPRoute.Spec.PassThrough = false
 	eIDPRoute.Spec.Upstreams[0] = gatewayv1.Upstream{
@@ -110,6 +160,34 @@ func externalIDPProviderRoute() *gatewayv1.Route {
 					ClientId:     "gateway",
 					ClientSecret: "topsecret",
 					Scopes:       []string{"idp:user"},
+				},
+			},
+			Scopes: []string{"admin:application"},
+		},
+	}
+
+	return eIDPRoute
+}
+
+func externalIDPProviderRouteBasic() *gatewayv1.Route {
+	eIDPRoute := route.DeepCopy()
+	eIDPRoute.Spec.PassThrough = false
+	eIDPRoute.Spec.Upstreams[0] = gatewayv1.Upstream{
+		Scheme: "http",
+		Host:   "upstream.url",
+		Port:   8080,
+		Path:   "/api/v1",
+	}
+
+	eIDPRoute.Spec.Security = &gatewayv1.Security{
+		M2M: &gatewayv1.Machine2MachineAuthentication{
+			ExternalIDP: &gatewayv1.ExternalIdentityProvider{
+				TokenEndpoint: "https://example.com/tokenEndpoint",
+				TokenRequest:  "header",
+				GrantType:     "password",
+				Basic: &gatewayv1.BasicAuthCredentials{
+					Username: "user",
+					Password: "*** ***",
 				},
 			},
 			Scopes: []string{"admin:application"},

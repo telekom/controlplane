@@ -92,6 +92,16 @@ func (route *Route) HasM2MExternalIdpClient() bool {
 	return route.Spec.Security.M2M.ExternalIDP.Client != nil
 }
 
+func (route *Route) HasM2MExternalIdpBasic() bool {
+	if !route.HasM2M() {
+		return false
+	}
+	if !route.HasM2MExternalIdp() {
+		return false
+	}
+	return route.Spec.Security.M2M.ExternalIDP.Basic != nil
+}
+
 // RouteStatus defines the observed state of Route
 type RouteStatus struct {
 	// +listType=map

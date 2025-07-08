@@ -60,24 +60,43 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 
 	rtpPlugin.Config.Append.AddHeader("token_endpoint", route.Spec.Security.M2M.ExternalIDP.TokenEndpoint)
 
-	providerOauth, err := extendOauth(ctx, jumperConfig.OAuth[defaultProviderKey], route.Spec.Security.M2M.ExternalIDP, route.Spec.Security.M2M.ExternalIDP.Client)
-	if err != nil {
-		return errors.Wrapf(err, "cannot get provider secret for route %s", route.Name)
-	}
-	jumperConfig.OAuth[defaultProviderKey] = providerOauth
-
-	for _, consumer := range builder.GetAllowedConsumers() {
-		if !consumer.HasM2MClient() {
-			continue
-		}
-		oauth, err := extendOauth(ctx, jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)], route.Spec.Security.M2M.ExternalIDP, consumer.Spec.Security.M2M.Client)
+	// Provider
+	if route.HasM2MExternalIdpClient() {
+		err = applyOauth(ctx, defaultProviderKey, jumperConfig, route.Spec.Security.M2M.ExternalIDP.Client, route.Spec.Security.M2M.ExternalIDP)
 		if err != nil {
-			return errors.Wrapf(err, "cannot get consumer secret for consumer %s", consumer.Spec.ConsumerName)
+			return errors.Wrapf(err, "cannot get provider secret for route %s", route.Name)
 		}
-		jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = oauth
-		// ToDo: password flow for basic auth
-		// ToDo: scopes for consumer
+	} else if route.HasM2MExternalIdpBasic() {
+		err = applyBasic(ctx, defaultProviderKey, jumperConfig, route.Spec.Security.M2M.ExternalIDP.Basic, route.Spec.Security.M2M.ExternalIDP)
+		if err != nil {
+			return errors.Wrapf(err, "cannot get provider secret for route %s", route.Name)
+		}
 	}
+
+	// Consumers
+	for _, consumer := range builder.GetAllowedConsumers() {
+		if consumer.HasM2MClient() {
+			err = applyOauth(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Client, route.Spec.Security.M2M.ExternalIDP)
+			if err != nil {
+				return errors.Wrapf(err, "cannot get consumer secret for consumer %s in route %s", consumer.Spec.ConsumerName, route.Name)
+			}
+		} else if consumer.HasM2MBasic() {
+			err = applyBasic(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Basic, route.Spec.Security.M2M.ExternalIDP)
+			if err != nil {
+				return errors.Wrapf(err, "cannot get consumer secret for consumer %s in route %s", consumer.Spec.ConsumerName, route.Name)
+			}
+		}
+	}
+
+	return nil
+}
+
+func applyOauth(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, client *gatewayv1.OAuth2ClientCredentials, providerSettings *gatewayv1.ExternalIdentityProvider) error {
+	oauth, err := extendOauth(ctx, jumperConfig.OAuth[key], providerSettings, client)
+	if err != nil {
+		return err
+	}
+	jumperConfig.OAuth[key] = oauth
 
 	return nil
 }
@@ -100,6 +119,32 @@ func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettin
 	}
 
 	in.TokenRequest = providerSettings.TokenRequest
+	in.GrantType = providerSettings.GrantType
+
+	return in, nil
+}
+
+func applyBasic(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, basic *gatewayv1.BasicAuthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider) error {
+	basicAuth, err := extendBasic(ctx, jumperConfig.BasicAuth[key], providerSettings, basic)
+	if err != nil {
+		return err
+	}
+	jumperConfig.BasicAuth[key] = basicAuth
+	return nil
+}
+
+func extendBasic(ctx context.Context, in plugin.BasicAuthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, basic *gatewayv1.BasicAuthCredentials) (plugin.BasicAuthCredentials, error) {
+	var err error
+
+	in.Username = basic.Username
+	password := basic.Password
+	if password != "" {
+		password, err = secretManagerApi.Get(ctx, password)
+		if err != nil {
+			return in, err
+		}
+	}
+	in.Password = password
 	in.GrantType = providerSettings.GrantType
 
 	return in, nil

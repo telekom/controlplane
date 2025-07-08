@@ -24,8 +24,9 @@ type OauthCredentials struct {
 }
 
 type BasicAuthCredentials struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	GrantType string `json:"grantType,omitempty"`
 }
 
 type LoadBalancing struct {
