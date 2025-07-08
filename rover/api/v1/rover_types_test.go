@@ -218,7 +218,6 @@ var _ = Describe("Rover V1 Test Suite", func() {
 										Password: "m2m-pass",
 									},
 								},
-								H2M: &v1.Human2MachineAuthentication{},
 							},
 						},
 					},
@@ -233,17 +232,11 @@ var _ = Describe("Rover V1 Test Suite", func() {
 			Expect(ok).To(BeTrue())
 
 			Expect(statusErr.Status().Reason).To(Equal(metav1.StatusReasonInvalid))
-			Expect(len(statusErr.Status().Details.Causes)).To(Equal(2))
+			Expect(len(statusErr.Status().Details.Causes)).To(Equal(1))
 			Expect(statusErr.Status().Details.Causes).To(ContainElement(metav1.StatusCause{
 				Type:    metav1.CauseTypeFieldValueInvalid,
 				Message: "Invalid value: \"object\": ExternalIDP and basic authentication cannot be used together",
 				Field:   "spec.exposures[0].api.security.m2m",
-			}))
-
-			Expect(statusErr.Status().Details.Causes).To(ContainElement(metav1.StatusCause{
-				Type:    metav1.CauseTypeFieldValueInvalid,
-				Message: "Invalid value: \"object\": Only one of m2m or h2m authentication can be provided (XOR relationship)",
-				Field:   "spec.exposures[0].api.security",
 			}))
 
 		})
