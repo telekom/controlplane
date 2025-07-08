@@ -58,8 +58,6 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	route := builder.GetRoute()
 	jumperConfig := builder.JumperConfig()
 
-	//upstream := route.Spec.Upstreams[0]
-	//builder.SetUpstream(upstream)
 	rtpPlugin.Config.Append.AddHeader("token_endpoint", route.Spec.Security.M2M.ExternalIDP.TokenEndpoint)
 
 	providerOauth, err := extendOauth(ctx, jumperConfig.OAuth[defaultProviderKey], route.Spec.Security.M2M.ExternalIDP, route.Spec.Security.M2M.ExternalIDP.Client)
