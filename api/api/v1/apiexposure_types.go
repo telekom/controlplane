@@ -28,6 +28,23 @@ type ApiExposureSpec struct {
 	// +kubebuilder:default=Auto
 	Approval ApprovalStrategy `json:"approval"`
 	Zone     ctypes.ObjectRef `json:"zone"`
+
+	Security *Security `json:"security,omitempty"`
+}
+
+func (exposureSpec *ApiExposureSpec) HasExternalIdp() bool {
+
+	if exposureSpec.Security == nil {
+		return false
+	}
+	if exposureSpec.Security.M2M == nil {
+		return false
+	}
+	if exposureSpec.Security.M2M.ExternalIDP == nil {
+		return false
+	}
+
+	return exposureSpec.Security.M2M.ExternalIDP.TokenEndpoint != ""
 }
 
 type Upstream struct {
