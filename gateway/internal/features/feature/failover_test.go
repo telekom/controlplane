@@ -37,7 +37,7 @@ var _ = Describe("Failover", func() {
 		})
 
 		It("should have the correct priority", func() {
-			Expect(feature.InstanceFailoverFeature.Priority()).To(Equal(feature.InstanceLastMileSecurityFeature.Priority() - 10))
+			Expect(feature.InstanceFailoverFeature.Priority()).To(Equal(feature.InstanceLastMileSecurityFeature.Priority() - 1))
 		})
 
 		It("should apply failover feature when it is used", func() {

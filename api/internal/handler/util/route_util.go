@@ -23,13 +23,12 @@ import (
 )
 
 var (
-	LabelFailoverTarget = config.BuildLabelKey("failover.target")
+	LabelFailoverSecondary = config.BuildLabelKey("failover.secondary")
 )
 
 type CreateRouteOptions struct {
-	FailoverUpstreams    []apiapi.Upstream
-	FailoverZone         types.ObjectRef
-	DeleteFailoverTarget bool
+	FailoverUpstreams []apiapi.Upstream
+	FailoverZone      types.ObjectRef
 }
 
 type CreateRouteOption func(*CreateRouteOptions)
@@ -40,21 +39,15 @@ func WithFailoverUpstreams(failoverUpstreams ...apiapi.Upstream) CreateRouteOpti
 	}
 }
 
-func WithDeleteFailoverTarget() CreateRouteOption {
-	return func(opts *CreateRouteOptions) {
-		opts.DeleteFailoverTarget = true
-	}
-}
-
 func WithFailoverZone(failoverZone types.ObjectRef) CreateRouteOption {
 	return func(opts *CreateRouteOptions) {
 		opts.FailoverZone = failoverZone
 	}
 }
 
-// IsFailoverTarget checks if the route is a failover target.
-// This means that this route has the real upstream as a failover target.
-func (o *CreateRouteOptions) IsFailoverTarget() bool {
+// IsFailoverSecondary checks if the route is a failover secondary route.
+// This means that this route has the real upstream as a failover upstream.
+func (o *CreateRouteOptions) IsFailoverSecondary() bool {
 	return len(o.FailoverUpstreams) > 0
 }
 
@@ -131,12 +124,12 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 
 		log.Info("Creating proxy route", "route", proxyRoute.Name, "namespace", proxyRoute.Namespace, "failover", options.HasFailover())
 
-		if options.IsFailoverTarget() {
-			proxyRoute.Labels[LabelFailoverTarget] = "true"
+		if options.IsFailoverSecondary() {
+			proxyRoute.Labels[LabelFailoverSecondary] = "true"
 
 			failoverUpstreams := make([]gatewayapi.Upstream, 0, len(options.FailoverUpstreams))
 			for _, rawUpstream := range options.FailoverUpstreams {
-				failoverUpstream, err := AsUpstreamForRealRoute(ctx, rawUpstream.Url)
+				failoverUpstream, err := AsUpstreamForRealRoute(ctx, rawUpstream.Url, rawUpstream.Weight)
 				if err != nil {
 					return errors.Wrapf(err, "failed to create failover upstream %s", rawUpstream.Url)
 				}
@@ -208,8 +201,8 @@ func CleanupProxyRoute(ctx context.Context, routeRef *types.ObjectRef, opts ...C
 		return nil
 	}
 
-	if !options.DeleteFailoverTarget && route.GetLabels()[LabelFailoverTarget] == "true" { // DO NOT DELETE FAILOVER ROUTES
-		log.V(1).Info("🫷 Not deleting route as it is a failover target")
+	if route.GetLabels()[LabelFailoverSecondary] == "true" { // DO NOT DELETE FAILOVER ROUTES
+		log.V(1).Info("🫷 Not deleting route as it is a failover secondary")
 		return nil
 	}
 
@@ -241,7 +234,7 @@ func CleanupProxyRoute(ctx context.Context, routeRef *types.ObjectRef, opts ...C
 	return nil
 }
 
-func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, upstream, apiBasePath, realmName string) (*gatewayapi.Route, error) {
+func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, upstreams []apiapi.Upstream, apiBasePath, realmName string) (*gatewayapi.Route, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	// get referenced Zone from exposure
@@ -279,16 +272,18 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, ups
 			return errors.Wrap(err, "failed to create downstream")
 		}
 
-		upstream, err := AsUpstreamForRealRoute(ctx, upstream)
-		if err != nil {
-			return errors.Wrap(err, "failed to create downstream")
+		gatewayUpstreams := make([]gatewayapi.Upstream, 0, len(upstreams))
+		for _, upstream := range upstreams {
+			gatewayUpstream, err := AsUpstreamForRealRoute(ctx, upstream.Url, upstream.Weight)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create upstream for URL %s", upstream.Url)
+			}
+			gatewayUpstreams = append(gatewayUpstreams, gatewayUpstream)
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
-			Realm: *types.ObjectRefFromObject(downstreamRealm),
-			Upstreams: []gatewayapi.Upstream{
-				upstream,
-			},
+			Realm:     *types.ObjectRefFromObject(downstreamRealm),
+			Upstreams: gatewayUpstreams,
 			Downstreams: []gatewayapi.Downstream{
 				downstream,
 			},

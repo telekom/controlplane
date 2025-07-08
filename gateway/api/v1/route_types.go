@@ -5,6 +5,7 @@
 package v1
 
 import (
+	"slices"
 	"strconv"
 
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -41,6 +42,12 @@ func (u Upstream) GetPath() string {
 
 func (u Upstream) Url() string {
 	return u.Scheme + "://" + u.Host + ":" + strconv.Itoa(u.Port) + u.Path
+}
+
+// IsProxy checks if the upstream is a proxy
+// In most cases a proxy-upstream is identified by having an IssuerUrl set.
+func (u Upstream) IsProxy() bool {
+	return u.IssuerUrl != ""
 }
 
 type Downstream struct {
@@ -186,7 +193,23 @@ func (g *Route) GetProperty(key string) string {
 
 func (g *Route) IsProxy() bool {
 	// If the first upstream has an issuer URL, it is a proxy route
-	return len(g.Spec.Upstreams) > 0 && g.Spec.Upstreams[0].IssuerUrl != ""
+	return len(g.Spec.Upstreams) > 0 && g.Spec.Upstreams[0].IsProxy()
+}
+
+func (g *Route) HasFailover() bool {
+	return g.Spec.Traffic.Failover != nil
+}
+
+// IsFailoverSecondary checks if the route is a failover target.
+// A Route is a failover target if atleast one failover upstream is a real upstream (not a proxy).
+// ! Assumption: It is not possible to mix proxy and non-proxy upstreams in the same failover configuration.
+func (g *Route) IsFailoverSecondary() bool {
+	if !g.HasFailover() {
+		return false
+	}
+	return slices.ContainsFunc(g.Spec.Traffic.Failover.Upstreams, func(upstream Upstream) bool {
+		return !upstream.IsProxy()
+	})
 }
 
 // +kubebuilder:object:root=true

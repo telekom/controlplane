@@ -226,8 +226,7 @@ func (b *Builder) Build(ctx context.Context) error {
 	// ! We must ensure that the default (empty) value is null. Otherwise, Jumper will not work properly.
 	if b.routingConfigs != nil {
 		b.RequestTransformerPlugin().Config.Append.AddHeader(plugin.RoutingConfigKey, plugin.ToBase64OrDie(b.routingConfigs))
-	}
-	if b.jumperConfig != nil {
+	} else if b.jumperConfig != nil {
 		b.RequestTransformerPlugin().Config.Append.AddHeader(plugin.JumperConfigKey, plugin.ToBase64OrDie(b.jumperConfig))
 	}
 

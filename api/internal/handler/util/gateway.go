@@ -41,7 +41,7 @@ func AsUpstreamForProxyRoute(ctx context.Context, realm *gatewayapi.Realm, apiBa
 }
 
 func AsUpstreamForRealRoute(
-	ctx context.Context, rawUrl string) (ups gatewayapi.Upstream, err error) {
+	ctx context.Context, rawUrl string, weight int) (ups gatewayapi.Upstream, err error) {
 	url, err := url.Parse(rawUrl)
 	if err != nil {
 		return ups, errors.Wrapf(err, "failed to parse URL %s", rawUrl)
@@ -52,5 +52,6 @@ func AsUpstreamForRealRoute(
 		Host:   url.Hostname(),
 		Port:   gatewayapi.GetPortOrDefaultFromScheme(url),
 		Path:   url.Path,
+		Weight: weight,
 	}, nil
 }

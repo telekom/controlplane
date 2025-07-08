@@ -7,12 +7,12 @@ package feature
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var _ features.Feature = &FailoverFeature{}
@@ -23,7 +23,7 @@ type FailoverFeature struct {
 }
 
 var InstanceFailoverFeature = &FailoverFeature{
-	priority: InstanceLastMileSecurityFeature.priority - 10,
+	priority: InstanceLastMileSecurityFeature.priority - 1,
 }
 
 func (f *FailoverFeature) Name() gatewayv1.FeatureType {
@@ -40,9 +40,6 @@ func (f *FailoverFeature) IsUsed(ctx context.Context, builder features.FeaturesB
 }
 
 func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
-	log := log.FromContext(ctx)
-	log.Info("Applying failover feature", "route", builder.GetRoute().Name)
-
 	routingConfigs := builder.RoutingConfigs()
 	route := builder.GetRoute()
 	failover := route.Spec.Traffic.Failover
@@ -50,7 +47,7 @@ func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBu
 
 	builder.SetUpstream(client.NewUpstreamOrDie(plugin.LocalhostProxyUrl))
 
-	// This is the proxy upstream that should be used in all non-failover cases.
+	// This is the proxy upstream that should be used in all non-failover cases (primary upstream).
 	// The target is the zone where the API is exposed on.
 	upstream := route.Spec.Upstreams[0]
 	proxyRoutingCfg := &plugin.RoutingConfig{
@@ -62,23 +59,49 @@ func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBu
 		ClientSecret:   upstream.ClientSecret,
 		Environment:    envName,
 		TargetZoneName: failover.TargetZoneName, // The zone where the API is exposed on
+		JumperConfig:   nil,                     // JumperConfig ist not needed for the proxy routing config
 	}
 	routingConfigs.Add(proxyRoutingCfg)
 
-	// The failover upstreams are used if the Jumper determines that the primary upstream is not available.
+	// The failover upstreams are used if the Jumper has determined that the primary upstream is not available.
 	// It does so by checking the health of the TargetZoneName using the ZoneHealthCheckService.
-	for _, failoverUpstream := range failover.Upstreams {
-		routingCfg := &plugin.RoutingConfig{
-			RemoteApiUrl:   failoverUpstream.Url(),
-			ApiBasePath:    failoverUpstream.Path,
-			Realm:          route.Spec.Realm.Name,
-			Issuer:         failoverUpstream.IssuerUrl,
-			ClientId:       failoverUpstream.ClientId,
-			ClientSecret:   failoverUpstream.ClientSecret,
-			Environment:    envName,
-			TargetZoneName: "", // In case of failover, the zone is not set
+
+	hasLoadbalancing := len(failover.Upstreams) > 1
+	IsFailoverSecondary := route.IsFailoverSecondary()
+
+	jumperCfg := builder.JumperConfig()
+	routingCfg := &plugin.RoutingConfig{
+		JumperConfig: jumperCfg,
+		Realm:        route.Spec.Realm.Name,
+		Environment:  envName,
+	}
+	routingConfigs.Add(routingCfg)
+
+	if IsFailoverSecondary {
+		// This route is a failover secondary route. This means that its failover-upstream is the real primary upstream.
+		if hasLoadbalancing {
+			// In addition, the real primary upstream is a loadbalancing upstream.
+			routingCfg.LoadBalancing = mapToLoadBalancingServers(failover.Upstreams)
+
+		} else {
+			// The real primary upstream is a single failover upstream.
+			routingCfg.RemoteApiUrl = failover.Upstreams[0].Url()
+			routingCfg.ApiBasePath = failover.Upstreams[0].Path
 		}
-		routingConfigs.Add(routingCfg)
+
+	} else {
+		if hasLoadbalancing {
+			return errors.New("loadbalancing is not supported for proxy routes that are not failover secondary routes")
+		}
+
+		// This route is not a failover secondary route. It is a proxy route that proxies to the secondary failover upstream.
+		failoverUpstream := failover.Upstreams[0]
+		routingCfg.RemoteApiUrl = failoverUpstream.Url()
+		routingCfg.ApiBasePath = failoverUpstream.Path
+		routingCfg.Issuer = failoverUpstream.IssuerUrl
+		routingCfg.ClientId = failoverUpstream.ClientId
+		routingCfg.ClientSecret = failoverUpstream.ClientSecret
+		routingCfg.TargetZoneName = "" // No target zone for failover upstreams
 	}
 
 	return nil

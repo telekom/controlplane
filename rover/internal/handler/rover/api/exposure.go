@@ -57,12 +57,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 			Visibility:  apiapi.Visibility(exp.Visibility.String()),
 			Approval:    apiapi.ApprovalStrategy(exp.Approval.Strategy),
 			Zone:        zoneRef,
-			Upstreams: []apiapi.Upstream{
-				{
-					Url:    exp.Upstreams[0].URL,
-					Weight: 100,
-				},
-			},
+			Upstreams:   make([]apiapi.Upstream, len(exp.Upstreams)),
 		}
 
 		if exp.Security != nil {

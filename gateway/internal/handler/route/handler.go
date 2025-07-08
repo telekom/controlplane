@@ -43,7 +43,7 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 
 		// If this is a proxy-route, we only need the consumers which are directly associated
 		// with this route as we just need to add them to the ACL plugin.
-		if route.IsProxy() {
+		if route.IsProxy() && !route.IsFailoverSecondary() {
 			log.Info("Route is a proxy route, only looking for direct consumers")
 			listOpts = append(listOpts, client.MatchingFields{
 				// This index field is defined in internal/controller/index.go

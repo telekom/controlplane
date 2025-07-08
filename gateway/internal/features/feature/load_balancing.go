@@ -46,8 +46,7 @@ func (f *LoadBalancingFeature) Apply(ctx context.Context, builder features.Featu
 
 	// Load Balancing is added to JumperConfig
 	jumperConfig := builder.JumperConfig()
-	loadBalancingServer := mapToLoadBalancingServers(upstreams)
-	jumperConfig.LoadBalancing = &loadBalancingServer
+	jumperConfig.LoadBalancing = mapToLoadBalancingServers(upstreams)
 
 	// Check if the remote API URL header should be removed when using Last Mile Security
 	RemoveRemoteApiUrlHeaderIfNeeded(builder)
@@ -55,12 +54,12 @@ func (f *LoadBalancingFeature) Apply(ctx context.Context, builder features.Featu
 	return nil
 }
 
-func mapToLoadBalancingServers(upstreams []gatewayv1.Upstream) plugin.LoadBalancing {
+func mapToLoadBalancingServers(upstreams []gatewayv1.Upstream) *plugin.LoadBalancing {
 	servers := make([]plugin.LoadBalancingServer, 0, len(upstreams))
 	for _, upstream := range upstreams {
 		servers = append(servers, mapToLoadBalancingServer(upstream))
 	}
-	return plugin.LoadBalancing{
+	return &plugin.LoadBalancing{
 		Servers: servers,
 	}
 }

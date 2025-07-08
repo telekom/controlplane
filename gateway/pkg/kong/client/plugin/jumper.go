@@ -51,6 +51,19 @@ func NewJumperConfig() *JumperConfig {
 	}
 }
 
+type RoutingConfig struct {
+	*JumperConfig `json:",inline"`
+	RemoteApiUrl  string `json:"remoteApiUrl,omitzero"`
+	ApiBasePath   string `json:"apiBasePath,omitzero"`
+	Realm         string `json:"realm,omitempty"`
+	Environment   string `json:"environment,omitempty"`
+	Issuer        string `json:"issuer,omitempty"`
+	ClientId      string `json:"clientId,omitempty"`
+	ClientSecret  string `json:"clientSecret,omitempty"`
+	// TargetZoneName is used to determine if the zone is currently available using zoneHealthCheckService
+	TargetZoneName string `json:"targetZoneName,omitempty"`
+}
+
 type RoutingConfigs []*RoutingConfig
 
 func (rcs *RoutingConfigs) Add(config *RoutingConfig) {
@@ -66,22 +79,6 @@ func (rcs *RoutingConfigs) Get(index int) *RoutingConfig {
 
 func (rcs *RoutingConfigs) Len() int {
 	return len(*rcs)
-}
-
-type RoutingConfig struct {
-	OAuth     map[ConsumerId]OauthCredentials     `json:"oauth,omitempty"`
-	BasicAuth map[ConsumerId]BasicAuthCredentials `json:"basicAuth,omitempty"`
-
-	LoadBalancing LoadBalancingConfig `json:"loadBalancing,omitzero"`
-	RemoteApiUrl  string              `json:"remoteApiUrl,omitzero"`
-	ApiBasePath   string              `json:"apiBasePath,omitzero"`
-	Realm         string              `json:"realm,omitempty"`
-	Environment   string              `json:"environment,omitempty"`
-	Issuer        string              `json:"issuer,omitempty"`
-	ClientId      string              `json:"clientId,omitempty"`
-	ClientSecret  string              `json:"clientSecret,omitempty"`
-	// TargetZoneName is used to determine if the zone is currently available using zoneHealthCheckService
-	TargetZoneName string `json:"targetZoneName,omitempty"`
 }
 
 type LoadBalancingConfig struct{}

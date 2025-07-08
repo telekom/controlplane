@@ -63,21 +63,21 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 					Scopes: sub.Security.M2M.Scopes,
 				},
 			}
+		}
 
-			failoverZones, hasFailover := getFailoverZones(environment, sub.Traffic.Failover)
-			if hasFailover {
-				apiSubscription.Spec.Traffic = apiapi.Traffic{
-					Failover: &apiapi.Failover{
-						Zones: failoverZones,
-					},
-				}
+		failoverZones, hasFailover := getFailoverZones(environment, sub.Traffic.Failover)
+		if hasFailover {
+			apiSubscription.Spec.Traffic = apiapi.Traffic{
+				Failover: &apiapi.Failover{
+					Zones: failoverZones,
+				},
 			}
+		}
 
-			apiSubscription.Labels = map[string]string{
-				apiapi.BasePathLabelKey:             labelutil.NormalizeValue(sub.BasePath),
-				config.BuildLabelKey("zone"):        labelutil.NormalizeValue(zoneRef.Name),
-				config.BuildLabelKey("application"): labelutil.NormalizeValue(owner.Name),
-			}
+		apiSubscription.Labels = map[string]string{
+			apiapi.BasePathLabelKey:             labelutil.NormalizeValue(sub.BasePath),
+			config.BuildLabelKey("zone"):        labelutil.NormalizeValue(zoneRef.Name),
+			config.BuildLabelKey("application"): labelutil.NormalizeValue(owner.Name),
 		}
 
 		return nil
