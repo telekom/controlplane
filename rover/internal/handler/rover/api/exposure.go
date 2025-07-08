@@ -64,6 +64,25 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 				},
 			},
 		}
+
+		if exp.Security != nil {
+			if exp.Security.M2M != nil {
+				if exp.Security.M2M.ExternalIDP != nil {
+					apiExposure.Spec.Security = &apiapi.Security{
+						M2M: &apiapi.Machine2MachineAuthentication{
+							ExternalIDP: &apiapi.ExternalIdentityProvider{
+								TokenEndpoint: exp.Security.M2M.ExternalIDP.TokenEndpoint,
+								TokenRequest:  exp.Security.M2M.ExternalIDP.TokenRequest,
+								GrantType:     exp.Security.M2M.ExternalIDP.GrantType,
+								Basic:         toApiBasic(exp.Security.M2M.ExternalIDP.Basic),
+								Client:        toApiClient(exp.Security.M2M.ExternalIDP.Client),
+							},
+						},
+					}
+				}
+			}
+		}
+
 		return nil
 	}
 

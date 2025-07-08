@@ -57,6 +57,8 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 		if sub.HasM2M() {
 			apiSubscription.Spec.Security = &apiapi.SubscriberSecurity{
 				M2M: &apiapi.SubscriberMachine2MachineAuthentication{
+					Client: toApiClient(sub.Security.M2M.Client),
+					Basic:  toApiBasic(sub.Security.M2M.Basic),
 					Scopes: sub.Security.M2M.Scopes,
 				},
 			}

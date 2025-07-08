@@ -169,10 +169,25 @@ spec:
                                           maxItems: 10
                                           type: array
                                       type: object
+                                    grantType:
+                                      description: GrantType defines the OAuth2 grant
+                                        type to use for the token request
+                                      enum:
+                                      - client_credentials
+                                      - authorization_code
+                                      - password
+                                      type: string
                                     tokenEndpoint:
                                       description: TokenEndpoint is the URL for the
                                         OAuth2 token endpoint
                                       format: uri
+                                      type: string
+                                    tokenRequest:
+                                      description: TokenRequest is the type of token
+                                        request, "body" or "header"
+                                      enum:
+                                      - body
+                                      - header
                                       type: string
                                   required:
                                   - tokenEndpoint
