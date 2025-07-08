@@ -229,20 +229,30 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			ConsumerName: application.Status.ClientId,
 		}
 
-		if apiSub.Spec.HasM2MClient() {
+		if apiSub.Spec.HasM2M() {
 			routeConsumer.Spec.Security = &gatewayapi.ConsumerSecurity{
 				M2M: &gatewayapi.ConsumerMachine2MachineAuthentication{
-					ExternalIDP: &gatewayapi.ConsumerExternalIdentityProvider{
-						Client: &gatewayapi.OAuth2ClientCredentials{
-							ClientId:     apiSub.Spec.Security.M2M.Client.ClientId,
-							ClientSecret: apiSub.Spec.Security.M2M.Client.ClientSecret,
-							Scopes:       apiSub.Spec.Security.M2M.Client.Scopes,
-						},
-					},
 					Scopes: apiSub.Spec.Security.M2M.Scopes,
 				},
 			}
 		}
+
+		if apiSub.Spec.HasM2MClient() {
+			if !routeConsumer.Spec.HasM2M() {
+				routeConsumer.Spec.Security = &gatewayapi.ConsumerSecurity{
+					M2M: &gatewayapi.ConsumerMachine2MachineAuthentication{},
+				}
+			}
+
+			routeConsumer.Spec.Security.M2M.ExternalIDP = &gatewayapi.ConsumerExternalIdentityProvider{
+				Client: &gatewayapi.OAuth2ClientCredentials{
+					ClientId:     apiSub.Spec.Security.M2M.Client.ClientId,
+					ClientSecret: apiSub.Spec.Security.M2M.Client.ClientSecret,
+					Scopes:       apiSub.Spec.Security.M2M.Client.Scopes,
+				},
+			}
+		}
+
 		return nil
 	}
 
