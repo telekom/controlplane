@@ -28,6 +28,10 @@ type Machine2MachineAuthentication struct {
 	// ExternalIDP defines external identity provider configuration
 	// +kubebuilder:validation:Optional
 	ExternalIDP *ExternalIdentityProvider `json:"externalIDP,omitempty"`
+
+	// Client defines client credentials for OAuth2 for LMS from the **internal** IDP
+	Client *OAuth2ClientCredentials `json:"client,omitempty"`
+
 	// Basic defines basic authentication configuration
 	// +kubebuilder:validation:Optional
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
@@ -55,12 +59,21 @@ type ConsumerMachine2MachineAuthentication struct {
 }
 
 // ExternalIdentityProvider defines configuration for using an external identity provider
-// +kubebuilder:validation:XValidation:rule="self == null || (self.basic == null && self.client != null) || (self.basic != null && self.client == null)", message="Only one of basic or client credentials can be provided (XOR relationship)"
+// +kubebuilder:validation:XValidation:rule="self == null || has(self.basic) != has(self.client)", message="Only one of basic or client credentials can be provided (XOR relationship)"
 type ExternalIdentityProvider struct {
 	// TokenEndpoint is the URL for the OAuth2 token endpoint
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Format=uri
 	TokenEndpoint string `json:"tokenEndpoint"`
+
+	// TokenRequest is the type of token request, "body" or "header"
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=body;header
+	TokenRequest string `json:"tokenRequest,omitempty"`
+	// GrantType is the grant type for the external IDP authentication
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=client_credentials;authorization_code;password
+	GrantType string `json:"grantType,omitempty"`
 
 	// Basic defines basic auth credentials for the OAuth2 token request
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`

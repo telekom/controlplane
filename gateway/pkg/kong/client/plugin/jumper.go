@@ -19,11 +19,14 @@ type OauthCredentials struct {
 	ClientId     string `json:"clientId,omitempty"`
 	ClientSecret string `json:"clientSecret,omitempty"`
 	Scopes       string `json:"scopes,omitempty"`
+	TokenRequest string `json:"tokenRequest,omitempty"`
+	GrantType    string `json:"grantType,omitempty"`
 }
 
 type BasicAuthCredentials struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	GrantType string `json:"grantType,omitempty"`
 }
 
 type LoadBalancing struct {

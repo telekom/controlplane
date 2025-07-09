@@ -436,4 +436,103 @@ var _ = Describe("Rover Controller", Ordered, func() {
 		})
 	})
 
+	Context("Rover with ExternalIDPs", func() {
+
+		It("should successfully handle scopes and reconcile the resource", func() {
+
+			Spec := roverv1.RoverSpec{
+				Zone: testEnvironment,
+				Subscriptions: []roverv1.Subscription{
+					{
+						Api: &roverv1.ApiSubscription{
+							BasePath: BasePath,
+							Security: &roverv1.SubscriberSecurity{
+								M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+									Client: &roverv1.OAuth2ClientCredentials{
+										ClientId:     "clientID",
+										ClientSecret: "******",
+										Scopes:       []string{"eIDP:scope"},
+									},
+								},
+							},
+						},
+					},
+				},
+				Exposures: []roverv1.Exposure{
+					{
+						Api: &roverv1.ApiExposure{
+							BasePath: BasePath,
+							Upstreams: []roverv1.Upstream{
+								{
+									URL: upstream,
+								},
+							},
+							Visibility: roverv1.VisibilityWorld,
+							Approval: roverv1.Approval{
+								Strategy: roverv1.ApprovalStrategyFourEyes,
+							},
+							Security: &roverv1.Security{
+								M2M: &roverv1.Machine2MachineAuthentication{
+									ExternalIDP: &roverv1.ExternalIdentityProvider{
+										TokenEndpoint: "https://idp.example.com/token",
+										TokenRequest:  "header",
+										GrantType:     "client_credentials",
+										Basic:         nil,
+										Client: &roverv1.OAuth2ClientCredentials{
+											ClientId:     "clientID",
+											ClientSecret: "******",
+											Scopes:       []string{"eIDP:scope"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			rover := createRover(resourceName, teamNamespace, testEnvironment, Spec)
+
+			By("creating the custom resource for the Kind Rover")
+
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      resourceName,
+					Namespace: teamNamespace,
+				}, rover)
+
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(rover.Status.ApiSubscriptions).To(HaveLen(1))
+
+				apiSubscription := &apiapi.ApiSubscription{}
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Name:      "test-resource--eni-api-v1",
+					Namespace: teamNamespace,
+				}, apiSubscription)
+
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(apiSubscription.Spec.Security.M2M.Client.ClientId).To(Equal("clientID"))
+				g.Expect(apiSubscription.Spec.Security.M2M.Client.ClientSecret).To(Equal("******"))
+				g.Expect(apiSubscription.Spec.Security.M2M.Client.Scopes[0]).To(Equal("eIDP:scope"))
+
+				apiExposure := &apiapi.ApiExposure{}
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Name:      "test-resource--eni-api-v1",
+					Namespace: teamNamespace,
+				}, apiExposure)
+
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("clientID"))
+				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("******"))
+				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.Client.Scopes[0]).To(Equal("eIDP:scope"))
+				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal("header"))
+				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://idp.example.com/token"))
+				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
+			}, timeout, interval).Should(Succeed())
+
+		})
+	})
+
 })

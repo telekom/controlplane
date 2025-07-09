@@ -32,10 +32,11 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
 			builder.EnableFeature(feature.InstanceCustomScopesFeature)
 			builder.EnableFeature(feature.InstanceLoadBalancingFeature)
+			builder.EnableFeature(feature.InstanceExternalIDPFeature)
 
 			b, ok := builder.(*features.Builder)
 			Expect(ok).To(BeTrue())
-			Expect(b.Features).To(HaveLen(5))
+			Expect(b.Features).To(HaveLen(6))
 		})
 
 	})

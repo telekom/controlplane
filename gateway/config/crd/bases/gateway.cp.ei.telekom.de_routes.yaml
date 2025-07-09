@@ -83,6 +83,140 @@ spec:
                 - name
                 - namespace
                 type: object
+              security:
+                description: Security is the security configuration for the route
+                properties:
+                  m2m:
+                    description: M2M defines machine-to-machine authentication configuration
+                    properties:
+                      basic:
+                        description: Basic defines basic authentication configuration
+                        properties:
+                          password:
+                            description: Password for basic authentication
+                            minLength: 1
+                            type: string
+                          username:
+                            description: Username for basic authentication
+                            minLength: 1
+                            type: string
+                        required:
+                        - password
+                        - username
+                        type: object
+                      client:
+                        description: Client defines client credentials for OAuth2
+                          for LMS from the **internal** IDP
+                        properties:
+                          clientId:
+                            description: ClientId identifies the client for OAuth2
+                              client credentials flow
+                            minLength: 1
+                            type: string
+                          clientSecret:
+                            description: ClientSecret is the secret associated with
+                              the client ID
+                            minLength: 1
+                            type: string
+                          scopes:
+                            description: Scopes defines the OAuth2 scopes to request
+                              in the token
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - clientId
+                        - clientSecret
+                        type: object
+                      externalIDP:
+                        description: ExternalIDP defines external identity provider
+                          configuration
+                        properties:
+                          basic:
+                            description: Basic defines basic auth credentials for
+                              the OAuth2 token request
+                            properties:
+                              password:
+                                description: Password for basic authentication
+                                minLength: 1
+                                type: string
+                              username:
+                                description: Username for basic authentication
+                                minLength: 1
+                                type: string
+                            required:
+                            - password
+                            - username
+                            type: object
+                          client:
+                            description: Client defines client credentials for the
+                              OAuth2 token request
+                            properties:
+                              clientId:
+                                description: ClientId identifies the client for OAuth2
+                                  client credentials flow
+                                minLength: 1
+                                type: string
+                              clientSecret:
+                                description: ClientSecret is the secret associated
+                                  with the client ID
+                                minLength: 1
+                                type: string
+                              scopes:
+                                description: Scopes defines the OAuth2 scopes to request
+                                  in the token
+                                items:
+                                  type: string
+                                type: array
+                            required:
+                            - clientId
+                            - clientSecret
+                            type: object
+                          grantType:
+                            description: GrantType is the grant type for the external
+                              IDP authentication
+                            enum:
+                            - client_credentials
+                            - authorization_code
+                            - password
+                            type: string
+                          tokenEndpoint:
+                            description: TokenEndpoint is the URL for the OAuth2 token
+                              endpoint
+                            format: uri
+                            type: string
+                          tokenRequest:
+                            description: TokenRequest is the type of token request,
+                              "body" or "header"
+                            enum:
+                            - body
+                            - header
+                            type: string
+                        required:
+                        - tokenEndpoint
+                        type: object
+                        x-kubernetes-validations:
+                        - message: Only one of basic or client credentials can be
+                            provided (XOR relationship)
+                          rule: self == null || has(self.basic) != has(self.client)
+                      scopes:
+                        description: Scopes defines additional OAuth2 scopes that
+                          are added to the LMS token
+                        items:
+                          type: string
+                        maxItems: 10
+                        type: array
+                    type: object
+                    x-kubernetes-validations:
+                    - message: ExternalIDP and basic authentication cannot be used
+                        together
+                      rule: 'self == null || (has(self.externalIDP) ? (!has(self.basic))
+                        : true)'
+                    - message: At least one of externalIDP, basic, or scopes must
+                        be provided
+                      rule: self == null || has(self.externalIDP) || has(self.basic)
+                        || has(self.scopes)
+                type: object
               upstreams:
                 items:
                   properties:

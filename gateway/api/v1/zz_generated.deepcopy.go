@@ -443,6 +443,11 @@ func (in *Machine2MachineAuthentication) DeepCopyInto(out *Machine2MachineAuthen
 		*out = new(ExternalIdentityProvider)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Client != nil {
+		in, out := &in.Client, &out.Client
+		*out = new(OAuth2ClientCredentials)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.Basic != nil {
 		in, out := &in.Basic, &out.Basic
 		*out = new(BasicAuthCredentials)
@@ -689,6 +694,11 @@ func (in *RouteSpec) DeepCopyInto(out *RouteSpec) {
 		in, out := &in.Downstreams, &out.Downstreams
 		*out = make([]Downstream, len(*in))
 		copy(*out, *in)
+	}
+	if in.Security != nil {
+		in, out := &in.Security, &out.Security
+		*out = new(Security)
+		(*in).DeepCopyInto(*out)
 	}
 }
 

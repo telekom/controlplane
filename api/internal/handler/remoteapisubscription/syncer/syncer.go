@@ -80,7 +80,7 @@ func (c *syncerClient) Send(ctx context.Context, resource *apiv1.RemoteApiSubscr
 			},
 		},
 	}
-	if resource.Spec.HasM2M() {
+	if resource.HasM2M() {
 		body.Security = &cpv1.Security{
 			Oauth2: &cpv1.SecurityOauth2{
 				Scopes: &resource.Spec.Security.M2M.Scopes,

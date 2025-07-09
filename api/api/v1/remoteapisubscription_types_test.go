@@ -15,16 +15,16 @@ var _ = Describe("RemoteSubscription Util", func() {
 		It("should return true if SubscriberMachine2MachineAuthentication exists", func() {
 
 			subscription := &apiapi.RemoteApiSubscription{}
-			Expect(subscription.Spec.HasM2M()).To(BeFalse())
+			Expect(subscription.HasM2M()).To(BeFalse())
 
 			subscription.Spec = apiapi.RemoteApiSubscriptionSpec{}
-			Expect(subscription.Spec.HasM2M()).To(BeFalse())
+			Expect(subscription.HasM2M()).To(BeFalse())
 
 			subscription.Spec.Security = &apiapi.SubscriberSecurity{}
-			Expect(subscription.Spec.HasM2M()).To(BeFalse())
+			Expect(subscription.HasM2M()).To(BeFalse())
 
 			subscription.Spec.Security.M2M = &apiapi.SubscriberMachine2MachineAuthentication{}
-			Expect(subscription.Spec.HasM2M()).To(BeTrue())
+			Expect(subscription.HasM2M()).To(BeTrue())
 		})
 	})
 })

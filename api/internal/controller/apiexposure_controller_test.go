@@ -11,6 +11,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -215,4 +216,84 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 
 		})
 	})
+
+	Context("ApiExposure with ExternalIDPConfig Configured", Ordered, func() {
+
+		var thirdApiExposure *apiv1.ApiExposure
+
+		BeforeAll(func() {
+			By("Creating the second APIExposure")
+			thirdApiExposure = NewApiExposure(apiBasePath, zoneName)
+			thirdApiExposure.Name = "third-api"
+			thirdApiExposure.Spec.Security = &apiv1.Security{
+				M2M: &apiv1.Machine2MachineAuthentication{
+					ExternalIDP: &apiv1.ExternalIdentityProvider{
+						TokenEndpoint: "https://example.com/token",
+						Client: &apiv1.OAuth2ClientCredentials{
+							ClientId:     "client-id",
+							ClientSecret: "******",
+						},
+					},
+				},
+			}
+		})
+
+		It("should reject invalid config", func() {
+			By("Creating the second APIExposure resource")
+			thirdApiExposure.Spec.Security.M2M = &apiv1.Machine2MachineAuthentication{
+				ExternalIDP: &apiv1.ExternalIdentityProvider{
+					TokenRequest: "sky",
+				},
+				Scopes: []string{"team:scope", "api:scope"},
+			}
+			err := k8sClient.Create(ctx, thirdApiExposure)
+			Expect(err).To(HaveOccurred())
+			Expect(apierrors.IsInvalid(err)).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring("Unsupported value: \"sky\": supported values: \"body\", \"header\""))
+
+			thirdApiExposure.Spec.Security.M2M.ExternalIDP.GrantType = "not_a_valid_grant_type"
+			err = k8sClient.Create(ctx, thirdApiExposure)
+			Expect(err).To(HaveOccurred())
+			Expect(apierrors.IsInvalid(err)).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring("Unsupported value: \"not_a_valid_grant_type\": supported values: \"client_credentials\", \"authorization_code\", \"password\""))
+		})
+
+		It("should successfully provision the resource", func() {
+			By("Creating the second APIExposure resource")
+			thirdApiExposure.Spec.Security.M2M = &apiv1.Machine2MachineAuthentication{
+				ExternalIDP: &apiv1.ExternalIdentityProvider{
+					TokenEndpoint: "https://example.com/token",
+					TokenRequest:  "header",
+					GrantType:     "client_credentials",
+					Client: &apiv1.OAuth2ClientCredentials{
+						ClientId:     "team",
+						ClientSecret: "******",
+						Scopes:       []string{"team:scope", "api:scope"},
+					},
+				},
+			}
+
+			err := k8sClient.Create(ctx, thirdApiExposure)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Checking if the resource has the expected state")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(thirdApiExposure), thirdApiExposure)
+				g.Expect(err).ToNot(HaveOccurred())
+				route := &gatewayapi.Route{}
+				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), route)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(route.Spec.Upstreams).To(HaveLen(1))
+				g.Expect(route.Spec.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("team"))
+				g.Expect(route.Spec.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("******"))
+				g.Expect(route.Spec.Security.M2M.ExternalIDP.Client.Scopes).To(Equal([]string{"team:scope", "api:scope"}))
+
+				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://example.com/token"))
+				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal("header"))
+				g.Expect(route.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
+			}, timeout, interval).Should(Succeed())
+		})
+
+	})
+
 })

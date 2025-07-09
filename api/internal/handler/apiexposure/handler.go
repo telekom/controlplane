@@ -191,6 +191,24 @@ func createRealRoute(ctx context.Context, obj *apiapi.ApiExposure) error {
 				downstream,
 			},
 		}
+
+		if obj.HasExternalIdp() {
+			route.Spec.Security = &gatewayapi.Security{
+				M2M: &gatewayapi.Machine2MachineAuthentication{
+					ExternalIDP: &gatewayapi.ExternalIdentityProvider{
+						TokenEndpoint: obj.Spec.Security.M2M.ExternalIDP.TokenEndpoint,
+						TokenRequest:  obj.Spec.Security.M2M.ExternalIDP.TokenRequest,
+						GrantType:     obj.Spec.Security.M2M.ExternalIDP.GrantType,
+						Client: &gatewayapi.OAuth2ClientCredentials{
+							ClientId:     obj.Spec.Security.M2M.ExternalIDP.Client.ClientId,
+							ClientSecret: obj.Spec.Security.M2M.ExternalIDP.Client.ClientSecret,
+							Scopes:       obj.Spec.Security.M2M.ExternalIDP.Client.Scopes,
+						},
+					},
+				},
+			}
+		}
+
 		return nil
 	}
 
