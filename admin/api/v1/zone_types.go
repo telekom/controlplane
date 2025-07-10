@@ -61,7 +61,9 @@ type ZoneSpec struct {
 	Gateway          GatewayConfig          `json:"gateway"`
 	Redis            RedisConfig            `json:"redis"`
 	TeamApis         *TeamApiConfig         `json:"teamApis,omitempty"`
-	Visibility       ZoneVisibility         `json:"visibility"`
+	// +kubebuilder:validation:Enum=World;Enterprise
+	// Visibility controls what subscriptions are allowed from and to this zone. It's also relevant for features like failover
+	Visibility ZoneVisibility `json:"visibility"`
 }
 
 type Links struct {

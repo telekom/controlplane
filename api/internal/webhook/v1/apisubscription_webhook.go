@@ -7,9 +7,10 @@ package v1
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
-	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -82,7 +83,7 @@ func (v *ApiSubscriptionCustomValidator) ValidateCreate(ctx context.Context, obj
 	}
 	apisubscriptionlog.Info("Validation for ApiSubscription upon creation", "name", apisubscription.GetName())
 
-	return validateCreateOrUpdate(ctx, v.client, *apisubscription)
+	return validateCreateOrUpdate(ctx, v.client, apisubscription)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type ApiSubscription.
@@ -93,7 +94,7 @@ func (v *ApiSubscriptionCustomValidator) ValidateUpdate(ctx context.Context, old
 	}
 	apisubscriptionlog.Info("Validation for ApiSubscription upon update", "name", apisubscription.GetName())
 
-	return validateCreateOrUpdate(ctx, v.client, *apisubscription)
+	return validateCreateOrUpdate(ctx, v.client, apisubscription)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type ApiSubscription.
@@ -109,18 +110,10 @@ func (v *ApiSubscriptionCustomValidator) ValidateDelete(ctx context.Context, obj
 	return nil, nil
 }
 
-func getEnvironment(object client.Object) (string, bool) {
-	labels := object.GetLabels()
-	if labels == nil {
-		return "", false
-	}
-	e, ok := labels[config.EnvironmentLabelKey]
-	return e, ok
-}
-func validateCreateOrUpdate(ctx context.Context, c client.Client, sub apiv1.ApiSubscription) (admission.Warnings, error) {
+func validateCreateOrUpdate(ctx context.Context, c client.Client, sub *apiv1.ApiSubscription) (admission.Warnings, error) {
 	apisubscriptionlog.Info("Validate for ApiSubscription upon creation", "name", sub.GetName())
 
-	env, found := getEnvironment(&sub)
+	env, found := controller.GetEnvironment(sub)
 	if !found {
 		return nil, apierrors.NewBadRequest("Environment validation failed - label is not present on subscription")
 	}
@@ -133,12 +126,12 @@ func validateCreateOrUpdate(ctx context.Context, c client.Client, sub apiv1.ApiS
 		client.MatchingFields{"status.active": "true"})
 
 	if err != nil {
-		apisubscriptionlog.Error(err, "unable to list ApiExposure", "name", sub.Spec.ApiBasePath)
+		apisubscriptionlog.Error(err, "unable to list ApiExposure", "basePath", sub.Spec.ApiBasePath)
 		return nil, apierrors.NewNotFound(schema.GroupResource{Group: apiv1.GroupVersion.Group, Resource: "ApiExposure"}, "Active Api Exposure for this subscription not found due to error")
 	}
 
 	if len(apiExposureList.Items) == 0 {
-		apisubscriptionlog.Error(err, "unable to list ApiExposure", "name", sub.Spec.ApiBasePath)
+		apisubscriptionlog.Error(errors.New("unable to list ApiExposure(s) for api subscription"), "basePath", sub.Spec.ApiBasePath)
 		return nil, apierrors.NewNotFound(schema.GroupResource{Group: apiv1.GroupVersion.Group, Resource: "ApiExposure"}, "Active Api Exposure for this subscription not found")
 	}
 

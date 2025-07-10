@@ -70,7 +70,7 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 
 	_, err := c.CreateOrUpdate(ctx, apiSubscription, mutator)
 
-	// many different errors can occur, so lets handle them
+	// many different errors can occur, so let's handle them
 	var statusErr *apierrors.StatusError
 	if errors.As(err, &statusErr) {
 		if statusErr.ErrStatus.Reason == metav1.StatusReasonBadRequest {
