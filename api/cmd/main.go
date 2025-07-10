@@ -24,6 +24,7 @@ import (
 
 	"github.com/telekom/controlplane/api/internal/controller"
 	"github.com/telekom/controlplane/api/internal/handler/remoteapisubscription/syncer"
+	webhookv1 "github.com/telekom/controlplane/api/internal/webhook/v1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -169,6 +170,13 @@ func main() {
 	}).SetupWithManager(mgr, syncer.NewSyncerFactory()); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "RemoteApiSubscription")
 		os.Exit(1)
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1.SetupApiSubscriptionWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "ApiSubscription")
+			os.Exit(1)
+		}
 	}
 	// +kubebuilder:scaffold:builder
 

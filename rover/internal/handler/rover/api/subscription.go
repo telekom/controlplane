@@ -6,6 +6,8 @@ package api
 
 import (
 	"context"
+	"github.com/telekom/controlplane/common/pkg/condition"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/pkg/errors"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
@@ -22,9 +24,8 @@ import (
 )
 
 func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rover.Rover, sub *rover.ApiSubscription) error {
-
 	log := log.FromContext(ctx)
-	log.V(1).Info("Handle APISusbcription", "basePath", sub.BasePath)
+	log.V(1).Info("Handle APISubscription", "basePath", sub.BasePath)
 
 	name := MakeName(owner.Name, sub.BasePath, sub.Organization)
 
@@ -46,6 +47,7 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 		if err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
 		}
+
 		apiSubscription.Spec = apiapi.ApiSubscriptionSpec{
 			ApiBasePath: sub.BasePath,
 			Zone:        zoneRef,
@@ -63,12 +65,25 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 			config.BuildLabelKey("zone"):        labelutil.NormalizeValue(zoneRef.Name),
 			config.BuildLabelKey("application"): labelutil.NormalizeValue(owner.Name),
 		}
-
 		return nil
 	}
 
 	_, err := c.CreateOrUpdate(ctx, apiSubscription, mutator)
-	if err != nil {
+
+	// many different errors can occur, so let's handle them
+	var statusErr *apierrors.StatusError
+	if errors.As(err, &statusErr) {
+		if statusErr.ErrStatus.Reason == metav1.StatusReasonBadRequest {
+			errorMessage := "Create or update ApiSubscription failed. Webhook validation error - BadRequest."
+			log.V(0).Error(err, errorMessage)
+			return errors.Wrap(err, errorMessage)
+		} else if statusErr.ErrStatus.Reason == metav1.StatusReasonNotFound {
+			errorMessage := "Create or update ApiSubscription failed. Webhook validation error - NotFound."
+			log.V(0).Error(err, errorMessage)
+			owner.SetCondition(condition.NewBlockedCondition("Blocked due to missing ApiExposure for subscription to basePath '" + sub.BasePath + "'"))
+			return errors.Wrap(err, errorMessage)
+		}
+	} else if err != nil {
 		return errors.Wrap(err, "failed to create or update ApiSubscription")
 	}
 
