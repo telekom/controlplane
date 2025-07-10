@@ -67,6 +67,7 @@ func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBu
 	// It does so by checking the health of the TargetZoneName using the ZoneHealthCheckService.
 
 	hasLoadbalancing := len(failover.Upstreams) > 1
+	hasFailoverSecurity := route.HasFailoverSecurity()
 	IsFailoverSecondary := route.IsFailoverSecondary()
 
 	jumperCfg := builder.JumperConfig()
@@ -87,6 +88,13 @@ func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBu
 			// The real primary upstream is a single failover upstream.
 			routingCfg.RemoteApiUrl = failover.Upstreams[0].Url()
 			routingCfg.ApiBasePath = failover.Upstreams[0].Path
+		}
+
+		// Because (per default) the ExternalIDP feature will set this header, we need to remove it here
+		// to avoid conflicts with the failover security configuration.
+		if hasFailoverSecurity && route.Spec.Traffic.Failover.Security.HasM2MExternalIDP() {
+			routingCfg.TokenEndpoint = failover.Security.M2M.ExternalIDP.TokenEndpoint
+			builder.RequestTransformerPlugin().Config.Append.Headers.Remove("token_endpoint")
 		}
 
 	} else {

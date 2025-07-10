@@ -19,7 +19,7 @@ var _ features.Feature = &ExternalIDPFeature{}
 
 // defaultKey for provider (exposure) config.
 // Used as a fallback in Jumper if no consumer key is found
-const defaultProviderKey = plugin.ConsumerId("default")
+const DefaultProviderKey = plugin.ConsumerId("default")
 
 // ExternalIDPFeature takes precedence over CustomScopesFeature
 type ExternalIDPFeature struct {
@@ -38,19 +38,22 @@ func (f *ExternalIDPFeature) Priority() int {
 	return f.priority
 }
 
+// IsUsed checks if the ExternalIDP feature is used in the route.
+// It can either be used as a primary route feature or as a failover security feature.
 func (f *ExternalIDPFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
 	route := builder.GetRoute()
-	if route == nil {
-		return false
+	isPrimaryRoute := !route.IsProxy()
+	isConfigured := false
+
+	if route.HasFailoverSecurity() {
+		isConfigured = route.Spec.Traffic.Failover.Security.HasM2MExternalIDP()
 	}
 
-	if !route.HasM2MExternalIdp() {
-		return false
+	if isPrimaryRoute && route.HasM2MExternalIdp() {
+		isConfigured = true
 	}
 
-	hasExternalTokenEndpoint := route.Spec.Security.M2M.ExternalIDP.TokenEndpoint != ""
-
-	return !route.Spec.PassThrough && hasExternalTokenEndpoint && !route.IsProxy()
+	return !route.Spec.PassThrough && isConfigured
 }
 
 func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
@@ -58,16 +61,24 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	route := builder.GetRoute()
 	jumperConfig := builder.JumperConfig()
 
-	rtpPlugin.Config.Append.AddHeader("token_endpoint", route.Spec.Security.M2M.ExternalIDP.TokenEndpoint)
+	// Depending on the context (primary or failover route), we need to use different security settings.
+	// If the route is a failover secondary route, we use the failover security settings
+	// Otherwise, we use the primary route security settings.
+	security := route.Spec.Security
+	if route.HasFailoverSecurity() {
+		security = route.Spec.Traffic.Failover.Security
+	}
+
+	rtpPlugin.Config.Append.AddHeader("token_endpoint", security.M2M.ExternalIDP.TokenEndpoint)
 
 	// Provider
-	if route.HasM2MExternalIdpClient() {
-		err = applyOauth(ctx, defaultProviderKey, jumperConfig, route.Spec.Security.M2M.ExternalIDP.Client, route.Spec.Security.M2M.ExternalIDP, route.Spec.Security.M2M.Scopes)
+	if security.HasM2MExternalIDP() && security.M2M.ExternalIDP.Client != nil {
+		err = applyOauth(ctx, DefaultProviderKey, jumperConfig, security.M2M.ExternalIDP.Client, security.M2M.ExternalIDP, security.M2M.Scopes)
 		if err != nil {
 			return errors.Wrapf(err, "cannot get provider secret for route %s", route.Name)
 		}
-	} else if route.HasM2MExternalIdpBasic() {
-		err = applyBasic(ctx, defaultProviderKey, jumperConfig, route.Spec.Security.M2M.ExternalIDP.Basic, route.Spec.Security.M2M.ExternalIDP, route.Spec.Security.M2M.Scopes)
+	} else if security.HasM2MExternalIDP() && security.M2M.ExternalIDP.Basic != nil {
+		err = applyBasic(ctx, DefaultProviderKey, jumperConfig, security.M2M.ExternalIDP.Basic, security.M2M.ExternalIDP, security.M2M.Scopes)
 		if err != nil {
 			return errors.Wrapf(err, "cannot get provider secret for route %s", route.Name)
 		}
@@ -76,12 +87,12 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	// Consumers
 	for _, consumer := range builder.GetAllowedConsumers() {
 		if consumer.HasM2MClient() {
-			err = applyOauth(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Client, route.Spec.Security.M2M.ExternalIDP, consumer.Spec.Security.M2M.Scopes)
+			err = applyOauth(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Client, security.M2M.ExternalIDP, consumer.Spec.Security.M2M.Scopes)
 			if err != nil {
 				return errors.Wrapf(err, "cannot get consumer secret for consumer %s in route %s", consumer.Spec.ConsumerName, route.Name)
 			}
 		} else if consumer.HasM2MBasic() {
-			err = applyBasic(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Basic, route.Spec.Security.M2M.ExternalIDP, consumer.Spec.Security.M2M.Scopes)
+			err = applyBasic(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Basic, security.M2M.ExternalIDP, consumer.Spec.Security.M2M.Scopes)
 			if err != nil {
 				return errors.Wrapf(err, "cannot get consumer secret for consumer %s in route %s", consumer.Spec.ConsumerName, route.Name)
 			}

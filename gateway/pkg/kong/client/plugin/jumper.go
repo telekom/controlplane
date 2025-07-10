@@ -66,6 +66,8 @@ type RoutingConfig struct {
 	ClientSecret  string `json:"clientSecret,omitempty"`
 	// TargetZoneName is used to determine if the zone is currently available using zoneHealthCheckService
 	TargetZoneName string `json:"targetZoneName,omitempty"`
+
+	TokenEndpoint string `json:"tokenEndpoint,omitempty"`
 }
 
 type RoutingConfigs []*RoutingConfig

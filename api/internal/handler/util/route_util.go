@@ -29,19 +29,35 @@ var (
 type CreateRouteOptions struct {
 	FailoverUpstreams []apiapi.Upstream
 	FailoverZone      types.ObjectRef
+	FailoverSecurity  *apiapi.Security
 }
 
 type CreateRouteOption func(*CreateRouteOptions)
 
+// WithFailoverUpstreams sets the failover upstreams for the route.
+// A Proxy-Route created using CreateProxyRoute with this option will have the failover upstreams set
+// and automatically be a failover secondary route.
 func WithFailoverUpstreams(failoverUpstreams ...apiapi.Upstream) CreateRouteOption {
 	return func(opts *CreateRouteOptions) {
 		opts.FailoverUpstreams = failoverUpstreams
 	}
 }
 
+// WithFailoverZone sets the failover zone for the route.
+// A Proxy-Route created using CreateProxyRoute with this option will have the failover zone set.
+// This will result in a Proxy-Route that will proxy requests to the failover zone (secondary route).
 func WithFailoverZone(failoverZone types.ObjectRef) CreateRouteOption {
 	return func(opts *CreateRouteOptions) {
 		opts.FailoverZone = failoverZone
+	}
+}
+
+// WithFailoverSecurity sets the failover security for the route.
+// A Proxy-Route created using CreateProxyRoute with this option will have the failover security set.
+// Only applicable if IsFailoverSecondary() is true.
+func WithFailoverSecurity(security *apiapi.Security) CreateRouteOption {
+	return func(opts *CreateRouteOptions) {
+		opts.FailoverSecurity = security
 	}
 }
 
@@ -142,6 +158,13 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 					Upstreams:      failoverUpstreams,
 				},
 			}
+
+			// Add the provided security config (mostly copied from primary-route)
+			// to the failover config of the secondary route
+			if options.FailoverSecurity != nil {
+				proxyRoute.Spec.Traffic.Failover.Security = mapSecurity(options.FailoverSecurity)
+			}
+
 		}
 
 		if options.HasFailover() {
@@ -289,34 +312,7 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 			},
 			Traffic: gatewayapi.Traffic{},
 		}
-
-		if apiExposure.HasExternalIdp() {
-			externalIDP := apiExposure.Spec.Security.M2M.ExternalIDP
-			route.Spec.Security = &gatewayapi.Security{
-				M2M: &gatewayapi.Machine2MachineAuthentication{
-					ExternalIDP: &gatewayapi.ExternalIdentityProvider{
-						TokenEndpoint: externalIDP.TokenEndpoint,
-						TokenRequest:  externalIDP.TokenRequest,
-						GrantType:     externalIDP.GrantType,
-					},
-				},
-			}
-			if externalIDP.Basic != nil {
-				route.Spec.Security.M2M.ExternalIDP.Basic = &gatewayapi.BasicAuthCredentials{
-					Username: externalIDP.Basic.Username,
-					Password: externalIDP.Basic.Password,
-				}
-			} else if externalIDP.Client != nil {
-				route.Spec.Security.M2M.ExternalIDP.Client = &gatewayapi.OAuth2ClientCredentials{
-					ClientId:     externalIDP.Client.ClientId,
-					ClientSecret: externalIDP.Client.ClientSecret,
-				}
-			}
-			if apiExposure.Spec.Security.M2M.Scopes != nil {
-				route.Spec.Security.M2M.Scopes = apiExposure.Spec.Security.M2M.Scopes
-			}
-
-		}
+		route.Spec.Security = mapSecurity(apiExposure.Spec.Security)
 
 		return nil
 	}
@@ -394,4 +390,38 @@ func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, dow
 	}
 
 	return routeConsumer, nil
+}
+
+func mapSecurity(apiSecurity *apiapi.Security) *gatewayapi.Security {
+	if apiSecurity == nil {
+		return nil
+	}
+
+	security := &gatewayapi.Security{}
+
+	if apiSecurity.M2M != nil {
+		security.M2M = &gatewayapi.Machine2MachineAuthentication{
+			Scopes: apiSecurity.M2M.Scopes,
+		}
+		if apiSecurity.M2M.ExternalIDP != nil {
+			security.M2M.ExternalIDP = &gatewayapi.ExternalIdentityProvider{
+				TokenEndpoint: apiSecurity.M2M.ExternalIDP.TokenEndpoint,
+				TokenRequest:  apiSecurity.M2M.ExternalIDP.TokenRequest,
+				GrantType:     apiSecurity.M2M.ExternalIDP.GrantType,
+			}
+			if apiSecurity.M2M.ExternalIDP.Basic != nil {
+				security.M2M.ExternalIDP.Basic = &gatewayapi.BasicAuthCredentials{
+					Username: apiSecurity.M2M.ExternalIDP.Basic.Username,
+					Password: apiSecurity.M2M.ExternalIDP.Basic.Password,
+				}
+			} else if apiSecurity.M2M.ExternalIDP.Client != nil {
+				security.M2M.ExternalIDP.Client = &gatewayapi.OAuth2ClientCredentials{
+					ClientId:     apiSecurity.M2M.ExternalIDP.Client.ClientId,
+					ClientSecret: apiSecurity.M2M.ExternalIDP.Client.ClientSecret,
+				}
+			}
+		}
+	}
+
+	return security
 }

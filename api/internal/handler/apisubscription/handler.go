@@ -236,19 +236,28 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		for _, subFailoverZone := range apiSub.Spec.Traffic.Failover.Zones {
 			options := []util.CreateRouteOption{}
 			if apiExposure.HasFailover() {
+				if len(apiExposure.Spec.Traffic.Failover.Zones) != 1 {
+					return errors.New("Must exactly define one failover zone")
+				}
 				expFailoverZone := apiExposure.Spec.Traffic.Failover.Zones[0]
 				options = append(options, util.WithFailoverZone(expFailoverZone))
 			}
 
-			log.Info("Creating proxy route for failover zone", "zone", subFailoverZone)
-			route, err = util.CreateProxyRoute(ctx, subFailoverZone, apiExposure.Spec.Zone, apiSub.Spec.ApiBasePath,
-				contextutil.EnvFromContextOrDie(ctx),
-				options...,
-			)
-			if err != nil {
-				return errors.Wrapf(err, "failed to create proxy route for zone %s in failover scenario", apiSub.Spec.Zone)
+			sameFailoverZoneAsExposure := apiExposure.HasFailover() && apiExposure.Spec.Traffic.Failover.ContainsZone(subFailoverZone)
+
+			if !sameFailoverZoneAsExposure {
+				log.Info("Creating proxy route for failover zone", "zone", subFailoverZone)
+				route, err = util.CreateProxyRoute(ctx, subFailoverZone, apiExposure.Spec.Zone, apiSub.Spec.ApiBasePath,
+					contextutil.EnvFromContextOrDie(ctx),
+					options...,
+				)
+				if err != nil {
+					return errors.Wrapf(err, "failed to create proxy route for zone %s in failover scenario", apiSub.Spec.Zone)
+				}
+				apiSub.Status.FailoverRoutes = append(apiSub.Status.FailoverRoutes, *types.ObjectRefFromObject(route))
+			} else {
+				log.Info("Same failover zone as exposure, no proxy route needed", "zone", subFailoverZone)
 			}
-			apiSub.Status.FailoverRoutes = append(apiSub.Status.FailoverRoutes, *types.ObjectRefFromObject(route))
 
 			log.Info("Creating failover ConsumeRoute for zone", "zone", subFailoverZone)
 			consumeRoute, err = util.CreateConsumeRoute(ctx, apiSub, subFailoverZone, *types.ObjectRefFromObject(route), application.Status.ClientId)

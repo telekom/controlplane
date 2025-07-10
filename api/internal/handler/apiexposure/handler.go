@@ -108,7 +108,9 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, obj *apiapi.Api
 	if obj.HasFailover() {
 		failoverZone := obj.Spec.Traffic.Failover.Zones[0] // currently only one failover zone is supported
 		route, err := util.CreateProxyRoute(ctx, failoverZone, obj.Spec.Zone, obj.Spec.ApiBasePath,
-			contextutil.EnvFromContextOrDie(ctx), util.WithFailoverUpstreams(apiExposure.Spec.Upstreams...),
+			contextutil.EnvFromContextOrDie(ctx),
+			util.WithFailoverUpstreams(apiExposure.Spec.Upstreams...),
+			util.WithFailoverSecurity(apiExposure.Spec.Security),
 		)
 		if err != nil {
 			return errors.Wrapf(err, "unable to create real route for apiExposure: %s in namespace: %s", obj.Name, obj.Namespace)

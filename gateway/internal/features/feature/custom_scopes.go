@@ -20,7 +20,7 @@ type CustomScopesFeature struct {
 }
 
 var InstanceCustomScopesFeature = &CustomScopesFeature{
-	priority: 1,
+	priority: 10,
 }
 
 func (f *CustomScopesFeature) Name() gatewayv1.FeatureType {

@@ -38,11 +38,6 @@ var _ = Describe("ExternalIDPFeature", func() {
 		})
 
 		Context("check IsUsed", func() {
-			It("nil route, external IDP should not be used", func() {
-				mockFeatureBuilder.EXPECT().GetRoute().Return(nil)
-				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
-			})
-
 			It("route with no upstreams, external IDP should not be used", func() {
 				route := &gatewayv1.Route{
 					Spec: gatewayv1.RouteSpec{
@@ -97,5 +92,10 @@ var _ = Describe("ExternalIDPFeature", func() {
 				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeTrue())
 			})
 		})
+	})
+
+	// TODO: implement this
+	Context("Apply", func() {
+
 	})
 })

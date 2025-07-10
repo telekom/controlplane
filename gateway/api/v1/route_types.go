@@ -120,6 +120,7 @@ type Traffic struct {
 type Failover struct {
 	TargetZoneName string     `json:"targetZoneName"`
 	Upstreams      []Upstream `json:"upstreams"`
+	Security       *Security  `json:"security,omitempty"`
 }
 
 // RouteStatus defines the observed state of Route
@@ -198,6 +199,10 @@ func (g *Route) IsProxy() bool {
 
 func (g *Route) HasFailover() bool {
 	return g.Spec.Traffic.Failover != nil
+}
+
+func (g *Route) HasFailoverSecurity() bool {
+	return g.HasFailover() && g.Spec.Traffic.Failover.Security != nil
 }
 
 // IsFailoverSecondary checks if the route is a failover target.

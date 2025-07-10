@@ -323,7 +323,6 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 
 				err = k8sClient.Get(ctx, apiSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(consumeRoute.Spec.Route).To(Equal(*apiSubscription.Status.Route))
 				g.Expect(consumeRoute.Spec.Security.M2M.Scopes[0]).To(Equal("scope1"))
 				g.Expect(consumeRoute.Spec.Security.M2M.Scopes[1]).To(Equal("scope2"))
 				g.Expect(consumeRoute.Spec.Security.M2M.Scopes).To(ConsistOf("scope1", "scope2"))
@@ -439,7 +438,6 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				By("Checking the first ApiSubscription")
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(apiSubscription.Status.Route).ToNot(BeNil())
 
 				By("Checking the second ApiSubscription")
 				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(secondApiSubscription), secondApiSubscription)
@@ -800,7 +798,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			ProgressApproval(sameZoneSubscription, approvalapi.ApprovalStateGranted, approvalReq)
 		})
 
-		It("should create a route for the ApiSubscription in the failover zone", func() {
+		It("should reuse the Proxy-Route created as secondary-route by ApiExposure", func() {
 			By("Checking route configuration")
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(sameZoneSubscription), sameZoneSubscription)

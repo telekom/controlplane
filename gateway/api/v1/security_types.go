@@ -12,6 +12,17 @@ type Security struct {
 	M2M *Machine2MachineAuthentication `json:"m2m,omitempty"`
 }
 
+func (s *Security) HasM2M() bool {
+	return s.M2M != nil
+}
+
+func (s *Security) HasM2MExternalIDP() bool {
+	if !s.HasM2M() {
+		return false
+	}
+	return s.M2M.ExternalIDP != nil
+}
+
 // Security defines the security configuration for the Rover
 // Security is optional, but if provided, exactly one of m2m or h2m must be set
 type ConsumerSecurity struct {
