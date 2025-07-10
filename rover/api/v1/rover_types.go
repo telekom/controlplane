@@ -521,8 +521,4 @@ type OAuth2ClientCredentials struct {
 	// ClientSecret is the secret associated with the client ID
 	// +kubebuilder:validation:Optional
 	ClientSecret string `json:"clientSecret"`
-	// Scopes defines the OAuth2 scopes to request in the token
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MaxItems=10
-	Scopes []string `json:"scopes,omitempty"`
 }

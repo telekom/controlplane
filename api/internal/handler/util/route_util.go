@@ -234,7 +234,7 @@ func CleanupProxyRoute(ctx context.Context, routeRef *types.ObjectRef, opts ...C
 	return nil
 }
 
-func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, upstreams []apiapi.Upstream, apiBasePath, realmName string) (*gatewayapi.Route, error) {
+func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, apiExposure *apiapi.ApiExposure, realmName string) (*gatewayapi.Route, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
 	// get referenced Zone from exposure
@@ -254,26 +254,26 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, ups
 
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      MakeRouteName(apiBasePath, realmName),
+			Name:      MakeRouteName(apiExposure.Spec.ApiBasePath, realmName),
 			Namespace: zone.Status.Namespace,
 		},
 	}
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			apiapi.BasePathLabelKey:       labelutil.NormalizeValue(apiBasePath),
+			apiapi.BasePathLabelKey:       labelutil.NormalizeValue(apiExposure.Spec.ApiBasePath),
 			config.BuildLabelKey("zone"):  labelutil.NormalizeValue(zone.Name),
 			config.BuildLabelKey("realm"): labelutil.NormalizeValue(downstreamRealm.Name),
 			config.BuildLabelKey("type"):  "real",
 		}
 
-		downstream, err := downstreamRealm.AsDownstream(apiBasePath)
+		downstream, err := downstreamRealm.AsDownstream(apiExposure.Spec.ApiBasePath)
 		if err != nil {
 			return errors.Wrap(err, "failed to create downstream")
 		}
 
-		gatewayUpstreams := make([]gatewayapi.Upstream, 0, len(upstreams))
-		for _, upstream := range upstreams {
+		gatewayUpstreams := make([]gatewayapi.Upstream, 0, len(apiExposure.Spec.Upstreams))
+		for _, upstream := range apiExposure.Spec.Upstreams {
 			gatewayUpstream, err := AsUpstreamForRealRoute(ctx, upstream.Url, upstream.Weight)
 			if err != nil {
 				return errors.Wrapf(err, "failed to create upstream for URL %s", upstream.Url)
@@ -289,6 +289,35 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, ups
 			},
 			Traffic: gatewayapi.Traffic{},
 		}
+
+		if apiExposure.HasExternalIdp() {
+			externalIDP := apiExposure.Spec.Security.M2M.ExternalIDP
+			route.Spec.Security = &gatewayapi.Security{
+				M2M: &gatewayapi.Machine2MachineAuthentication{
+					ExternalIDP: &gatewayapi.ExternalIdentityProvider{
+						TokenEndpoint: externalIDP.TokenEndpoint,
+						TokenRequest:  externalIDP.TokenRequest,
+						GrantType:     externalIDP.GrantType,
+					},
+				},
+			}
+			if externalIDP.Basic != nil {
+				route.Spec.Security.M2M.ExternalIDP.Basic = &gatewayapi.BasicAuthCredentials{
+					Username: externalIDP.Basic.Username,
+					Password: externalIDP.Basic.Password,
+				}
+			} else if externalIDP.Client != nil {
+				route.Spec.Security.M2M.ExternalIDP.Client = &gatewayapi.OAuth2ClientCredentials{
+					ClientId:     externalIDP.Client.ClientId,
+					ClientSecret: externalIDP.Client.ClientSecret,
+				}
+			}
+			if apiExposure.Spec.Security.M2M.Scopes != nil {
+				route.Spec.Security.M2M.Scopes = apiExposure.Spec.Security.M2M.Scopes
+			}
+
+		}
+
 		return nil
 	}
 
@@ -300,33 +329,58 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, ups
 	return route, nil
 }
 
-func CreateConsumeRoute(ctx context.Context, parent *apiapi.ApiSubscription, downstreamZoneRef types.ObjectRef, routeRef types.ObjectRef, clientId string) (*gatewayapi.ConsumeRoute, error) {
+func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, downstreamZoneRef types.ObjectRef, routeRef types.ObjectRef, clientId string) (*gatewayapi.ConsumeRoute, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
-	name := downstreamZoneRef.Name + "--" + parent.GetName()
+	name := downstreamZoneRef.Name + "--" + apiSub.GetName()
 	routeConsumer := &gatewayapi.ConsumeRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: parent.GetNamespace(),
+			Namespace: apiSub.GetNamespace(),
 		},
 	}
 
 	mutate := func() error {
-		if err := controllerutil.SetControllerReference(parent, routeConsumer, scopedClient.Scheme()); err != nil {
+		if err := controllerutil.SetControllerReference(apiSub, routeConsumer, scopedClient.Scheme()); err != nil {
 			return errors.Wrapf(err, "failed to set owner-reference on %v", routeConsumer)
 		}
-		routeConsumer.Labels = parent.GetLabels()
+		routeConsumer.Labels = apiSub.GetLabels()
 
 		routeConsumer.Spec = gatewayapi.ConsumeRouteSpec{
 			Route:        routeRef,
 			ConsumerName: clientId,
 		}
 
-		if parent.Spec.HasM2M() {
-			routeConsumer.Spec.Security = &gatewayapi.ConsumerSecurity{
-				M2M: &gatewayapi.ConsumerMachine2MachineAuthentication{
-					Scopes: parent.Spec.Security.M2M.Scopes,
-				},
+		if apiSub.HasM2M() {
+			if apiSub.Spec.Security.M2M.Client != nil {
+				routeConsumer.Spec.Security = &gatewayapi.ConsumerSecurity{
+					M2M: &gatewayapi.ConsumerMachine2MachineAuthentication{
+						Client: &gatewayapi.OAuth2ClientCredentials{
+							ClientId:     apiSub.Spec.Security.M2M.Client.ClientId,
+							ClientSecret: apiSub.Spec.Security.M2M.Client.ClientSecret,
+						},
+						Scopes: apiSub.Spec.Security.M2M.Scopes,
+					},
+				}
+
+			} else if apiSub.Spec.Security.M2M.Basic != nil {
+				routeConsumer.Spec.Security = &gatewayapi.ConsumerSecurity{
+					M2M: &gatewayapi.ConsumerMachine2MachineAuthentication{
+						Basic: &gatewayapi.BasicAuthCredentials{
+							Username: apiSub.Spec.Security.M2M.Basic.Username,
+							Password: apiSub.Spec.Security.M2M.Basic.Password,
+						},
+						Scopes: apiSub.Spec.Security.M2M.Scopes,
+					},
+				}
+
+			} else if apiSub.Spec.Security.M2M.Scopes != nil {
+				routeConsumer.Spec.Security = &gatewayapi.ConsumerSecurity{
+					M2M: &gatewayapi.ConsumerMachine2MachineAuthentication{
+						Scopes: apiSub.Spec.Security.M2M.Scopes,
+					},
+				}
+
 			}
 		}
 
@@ -336,7 +390,7 @@ func CreateConsumeRoute(ctx context.Context, parent *apiapi.ApiSubscription, dow
 	_, err := scopedClient.CreateOrUpdate(ctx, routeConsumer, mutate)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to create ConsumeRoute %s in namespace: %s",
-			parent.GetName(), parent.GetNamespace())
+			apiSub.GetName(), apiSub.GetNamespace())
 	}
 
 	return routeConsumer, nil

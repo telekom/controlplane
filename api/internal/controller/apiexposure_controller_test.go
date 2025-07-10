@@ -270,9 +270,9 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 					Client: &apiv1.OAuth2ClientCredentials{
 						ClientId:     "team",
 						ClientSecret: "******",
-						Scopes:       []string{"team:scope", "api:scope"},
 					},
 				},
+				Scopes: []string{"team:scope", "api:scope"},
 			}
 
 			err := k8sClient.Create(ctx, thirdApiExposure)
@@ -288,7 +288,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				g.Expect(route.Spec.Upstreams).To(HaveLen(1))
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("team"))
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("******"))
-				g.Expect(route.Spec.Security.M2M.ExternalIDP.Client.Scopes).To(Equal([]string{"team:scope", "api:scope"}))
+				g.Expect(route.Spec.Security.M2M.Scopes).To(Equal([]string{"team:scope", "api:scope"}))
 
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://example.com/token"))
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal("header"))

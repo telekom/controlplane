@@ -28,7 +28,6 @@ func toApiClient(client *rover.OAuth2ClientCredentials) *apiapi.OAuth2ClientCred
 	return &apiapi.OAuth2ClientCredentials{
 		ClientId:     client.ClientId,
 		ClientSecret: client.ClientSecret,
-		Scopes:       client.Scopes,
 	}
 }
 

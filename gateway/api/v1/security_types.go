@@ -29,9 +29,6 @@ type Machine2MachineAuthentication struct {
 	// +kubebuilder:validation:Optional
 	ExternalIDP *ExternalIdentityProvider `json:"externalIDP,omitempty"`
 
-	// Client defines client credentials for OAuth2 for LMS from the **internal** IDP
-	Client *OAuth2ClientCredentials `json:"client,omitempty"`
-
 	// Basic defines basic authentication configuration
 	// +kubebuilder:validation:Optional
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
@@ -103,7 +100,4 @@ type OAuth2ClientCredentials struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	ClientSecret string `json:"clientSecret"`
-	// Scopes defines the OAuth2 scopes to request in the token
-	// +kubebuilder:validation:Optional
-	Scopes []string `json:"scopes,omitempty"`
 }

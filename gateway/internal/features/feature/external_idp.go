@@ -62,12 +62,12 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 
 	// Provider
 	if route.HasM2MExternalIdpClient() {
-		err = applyOauth(ctx, defaultProviderKey, jumperConfig, route.Spec.Security.M2M.ExternalIDP.Client, route.Spec.Security.M2M.ExternalIDP)
+		err = applyOauth(ctx, defaultProviderKey, jumperConfig, route.Spec.Security.M2M.ExternalIDP.Client, route.Spec.Security.M2M.ExternalIDP, route.Spec.Security.M2M.Scopes)
 		if err != nil {
 			return errors.Wrapf(err, "cannot get provider secret for route %s", route.Name)
 		}
 	} else if route.HasM2MExternalIdpBasic() {
-		err = applyBasic(ctx, defaultProviderKey, jumperConfig, route.Spec.Security.M2M.ExternalIDP.Basic, route.Spec.Security.M2M.ExternalIDP)
+		err = applyBasic(ctx, defaultProviderKey, jumperConfig, route.Spec.Security.M2M.ExternalIDP.Basic, route.Spec.Security.M2M.ExternalIDP, route.Spec.Security.M2M.Scopes)
 		if err != nil {
 			return errors.Wrapf(err, "cannot get provider secret for route %s", route.Name)
 		}
@@ -76,12 +76,12 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	// Consumers
 	for _, consumer := range builder.GetAllowedConsumers() {
 		if consumer.HasM2MClient() {
-			err = applyOauth(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Client, route.Spec.Security.M2M.ExternalIDP)
+			err = applyOauth(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Client, route.Spec.Security.M2M.ExternalIDP, consumer.Spec.Security.M2M.Scopes)
 			if err != nil {
 				return errors.Wrapf(err, "cannot get consumer secret for consumer %s in route %s", consumer.Spec.ConsumerName, route.Name)
 			}
 		} else if consumer.HasM2MBasic() {
-			err = applyBasic(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Basic, route.Spec.Security.M2M.ExternalIDP)
+			err = applyBasic(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Basic, route.Spec.Security.M2M.ExternalIDP, consumer.Spec.Security.M2M.Scopes)
 			if err != nil {
 				return errors.Wrapf(err, "cannot get consumer secret for consumer %s in route %s", consumer.Spec.ConsumerName, route.Name)
 			}
@@ -91,8 +91,8 @@ func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.Feature
 	return nil
 }
 
-func applyOauth(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, client *gatewayv1.OAuth2ClientCredentials, providerSettings *gatewayv1.ExternalIdentityProvider) error {
-	oauth, err := extendOauth(ctx, jumperConfig.OAuth[key], providerSettings, client)
+func applyOauth(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, client *gatewayv1.OAuth2ClientCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, scopes []string) error {
+	oauth, err := extendOauth(ctx, jumperConfig.OAuth[key], providerSettings, client, scopes)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func applyOauth(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin
 	return nil
 }
 
-func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, client *gatewayv1.OAuth2ClientCredentials) (plugin.OauthCredentials, error) {
+func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, client *gatewayv1.OAuth2ClientCredentials, scopes []string) (plugin.OauthCredentials, error) {
 	var err error
 
 	in.ClientId = client.ClientId
@@ -114,8 +114,8 @@ func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettin
 	}
 	in.ClientSecret = secret
 
-	if in.Scopes == "" && len(client.Scopes) > 0 {
-		in.Scopes = strings.Join(client.Scopes, " ")
+	if len(scopes) > 0 {
+		in.Scopes = strings.Join(scopes, " ")
 	}
 
 	in.TokenRequest = providerSettings.TokenRequest
@@ -124,16 +124,16 @@ func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettin
 	return in, nil
 }
 
-func applyBasic(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, basic *gatewayv1.BasicAuthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider) error {
-	basicAuth, err := extendBasic(ctx, jumperConfig.BasicAuth[key], providerSettings, basic)
+func applyBasic(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, basic *gatewayv1.BasicAuthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, scopes []string) error {
+	basicAuth, err := extendBasic(ctx, jumperConfig.OAuth[key], providerSettings, basic, scopes)
 	if err != nil {
 		return err
 	}
-	jumperConfig.BasicAuth[key] = basicAuth
+	jumperConfig.OAuth[key] = basicAuth
 	return nil
 }
 
-func extendBasic(ctx context.Context, in plugin.BasicAuthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, basic *gatewayv1.BasicAuthCredentials) (plugin.BasicAuthCredentials, error) {
+func extendBasic(ctx context.Context, in plugin.OauthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, basic *gatewayv1.BasicAuthCredentials, scopes []string) (plugin.OauthCredentials, error) {
 	var err error
 
 	in.Username = basic.Username
@@ -144,6 +144,11 @@ func extendBasic(ctx context.Context, in plugin.BasicAuthCredentials, providerSe
 			return in, err
 		}
 	}
+
+	if len(scopes) > 0 {
+		in.Scopes = strings.Join(scopes, " ")
+	}
+
 	in.Password = password
 	in.GrantType = providerSettings.GrantType
 

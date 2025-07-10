@@ -72,11 +72,13 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 								Basic:         toApiBasic(exp.Security.M2M.ExternalIDP.Basic),
 								Client:        toApiClient(exp.Security.M2M.ExternalIDP.Client),
 							},
+							Scopes: exp.Security.M2M.Scopes,
 						},
 					}
 				}
 			}
 		}
+
 		failoverZones, hasFailover := getFailoverZones(environment, exp.Traffic.Failover)
 		if hasFailover {
 			apiExposure.Spec.Traffic = apiapi.Traffic{

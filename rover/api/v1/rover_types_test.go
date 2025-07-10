@@ -88,7 +88,6 @@ var _ = Describe("Rover V1 Test Suite", func() {
 										Client: &v1.OAuth2ClientCredentials{
 											ClientId:     "client-id",
 											ClientSecret: "client-secret",
-											Scopes:       []string{"scope1", "scope2"},
 										},
 									},
 								},

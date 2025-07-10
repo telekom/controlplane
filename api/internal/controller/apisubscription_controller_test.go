@@ -7,7 +7,6 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -465,25 +464,24 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 
 	Context("Gateway Features", Ordered, func() {
 		Context("oauth2 configuration to consumer route", func() {
-			var securityApiSubscription *apiapi.ApiSubscription
+			var apiSubscription *apiapi.ApiSubscription
 
 			BeforeEach(func() {
-				securityApiSubscription = NewApiSubscription(apiBasePath, otherZoneName, appName)
-				securityApiSubscription.ObjectMeta.Name = securityApiSubscription.Name + "-security"
+				apiSubscription = NewApiSubscription(apiBasePath, otherZoneName, appName)
+				apiSubscription.ObjectMeta.Name = apiSubscription.Name + "-security"
 			})
 
 			AfterEach(func() {
-				err := k8sClient.Delete(ctx, securityApiSubscription)
+				err := k8sClient.Delete(ctx, apiSubscription)
 				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("should apply those configs to ConsumeRoute", func() {
 				By("applying oauth2 security to the ApiSubscription")
-				securityApiSubscription.Spec.Security.M2M = &apiapi.SubscriberMachine2MachineAuthentication{
+				apiSubscription.Spec.Security.M2M = &apiapi.SubscriberMachine2MachineAuthentication{
 					Client: &apiapi.OAuth2ClientCredentials{
 						ClientId:     "custom-client-id",
 						ClientSecret: "******",
-						Scopes:       []string{"eIDP:allow"},
 					},
 					Scopes: []string{"scope1", "scope2"},
 				}
@@ -508,33 +506,26 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				ProgressApproval(apiSubscription, approvalapi.ApprovalStateGranted, approvalReq)
 				Expect(err).ToNot(HaveOccurred())
 
-				By("Checking if the resource is ready")
+				By("Checking if the resource has the expected state")
 				Eventually(func(g Gomega) {
 					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
 					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(apiSubscription.Status.Route).ToNot(BeNil())
+					g.Expect(apiSubscription.Status.ConsumeRoute).ToNot(BeNil())
 					By("Checking the conditions")
-					processingCondition := meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeReady)
-					g.Expect(processingCondition).ToNot(BeNil())
-					g.Expect(processingCondition.Status).To(Equal(metav1.ConditionTrue))
-					g.Expect(processingCondition.Reason).To(Equal("Provisioned"))
-				}, timeout, interval).Should(Succeed())
+					readyCondition := meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeReady)
+					g.Expect(readyCondition).ToNot(BeNil())
+					g.Expect(readyCondition.Status).To(Equal(metav1.ConditionTrue))
+					g.Expect(readyCondition.Reason).To(Equal("Provisioned"))
 
-				By("Checking if the resource has the expected state")
-				Eventually(func(g Gomega) {
 					consumeRoute := &gatewayapi.ConsumeRoute{}
-					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(securityApiSubscription), securityApiSubscription)
+					err = k8sClient.Get(ctx, apiSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
 					g.Expect(err).ToNot(HaveOccurred())
-					g.Expect(securityApiSubscription.Status.Route).ToNot(BeNil())
-					g.Expect(securityApiSubscription.Status.ConsumeRoute).ToNot(BeNil())
 
-					time.Sleep(2 * time.Second) // wait for the controller to process the changes
-					err = k8sClient.Get(ctx, securityApiSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
-					g.Expect(err).ToNot(HaveOccurred())
-					g.Expect(consumeRoute.Spec.Security.M2M.Client.Scopes).To(Equal([]string{"eIDP:allow"}))
 					g.Expect(consumeRoute.Spec.Security.M2M.Client.ClientId).To(Equal("custom-client-id"))
 					g.Expect(consumeRoute.Spec.Security.M2M.Client.ClientSecret).To(Equal("******"))
 					g.Expect(consumeRoute.Spec.Security.M2M.Scopes).To(Equal([]string{"scope1", "scope2"}))
-					g.Expect(consumeRoute.Spec.Route).To(Equal(*securityApiSubscription.Status.Route))
+					g.Expect(consumeRoute.Spec.Route).To(Equal(*apiSubscription.Status.Route))
 
 				}, timeout, interval).Should(Succeed())
 			})

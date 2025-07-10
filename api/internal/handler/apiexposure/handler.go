@@ -100,7 +100,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, obj *apiapi.Api
 
 	obj.SetCondition(condition.NewProcessingCondition("Provisioning", "Provisioning route"))
 	// create real route
-	route, err := util.CreateRealRoute(ctx, obj.Spec.Zone, apiExposure.Spec.Upstreams, obj.Spec.ApiBasePath, contextutil.EnvFromContextOrDie(ctx))
+	route, err := util.CreateRealRoute(ctx, obj.Spec.Zone, obj, contextutil.EnvFromContextOrDie(ctx))
 	if err != nil {
 		return errors.Wrapf(err, "unable to create real route for apiExposure: %s in namespace: %s", obj.Name, obj.Namespace)
 	}

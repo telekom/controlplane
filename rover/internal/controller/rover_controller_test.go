@@ -374,7 +374,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 
 		It("should successfully handle scopes and reconcile the resource", func() {
 
-			Spec := roverv1.RoverSpec{
+			spec := roverv1.RoverSpec{
 				Zone:         testEnvironment,
 				ClientSecret: "topsecret",
 				Subscriptions: []roverv1.Subscription{
@@ -392,7 +392,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				},
 			}
 
-			rover := createRover(resourceName, teamNamespace, testEnvironment, Spec)
+			rover := createRover(resourceName, teamNamespace, testEnvironment, spec)
 
 			By("creating the custom resource for the Kind Rover")
 
@@ -425,8 +425,9 @@ var _ = Describe("Rover Controller", Ordered, func() {
 
 		It("should successfully handle scopes and reconcile the resource", func() {
 
-			Spec := roverv1.RoverSpec{
-				Zone: testEnvironment,
+			spec := roverv1.RoverSpec{
+				Zone:         testEnvironment,
+				ClientSecret: "topsecret",
 				Subscriptions: []roverv1.Subscription{
 					{
 						Api: &roverv1.ApiSubscription{
@@ -436,8 +437,8 @@ var _ = Describe("Rover Controller", Ordered, func() {
 									Client: &roverv1.OAuth2ClientCredentials{
 										ClientId:     "clientID",
 										ClientSecret: "******",
-										Scopes:       []string{"eIDP:scope"},
 									},
+									Scopes: []string{"eIDP:scope"},
 								},
 							},
 						},
@@ -466,9 +467,9 @@ var _ = Describe("Rover Controller", Ordered, func() {
 										Client: &roverv1.OAuth2ClientCredentials{
 											ClientId:     "clientID",
 											ClientSecret: "******",
-											Scopes:       []string{"eIDP:scope"},
 										},
 									},
+									Scopes: []string{"eIDP:scope"},
 								},
 							},
 						},
@@ -476,7 +477,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				},
 			}
 
-			rover := createRover(resourceName, teamNamespace, testEnvironment, Spec)
+			rover := createRover(resourceName, teamNamespace, testEnvironment, spec)
 
 			By("creating the custom resource for the Kind Rover")
 
@@ -500,7 +501,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(apiSubscription.Spec.Security.M2M.Client.ClientId).To(Equal("clientID"))
 				g.Expect(apiSubscription.Spec.Security.M2M.Client.ClientSecret).To(Equal("******"))
-				g.Expect(apiSubscription.Spec.Security.M2M.Client.Scopes[0]).To(Equal("eIDP:scope"))
+				g.Expect(apiSubscription.Spec.Security.M2M.Scopes[0]).To(Equal("eIDP:scope"))
 
 				apiExposure := &apiapi.ApiExposure{}
 				err = k8sClient.Get(ctx, client.ObjectKey{
@@ -511,7 +512,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("clientID"))
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.Client.ClientSecret).To(Equal("******"))
-				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.Client.Scopes[0]).To(Equal("eIDP:scope"))
+				g.Expect(apiExposure.Spec.Security.M2M.Scopes[0]).To(Equal("eIDP:scope"))
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal("header"))
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://idp.example.com/token"))
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))

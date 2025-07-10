@@ -16,17 +16,21 @@ const LocalhostProxyUrl = "http://localhost:8080/proxy"
 type ConsumerId string
 
 type OauthCredentials struct {
+	// Client creds flow
 	ClientId     string `json:"clientId,omitempty"`
 	ClientSecret string `json:"clientSecret,omitempty"`
+	// Password flow
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	// shared props
 	Scopes       string `json:"scopes,omitempty"`
 	TokenRequest string `json:"tokenRequest,omitempty"`
 	GrantType    string `json:"grantType,omitempty"`
 }
 
 type BasicAuthCredentials struct {
-	Username  string `json:"username"`
-	Password  string `json:"password"`
-	GrantType string `json:"grantType,omitempty"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type LoadBalancing struct {

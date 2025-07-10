@@ -100,7 +100,4 @@ type OAuth2ClientCredentials struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	ClientSecret string `json:"clientSecret"`
-	// Scopes defines the OAuth2 scopes to request in the token
-	// +kubebuilder:validation:Optional
-	Scopes []string `json:"scopes,omitempty"`
 }
