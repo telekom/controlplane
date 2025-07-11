@@ -32,7 +32,7 @@ provider and gateway configuration:
     admin:
       clientSecret: someSecret
       url: https://my-gateway-admin.example.com/admin-api
-    url: https://my-gateway-admin.example.com/
+    url: https://my-gateway.example.com/
 ```
 
 
