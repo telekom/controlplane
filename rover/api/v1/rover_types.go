@@ -208,6 +208,7 @@ type ApiExposure struct {
 	// Upstreams defines the backend service endpoints for this API
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=12
 	Upstreams []Upstream `json:"upstreams"`
 	// Visibility defines the access scope for this API
 	// +kubebuilder:validation:Enum=World;Zone;Enterprise

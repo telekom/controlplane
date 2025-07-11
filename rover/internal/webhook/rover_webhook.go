@@ -161,7 +161,34 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, environment strin
 		}
 	}
 
+	// Check if all upstreams have a weight set or none
+	all, none := CheckWeightSetOnAllOrNone(exposure.Api.Upstreams)
+	if !all && !none {
+		return nil, apierrors.NewBadRequest("all upstreams must have a weight set or none must have a weight set")
+	}
+
 	return
+}
+
+func CheckWeightSetOnAllOrNone(upstreams []roverv1.Upstream) (allSet, noneSet bool) {
+	if len(upstreams) == 0 {
+		return true, true
+	}
+
+	allSet = true
+	noneSet = true
+
+	for _, upstream := range upstreams {
+		// In Go, with `omitempty` and a non-pointer `int`, if the field is omitted in JSON,
+		// it will be unmarshalled as `0`.
+		if upstream.Weight == 0 {
+			allSet = false
+		} else {
+			noneSet = false
+		}
+	}
+
+	return allSet, noneSet
 }
 
 // MustNotHaveDuplicates checks if there are no duplicates in the subscriptions and exposures
