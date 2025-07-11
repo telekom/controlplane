@@ -40,8 +40,15 @@ func (c *CachedBackend[T, S]) ParseSecretId(raw string) (T, error) {
 
 func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (res S, err error) {
 	log := logr.FromContextOrDiscard(ctx)
-	if item, ok := c.Cache.Get(id.String()); ok && !item.Expired() {
-		return item.Value(), nil
+	if item, ok := c.Cache.Get(id.String()); ok {
+		if !item.Expired() {
+			RecordCacheHit()
+			return item.Value(), nil
+		} else {
+			RecordCacheMiss("expired")
+		}
+	} else {
+		RecordCacheMiss("not_found")
 	}
 
 	log.Info("Cache miss", "id", id.String())
