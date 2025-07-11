@@ -32,3 +32,14 @@ spec:
             scopes:
               - read
               - write
+---
+apiVersion: rover.cp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: rover-echo-consumer
+spec:
+  zone: dataplane1
+  clientSecret: someSecret
+  subscriptions:
+    - api:
+        basePath: /phoenix/echo/v1
