@@ -51,8 +51,7 @@ spec:
             - :8443
             - --configfile
             - /etc/secret-manager/config.yaml
-          image: ghcr.io/telekom/controlplane/secret-manager:feat-secret-manager-optimization
-          # imagePullPolicy: IfNotPresent
+          image: ghcr.io/telekom/controlplane/secret-manager:stable
           env: []
           envFrom:
             - configMapRef:
