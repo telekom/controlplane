@@ -1,0 +1,13 @@
+ # Copyright 2025 Deutsche Telekom IT GmbH
+ #
+ # SPDX-License-Identifier: Apache-2.0
+
+requeue-after-on-error: 3s
+requeue-after: 20m
+default-namespace: test-namespace-from-file
+default-environment: test-env-from-file
+label-key-prefix: test.prefix.from.file
+finalizer-suffix: test-finalizer-from-file
+jitter-factor: 0.5
+max-backoff: 3m
+max-concurrent-reconciles: 5
