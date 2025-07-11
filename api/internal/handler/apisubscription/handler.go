@@ -6,6 +6,8 @@ package apisubscription
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -18,9 +20,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
@@ -111,16 +111,39 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	// Approval
 
-	requester := &approvalapi.Requester{ // TODO: get from somewhere (Team?)
-		Name:   "Ron",
-		Email:  "ron.gummich@telekom.de",
-		Reason: "I need access to this API!!",
+	requester := &approvalapi.Requester{
+		Name:   application.Spec.Team,
+		Email:  application.Spec.TeamEmail,
+		Reason: fmt.Sprintf("Team %s requested access to your API %s from zone %s", application.Spec.Team, api.Name, apiSub.Spec.Zone.Name),
 	}
 	properties := map[string]any{
 		"basePath": apiSub.Spec.ApiBasePath,
 	}
-	if apiSub.Spec.Security != nil {
-		properties["scopes"] = apiSub.Spec.Security.Oauth2Scopes
+
+	// Scopes
+	// check if scopes exist and scopes are subset from api
+	if apiSub.HasM2M() {
+		if apiSub.Spec.Security.M2M.Scopes != nil {
+
+			if len(api.Spec.Oauth2Scopes) == 0 {
+				log.Info("❌ Api does not define any Oauth2 scopes")
+				apiSub.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Api does not define any Oauth2 scopes"))
+				apiSub.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
+				return nil
+			} else {
+				scopesExist, invalidScopes := ScopesMustExist(ctx, api, apiSub)
+				if !scopesExist {
+					log.Info("❌ One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification")
+					var message = fmt.Sprintf("Available scopes: %s | Invalid scopes: %s", strings.Join(api.Spec.Oauth2Scopes, ", "), strings.Join(invalidScopes, ", "))
+					log.Info(message)
+					apiSub.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification"))
+					apiSub.SetCondition(condition.NewBlockedCondition("One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
+					return nil
+				}
+			}
+
+		}
+		properties["scopes"] = apiSub.Spec.Security.M2M.Scopes
 	}
 	err = requester.SetProperties(properties)
 	if err != nil {
@@ -171,49 +194,80 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	route := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      labelutil.NormalizeValue(apiSub.Spec.ApiBasePath),
+			Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath, contextutil.EnvFromContextOrDie(ctx)),
 			Namespace: subscriptionZone.Status.Namespace,
 		},
 	}
 
 	// ProxyRoute is only needed if subscriptionZone is different from exposureZone
-	if !apiSub.Spec.Zone.Equals(&apiExposure.Spec.Zone) {
-		route, err = util.CreateProxyRoute(ctx, apiSub.Spec.Zone, apiExposure.Spec.Zone, apiSub.Spec.ApiBasePath, contextutil.EnvFromContextOrDie(ctx))
+	sameZone := apiSub.Spec.Zone.Equals(&apiExposure.Spec.Zone)
+	// ProxyRoute is only needed if subscriptionZone is not used as failover zone
+	failoverProxyRouteExists := apiExposure.HasFailover() && apiExposure.Spec.Traffic.Failover.ContainsZone(apiSub.Spec.Zone)
+
+	if !sameZone && !failoverProxyRouteExists {
+		log.Info("Creating proxy route for ApiSubscription", "zone", apiSub.Spec.Zone.Name)
+		options := []util.CreateRouteOption{}
+		// Only add failover zone if the ApiExposure actually has a failover zone configured
+		if apiExposure.HasFailover() {
+			failoverZone := apiExposure.Spec.Traffic.Failover.Zones[0]
+			options = append(options, util.WithFailoverZone(failoverZone))
+		}
+
+		route, err = util.CreateProxyRoute(ctx, apiSub.Spec.Zone, apiExposure.Spec.Zone, apiSub.Spec.ApiBasePath,
+			contextutil.EnvFromContextOrDie(ctx),
+			options...,
+		)
 		if err != nil {
-			return errors.Wrapf(err, "failed to create proxy route")
+			return errors.Wrapf(err, "failed to create proxy route for zone %s", apiSub.Spec.Zone.Name)
 		}
 	}
-
 	apiSub.Status.Route = types.ObjectRefFromObject(route)
 
-	routeConsumer := &gatewayapi.ConsumeRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      apiSub.Name,
-			Namespace: apiSub.Namespace,
-		},
-	}
-
-	mutate := func() error {
-		if err := controllerutil.SetControllerReference(apiSub, routeConsumer, scopedClient.Scheme()); err != nil {
-			return errors.Wrapf(err, "failed to set owner-reference on %v", routeConsumer)
-		}
-		routeConsumer.Labels = apiSub.Labels
-
-		routeConsumer.Spec = gatewayapi.ConsumeRouteSpec{
-			Route:        *types.ObjectRefFromObject(route),
-			ConsumerName: application.Status.ClientId,
-		}
-
-		return nil
-	}
-
-	_, err = scopedClient.CreateOrUpdate(ctx, routeConsumer, mutate)
+	consumeRoute, err := util.CreateConsumeRoute(ctx, apiSub, apiSub.Spec.Zone, *types.ObjectRefFromObject(route), application.Status.ClientId)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to create consume route for Apisubscription:  %s in namespace: %s",
-			apiSub.Name, apiSub.Namespace)
+		return errors.Wrapf(err, "failed to create normal ConsumeRoute")
+	}
+	apiSub.Status.ConsumeRoute = types.ObjectRefFromObject(consumeRoute)
+
+	// Create the proxy-routes used for failover
+	apiSub.Status.FailoverRoutes = []types.ObjectRef{}
+	apiSub.Status.FailoverConsumeRoutes = []types.ObjectRef{}
+	if apiSub.HasFailover() {
+		for _, subFailoverZone := range apiSub.Spec.Traffic.Failover.Zones {
+			options := []util.CreateRouteOption{}
+			if apiExposure.HasFailover() {
+				if len(apiExposure.Spec.Traffic.Failover.Zones) != 1 {
+					return errors.New("Must exactly define one failover zone")
+				}
+				expFailoverZone := apiExposure.Spec.Traffic.Failover.Zones[0]
+				options = append(options, util.WithFailoverZone(expFailoverZone))
+			}
+
+			sameFailoverZoneAsExposure := apiExposure.HasFailover() && apiExposure.Spec.Traffic.Failover.ContainsZone(subFailoverZone)
+
+			if !sameFailoverZoneAsExposure {
+				log.Info("Creating proxy route for failover zone", "zone", subFailoverZone)
+				route, err = util.CreateProxyRoute(ctx, subFailoverZone, apiExposure.Spec.Zone, apiSub.Spec.ApiBasePath,
+					contextutil.EnvFromContextOrDie(ctx),
+					options...,
+				)
+				if err != nil {
+					return errors.Wrapf(err, "failed to create proxy route for zone %s in failover scenario", apiSub.Spec.Zone)
+				}
+				apiSub.Status.FailoverRoutes = append(apiSub.Status.FailoverRoutes, *types.ObjectRefFromObject(route))
+			} else {
+				log.Info("Same failover zone as exposure, no proxy route needed", "zone", subFailoverZone)
+			}
+
+			log.Info("Creating failover ConsumeRoute for zone", "zone", subFailoverZone)
+			consumeRoute, err = util.CreateConsumeRoute(ctx, apiSub, subFailoverZone, *types.ObjectRefFromObject(route), application.Status.ClientId)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create failover ConsumeRoute for zone %s", subFailoverZone.Name)
+			}
+			apiSub.Status.FailoverConsumeRoutes = append(apiSub.Status.FailoverConsumeRoutes, *types.ObjectRefFromObject(consumeRoute))
+		}
 	}
 
-	apiSub.Status.ConsumeRoute = types.ObjectRefFromObject(routeConsumer)
 	apiSub.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
 	apiSub.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
 
@@ -224,6 +278,13 @@ func (h *ApiSubscriptionHandler) Delete(ctx context.Context, apiSub *apiapi.ApiS
 	err := util.CleanupProxyRoute(ctx, apiSub.Status.Route)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete route")
+	}
+
+	for _, failoverRoute := range apiSub.Status.FailoverRoutes {
+		err := util.CleanupProxyRoute(ctx, &failoverRoute)
+		if err != nil {
+			return errors.Wrapf(err, "failed to delete failover route")
+		}
 	}
 	return nil
 }

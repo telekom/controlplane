@@ -20,7 +20,15 @@ type RemoteApiSubscriptionSpec struct {
 	// Requester is the entity that is requesting the subscription
 	Requester RemoteRequester `json:"requester"`
 	// Security is the security configuration for the subscription
-	Security *Security `json:"security,omitempty"`
+	Security *SubscriberSecurity `json:"security,omitempty"`
+}
+
+func (rmSub *RemoteApiSubscription) HasM2M() bool {
+	if rmSub.Spec.Security == nil {
+		return false
+	}
+
+	return rmSub.Spec.Security.M2M != nil
 }
 
 type RemoteRequester struct {

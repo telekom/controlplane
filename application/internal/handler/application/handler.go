@@ -12,6 +12,7 @@ import (
 	application "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -33,27 +34,57 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	c.AddKnownTypeToState(&identity.Client{})
 	c.AddKnownTypeToState(&gateway.Consumer{})
 
+	app.Status.Clients = []types.ObjectRef{}
+	app.Status.Consumers = []types.ObjectRef{}
+
 	zone, err := GetZone(ctx, c, app.Spec.Zone)
 	if err != nil {
 		log.Error(err, "❌ Failed to get Zone when creating application")
 		return err
 	}
+	failoverZones := make([]*admin.Zone, 0, len(app.Spec.FailoverZones))
+	if app.Spec.NeedsClient || app.Spec.NeedsConsumer {
+		for _, zoneRef := range app.Spec.FailoverZones {
+			zone, err := GetZone(ctx, c, zoneRef)
+			if err != nil {
+				log.Error(err, "❌ Failed to get Zone when creating application")
+				return err
+			}
+			failoverZones = append(failoverZones, zone)
+		}
+	}
 
 	// Create Client only if subscription present
 	if app.Spec.NeedsClient {
-		err = h.CreateIdentityClient(ctx, zone, app)
+		err = CreateIdentityClient(ctx, zone, app)
 		if err != nil {
 			log.Error(err, "❌ Failed to create Identity client when creating application")
 			return err
 		}
+		for _, failoverZone := range failoverZones {
+			err = CreateIdentityClient(ctx, failoverZone, app, WithFailover())
+			if err != nil {
+				log.Error(err, "❌ Failed to create Identity client for failover zone when creating application")
+				return err
+			}
+		}
+
 	} else {
 		app.Status.ClientSecret = "NOT_NEEDED"
 	}
 
 	if app.Spec.NeedsConsumer {
-		err = h.CreateGatewayConsumer(ctx, zone, app)
+		err = CreateGatewayConsumer(ctx, zone, app)
 		if err != nil {
 			return err
+		}
+
+		for _, failoverZone := range failoverZones {
+			err = CreateGatewayConsumer(ctx, failoverZone, app, WithFailover())
+			if err != nil {
+				log.Error(err, "❌ Failed to create Gateway consumer for failover zone when creating application")
+				return err
+			}
 		}
 	}
 
@@ -77,9 +108,32 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	return nil
 }
 
-func (h *ApplicationHandler) CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *application.Application) error {
+func (h *ApplicationHandler) Delete(ctx context.Context, app *application.Application) error {
+	// deleted using controller reference
+	return nil
+}
+
+type CreateOptions struct {
+	Failover bool
+}
+
+type CreateOption func(*CreateOptions)
+
+func WithFailover() CreateOption {
+	return func(opts *CreateOptions) {
+		opts.Failover = true
+	}
+}
+
+func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *application.Application, opts ...CreateOption) error {
+	options := &CreateOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	client := client.ClientFromContextOrDie(ctx)
-	clientName := MakeClientName(owner)
+	clientId := MakeClientName(owner)
+	resourceName := clientId + "--" + zone.Name
 	realmName := contextutil.EnvFromContextOrDie(ctx)
 
 	// get namespace from zoneStatus
@@ -93,19 +147,29 @@ func (h *ApplicationHandler) CreateIdentityClient(ctx context.Context, zone *adm
 
 	idpClient := &identity.Client{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      clientName,
+			Name:      resourceName,
 			Namespace: owner.GetNamespace(),
 		},
 	}
 
 	mutator := func() error {
+		idpClient.Labels = map[string]string{
+			config.BuildLabelKey("application"): owner.Name,
+			config.BuildLabelKey("team"):        owner.Spec.Team,
+			config.BuildLabelKey("realm"):       realmName,
+			config.BuildLabelKey("zone"):        zone.Name,
+		}
+		if options.Failover {
+			idpClient.Labels[config.BuildLabelKey("failover")] = "true"
+		}
+
 		err := ctrl.SetControllerReference(owner, idpClient, client.Scheme())
 		if err != nil {
-			return errors.Wrapf(err, "failed to set controller reference for identity client %s", clientName)
+			return errors.Wrapf(err, "failed to set controller reference for identity client %s", resourceName)
 		}
 
 		idpClient.Spec = identity.ClientSpec{
-			ClientId:     clientName,
+			ClientId:     clientId,
 			Realm:        realmRef,
 			ClientSecret: owner.Spec.Secret,
 		}
@@ -115,16 +179,23 @@ func (h *ApplicationHandler) CreateIdentityClient(ctx context.Context, zone *adm
 
 	_, err := client.CreateOrUpdate(ctx, idpClient, mutator)
 	if err != nil {
-		return errors.Wrapf(err, "❌ failed to create or update Identity Client %s", clientName)
+		return errors.Wrapf(err, "failed to create or update Identity Client %s", resourceName)
 	}
 
 	owner.Status.ClientSecret = idpClient.Spec.ClientSecret
+	owner.Status.Clients = append(owner.Status.Clients, *types.ObjectRefFromObject(idpClient))
 	return nil
 }
 
-func (h *ApplicationHandler) CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *application.Application) error {
+func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *application.Application, opts ...CreateOption) error {
+	options := &CreateOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	client := client.ClientFromContextOrDie(ctx)
-	consumerName := MakeClientName(owner)
+	clientId := MakeClientName(owner)
+	resourceName := clientId + "--" + zone.Name
 	realmName := contextutil.EnvFromContextOrDie(ctx)
 
 	realmRef := types.ObjectRef{
@@ -134,19 +205,29 @@ func (h *ApplicationHandler) CreateGatewayConsumer(ctx context.Context, zone *ad
 
 	consumer := &gateway.Consumer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      consumerName,
+			Name:      resourceName,
 			Namespace: owner.GetNamespace(),
 		},
 	}
 
 	mutator := func() error {
+		consumer.Labels = map[string]string{
+			config.BuildLabelKey("application"): owner.Name,
+			config.BuildLabelKey("team"):        owner.Spec.Team,
+			config.BuildLabelKey("realm"):       realmName,
+			config.BuildLabelKey("zone"):        zone.Name,
+		}
+		if options.Failover {
+			consumer.Labels[config.BuildLabelKey("failover")] = "true"
+		}
+
 		err := ctrl.SetControllerReference(owner, consumer, client.Scheme())
 		if err != nil {
-			return errors.Wrapf(err, "failed to set controller reference for gateway consumer %s", consumerName)
+			return errors.Wrapf(err, "failed to set controller reference for gateway consumer %s", resourceName)
 		}
 		consumer.Spec = gateway.ConsumerSpec{
 			Realm: realmRef,
-			Name:  consumerName,
+			Name:  clientId,
 		}
 
 		return nil
@@ -154,12 +235,10 @@ func (h *ApplicationHandler) CreateGatewayConsumer(ctx context.Context, zone *ad
 
 	_, err := client.CreateOrUpdate(ctx, consumer, mutator)
 	if err != nil {
-		return errors.Wrapf(err, "❌ failed to create or update Gateway Consumer %s", consumerName)
+		return errors.Wrapf(err, "failed to create or update Gateway Consumer %s", resourceName)
 	}
 
-	return nil
-}
+	owner.Status.Consumers = append(owner.Status.Consumers, *types.ObjectRefFromObject(consumer))
 
-func (h *ApplicationHandler) Delete(ctx context.Context, app *application.Application) error {
 	return nil
 }

@@ -6,6 +6,7 @@ package apisubscription
 
 import (
 	"context"
+	"slices"
 
 	"github.com/pkg/errors"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
@@ -49,6 +50,25 @@ func ApiMustExist(ctx context.Context, obj types.Object) (bool, *apiapi.Api, err
 	}
 
 	return true, &apiList.Items[0], nil
+}
+
+// Scopes must exist in the Api specification
+func ScopesMustExist(ctx context.Context, api *apiapi.Api, apiSub *apiapi.ApiSubscription) (bool, []string) {
+
+	var invalidScopes []string
+
+	// Check if scopes are a subset of the Api specification
+	for _, scope := range apiSub.Spec.Security.M2M.Scopes {
+		if !slices.Contains(api.Spec.Oauth2Scopes, scope) {
+			invalidScopes = append(invalidScopes, scope)
+		}
+	}
+
+	if len(invalidScopes) > 0 {
+		return false, invalidScopes
+	}
+
+	return true, nil
 }
 
 func ApiExposureMustExist(ctx context.Context, obj types.Object) (bool, *apiapi.ApiExposure, error) {

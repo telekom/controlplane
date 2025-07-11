@@ -11,6 +11,40 @@ SPDX-License-Identifier: CC0-1.0
 ## Description
 // TODO(user): An in-depth paragraph about your project and overview of use
 
+
+## Features
+
+* **Load Balancing**: As an API provider you can use the load balancing feature to have requests distributed between a list of upstreams.
+
+### Load Balancing
+
+As an API provider you can use the load balancing feature to have requests distributed between a list of upstreams. 
+This list is limited to a maximum of 12 upstreams. You can also define weights to configure the request distribution 
+ratio. This is optional and as a default, requests will be balanced equally between all upstreams.
+
+> An important thing to notice is that when you define load balancing, either all upstreams must contain a weight or 
+> no upstream must contain a weight. Mixing weights is not allowed and will result in an error when creating or 
+> updating the Rover resource.
+
+Example resource of kind Rover with load balancing:
+
+```yaml
+apiVersion: rover.cp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: provider-with-load-balancing
+spec:
+  zone: "aws"
+  exposures:
+    - api:
+        basePath: "/some/basepath/v1"
+        upstreams:
+          - url: "https://my-first-upstream.telekom.de"
+            weight: 1  # optional
+          - url: "https://my-second-upstream.telekom.de"
+            weight: 2 # optional
+```
+
 ## Getting Started
 
 ### Prerequisites

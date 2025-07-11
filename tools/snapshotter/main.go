@@ -52,8 +52,8 @@ var (
 	waitGroup               sync.WaitGroup
 	kubeCfg                 *rest.Config
 	secretsApi              secrets.SecretsApi
-	serviceAccountNamespace = "gateway-system"
-	serviceAccountName      = "gateway-controller-manager"
+	serviceAccountNamespace = "secret-manager-system"
+	serviceAccountName      = "secret-manager"
 
 	obfuscationTargets = []state.ObfuscationTarget{
 		{
@@ -79,6 +79,7 @@ var (
 
 	base64ContentPatterns = []string{
 		`jumper_config:([A-Za-z0-9=]+)`,
+		`routing_config:([A-Za-z0-9=]+)`,
 	}
 
 	diffDetected = false // used to indicate if a diff was detected in the route state
@@ -109,6 +110,7 @@ func setupSecretManager(ctx context.Context) error {
 	secretsApi = secrets.NewSecrets(
 		secrets.WithURL("https://localhost:8443/api"), // kubectl -n secret-manager-system port-forward svc/secret-manager 8443:443
 		secrets.WithAccessToken(accesstoken.NewStaticAccessToken(tokenRes.Status.Token)),
+		secrets.WithSkipTLSVerify(),
 	)
 
 	return nil

@@ -148,12 +148,47 @@ func (r *RoverValidator) ValidateSubscription(ctx context.Context, environment s
 
 func (r *RoverValidator) ValidateExposure(ctx context.Context, environment string, exposure roverv1.Exposure) (warnings admission.Warnings, err error) {
 	if exposure.Api != nil {
-		if strings.Contains(exposure.Api.Upstream, "localhost") {
-			return nil, apierrors.NewBadRequest("upstream must not contain localhost")
+		for _, upstream := range exposure.Api.Upstreams {
+			if upstream.URL == "" {
+				return nil, apierrors.NewBadRequest("upstream URL must not be empty")
+			}
+			if !strings.HasPrefix(upstream.URL, "http://") && !strings.HasPrefix(upstream.URL, "https://") {
+				return nil, apierrors.NewBadRequest("upstream URL must start with http:// or https://")
+			}
+			if strings.Contains(upstream.URL, "localhost") {
+				return nil, apierrors.NewBadRequest("upstream URL must not contain localhost")
+			}
 		}
 	}
 
+	// Check if all upstreams have a weight set or none
+	all, none := CheckWeightSetOnAllOrNone(exposure.Api.Upstreams)
+	if !all && !none {
+		return nil, apierrors.NewBadRequest("all upstreams must have a weight set or none must have a weight set")
+	}
+
 	return
+}
+
+func CheckWeightSetOnAllOrNone(upstreams []roverv1.Upstream) (allSet, noneSet bool) {
+	if len(upstreams) == 0 {
+		return true, true
+	}
+
+	allSet = true
+	noneSet = true
+
+	for _, upstream := range upstreams {
+		// In Go, with `omitempty` and a non-pointer `int`, if the field is omitted in JSON,
+		// it will be unmarshalled as `0`.
+		if upstream.Weight == 0 {
+			allSet = false
+		} else {
+			noneSet = false
+		}
+	}
+
+	return allSet, noneSet
 }
 
 // MustNotHaveDuplicates checks if there are no duplicates in the subscriptions and exposures

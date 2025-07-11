@@ -62,8 +62,9 @@ type secretManagerAPI struct {
 }
 
 type Options struct {
-	URL   string
-	Token accesstoken.AccessToken
+	URL           string
+	Token         accesstoken.AccessToken
+	SkipTLSVerify bool
 }
 
 func (o *Options) accessTokenReqEditor(ctx context.Context, req *http.Request) error {
@@ -106,6 +107,12 @@ func WithAccessToken(token accesstoken.AccessToken) Option {
 	}
 }
 
+func WithSkipTLSVerify() Option {
+	return func(o *Options) {
+		o.SkipTLSVerify = true
+	}
+}
+
 func NewOnboarding(opts ...Option) OnboardingApi {
 	return New(opts...)
 }
@@ -123,7 +130,7 @@ func New(opts ...Option) SecretManager {
 	if !strings.HasPrefix(options.URL, "https://") {
 		fmt.Println("⚠️\tWarning: Using HTTP instead of HTTPS. This is not secure.")
 	}
-	skipTlsVerify := os.Getenv("SKIP_TLS_VERIFY") == "true"
+	skipTlsVerify := os.Getenv("SKIP_TLS_VERIFY") == "true" || options.SkipTLSVerify
 	httpClient, err := gen.NewClientWithResponses(options.URL, gen.WithHTTPClient(util.NewHttpClientOrDie(skipTlsVerify, CaFilePath)), gen.WithRequestEditorFn(options.accessTokenReqEditor))
 	if err != nil {
 		panic(fmt.Sprintf("Failed to create client: %v", err))

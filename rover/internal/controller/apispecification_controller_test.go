@@ -31,6 +31,18 @@ info:
   x-vendor: true
 servers:
   - url: http://localhost:8080/eni/api/v1
+components:
+  securitySchemes:
+    oAuth2:
+      type: oauth2
+      description: dummy oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: >-
+            http://localhost:8080/proxy/auth/realms/default/protocol/openid-connect/token
+          scopes:
+            read: read dummy
+            write: write dummy
 `
 
 		ctx := context.Background()
@@ -91,6 +103,7 @@ servers:
 				g.Expect(api.Spec.Version).To(Equal("1.0.0"))
 				g.Expect(api.Spec.XVendor).To(Equal(true))
 				g.Expect(api.Spec.Category).To(Equal("other"))
+				g.Expect(api.Spec.Oauth2Scopes).To(ConsistOf("read", "write"))
 
 			}, timeout, interval).Should(Succeed())
 		})
