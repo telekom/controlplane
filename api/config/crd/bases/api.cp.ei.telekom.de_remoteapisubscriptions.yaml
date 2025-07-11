@@ -103,12 +103,6 @@ spec:
                               the client ID
                             minLength: 1
                             type: string
-                          scopes:
-                            description: Scopes defines the OAuth2 scopes to request
-                              in the token
-                            items:
-                              type: string
-                            type: array
                         required:
                         - clientId
                         - clientSecret

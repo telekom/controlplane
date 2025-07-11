@@ -46,8 +46,8 @@ var _ = Describe("FeatureBuilder externalIDP", Ordered, func() {
 			consumerRoute.Spec.Security.M2M.Client = &gatewayv1.OAuth2ClientCredentials{
 				ClientId:     "test-user",
 				ClientSecret: "******",
-				Scopes:       []string{"idp:group"},
 			}
+			consumerRoute.Spec.Security.M2M.Scopes = []string{"idp:group"}
 			builder.AddAllowedConsumers(consumerRoute)
 
 			err := builder.Build(ctx)
@@ -69,7 +69,7 @@ var _ = Describe("FeatureBuilder externalIDP", Ordered, func() {
 			By("checking the jumper plugin")
 			jumperConfig := builder.JumperConfig()
 			Expect(jumperConfig.OAuth).To(HaveKeyWithValue(plugin.ConsumerId("default"), plugin.OauthCredentials{
-				Scopes:       "idp:user",
+				Scopes:       "admin:application",
 				ClientId:     "gateway",
 				ClientSecret: "topsecret",
 				GrantType:    "client_credentials",
@@ -102,6 +102,7 @@ var _ = Describe("FeatureBuilder externalIDP", Ordered, func() {
 				Username: "test-user",
 				Password: "******",
 			}
+			consumerRoute.Spec.Security.M2M.Scopes = []string{"idp:group"}
 			builder.AddAllowedConsumers(consumerRoute)
 
 			err := builder.Build(ctx)
@@ -122,16 +123,18 @@ var _ = Describe("FeatureBuilder externalIDP", Ordered, func() {
 
 			By("checking the jumper plugin")
 			jumperConfig := builder.JumperConfig()
-			Expect(jumperConfig.BasicAuth).To(HaveKeyWithValue(plugin.ConsumerId("default"), plugin.BasicAuthCredentials{
+			Expect(jumperConfig.OAuth).To(HaveKeyWithValue(plugin.ConsumerId("default"), plugin.OauthCredentials{
 				Username:  "user",
 				Password:  "*** ***",
 				GrantType: "password",
+				Scopes:    "admin:application",
 			}))
 
-			Expect(jumperConfig.BasicAuth).To(HaveKeyWithValue(plugin.ConsumerId("test-consumer-name"), plugin.BasicAuthCredentials{
+			Expect(jumperConfig.OAuth).To(HaveKeyWithValue(plugin.ConsumerId("test-consumer-name"), plugin.OauthCredentials{
 				Username:  "test-user",
 				Password:  "******",
 				GrantType: "password",
+				Scopes:    "idp:group",
 			}))
 
 		})
@@ -159,7 +162,6 @@ func externalIDPProviderRouteOAuth() *gatewayv1.Route {
 				Client: &gatewayv1.OAuth2ClientCredentials{
 					ClientId:     "gateway",
 					ClientSecret: "topsecret",
-					Scopes:       []string{"idp:user"},
 				},
 			},
 			Scopes: []string{"admin:application"},

@@ -20,7 +20,7 @@ type CustomScopesFeature struct {
 }
 
 var InstanceCustomScopesFeature = &CustomScopesFeature{
-	priority: InstanceLastMileSecurityFeature.priority - 1,
+	priority: 10,
 }
 
 func (f *CustomScopesFeature) Name() gatewayv1.FeatureType {
@@ -32,7 +32,11 @@ func (f *CustomScopesFeature) Priority() int {
 }
 
 func (f *CustomScopesFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
-	return !builder.GetRoute().IsProxy() && !builder.GetRoute().Spec.PassThrough
+	notPassThrough := !builder.GetRoute().Spec.PassThrough
+	isPrimaryRoute := !builder.GetRoute().IsProxy()
+	isFailoverSecondary := builder.GetRoute().IsFailoverSecondary()
+
+	return notPassThrough && (isPrimaryRoute || isFailoverSecondary)
 }
 
 func (f *CustomScopesFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {

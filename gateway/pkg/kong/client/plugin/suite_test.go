@@ -90,7 +90,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should correctly base64-decode", func() {
-			actual, err := FromBase64(encodedJumperConfig)
+			actual, err := FromBase64[JumperConfig](encodedJumperConfig)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(Equal(expected))
 		})

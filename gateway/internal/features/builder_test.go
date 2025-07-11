@@ -161,7 +161,7 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 
 			Expect(rtPlugin.Config.Append.Headers.Get("remote_api_url")).To(Equal("http://upstream.url:8080/api/v1"))
 			Expect(rtPlugin.Config.Append.Headers.Get("api_base_path")).To(Equal("/api/v1"))
-			Expect(rtPlugin.Config.Append.Headers.Get("jumper_config")).To(Equal("e30="))
+			Expect(b.JumperConfig()).To(Equal(plugin.NewJumperConfig())) // empty jumper config
 
 			Expect(rtPlugin.Config.Add.Headers.Get("environment")).To(Equal("test"))
 			Expect(rtPlugin.Config.Add.Headers.Get("realm")).To(Equal("test-realm"))
@@ -208,7 +208,6 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 
 			By("checking the request-transformer plugin config")
 			Expect(rtPlugin.Config.Append.Headers.Get("remote_api_url")).To(Equal("http://upstream.url:8080/api/v1"))
-			Expect(rtPlugin.Config.Append.Headers.Get("jumper_config")).To(Equal("e30="))
 
 			Expect(rtPlugin.Config.Append.Headers.Get("issuer")).To(Equal("https://upstream.issuer.url"))
 			Expect(rtPlugin.Config.Append.Headers.Get("client_id")).To(Equal("gateway"))

@@ -57,12 +57,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 			Visibility:  apiapi.Visibility(exp.Visibility.String()),
 			Approval:    apiapi.ApprovalStrategy(exp.Approval.Strategy),
 			Zone:        zoneRef,
-			Upstreams: []apiapi.Upstream{
-				{
-					Url:    exp.Upstreams[0].URL,
-					Weight: 100,
-				},
-			},
+			Upstreams:   make([]apiapi.Upstream, len(exp.Upstreams)),
 		}
 
 		if exp.Security != nil {
@@ -77,9 +72,26 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 								Basic:         toApiBasic(exp.Security.M2M.ExternalIDP.Basic),
 								Client:        toApiClient(exp.Security.M2M.ExternalIDP.Client),
 							},
+							Scopes: exp.Security.M2M.Scopes,
 						},
 					}
 				}
+			}
+		}
+
+		failoverZones, hasFailover := getFailoverZones(environment, exp.Traffic.Failover)
+		if hasFailover {
+			apiExposure.Spec.Traffic = apiapi.Traffic{
+				Failover: &apiapi.Failover{
+					Zones: failoverZones,
+				},
+			}
+		}
+
+		for i, upstream := range exp.Upstreams {
+			apiExposure.Spec.Upstreams[i] = apiapi.Upstream{
+				Url:    upstream.URL,
+				Weight: upstream.Weight,
 			}
 		}
 

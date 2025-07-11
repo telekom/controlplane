@@ -49,6 +49,10 @@ spec:
           spec:
             description: Spec defines the desired state of the Rover resource
             properties:
+              clientSecret:
+                description: ClientSecret is the secret used for client authentication
+                minLength: 1
+                type: string
               exposures:
                 description: Exposures is a list of APIs and Events that this Rover
                   exposes to consumers
@@ -161,13 +165,6 @@ spec:
                                           description: ClientSecret is the secret
                                             associated with the client ID
                                           type: string
-                                        scopes:
-                                          description: Scopes defines the OAuth2 scopes
-                                            to request in the token
-                                          items:
-                                            type: string
-                                          maxItems: 10
-                                          type: array
                                       type: object
                                     grantType:
                                       description: GrantType defines the OAuth2 grant
@@ -229,7 +226,6 @@ spec:
                                   items:
                                     type: string
                                   maxItems: 10
-                                  minItems: 1
                                   type: array
                               type: object
                             loadBalancing:
@@ -237,6 +233,7 @@ spec:
                                 among multiple upstream servers
                               properties:
                                 strategy:
+                                  default: RoundRobin
                                   description: Strategy defines the algorithm used
                                     for distributing traffic (RoundRobin, LeastConnections)
                                   enum:
@@ -464,13 +461,6 @@ spec:
                                       description: ClientSecret is the secret associated
                                         with the client ID
                                       type: string
-                                    scopes:
-                                      description: Scopes defines the OAuth2 scopes
-                                        to request in the token
-                                      items:
-                                        type: string
-                                      maxItems: 10
-                                      type: array
                                   type: object
                                 scopes:
                                   description: Scopes defines additional OAuth2 scopes
@@ -504,7 +494,6 @@ spec:
                                   items:
                                     type: string
                                   maxItems: 10
-                                  minItems: 1
                                   type: array
                               type: object
                             rateLimit:
@@ -587,6 +576,7 @@ spec:
                 minLength: 1
                 type: string
             required:
+            - clientSecret
             - zone
             type: object
           status:

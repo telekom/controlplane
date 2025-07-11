@@ -37,7 +37,6 @@ func NewMockRoute() *gatewayv1.Route {
 			PassThrough: false,
 			Upstreams: []gatewayv1.Upstream{
 				{
-					Url: "http://upstream.url:8080/api/v1",
 					// Default is used for Weight
 					Scheme: "http",
 					Host:   "upstream.url",

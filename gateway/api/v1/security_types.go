@@ -12,6 +12,17 @@ type Security struct {
 	M2M *Machine2MachineAuthentication `json:"m2m,omitempty"`
 }
 
+func (s *Security) HasM2M() bool {
+	return s.M2M != nil
+}
+
+func (s *Security) HasM2MExternalIDP() bool {
+	if !s.HasM2M() {
+		return false
+	}
+	return s.M2M.ExternalIDP != nil
+}
+
 // Security defines the security configuration for the Rover
 // Security is optional, but if provided, exactly one of m2m or h2m must be set
 type ConsumerSecurity struct {
@@ -28,9 +39,6 @@ type Machine2MachineAuthentication struct {
 	// ExternalIDP defines external identity provider configuration
 	// +kubebuilder:validation:Optional
 	ExternalIDP *ExternalIdentityProvider `json:"externalIDP,omitempty"`
-
-	// Client defines client credentials for OAuth2 for LMS from the **internal** IDP
-	Client *OAuth2ClientCredentials `json:"client,omitempty"`
 
 	// Basic defines basic authentication configuration
 	// +kubebuilder:validation:Optional
@@ -103,7 +111,4 @@ type OAuth2ClientCredentials struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	ClientSecret string `json:"clientSecret"`
-	// Scopes defines the OAuth2 scopes to request in the token
-	// +kubebuilder:validation:Optional
-	Scopes []string `json:"scopes,omitempty"`
 }
