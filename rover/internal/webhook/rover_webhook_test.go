@@ -84,27 +84,6 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 			expectedErrorMessage := "environment not found"
 			assertValidationFailedWith(warnings, err, errors.IsBadRequest, expectedErrorMessage)
 
-			By("Creating a Rover with more than 12 upstreams")
-			roverObj = NewRover(*testZone)
-			roverObj.Spec.Exposures[0].Api.Upstreams = []roverv1.Upstream{
-				{URL: "https://upstream1.example.com"},
-				{URL: "https://upstream2.example.com"},
-				{URL: "https://upstream3.example.com"},
-				{URL: "https://upstream4.example.com"},
-				{URL: "https://upstream5.example.com"},
-				{URL: "https://upstream6.example.com"},
-				{URL: "https://upstream7.example.com"},
-				{URL: "https://upstream8.example.com"},
-				{URL: "https://upstream9.example.com"},
-				{URL: "https://upstream10.example.com"},
-				{URL: "https://upstream11.example.com"},
-				{URL: "https://upstream12.example.com"},
-				{URL: "https://upstream13.example.com"},
-			}
-			warnings, err = validator.ValidateCreate(ctx, roverObj)
-			expectedErrorMessage = "maximum of 12 upstreams allowed"
-			assertValidationFailedWith(warnings, err, errors.IsBadRequest, expectedErrorMessage)
-
 			By("Creating a Rover multiple upstreams and only one contains weight")
 			roverObj = NewRover(*testZone)
 			roverObj.Spec.Exposures[0].Api.Upstreams = []roverv1.Upstream{

@@ -370,6 +370,7 @@ spec:
                             required:
                             - url
                             type: object
+                          maxItems: 12
                           minItems: 1
                           type: array
                         visibility:

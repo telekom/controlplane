@@ -161,11 +161,6 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, environment strin
 		}
 	}
 
-	// Must have a maximum of 12 upstreams
-	if len(exposure.Api.Upstreams) > 12 {
-		return nil, apierrors.NewBadRequest("maximum of 12 upstreams allowed")
-	}
-
 	// Check if all upstreams have a weight set or none
 	all, none := CheckWeightSetOnAllOrNone(exposure.Api.Upstreams)
 	if !all && !none {
