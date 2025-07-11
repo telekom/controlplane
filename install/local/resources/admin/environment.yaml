@@ -5,10 +5,14 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: default
+  name: controlplane
 ---
 apiVersion: admin.cp.ei.telekom.de/v1
 kind: Environment
 metadata:
-  name: default
+  labels:
+    cp.ei.telekom.de/environment: controlplane
+  name: controlplane
+  namespace: controlplane
 spec:
+---
