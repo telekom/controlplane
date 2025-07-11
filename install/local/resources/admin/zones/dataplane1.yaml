@@ -5,22 +5,27 @@
 apiVersion: admin.cp.ei.telekom.de/v1
 kind: Zone
 metadata:
-  name: zone-a
+  labels:
+    app.kubernetes.io/name: dataplane1
+    app.kubernetes.io/managed-by: kustomize
+    cp.ei.telekom.de/environment: controlplane
+  name: dataplane1
+  namespace: controlplane
 spec:
-  teamApis:
-    apis: []
   identityProvider:
     admin:
       clientId: admin-cli
       userName: admin
       password: somePassword
-    url: https://my-idp.example.com
+    url: https://my-idp.example.com/
   gateway:
     admin:
       clientSecret: someSecret
       url: https://my-gateway-admin.example.com/admin-api
-    url: https://my-gateway.example.com
+    url: https://my-gateway-admin.example.com/
   redis:
-    host: foo
-    password: topsecret
+    host: my-redis-host
     port: 6379
+    password: somePassword
+  teamApis:
+    apis: []

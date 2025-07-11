@@ -5,17 +5,34 @@
 apiVersion: rover.cp.ei.telekom.de/v1
 kind: ApiSpecification
 metadata:
-  name: eni-foo-v2
+  name: phoenix-echo-v1
 spec:
   specification: |
     openapi: "3.0.0"
     info:
       version: "1.0.0"
-      title: "Test API"
+      title: "Echo API"
       x-category: "test"
     servers:
-      - url: "https://example.com/eni/foo/v2"
+      - url: "https://example.com/phoenix/echo/v1"
     security:
       - oauth2:
           - read
           - write
+    components:
+      securitySchemes:
+        filestore_auth:
+          type: oauth2
+          flows:
+            implicit:
+              authorizationUrl: 'https://scope.swagger.io/oauth/authorize'
+              scopes:
+                'write:file': modify file in your account
+                'read:file': read your file
+            clientCredentials:
+              tokenUrl: >-
+                http://localhost:8080/proxy/auth/realms/default/protocol/openid-connect/token
+              scopes:
+                read: read all files
+                write: write to all files
+                admin: write to all files
