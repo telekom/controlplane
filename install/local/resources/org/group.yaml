@@ -5,7 +5,7 @@
 apiVersion: organization.cp.ei.telekom.de/v1
 kind: Group
 metadata:
-  name: group-sample
+  name: phoenix
 spec:
-  displayName: group-sample
-  description: "This is a sample group"
+  displayName: phoenix
+  description: "This is a sample group called phoenix"
