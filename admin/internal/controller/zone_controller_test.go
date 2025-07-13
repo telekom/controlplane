@@ -66,6 +66,7 @@ func NewZone(name string, namespace string) *adminv1.Zone {
 					Url:  "https://test-team-api-host.de/test-team-api-v1",
 				}},
 			},
+			Visibility: adminv1.ZoneVisibilityWorld,
 		},
 	}
 }

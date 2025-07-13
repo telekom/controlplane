@@ -118,6 +118,11 @@ spec:
                 - apis
                 type: object
               visibility:
+                description: Visibility controls what subscriptions are allowed from
+                  and to this zone. It's also relevant for features like failover
+                enum:
+                - World
+                - Enterprise
                 type: string
             required:
             - gateway

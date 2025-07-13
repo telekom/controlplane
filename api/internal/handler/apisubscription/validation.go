@@ -103,7 +103,7 @@ func ApiVisibilityMustBeValid(ctx context.Context, apiExposure *apiapi.ApiExposu
 	err := scopedClient.Get(ctx, apiSubscription.Spec.Zone.K8s(), subZone)
 	if err != nil {
 		log.Error(err, "unable to get zone", "name", apiSubscription.Spec.Zone.K8s())
-		return errors.Wrapf(err, "Zone '"+apiSubscription.Spec.Zone.GetName()+"' not found")
+		return errors.Wrapf(err, "Zone '%s' not found", apiSubscription.Spec.Zone.GetName())
 	}
 
 	// only same zone
