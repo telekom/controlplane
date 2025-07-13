@@ -75,6 +75,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					Path: "/teamAPI",
 					Url:  "example.org",
 				}}},
+				Visibility: adminv1.ZoneVisibilityWorld,
 			},
 		}
 
