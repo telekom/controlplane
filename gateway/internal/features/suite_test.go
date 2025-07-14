@@ -52,6 +52,12 @@ func NewMockRoute() *gatewayv1.Route {
 					IssuerUrl: "issuer.url",
 				},
 			},
+
+			Security: &gatewayv1.Security{
+				M2M: &gatewayv1.Machine2MachineAuthentication{
+					Scopes: []string{"scope1"},
+				},
+			},
 		},
 	}
 }

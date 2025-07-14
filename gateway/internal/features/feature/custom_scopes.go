@@ -47,6 +47,17 @@ func (f *CustomScopesFeature) Apply(ctx context.Context, builder features.Featur
 		return nil
 	}
 
+	// Default scopes
+	// If the route has a security configuration with default M2M scopes, we add them to the JumperConfig
+	if builder.GetRoute().Spec.Security != nil && builder.GetRoute().Spec.Security.M2M != nil {
+		if len(builder.GetRoute().Spec.Security.M2M.Scopes) > 0 {
+			// Join scopes with a space, as Kong expects a single string with space-separated scopes
+			jumperConfig.OAuth[plugin.ConsumerId(DefaultProviderKey)] = plugin.OauthCredentials{
+				Scopes: strings.Join(builder.GetRoute().Spec.Security.M2M.Scopes, " "),
+			}
+		}
+	}
+
 	for _, consumer := range builder.GetAllowedConsumers() {
 
 		if consumer.Spec.Security != nil && consumer.Spec.Security.M2M != nil {

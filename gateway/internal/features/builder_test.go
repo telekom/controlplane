@@ -235,6 +235,7 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 
 			By("Checking that jumperConfig is filled with the scopes")
 			Expect(b.JumperConfig).ToNot(BeNil())
+			Expect(b.JumperConfig().OAuth[plugin.ConsumerId("default")].Scopes).To(Equal("scope1"))
 			Expect(b.JumperConfig().OAuth[plugin.ConsumerId(consumeRoute.Spec.ConsumerName)].Scopes).To(Equal("scope1 scope2"))
 		})
 

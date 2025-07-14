@@ -6,7 +6,10 @@ package apiexposure
 
 import (
 	"context"
+	"fmt"
+	"slices"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
@@ -95,6 +98,32 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, obj *apiapi.Api
 		return nil
 	}
 
+	// Scopes
+	// check if scopes exist and scopes are subset from api
+	if obj.HasM2M() {
+		if obj.Spec.Security.M2M.Scopes != nil {
+
+			if len(api.Spec.Oauth2Scopes) == 0 {
+				log.Info("❌ Api does not define any Oauth2 scopes")
+				obj.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Api does not define any Oauth2 scopes"))
+				obj.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiExposure will be automatically processed, if the API will be updated with scopes"))
+				return nil
+			} else {
+				scopesExist, invalidScopes := ScopesMustExist(ctx, &api, obj)
+				if !scopesExist {
+					log.Info("❌ One or more scopes which are defined in ApiExposure are not defined in the ApiSpecification")
+					var message = fmt.Sprintf("Available scopes: %s | Invalid scopes: %s", strings.Join(api.Spec.Oauth2Scopes, ", "), strings.Join(invalidScopes, ", "))
+					log.Info(message)
+					obj.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes which are defined in ApiExposure are not defined in the ApiSpecification"))
+					obj.SetCondition(condition.NewBlockedCondition("One or more scopes which are defined in ApiExposure are not defined in the ApiSpecification. ApiExposure will be automatically processed, if the API will be updated with scopes"))
+					return nil
+				}
+			}
+
+		}
+
+	}
+
 	// TODO: further validations (currently contained in the old code)
 	// - validate if team category allows exposure of api category
 
@@ -167,4 +196,23 @@ func (h *ApiExposureHandler) Delete(ctx context.Context, obj *apiapi.ApiExposure
 	}
 
 	return nil
+}
+
+// Scopes must exist in the Api specification
+func ScopesMustExist(ctx context.Context, api *apiapi.Api, apiExp *apiapi.ApiExposure) (bool, []string) {
+
+	var invalidScopes []string
+
+	// Check if scopes are a subset of the Api specification
+	for _, scope := range apiExp.Spec.Security.M2M.Scopes {
+		if !slices.Contains(api.Spec.Oauth2Scopes, scope) {
+			invalidScopes = append(invalidScopes, scope)
+		}
+	}
+
+	if len(invalidScopes) > 0 {
+		return false, invalidScopes
+	}
+
+	return true, nil
 }

@@ -54,6 +54,14 @@ func (a *ApiExposure) HasFailover() bool {
 	return a.Spec.Traffic.Failover != nil
 }
 
+func (a *ApiExposure) HasM2M() bool {
+	if a.Spec.Security == nil {
+		return false
+	}
+
+	return a.Spec.Security.M2M != nil
+}
+
 type Upstream struct {
 	Url    string `json:"url"`
 	Weight int    `json:"weight,omitempty"`

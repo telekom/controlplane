@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
+	apiapi "github.com/telekom/controlplane/api/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -77,6 +78,11 @@ func NewApiExposure(apiBasePath, zoneName string) *apiv1.ApiExposure {
 				{
 					Url:    "http://my-provider-api:8080/api/v1",
 					Weight: 100,
+				},
+			},
+			Security: &apiapi.Security{
+				M2M: &apiapi.Machine2MachineAuthentication{
+					Scopes: []string{"scope1"},
 				},
 			},
 			Visibility: apiv1.VisibilityWorld,
