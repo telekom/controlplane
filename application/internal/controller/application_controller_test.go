@@ -58,7 +58,9 @@ var _ = Describe("Application Controller", func() {
 							config.EnvironmentLabelKey: testEnvironment,
 						},
 					},
-					Spec: adminv1.ZoneSpec{},
+					Spec: adminv1.ZoneSpec{
+						Visibility: adminv1.ZoneVisibilityWorld,
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
