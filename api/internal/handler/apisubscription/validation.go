@@ -87,7 +87,7 @@ func ApiExposureMustExist(ctx context.Context, obj types.Object) (bool, *apiapi.
 	return true, &apiExposureList.Items[0], nil
 }
 
-func ApiVisibilityMustBeValid(ctx context.Context, apiExposure *apiapi.ApiExposure, apiSubscription *apiapi.ApiSubscription) error {
+func ApiVisibilityMustBeValid(ctx context.Context, apiExposure *apiapi.ApiExposure, apiSubscription *apiapi.ApiSubscription) (bool, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 	log := log.FromContext(ctx)
 
@@ -95,7 +95,7 @@ func ApiVisibilityMustBeValid(ctx context.Context, apiExposure *apiapi.ApiExposu
 
 	// any subscription is valid for a WORLD exposure
 	if exposureVisibility == apiapi.VisibilityWorld {
-		return nil
+		return true, nil
 	}
 
 	// get the subscription zone
@@ -103,21 +103,23 @@ func ApiVisibilityMustBeValid(ctx context.Context, apiExposure *apiapi.ApiExposu
 	err := scopedClient.Get(ctx, apiSubscription.Spec.Zone.K8s(), subZone)
 	if err != nil {
 		log.Error(err, "unable to get zone", "name", apiSubscription.Spec.Zone.K8s())
-		return errors.Wrapf(err, "Zone '%s' not found", apiSubscription.Spec.Zone.GetName())
+		return false, errors.Wrapf(err, "Zone '%s' not found", apiSubscription.Spec.Zone.GetName())
 	}
 
 	// only same zone
 	if exposureVisibility == apiapi.VisibilityZone {
 		if apiExposure.Spec.Zone.GetName() != subZone.GetName() {
-			return errors.New("Exposure visibility is ZONE and it doesnt match the subscription zone '" + subZone.GetName() + "'")
+			log.Info(fmt.Sprintf("Exposure visibility is ZONE and it doesnt match the subscription zone '%s'", subZone.GetName()))
+			return false, nil
 		}
 	}
 
 	// only enterprise zones
 	if exposureVisibility == apiapi.VisibilityEnterprise {
 		if subZone.Spec.Visibility != adminv1.ZoneVisibilityEnterprise {
-			return errors.New(fmt.Sprintf("Api is exposed with visibility '%s', but subscriptions is from zone with visibility '%s'", apiapi.VisibilityEnterprise, subZone.Spec.Visibility))
+			log.Info(fmt.Sprintf("Api is exposed with visibility '%s', but subscriptions is from zone with visibility '%s'", apiapi.VisibilityEnterprise, subZone.Spec.Visibility))
+			return false, nil
 		}
 	}
-	return nil
+	return true, nil
 }

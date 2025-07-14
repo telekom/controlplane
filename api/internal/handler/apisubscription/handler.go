@@ -6,6 +6,7 @@ package apisubscription
 
 import (
 	"context"
+	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -82,9 +83,14 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	}
 
 	// - validate visibility of apiExposure (WORLD, ENTERPRISE, ZONE) depending on subscription zone
-	err = ApiVisibilityMustBeValid(ctx, apiExposure, apiSub)
+	valid, err := ApiVisibilityMustBeValid(ctx, apiExposure, apiSub)
 	if err != nil {
-		return errors.Wrapf(err, "Subscriptions from zone '%s' are not allowed due to exposure visiblity constraints", apiSub.Spec.Zone.GetName())
+		return err
+	}
+	if !valid {
+		apiSub.SetCondition(condition.NewNotReadyCondition("VisibilityConstraintViolation", "ApiExposure and ApiSubscription visibility combination is not allowed"))
+		apiSub.SetCondition(condition.NewBlockedCondition(
+			fmt.Sprintf("ApiSubscription is blocked. Subscriptions from zone '%s' are not allowed due to exposure visiblity constraints", apiSub.Spec.Zone.GetName())))
 	}
 
 	// TODO: further validations (currently contained in the old code)
