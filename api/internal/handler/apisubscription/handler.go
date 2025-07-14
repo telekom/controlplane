@@ -91,6 +91,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		apiSub.SetCondition(condition.NewNotReadyCondition("VisibilityConstraintViolation", "ApiExposure and ApiSubscription visibility combination is not allowed"))
 		apiSub.SetCondition(condition.NewBlockedCondition(
 			fmt.Sprintf("ApiSubscription is blocked. Subscriptions from zone '%s' are not allowed due to exposure visiblity constraints", apiSub.Spec.Zone.GetName())))
+		return nil
 	}
 
 	// TODO: further validations (currently contained in the old code)
