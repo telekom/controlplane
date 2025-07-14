@@ -26,9 +26,18 @@ const (
 	ClientSecret   = "test-secret"
 )
 
+// NewKeycloakClientMock creates a new KeycloakClient mock without using t.Cleanup to avoid DeferCleanup conflicts with Ginkgo
 func NewKeycloakClientMock(testing ginkgo.FullGinkgoTInterface) *mocks.MockKeycloakClient {
-	var mockKeycloakClient = mocks.NewMockKeycloakClient(testing)
-	return mockKeycloakClient
+	// Create mock directly without using t.Cleanup in the mock constructor
+	mock := &mocks.MockKeycloakClient{}
+	mock.Test(testing)
+
+	// Register manual cleanup using Ginkgo's DeferCleanup
+	ginkgo.DeferCleanup(func() {
+		mock.AssertExpectations(testing)
+	})
+
+	return mock
 }
 
 func ConfigureKeycloakClientMock(mockedClient *mocks.MockKeycloakClient) {
