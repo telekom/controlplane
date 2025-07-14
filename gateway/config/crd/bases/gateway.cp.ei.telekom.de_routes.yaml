@@ -86,6 +86,11 @@ spec:
               security:
                 description: Security is the security configuration for the route
                 properties:
+                  disableAccessControl:
+                    default: false
+                    description: DisableAccessControl disable the ACL mechanism for
+                      this route
+                    type: boolean
                   m2m:
                     description: M2M defines machine-to-machine authentication configuration
                     properties:
@@ -196,6 +201,11 @@ spec:
                           Security defines the security configuration for the gateway
                           Security is optional, but if provided, exactly one of m2m or h2m must be set
                         properties:
+                          disableAccessControl:
+                            default: false
+                            description: DisableAccessControl disable the ACL mechanism
+                              for this route
+                            type: boolean
                           m2m:
                             description: M2M defines machine-to-machine authentication
                               configuration

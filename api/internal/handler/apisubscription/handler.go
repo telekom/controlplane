@@ -126,18 +126,18 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		if apiSub.Spec.Security.M2M.Scopes != nil {
 
 			if len(api.Spec.Oauth2Scopes) == 0 {
-				log.Info("❌ Api does not define any Oauth2 scopes")
 				apiSub.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Api does not define any Oauth2 scopes"))
 				apiSub.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
 				return nil
 			} else {
-				scopesExist, invalidScopes := ScopesMustExist(ctx, api, apiSub)
+				scopesExist, invalidScopes := util.IsSubsetOfScopes(api.Spec.Oauth2Scopes, apiSub.Spec.Security.M2M.Scopes)
 				if !scopesExist {
-					log.Info("❌ One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification")
-					var message = fmt.Sprintf("Available scopes: %s | Invalid scopes: %s", strings.Join(api.Spec.Oauth2Scopes, ", "), strings.Join(invalidScopes, ", "))
-					log.Info(message)
+					var message = fmt.Sprintf("Some defined scopes are not available. Defined scopes: \"%s\". Unsupported scopes: \"%s\"",
+						strings.Join(api.Spec.Oauth2Scopes, ", "),
+						strings.Join(invalidScopes, ", "),
+					)
 					apiSub.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification"))
-					apiSub.SetCondition(condition.NewBlockedCondition("One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
+					apiSub.SetCondition(condition.NewBlockedCondition(message))
 					return nil
 				}
 			}

@@ -7,6 +7,11 @@ package v1
 // Security defines the security configuration for the gateway
 // Security is optional, but if provided, exactly one of m2m or h2m must be set
 type Security struct {
+	// DisableAccessControl disable the ACL mechanism for this route
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default:=false
+	DisableAccessControl bool `json:"disableAccessControl,omitempty"`
+
 	// M2M defines machine-to-machine authentication configuration
 	// +kubebuilder:validation:Optional
 	M2M *Machine2MachineAuthentication `json:"m2m,omitempty"`
