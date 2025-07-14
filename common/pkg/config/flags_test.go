@@ -160,6 +160,28 @@ var _ = Describe("Config Flag Tests", func() {
 		})
 	})
 
+	Context("Default Values with Explicit Registration", func() {
+		It("should use default values when everything is configured but not used", func() {
+			// Ensure flags are registered but no values passed
+			Expect(registerFlag()).NotTo(HaveOccurred())
+			Expect(registerEnvs()).NotTo(HaveOccurred())
+			Expect(registerConfigFileFromFlag()).NotTo(HaveOccurred())
+			loadConfig()
+
+			// Verify all values match defaults
+			Expect(RequeueAfterOnError).To(Equal(origRequeueAfterOnError))
+			Expect(RequeueAfter).To(Equal(origRequeueAfter))
+			Expect(DefaultNamespace).To(Equal(origDefaultNamespace))
+			Expect(DefaultEnvironment).To(Equal(origDefaultEnvironment))
+			Expect(LabelKeyPrefix).To(Equal(origLabelKeyPrefix))
+			Expect(FinalizerSuffix).To(Equal(origFinalizerSuffix))
+			Expect(JitterFactor).To(Equal(origJitterFactor))
+			Expect(MaxBackoff).To(Equal(origMaxBackoff))
+			Expect(MaxConcurrentReconciles).To(Equal(origMaxConcurrentReconciles))
+			Expect(FinalizerName).To(Equal(origFinalizerName))
+		})
+	})
+
 	Context("Config File Tests", func() {
 
 		It("should load values from config file", func() {
