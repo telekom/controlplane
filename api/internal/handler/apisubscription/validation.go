@@ -6,8 +6,9 @@ package apisubscription
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/pkg/errors"
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -84,4 +85,41 @@ func ApiExposureMustExist(ctx context.Context, obj types.Object) (bool, *apiapi.
 	}
 
 	return true, &apiExposureList.Items[0], nil
+}
+
+func ApiVisibilityMustBeValid(ctx context.Context, apiExposure *apiapi.ApiExposure, apiSubscription *apiapi.ApiSubscription) (bool, error) {
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+	log := log.FromContext(ctx)
+
+	exposureVisibility := apiExposure.Spec.Visibility
+
+	// any subscription is valid for a WORLD exposure
+	if exposureVisibility == apiapi.VisibilityWorld {
+		return true, nil
+	}
+
+	// get the subscription zone
+	subZone := &adminv1.Zone{}
+	err := scopedClient.Get(ctx, apiSubscription.Spec.Zone.K8s(), subZone)
+	if err != nil {
+		log.Error(err, "unable to get zone", "name", apiSubscription.Spec.Zone.K8s())
+		return false, errors.Wrapf(err, "Zone '%s' not found", apiSubscription.Spec.Zone.GetName())
+	}
+
+	// only same zone
+	if exposureVisibility == apiapi.VisibilityZone {
+		if apiExposure.Spec.Zone.GetName() != subZone.GetName() {
+			log.Info(fmt.Sprintf("Exposure visibility is ZONE and it doesnt match the subscription zone '%s'", subZone.GetName()))
+			return false, nil
+		}
+	}
+
+	// only enterprise zones
+	if exposureVisibility == apiapi.VisibilityEnterprise {
+		if subZone.Spec.Visibility != adminv1.ZoneVisibilityEnterprise {
+			log.Info(fmt.Sprintf("Api is exposed with visibility '%s', but subscriptions is from zone with visibility '%s'", apiapi.VisibilityEnterprise, subZone.Spec.Visibility))
+			return false, nil
+		}
+	}
+	return true, nil
 }

@@ -81,9 +81,20 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			apiSub.Spec.ApiBasePath, api.Spec.BasePath)
 	}
 
+	// - validate visibility of apiExposure (WORLD, ENTERPRISE, ZONE) depending on subscription zone
+	valid, err := ApiVisibilityMustBeValid(ctx, apiExposure, apiSub)
+	if err != nil {
+		return err
+	}
+	if !valid {
+		apiSub.SetCondition(condition.NewNotReadyCondition("VisibilityConstraintViolation", "ApiExposure and ApiSubscription visibility combination is not allowed"))
+		apiSub.SetCondition(condition.NewBlockedCondition(
+			fmt.Sprintf("ApiSubscription is blocked. Subscriptions from zone '%s' are not allowed due to exposure visiblity constraints", apiSub.Spec.Zone.GetName())))
+		return nil
+	}
+
 	// TODO: further validations (currently contained in the old code)
 	// - validate if team category allows subscription of api category
-	// - validate visibility of apiExposure (WORLD, ENTERPRISE, ZONE) depending on subscription zone
 
 	// get application from cluster and get clientId from status
 	application, err := util.GetApplication(ctx, apiSub.Spec.Requestor.Application)

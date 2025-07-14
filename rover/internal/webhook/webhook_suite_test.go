@@ -189,5 +189,8 @@ func NewZone(name string, environment string) *adminv1.Zone {
 				config.EnvironmentLabelKey: environment,
 			},
 		},
+		Spec: adminv1.ZoneSpec{
+			Visibility: adminv1.ZoneVisibilityWorld,
+		},
 	}
 }

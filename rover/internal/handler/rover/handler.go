@@ -82,7 +82,7 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 
 	} else {
 		roverObj.SetCondition(
-			condition.NewNotReadyCondition("SubResourceNotReady", "Atleast one sub-resource is being processed"))
+			condition.NewNotReadyCondition("SubResourceNotReady", "At least one sub-resource is being processed"))
 	}
 	return nil
 }
