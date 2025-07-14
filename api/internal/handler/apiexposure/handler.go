@@ -109,7 +109,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, obj *apiapi.Api
 			} else {
 				scopesExist, invalidScopes := util.IsSubsetOfScopes(api.Spec.Oauth2Scopes, obj.Spec.Security.M2M.Scopes)
 				if !scopesExist {
-					var message = fmt.Sprintf("Some defined scopes are not available. Defined scopes: \"%s\". Unsupported scopes: \"%s\"",
+					var message = fmt.Sprintf("Some defined scopes are not available. Available scopes: \"%s\". Unsupported scopes: \"%s\"",
 						strings.Join(api.Spec.Oauth2Scopes, ", "),
 						strings.Join(invalidScopes, ", "),
 					)
