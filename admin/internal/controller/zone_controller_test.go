@@ -298,7 +298,7 @@ func VerifyZone(ctx context.Context, g Gomega, namespacedName client.ObjectKey, 
 	teamApiRoute := &gatewayapi.Route{}
 	teamApiRouteRef := client.ObjectKey{
 		Namespace: "test--test-zone",
-		Name:      "test-team-api1",
+		Name:      "team-test--test-team-api1",
 	}
 	err = k8sClient.Get(ctx, teamApiRouteRef, teamApiRoute)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -318,6 +318,9 @@ func VerifyZone(ctx context.Context, g Gomega, namespacedName client.ObjectKey, 
 				Path:      "/test/team/api/v1",
 				IssuerUrl: "https://test-iris.de/auth/realms/team-test",
 			},
+		},
+		Security: &gatewayapi.Security{
+			DisableAccessControl: true,
 		},
 	}
 	g.Expect(teamApiRoute.Spec).To(Equal(teamApiRouteSpec))
