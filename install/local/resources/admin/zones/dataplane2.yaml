@@ -29,3 +29,4 @@ spec:
     password: somePassword
   teamApis:
     apis: []
+  visibility: Enterprise
