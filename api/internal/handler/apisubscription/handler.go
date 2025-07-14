@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"strings"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/pkg/errors"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/apisubscription/remote"
@@ -197,50 +195,42 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	log.Info("👌 Approval is granted and will continue with process")
 
-	// Route
-	subscriptionZone, err := util.GetZone(ctx, scopedClient, apiSub.Spec.Zone.K8s())
-	if err != nil {
-		return err
-	}
-
-	route := &gatewayapi.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath, contextutil.EnvFromContextOrDie(ctx)),
-			Namespace: subscriptionZone.Status.Namespace,
-		},
-	}
-
 	// ProxyRoute is only needed if subscriptionZone is different from exposureZone
-	sameZone := apiSub.Spec.Zone.Equals(&apiExposure.Spec.Zone)
+	sameZoneAsExposure := apiSub.Spec.Zone.Equals(&apiExposure.Spec.Zone)
 	// ProxyRoute is only needed if subscriptionZone is not used as failover zone
 	failoverProxyRouteExists := apiExposure.HasFailover() && apiExposure.Spec.Traffic.Failover.ContainsZone(apiSub.Spec.Zone)
 
-	if !sameZone && !failoverProxyRouteExists {
+	options := []util.CreateRouteOption{}
+
+	if sameZoneAsExposure || failoverProxyRouteExists {
+		log.Info("Skipping creation of proxy route for ApiSubscription", "zone", apiSub.Spec)
+		options = append(options, util.ReturnReferenceOnly())
+	} else {
 		log.Info("Creating proxy route for ApiSubscription", "zone", apiSub.Spec.Zone.Name)
-		options := []util.CreateRouteOption{}
-		// Only add failover zone if the ApiExposure actually has a failover zone configured
-		if apiExposure.HasFailover() {
-			failoverZone := apiExposure.Spec.Traffic.Failover.Zones[0]
-			options = append(options, util.WithFailoverZone(failoverZone))
-		}
-
-		route, err = util.CreateProxyRoute(ctx, apiSub.Spec.Zone, apiExposure.Spec.Zone, apiSub.Spec.ApiBasePath,
-			contextutil.EnvFromContextOrDie(ctx),
-			options...,
-		)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create proxy route for zone %s", apiSub.Spec.Zone.Name)
-		}
 	}
-	apiSub.Status.Route = types.ObjectRefFromObject(route)
 
-	consumeRoute, err := util.CreateConsumeRoute(ctx, apiSub, apiSub.Spec.Zone, *types.ObjectRefFromObject(route), application.Status.ClientId)
+	if apiExposure.HasFailover() {
+		failoverZone := apiExposure.Spec.Traffic.Failover.Zones[0]
+		options = append(options, util.WithFailoverZone(failoverZone))
+	}
+
+	proxyRoute, err := util.CreateProxyRoute(ctx, apiSub.Spec.Zone, apiExposure.Spec.Zone, apiSub.Spec.ApiBasePath,
+		contextutil.EnvFromContextOrDie(ctx),
+		options...,
+	)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create proxy route for zone %s", apiSub.Spec.Zone.Name)
+	}
+	apiSub.Status.Route = types.ObjectRefFromObject(proxyRoute)
+
+	consumeRoute, err := util.CreateConsumeRoute(ctx, apiSub, apiSub.Spec.Zone, *types.ObjectRefFromObject(proxyRoute), application.Status.ClientId)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create normal ConsumeRoute")
 	}
 	apiSub.Status.ConsumeRoute = types.ObjectRefFromObject(consumeRoute)
 
-	// Create the proxy-routes used for failover
+	// ----- Failover -----
+
 	apiSub.Status.FailoverRoutes = []types.ObjectRef{}
 	apiSub.Status.FailoverConsumeRoutes = []types.ObjectRef{}
 	if apiSub.HasFailover() {
@@ -254,24 +244,29 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 				options = append(options, util.WithFailoverZone(expFailoverZone))
 			}
 
-			sameFailoverZoneAsExposure := apiExposure.HasFailover() && apiExposure.Spec.Traffic.Failover.ContainsZone(subFailoverZone)
+			// Check if the failover zone is the same as the exposure failover zone, then there is no need to create a proxy route
+			sameFailoverZoneAsExposureFailoverZone := apiExposure.HasFailover() && apiExposure.Spec.Traffic.Failover.ContainsZone(subFailoverZone)
+			// Check if the failover zone is the same as the exposure zone, then there is no need to create a proxy route
+			failoverZoneIsExposureZone := subFailoverZone.Equals(&apiExposure.Spec.Zone)
 
-			if !sameFailoverZoneAsExposure {
-				log.Info("Creating proxy route for failover zone", "zone", subFailoverZone)
-				route, err = util.CreateProxyRoute(ctx, subFailoverZone, apiExposure.Spec.Zone, apiSub.Spec.ApiBasePath,
-					contextutil.EnvFromContextOrDie(ctx),
-					options...,
-				)
-				if err != nil {
-					return errors.Wrapf(err, "failed to create proxy route for zone %s in failover scenario", apiSub.Spec.Zone)
-				}
-				apiSub.Status.FailoverRoutes = append(apiSub.Status.FailoverRoutes, *types.ObjectRefFromObject(route))
+			if sameFailoverZoneAsExposureFailoverZone || failoverZoneIsExposureZone {
+				log.Info("Skipping creation of proxy route for failover zone", "zone", subFailoverZone)
+				options = append(options, util.ReturnReferenceOnly())
 			} else {
-				log.Info("Same failover zone as exposure, no proxy route needed", "zone", subFailoverZone)
+				log.Info("Creating proxy route for failover zone", "zone", subFailoverZone)
 			}
 
+			failoverProxyRoute, err := util.CreateProxyRoute(ctx, subFailoverZone, apiExposure.Spec.Zone, apiSub.Spec.ApiBasePath,
+				contextutil.EnvFromContextOrDie(ctx),
+				options...,
+			)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create proxy route for zone %s in failover scenario", apiSub.Spec.Zone)
+			}
+			apiSub.Status.FailoverRoutes = append(apiSub.Status.FailoverRoutes, *types.ObjectRefFromObject(failoverProxyRoute))
+
 			log.Info("Creating failover ConsumeRoute for zone", "zone", subFailoverZone)
-			consumeRoute, err = util.CreateConsumeRoute(ctx, apiSub, subFailoverZone, *types.ObjectRefFromObject(route), application.Status.ClientId)
+			consumeRoute, err = util.CreateConsumeRoute(ctx, apiSub, subFailoverZone, *types.ObjectRefFromObject(failoverProxyRoute), application.Status.ClientId)
 			if err != nil {
 				return errors.Wrapf(err, "failed to create failover ConsumeRoute for zone %s", subFailoverZone.Name)
 			}
@@ -279,6 +274,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		}
 	}
 
+	// ---- Set Conditions ----
 	apiSub.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
 	apiSub.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
 

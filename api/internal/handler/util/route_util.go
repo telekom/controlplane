@@ -27,9 +27,10 @@ var (
 )
 
 type CreateRouteOptions struct {
-	FailoverUpstreams []apiapi.Upstream
-	FailoverZone      types.ObjectRef
-	FailoverSecurity  *apiapi.Security
+	FailoverUpstreams   []apiapi.Upstream
+	FailoverZone        types.ObjectRef
+	FailoverSecurity    *apiapi.Security
+	ReturnReferenceOnly bool // If true, the route will not be created, but only the reference will be returned.
 }
 
 type CreateRouteOption func(*CreateRouteOptions)
@@ -58,6 +59,14 @@ func WithFailoverZone(failoverZone types.ObjectRef) CreateRouteOption {
 func WithFailoverSecurity(security *apiapi.Security) CreateRouteOption {
 	return func(opts *CreateRouteOptions) {
 		opts.FailoverSecurity = security
+	}
+}
+
+// ReturnReferenceOnly indicates that the route should not be created, but only the reference should be returned.
+// This is useful for cases where you only need the route reference, e.g., for cleanup operations or when the route is already created.
+func ReturnReferenceOnly() CreateRouteOption {
+	return func(opts *CreateRouteOptions) {
+		opts.ReturnReferenceOnly = true
 	}
 }
 
@@ -108,6 +117,11 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 			Name:      MakeRouteName(apiBasePath, realmName),
 			Namespace: downstreamRealm.Namespace,
 		},
+	}
+
+	if options.ReturnReferenceOnly {
+		// If we only want the reference, we return the route with the labels set
+		return proxyRoute, nil
 	}
 
 	mutate := func() error {
