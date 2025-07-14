@@ -1,0 +1,18 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/oapi-codegen/oapi-codegen/HEAD/configuration-schema.json
+
+package: api
+generate:
+  fiber-server: true
+  strict-server: true
+  models: true
+  client: false
+  embedded-spec: true
+output: ../internal/api/server.gen.go
+output-options:
+  name-normalizer: ToCamelCase
+  user-templates:
+    strict/strict-fiber.tmpl: templates/custom-strict-fiber.tmpl
