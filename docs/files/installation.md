@@ -8,8 +8,9 @@ to get started right away.
 
 You can deploy the controlplane to your local Kubernetes cluster, e.g. using [kind](https://kind.sigs.k8s.io/).
 
-> **ℹ️ Important:** Before you start executing commands, please read the complete documentation for this chapter. 
-> Otherwise, you might need to do some backtracking.
+> [!IMPORTANT]
+> Before you start executing commands, please read the complete documentation for this chapter. Otherwise, you 
+> might need to do some backtracking.
 
 ### Installing local kind Cluster
 
@@ -119,11 +120,11 @@ can do:
 
 #### Option 2
 
-
-> **⚠️ Important:** You cannot test any webhook logic by running the controller like this!
+> [!WARNING]
+> You cannot test any webhook logic by running the controller like this!
 
 1. Before you run [Installing the Controlplane](#installing-the-controlplane), navigate to `install/local/kustomization.yaml`
-2. Edit the file and comment out all controller that you want to test locally, e. g. if I want to test rover, api and gateway:
+2. Edit the file and comment out all controller that you want to test locally, e.g. if I want to test rover, api and gateway:
     ```yaml
     resources:
       - ../../secret-manager/config/default

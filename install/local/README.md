@@ -13,8 +13,9 @@ Before installing the operators and CRDs, ensure that you have updated the resou
 directory. This is important, because they contain configuration for the identity provider and the gateway. You either
 need to provide them on your local machine or use existing resources from a running environment.
 
-Please update `dataplane1.yaml` and `dataplane2.yaml` in the `resources/admin/zones` directory with your identity 
-provider and gateway configuration:
+> [!IMPORTANT]
+> Please update `dataplane1.yaml` and `dataplane2.yaml` in the `resources/admin/zones` directory with your identity 
+> provider and gateway configuration:
 
 **IdentityProvider**
 ```yaml
