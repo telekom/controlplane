@@ -22,6 +22,10 @@ var (
 	)
 )
 
+func init() {
+	RegisterMetrics(prometheus.DefaultRegisterer)
+}
+
 // RegisterMetrics registers all cache-related metrics with Prometheus
 func RegisterMetrics(reg prometheus.Registerer) {
 	registerOnce.Do(func() {

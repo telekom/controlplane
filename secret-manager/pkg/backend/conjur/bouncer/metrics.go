@@ -10,6 +10,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+func init() {
+	RegisterMetrics(prometheus.DefaultRegisterer)
+}
+
 var (
 	registerOnce = sync.Once{}
 	queueLength  = prometheus.NewGaugeVec(

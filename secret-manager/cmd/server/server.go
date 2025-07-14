@@ -14,7 +14,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 	cs "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/serve"
 	"github.com/telekom/controlplane/secret-manager/api/util"
@@ -129,10 +128,6 @@ func main() {
 	log := setupLog(logLevel)
 
 	ctx := cs.SignalHandler(context.Background())
-
-	// Register metrics
-	cache.RegisterMetrics(prometheus.DefaultRegisterer)
-	bouncer.RegisterMetrics(prometheus.DefaultRegisterer)
 
 	ctrlr.SetLogger(log)
 	cfg := config.GetConfigOrDie(configFile)
