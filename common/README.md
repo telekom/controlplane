@@ -15,7 +15,8 @@ SPDX-License-Identifier: Apache-2.0
 
 <p align="center">
   <a href="#about">About</a> •
-  <a href="#getting-started">Getting Started</a>
+  <a href="#getting-started">Getting Started</a> •
+  <a href="#configuration">Configuration</a>
 </p>
 
 
@@ -34,7 +35,7 @@ In addition to these components, the module also provides some common utilities 
 - **Condition**: This package provides a set of utilities for managing conditions on CRs. See [Conditions](#conditions) for more information.
 - **Types**: This package provides some common types that are used by the controllers and handlers. These include the `Object` interface, which is an extension to the kubebuilder `Object` interface
 - **Util**: This package provides some common utilities including context and labels
-- **Config**: This package provides a set of default configurations that can be used by the controllers. See [Config](pkg/config/config.go) for more information.
+- **Config**: This package provides a set of default configurations that can be used by the controllers. See [Configuration](#configuration) for more information.
 
 ## Controller and Handler Flow
 
@@ -73,6 +74,37 @@ The following conditions are used:
 
 - **install_crds**: See [install_crds](scripts/install_crds/README.md) for more information
 
+
+## Configuration
+
+The common module provides a configuration system that allows operators to customize their behavior. The configuration is managed by the `config` package and uses [Viper](https://github.com/spf13/viper) for handling configuration values from various sources.
+
+### Configuration Sources and Priorities
+
+Configuration values are resolved with the following priority (highest to lowest) ([reference](https://github.com/spf13/viper?tab=readme-ov-file#why-viper)):
+
+1. **Command-line flags** - Values provided as command-line arguments
+2. **Environment variables** - Values set in environment variables
+3. **Configuration file** - YAML file specified by the `--config` flag
+4. **Default values** - Hardcoded defaults in the code
+
+### Available Configuration Options
+
+Take a look at the [./pkg/config/config.go](./pkg/config/config.go) file for all available configuration options and their default values.
+
+### Using Configuration in Your Operator
+
+To use the configuration in your operator, simply import the config package. 
+The operator will automatically load the configuration values from the sources and do not need to be aware of viper.
+
+Examples: 
+* [organization/internal/controller/group_controller.go](../organization/internal/controller/group_controller.go)
+
+
+
+### Configuration File Example
+
+You can provide a YAML configuration file with the `--config` flag. Here's an example: [testdata/config.yaml](./pkg/config/testdata/config.yaml)
 
 ## Getting Started
 
