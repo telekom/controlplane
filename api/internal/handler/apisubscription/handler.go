@@ -203,10 +203,10 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	options := []util.CreateRouteOption{}
 
 	if sameZoneAsExposure || failoverProxyRouteExists {
-		log.Info("Skipping creation of proxy route for ApiSubscription", "zone", apiSub.Spec)
+		log.Info("Skipping creation of proxy route for ApiSubscription", "zone", apiSub.Spec.Zone.String())
 		options = append(options, util.ReturnReferenceOnly())
 	} else {
-		log.Info("Creating proxy route for ApiSubscription", "zone", apiSub.Spec.Zone.Name)
+		log.Info("Creating proxy route for ApiSubscription", "zone", apiSub.Spec.Zone.String())
 	}
 
 	if apiExposure.HasFailover() {

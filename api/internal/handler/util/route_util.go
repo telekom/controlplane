@@ -120,7 +120,7 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 	}
 
 	if options.ReturnReferenceOnly {
-		// If we only want the reference, we return the route with the labels set
+		// Return early with just the reference (name + namespace)
 		return proxyRoute, nil
 	}
 
