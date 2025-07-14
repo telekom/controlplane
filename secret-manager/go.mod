@@ -10,7 +10,7 @@ require github.com/telekom/controlplane/common-server v0.0.0
 
 require (
 	github.com/MicahParks/keyfunc/v2 v2.1.0
-	github.com/cyberark/conjur-api-go v0.13.0
+	github.com/cyberark/conjur-api-go v0.13.1
 	github.com/getkin/kin-openapi v0.132.0
 	github.com/go-logr/logr v1.4.3
 	github.com/go-logr/zapr v1.3.0
