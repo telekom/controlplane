@@ -5,6 +5,10 @@
 ### Prepare local kind Cluster
 
 ```bash
+# [optional] clone the controlplane repo
+git clone --branch main https://github.com/telekom/controlplane.git
+cd controlplane
+
 # kind cluster
 kind create cluster
 
