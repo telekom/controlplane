@@ -49,8 +49,8 @@ images:
     newName: ghcr.io/telekom/controlplane/secret-manager
     newTag: latest
   - name: ghcr.io/telekom/controlplane/rover
-    newName: ko.local
-    newTag: rover-test
+    newName: ghcr.io/telekom/controlplane/rover
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/application
     newName: ghcr.io/telekom/controlplane/application
     newTag: latest
