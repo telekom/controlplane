@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache/metrics"
 	"github.com/telekom/controlplane/secret-manager/test/mocks"
 )
 
@@ -21,6 +22,7 @@ var _ = Describe("Cached Backend", func() {
 
 		var mockBackend *mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]
 		var cachedBackend *cache.CachedBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]
+		var mockedMetrics *mocks.MockCollectionInterface
 
 		BeforeEach(func() {
 			t := GinkgoT()
@@ -28,7 +30,12 @@ var _ = Describe("Cached Backend", func() {
 			mockBackend.Test(t)
 			t.Cleanup(func() { mockBackend.AssertExpectations(t) })
 
+			mockedMetrics = &mocks.MockCollectionInterface{}
+			mockedMetrics.Test(t)
+			t.Cleanup(func() { mockedMetrics.AssertExpectations(t) })
+
 			cachedBackend = cache.NewCachedBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]](mockBackend, 10*time.Second)
+			metrics.Collection = mockedMetrics
 		})
 
 		It("should create a new cached backend", func() {
@@ -53,6 +60,7 @@ var _ = Describe("Cached Backend", func() {
 
 			secret := backend.NewDefaultSecret[*mocks.MockSecretId](secretId, "my-value")
 			mockBackend.EXPECT().Get(ctx, secretId).Return(secret, nil).Once()
+			mockedMetrics.EXPECT().RecordCacheMiss("not_found").Return().Once()
 
 			secret, err := cachedBackend.Get(ctx, secretId)
 			Expect(err).NotTo(HaveOccurred())
@@ -80,6 +88,7 @@ var _ = Describe("Cached Backend", func() {
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
 			secretId.EXPECT().String().Return("my-secret-id").Times(2)
+			mockedMetrics.EXPECT().RecordCacheHit().Return().Once()
 
 			secret := backend.NewDefaultSecret[*mocks.MockSecretId](secretId, "my-value")
 			cachedItem := cache.NewDefaultCacheItem(secretId, secret, 10)
@@ -99,6 +108,7 @@ var _ = Describe("Cached Backend", func() {
 			secretId.EXPECT().String().Return("my-secret-id")
 
 			mockBackend.EXPECT().Get(ctx, secretId).Return(backend.DefaultSecret[*mocks.MockSecretId]{}, backend.ErrSecretNotFound(secretId)).Once()
+			mockedMetrics.EXPECT().RecordCacheMiss("not_found").Return().Once()
 
 			res, err := cachedBackend.Get(ctx, secretId)
 			Expect(err).To(HaveOccurred())

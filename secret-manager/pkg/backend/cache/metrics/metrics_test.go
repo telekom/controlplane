@@ -2,27 +2,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package cache_test
+package metrics
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var _ = Describe("Cache Metrics", Ordered, func() {
-
-	BeforeAll(func() {
-		cache.RegisterMetrics(prometheus.DefaultRegisterer)
-	})
 
 	Context("Register Metrics", Ordered, func() {
 
 		It("should record cache hits", func() {
 			// Record a cache hit
-			cache.RecordCacheHit()
+			Collection.RecordCacheHit()
 
 			// Verify metric exists with correct labels
 			metrics, err := prometheus.DefaultGatherer.Gather()
@@ -55,8 +49,8 @@ var _ = Describe("Cache Metrics", Ordered, func() {
 
 		It("should record cache misses with reason", func() {
 			// Record cache misses with different reasons
-			cache.RecordCacheMiss("expired")
-			cache.RecordCacheMiss("not_found")
+			Collection.RecordCacheMiss("expired")
+			Collection.RecordCacheMiss("not_found")
 
 			// Verify metrics exist with correct labels
 			metrics, err := prometheus.DefaultGatherer.Gather()
@@ -99,9 +93,9 @@ var _ = Describe("Cache Metrics", Ordered, func() {
 
 		It("should register metrics only once", func() {
 			// Call RegisterMetrics multiple times
-			cache.RegisterMetrics(prometheus.DefaultRegisterer)
-			cache.RegisterMetrics(prometheus.DefaultRegisterer)
-			cache.RegisterMetrics(prometheus.DefaultRegisterer)
+			registerMetrics(prometheus.DefaultRegisterer)
+			registerMetrics(prometheus.DefaultRegisterer)
+			registerMetrics(prometheus.DefaultRegisterer)
 
 			metrics, err := prometheus.DefaultGatherer.Gather()
 			Expect(err).NotTo(HaveOccurred())
