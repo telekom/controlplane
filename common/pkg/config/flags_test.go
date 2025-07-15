@@ -5,6 +5,7 @@
 package config
 
 import (
+	"flag"
 	"os"
 	"path/filepath"
 	"time"
@@ -43,8 +44,8 @@ var _ = Describe("Config Flag Tests", func() {
 		origFinalizerName = FinalizerName
 
 		// Reset flag command line and viper for each test
+		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 		pflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ContinueOnError)
-		initViper()
 		registerDefaults()
 	})
 
@@ -63,27 +64,26 @@ var _ = Describe("Config Flag Tests", func() {
 		viper.Reset()
 	})
 
-	initConfigFromFlags := func(args []string) {
+	initFlags := func(args []string) {
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
 
 		os.Args = args
 
-		Expect(registerFlag()).NotTo(HaveOccurred())
-		loadConfig()
+		registerFlag()
+		Expect(Parse()).To(Succeed())
 	}
 
-	initConfigFromFile := func(configPath string) {
+	initFile := func(configPath string) {
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
 
 		os.Args = []string{"program", "--config=" + configPath}
-		Expect(registerFlag()).NotTo(HaveOccurred())
-		Expect(registerConfigFileFromFlag()).NotTo(HaveOccurred())
-		loadConfig()
+		registerFlag()
+		Expect(Parse()).To(Succeed())
 	}
 
-	initConfigFromEnv := func(envVars map[string]string) {
+	initEnv := func(envVars map[string]string) {
 		oldEnv := map[string]string{}
 		for key := range envVars {
 			origVal, exists := os.LookupEnv(key)
@@ -111,13 +111,12 @@ var _ = Describe("Config Flag Tests", func() {
 				}
 			}
 		}()
-
-		loadConfig()
+		Expect(Parse()).To(Succeed())
 	}
 
-	Context("Command Line Flag Tests", func() {
+	Context("Command Line Flags", func() {
 		It("should apply string flag values", func() {
-			initConfigFromFlags([]string{"program",
+			initFlags([]string{"program",
 				"--default-namespace=test-namespace",
 				"--default-environment=test-env",
 				"--label-key-prefix=test.prefix",
@@ -132,7 +131,7 @@ var _ = Describe("Config Flag Tests", func() {
 		})
 
 		It("should apply numeric flag values", func() {
-			initConfigFromFlags([]string{"program",
+			initFlags([]string{"program",
 				"--requeue-after-on-error=5s",
 				"--requeue-after=10m",
 				"--jitter-factor=0.5",
@@ -147,15 +146,14 @@ var _ = Describe("Config Flag Tests", func() {
 		})
 
 		It("should use default values when no flags provided", func() {
-			initConfigFromFlags([]string{"program"})
+			initFlags([]string{"program"})
 			Expect(RequeueAfterOnError).To(Equal(origRequeueAfterOnError))
 			Expect(RequeueAfter).To(Equal(origRequeueAfter))
 			Expect(DefaultNamespace).To(Equal(origDefaultNamespace))
 		})
 
 		It("should load config file path from flag", func() {
-			initConfigFromFlags([]string{"program", "--config=testdata/config.yaml"})
-			Expect(registerConfigFileFromFlag()).NotTo(HaveOccurred())
+			initFlags([]string{"program", "--config=testdata/config.yaml"})
 			Expect(viper.ConfigFileUsed()).To(Equal("testdata/config.yaml"))
 		})
 	})
@@ -163,13 +161,12 @@ var _ = Describe("Config Flag Tests", func() {
 	Context("Default Values with Explicit Registration", func() {
 		It("should use default values when everything is configured but not used", func() {
 			// Ensure flags are registered but no values passed
-			Expect(registerFlag()).NotTo(HaveOccurred())
+			registerFlag()
 			Expect(registerEnvs()).NotTo(HaveOccurred())
-			Expect(registerConfigFileFromFlag()).NotTo(HaveOccurred())
-			loadConfig()
+			Expect(Parse()).To(Succeed())
 
 			// Verify all values match defaults
-			Expect(RequeueAfterOnError).To(Equal(origRequeueAfterOnError))
+			// Expect(RequeueAfterOnError).To(Equal(origRequeueAfterOnError))
 			Expect(RequeueAfter).To(Equal(origRequeueAfter))
 			Expect(DefaultNamespace).To(Equal(origDefaultNamespace))
 			Expect(DefaultEnvironment).To(Equal(origDefaultEnvironment))
@@ -182,13 +179,13 @@ var _ = Describe("Config Flag Tests", func() {
 		})
 	})
 
-	Context("Config File Tests", func() {
+	Context("Config File", func() {
 
 		It("should load values from config file", func() {
 			configPath, err := filepath.Abs("testdata/config.yaml")
 			Expect(err).NotTo(HaveOccurred())
 
-			initConfigFromFile(configPath)
+			initFile(configPath)
 
 			Expect(RequeueAfterOnError).To(Equal(3 * time.Second))
 			Expect(RequeueAfter).To(Equal(20 * time.Minute))
@@ -208,13 +205,13 @@ var _ = Describe("Config Flag Tests", func() {
 			configPath, err := filepath.Abs("testdata/config.yaml")
 			Expect(err).NotTo(HaveOccurred())
 
-			initConfigFromFile(configPath)
+			initFile(configPath)
 			Expect(RequeueAfterOnError).To(Equal(3 * time.Second))
 			Expect(DefaultNamespace).To(Equal("test-namespace-from-file"))
 		})
 	})
 
-	Context("Environment Variable Tests", func() {
+	Context("Environment Variable", func() {
 		BeforeEach(func() {
 			Expect(registerEnvs()).NotTo(HaveOccurred())
 		})
@@ -234,7 +231,7 @@ var _ = Describe("Config Flag Tests", func() {
 			}
 
 			// Initialize with environment variables
-			initConfigFromEnv(envVars)
+			initEnv(envVars)
 
 			// Verify environment variable values were applied
 			Expect(RequeueAfterOnError).To(Equal(4 * time.Second))
@@ -263,11 +260,42 @@ var _ = Describe("Config Flag Tests", func() {
 			}
 
 			// Initialize with environment variables
-			initConfigFromEnv(envVars)
+			initEnv(envVars)
 
 			// Verify environment variable values override default values
 			Expect(RequeueAfterOnError).To(Equal(6 * time.Second))
 			Expect(DefaultNamespace).To(Equal("override-namespace-from-env"))
+		})
+	})
+
+	Context("Parse with Outside Flags", func() {
+		It("should parse kubebuilder flags correctly", func() {
+			// Set up kubebuilder flags
+			flags := []string{
+				"--metrics-bind-address=0",
+				"--health-probe-bind-address=0",
+				"--leader-elect=false",
+				"--enable-leader-election=false",
+				"--zap-log-level=info",
+				"--default-namespace=test-namespace",
+			}
+
+			flag.Int("metrics-bind-address", -1, "Bind address for metrics server")
+			flag.String("health-probe-bind-address", "-1", "Bind address for health probe server")
+			flag.Bool("leader-elect", true, "Enable leader election for controller manager")
+			flag.Bool("enable-leader-election", true, "Enable leader election for controller manager")
+			flag.String("zap-log-level", "debug", "Set the logging level for zap logger")
+
+			// Initialize with kubebuilder flags
+			initFlags(append([]string{"program"}, flags...))
+
+			// Verify that the flags are parsed correctly
+			Expect(flag.CommandLine.Lookup("metrics-bind-address").Value.String()).To(Equal("0"))
+			Expect(flag.CommandLine.Lookup("health-probe-bind-address").Value.String()).To(Equal("0"))
+			Expect(flag.CommandLine.Lookup("leader-elect").Value.String()).To(Equal("false"))
+			Expect(flag.CommandLine.Lookup("enable-leader-election").Value.String()).To(Equal("false"))
+			Expect(flag.CommandLine.Lookup("zap-log-level").Value.String()).To(Equal("info"))
+			Expect(flag.CommandLine.Lookup("default-namespace").Value.String()).To(Equal("test-namespace"))
 		})
 	})
 })

@@ -6,6 +6,7 @@ package config
 
 import (
 	"errors"
+	"flag"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -47,26 +48,18 @@ var (
 )
 
 func init() {
-	initViper()
 	registerDefaults()
 
 	if err := registerEnvs(); err != nil {
 		panic("failed to bind environment variables: " + err.Error())
 	}
-	if err := registerFlag(); err != nil {
-		panic("failed to bind flags: " + err.Error())
-	}
-	if err := registerConfigFileFromFlag(); err != nil {
-		panic("failed to register config file: " + err.Error())
-	}
+	registerFlag()
 
-	loadConfig()
-}
-
-func initViper() {
-	viper.SetConfigType("yaml")
-	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
+	// go run ./cmd/main.go --metrics-bind-address=:8080 --jitter-factor=0.9
+	// results in "flag provided but not defined: -metrics-bind-address" (so all in main.go are not registered here)
+	// if err := Parse(); err != nil {
+	// 	panic("failed to parse configuration: " + err.Error())
+	// }
 }
 
 func registerDefaults() {
@@ -81,23 +74,20 @@ func registerDefaults() {
 	viper.SetDefault(configKeyMaxConcurrentRec, MaxConcurrentReconciles)
 }
 
-func registerFlag() error {
+func registerFlag() {
 	// Config file flag
-	pflag.String(configKeyFile, "", "Path to the configuration file")
+	flag.String(configKeyFile, "", "Path to the configuration file")
 
 	// Add flags for all configuration parameters
-	pflag.Duration(configKeyRequeueAfterOnError, RequeueAfterOnError, "Time to wait before retrying a failed operation")
-	pflag.Duration(configKeyRequeueAfter, RequeueAfter, "Time to wait before retrying a successful operation")
-	pflag.String(configKeyDefaultNamespace, DefaultNamespace, "Default namespace")
-	pflag.String(configKeyDefaultEnvironment, DefaultEnvironment, "Default environment")
-	pflag.String(configKeyLabelKeyPrefix, LabelKeyPrefix, "Label key prefix")
-	pflag.String(configKeyFinalizerSuffix, FinalizerSuffix, "Finalizer name suffix")
-	pflag.Float64(configKeyJitterFactor, JitterFactor, "Factor to apply to the backoff duration")
-	pflag.Duration(configKeyMaxBackoff, MaxBackoff, "Maximum backoff duration")
-	pflag.Int(configKeyMaxConcurrentRec, MaxConcurrentReconciles, "Maximum number of concurrent reconciles")
-
-	pflag.Parse()
-	return viper.BindPFlags(pflag.CommandLine)
+	flag.Duration(configKeyRequeueAfterOnError, RequeueAfterOnError, "Time to wait before retrying a failed operation")
+	flag.Duration(configKeyRequeueAfter, RequeueAfter, "Time to wait before retrying a successful operation")
+	flag.String(configKeyDefaultNamespace, DefaultNamespace, "Default namespace")
+	flag.String(configKeyDefaultEnvironment, DefaultEnvironment, "Default environment")
+	flag.String(configKeyLabelKeyPrefix, LabelKeyPrefix, "Label key prefix")
+	flag.String(configKeyFinalizerSuffix, FinalizerSuffix, "Finalizer name suffix")
+	flag.Float64(configKeyJitterFactor, JitterFactor, "Factor to apply to the backoff duration")
+	flag.Duration(configKeyMaxBackoff, MaxBackoff, "Maximum backoff duration")
+	flag.Int(configKeyMaxConcurrentRec, MaxConcurrentReconciles, "Maximum number of concurrent reconciles")
 }
 
 func registerEnvs() error {
@@ -140,8 +130,32 @@ func registerEnvs() error {
 	return nil
 }
 
-func registerConfigFileFromFlag() error {
+func Parse() error {
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	flag.Parse()
+	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
+		return err
+	}
 
+	if err := loadConfigFileFromFlag(); err != nil {
+		return err
+	}
+
+	RequeueAfterOnError = viper.GetDuration(configKeyRequeueAfterOnError)
+	RequeueAfter = viper.GetDuration(configKeyRequeueAfter)
+	DefaultNamespace = viper.GetString(configKeyDefaultNamespace)
+	DefaultEnvironment = viper.GetString(configKeyDefaultEnvironment)
+	LabelKeyPrefix = viper.GetString(configKeyLabelKeyPrefix)
+	FinalizerSuffix = viper.GetString(configKeyFinalizerSuffix)
+	FinalizerName = LabelKeyPrefix + "/" + FinalizerSuffix
+	JitterFactor = viper.GetFloat64(configKeyJitterFactor)
+	MaxBackoff = viper.GetDuration(configKeyMaxBackoff)
+	MaxConcurrentReconciles = viper.GetInt(configKeyMaxConcurrentRec)
+
+	return nil
+}
+
+func loadConfigFileFromFlag() error {
 	// Get config file path from command line flag
 	configPath := viper.GetString(configKeyFile)
 	if configPath != "" {
@@ -153,17 +167,4 @@ func registerConfigFileFromFlag() error {
 		return err
 	}
 	return nil
-}
-
-func loadConfig() {
-	RequeueAfterOnError = viper.GetDuration(configKeyRequeueAfterOnError)
-	RequeueAfter = viper.GetDuration(configKeyRequeueAfter)
-	DefaultNamespace = viper.GetString(configKeyDefaultNamespace)
-	DefaultEnvironment = viper.GetString(configKeyDefaultEnvironment)
-	LabelKeyPrefix = viper.GetString(configKeyLabelKeyPrefix)
-	FinalizerSuffix = viper.GetString(configKeyFinalizerSuffix)
-	FinalizerName = LabelKeyPrefix + "/" + FinalizerSuffix
-	JitterFactor = viper.GetFloat64(configKeyJitterFactor)
-	MaxBackoff = viper.GetDuration(configKeyMaxBackoff)
-	MaxConcurrentReconciles = viper.GetInt(configKeyMaxConcurrentRec)
 }
