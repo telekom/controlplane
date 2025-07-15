@@ -9,6 +9,7 @@ package mocks
 import (
 	context "context"
 
+	"github.com/onsi/ginkgo/v2"
 	api "github.com/telekom/controlplane/identity/pkg/api"
 
 	mock "github.com/stretchr/testify/mock"
@@ -633,7 +634,13 @@ func NewMockKeycloakClient(t interface {
 	mock := &MockKeycloakClient{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	// When using with standard Go tests, we want the cleanup to happen
+	// In Ginkgo tests, this function should be called through utils.NewKeycloakClientMock
+	// which properly handles Ginkgo's DeferCleanup mechanism
+	_, isGinkgo := t.(ginkgo.GinkgoTInterface)
+	if !isGinkgo {
+		t.Cleanup(func() { mock.AssertExpectations(t) })
+	}
 
 	return mock
 }
