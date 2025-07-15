@@ -8,6 +8,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/telekom/controlplane/common-server/pkg/middleware/k8s"
 	"os"
 	"time"
 
@@ -25,7 +26,6 @@ import (
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/kubernetes"
 	"github.com/telekom/controlplane/secret-manager/pkg/controller"
-	"github.com/telekom/controlplane/secret-manager/pkg/middleware"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	ctrlr "sigs.k8s.io/controller-runtime"
@@ -142,16 +142,16 @@ func main() {
 	handler := api.NewStrictHandler(handler.NewHandler(ctrl), nil)
 
 	if cfg.Security.Enabled {
-		opts := []middleware.KubernetesAuthOption{
-			middleware.WithTrustedIssuers(cfg.Security.TrustedIssuers...),
-			middleware.WithJWKSetURLs(cfg.Security.JWKSetURLs...),
-			middleware.WithAccessConfig(cfg.Security.AccessConfig...),
+		opts := []k8s.KubernetesAuthOption{
+			k8s.WithTrustedIssuers(cfg.Security.TrustedIssuers...),
+			k8s.WithJWKSetURLs(cfg.Security.JWKSetURLs...),
+			k8s.WithAccessConfig(cfg.Security.AccessConfig...),
 		}
 		if util.IsRunningInCluster() {
 			log.Info("🔑 Running in cluster")
-			opts = append(opts, middleware.WithInClusterIssuer())
+			opts = append(opts, k8s.WithInClusterIssuer())
 		}
-		apiGroup.Use(middleware.NewKubernetesAuthz(opts...))
+		apiGroup.Use(k8s.NewKubernetesAuthz(opts...))
 	}
 
 	api.RegisterHandlersWithOptions(apiGroup, handler, api.FiberServerOptions{})

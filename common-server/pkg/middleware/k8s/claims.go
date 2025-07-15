@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package middleware
+package k8s
 
 import "github.com/golang-jwt/jwt/v5"
 

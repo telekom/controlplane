@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package middleware_test
+package k8s_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
