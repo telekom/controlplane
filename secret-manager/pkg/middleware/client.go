@@ -7,12 +7,12 @@ package middleware
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"github.com/telekom/controlplane/common-server/api/accesstoken"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/secret-manager/api/accesstoken"
 	"github.com/telekom/controlplane/secret-manager/api/util"
 )
 
