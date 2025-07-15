@@ -5,12 +5,12 @@
 resources:
   - ../../secret-manager/config/default
   - ../../identity/config/default
-  - ../../gateway/config/default
+  #- ../../gateway/config/default
   - ../../approval/config/default
   - ../../rover/config/default
   - ../../application/config/default
   - ../../organization/config/default
-  - ../../api/config/default
+  #- ../../api/config/default
   - ../../admin/config/default
 
 configMapGenerator:
@@ -49,8 +49,8 @@ images:
     newName: ghcr.io/telekom/controlplane/secret-manager
     newTag: latest
   - name: ghcr.io/telekom/controlplane/rover
-    newName: ghcr.io/telekom/controlplane/rover
-    newTag: latest
+    newName: ko.local
+    newTag: rover-test
   - name: ghcr.io/telekom/controlplane/application
     newName: ghcr.io/telekom/controlplane/application
     newTag: latest

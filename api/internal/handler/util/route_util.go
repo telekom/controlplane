@@ -359,39 +359,7 @@ func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, dow
 		routeConsumer.Spec = gatewayapi.ConsumeRouteSpec{
 			Route:        routeRef,
 			ConsumerName: clientId,
-		}
-
-		if apiSub.HasM2M() {
-			if apiSub.Spec.Security.M2M.Client != nil {
-				routeConsumer.Spec.Security = &gatewayapi.ConsumerSecurity{
-					M2M: &gatewayapi.ConsumerMachine2MachineAuthentication{
-						Client: &gatewayapi.OAuth2ClientCredentials{
-							ClientId:     apiSub.Spec.Security.M2M.Client.ClientId,
-							ClientSecret: apiSub.Spec.Security.M2M.Client.ClientSecret,
-						},
-						Scopes: apiSub.Spec.Security.M2M.Scopes,
-					},
-				}
-
-			} else if apiSub.Spec.Security.M2M.Basic != nil {
-				routeConsumer.Spec.Security = &gatewayapi.ConsumerSecurity{
-					M2M: &gatewayapi.ConsumerMachine2MachineAuthentication{
-						Basic: &gatewayapi.BasicAuthCredentials{
-							Username: apiSub.Spec.Security.M2M.Basic.Username,
-							Password: apiSub.Spec.Security.M2M.Basic.Password,
-						},
-						Scopes: apiSub.Spec.Security.M2M.Scopes,
-					},
-				}
-
-			} else if apiSub.Spec.Security.M2M.Scopes != nil {
-				routeConsumer.Spec.Security = &gatewayapi.ConsumerSecurity{
-					M2M: &gatewayapi.ConsumerMachine2MachineAuthentication{
-						Scopes: apiSub.Spec.Security.M2M.Scopes,
-					},
-				}
-
-			}
+			Security:     mapConsumerSecurity(apiSub.Spec.Security),
 		}
 
 		return nil
@@ -433,6 +401,40 @@ func mapSecurity(apiSecurity *apiapi.Security) *gatewayapi.Security {
 					ClientId:     apiSecurity.M2M.ExternalIDP.Client.ClientId,
 					ClientSecret: apiSecurity.M2M.ExternalIDP.Client.ClientSecret,
 				}
+			}
+		}
+		if apiSecurity.M2M.Basic != nil {
+			security.M2M.Basic = &gatewayapi.BasicAuthCredentials{
+				Username: apiSecurity.M2M.Basic.Username,
+				Password: apiSecurity.M2M.Basic.Password,
+			}
+		}
+
+	}
+
+	return security
+}
+
+func mapConsumerSecurity(apiSecurity *apiapi.SubscriberSecurity) *gatewayapi.ConsumerSecurity {
+	if apiSecurity == nil {
+		return nil
+	}
+
+	security := &gatewayapi.ConsumerSecurity{}
+
+	if apiSecurity.M2M != nil {
+		security.M2M = &gatewayapi.ConsumerMachine2MachineAuthentication{
+			Scopes: apiSecurity.M2M.Scopes,
+		}
+		if apiSecurity.M2M.Client != nil {
+			security.M2M.Client = &gatewayapi.OAuth2ClientCredentials{
+				ClientId:     apiSecurity.M2M.Client.ClientId,
+				ClientSecret: apiSecurity.M2M.Client.ClientSecret,
+			}
+		} else if apiSecurity.M2M.Basic != nil {
+			security.M2M.Basic = &gatewayapi.BasicAuthCredentials{
+				Username: apiSecurity.M2M.Basic.Username,
+				Password: apiSecurity.M2M.Basic.Password,
 			}
 		}
 	}
