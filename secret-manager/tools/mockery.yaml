@@ -17,6 +17,11 @@ packages:
         config:
       SecretId:
         config:
+  github.com/telekom/controlplane/secret-manager/pkg/backend/cache/metrics:
+    config:
+    interfaces:
+      CollectionInterface:
+        config:
   github.com/telekom/controlplane/secret-manager/pkg/backend/conjur:
     config:
     interfaces:
