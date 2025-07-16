@@ -12,9 +12,9 @@ import (
 
 // ConsumeRouteSpec defines the desired state of ConsumeRoute
 type ConsumeRouteSpec struct {
-	Route        types.ObjectRef   `json:"route"`
-	ConsumerName string            `json:"consumerName"`
-	Security     *ConsumerSecurity `json:"security,omitempty"`
+	Route        types.ObjectRef       `json:"route"`
+	ConsumerName string                `json:"consumerName"`
+	Security     *ConsumeRouteSecurity `json:"security,omitempty"`
 }
 
 func (c *ConsumeRoute) HasM2M() bool {

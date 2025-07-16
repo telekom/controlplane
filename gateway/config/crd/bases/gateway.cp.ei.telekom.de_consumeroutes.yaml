@@ -64,9 +64,6 @@ spec:
                 - namespace
                 type: object
               security:
-                description: |-
-                  Security defines the security configuration for the Rover
-                  Security is optional, but if provided, exactly one of m2m or h2m must be set
                 properties:
                   m2m:
                     description: M2M defines machine-to-machine authentication configuration

@@ -5,6 +5,7 @@
 package client
 
 import (
+	"net/http"
 	"slices"
 )
 
@@ -49,4 +50,21 @@ func CheckStatusCode(res ApiResponse, okStatusCodes ...int) ApiError {
 		Message:      "Kong client error",
 		RetryAllowed: false,
 	}
+}
+
+func WrapApiResponse(res *http.Response) ApiResponse {
+	return &responseWrapper{
+		response: res,
+	}
+}
+
+type responseWrapper struct {
+	response *http.Response
+}
+
+func (r *responseWrapper) StatusCode() int {
+	if r.response == nil {
+		return 0
+	}
+	return r.response.StatusCode
 }

@@ -44,7 +44,7 @@ var _ = Describe("ExternalIDPFeature", func() {
 						Upstreams: []gatewayv1.Upstream{},
 					},
 				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route)
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
 				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
 			})
 
@@ -63,7 +63,7 @@ var _ = Describe("ExternalIDPFeature", func() {
 						},
 					},
 				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route)
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
 				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
 			})
 
@@ -88,7 +88,7 @@ var _ = Describe("ExternalIDPFeature", func() {
 						},
 					},
 				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route)
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
 				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeTrue())
 			})
 		})

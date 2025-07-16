@@ -5,6 +5,7 @@
 package controller
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -71,12 +72,10 @@ var _ = Describe("Consumer Controller", Ordered, func() {
 	Context("When creating a Consumer", func() {
 
 		It("should successfully provision the Consumer", func() {
+
 			By("Creating the Consumer")
 			err := k8sClient.Create(ctx, consumer)
 			Expect(err).NotTo(HaveOccurred())
-
-			By("Setting up the mocks")
-			GetMockClientFor(gateway).EXPECT().CreateOrReplaceConsumer(gomock.Any(), consumer.Name).Return(nil).MinTimes(1)
 
 			By("Checking the status")
 			Eventually(func(g Gomega) {
@@ -102,7 +101,10 @@ var _ = Describe("Consumer Controller", Ordered, func() {
 
 		It("should delete the Consumer", func() {
 			By("Setting up the mocks")
-			GetMockClientFor(gateway).EXPECT().DeleteConsumer(gomock.Any(), consumer.Spec.Name).Return(nil).MinTimes(1)
+			GetMockClientFor(gateway).EXPECT().DeleteConsumer(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, actual *gatewayv1.Consumer) error {
+				Expect(actual.Name).To(Equal(consumer.Name))
+				return nil
+			}).MinTimes(1)
 
 			By("Deleting the Consumer")
 			err := k8sClient.Delete(ctx, consumer)

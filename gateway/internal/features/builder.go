@@ -16,6 +16,9 @@ import (
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
 )
 
+var ErrNoRoute = errors.New("no route found in builder context")
+var ErrNoConsumer = errors.New("no consumer found in builder context")
+
 type Feature interface {
 	// Name of the feature
 	Name() gatewayv1.FeatureType
@@ -35,7 +38,8 @@ type Feature interface {
 //go:generate mockgen -source=builder.go -destination=mock/builder.gen.go -package=mock
 type FeaturesBuilder interface {
 	EnableFeature(f Feature)
-	GetRoute() *gatewayv1.Route
+	GetRoute() (*gatewayv1.Route, bool)
+	GetConsumer() (*gatewayv1.Consumer, bool)
 	GetRealm() *gatewayv1.Realm
 	GetGateway() *gatewayv1.Gateway
 	GetAllowedConsumers() []*gatewayv1.ConsumeRoute
@@ -48,8 +52,10 @@ type FeaturesBuilder interface {
 	RateLimitPlugin() *plugin.RateLimitPlugin
 	JumperConfig() *plugin.JumperConfig
 	RoutingConfigs() *plugin.RoutingConfigs
+	IpRestrictionPlugin() *plugin.IpRestrictionPlugin
 
 	Build(context.Context) error
+	BuildForConsumer(context.Context) error
 }
 
 var _ FeaturesBuilder = &Builder{}
@@ -60,7 +66,9 @@ type Builder struct {
 
 	// AllowedConsumers are the consumers that are allowed to consume the passed route
 	AllowedConsumers []*gatewayv1.ConsumeRoute
-	Route            *gatewayv1.Route
+
+	Route    *gatewayv1.Route
+	Consumer *gatewayv1.Consumer
 
 	Realm   *gatewayv1.Realm
 	Gateway *gatewayv1.Gateway
@@ -80,12 +88,13 @@ type Builder struct {
 	Features map[gatewayv1.FeatureType]Feature
 }
 
-var NewFeatureBuilder = func(kc client.KongClient, route *gatewayv1.Route, realm *gatewayv1.Realm, gateway *gatewayv1.Gateway) FeaturesBuilder {
+var NewFeatureBuilder = func(kc client.KongClient, route *gatewayv1.Route, consumer *gatewayv1.Consumer, realm *gatewayv1.Realm, gateway *gatewayv1.Gateway) FeaturesBuilder {
 	return &Builder{
 		kc: kc,
 
 		AllowedConsumers: []*gatewayv1.ConsumeRoute{},
 		Route:            route,
+		Consumer:         consumer,
 		Realm:            realm,
 		Gateway:          gateway,
 
@@ -98,8 +107,17 @@ func (b *Builder) EnableFeature(f Feature) {
 	b.Features[f.Name()] = f
 }
 
-func (b *Builder) GetRoute() *gatewayv1.Route {
-	return b.Route
+func (b *Builder) GetRoute() (*gatewayv1.Route, bool) {
+	if b.Route == nil {
+		return nil, false
+	}
+	return b.Route, true
+}
+func (b *Builder) GetConsumer() (*gatewayv1.Consumer, bool) {
+	if b.Consumer == nil {
+		return nil, false
+	}
+	return b.Consumer, true
 }
 
 func (b *Builder) GetRealm() *gatewayv1.Realm {
@@ -196,6 +214,22 @@ func (b *Builder) RoutingConfigs() *plugin.RoutingConfigs {
 	return b.routingConfigs
 }
 
+func (b *Builder) IpRestrictionPlugin() *plugin.IpRestrictionPlugin {
+	var ipRestrictionPlugin *plugin.IpRestrictionPlugin
+
+	if p, ok := b.Plugins["ip-restriction"]; ok {
+		ipRestrictionPlugin, ok = p.(*plugin.IpRestrictionPlugin)
+		if !ok {
+			panic("plugin is not a IpRestrictionPlugin")
+		}
+	} else {
+		ipRestrictionPlugin = plugin.IpRestrictionPluginFromConsumer(b.Consumer)
+		b.Plugins["ip-restriction"] = ipRestrictionPlugin
+	}
+
+	return ipRestrictionPlugin
+}
+
 func (b *Builder) SetUpstream(upstream client.Upstream) {
 	b.Upstream = upstream
 }
@@ -242,12 +276,51 @@ func (b *Builder) Build(ctx context.Context) error {
 		}
 	}
 
-	err = b.kc.CleanupPlugins(ctx, b.Route, toSlice(b.Plugins))
+	err = b.kc.CleanupPlugins(ctx, b.Route, nil, toSlice(b.Plugins))
 	if err != nil {
 		return errors.Wrap(err, "failed to cleanup plugins")
 	}
 
 	return nil
+}
+
+func (b *Builder) BuildForConsumer(ctx context.Context) error {
+	log := logr.FromContextOrDiscard(ctx).WithName("features.builder").WithValues("route", b.Consumer.Name)
+
+	for _, f := range sortFeatures(toSlice(b.Features)) {
+		if f.IsUsed(ctx, b) {
+			log.V(1).Info("Applying feature", "name", f.Name())
+			err := f.Apply(ctx, b)
+			if err != nil {
+				return err
+			}
+		} else {
+			log.V(1).Info("Feature is not used", "name", f.Name())
+		}
+	}
+
+	// In case a plugin was used before but is not used anymore, we need to remove it
+	b.Consumer.Status.Properties = map[string]string{}
+
+	_, err := b.kc.CreateOrReplaceConsumer(ctx, b.Consumer)
+	if err != nil {
+		return errors.Wrap(err, "failed to create or replace route")
+	}
+
+	for pn, p := range b.Plugins {
+		_, err = b.kc.CreateOrReplacePlugin(ctx, p)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create or replace plugin %s", pn)
+		}
+	}
+
+	err = b.kc.CleanupPlugins(ctx, nil, b.Consumer, toSlice(b.Plugins))
+	if err != nil {
+		return errors.Wrap(err, "failed to cleanup plugins")
+	}
+
+	return nil
+
 }
 
 // sort features based on their priority

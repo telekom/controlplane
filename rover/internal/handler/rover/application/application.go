@@ -90,6 +90,15 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 			FailoverZones: subscriberFailoverZones,
 		}
 
+		if owner.Spec.IpRestriction != nil {
+			application.Spec.Security = &applicationv1.Security{
+				IpRestriction: &applicationv1.IpRestriction{
+					Allow: owner.Spec.IpRestriction.Allow,
+					Deny:  owner.Spec.IpRestriction.Deny,
+				},
+			}
+		}
+
 		return nil
 	}
 

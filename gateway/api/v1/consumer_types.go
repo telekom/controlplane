@@ -14,6 +14,8 @@ import (
 type ConsumerSpec struct {
 	Realm types.ObjectRef `json:"realm"`
 	Name  string          `json:"name"`
+
+	Security *ConsumerSecurity `json:"security,omitempty"`
 }
 
 // ConsumerStatus defines the observed state of Consumer
@@ -23,9 +25,8 @@ type ConsumerStatus struct {
 	// +patchStrategy=merge
 	// +patchMergeKey=type
 	// +optional
-	Conditions          []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
-	KongConsumerId      string             `json:"kongConsumerId"`
-	KongConsumerGroupId string             `json:"kongConsumerGroupId"`
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+	Properties map[string]string  `json:"properties,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -61,6 +62,33 @@ func (c *Consumer) GetConditions() []metav1.Condition {
 
 func (c *Consumer) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&c.Status.Conditions, condition)
+}
+
+func (c *Consumer) GetConsumerName() string {
+	return c.Spec.Name
+}
+
+func (c *Consumer) SetId(id string) {
+	c.SetProperty("kongConsumerId", id)
+}
+
+func (c *Consumer) SetProperty(key, val string) {
+	if c.Status.Properties == nil {
+		c.Status.Properties = make(map[string]string)
+	}
+	c.Status.Properties[key] = val
+}
+
+func (c *Consumer) GetProperty(key string) string {
+	if c.Status.Properties == nil {
+		return ""
+	}
+	val := c.Status.Properties[key]
+	return val
+}
+
+func (c *Consumer) HasIpRestriction() bool {
+	return c.Spec.Security != nil && c.Spec.Security.IpRestriction != nil
 }
 
 func (c *ConsumerList) GetItems() []types.Object {

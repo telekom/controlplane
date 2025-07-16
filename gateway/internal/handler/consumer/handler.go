@@ -10,49 +10,26 @@ import (
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
-	v1 "github.com/telekom/controlplane/gateway/api/v1"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	"github.com/telekom/controlplane/gateway/internal/features"
+	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	"github.com/telekom/controlplane/gateway/internal/handler/gateway"
 	"github.com/telekom/controlplane/gateway/internal/handler/realm"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 )
 
-var _ handler.Handler[*v1.Consumer] = &ConsumerHandler{}
+var _ handler.Handler[*gatewayv1.Consumer] = &ConsumerHandler{}
 
 type ConsumerHandler struct{}
 
-func (h *ConsumerHandler) CreateOrUpdate(ctx context.Context, consumer *v1.Consumer) error {
-
-	consumer.SetCondition(condition.NewProcessingCondition("Processing", "Processing consumer"))
-	consumer.SetCondition(condition.NewNotReadyCondition("ConsumerNotReady", "Consumer not ready"))
-
-	ready, realm, err := realm.GetRealmByRef(ctx, consumer.Spec.Realm)
+func (h *ConsumerHandler) CreateOrUpdate(ctx context.Context, consumer *gatewayv1.Consumer) error {
+	builder, err := NewFeatureBuilder(ctx, consumer)
 	if err != nil {
-		return err
-	}
-	if !ready {
-		consumer.SetCondition(condition.NewBlockedCondition("Realm not ready"))
-		consumer.SetCondition(condition.NewNotReadyCondition("RealmNotReady", "Realm not ready"))
-		return nil
+		return errors.Wrap(err, "failed to create feature builder")
 	}
 
-	ready, gateway, err := gateway.GetGatewayByRef(ctx, *realm.Spec.Gateway, true)
-	if err != nil {
-		return err
-	}
-	if !ready {
-		consumer.SetCondition(condition.NewBlockedCondition("Gateway not ready"))
-		consumer.SetCondition(condition.NewNotReadyCondition("GatewayNotReady", "Gateway not ready"))
-		return nil
-	}
-
-	kc, err := kongutil.GetClientFor(gateway)
-	if err != nil {
-		return errors.Wrap(err, "failed to get kong client")
-	}
-
-	err = kc.CreateOrReplaceConsumer(ctx, consumer.Spec.Name)
-	if err != nil {
-		return errors.Wrap(err, "failed to create or update consumer")
+	if err := builder.BuildForConsumer(ctx); err != nil {
+		return errors.Wrap(err, "failed to build route")
 	}
 
 	consumer.SetCondition(condition.NewDoneProcessingCondition("Consumer is ready"))
@@ -61,7 +38,7 @@ func (h *ConsumerHandler) CreateOrUpdate(ctx context.Context, consumer *v1.Consu
 	return nil
 }
 
-func (h *ConsumerHandler) Delete(ctx context.Context, consumer *v1.Consumer) error {
+func (h *ConsumerHandler) Delete(ctx context.Context, consumer *gatewayv1.Consumer) error {
 	_, realm, err := realm.GetRealmByRef(ctx, consumer.Spec.Realm)
 	if err != nil {
 		return err
@@ -77,10 +54,42 @@ func (h *ConsumerHandler) Delete(ctx context.Context, consumer *v1.Consumer) err
 		return errors.Wrap(err, "failed to get kong client")
 	}
 
-	err = kc.DeleteConsumer(ctx, consumer.Spec.Name)
+	err = kc.DeleteConsumer(ctx, consumer)
 	if err != nil {
 		return errors.Wrap(err, "failed to create or update consumer")
 	}
 
 	return nil
+}
+
+func NewFeatureBuilder(ctx context.Context, consumer *gatewayv1.Consumer) (features.FeaturesBuilder, error) {
+	ready, realm, err := realm.GetRealmByRef(ctx, consumer.Spec.Realm)
+	if err != nil {
+		return nil, err
+	}
+	if !ready {
+		consumer.SetCondition(condition.NewBlockedCondition("Realm is not ready"))
+		consumer.SetCondition(condition.NewNotReadyCondition("RealmNotReady", "Realm is not ready"))
+		return nil, nil
+	}
+
+	ready, gateway, err := gateway.GetGatewayByRef(ctx, *realm.Spec.Gateway, true)
+	if err != nil {
+		return nil, err
+	}
+	if !ready {
+		consumer.SetCondition(condition.NewBlockedCondition("Gateway is not ready"))
+		consumer.SetCondition(condition.NewNotReadyCondition("GatewayNotReady", "Gateway is not ready"))
+		return nil, nil
+	}
+
+	kc, err := kongutil.GetClientFor(gateway)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get kong client")
+	}
+
+	builder := features.NewFeatureBuilder(kc, nil, consumer, realm, gateway)
+	builder.EnableFeature(feature.InstanceIpRestrictionFeature)
+
+	return builder, nil
 }

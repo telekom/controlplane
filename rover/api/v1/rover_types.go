@@ -90,6 +90,10 @@ type RoverSpec struct {
 	// +kubebuilder:validation:MinLength=1
 	Zone string `json:"zone"`
 
+	// IpRestriction defines IP-based access restrictions for the entire Application
+	// +kubebuilder:validation:Optional
+	IpRestriction *IpRestriction `json:"ipRestriction,omitempty"`
+
 	// ClientSecret is the secret used for client authentication
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
@@ -154,6 +158,19 @@ const (
 	// LoadBalancingLeastConnections sends requests to the upstream with the fewest active connections
 	LoadBalancingLeastConnections LoadBalancingStrategy = "LeastConnections"
 )
+
+type IpRestriction struct {
+	// Allow is a list of IP addresses or CIDR ranges that are allowed access
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinItems=0
+	// +kubebuilder:validation:MaxItems=10
+	Allow []string `json:"allow,omitempty"`
+	// Deny is a list of IP addresses or CIDR ranges that are denied access
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinItems=0
+	// +kubebuilder:validation:MaxItems=10
+	Deny []string `json:"deny,omitempty"`
+}
 
 // Exposure defines a service that is exposed by this Rover
 // +kubebuilder:validation:XValidation:rule="self == null || has(self.api) || has(self.event)", message="At least one of api or event must be specified"

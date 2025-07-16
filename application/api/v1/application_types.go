@@ -10,16 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-type TeamCategory string
-
-const (
-	CUSTOMER       TeamCategory = "customer"
-	INFRASTRUCTURE TeamCategory = "infrastructure"
-)
-
 // ApplicationSpec defines the desired state of Application
 type ApplicationSpec struct {
 	// Team is the name of the team responsible for the application
@@ -53,6 +43,20 @@ type ApplicationSpec struct {
 	// If NeedsClient is true, the consumer will be created for the client
 	// +kubebuilder:default=true
 	NeedsConsumer bool `json:"needsConsumer"`
+
+	// Security defines the security configuration for the application
+	Security *Security `json:"security,omitempty"`
+}
+
+type Security struct {
+	IpRestriction *IpRestriction `json:"ipRestrictions,omitempty"`
+}
+
+type IpRestriction struct {
+	// +kubebuilder:validation:Optional
+	Allow []string `json:"allow,omitempty"`
+	// +kubebuilder:validation:Optional
+	Deny []string `json:"deny,omitempty"`
 }
 
 // ApplicationStatus defines the observed state of Application
