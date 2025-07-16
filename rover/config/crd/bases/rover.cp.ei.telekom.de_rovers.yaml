@@ -346,7 +346,11 @@ spec:
                                       minItems: 1
                                       type: array
                                   type: object
+                              required:
+                              - headers
                               type: object
+                          required:
+                          - request
                           type: object
                         upstreams:
                           description: Upstreams defines the backend service endpoints
@@ -547,7 +551,11 @@ spec:
                                       minItems: 1
                                       type: array
                                   type: object
+                              required:
+                              - headers
                               type: object
+                          required:
+                          - request
                           type: object
                       required:
                       - basePath

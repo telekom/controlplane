@@ -60,6 +60,16 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 			Upstreams:   make([]apiapi.Upstream, len(exp.Upstreams)),
 		}
 
+		if exp.Transformation != nil {
+			apiExposure.Spec.Transformation = &apiapi.Transformation{
+				Request: apiapi.RequestResponseTransformation{
+					Headers: apiapi.HeaderTransformation{
+						Remove: exp.Transformation.Request.Headers.Remove,
+					},
+				},
+			}
+		}
+
 		if exp.Security != nil {
 			if exp.Security.M2M != nil {
 				apiExposure.Spec.Security = &apiapi.Security{

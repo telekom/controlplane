@@ -31,6 +31,8 @@ type ApiExposureSpec struct {
 
 	Traffic Traffic `json:"traffic"`
 
+	Transformation *Transformation `json:"transformation,omitempty"`
+
 	Security *Security `json:"security,omitempty"`
 }
 

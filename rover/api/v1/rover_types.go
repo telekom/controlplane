@@ -221,7 +221,7 @@ type ApiExposure struct {
 
 	// Transformation defines optional request/response transformations for this API
 	// +kubebuilder:validation:Optional
-	Transformation Transformation `json:"transformation"`
+	Transformation *Transformation `json:"transformation"`
 	// Traffic defines optional traffic management configuration for this API
 	// +kubebuilder:validation:Optional
 	Traffic Traffic `json:"traffic"`
@@ -328,14 +328,14 @@ type Upstream struct {
 // This is shared object for both subscriptions and exposures
 type Transformation struct {
 	// Request defines transformations applied to incoming API requests
-	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Required
 	Request RequestResponseTransformation `json:"request"`
 }
 
 // RequestResponseTransformation defines transformations applied to API requests and responses
 type RequestResponseTransformation struct {
 	// Headers defines HTTP header modifications for requests
-	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Required
 	Headers HeaderTransformation `json:"headers"`
 }
 

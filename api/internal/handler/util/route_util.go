@@ -325,6 +325,13 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 				downstream,
 			},
 			Traffic: gatewayapi.Traffic{},
+			Transformation: &gatewayapi.Transformation{
+				Request: gatewayapi.RequestResponseTransformation{
+					Headers: gatewayapi.HeaderTransformation{
+						Remove: apiExposure.Spec.Transformation.Request.Headers.Remove,
+					},
+				},
+			},
 		}
 		route.Spec.Security = mapSecurity(apiExposure.Spec.Security)
 

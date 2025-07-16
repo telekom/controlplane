@@ -341,6 +341,37 @@ spec:
                     - upstreams
                     type: object
                 type: object
+              transformation:
+                description: Transformation defines optional request/response transformations
+                  for this API
+                properties:
+                  request:
+                    description: Request defines transformations applied to incoming
+                      API requests
+                    properties:
+                      headers:
+                        description: Headers defines HTTP header modifications for
+                          requests
+                        properties:
+                          add:
+                            description: Add is a list of HTTP headers to add to the
+                              request/response
+                            items:
+                              type: string
+                            maxItems: 5
+                            minItems: 1
+                            type: array
+                          remove:
+                            description: Remove is a list of HTTP header names to
+                              remove
+                            items:
+                              type: string
+                            maxItems: 5
+                            minItems: 1
+                            type: array
+                        type: object
+                    type: object
+                type: object
               upstreams:
                 items:
                   properties:
