@@ -17,7 +17,6 @@ const (
 	configKeyDefaultNamespace    = "default-namespace"
 	configKeyDefaultEnvironment  = "default-environment"
 	configKeyLabelKeyPrefix      = "label-key-prefix"
-	configKeyFinalizerSuffix     = "finalizer-suffix"
 	configKeyJitterFactor        = "jitter-factor"
 	configKeyMaxBackoff          = "max-backoff"
 	configKeyMaxConcurrentRec    = "max-concurrent-reconciles"
@@ -73,7 +72,6 @@ func registerEnvsOrDie() {
 		configKeyDefaultNamespace:    "DEFAULT_NAMESPACE",
 		configKeyDefaultEnvironment:  "DEFAULT_ENVIRONMENT",
 		configKeyLabelKeyPrefix:      "LABEL_KEY_PREFIX",
-		configKeyFinalizerSuffix:     "FINALIZER_SUFFIX",
 		configKeyJitterFactor:        "JITTER_FACTOR",
 		configKeyMaxBackoff:          "MAX_BACKOFF",
 		configKeyMaxConcurrentRec:    "MAX_CONCURRENT_RECONCILES",
