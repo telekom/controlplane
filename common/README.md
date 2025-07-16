@@ -101,7 +101,7 @@ Examples to use in `common` present configs:
 
 #### Add new custom configuration in a domain
 
-Domains can additional add custom configuration options that are not part of `common`.
+Domains can additionally add custom configuration options that are not part of `common`.
 Simply, add a new configuration key to the global [Viper](https://github.com/spf13/viper) configuration.
 
 Take a look at the following example:
