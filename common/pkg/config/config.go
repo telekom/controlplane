@@ -5,6 +5,7 @@
 package config
 
 import (
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -12,14 +13,14 @@ import (
 
 // Configuration key constants
 const (
-	configKeyRequeueAfterOnError = "requeue-after-on-error"
-	configKeyRequeueAfter        = "requeue-after"
-	configKeyDefaultNamespace    = "default-namespace"
-	configKeyDefaultEnvironment  = "default-environment"
-	configKeyLabelKeyPrefix      = "label-key-prefix"
-	configKeyJitterFactor        = "jitter-factor"
-	configKeyMaxBackoff          = "max-backoff"
-	configKeyMaxConcurrentRec    = "max-concurrent-reconciles"
+	configKeyRequeueAfterOnError = "REQUEUE_AFTER_ON_ERROR"
+	configKeyRequeueAfter        = "REQUEUE_AFTER"
+	configKeyDefaultNamespace    = "DEFAULT_NAMESPACE"
+	configKeyDefaultEnvironment  = "DEFAULT_ENVIRONMENT"
+	configKeyLabelKeyPrefix      = "LABEL_KEY_PREFIX"
+	configKeyJitterFactor        = "JITTER_FACTOR"
+	configKeyMaxBackoff          = "MAX_BACKOFF"
+	configKeyMaxConcurrentRec    = "MAX_CONCURRENT_RECONCILES"
 )
 
 const (
@@ -64,24 +65,8 @@ func registerDefaults() {
 }
 
 func registerEnvsOrDie() {
-	// Explicitly bind environment variables to configuration keys
-
-	envKeyMap := map[string]string{
-		configKeyRequeueAfterOnError: "REQUEUE_AFTER_ON_ERROR",
-		configKeyRequeueAfter:        "REQUEUE_AFTER",
-		configKeyDefaultNamespace:    "DEFAULT_NAMESPACE",
-		configKeyDefaultEnvironment:  "DEFAULT_ENVIRONMENT",
-		configKeyLabelKeyPrefix:      "LABEL_KEY_PREFIX",
-		configKeyJitterFactor:        "JITTER_FACTOR",
-		configKeyMaxBackoff:          "MAX_BACKOFF",
-		configKeyMaxConcurrentRec:    "MAX_CONCURRENT_RECONCILES",
-	}
-
-	for key, env := range envKeyMap {
-		if err := viper.BindEnv(key, env); err != nil {
-			panic(err)
-		}
-	}
+	viper.AutomaticEnv() // Automatically map environment variables to viper keys
+	viper.EnvKeyReplacer(strings.NewReplacer("-", "_"))
 }
 
 func Parse() {
