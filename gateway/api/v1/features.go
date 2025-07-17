@@ -8,10 +8,10 @@ type FeatureType string
 
 // Independent Features
 const (
-	FeatureTypePassThrough   FeatureType = "PassThrough"
-	FeatureTypeAccessControl FeatureType = "AccessControl"
-	FeatureTypeRateLimit     FeatureType = "RateLimit"
-	FeatureTypeRemoveHeaders FeatureType = "RemoveHeaders"
+	FeatureTypePassThrough          FeatureType = "PassThrough"
+	FeatureTypeAccessControl        FeatureType = "AccessControl"
+	FeatureTypeRateLimit            FeatureType = "RateLimit"
+	FeatureTypeHeaderTransformation FeatureType = "HeaderTransformation	"
 )
 
 // Dependent Features

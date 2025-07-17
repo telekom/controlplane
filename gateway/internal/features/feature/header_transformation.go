@@ -11,31 +11,31 @@ import (
 	"github.com/telekom/controlplane/gateway/internal/features"
 )
 
-var _ features.Feature = &RemoveHeadersFeature{}
+var _ features.Feature = &HeaderTransformationFeature{}
 
-type RemoveHeadersFeature struct {
+type HeaderTransformationFeature struct {
 	priority int
 }
 
-var InstanceRemoveHeadersFeature = &RemoveHeadersFeature{
+var InstanceRemoveHeadersFeature = &HeaderTransformationFeature{
 	priority: 0,
 }
 
-func (f *RemoveHeadersFeature) Name() gatewayv1.FeatureType {
-	return gatewayv1.FeatureTypeRemoveHeaders
+func (f *HeaderTransformationFeature) Name() gatewayv1.FeatureType {
+	return gatewayv1.FeatureTypeHeaderTransformation
 }
 
-func (f *RemoveHeadersFeature) Priority() int {
+func (f *HeaderTransformationFeature) Priority() int {
 	return f.priority
 }
 
-func (f *RemoveHeadersFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
+func (f *HeaderTransformationFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
 	isPrimaryRoute := !builder.GetRoute().IsProxy()
 
 	return isPrimaryRoute
 }
 
-func (f *RemoveHeadersFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
+func (f *HeaderTransformationFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
 	route := builder.GetRoute()
 	RequestTransformerPlugin := builder.RequestTransformerPlugin()
 

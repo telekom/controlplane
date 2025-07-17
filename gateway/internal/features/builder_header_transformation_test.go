@@ -19,7 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("FeatureBuilder removeHeaders", Ordered, func() {
+var _ = Describe("FeatureBuilder HeaderTransformation", Ordered, func() {
 	var ctx = context.Background()
 	ctx = contextutil.WithEnv(ctx, "test")
 	BeforeEach(func() {
@@ -32,13 +32,13 @@ var _ = Describe("FeatureBuilder removeHeaders", Ordered, func() {
 			mockKc = mock.NewMockKongClient(mockCtrl)
 		})
 
-		It("should apply the removeHeaders RT config", func() {
+		It("should apply the HeaderTransformation RT config", func() {
 			route := NewMockRouteWithRemoveHeaders()
 
 			By("building the features")
 			builder := features.NewFeatureBuilder(mockKc, route, realm, gateway)
 			builder.SetUpstream(route.Spec.Upstreams[0])
-			builder.EnableFeature(&feature.RemoveHeadersFeature{})
+			builder.EnableFeature(&feature.HeaderTransformationFeature{})
 
 			mockKc.EXPECT().CreateOrReplaceRoute(ctx, route, gomock.Any()).Return(nil).Times(1)
 			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)

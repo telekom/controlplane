@@ -17,24 +17,24 @@ import (
 var _ = Describe("RemoveHeadersFeature", func() {
 
 	It("should return the correct feature type", func() {
-		Expect(InstanceRemoveHeadersFeature.Name()).To(Equal(gatewayv1.FeatureTypeRemoveHeaders))
+		Expect(InstanceRemoveHeadersFeature.Name()).To(Equal(gatewayv1.FeatureTypeHeaderTransformation))
 	})
 
 	Context("with mocked feature builder", func() {
 
 		var ctrl *gomock.Controller
 		var mockFeatureBuilder *featuresmock.MockFeaturesBuilder
-		var feature RemoveHeadersFeature
+		var feature HeaderTransformationFeature
 
 		BeforeEach(func() {
-			feature = RemoveHeadersFeature{}
+			feature = HeaderTransformationFeature{}
 
 			ctrl = gomock.NewController(GinkgoT())
 			mockFeatureBuilder = featuresmock.NewMockFeaturesBuilder(ctrl)
 		})
 
 		Context("check IsUsed", func() {
-			It("proxy route, RemoveHeaders should not be used", func() {
+			It("proxy route, HeaderTransformation should not be used", func() {
 				route := &gatewayv1.Route{
 					Spec: gatewayv1.RouteSpec{
 						Upstreams: []gatewayv1.Upstream{
@@ -59,7 +59,7 @@ var _ = Describe("RemoveHeadersFeature", func() {
 				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
 			})
 
-			It("real route, RemoveHeaders should be used", func() {
+			It("real route, HeaderTransformation should be used", func() {
 				route := &gatewayv1.Route{
 					Spec: gatewayv1.RouteSpec{
 						Upstreams: []gatewayv1.Upstream{
