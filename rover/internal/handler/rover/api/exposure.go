@@ -58,25 +58,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 			Approval:    apiapi.ApprovalStrategy(exp.Approval.Strategy),
 			Zone:        zoneRef,
 			Upstreams:   make([]apiapi.Upstream, len(exp.Upstreams)),
-		}
-
-		if exp.Security != nil {
-			if exp.Security.M2M != nil {
-				apiExposure.Spec.Security = &apiapi.Security{
-					M2M: &apiapi.Machine2MachineAuthentication{
-						Scopes: exp.Security.M2M.Scopes,
-					},
-				}
-				if exp.Security.M2M.ExternalIDP != nil {
-					apiExposure.Spec.Security.M2M.ExternalIDP = &apiapi.ExternalIdentityProvider{
-						TokenEndpoint: exp.Security.M2M.ExternalIDP.TokenEndpoint,
-						TokenRequest:  exp.Security.M2M.ExternalIDP.TokenRequest,
-						GrantType:     exp.Security.M2M.ExternalIDP.GrantType,
-						Basic:         toApiBasic(exp.Security.M2M.ExternalIDP.Basic),
-						Client:        toApiClient(exp.Security.M2M.ExternalIDP.Client),
-					}
-				}
-			}
+			Security:    mapSecurityToApiSecurity(exp.Security),
 		}
 
 		failoverZones, hasFailover := getFailoverZones(environment, exp.Traffic.Failover)
@@ -108,4 +90,38 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		Namespace: apiExposure.Namespace,
 	})
 	return err
+}
+
+func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
+	if roverSecurity == nil {
+		return nil
+	}
+
+	security := &apiapi.Security{}
+
+	if roverSecurity.M2M != nil {
+		security.M2M = &apiapi.Machine2MachineAuthentication{
+			Scopes: roverSecurity.M2M.Scopes,
+		}
+
+		if roverSecurity.M2M.ExternalIDP != nil {
+			security.M2M.ExternalIDP = &apiapi.ExternalIdentityProvider{
+				TokenEndpoint: roverSecurity.M2M.ExternalIDP.TokenEndpoint,
+				TokenRequest:  roverSecurity.M2M.ExternalIDP.TokenRequest,
+				GrantType:     roverSecurity.M2M.ExternalIDP.GrantType,
+				Client:        toApiClient(roverSecurity.M2M.ExternalIDP.Client),
+				Basic:         toApiBasic(roverSecurity.M2M.ExternalIDP.Basic),
+			}
+		}
+
+		if roverSecurity.M2M.Basic != nil {
+			security.M2M.Basic = &apiapi.BasicAuthCredentials{
+				Username: roverSecurity.M2M.Basic.Username,
+				Password: roverSecurity.M2M.Basic.Password,
+			}
+		}
+	}
+
+	return security
+
 }
