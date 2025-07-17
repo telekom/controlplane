@@ -12,12 +12,12 @@ type S3FileUploader struct {
 	// todo something here
 }
 
-func (s S3FileUploader) UploadFile(ctx context.Context, env string, group string, team string, file *io.Reader) (string, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func NewS3FileUploader() *S3FileUploader {
 	//TODO implement me
 	return &S3FileUploader{}
+}
+
+func (s S3FileUploader) UploadFile(ctx context.Context, fileId string, file *io.Reader) (string, error) {
+	//TODO implement me
+	panic("implement me")
 }

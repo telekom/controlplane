@@ -38,12 +38,12 @@ type FileUploadResponse struct {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Upload a file
-	// (PUT /v1/files/{env}/{group}/{team})
-	UploadFile(c *fiber.Ctx, env string, group string, team string) error
 	// Download a file
-	// (GET /v1/files/{env}/{group}/{team}/{fileId})
-	DownloadFile(c *fiber.Ctx, env string, group string, team string, fileId string) error
+	// (GET /v1/files/{fileId})
+	DownloadFile(c *fiber.Ctx, fileId string) error
+	// Upload a file
+	// (PUT /v1/files/{fileId})
+	UploadFile(c *fiber.Ctx, fileId string) error
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -53,66 +53,10 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc fiber.Handler
 
-// UploadFile operation middleware
-func (siw *ServerInterfaceWrapper) UploadFile(c *fiber.Ctx) error {
-
-	var err error
-
-	// ------------- Path parameter "env" -------------
-	var env string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "env", c.Params("env"), &env, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter env: %w", err).Error())
-	}
-
-	// ------------- Path parameter "group" -------------
-	var group string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "group", c.Params("group"), &group, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter group: %w", err).Error())
-	}
-
-	// ------------- Path parameter "team" -------------
-	var team string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "team", c.Params("team"), &team, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter team: %w", err).Error())
-	}
-
-	return siw.Handler.UploadFile(c, env, group, team)
-}
-
 // DownloadFile operation middleware
 func (siw *ServerInterfaceWrapper) DownloadFile(c *fiber.Ctx) error {
 
 	var err error
-
-	// ------------- Path parameter "env" -------------
-	var env string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "env", c.Params("env"), &env, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter env: %w", err).Error())
-	}
-
-	// ------------- Path parameter "group" -------------
-	var group string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "group", c.Params("group"), &group, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter group: %w", err).Error())
-	}
-
-	// ------------- Path parameter "team" -------------
-	var team string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "team", c.Params("team"), &team, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter team: %w", err).Error())
-	}
 
 	// ------------- Path parameter "fileId" -------------
 	var fileId string
@@ -122,7 +66,23 @@ func (siw *ServerInterfaceWrapper) DownloadFile(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter fileId: %w", err).Error())
 	}
 
-	return siw.Handler.DownloadFile(c, env, group, team, fileId)
+	return siw.Handler.DownloadFile(c, fileId)
+}
+
+// UploadFile operation middleware
+func (siw *ServerInterfaceWrapper) UploadFile(c *fiber.Ctx) error {
+
+	var err error
+
+	// ------------- Path parameter "fileId" -------------
+	var fileId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "fileId", c.Params("fileId"), &fileId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter fileId: %w", err).Error())
+	}
+
+	return siw.Handler.UploadFile(c, fileId)
 }
 
 // FiberServerOptions provides options for the Fiber server.
@@ -146,9 +106,9 @@ func RegisterHandlersWithOptions(router fiber.Router, si ServerInterface, option
 		router.Use(fiber.Handler(m))
 	}
 
-	router.Put(options.BaseURL+"/v1/files/:env/:group/:team", wrapper.UploadFile)
+	router.Get(options.BaseURL+"/v1/files/:fileId", wrapper.DownloadFile)
 
-	router.Get(options.BaseURL+"/v1/files/:env/:group/:team/:fileId", wrapper.DownloadFile)
+	router.Put(options.BaseURL+"/v1/files/:fileId", wrapper.UploadFile)
 
 }
 
@@ -164,50 +124,7 @@ type FileUploadResponseJSONResponse struct {
 	Id string `json:"id"`
 }
 
-type UploadFileRequestObject struct {
-	Env   string `json:"env"`
-	Group string `json:"group"`
-	Team  string `json:"team"`
-	Body  io.Reader
-}
-
-type UploadFileResponseObject interface {
-	VisitUploadFileResponse(ctx *fiber.Ctx) error
-}
-
-type UploadFile200JSONResponse struct{ FileUploadResponseJSONResponse }
-
-func (response UploadFile200JSONResponse) VisitUploadFileResponse(ctx *fiber.Ctx) error {
-	ctx.Response().Header.Set("Content-Type", "application/json")
-	ctx.Status(200)
-
-	return ctx.JSON(&response)
-}
-
-type UploadFile400ApplicationProblemPlusJSONResponse struct {
-	ErrorResponseApplicationProblemPlusJSONResponse
-}
-
-func (response UploadFile400ApplicationProblemPlusJSONResponse) VisitUploadFileResponse(ctx *fiber.Ctx) error {
-	ctx.Response().Header.Set("Content-Type", "application/problem+json")
-	ctx.Status(400)
-
-	return ctx.JSON(&response)
-}
-
-type UploadFile500ApplicationProblemPlusJSONResponse ApiProblem
-
-func (response UploadFile500ApplicationProblemPlusJSONResponse) VisitUploadFileResponse(ctx *fiber.Ctx) error {
-	ctx.Response().Header.Set("Content-Type", "application/problem+json")
-	ctx.Status(500)
-
-	return ctx.JSON(&response)
-}
-
 type DownloadFileRequestObject struct {
-	Env    string `json:"env"`
-	Group  string `json:"group"`
-	Team   string `json:"team"`
 	FileId string `json:"fileId"`
 }
 
@@ -253,14 +170,52 @@ func (response DownloadFile500ApplicationProblemPlusJSONResponse) VisitDownloadF
 	return ctx.JSON(&response)
 }
 
+type UploadFileRequestObject struct {
+	FileId string `json:"fileId"`
+	Body   io.Reader
+}
+
+type UploadFileResponseObject interface {
+	VisitUploadFileResponse(ctx *fiber.Ctx) error
+}
+
+type UploadFile200JSONResponse struct{ FileUploadResponseJSONResponse }
+
+func (response UploadFile200JSONResponse) VisitUploadFileResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/json")
+	ctx.Status(200)
+
+	return ctx.JSON(&response)
+}
+
+type UploadFile400ApplicationProblemPlusJSONResponse struct {
+	ErrorResponseApplicationProblemPlusJSONResponse
+}
+
+func (response UploadFile400ApplicationProblemPlusJSONResponse) VisitUploadFileResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/problem+json")
+	ctx.Status(400)
+
+	return ctx.JSON(&response)
+}
+
+type UploadFile500ApplicationProblemPlusJSONResponse ApiProblem
+
+func (response UploadFile500ApplicationProblemPlusJSONResponse) VisitUploadFileResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/problem+json")
+	ctx.Status(500)
+
+	return ctx.JSON(&response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// Upload a file
-	// (PUT /v1/files/{env}/{group}/{team})
-	UploadFile(ctx context.Context, request UploadFileRequestObject) (UploadFileResponseObject, error)
 	// Download a file
-	// (GET /v1/files/{env}/{group}/{team}/{fileId})
+	// (GET /v1/files/{fileId})
 	DownloadFile(ctx context.Context, request DownloadFileRequestObject) (DownloadFileResponseObject, error)
+	// Upload a file
+	// (PUT /v1/files/{fileId})
+	UploadFile(ctx context.Context, request UploadFileRequestObject) (UploadFileResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx *fiber.Ctx, args interface{}) (interface{}, error)
@@ -276,13 +231,38 @@ type strictHandler struct {
 	middlewares []StrictMiddlewareFunc
 }
 
+// DownloadFile operation middleware
+func (sh *strictHandler) DownloadFile(ctx *fiber.Ctx, fileId string) error {
+	var request DownloadFileRequestObject
+
+	request.FileId = fileId
+
+	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
+		return sh.ssi.DownloadFile(ctx.UserContext(), request.(DownloadFileRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DownloadFile")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(DownloadFileResponseObject); ok {
+		if err := validResponse.VisitDownloadFileResponse(ctx); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
 // UploadFile operation middleware
-func (sh *strictHandler) UploadFile(ctx *fiber.Ctx, env string, group string, team string) error {
+func (sh *strictHandler) UploadFile(ctx *fiber.Ctx, fileId string) error {
 	var request UploadFileRequestObject
 
-	request.Env = env
-	request.Group = group
-	request.Team = team
+	request.FileId = fileId
 
 	request.Body = bytes.NewReader(ctx.Request().Body())
 
@@ -307,56 +287,25 @@ func (sh *strictHandler) UploadFile(ctx *fiber.Ctx, env string, group string, te
 	return nil
 }
 
-// DownloadFile operation middleware
-func (sh *strictHandler) DownloadFile(ctx *fiber.Ctx, env string, group string, team string, fileId string) error {
-	var request DownloadFileRequestObject
-
-	request.Env = env
-	request.Group = group
-	request.Team = team
-	request.FileId = fileId
-
-	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
-		return sh.ssi.DownloadFile(ctx.UserContext(), request.(DownloadFileRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "DownloadFile")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		return err
-	} else if validResponse, ok := response.(DownloadFileResponseObject); ok {
-		if err := validResponse.VisitDownloadFileResponse(ctx); err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, err.Error())
-		}
-	} else if response != nil {
-		return fmt.Errorf("unexpected response type: %T", response)
-	}
-	return nil
-}
-
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

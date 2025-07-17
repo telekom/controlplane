@@ -25,18 +25,30 @@ tags:
   - name: downloading
     description: An endpoint to download existing files
 paths:
-  /v1/files/{fileId}:
+  /v1/files/{env}/{group}/{team}:
     put:
       operationId: uploadFile
       summary: Upload a file
       description: >-
-        Uploads a file to the server with the specified Id. The id should follow the convention.
+        Uploads a file to the server belonging to an environment, group and team.
       tags:
         - uploading
       parameters:
-        - name: fileId
+        - name: env
           in: path
-          description: Id of the file, should follow the convention <env>--<group>--<team>--<fileName>
+          description: Name of the environment
+          required: true
+          schema:
+            type: string
+        - name: group
+          in: path
+          description: Name of the group
+          required: true
+          schema:
+            type: string
+        - name: team
+          in: path
+          description: Name of the team
           required: true
           schema:
             type: string
@@ -49,17 +61,36 @@ paths:
           $ref: '#/components/responses/ErrorResponse'
         '500':
           $ref: '#/components/responses/ErrorResponse'
+  /v1/files/{env}/{group}/{team}/{fileId}:
     get:
       operationId: downloadFile
       summary: Download a file
       description: >-
-        Retrieves a file from the server with the specified Id. The id should follow the convention.
+        Retrieves a file from the server at the specified path, belonging to the environment, group and team.
       tags:
         - downloading
       parameters:
-        - name: fileId
+        - name: env
           in: path
-          description: Id of the file, should follow the convention <env>--<group>--<team>--<fileName>
+          description: Name of the environment
+          required: true
+          schema:
+            type: string
+        - name: group
+          in: path
+          description: Name of the group
+          required: true
+          schema:
+            type: string
+        - name: team
+          in: path
+          description: Name of the team
+          required: true
+          schema:
+            type: string
+        - name: fileId
+          description: Id of the file returned after uploading
+          in: path
           required: true
           schema:
             type: string
