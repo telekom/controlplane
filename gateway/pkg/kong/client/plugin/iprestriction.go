@@ -15,8 +15,8 @@ var _ client.CustomPlugin = &IpRestrictionPlugin{}
 type IpRestrictionPluginConfig struct {
 	Deny    *hashset.Set `json:"deny,omitempty"`
 	Allow   *hashset.Set `json:"allow,omitempty"`
-	Message string       `json:"message,omizero"`
-	Status  int          `json:"status,omizero"`
+	Message string       `json:"message,omitempty"`
+	Status  int          `json:"status,omitempty"`
 }
 
 func (c *IpRestrictionPluginConfig) AddAllow(allow string) {

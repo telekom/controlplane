@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"slices"
 	"strings"
 
@@ -142,18 +143,10 @@ func (c *kongClient) CreateOrReplacePlugin(
 		return nil, err
 	}
 
-	var pluginId string
-	if kongPlugin != nil {
-		pluginId = *kongPlugin.Id
-	} else {
-		pluginId = uuid.NewString()
-		log.V(1).Info("generated new plugin id", "id", pluginId, "plugin", plugin.GetName())
-	}
-
 	pluginName := plugin.GetName()
 	pluginConfig := plugin.GetConfig()
 	pluginEnabled := true
-	body := kong.CreatePluginJSONRequestBody{
+	body := kong.UpsertPluginJSONRequestBody{
 		Enabled:  &pluginEnabled,
 		Name:     &pluginName,
 		Config:   &pluginConfig,
@@ -166,45 +159,93 @@ func (c *kongClient) CreateOrReplacePlugin(
 		Tags: &tags,
 	}
 
-	routeName := plugin.GetRoute()
-	consumerName := plugin.GetConsumer()
-	if routeName != nil {
-		response, err := c.client.UpsertPluginForRouteWithResponse(ctx, *routeName, pluginId, body)
-		if err != nil {
-			return nil, err
-		}
-		if err := CheckStatusCode(response, 200); err != nil {
-			return nil, fmt.Errorf("failed to create plugin: (%d): %s", response.StatusCode(), string(response.Body))
-		}
-		kongPlugin = response.JSON200
-
-	} else if consumerName != nil {
-		// The Api-Spec defines a wrong type for the response body and we dont have the consumerId
-		// So we need to use the underlying client to create the plugin
-		client, ok := c.client.(kong.ClientInterface)
-		if !ok {
-			return nil, fmt.Errorf("invalid client type: %T", c.client)
-		}
-		response, err := client.UpsertPluginForConsumer(ctx, *consumerName, pluginId, body)
-		if err != nil {
-			return nil, err
-		}
-		apiResponse := WrapApiResponse(response)
-		responseBody, err := io.ReadAll(response.Body)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to read response body")
-		}
-		response.Body.Close() //nolint:errcheck
-
-		if err := CheckStatusCode(apiResponse, 200); err != nil {
-			return nil, fmt.Errorf("failed to create plugin: (%d): %s", apiResponse.StatusCode(), string(responseBody))
-		}
-		// The Api-Spec defines a wrong type for the response body, so we need to unmarshal it manually
-		err = json.Unmarshal(responseBody, &kongPlugin)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal plugin response")
-		}
+	client, ok := c.client.(kong.ClientInterface)
+	if !ok {
+		return nil, fmt.Errorf("invalid client type: %T", c.client)
 	}
+
+	var pluginId string
+	if kongPlugin != nil {
+		pluginId = *kongPlugin.Id
+	} else {
+		pluginId = uuid.NewString()
+		log.V(1).Info("generated new plugin id", "id", pluginId, "plugin", plugin.GetName())
+	}
+
+	var response *http.Response
+	if plugin.GetConsumer() != nil {
+		log.V(1).Info("upserting plugin for consumer", "consumer", *plugin.GetConsumer(), "id", pluginId)
+		response, err = client.UpsertPluginForConsumer(ctx, *plugin.GetConsumer(), pluginId, body)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create plugin")
+		}
+
+	} else if plugin.GetRoute() != nil {
+		log.V(1).Info("upserting plugin for route", "route", *plugin.GetRoute(), "id", pluginId)
+		response, err = client.UpsertPluginForRoute(ctx, *plugin.GetRoute(), pluginId, body)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to upsert plugin for route")
+		}
+
+	} else {
+		return nil, fmt.Errorf("either route or consumer must be provided for plugin creation")
+	}
+
+	apiResponse := WrapApiResponse(response)
+	responseBody, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read response body")
+	}
+	response.Body.Close() //nolint:errcheck
+
+	if err := CheckStatusCode(apiResponse, 200); err != nil {
+		return nil, fmt.Errorf("failed to create plugin: (%d): %s", apiResponse.StatusCode(), string(responseBody))
+	}
+	err = json.Unmarshal(responseBody, &kongPlugin)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal plugin response")
+	}
+
+	// routeName := plugin.GetRoute()
+	// consumerName := plugin.GetConsumer()
+
+	// if routeName != nil {
+	// 	response, err := c.client.UpsertPluginForRouteWithResponse(ctx, *routeName, pluginId, body)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	if err := CheckStatusCode(response, 200); err != nil {
+	// 		return nil, fmt.Errorf("failed to create plugin: (%d): %s", response.StatusCode(), string(response.Body))
+	// 	}
+	// 	kongPlugin = response.JSON200
+
+	// } else if consumerName != nil {
+	// 	// The Api-Spec defines a wrong type for the response body and we dont have the consumerId
+	// 	// So we need to use the underlying client to create the plugin
+	// 	client, ok := c.client.(kong.ClientInterface)
+	// 	if !ok {
+	// 		return nil, fmt.Errorf("invalid client type: %T", c.client)
+	// 	}
+	// 	response, err := client.UpsertPluginForConsumer(ctx, *consumerName, pluginId, body)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	apiResponse := WrapApiResponse(response)
+	// 	responseBody, err := io.ReadAll(response.Body)
+	// 	if err != nil {
+	// 		return nil, errors.Wrap(err, "failed to read response body")
+	// 	}
+	// 	response.Body.Close() //nolint:errcheck
+
+	// 	if err := CheckStatusCode(apiResponse, 200); err != nil {
+	// 		return nil, fmt.Errorf("failed to create plugin: (%d): %s", apiResponse.StatusCode(), string(responseBody))
+	// 	}
+	// 	// The Api-Spec defines a wrong type for the response body, so we need to unmarshal it manually
+	// 	err = json.Unmarshal(responseBody, &kongPlugin)
+	// 	if err != nil {
+	// 		return nil, errors.Wrap(err, "failed to unmarshal plugin response")
+	// 	}
+	// }
 
 	plugin.SetId(pluginId)
 	return kongPlugin, nil
@@ -216,6 +257,10 @@ func (c *kongClient) DeletePlugin(ctx context.Context, plugin CustomPlugin) (err
 	tags := []string{
 		buildTag("env", envName),
 		buildTag("plugin", plugin.GetName()),
+	}
+
+	if plugin.GetRoute() == nil && plugin.GetConsumer() == nil {
+		return fmt.Errorf("either route or consumer must be provided for deletion")
 	}
 
 	if plugin.GetRoute() != nil {
@@ -249,18 +294,20 @@ func (c *kongClient) DeletePlugin(ctx context.Context, plugin CustomPlugin) (err
 }
 
 func (c *kongClient) CleanupPlugins(ctx context.Context, route CustomRoute, consumer CustomConsumer, plugins []CustomPlugin) error {
-	if route == nil && consumer == nil {
-		return errors.New("either route or consumer must be provided for cleanup")
-	}
-
 	log := logr.FromContextOrDiscard(ctx)
 	envName := contextutil.EnvFromContextOrDie(ctx)
 	tags := []string{
 		buildTag("env", envName),
 	}
+
+	if route == nil && consumer == nil {
+		return errors.New("either route or consumer must be provided for cleanup")
+	}
+
 	if route != nil {
 		tags = append(tags, buildTag("route", route.GetName()))
-	} else {
+	}
+	if consumer != nil {
 		tags = append(tags, buildTag("consumer", consumer.GetConsumerName()))
 	}
 
