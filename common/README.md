@@ -133,9 +133,9 @@ For Kubernetes deployments, you can use Kustomize's configMapGenerator to provid
 
 ```yaml
 configMapGenerator:
-  - name: admin-env
+  - name: admin-env-config
     namespace: admin-system
-    behavior: merge
+    behavior: create
     options:
       disableNameSuffixHash: true
     envs:
@@ -155,22 +155,17 @@ patches:
         path: /spec/template/spec/containers/0/envFrom
         value:
           - configMapRef:
-              name: admin-env
+              name: admin-env-config
 ```
 
 The `admin.cnf` file should contain the environment variables in key-value pairs:
 ```text
-REQUEUE_AFTER_ON_ERROR=2s
-REQUEUE_AFTER=15m
-DEFAULT_NAMESPACE=custom-namespace
-DEFAULT_ENVIRONMENT=development
-LABEL_KEY_PREFIX=cp.ei.telekom.de
-JITTER_FACTOR=0.5
+REQUEUE_AFTER_ON_ERROR=1m
+REQUEUE_AFTER=30m
+JITTER_FACTOR=0.9
 MAX_BACKOFF=3m
-MAX_CONCURRENT_RECONCILES=5
+MAX_CONCURRENT_RECONCILES=3
 ```
-
-See [install/local/config/admin.cnf](../install/local/config/admin.cnf) and [install/local/kustomization.yaml](../install/local/kustomization.yaml) for a complete example.
 
 ## Getting Started
 
