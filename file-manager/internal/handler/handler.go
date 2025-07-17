@@ -12,12 +12,19 @@ type Handler struct {
 	ctrl controller.Controller
 }
 
-func (h Handler) UploadFile(ctx context.Context, request api.UploadFileRequestObject) (api.UploadFileResponseObject, error) {
+func NewHandler(ctrl controller.Controller) *Handler {
+	return &Handler{
+		ctrl: ctrl,
+	}
+}
+
+func (h *Handler) UploadFile(ctx context.Context, request api.UploadFileRequestObject) (res api.UploadFileResponseObject, err error) {
+
 	//TODO implement me
 	panic("implement me")
 }
 
-func (h Handler) DownloadFile(ctx context.Context, request api.DownloadFileRequestObject) (api.DownloadFileResponseObject, error) {
+func (h *Handler) DownloadFile(ctx context.Context, request api.DownloadFileRequestObject) (res api.DownloadFileResponseObject, err error) {
 	//TODO implement me
 	panic("implement me")
 }

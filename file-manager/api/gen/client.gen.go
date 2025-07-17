@@ -105,15 +105,15 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
-	// UploadFileWithBody request with any body
-	UploadFileWithBody(ctx context.Context, env string, group string, team string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// DownloadFile request
-	DownloadFile(ctx context.Context, env string, group string, team string, fileId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DownloadFile(ctx context.Context, fileId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UploadFileWithBody request with any body
+	UploadFileWithBody(ctx context.Context, fileId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-func (c *Client) UploadFileWithBody(ctx context.Context, env string, group string, team string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUploadFileRequestWithBody(c.Server, env, group, team, contentType, body)
+func (c *Client) DownloadFile(ctx context.Context, fileId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDownloadFileRequest(c.Server, fileId)
 	if err != nil {
 		return nil, err
 	}
@@ -124,8 +124,8 @@ func (c *Client) UploadFileWithBody(ctx context.Context, env string, group strin
 	return c.Client.Do(req)
 }
 
-func (c *Client) DownloadFile(ctx context.Context, env string, group string, team string, fileId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDownloadFileRequest(c.Server, env, group, team, fileId)
+func (c *Client) UploadFileWithBody(ctx context.Context, fileId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUploadFileRequestWithBody(c.Server, fileId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -136,27 +136,13 @@ func (c *Client) DownloadFile(ctx context.Context, env string, group string, tea
 	return c.Client.Do(req)
 }
 
-// NewUploadFileRequestWithBody generates requests for UploadFile with any type of body
-func NewUploadFileRequestWithBody(server string, env string, group string, team string, contentType string, body io.Reader) (*http.Request, error) {
+// NewDownloadFileRequest generates requests for DownloadFile
+func NewDownloadFileRequest(server string, fileId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "env", runtime.ParamLocationPath, env)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "group", runtime.ParamLocationPath, group)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "team", runtime.ParamLocationPath, team)
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "fileId", runtime.ParamLocationPath, fileId)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +152,41 @@ func NewUploadFileRequestWithBody(server string, env string, group string, team 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/files/%s/%s/%s", pathParam0, pathParam1, pathParam2)
+	operationPath := fmt.Sprintf("/v1/files/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUploadFileRequestWithBody generates requests for UploadFile with any type of body
+func NewUploadFileRequestWithBody(server string, fileId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "fileId", runtime.ParamLocationPath, fileId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/files/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -182,61 +202,6 @@ func NewUploadFileRequestWithBody(server string, env string, group string, team 
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDownloadFileRequest generates requests for DownloadFile
-func NewDownloadFileRequest(server string, env string, group string, team string, fileId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "env", runtime.ParamLocationPath, env)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "group", runtime.ParamLocationPath, group)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "team", runtime.ParamLocationPath, team)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam3 string
-
-	pathParam3, err = runtime.StyleParamWithLocation("simple", false, "fileId", runtime.ParamLocationPath, fileId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/files/%s/%s/%s/%s", pathParam0, pathParam1, pathParam2, pathParam3)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
 
 	return req, nil
 }
@@ -284,11 +249,34 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
-	// UploadFileWithBodyWithResponse request with any body
-	UploadFileWithBodyWithResponse(ctx context.Context, env string, group string, team string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadFileResponse, error)
-
 	// DownloadFileWithResponse request
-	DownloadFileWithResponse(ctx context.Context, env string, group string, team string, fileId string, reqEditors ...RequestEditorFn) (*DownloadFileResponse, error)
+	DownloadFileWithResponse(ctx context.Context, fileId string, reqEditors ...RequestEditorFn) (*DownloadFileResponse, error)
+
+	// UploadFileWithBodyWithResponse request with any body
+	UploadFileWithBodyWithResponse(ctx context.Context, fileId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadFileResponse, error)
+}
+
+type DownloadFileResponse struct {
+	Body                      []byte
+	HTTPResponse              *http.Response
+	ApplicationproblemJSON400 *ErrorResponse
+	ApplicationproblemJSON500 *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DownloadFileResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DownloadFileResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type UploadFileResponse struct {
@@ -315,45 +303,55 @@ func (r UploadFileResponse) StatusCode() int {
 	return 0
 }
 
-type DownloadFileResponse struct {
-	Body                      []byte
-	HTTPResponse              *http.Response
-	ApplicationproblemJSON400 *ErrorResponse
-	ApplicationproblemJSON500 *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r DownloadFileResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
+// DownloadFileWithResponse request returning *DownloadFileResponse
+func (c *ClientWithResponses) DownloadFileWithResponse(ctx context.Context, fileId string, reqEditors ...RequestEditorFn) (*DownloadFileResponse, error) {
+	rsp, err := c.DownloadFile(ctx, fileId, reqEditors...)
+	if err != nil {
+		return nil, err
 	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DownloadFileResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
+	return ParseDownloadFileResponse(rsp)
 }
 
 // UploadFileWithBodyWithResponse request with arbitrary body returning *UploadFileResponse
-func (c *ClientWithResponses) UploadFileWithBodyWithResponse(ctx context.Context, env string, group string, team string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadFileResponse, error) {
-	rsp, err := c.UploadFileWithBody(ctx, env, group, team, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UploadFileWithBodyWithResponse(ctx context.Context, fileId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadFileResponse, error) {
+	rsp, err := c.UploadFileWithBody(ctx, fileId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUploadFileResponse(rsp)
 }
 
-// DownloadFileWithResponse request returning *DownloadFileResponse
-func (c *ClientWithResponses) DownloadFileWithResponse(ctx context.Context, env string, group string, team string, fileId string, reqEditors ...RequestEditorFn) (*DownloadFileResponse, error) {
-	rsp, err := c.DownloadFile(ctx, env, group, team, fileId, reqEditors...)
+// ParseDownloadFileResponse parses an HTTP response from a DownloadFileWithResponse call
+func ParseDownloadFileResponse(rsp *http.Response) (*DownloadFileResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
-	return ParseDownloadFileResponse(rsp)
+
+	response := &DownloadFileResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON500 = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseUploadFileResponse parses an HTTP response from a UploadFileWithResponse call
@@ -377,39 +375,6 @@ func ParseUploadFileResponse(rsp *http.Response) (*UploadFileResponse, error) {
 		}
 		response.JSON200 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.ApplicationproblemJSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.ApplicationproblemJSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDownloadFileResponse parses an HTTP response from a DownloadFileWithResponse call
-func ParseDownloadFileResponse(rsp *http.Response) (*DownloadFileResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DownloadFileResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
