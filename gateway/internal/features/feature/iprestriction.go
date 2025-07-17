@@ -13,6 +13,9 @@ import (
 
 var _ features.Feature = &IpRestrictionFeature{}
 
+// This feature implements IP restriction for consumers.
+// At the moment, it is only used for the consumer.
+// It allows to specify IP addresses or CIDR ranges that are allowed or denied access for a specific consumer.
 type IpRestrictionFeature struct {
 	priority int
 }
