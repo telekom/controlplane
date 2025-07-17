@@ -6,13 +6,20 @@ package feature
 
 import (
 	"context"
+	"strings"
 
+	"github.com/pkg/errors"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
+	secretManagerApi "github.com/telekom/controlplane/secret-manager/api"
 )
 
 var _ features.Feature = &ExternalIDPFeature{}
+
+// defaultKey for provider (exposure) config.
+// Used as a fallback in Jumper if no consumer key is found
+const DefaultProviderKey = plugin.ConsumerId("default")
 
 // ExternalIDPFeature takes precedence over CustomScopesFeature
 type ExternalIDPFeature struct {
@@ -31,36 +38,130 @@ func (f *ExternalIDPFeature) Priority() int {
 	return f.priority
 }
 
+// IsUsed checks if the ExternalIDP feature is used in the route.
+// It can either be used as a primary route feature or as a failover security feature.
 func (f *ExternalIDPFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
 	route := builder.GetRoute()
-	hasExternalIdpConfigured := true
+	isPrimaryRoute := !route.IsProxy()
+	isConfigured := false
 
-	return !route.Spec.PassThrough && hasExternalIdpConfigured && !route.IsProxy()
+	if route.HasFailoverSecurity() {
+		isConfigured = route.Spec.Traffic.Failover.Security.HasM2MExternalIDP()
+	}
+
+	if isPrimaryRoute && route.HasM2MExternalIdp() {
+		isConfigured = true
+	}
+
+	return !route.Spec.PassThrough && isConfigured
 }
 
 func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
 	rtpPlugin := builder.RequestTransformerPlugin()
-
-	// TODO: get from route or somewhere
-	rtpPlugin.Config.Append.AddHeader("token_endpoint", "https://example.com/token")
-
+	route := builder.GetRoute()
 	jumperConfig := builder.JumperConfig()
 
-	for _, consumer := range builder.GetAllowedConsumers() { // TODO: implement
+	// Depending on the context (primary or failover route), we need to use different security settings.
+	// If the route is a failover secondary route, we use the failover security settings
+	// Otherwise, we use the primary route security settings.
+	security := route.Spec.Security
+	if route.HasFailoverSecurity() {
+		security = route.Spec.Traffic.Failover.Security
+	}
 
-		// TODO: handle default
-		jumperConfig.OAuth[plugin.ConsumerId("default")] = plugin.OauthCredentials{
-			ClientId:     "default_client_id",
-			ClientSecret: "default_client_secret",
+	rtpPlugin.Config.Append.AddHeader("token_endpoint", security.M2M.ExternalIDP.TokenEndpoint)
+
+	// Provider
+	if security.HasM2MExternalIDP() && security.M2M.ExternalIDP.Client != nil {
+		err = applyOauth(ctx, DefaultProviderKey, jumperConfig, security.M2M.ExternalIDP.Client, security.M2M.ExternalIDP, security.M2M.Scopes)
+		if err != nil {
+			return errors.Wrapf(err, "cannot get provider secret for route %s", route.Name)
 		}
+	} else if security.HasM2MExternalIDP() && security.M2M.ExternalIDP.Basic != nil {
+		err = applyBasic(ctx, DefaultProviderKey, jumperConfig, security.M2M.ExternalIDP.Basic, security.M2M.ExternalIDP, security.M2M.Scopes)
+		if err != nil {
+			return errors.Wrapf(err, "cannot get provider secret for route %s", route.Name)
+		}
+	}
 
-		// TODO: implement
-		jumperConfig.OAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = plugin.OauthCredentials{
-			Scopes:       "custom_scope",
-			ClientId:     "client_id",
-			ClientSecret: "client_secret",
+	// Consumers
+	for _, consumer := range builder.GetAllowedConsumers() {
+		if consumer.HasM2MClient() {
+			err = applyOauth(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Client, security.M2M.ExternalIDP, consumer.Spec.Security.M2M.Scopes)
+			if err != nil {
+				return errors.Wrapf(err, "cannot get consumer secret for consumer %s in route %s", consumer.Spec.ConsumerName, route.Name)
+			}
+		} else if consumer.HasM2MBasic() {
+			err = applyBasic(ctx, plugin.ConsumerId(consumer.Spec.ConsumerName), jumperConfig, consumer.Spec.Security.M2M.Basic, security.M2M.ExternalIDP, consumer.Spec.Security.M2M.Scopes)
+			if err != nil {
+				return errors.Wrapf(err, "cannot get consumer secret for consumer %s in route %s", consumer.Spec.ConsumerName, route.Name)
+			}
 		}
 	}
 
 	return nil
+}
+
+func applyOauth(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, client *gatewayv1.OAuth2ClientCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, scopes []string) error {
+	oauth, err := extendOauth(ctx, jumperConfig.OAuth[key], providerSettings, client, scopes)
+	if err != nil {
+		return err
+	}
+	jumperConfig.OAuth[key] = oauth
+
+	return nil
+}
+
+func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, client *gatewayv1.OAuth2ClientCredentials, scopes []string) (plugin.OauthCredentials, error) {
+	var err error
+
+	in.ClientId = client.ClientId
+	secret := client.ClientSecret
+	if secret != "" {
+		secret, err = secretManagerApi.Get(ctx, secret)
+		if err != nil {
+			return in, err
+		}
+	}
+	in.ClientSecret = secret
+
+	if len(scopes) > 0 {
+		in.Scopes = strings.Join(scopes, " ")
+	}
+
+	in.TokenRequest = providerSettings.TokenRequest
+	in.GrantType = providerSettings.GrantType
+
+	return in, nil
+}
+
+func applyBasic(ctx context.Context, key plugin.ConsumerId, jumperConfig *plugin.JumperConfig, basic *gatewayv1.BasicAuthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, scopes []string) error {
+	basicAuth, err := extendBasic(ctx, jumperConfig.OAuth[key], providerSettings, basic, scopes)
+	if err != nil {
+		return err
+	}
+	jumperConfig.OAuth[key] = basicAuth
+	return nil
+}
+
+func extendBasic(ctx context.Context, in plugin.OauthCredentials, providerSettings *gatewayv1.ExternalIdentityProvider, basic *gatewayv1.BasicAuthCredentials, scopes []string) (plugin.OauthCredentials, error) {
+	var err error
+
+	in.Username = basic.Username
+	password := basic.Password
+	if password != "" {
+		password, err = secretManagerApi.Get(ctx, password)
+		if err != nil {
+			return in, err
+		}
+	}
+
+	if len(scopes) > 0 {
+		in.Scopes = strings.Join(scopes, " ")
+	}
+
+	in.Password = password
+	in.GrantType = providerSettings.GrantType
+
+	return in, nil
 }

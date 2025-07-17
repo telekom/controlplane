@@ -10,7 +10,8 @@ import (
 	"strings"
 
 	"github.com/pb33f/libopenapi"
-	"github.com/pb33f/libopenapi/datamodel/high/base"
+	v2 "github.com/pb33f/libopenapi/datamodel/high/v2"
+	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/pkg/errors"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
@@ -26,9 +27,9 @@ var (
 func ParseSpecification(ctx context.Context, spec string) (*apiapi.Api, error) {
 	api := &apiapi.Api{}
 	api.Spec = apiapi.ApiSpec{
-		Oauth2Scopes: []string{},
 		XVendor:      false,
 		Category:     "other",
+		Oauth2Scopes: []string{},
 	}
 	log := log.FromContext(ctx)
 
@@ -52,7 +53,10 @@ func ParseSpecification(ctx context.Context, spec string) (*apiapi.Api, error) {
 		api.Spec.Version = model.Model.Info.Version
 
 		setExtensionValues(api, model.Model.Info.Extensions)
-		setSecurityValues(api, model.Model.Security)
+
+		if model.Model.SecurityDefinitions != nil {
+			setSecurityDefinitionsValues(api, model.Model.SecurityDefinitions.Definitions)
+		}
 
 		return api, nil
 	}
@@ -79,7 +83,10 @@ func ParseSpecification(ctx context.Context, spec string) (*apiapi.Api, error) {
 		api.Spec.Version = model.Model.Info.Version
 
 		setExtensionValues(api, model.Model.Info.Extensions)
-		setSecurityValues(api, model.Model.Security)
+
+		if model.Model.Components != nil {
+			setSecuritySchemeValues(api, model.Model.Components.SecuritySchemes)
+		}
 
 		return api, nil
 	}
@@ -114,9 +121,41 @@ func setExtensionValues(api *apiapi.Api, extensionMap *orderedmap.Map[string, *y
 	}
 }
 
-func setSecurityValues(api *apiapi.Api, security []*base.SecurityRequirement) {
-	if len(security) == 0 {
+func setSecurityDefinitionsValues(api *apiapi.Api, Definitions *orderedmap.Map[string, *v2.SecurityScheme]) {
+	if Definitions.Len() == 0 {
 		return
 	}
-	api.Spec.Oauth2Scopes = security[0].Requirements.Value("oauth2")
+
+	// iterate over the security definitions and find the first scheme with type OAuth2
+	for defPair := Definitions.First(); defPair != nil; defPair = defPair.Next() {
+		definition := defPair.Value()
+		if definition.Type == "oauth2" && definition.Scopes != nil {
+
+			for scopePair := definition.Scopes.Values.First(); scopePair != nil; scopePair = scopePair.Next() {
+
+				//append scope to the api security authentication oauth2 scopes
+				api.Spec.Oauth2Scopes = append(api.Spec.Oauth2Scopes, scopePair.Key())
+			}
+		}
+	}
+}
+
+func setSecuritySchemeValues(api *apiapi.Api, SecuritySchemes *orderedmap.Map[string, *v3.SecurityScheme]) {
+	if SecuritySchemes.Len() == 0 {
+		return
+	}
+
+	// iterate over the security schemes and find the first scheme with type OAuth2
+	for schemePair := SecuritySchemes.First(); schemePair != nil; schemePair = schemePair.Next() {
+		scheme := schemePair.Value()
+		if scheme.Type == "oauth2" && scheme.Flows != nil {
+
+			for scopePair := scheme.Flows.ClientCredentials.Scopes.First(); scopePair != nil; scopePair = scopePair.Next() {
+
+				//append scope to the api security authentication oauth2 scopes
+				api.Spec.Oauth2Scopes = append(api.Spec.Oauth2Scopes, scopePair.Key())
+			}
+
+		}
+	}
 }

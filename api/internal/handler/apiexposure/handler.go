@@ -8,20 +8,19 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/util"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -98,18 +97,58 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, obj *apiapi.Api
 		return nil
 	}
 
+	// Scopes
+	// check if scopes exist and scopes are subset from api
+	if obj.HasM2M() {
+		// If scopes are set and its not externalIDP (here its allowed to have unknown/external scopes)
+		if obj.Spec.Security.M2M.Scopes != nil && !obj.HasExternalIdp() {
+			if len(api.Spec.Oauth2Scopes) == 0 {
+				obj.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Api does not define any Oauth2 scopes"))
+				obj.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiExposure will be automatically processed, if the API will be updated with scopes"))
+				return nil
+			} else {
+				scopesExist, invalidScopes := util.IsSubsetOfScopes(api.Spec.Oauth2Scopes, obj.Spec.Security.M2M.Scopes)
+				if !scopesExist {
+					var message = fmt.Sprintf("Some defined scopes are not available. Available scopes: \"%s\". Unsupported scopes: \"%s\"",
+						strings.Join(api.Spec.Oauth2Scopes, ", "),
+						strings.Join(invalidScopes, ", "),
+					)
+					obj.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes which are defined in ApiExposure are not defined in the ApiSpecification"))
+					obj.SetCondition(condition.NewBlockedCondition(message))
+					return nil
+				}
+			}
+
+			log.V(1).Info("✅ Scopes are valid and exist")
+		}
+	}
+
 	// TODO: further validations (currently contained in the old code)
 	// - validate if team category allows exposure of api category
 
 	obj.SetCondition(condition.NewProcessingCondition("Provisioning", "Provisioning route"))
 	// create real route
-	err = createRealRoute(ctx, obj)
+	route, err := util.CreateRealRoute(ctx, obj.Spec.Zone, obj, contextutil.EnvFromContextOrDie(ctx))
 	if err != nil {
 		return errors.Wrapf(err, "unable to create real route for apiExposure: %s in namespace: %s", obj.Name, obj.Namespace)
 	}
 
+	if obj.HasFailover() {
+		failoverZone := obj.Spec.Traffic.Failover.Zones[0] // currently only one failover zone is supported
+		route, err := util.CreateProxyRoute(ctx, failoverZone, obj.Spec.Zone, obj.Spec.ApiBasePath,
+			contextutil.EnvFromContextOrDie(ctx),
+			util.WithFailoverUpstreams(apiExposure.Spec.Upstreams...),
+			util.WithFailoverSecurity(apiExposure.Spec.Security),
+		)
+		if err != nil {
+			return errors.Wrapf(err, "unable to create real route for apiExposure: %s in namespace: %s", obj.Name, obj.Namespace)
+		}
+		obj.Status.FailoverRoute = types.ObjectRefFromObject(route)
+	}
+
 	obj.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
+	obj.Status.Route = types.ObjectRefFromObject(route)
 	log.Info("✅ ApiExposure is processed")
 
 	return nil
@@ -138,70 +177,21 @@ func (h *ApiExposureHandler) Delete(ctx context.Context, obj *apiapi.ApiExposure
 		log.Info("✅ Successfully deleted obsolete route")
 	}
 
-	return nil
-}
-
-// createRealRoute creates a real route for the given apiExposure
-func createRealRoute(ctx context.Context, obj *apiapi.ApiExposure) error {
-	scopedClient := cclient.ClientFromContextOrDie(ctx)
-	envName := contextutil.EnvFromContextOrDie(ctx)
-
-	// get referenced Zone from exposure
-	zone, err := util.GetZone(ctx, scopedClient, obj.Spec.Zone.K8s())
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("Unable to get zone from apiExposure:  %s in namespace: %s", obj.Name, obj.Namespace))
-	}
-
-	downstreamRealm, err := util.GetRealm(ctx, client.ObjectKey{Name: envName, Namespace: zone.Status.Namespace})
-	if err != nil {
-		return err
-	}
-
-	route := &gatewayapi.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      labelutil.NormalizeValue(obj.Spec.ApiBasePath),
-			Namespace: zone.Status.Namespace,
-		},
-	}
-
-	mutator := func() error {
-		route.Labels = map[string]string{
-			apiapi.BasePathLabelKey:       labelutil.NormalizeValue(obj.Spec.ApiBasePath),
-			config.BuildLabelKey("zone"):  labelutil.NormalizeValue(zone.Name),
-			config.BuildLabelKey("realm"): labelutil.NormalizeValue(downstreamRealm.Name),
-			config.BuildLabelKey("type"):  "real",
-		}
-
-		downstream, err := downstreamRealm.AsDownstream(obj.Spec.ApiBasePath)
+	if obj.Status.FailoverRoute != nil {
+		failoverRoute := &gatewayapi.Route{}
+		err := scopedClient.Get(ctx, obj.Status.FailoverRoute.K8s(), failoverRoute)
 		if err != nil {
-			return errors.Wrap(err, "failed to create downstream")
+			if apierrors.IsNotFound(err) {
+				return nil
+			}
+			return errors.Wrap(err, "failed to get failover route")
 		}
-
-		upstream, err := util.AsUpstreamForRealRoute(ctx, obj)
+		log.Info("🧹 Deleting failover proxy route of exposure")
+		err = scopedClient.Delete(ctx, failoverRoute)
 		if err != nil {
-			return errors.Wrap(err, "failed to create downstream")
+			return errors.Wrapf(err, "failed to delete failover route")
 		}
-
-		route.Spec = gatewayapi.RouteSpec{
-			Realm: *types.ObjectRefFromObject(downstreamRealm),
-			Upstreams: []gatewayapi.Upstream{
-				upstream,
-			},
-			Downstreams: []gatewayapi.Downstream{
-				downstream,
-			},
-		}
-		return nil
-	}
-
-	_, err = scopedClient.CreateOrUpdate(ctx, route, mutator)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create or update route: %s in namespace: %s", route.Name, route.Namespace)
-	}
-
-	obj.Status.Route = &types.ObjectRef{
-		Name:      route.Name,
-		Namespace: route.Namespace,
+		log.Info("✅ Successfully deleted obsolete failover route")
 	}
 
 	return nil

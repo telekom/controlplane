@@ -29,7 +29,7 @@ func NewApi(apiBasePath string) *apiv1.Api {
 			Version:      "v1",
 			BasePath:     apiBasePath,
 			Category:     "other",
-			Oauth2Scopes: []string{"scope1", "scope2"},
+			Oauth2Scopes: []string{"scope1", "scope2", "team:scope", "api:scope"},
 			XVendor:      false,
 		},
 	}

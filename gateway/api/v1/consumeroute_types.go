@@ -12,8 +12,30 @@ import (
 
 // ConsumeRouteSpec defines the desired state of ConsumeRoute
 type ConsumeRouteSpec struct {
-	Route        types.ObjectRef `json:"route"`
-	ConsumerName string          `json:"consumerName"`
+	Route        types.ObjectRef   `json:"route"`
+	ConsumerName string            `json:"consumerName"`
+	Security     *ConsumerSecurity `json:"security,omitempty"`
+}
+
+func (c *ConsumeRoute) HasM2M() bool {
+	if c.Spec.Security == nil {
+		return false
+	}
+	return c.Spec.Security.M2M != nil
+}
+
+func (c *ConsumeRoute) HasM2MClient() bool {
+	if !c.HasM2M() {
+		return false
+	}
+	return c.Spec.Security.M2M.Client != nil
+}
+
+func (c *ConsumeRoute) HasM2MBasic() bool {
+	if !c.HasM2M() {
+		return false
+	}
+	return c.Spec.Security.M2M.Basic != nil
 }
 
 // ConsumeRouteStatus defines the observed state of ConsumeRoute

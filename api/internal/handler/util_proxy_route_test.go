@@ -31,7 +31,9 @@ func CreateZone(name string) *adminapi.Zone {
 				config.EnvironmentLabelKey: testEnvironment,
 			},
 		},
-		Spec: adminapi.ZoneSpec{},
+		Spec: adminapi.ZoneSpec{
+			Visibility: adminapi.ZoneVisibilityWorld,
+		},
 	}
 
 	err := k8sClient.Create(ctx, zone)
