@@ -16,7 +16,7 @@ var _ = Describe("Cache Metrics", Ordered, func() {
 
 		It("should record cache hits", func() {
 			// Record a cache hit
-			Collection.RecordCacheHit()
+			RecordCacheHit()
 
 			// Verify metric exists with correct labels
 			metrics, err := prometheus.DefaultGatherer.Gather()
@@ -49,8 +49,8 @@ var _ = Describe("Cache Metrics", Ordered, func() {
 
 		It("should record cache misses with reason", func() {
 			// Record cache misses with different reasons
-			Collection.RecordCacheMiss("expired")
-			Collection.RecordCacheMiss("not_found")
+			RecordCacheMiss("expired")
+			RecordCacheMiss("not_found")
 
 			// Verify metrics exist with correct labels
 			metrics, err := prometheus.DefaultGatherer.Gather()

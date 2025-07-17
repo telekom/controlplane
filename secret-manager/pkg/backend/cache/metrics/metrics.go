@@ -24,7 +24,6 @@ var (
 
 func init() {
 	registerMetrics(prometheus.DefaultRegisterer)
-	Collection = &collectionImpl{}
 }
 
 // RegisterMetrics registers all cache-related metrics with Prometheus
@@ -34,15 +33,12 @@ func registerMetrics(reg prometheus.Registerer) {
 	})
 }
 
-// implementation of the Collection interface
-type collectionImpl struct{}
-
 // RecordCacheHit increments the counter for a successful cache hit
-func (_ collectionImpl) RecordCacheHit() {
+func RecordCacheHit() {
 	cacheAccess.WithLabelValues("hit", "").Inc()
 }
 
 // RecordCacheMiss increments the counter for a cache miss with the specified reasons like "expired" or "not_found"
-func (_ collectionImpl) RecordCacheMiss(reason string) {
+func RecordCacheMiss(reason string) {
 	cacheAccess.WithLabelValues("miss", reason).Inc()
 }
