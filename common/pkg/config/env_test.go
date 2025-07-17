@@ -79,7 +79,7 @@ var _ = Describe("Config Env Tests", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		registerEnvsOrDie()
+		registerEnvs()
 		Parse()
 	}
 
@@ -100,7 +100,7 @@ var _ = Describe("Config Env Tests", func() {
 	Context("Default Values with Explicit Registration", func() {
 		It("should use default values when env not provided", func() {
 			// Ensure flags are registered but no values passed
-			registerEnvsOrDie()
+			registerEnvs()
 			Parse()
 
 			// Verify all values match defaults

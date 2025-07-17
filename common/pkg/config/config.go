@@ -49,7 +49,7 @@ var (
 
 func init() {
 	registerDefaults()
-	registerEnvsOrDie()
+	registerEnvs()
 	Parse()
 }
 
@@ -64,7 +64,7 @@ func registerDefaults() {
 	viper.SetDefault(configKeyMaxConcurrentRec, MaxConcurrentReconciles)
 }
 
-func registerEnvsOrDie() {
+func registerEnvs() {
 	viper.AutomaticEnv() // Automatically map environment variables to viper keys
 	viper.EnvKeyReplacer(strings.NewReplacer("-", "_"))
 }
