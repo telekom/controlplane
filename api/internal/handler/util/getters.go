@@ -50,3 +50,23 @@ func GetRealm(ctx context.Context, ref client.ObjectKey) (*gatewayapi.Realm, err
 	}
 	return realm, nil
 }
+
+func GetRealmForZone(ctx context.Context, zoneRef types.ObjectRef, realmName string) (*gatewayapi.Realm, *adminapi.Zone, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	zone, err := GetZone(ctx, c, zoneRef.K8s())
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get zone %s", zoneRef.String())
+	}
+
+	realmRef := client.ObjectKey{
+		Name:      realmName,
+		Namespace: zone.Status.Namespace,
+	}
+	realm, err := GetRealm(ctx, realmRef)
+	if err != nil {
+		return nil, zone, errors.Wrapf(err, "failed to get realm %s", realmRef.String())
+	}
+
+	return realm, zone, nil
+}

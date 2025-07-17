@@ -80,6 +80,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 					Path: "/teamAPI",
 					Url:  "example.org",
 				}}},
+				Visibility: adminv1.ZoneVisibilityWorld,
 			},
 		}
 
@@ -563,6 +564,9 @@ var _ = Describe("Team Controller", Ordered, func() {
 				Labels: map[string]string{
 					config.EnvironmentLabelKey: testEnvironment,
 				},
+			},
+			Spec: adminv1.ZoneSpec{
+				Visibility: adminv1.ZoneVisibilityWorld,
 			},
 		}
 

@@ -14,7 +14,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-
 	rover "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -24,7 +23,7 @@ import (
 func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rover.Rover, sub *rover.ApiSubscription) error {
 
 	log := log.FromContext(ctx)
-	log.V(1).Info("Handle APISusbcription", "basePath", sub.BasePath)
+	log.V(1).Info("Handle APISubscription", "basePath", sub.BasePath)
 
 	name := MakeName(owner.Name, sub.BasePath, sub.Organization)
 
@@ -47,15 +46,30 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 		apiSubscription.Spec = apiapi.ApiSubscriptionSpec{
-			ApiBasePath: sub.BasePath,
-			Zone:        zoneRef,
-			Security: &apiapi.Security{
-				Oauth2Scopes: sub.OAuth2Scopes,
-			},
+			ApiBasePath:  sub.BasePath,
+			Zone:         zoneRef,
+			Security:     &apiapi.SubscriberSecurity{},
 			Organization: sub.Organization,
 			Requestor: apiapi.Requestor{
 				Application: *owner.Status.Application,
 			},
+		}
+
+		if sub.HasM2M() {
+			apiSubscription.Spec.Security.M2M = &apiapi.SubscriberMachine2MachineAuthentication{
+				Client: toApiClient(sub.Security.M2M.Client),
+				Basic:  toApiBasic(sub.Security.M2M.Basic),
+				Scopes: sub.Security.M2M.Scopes,
+			}
+		}
+
+		failoverZones, hasFailover := getFailoverZones(environment, sub.Traffic.Failover)
+		if hasFailover {
+			apiSubscription.Spec.Traffic = apiapi.Traffic{
+				Failover: &apiapi.Failover{
+					Zones: failoverZones,
+				},
+			}
 		}
 
 		apiSubscription.Labels = map[string]string{

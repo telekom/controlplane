@@ -22,10 +22,30 @@ const (
 
 // ApplicationSpec defines the desired state of Application
 type ApplicationSpec struct {
-	Team      string          `json:"team"`
-	TeamEmail string          `json:"teamEmail"`
-	Secret    string          `json:"secret"`
-	Zone      types.ObjectRef `json:"zone"`
+	// Team is the name of the team responsible for the application
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
+	Team string `json:"team"`
+	// TeamEmail is the email address of the team responsible for the application
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
+	// +kubebuilder:validation:Format=email
+	TeamEmail string `json:"teamEmail"`
+	// Secret is the secret used to authenticate the application
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
+	Secret string `json:"secret"`
+
+	// Zone is the primary zone for the application
+	// +kubebuilder:validation:Required
+	Zone types.ObjectRef `json:"zone"`
+	// FailoverZones are the zones which can be used by the application in case of a failure in the primary zone
+	// +kubebuilder:validation:Optional
+	FailoverZones []types.ObjectRef `json:"failoverZones,omitempty"`
+
 	// NeedsClient is a flag to indicate if the application needs a Identity client
 	// +kubebuilder:default=true
 	NeedsClient bool `json:"needsClient"`
@@ -45,6 +65,9 @@ type ApplicationStatus struct {
 	Conditions   []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 	ClientId     string             `json:"clientId"`
 	ClientSecret string             `json:"clientSecret"`
+
+	Clients   []types.ObjectRef `json:"clients,omitempty"`
+	Consumers []types.ObjectRef `json:"consumers,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -6,6 +6,7 @@ package feature
 
 import (
 	"context"
+	"slices"
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
@@ -37,24 +38,28 @@ func (f *AccessControlFeature) IsUsed(ctx context.Context, builder features.Feat
 
 func (f *AccessControlFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
 	route := builder.GetRoute()
-	aclPlugin := builder.AclPlugin()
-
-	aclPlugin.Config.Allow.Add("gateway")
-	for _, defaultConsumer := range builder.GetRealm().Spec.DefaultConsumers {
-		aclPlugin.Config.Allow.Add(defaultConsumer)
+	hasIssuer := slices.ContainsFunc(route.Spec.Downstreams, func(downstream gatewayv1.Downstream) bool {
+		return downstream.IssuerUrl != ""
+	})
+	if hasIssuer {
+		// This will initialize the JWT-Plugin and set the issuer URLs of the downstreams
+		builder.JwtPlugin()
 	}
 
-	for _, consumer := range builder.GetAllowedConsumers() {
-		if consumer.Spec.Route.Equals(route) {
-			// Only add allowed consumers that actually belong to this specific route
-			aclPlugin.Config.Allow.Add(consumer.Spec.ConsumerName)
+	if route.Spec.Security != nil && !route.Spec.Security.DisableAccessControl {
+		aclPlugin := builder.AclPlugin()
+
+		aclPlugin.Config.Allow.Add("gateway")
+		for _, defaultConsumer := range builder.GetRealm().Spec.DefaultConsumers {
+			aclPlugin.Config.Allow.Add(defaultConsumer)
 		}
-	}
 
-	issuer := route.Spec.Downstreams[0].IssuerUrl
-	if issuer != "" {
-		jwtPlugin := builder.JwtPlugin()
-		jwtPlugin.Config.AllowedIss.Add(issuer)
+		for _, consumer := range builder.GetAllowedConsumers() {
+			if consumer.Spec.Route.Equals(route) {
+				// Only add allowed consumers that actually belong to this specific route
+				aclPlugin.Config.Allow.Add(consumer.Spec.ConsumerName)
+			}
+		}
 	}
 
 	return nil

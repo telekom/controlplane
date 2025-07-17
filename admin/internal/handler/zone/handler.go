@@ -164,7 +164,7 @@ func createTeamApiRoute(ctx context.Context, handlingContext HandlingContext, te
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 	teamRoute := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      naming.ForGatewayRoute(teamRouteConfig),
+			Name:      gatewayRealm.Name + "--" + naming.ForGatewayRoute(teamRouteConfig),
 			Namespace: handlingContext.Namespace.Name,
 		},
 	}
@@ -201,6 +201,10 @@ func createTeamApiRoute(ctx context.Context, handlingContext HandlingContext, te
 			PassThrough: false,
 			Upstreams:   []gatewayapi.Upstream{upstream},
 			Downstreams: []gatewayapi.Downstream{downstream},
+			Traffic:     gatewayapi.Traffic{},
+			Security: &gatewayapi.Security{
+				DisableAccessControl: true, // Team APIs are not protected by ACLs
+			},
 		}
 
 		return nil

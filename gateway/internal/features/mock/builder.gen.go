@@ -296,6 +296,20 @@ func (mr *MockFeaturesBuilderMockRecorder) RequestTransformerPlugin() *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequestTransformerPlugin", reflect.TypeOf((*MockFeaturesBuilder)(nil).RequestTransformerPlugin))
 }
 
+// RoutingConfigs mocks base method.
+func (m *MockFeaturesBuilder) RoutingConfigs() *plugin.RoutingConfigs {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RoutingConfigs")
+	ret0, _ := ret[0].(*plugin.RoutingConfigs)
+	return ret0
+}
+
+// RoutingConfigs indicates an expected call of RoutingConfigs.
+func (mr *MockFeaturesBuilderMockRecorder) RoutingConfigs() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RoutingConfigs", reflect.TypeOf((*MockFeaturesBuilder)(nil).RoutingConfigs))
+}
+
 // SetUpstream mocks base method.
 func (m *MockFeaturesBuilder) SetUpstream(arg0 client.Upstream) {
 	m.ctrl.T.Helper()
