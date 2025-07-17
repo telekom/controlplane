@@ -13,14 +13,14 @@ import (
 
 // Configuration key constants
 const (
-	configKeyRequeueAfterOnError = "REQUEUE_AFTER_ON_ERROR"
-	configKeyRequeueAfter        = "REQUEUE_AFTER"
-	configKeyDefaultNamespace    = "DEFAULT_NAMESPACE"
-	configKeyDefaultEnvironment  = "DEFAULT_ENVIRONMENT"
-	configKeyLabelKeyPrefix      = "LABEL_KEY_PREFIX"
-	configKeyJitterFactor        = "JITTER_FACTOR"
-	configKeyMaxBackoff          = "MAX_BACKOFF"
-	configKeyMaxConcurrentRec    = "MAX_CONCURRENT_RECONCILES"
+	configKeyRequeueAfterOnError = "requeue-after-on-error"
+	configKeyRequeueAfter        = "requeue-after"
+	configKeyDefaultNamespace    = "default-namespace"
+	configKeyDefaultEnvironment  = "default-environment"
+	configKeyLabelKeyPrefix      = "label-key-prefix"
+	configKeyJitterFactor        = "jitter-factor"
+	configKeyMaxBackoff          = "max-backoff"
+	configKeyMaxConcurrentRec    = "max-concurrent-reconciles"
 )
 
 const (
@@ -65,8 +65,8 @@ func registerDefaults() {
 }
 
 func registerEnvs() {
-	viper.AutomaticEnv() // Automatically map environment variables to viper keys
-	viper.EnvKeyReplacer(strings.NewReplacer("-", "_"))
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 }
 
 func Parse() {
