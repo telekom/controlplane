@@ -100,8 +100,8 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, obj *apiapi.Api
 	// Scopes
 	// check if scopes exist and scopes are subset from api
 	if obj.HasM2M() {
-		if obj.Spec.Security.M2M.Scopes != nil {
-
+		// If scopes are set and its not externalIDP (here its allowed to have unknown/external scopes)
+		if obj.Spec.Security.M2M.Scopes != nil && !obj.HasExternalIdp() {
 			if len(api.Spec.Oauth2Scopes) == 0 {
 				obj.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Api does not define any Oauth2 scopes"))
 				obj.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiExposure will be automatically processed, if the API will be updated with scopes"))
@@ -119,8 +119,8 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, obj *apiapi.Api
 				}
 			}
 
+			log.V(1).Info("✅ Scopes are valid and exist")
 		}
-
 	}
 
 	// TODO: further validations (currently contained in the old code)

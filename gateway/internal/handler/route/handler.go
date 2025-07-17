@@ -151,8 +151,9 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 	builder.EnableFeature(feature.InstanceCustomScopesFeature)
 	builder.EnableFeature(feature.InstanceLoadBalancingFeature)
 	builder.EnableFeature(feature.InstanceExternalIDPFeature)
-	// builder.EnableFeature(feature.InstanceRateLimitFeature)
+	builder.EnableFeature(feature.InstanceRateLimitFeature)
 	builder.EnableFeature(feature.InstanceFailoverFeature)
+	builder.EnableFeature(feature.InstanceBasicAuthFeature)
 
 	return builder, nil
 }
