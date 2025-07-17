@@ -28,6 +28,38 @@ type ApiExposureSpec struct {
 	// +kubebuilder:default=Auto
 	Approval ApprovalStrategy `json:"approval"`
 	Zone     ctypes.ObjectRef `json:"zone"`
+
+	Traffic Traffic `json:"traffic"`
+
+	Security *Security `json:"security,omitempty"`
+}
+
+func (exposure *ApiExposure) HasExternalIdp() bool {
+
+	if exposure.Spec.Security == nil {
+		return false
+	}
+	if exposure.Spec.Security.M2M == nil {
+		return false
+	}
+	if exposure.Spec.Security.M2M.ExternalIDP == nil {
+		return false
+	}
+
+	return exposure.Spec.Security.M2M.ExternalIDP.TokenEndpoint != ""
+
+}
+
+func (a *ApiExposure) HasFailover() bool {
+	return a.Spec.Traffic.Failover != nil
+}
+
+func (a *ApiExposure) HasM2M() bool {
+	if a.Spec.Security == nil {
+		return false
+	}
+
+	return a.Spec.Security.M2M != nil
 }
 
 type Upstream struct {
@@ -52,8 +84,9 @@ type ApiExposureStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
-	Active bool              `json:"active"`
-	Route  *ctypes.ObjectRef `json:"route,omitempty"`
+	Active        bool              `json:"active"`
+	Route         *ctypes.ObjectRef `json:"route,omitempty"`
+	FailoverRoute *ctypes.ObjectRef `json:"failoverRoute,omitempty"`
 }
 
 // +kubebuilder:object:root=true

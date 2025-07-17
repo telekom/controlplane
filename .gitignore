@@ -11,3 +11,4 @@ charts
 
 # ignore test output
 gotest.log
+snapshots

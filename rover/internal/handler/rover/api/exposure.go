@@ -55,15 +55,46 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		apiExposure.Spec = apiapi.ApiExposureSpec{
 			ApiBasePath: exp.BasePath,
 			Visibility:  apiapi.Visibility(exp.Visibility.String()),
-			Approval:    apiapi.ApprovalStrategy(exp.Approval),
+			Approval:    apiapi.ApprovalStrategy(exp.Approval.Strategy),
 			Zone:        zoneRef,
-			Upstreams: []apiapi.Upstream{
-				{
-					Url:    exp.Upstream,
-					Weight: 100,
-				},
-			},
+			Upstreams:   make([]apiapi.Upstream, len(exp.Upstreams)),
 		}
+
+		if exp.Security != nil {
+			if exp.Security.M2M != nil {
+				apiExposure.Spec.Security = &apiapi.Security{
+					M2M: &apiapi.Machine2MachineAuthentication{
+						Scopes: exp.Security.M2M.Scopes,
+					},
+				}
+				if exp.Security.M2M.ExternalIDP != nil {
+					apiExposure.Spec.Security.M2M.ExternalIDP = &apiapi.ExternalIdentityProvider{
+						TokenEndpoint: exp.Security.M2M.ExternalIDP.TokenEndpoint,
+						TokenRequest:  exp.Security.M2M.ExternalIDP.TokenRequest,
+						GrantType:     exp.Security.M2M.ExternalIDP.GrantType,
+						Basic:         toApiBasic(exp.Security.M2M.ExternalIDP.Basic),
+						Client:        toApiClient(exp.Security.M2M.ExternalIDP.Client),
+					}
+				}
+			}
+		}
+
+		failoverZones, hasFailover := getFailoverZones(environment, exp.Traffic.Failover)
+		if hasFailover {
+			apiExposure.Spec.Traffic = apiapi.Traffic{
+				Failover: &apiapi.Failover{
+					Zones: failoverZones,
+				},
+			}
+		}
+
+		for i, upstream := range exp.Upstreams {
+			apiExposure.Spec.Upstreams[i] = apiapi.Upstream{
+				Url:    upstream.URL,
+				Weight: upstream.Weight,
+			}
+		}
+
 		return nil
 	}
 

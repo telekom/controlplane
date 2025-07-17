@@ -72,10 +72,56 @@ spec:
               security:
                 description: Security is the security configuration for the subscription
                 properties:
-                  oauth2Scopes:
-                    items:
-                      type: string
-                    type: array
+                  m2m:
+                    description: M2M defines machine-to-machine authentication configuration
+                    properties:
+                      basic:
+                        description: Basic defines basic authentication configuration
+                        properties:
+                          password:
+                            description: Password for basic authentication
+                            minLength: 1
+                            type: string
+                          username:
+                            description: Username for basic authentication
+                            minLength: 1
+                            type: string
+                        required:
+                        - password
+                        - username
+                        type: object
+                      client:
+                        description: Client defines client credentials for OAuth2
+                        properties:
+                          clientId:
+                            description: ClientId identifies the client for OAuth2
+                              client credentials flow
+                            minLength: 1
+                            type: string
+                          clientSecret:
+                            description: ClientSecret is the secret associated with
+                              the client ID
+                            minLength: 1
+                            type: string
+                        required:
+                        - clientId
+                        - clientSecret
+                        type: object
+                      scopes:
+                        description: Scopes defines additional OAuth2 scopes that
+                          are added to the LMS token
+                        items:
+                          type: string
+                        maxItems: 10
+                        type: array
+                    type: object
+                    x-kubernetes-validations:
+                    - message: Client and basic authentication cannot be used together
+                      rule: 'self == null || (has(self.client) ? (!has(self.basic))
+                        : true)'
+                    - message: At least one of client, basic, or scopes must be provided
+                      rule: self == null || has(self.client) || has(self.basic) ||
+                        has(self.scopes)
                 type: object
               sourceOrganization:
                 type: string

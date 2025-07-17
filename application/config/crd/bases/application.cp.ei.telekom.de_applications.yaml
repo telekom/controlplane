@@ -42,6 +42,29 @@ spec:
           spec:
             description: ApplicationSpec defines the desired state of Application
             properties:
+              failoverZones:
+                description: FailoverZones are the zones which can be used by the
+                  application in case of a failure in the primary zone
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
               needsClient:
                 default: true
                 description: NeedsClient is a flag to indicate if the application
@@ -54,15 +77,24 @@ spec:
                   If NeedsClient is true, the consumer will be created for the client
                 type: boolean
               secret:
+                description: Secret is the secret used to authenticate the application
+                maxLength: 64
+                minLength: 1
                 type: string
               team:
+                description: Team is the name of the team responsible for the application
+                maxLength: 64
+                minLength: 1
                 type: string
               teamEmail:
+                description: TeamEmail is the email address of the team responsible
+                  for the application
+                format: email
+                maxLength: 64
+                minLength: 1
                 type: string
               zone:
-                description: |-
-                  ObjectRef is a reference to a Kubernetes object
-                  It is similar to types.NamespacedName but has the required json tags for serialization
+                description: Zone is the primary zone for the application
                 properties:
                   name:
                     type: string
@@ -93,6 +125,27 @@ spec:
                 type: string
               clientSecret:
                 type: string
+              clients:
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
               conditions:
                 items:
                   description: Condition contains details for one aspect of the current
@@ -152,6 +205,27 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              consumers:
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
             required:
             - clientId
             - clientSecret

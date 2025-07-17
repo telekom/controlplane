@@ -43,7 +43,7 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 
 		// If this is a proxy-route, we only need the consumers which are directly associated
 		// with this route as we just need to add them to the ACL plugin.
-		if route.IsProxy() {
+		if route.IsProxy() && !route.IsFailoverSecondary() {
 			log.Info("Route is a proxy route, only looking for direct consumers")
 			listOpts = append(listOpts, client.MatchingFields{
 				// This index field is defined in internal/controller/index.go
@@ -79,7 +79,12 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 	// Reset the consumers list to only contain the current consumer names
 	route.Status.Consumers = []string{}
 	for _, consumer := range builder.GetAllowedConsumers() {
-		route.Status.Consumers = append(route.Status.Consumers, consumer.Spec.ConsumerName)
+		// We needed all consumers for real-routes to construct the JumperConfig,
+		// but we only want to add the consumers that are actually consuming this route
+		// to the route status.
+		if consumer.Spec.Route.Equals(route) {
+			route.Status.Consumers = append(route.Status.Consumers, consumer.Spec.ConsumerName)
+		}
 	}
 
 	route.SetCondition(condition.NewReadyCondition("RouteProcessed", "Route processed successfully"))
@@ -143,9 +148,11 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 	builder.EnableFeature(feature.InstanceAccessControlFeature)
 	builder.EnableFeature(feature.InstancePassThroughFeature)
 	builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
-	// builder.EnableFeature(feature.InstanceCustomScopesFeature)
-	// builder.EnableFeature(feature.InstanceExternalIDPFeature)
+	builder.EnableFeature(feature.InstanceCustomScopesFeature)
+	builder.EnableFeature(feature.InstanceLoadBalancingFeature)
+	builder.EnableFeature(feature.InstanceExternalIDPFeature)
 	// builder.EnableFeature(feature.InstanceRateLimitFeature)
+	builder.EnableFeature(feature.InstanceFailoverFeature)
 
 	return builder, nil
 }
