@@ -117,10 +117,18 @@ spec:
                 required:
                 - apis
                 type: object
+              visibility:
+                description: Visibility controls what subscriptions are allowed from
+                  and to this zone. It's also relevant for features like failover
+                enum:
+                - World
+                - Enterprise
+                type: string
             required:
             - gateway
             - identityProvider
             - redis
+            - visibility
             type: object
           status:
             description: ZoneStatus defines the observed state of Zone

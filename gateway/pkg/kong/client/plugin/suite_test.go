@@ -55,9 +55,21 @@ var _ = Describe("Plugin", func() {
 						Scopes:       "scope1 scope2",
 					},
 				},
+				LoadBalancing: &LoadBalancing{
+					Servers: []LoadBalancingServer{
+						{
+							Upstream: "http://upstream.url:8080/api/v1",
+							Weight:   2,
+						},
+						{
+							Upstream: "http://upstream2.url:8080/api/v1",
+							Weight:   1,
+						},
+					},
+				},
 			}
 			// This must be the base64 encoded version of the expected JumperConfig
-			encodedJumperConfig = "eyJvYXV0aCI6eyIxMjMiOnsiY2xpZW50SWQiOiJjbGllbnQtaWQiLCJjbGllbnRTZWNyZXQiOiJ0b3BzZWNyZXQiLCJzY29wZXMiOiJzY29wZTEgc2NvcGUyIn19fQ=="
+			encodedJumperConfig = "eyJvYXV0aCI6eyIxMjMiOnsiY2xpZW50SWQiOiJjbGllbnQtaWQiLCJjbGllbnRTZWNyZXQiOiJ0b3BzZWNyZXQiLCJzY29wZXMiOiJzY29wZTEgc2NvcGUyIn19LCJsb2FkQmFsYW5jaW5nIjp7InNlcnZlcnMiOlt7InVwc3RyZWFtIjoiaHR0cDovL3Vwc3RyZWFtLnVybDo4MDgwL2FwaS92MSIsIndlaWdodCI6Mn0seyJ1cHN0cmVhbSI6Imh0dHA6Ly91cHN0cmVhbTIudXJsOjgwODAvYXBpL3YxIiwid2VpZ2h0IjoxfV19fQ=="
 		)
 
 		It("should return an empty JumperConfig", func() {
@@ -66,6 +78,7 @@ var _ = Describe("Plugin", func() {
 			Expect(actual).To(Equal(&JumperConfig{
 				OAuth:     map[ConsumerId]OauthCredentials{},
 				BasicAuth: map[ConsumerId]BasicAuthCredentials{},
+				// LoadBalancing is optional and not set by default
 			}))
 
 		})
@@ -77,7 +90,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should correctly base64-decode", func() {
-			actual, err := FromBase64(encodedJumperConfig)
+			actual, err := FromBase64[JumperConfig](encodedJumperConfig)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(Equal(expected))
 		})

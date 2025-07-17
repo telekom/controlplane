@@ -12,19 +12,37 @@ import (
 
 // ApiSubscriptionSpec defines the desired state of ApiSubscription
 type ApiSubscriptionSpec struct {
-	ApiBasePath  string           `json:"apiBasePath"`
-	Security     *Security        `json:"security,omitempty"`
-	Organization string           `json:"organization,omitempty"`
-	Requestor    Requestor        `json:"requestor"`
-	Zone         ctypes.ObjectRef `json:"zone"`
+	ApiBasePath  string              `json:"apiBasePath"`
+	Security     *SubscriberSecurity `json:"security,omitempty"`
+	Organization string              `json:"organization,omitempty"`
+	Requestor    Requestor           `json:"requestor"`
+	Zone         ctypes.ObjectRef    `json:"zone"`
+
+	Traffic Traffic `json:"traffic"`
+}
+
+func (api *ApiSubscription) HasM2M() bool {
+	if api.Spec.Security == nil {
+		return false
+	}
+
+	return api.Spec.Security.M2M != nil
+}
+
+func (api *ApiSubscription) HasM2MClient() bool {
+	if !api.HasM2M() {
+		return false
+	}
+
+	return api.Spec.Security.M2M.Client != nil
+}
+
+func (a *ApiSubscription) HasFailover() bool {
+	return a.Spec.Traffic.Failover != nil
 }
 
 type Requestor struct {
 	Application ctypes.ObjectRef `json:"application"`
-}
-
-type Security struct {
-	Oauth2Scopes []string `json:"oauth2Scopes,omitempty"`
 }
 
 // ApiSubscriptionStatus defines the observed state of ApiSubscription
@@ -36,8 +54,12 @@ type ApiSubscriptionStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
-	Route                 *ctypes.ObjectRef `json:"route,omitempty"`
-	ConsumeRoute          *ctypes.ObjectRef `json:"consumeRoute,omitempty"`
+	Route        *ctypes.ObjectRef `json:"route,omitempty"`
+	ConsumeRoute *ctypes.ObjectRef `json:"consumeRoute,omitempty"`
+
+	FailoverConsumeRoutes []ctypes.ObjectRef `json:"failoverConsumeRoutes,omitempty"`
+	FailoverRoutes        []ctypes.ObjectRef `json:"failoverRoutes,omitempty"`
+
 	Approval              *ctypes.ObjectRef `json:"approval,omitempty"`
 	ApprovalRequest       *ctypes.ObjectRef `json:"approvalRequest,omitempty"`
 	RemoteApiSubscription *ctypes.ObjectRef `json:"remoteApiSubscription,omitempty"`

@@ -1,3 +1,31 @@
+# [0.7.0](https://github.com/telekom/controlplane/compare/v0.6.0...v0.7.0) (2025-07-14)
+
+
+### Bug Fixes
+
+* added disable-access-control; refactored custom-scopes ([4873006](https://github.com/telekom/controlplane/commit/4873006bedbf092c2c35230cb12019034ad6d116))
+
+
+### Features
+
+* added failover feature ([#77](https://github.com/telekom/controlplane/issues/77)) ([75981ef](https://github.com/telekom/controlplane/commit/75981efff4d804c06135ebec7beb34717fe686ad))
+* **default-scopes:** Added provider default-scopes ([58026c6](https://github.com/telekom/controlplane/commit/58026c6321a223ee04152f873258cf100c6597b3))
+* **externalIDP:** add external idp feature to api, gateway, rover ([#78](https://github.com/telekom/controlplane/issues/78)) ([6c185c4](https://github.com/telekom/controlplane/commit/6c185c43586dda48d5598796a4cbf09ff05ac2ae))
+* **loadbalancing:** Add loadbalancing feature in the gateway domain using Upstreams in the RouteSpec ([eb3c625](https://github.com/telekom/controlplane/commit/eb3c625e08c9f07fdb33447a9f1d34f5f5649e95))
+* **loadbalancing:** Add validation for load-balancing in rover webhook ([#82](https://github.com/telekom/controlplane/issues/82)) ([d22d198](https://github.com/telekom/controlplane/commit/d22d198900f68b2024b39ba7f2620303fc4a9636))
+
+# [0.6.0](https://github.com/telekom/controlplane/compare/v0.5.0...v0.6.0) (2025-07-14)
+
+
+### Bug Fixes
+
+* add update_install.sh ([#70](https://github.com/telekom/controlplane/issues/70)) ([989c9fb](https://github.com/telekom/controlplane/commit/989c9fb3d351ea83133faef066a09e87bfbf9905))
+
+
+### Features
+
+* **visibility:** add Zone visibility feature ([e24a881](https://github.com/telekom/controlplane/commit/e24a8813afc43360dcb5c3657faeb5b96cf7e236))
+
 # [0.5.0](https://github.com/telekom/controlplane/compare/v0.4.0...v0.5.0) (2025-07-03)
 
 
