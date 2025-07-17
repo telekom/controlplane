@@ -48,19 +48,11 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 		apiSubscription.Spec = apiapi.ApiSubscriptionSpec{
 			ApiBasePath:  sub.BasePath,
 			Zone:         zoneRef,
-			Security:     &apiapi.SubscriberSecurity{},
+			Security:     mapSubscriberSecurityToApiSecurity(sub.Security),
 			Organization: sub.Organization,
 			Requestor: apiapi.Requestor{
 				Application: *owner.Status.Application,
 			},
-		}
-
-		if sub.HasM2M() {
-			apiSubscription.Spec.Security.M2M = &apiapi.SubscriberMachine2MachineAuthentication{
-				Client: toApiClient(sub.Security.M2M.Client),
-				Basic:  toApiBasic(sub.Security.M2M.Basic),
-				Scopes: sub.Security.M2M.Scopes,
-			}
 		}
 
 		failoverZones, hasFailover := getFailoverZones(environment, sub.Traffic.Failover)
@@ -94,4 +86,22 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 	log.V(1).Info("Created ApiSubscription", "subscription", apiSubscription)
 
 	return err
+}
+
+func mapSubscriberSecurityToApiSecurity(roverSecurity *rover.SubscriberSecurity) *apiapi.SubscriberSecurity {
+	if roverSecurity == nil {
+		return nil
+	}
+
+	security := &apiapi.SubscriberSecurity{}
+
+	if roverSecurity.M2M != nil {
+		security.M2M = &apiapi.SubscriberMachine2MachineAuthentication{
+			Client: toApiClient(roverSecurity.M2M.Client),
+			Basic:  toApiBasic(roverSecurity.M2M.Basic),
+			Scopes: roverSecurity.M2M.Scopes,
+		}
+	}
+
+	return security
 }

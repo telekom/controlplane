@@ -11,6 +11,7 @@ const (
 	FeatureTypePassThrough   FeatureType = "PassThrough"
 	FeatureTypeAccessControl FeatureType = "AccessControl"
 	FeatureTypeRateLimit     FeatureType = "RateLimit"
+	FeatureTypeBasicAuth     FeatureType = "BasicAuth"
 )
 
 // Dependent Features
