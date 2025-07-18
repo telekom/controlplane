@@ -88,7 +88,7 @@ func (c *Consumer) GetProperty(key string) string {
 }
 
 func (c *Consumer) HasIpRestriction() bool {
-	return c.Spec.Security != nil && c.Spec.Security.IpRestriction != nil
+	return c.Spec.Security != nil && c.Spec.Security.IpRestrictions != nil
 }
 
 func (c *ConsumerList) GetItems() []types.Object {

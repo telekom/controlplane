@@ -90,9 +90,9 @@ type RoverSpec struct {
 	// +kubebuilder:validation:MinLength=1
 	Zone string `json:"zone"`
 
-	// IpRestriction defines IP-based access restrictions for the entire Application
+	// IpRestrictions defines IP-based access restrictions for the entire Application
 	// +kubebuilder:validation:Optional
-	IpRestriction *IpRestriction `json:"ipRestriction,omitempty"`
+	IpRestrictions *IpRestrictions `json:"ipRestrictions,omitempty"`
 
 	// ClientSecret is the secret used for client authentication
 	// +kubebuilder:validation:Required
@@ -159,22 +159,20 @@ const (
 	LoadBalancingLeastConnections LoadBalancingStrategy = "LeastConnections"
 )
 
-type IpRestriction struct {
+type IpRestrictions struct {
 	// Allow is a list of IP addresses or CIDR ranges that are allowed access
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinItems=0
-	// +kubebuilder:validation:MaxItems=20
-	// +kubebuilder:validation:UniqueItems=true
+	// +kubebuilder:validation:MaxItems=10
 	// +kubebuilder:validation:Type=array
-	// +kubebuilder:validation:Items.Pattern=^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?:/(?:3[0-2]|[12]?[0-9]))?$
+	// +kubebuilder:validation:XValidation:rule="self.all(x, isCIDR(x) || isIP(x))", message="All items must be valid IP addresses or CIDR notations"
 	Allow []string `json:"allow,omitempty"`
 	// Deny is a list of IP addresses or CIDR ranges that are denied access
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinItems=0
-	// +kubebuilder:validation:MaxItems=20
-	// +kubebuilder:validation:UniqueItems=true
+	// +kubebuilder:validation:MaxItems=10
 	// +kubebuilder:validation:Type=array
-	// +kubebuilder:validation:Items.Pattern=^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?:/(?:3[0-2]|[12]?[0-9]))?$
+	// +kubebuilder:validation:XValidation:rule="self.all(x, isCIDR(x) || isIP(x))", message="All items must be valid IP addresses or CIDR notations"
 	Deny []string `json:"deny,omitempty"`
 }
 

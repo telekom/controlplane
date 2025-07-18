@@ -48,10 +48,10 @@ func (f *IpRestrictionFeature) Apply(ctx context.Context, builder features.Featu
 	}
 
 	ipRestr := builder.IpRestrictionPlugin()
-	for _, allow := range consumer.Spec.Security.IpRestriction.Allow {
+	for _, allow := range consumer.Spec.Security.IpRestrictions.Allow {
 		ipRestr.Config.AddAllow(allow)
 	}
-	for _, deny := range consumer.Spec.Security.IpRestriction.Deny {
+	for _, deny := range consumer.Spec.Security.IpRestrictions.Deny {
 		ipRestr.Config.AddDeny(deny)
 	}
 

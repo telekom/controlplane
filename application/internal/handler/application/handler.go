@@ -230,11 +230,11 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 			Name:  clientId,
 		}
 
-		if owner.Spec.Security != nil && owner.Spec.Security.IpRestriction != nil {
+		if owner.Spec.Security != nil && owner.Spec.Security.IpRestrictions != nil {
 			consumer.Spec.Security = &gateway.ConsumerSecurity{
-				IpRestriction: &gateway.IpRestriction{
-					Allow: owner.Spec.Security.IpRestriction.Allow,
-					Deny:  owner.Spec.Security.IpRestriction.Deny,
+				IpRestrictions: &gateway.IpRestrictions{
+					Allow: owner.Spec.Security.IpRestrictions.Allow,
+					Deny:  owner.Spec.Security.IpRestrictions.Deny,
 				},
 			}
 		}

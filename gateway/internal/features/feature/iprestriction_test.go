@@ -69,7 +69,7 @@ var _ = Describe("IpRestrictionFeature", func() {
 			It("consumer with IP restriction config, feature should be used", func() {
 				consumer := NewConsumer()
 				consumer.Spec.Security = &gatewayv1.ConsumerSecurity{
-					IpRestriction: &gatewayv1.IpRestriction{
+					IpRestrictions: &gatewayv1.IpRestrictions{
 						Allow: []string{"192.168.1.1"},
 					},
 				}
@@ -93,7 +93,7 @@ var _ = Describe("IpRestrictionFeature", func() {
 			It("should configure IP restriction plugin with allow list", func() {
 				consumer := NewConsumer()
 				consumer.Spec.Security = &gatewayv1.ConsumerSecurity{
-					IpRestriction: &gatewayv1.IpRestriction{
+					IpRestrictions: &gatewayv1.IpRestrictions{
 						Allow: []string{"192.168.1.1", "10.0.0.0/24"},
 					},
 				}
@@ -118,7 +118,7 @@ var _ = Describe("IpRestrictionFeature", func() {
 			It("should configure IP restriction plugin with deny list", func() {
 				consumer := NewConsumer()
 				consumer.Spec.Security = &gatewayv1.ConsumerSecurity{
-					IpRestriction: &gatewayv1.IpRestriction{
+					IpRestrictions: &gatewayv1.IpRestrictions{
 						Deny: []string{"192.168.1.2", "10.0.1.0/24"},
 					},
 				}
@@ -143,7 +143,7 @@ var _ = Describe("IpRestrictionFeature", func() {
 			It("should configure IP restriction plugin with both allow and deny lists", func() {
 				consumer := NewConsumer()
 				consumer.Spec.Security = &gatewayv1.ConsumerSecurity{
-					IpRestriction: &gatewayv1.IpRestriction{
+					IpRestrictions: &gatewayv1.IpRestrictions{
 						Allow: []string{"192.168.1.1", "10.0.0.0/24"},
 						Deny:  []string{"192.168.1.2", "10.0.1.0/24"},
 					},
@@ -184,7 +184,7 @@ var _ = Describe("IpRestrictionFeature", func() {
 
 			consumer := NewConsumer()
 			consumer.Spec.Security = &gatewayv1.ConsumerSecurity{
-				IpRestriction: &gatewayv1.IpRestriction{
+				IpRestrictions: &gatewayv1.IpRestrictions{
 					Allow: []string{"192.168.1.1", "10.0.0.0/24"},
 				},
 			}
@@ -220,7 +220,7 @@ var _ = Describe("IpRestrictionFeature", func() {
 
 			consumer := NewConsumer()
 			consumer.Spec.Security = &gatewayv1.ConsumerSecurity{
-				IpRestriction: &gatewayv1.IpRestriction{
+				IpRestrictions: &gatewayv1.IpRestrictions{
 					Deny: []string{"192.168.1.2", "10.0.1.0/24"},
 				},
 			}

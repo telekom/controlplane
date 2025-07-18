@@ -36,10 +36,10 @@ func (s *Security) HasBasicAuth() bool {
 // Security defines the security configuration for the Rover
 // Security is optional, but if provided, exactly one of m2m or h2m must be set
 type ConsumerSecurity struct {
-	IpRestriction *IpRestriction `json:"ipRestrictions,omitempty"`
+	IpRestrictions *IpRestrictions `json:"ipRestrictions,omitempty"`
 }
 
-type IpRestriction struct {
+type IpRestrictions struct {
 	// +kubebuilder:validation:Optional
 	Allow []string `json:"allow,omitempty"`
 	// +kubebuilder:validation:Optional

@@ -411,8 +411,8 @@ spec:
                     rule: self == null || (!has(self.api) && has(self.event)) || (has(self.api)
                       && !has(self.event))
                 type: array
-              ipRestriction:
-                description: IpRestriction defines IP-based access restrictions for
+              ipRestrictions:
+                description: IpRestrictions defines IP-based access restrictions for
                   the entire Application
                 properties:
                   allow:
@@ -420,19 +420,23 @@ spec:
                       are allowed access
                     items:
                       type: string
-                    maxItems: 20
+                    maxItems: 10
                     minItems: 0
                     type: array
-                    uniqueItems: true
+                    x-kubernetes-validations:
+                    - message: All items must be valid IP addresses or CIDR notations
+                      rule: self.all(x, isCIDR(x) || isIP(x))
                   deny:
                     description: Deny is a list of IP addresses or CIDR ranges that
                       are denied access
                     items:
                       type: string
-                    maxItems: 20
+                    maxItems: 10
                     minItems: 0
                     type: array
-                    uniqueItems: true
+                    x-kubernetes-validations:
+                    - message: All items must be valid IP addresses or CIDR notations
+                      rule: self.all(x, isCIDR(x) || isIP(x))
                 type: object
               subscriptions:
                 description: Subscriptions is a list of APIs and Events that this

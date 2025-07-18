@@ -49,10 +49,10 @@ type ApplicationSpec struct {
 }
 
 type Security struct {
-	IpRestriction *IpRestriction `json:"ipRestrictions,omitempty"`
+	IpRestrictions *IpRestrictions `json:"ipRestrictions,omitempty"`
 }
 
-type IpRestriction struct {
+type IpRestrictions struct {
 	// +kubebuilder:validation:Optional
 	Allow []string `json:"allow,omitempty"`
 	// +kubebuilder:validation:Optional
