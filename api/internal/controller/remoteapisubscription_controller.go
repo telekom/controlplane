@@ -7,16 +7,18 @@ package controller
 import (
 	"context"
 
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/remoteapisubscription"
 	"github.com/telekom/controlplane/api/internal/handler/remoteapisubscription/syncer"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
-	ccontroller "github.com/telekom/controlplane/common/pkg/controller"
 )
 
 // RemoteApiSubscriptionReconciler reconciles a RemoteApiSubscription object
@@ -25,7 +27,7 @@ type RemoteApiSubscriptionReconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
-	ccontroller.Controller[*apiapi.RemoteApiSubscription]
+	cc.Controller[*apiapi.RemoteApiSubscription]
 }
 
 // +kubebuilder:rbac:groups=api.cp.ei.telekom.de,resources=remoteapisubscriptions,verbs=get;list;watch;create;update;patch;delete
@@ -46,10 +48,14 @@ func (r *RemoteApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager, syn
 		SyncerFactory: syncerFactory,
 	}
 
-	r.Controller = ccontroller.NewController(handler, r.Client, r.Recorder)
+	r.Controller = cc.NewController(handler, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&apiapi.RemoteApiSubscription{}).
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter(),
+		}).
 		Owns(&apiapi.ApiSubscription{}).
 		Owns(&applicationapi.Application{}).
 		// Watch Routes

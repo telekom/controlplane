@@ -9,7 +9,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -23,8 +22,8 @@ import (
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
-	"github.com/telekom/controlplane/common/pkg/config"
-	ccontroller "github.com/telekom/controlplane/common/pkg/controller"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 
@@ -37,7 +36,7 @@ type ApiSubscriptionReconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
-	ccontroller.Controller[*apiapi.ApiSubscription]
+	cc.Controller[*apiapi.ApiSubscription]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
@@ -65,7 +64,7 @@ func (r *ApiSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 // SetupWithManager sets up the controller with the Manager.
 func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("apisubscription-controller")
-	r.Controller = ccontroller.NewController(&apisubscription.ApiSubscriptionHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&apisubscription.ApiSubscriptionHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&apiapi.ApiSubscription{}).
@@ -94,8 +93,8 @@ func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			builder.WithPredicates(DeleteOnlyPredicate{}),
 		).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: 10,
-			RateLimiter:             workqueue.DefaultTypedItemBasedRateLimiter[reconcile.Request]()}).
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter()}).
 		Complete(r)
 }
 
@@ -110,8 +109,8 @@ func (r *ApiSubscriptionReconciler) MapApiToApiSubscription(ctx context.Context,
 
 	list := &apiapi.ApiSubscriptionList{}
 	err := r.Client.List(ctx, list, client.MatchingLabels{
-		config.EnvironmentLabelKey: api.Labels[config.EnvironmentLabelKey],
-		apiapi.BasePathLabelKey:    api.Labels[apiapi.BasePathLabelKey],
+		cconfig.EnvironmentLabelKey: api.Labels[cconfig.EnvironmentLabelKey],
+		apiapi.BasePathLabelKey:     api.Labels[apiapi.BasePathLabelKey],
 	})
 	if err != nil {
 		log.Error(err, "failed to list API-Subscriptions")
@@ -140,8 +139,8 @@ func (r *ApiSubscriptionReconciler) MapApiExposureToApiSubscription(ctx context.
 
 	list := &apiapi.ApiSubscriptionList{}
 	err := r.Client.List(ctx, list, client.MatchingLabels{
-		config.EnvironmentLabelKey: apiExposure.Labels[config.EnvironmentLabelKey],
-		apiapi.BasePathLabelKey:    apiExposure.Labels[apiapi.BasePathLabelKey],
+		cconfig.EnvironmentLabelKey: apiExposure.Labels[cconfig.EnvironmentLabelKey],
+		apiapi.BasePathLabelKey:     apiExposure.Labels[apiapi.BasePathLabelKey],
 	})
 	if err != nil {
 		log.Error(err, "failed to list API-Subscriptions")
@@ -170,8 +169,8 @@ func (r *ApiSubscriptionReconciler) MapApplicationToApiSubscription(ctx context.
 
 	list := &apiapi.ApiSubscriptionList{}
 	err := r.Client.List(ctx, list, client.MatchingLabels{
-		config.EnvironmentLabelKey:          application.Labels[config.EnvironmentLabelKey],
-		config.BuildLabelKey("application"): application.Labels[config.BuildLabelKey("application")],
+		cconfig.EnvironmentLabelKey:          application.Labels[cconfig.EnvironmentLabelKey],
+		cconfig.BuildLabelKey("application"): application.Labels[cconfig.BuildLabelKey("application")],
 	}, client.InNamespace(application.Namespace))
 	if err != nil {
 		log.Error(err, "failed to list API-Subscriptions")

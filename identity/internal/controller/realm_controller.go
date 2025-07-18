@@ -7,11 +7,10 @@ package controller
 import (
 	"context"
 
-	"github.com/telekom/controlplane/common/pkg/config"
-	commonController "github.com/telekom/controlplane/common/pkg/controller"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -31,7 +30,7 @@ type RealmReconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
-	commonController.Controller[*identityv1.Realm]
+	cc.Controller[*identityv1.Realm]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
@@ -47,7 +46,7 @@ func (r *RealmReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 // SetupWithManager sets up the controller with the Manager.
 func (r *RealmReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("realm-controller")
-	r.Controller = commonController.NewController(&realmHandler.HandlerRealm{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&realmHandler.HandlerRealm{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&identityv1.Realm{}).
@@ -55,8 +54,8 @@ func (r *RealmReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.mapIdpObjToRealm),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: 10,
-			RateLimiter:             workqueue.DefaultTypedItemBasedRateLimiter[reconcile.Request](),
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
 }
@@ -73,7 +72,7 @@ func (r *RealmReconciler) mapIdpObjToRealm(ctx context.Context, obj client.Objec
 
 	list := &identityv1.RealmList{}
 	err := r.Client.List(ctx, list, client.MatchingLabels{
-		config.EnvironmentLabelKey: idp.Labels[config.EnvironmentLabelKey],
+		cconfig.EnvironmentLabelKey: idp.Labels[cconfig.EnvironmentLabelKey],
 	})
 	if err != nil {
 		logger.Error(err, "failed to list Realms")

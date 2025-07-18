@@ -8,12 +8,14 @@ import (
 	"context"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	record "k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/application/internal/handler/application"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/controller/index"
 	gateway "github.com/telekom/controlplane/gateway/api/v1"
@@ -64,6 +66,10 @@ func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&applicationv1.Application{}).
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter(),
+		}).
 		Owns(&identity.Client{}).
 		Owns(&gateway.Consumer{}).
 		Complete(r)

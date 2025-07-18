@@ -7,11 +7,13 @@ package controller
 import (
 	"context"
 
-	"github.com/telekom/controlplane/common/pkg/controller"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	environment_handler "github.com/telekom/controlplane/admin/internal/handler/environment"
@@ -23,7 +25,7 @@ type EnvironmentReconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
-	controller.Controller[*adminv1.Environment]
+	cc.Controller[*adminv1.Environment]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
@@ -40,9 +42,13 @@ func (r *EnvironmentReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 // SetupWithManager sets up the controller with the Manager.
 func (r *EnvironmentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("environment-controller")
-	r.Controller = controller.NewController(&environment_handler.EnvironmentHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&environment_handler.EnvironmentHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&adminv1.Environment{}).
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter(),
+		}).
 		Complete(r)
 }

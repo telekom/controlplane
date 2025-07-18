@@ -7,14 +7,13 @@ package controller
 import (
 	"context"
 
-	errors "github.com/pkg/errors"
+	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	opErrors "github.com/telekom/controlplane/common/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"

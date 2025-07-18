@@ -7,9 +7,10 @@ package controller
 import (
 	"context"
 
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -18,8 +19,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	consumer_handler "github.com/telekom/controlplane/gateway/internal/handler/consumer"
@@ -54,8 +53,8 @@ func (r *ConsumerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.mapRealmToConsumer),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: 10,
-			RateLimiter:             workqueue.DefaultTypedItemBasedRateLimiter[reconcile.Request](),
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
 }
@@ -75,7 +74,7 @@ func (r *ConsumerReconciler) mapRealmToConsumer(ctx context.Context, obj client.
 			IndexFieldSpecRealm: types.ObjectRefFromObject(realm).String(),
 		},
 		client.MatchingLabels{
-			config.EnvironmentLabelKey: realm.Labels[config.EnvironmentLabelKey],
+			cconfig.EnvironmentLabelKey: realm.Labels[cconfig.EnvironmentLabelKey],
 		},
 	}
 

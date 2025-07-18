@@ -7,11 +7,13 @@ package controller
 import (
 	"context"
 
-	"github.com/telekom/controlplane/common/pkg/controller"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	v1 "github.com/telekom/controlplane/gateway/api/v1"
 	handler "github.com/telekom/controlplane/gateway/internal/handler/gateway"
@@ -23,7 +25,7 @@ type GatewayReconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
-	controller.Controller[*v1.Gateway]
+	cc.Controller[*v1.Gateway]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
@@ -38,9 +40,13 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 // SetupWithManager sets up the controller with the Manager.
 func (r *GatewayReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("gateway-controller")
-	r.Controller = controller.NewController(&handler.GatewayHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&handler.GatewayHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1.Gateway{}).
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter(),
+		}).
 		Complete(r)
 }

@@ -7,11 +7,10 @@ package controller
 import (
 	"context"
 
-	"github.com/telekom/controlplane/common/pkg/config"
-	commonController "github.com/telekom/controlplane/common/pkg/controller"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -31,7 +30,7 @@ type ClientReconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
-	commonController.Controller[*identityv1.Client]
+	cc.Controller[*identityv1.Client]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
@@ -47,7 +46,7 @@ func (r *ClientReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 // SetupWithManager sets up the controller with the Manager.
 func (r *ClientReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("client-controller")
-	r.Controller = commonController.NewController(&clientHandler.HandlerClient{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&clientHandler.HandlerClient{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&identityv1.Client{}).
@@ -55,8 +54,8 @@ func (r *ClientReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.mapRealmObjToIdentityClient),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: 10,
-			RateLimiter:             workqueue.DefaultTypedItemBasedRateLimiter[reconcile.Request](),
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
 }
@@ -73,7 +72,7 @@ func (r *ClientReconciler) mapRealmObjToIdentityClient(ctx context.Context, obj 
 
 	list := &identityv1.ClientList{}
 	err := r.Client.List(ctx, list, client.MatchingLabels{
-		config.EnvironmentLabelKey: realm.Labels[config.EnvironmentLabelKey],
+		cconfig.EnvironmentLabelKey: realm.Labels[cconfig.EnvironmentLabelKey],
 	})
 	if err != nil {
 		logger.Error(err, "failed to list clients")

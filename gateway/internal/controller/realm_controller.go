@@ -7,18 +7,18 @@ package controller
 import (
 	"context"
 
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/controller"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 
 	realm_handler "github.com/telekom/controlplane/gateway/internal/handler/realm"
@@ -44,10 +44,14 @@ func (r *RealmReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 // SetupWithManager sets up the controller with the Manager.
 func (r *RealmReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("realm-controller")
-	r.Controller = controller.NewController(&realm_handler.RealmHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&realm_handler.RealmHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayv1.Realm{}).
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter(),
+		}).
 		Owns(&gatewayv1.Route{}).
 		Watches(&gatewayv1.Gateway{},
 			handler.EnqueueRequestsFromMapFunc(NewMapGatewayToRealm(r.Client)),
@@ -68,8 +72,8 @@ func NewMapGatewayToRealm(c client.Client) handler.MapFunc {
 		}
 
 		matchLabels := client.MatchingLabels{
-			config.EnvironmentLabelKey:   gateway.Labels[config.EnvironmentLabelKey],
-			config.BuildLabelKey("zone"): gateway.Labels[config.BuildLabelKey("zone")],
+			cconfig.EnvironmentLabelKey:   gateway.Labels[cconfig.EnvironmentLabelKey],
+			cconfig.BuildLabelKey("zone"): gateway.Labels[cconfig.BuildLabelKey("zone")],
 		}
 
 		list := &gatewayv1.RealmList{}
