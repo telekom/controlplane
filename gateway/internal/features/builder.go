@@ -288,7 +288,7 @@ func (b *Builder) Build(ctx context.Context) error {
 }
 
 func (b *Builder) BuildForConsumer(ctx context.Context) error {
-	log := logr.FromContextOrDiscard(ctx).WithName("features.builder").WithValues("route", b.Consumer.Name)
+	log := logr.FromContextOrDiscard(ctx).WithName("features.builder").WithValues("consumer", b.Consumer.Name)
 	if b.Consumer == nil {
 		return ErrNoConsumer
 	}
@@ -310,7 +310,7 @@ func (b *Builder) BuildForConsumer(ctx context.Context) error {
 
 	_, err := b.kc.CreateOrReplaceConsumer(ctx, b.Consumer)
 	if err != nil {
-		return errors.Wrap(err, "failed to create or replace route")
+		return errors.Wrap(err, "failed to create or replace consumer")
 	}
 
 	for pn, p := range b.Plugins {
