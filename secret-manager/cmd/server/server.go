@@ -72,6 +72,7 @@ func setupLog(logLevel string) logr.Logger {
 }
 
 func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.Controller, err error) {
+	log := logr.FromContextOrDiscard(ctx)
 	if backendType != "" {
 		cfg.Backend.Type = backendType
 	}
@@ -83,13 +84,20 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 		return nil, errors.Wrap(err, "failed to parse cache duration")
 	}
 
+	shouldCache := cfg.Backend.GetDefault("disable_cache", "false") != trueStr
+	if shouldCache {
+		log.V(1).Info("enabling cache", "duration", cacheDuration.String())
+	} else {
+		log.V(1).Info("cache is disabled")
+	}
+
 	switch cfg.Backend.Type {
 	case "conjur":
 		conjurWriteApi := conjur.NewWriteApiOrDie()
 		conjurReadApi := conjur.NewReadOnlyApiOrDie()
 
 		backend := conjur.NewBackend(conjurWriteApi, conjurReadApi)
-		if cfg.Backend.GetDefault("disable_cache", "false") == trueStr {
+		if shouldCache {
 			backend = cache.NewCachedBackend(backend, cacheDuration)
 		}
 		onboarder := conjur.NewOnboarder(conjurWriteApi, backend)
@@ -102,7 +110,7 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 			return nil, errors.Wrap(err, "failed to create kubernetes client")
 		}
 		backend := kubernetes.NewBackend(k8sClient)
-		if cfg.Backend.GetDefault("disable_cache", "false") == trueStr {
+		if shouldCache {
 			backend = cache.NewCachedBackend(backend, cacheDuration)
 		}
 		onboarder := kubernetes.NewOnboarder(k8sClient)
