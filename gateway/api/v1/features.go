@@ -11,7 +11,7 @@ const (
 	FeatureTypePassThrough          FeatureType = "PassThrough"
 	FeatureTypeAccessControl        FeatureType = "AccessControl"
 	FeatureTypeRateLimit            FeatureType = "RateLimit"
-	FeatureTypeHeaderTransformation FeatureType = "HeaderTransformation	"
+	FeatureTypeHeaderTransformation FeatureType = "HeaderTransformation"
 )
 
 // Dependent Features

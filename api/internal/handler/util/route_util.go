@@ -325,14 +325,8 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 				downstream,
 			},
 			Traffic: gatewayapi.Traffic{},
-			Transformation: &gatewayapi.Transformation{
-				Request: gatewayapi.RequestResponseTransformation{
-					Headers: gatewayapi.HeaderTransformation{
-						Remove: apiExposure.Spec.Transformation.Request.Headers.Remove,
-					},
-				},
-			},
 		}
+		route.Spec.Transformation = mapTransformation(apiExposure.Spec.Transformation)
 		route.Spec.Security = mapSecurity(apiExposure.Spec.Security)
 
 		return nil
@@ -445,4 +439,18 @@ func mapSecurity(apiSecurity *apiapi.Security) *gatewayapi.Security {
 	}
 
 	return security
+}
+
+func mapTransformation(apiTransformation *apiapi.Transformation) *gatewayapi.Transformation {
+	if apiTransformation == nil {
+		return nil
+	}
+
+	transformation := &gatewayapi.Transformation{}
+
+	if len(apiTransformation.Request.Headers.Remove) > 0 {
+		transformation.Request.Headers.Remove = apiTransformation.Request.Headers.Remove
+	}
+
+	return transformation
 }
