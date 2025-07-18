@@ -68,7 +68,7 @@ var _ = Describe("Rover V1 Test Suite", func() {
 									},
 								},
 							},
-							Transformation: v1.Transformation{
+							Transformation: &v1.Transformation{
 								Request: v1.RequestResponseTransformation{
 									Headers: v1.HeaderTransformation{
 										Remove: []string{"X-Remove-Header"},

@@ -23,7 +23,11 @@ func (in *ApiExposure) DeepCopyInto(out *ApiExposure) {
 		copy(*out, *in)
 	}
 	in.Approval.DeepCopyInto(&out.Approval)
-	in.Transformation.DeepCopyInto(&out.Transformation)
+	if in.Transformation != nil {
+		in, out := &in.Transformation, &out.Transformation
+		*out = new(Transformation)
+		(*in).DeepCopyInto(*out)
+	}
 	in.Traffic.DeepCopyInto(&out.Traffic)
 	if in.Security != nil {
 		in, out := &in.Security, &out.Security

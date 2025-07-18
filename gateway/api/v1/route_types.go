@@ -74,6 +74,10 @@ type RouteSpec struct {
 
 	Traffic Traffic `json:"traffic"`
 
+	// Transformation defines optional request/response transformations for this API
+	// +kubebuilder:validation:Optional
+	Transformation *Transformation `json:"transformation,omitempty"`
+
 	// Security is the security configuration for the route
 	// +kubebuilder:validation:Optional
 	Security *Security `json:"security,omitempty"`

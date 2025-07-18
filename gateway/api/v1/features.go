@@ -8,9 +8,10 @@ type FeatureType string
 
 // Independent Features
 const (
-	FeatureTypePassThrough   FeatureType = "PassThrough"
-	FeatureTypeAccessControl FeatureType = "AccessControl"
-	FeatureTypeRateLimit     FeatureType = "RateLimit"
+	FeatureTypePassThrough          FeatureType = "PassThrough"
+	FeatureTypeAccessControl        FeatureType = "AccessControl"
+	FeatureTypeRateLimit            FeatureType = "RateLimit"
+	FeatureTypeHeaderTransformation FeatureType = "HeaderTransformation"
 	FeatureTypeBasicAuth     FeatureType = "BasicAuth"
 )
 
