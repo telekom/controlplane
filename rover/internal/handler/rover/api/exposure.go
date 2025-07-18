@@ -87,6 +87,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 					}
 				}
 			}
+			Security:    mapSecurityToApiSecurity(exp.Security),
 		}
 
 		failoverZones, hasFailover := getFailoverZones(environment, exp.Traffic.Failover)
@@ -118,4 +119,38 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		Namespace: apiExposure.Namespace,
 	})
 	return err
+}
+
+func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
+	if roverSecurity == nil {
+		return nil
+	}
+
+	security := &apiapi.Security{}
+
+	if roverSecurity.M2M != nil {
+		security.M2M = &apiapi.Machine2MachineAuthentication{
+			Scopes: roverSecurity.M2M.Scopes,
+		}
+
+		if roverSecurity.M2M.ExternalIDP != nil {
+			security.M2M.ExternalIDP = &apiapi.ExternalIdentityProvider{
+				TokenEndpoint: roverSecurity.M2M.ExternalIDP.TokenEndpoint,
+				TokenRequest:  roverSecurity.M2M.ExternalIDP.TokenRequest,
+				GrantType:     roverSecurity.M2M.ExternalIDP.GrantType,
+				Client:        toApiClient(roverSecurity.M2M.ExternalIDP.Client),
+				Basic:         toApiBasic(roverSecurity.M2M.ExternalIDP.Basic),
+			}
+		}
+
+		if roverSecurity.M2M.Basic != nil {
+			security.M2M.Basic = &apiapi.BasicAuthCredentials{
+				Username: roverSecurity.M2M.Basic.Username,
+				Password: roverSecurity.M2M.Basic.Password,
+			}
+		}
+	}
+
+	return security
+
 }

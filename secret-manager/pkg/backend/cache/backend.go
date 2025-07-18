@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache/metrics"
 )
 
 type Cache[T backend.SecretId, S backend.Secret[T]] interface {
@@ -41,9 +42,11 @@ func (c *CachedBackend[T, S]) ParseSecretId(raw string) (T, error) {
 func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (res S, err error) {
 	log := logr.FromContextOrDiscard(ctx)
 	if item, ok := c.Cache.Get(id.String()); ok && !item.Expired() {
+		metrics.RecordCacheHit()
 		return item.Value(), nil
 	}
 
+	metrics.RecordCacheMiss("not_found")
 	log.Info("Cache miss", "id", id.String())
 	item, err := c.Backend.Get(ctx, id)
 	if err != nil {

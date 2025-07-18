@@ -28,6 +28,13 @@ func (s *Security) HasM2MExternalIDP() bool {
 	return s.M2M.ExternalIDP != nil
 }
 
+func (s *Security) HasBasicAuth() bool {
+	if !s.HasM2M() {
+		return false
+	}
+	return s.M2M.Basic != nil
+}
+
 // Security defines the security configuration for the Rover
 // Security is optional, but if provided, exactly one of m2m or h2m must be set
 type ConsumerSecurity struct {
@@ -36,9 +43,21 @@ type ConsumerSecurity struct {
 	M2M *ConsumerMachine2MachineAuthentication `json:"m2m,omitempty"`
 }
 
+func (s *ConsumerSecurity) HasM2M() bool {
+	return s.M2M != nil
+}
+
+func (s *ConsumerSecurity) HasBasicAuth() bool {
+	if !s.HasM2M() {
+		return false
+	}
+	return s.M2M.Basic != nil
+}
+
 // Machine2MachineAuthentication defines the authentication methods for machine-to-machine communication
 // Either externalIDP, basic, or only scopes can be provided
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.externalIDP) ? (!has(self.basic)) : true)", message="ExternalIDP and basic authentication cannot be used together"
+// +kubebuilder:validation:XValidation:rule="self == null || (has(self.scopes) ? (!has(self.basic)) : true)", message="Scopes and basic authentication cannot be used together"
 // +kubebuilder:validation:XValidation:rule="self == null || has(self.externalIDP) || has(self.basic) || has(self.scopes)", message="At least one of externalIDP, basic, or scopes must be provided"
 type Machine2MachineAuthentication struct {
 	// ExternalIDP defines external identity provider configuration
@@ -57,6 +76,7 @@ type Machine2MachineAuthentication struct {
 // ConsumerMachine2MachineAuthentication defines the authentication methods for machine-to-machine communication for consumers
 // Either client, basic, or only scopes can be provided
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.client) ? (!has(self.basic)) : true)", message="Client and basic authentication cannot be used together"
+// +kubebuilder:validation:XValidation:rule="self == null || (has(self.scopes) ? (!has(self.basic)) : true)", message="Scopes and basic authentication cannot be used together"
 // +kubebuilder:validation:XValidation:rule="self == null || has(self.client) || has(self.basic) || has(self.scopes)", message="At least one of client, basic, or scopes must be provided"
 type ConsumerMachine2MachineAuthentication struct {
 	// Client defines client credentials for OAuth2
