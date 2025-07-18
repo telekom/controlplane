@@ -7,14 +7,13 @@ package controller
 import (
 	"context"
 
-	commonController "github.com/telekom/controlplane/common/pkg/controller"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	identityproviderHandler "github.com/telekom/controlplane/identity/internal/handler/identityprovider"
@@ -26,7 +25,7 @@ type IdentityProviderReconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
-	commonController.Controller[*identityv1.IdentityProvider]
+	cc.Controller[*identityv1.IdentityProvider]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
@@ -41,15 +40,15 @@ func (r *IdentityProviderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 // SetupWithManager sets up the controller with the Manager.
 func (r *IdentityProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("identityprovider-controller")
-	r.Controller = commonController.NewController(&identityproviderHandler.HandlerIdentityProvider{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&identityproviderHandler.HandlerIdentityProvider{}, r.Client, r.Recorder)
 
 	// TODO CreateOrUpdate realms in keycloak
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&identityv1.IdentityProvider{}).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: 10,
-			RateLimiter:             workqueue.DefaultTypedItemBasedRateLimiter[reconcile.Request](),
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
 }
