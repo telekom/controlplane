@@ -328,14 +328,14 @@ type Upstream struct {
 // This is shared object for both subscriptions and exposures
 type Transformation struct {
 	// Request defines transformations applied to incoming API requests
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	Request RequestResponseTransformation `json:"request"`
 }
 
 // RequestResponseTransformation defines transformations applied to API requests and responses
 type RequestResponseTransformation struct {
 	// Headers defines HTTP header modifications for requests
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	Headers HeaderTransformation `json:"headers"`
 }
 

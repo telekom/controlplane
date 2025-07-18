@@ -17,7 +17,7 @@ type HeaderTransformationFeature struct {
 	priority int
 }
 
-var InstanceRemoveHeadersFeature = &HeaderTransformationFeature{
+var InstanceHeaderTransformationFeature = &HeaderTransformationFeature{
 	priority: 0,
 }
 

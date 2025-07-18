@@ -153,7 +153,7 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 	builder.EnableFeature(feature.InstanceExternalIDPFeature)
 	// builder.EnableFeature(feature.InstanceRateLimitFeature)
 	builder.EnableFeature(feature.InstanceFailoverFeature)
-	builder.EnableFeature(feature.InstanceRemoveHeadersFeature)
+	builder.EnableFeature(feature.InstanceHeaderTransformationFeature)
 
 	return builder, nil
 }

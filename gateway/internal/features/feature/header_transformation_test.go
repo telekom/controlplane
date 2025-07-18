@@ -17,7 +17,7 @@ import (
 var _ = Describe("RemoveHeadersFeature", func() {
 
 	It("should return the correct feature type", func() {
-		Expect(InstanceRemoveHeadersFeature.Name()).To(Equal(gatewayv1.FeatureTypeHeaderTransformation))
+		Expect(InstanceHeaderTransformationFeature.Name()).To(Equal(gatewayv1.FeatureTypeHeaderTransformation))
 	})
 
 	Context("with mocked feature builder", func() {
