@@ -15,16 +15,16 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 )
 
-func GetRouteByRef(ctx context.Context, ref types.ObjectRef) (*v1.Route, error) {
+func GetRouteByRef(ctx context.Context, ref types.ObjectRef) (bool, *v1.Route, error) {
 	client, _ := client.ClientFromContext(ctx)
 
 	route := &v1.Route{}
 	err := client.Get(context.Background(), ref.K8s(), route)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get route")
+		return false, nil, errors.Wrap(err, "failed to get route")
 	}
 	if !meta.IsStatusConditionTrue(route.GetConditions(), condition.ConditionTypeReady) {
-		return nil, errors.Errorf("route %s is not ready", ref.String())
+		return false, route, nil
 	}
-	return route, nil
+	return true, route, nil
 }

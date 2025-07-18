@@ -30,6 +30,11 @@ type CustomRoute interface {
 	GetPath() string
 }
 
+type CustomConsumer interface {
+	SetId(string)
+	GetConsumerName() string
+}
+
 type Upstream interface {
 	GetScheme() string
 	GetHost() string

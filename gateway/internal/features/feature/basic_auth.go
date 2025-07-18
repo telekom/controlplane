@@ -31,7 +31,10 @@ func (b *BasicAuthFeature) Priority() int {
 }
 
 func (b *BasicAuthFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return false
+	}
 
 	notPassThrough := !route.Spec.PassThrough
 	isPrimaryRoute := !route.IsProxy()
@@ -50,7 +53,10 @@ func (b *BasicAuthFeature) IsUsed(ctx context.Context, builder features.Features
 
 func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) error {
 	jumperConfig := builder.JumperConfig()
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return features.ErrNoRoute
+	}
 
 	security := route.Spec.Security
 	if route.HasFailoverSecurity() {

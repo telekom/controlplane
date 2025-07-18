@@ -30,12 +30,18 @@ func (f *PassThroughFeature) Priority() int {
 }
 
 func (f *PassThroughFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return false
+	}
 	return len(route.Spec.Upstreams) > 0 && route.Spec.PassThrough
 }
 
 func (f *PassThroughFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return features.ErrNoRoute
+	}
 	builder.SetUpstream(route.Spec.Upstreams[0])
 
 	return nil

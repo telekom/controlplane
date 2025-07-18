@@ -35,13 +35,20 @@ func (f *FailoverFeature) Priority() int {
 }
 
 func (f *FailoverFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return false
+	}
 	return route.Spec.Traffic.Failover != nil && len(route.Spec.Traffic.Failover.Upstreams) > 0
 }
 
 func (f *FailoverFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
 	routingConfigs := builder.RoutingConfigs()
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return features.ErrNoRoute
+	}
+
 	failover := route.Spec.Traffic.Failover
 	envName := contextutil.EnvFromContextOrDie(ctx)
 

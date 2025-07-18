@@ -90,6 +90,10 @@ type RoverSpec struct {
 	// +kubebuilder:validation:MinLength=1
 	Zone string `json:"zone"`
 
+	// IpRestrictions defines IP-based access restrictions for the entire Application
+	// +kubebuilder:validation:Optional
+	IpRestrictions *IpRestrictions `json:"ipRestrictions,omitempty"`
+
 	// ClientSecret is the secret used for client authentication
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
@@ -154,6 +158,23 @@ const (
 	// LoadBalancingLeastConnections sends requests to the upstream with the fewest active connections
 	LoadBalancingLeastConnections LoadBalancingStrategy = "LeastConnections"
 )
+
+type IpRestrictions struct {
+	// Allow is a list of IP addresses or CIDR ranges that are allowed access
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinItems=0
+	// +kubebuilder:validation:MaxItems=10
+	// +kubebuilder:validation:Type=array
+	// +kubebuilder:validation:XValidation:rule="self.all(x, isCIDR(x) || isIP(x))", message="All items must be valid IP addresses or CIDR notations"
+	Allow []string `json:"allow,omitempty"`
+	// Deny is a list of IP addresses or CIDR ranges that are denied access
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinItems=0
+	// +kubebuilder:validation:MaxItems=10
+	// +kubebuilder:validation:Type=array
+	// +kubebuilder:validation:XValidation:rule="self.all(x, isCIDR(x) || isIP(x))", message="All items must be valid IP addresses or CIDR notations"
+	Deny []string `json:"deny,omitempty"`
+}
 
 // Exposure defines a service that is exposed by this Rover
 // +kubebuilder:validation:XValidation:rule="self == null || has(self.api) || has(self.event)", message="At least one of api or event must be specified"

@@ -25,7 +25,7 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 		It("should be registered", func() {
 			kc := mock.NewMockKongClient(mockCtrl)
 
-			builder := features.NewFeatureBuilder(kc, route, realm, gateway)
+			builder := features.NewFeatureBuilder(kc, route, nil, realm, gateway)
 
 			builder.EnableFeature(feature.InstancePassThroughFeature)
 			builder.EnableFeature(feature.InstanceAccessControlFeature)
@@ -51,7 +51,7 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 		It("should fail if no upstream is set", func() {
 			// No features enabled
 
-			builder := features.NewFeatureBuilder(mockKc, route, realm, gateway)
+			builder := features.NewFeatureBuilder(mockKc, route, nil, realm, gateway)
 
 			By("building the features")
 			err := builder.Build(ctx)
@@ -62,11 +62,11 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 		It("should apply the PassThrough feature", func() {
 			passThroughRoute := route.DeepCopy()
 			passThroughRoute.Spec.PassThrough = true
-			builder := features.NewFeatureBuilder(mockKc, passThroughRoute, realm, gateway)
+			builder := features.NewFeatureBuilder(mockKc, passThroughRoute, nil, realm, gateway)
 			builder.EnableFeature(feature.InstancePassThroughFeature)
 
 			mockKc.EXPECT().CreateOrReplaceRoute(ctx, passThroughRoute, gomock.Any()).Return(nil).Times(1)
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 			By("building the features")
 			err := builder.Build(ctx)
@@ -87,7 +87,7 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			acRoute := route.DeepCopy()
 			acRoute.Spec.Downstreams[0].IssuerUrl = "https://issuer.url"
 			acRoute.Spec.PassThrough = true
-			builder := features.NewFeatureBuilder(mockKc, acRoute, realm, gateway)
+			builder := features.NewFeatureBuilder(mockKc, acRoute, nil, realm, gateway)
 
 			consumeRoute := NewMockConsumeRoute(*types.ObjectRefFromObject(acRoute))
 			builder.AddAllowedConsumers(consumeRoute)
@@ -97,7 +97,7 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 
 			mockKc.EXPECT().CreateOrReplaceRoute(ctx, acRoute, gomock.Any()).Return(nil).Times(1)
 			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(2)
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 			By("building the features")
 			err := builder.Build(ctx)
@@ -129,13 +129,13 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			lmsRoute := route.DeepCopy()
 			lmsRoute.Spec.PassThrough = false
 
-			builder := features.NewFeatureBuilder(mockKc, lmsRoute, realm, gateway)
+			builder := features.NewFeatureBuilder(mockKc, lmsRoute, nil, realm, gateway)
 
 			builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
 
 			mockKc.EXPECT().CreateOrReplaceRoute(ctx, lmsRoute, gomock.Any()).Return(nil).Times(1)
 			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 			By("building the features")
 			err := builder.Build(ctx)
@@ -180,13 +180,13 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 				ClientSecret: "topsecret",
 			}
 
-			builder := features.NewFeatureBuilder(mockKc, lmsRoute, realm, gateway)
+			builder := features.NewFeatureBuilder(mockKc, lmsRoute, nil, realm, gateway)
 
 			builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
 
 			mockKc.EXPECT().CreateOrReplaceRoute(ctx, lmsRoute, gomock.Any()).Return(nil).Times(1)
 			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 			By("building the features")
 			err := builder.Build(ctx)
@@ -217,14 +217,14 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 		It("should apply the CustomScopes feature", func() {
 			scopesRoute := route.DeepCopy()
 			consumeRoute := NewMockConsumeRoute(*types.ObjectRefFromObject(scopesRoute))
-			builder := features.NewFeatureBuilder(mockKc, scopesRoute, realm, gateway)
+			builder := features.NewFeatureBuilder(mockKc, scopesRoute, nil, realm, gateway)
 			builder.AddAllowedConsumers(consumeRoute)
 			builder.EnableFeature(feature.InstanceCustomScopesFeature)
 			builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
 
 			mockKc.EXPECT().CreateOrReplaceRoute(ctx, scopesRoute, gomock.Any()).Return(nil).Times(1)
 			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 			By("building the features")
 			err := builder.Build(ctx)

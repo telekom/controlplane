@@ -31,13 +31,19 @@ func (f *AccessControlFeature) Priority() int {
 }
 
 func (f *AccessControlFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return false
+	}
 	hasIssuerDefined := len(route.Spec.Downstreams) > 0 && route.Spec.Downstreams[0].IssuerUrl != ""
 	return hasIssuerDefined
 }
 
 func (f *AccessControlFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return features.ErrNoRoute
+	}
 	hasIssuer := slices.ContainsFunc(route.Spec.Downstreams, func(downstream gatewayv1.Downstream) bool {
 		return downstream.IssuerUrl != ""
 	})

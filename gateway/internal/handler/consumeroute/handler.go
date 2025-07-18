@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	v1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/handler/gateway"
 	"github.com/telekom/controlplane/gateway/internal/handler/realm"
@@ -28,16 +27,19 @@ var _ handler.Handler[*v1.ConsumeRoute] = &ConsumeRouteHandler{}
 type ConsumeRouteHandler struct{}
 
 func (h *ConsumeRouteHandler) CreateOrUpdate(ctx context.Context, consumeRoute *v1.ConsumeRoute) error {
-	route, err := route.GetRouteByRef(ctx, consumeRoute.Spec.Route)
+	ready, route, err := route.GetRouteByRef(ctx, consumeRoute.Spec.Route)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			contextutil.RecorderFromContextOrDie(ctx).
-				Eventf(consumeRoute, "Warning", "RouteNotFound", "Realm '%s' not found", consumeRoute.Spec.Route.String())
 			consumeRoute.SetCondition(condition.NewBlockedCondition("Route not found"))
 			consumeRoute.SetCondition(condition.NewNotReadyCondition("RouteNotFound", "Route not found"))
 			return nil
 		}
 		return err
+	}
+	if !ready {
+		consumeRoute.SetCondition(condition.NewBlockedCondition("Route not ready"))
+		consumeRoute.SetCondition(condition.NewNotReadyCondition("RouteNotReady", "Route is not ready"))
+		return nil
 	}
 
 	if slices.Contains(route.Status.Consumers, consumeRoute.Spec.ConsumerName) {
@@ -55,12 +57,17 @@ func (h *ConsumeRouteHandler) Delete(ctx context.Context, consumeRoute *v1.Consu
 	log := log.FromContext(ctx)
 	log.Info("Handing deletion of ConsumeRoute resource", "consumeRoute", consumeRoute)
 
-	route, err := route.GetRouteByRef(ctx, consumeRoute.Spec.Route)
+	ready, route, err := route.GetRouteByRef(ctx, consumeRoute.Spec.Route)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil
 		}
 		return err
+	}
+
+	if !ready {
+		log.Info("Route is not ready")
+		return nil
 	}
 
 	_, realm, err := realm.GetRealmByRef(ctx, route.Spec.Realm)

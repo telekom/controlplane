@@ -47,31 +47,32 @@ func (m *MockKongClient) EXPECT() *MockKongClientMockRecorder {
 }
 
 // CleanupPlugins mocks base method.
-func (m *MockKongClient) CleanupPlugins(ctx context.Context, route client.CustomRoute, plugins []client.CustomPlugin) error {
+func (m *MockKongClient) CleanupPlugins(ctx context.Context, route client.CustomRoute, consumer client.CustomConsumer, plugins []client.CustomPlugin) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CleanupPlugins", ctx, route, plugins)
+	ret := m.ctrl.Call(m, "CleanupPlugins", ctx, route, consumer, plugins)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CleanupPlugins indicates an expected call of CleanupPlugins.
-func (mr *MockKongClientMockRecorder) CleanupPlugins(ctx, route, plugins any) *gomock.Call {
+func (mr *MockKongClientMockRecorder) CleanupPlugins(ctx, route, consumer, plugins any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanupPlugins", reflect.TypeOf((*MockKongClient)(nil).CleanupPlugins), ctx, route, plugins)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanupPlugins", reflect.TypeOf((*MockKongClient)(nil).CleanupPlugins), ctx, route, consumer, plugins)
 }
 
 // CreateOrReplaceConsumer mocks base method.
-func (m *MockKongClient) CreateOrReplaceConsumer(ctx context.Context, consumerName string) error {
+func (m *MockKongClient) CreateOrReplaceConsumer(ctx context.Context, consumer client.CustomConsumer) (*kong.Consumer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrReplaceConsumer", ctx, consumerName)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "CreateOrReplaceConsumer", ctx, consumer)
+	ret0, _ := ret[0].(*kong.Consumer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // CreateOrReplaceConsumer indicates an expected call of CreateOrReplaceConsumer.
-func (mr *MockKongClientMockRecorder) CreateOrReplaceConsumer(ctx, consumerName any) *gomock.Call {
+func (mr *MockKongClientMockRecorder) CreateOrReplaceConsumer(ctx, consumer any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrReplaceConsumer", reflect.TypeOf((*MockKongClient)(nil).CreateOrReplaceConsumer), ctx, consumerName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrReplaceConsumer", reflect.TypeOf((*MockKongClient)(nil).CreateOrReplaceConsumer), ctx, consumer)
 }
 
 // CreateOrReplacePlugin mocks base method.
@@ -104,17 +105,17 @@ func (mr *MockKongClientMockRecorder) CreateOrReplaceRoute(ctx, route, upstream 
 }
 
 // DeleteConsumer mocks base method.
-func (m *MockKongClient) DeleteConsumer(ctx context.Context, consumerName string) error {
+func (m *MockKongClient) DeleteConsumer(ctx context.Context, consumer client.CustomConsumer) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteConsumer", ctx, consumerName)
+	ret := m.ctrl.Call(m, "DeleteConsumer", ctx, consumer)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteConsumer indicates an expected call of DeleteConsumer.
-func (mr *MockKongClientMockRecorder) DeleteConsumer(ctx, consumerName any) *gomock.Call {
+func (mr *MockKongClientMockRecorder) DeleteConsumer(ctx, consumer any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteConsumer", reflect.TypeOf((*MockKongClient)(nil).DeleteConsumer), ctx, consumerName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteConsumer", reflect.TypeOf((*MockKongClient)(nil).DeleteConsumer), ctx, consumer)
 }
 
 // DeletePlugin mocks base method.
@@ -158,18 +159,4 @@ func (m *MockKongClient) LoadPlugin(ctx context.Context, plugin client.CustomPlu
 func (mr *MockKongClientMockRecorder) LoadPlugin(ctx, plugin, copyConfig any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadPlugin", reflect.TypeOf((*MockKongClient)(nil).LoadPlugin), ctx, plugin, copyConfig)
-}
-
-// LoadPlugins mocks base method.
-func (m *MockKongClient) LoadPlugins(ctx context.Context, plugin []client.CustomPlugin, copyConfig, rmSuperfluousPlugins bool) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadPlugins", ctx, plugin, copyConfig, rmSuperfluousPlugins)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// LoadPlugins indicates an expected call of LoadPlugins.
-func (mr *MockKongClientMockRecorder) LoadPlugins(ctx, plugin, copyConfig, rmSuperfluousPlugins any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadPlugins", reflect.TypeOf((*MockKongClient)(nil).LoadPlugins), ctx, plugin, copyConfig, rmSuperfluousPlugins)
 }

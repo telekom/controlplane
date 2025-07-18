@@ -32,16 +32,23 @@ func (f *CustomScopesFeature) Priority() int {
 }
 
 func (f *CustomScopesFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
-	notPassThrough := !builder.GetRoute().Spec.PassThrough
-	isPrimaryRoute := !builder.GetRoute().IsProxy()
-	isFailoverSecondary := builder.GetRoute().IsFailoverSecondary()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return false
+	}
+	notPassThrough := !route.Spec.PassThrough
+	isPrimaryRoute := !route.IsProxy()
+	isFailoverSecondary := route.IsFailoverSecondary()
 
 	return notPassThrough && (isPrimaryRoute || isFailoverSecondary)
 }
 
 func (f *CustomScopesFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
 	jumperConfig := builder.JumperConfig()
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return features.ErrNoRoute
+	}
 
 	if len(jumperConfig.OAuth) > 0 {
 		// already populated by external_idp feature

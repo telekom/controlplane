@@ -870,7 +870,7 @@ type CreatePluginForConsumerRequest struct {
 	Protocols *[]CreatePluginForConsumerRequestProtocols `json:"protocols,omitempty"`
 
 	// Route If set, the plugin will only activate when receiving requests via the specified route. Leave unset for the plugin to activate regardless of the route being used. Default: `null`. With form-encoded, the notation is `route.id=<route id> or route.name=<route name>`. With JSON, use `"route":{"id":"<route id>"}` or `"route":{"name":"<route name>"}`.
-	Route *string `json:"route"`
+	Route *map[string]interface{} `json:"route"`
 
 	// Service If set, the plugin will only activate when receiving requests via one of the routes belonging to the specified service.
 	Service *string `json:"service"`

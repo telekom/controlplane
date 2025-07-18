@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -38,16 +39,17 @@ var (
 	ctx = context.Background()
 
 	// flags
-	kubecontext string
-	environment string
-	zone        string
-	routeName   string
-	clean       bool
-	outputDir   string
-	fromEnv     bool
-	allRoutes   bool
-	failFast    bool
-	parallel    bool
+	kubecontext  string
+	environment  string
+	zone         string
+	routeName    string
+	consumerName string
+	clean        bool
+	outputDir    string
+	fromEnv      bool
+	allRoutes    bool
+	failFast     bool
+	parallel     bool
 
 	waitGroup               sync.WaitGroup
 	kubeCfg                 *rest.Config
@@ -91,6 +93,7 @@ func init() {
 	flag.StringVar(&environment, "env", "", "Environment to use")
 	flag.StringVar(&zone, "zone", "", "Zone to use")
 	flag.StringVar(&routeName, "route", "", "Route to use")
+	flag.StringVar(&consumerName, "consumer", "", "Consumer name to use")
 	flag.BoolVar(&clean, "clean", false, "Clean output directory before writing snapshots")
 	flag.StringVar(&outputDir, "output-dir", "snapshots", "Output directory for snapshots")
 	flag.BoolVar(&fromEnv, "from-env", false, "Use environment variables to configure gateway client")
@@ -177,41 +180,68 @@ func setupFromEnv() (kong.ClientWithResponsesInterface, error) {
 	return kongClient, nil
 }
 
-func collectStateOfRoute(ctx context.Context, state *state.RouteState) error {
-	routeRes, err := getters.KongClient.GetRouteWithResponse(ctx, state.RouteName)
-	if err != nil {
-		return errors.Wrap(err, "failed to get route")
-	}
-	util.MustBe2xx(routeRes, "Route")
-	state.Route = routeRes.JSON200
+func collectState(ctx context.Context, state *state.State) error {
 
-	serviceRes, err := getters.KongClient.GetServiceWithResponse(ctx, *routeRes.JSON200.Service.Id)
-	if err != nil {
-		return errors.Wrap(err, "failed to get service for route")
-	}
-	util.MustBe2xx(serviceRes, "Service")
-	state.Service = serviceRes.JSON200
-
-	plugins, err := getters.KongClient.ListPluginsForRouteWithResponse(ctx, state.RouteName, &kong.ListPluginsForRouteParams{})
-	if err != nil {
-		return errors.Wrap(err, "failed to list plugins for route")
-	}
-	util.MustBe2xx(plugins, "Plugins for Route")
-	state.Plugins = *plugins.JSON200.Data
-
-	upstream, err := getters.KongClient.GetUpstreamWithResponse(ctx, state.RouteName) // per convention, the upstream name is the same as the route name
-	if err != nil {
-		return errors.Wrap(err, "failed to get upstream for route")
-	}
-	if util.Is2xx(upstream) { // upstream may not exist for some routes
-		state.Upstream = upstream.JSON200
-
-		targets, err := getters.KongClient.ListTargetsForUpstreamWithResponse(ctx, *upstream.JSON200.Id, &kong.ListTargetsForUpstreamParams{})
+	if state.RouteName != "" {
+		routeRes, err := getters.KongClient.GetRouteWithResponse(ctx, state.RouteName)
 		if err != nil {
-			return errors.Wrap(err, "failed to list targets for upstream")
+			return errors.Wrap(err, "failed to get route")
 		}
-		util.MustBe2xx(targets, "Targets for Upstream")
-		state.Targets = *targets.JSON200.Data
+		util.MustBe2xx(routeRes, "Route")
+		state.Route = routeRes.JSON200
+
+		serviceRes, err := getters.KongClient.GetServiceWithResponse(ctx, *routeRes.JSON200.Service.Id)
+		if err != nil {
+			return errors.Wrap(err, "failed to get service for route")
+		}
+		util.MustBe2xx(serviceRes, "Service")
+		state.Service = serviceRes.JSON200
+
+		plugins, err := getters.KongClient.ListPluginsForRouteWithResponse(ctx, state.RouteName, &kong.ListPluginsForRouteParams{})
+		if err != nil {
+			return errors.Wrap(err, "failed to list plugins for route")
+		}
+		util.MustBe2xx(plugins, "Plugins for Route")
+		state.Plugins = *plugins.JSON200.Data
+
+		upstream, err := getters.KongClient.GetUpstreamWithResponse(ctx, state.RouteName) // per convention, the upstream name is the same as the route name
+		if err != nil {
+			return errors.Wrap(err, "failed to get upstream for route")
+		}
+		if util.Is2xx(upstream) { // upstream may not exist for some routes
+			state.Upstream = upstream.JSON200
+
+			targets, err := getters.KongClient.ListTargetsForUpstreamWithResponse(ctx, *upstream.JSON200.Id, &kong.ListTargetsForUpstreamParams{})
+			if err != nil {
+				return errors.Wrap(err, "failed to list targets for upstream")
+			}
+			util.MustBe2xx(targets, "Targets for Upstream")
+			state.Targets = *targets.JSON200.Data
+		}
+	}
+
+	if state.ConsumerName != "" {
+		consumerRes, err := getters.KongClient.GetConsumerWithResponse(ctx, consumerName)
+		if err != nil {
+			return errors.Wrap(err, "failed to get route")
+		}
+		util.MustBe2xx(consumerRes, "Consumer")
+		state.Consumer = consumerRes.JSON200
+
+		plugins, err := getters.KongClient.ListPluginsForConsumerWithResponse(ctx, consumerName, &kong.ListPluginsForConsumerParams{})
+		if err != nil {
+			return errors.Wrap(err, "failed to list plugins for consumer")
+		}
+		util.MustBe2xx(plugins, "Plugins for Consumer")
+		type PluginsResponse struct {
+			Data []kong.Plugin `json:"data"`
+		}
+		var pluginsResponse PluginsResponse
+		err = json.Unmarshal(plugins.Body, &pluginsResponse)
+		if err != nil {
+			return errors.Wrap(err, "failed to unmarshal plugins response for consumer")
+		}
+		state.Plugins = append(state.Plugins, pluginsResponse.Data...)
 	}
 
 	return nil
@@ -236,8 +266,12 @@ func main() {
 	zone = util.IfEmptyLoadEnvOrFail(zone, "GATEWAY_ZONE")
 	environment = util.IfEmptyLoadEnvOrFail(environment, "GATEWAY_ENV")
 	routeName = util.IfEmptyLoadEnv(routeName, "GATEWAY_ROUTE")
-	if routeName == "" && !allRoutes {
-		fmt.Fprintf(os.Stderr, "No route specified, use -route or GATEWAY_ROUTE environment variable to specify a route.\n")
+	if (allRoutes || routeName != "") && consumerName != "" {
+		panic(errors.New("consumer name cannot be specified when collecting state for all routes or a specific route"))
+	}
+	if consumerName == "" && routeName == "" && !allRoutes {
+		fmt.Fprintf(os.Stderr, "Please specify either a route name or consumer name or use --all-routes to collect state for all routes.\n")
+		flag.Usage()
 		os.Exit(1)
 	}
 
@@ -275,9 +309,9 @@ func main() {
 		for _, routeName := range routeNames {
 			if parallel {
 				waitGroup.Add(1)
-				go forRoute(ctx, routeName)
+				go process(ctx, routeName, consumerName)
 			} else {
-				forRoute(ctx, routeName)
+				process(ctx, routeName, consumerName)
 			}
 		}
 		if parallel {
@@ -285,7 +319,7 @@ func main() {
 		}
 
 	} else {
-		forRoute(ctx, routeName)
+		process(ctx, routeName, consumerName)
 	}
 
 	if diffDetected {
@@ -293,37 +327,40 @@ func main() {
 	}
 }
 
-func forRoute(ctx context.Context, routeName string) {
+func process(ctx context.Context, routeName, consumerName string) {
 	if parallel {
 		defer waitGroup.Done()
 	}
 
 	// collect route state
-	currentState := &state.RouteState{
-		Environment: environment,
-		Zone:        zone,
-		RouteName:   routeName,
+	currentState := &state.State{
+		Environment:  environment,
+		Zone:         zone,
+		RouteName:    routeName,
+		ConsumerName: consumerName,
 	}
 
-	err := collectStateOfRoute(ctx, currentState)
+	err := collectState(ctx, currentState)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to collect state of route: %v\n", err)
+		fmt.Fprintf(os.Stderr, "failed to collect state: %v\n", err)
 		return
 	}
 
-	filename := fmt.Sprintf("%s-route-state.yaml", routeName)
+	filename := fmt.Sprintf("%s-state.yaml", routeName)
+	if consumerName != "" {
+		filename = fmt.Sprintf("%s-state.yaml", consumerName)
+	}
 	filepath := filepath.Join(outputDir, filename)
 
 	// decode base64 content in plugins
 	err = state.DecodeBase64Content(currentState, base64ContentPatterns...)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to decode base64 content in route state: %v\n", err)
+		fmt.Fprintf(os.Stderr, "failed to decode base64 content in state: %v\n", err)
 		return
 	}
 
 	// setup initial snapshot
 	if !util.FileExists(filepath) || clean {
-		fmt.Fprintf(os.Stderr, "Creating initial snapshot for route %s/%s/%s\n", environment, zone, routeName)
 		util.Must(currentState.Write(filepath))
 		return
 	}
@@ -334,23 +371,23 @@ func forRoute(ctx context.Context, routeName string) {
 		fmt.Fprintf(os.Stderr, "failed to read snapshot file %s: %v\n", filepath, err)
 		return
 	}
-	snapshottedState := &state.RouteState{}
+	snapshottedState := &state.State{}
 	err = yaml.Unmarshal(snapshottedStateBytes, snapshottedState)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to unmarshal snapshotted route state from %s: %v\n", filepath, err)
+		fmt.Fprintf(os.Stderr, "failed to unmarshal snapshotted state from %s: %v\n", filepath, err)
 		return
 	}
 
 	// obfuscate sensitive or dynamic data
 	err = state.Obfuscate(currentState, obfuscationTargets...)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to obfuscate route state: %v\n", err)
+		fmt.Fprintf(os.Stderr, "failed to obfuscate state: %v\n", err)
 		return
 	}
 
 	err = state.Obfuscate(snapshottedState, obfuscationTargets...)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to obfuscate snapshotted route state: %v\n", err)
+		fmt.Fprintf(os.Stderr, "failed to obfuscate snapshotted state: %v\n", err)
 		return
 	}
 
@@ -358,10 +395,10 @@ func forRoute(ctx context.Context, routeName string) {
 	diffs := dmp.DiffMain(snapshottedState.String(), currentState.String(), false)
 	diffs = dmp.DiffCleanupSemantic(diffs)
 	if len(diffs) <= 1 {
-		fmt.Fprintf(os.Stderr, "✅ State of route is unchanged, no diff to show.\n")
+		fmt.Fprintf(os.Stderr, "✅ State is unchanged, no diff to show.\n")
 		return
 	} else {
-		fmt.Fprintf(os.Stderr, "⚠️  State of route has changed, showing diff:\n")
+		fmt.Fprintf(os.Stderr, "⚠️  State has changed, showing diff:\n")
 	}
 	fmt.Println(dmp.DiffPrettyText(diffs))
 	if failFast {

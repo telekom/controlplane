@@ -36,7 +36,7 @@ var _ = Describe("FeatureBuilder externalIDP", Ordered, func() {
 			configureExternalIDPMocks(ctx, externalIDPRoute)
 
 			By("building the features")
-			builder := features.NewFeatureBuilder(mockKc, externalIDPRoute, realm, gateway)
+			builder := features.NewFeatureBuilder(mockKc, externalIDPRoute, nil, realm, gateway)
 			builder.EnableFeature(feature.InstanceExternalIDPFeature)
 			builder.SetUpstream(externalIDPRoute.Spec.Upstreams[0])
 
@@ -91,7 +91,7 @@ var _ = Describe("FeatureBuilder externalIDP", Ordered, func() {
 			configureExternalIDPMocks(ctx, externalIDPRoute)
 
 			By("building the features")
-			builder := features.NewFeatureBuilder(mockKc, externalIDPRoute, realm, gateway)
+			builder := features.NewFeatureBuilder(mockKc, externalIDPRoute, nil, realm, gateway)
 			builder.EnableFeature(feature.InstanceExternalIDPFeature)
 			builder.SetUpstream(externalIDPRoute.Spec.Upstreams[0])
 
@@ -202,5 +202,5 @@ func externalIDPProviderRouteBasic() *gatewayv1.Route {
 func configureExternalIDPMocks(ctx context.Context, externalIDPRoute *gatewayv1.Route) {
 	mockKc.EXPECT().CreateOrReplaceRoute(ctx, externalIDPRoute, gomock.Any()).Return(nil).Times(1)
 	mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
-	mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any()).Return(nil).Times(1)
+	mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 }

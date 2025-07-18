@@ -32,7 +32,10 @@ func (f *RateLimitFeature) Priority() int {
 }
 
 func (f *RateLimitFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return false
+	}
 	hasRateLimitConfigured := false
 
 	return !route.Spec.PassThrough && hasRateLimitConfigured

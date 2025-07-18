@@ -36,13 +36,13 @@ var _ = Describe("FeatureBuilder HeaderTransformation", Ordered, func() {
 			route := NewMockRouteWithRemoveHeaders()
 
 			By("building the features")
-			builder := features.NewFeatureBuilder(mockKc, route, realm, gateway)
+			builder := features.NewFeatureBuilder(mockKc, route, nil, realm, gateway)
 			builder.SetUpstream(route.Spec.Upstreams[0])
 			builder.EnableFeature(&feature.HeaderTransformationFeature{})
 
 			mockKc.EXPECT().CreateOrReplaceRoute(ctx, route, gomock.Any()).Return(nil).Times(1)
 			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), nil, gomock.Any()).Return(nil).Times(1)
 
 			err := builder.Build(ctx)
 			Expect(err).ToNot(HaveOccurred())

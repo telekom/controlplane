@@ -51,7 +51,7 @@ var _ = Describe("BasicAuthFeature", func() {
 						},
 					},
 				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
 				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
 			})
 
@@ -74,7 +74,7 @@ var _ = Describe("BasicAuthFeature", func() {
 						},
 					},
 				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
 				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
 			})
 
@@ -92,7 +92,7 @@ var _ = Describe("BasicAuthFeature", func() {
 						},
 					},
 				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
 				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeTrue())
 			})
 
@@ -114,7 +114,7 @@ var _ = Describe("BasicAuthFeature", func() {
 						},
 					},
 				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
 				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeTrue())
 			})
 
@@ -130,7 +130,7 @@ var _ = Describe("BasicAuthFeature", func() {
 						},
 					},
 				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
 				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
 			})
 		})
@@ -154,7 +154,7 @@ var _ = Describe("BasicAuthFeature", func() {
 				}
 
 				mockFeatureBuilder.EXPECT().JumperConfig().Return(jumperConfig)
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
 				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
 				// Execute
@@ -189,7 +189,7 @@ var _ = Describe("BasicAuthFeature", func() {
 				}
 
 				mockFeatureBuilder.EXPECT().JumperConfig().Return(jumperConfig)
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
 				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
 				// Execute
@@ -222,7 +222,7 @@ var _ = Describe("BasicAuthFeature", func() {
 				consumer1 := &gatewayv1.ConsumeRoute{
 					Spec: gatewayv1.ConsumeRouteSpec{
 						ConsumerName: "consumer1",
-						Security: &gatewayv1.ConsumerSecurity{
+						Security: &gatewayv1.ConsumeRouteSecurity{
 							M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
 								Basic: &gatewayv1.BasicAuthCredentials{
 									Username: "consumer1user",
@@ -236,7 +236,7 @@ var _ = Describe("BasicAuthFeature", func() {
 				consumer2 := &gatewayv1.ConsumeRoute{
 					Spec: gatewayv1.ConsumeRouteSpec{
 						ConsumerName: "consumer2",
-						Security: &gatewayv1.ConsumerSecurity{
+						Security: &gatewayv1.ConsumeRouteSecurity{
 							M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
 								// No basic auth for consumer2
 							},
@@ -245,7 +245,7 @@ var _ = Describe("BasicAuthFeature", func() {
 				}
 
 				mockFeatureBuilder.EXPECT().JumperConfig().Return(jumperConfig)
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
 				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{consumer1, consumer2})
 
 				// Execute
@@ -294,7 +294,7 @@ var _ = Describe("BasicAuthFeature", func() {
 				}
 
 				mockFeatureBuilder.EXPECT().JumperConfig().Return(jumperConfig)
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
 				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{consumer1})
 
 				// Execute

@@ -30,13 +30,22 @@ func (f *HeaderTransformationFeature) Priority() int {
 }
 
 func (f *HeaderTransformationFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
-	isPrimaryRoute := !builder.GetRoute().IsProxy()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return false
+	}
 
-	return isPrimaryRoute
+	isPrimaryRoute := !route.IsProxy()
+	hasTransformation := route.Spec.Transformation != nil
+
+	return isPrimaryRoute && hasTransformation
 }
 
 func (f *HeaderTransformationFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return features.ErrNoRoute
+	}
 	RequestTransformerPlugin := builder.RequestTransformerPlugin()
 
 	if route.Spec.Transformation != nil {

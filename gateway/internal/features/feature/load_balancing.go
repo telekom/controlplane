@@ -33,12 +33,18 @@ func (f *LoadBalancingFeature) Priority() int {
 }
 
 func (f *LoadBalancingFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return false
+	}
 	return len(route.Spec.Upstreams) > 1
 }
 
 func (f *LoadBalancingFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return features.ErrNoRoute
+	}
 	upstreams := route.Spec.Upstreams
 
 	// Upstream URL is always set to jumper proxy URL (localhost for sidecar proxy)
@@ -49,7 +55,7 @@ func (f *LoadBalancingFeature) Apply(ctx context.Context, builder features.Featu
 	jumperConfig.LoadBalancing = mapToLoadBalancingServers(upstreams)
 
 	// Check if the remote API URL header should be removed when using Last Mile Security
-	RemoveRemoteApiUrlHeaderIfNeeded(builder)
+	RemoveRemoteApiUrlHeaderIfNeeded(route, builder.RequestTransformerPlugin())
 
 	return nil
 }
@@ -71,19 +77,17 @@ func mapToLoadBalancingServer(upstream gatewayv1.Upstream) plugin.LoadBalancingS
 	}
 }
 
-func RemoveRemoteApiUrlHeaderIfNeeded(builder features.FeaturesBuilder) {
-	route := builder.GetRoute()
+func RemoveRemoteApiUrlHeaderIfNeeded(route *gatewayv1.Route, rtp *plugin.RequestTransformerPlugin) {
 	lastMileSecurityIsUsed := !route.Spec.PassThrough
 	realRoute := !route.IsProxy()
 
 	if realRoute && lastMileSecurityIsUsed {
-		rtpPlugin := builder.RequestTransformerPlugin()
 
 		// Remove the remote_api_url header if it exists:
 		// This is necessary to avoid conflicts with Last Mile Security in Jumper, because Jumper will
 		// only consider LoadBalancing servers if the remote_api_url header is not set.
-		if rtpPlugin.Config.Append.Headers != nil && rtpPlugin.Config.Append.Headers.Contains("remote_api_url") {
-			rtpPlugin.Config.Append.Headers.Remove("remote_api_url")
+		if rtp.Config.Append.Headers != nil && rtp.Config.Append.Headers.Contains("remote_api_url") {
+			rtp.Config.Append.Headers.Remove("remote_api_url")
 		}
 	}
 }

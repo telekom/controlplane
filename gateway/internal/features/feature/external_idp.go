@@ -41,7 +41,10 @@ func (f *ExternalIDPFeature) Priority() int {
 // IsUsed checks if the ExternalIDP feature is used in the route.
 // It can either be used as a primary route feature or as a failover security feature.
 func (f *ExternalIDPFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return false
+	}
 	isPrimaryRoute := !route.IsProxy()
 	isConfigured := false
 
@@ -58,7 +61,10 @@ func (f *ExternalIDPFeature) IsUsed(ctx context.Context, builder features.Featur
 
 func (f *ExternalIDPFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
 	rtpPlugin := builder.RequestTransformerPlugin()
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return features.ErrNoRoute
+	}
 	jumperConfig := builder.JumperConfig()
 
 	// Depending on the context (primary or failover route), we need to use different security settings.
