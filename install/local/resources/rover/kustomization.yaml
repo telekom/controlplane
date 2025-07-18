@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-namespace: default--group-sample--team-sample # team namespace
+namespace: controlplane--phoenix--firebirds # team namespace
 
 labels:
   - includeSelectors: true
     pairs:
-      cp.ei.telekom.de/environment: default
+      cp.ei.telekom.de/environment: controlplane
       app.kubernetes.io/managed-by: kustomize
 
 resources:

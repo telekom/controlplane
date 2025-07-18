@@ -5,11 +5,11 @@
 apiVersion: organization.cp.ei.telekom.de/v1
 kind: Team
 metadata:
-  name: group-sample--team-sample
+  name: phoenix--firebirds
 spec:
-  name: team-sample
-  group: group-sample
-  email: team-sample-mail@example.com
+  name: firebirds
+  group: phoenix
+  email: firebirds-mail@example.com
   members:
     - name: user1
       email: user1@example.com
