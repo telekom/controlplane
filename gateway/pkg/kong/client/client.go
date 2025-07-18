@@ -127,16 +127,20 @@ func (c *kongClient) CreateOrReplacePlugin(
 
 	log := logr.FromContextOrDiscard(ctx)
 	envName := contextutil.EnvFromContextOrDie(ctx)
+
+	isRouteSpecific := plugin.GetRoute() != nil
+	isConsumerSpecific := plugin.GetConsumer() != nil
+
 	tags := []string{
 		buildTag("env", envName),
 		buildTag("plugin", plugin.GetName()),
 	}
 
-	if plugin.GetRoute() != nil {
+	if isRouteSpecific {
 		tags = append(tags, buildTag("route", *plugin.GetRoute()))
 	}
 
-	if plugin.GetConsumer() != nil {
+	if isConsumerSpecific {
 		tags = append(tags, buildTag("consumer", *plugin.GetConsumer()))
 	} else {
 		tags = append(tags, buildTag("consumer", "none"))
@@ -154,15 +158,26 @@ func (c *kongClient) CreateOrReplacePlugin(
 		Enabled:  &pluginEnabled,
 		Name:     &pluginName,
 		Config:   &pluginConfig,
-		Consumer: plugin.GetConsumer(),
-		Route: &map[string]any{
-			"name": plugin.GetRoute(),
-		},
-		Service: nil,
+		Consumer: nil,
+		Service:  nil,
+		Route:    nil,
 		Protocols: &[]kong.CreatePluginForConsumerRequestProtocols{
 			kong.CreatePluginForConsumerRequestProtocolsHttp,
 		},
 		Tags: &tags,
+	}
+
+	if isConsumerSpecific {
+		// If the plugin is for a consumer, set the reference to the consumer in the plugin-request.
+		body.Consumer = plugin.GetConsumer()
+	}
+
+	// If the plugin is for a route or a consumer on a route,
+	// set the reference to the route in the plugin-request.
+	if isRouteSpecific {
+		body.Route = &map[string]any{
+			"name": plugin.GetRoute(),
+		}
 	}
 
 	client, ok := c.client.(kong.ClientInterface)
@@ -179,14 +194,26 @@ func (c *kongClient) CreateOrReplacePlugin(
 	}
 
 	var response *http.Response
-	if plugin.GetConsumer() != nil {
+
+	// Order is important here:
+	// 1. If a consumer is set on the plugin, then the plugin is created for that consumer.
+	// 2. If a route and a consumer are set on the plugin, then the plugin is created for that consumer on that route.
+	// 3. If a route is set on the plugin, then the plugin is created for that route.
+	if isConsumerSpecific {
+		// If a consumer is set on the plugin, then the plugin is created for that consumer.
+		// It is also possible to define a route in addition to the consumer.
+		// In that case, the plugin is created for the consumer on that route.
+
 		log.V(1).Info("upserting plugin for consumer", "consumer", *plugin.GetConsumer(), "id", pluginId)
 		response, err = client.UpsertPluginForConsumer(ctx, *plugin.GetConsumer(), pluginId, body)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create plugin")
 		}
 
-	} else if plugin.GetRoute() != nil {
+	} else if isRouteSpecific {
+		// If a route is set on the plugin, then the plugin is created for that route.
+		// This means, it is applied for all consumers of that route.
+
 		log.V(1).Info("upserting plugin for route", "route", *plugin.GetRoute(), "id", pluginId)
 		response, err = client.UpsertPluginForRoute(ctx, *plugin.GetRoute(), pluginId, body)
 		if err != nil {
@@ -194,7 +221,12 @@ func (c *kongClient) CreateOrReplacePlugin(
 		}
 
 	} else {
-		return nil, fmt.Errorf("either route or consumer must be provided for plugin creation")
+		// global plugin
+		log.V(1).Info("upserting global plugin", "id", pluginId)
+		response, err = client.UpsertPlugin(ctx, pluginId, body)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create plugin")
+		}
 	}
 
 	apiResponse := WrapApiResponse(response)
