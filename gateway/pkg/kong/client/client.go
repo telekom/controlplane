@@ -70,6 +70,8 @@ func (c *kongClient) LoadPlugin(
 
 	if plugin.GetConsumer() != nil {
 		tags = append(tags, buildTag("consumer", *plugin.GetConsumer()))
+	} else {
+		tags = append(tags, buildTag("consumer", "none"))
 	}
 
 	if pluginId != "" {
@@ -136,6 +138,8 @@ func (c *kongClient) CreateOrReplacePlugin(
 
 	if plugin.GetConsumer() != nil {
 		tags = append(tags, buildTag("consumer", *plugin.GetConsumer()))
+	} else {
+		tags = append(tags, buildTag("consumer", "none"))
 	}
 
 	kongPlugin, err = c.LoadPlugin(ctx, plugin, false)
@@ -151,8 +155,10 @@ func (c *kongClient) CreateOrReplacePlugin(
 		Name:     &pluginName,
 		Config:   &pluginConfig,
 		Consumer: plugin.GetConsumer(),
-		Route:    plugin.GetRoute(),
-		Service:  nil,
+		Route: &map[string]any{
+			"name": plugin.GetRoute(),
+		},
+		Service: nil,
 		Protocols: &[]kong.CreatePluginForConsumerRequestProtocols{
 			kong.CreatePluginForConsumerRequestProtocolsHttp,
 		},
@@ -205,47 +211,6 @@ func (c *kongClient) CreateOrReplacePlugin(
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal plugin response")
 	}
-
-	// routeName := plugin.GetRoute()
-	// consumerName := plugin.GetConsumer()
-
-	// if routeName != nil {
-	// 	response, err := c.client.UpsertPluginForRouteWithResponse(ctx, *routeName, pluginId, body)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	if err := CheckStatusCode(response, 200); err != nil {
-	// 		return nil, fmt.Errorf("failed to create plugin: (%d): %s", response.StatusCode(), string(response.Body))
-	// 	}
-	// 	kongPlugin = response.JSON200
-
-	// } else if consumerName != nil {
-	// 	// The Api-Spec defines a wrong type for the response body and we dont have the consumerId
-	// 	// So we need to use the underlying client to create the plugin
-	// 	client, ok := c.client.(kong.ClientInterface)
-	// 	if !ok {
-	// 		return nil, fmt.Errorf("invalid client type: %T", c.client)
-	// 	}
-	// 	response, err := client.UpsertPluginForConsumer(ctx, *consumerName, pluginId, body)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	apiResponse := WrapApiResponse(response)
-	// 	responseBody, err := io.ReadAll(response.Body)
-	// 	if err != nil {
-	// 		return nil, errors.Wrap(err, "failed to read response body")
-	// 	}
-	// 	response.Body.Close() //nolint:errcheck
-
-	// 	if err := CheckStatusCode(apiResponse, 200); err != nil {
-	// 		return nil, fmt.Errorf("failed to create plugin: (%d): %s", apiResponse.StatusCode(), string(responseBody))
-	// 	}
-	// 	// The Api-Spec defines a wrong type for the response body, so we need to unmarshal it manually
-	// 	err = json.Unmarshal(responseBody, &kongPlugin)
-	// 	if err != nil {
-	// 		return nil, errors.Wrap(err, "failed to unmarshal plugin response")
-	// 	}
-	// }
 
 	plugin.SetId(pluginId)
 	return kongPlugin, nil

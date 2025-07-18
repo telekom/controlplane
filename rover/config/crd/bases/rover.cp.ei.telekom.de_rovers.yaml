@@ -420,17 +420,19 @@ spec:
                       are allowed access
                     items:
                       type: string
-                    maxItems: 10
+                    maxItems: 20
                     minItems: 0
                     type: array
+                    uniqueItems: true
                   deny:
                     description: Deny is a list of IP addresses or CIDR ranges that
                       are denied access
                     items:
                       type: string
-                    maxItems: 10
+                    maxItems: 20
                     minItems: 0
                     type: array
+                    uniqueItems: true
                 type: object
               subscriptions:
                 description: Subscriptions is a list of APIs and Events that this

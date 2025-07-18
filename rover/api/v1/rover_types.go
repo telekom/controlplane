@@ -163,12 +163,18 @@ type IpRestriction struct {
 	// Allow is a list of IP addresses or CIDR ranges that are allowed access
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinItems=0
-	// +kubebuilder:validation:MaxItems=10
+	// +kubebuilder:validation:MaxItems=20
+	// +kubebuilder:validation:UniqueItems=true
+	// +kubebuilder:validation:Type=array
+	// +kubebuilder:validation:Items.Pattern=^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?:/(?:3[0-2]|[12]?[0-9]))?$
 	Allow []string `json:"allow,omitempty"`
 	// Deny is a list of IP addresses or CIDR ranges that are denied access
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinItems=0
-	// +kubebuilder:validation:MaxItems=10
+	// +kubebuilder:validation:MaxItems=20
+	// +kubebuilder:validation:UniqueItems=true
+	// +kubebuilder:validation:Type=array
+	// +kubebuilder:validation:Items.Pattern=^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?:/(?:3[0-2]|[12]?[0-9]))?$
 	Deny []string `json:"deny,omitempty"`
 }
 
