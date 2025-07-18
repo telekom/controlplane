@@ -53,41 +53,13 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		}
 
 		apiExposure.Spec = apiapi.ApiExposureSpec{
-			ApiBasePath: exp.BasePath,
-			Visibility:  apiapi.Visibility(exp.Visibility.String()),
-			Approval:    apiapi.ApprovalStrategy(exp.Approval.Strategy),
-			Zone:        zoneRef,
-			Upstreams:   make([]apiapi.Upstream, len(exp.Upstreams)),
-		}
-
-		if exp.Transformation != nil {
-			apiExposure.Spec.Transformation = &apiapi.Transformation{
-				Request: apiapi.RequestResponseTransformation{
-					Headers: apiapi.HeaderTransformation{
-						Remove: exp.Transformation.Request.Headers.Remove,
-					},
-				},
-			}
-		}
-
-		if exp.Security != nil {
-			if exp.Security.M2M != nil {
-				apiExposure.Spec.Security = &apiapi.Security{
-					M2M: &apiapi.Machine2MachineAuthentication{
-						Scopes: exp.Security.M2M.Scopes,
-					},
-				}
-				if exp.Security.M2M.ExternalIDP != nil {
-					apiExposure.Spec.Security.M2M.ExternalIDP = &apiapi.ExternalIdentityProvider{
-						TokenEndpoint: exp.Security.M2M.ExternalIDP.TokenEndpoint,
-						TokenRequest:  exp.Security.M2M.ExternalIDP.TokenRequest,
-						GrantType:     exp.Security.M2M.ExternalIDP.GrantType,
-						Basic:         toApiBasic(exp.Security.M2M.ExternalIDP.Basic),
-						Client:        toApiClient(exp.Security.M2M.ExternalIDP.Client),
-					}
-				}
-			}
-			Security:    mapSecurityToApiSecurity(exp.Security),
+			ApiBasePath:    exp.BasePath,
+			Visibility:     apiapi.Visibility(exp.Visibility.String()),
+			Approval:       apiapi.ApprovalStrategy(exp.Approval.Strategy),
+			Zone:           zoneRef,
+			Upstreams:      make([]apiapi.Upstream, len(exp.Upstreams)),
+			Security:       mapSecurityToApiSecurity(exp.Security),
+			Transformation: mapTransformationtoApiTransformation(exp.Transformation),
 		}
 
 		failoverZones, hasFailover := getFailoverZones(environment, exp.Traffic.Failover)
@@ -153,4 +125,18 @@ func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
 
 	return security
 
+}
+
+func mapTransformationtoApiTransformation(roverTransformation *rover.Transformation) *apiapi.Transformation {
+	if roverTransformation == nil {
+		return nil
+	}
+
+	apiTransformation := &apiapi.Transformation{}
+
+	if len(roverTransformation.Request.Headers.Remove) > 0 {
+		apiTransformation.Request.Headers.Remove = roverTransformation.Request.Headers.Remove
+	}
+
+	return apiTransformation
 }
