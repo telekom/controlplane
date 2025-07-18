@@ -104,7 +104,7 @@ var _ = Describe("Config Env Tests", func() {
 			Parse()
 
 			// Verify all values match defaults
-			// Expect(RequeueAfterOnError).To(Equal(origRequeueAfterOnError))
+			Expect(RequeueAfterOnError).To(Equal(origRequeueAfterOnError))
 			Expect(RequeueAfter).To(Equal(origRequeueAfter))
 			Expect(DefaultNamespace).To(Equal(origDefaultNamespace))
 			Expect(DefaultEnvironment).To(Equal(origDefaultEnvironment))
