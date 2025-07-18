@@ -10,6 +10,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache"
 	"github.com/telekom/controlplane/secret-manager/test/mocks"
@@ -27,7 +29,6 @@ var _ = Describe("Cached Backend", func() {
 			mockBackend = &mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]{}
 			mockBackend.Test(t)
 			t.Cleanup(func() { mockBackend.AssertExpectations(t) })
-
 			cachedBackend = cache.NewCachedBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]](mockBackend, 10*time.Second)
 		})
 
@@ -57,6 +58,10 @@ var _ = Describe("Cached Backend", func() {
 			secret, err := cachedBackend.Get(ctx, secretId)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(secret).ToNot(BeNil())
+
+			num, err := testutil.GatherAndCount(prometheus.DefaultGatherer, "cache_access_total")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(num).To(Equal(1))
 		})
 
 		It("should set the secret and update the cache", func() {
@@ -90,6 +95,10 @@ var _ = Describe("Cached Backend", func() {
 			Expect(secret).ToNot(BeNil())
 			Expect(secret.Value()).To(Equal("my-value"))
 			Expect(secret.Id()).To(Equal(secretId))
+
+			num, err := testutil.GatherAndCount(prometheus.DefaultGatherer, "cache_access_total")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(num).To(Equal(2))
 		})
 
 		It("should return an error if the backend fails", func() {
@@ -105,6 +114,10 @@ var _ = Describe("Cached Backend", func() {
 			Expect(res.Value()).To(BeEmpty())
 			Expect(res.Id()).To(BeNil())
 			Expect(backend.IsNotFoundErr(err)).To(BeTrue())
+
+			num, err := testutil.GatherAndCount(prometheus.DefaultGatherer, "cache_access_total")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(num).To(Equal(2))
 		})
 
 		It("should return the cached item when the value did not change", func() {
