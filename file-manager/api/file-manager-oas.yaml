@@ -17,6 +17,8 @@ info:
 servers:
   - url: https://locahost:8080
     description: For local development
+security:
+  - bearerAuth: []
 tags:
   - name: files
     description: Everything regarding storing and accessing files
@@ -40,6 +42,20 @@ paths:
           required: true
           schema:
             type: string
+        - name: X-File-Content-Type
+          in: header
+          description: Content type of the file (e.g., text/yaml, text/json) that will be stored as metadata
+          required: false
+          schema:
+            type: string
+        - name: X-File-Checksum
+          in: header
+          description: Checksum of the file that will be stored as metadata
+          required: false
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
       requestBody:
         $ref: '#/components/requestBodies/FileUploadRequest'
       responses:
@@ -63,6 +79,8 @@ paths:
           required: true
           schema:
             type: string
+      security:
+        - bearerAuth: []
       responses:
         '200':
           $ref: '#/components/responses/FileDownloadResponse'
@@ -72,6 +90,12 @@ paths:
           $ref: '#/components/responses/ErrorResponse'
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Bearer token authentication
   requestBodies:
     FileUploadRequest:
       content:
@@ -82,6 +106,15 @@ components:
   responses:
     FileUploadResponse:
       description: Successful upload of a file. Contains the assigned id.
+      headers:
+        X-File-Content-Type:
+          description: Content type of the file as stored in metadata
+          schema:
+            type: string
+        X-File-Checksum:
+          description: Checksum of the file as stored in metadata
+          schema:
+            type: string
       content:
         application/json:
           schema:
@@ -94,6 +127,15 @@ components:
     FileDownloadResponse:
       description: >-
         Successful download of a file with the specified id. Responds with the file contents.
+      headers:
+        X-File-Content-Type:
+          description: Content type of the file as stored in metadata
+          schema:
+            type: string
+        X-File-Checksum:
+            description: Checksum of the file as stored in metadata
+            schema:
+                type: string
       content:
         application/octet-stream:
           schema:

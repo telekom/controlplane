@@ -42,7 +42,7 @@ func (h *Handler) UploadFile(ctx context.Context, request api.UploadFileRequestO
 	// Return the successful response
 	return api.UploadFile200JSONResponse{
 		FileUploadResponseJSONResponse: api.FileUploadResponseJSONResponse{
-			Id: id,
+			Body: api.FileUploadResponse{Id: id},
 		},
 	}, nil
 }
