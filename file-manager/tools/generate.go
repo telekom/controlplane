@@ -17,4 +17,4 @@ import (
 
 ////go:generate go run github.com/vektra/mockery/v2 --config=mockery.yaml
 
-////go:generate go run github.com/vektra/mockery/v2 --config=mockery.api.yaml
+//go:generate go run github.com/vektra/mockery/v2 --config=mockery.api.yaml

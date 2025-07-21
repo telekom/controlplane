@@ -9,7 +9,7 @@ info:
   version: 0.0.1
   contact:
     name: TARDIS
-    email: tadis@nop.telekom.de
+    email: tardis@nop.telekom.de
     url: https://developer.telekom.de/
   license:
     name: Apache 2.0

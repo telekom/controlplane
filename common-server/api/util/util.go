@@ -20,12 +20,48 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/client"
 )
 
-var (
-	ClientName     = "secret-manager"
-	ReplacePattern = `^\/api\/v1\/(secrets|onboarding)\/(?P<redacted>.*)$`
+type Options struct {
+	ClientName     string
+	ReplacePattern string
+	SkipTlsVerify  bool
+	CaFilepath     string
+	ClientTimeout  time.Duration
+}
 
-	DefaultClientTimeout = 5 * time.Second
-	ClientTimeout        = os.Getenv("CLIENT_TIMEOUT")
+type Option func(*Options)
+
+func WithClientName(name string) Option {
+	return func(o *Options) {
+		o.ClientName = name
+	}
+}
+
+func WithReplacePattern(pattern string) Option {
+	return func(o *Options) {
+		o.ReplacePattern = pattern
+	}
+}
+
+func WithSkipTlsVerify(skip bool) Option {
+	return func(o *Options) {
+		o.SkipTlsVerify = skip
+	}
+}
+
+func WithCaFilepath(caFilepath string) Option {
+	return func(o *Options) {
+		o.CaFilepath = caFilepath
+	}
+}
+
+func WithClientTimeout(timeout time.Duration) Option {
+	return func(o *Options) {
+		o.ClientTimeout = timeout
+	}
+}
+
+var (
+	EnvClientTimeout = os.Getenv("CLIENT_TIMEOUT")
 )
 
 // IsRunningInCluster checks if the application is running in a Kubernetes cluster
@@ -34,15 +70,22 @@ func IsRunningInCluster() bool {
 	return ok
 }
 
-func NewHttpClientOrDie(skipTlsVerify bool, caFilepath string) client.HttpRequestDoer {
+func NewHttpClientOrDie(opts ...Option) client.HttpRequestDoer {
+	options := &Options{
+		ClientTimeout: 5 * time.Second,
+	}
+	for _, o := range opts {
+		o(options)
+	}
+
 	var caPool *x509.CertPool
 
-	if skipTlsVerify {
+	if options.SkipTlsVerify {
 		fmt.Println("⚠️\tWarning: Using InsecureSkipVerify. This is not secure.")
 	}
 
-	if !skipTlsVerify && caFilepath != "" {
-		certRefresher := NewCertRefresher(caFilepath)
+	if !options.SkipTlsVerify && options.CaFilepath != "" {
+		certRefresher := NewCertRefresher(options.CaFilepath)
 		err := certRefresher.Start(context.Background())
 		if err != nil {
 			panic(err)
@@ -52,15 +95,16 @@ func NewHttpClientOrDie(skipTlsVerify bool, caFilepath string) client.HttpReques
 
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: skipTlsVerify,
+			InsecureSkipVerify: options.SkipTlsVerify,
 			MinVersion:         tls.VersionTLS13,
 			RootCAs:            caPool,
 		},
 	}
-	timeout := DefaultClientTimeout
-	if ClientTimeout != "" {
+
+	timeout := options.ClientTimeout
+	if EnvClientTimeout != "" {
 		var err error
-		timeout, err = time.ParseDuration(ClientTimeout)
+		timeout, err = time.ParseDuration(EnvClientTimeout)
 		if err != nil {
 			panic(errors.Wrap(err, "failed to parse CLIENT_TIMEOUT"))
 		}
@@ -71,7 +115,7 @@ func NewHttpClientOrDie(skipTlsVerify bool, caFilepath string) client.HttpReques
 		Timeout:   timeout,
 	}
 
-	return client.WithMetrics(httpClient, ClientName, ReplacePattern)
+	return client.WithMetrics(httpClient, options.ClientName, options.ReplacePattern)
 }
 
 func GetCert(filepath string) (*x509.CertPool, error) {

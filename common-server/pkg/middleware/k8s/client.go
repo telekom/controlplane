@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/secret-manager/api/util"
+	"github.com/telekom/controlplane/common-server/api/util"
 )
 
 var (
