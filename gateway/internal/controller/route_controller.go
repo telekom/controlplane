@@ -7,12 +7,11 @@ package controller
 import (
 	"context"
 
-	"github.com/telekom/controlplane/common/pkg/config"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -57,8 +56,8 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.mapConsumeRouteToRoute),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: 10,
-			RateLimiter:             workqueue.DefaultTypedItemBasedRateLimiter[reconcile.Request](),
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
 }
@@ -94,7 +93,7 @@ func (r *RouteReconciler) mapRealmToRoute(ctx context.Context, obj client.Object
 			IndexFieldSpecRealm: types.ObjectRefFromObject(realm).String(),
 		},
 		client.MatchingLabels{
-			config.EnvironmentLabelKey: realm.Labels[config.EnvironmentLabelKey],
+			cconfig.EnvironmentLabelKey: realm.Labels[cconfig.EnvironmentLabelKey],
 		},
 	}
 

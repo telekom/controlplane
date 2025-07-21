@@ -9,12 +9,11 @@ import (
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/apiexposure"
-	"github.com/telekom/controlplane/common/pkg/config"
-	ccontroller "github.com/telekom/controlplane/common/pkg/controller"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -31,7 +30,7 @@ type ApiExposureReconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
-	ccontroller.Controller[*apiapi.ApiExposure]
+	cc.Controller[*apiapi.ApiExposure]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
@@ -52,7 +51,7 @@ func (r *ApiExposureReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 // SetupWithManager sets up the controller with the Manager.
 func (r *ApiExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("apiexposure-controller")
-	r.Controller = ccontroller.NewController(&apiexposure.ApiExposureHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&apiexposure.ApiExposureHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&apiapi.ApiExposure{}).
@@ -69,8 +68,8 @@ func (r *ApiExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: 10,
-			RateLimiter:             workqueue.DefaultTypedItemBasedRateLimiter[reconcile.Request]()}).
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter()}).
 		Complete(r)
 }
 
@@ -84,8 +83,8 @@ func (r *ApiExposureReconciler) MapApiToApiExposure(ctx context.Context, obj cli
 
 	list := &apiapi.ApiExposureList{}
 	err := r.Client.List(ctx, list, client.MatchingLabels{
-		config.EnvironmentLabelKey: api.Labels[config.EnvironmentLabelKey],
-		apiapi.BasePathLabelKey:    api.Labels[apiapi.BasePathLabelKey],
+		cconfig.EnvironmentLabelKey: api.Labels[cconfig.EnvironmentLabelKey],
+		apiapi.BasePathLabelKey:     api.Labels[apiapi.BasePathLabelKey],
 	})
 	if err != nil {
 		log.Error(err, "failed to list API-Exposures")
@@ -113,8 +112,8 @@ func (r *ApiExposureReconciler) MapApiExposureToApiExposure(ctx context.Context,
 
 	list := &apiapi.ApiExposureList{}
 	err := r.Client.List(ctx, list, client.MatchingLabels{
-		config.EnvironmentLabelKey: apiExposure.Labels[config.EnvironmentLabelKey],
-		apiapi.BasePathLabelKey:    apiExposure.Labels[apiapi.BasePathLabelKey],
+		cconfig.EnvironmentLabelKey: apiExposure.Labels[cconfig.EnvironmentLabelKey],
+		apiapi.BasePathLabelKey:     apiExposure.Labels[apiapi.BasePathLabelKey],
 	})
 	if err != nil {
 		log.Error(err, "failed to list API-Exposures")

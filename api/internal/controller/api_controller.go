@@ -9,11 +9,10 @@ import (
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/api"
-	"github.com/telekom/controlplane/common/pkg/config"
-	ccontroller "github.com/telekom/controlplane/common/pkg/controller"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,7 +29,7 @@ type ApiReconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
-	ccontroller.Controller[*apiapi.Api]
+	cc.Controller[*apiapi.Api]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
@@ -45,7 +44,7 @@ func (r *ApiReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 // SetupWithManager sets up the controller with the Manager.
 func (r *ApiReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("api-controller")
-	r.Controller = ccontroller.NewController(&api.ApiHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&api.ApiHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&apiapi.Api{}).
@@ -54,8 +53,8 @@ func (r *ApiReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: 10,
-			RateLimiter:             workqueue.DefaultTypedItemBasedRateLimiter[reconcile.Request](),
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
 }
@@ -71,8 +70,8 @@ func (r *ApiReconciler) MapApiToApi(ctx context.Context, obj client.Object) []re
 
 	list := &apiapi.ApiList{}
 	err := r.Client.List(ctx, list, client.MatchingLabels{
-		config.EnvironmentLabelKey: api.Labels[config.EnvironmentLabelKey],
-		apiapi.BasePathLabelKey:    api.Labels[apiapi.BasePathLabelKey],
+		cconfig.EnvironmentLabelKey: api.Labels[cconfig.EnvironmentLabelKey],
+		apiapi.BasePathLabelKey:     api.Labels[apiapi.BasePathLabelKey],
 	})
 	if err != nil {
 		log.Error(err, "failed to list API-Subscriptions")

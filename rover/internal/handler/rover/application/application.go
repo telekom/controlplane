@@ -6,8 +6,6 @@ package application
 
 import (
 	"context"
-	"fmt"
-
 	"strings"
 
 	"github.com/pkg/errors"
@@ -23,11 +21,6 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-)
-
-const (
-	ClientSecret = "clientSecret"
 )
 
 func HandleApplication(ctx context.Context, c client.JanitorClient, owner *roverv1.Rover) error {
@@ -138,8 +131,4 @@ func findTeam(ctx context.Context, c client.JanitorClient, owner *roverv1.Rover)
 	}
 
 	return team, nil
-}
-
-func wrapCommunicationError(err error, purposeOfCommunication string) error {
-	return k8serrors.NewInternalError(fmt.Errorf("failure during communication with secret-manager when doing '%s': '%w'", purposeOfCommunication, err))
 }

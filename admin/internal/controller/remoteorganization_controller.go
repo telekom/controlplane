@@ -7,11 +7,13 @@ package controller
 import (
 	"context"
 
-	"github.com/telekom/controlplane/common/pkg/controller"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	remoteorg_handler "github.com/telekom/controlplane/admin/internal/handler/remoteorganization"
@@ -23,7 +25,7 @@ type RemoteOrganizationReconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
-	controller.Controller[*adminv1.RemoteOrganization]
+	cc.Controller[*adminv1.RemoteOrganization]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
@@ -40,9 +42,13 @@ func (r *RemoteOrganizationReconciler) Reconcile(ctx context.Context, req ctrl.R
 // SetupWithManager sets up the controller with the Manager.
 func (r *RemoteOrganizationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("remoteorganization-controller")
-	r.Controller = controller.NewController(&remoteorg_handler.RemoteOrganizationHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&remoteorg_handler.RemoteOrganizationHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&adminv1.RemoteOrganization{}).
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter(),
+		}).
 		Complete(r)
 }
