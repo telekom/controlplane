@@ -416,12 +416,12 @@ func mapSecurity(apiSecurity *apiapi.Security) *gatewayapi.Security {
 	return security
 }
 
-func mapConsumerSecurity(apiSecurity *apiapi.SubscriberSecurity) *gatewayapi.ConsumerSecurity {
+func mapConsumerSecurity(apiSecurity *apiapi.SubscriberSecurity) *gatewayapi.ConsumeRouteSecurity {
 	if apiSecurity == nil {
 		return nil
 	}
 
-	security := &gatewayapi.ConsumerSecurity{}
+	security := &gatewayapi.ConsumeRouteSecurity{}
 
 	if apiSecurity.M2M != nil {
 		security.M2M = &gatewayapi.ConsumerMachine2MachineAuthentication{

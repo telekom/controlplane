@@ -33,9 +33,6 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 	if err != nil {
 		return errors.Wrap(err, "failed to create feature builder")
 	}
-	if builder == nil {
-		return nil
-	}
 
 	routeConsumers := &gatewayv1.ConsumeRouteList{}
 	if !route.Spec.PassThrough {
@@ -144,7 +141,7 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 		return nil, errors.Wrap(err, "failed to get kong client")
 	}
 
-	builder := features.NewFeatureBuilder(kc, route, realm, gateway)
+	builder := features.NewFeatureBuilder(kc, route, nil, realm, gateway)
 	builder.EnableFeature(feature.InstanceAccessControlFeature)
 	builder.EnableFeature(feature.InstancePassThroughFeature)
 	builder.EnableFeature(feature.InstanceLastMileSecurityFeature)

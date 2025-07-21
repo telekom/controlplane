@@ -172,6 +172,20 @@ func (mr *MockFeaturesBuilderMockRecorder) Build(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Build", reflect.TypeOf((*MockFeaturesBuilder)(nil).Build), arg0)
 }
 
+// BuildForConsumer mocks base method.
+func (m *MockFeaturesBuilder) BuildForConsumer(arg0 context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BuildForConsumer", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BuildForConsumer indicates an expected call of BuildForConsumer.
+func (mr *MockFeaturesBuilderMockRecorder) BuildForConsumer(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuildForConsumer", reflect.TypeOf((*MockFeaturesBuilder)(nil).BuildForConsumer), arg0)
+}
+
 // EnableFeature mocks base method.
 func (m *MockFeaturesBuilder) EnableFeature(f features.Feature) {
 	m.ctrl.T.Helper()
@@ -196,6 +210,21 @@ func (m *MockFeaturesBuilder) GetAllowedConsumers() []*v1.ConsumeRoute {
 func (mr *MockFeaturesBuilderMockRecorder) GetAllowedConsumers() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllowedConsumers", reflect.TypeOf((*MockFeaturesBuilder)(nil).GetAllowedConsumers))
+}
+
+// GetConsumer mocks base method.
+func (m *MockFeaturesBuilder) GetConsumer() (*v1.Consumer, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConsumer")
+	ret0, _ := ret[0].(*v1.Consumer)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetConsumer indicates an expected call of GetConsumer.
+func (mr *MockFeaturesBuilderMockRecorder) GetConsumer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConsumer", reflect.TypeOf((*MockFeaturesBuilder)(nil).GetConsumer))
 }
 
 // GetGateway mocks base method.
@@ -227,17 +256,32 @@ func (mr *MockFeaturesBuilderMockRecorder) GetRealm() *gomock.Call {
 }
 
 // GetRoute mocks base method.
-func (m *MockFeaturesBuilder) GetRoute() *v1.Route {
+func (m *MockFeaturesBuilder) GetRoute() (*v1.Route, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRoute")
 	ret0, _ := ret[0].(*v1.Route)
-	return ret0
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
 }
 
 // GetRoute indicates an expected call of GetRoute.
 func (mr *MockFeaturesBuilderMockRecorder) GetRoute() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoute", reflect.TypeOf((*MockFeaturesBuilder)(nil).GetRoute))
+}
+
+// IpRestrictionPlugin mocks base method.
+func (m *MockFeaturesBuilder) IpRestrictionPlugin() *plugin.IpRestrictionPlugin {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IpRestrictionPlugin")
+	ret0, _ := ret[0].(*plugin.IpRestrictionPlugin)
+	return ret0
+}
+
+// IpRestrictionPlugin indicates an expected call of IpRestrictionPlugin.
+func (mr *MockFeaturesBuilderMockRecorder) IpRestrictionPlugin() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IpRestrictionPlugin", reflect.TypeOf((*MockFeaturesBuilder)(nil).IpRestrictionPlugin))
 }
 
 // JumperConfig mocks base method.

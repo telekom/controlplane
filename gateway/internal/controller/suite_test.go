@@ -158,12 +158,13 @@ var _ = BeforeSuite(func() {
 		return client, nil
 	}
 
-	features.NewFeatureBuilder = func(kc kong_client.KongClient, route *gatewayv1.Route, realm *gatewayv1.Realm, gateway *gatewayv1.Gateway) features.FeaturesBuilder {
+	features.NewFeatureBuilder = func(kc kong_client.KongClient, route *gatewayv1.Route, consumer *gatewayv1.Consumer, realm *gatewayv1.Realm, gateway *gatewayv1.Gateway) features.FeaturesBuilder {
 		mockBuilder := features_mock.NewMockFeaturesBuilder(mockCtrl)
 		mockBuilder.EXPECT().EnableFeature(gomock.Any()).MinTimes(1)
 		mockBuilder.EXPECT().AddAllowedConsumers(gomock.Any()).AnyTimes()
-		mockBuilder.EXPECT().Build(gomock.Any()).Return(nil).MinTimes(1)
-		mockBuilder.EXPECT().GetAllowedConsumers().Return(nil).MinTimes(1)
+		mockBuilder.EXPECT().Build(gomock.Any()).Return(nil).AnyTimes()
+		mockBuilder.EXPECT().BuildForConsumer(gomock.Any()).Return(nil).AnyTimes()
+		mockBuilder.EXPECT().GetAllowedConsumers().Return(nil).AnyTimes()
 
 		return mockBuilder
 	}
