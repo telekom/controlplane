@@ -81,6 +81,21 @@ spec:
                 maxLength: 64
                 minLength: 1
                 type: string
+              security:
+                description: Security defines the security configuration for the application
+                properties:
+                  ipRestrictions:
+                    properties:
+                      allow:
+                        items:
+                          type: string
+                        type: array
+                      deny:
+                        items:
+                          type: string
+                        type: array
+                    type: object
+                type: object
               team:
                 description: Team is the name of the team responsible for the application
                 maxLength: 64

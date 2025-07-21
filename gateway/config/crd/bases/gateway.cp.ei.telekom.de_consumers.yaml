@@ -63,6 +63,23 @@ spec:
                 - name
                 - namespace
                 type: object
+              security:
+                description: |-
+                  Security defines the security configuration for the Rover
+                  Security is optional, but if provided, exactly one of m2m or h2m must be set
+                properties:
+                  ipRestrictions:
+                    properties:
+                      allow:
+                        items:
+                          type: string
+                        type: array
+                      deny:
+                        items:
+                          type: string
+                        type: array
+                    type: object
+                type: object
             required:
             - name
             - realm
@@ -129,13 +146,10 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
-              kongConsumerGroupId:
-                type: string
-              kongConsumerId:
-                type: string
-            required:
-            - kongConsumerGroupId
-            - kongConsumerId
+              properties:
+                additionalProperties:
+                  type: string
+                type: object
             type: object
         type: object
     served: true

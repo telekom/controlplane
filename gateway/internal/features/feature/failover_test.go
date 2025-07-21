@@ -114,9 +114,9 @@ var _ = Describe("Failover", func() {
 			}
 			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).DoAndReturn(mockCreateOrReplacePlugin).Times(1)
 
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
-			builder := features.NewFeatureBuilder(mockKc, route, realm, gateway)
+			builder := features.NewFeatureBuilder(mockKc, route, nil, realm, gateway)
 			builder.EnableFeature(feature.InstanceFailoverFeature)
 
 			err := builder.Build(ctx)
@@ -231,9 +231,9 @@ var _ = Describe("Failover", func() {
 			}
 			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).DoAndReturn(mockCreateOrReplacePlugin).Times(1)
 
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
-			builder := features.NewFeatureBuilder(mockKc, route, realm, gateway)
+			builder := features.NewFeatureBuilder(mockKc, route, nil, realm, gateway)
 			builder.EnableFeature(feature.InstanceFailoverFeature)
 
 			err := builder.Build(ctx)
@@ -335,9 +335,9 @@ var _ = Describe("Failover", func() {
 			}
 			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).DoAndReturn(mockCreateOrReplacePlugin).Times(1)
 
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
-			builder := features.NewFeatureBuilder(mockKc, route, realm, gateway)
+			builder := features.NewFeatureBuilder(mockKc, route, nil, realm, gateway)
 			builder.EnableFeature(feature.InstanceFailoverFeature)
 
 			err := builder.Build(ctx)

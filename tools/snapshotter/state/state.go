@@ -21,15 +21,15 @@ import (
 	"github.com/tidwall/sjson"
 )
 
-type RouteState struct {
+type State struct {
 	Environment  string `yaml:"environment" json:"environment"`
 	Zone         string `yaml:"zone" json:"zone"`
 	RouteName    string `yaml:"route_name,omitempty" json:"route_name,omitempty"`
 	ConsumerName string `yaml:"consumer_name,omitempty" json:"consumer_name,omitempty"`
 
-	Service  *kong.Service  `yaml:"service" json:"service"`
-	Route    *kong.Route    `yaml:"route" json:"route"`
-	Plugins  []kong.Plugin  `yaml:"plugins" json:"plugins"`
+	Service  *kong.Service  `yaml:"service,omitempty" json:"service,omitempty"`
+	Route    *kong.Route    `yaml:"route,omitempty" json:"route,omitempty"`
+	Plugins  []kong.Plugin  `yaml:"plugins,omitempty" json:"plugins,omitempty"`
 	Consumer *kong.Consumer `yaml:"consumer,omitempty" json:"consumer,omitempty"`
 	Upstream *kong.Upstream `yaml:"upstream,omitempty" json:"upstream,omitempty"`
 	Targets  []kong.Target  `yaml:"targets,omitempty" json:"targets,omitempty"`
@@ -41,7 +41,7 @@ type ObfuscationTarget struct {
 	Replace string
 }
 
-func (s *RouteState) Print(w io.Writer) error {
+func (s *State) Print(w io.Writer) error {
 	err := yaml.NewEncoder(w).Encode(s)
 	if err != nil {
 		return errors.Wrap(err, "failed to encode route state to YAML")
@@ -49,7 +49,7 @@ func (s *RouteState) Print(w io.Writer) error {
 	return nil
 }
 
-func (s *RouteState) String() string {
+func (s *State) String() string {
 	util.DeepSort(s)
 	data, err := yaml.Marshal(s)
 	if err != nil {
@@ -58,7 +58,7 @@ func (s *RouteState) String() string {
 	return string(data)
 }
 
-func (s *RouteState) Write(filename string) error {
+func (s *State) Write(filename string) error {
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return errors.Wrapf(err, "failed to open file %s for writing", filename)
@@ -72,7 +72,7 @@ func (s *RouteState) Write(filename string) error {
 	return nil
 }
 
-func Obfuscate(s *RouteState, targets ...ObfuscationTarget) error {
+func Obfuscate(s *State, targets ...ObfuscationTarget) error {
 	b, err := json.Marshal(s)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal route state to JSON")
@@ -108,7 +108,7 @@ func ObfuscateBytes(b []byte, targets ...ObfuscationTarget) ([]byte, error) {
 	return b, nil
 }
 
-func DecodeBase64Content(s *RouteState, patterns ...string) error {
+func DecodeBase64Content(s *State, patterns ...string) error {
 	for _, plugin := range s.Plugins {
 		b, err := json.Marshal(plugin)
 		if err != nil {
