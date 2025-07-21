@@ -61,9 +61,10 @@ type RateLimitPluginConfig struct {
 }
 
 type RateLimitPlugin struct {
-	Id     string                `json:"id,omitempty"`
-	Config RateLimitPluginConfig `json:"config,omitempty"`
-	route  *gatewayv1.Route
+	Id           string                `json:"id,omitempty"`
+	Config       RateLimitPluginConfig `json:"config,omitempty"`
+	route        *gatewayv1.Route
+	consumeRoute *gatewayv1.ConsumeRoute
 }
 
 func (p *RateLimitPlugin) GetId() string {
@@ -72,7 +73,12 @@ func (p *RateLimitPlugin) GetId() string {
 
 func (p *RateLimitPlugin) SetId(id string) {
 	p.Id = id
-	p.route.SetProperty("kongRateLimitingPluginId", id)
+	if p.route != nil {
+		p.route.SetProperty("kongRateLimitingPluginId", id)
+	}
+	if p.consumeRoute != nil {
+		p.consumeRoute.SetProperty("kongRateLimitingPluginId", id)
+	}
 }
 
 func (p *RateLimitPlugin) GetName() string {
@@ -80,10 +86,20 @@ func (p *RateLimitPlugin) GetName() string {
 }
 
 func (p *RateLimitPlugin) GetRoute() *string {
-	return &p.route.Name
+	if p.route != nil {
+		return &p.route.Name
+	}
+	if p.consumeRoute != nil {
+		return &p.consumeRoute.Spec.Route.Name
+	}
+
+	return nil
 }
 
 func (p *RateLimitPlugin) GetConsumer() *string {
+	if p.consumeRoute != nil {
+		return &p.consumeRoute.Spec.ConsumerName
+	}
 	return nil
 }
 
@@ -103,6 +119,17 @@ func RateLimitPluginFromRoute(route *gatewayv1.Route) *RateLimitPlugin {
 			HideClientHeaders: false,
 		},
 		route: route,
+	}
+}
+
+func RateLimitPluginFromConsumeRoute(consumeRoute *gatewayv1.ConsumeRoute) *RateLimitPlugin {
+	return &RateLimitPlugin{
+		Id: consumeRoute.GetProperty("kongRateLimitingPluginId"),
+		Config: RateLimitPluginConfig{
+			FaultTolerant:     true,
+			HideClientHeaders: false,
+		},
+		consumeRoute: consumeRoute,
 	}
 }
 

@@ -4,8 +4,6 @@
 
 package v1
 
-// Security defines the security configuration for the gateway
-// Security is optional, but if provided, exactly one of m2m or h2m must be set
 type Security struct {
 	// DisableAccessControl disable the ACL mechanism for this route
 	// +kubebuilder:validation:Optional
@@ -38,16 +36,27 @@ func (s *Security) HasBasicAuth() bool {
 // Security defines the security configuration for the Rover
 // Security is optional, but if provided, exactly one of m2m or h2m must be set
 type ConsumerSecurity struct {
+	IpRestrictions *IpRestrictions `json:"ipRestrictions,omitempty"`
+}
+
+type IpRestrictions struct {
+	// +kubebuilder:validation:Optional
+	Allow []string `json:"allow,omitempty"`
+	// +kubebuilder:validation:Optional
+	Deny []string `json:"deny,omitempty"`
+}
+
+type ConsumeRouteSecurity struct {
 	// M2M defines machine-to-machine authentication configuration
 	// +kubebuilder:validation:Optional
 	M2M *ConsumerMachine2MachineAuthentication `json:"m2m,omitempty"`
 }
 
-func (s *ConsumerSecurity) HasM2M() bool {
+func (s *ConsumeRouteSecurity) HasM2M() bool {
 	return s.M2M != nil
 }
 
-func (s *ConsumerSecurity) HasBasicAuth() bool {
+func (s *ConsumeRouteSecurity) HasBasicAuth() bool {
 	if !s.HasM2M() {
 		return false
 	}

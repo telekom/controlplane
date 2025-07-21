@@ -12,9 +12,9 @@ import (
 
 // ConsumeRouteSpec defines the desired state of ConsumeRoute
 type ConsumeRouteSpec struct {
-	Route        types.ObjectRef   `json:"route"`
-	ConsumerName string            `json:"consumerName"`
-	Security     *ConsumerSecurity `json:"security,omitempty"`
+	Route        types.ObjectRef       `json:"route"`
+	ConsumerName string                `json:"consumerName"`
+	Security     *ConsumeRouteSecurity `json:"security,omitempty"`
 }
 
 func (c *ConsumeRoute) HasM2M() bool {
@@ -46,6 +46,8 @@ type ConsumeRouteStatus struct {
 	// +patchMergeKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+
+	Properties map[string]string `json:"properties,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -68,6 +70,21 @@ func (c *ConsumeRoute) GetConditions() []metav1.Condition {
 
 func (c *ConsumeRoute) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&c.Status.Conditions, condition)
+}
+
+func (c *ConsumeRoute) SetProperty(key, val string) {
+	if c.Status.Properties == nil {
+		c.Status.Properties = make(map[string]string)
+	}
+	c.Status.Properties[key] = val
+}
+
+func (c *ConsumeRoute) GetProperty(key string) string {
+	if c.Status.Properties == nil {
+		return ""
+	}
+	val := c.Status.Properties[key]
+	return val
 }
 
 // +kubebuilder:object:root=true
