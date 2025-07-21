@@ -545,4 +545,7 @@ type OAuth2ClientCredentials struct {
 	// ClientSecret is the secret associated with the client ID
 	// +kubebuilder:validation:Optional
 	ClientSecret string `json:"clientSecret"`
+	// ClientKey is the private key associated with the client ID
+	// +kubebuilder:validation:Optional
+	ClientKey string `json:"clientKey"`
 }

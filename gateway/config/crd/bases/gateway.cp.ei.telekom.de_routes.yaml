@@ -138,6 +138,10 @@ spec:
                                   client credentials flow
                                 minLength: 1
                                 type: string
+                              clientKey:
+                                description: clientKey is the private key associated
+                                  with the client ID
+                                type: string
                               clientSecret:
                                 description: ClientSecret is the secret associated
                                   with the client ID
@@ -145,7 +149,6 @@ spec:
                                 type: string
                             required:
                             - clientId
-                            - clientSecret
                             type: object
                           grantType:
                             description: GrantType is the grant type for the external
@@ -254,6 +257,10 @@ spec:
                                           for OAuth2 client credentials flow
                                         minLength: 1
                                         type: string
+                                      clientKey:
+                                        description: clientKey is the private key
+                                          associated with the client ID
+                                        type: string
                                       clientSecret:
                                         description: ClientSecret is the secret associated
                                           with the client ID
@@ -261,7 +268,6 @@ spec:
                                         type: string
                                     required:
                                     - clientId
-                                    - clientSecret
                                     type: object
                                   grantType:
                                     description: GrantType is the grant type for the

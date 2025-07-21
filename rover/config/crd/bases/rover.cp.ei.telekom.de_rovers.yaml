@@ -161,6 +161,10 @@ spec:
                                           description: ClientId identifies the client
                                             for OAuth2 client credentials flow
                                           type: string
+                                        clientKey:
+                                          description: ClientKey is the private key
+                                            associated with the client ID
+                                          type: string
                                         clientSecret:
                                           description: ClientSecret is the secret
                                             associated with the client ID
@@ -488,6 +492,10 @@ spec:
                                     clientId:
                                       description: ClientId identifies the client
                                         for OAuth2 client credentials flow
+                                      type: string
+                                    clientKey:
+                                      description: ClientKey is the private key associated
+                                        with the client ID
                                       type: string
                                     clientSecret:
                                       description: ClientSecret is the secret associated
