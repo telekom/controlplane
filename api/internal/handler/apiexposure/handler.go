@@ -29,7 +29,7 @@ var _ handler.Handler[*apiapi.ApiExposure] = (*ApiExposureHandler)(nil)
 
 type ApiExposureHandler struct{}
 
-func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, obj *apiapi.ApiExposure) error {
+func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.ApiExposure) error {
 	log := log.FromContext(ctx)
 
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
@@ -37,41 +37,41 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, obj *apiapi.Api
 	//  get corresponding active api
 	apiList := &apiapi.ApiList{}
 	err := scopedClient.List(ctx, apiList,
-		client.MatchingLabels{apiapi.BasePathLabelKey: labelutil.NormalizeValue(obj.Spec.ApiBasePath)},
+		client.MatchingLabels{apiapi.BasePathLabelKey: labelutil.NormalizeValue(apiExp.Spec.ApiBasePath)},
 		client.MatchingFields{"status.active": "true"})
 	if err != nil {
 		return errors.Wrapf(err,
-			"failed to list corresponding APIs for ApiExposure: %s in namespace: %s", obj.Name, obj.Namespace)
+			"failed to list corresponding APIs for ApiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
 	}
 
 	// if no corresponding active api is found, set conditions and return
 	if len(apiList.Items) == 0 {
-		obj.SetCondition(condition.NewNotReadyCondition("NoApiRegistered", "API is not yet registered"))
-		obj.SetCondition(condition.NewBlockedCondition(
+		apiExp.SetCondition(condition.NewNotReadyCondition("NoApiRegistered", "API is not yet registered"))
+		apiExp.SetCondition(condition.NewBlockedCondition(
 			"API is not yet registered. ApiExposure will be automatically processed, if the API will be registered"))
 		log.Info("❌ API is not yet registered. ApiExposure is blocked")
 
 		routeList := &gatewayapi.RouteList{}
 		// Using ownedByLabel to cleanup all routes that are owned by the ApiExposure
-		_, err := scopedClient.Cleanup(ctx, routeList, cclient.OwnedByLabel(obj))
+		_, err := scopedClient.Cleanup(ctx, routeList, cclient.OwnedByLabel(apiExp))
 		if err != nil {
 			return errors.Wrapf(err,
-				"failed to cleanup owned routes for ApiExposure: %s in namespace: %s", obj.Name, obj.Namespace)
+				"failed to cleanup owned routes for ApiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
 		}
 		return nil
 	}
 	api := apiList.Items[0]
 
 	// validate if basepathes of the api and apiexposure are really equal
-	if api.Spec.BasePath != obj.Spec.ApiBasePath {
+	if api.Spec.BasePath != apiExp.Spec.ApiBasePath {
 		return errors.Wrapf(err,
-			"Exposures basePath: %s does not match the APIs basepath: %s", obj.Spec.ApiBasePath, api.Spec.BasePath)
+			"Exposures basePath: %s does not match the APIs basepath: %s", apiExp.Spec.ApiBasePath, api.Spec.BasePath)
 	}
 
 	// check if there is already a different active apiExposure with same basepath
 	apiExposureList := &apiapi.ApiExposureList{}
 	err = scopedClient.List(ctx, apiExposureList,
-		client.MatchingLabels{apiapi.BasePathLabelKey: obj.Labels[apiapi.BasePathLabelKey]})
+		client.MatchingLabels{apiapi.BasePathLabelKey: apiExp.Labels[apiapi.BasePathLabelKey]})
 	if err != nil {
 		return errors.Wrap(err, "failed to list ApiExposures")
 	}
@@ -82,15 +82,15 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, obj *apiapi.Api
 	})
 	apiExposure := apiExposureList.Items[0]
 
-	if apiExposure.Name == obj.Name && apiExposure.Namespace == obj.Namespace {
+	if apiExposure.Name == apiExp.Name && apiExposure.Namespace == apiExp.Namespace {
 		// the oldest apiExposure is the same as the one we are trying to handle
-		obj.Status.Active = true
+		apiExp.Status.Active = true
 	} else {
 		// there is already a different apiExposure active with the same BasePathLabelKey
 		// the new one will be blocked until the other is deleted
-		obj.Status.Active = false
-		obj.SetCondition(condition.NewNotReadyCondition("ApiExposureNotActive", "ApiExposure is not active"))
-		obj.SetCondition(condition.
+		apiExp.Status.Active = false
+		apiExp.SetCondition(condition.NewNotReadyCondition("ApiExposureNotActive", "ApiExposure is not active"))
+		apiExp.SetCondition(condition.
 			NewBlockedCondition("ApiExposure is blocked, another ApiExposure with the same BasePath is active."))
 		log.Info("❌ ApiExposure is blocked, another ApiExposure with the same BasePath is already active.")
 
@@ -99,22 +99,22 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, obj *apiapi.Api
 
 	// Scopes
 	// check if scopes exist and scopes are subset from api
-	if obj.HasM2M() {
+	if apiExp.HasM2M() {
 		// If scopes are set and its not externalIDP (here its allowed to have unknown/external scopes)
-		if obj.Spec.Security.M2M.Scopes != nil && !obj.HasExternalIdp() {
+		if apiExp.Spec.Security.M2M.Scopes != nil && !apiExp.HasExternalIdp() {
 			if len(api.Spec.Oauth2Scopes) == 0 {
-				obj.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Api does not define any Oauth2 scopes"))
-				obj.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiExposure will be automatically processed, if the API will be updated with scopes"))
+				apiExp.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Api does not define any Oauth2 scopes"))
+				apiExp.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiExposure will be automatically processed, if the API will be updated with scopes"))
 				return nil
 			} else {
-				scopesExist, invalidScopes := util.IsSubsetOfScopes(api.Spec.Oauth2Scopes, obj.Spec.Security.M2M.Scopes)
+				scopesExist, invalidScopes := util.IsSubsetOfScopes(api.Spec.Oauth2Scopes, apiExp.Spec.Security.M2M.Scopes)
 				if !scopesExist {
 					var message = fmt.Sprintf("Some defined scopes are not available. Available scopes: \"%s\". Unsupported scopes: \"%s\"",
 						strings.Join(api.Spec.Oauth2Scopes, ", "),
 						strings.Join(invalidScopes, ", "),
 					)
-					obj.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes which are defined in ApiExposure are not defined in the ApiSpecification"))
-					obj.SetCondition(condition.NewBlockedCondition(message))
+					apiExp.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes which are defined in ApiExposure are not defined in the ApiSpecification"))
+					apiExp.SetCondition(condition.NewBlockedCondition(message))
 					return nil
 				}
 			}
@@ -126,29 +126,29 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, obj *apiapi.Api
 	// TODO: further validations (currently contained in the old code)
 	// - validate if team category allows exposure of api category
 
-	obj.SetCondition(condition.NewProcessingCondition("Provisioning", "Provisioning route"))
+	apiExp.SetCondition(condition.NewProcessingCondition("Provisioning", "Provisioning route"))
 	// create real route
-	route, err := util.CreateRealRoute(ctx, obj.Spec.Zone, obj, contextutil.EnvFromContextOrDie(ctx))
+	route, err := util.CreateRealRoute(ctx, apiExp.Spec.Zone, apiExp, contextutil.EnvFromContextOrDie(ctx))
 	if err != nil {
-		return errors.Wrapf(err, "unable to create real route for apiExposure: %s in namespace: %s", obj.Name, obj.Namespace)
+		return errors.Wrapf(err, "unable to create real route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
 	}
 
-	if obj.HasFailover() {
-		failoverZone := obj.Spec.Traffic.Failover.Zones[0] // currently only one failover zone is supported
-		route, err := util.CreateProxyRoute(ctx, failoverZone, obj.Spec.Zone, obj.Spec.ApiBasePath,
+	if apiExp.HasFailover() {
+		failoverZone := apiExp.Spec.Traffic.Failover.Zones[0] // currently only one failover zone is supported
+		route, err := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
 			contextutil.EnvFromContextOrDie(ctx),
 			util.WithFailoverUpstreams(apiExposure.Spec.Upstreams...),
 			util.WithFailoverSecurity(apiExposure.Spec.Security),
 		)
 		if err != nil {
-			return errors.Wrapf(err, "unable to create real route for apiExposure: %s in namespace: %s", obj.Name, obj.Namespace)
+			return errors.Wrapf(err, "unable to create real route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
 		}
-		obj.Status.FailoverRoute = types.ObjectRefFromObject(route)
+		apiExp.Status.FailoverRoute = types.ObjectRefFromObject(route)
 	}
 
-	obj.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
-	obj.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
-	obj.Status.Route = types.ObjectRefFromObject(route)
+	apiExp.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
+	apiExp.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
+	apiExp.Status.Route = types.ObjectRefFromObject(route)
 	log.Info("✅ ApiExposure is processed")
 
 	return nil

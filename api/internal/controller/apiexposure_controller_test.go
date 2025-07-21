@@ -82,6 +82,13 @@ func NewApiExposure(apiBasePath, zoneName string) *apiv1.ApiExposure {
 					Weight: 100,
 				},
 			},
+			Transformation: &apiv1.Transformation{
+				Request: apiv1.RequestResponseTransformation{
+					Headers: apiv1.HeaderTransformation{
+						Remove: []string{"X-Remove-Header"},
+					},
+				},
+			},
 			Security: &apiapi.Security{
 				M2M: &apiapi.Machine2MachineAuthentication{
 					Scopes: []string{"scope1"},
@@ -167,6 +174,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				route := &gatewayapi.Route{}
 				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), route)
 				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(route.Spec.Transformation.Request.Headers.Remove).To(ContainElement("X-Remove-Header"))
 
 			}, timeout, interval).Should(Succeed())
 

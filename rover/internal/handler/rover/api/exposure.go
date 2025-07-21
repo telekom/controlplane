@@ -53,12 +53,13 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		}
 
 		apiExposure.Spec = apiapi.ApiExposureSpec{
-			ApiBasePath: exp.BasePath,
-			Visibility:  apiapi.Visibility(exp.Visibility.String()),
-			Approval:    apiapi.ApprovalStrategy(exp.Approval.Strategy),
-			Zone:        zoneRef,
-			Upstreams:   make([]apiapi.Upstream, len(exp.Upstreams)),
-			Security:    mapSecurityToApiSecurity(exp.Security),
+			ApiBasePath:    exp.BasePath,
+			Visibility:     apiapi.Visibility(exp.Visibility.String()),
+			Approval:       apiapi.ApprovalStrategy(exp.Approval.Strategy),
+			Zone:           zoneRef,
+			Upstreams:      make([]apiapi.Upstream, len(exp.Upstreams)),
+			Security:       mapSecurityToApiSecurity(exp.Security),
+			Transformation: mapTransformationtoApiTransformation(exp.Transformation),
 		}
 
 		failoverZones, hasFailover := getFailoverZones(environment, exp.Traffic.Failover)
@@ -124,4 +125,18 @@ func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
 
 	return security
 
+}
+
+func mapTransformationtoApiTransformation(roverTransformation *rover.Transformation) *apiapi.Transformation {
+	if roverTransformation == nil {
+		return nil
+	}
+
+	apiTransformation := &apiapi.Transformation{}
+
+	if len(roverTransformation.Request.Headers.Remove) > 0 {
+		apiTransformation.Request.Headers.Remove = roverTransformation.Request.Headers.Remove
+	}
+
+	return apiTransformation
 }

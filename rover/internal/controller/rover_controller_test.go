@@ -86,6 +86,13 @@ var _ = Describe("Rover Controller", Ordered, func() {
 							Approval: roverv1.Approval{
 								Strategy: roverv1.ApprovalStrategyFourEyes,
 							},
+							Transformation: &roverv1.Transformation{
+								Request: roverv1.RequestResponseTransformation{
+									Headers: roverv1.HeaderTransformation{
+										Remove: []string{"X-Remove-Header"},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -135,6 +142,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(apiExposure.Spec.ApiBasePath).To(Equal("/eni/api/v1"))
+				g.Expect(apiExposure.Spec.Transformation.Request.Headers.Remove).To(ContainElement("X-Remove-Header"))
 
 				apiSubscription := &apiapi.ApiSubscription{}
 				err = k8sClient.Get(ctx, client.ObjectKey{
