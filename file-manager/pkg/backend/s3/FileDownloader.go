@@ -41,6 +41,18 @@ func (s *S3FileDownloader) DownloadFile(ctx context.Context, fileId string) (*io
 		return nil, nil, errors.New("S3 client not initialized")
 	}
 
+	// Extract bearer token from context and update client credentials
+	token, err := ExtractBearerTokenFromContext(ctx)
+	if err == nil {
+		// Update token only if found in context
+		if err := s.config.UpdateBearerToken(token); err != nil {
+			log.Error(err, "Failed to update bearer token")
+			// Continue with old token if update fails
+		}
+	} else {
+		log.V(1).Info("No bearer token in context, using existing credentials")
+	}
+
 	// Convert fileId to S3 path format
 	s3Path, err := identifier.ConvertFileIdToPath(fileId)
 	if err != nil {

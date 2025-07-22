@@ -39,6 +39,18 @@ func (s *S3FileUploader) UploadFile(ctx context.Context, fileId string, reader *
 		return "", errors.New("S3 client not initialized")
 	}
 
+	// Extract bearer token from context and update client credentials
+	token, err := ExtractBearerTokenFromContext(ctx)
+	if err == nil {
+		// Update token only if found in context
+		if err := s.config.UpdateBearerToken(token); err != nil {
+			log.Error(err, "Failed to update bearer token")
+			// Continue with old token if update fails
+		}
+	} else {
+		log.V(1).Info("No bearer token in context, using existing credentials")
+	}
+
 	if reader == nil || *reader == nil {
 		log.Error(nil, "File reader is nil")
 		return "", errors.New("file reader is nil")

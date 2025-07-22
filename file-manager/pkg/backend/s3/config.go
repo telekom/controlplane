@@ -21,6 +21,9 @@ type S3Config struct {
 	TokenPath      string
 	Client         *minio.Client
 	Logger         logr.Logger
+	// Current bearer token and credentials
+	currentToken string
+	currentCreds *credentials.Credentials
 }
 
 // NewS3Config creates a new S3 configuration with the provided options
@@ -59,6 +62,64 @@ func NewS3ConfigWithLogger(log logr.Logger, options ...ConfigOption) (*S3Config,
 	}
 
 	return NewS3Config(options...)
+}
+
+// UpdateBearerToken updates the current token and recreates the client credentials if the token has changed
+// This should be called before each request to ensure the client has the latest token
+func (c *S3Config) UpdateBearerToken(token string) error {
+	// If token is unchanged, no need to update
+	if c.currentToken == token {
+		c.Logger.V(1).Info("Token unchanged, skipping credentials update")
+		return nil
+	}
+
+	// Update the current token
+	c.Logger.V(1).Info("Token changed, updating credentials")
+	c.currentToken = token
+
+	// Create a token provider function that returns the provided bearer token
+	tokenProvider := func() (*credentials.WebIdentityToken, error) {
+		return &credentials.WebIdentityToken{
+			Token: token,
+		}, nil
+	}
+
+	// Create credentials with the new token
+	creds, err := credentials.NewSTSWebIdentity(
+		c.STSEndpoint,
+		tokenProvider,
+		func(i *credentials.STSWebIdentity) {
+			i.RoleARN = c.RoleSessionArn
+			c.Logger.V(1).Info("Setting role ARN for STS", "roleARN", i.RoleARN)
+		},
+	)
+	if err != nil {
+		c.Logger.Error(err, "Failed to create STS web identity credentials")
+		return errors.Wrap(err, "failed to create STS web identity credentials")
+	}
+
+	// Store the new credentials
+	c.currentCreds = creds
+
+	// For the minio S3 client, we need to recreate it with the new credentials
+	if c.Client != nil {
+		client, err := minio.New(c.Endpoint, &minio.Options{
+			Creds:  creds,
+			Secure: true,
+			// TODO: CHECKSUM-SHA-256: Enable SHA-256 checksum calculation and verification
+			//TrailingHeaders: true, // Enable trailing headers for checksum support
+		})
+		if err != nil {
+			c.Logger.Error(err, "Failed to create new S3 client with updated credentials")
+			return errors.Wrap(err, "failed to create new S3 client with updated credentials")
+		}
+
+		// Replace the client
+		c.Client = client
+		c.Logger.V(1).Info("Updated client with new credentials")
+	}
+
+	return nil
 }
 
 // ConfigOption is a function type for applying options to S3Config
@@ -117,14 +178,35 @@ func (c *S3Config) initClient() (*minio.Client, error) {
 		"bucketName", c.BucketName,
 		"roleARN", c.RoleSessionArn)
 
-	// Define the token provider function
-	tokenProvider := func() (*credentials.WebIdentityToken, error) {
-		if os.Getenv("MC_WEB_IDENTITY_TOKEN") != "" {
-			log.V(1).Info("Using web identity token from environment variable")
-			return c.getWebIDTokenFromEnv()
+	// Get initial token for client creation
+	// This is just for initial setup; we'll update with real bearer tokens later
+	var initialToken string
+	var err error
+
+	if os.Getenv("MC_WEB_IDENTITY_TOKEN") != "" {
+		log.V(1).Info("Getting initial token from environment for client setup")
+		token, err := c.getWebIDTokenFromEnv()
+		if err != nil {
+			return nil, err
 		}
-		log.V(1).Info("Using web identity token from file", "path", c.TokenPath)
-		return c.getWebIDTokenFromFile()
+		initialToken = token.Token
+	} else {
+		log.V(1).Info("Getting initial token from file for client setup", "path", c.TokenPath)
+		token, err := c.getWebIDTokenFromFile()
+		if err != nil {
+			return nil, err
+		}
+		initialToken = token.Token
+	}
+
+	// Store the initial token
+	c.currentToken = initialToken
+
+	// Define the token provider function that returns our current token
+	tokenProvider := func() (*credentials.WebIdentityToken, error) {
+		return &credentials.WebIdentityToken{
+			Token: c.currentToken,
+		}, nil
 	}
 
 	// Create credentials
@@ -141,6 +223,9 @@ func (c *S3Config) initClient() (*minio.Client, error) {
 		log.Error(err, "Failed to create STS web identity credentials")
 		return nil, errors.Wrap(err, "failed to create STS web identity credentials")
 	}
+
+	// Store the credentials
+	c.currentCreds = creds
 
 	// Create S3 client
 	log.V(1).Info("Creating Minio S3 client", "endpoint", c.Endpoint)
