@@ -74,14 +74,25 @@ func (s *S3FileUploader) UploadFile(ctx context.Context, fileId string, reader *
 		log.V(1).Info("Added checksum to metadata", "checksum", value)
 	}
 
-	// Configure PutObjectOptions with SHA-256 checksum validation
+	// Configure PutObjectOptions
 	putOptions := minio.PutObjectOptions{
 		ContentType:  contentType,
 		UserMetadata: userMetadata,
+		// TODO: CHECKSUM-SHA-256: Enable SHA-256 checksum calculation and verification
+		//Checksum: minio.ChecksumSHA256,
 	}
 
-	// Enable SHA-256 checksum calculation and verification
-	putOptions.Checksum = minio.ChecksumSHA256
+	// TODO: CHECKSUM-SHA-256: Enable SHA-256 checksum calculation and verification
+	// If client provided a checksum, set it for server-side validation
+	// S3 will automatically validate this against the uploaded content
+	//if providedChecksum, ok := metadata["X-File-Checksum"]; ok && providedChecksum != "" {
+	//	log.V(1).Info("Using client-provided checksum for server-side validation", "checksum", providedChecksum)
+	//	// Set the full object checksum mode in UserMetadata
+	//	// This is the proper way to specify the checksum mode in minio-go v7.0.95
+	//	putOptions.UserMetadata["x-amz-checksum-mode"] = "FULL_OBJECT"
+	//	// Add the client-provided checksum in the format expected by S3
+	//	putOptions.UserMetadata["x-amz-checksum-sha256"] = providedChecksum
+	//}
 
 	// Upload file using the S3 path instead of fileId directly
 	log.V(1).Info("Starting S3 PutObject operation")
@@ -115,14 +126,28 @@ func (s *S3FileUploader) UploadFile(ctx context.Context, fileId string, reader *
 
 	// Validate Checksum if it was specified in the request
 	if requestedChecksum, ok := metadata["X-File-Checksum"]; ok && requestedChecksum != "" {
-		// The checksum from S3 could be in the metadata or in the SHA256 field
-		storedChecksum := objInfo.UserMetadata["X-File-Checksum"]
+		// Use the S3-generated checksum instead of the UserMetadata
+		var storedChecksum string
+		if objInfo.ETag != "" {
+			// Use the S3-generated checksum if available
+			storedChecksum = objInfo.ETag
+			log.V(1).Info("Using S3-generated checksum for validation", "checksum", storedChecksum)
+		} else {
+			// Fall back to UserMetadata if ETag is not available
+			storedChecksum = objInfo.UserMetadata["X-File-Checksum"]
+			log.V(1).Info("Using UserMetadata checksum for validation", "userMetadataChecksum", storedChecksum)
+		}
 
 		// If checksum differs from what was requested, return an error
 		if storedChecksum != requestedChecksum {
+			checksumSource := "UserMetadata"
+			if objInfo.ETag != "" {
+				checksumSource = "S3 ETag"
+			}
 			log.Error(nil, "Checksum mismatch",
 				"expected", requestedChecksum,
-				"actual", storedChecksum)
+				"actual", storedChecksum,
+				"checksumSource", checksumSource)
 			return "", errors.Errorf("checksum mismatch: expected %s, got %s",
 				requestedChecksum, storedChecksum)
 		}

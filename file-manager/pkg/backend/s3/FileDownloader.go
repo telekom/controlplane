@@ -86,10 +86,15 @@ func (s *S3FileDownloader) DownloadFile(ctx context.Context, fileId string) (*io
 		log.V(1).Info("Added content type to response metadata", "contentType", objInfo.ContentType)
 	}
 
-	// Add Checksum to metadata if available in UserMetadata
-	if checksum, ok := objInfo.UserMetadata["X-File-Checksum"]; ok && checksum != "" {
+	// Add Checksum to metadata
+	// Prefer S3's Checksum over UserMetadata
+	if objInfo.ETag != "" {
+		metadata["X-File-Checksum"] = objInfo.ETag
+		log.V(1).Info("Added S3-generated checksum to response metadata", "checksum", objInfo.ETag)
+	} else if checksum, ok := objInfo.UserMetadata["X-File-Checksum"]; ok && checksum != "" {
+		// Fall back to UserMetadata if ETag is not available
 		metadata["X-File-Checksum"] = checksum
-		log.V(1).Info("Added checksum to response metadata", "checksum", checksum)
+		log.V(1).Info("Added UserMetadata checksum to response metadata", "checksum", checksum)
 	}
 
 	log.V(1).Info("File downloaded successfully", "fileId", fileId, "s3Path", s3Path)
