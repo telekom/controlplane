@@ -1,3 +1,19 @@
+# [0.8.0](https://github.com/telekom/controlplane/compare/v0.7.0...v0.8.0) (2025-07-22)
+
+
+### Bug Fixes
+
+* **api:** correct handling of failover edge cases;  correct handling of api-exposure default scopes ([#87](https://github.com/telekom/controlplane/issues/87)) ([859bffb](https://github.com/telekom/controlplane/commit/859bffb01aba5a2442b95b4726efb20773d2e1db))
+
+
+### Features
+
+* add unified configuration options for reconciler with spf13/viper as ENVs ([#90](https://github.com/telekom/controlplane/issues/90)) ([0d2091a](https://github.com/telekom/controlplane/commit/0d2091a2d68fa97df7ebe7ee4ff769935cbfc54d))
+* added basic-auth feature ([#88](https://github.com/telekom/controlplane/issues/88)) ([5cf41c0](https://github.com/telekom/controlplane/commit/5cf41c002d854a2916cb645f963df4c9f4b38b50))
+* added ip-restriction feature; refactored feature-builder to support consumer-features ([#89](https://github.com/telekom/controlplane/issues/89)) ([5a6aa2f](https://github.com/telekom/controlplane/commit/5a6aa2fa96e9f3a8be582a0ec1d1bd594a098c32))
+* **remove-headers:** Added remove-headers feature ([#91](https://github.com/telekom/controlplane/issues/91)) ([4ab4b60](https://github.com/telekom/controlplane/commit/4ab4b607626e6a7125f3a4351e470ffd2907ebe3))
+* **secret-manager:** add cache metrics for cache hits and misses ([#81](https://github.com/telekom/controlplane/issues/81)) ([902666f](https://github.com/telekom/controlplane/commit/902666fe0ea98f23e1ea21fc3d3d64b13cb34459))
+
 # [0.7.0](https://github.com/telekom/controlplane/compare/v0.6.0...v0.7.0) (2025-07-14)
 
 
