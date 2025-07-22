@@ -10,6 +10,9 @@ import (
 	"os"
 	"path/filepath"
 
+	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -85,6 +88,8 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	secretmetrics.RegisterPrometheusMetrics(metrics.Registry)
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will
