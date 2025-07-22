@@ -58,3 +58,5 @@ func TestS3FileUploader_UploadFile(t *testing.T) {
 		t.Error("Expected error due to nil client, but got success")
 	}
 }
+
+// TODO: Add proper mocked tests for the validation functionality in a separate PR

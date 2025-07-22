@@ -74,18 +74,60 @@ func (s *S3FileUploader) UploadFile(ctx context.Context, fileId string, reader *
 		log.V(1).Info("Added checksum to metadata", "checksum", value)
 	}
 
-	// Upload file using the S3 path instead of fileId directly
-	log.V(1).Info("Starting S3 PutObject operation")
-	_, err = s.config.Client.PutObject(ctx, s.config.BucketName, s3Path, *reader, -1, minio.PutObjectOptions{
+	// Configure PutObjectOptions with SHA-256 checksum validation
+	putOptions := minio.PutObjectOptions{
 		ContentType:  contentType,
 		UserMetadata: userMetadata,
-	})
+	}
+
+	// Enable SHA-256 checksum calculation and verification
+	putOptions.Checksum = minio.ChecksumSHA256
+
+	// Upload file using the S3 path instead of fileId directly
+	log.V(1).Info("Starting S3 PutObject operation")
+	_, err = s.config.Client.PutObject(ctx, s.config.BucketName, s3Path, *reader, -1, putOptions)
 
 	if err != nil {
 		log.Error(err, "Failed to upload file to S3")
 		return "", errors.Wrap(err, "failed to upload file")
 	}
 	log.V(1).Info("File uploaded successfully", "fileId", fileId, "s3Path", s3Path)
+
+	// Get the object info to validate metadata
+	log.V(1).Info("Retrieving object info for validation", "s3Path", s3Path)
+	objInfo, err := s.config.Client.StatObject(ctx, s.config.BucketName, s3Path, minio.StatObjectOptions{})
+	if err != nil {
+		log.Error(err, "Failed to retrieve object info for validation")
+		return "", errors.Wrap(err, "failed to retrieve object info for validation")
+	}
+
+	// Validate Content-Type if it was specified in the request
+	if requestedContentType, ok := metadata["X-File-Content-Type"]; ok && requestedContentType != "" {
+		if objInfo.ContentType != requestedContentType {
+			log.Error(nil, "Content-Type mismatch",
+				"expected", requestedContentType,
+				"actual", objInfo.ContentType)
+			return "", errors.Errorf("content type mismatch: expected %s, got %s",
+				requestedContentType, objInfo.ContentType)
+		}
+		log.V(1).Info("Content-Type validation successful", "contentType", objInfo.ContentType)
+	}
+
+	// Validate Checksum if it was specified in the request
+	if requestedChecksum, ok := metadata["X-File-Checksum"]; ok && requestedChecksum != "" {
+		// The checksum from S3 could be in the metadata or in the SHA256 field
+		storedChecksum := objInfo.UserMetadata["X-File-Checksum"]
+
+		// If checksum differs from what was requested, return an error
+		if storedChecksum != requestedChecksum {
+			log.Error(nil, "Checksum mismatch",
+				"expected", requestedChecksum,
+				"actual", storedChecksum)
+			return "", errors.Errorf("checksum mismatch: expected %s, got %s",
+				requestedChecksum, storedChecksum)
+		}
+		log.V(1).Info("Checksum validation successful", "checksum", storedChecksum)
+	}
 
 	// Return the original fileId as that's the expected return value by the interface
 	return fileId, nil

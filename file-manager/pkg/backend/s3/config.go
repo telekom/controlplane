@@ -145,8 +145,9 @@ func (c *S3Config) initClient() (*minio.Client, error) {
 	// Create S3 client
 	log.V(1).Info("Creating Minio S3 client", "endpoint", c.Endpoint)
 	client, err := minio.New(c.Endpoint, &minio.Options{
-		Creds:  creds,
-		Secure: true,
+		Creds:           creds,
+		Secure:          true,
+		TrailingHeaders: true, // Enable trailing headers for checksum support
 	})
 	if err != nil {
 		log.Error(err, "Failed to create S3 client")
