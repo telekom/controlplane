@@ -10,6 +10,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
+	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
 	"io"
 )
 
@@ -43,7 +44,7 @@ func (s *S3FileUploader) UploadFile(ctx context.Context, fileId string, reader *
 	}
 
 	// Convert fileId to S3 path format
-	s3Path, err := ConvertFileIdToS3Path(fileId)
+	s3Path, err := identifier.ConvertFileIdToPath(fileId)
 	if err != nil {
 		log.Error(err, "Failed to convert fileId to S3 path")
 		return "", errors.Wrap(err, "failed to convert fileId to S3 path")

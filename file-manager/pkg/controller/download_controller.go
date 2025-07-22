@@ -8,6 +8,7 @@ import (
 	"context"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
+	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
 	"io"
 )
 
@@ -29,7 +30,7 @@ func NewDownloadController(fd backend.FileDownloader) DownloadController {
 
 func (d downloadController) DownloadFile(ctx context.Context, fileId string) (*io.Writer, error) {
 	// Validate fileId format first
-	if err := ValidateFileID(fileId); err != nil {
+	if err := identifier.ValidateFileID(fileId); err != nil {
 		return nil, errors.Wrap(err, "invalid fileId")
 	}
 

@@ -8,6 +8,7 @@ import (
 	"context"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
+	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
 	"io"
 )
 
@@ -25,7 +26,7 @@ func NewUploadController(fu backend.FileUploader) UploadController {
 
 func (u uploadController) UploadFile(ctx context.Context, fileId string, file *io.Reader) (string, error) {
 	// Validate fileId format first
-	if err := ValidateFileID(fileId); err != nil {
+	if err := identifier.ValidateFileID(fileId); err != nil {
 		return "", errors.Wrap(err, "invalid fileId")
 	}
 
