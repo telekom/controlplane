@@ -18,14 +18,14 @@ import (
 // MockController is a mock implementation of the controller.Controller interface for testing
 type MockController struct {
 	UploadMock   func(ctx context.Context, fileId string, file *io.Reader, metadata map[string]string) (string, error)
-	DownloadMock func(ctx context.Context, fileId string) (*io.Writer, error)
+	DownloadMock func(ctx context.Context, fileId string) (*io.Writer, map[string]string, error)
 }
 
 func (m *MockController) UploadFile(ctx context.Context, fileId string, file *io.Reader, metadata map[string]string) (string, error) {
 	return m.UploadMock(ctx, fileId, file, metadata)
 }
 
-func (m *MockController) DownloadFile(ctx context.Context, fileId string) (*io.Writer, error) {
+func (m *MockController) DownloadFile(ctx context.Context, fileId string) (*io.Writer, map[string]string, error) {
 	return m.DownloadMock(ctx, fileId)
 }
 
@@ -91,13 +91,17 @@ func TestHandler_UploadFile(t *testing.T) {
 func TestHandler_DownloadFile(t *testing.T) {
 	// Create mock controller
 	mockCtrl := &MockController{
-		DownloadMock: func(ctx context.Context, fileId string) (*io.Writer, error) {
+		DownloadMock: func(ctx context.Context, fileId string) (*io.Writer, map[string]string, error) {
 			if fileId == "success--test--case--file.txt" {
 				buf := bytes.NewBuffer([]byte("test content"))
 				var w io.Writer = buf
-				return &w, nil
+				metadata := map[string]string{
+					"X-File-Content-Type": "text/plain",
+					"X-File-Checksum":     "abc123",
+				}
+				return &w, metadata, nil
 			}
-			return nil, errors.New("mock error")
+			return nil, nil, errors.New("mock error")
 		},
 	}
 

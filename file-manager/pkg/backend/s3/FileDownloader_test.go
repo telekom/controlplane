@@ -21,7 +21,7 @@ func TestS3FileDownloader_DownloadFile(t *testing.T) {
 
 	// Test case 1: Nil config
 	downloader.config = nil
-	_, err := downloader.DownloadFile(context.Background(), "valid--file--id--name")
+	_, _, err := downloader.DownloadFile(context.Background(), "valid--file--id--name")
 	if err == nil {
 		t.Error("Expected error when config is nil")
 	}
@@ -30,14 +30,14 @@ func TestS3FileDownloader_DownloadFile(t *testing.T) {
 	downloader.config = config
 
 	// Test case 2: Invalid file ID format
-	_, err = downloader.DownloadFile(context.Background(), "invalid-file-id")
+	_, _, err = downloader.DownloadFile(context.Background(), "invalid-file-id")
 	if err == nil {
 		t.Error("Expected error when file ID format is invalid")
 	}
 
 	// Test case 3: Valid case (but will fail because we have no real client)
 	// This is just to test that validation passes
-	_, err = downloader.DownloadFile(context.Background(), "env--group--team--file.txt")
+	_, _, err = downloader.DownloadFile(context.Background(), "env--group--team--file.txt")
 	// We expect an error because the client is nil
 	if err == nil {
 		t.Error("Expected error due to nil client, but got success")

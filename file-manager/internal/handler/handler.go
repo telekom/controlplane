@@ -71,7 +71,7 @@ func (h *Handler) DownloadFile(ctx context.Context, request api.DownloadFileRequ
 	fileId := request.FileId
 
 	// Use the controller to download the file
-	fileData, err := h.ctrl.DownloadFile(ctx, fileId)
+	fileData, metadata, err := h.ctrl.DownloadFile(ctx, fileId)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("failed to download file with ID %s", fileId))
 	}
@@ -91,10 +91,21 @@ func (h *Handler) DownloadFile(ctx context.Context, request api.DownloadFileRequ
 		return nil, errors.New("could not convert file data to readable format")
 	}
 
-	// Return the successful response
-	return api.DownloadFile200ApplicationoctetStreamResponse{
+	// Create response with file data
+	response := api.DownloadFile200ApplicationoctetStreamResponse{
 		FileDownloadResponseApplicationoctetStreamResponse: api.FileDownloadResponseApplicationoctetStreamResponse{
-			Body: reader,
+			Body:    reader,
+			Headers: api.FileDownloadResponseResponseHeaders{},
 		},
-	}, nil
+	}
+
+	// Add headers to response from metadata
+	if contentType, ok := metadata["X-File-Content-Type"]; ok && contentType != "" {
+		response.Headers.XFileContentType = contentType
+	}
+	if checksum, ok := metadata["X-File-Checksum"]; ok && checksum != "" {
+		response.Headers.XFileChecksum = checksum
+	}
+
+	return response, nil
 }

@@ -17,7 +17,7 @@ type DownloadResponse struct {
 }
 
 type DownloadController interface {
-	DownloadFile(ctx context.Context, fileId string) (*io.Writer, error)
+	DownloadFile(ctx context.Context, fileId string) (*io.Writer, map[string]string, error)
 }
 
 type downloadController struct {
@@ -28,10 +28,10 @@ func NewDownloadController(fd backend.FileDownloader) DownloadController {
 	return &downloadController{FileDownloader: fd}
 }
 
-func (d downloadController) DownloadFile(ctx context.Context, fileId string) (*io.Writer, error) {
+func (d downloadController) DownloadFile(ctx context.Context, fileId string) (*io.Writer, map[string]string, error) {
 	// Validate fileId format first
 	if err := identifier.ValidateFileID(fileId); err != nil {
-		return nil, errors.Wrap(err, "invalid fileId")
+		return nil, nil, errors.Wrap(err, "invalid fileId")
 	}
 
 	// Use the fileDownloader to download the file
