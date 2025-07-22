@@ -33,18 +33,38 @@ func (h *Handler) UploadFile(ctx context.Context, request api.UploadFileRequestO
 		return nil, errors.New("no file data provided")
 	}
 
-	// Use the controller to upload the file
-	id, err := h.ctrl.UploadFile(ctx, fileId, &fileData)
+	// Extract metadata headers from request
+	metadata := make(map[string]string)
+	if request.Params.XFileContentType != nil {
+		metadata["X-File-Content-Type"] = *request.Params.XFileContentType
+	}
+	if request.Params.XFileChecksum != nil {
+		metadata["X-File-Checksum"] = *request.Params.XFileChecksum
+	}
+
+	// Use the controller to upload the file with metadata
+	id, err := h.ctrl.UploadFile(ctx, fileId, &fileData, metadata)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("failed to upload file with ID %s", fileId))
 	}
 
-	// Return the successful response
-	return api.UploadFile200JSONResponse{
+	// Build response with same headers
+	response := api.UploadFile200JSONResponse{
 		FileUploadResponseJSONResponse: api.FileUploadResponseJSONResponse{
-			Body: api.FileUploadResponse{Id: id},
+			Body:    api.FileUploadResponse{Id: id},
+			Headers: api.FileUploadResponseResponseHeaders{},
 		},
-	}, nil
+	}
+
+	// Add headers to response if they were provided in the request
+	if request.Params.XFileContentType != nil {
+		response.Headers.XFileContentType = *request.Params.XFileContentType
+	}
+	if request.Params.XFileChecksum != nil {
+		response.Headers.XFileChecksum = *request.Params.XFileChecksum
+	}
+
+	return response, nil
 }
 
 func (h *Handler) DownloadFile(ctx context.Context, request api.DownloadFileRequestObject) (res api.DownloadFileResponseObject, err error) {

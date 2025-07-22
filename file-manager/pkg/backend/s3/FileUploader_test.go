@@ -25,7 +25,7 @@ func TestS3FileUploader_UploadFile(t *testing.T) {
 	uploader.config = nil
 	reader := strings.NewReader("test content")
 	var r io.Reader = reader
-	_, err := uploader.UploadFile(context.Background(), "valid--file--id--name", &r)
+	_, err := uploader.UploadFile(context.Background(), "valid--file--id--name", &r, nil)
 	if err == nil {
 		t.Error("Expected error when config is nil")
 	}
@@ -34,20 +34,25 @@ func TestS3FileUploader_UploadFile(t *testing.T) {
 	uploader.config = config
 
 	// Test case 2: Nil reader
-	_, err = uploader.UploadFile(context.Background(), "valid--file--id--name", nil)
+	_, err = uploader.UploadFile(context.Background(), "valid--file--id--name", nil, nil)
 	if err == nil {
 		t.Error("Expected error when reader is nil")
 	}
 
 	// Test case 3: Invalid file ID format
-	_, err = uploader.UploadFile(context.Background(), "invalid-file-id", &r)
+	_, err = uploader.UploadFile(context.Background(), "invalid-file-id", &r, nil)
 	if err == nil {
 		t.Error("Expected error when file ID format is invalid")
 	}
 
 	// Test case 4: Valid case (but will fail because we have no real client)
 	// This is just to test that validation passes
-	_, err = uploader.UploadFile(context.Background(), "env--group--team--file.txt", &r)
+	// Create test metadata
+	metadata := map[string]string{
+		"X-File-Content-Type": "text/plain",
+		"X-File-Checksum":     "abcdef1234567890",
+	}
+	_, err = uploader.UploadFile(context.Background(), "env--group--team--file.txt", &r, metadata)
 	// We expect an error because the client is nil
 	if err == nil {
 		t.Error("Expected error due to nil client, but got success")

@@ -30,7 +30,8 @@ func NewS3FileUploader(config *S3Config) *S3FileUploader {
 // UploadFile uploads a file to S3 and returns the file ID
 // The fileId should follow the convention <env>--<group>--<team>--<fileName>
 // The file will be stored in S3 using a path format: <env>/<group>/<team>/<fileName>
-func (s *S3FileUploader) UploadFile(ctx context.Context, fileId string, reader *io.Reader) (string, error) {
+// Metadata can include X-File-Content-Type and X-File-Checksum headers
+func (s *S3FileUploader) UploadFile(ctx context.Context, fileId string, reader *io.Reader, metadata map[string]string) (string, error) {
 	log := logr.FromContextOrDiscard(ctx)
 
 	if s.config == nil || s.config.Client == nil {
@@ -52,13 +53,32 @@ func (s *S3FileUploader) UploadFile(ctx context.Context, fileId string, reader *
 
 	log.V(1).Info("Uploading file", "fileId", fileId, "s3Path", s3Path, "bucket", s.config.BucketName)
 
-	// Get content type - we'll use application/octet-stream as default
+	// Get content type from metadata or use default
 	contentType := "application/octet-stream"
+	if ctHeader, ok := metadata["X-File-Content-Type"]; ok && ctHeader != "" {
+		contentType = ctHeader
+		log.V(1).Info("Using content type from metadata", "contentType", contentType)
+	}
+
+	// Prepare minio UserMetadata from our metadata map
+	userMetadata := make(map[string]string)
+
+	// Add X-File-Content-Type to UserMetadata if present
+	if value, ok := metadata["X-File-Content-Type"]; ok && value != "" {
+		userMetadata["X-File-Content-Type"] = value
+	}
+
+	// Add X-File-Checksum to UserMetadata if present
+	if value, ok := metadata["X-File-Checksum"]; ok && value != "" {
+		userMetadata["X-File-Checksum"] = value
+		log.V(1).Info("Added checksum to metadata", "checksum", value)
+	}
 
 	// Upload file using the S3 path instead of fileId directly
 	log.V(1).Info("Starting S3 PutObject operation")
 	_, err = s.config.Client.PutObject(ctx, s.config.BucketName, s3Path, *reader, -1, minio.PutObjectOptions{
-		ContentType: contentType,
+		ContentType:  contentType,
+		UserMetadata: userMetadata,
 	})
 
 	if err != nil {
