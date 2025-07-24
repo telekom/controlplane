@@ -178,50 +178,72 @@ func (c *S3Config) initClient() (*minio.Client, error) {
 		"bucketName", c.BucketName,
 		"roleARN", c.RoleSessionArn)
 
-	// Get initial token for client creation
+	// Get initial token for client creation if possible
 	// This is just for initial setup; we'll update with real bearer tokens later
 	var initialToken string
+	var tokenAvailable bool
 	var err error
 
+	// Try to get token from environment first
 	if os.Getenv("MC_WEB_IDENTITY_TOKEN") != "" {
 		log.V(1).Info("Getting initial token from environment for client setup")
 		token, err := c.getWebIDTokenFromEnv()
-		if err != nil {
-			return nil, err
+		if err == nil {
+			initialToken = token.Token
+			tokenAvailable = true
+		} else {
+			log.V(1).Info("Failed to get token from environment, will try file next", "error", err.Error())
 		}
-		initialToken = token.Token
-	} else {
-		log.V(1).Info("Getting initial token from file for client setup", "path", c.TokenPath)
+	}
+
+	// If no token from environment, try from file
+	if !tokenAvailable {
+		log.V(1).Info("Trying to get initial token from file", "path", c.TokenPath)
 		token, err := c.getWebIDTokenFromFile()
-		if err != nil {
-			return nil, err
+		if err == nil {
+			initialToken = token.Token
+			tokenAvailable = true
+		} else {
+			log.V(1).Info("Failed to get token from file", "error", err.Error())
 		}
-		initialToken = token.Token
 	}
 
-	// Store the initial token
-	c.currentToken = initialToken
-
-	// Define the token provider function that returns our current token
-	tokenProvider := func() (*credentials.WebIdentityToken, error) {
-		return &credentials.WebIdentityToken{
-			Token: c.currentToken,
-		}, nil
+	// Store the initial token if available
+	if tokenAvailable {
+		c.currentToken = initialToken
+	} else {
+		log.V(0).Info("No identity token found in environment or file - will use anonymous credentials")
 	}
 
-	// Create credentials
-	log.V(1).Info("Creating STS web identity credentials")
-	creds, err := credentials.NewSTSWebIdentity(
-		c.STSEndpoint,
-		tokenProvider,
-		func(i *credentials.STSWebIdentity) {
-			i.RoleARN = c.RoleSessionArn
-			log.V(1).Info("Setting role ARN for STS", "roleARN", i.RoleARN)
-		},
-	)
-	if err != nil {
-		log.Error(err, "Failed to create STS web identity credentials")
-		return nil, errors.Wrap(err, "failed to create STS web identity credentials")
+	// Create credentials based on whether a token is available
+	var creds *credentials.Credentials
+
+	if tokenAvailable {
+		// Define the token provider function that returns our current token
+		tokenProvider := func() (*credentials.WebIdentityToken, error) {
+			return &credentials.WebIdentityToken{
+				Token: c.currentToken,
+			}, nil
+		}
+
+		// Create STS web identity credentials
+		log.V(1).Info("Creating STS web identity credentials")
+		creds, err = credentials.NewSTSWebIdentity(
+			c.STSEndpoint,
+			tokenProvider,
+			func(i *credentials.STSWebIdentity) {
+				i.RoleARN = c.RoleSessionArn
+				log.V(1).Info("Setting role ARN for STS", "roleARN", i.RoleARN)
+			},
+		)
+		if err != nil {
+			log.Error(err, "Failed to create STS web identity credentials")
+			return nil, errors.Wrap(err, "failed to create STS web identity credentials")
+		}
+	} else {
+		// Create anonymous credentials as fallback
+		log.V(0).Info("Using anonymous credentials - limited functionality may be available")
+		creds = credentials.NewStatic("", "", "", credentials.SignatureAnonymous)
 	}
 
 	// Store the credentials
@@ -267,18 +289,30 @@ func (c *S3Config) getWebIDTokenFromFile() (*credentials.WebIdentityToken, error
 	// Use the configured logger
 	log := c.Logger
 
+	// If token path is empty, return an error
+	if c.TokenPath == "" {
+		log.V(1).Info("No token file path specified")
+		return nil, errors.New("no token file path specified")
+	}
+
 	log.V(1).Info("Reading web identity token from file", "path", c.TokenPath)
 
 	// Check if file exists before trying to read it
 	if _, err := os.Stat(c.TokenPath); os.IsNotExist(err) {
-		log.Error(err, "Token file does not exist", "path", c.TokenPath)
+		log.V(1).Info("Token file does not exist", "path", c.TokenPath)
 		return nil, errors.New("token file does not exist")
 	}
 
 	data, err := os.ReadFile(c.TokenPath)
 	if err != nil {
-		log.Error(err, "Failed to read web identity token file")
+		log.V(1).Info("Failed to read web identity token file", "error", err.Error())
 		return nil, errors.Wrap(err, "failed to read web identity token file")
+	}
+
+	// Check if file is empty
+	if len(data) == 0 {
+		log.V(1).Info("Token file is empty", "path", c.TokenPath)
+		return nil, errors.New("token file is empty")
 	}
 
 	log.V(1).Info("Successfully read token from file")
