@@ -50,12 +50,43 @@ spec:
               apiBasePath:
                 type: string
               approval:
-                default: Auto
-                enum:
-                - Auto
-                - Simple
-                - FourEyes
-                type: string
+                properties:
+                  strategy:
+                    default: Auto
+                    enum:
+                    - Auto
+                    - Simple
+                    - FourEyes
+                    type: string
+                  trustedTeams:
+                    description: |-
+                      TrustedTeams identifies teams that are trusted for approving this API
+                      Per default your own team is trusted
+                    items:
+                      description: |-
+                        ObjectRef is a reference to a Kubernetes object
+                        It is similar to types.NamespacedName but has the required json tags for serialization
+                      properties:
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        uid:
+                          description: |-
+                            UID is a type that holds unique ID values, including UUIDs.  Because we
+                            don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                            intent and helps make sure that UIDs and names do not get conflated.
+                          type: string
+                      required:
+                      - name
+                      - namespace
+                      type: object
+                    maxItems: 10
+                    minItems: 0
+                    type: array
+                required:
+                - strategy
+                type: object
               security:
                 description: |-
                   Security defines the security configuration for the Rover
