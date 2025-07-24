@@ -17,22 +17,22 @@ import (
 
 // MockController is a mock implementation of the controller.Controller interface for testing
 type MockController struct {
-	UploadMock   func(ctx context.Context, fileId string, file *io.Reader) (string, error)
-	DownloadMock func(ctx context.Context, fileId string) (*io.Writer, error)
+	UploadMock   func(ctx context.Context, fileId string, file *io.Reader, metadata map[string]string) (string, error)
+	DownloadMock func(ctx context.Context, fileId string) (*io.Writer, map[string]string, error)
 }
 
-func (m *MockController) UploadFile(ctx context.Context, fileId string, file *io.Reader) (string, error) {
-	return m.UploadMock(ctx, fileId, file)
+func (m *MockController) UploadFile(ctx context.Context, fileId string, file *io.Reader, metadata map[string]string) (string, error) {
+	return m.UploadMock(ctx, fileId, file, metadata)
 }
 
-func (m *MockController) DownloadFile(ctx context.Context, fileId string) (*io.Writer, error) {
+func (m *MockController) DownloadFile(ctx context.Context, fileId string) (*io.Writer, map[string]string, error) {
 	return m.DownloadMock(ctx, fileId)
 }
 
 func TestHandler_UploadFile(t *testing.T) {
 	// Create mock controller
 	mockCtrl := &MockController{
-		UploadMock: func(ctx context.Context, fileId string, file *io.Reader) (string, error) {
+		UploadMock: func(ctx context.Context, fileId string, file *io.Reader, metadata map[string]string) (string, error) {
 			if fileId == "success--test--case--file.txt" {
 				return fileId, nil
 			}
@@ -46,9 +46,15 @@ func TestHandler_UploadFile(t *testing.T) {
 	fileContent := strings.NewReader("test content")
 	var reader io.Reader = fileContent
 
+	contentType := "text/plain"
+	checksum := "abc123"
 	request := api.UploadFileRequestObject{
 		FileId: "success--test--case--file.txt",
 		Body:   reader,
+		Params: api.UploadFileParams{
+			XFileContentType: &contentType,
+			XFileChecksum:    &checksum,
+		},
 	}
 
 	response, err := h.UploadFile(context.Background(), request)
@@ -57,8 +63,8 @@ func TestHandler_UploadFile(t *testing.T) {
 	}
 
 	if resp, ok := response.(api.UploadFile200JSONResponse); ok {
-		if resp.FileUploadResponseJSONResponse.Id != "success--test--case--file.txt" {
-			t.Errorf("Expected file ID %s, got %s", "success--test--case--file.txt", resp.Id)
+		if resp.Body.Id != "success--test--case--file.txt" {
+			t.Errorf("Expected file ID %s, got %s", "success--test--case--file.txt", resp.Body.Id)
 		}
 	} else {
 		t.Error("Expected UploadFile200JSONResponse")
@@ -85,13 +91,17 @@ func TestHandler_UploadFile(t *testing.T) {
 func TestHandler_DownloadFile(t *testing.T) {
 	// Create mock controller
 	mockCtrl := &MockController{
-		DownloadMock: func(ctx context.Context, fileId string) (*io.Writer, error) {
+		DownloadMock: func(ctx context.Context, fileId string) (*io.Writer, map[string]string, error) {
 			if fileId == "success--test--case--file.txt" {
 				buf := bytes.NewBuffer([]byte("test content"))
 				var w io.Writer = buf
-				return &w, nil
+				metadata := map[string]string{
+					"X-File-Content-Type": "text/plain",
+					"X-File-Checksum":     "abc123",
+				}
+				return &w, metadata, nil
 			}
-			return nil, errors.New("mock error")
+			return nil, nil, errors.New("mock error")
 		},
 	}
 

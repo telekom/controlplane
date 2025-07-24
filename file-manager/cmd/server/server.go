@@ -16,6 +16,7 @@ import (
 	"github.com/telekom/controlplane/file-manager/cmd/server/config"
 	"github.com/telekom/controlplane/file-manager/internal/api"
 	"github.com/telekom/controlplane/file-manager/internal/handler"
+	"github.com/telekom/controlplane/file-manager/internal/middleware"
 	"github.com/telekom/controlplane/file-manager/pkg/backend/s3"
 	"github.com/telekom/controlplane/file-manager/pkg/controller"
 	"go.uber.org/zap"
@@ -157,6 +158,10 @@ func main() {
 
 	apiGroup := app.Group("/api")
 	handler := api.NewStrictHandler(handler.NewHandler(ctrl), nil)
+
+	// Add bearer auth middleware to extract the token from the request
+	log.Info("Registering bearer token middleware")
+	apiGroup.Use(middleware.BearerAuthMiddleware(log))
 
 	//if cfg.Security.Enabled {
 	//	opts := []k8s.KubernetesAuthOption{
