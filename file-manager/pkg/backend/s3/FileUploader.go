@@ -88,8 +88,9 @@ func (s *S3FileUploader) UploadFile(ctx context.Context, fileId string, reader *
 
 	// Configure PutObjectOptions
 	putOptions := minio.PutObjectOptions{
-		ContentType:  contentType,
-		UserMetadata: userMetadata,
+		ContentType:    contentType,
+		UserMetadata:   userMetadata,
+		SendContentMd5: true, // Enable MD5 checksum calculation and verification
 		// TODO: CHECKSUM-SHA-256: Enable SHA-256 checksum calculation and verification
 		//Checksum: minio.ChecksumSHA256,
 	}
