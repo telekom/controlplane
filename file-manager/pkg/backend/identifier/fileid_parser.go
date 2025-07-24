@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package controller
+package identifier
 
 import (
 	"github.com/pkg/errors"
@@ -21,9 +21,9 @@ type FileIDParts struct {
 // ParseFileID parses a fileId in the format "<env>--<group>--<team>--<fileName>" into its components
 // Returns the parsed parts and an error if the format is invalid
 func ParseFileID(fileId string) (*FileIDParts, error) {
-	// Validate fileId format
-	parts := strings.Split(fileId, "--")
-	if len(parts) < 4 {
+	// Split the key by --
+	parts := strings.SplitN(fileId, "--", 4)
+	if len(parts) != 4 {
 		return nil, errors.New("invalid fileId format, expected <env>--<group>--<team>--<fileName>")
 	}
 
@@ -31,9 +31,12 @@ func ParseFileID(fileId string) (*FileIDParts, error) {
 	env := parts[0]
 	group := parts[1]
 	team := parts[2]
+	fileName := parts[3]
 
-	// For the fileName, join any remaining parts in case the fileName itself contains --
-	fileName := strings.Join(parts[3:], "--")
+	// Validate non-empty parts
+	if env == "" || group == "" || team == "" || fileName == "" {
+		return nil, errors.New("all parts of key must be non-empty")
+	}
 
 	return &FileIDParts{
 		Env:      env,

@@ -2,34 +2,33 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package s3
+package identifier
 
 import (
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/file-manager/pkg/controller"
 	"strings"
 )
 
-// ConvertFileIdToS3Path converts a fileId in the format "<env>--<group>--<team>--<fileName>"
-// to an S3 path with virtual folders: "<env>/<group>/<team>/<fileName>"
-// This allows for better organization in S3 and facilitates browsing/management
-func ConvertFileIdToS3Path(fileId string) (string, error) {
+// ConvertFileIdToPath converts a fileId in the format "<env>--<group>--<team>--<fileName>"
+// to a path with virtual folders: "<env>/<group>/<team>/<fileName>"
+// This allows for better organization and facilitates browsing/management
+func ConvertFileIdToPath(fileId string) (string, error) {
 	// Parse the fileId using the controller utility
-	parts, err := controller.ParseFileID(fileId)
+	parts, err := ParseFileID(fileId)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse fileId")
 	}
 
-	// Build the S3 path with slashes
+	// Build the path with slashes
 	s3Path := parts.Env + "/" + parts.Group + "/" + parts.Team + "/" + parts.FileName
 
 	return s3Path, nil
 }
 
-// ConvertS3PathToFileId converts an S3 path with virtual folders back to a fileId
-// This is the reverse operation of ConvertFileIdToS3Path
-func ConvertS3PathToFileId(s3Path string) (string, error) {
-	// Split the S3 path into parts
+// ConvertPathToFileId converts a path with virtual folders back to a fileId
+// This is the reverse operation of ConvertFileIdToPath
+func ConvertPathToFileId(s3Path string) (string, error) {
+	// Split the path into parts
 	parts := strings.SplitN(s3Path, "/", 4)
 	if len(parts) != 4 {
 		return "", errors.New("invalid S3 path format, expected <env>/<group>/<team>/<fileName>")

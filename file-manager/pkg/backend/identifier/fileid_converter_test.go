@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package s3
+package identifier
 
 import (
 	"testing"
 )
 
-func TestConvertFileIdToS3Path(t *testing.T) {
+func TestConvertFileIdToPath(t *testing.T) {
 	tests := []struct {
 		name     string
 		fileId   string
@@ -37,19 +37,19 @@ func TestConvertFileIdToS3Path(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ConvertFileIdToS3Path(tt.fileId)
+			got, err := ConvertFileIdToPath(tt.fileId)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ConvertFileIdToS3Path() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ConvertFileIdToPath() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.expected {
-				t.Errorf("ConvertFileIdToS3Path() = %v, want %v", got, tt.expected)
+				t.Errorf("ConvertFileIdToPath() = %v, want %v", got, tt.expected)
 			}
 		})
 	}
 }
 
-func TestConvertS3PathToFileId(t *testing.T) {
+func TestConvertPathToFileId(t *testing.T) {
 	tests := []struct {
 		name     string
 		s3Path   string
@@ -78,13 +78,13 @@ func TestConvertS3PathToFileId(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ConvertS3PathToFileId(tt.s3Path)
+			got, err := ConvertPathToFileId(tt.s3Path)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ConvertS3PathToFileId() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ConvertPathToFileId() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.expected {
-				t.Errorf("ConvertS3PathToFileId() = %v, want %v", got, tt.expected)
+				t.Errorf("ConvertPathToFileId() = %v, want %v", got, tt.expected)
 			}
 		})
 	}
@@ -94,12 +94,12 @@ func TestRoundTrip(t *testing.T) {
 	// Test that converting from fileId to s3Path and back gives the original fileId
 	fileId := "dev--group1--team1--complex--file--name.txt"
 
-	s3Path, err := ConvertFileIdToS3Path(fileId)
+	s3Path, err := ConvertFileIdToPath(fileId)
 	if err != nil {
 		t.Fatalf("Failed to convert fileId to s3Path: %v", err)
 	}
 
-	roundTripFileId, err := ConvertS3PathToFileId(s3Path)
+	roundTripFileId, err := ConvertPathToFileId(s3Path)
 	if err != nil {
 		t.Fatalf("Failed to convert s3Path back to fileId: %v", err)
 	}
