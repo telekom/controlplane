@@ -12,6 +12,9 @@ import (
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
 	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
 	"io"
+	"mime"
+	"path/filepath"
+	"strings"
 )
 
 var _ backend.FileUploader = &S3FileUploader{}
@@ -65,15 +68,61 @@ func (s *S3FileUploader) UploadFile(ctx context.Context, fileId string, reader *
 
 	log.V(1).Info("Uploading file", "fileId", fileId, "s3Path", s3Path, "bucket", s.config.BucketName)
 
-	// Get content type from metadata or use default
-	contentType := "application/octet-stream"
-	if ctHeader, ok := metadata["X-File-Content-Type"]; ok && ctHeader != "" {
-		contentType = ctHeader
-		log.V(1).Info("Using content type from metadata", "contentType", contentType)
+	// Parse the fileId to extract the filename for content type detection
+	fileIdParts, err := identifier.ParseFileID(fileId)
+	if err != nil {
+		log.Error(err, "Failed to parse fileId for content type detection")
+		return "", errors.Wrap(err, "failed to parse fileId for content type detection")
+	}
+
+	// Detect content type from file extension
+	detectedContentType := "application/octet-stream"
+	fileExt := filepath.Ext(fileIdParts.FileName)
+	if fileExt != "" {
+		// Ensure the extension includes the dot and convert to lowercase
+		if !strings.HasPrefix(fileExt, ".") {
+			fileExt = "." + fileExt
+		}
+		tmpContentType := mime.TypeByExtension(fileExt)
+		if tmpContentType != "" {
+			detectedContentType = tmpContentType
+			log.V(1).Info("Detected content type from file extension",
+				"fileName", fileIdParts.FileName,
+				"extension", fileExt,
+				"contentType", detectedContentType)
+		}
 	}
 
 	// Prepare minio UserMetadata from our metadata map
 	userMetadata := make(map[string]string)
+
+	// Get content type from metadata or use detected/default
+	contentType := detectedContentType
+	if ctHeader, ok := metadata["X-File-Content-Type"]; ok && ctHeader != "" {
+		// Check if the provided content type matches the detected one
+		if detectedContentType != "application/octet-stream" && ctHeader != detectedContentType {
+			// Log a warning if content types don't match, but allow the upload to proceed
+			log.V(1).Info("WARNING: Content type from metadata differs from detected type",
+				"provided", ctHeader,
+				"detected", detectedContentType,
+				"fileName", fileIdParts.FileName,
+				"extension", filepath.Ext(fileIdParts.FileName))
+
+			// Store both content types in UserMetadata for reference
+			userMetadata["X-File-Detected-Content-Type"] = detectedContentType
+		}
+
+		// Use the provided content type anyway (client's choice overrides detection)
+		contentType = ctHeader
+		log.V(1).Info("Using content type from metadata", "contentType", contentType)
+	} else {
+		log.V(1).Info("Using detected content type", "contentType", contentType, "fileName", fileIdParts.FileName)
+
+		// Store the content type in metadata since it was auto-detected
+		metadata["X-File-Content-Type"] = contentType
+		userMetadata["X-File-Content-Type"] = contentType
+		userMetadata["X-File-Content-Type-Source"] = "auto-detected"
+	}
 
 	// Add X-File-Content-Type to UserMetadata if present
 	if value, ok := metadata["X-File-Content-Type"]; ok && value != "" {
@@ -125,7 +174,8 @@ func (s *S3FileUploader) UploadFile(ctx context.Context, fileId string, reader *
 		return "", errors.Wrap(err, "failed to retrieve object info for validation")
 	}
 
-	// Validate Content-Type if it was specified in the request
+	// Validate Content-Type with the S3 object's stored content type
+	// If Content-Type was specified in the request, validate against that
 	if requestedContentType, ok := metadata["X-File-Content-Type"]; ok && requestedContentType != "" {
 		if objInfo.ContentType != requestedContentType {
 			log.Error(nil, "Content-Type mismatch",
@@ -135,6 +185,27 @@ func (s *S3FileUploader) UploadFile(ctx context.Context, fileId string, reader *
 				requestedContentType, objInfo.ContentType)
 		}
 		log.V(1).Info("Content-Type validation successful", "contentType", objInfo.ContentType)
+	} else {
+		// If no Content-Type was specified, validate against the detected type from the filename
+		// Extract file extension again for validation
+		fileExt := filepath.Ext(fileIdParts.FileName)
+		if fileExt != "" {
+			if !strings.HasPrefix(fileExt, ".") {
+				fileExt = "." + fileExt
+			}
+			expectedType := mime.TypeByExtension(fileExt)
+			if expectedType != "" && expectedType != "application/octet-stream" &&
+				objInfo.ContentType != expectedType && objInfo.ContentType != "application/octet-stream" {
+				// Log error but don't fail the request
+				log.V(1).Info("WARNING: Content-Type differs from extension-based type",
+					"stored", objInfo.ContentType,
+					"extension-based", expectedType,
+					"fileName", fileIdParts.FileName)
+
+				// Record the mismatch in the UserMetadata for debugging purposes
+				// Note: We cannot modify the object's metadata at this point without re-uploading
+			}
+		}
 	}
 
 	// Validate Checksum if it was specified in the request
