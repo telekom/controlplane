@@ -14,9 +14,11 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 
 	rover "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -53,13 +55,20 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		}
 
 		apiExposure.Spec = apiapi.ApiExposureSpec{
-			ApiBasePath:    exp.BasePath,
-			Visibility:     apiapi.Visibility(exp.Visibility.String()),
-			Approval:       apiapi.ApprovalStrategy(exp.Approval.Strategy),
+			ApiBasePath: exp.BasePath,
+			Visibility:  apiapi.Visibility(exp.Visibility.String()),
+			Approval: apiapi.Approval{
+				Strategy: apiapi.ApprovalStrategy(exp.Approval.Strategy),
+			},
 			Zone:           zoneRef,
 			Upstreams:      make([]apiapi.Upstream, len(exp.Upstreams)),
 			Security:       mapSecurityToApiSecurity(exp.Security),
 			Transformation: mapTransformationtoApiTransformation(exp.Transformation),
+		}
+
+		apiExposure.Spec.Approval.TrustedTeams, err = mapTrustedTeamsToApiTrustedTeams(ctx, c, exp.Approval.TrustedTeams)
+		if err != nil {
+			return errors.Wrap(err, "failed to map trusted teams")
 		}
 
 		failoverZones, hasFailover := getFailoverZones(environment, exp.Traffic.Failover)
@@ -91,6 +100,25 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		Namespace: apiExposure.Namespace,
 	})
 	return err
+}
+
+func mapTrustedTeamsToApiTrustedTeams(ctx context.Context, c client.JanitorClient, teams []rover.TrustedTeam) ([]types.ObjectRef, error) {
+	if len(teams) == 0 {
+		return nil, nil
+	}
+
+	apiTrustedTeams := make([]types.ObjectRef, 0, len(teams))
+	for _, team := range teams {
+		foundTeam := &organizationv1.Team{}
+		err := c.Get(ctx, k8sclient.ObjectKey{Namespace: contextutil.EnvFromContextOrDie(ctx), Name: team.Group + "--" + team.Team}, foundTeam)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get trusted team '%s' in namespace '%s'", team.Group+"--"+team.Team, contextutil.EnvFromContextOrDie(ctx))
+		}
+
+		apiTrustedTeams = append(apiTrustedTeams, *types.ObjectRefFromObject(foundTeam))
+	}
+
+	return apiTrustedTeams, nil
 }
 
 func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
