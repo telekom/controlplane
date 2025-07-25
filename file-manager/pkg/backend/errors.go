@@ -10,10 +10,15 @@ import (
 )
 
 const (
-	TypeErrNotFound        = "NotFound"
-	TypeErrInvalidFileId   = "InvalidFileId"
-	TypeErrFileExists      = "FileExists"
-	TypeErrTooManyRequests = "TooManyRequests"
+	TypeErrNotFound             = "NotFound"
+	TypeErrInvalidFileId        = "InvalidFileId"
+	TypeErrFileExists           = "FileExists"
+	TypeErrTooManyRequests      = "TooManyRequests"
+	TypeErrInvalidChecksum      = "InvalidChecksum"
+	TypeErrInvalidContentType   = "InvalidContentType"
+	TypeErrClientInitialization = "ClientInitialization"
+	TypeErrUploadFailed         = "UploadFailed"
+	TypeErrDownloadFailed       = "DownloadFailed"
 )
 
 var _ error = &BackendError{}
@@ -127,6 +132,96 @@ func IsTooManyRequestsErr(err error) bool {
 	var backendErr *BackendError
 	if errors.As(err, &backendErr) {
 		return backendErr.Type == TypeErrTooManyRequests
+	}
+	return false
+}
+
+// ErrInvalidChecksum creates a BackendError for a checksum mismatch
+func ErrInvalidChecksum(fileId string, expected, actual string) *BackendError {
+	err := fmt.Errorf("checksum mismatch for file '%s': expected %s, got %s", fileId, expected, actual)
+	return NewBackendError(fileId, err, TypeErrInvalidChecksum)
+}
+
+// IsInvalidChecksumErr checks if the given error is a checksum validation error
+func IsInvalidChecksumErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	var backendErr *BackendError
+	if errors.As(err, &backendErr) {
+		return backendErr.Type == TypeErrInvalidChecksum
+	}
+	return false
+}
+
+// ErrInvalidContentType creates a BackendError for a content type mismatch
+func ErrInvalidContentType(fileId string, expected, actual string) *BackendError {
+	err := fmt.Errorf("content type mismatch for file '%s': expected %s, got %s", fileId, expected, actual)
+	return NewBackendError(fileId, err, TypeErrInvalidContentType)
+}
+
+// IsInvalidContentTypeErr checks if the given error is a content type validation error
+func IsInvalidContentTypeErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	var backendErr *BackendError
+	if errors.As(err, &backendErr) {
+		return backendErr.Type == TypeErrInvalidContentType
+	}
+	return false
+}
+
+// ErrClientInitialization creates a BackendError for S3 client initialization failures
+func ErrClientInitialization(details string) *BackendError {
+	err := fmt.Errorf("storage client initialization failed: %s", details)
+	return NewBackendError("", err, TypeErrClientInitialization)
+}
+
+// IsClientInitializationErr checks if the given error is a client initialization error
+func IsClientInitializationErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	var backendErr *BackendError
+	if errors.As(err, &backendErr) {
+		return backendErr.Type == TypeErrClientInitialization
+	}
+	return false
+}
+
+// ErrUploadFailed creates a BackendError for file upload failures
+func ErrUploadFailed(fileId string, details string) *BackendError {
+	err := fmt.Errorf("failed to upload file '%s': %s", fileId, details)
+	return NewBackendError(fileId, err, TypeErrUploadFailed)
+}
+
+// IsUploadFailedErr checks if the given error is an upload failure error
+func IsUploadFailedErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	var backendErr *BackendError
+	if errors.As(err, &backendErr) {
+		return backendErr.Type == TypeErrUploadFailed
+	}
+	return false
+}
+
+// ErrDownloadFailed creates a BackendError for file download failures
+func ErrDownloadFailed(fileId string, details string) *BackendError {
+	err := fmt.Errorf("failed to download file '%s': %s", fileId, details)
+	return NewBackendError(fileId, err, TypeErrDownloadFailed)
+}
+
+// IsDownloadFailedErr checks if the given error is a download failure error
+func IsDownloadFailedErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	var backendErr *BackendError
+	if errors.As(err, &backendErr) {
+		return backendErr.Type == TypeErrDownloadFailed
 	}
 	return false
 }

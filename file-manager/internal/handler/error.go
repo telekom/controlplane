@@ -50,6 +50,41 @@ func ErrorHandler(c *fiber.Ctx, err error) error {
 				"title":  "Too Many Requests",
 				"detail": backendErr.Error(),
 			})
+		case backend.TypeErrInvalidChecksum:
+			return c.Status(fiber.StatusUnprocessableEntity).JSON(map[string]interface{}{
+				"type":   "InvalidChecksum",
+				"status": fiber.StatusUnprocessableEntity,
+				"title":  "Invalid Checksum",
+				"detail": backendErr.Error(),
+			})
+		case backend.TypeErrInvalidContentType:
+			return c.Status(fiber.StatusUnprocessableEntity).JSON(map[string]interface{}{
+				"type":   "InvalidContentType",
+				"status": fiber.StatusUnprocessableEntity,
+				"title":  "Invalid Content Type",
+				"detail": backendErr.Error(),
+			})
+		case backend.TypeErrClientInitialization:
+			return c.Status(fiber.StatusServiceUnavailable).JSON(map[string]interface{}{
+				"type":   "ServiceUnavailable",
+				"status": fiber.StatusServiceUnavailable,
+				"title":  "Storage Service Unavailable",
+				"detail": backendErr.Error(),
+			})
+		case backend.TypeErrUploadFailed:
+			return c.Status(fiber.StatusInternalServerError).JSON(map[string]interface{}{
+				"type":   "UploadFailed",
+				"status": fiber.StatusInternalServerError,
+				"title":  "Upload Failed",
+				"detail": backendErr.Error(),
+			})
+		case backend.TypeErrDownloadFailed:
+			return c.Status(fiber.StatusInternalServerError).JSON(map[string]interface{}{
+				"type":   "DownloadFailed",
+				"status": fiber.StatusInternalServerError,
+				"title":  "Download Failed",
+				"detail": backendErr.Error(),
+			})
 		default:
 			return c.Status(fiber.StatusInternalServerError).JSON(map[string]interface{}{
 				"type":   "InternalServerError",

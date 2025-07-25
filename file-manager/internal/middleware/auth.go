@@ -5,10 +5,10 @@
 package middleware
 
 import (
+	"strings"
+
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
-	"github.com/telekom/controlplane/file-manager/pkg/backend/s3"
-	"strings"
 )
 
 // BearerAuthMiddleware extracts the bearer token from the Authorization header
@@ -24,7 +24,7 @@ func BearerAuthMiddleware(log logr.Logger) fiber.Handler {
 			token := strings.TrimPrefix(authHeader, "Bearer ")
 
 			// Add token to context
-			ctx := s3.WithBearerToken(c.Context(), token)
+			ctx := WithBearerToken(c.Context(), token)
 			c.SetUserContext(ctx)
 
 			log.V(1).Info("Bearer token extracted and added to context")

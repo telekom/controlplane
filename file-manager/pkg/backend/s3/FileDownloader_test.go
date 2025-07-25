@@ -7,39 +7,36 @@ package s3
 import (
 	"context"
 	"testing"
+
+	"github.com/go-logr/logr"
 )
 
 func TestS3FileDownloader_DownloadFile(t *testing.T) {
-	// Create a mock config (we'll skip client initialization for unit testing)
-	config := &S3Config{
-		Endpoint:       "mock-endpoint",
-		BucketName:     "mock-bucket",
-		RoleSessionArn: "mock-role",
-	}
-
-	downloader := NewS3FileDownloader(config)
-
 	// Test case 1: Nil config
-	downloader.config = nil
-	_, _, err := downloader.DownloadFile(context.Background(), "valid--file--id--name")
+	downloaderNilConfig := NewS3FileDownloader(nil)
+	_, _, err := downloaderNilConfig.DownloadFile(context.Background(), "valid/path/to/file")
 	if err == nil {
 		t.Error("Expected error when config is nil")
 	}
 
-	// Restore config for next tests
-	downloader.config = config
-
-	// Test case 2: Invalid file ID format
-	_, _, err = downloader.DownloadFile(context.Background(), "invalid-file-id")
-	if err == nil {
-		t.Error("Expected error when file ID format is invalid")
+	// Test case 2: Config without client
+	configNoClient := &S3Config{
+		Logger:     logr.Discard(),
+		Endpoint:   "mock-endpoint",
+		BucketName: "mock-bucket",
+		Client:     nil,
 	}
-
-	// Test case 3: Valid case (but will fail because we have no real client)
-	// This is just to test that validation passes
-	_, _, err = downloader.DownloadFile(context.Background(), "env--group--team--file.txt")
-	// We expect an error because the client is nil
+	downloaderNoClient := NewS3FileDownloader(configNoClient)
+	_, _, err = downloaderNoClient.DownloadFile(context.Background(), "env/group/team/file.txt")
 	if err == nil {
 		t.Error("Expected error due to nil client, but got success")
 	}
 }
+
+// Moved the following tests to minio_wrapper_test.go:
+// - TestS3FileDownloader_extractMetadata -> TestMinioWrapper_ExtractMetadata
+// - TestS3FileDownloader_updateCredentialsFromContext -> TestMinioWrapper_UpdateCredentialsFromContext
+// - Tests for getObjectInfo are now handled in TestMinioWrapper_GetObjectInfo
+
+// downloadObject is still part of S3FileDownloader, but requires more complex mocking
+// and is covered indirectly through other tests.

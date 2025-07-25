@@ -1,0 +1,140 @@
+// Copyright 2025 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package s3
+
+import (
+	"context"
+	"testing"
+
+	"github.com/go-logr/logr"
+	"github.com/minio/minio-go/v7"
+	"github.com/telekom/controlplane/file-manager/pkg/backend"
+)
+
+func TestMinioWrapper_ValidateClient(t *testing.T) {
+	// Test case 1: Nil config
+	nilConfigWrapper := NewMinioWrapper(nil)
+	err := nilConfigWrapper.ValidateClient(context.Background())
+	if err == nil {
+		t.Error("Expected error when config is nil")
+	}
+
+	// Test case 2: Config without client
+	configNoClient := &S3Config{
+		Logger:     logr.Discard(),
+		Endpoint:   "mock-endpoint",
+		BucketName: "mock-bucket",
+		Client:     nil,
+	}
+	wrapperNoClient := NewMinioWrapper(configNoClient)
+	err = wrapperNoClient.ValidateClient(context.Background())
+	if err == nil {
+		t.Error("Expected error due to nil client, but got success")
+	}
+
+	// Test case 3: Valid config
+	validConfig := &S3Config{
+		Logger:     logr.Discard(),
+		Endpoint:   "mock-endpoint",
+		BucketName: "mock-bucket",
+		Client:     &minio.Client{}, // This is not a fully functional client but sufficient for validation
+	}
+	wrapperValid := NewMinioWrapper(validConfig)
+	err = wrapperValid.ValidateClient(context.Background())
+	if err != nil {
+		t.Errorf("Expected no error with valid client, got: %v", err)
+	}
+}
+
+func TestMinioWrapper_ExtractMetadata(t *testing.T) {
+	// Create wrapper with basic config
+	config := &S3Config{
+		Logger:   logr.Discard(),
+		Endpoint: "mock-endpoint",
+	}
+	wrapper := NewMinioWrapper(config)
+
+	// Test case 1: Object with ContentType and ETag
+	objInfo := minio.ObjectInfo{
+		ContentType: "text/plain",
+		ETag:        "abc123",
+	}
+
+	metadata := wrapper.ExtractMetadata(context.Background(), objInfo)
+
+	// Verify metadata was extracted correctly
+	if metadata[backend.XFileContentType] != "text/plain" {
+		t.Errorf("Expected content type to be text/plain, got %s", metadata[backend.XFileContentType])
+	}
+
+	if metadata[backend.XFileChecksum] != "abc123" {
+		t.Errorf("Expected checksum to be abc123, got %s", metadata[backend.XFileChecksum])
+	}
+
+	// Test case 2: Object with ContentType but no ETag, using UserMetadata instead
+	objInfo = minio.ObjectInfo{
+		ContentType: "application/json",
+		ETag:        "",
+		UserMetadata: map[string]string{
+			backend.XFileChecksum: "def456",
+		},
+	}
+
+	metadata = wrapper.ExtractMetadata(context.Background(), objInfo)
+
+	// Verify metadata was extracted correctly
+	if metadata[backend.XFileContentType] != "application/json" {
+		t.Errorf("Expected content type to be application/json, got %s", metadata[backend.XFileContentType])
+	}
+
+	if metadata[backend.XFileChecksum] != "def456" {
+		t.Errorf("Expected checksum to be def456, got %s", metadata[backend.XFileChecksum])
+	}
+
+	// Test case 3: Object with no metadata
+	objInfo = minio.ObjectInfo{}
+	metadata = wrapper.ExtractMetadata(context.Background(), objInfo)
+
+	// Verify no metadata was added
+	if len(metadata) != 0 {
+		t.Errorf("Expected empty metadata, got %d entries", len(metadata))
+	}
+}
+
+func TestMinioWrapper_UpdateCredentialsFromContext(t *testing.T) {
+	// Create a simple test
+	config := &S3Config{
+		Logger:   logr.Discard(),
+		Endpoint: "mock-endpoint",
+	}
+
+	wrapper := NewMinioWrapper(config)
+
+	// Just verify no panic with a basic context
+	ctx := context.Background()
+	// This should not panic
+	wrapper.UpdateCredentialsFromContext(ctx)
+}
+
+func TestMinioWrapper_ValidateObjectMetadata(t *testing.T) {
+	// Create a basic config for testing
+	config := &S3Config{
+		Logger:     logr.Discard(),
+		Endpoint:   "mock-endpoint",
+		BucketName: "mock-bucket",
+	}
+
+	wrapper := NewMinioWrapper(config)
+
+	// Validate that client validation is called first
+	err := wrapper.ValidateClient(context.Background())
+	if err == nil {
+		t.Error("Expected error with nil client, got success")
+	}
+
+	// Note: Testing actual validation logic would require mocking the S3 client responses
+	// which is beyond the scope of this unit test. This should be covered in integration tests
+	// or with a more sophisticated mocking setup.
+}

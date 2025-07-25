@@ -37,7 +37,7 @@ type SecurityConfig struct {
 	Enabled        bool     `yaml:"enabled"`
 	TrustedIssuers []string `yaml:"trusted_issuers"`
 	JWKSetURLs     []string `yaml:"jwk_set_urls"`
-	//AccessConfig   []middleware.ServiceAccessConfig `yaml:"access_config"`
+	//  AccessConfig   []middleware.ServiceAccessConfig `yaml:"access_config"`
 }
 
 type ServerConfig struct {
