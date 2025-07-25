@@ -138,15 +138,24 @@ spec:
                                   client credentials flow
                                 minLength: 1
                                 type: string
+                              clientKey:
+                                description: clientKey is the private key associated
+                                  with the client ID
+                                type: string
                               clientSecret:
                                 description: ClientSecret is the secret associated
                                   with the client ID
-                                minLength: 1
                                 type: string
                             required:
                             - clientId
-                            - clientSecret
                             type: object
+                            x-kubernetes-validations:
+                            - message: ClientSecret and ClientKey cannot be used together
+                              rule: 'self == null || (has(self.clientKey) ? (!has(self.clientSecret))
+                                : true)'
+                            - message: At least one of clientSecret or clientKey must
+                                be provided
+                              rule: self == null || has(self.clientSecret) || has(self.clientKey)
                           grantType:
                             description: GrantType is the grant type for the external
                               IDP authentication
@@ -254,15 +263,26 @@ spec:
                                           for OAuth2 client credentials flow
                                         minLength: 1
                                         type: string
+                                      clientKey:
+                                        description: clientKey is the private key
+                                          associated with the client ID
+                                        type: string
                                       clientSecret:
                                         description: ClientSecret is the secret associated
                                           with the client ID
-                                        minLength: 1
                                         type: string
                                     required:
                                     - clientId
-                                    - clientSecret
                                     type: object
+                                    x-kubernetes-validations:
+                                    - message: ClientSecret and ClientKey cannot be
+                                        used together
+                                      rule: 'self == null || (has(self.clientKey)
+                                        ? (!has(self.clientSecret)) : true)'
+                                    - message: At least one of clientSecret or clientKey
+                                        must be provided
+                                      rule: self == null || has(self.clientSecret)
+                                        || has(self.clientKey)
                                   grantType:
                                     description: GrantType is the grant type for the
                                       external IDP authentication

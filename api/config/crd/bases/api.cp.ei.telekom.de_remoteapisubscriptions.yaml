@@ -98,15 +98,24 @@ spec:
                               client credentials flow
                             minLength: 1
                             type: string
+                          clientKey:
+                            description: ClientKey is the private key associated with
+                              the client ID
+                            type: string
                           clientSecret:
                             description: ClientSecret is the secret associated with
                               the client ID
-                            minLength: 1
                             type: string
                         required:
                         - clientId
-                        - clientSecret
                         type: object
+                        x-kubernetes-validations:
+                        - message: ClientSecret and ClientKey cannot be used together
+                          rule: 'self == null || (has(self.clientKey) ? (!has(self.clientSecret))
+                            : true)'
+                        - message: At least one of clientSecret or clientKey must
+                            be provided
+                          rule: self == null || has(self.clientSecret) || has(self.clientKey)
                       scopes:
                         description: Scopes defines additional OAuth2 scopes that
                           are added to the LMS token

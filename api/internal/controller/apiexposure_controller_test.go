@@ -91,6 +91,16 @@ func NewApiExposure(apiBasePath, zoneName string) *apiv1.ApiExposure {
 			},
 			Security: &apiapi.Security{
 				M2M: &apiapi.Machine2MachineAuthentication{
+					ExternalIDP: &apiapi.ExternalIdentityProvider{
+						TokenEndpoint: "https://example.com/token",
+						TokenRequest:  "header",
+						GrantType:     "client_credentials",
+						Client: &apiapi.OAuth2ClientCredentials{
+							ClientId:  "client-id",
+							ClientKey: "******",
+						},
+					},
+
 					Scopes: []string{"scope1"},
 				},
 			},
@@ -418,6 +428,8 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 				Expect(realRoute.Spec.Upstreams[0].Port).To(Equal(8080))
 				Expect(realRoute.Spec.Upstreams[0].Path).To(Equal("/api/v1"))
 				Expect(realRoute.Spec.Upstreams[0].Scheme).To(Equal("http"))
+				Expect(realRoute.Spec.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("client-id"))
+				Expect(realRoute.Spec.Security.M2M.ExternalIDP.Client.ClientKey).To(Equal("******"))
 
 				Expect(realRoute.Spec.Traffic.Failover).To(BeNil())
 
