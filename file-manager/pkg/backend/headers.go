@@ -1,4 +1,4 @@
-package identifier
+package backend
 
 const (
 	// XFileContentType is the header for the content type of the file

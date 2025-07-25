@@ -9,7 +9,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
+	"github.com/telekom/controlplane/file-manager/pkg/backend"
 )
 
 // S3ClientValidator defines the interface for client validation
@@ -105,7 +105,7 @@ func (v *ObjectMetadataValidator) validateChecksum(ctx context.Context, objInfo 
 		log.V(1).Info("Using S3-generated checksum for validation", "checksum", storedChecksum)
 	} else {
 		// Fall back to UserMetadata if ETag is not available
-		storedChecksum = objInfoTyped.UserMetadata[identifier.XFileChecksum]
+		storedChecksum = objInfoTyped.UserMetadata[backend.XFileChecksum]
 		log.V(1).Info("Using UserMetadata checksum for validation", "userMetadataChecksum", storedChecksum)
 	}
 

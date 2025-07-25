@@ -46,7 +46,7 @@ func (u uploadController) detectContentType(ctx context.Context, fileName string
 	}
 
 	// Detect content type from file extension
-	detectedContentType := identifier.DefaultContentType
+	detectedContentType := backend.DefaultContentType
 	fileExt := filepath.Ext(fileName)
 	if fileExt != "" {
 		// Ensure the extension includes the dot and convert to lowercase
@@ -64,9 +64,9 @@ func (u uploadController) detectContentType(ctx context.Context, fileName string
 	}
 
 	// Get content type from metadata or use detected/default
-	if ctHeader, ok := metadata[identifier.XFileContentType]; ok && ctHeader != "" {
+	if ctHeader, ok := metadata[backend.XFileContentType]; ok && ctHeader != "" {
 		// Check if the provided content type matches the detected one
-		if detectedContentType != identifier.DefaultContentType && ctHeader != detectedContentType {
+		if detectedContentType != backend.DefaultContentType && ctHeader != detectedContentType {
 			// Log a warning if content types don't match, but allow the upload to proceed
 			log.V(1).Info("WARNING: Content type from metadata differs from detected type",
 				"provided", ctHeader,
@@ -75,7 +75,7 @@ func (u uploadController) detectContentType(ctx context.Context, fileName string
 				"extension", filepath.Ext(fileName))
 
 			// Store both content types in metadata for reference
-			metadata[identifier.XFileDetectedContentType] = detectedContentType
+			metadata[backend.XFileDetectedContentType] = detectedContentType
 		}
 
 		// Return the provided content type
@@ -84,8 +84,8 @@ func (u uploadController) detectContentType(ctx context.Context, fileName string
 		log.V(1).Info("Using detected content type", "contentType", detectedContentType, "fileName", fileName)
 
 		// Store the content type in metadata since it was auto-detected
-		metadata[identifier.XFileContentType] = detectedContentType
-		metadata[identifier.XFileContentTypeSource] = "auto-detected"
+		metadata[backend.XFileContentType] = detectedContentType
+		metadata[backend.XFileContentTypeSource] = "auto-detected"
 
 		// Return the detected content type
 		return detectedContentType, metadata, nil

@@ -9,7 +9,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
+	"github.com/telekom/controlplane/file-manager/internal/middleware"
+	"github.com/telekom/controlplane/file-manager/pkg/backend"
 )
 
 // MinioWrapper provides common functionality for S3 operations
@@ -29,7 +30,7 @@ func (w *MinioWrapper) UpdateCredentialsFromContext(ctx context.Context) {
 	log := logr.FromContextOrDiscard(ctx)
 
 	// Extract bearer token from context and update client credentials
-	token, err := ExtractBearerTokenFromContext(ctx)
+	token, err := middleware.ExtractBearerTokenFromContext(ctx)
 	if err == nil {
 		// Update token only if found in context
 		if err := w.config.UpdateBearerToken(token); err != nil {
@@ -61,18 +62,18 @@ func (w *MinioWrapper) ExtractMetadata(ctx context.Context, objInfo minio.Object
 
 	// Add Content-Type to metadata
 	if objInfo.ContentType != "" {
-		metadata[identifier.XFileContentType] = objInfo.ContentType
+		metadata[backend.XFileContentType] = objInfo.ContentType
 		log.V(1).Info("Added content type to response metadata", "contentType", objInfo.ContentType)
 	}
 
 	// Add Checksum to metadata
 	// Prefer S3's Checksum over UserMetadata
 	if objInfo.ETag != "" {
-		metadata[identifier.XFileChecksum] = objInfo.ETag
+		metadata[backend.XFileChecksum] = objInfo.ETag
 		log.V(1).Info("Added S3-generated checksum to response metadata", "checksum", objInfo.ETag)
-	} else if checksum, ok := objInfo.UserMetadata[identifier.XFileChecksum]; ok && checksum != "" {
+	} else if checksum, ok := objInfo.UserMetadata[backend.XFileChecksum]; ok && checksum != "" {
 		// Fall back to UserMetadata if ETag is not available
-		metadata[identifier.XFileChecksum] = checksum
+		metadata[backend.XFileChecksum] = checksum
 		log.V(1).Info("Added UserMetadata checksum to response metadata", "checksum", checksum)
 	}
 

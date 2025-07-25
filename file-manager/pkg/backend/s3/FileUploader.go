@@ -41,14 +41,14 @@ func (s *S3FileUploader) prepareMetadata(ctx context.Context, metadata map[strin
 	}
 
 	// Get content type from metadata
-	contentType := identifier.DefaultContentType // fallback default
-	if ctHeader, ok := metadata[identifier.XFileContentType]; ok && ctHeader != "" {
+	contentType := backend.DefaultContentType // fallback default
+	if ctHeader, ok := metadata[backend.XFileContentType]; ok && ctHeader != "" {
 		contentType = ctHeader
 		log.V(1).Info("Using content type from metadata", "contentType", contentType)
 	}
 
 	// Add X-File-Checksum to UserMetadata if present and log it
-	if value, ok := metadata[identifier.XFileChecksum]; ok && value != "" {
+	if value, ok := metadata[backend.XFileChecksum]; ok && value != "" {
 		log.V(1).Info("Added checksum to metadata", "checksum", value)
 	}
 
@@ -85,12 +85,12 @@ func (s *S3FileUploader) validateUploadedMetadata(ctx context.Context, path stri
 	requestChecksum := ""
 
 	// Get requested content type if provided
-	if value, ok := metadata[identifier.XFileContentType]; ok && value != "" {
+	if value, ok := metadata[backend.XFileContentType]; ok && value != "" {
 		requestContentType = value
 	}
 
 	// Get requested checksum if provided
-	if value, ok := metadata[identifier.XFileChecksum]; ok && value != "" {
+	if value, ok := metadata[backend.XFileChecksum]; ok && value != "" {
 		requestChecksum = value
 	}
 

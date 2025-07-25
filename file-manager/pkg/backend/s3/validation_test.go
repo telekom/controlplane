@@ -8,7 +8,7 @@ import (
 	"context"
 	"github.com/minio/minio-go/v7"
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
+	"github.com/telekom/controlplane/file-manager/pkg/backend"
 	"testing"
 )
 
@@ -124,7 +124,7 @@ func TestObjectMetadataValidator_ValidateObjectMetadata(t *testing.T) {
 			ContentType: "text/plain",
 			ETag:        "",
 			UserMetadata: map[string]string{
-				identifier.XFileChecksum: "user-checksum",
+				backend.XFileChecksum: "user-checksum",
 			},
 		},
 	}

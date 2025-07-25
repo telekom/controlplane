@@ -7,7 +7,6 @@ package middleware
 import (
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
-	"github.com/telekom/controlplane/file-manager/pkg/backend/s3"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -22,7 +21,7 @@ func TestBearerAuthMiddleware(t *testing.T) {
 
 	// Add a test handler to verify the token was added to the context
 	app.Get("/test", func(c *fiber.Ctx) error {
-		token, err := s3.ExtractBearerTokenFromContext(c.UserContext())
+		token, err := ExtractBearerTokenFromContext(c.UserContext())
 		if err != nil {
 			return c.SendStatus(500)
 		}
