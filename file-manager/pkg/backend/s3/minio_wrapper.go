@@ -9,13 +9,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
 	"github.com/pkg/errors"
-)
-
-const (
-	// XFileContentType is the header for the content type of the file
-	XFileContentType = "X-File-Content-Type"
-	// XFileChecksum is the header for the checksum of the file
-	XFileChecksum = "X-File-Checksum"
+	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
 )
 
 // MinioWrapper provides common functionality for S3 operations
@@ -67,18 +61,18 @@ func (w *MinioWrapper) ExtractMetadata(ctx context.Context, objInfo minio.Object
 
 	// Add Content-Type to metadata
 	if objInfo.ContentType != "" {
-		metadata[XFileContentType] = objInfo.ContentType
+		metadata[identifier.XFileContentType] = objInfo.ContentType
 		log.V(1).Info("Added content type to response metadata", "contentType", objInfo.ContentType)
 	}
 
 	// Add Checksum to metadata
 	// Prefer S3's Checksum over UserMetadata
 	if objInfo.ETag != "" {
-		metadata[XFileChecksum] = objInfo.ETag
+		metadata[identifier.XFileChecksum] = objInfo.ETag
 		log.V(1).Info("Added S3-generated checksum to response metadata", "checksum", objInfo.ETag)
-	} else if checksum, ok := objInfo.UserMetadata[XFileChecksum]; ok && checksum != "" {
+	} else if checksum, ok := objInfo.UserMetadata[identifier.XFileChecksum]; ok && checksum != "" {
 		// Fall back to UserMetadata if ETag is not available
-		metadata[XFileChecksum] = checksum
+		metadata[identifier.XFileChecksum] = checksum
 		log.V(1).Info("Added UserMetadata checksum to response metadata", "checksum", checksum)
 	}
 
@@ -95,4 +89,19 @@ func (w *MinioWrapper) ValidateClient(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// validator is the internal reference to the object metadata validator
+var validator *ObjectMetadataValidator
+
+// ValidateObjectMetadata delegates to the ObjectMetadataValidator
+// This method maintains backwards compatibility with existing code
+func (w *MinioWrapper) ValidateObjectMetadata(ctx context.Context, path string, expectedContentType string, expectedChecksum string) error {
+	// Create the validator if it doesn't exist yet
+	if validator == nil {
+		validator = NewObjectMetadataValidator(w)
+	}
+
+	// Delegate to the validator
+	return validator.ValidateObjectMetadata(ctx, path, expectedContentType, expectedChecksum)
 }

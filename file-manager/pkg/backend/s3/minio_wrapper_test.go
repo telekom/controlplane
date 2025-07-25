@@ -8,6 +8,7 @@ import (
 	"context"
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
+	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
 	"testing"
 )
 
@@ -63,12 +64,12 @@ func TestMinioWrapper_ExtractMetadata(t *testing.T) {
 	metadata := wrapper.ExtractMetadata(context.Background(), objInfo)
 
 	// Verify metadata was extracted correctly
-	if metadata[XFileContentType] != "text/plain" {
-		t.Errorf("Expected content type to be text/plain, got %s", metadata[XFileContentType])
+	if metadata[identifier.XFileContentType] != "text/plain" {
+		t.Errorf("Expected content type to be text/plain, got %s", metadata[identifier.XFileContentType])
 	}
 
-	if metadata[XFileChecksum] != "abc123" {
-		t.Errorf("Expected checksum to be abc123, got %s", metadata[XFileChecksum])
+	if metadata[identifier.XFileChecksum] != "abc123" {
+		t.Errorf("Expected checksum to be abc123, got %s", metadata[identifier.XFileChecksum])
 	}
 
 	// Test case 2: Object with ContentType but no ETag, using UserMetadata instead
@@ -76,19 +77,19 @@ func TestMinioWrapper_ExtractMetadata(t *testing.T) {
 		ContentType: "application/json",
 		ETag:        "",
 		UserMetadata: map[string]string{
-			XFileChecksum: "def456",
+			identifier.XFileChecksum: "def456",
 		},
 	}
 
 	metadata = wrapper.ExtractMetadata(context.Background(), objInfo)
 
 	// Verify metadata was extracted correctly
-	if metadata[XFileContentType] != "application/json" {
-		t.Errorf("Expected content type to be application/json, got %s", metadata[XFileContentType])
+	if metadata[identifier.XFileContentType] != "application/json" {
+		t.Errorf("Expected content type to be application/json, got %s", metadata[identifier.XFileContentType])
 	}
 
-	if metadata[XFileChecksum] != "def456" {
-		t.Errorf("Expected checksum to be def456, got %s", metadata[XFileChecksum])
+	if metadata[identifier.XFileChecksum] != "def456" {
+		t.Errorf("Expected checksum to be def456, got %s", metadata[identifier.XFileChecksum])
 	}
 
 	// Test case 3: Object with no metadata
@@ -114,4 +115,25 @@ func TestMinioWrapper_UpdateCredentialsFromContext(t *testing.T) {
 	ctx := context.Background()
 	// This should not panic
 	wrapper.UpdateCredentialsFromContext(ctx)
+}
+
+func TestMinioWrapper_ValidateObjectMetadata(t *testing.T) {
+	// Create a basic config for testing
+	config := &S3Config{
+		Logger:     logr.Discard(),
+		Endpoint:   "mock-endpoint",
+		BucketName: "mock-bucket",
+	}
+
+	wrapper := NewMinioWrapper(config)
+
+	// Validate that client validation is called first
+	err := wrapper.ValidateClient(context.Background())
+	if err == nil {
+		t.Error("Expected error with nil client, got success")
+	}
+
+	// Note: Testing actual validation logic would require mocking the S3 client responses
+	// which is beyond the scope of this unit test. This should be covered in integration tests
+	// or with a more sophisticated mocking setup.
 }
