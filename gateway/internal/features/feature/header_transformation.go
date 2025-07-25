@@ -57,6 +57,7 @@ func (f *HeaderTransformationFeature) Apply(ctx context.Context, builder feature
 			}
 
 		}
+
 	}
 
 	return nil

@@ -111,7 +111,7 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime
 	}
 
 	for _, exposure := range rover.Spec.Exposures {
-		if _, err = r.ValidateExposure(ctx, environment, exposure); err != nil {
+		if _, err = r.ValidateExposure(ctx, environment, exposure, zoneRef); err != nil {
 			return nil, err
 		}
 	}
@@ -146,7 +146,7 @@ func (r *RoverValidator) ValidateSubscription(ctx context.Context, environment s
 	return
 }
 
-func (r *RoverValidator) ValidateExposure(ctx context.Context, environment string, exposure roverv1.Exposure) (warnings admission.Warnings, err error) {
+func (r *RoverValidator) ValidateExposure(ctx context.Context, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey) (warnings admission.Warnings, err error) {
 	if exposure.Api != nil {
 		for _, upstream := range exposure.Api.Upstreams {
 			if upstream.URL == "" {
@@ -165,6 +165,11 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, environment strin
 	all, none := CheckWeightSetOnAllOrNone(exposure.Api.Upstreams)
 	if !all && !none {
 		return nil, apierrors.NewBadRequest("all upstreams must have a weight set or none must have a weight set")
+	}
+
+	// Header removal is generally allowed everywhere, except the "Authorization" header, which is only allowed to be configured for removal on external zones - currently space/canis
+	if err = r.validateRemoveHeaders(ctx, exposure, zoneRef); err != nil {
+		return nil, err
 	}
 
 	return
@@ -228,4 +233,39 @@ func MustNotHaveDuplicates(subs []roverv1.Subscription, exps []roverv1.Exposure)
 	}
 
 	return nil
+}
+
+func (r *RoverValidator) validateRemoveHeaders(ctx context.Context, exp roverv1.Exposure, zoneRef client.ObjectKey) error {
+
+	// get zone
+	zone, err := r.GetZone(ctx, zoneRef)
+	if err != nil {
+		return err
+	}
+	if exp.Api.Transformation != nil {
+		if len(exp.Api.Transformation.Request.Headers.Remove) > 0 {
+			for _, header := range exp.Api.Transformation.Request.Headers.Remove {
+				if strings.EqualFold(header, "Authorization") {
+					if zone.Spec.Visibility != adminv1.ZoneVisibilityWorld {
+						return apierrors.NewBadRequest("removal of 'Authorization' header is only allowed for external zones, i.e space or canis")
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (r *RoverValidator) GetZone(ctx context.Context, zoneRef client.ObjectKey) (*adminv1.Zone, error) {
+	zone := &adminv1.Zone{}
+	err := r.client.Get(ctx, zoneRef, zone)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, apierrors.NewBadRequest(fmt.Sprintf("%s not found", reflect.TypeOf(zone).Elem().Name()))
+		}
+		return nil, apierrors.NewInternalError(err)
+	}
+	return zone, nil
+
 }
