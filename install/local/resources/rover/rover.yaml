@@ -5,18 +5,41 @@
 apiVersion: rover.cp.ei.telekom.de/v1
 kind: Rover
 metadata:
-  name: rover-sample
+  name: rover-echo-v1
 spec:
-  zone: zone-a
+  zone: dataplane1
+  clientSecret: someSecret
   exposures:
     - api:
-        basePath: /eni/foo/v2
-        upstream: https://httpbin.org/anything
+        basePath: /phoenix/echo/v1
+        upstreams:
+          - url: https://httpbin.org/anything
+            weight: 50
+          - url: https://httpbin.org/anything/balancing-the-load
+            weight: 50
         visibility: World
-        approval: Auto
+        approval:
+          strategy: Auto
+        security:
+          m2m:
+            scopes:
+              - read
   subscriptions:
     - api:
-        basePath: /eni/foo/v2
-        oauth2Scopes:
-          - read
-          - write
+        basePath: /phoenix/echo/v1
+        security:
+          m2m:
+            scopes:
+              - read
+              - write
+---
+apiVersion: rover.cp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: rover-echo-consumer
+spec:
+  zone: dataplane1
+  clientSecret: someSecret
+  subscriptions:
+    - api:
+        basePath: /phoenix/echo/v1
