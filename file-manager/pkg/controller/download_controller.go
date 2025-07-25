@@ -34,6 +34,12 @@ func (d downloadController) DownloadFile(ctx context.Context, fileId string) (*i
 		return nil, nil, errors.Wrap(err, "invalid fileId")
 	}
 
-	// Use the fileDownloader to download the file
-	return d.FileDownloader.DownloadFile(ctx, fileId)
+	// Convert fileId to S3 path format
+	s3Path, err := identifier.ConvertFileIdToPath(fileId)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to convert fileId to path")
+	}
+
+	// Use the fileDownloader to download the file using the converted path
+	return d.FileDownloader.DownloadFile(ctx, s3Path)
 }
