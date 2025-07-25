@@ -9,7 +9,6 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/pkg/errors"
-	"os"
 )
 
 // S3Config holds all configuration needed for S3 operations
@@ -64,62 +63,18 @@ func NewS3ConfigWithLogger(log logr.Logger, options ...ConfigOption) (*S3Config,
 	return NewS3Config(options...)
 }
 
-// UpdateBearerToken updates the current token and recreates the client credentials if the token has changed
-// This should be called before each request to ensure the client has the latest token
-func (c *S3Config) UpdateBearerToken(token string) error {
-	// If token is unchanged, no need to update
-	if c.currentToken == token {
-		c.Logger.V(1).Info("Token unchanged, skipping credentials update")
-		return nil
-	}
-
-	// Update the current token
-	c.Logger.V(1).Info("Token changed, updating credentials")
-	c.currentToken = token
-
-	// Create a token provider function that returns the provided bearer token
-	tokenProvider := func() (*credentials.WebIdentityToken, error) {
-		return &credentials.WebIdentityToken{
-			Token: token,
-		}, nil
-	}
-
-	// Create credentials with the new token
-	creds, err := credentials.NewSTSWebIdentity(
-		c.STSEndpoint,
-		tokenProvider,
-		func(i *credentials.STSWebIdentity) {
-			i.RoleARN = c.RoleSessionArn
-			c.Logger.V(1).Info("Setting role ARN for STS", "roleARN", i.RoleARN)
-		},
-	)
+// createMinioClient creates a new Minio S3 client with the given credentials
+func (c *S3Config) createMinioClient(creds *credentials.Credentials) (*minio.Client, error) {
+	c.Logger.V(1).Info("Creating Minio S3 client", "endpoint", c.Endpoint)
+	client, err := minio.New(c.Endpoint, &minio.Options{
+		Creds:  creds,
+		Secure: true,
+	})
 	if err != nil {
-		c.Logger.Error(err, "Failed to create STS web identity credentials")
-		return errors.Wrap(err, "failed to create STS web identity credentials")
+		c.Logger.Error(err, "Failed to create S3 client")
+		return nil, errors.Wrap(err, "failed to create S3 client")
 	}
-
-	// Store the new credentials
-	c.currentCreds = creds
-
-	// For the minio S3 client, we need to recreate it with the new credentials
-	if c.Client != nil {
-		client, err := minio.New(c.Endpoint, &minio.Options{
-			Creds:  creds,
-			Secure: true,
-			// TODO: CHECKSUM-SHA-256: Enable SHA-256 checksum calculation and verification
-			//TrailingHeaders: true, // Enable trailing headers for checksum support
-		})
-		if err != nil {
-			c.Logger.Error(err, "Failed to create new S3 client with updated credentials")
-			return errors.Wrap(err, "failed to create new S3 client with updated credentials")
-		}
-
-		// Replace the client
-		c.Client = client
-		c.Logger.V(1).Info("Updated client with new credentials")
-	}
-
-	return nil
+	return client, nil
 }
 
 // ConfigOption is a function type for applying options to S3Config
@@ -169,7 +124,6 @@ func WithLogger(logger logr.Logger) ConfigOption {
 
 // initClient initializes the Minio client with the current configuration
 func (c *S3Config) initClient() (*minio.Client, error) {
-	// Use the configured logger
 	log := c.Logger
 
 	log.V(1).Info("Initializing S3 client",
@@ -178,145 +132,29 @@ func (c *S3Config) initClient() (*minio.Client, error) {
 		"bucketName", c.BucketName,
 		"roleARN", c.RoleSessionArn)
 
-	// Get initial token for client creation if possible
-	// This is just for initial setup; we'll update with real bearer tokens later
-	var initialToken string
-	var tokenAvailable bool
-	var err error
-
-	// Try to get token from environment first
-	if os.Getenv("MC_WEB_IDENTITY_TOKEN") != "" {
-		log.V(1).Info("Getting initial token from environment for client setup")
-		token, err := c.getWebIDTokenFromEnv()
-		if err == nil {
-			initialToken = token.Token
-			tokenAvailable = true
-		} else {
-			log.V(1).Info("Failed to get token from environment, will try file next", "error", err.Error())
-		}
-	}
-
-	// If no token from environment, try from file
-	if !tokenAvailable {
-		log.V(1).Info("Trying to get initial token from file", "path", c.TokenPath)
-		token, err := c.getWebIDTokenFromFile()
-		if err == nil {
-			initialToken = token.Token
-			tokenAvailable = true
-		} else {
-			log.V(1).Info("Failed to get token from file", "error", err.Error())
-		}
-	}
+	// Get initial token for client creation
+	token, tokenAvailable, _ := c.getTokenFromSources()
 
 	// Store the initial token if available
 	if tokenAvailable {
-		c.currentToken = initialToken
-	} else {
-		log.V(0).Info("No identity token found in environment or file - will use anonymous credentials")
+		c.currentToken = token
 	}
 
-	// Create credentials based on whether a token is available
-	var creds *credentials.Credentials
-
-	if tokenAvailable {
-		// Define the token provider function that returns our current token
-		tokenProvider := func() (*credentials.WebIdentityToken, error) {
-			return &credentials.WebIdentityToken{
-				Token: c.currentToken,
-			}, nil
-		}
-
-		// Create STS web identity credentials
-		log.V(1).Info("Creating STS web identity credentials")
-		creds, err = credentials.NewSTSWebIdentity(
-			c.STSEndpoint,
-			tokenProvider,
-			func(i *credentials.STSWebIdentity) {
-				i.RoleARN = c.RoleSessionArn
-				log.V(1).Info("Setting role ARN for STS", "roleARN", i.RoleARN)
-			},
-		)
-		if err != nil {
-			log.Error(err, "Failed to create STS web identity credentials")
-			return nil, errors.Wrap(err, "failed to create STS web identity credentials")
-		}
-	} else {
-		// Create anonymous credentials as fallback
-		log.V(0).Info("Using anonymous credentials - limited functionality may be available")
-		creds = credentials.NewStatic("", "", "", credentials.SignatureAnonymous)
+	// Get credentials based on token availability
+	creds, err := c.getCredentials(tokenAvailable, token)
+	if err != nil {
+		return nil, err
 	}
 
 	// Store the credentials
 	c.currentCreds = creds
 
 	// Create S3 client
-	log.V(1).Info("Creating Minio S3 client", "endpoint", c.Endpoint)
-	client, err := minio.New(c.Endpoint, &minio.Options{
-		Creds:  creds,
-		Secure: true,
-		// TODO: CHECKSUM-SHA-256: Enable SHA-256 checksum calculation and verification
-		//TrailingHeaders: true, // Enable trailing headers for checksum support
-	})
+	client, err := c.createMinioClient(creds)
 	if err != nil {
-		log.Error(err, "Failed to create S3 client")
-		return nil, errors.Wrap(err, "failed to create S3 client")
+		return nil, err
 	}
+
 	log.V(1).Info("S3 client created successfully")
-
 	return client, nil
-}
-
-// getWebIDTokenFromEnv retrieves the web identity token from an environment variable
-func (c *S3Config) getWebIDTokenFromEnv() (*credentials.WebIdentityToken, error) {
-	// Use the configured logger
-	log := c.Logger
-
-	log.V(1).Info("Retrieving web identity token from environment variable")
-	data := os.Getenv("MC_WEB_IDENTITY_TOKEN")
-	if data == "" {
-		log.Error(nil, "MC_WEB_IDENTITY_TOKEN environment variable not set")
-		return nil, errors.New("MC_WEB_IDENTITY_TOKEN environment variable not set")
-	}
-
-	log.V(1).Info("Successfully retrieved token from environment variable")
-	return &credentials.WebIdentityToken{
-		Token: data,
-	}, nil
-}
-
-// getWebIDTokenFromFile retrieves the web identity token from a file
-func (c *S3Config) getWebIDTokenFromFile() (*credentials.WebIdentityToken, error) {
-	// Use the configured logger
-	log := c.Logger
-
-	// If token path is empty, return an error
-	if c.TokenPath == "" {
-		log.V(1).Info("No token file path specified")
-		return nil, errors.New("no token file path specified")
-	}
-
-	log.V(1).Info("Reading web identity token from file", "path", c.TokenPath)
-
-	// Check if file exists before trying to read it
-	if _, err := os.Stat(c.TokenPath); os.IsNotExist(err) {
-		log.V(1).Info("Token file does not exist", "path", c.TokenPath)
-		return nil, errors.New("token file does not exist")
-	}
-
-	data, err := os.ReadFile(c.TokenPath)
-	if err != nil {
-		log.V(1).Info("Failed to read web identity token file", "error", err.Error())
-		return nil, errors.Wrap(err, "failed to read web identity token file")
-	}
-
-	// Check if file is empty
-	if len(data) == 0 {
-		log.V(1).Info("Token file is empty", "path", c.TokenPath)
-		return nil, errors.New("token file is empty")
-	}
-
-	log.V(1).Info("Successfully read token from file")
-	return &credentials.WebIdentityToken{
-		Token: string(data),
-	}, nil
 }
