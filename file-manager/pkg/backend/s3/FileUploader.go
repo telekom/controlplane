@@ -8,7 +8,6 @@ import (
 	"context"
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
-	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
 	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
 	"io"
@@ -72,7 +71,7 @@ func (s *S3FileUploader) uploadToS3(ctx context.Context, path string, reader io.
 
 	if err != nil {
 		log.Error(err, "Failed to upload file to S3")
-		return errors.Wrap(err, "failed to upload file")
+		return backend.ErrUploadFailed(path, err.Error())
 	}
 
 	return nil
@@ -109,7 +108,7 @@ func (s *S3FileUploader) convertFileIdToPath(ctx context.Context, fileId string)
 	path, err := identifier.ConvertFileIdToPath(fileId)
 	if err != nil {
 		log.Error(err, "Failed to convert fileId to S3 path")
-		return "", errors.Wrap(err, "failed to convert fileId to S3 path")
+		return "", backend.ErrInvalidFileId(fileId)
 	}
 
 	log.V(1).Info("Using S3 path", "path", path)
@@ -120,7 +119,7 @@ func (s *S3FileUploader) convertFileIdToPath(ctx context.Context, fileId string)
 func (s *S3FileUploader) initializeUpload(ctx context.Context) error {
 	// Validate client initialization
 	if err := s.wrapper.ValidateClient(ctx); err != nil {
-		return err
+		return backend.ErrClientInitialization(err.Error())
 	}
 
 	// Update credentials using token from context if available

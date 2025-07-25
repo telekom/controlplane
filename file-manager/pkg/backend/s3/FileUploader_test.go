@@ -7,6 +7,7 @@ package s3
 import (
 	"context"
 	"github.com/minio/minio-go/v7"
+	"github.com/telekom/controlplane/file-manager/pkg/backend"
 	"io"
 	"strings"
 	"testing"
@@ -42,9 +43,9 @@ func TestS3FileUploader_UploadFile(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error when fileId format is invalid")
 	}
-	// Check if the error message contains the expected text
-	if err != nil && !strings.Contains(err.Error(), "failed to convert fileId to S3 path") {
-		t.Errorf("Expected error to contain 'failed to convert fileId to S3 path', got: %v", err)
+	// Check if the error is an InvalidFileId error
+	if err != nil && !backend.IsInvalidFileIdErr(err) {
+		t.Errorf("Expected InvalidFileIdErr, got: %v", err)
 	}
 
 	// Note: A full test with mocked S3 client would be added in a future PR

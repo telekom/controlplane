@@ -8,7 +8,6 @@ import (
 	"context"
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
-	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/file-manager/internal/middleware"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
 )
@@ -50,7 +49,7 @@ func (w *MinioWrapper) GetObjectInfo(ctx context.Context, path string) (minio.Ob
 	objInfo, err := w.config.Client.StatObject(ctx, w.config.BucketName, path, minio.StatObjectOptions{})
 	if err != nil {
 		log.Error(err, "Failed to get object info from S3")
-		return minio.ObjectInfo{}, errors.Wrap(err, "failed to get object info from S3")
+		return minio.ObjectInfo{}, backend.ErrFileNotFound(path)
 	}
 	return objInfo, nil
 }
@@ -86,7 +85,7 @@ func (w *MinioWrapper) ValidateClient(ctx context.Context) error {
 
 	if w.config == nil || w.config.Client == nil {
 		log.Error(nil, "S3 client not initialized")
-		return errors.New("S3 client not initialized")
+		return backend.ErrClientInitialization("S3 client not initialized")
 	}
 
 	return nil

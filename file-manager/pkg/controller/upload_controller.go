@@ -7,7 +7,6 @@ package controller
 import (
 	"context"
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
 	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
 	"io"
@@ -97,27 +96,27 @@ func (u uploadController) UploadFile(ctx context.Context, fileId string, reader 
 
 	// Validate fileId format first
 	if err := identifier.ValidateFileID(fileId); err != nil {
-		return "", errors.Wrap(err, "invalid fileId")
+		return "", backend.ErrInvalidFileId(fileId)
 	}
 
 	// Validate reader input
 	if reader == nil || *reader == nil {
 		log.Error(nil, "File reader is nil")
-		return "", errors.New("file reader is nil")
+		return "", backend.ErrUploadFailed(fileId, "file reader is nil")
 	}
 
 	// Parse the fileId to extract the filename for content type detection
 	fileIdParts, err := identifier.ParseFileID(fileId)
 	if err != nil {
 		log.Error(err, "Failed to parse fileId for content type detection")
-		return "", errors.Wrap(err, "failed to parse fileId for content type detection")
+		return "", backend.ErrInvalidFileId(fileId)
 	}
 
 	// Detect content type and update metadata
 	_, metadata, err = u.detectContentType(ctx, fileIdParts.FileName, metadata)
 	if err != nil {
 		log.Error(err, "Failed to detect content type")
-		return "", errors.Wrap(err, "failed to detect content type")
+		return "", backend.ErrUploadFailed(fileId, "failed to detect content type: "+err.Error())
 	}
 
 	// Use the fileUploader to upload the file with the fileId and processed metadata

@@ -8,7 +8,6 @@ import (
 	"context"
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
-	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
 )
 
@@ -37,7 +36,7 @@ func (v *ObjectMetadataValidator) ValidateObjectMetadata(ctx context.Context, pa
 
 	// First validate the client
 	if err := v.wrapper.ValidateClient(ctx); err != nil {
-		return err
+		return backend.ErrClientInitialization(err.Error())
 	}
 
 	// Get the object info to validate metadata
@@ -45,7 +44,7 @@ func (v *ObjectMetadataValidator) ValidateObjectMetadata(ctx context.Context, pa
 	objInfo, err := v.wrapper.GetObjectInfo(ctx, path)
 	if err != nil {
 		log.Error(err, "Failed to retrieve object info for validation")
-		return errors.Wrap(err, "failed to retrieve object info for validation")
+		return backend.ErrDownloadFailed(path, "failed to retrieve object info: "+err.Error())
 	}
 
 	// Validate Content-Type if provided
@@ -74,8 +73,7 @@ func (v *ObjectMetadataValidator) validateContentType(ctx context.Context, actua
 		log.Error(nil, "Content-Type mismatch",
 			"expected", expectedContentType,
 			"actual", actualContentType)
-		return errors.Errorf("content type mismatch: expected %s, got %s",
-			expectedContentType, actualContentType)
+		return backend.ErrInvalidContentType("", expectedContentType, actualContentType)
 	}
 
 	log.V(1).Info("Content-Type validation successful", "contentType", actualContentType)
@@ -94,7 +92,7 @@ func (v *ObjectMetadataValidator) validateChecksum(ctx context.Context, objInfo 
 	// Access object info fields directly since we're using minio.ObjectInfo
 	objInfoTyped, ok := objInfo.(minio.ObjectInfo)
 	if !ok {
-		return errors.New("invalid object info type for checksum validation")
+		return backend.ErrClientInitialization("invalid object info type for checksum validation")
 	}
 
 	// Use the S3-generated checksum instead of the UserMetadata
@@ -119,8 +117,7 @@ func (v *ObjectMetadataValidator) validateChecksum(ctx context.Context, objInfo 
 			"expected", expectedChecksum,
 			"actual", storedChecksum,
 			"checksumSource", checksumSource)
-		return errors.Errorf("checksum mismatch: expected %s, got %s",
-			expectedChecksum, storedChecksum)
+		return backend.ErrInvalidChecksum(objInfoTyped.Key, expectedChecksum, storedChecksum)
 	}
 
 	log.V(1).Info("Checksum validation successful", "checksum", storedChecksum)
