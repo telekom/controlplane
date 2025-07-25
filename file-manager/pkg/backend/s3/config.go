@@ -32,9 +32,9 @@ func NewS3Config(options ...ConfigOption) (*S3Config, error) {
 		Logger:         logr.Discard(),
 		Endpoint:       "s3.amazonaws.com",
 		STSEndpoint:    "https://sts.amazonaws.com",
-		BucketName:     "s3-ec1-d-distcp-tardis",
-		RoleSessionArn: "arn:aws:iam::540220622237:role/s3-ec1-d-distcp-tardis_Role",
-		TokenPath:      "/var/run/secrets/tokens/sa-token",
+		BucketName:     "my-s3-bucket",
+		RoleSessionArn: "arn:aws:iam::123456789012:role/my-sample-role",
+		TokenPath:      "/var/run/files/filemgr/filemgr-token",
 	}
 
 	// Apply all options
