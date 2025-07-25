@@ -123,6 +123,20 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 			Expect(warnings).To(BeNil())
 			Expect(err).ToNot(HaveOccurred())
 
+			By("Creating a Rover with remove headers = Authorization and zone visibility is not World")
+			roverObj = NewRover(*testZone)
+			roverObj.Spec.Exposures[0].Api.Transformation = &roverv1.Transformation{
+				Request: roverv1.RequestResponseTransformation{
+					Headers: roverv1.HeaderTransformation{
+						Remove: []string{"Authorization"},
+					},
+				},
+			}
+
+			warnings, err = validator.ValidateCreate(ctx, roverObj)
+			Expect(warnings).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
+
 		})
 	})
 

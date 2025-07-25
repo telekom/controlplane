@@ -161,11 +161,24 @@ spec:
                                           description: ClientId identifies the client
                                             for OAuth2 client credentials flow
                                           type: string
+                                        clientKey:
+                                          description: ClientKey is the private key
+                                            associated with the client ID
+                                          type: string
                                         clientSecret:
                                           description: ClientSecret is the secret
                                             associated with the client ID
                                           type: string
                                       type: object
+                                      x-kubernetes-validations:
+                                      - message: ClientSecret and ClientKey cannot
+                                          be used together
+                                        rule: 'self == null || (has(self.clientKey)
+                                          ? (!has(self.clientSecret)) : true)'
+                                      - message: At least one of clientSecret or clientKey
+                                          must be provided
+                                        rule: self == null || has(self.clientSecret)
+                                          || has(self.clientKey)
                                     grantType:
                                       description: GrantType defines the OAuth2 grant
                                         type to use for the token request
@@ -489,11 +502,24 @@ spec:
                                       description: ClientId identifies the client
                                         for OAuth2 client credentials flow
                                       type: string
+                                    clientKey:
+                                      description: ClientKey is the private key associated
+                                        with the client ID
+                                      type: string
                                     clientSecret:
                                       description: ClientSecret is the secret associated
                                         with the client ID
                                       type: string
                                   type: object
+                                  x-kubernetes-validations:
+                                  - message: ClientSecret and ClientKey cannot be
+                                      used together
+                                    rule: 'self == null || (has(self.clientKey) ?
+                                      (!has(self.clientSecret)) : true)'
+                                  - message: At least one of clientSecret or clientKey
+                                      must be provided
+                                    rule: self == null || has(self.clientSecret) ||
+                                      has(self.clientKey)
                                 scopes:
                                   description: Scopes defines additional OAuth2 scopes
                                     that are added to the LMS token

@@ -136,13 +136,18 @@ type BasicAuthCredentials struct {
 }
 
 // OAuth2ClientCredentials defines client credentials for OAuth2
+// Either clientSecret or clientKey can be provided, but not both
+// +kubebuilder:validation:XValidation:rule="self == null || (has(self.clientKey) ? (!has(self.clientSecret)) : true)", message="ClientSecret and ClientKey cannot be used together"
+// +kubebuilder:validation:XValidation:rule="self == null || has(self.clientSecret) || has(self.clientKey)", message="At least one of clientSecret or clientKey must be provided"
 type OAuth2ClientCredentials struct {
 	// ClientId identifies the client for OAuth2 client credentials flow
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	ClientId string `json:"clientId"`
 	// ClientSecret is the secret associated with the client ID
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
-	ClientSecret string `json:"clientSecret"`
+	// +kubebuilder:validation:Optional
+	ClientSecret string `json:"clientSecret,omitempty"`
+	// clientKey is the private key associated with the client ID
+	// +kubebuilder:validation:Optional
+	ClientKey string `json:"clientKey,omitempty"`
 }

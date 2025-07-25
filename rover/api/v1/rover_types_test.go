@@ -240,6 +240,112 @@ var _ = Describe("Rover V1 Test Suite", func() {
 
 		})
 
+		It("should reject a Rover with oauth2 clientSecret and clientKey configured", func() {
+			rover := new(v1.Rover)
+			rover.Name = "invalid-rover"
+			rover.Namespace = "default"
+			rover.Spec = v1.RoverSpec{
+				Zone:         "test-zone",
+				ClientSecret: "topsecret",
+				Exposures: []v1.Exposure{
+					{
+						Api: &v1.ApiExposure{
+							BasePath: "/api",
+							Upstreams: []v1.Upstream{
+								{
+									URL: "http://example.com",
+								},
+							},
+							Visibility: v1.VisibilityEnterprise,
+							Approval: v1.Approval{
+								Strategy: v1.ApprovalStrategyAuto,
+							},
+							Security: &v1.Security{
+								M2M: &v1.Machine2MachineAuthentication{
+									ExternalIDP: &v1.ExternalIdentityProvider{
+										TokenEndpoint: "https://idp.example.com/token",
+										Client: &v1.OAuth2ClientCredentials{
+											ClientId:     "client-id",
+											ClientSecret: "client-secret",
+											ClientKey:    "base64-encoded-private-key",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			rover.Status = v1.RoverStatus{}
+
+			err := k8sClient.Create(ctx, rover)
+			Expect(err).To(HaveOccurred())
+			Expect(apierrors.IsInvalid(err)).To(BeTrue())
+			statusErr, ok := err.(apierrors.APIStatus)
+			Expect(ok).To(BeTrue())
+
+			Expect(statusErr.Status().Reason).To(Equal(metav1.StatusReasonInvalid))
+			Expect(len(statusErr.Status().Details.Causes)).To(Equal(1))
+			Expect(statusErr.Status().Details.Causes).To(ContainElement(metav1.StatusCause{
+				Type:    metav1.CauseTypeFieldValueInvalid,
+				Message: "Invalid value: \"object\": ClientSecret and ClientKey cannot be used together",
+				Field:   "spec.exposures[0].api.security.m2m.externalIDP.client",
+			}))
+
+		})
+
+		It("should reject a Rover with no oauth2 clientSecret or clientKey configured", func() {
+			rover := new(v1.Rover)
+			rover.Name = "invalid-rover"
+			rover.Namespace = "default"
+			rover.Spec = v1.RoverSpec{
+				Zone:         "test-zone",
+				ClientSecret: "topsecret",
+				Exposures: []v1.Exposure{
+					{
+						Api: &v1.ApiExposure{
+							BasePath: "/api",
+							Upstreams: []v1.Upstream{
+								{
+									URL: "http://example.com",
+								},
+							},
+							Visibility: v1.VisibilityEnterprise,
+							Approval: v1.Approval{
+								Strategy: v1.ApprovalStrategyAuto,
+							},
+							Security: &v1.Security{
+								M2M: &v1.Machine2MachineAuthentication{
+									ExternalIDP: &v1.ExternalIdentityProvider{
+										TokenEndpoint: "https://idp.example.com/token",
+										Client: &v1.OAuth2ClientCredentials{
+											ClientId: "client-id",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			rover.Status = v1.RoverStatus{}
+
+			err := k8sClient.Create(ctx, rover)
+			Expect(err).To(HaveOccurred())
+			Expect(apierrors.IsInvalid(err)).To(BeTrue())
+			statusErr, ok := err.(apierrors.APIStatus)
+			Expect(ok).To(BeTrue())
+
+			Expect(statusErr.Status().Reason).To(Equal(metav1.StatusReasonInvalid))
+			Expect(len(statusErr.Status().Details.Causes)).To(Equal(1))
+			Expect(statusErr.Status().Details.Causes).To(ContainElement(metav1.StatusCause{
+				Type:    metav1.CauseTypeFieldValueInvalid,
+				Message: "Invalid value: \"object\": At least one of clientSecret or clientKey must be provided",
+				Field:   "spec.exposures[0].api.security.m2m.externalIDP.client",
+			}))
+
+		})
+
 		It("should reject a Rover with invalid URL", func() {
 			rover := new(v1.Rover)
 			rover.Name = "invalid-rover"

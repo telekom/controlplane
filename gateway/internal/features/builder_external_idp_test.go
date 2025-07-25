@@ -139,6 +139,64 @@ var _ = Describe("FeatureBuilder externalIDP", Ordered, func() {
 
 		})
 
+		It("should apply the ExternalIDPConfig with Private Key JWT", func() {
+			externalIDPRoute := externalIDPProviderRouteOAuthJwt()
+			configureExternalIDPMocks(ctx, externalIDPRoute)
+
+			By("building the features")
+			builder := features.NewFeatureBuilder(mockKc, externalIDPRoute, nil, realm, gateway)
+			builder.EnableFeature(feature.InstanceExternalIDPFeature)
+			builder.SetUpstream(externalIDPRoute.Spec.Upstreams[0])
+
+			By("defining the consumer oauth config")
+			consumerRoute := NewMockConsumeRoute(*types.ObjectRefFromObject(externalIDPRoute))
+			consumerRoute.Spec.Security.M2M.Scopes = []string{"team:application"}
+			consumerRoute.Spec.Security.M2M.Client = &gatewayv1.OAuth2ClientCredentials{
+				ClientId:     "ConsumerClientId",
+				ClientSecret: "topsecret",
+				ClientKey:    "ConsumerBase64EncodedPrivateKey",
+			}
+			consumerRoute.Spec.Security.M2M.Scopes = []string{"idp:group"}
+			builder.AddAllowedConsumers(consumerRoute)
+
+			err := builder.Build(ctx)
+			Expect(err).ToNot(HaveOccurred())
+
+			b, ok := builder.(*features.Builder)
+			Expect(ok).To(BeTrue())
+
+			By("Checking that the plugins are set")
+			Expect(b.Plugins).To(HaveLen(1))
+
+			By("checking the request-transformer plugin")
+			rtPlugin, ok := b.Plugins["request-transformer"].(*plugin.RequestTransformerPlugin)
+			Expect(ok).To(BeTrue())
+
+			By("checking the request-transformer plugin config")
+			Expect(rtPlugin.Config.Append.Headers.Get("token_endpoint")).To(Equal("https://example.com/tokenEndpoint"))
+
+			By("checking the jumper plugin")
+			jumperConfig := builder.JumperConfig()
+			Expect(jumperConfig.OAuth).To(HaveKeyWithValue(plugin.ConsumerId("default"), plugin.OauthCredentials{
+				ClientId:     "ClientId",
+				ClientSecret: "",
+				ClientKey:    "Base64EncodedPrivateKey",
+				GrantType:    "client_credentials",
+				TokenRequest: "header",
+				Scopes:       "admin:application",
+			}))
+
+			Expect(jumperConfig.OAuth).To(HaveKeyWithValue(plugin.ConsumerId("test-consumer-name"), plugin.OauthCredentials{
+				ClientId:     "ConsumerClientId",
+				ClientSecret: "",
+				ClientKey:    "ConsumerBase64EncodedPrivateKey",
+				GrantType:    "client_credentials",
+				TokenRequest: "header",
+				Scopes:       "idp:group",
+			}))
+
+		})
+
 	})
 
 })
@@ -190,6 +248,35 @@ func externalIDPProviderRouteBasic() *gatewayv1.Route {
 				Basic: &gatewayv1.BasicAuthCredentials{
 					Username: "user",
 					Password: "*** ***",
+				},
+			},
+			Scopes: []string{"admin:application"},
+		},
+	}
+
+	return eIDPRoute
+}
+
+func externalIDPProviderRouteOAuthJwt() *gatewayv1.Route {
+	eIDPRoute := route.DeepCopy()
+	eIDPRoute.Spec.PassThrough = false
+	eIDPRoute.Spec.Upstreams[0] = gatewayv1.Upstream{
+		Scheme: "http",
+		Host:   "upstream.url",
+		Port:   8080,
+		Path:   "/api/v1",
+	}
+
+	eIDPRoute.Spec.Security = &gatewayv1.Security{
+		M2M: &gatewayv1.Machine2MachineAuthentication{
+			ExternalIDP: &gatewayv1.ExternalIdentityProvider{
+				TokenEndpoint: "https://example.com/tokenEndpoint",
+				TokenRequest:  "header",
+				GrantType:     "client_credentials",
+				Client: &gatewayv1.OAuth2ClientCredentials{
+					ClientId:     "ClientId",
+					ClientSecret: "topsecret",
+					ClientKey:    "Base64EncodedPrivateKey",
 				},
 			},
 			Scopes: []string{"admin:application"},

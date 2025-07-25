@@ -12,8 +12,8 @@ type Security struct {
 	M2M *Machine2MachineAuthentication `json:"m2m,omitempty"`
 }
 
-// SubscriberSecurity defines the security configuration for the Rover
-// SubscriberSecurity is optional, but if provided, exactly one of m2m or h2m must be set
+// Security defines the security configuration for the Rover
+// Security is optional, but if provided, exactly one of m2m or h2m must be set
 type SubscriberSecurity struct {
 	// M2M defines machine-to-machine authentication configuration
 	// +kubebuilder:validation:Optional
@@ -57,7 +57,7 @@ type SubscriberMachine2MachineAuthentication struct {
 }
 
 // ExternalIdentityProvider defines configuration for using an external identity provider
-// +kubebuilder:validation:XValidation:rule="self == null || has(self.basic) != has(self.client)", message="Only one of basic or client credentials can be provided (XOR relationship)"
+// +kubebuilder:validation:XValidation:rule="self == null || (!has(self.basic) && has(self.client)) || (has(self.basic) &&  !has(self.client))", message="Only one of basic or client credentials can be provided (XOR relationship)"
 type ExternalIdentityProvider struct {
 	// TokenEndpoint is the URL for the OAuth2 token endpoint
 	// +kubebuilder:validation:Required
@@ -93,13 +93,11 @@ type BasicAuthCredentials struct {
 }
 
 // OAuth2ClientCredentials defines client credentials for OAuth2
-// Either clientSecret or clientKey can be provided, but not both
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.clientKey) ? (!has(self.clientSecret)) : true)", message="ClientSecret and ClientKey cannot be used together"
 // +kubebuilder:validation:XValidation:rule="self == null || has(self.clientSecret) || has(self.clientKey)", message="At least one of clientSecret or clientKey must be provided"
 type OAuth2ClientCredentials struct {
 	// ClientId identifies the client for OAuth2 client credentials flow
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Optional
 	ClientId string `json:"clientId"`
 	// ClientSecret is the secret associated with the client ID
 	// +kubebuilder:validation:Optional
