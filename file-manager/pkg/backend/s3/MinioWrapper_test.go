@@ -6,10 +6,11 @@ package s3
 
 import (
 	"context"
+	"testing"
+
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
-	"testing"
 )
 
 func TestMinioWrapper_ValidateClient(t *testing.T) {

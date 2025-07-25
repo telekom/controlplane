@@ -6,11 +6,12 @@ package s3
 
 import (
 	"context"
-	"github.com/minio/minio-go/v7"
-	"github.com/telekom/controlplane/file-manager/pkg/backend"
 	"io"
 	"strings"
 	"testing"
+
+	"github.com/minio/minio-go/v7"
+	"github.com/telekom/controlplane/file-manager/pkg/backend"
 )
 
 func TestS3FileUploader_UploadFile(t *testing.T) {

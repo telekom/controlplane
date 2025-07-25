@@ -7,10 +7,11 @@ package handler
 import (
 	"context"
 	"fmt"
+	"io"
+
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/file-manager/internal/api"
 	"github.com/telekom/controlplane/file-manager/pkg/controller"
-	"io"
 )
 
 var _ api.StrictServerInterface = &Handler{}

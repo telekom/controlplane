@@ -6,6 +6,7 @@ package s3
 
 import (
 	"context"
+
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
 	"github.com/telekom/controlplane/file-manager/internal/middleware"

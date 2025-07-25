@@ -7,11 +7,12 @@ package s3
 import (
 	"bytes"
 	"context"
+	"io"
+
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
-	"io"
 )
 
 var _ backend.FileDownloader = &S3FileDownloader{}
@@ -41,7 +42,7 @@ func (s *S3FileDownloader) downloadObject(ctx context.Context, path string) (*by
 		log.Error(err, "Failed to get file from S3")
 		return nil, errors.Wrap(err, "failed to get file from S3")
 	}
-	defer object.Close()
+	defer object.Close() //nolint:errcheck
 
 	// Create a buffer to store the downloaded content
 	buf := new(bytes.Buffer)

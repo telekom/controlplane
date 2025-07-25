@@ -5,11 +5,12 @@
 package middleware
 
 import (
-	"github.com/go-logr/logr"
-	"github.com/gofiber/fiber/v2"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/go-logr/logr"
+	"github.com/gofiber/fiber/v2"
 )
 
 func TestBearerAuthMiddleware(t *testing.T) {

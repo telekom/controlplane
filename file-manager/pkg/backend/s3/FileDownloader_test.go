@@ -6,18 +6,10 @@ package s3
 
 import (
 	"context"
-	"github.com/go-logr/logr"
 	"testing"
+
+	"github.com/go-logr/logr"
 )
-
-// errorReader is a helper for testing read errors
-type errorReader struct {
-	err error
-}
-
-func (e *errorReader) Read(p []byte) (n int, err error) {
-	return 0, e.err
-}
 
 func TestS3FileDownloader_DownloadFile(t *testing.T) {
 	// Test case 1: Nil config

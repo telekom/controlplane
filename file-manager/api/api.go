@@ -7,13 +7,14 @@ package api
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"os"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/api/accesstoken"
 	"github.com/telekom/controlplane/file-manager/api/gen"
 	"github.com/telekom/controlplane/secret-manager/api/util"
-	"net/http"
-	"os"
-	"strings"
 )
 
 const (

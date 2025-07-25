@@ -5,9 +5,10 @@
 package middleware
 
 import (
+	"strings"
+
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
-	"strings"
 )
 
 // BearerAuthMiddleware extracts the bearer token from the Authorization header

@@ -6,11 +6,12 @@ package s3
 
 import (
 	"context"
+	"io"
+
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
 	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
-	"io"
 )
 
 var _ backend.FileUploader = &S3FileUploader{}

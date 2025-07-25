@@ -6,13 +6,14 @@ package controller
 
 import (
 	"context"
-	"github.com/go-logr/logr"
-	"github.com/telekom/controlplane/file-manager/pkg/backend"
-	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
 	"io"
 	"mime"
 	"path/filepath"
 	"strings"
+
+	"github.com/go-logr/logr"
+	"github.com/telekom/controlplane/file-manager/pkg/backend"
+	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
 )
 
 type UploadController interface {
@@ -29,7 +30,7 @@ func NewUploadController(fu backend.FileUploader) UploadController {
 
 // detectContentType detects the content type for a file based on its filename
 // and adds appropriate metadata entries
-func (u uploadController) detectContentType(ctx context.Context, fileName string, metadata map[string]string) (string, map[string]string, error) {
+func (u uploadController) detectContentType(ctx context.Context, fileName string, metadata map[string]string) (string, map[string]string) {
 	log := logr.FromContextOrDiscard(ctx)
 
 	// Make a copy of the metadata to avoid modifying the original
@@ -78,7 +79,7 @@ func (u uploadController) detectContentType(ctx context.Context, fileName string
 		}
 
 		// Return the provided content type
-		return ctHeader, metadata, nil
+		return ctHeader, metadata
 	} else {
 		log.V(1).Info("Using detected content type", "contentType", detectedContentType, "fileName", fileName)
 
@@ -87,7 +88,7 @@ func (u uploadController) detectContentType(ctx context.Context, fileName string
 		metadata[backend.XFileContentTypeSource] = "auto-detected"
 
 		// Return the detected content type
-		return detectedContentType, metadata, nil
+		return detectedContentType, metadata
 	}
 }
 
@@ -113,11 +114,7 @@ func (u uploadController) UploadFile(ctx context.Context, fileId string, reader 
 	}
 
 	// Detect content type and update metadata
-	_, metadata, err = u.detectContentType(ctx, fileIdParts.FileName, metadata)
-	if err != nil {
-		log.Error(err, "Failed to detect content type")
-		return "", backend.ErrUploadFailed(fileId, "failed to detect content type: "+err.Error())
-	}
+	_, metadata = u.detectContentType(ctx, fileIdParts.FileName, metadata)
 
 	// Use the fileUploader to upload the file with the fileId and processed metadata
 	return u.FileUploader.UploadFile(ctx, fileId, *reader, metadata)

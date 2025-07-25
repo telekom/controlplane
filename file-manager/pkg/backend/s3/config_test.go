@@ -5,12 +5,12 @@
 package s3
 
 import (
-	"github.com/go-logr/logr"
-	"github.com/minio/minio-go/v7/pkg/credentials"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/go-logr/logr"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 func TestNewS3Config(t *testing.T) {
@@ -31,7 +31,7 @@ func TestNewS3Config(t *testing.T) {
 	testRole := "test-role"
 	testTokenPath := "test-token-path"
 
-	config, err = NewS3Config(
+	config, _ = NewS3Config(
 		WithEndpoint(testEndpoint),
 		WithSTSEndpoint(testSTSEndpoint),
 		WithBucketName(testBucket),
@@ -201,8 +201,8 @@ func TestClientConfigCombinations(t *testing.T) {
 	}
 
 	// Test with environment variable for token
-	os.Setenv(WebIdentityTokenEnvVar, "env-token-for-client")
-	defer os.Unsetenv(WebIdentityTokenEnvVar)
+	os.Setenv(WebIdentityTokenEnvVar, "env-token-for-client") //nolint:errcheck
+	defer os.Unsetenv(WebIdentityTokenEnvVar)                 //nolint:errcheck
 
 	envTokenConfig := &S3Config{
 		Logger:         logr.Discard(),
@@ -211,7 +211,7 @@ func TestClientConfigCombinations(t *testing.T) {
 		RoleSessionArn: "test-role",
 	}
 
-	_, err = envTokenConfig.initClient()
+	_, _ = envTokenConfig.initClient()
 	// In test environment this will fail to create STS credentials, which is expected
 	// But we check that it tried to use the token from the environment
 	if envTokenConfig.currentToken != "env-token-for-client" {
@@ -274,15 +274,15 @@ func TestInitClient(t *testing.T) {
 	}
 
 	// Test case 3: Client initialization with token file
-	tempDir, err := ioutil.TempDir("", "s3-client-test")
+	tempDir, err := os.MkdirTemp("", "s3-client-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer os.RemoveAll(tempDir) //nolint:errcheck
 
 	tokenFile := filepath.Join(tempDir, "token")
 	testToken := "test-token-for-client"
-	err = ioutil.WriteFile(tokenFile, []byte(testToken), 0644)
+	err = os.WriteFile(tokenFile, []byte(testToken), 0644)
 	if err != nil {
 		t.Fatalf("Failed to write test token file: %v", err)
 	}
@@ -296,7 +296,7 @@ func TestInitClient(t *testing.T) {
 		TokenPath:      tokenFile,
 	}
 
-	_, err = configWithToken.initClient()
+	_, _ = configWithToken.initClient()
 	// In test environment this will fail to create STS credentials, which is expected
 	// But we check that it tried to use the token from the file
 	if configWithToken.currentToken != testToken {

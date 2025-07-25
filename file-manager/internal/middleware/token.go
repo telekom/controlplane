@@ -6,9 +6,10 @@ package middleware
 
 import (
 	"context"
+	"strings"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"strings"
 )
 
 // ContextBearerTokenKey is the key used to store the bearer token in the context

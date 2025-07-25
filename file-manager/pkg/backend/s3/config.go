@@ -133,7 +133,7 @@ func (c *S3Config) initClient() (*minio.Client, error) {
 		"roleARN", c.RoleSessionArn)
 
 	// Get initial token for client creation
-	token, tokenAvailable, _ := c.getTokenFromSources()
+	token, tokenAvailable := c.getTokenFromSources()
 
 	// Store the initial token if available
 	if tokenAvailable {

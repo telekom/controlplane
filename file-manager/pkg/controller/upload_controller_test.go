@@ -6,10 +6,11 @@ package controller
 
 import (
 	"context"
-	"github.com/pkg/errors"
 	"io"
 	"strings"
 	"testing"
+
+	"github.com/pkg/errors"
 )
 
 // MockFileUploader is a mock implementation of the FileUploader interface for testing

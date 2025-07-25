@@ -5,14 +5,15 @@
 package s3
 
 import (
-	"github.com/go-logr/logr"
-	"github.com/minio/minio-go/v7/pkg/credentials"
-	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/go-logr/logr"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 func TestUpdateBearerToken(t *testing.T) {
@@ -79,14 +80,14 @@ func TestGetWebIDTokenFromEnv(t *testing.T) {
 	}
 
 	// Test with environment variable not set
-	os.Unsetenv(WebIdentityTokenEnvVar)
+	os.Unsetenv(WebIdentityTokenEnvVar) //nolint:errcheck
 	_, err := config.getWebIDTokenFromEnv()
 	if err == nil {
 		t.Error("Expected error when environment variable is not set")
 	}
 
 	// Test with environment variable set
-	os.Setenv(WebIdentityTokenEnvVar, "test-token")
+	os.Setenv(WebIdentityTokenEnvVar, "test-token") //nolint:errcheck
 	token, err := config.getWebIDTokenFromEnv()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -96,7 +97,7 @@ func TestGetWebIDTokenFromEnv(t *testing.T) {
 	}
 
 	// Clean up
-	os.Unsetenv(WebIdentityTokenEnvVar)
+	os.Unsetenv(WebIdentityTokenEnvVar) //nolint:errcheck
 }
 
 func TestGetWebIDTokenFromFile(t *testing.T) {
@@ -119,16 +120,16 @@ func TestGetWebIDTokenFromFile(t *testing.T) {
 	}
 
 	// Test with valid file
-	tempDir, err := ioutil.TempDir("", "s3-test")
+	tempDir, err := os.MkdirTemp("", "s3-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer os.RemoveAll(tempDir) //nolint:errcheck
 
 	// Create a test token file
 	tokenFile := filepath.Join(tempDir, "token")
 	testToken := "test-file-token"
-	err = ioutil.WriteFile(tokenFile, []byte(testToken), 0644)
+	err = os.WriteFile(tokenFile, []byte(testToken), 0644)
 	if err != nil {
 		t.Fatalf("Failed to write test token file: %v", err)
 	}
@@ -144,7 +145,7 @@ func TestGetWebIDTokenFromFile(t *testing.T) {
 
 	// Test with empty file
 	emptyFile := filepath.Join(tempDir, "empty")
-	err = ioutil.WriteFile(emptyFile, []byte{}, 0644)
+	err = os.WriteFile(emptyFile, []byte{}, 0644)
 	if err != nil {
 		t.Fatalf("Failed to write empty file: %v", err)
 	}
@@ -162,9 +163,9 @@ func TestGetTokenFromSources(t *testing.T) {
 	}
 
 	// Test with no token available
-	os.Unsetenv(WebIdentityTokenEnvVar)
+	os.Unsetenv(WebIdentityTokenEnvVar) //nolint:errcheck
 	config.TokenPath = "/non/existent/path"
-	token, available, _ := config.getTokenFromSources()
+	token, available := config.getTokenFromSources()
 	if available {
 		t.Error("Expected token to not be available")
 	}
@@ -173,8 +174,8 @@ func TestGetTokenFromSources(t *testing.T) {
 	}
 
 	// Test with environment token
-	os.Setenv(WebIdentityTokenEnvVar, "env-token")
-	token, available, _ = config.getTokenFromSources()
+	os.Setenv(WebIdentityTokenEnvVar, "env-token") //nolint:errcheck
+	token, available = config.getTokenFromSources()
 	if !available {
 		t.Error("Expected token to be available")
 	}
@@ -183,24 +184,24 @@ func TestGetTokenFromSources(t *testing.T) {
 	}
 
 	// Clean up environment
-	os.Unsetenv(WebIdentityTokenEnvVar)
+	os.Unsetenv(WebIdentityTokenEnvVar) //nolint:errcheck
 
 	// Test with file token
-	tempDir, err := ioutil.TempDir("", "s3-test")
+	tempDir, err := os.MkdirTemp("", "s3-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer os.RemoveAll(tempDir) //nolint:errcheck
 
 	tokenFile := filepath.Join(tempDir, "token")
 	fileToken := "file-token"
-	err = ioutil.WriteFile(tokenFile, []byte(fileToken), 0644)
+	err = os.WriteFile(tokenFile, []byte(fileToken), 0644)
 	if err != nil {
 		t.Fatalf("Failed to write test token file: %v", err)
 	}
 
 	config.TokenPath = tokenFile
-	token, available, _ = config.getTokenFromSources()
+	token, available = config.getTokenFromSources()
 	if !available {
 		t.Error("Expected token to be available")
 	}
@@ -210,13 +211,13 @@ func TestGetTokenFromSources(t *testing.T) {
 
 	// Test token refresh scenario - update token file and verify it gets new token
 	newToken := "refreshed-token"
-	err = ioutil.WriteFile(tokenFile, []byte(newToken), 0644)
+	err = os.WriteFile(tokenFile, []byte(newToken), 0644)
 	if err != nil {
 		t.Fatalf("Failed to update test token file: %v", err)
 	}
 
 	// Verify token is updated
-	token, available, _ = config.getTokenFromSources()
+	token, available = config.getTokenFromSources()
 	if !available {
 		t.Error("Expected token to be available after refresh")
 	}
@@ -347,7 +348,10 @@ func TestGetCredentials(t *testing.T) {
 	}
 
 	// Get the credentials value to check the signature type
-	credValue, err := creds.Get()
+	credCtx := &credentials.CredContext{
+		Client: http.DefaultClient,
+	}
+	credValue, err := creds.GetWithContext(credCtx)
 	if err != nil {
 		t.Errorf("Unexpected error getting credentials value: %v", err)
 	}
@@ -393,16 +397,16 @@ func TestGetCredentials(t *testing.T) {
 // TestTokenRefreshScenario tests a complete token refresh scenario
 func TestTokenRefreshScenario(t *testing.T) {
 	// Create a temp directory for token file
-	tempDir, err := ioutil.TempDir("", "s3-refresh-test")
+	tempDir, err := os.MkdirTemp("", "s3-refresh-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer os.RemoveAll(tempDir) //nolint:errcheck
 
 	// Create initial token file
 	tokenFile := filepath.Join(tempDir, "token")
 	initialToken := "initial-token"
-	err = ioutil.WriteFile(tokenFile, []byte(initialToken), 0644)
+	err = os.WriteFile(tokenFile, []byte(initialToken), 0644)
 	if err != nil {
 		t.Fatalf("Failed to write initial token file: %v", err)
 	}
@@ -419,7 +423,7 @@ func TestTokenRefreshScenario(t *testing.T) {
 	}
 
 	// Initial token load
-	token, available, _ := config.getTokenFromSources()
+	token, available := config.getTokenFromSources()
 	if !available {
 		t.Error("Expected token to be available")
 	}
@@ -428,7 +432,7 @@ func TestTokenRefreshScenario(t *testing.T) {
 	}
 
 	// Update bearer token
-	err = config.UpdateBearerToken(token)
+	_ = config.UpdateBearerToken(token)
 	// In test environment this might fail to create STS credentials, but token should be updated
 	if config.currentToken != initialToken {
 		t.Errorf("Expected current token to be updated to %s, got %s", initialToken, config.currentToken)
@@ -437,13 +441,13 @@ func TestTokenRefreshScenario(t *testing.T) {
 	// Simulate token expiration by updating the token file
 	newToken := "refreshed-token-after-expiration"
 	time.Sleep(10 * time.Millisecond) // Small delay to ensure file modification time changes
-	err = ioutil.WriteFile(tokenFile, []byte(newToken), 0644)
+	err = os.WriteFile(tokenFile, []byte(newToken), 0644)
 	if err != nil {
 		t.Fatalf("Failed to update token file: %v", err)
 	}
 
 	// Get the new token and verify it's updated
-	token, available, _ = config.getTokenFromSources()
+	token, available = config.getTokenFromSources()
 	if !available {
 		t.Error("Expected token to be available after refresh")
 	}
@@ -452,7 +456,7 @@ func TestTokenRefreshScenario(t *testing.T) {
 	}
 
 	// Update bearer token again
-	err = config.UpdateBearerToken(token)
+	_ = config.UpdateBearerToken(token)
 	// In test environment this might fail to create STS credentials, but token should be updated
 	if config.currentToken != newToken {
 		t.Errorf("Expected current token to be updated to %s after refresh, got %s", newToken, config.currentToken)

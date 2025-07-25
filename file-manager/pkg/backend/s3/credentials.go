@@ -5,9 +5,10 @@
 package s3
 
 import (
+	"os"
+
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/pkg/errors"
-	"os"
 )
 
 const WebIdentityTokenEnvVar = "MC_WEB_IDENTITY_TOKEN"
@@ -90,7 +91,7 @@ func (c *S3Config) UpdateBearerToken(token string) error {
 
 // getTokenFromSources tries to get a token from various sources (environment, file)
 // Returns the token, a boolean indicating whether it's available, and any error
-func (c *S3Config) getTokenFromSources() (string, bool, error) {
+func (c *S3Config) getTokenFromSources() (string, bool) {
 	log := c.Logger
 	var token string
 	var available bool
@@ -102,7 +103,7 @@ func (c *S3Config) getTokenFromSources() (string, bool, error) {
 		if err == nil {
 			token = webToken.Token
 			available = true
-			return token, available, nil
+			return token, available
 		} else {
 			log.V(1).Info("Failed to get token from environment", "error", err.Error())
 		}
@@ -114,14 +115,14 @@ func (c *S3Config) getTokenFromSources() (string, bool, error) {
 	if err == nil {
 		token = webToken.Token
 		available = true
-		return token, available, nil
+		return token, available
 	} else {
 		log.V(1).Info("Failed to get token from file", "error", err.Error())
 	}
 
 	// No token found
 	log.V(0).Info("No identity token found in environment or file")
-	return "", false, nil
+	return "", false
 }
 
 // getWebIDTokenFromEnv retrieves the web identity token from an environment variable
