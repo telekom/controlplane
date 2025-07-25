@@ -5,8 +5,9 @@
 package identifier
 
 import (
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // FileIDParts represents the individual components of a file ID

@@ -8,6 +8,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
+
+	"go.uber.org/zap"
+
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
@@ -19,9 +23,7 @@ import (
 	"github.com/telekom/controlplane/file-manager/internal/middleware"
 	"github.com/telekom/controlplane/file-manager/pkg/backend/s3"
 	"github.com/telekom/controlplane/file-manager/pkg/controller"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"os"
 	ctrlr "sigs.k8s.io/controller-runtime"
 )
 
@@ -61,6 +63,7 @@ func setupLog(logLevel string) logr.Logger {
 	return zapr.NewLogger(zapLog)
 }
 
+//nolint:unparam
 func newController(ctx context.Context, cfg *config.ServerConfig, log logr.Logger) (c controller.Controller, err error) {
 	if backendType != "" {
 		cfg.Backend.Type = backendType
@@ -163,18 +166,18 @@ func main() {
 	log.Info("Registering bearer token middleware")
 	apiGroup.Use(middleware.BearerAuthMiddleware(log))
 
-	//if cfg.Security.Enabled {
-	//	opts := []k8s.KubernetesAuthOption{
-	//		k8s.WithTrustedIssuers(cfg.Security.TrustedIssuers...),
-	//		k8s.WithJWKSetURLs(cfg.Security.JWKSetURLs...),
-	//		k8s.WithAccessConfig(cfg.Security.AccessConfig...),
-	//	}
-	//	if util.IsRunningInCluster() {
-	//		log.Info("🔑 Running in cluster")
-	//		opts = append(opts, k8s.WithInClusterIssuer())
-	//	}
-	//	apiGroup.Use(k8s.NewKubernetesAuthz(opts...))
-	//}
+	//  if cfg.Security.Enabled {
+	//	  opts := []k8s.KubernetesAuthOption{
+	//		  k8s.WithTrustedIssuers(cfg.Security.TrustedIssuers...),
+	//		  k8s.WithJWKSetURLs(cfg.Security.JWKSetURLs...),
+	//		  k8s.WithAccessConfig(cfg.Security.AccessConfig...),
+	//	  }
+	//	  if util.IsRunningInCluster() {
+	//		  log.Info("🔑 Running in cluster")
+	//		  opts = append(opts, k8s.WithInClusterIssuer())
+	//	  }
+	//	  apiGroup.Use(k8s.NewKubernetesAuthz(opts...))
+	//  }
 
 	api.RegisterHandlersWithOptions(apiGroup, handler, api.FiberServerOptions{})
 

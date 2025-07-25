@@ -6,166 +6,159 @@ package s3
 
 import (
 	"context"
+	"io"
+
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
-	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
 	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
-	"io"
 )
 
 var _ backend.FileUploader = &S3FileUploader{}
 
 type S3FileUploader struct {
-	config *S3Config
+	config  *S3Config
+	wrapper *MinioWrapper
 }
 
 // NewS3FileUploader creates a new S3FileUploader with the given configuration
 func NewS3FileUploader(config *S3Config) *S3FileUploader {
 	return &S3FileUploader{
-		config: config,
+		config:  config,
+		wrapper: NewMinioWrapper(config),
 	}
 }
 
-// UploadFile uploads a file to S3 and returns the file ID
-// The fileId should follow the convention <env>--<group>--<team>--<fileName>
-// The file will be stored in S3 using a path format: <env>/<group>/<team>/<fileName>
-// Metadata can include X-File-Content-Type and X-File-Checksum headers
-func (s *S3FileUploader) UploadFile(ctx context.Context, fileId string, reader *io.Reader, metadata map[string]string) (string, error) {
+// prepareMetadata processes the input metadata and returns UserMetadata for S3 and the content type
+func (s *S3FileUploader) prepareMetadata(ctx context.Context, metadata map[string]string) (map[string]string, string) {
 	log := logr.FromContextOrDiscard(ctx)
 
-	if s.config == nil || s.config.Client == nil {
-		log.Error(nil, "S3 client not initialized")
-		return "", errors.New("S3 client not initialized")
+	// Prepare minio UserMetadata from our metadata map
+	userMetadata := make(map[string]string)
+	// Copy all metadata fields to UserMetadata
+	for k, v := range metadata {
+		userMetadata[k] = v
 	}
 
-	// Extract bearer token from context and update client credentials
-	token, err := ExtractBearerTokenFromContext(ctx)
-	if err == nil {
-		// Update token only if found in context
-		if err := s.config.UpdateBearerToken(token); err != nil {
-			log.Error(err, "Failed to update bearer token")
-			// Continue with old token if update fails
-		}
-	} else {
-		log.V(1).Info("No bearer token in context, using existing credentials")
-	}
-
-	if reader == nil || *reader == nil {
-		log.Error(nil, "File reader is nil")
-		return "", errors.New("file reader is nil")
-	}
-
-	// Convert fileId to S3 path format
-	s3Path, err := identifier.ConvertFileIdToPath(fileId)
-	if err != nil {
-		log.Error(err, "Failed to convert fileId to S3 path")
-		return "", errors.Wrap(err, "failed to convert fileId to S3 path")
-	}
-
-	log.V(1).Info("Uploading file", "fileId", fileId, "s3Path", s3Path, "bucket", s.config.BucketName)
-
-	// Get content type from metadata or use default
-	contentType := "application/octet-stream"
-	if ctHeader, ok := metadata["X-File-Content-Type"]; ok && ctHeader != "" {
+	// Get content type from metadata
+	contentType := backend.DefaultContentType // fallback default
+	if ctHeader, ok := metadata[backend.XFileContentType]; ok && ctHeader != "" {
 		contentType = ctHeader
 		log.V(1).Info("Using content type from metadata", "contentType", contentType)
 	}
 
-	// Prepare minio UserMetadata from our metadata map
-	userMetadata := make(map[string]string)
-
-	// Add X-File-Content-Type to UserMetadata if present
-	if value, ok := metadata["X-File-Content-Type"]; ok && value != "" {
-		userMetadata["X-File-Content-Type"] = value
-	}
-
-	// Add X-File-Checksum to UserMetadata if present
-	if value, ok := metadata["X-File-Checksum"]; ok && value != "" {
-		userMetadata["X-File-Checksum"] = value
+	// Add X-File-Checksum to UserMetadata if present and log it
+	if value, ok := metadata[backend.XFileChecksum]; ok && value != "" {
 		log.V(1).Info("Added checksum to metadata", "checksum", value)
 	}
 
+	return userMetadata, contentType
+}
+
+// uploadToS3 handles the actual upload operation to S3
+func (s *S3FileUploader) uploadToS3(ctx context.Context, path string, reader io.Reader, contentType string, userMetadata map[string]string) error {
+	log := logr.FromContextOrDiscard(ctx)
+
 	// Configure PutObjectOptions
 	putOptions := minio.PutObjectOptions{
-		ContentType:  contentType,
-		UserMetadata: userMetadata,
-		// TODO: CHECKSUM-SHA-256: Enable SHA-256 checksum calculation and verification
-		//Checksum: minio.ChecksumSHA256,
+		ContentType:    contentType,
+		UserMetadata:   userMetadata,
+		SendContentMd5: true, // Enable MD5 checksum calculation and verification
 	}
 
-	// TODO: CHECKSUM-SHA-256: Enable SHA-256 checksum calculation and verification
-	// If client provided a checksum, set it for server-side validation
-	// S3 will automatically validate this against the uploaded content
-	//if providedChecksum, ok := metadata["X-File-Checksum"]; ok && providedChecksum != "" {
-	//	log.V(1).Info("Using client-provided checksum for server-side validation", "checksum", providedChecksum)
-	//	// Set the full object checksum mode in UserMetadata
-	//	// This is the proper way to specify the checksum mode in minio-go v7.0.95
-	//	putOptions.UserMetadata["x-amz-checksum-mode"] = "FULL_OBJECT"
-	//	// Add the client-provided checksum in the format expected by S3
-	//	putOptions.UserMetadata["x-amz-checksum-sha256"] = providedChecksum
-	//}
-
-	// Upload file using the S3 path instead of fileId directly
+	// Upload file using the S3 path directly
 	log.V(1).Info("Starting S3 PutObject operation")
-	_, err = s.config.Client.PutObject(ctx, s.config.BucketName, s3Path, *reader, -1, putOptions)
+	_, err := s.config.Client.PutObject(ctx, s.config.BucketName, path, reader, -1, putOptions)
 
 	if err != nil {
 		log.Error(err, "Failed to upload file to S3")
-		return "", errors.Wrap(err, "failed to upload file")
+		return backend.ErrUploadFailed(path, err.Error())
 	}
-	log.V(1).Info("File uploaded successfully", "fileId", fileId, "s3Path", s3Path)
 
-	// Get the object info to validate metadata
-	log.V(1).Info("Retrieving object info for validation", "s3Path", s3Path)
-	objInfo, err := s.config.Client.StatObject(ctx, s.config.BucketName, s3Path, minio.StatObjectOptions{})
+	return nil
+}
+
+// validateUploadedMetadata validates that the uploaded object metadata matches expectations
+func (s *S3FileUploader) validateUploadedMetadata(ctx context.Context, path string, metadata map[string]string) error {
+	// Extract metadata fields that need validation
+	requestContentType := ""
+	requestChecksum := ""
+
+	// Get requested content type if provided
+	if value, ok := metadata[backend.XFileContentType]; ok && value != "" {
+		requestContentType = value
+	}
+
+	// Get requested checksum if provided
+	if value, ok := metadata[backend.XFileChecksum]; ok && value != "" {
+		requestChecksum = value
+	}
+
+	// Validate the metadata using the wrapper
+	return s.wrapper.ValidateObjectMetadata(ctx, path, requestContentType, requestChecksum)
+}
+
+// UploadFile uploads a file to S3 and returns the file ID
+// The fileId should follow the convention <env>--<group>--<team>--<fileName>
+// Metadata already includes X-File-Content-Type and X-File-Checksum headers
+// convertFileIdToPath converts a fileId to an S3 path and logs the result
+func (s *S3FileUploader) convertFileIdToPath(ctx context.Context, fileId string) (string, error) {
+	log := logr.FromContextOrDiscard(ctx)
+
+	// Convert fileId to S3 path format
+	path, err := identifier.ConvertFileIdToPath(fileId)
 	if err != nil {
-		log.Error(err, "Failed to retrieve object info for validation")
-		return "", errors.Wrap(err, "failed to retrieve object info for validation")
+		log.Error(err, "Failed to convert fileId to S3 path")
+		return "", backend.ErrInvalidFileId(fileId)
 	}
 
-	// Validate Content-Type if it was specified in the request
-	if requestedContentType, ok := metadata["X-File-Content-Type"]; ok && requestedContentType != "" {
-		if objInfo.ContentType != requestedContentType {
-			log.Error(nil, "Content-Type mismatch",
-				"expected", requestedContentType,
-				"actual", objInfo.ContentType)
-			return "", errors.Errorf("content type mismatch: expected %s, got %s",
-				requestedContentType, objInfo.ContentType)
-		}
-		log.V(1).Info("Content-Type validation successful", "contentType", objInfo.ContentType)
+	log.V(1).Info("Using S3 path", "path", path)
+	return path, nil
+}
+
+// initializeUpload validates the client and updates credentials
+func (s *S3FileUploader) initializeUpload(ctx context.Context) error {
+	// Validate client initialization
+	if err := s.wrapper.ValidateClient(ctx); err != nil {
+		return backend.ErrClientInitialization(err.Error())
 	}
 
-	// Validate Checksum if it was specified in the request
-	if requestedChecksum, ok := metadata["X-File-Checksum"]; ok && requestedChecksum != "" {
-		// Use the S3-generated checksum instead of the UserMetadata
-		var storedChecksum string
-		if objInfo.ETag != "" {
-			// Use the S3-generated checksum if available
-			storedChecksum = objInfo.ETag
-			log.V(1).Info("Using S3-generated checksum for validation", "checksum", storedChecksum)
-		} else {
-			// Fall back to UserMetadata if ETag is not available
-			storedChecksum = objInfo.UserMetadata["X-File-Checksum"]
-			log.V(1).Info("Using UserMetadata checksum for validation", "userMetadataChecksum", storedChecksum)
-		}
+	// Update credentials using token from context if available
+	s.wrapper.UpdateCredentialsFromContext(ctx)
+	return nil
+}
 
-		// If checksum differs from what was requested, return an error
-		if storedChecksum != requestedChecksum {
-			checksumSource := "UserMetadata"
-			if objInfo.ETag != "" {
-				checksumSource = "S3 ETag"
-			}
-			log.Error(nil, "Checksum mismatch",
-				"expected", requestedChecksum,
-				"actual", storedChecksum,
-				"checksumSource", checksumSource)
-			return "", errors.Errorf("checksum mismatch: expected %s, got %s",
-				requestedChecksum, storedChecksum)
-		}
-		log.V(1).Info("Checksum validation successful", "checksum", storedChecksum)
+func (s *S3FileUploader) UploadFile(ctx context.Context, fileId string, reader io.Reader, metadata map[string]string) (string, error) {
+	log := logr.FromContextOrDiscard(ctx)
+
+	// Initialize upload (client validation and credential updates)
+	if err := s.initializeUpload(ctx); err != nil {
+		return "", err
 	}
 
-	// Return the original fileId as that's the expected return value by the interface
+	log.V(1).Info("Uploading file", "fileId", fileId, "bucket", s.config.BucketName)
+
+	// Convert fileId to S3 path
+	path, err := s.convertFileIdToPath(ctx, fileId)
+	if err != nil {
+		return "", err
+	}
+
+	// Prepare metadata for S3 upload
+	userMetadata, contentType := s.prepareMetadata(ctx, metadata)
+
+	// Upload file to S3
+	err = s.uploadToS3(ctx, path, reader, contentType, userMetadata)
+	if err != nil {
+		return "", err
+	}
+	log.V(1).Info("File uploaded successfully", "fileId", fileId, "s3Path", path)
+
+	// Validate metadata after upload
+	if err := s.validateUploadedMetadata(ctx, path, metadata); err != nil {
+		return "", err
+	}
+
+	// Return the original fileId
 	return fileId, nil
 }

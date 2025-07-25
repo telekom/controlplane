@@ -5,8 +5,9 @@
 package identifier
 
 import (
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // ConvertFileIdToPath converts a fileId in the format "<env>--<group>--<team>--<fileName>"

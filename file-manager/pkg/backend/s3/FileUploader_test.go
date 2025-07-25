@@ -9,6 +9,9 @@ import (
 	"io"
 	"strings"
 	"testing"
+
+	"github.com/minio/minio-go/v7"
+	"github.com/telekom/controlplane/file-manager/pkg/backend"
 )
 
 func TestS3FileUploader_UploadFile(t *testing.T) {
@@ -21,42 +24,33 @@ func TestS3FileUploader_UploadFile(t *testing.T) {
 
 	uploader := NewS3FileUploader(config)
 
-	// Test case 1: Nil config
-	uploader.config = nil
+	// Test case 1: Nil client validation through wrapper
 	reader := strings.NewReader("test content")
 	var r io.Reader = reader
-	_, err := uploader.UploadFile(context.Background(), "valid--file--id--name", &r, nil)
+	_, err := uploader.UploadFile(context.Background(), "env--group--team--file.txt", r, nil)
 	if err == nil {
-		t.Error("Expected error when config is nil")
+		t.Error("Expected error when client is nil")
 	}
 
 	// Restore config for next tests
 	uploader.config = config
 
-	// Test case 2: Nil reader
-	_, err = uploader.UploadFile(context.Background(), "valid--file--id--name", nil, nil)
+	// Test case 2: Nil reader is handled by the controller, not tested here anymore
+
+	// Test case 3: Invalid fileId format
+	// First make sure the config has a client to pass initial validation
+	uploader.config.Client = &minio.Client{} // Mock client
+	_, err = uploader.UploadFile(context.Background(), "invalid-file-id", r, nil)
 	if err == nil {
-		t.Error("Expected error when reader is nil")
+		t.Error("Expected error when fileId format is invalid")
+	}
+	// Check if the error is an InvalidFileId error
+	if err != nil && !backend.IsInvalidFileIdErr(err) {
+		t.Errorf("Expected InvalidFileIdErr, got: %v", err)
 	}
 
-	// Test case 3: Invalid file ID format
-	_, err = uploader.UploadFile(context.Background(), "invalid-file-id", &r, nil)
-	if err == nil {
-		t.Error("Expected error when file ID format is invalid")
-	}
-
-	// Test case 4: Valid case (but will fail because we have no real client)
-	// This is just to test that validation passes
-	// Create test metadata
-	metadata := map[string]string{
-		"X-File-Content-Type": "text/plain",
-		"X-File-Checksum":     "abcdef1234567890",
-	}
-	_, err = uploader.UploadFile(context.Background(), "env--group--team--file.txt", &r, metadata)
-	// We expect an error because the client is nil
-	if err == nil {
-		t.Error("Expected error due to nil client, but got success")
-	}
+	// Note: A full test with mocked S3 client would be added in a future PR
+	// That would test the complete flow with proper mocking of the S3 client
 }
 
 // TODO: Add proper mocked tests for the validation functionality in a separate PR
