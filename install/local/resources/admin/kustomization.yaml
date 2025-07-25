@@ -2,14 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-namespace: default
+namespace: controlplane
 
 labels:
   - includeSelectors: true
     pairs:
-      cp.ei.telekom.de/environment: default
+      cp.ei.telekom.de/environment: controlplane
       app.kubernetes.io/managed-by: kustomize
 
 resources:
   - environment.yaml
-  - zone.yaml
+  - zones
