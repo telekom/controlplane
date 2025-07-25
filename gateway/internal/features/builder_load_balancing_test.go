@@ -146,7 +146,7 @@ func verifyJumperConfig(builder *features.Builder) {
 }
 
 func buildLoadBalancingFeature(ctx context.Context, loadBalancingRoute *gatewayv1.Route, withLastMileSecurity bool) *features.Builder {
-	builder := features.NewFeatureBuilder(mockKc, loadBalancingRoute, realm, gateway)
+	builder := features.NewFeatureBuilder(mockKc, loadBalancingRoute, nil, realm, gateway)
 	builder.EnableFeature(feature.InstanceLoadBalancingFeature)
 	if withLastMileSecurity {
 		builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
@@ -170,5 +170,5 @@ func enableLoadBalancing(isProxyRoute bool) *gatewayv1.Route {
 func configureMocks(ctx context.Context, loadBalancingRoute *gatewayv1.Route) {
 	mockKc.EXPECT().CreateOrReplaceRoute(ctx, loadBalancingRoute, gomock.Any()).Return(nil).Times(1)
 	mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
-	mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any()).Return(nil).Times(1)
+	mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 }

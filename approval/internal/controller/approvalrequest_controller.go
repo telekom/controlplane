@@ -7,16 +7,15 @@ package controller // nolint: dupl
 import (
 	"context"
 
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
 
 	approvalreq_handler "github.com/telekom/controlplane/approval/internal/handler/approvalrequest"
 )
@@ -47,8 +46,8 @@ func (r *ApprovalRequestReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&approvalv1.ApprovalRequest{}).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: 1,
-			RateLimiter:             workqueue.DefaultTypedItemBasedRateLimiter[reconcile.Request](),
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
 }

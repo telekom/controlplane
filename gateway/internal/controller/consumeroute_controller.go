@@ -7,8 +7,8 @@ package controller
 import (
 	"context"
 
-	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/controller"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	consumeroute_handler "github.com/telekom/controlplane/gateway/internal/handler/consumeroute"
@@ -17,6 +17,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -28,7 +29,7 @@ type ConsumeRouteReconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
-	controller.Controller[*gatewayv1.ConsumeRoute]
+	cc.Controller[*gatewayv1.ConsumeRoute]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
@@ -43,10 +44,14 @@ func (r *ConsumeRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request
 // SetupWithManager sets up the controller with the Manager.
 func (r *ConsumeRouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("consumeroute-controller")
-	r.Controller = controller.NewController(&consumeroute_handler.ConsumeRouteHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&consumeroute_handler.ConsumeRouteHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayv1.ConsumeRoute{}).
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter(),
+		}).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.mapRouteToConsumeRoute),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
@@ -68,7 +73,7 @@ func (r *ConsumeRouteReconciler) mapRouteToConsumeRoute(ctx context.Context, obj
 			IndexFieldSpecRoute: types.ObjectRefFromObject(route).String(),
 		},
 		client.MatchingLabels{
-			config.EnvironmentLabelKey: route.Labels[config.EnvironmentLabelKey],
+			cconfig.EnvironmentLabelKey: route.Labels[cconfig.EnvironmentLabelKey],
 		},
 	}
 

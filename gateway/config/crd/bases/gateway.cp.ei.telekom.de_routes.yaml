@@ -200,9 +200,6 @@ spec:
                   failover:
                     properties:
                       security:
-                        description: |-
-                          Security defines the security configuration for the gateway
-                          Security is optional, but if provided, exactly one of m2m or h2m must be set
                         properties:
                           disableAccessControl:
                             default: false

@@ -7,12 +7,14 @@ package controller
 import (
 	"context"
 
-	"github.com/telekom/controlplane/common/pkg/controller"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -20,7 +22,6 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	zone_handler "github.com/telekom/controlplane/admin/internal/handler/zone"
 	corev1 "k8s.io/api/core/v1"
-	runtime_ctrl "sigs.k8s.io/controller-runtime/pkg/controller"
 )
 
 // ZoneReconciler reconciles a Zone object
@@ -29,7 +30,7 @@ type ZoneReconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
-	controller.Controller[*adminv1.Zone]
+	cc.Controller[*adminv1.Zone]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
@@ -56,7 +57,7 @@ func (r *ZoneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 // SetupWithManager sets up the controller with the Manager.
 func (r *ZoneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("zone-controller")
-	r.Controller = controller.NewController(&zone_handler.ZoneHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&zone_handler.ZoneHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&adminv1.Zone{}).
@@ -65,9 +66,9 @@ func (r *ZoneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Owns(&corev1.Namespace{}).
-		WithOptions(runtime_ctrl.Options{
-			MaxConcurrentReconciles: 1,
-			// RateLimiter:             ...
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
 }
@@ -79,7 +80,7 @@ func (r *ZoneReconciler) mapEnvironmentToZone(ctx context.Context, obj client.Ob
 	}
 
 	list := &adminv1.ZoneList{}
-	err := r.List(ctx, list, client.MatchingLabels{"environment": environment.GetName()})
+	err := r.List(ctx, list, client.MatchingLabels{cconfig.EnvironmentLabelKey: environment.GetName()})
 	if err != nil {
 		return nil
 	}

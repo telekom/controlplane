@@ -36,13 +36,19 @@ func (f *LastMileSecurityFeature) Priority() int {
 }
 
 func (f *LastMileSecurityFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return false
+	}
 	noFailover := route.Spec.Traffic.Failover == nil
 	return !route.Spec.PassThrough && noFailover
 }
 
 func (f *LastMileSecurityFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
-	route := builder.GetRoute()
+	route, ok := builder.GetRoute()
+	if !ok {
+		return features.ErrNoRoute
+	}
 	realm := builder.GetRealm()
 	envName := contextutil.EnvFromContextOrDie(ctx)
 
