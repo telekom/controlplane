@@ -6,6 +6,7 @@ package api
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
@@ -70,6 +71,15 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		if err != nil {
 			return errors.Wrap(err, "failed to map trusted teams")
 		}
+
+		ownerTeamName := strings.Split(owner.Namespace, "--")
+		if len(ownerTeamName) != 3 {
+			return errors.New("invalid owner team name")
+		}
+		apiExposure.Spec.Approval.TrustedTeams = append(apiExposure.Spec.Approval.TrustedTeams, types.ObjectRef{
+			Name:      ownerTeamName[1] + "--" + ownerTeamName[2],
+			Namespace: contextutil.EnvFromContextOrDie(ctx),
+		})
 
 		failoverZones, hasFailover := getFailoverZones(environment, exp.Traffic.Failover)
 		if hasFailover {

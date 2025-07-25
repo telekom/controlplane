@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/common/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -34,6 +35,10 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 	}
 
 	BeforeAll(func() {
+
+		By("Creating the environment Namespace")
+		createNamespace(testEnvironment)
+
 		// Note: Namespaces and team are shared with main controller tests
 		// They may already exist, so we handle that gracefully
 		By("Ensuring the Team exists")
@@ -45,6 +50,9 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 		}
+
+		By("Creating the team Namespace")
+		createNamespace(teamNamespace)
 	})
 
 	AfterEach(func() {
@@ -161,7 +169,8 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 				g.Expect(apiExposure.Spec.Approval.Strategy).To(Equal(apiapi.ApprovalStrategyFourEyes))
 
 				// Verify trusted teams are mapped correctly
-				g.Expect(apiExposure.Spec.Approval.TrustedTeams).To(HaveLen(2))
+				// Note: The owner team is added as well
+				g.Expect(apiExposure.Spec.Approval.TrustedTeams).To(HaveLen(3))
 
 				// Check that trusted teams reference the correct Team objects
 				trustedTeamNames := make([]string, len(apiExposure.Spec.Approval.TrustedTeams))
@@ -226,7 +235,10 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 				g.Expect(apiExposure.Spec.Approval.Strategy).To(Equal(apiapi.ApprovalStrategySimple))
 
 				// Verify trusted teams list is empty/nil
-				g.Expect(apiExposure.Spec.Approval.TrustedTeams).To(BeEmpty())
+				g.Expect(apiExposure.Spec.Approval.TrustedTeams).To(ContainElement(types.ObjectRef{
+					Name:      "eni--hyperion",
+					Namespace: testEnvironment,
+				}))
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -347,7 +359,7 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 
 				// Verify trusted teams are mapped (should handle duplicates)
 				g.Expect(len(apiExposure.Spec.Approval.TrustedTeams)).To(BeNumerically(">=", 3))
-				g.Expect(len(apiExposure.Spec.Approval.TrustedTeams)).To(BeNumerically("<=", 5))
+				g.Expect(len(apiExposure.Spec.Approval.TrustedTeams)).To(BeNumerically("<=", 6))
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -406,7 +418,7 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 				g.Expect(apiExposure.Spec.Approval.Strategy).To(Equal(apiapi.ApprovalStrategyAuto))
 
 				// Verify trusted teams are still mapped correctly
-				g.Expect(apiExposure.Spec.Approval.TrustedTeams).To(HaveLen(1))
+				g.Expect(apiExposure.Spec.Approval.TrustedTeams).To(HaveLen(2))
 				g.Expect(apiExposure.Spec.Approval.TrustedTeams[0].Name).To(Equal("trusted-group-1--trusted-team-1"))
 				g.Expect(apiExposure.Spec.Approval.TrustedTeams[0].Namespace).To(Equal(testEnvironment))
 			}, timeout, interval).Should(Succeed())
