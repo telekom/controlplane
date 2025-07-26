@@ -146,5 +146,5 @@ can do:
     export ENABLE_WEBHOOKS=false # if applicable, disable webhooks
     go run cmd/main.go # start the controller process
     ```
-5. 🎉 Success: Your controllers should now run as a seperate process connected to the kind-cluster
+5. 🎉 Success: Your controllers should now run as a separate process connected to the kind-cluster
 
