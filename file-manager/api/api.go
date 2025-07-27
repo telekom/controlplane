@@ -36,20 +36,12 @@ var (
 	api         FileManager
 )
 
-type FileContentType string
-
-var (
-	FileContentTypeJSON   FileContentType = "application/json"
-	FileContentTypeYaml   FileContentType = "application/yaml"
-	FileContentTypeBinary FileContentType = "application/octet-stream"
-)
-
 type DownloadApi interface {
 	DownloadFile(ctx context.Context, fileId string) (*io.ReadCloser, error)
 }
 
 type UploadApi interface {
-	UploadFile(ctx context.Context, fileId string, fileContentType FileContentType, content *io.Reader) (*FileUploadResponse, error)
+	UploadFile(ctx context.Context, fileId string, fileContentType string, content *io.Reader) (*FileUploadResponse, error)
 }
 
 type FileManager interface {
@@ -134,7 +126,7 @@ func GetFileManager(opts ...Option) FileManager {
 	return api
 }
 
-func (f *fileManagerAPI) UploadFile(ctx context.Context, fileId string, fileContentType FileContentType, content *io.Reader) (*FileUploadResponse, error) {
+func (f *fileManagerAPI) UploadFile(ctx context.Context, fileId string, fileContentType string, content *io.Reader) (*FileUploadResponse, error) {
 	log := log.FromContext(ctx)
 	log.V(1).Info("Uploading file ", "fileId", fileId, "fileContentType", fileContentType)
 
@@ -151,7 +143,7 @@ func (f *fileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 
 	// use generated client code to call the file manager server
 	response, err := f.client.UploadFileWithBodyWithResponse(ctx, fileId, &gen.UploadFileParams{
-		XFileContentType: fileContentTypeAsStringPtr(fileContentType),
+		XFileContentType: stringPtr(fileContentType),
 		XFileChecksum:    stringPtr(md5hash),
 	}, uploadRequestContentType, io.NopCloser(bytes.NewReader(data)))
 	if err != nil {

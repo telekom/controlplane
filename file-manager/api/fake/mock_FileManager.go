@@ -89,21 +89,33 @@ func (_c *MockFileManager_DownloadFile_Call) RunAndReturn(run func(context.Conte
 }
 
 // UploadFile provides a mock function with given fields: ctx, fileId, fileContentType, content
-func (_m *MockFileManager) UploadFile(ctx context.Context, fileId string, fileContentType api.FileContentType, content *io.Reader) error {
+func (_m *MockFileManager) UploadFile(ctx context.Context, fileId string, fileContentType string, content *io.Reader) (*api.FileUploadResponse, error) {
 	ret := _m.Called(ctx, fileId, fileContentType, content)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UploadFile")
 	}
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, api.FileContentType, *io.Reader) error); ok {
+	var r0 *api.FileUploadResponse
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, *io.Reader) (*api.FileUploadResponse, error)); ok {
+		return rf(ctx, fileId, fileContentType, content)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, *io.Reader) *api.FileUploadResponse); ok {
 		r0 = rf(ctx, fileId, fileContentType, content)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*api.FileUploadResponse)
+		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, *io.Reader) error); ok {
+		r1 = rf(ctx, fileId, fileContentType, content)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // MockFileManager_UploadFile_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UploadFile'
@@ -114,25 +126,25 @@ type MockFileManager_UploadFile_Call struct {
 // UploadFile is a helper method to define mock.On call
 //   - ctx context.Context
 //   - fileId string
-//   - fileContentType api.FileContentType
+//   - fileContentType string
 //   - content *io.Reader
 func (_e *MockFileManager_Expecter) UploadFile(ctx interface{}, fileId interface{}, fileContentType interface{}, content interface{}) *MockFileManager_UploadFile_Call {
 	return &MockFileManager_UploadFile_Call{Call: _e.mock.On("UploadFile", ctx, fileId, fileContentType, content)}
 }
 
-func (_c *MockFileManager_UploadFile_Call) Run(run func(ctx context.Context, fileId string, fileContentType api.FileContentType, content *io.Reader)) *MockFileManager_UploadFile_Call {
+func (_c *MockFileManager_UploadFile_Call) Run(run func(ctx context.Context, fileId string, fileContentType string, content *io.Reader)) *MockFileManager_UploadFile_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(api.FileContentType), args[3].(*io.Reader))
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(*io.Reader))
 	})
 	return _c
 }
 
-func (_c *MockFileManager_UploadFile_Call) Return(_a0 error) *MockFileManager_UploadFile_Call {
-	_c.Call.Return(_a0)
+func (_c *MockFileManager_UploadFile_Call) Return(_a0 *api.FileUploadResponse, _a1 error) *MockFileManager_UploadFile_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockFileManager_UploadFile_Call) RunAndReturn(run func(context.Context, string, api.FileContentType, *io.Reader) error) *MockFileManager_UploadFile_Call {
+func (_c *MockFileManager_UploadFile_Call) RunAndReturn(run func(context.Context, string, string, *io.Reader) (*api.FileUploadResponse, error)) *MockFileManager_UploadFile_Call {
 	_c.Call.Return(run)
 	return _c
 }

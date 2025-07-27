@@ -22,11 +22,6 @@ func Md5Base64(reader io.Reader) (string, error) {
 	return base64.StdEncoding.EncodeToString(sum), nil
 }
 
-func fileContentTypeAsStringPtr(fileContentType FileContentType) *string {
-	s := string(fileContentType)
-	return stringPtr(s)
-}
-
 func stringPtr(s string) *string {
 	return &s
 }
