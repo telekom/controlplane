@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	// flags
+	// flags defines the command-line flags for the application.
 	kubecontext string
 	environment string
 	team        string
