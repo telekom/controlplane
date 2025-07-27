@@ -48,13 +48,13 @@ ingress:
     nginx.ingress.kubernetes.io/backend-protocol: HTTP
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
   hosts:
-    - host: <your-api-host> # TODO: Set your ingress host, e.g. my-api.example.com
+    - host: controlplane-api.your-domain.com # Replace with your actual domain
       paths:
         - path: /
           pathType: ImplementationSpecific
   tls:
     - hosts:
-        - <your-api-host> # TODO: Set your ingress TLS host, e.g. my-api.example.com
+        - controlplane-api.your-domain.com # Must match the host above
 
 metrics:
   enabled: true
@@ -89,7 +89,8 @@ logLevel: "info"
 config: 
   address: ":8080"
   basepath: "/api"
-  resources: [] # TODO: Define your resources here
+  resources: [] # Define which Kubernetes CRDs this API should expose
+    # Example - uncomment and modify as needed:
     # - group: approval.cp.ei.telekom.de
     #   version: v1
     #   resource: approvals
@@ -99,10 +100,10 @@ config:
     description: "API for managing control plane resources"
     version: "v1"
     servers:
-      - url: "https://<your-api-host>" # TODO: Set your API server URL
+      - url: "https://controlplane-api.your-domain.com" # Replace with your actual API URL
         description: "Development"
 
-  predefined: [] # TODO: Define your predefined resources here
+  predefined: [] # Define predefined resource queries and transformations
 
     # - ref: approvals # This references the previously defined resource
     #   name: grants
@@ -126,6 +127,6 @@ rbac:
     - apiGroups: ["apiextensions.k8s.io"]
       resources: ["customresourcedefinitions"]
       verbs: ["list"]
-    - apiGroups: ["*"] # TODO: Adjust API groups as needed
+    - apiGroups: ["*"] # Grant access to all API groups - restrict in production
       resources: ["*"]
       verbs: ["*"]
