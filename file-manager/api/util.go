@@ -3,9 +3,9 @@ package api
 import (
 	"crypto/md5"
 	"encoding/base64"
-	"github.com/telekom/controlplane/file-manager/api/gen"
 	"github.com/telekom/controlplane/file-manager/pkg/constants"
 	"io"
+	"net/http"
 )
 
 func Md5Base64(reader io.Reader) (string, error) {
@@ -26,8 +26,8 @@ func stringPtr(s string) *string {
 	return &s
 }
 
-func extractHeader(response *gen.UploadFileResponse, checksum constants.HeaderName) string {
-	value := response.HTTPResponse.Header.Get(checksum.String())
+func extractHeader(httpResponse *http.Response, checksum constants.HeaderName) string {
+	value := httpResponse.Header.Get(checksum.String())
 	if value == "" {
 		return "undefined"
 	}

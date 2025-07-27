@@ -37,7 +37,7 @@ var (
 )
 
 type DownloadApi interface {
-	DownloadFile(ctx context.Context, fileId string) (*io.ReadCloser, error)
+	DownloadFile(ctx context.Context, fileId string) (*FileDownloadResponse, error)
 }
 
 type UploadApi interface {
@@ -154,9 +154,9 @@ func (f *fileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 	switch response.StatusCode() {
 	case http.StatusOK:
 		return &FileUploadResponse{
-			MD5Hash:     extractHeader(response, constants.HeaderNameChecksum),
+			MD5Hash:     extractHeader(response.HTTPResponse, constants.HeaderNameChecksum),
 			FileId:      response.JSON200.Id,
-			ContentType: extractHeader(response, constants.HeaderNameOriginalContentType),
+			ContentType: extractHeader(response.HTTPResponse, constants.HeaderNameOriginalContentType),
 		}, nil
 	case http.StatusNotFound:
 		return nil, ErrNotFound
@@ -169,7 +169,7 @@ func (f *fileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 	}
 }
 
-func (f *fileManagerAPI) DownloadFile(ctx context.Context, fileId string) (*io.ReadCloser, error) {
+func (f *fileManagerAPI) DownloadFile(ctx context.Context, fileId string) (*FileDownloadResponse, error) {
 	log := log.FromContext(ctx)
 	response, err := f.client.DownloadFileWithResponse(ctx, fileId)
 	if err != nil {
@@ -177,6 +177,7 @@ func (f *fileManagerAPI) DownloadFile(ctx context.Context, fileId string) (*io.R
 	}
 	switch response.StatusCode() {
 	case http.StatusOK:
+		// read to body and close the reader here
 		bodyReadCloser := io.NopCloser(bytes.NewReader(response.Body))
 		defer func(bodyReadCloser io.ReadCloser) {
 			err := bodyReadCloser.Close()
@@ -185,13 +186,23 @@ func (f *fileManagerAPI) DownloadFile(ctx context.Context, fileId string) (*io.R
 			}
 		}(bodyReadCloser)
 
-		return &bodyReadCloser, nil
+		data, err := io.ReadAll(bodyReadCloser)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read response body")
+		}
+
+		// construct the response
+		return &FileDownloadResponse{
+			MD5Hash:     extractHeader(response.HTTPResponse, constants.HeaderNameChecksum),
+			ContentType: extractHeader(response.HTTPResponse, constants.HeaderNameOriginalContentType),
+			Content:     data,
+		}, nil
 	case http.StatusNotFound:
 		return nil, ErrNotFound
 	default:
 		var err gen.ErrorResponse
 		if err := json.Unmarshal(response.Body, &err); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to read response body of error response")
 		}
 		return nil, fmt.Errorf("error %s: %s", err.Type, err.Detail)
 	}

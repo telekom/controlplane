@@ -5,3 +5,9 @@ type FileUploadResponse struct {
 	FileId      string
 	ContentType string
 }
+
+type FileDownloadResponse struct {
+	MD5Hash     string
+	ContentType string
+	Content     []byte
+}
