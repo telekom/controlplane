@@ -17,18 +17,21 @@ import (
 	"github.com/telekom/controlplane/common-server/api/accesstoken"
 	"github.com/telekom/controlplane/common-server/api/util"
 	"github.com/telekom/controlplane/file-manager/api/gen"
+	"github.com/telekom/controlplane/file-manager/pkg/constants"
 	"io"
 	"net/http"
 	"os"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"strings"
 	"sync"
 	"github.com/telekom/controlplane/secret-manager/api/util"
 )
 
 const (
-	localhost = "http://localhost:9090/api"
-	inCluster = "https://file-manager.file-manager-system.svc.cluster.local/api"
+	localhost                = "http://localhost:9090/api"
+	inCluster                = "https://file-manager.file-manager-system.svc.cluster.local/api"
+	tokenFilePath            = "/var/run/secrets/tokens/sa-token"
+	uploadRequestContentType = "application/octet-stream"
 )
 
 var (
@@ -50,7 +53,7 @@ type DownloadApi interface {
 }
 
 type UploadApi interface {
-	UploadFile(ctx context.Context, fileId string, fileContentType FileContentType, content *io.Reader) error
+	UploadFile(ctx context.Context, fileId string, fileContentType FileContentType, content *io.Reader) (*FileUploadResponse, error)
 }
 
 type FileManager interface {
@@ -86,7 +89,7 @@ func defaultOptions() *Options {
 	if util.IsRunningInCluster() {
 		return &Options{
 			URL:   inCluster,
-			Token: accesstoken.NewAccessToken(accesstoken.TokenFilePath),
+			Token: accesstoken.NewAccessToken(tokenFilePath),
 		}
 	} else {
 		return &Options{
@@ -135,27 +138,51 @@ func GetFileManager(opts ...Option) FileManager {
 	return api
 }
 
-func (f *fileManagerAPI) UploadFile(ctx context.Context, fileId string, fileContentType FileContentType, content *io.Reader) error {
-	response, err := f.client.UploadFileWithBodyWithResponse(ctx, fileId, string(fileContentType), *content)
+func (f *fileManagerAPI) UploadFile(ctx context.Context, fileId string, fileContentType FileContentType, content *io.Reader) (*FileUploadResponse, error) {
+	log := log.FromContext(ctx)
+	log.V(1).Info("Uploading file ", "fileId", fileId, "fileContentType", fileContentType)
+
+	// calculate the MD5 hash
+	data, err := io.ReadAll(*content)
 	if err != nil {
-		return err
+		return nil, errors.Wrap(err, "Failed to read content of file while calculating MD5 hash")
 	}
+
+	md5hash, err := Md5Base64(bytes.NewReader(data))
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to calculate MD5 hash")
+	}
+
+	// use generated client code to call the file manager server
+	response, err := f.client.UploadFileWithBodyWithResponse(ctx, fileId, &gen.UploadFileParams{
+		XFileContentType: fileContentTypeAsStringPtr(fileContentType),
+		XFileChecksum:    stringPtr(md5hash),
+	}, uploadRequestContentType, io.NopCloser(bytes.NewReader(data)))
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to upload file")
+	}
+
+	// evaluate the response
 	switch response.StatusCode() {
 	case http.StatusOK:
-		return nil
+		return &FileUploadResponse{
+			MD5Hash:     extractHeader(response, constants.HeaderNameChecksum),
+			FileId:      response.JSON200.Id,
+			ContentType: extractHeader(response, constants.HeaderNameOriginalContentType),
+		}, nil
 	case http.StatusNotFound:
-		return ErrNotFound
+		return nil, ErrNotFound
 	default:
 		var err gen.ErrorResponse
 		if err := json.Unmarshal(response.Body, &err); err != nil {
-			return err
+			return nil, err
 		}
-		return fmt.Errorf("error %s: %s", err.Type, err.Detail)
+		return nil, fmt.Errorf("error %s: %s", err.Type, err.Detail)
 	}
 }
 
 func (f *fileManagerAPI) DownloadFile(ctx context.Context, fileId string) (*io.ReadCloser, error) {
-	log := logf.FromContext(ctx)
+	log := log.FromContext(ctx)
 	response, err := f.client.DownloadFileWithResponse(ctx, fileId)
 	if err != nil {
 		return nil, err

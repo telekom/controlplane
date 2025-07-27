@@ -7,21 +7,14 @@ package handler
 import (
 	"context"
 	"fmt"
-	"io"
-
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/file-manager/internal/api"
+	"github.com/telekom/controlplane/file-manager/pkg/constants"
 	"github.com/telekom/controlplane/file-manager/pkg/controller"
+	"io"
 )
 
 var _ api.StrictServerInterface = &Handler{}
-
-const (
-	// XFileContentType is the header for the content type of the file
-	XFileContentType = "X-File-Content-Type"
-	// XFileChecksum is the header for the checksum of the file
-	XFileChecksum = "X-File-Checksum"
-)
 
 type Handler struct {
 	ctrl controller.Controller
@@ -44,10 +37,10 @@ func (h *Handler) UploadFile(ctx context.Context, request api.UploadFileRequestO
 	// Extract metadata headers from request
 	metadata := make(map[string]string)
 	if request.Params.XFileContentType != nil {
-		metadata[XFileContentType] = *request.Params.XFileContentType
+		metadata[constants.HeaderNameOriginalContentType.String()] = *request.Params.XFileContentType
 	}
 	if request.Params.XFileChecksum != nil {
-		metadata[XFileChecksum] = *request.Params.XFileChecksum
+		metadata[constants.HeaderNameChecksum.String()] = *request.Params.XFileChecksum
 	}
 
 	// Use the controller to upload the file with metadata
@@ -108,10 +101,10 @@ func (h *Handler) DownloadFile(ctx context.Context, request api.DownloadFileRequ
 	}
 
 	// Add headers to response from metadata
-	if contentType, ok := metadata[XFileContentType]; ok && contentType != "" {
+	if contentType, ok := metadata["X-File-Content-Type"]; ok && contentType != "" {
 		response.Headers.XFileContentType = contentType
 	}
-	if checksum, ok := metadata[XFileChecksum]; ok && checksum != "" {
+	if checksum, ok := metadata["X-File-Checksum"]; ok && checksum != "" {
 		response.Headers.XFileChecksum = checksum
 	}
 
