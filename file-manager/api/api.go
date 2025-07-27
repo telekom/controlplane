@@ -9,9 +9,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"os"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/api/accesstoken"
@@ -24,7 +21,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"strings"
 	"sync"
-	"github.com/telekom/controlplane/secret-manager/api/util"
 )
 
 const (
