@@ -41,7 +41,7 @@ var (
 
 func init() {
 	flag.StringVar(&logLevel, "loglevel", "info", "log level")
-	flag.BoolVar(&disableTls, "disable-tls", true, "disable TLS")
+	flag.BoolVar(&disableTls, "disable-tls", false, "disable TLS")
 	flag.StringVar(&tlsCert, "tls-cert", "/etc/tls/tls.crt", "path to TLS certificate")
 	flag.StringVar(&tlsKey, "tls-key", "/etc/tls/tls.key", "path to TLS key")
 	flag.StringVar(&address, "address", ":8443", "server address")
