@@ -7,15 +7,16 @@ package api
 import (
 	"bytes"
 	"context"
+	"io"
+	"net/http"
+	"testing"
+
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/telekom/controlplane/file-manager/api/gen"
 	"github.com/telekom/controlplane/file-manager/pkg/constants"
 	"github.com/telekom/controlplane/file-manager/test/mocks"
-	"io"
-	"net/http"
-	"testing"
 )
 
 func TestUploadFile(t *testing.T) {

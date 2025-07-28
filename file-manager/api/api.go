@@ -10,17 +10,18 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"io"
+	"net/http"
+	"os"
+	"strings"
+	"sync"
+
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/api/accesstoken"
 	"github.com/telekom/controlplane/common-server/api/util"
 	"github.com/telekom/controlplane/file-manager/api/gen"
 	"github.com/telekom/controlplane/file-manager/pkg/constants"
-	"io"
-	"net/http"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"strings"
-	"sync"
 )
 
 const (

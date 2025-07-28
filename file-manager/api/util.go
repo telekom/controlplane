@@ -7,9 +7,10 @@ package api
 import (
 	"crypto/md5"
 	"encoding/base64"
-	"github.com/telekom/controlplane/file-manager/pkg/constants"
 	"io"
 	"net/http"
+
+	"github.com/telekom/controlplane/file-manager/pkg/constants"
 )
 
 func Md5Base64(reader io.Reader) (string, error) {
