@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/file-manager/pkg/constants"
 )
 
 // MockFileUploader is a mock implementation of the FileUploader interface for testing
@@ -50,7 +51,7 @@ func TestUploadController_UploadFile(t *testing.T) {
 	fileId := "env--group--team--file.txt"
 	reader := strings.NewReader("test content")
 	var r io.Reader = reader
-	metadata := map[string]string{"X-File-Checksum": "test-checksum"}
+	metadata := map[string]string{constants.XFileChecksum: "test-checksum"}
 
 	resultId, err := controller.UploadFile(context.Background(), fileId, &r, metadata)
 

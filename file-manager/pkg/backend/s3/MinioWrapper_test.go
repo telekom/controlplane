@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
-	"github.com/telekom/controlplane/file-manager/pkg/backend"
+	"github.com/telekom/controlplane/file-manager/pkg/constants"
 )
 
 func TestMinioWrapper_ValidateClient(t *testing.T) {
@@ -65,12 +65,12 @@ func TestMinioWrapper_ExtractMetadata(t *testing.T) {
 	metadata := wrapper.ExtractMetadata(context.Background(), objInfo)
 
 	// Verify metadata was extracted correctly
-	if metadata[backend.XFileContentType] != "text/plain" {
-		t.Errorf("Expected content type to be text/plain, got %s", metadata[backend.XFileContentType])
+	if metadata[constants.XFileContentType] != "text/plain" {
+		t.Errorf("Expected content type to be text/plain, got %s", metadata[constants.XFileContentType])
 	}
 
-	if metadata[backend.XFileChecksum] != "abc123" {
-		t.Errorf("Expected checksum to be abc123, got %s", metadata[backend.XFileChecksum])
+	if metadata[constants.XFileChecksum] != "abc123" {
+		t.Errorf("Expected checksum to be abc123, got %s", metadata[constants.XFileChecksum])
 	}
 
 	// Test case 2: Object with ContentType but no ETag, using UserMetadata instead
@@ -78,19 +78,19 @@ func TestMinioWrapper_ExtractMetadata(t *testing.T) {
 		ContentType: "application/json",
 		ETag:        "",
 		UserMetadata: map[string]string{
-			backend.XFileChecksum: "def456",
+			constants.XFileChecksum: "def456",
 		},
 	}
 
 	metadata = wrapper.ExtractMetadata(context.Background(), objInfo)
 
 	// Verify metadata was extracted correctly
-	if metadata[backend.XFileContentType] != "application/json" {
-		t.Errorf("Expected content type to be application/json, got %s", metadata[backend.XFileContentType])
+	if metadata[constants.XFileContentType] != "application/json" {
+		t.Errorf("Expected content type to be application/json, got %s", metadata[constants.XFileContentType])
 	}
 
-	if metadata[backend.XFileChecksum] != "def456" {
-		t.Errorf("Expected checksum to be def456, got %s", metadata[backend.XFileChecksum])
+	if metadata[constants.XFileChecksum] != "def456" {
+		t.Errorf("Expected checksum to be def456, got %s", metadata[constants.XFileChecksum])
 	}
 
 	// Test case 3: Object with no metadata

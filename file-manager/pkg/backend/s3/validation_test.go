@@ -10,7 +10,7 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/file-manager/pkg/backend"
+	"github.com/telekom/controlplane/file-manager/pkg/constants"
 )
 
 // MockMinioWrapper provides a mock implementation for testing the validator
@@ -125,7 +125,7 @@ func TestObjectMetadataValidator_ValidateObjectMetadata(t *testing.T) {
 			ContentType: "text/plain",
 			ETag:        "",
 			UserMetadata: map[string]string{
-				backend.XFileChecksum: "user-checksum",
+				constants.XFileChecksum: "user-checksum",
 			},
 		},
 	}

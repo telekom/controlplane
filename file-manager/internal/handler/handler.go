@@ -38,10 +38,10 @@ func (h *Handler) UploadFile(ctx context.Context, request api.UploadFileRequestO
 	// Extract metadata headers from request
 	metadata := make(map[string]string)
 	if request.Params.XFileContentType != nil {
-		metadata[constants.HeaderNameOriginalContentType.String()] = *request.Params.XFileContentType
+		metadata[constants.XFileContentType] = *request.Params.XFileContentType
 	}
 	if request.Params.XFileChecksum != nil {
-		metadata[constants.HeaderNameChecksum.String()] = *request.Params.XFileChecksum
+		metadata[constants.XFileChecksum] = *request.Params.XFileChecksum
 	}
 
 	// Use the controller to upload the file with metadata
@@ -102,10 +102,10 @@ func (h *Handler) DownloadFile(ctx context.Context, request api.DownloadFileRequ
 	}
 
 	// Add headers to response from metadata
-	if contentType, ok := metadata["X-File-Content-Type"]; ok && contentType != "" {
+	if contentType, ok := metadata[constants.XFileContentType]; ok && contentType != "" {
 		response.Headers.XFileContentType = contentType
 	}
-	if checksum, ok := metadata["X-File-Checksum"]; ok && checksum != "" {
+	if checksum, ok := metadata[constants.XFileChecksum]; ok && checksum != "" {
 		response.Headers.XFileChecksum = checksum
 	}
 

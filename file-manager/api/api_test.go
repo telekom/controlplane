@@ -42,8 +42,8 @@ func TestUploadFile(t *testing.T) {
 					HTTPResponse: &http.Response{
 						StatusCode: http.StatusOK,
 						Header: http.Header{
-							string(constants.HeaderNameChecksum):            []string{"abc123"},
-							string(constants.HeaderNameOriginalContentType): []string{"application/pdf"},
+							constants.XFileChecksum:    []string{"abc123"},
+							constants.XFileContentType: []string{"application/pdf"},
 						},
 					},
 					JSON200: &gen.FileUploadResponse{
@@ -138,8 +138,8 @@ func TestDownloadFile(t *testing.T) {
 					HTTPResponse: &http.Response{
 						StatusCode: http.StatusOK,
 						Header: http.Header{
-							string(constants.HeaderNameChecksum):            []string{"abc123"},
-							string(constants.HeaderNameOriginalContentType): []string{"application/yaml"},
+							constants.XFileChecksum:    []string{"abc123"},
+							constants.XFileContentType: []string{"application/yaml"},
 						},
 					},
 					Body: []byte("file content"),

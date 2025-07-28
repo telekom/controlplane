@@ -11,6 +11,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/telekom/controlplane/file-manager/internal/middleware"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
+	"github.com/telekom/controlplane/file-manager/pkg/constants"
 )
 
 // MinioWrapper provides common functionality for S3 operations
@@ -62,18 +63,18 @@ func (w *MinioWrapper) ExtractMetadata(ctx context.Context, objInfo minio.Object
 
 	// Add Content-Type to metadata
 	if objInfo.ContentType != "" {
-		metadata[backend.XFileContentType] = objInfo.ContentType
+		metadata[constants.XFileContentType] = objInfo.ContentType
 		log.V(1).Info("Added content type to response metadata", "contentType", objInfo.ContentType)
 	}
 
 	// Add Checksum to metadata
 	// Prefer S3's Checksum over UserMetadata
 	if objInfo.ETag != "" {
-		metadata[backend.XFileChecksum] = objInfo.ETag
+		metadata[constants.XFileChecksum] = objInfo.ETag
 		log.V(1).Info("Added S3-generated checksum to response metadata", "checksum", objInfo.ETag)
-	} else if checksum, ok := objInfo.UserMetadata[backend.XFileChecksum]; ok && checksum != "" {
+	} else if checksum, ok := objInfo.UserMetadata[constants.XFileChecksum]; ok && checksum != "" {
 		// Fall back to UserMetadata if ETag is not available
-		metadata[backend.XFileChecksum] = checksum
+		metadata[constants.XFileChecksum] = checksum
 		log.V(1).Info("Added UserMetadata checksum to response metadata", "checksum", checksum)
 	}
 

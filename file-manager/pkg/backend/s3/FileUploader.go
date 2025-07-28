@@ -12,6 +12,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
 	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"
+	"github.com/telekom/controlplane/file-manager/pkg/constants"
 )
 
 var _ backend.FileUploader = &S3FileUploader{}
@@ -41,14 +42,14 @@ func (s *S3FileUploader) prepareMetadata(ctx context.Context, metadata map[strin
 	}
 
 	// Get content type from metadata
-	contentType := backend.DefaultContentType // fallback default
-	if ctHeader, ok := metadata[backend.XFileContentType]; ok && ctHeader != "" {
+	contentType := constants.DefaultContentType // fallback default
+	if ctHeader, ok := metadata[constants.XFileContentType]; ok && ctHeader != "" {
 		contentType = ctHeader
 		log.V(1).Info("Using content type from metadata", "contentType", contentType)
 	}
 
 	// Add X-File-Checksum to UserMetadata if present and log it
-	if value, ok := metadata[backend.XFileChecksum]; ok && value != "" {
+	if value, ok := metadata[constants.XFileChecksum]; ok && value != "" {
 		log.V(1).Info("Added checksum to metadata", "checksum", value)
 	}
 
@@ -85,12 +86,12 @@ func (s *S3FileUploader) validateUploadedMetadata(ctx context.Context, path stri
 	requestChecksum := ""
 
 	// Get requested content type if provided
-	if value, ok := metadata[backend.XFileContentType]; ok && value != "" {
+	if value, ok := metadata[constants.XFileContentType]; ok && value != "" {
 		requestContentType = value
 	}
 
 	// Get requested checksum if provided
-	if value, ok := metadata[backend.XFileChecksum]; ok && value != "" {
+	if value, ok := metadata[constants.XFileChecksum]; ok && value != "" {
 		requestChecksum = value
 	}
 

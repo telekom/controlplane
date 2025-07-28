@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package backend
+package constants
 
 const (
 	// XFileContentType is the header for the content type of the file

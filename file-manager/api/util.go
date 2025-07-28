@@ -9,8 +9,6 @@ import (
 	"encoding/base64"
 	"io"
 	"net/http"
-
-	"github.com/telekom/controlplane/file-manager/pkg/constants"
 )
 
 func Md5Base64(reader io.Reader) (string, error) {
@@ -31,8 +29,8 @@ func stringPtr(s string) *string {
 	return &s
 }
 
-func extractHeader(httpResponse *http.Response, checksum constants.HeaderName) string {
-	value := httpResponse.Header.Get(checksum.String())
+func extractHeader(httpResponse *http.Response, header string) string {
+	value := httpResponse.Header.Get(header)
 	if value == "" {
 		return "undefined"
 	}

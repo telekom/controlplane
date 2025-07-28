@@ -155,9 +155,9 @@ func (f *fileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 	switch response.StatusCode() {
 	case http.StatusOK:
 		return &FileUploadResponse{
-			MD5Hash:     extractHeader(response.HTTPResponse, constants.HeaderNameChecksum),
+			MD5Hash:     extractHeader(response.HTTPResponse, constants.XFileChecksum),
 			FileId:      response.JSON200.Id,
-			ContentType: extractHeader(response.HTTPResponse, constants.HeaderNameOriginalContentType),
+			ContentType: extractHeader(response.HTTPResponse, constants.XFileContentType),
 		}, nil
 	case http.StatusNotFound:
 		return nil, ErrNotFound
@@ -194,8 +194,8 @@ func (f *fileManagerAPI) DownloadFile(ctx context.Context, fileId string) (*File
 
 		// construct the response
 		return &FileDownloadResponse{
-			MD5Hash:     extractHeader(response.HTTPResponse, constants.HeaderNameChecksum),
-			ContentType: extractHeader(response.HTTPResponse, constants.HeaderNameOriginalContentType),
+			MD5Hash:     extractHeader(response.HTTPResponse, constants.XFileChecksum),
+			ContentType: extractHeader(response.HTTPResponse, constants.XFileContentType),
 			Content:     data,
 		}, nil
 	case http.StatusNotFound:
