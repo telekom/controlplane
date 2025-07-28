@@ -9,13 +9,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/telekom/controlplane/common-server/api/accesstoken"
+	"github.com/telekom/controlplane/common-server/api/util"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/secret-manager/api/gen"
-	"github.com/telekom/controlplane/secret-manager/api/util"
 )
 
 const (
@@ -131,7 +131,14 @@ func New(opts ...Option) SecretManager {
 		fmt.Println("⚠️\tWarning: Using HTTP instead of HTTPS. This is not secure.")
 	}
 	skipTlsVerify := os.Getenv("SKIP_TLS_VERIFY") == "true" || options.SkipTLSVerify
-	httpClient, err := gen.NewClientWithResponses(options.URL, gen.WithHTTPClient(util.NewHttpClientOrDie(skipTlsVerify, CaFilePath)), gen.WithRequestEditorFn(options.accessTokenReqEditor))
+	httpClient, err := gen.NewClientWithResponses(options.URL, gen.WithHTTPClient(
+		util.NewHttpClientOrDie(
+			util.WithClientName("secret-manager"),
+			util.WithReplacePattern(`^\/api\/v1\/(secrets|onboarding)\/(?P<redacted>.*)$`),
+			util.WithSkipTlsVerify(skipTlsVerify),
+			util.WithCaFilepath(CaFilePath),
+		)),
+		gen.WithRequestEditorFn(options.accessTokenReqEditor))
 	if err != nil {
 		panic(fmt.Sprintf("Failed to create client: %v", err))
 	}
