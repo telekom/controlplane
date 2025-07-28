@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package s3
+package buckets
 
 import (
 	"net/http"
@@ -18,7 +18,7 @@ import (
 
 func TestUpdateBearerToken(t *testing.T) {
 	// Create a config with initial settings
-	config := &S3Config{
+	config := &BucketConfig{
 		Logger:       logr.Discard(),
 		Endpoint:     "test-endpoint",
 		STSEndpoint:  "test-sts-endpoint",
@@ -75,7 +75,7 @@ func TestUpdateBearerToken(t *testing.T) {
 }
 
 func TestGetWebIDTokenFromEnv(t *testing.T) {
-	config := &S3Config{
+	config := &BucketConfig{
 		Logger: logr.Discard(),
 	}
 
@@ -101,7 +101,7 @@ func TestGetWebIDTokenFromEnv(t *testing.T) {
 }
 
 func TestGetWebIDTokenFromFile(t *testing.T) {
-	config := &S3Config{
+	config := &BucketConfig{
 		Logger: logr.Discard(),
 	}
 
@@ -120,7 +120,7 @@ func TestGetWebIDTokenFromFile(t *testing.T) {
 	}
 
 	// Test with valid file
-	tempDir, err := os.MkdirTemp("", "s3-test")
+	tempDir, err := os.MkdirTemp("", "bucket-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -158,7 +158,7 @@ func TestGetWebIDTokenFromFile(t *testing.T) {
 }
 
 func TestGetTokenFromSources(t *testing.T) {
-	config := &S3Config{
+	config := &BucketConfig{
 		Logger: logr.Discard(),
 	}
 
@@ -187,7 +187,7 @@ func TestGetTokenFromSources(t *testing.T) {
 	os.Unsetenv(WebIdentityTokenEnvVar) //nolint:errcheck
 
 	// Test with file token
-	tempDir, err := os.MkdirTemp("", "s3-test")
+	tempDir, err := os.MkdirTemp("", "bucket-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -227,7 +227,7 @@ func TestGetTokenFromSources(t *testing.T) {
 }
 
 func TestCreateTokenProvider(t *testing.T) {
-	config := &S3Config{}
+	config := &BucketConfig{}
 
 	// Test case 1: Normal token
 	testToken := "test-token"
@@ -265,7 +265,7 @@ func TestCreateTokenProvider(t *testing.T) {
 
 func TestCreateSTSCredentials(t *testing.T) {
 	// Test case 1: Normal operation (may not fail in all test environments)
-	config := &S3Config{
+	config := &BucketConfig{
 		Logger:         logr.Discard(),
 		STSEndpoint:    "test-sts-endpoint",
 		RoleSessionArn: "test-role",
@@ -284,7 +284,7 @@ func TestCreateSTSCredentials(t *testing.T) {
 	}
 
 	// Test case 2: Missing role ARN (some implementations might still allow this)
-	configNoRole := &S3Config{
+	configNoRole := &BucketConfig{
 		Logger:      logr.Discard(),
 		STSEndpoint: "test-sts-endpoint",
 		// RoleSessionArn is empty
@@ -302,7 +302,7 @@ func TestCreateSTSCredentials(t *testing.T) {
 	}
 
 	// Test case 3: Invalid STS endpoint
-	configInvalidEndpoint := &S3Config{
+	configInvalidEndpoint := &BucketConfig{
 		Logger:         logr.Discard(),
 		STSEndpoint:    "invalid://endpoint", // Invalid URL format
 		RoleSessionArn: "test-role",
@@ -332,7 +332,7 @@ func TestCreateSTSCredentials(t *testing.T) {
 }
 
 func TestGetCredentials(t *testing.T) {
-	config := &S3Config{
+	config := &BucketConfig{
 		Logger:         logr.Discard(),
 		STSEndpoint:    "test-sts-endpoint",
 		RoleSessionArn: "test-role",
@@ -379,7 +379,7 @@ func TestGetCredentials(t *testing.T) {
 	}
 
 	// Test case 4: Token available but config has missing required fields
-	configMissingFields := &S3Config{
+	configMissingFields := &BucketConfig{
 		Logger: logr.Discard(),
 		// Missing STSEndpoint and RoleSessionArn
 	}
@@ -397,7 +397,7 @@ func TestGetCredentials(t *testing.T) {
 // TestTokenRefreshScenario tests a complete token refresh scenario
 func TestTokenRefreshScenario(t *testing.T) {
 	// Create a temp directory for token file
-	tempDir, err := os.MkdirTemp("", "s3-refresh-test")
+	tempDir, err := os.MkdirTemp("", "bucket-refresh-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -412,7 +412,7 @@ func TestTokenRefreshScenario(t *testing.T) {
 	}
 
 	// Create config with the token file
-	config := &S3Config{
+	config := &BucketConfig{
 		Logger:         logr.Discard(),
 		Endpoint:       "test-endpoint",
 		STSEndpoint:    "test-sts-endpoint",

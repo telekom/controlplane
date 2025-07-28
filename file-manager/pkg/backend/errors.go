@@ -172,7 +172,7 @@ func IsInvalidContentTypeErr(err error) bool {
 	return false
 }
 
-// ErrClientInitialization creates a BackendError for S3 client initialization failures
+// ErrClientInitialization creates a BackendError for bucket client initialization failures
 func ErrClientInitialization(details string) *BackendError {
 	err := fmt.Errorf("storage client initialization failed: %s", details)
 	return NewBackendError("", err, TypeErrClientInitialization)

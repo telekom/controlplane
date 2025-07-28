@@ -23,7 +23,7 @@ import (
 	"github.com/telekom/controlplane/file-manager/internal/api"
 	"github.com/telekom/controlplane/file-manager/internal/handler"
 	"github.com/telekom/controlplane/file-manager/internal/middleware"
-	"github.com/telekom/controlplane/file-manager/pkg/backend/s3"
+	"github.com/telekom/controlplane/file-manager/pkg/backend/buckets"
 	"github.com/telekom/controlplane/file-manager/pkg/controller"
 	"go.uber.org/zap/zapcore"
 	ctrlr "sigs.k8s.io/controller-runtime"
@@ -46,7 +46,7 @@ func init() {
 	flag.StringVar(&tlsKey, "tls-key", "/etc/tls/tls.key", "path to TLS key")
 	flag.StringVar(&address, "address", ":8443", "server address")
 	flag.StringVar(&configFile, "configfile", "", "path to config file")
-	flag.StringVar(&backendType, "backend", "", "backend type (s3)")
+	flag.StringVar(&backendType, "backend", "", "backend type (buckets)")
 }
 
 func setupLog(logLevel string) logr.Logger {
@@ -71,37 +71,37 @@ func newController(ctx context.Context, cfg *config.ServerConfig, log logr.Logge
 		cfg.Backend.Type = backendType
 	}
 	if cfg.Backend.Type == "" {
-		cfg.Backend.Type = "s3"
+		cfg.Backend.Type = "buckets"
 	}
 	log.Info("Initializing backend", "type", cfg.Backend.Type)
 
 	switch cfg.Backend.Type {
-	case "s3":
+	case "buckets":
 		// Create S3 config options from the server config
-		var options []s3.ConfigOption
+		var options []buckets.ConfigOption
 
 		if endpoint := cfg.Backend.Get("endpoint"); endpoint != "" {
-			options = append(options, s3.WithEndpoint(endpoint))
-			log.Info("Using S3 endpoint", "endpoint", endpoint)
+			options = append(options, buckets.WithEndpoint(endpoint))
+			log.Info("Using bucket endpoint", "endpoint", endpoint)
 		}
 
 		if stsEndpoint := cfg.Backend.Get("sts_endpoint"); stsEndpoint != "" {
-			options = append(options, s3.WithSTSEndpoint(stsEndpoint))
+			options = append(options, buckets.WithSTSEndpoint(stsEndpoint))
 			log.Info("Using STS endpoint", "sts_endpoint", stsEndpoint)
 		}
 
 		if bucketName := cfg.Backend.Get("bucket_name"); bucketName != "" {
-			options = append(options, s3.WithBucketName(bucketName))
+			options = append(options, buckets.WithBucketName(bucketName))
 			log.Info("Using bucket", "bucket_name", bucketName)
 		}
 
 		if roleArn := cfg.Backend.Get("role_arn"); roleArn != "" {
-			options = append(options, s3.WithRoleSessionArn(roleArn))
+			options = append(options, buckets.WithRoleSessionArn(roleArn))
 			log.Info("Using role ARN", "role_arn", roleArn)
 		}
 
 		if tokenPath := cfg.Backend.Get("token_path"); tokenPath != "" {
-			options = append(options, s3.WithTokenPath(tokenPath))
+			options = append(options, buckets.WithTokenPath(tokenPath))
 			log.Info("Using token path", "token_path", tokenPath)
 		}
 
@@ -112,18 +112,18 @@ func newController(ctx context.Context, cfg *config.ServerConfig, log logr.Logge
 			log.V(1).Info("MC_WEB_IDENTITY_TOKEN environment variable not set")
 		}
 
-		// Initialize S3 configuration with context
-		log.Info("Initializing S3 configuration")
-		s3Config, err := s3.NewS3ConfigWithLogger(log, options...)
+		// Initialize bucket configuration with context
+		log.Info("Initializing bucket configuration")
+		bucketConfig, err := buckets.NewBucketConfigWithLogger(log, options...)
 		if err != nil {
-			log.Error(err, "Failed to initialize S3 configuration")
-			return nil, errors.Wrap(err, "failed to initialize S3 configuration")
+			log.Error(err, "Failed to initialize bucket configuration")
+			return nil, errors.Wrap(err, "failed to initialize bucket configuration")
 		}
-		log.Info("S3 configuration initialized successfully")
+		log.Info("Bucket configuration initialized successfully")
 
 		// Create file uploader and downloader with the shared config
-		fileDownloader := s3.NewS3FileDownloader(s3Config)
-		fileUploader := s3.NewS3FileUploader(s3Config)
+		fileDownloader := buckets.NewBucketFileDownloader(bucketConfig)
+		fileUploader := buckets.NewBucketFileUploader(bucketConfig)
 
 		c = controller.NewController(fileDownloader, fileUploader)
 

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package s3
+package buckets
 
 import (
 	"context"
@@ -14,15 +14,15 @@ import (
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
 )
 
-func TestS3FileUploader_UploadFile(t *testing.T) {
+func TestBucketFileUploader_UploadFile(t *testing.T) {
 	// Create a mock config (we'll skip client initialization for unit testing)
-	config := &S3Config{
+	config := &BucketConfig{
 		Endpoint:       "mock-endpoint",
 		BucketName:     "mock-bucket",
 		RoleSessionArn: "mock-role",
 	}
 
-	uploader := NewS3FileUploader(config)
+	uploader := NewBucketFileUploader(config)
 
 	// Test case 1: Nil client validation through wrapper
 	reader := strings.NewReader("test content")
@@ -49,8 +49,8 @@ func TestS3FileUploader_UploadFile(t *testing.T) {
 		t.Errorf("Expected InvalidFileIdErr, got: %v", err)
 	}
 
-	// Note: A full test with mocked S3 client would be added in a future PR
-	// That would test the complete flow with proper mocking of the S3 client
+	// Note: A full test with mocked client would be added in a future PR
+	// That would test the complete flow with proper mocking of the client
 }
 
 // TODO: Add proper mocked tests for the validation functionality in a separate PR

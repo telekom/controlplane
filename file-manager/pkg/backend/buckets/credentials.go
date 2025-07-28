@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package s3
+package buckets
 
 import (
 	"os"
@@ -14,7 +14,7 @@ import (
 const WebIdentityTokenEnvVar = "MC_WEB_IDENTITY_TOKEN"
 
 // createTokenProvider creates a token provider function for a given token
-func (c *S3Config) createTokenProvider(token string) func() (*credentials.WebIdentityToken, error) {
+func (c *BucketConfig) createTokenProvider(token string) func() (*credentials.WebIdentityToken, error) {
 	return func() (*credentials.WebIdentityToken, error) {
 		return &credentials.WebIdentityToken{
 			Token: token,
@@ -23,7 +23,7 @@ func (c *S3Config) createTokenProvider(token string) func() (*credentials.WebIde
 }
 
 // createSTSCredentials creates STS web identity credentials using a token provider
-func (c *S3Config) createSTSCredentials(tokenProvider func() (*credentials.WebIdentityToken, error)) (*credentials.Credentials, error) {
+func (c *BucketConfig) createSTSCredentials(tokenProvider func() (*credentials.WebIdentityToken, error)) (*credentials.Credentials, error) {
 	c.Logger.V(1).Info("Creating STS web identity credentials")
 	creds, err := credentials.NewSTSWebIdentity(
 		c.STSEndpoint,
@@ -41,7 +41,7 @@ func (c *S3Config) createSTSCredentials(tokenProvider func() (*credentials.WebId
 }
 
 // getCredentials returns appropriate credentials based on token availability
-func (c *S3Config) getCredentials(tokenAvailable bool, token string) (*credentials.Credentials, error) {
+func (c *BucketConfig) getCredentials(tokenAvailable bool, token string) (*credentials.Credentials, error) {
 	if tokenAvailable {
 		tokenProvider := c.createTokenProvider(token)
 		return c.createSTSCredentials(tokenProvider)
@@ -54,7 +54,7 @@ func (c *S3Config) getCredentials(tokenAvailable bool, token string) (*credentia
 
 // UpdateBearerToken updates the current token and recreates the client credentials if the token has changed
 // This should be called before each request to ensure the client has the latest token
-func (c *S3Config) UpdateBearerToken(token string) error {
+func (c *BucketConfig) UpdateBearerToken(token string) error {
 	// If token is unchanged, no need to update
 	if c.currentToken == token {
 		c.Logger.V(1).Info("Token unchanged, skipping credentials update")
@@ -74,11 +74,11 @@ func (c *S3Config) UpdateBearerToken(token string) error {
 	// Store the new credentials
 	c.currentCreds = creds
 
-	// For the minio S3 client, we need to recreate it with the new credentials
+	// For the minio client, we need to recreate it with the new credentials
 	if c.Client != nil {
 		client, err := c.createMinioClient(creds)
 		if err != nil {
-			return errors.Wrap(err, "failed to create new S3 client with updated credentials")
+			return errors.Wrap(err, "failed to create new client with updated credentials")
 		}
 
 		// Replace the client
@@ -91,7 +91,7 @@ func (c *S3Config) UpdateBearerToken(token string) error {
 
 // getTokenFromSources tries to get a token from various sources (environment, file)
 // Returns the token, a boolean indicating whether it's available, and any error
-func (c *S3Config) getTokenFromSources() (string, bool) {
+func (c *BucketConfig) getTokenFromSources() (string, bool) {
 	log := c.Logger
 	var token string
 	var available bool
@@ -126,7 +126,7 @@ func (c *S3Config) getTokenFromSources() (string, bool) {
 }
 
 // getWebIDTokenFromEnv retrieves the web identity token from an environment variable
-func (c *S3Config) getWebIDTokenFromEnv() (*credentials.WebIdentityToken, error) {
+func (c *BucketConfig) getWebIDTokenFromEnv() (*credentials.WebIdentityToken, error) {
 	// Use the configured logger
 	log := c.Logger
 
@@ -144,7 +144,7 @@ func (c *S3Config) getWebIDTokenFromEnv() (*credentials.WebIdentityToken, error)
 }
 
 // getWebIDTokenFromFile retrieves the web identity token from a file
-func (c *S3Config) getWebIDTokenFromFile() (*credentials.WebIdentityToken, error) {
+func (c *BucketConfig) getWebIDTokenFromFile() (*credentials.WebIdentityToken, error) {
 	// Use the configured logger
 	log := c.Logger
 

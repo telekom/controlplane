@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package s3
+package buckets
 
 import (
 	"context"
@@ -14,13 +14,13 @@ import (
 	"github.com/telekom/controlplane/file-manager/pkg/constants"
 )
 
-// MinioWrapper provides common functionality for S3 operations
+// MinioWrapper provides common functionality for bucket operations
 type MinioWrapper struct {
-	config *S3Config
+	config *BucketConfig
 }
 
 // NewMinioWrapper creates a new wrapper for Minio operations with the given configuration
-func NewMinioWrapper(config *S3Config) *MinioWrapper {
+func NewMinioWrapper(config *BucketConfig) *MinioWrapper {
 	return &MinioWrapper{
 		config: config,
 	}
@@ -43,14 +43,14 @@ func (w *MinioWrapper) UpdateCredentialsFromContext(ctx context.Context) {
 	}
 }
 
-// GetObjectInfo retrieves S3 object metadata
+// GetObjectInfo retrieves object metadata
 func (w *MinioWrapper) GetObjectInfo(ctx context.Context, path string) (minio.ObjectInfo, error) {
 	log := logr.FromContextOrDiscard(ctx)
 
-	log.V(1).Info("Getting object info for metadata", "s3Path", path)
+	log.V(1).Info("Getting object info for metadata", "path", path)
 	objInfo, err := w.config.Client.StatObject(ctx, w.config.BucketName, path, minio.StatObjectOptions{})
 	if err != nil {
-		log.Error(err, "Failed to get object info from S3")
+		log.Error(err, "Failed to get object info from bucket")
 		return minio.ObjectInfo{}, backend.ErrFileNotFound(path)
 	}
 	return objInfo, nil
@@ -68,10 +68,10 @@ func (w *MinioWrapper) ExtractMetadata(ctx context.Context, objInfo minio.Object
 	}
 
 	// Add Checksum to metadata
-	// Prefer S3's Checksum over UserMetadata
+	// Prefer bucket's Checksum over UserMetadata
 	if objInfo.ETag != "" {
 		metadata[constants.XFileChecksum] = objInfo.ETag
-		log.V(1).Info("Added S3-generated checksum to response metadata", "checksum", objInfo.ETag)
+		log.V(1).Info("Added generated checksum to response metadata", "checksum", objInfo.ETag)
 	} else if checksum, ok := objInfo.UserMetadata[constants.XFileChecksum]; ok && checksum != "" {
 		// Fall back to UserMetadata if ETag is not available
 		metadata[constants.XFileChecksum] = checksum
@@ -81,13 +81,13 @@ func (w *MinioWrapper) ExtractMetadata(ctx context.Context, objInfo minio.Object
 	return metadata
 }
 
-// ValidateClient checks if the S3 client is properly initialized
+// ValidateClient checks if the client is properly initialized
 func (w *MinioWrapper) ValidateClient(ctx context.Context) error {
 	log := logr.FromContextOrDiscard(ctx)
 
 	if w.config == nil || w.config.Client == nil {
-		log.Error(nil, "S3 client not initialized")
-		return backend.ErrClientInitialization("S3 client not initialized")
+		log.Error(nil, "client not initialized")
+		return backend.ErrClientInitialization("client not initialized")
 	}
 
 	return nil

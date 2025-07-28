@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package s3
+package buckets
 
 import (
 	"github.com/go-logr/logr"
@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// S3Config holds all configuration needed for S3 operations
-type S3Config struct {
+// BucketConfig holds all configuration needed for bucket operations
+type BucketConfig struct {
 	Endpoint       string
 	STSEndpoint    string
 	BucketName     string
@@ -25,10 +25,10 @@ type S3Config struct {
 	currentCreds *credentials.Credentials
 }
 
-// NewS3Config creates a new S3 configuration with the provided options
-func NewS3Config(options ...ConfigOption) (*S3Config, error) {
+// NewBucketConfig creates a new bucket configuration with the provided options
+func NewBucketConfig(options ...ConfigOption) (*BucketConfig, error) {
 	// Default configuration
-	config := &S3Config{
+	config := &BucketConfig{
 		Logger:         logr.Discard(),
 		Endpoint:       "s3.amazonaws.com",
 		STSEndpoint:    "https://sts.amazonaws.com",
@@ -42,10 +42,10 @@ func NewS3Config(options ...ConfigOption) (*S3Config, error) {
 		option(config)
 	}
 
-	// Initialize the S3 client
+	// Initialize the bucket client
 	client, err := config.initClient()
 	if err != nil {
-		config.Logger.Error(err, "Failed to initialize S3 client")
+		config.Logger.Error(err, "Failed to initialize bucket client")
 		return nil, err
 	}
 
@@ -53,80 +53,80 @@ func NewS3Config(options ...ConfigOption) (*S3Config, error) {
 	return config, nil
 }
 
-// NewS3ConfigWithLogger creates a new S3 configuration with the provided logger and options
-func NewS3ConfigWithLogger(log logr.Logger, options ...ConfigOption) (*S3Config, error) {
+// NewBucketConfigWithLogger creates a new bucket configuration with the provided logger and options
+func NewBucketConfigWithLogger(log logr.Logger, options ...ConfigOption) (*BucketConfig, error) {
 	// Add logger to options if we got a real logger (not Discard)
 	if log != logr.Discard() {
 		options = append(options, WithLogger(log))
 	}
 
-	return NewS3Config(options...)
+	return NewBucketConfig(options...)
 }
 
-// createMinioClient creates a new Minio S3 client with the given credentials
-func (c *S3Config) createMinioClient(creds *credentials.Credentials) (*minio.Client, error) {
-	c.Logger.V(1).Info("Creating Minio S3 client", "endpoint", c.Endpoint)
+// createMinioClient creates a new Minio client with the given credentials
+func (c *BucketConfig) createMinioClient(creds *credentials.Credentials) (*minio.Client, error) {
+	c.Logger.V(1).Info("Creating Minio client", "endpoint", c.Endpoint)
 	client, err := minio.New(c.Endpoint, &minio.Options{
 		Creds:  creds,
 		Secure: true,
 	})
 	if err != nil {
-		c.Logger.Error(err, "Failed to create S3 client")
-		return nil, errors.Wrap(err, "failed to create S3 client")
+		c.Logger.Error(err, "Failed to create client")
+		return nil, errors.Wrap(err, "failed to create client")
 	}
 	return client, nil
 }
 
-// ConfigOption is a function type for applying options to S3Config
-type ConfigOption func(*S3Config)
+// ConfigOption is a function type for applying options to BucketConfig
+type ConfigOption func(*BucketConfig)
 
-// WithEndpoint sets the S3 endpoint
+// WithEndpoint sets the bucket endpoint
 func WithEndpoint(endpoint string) ConfigOption {
-	return func(c *S3Config) {
+	return func(c *BucketConfig) {
 		c.Endpoint = endpoint
 	}
 }
 
 // WithSTSEndpoint sets the STS endpoint
 func WithSTSEndpoint(stsEndpoint string) ConfigOption {
-	return func(c *S3Config) {
+	return func(c *BucketConfig) {
 		c.STSEndpoint = stsEndpoint
 	}
 }
 
 // WithBucketName sets the bucket name
 func WithBucketName(bucketName string) ConfigOption {
-	return func(c *S3Config) {
+	return func(c *BucketConfig) {
 		c.BucketName = bucketName
 	}
 }
 
 // WithRoleSessionArn sets the role session ARN
 func WithRoleSessionArn(roleArn string) ConfigOption {
-	return func(c *S3Config) {
+	return func(c *BucketConfig) {
 		c.RoleSessionArn = roleArn
 	}
 }
 
 // WithTokenPath sets the path to the token file
 func WithTokenPath(path string) ConfigOption {
-	return func(c *S3Config) {
+	return func(c *BucketConfig) {
 		c.TokenPath = path
 	}
 }
 
 // WithLogger sets the logger
 func WithLogger(logger logr.Logger) ConfigOption {
-	return func(c *S3Config) {
+	return func(c *BucketConfig) {
 		c.Logger = logger
 	}
 }
 
 // initClient initializes the Minio client with the current configuration
-func (c *S3Config) initClient() (*minio.Client, error) {
+func (c *BucketConfig) initClient() (*minio.Client, error) {
 	log := c.Logger
 
-	log.V(1).Info("Initializing S3 client",
+	log.V(1).Info("Initializing client",
 		"endpoint", c.Endpoint,
 		"stsEndpoint", c.STSEndpoint,
 		"bucketName", c.BucketName,
@@ -149,7 +149,7 @@ func (c *S3Config) initClient() (*minio.Client, error) {
 	// Store the credentials
 	c.currentCreds = creds
 
-	// Create S3 client
+	// Create client
 	client, err := c.createMinioClient(creds)
 	if err != nil {
 		return nil, err

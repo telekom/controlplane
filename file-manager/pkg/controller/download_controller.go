@@ -34,7 +34,7 @@ func (d downloadController) DownloadFile(ctx context.Context, fileId string) (*i
 		return nil, nil, backend.ErrInvalidFileId(fileId)
 	}
 
-	// Convert fileId to S3 path format
+	// Convert fileId to path format
 	path, err := identifier.ConvertFileIdToPath(fileId)
 	if err != nil {
 		return nil, nil, backend.ErrInvalidFileId(fileId)

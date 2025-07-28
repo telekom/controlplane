@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package s3
+package buckets
 
 import (
 	"context"
@@ -22,7 +22,7 @@ func TestMinioWrapper_ValidateClient(t *testing.T) {
 	}
 
 	// Test case 2: Config without client
-	configNoClient := &S3Config{
+	configNoClient := &BucketConfig{
 		Logger:     logr.Discard(),
 		Endpoint:   "mock-endpoint",
 		BucketName: "mock-bucket",
@@ -35,7 +35,7 @@ func TestMinioWrapper_ValidateClient(t *testing.T) {
 	}
 
 	// Test case 3: Valid config
-	validConfig := &S3Config{
+	validConfig := &BucketConfig{
 		Logger:     logr.Discard(),
 		Endpoint:   "mock-endpoint",
 		BucketName: "mock-bucket",
@@ -50,7 +50,7 @@ func TestMinioWrapper_ValidateClient(t *testing.T) {
 
 func TestMinioWrapper_ExtractMetadata(t *testing.T) {
 	// Create wrapper with basic config
-	config := &S3Config{
+	config := &BucketConfig{
 		Logger:   logr.Discard(),
 		Endpoint: "mock-endpoint",
 	}
@@ -105,7 +105,7 @@ func TestMinioWrapper_ExtractMetadata(t *testing.T) {
 
 func TestMinioWrapper_UpdateCredentialsFromContext(t *testing.T) {
 	// Create a simple test
-	config := &S3Config{
+	config := &BucketConfig{
 		Logger:   logr.Discard(),
 		Endpoint: "mock-endpoint",
 	}
@@ -120,7 +120,7 @@ func TestMinioWrapper_UpdateCredentialsFromContext(t *testing.T) {
 
 func TestMinioWrapper_ValidateObjectMetadata(t *testing.T) {
 	// Create a basic config for testing
-	config := &S3Config{
+	config := &BucketConfig{
 		Logger:     logr.Discard(),
 		Endpoint:   "mock-endpoint",
 		BucketName: "mock-bucket",
@@ -134,7 +134,7 @@ func TestMinioWrapper_ValidateObjectMetadata(t *testing.T) {
 		t.Error("Expected error with nil client, got success")
 	}
 
-	// Note: Testing actual validation logic would require mocking the S3 client responses
+	// Note: Testing actual validation logic would require mocking the bucket client responses
 	// which is beyond the scope of this unit test. This should be covered in integration tests
 	// or with a more sophisticated mocking setup.
 }

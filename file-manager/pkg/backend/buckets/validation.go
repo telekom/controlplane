@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package s3
+package buckets
 
 import (
 	"context"
@@ -13,20 +13,20 @@ import (
 	"github.com/telekom/controlplane/file-manager/pkg/constants"
 )
 
-// S3ClientValidator defines the interface for client validation
-type S3ClientValidator interface {
+// BucketClientValidator defines the interface for client validation
+type BucketClientValidator interface {
 	ValidateClient(ctx context.Context) error
 	GetObjectInfo(ctx context.Context, path string) (minio.ObjectInfo, error)
 }
 
-// ObjectMetadataValidator handles validation of S3 object metadata
+// ObjectMetadataValidator handles validation of object metadata
 type ObjectMetadataValidator struct {
-	// Wrapper reference for using existing S3 operations
-	wrapper S3ClientValidator
+	// Wrapper reference for using existing bucket operations
+	wrapper BucketClientValidator
 }
 
 // NewObjectMetadataValidator creates a new validator with the provided wrapper
-func NewObjectMetadataValidator(wrapper S3ClientValidator) *ObjectMetadataValidator {
+func NewObjectMetadataValidator(wrapper BucketClientValidator) *ObjectMetadataValidator {
 	return &ObjectMetadataValidator{
 		wrapper: wrapper,
 	}
@@ -42,7 +42,7 @@ func (v *ObjectMetadataValidator) ValidateObjectMetadata(ctx context.Context, pa
 	}
 
 	// Get the object info to validate metadata
-	log.V(1).Info("Retrieving object info for validation", "s3Path", path)
+	log.V(1).Info("Retrieving object info for validation", "path", path)
 	objInfo, err := v.wrapper.GetObjectInfo(ctx, path)
 	if err != nil {
 		log.Error(err, "Failed to retrieve object info for validation")
@@ -97,12 +97,12 @@ func (v *ObjectMetadataValidator) validateChecksum(ctx context.Context, objInfo 
 		return backend.ErrClientInitialization("invalid object info type for checksum validation")
 	}
 
-	// Use the S3-generated checksum instead of the UserMetadata
+	// Use the generated checksum instead of the UserMetadata
 	var storedChecksum string
 	if objInfoTyped.ETag != "" {
-		// Use the S3-generated checksum if available
+		// Use the generated checksum if available
 		storedChecksum = objInfoTyped.ETag
-		log.V(1).Info("Using S3-generated checksum for validation", "checksum", storedChecksum)
+		log.V(1).Info("Using generated checksum for validation", "checksum", storedChecksum)
 	} else {
 		// Fall back to UserMetadata if ETag is not available
 		storedChecksum = objInfoTyped.UserMetadata[constants.XFileChecksum]

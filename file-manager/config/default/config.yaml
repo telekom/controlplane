@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 backend:
-  type: s3
+  type: buckets
   endpoint: "s3.amazonaws.com"
   sts_endpoint: "https://sts.amazonaws.com"
   bucket_name: "my-s3-bucket" # Replace with your actual S3 bucket name

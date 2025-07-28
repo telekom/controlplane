@@ -12,7 +12,7 @@ import (
 )
 
 // BearerAuthMiddleware extracts the bearer token from the Authorization header
-// and adds it to the context for use by the S3 client
+// and adds it to the context for use by the minio client
 func BearerAuthMiddleware(log logr.Logger) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Extract the Authorization header

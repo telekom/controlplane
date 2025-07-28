@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package s3
+package buckets
 
 import (
 	"context"
@@ -13,20 +13,20 @@ import (
 
 func TestS3FileDownloader_DownloadFile(t *testing.T) {
 	// Test case 1: Nil config
-	downloaderNilConfig := NewS3FileDownloader(nil)
+	downloaderNilConfig := NewBucketFileDownloader(nil)
 	_, _, err := downloaderNilConfig.DownloadFile(context.Background(), "valid/path/to/file")
 	if err == nil {
 		t.Error("Expected error when config is nil")
 	}
 
 	// Test case 2: Config without client
-	configNoClient := &S3Config{
+	configNoClient := &BucketConfig{
 		Logger:     logr.Discard(),
 		Endpoint:   "mock-endpoint",
 		BucketName: "mock-bucket",
 		Client:     nil,
 	}
-	downloaderNoClient := NewS3FileDownloader(configNoClient)
+	downloaderNoClient := NewBucketFileDownloader(configNoClient)
 	_, _, err = downloaderNoClient.DownloadFile(context.Background(), "env/group/team/file.txt")
 	if err == nil {
 		t.Error("Expected error due to nil client, but got success")

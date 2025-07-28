@@ -52,25 +52,25 @@ func TestConvertFileIdToPath(t *testing.T) {
 func TestConvertPathToFileId(t *testing.T) {
 	tests := []struct {
 		name     string
-		s3Path   string
+		path     string
 		expected string
 		wantErr  bool
 	}{
 		{
-			name:     "Simple valid S3 path",
-			s3Path:   "dev/group1/team1/file.txt",
+			name:     "Simple valid path",
+			path:     "dev/group1/team1/file.txt",
 			expected: "dev--group1--team1--file.txt",
 			wantErr:  false,
 		},
 		{
 			name:     "Path with subdirectories in filename part",
-			s3Path:   "dev/group1/team1/subdir/file.txt",
+			path:     "dev/group1/team1/subdir/file.txt",
 			expected: "dev--group1--team1--subdir/file.txt",
 			wantErr:  false,
 		},
 		{
-			name:     "Invalid S3 path format",
-			s3Path:   "invalid/format",
+			name:     "Invalid  path format",
+			path:     "invalid/format",
 			expected: "",
 			wantErr:  true,
 		},
@@ -78,7 +78,7 @@ func TestConvertPathToFileId(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ConvertPathToFileId(tt.s3Path)
+			got, err := ConvertPathToFileId(tt.path)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ConvertPathToFileId() error = %v, wantErr %v", err, tt.wantErr)
 				return

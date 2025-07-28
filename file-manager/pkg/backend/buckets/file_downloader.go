@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package s3
+package buckets
 
 import (
 	"bytes"
@@ -15,32 +15,31 @@ import (
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
 )
 
-var _ backend.FileDownloader = &S3FileDownloader{}
+var _ backend.FileDownloader = &BucketFileDownloader{}
 
-// S3FileDownloader implements backend.FileDownloader for S3
-
-type S3FileDownloader struct {
-	config  *S3Config
+// BucketFileDownloader implements backend.FileDownloader for bucket
+type BucketFileDownloader struct {
+	config  *BucketConfig
 	wrapper *MinioWrapper
 }
 
-// NewS3FileDownloader creates a new S3FileDownloader with the given configuration
-func NewS3FileDownloader(config *S3Config) *S3FileDownloader {
-	return &S3FileDownloader{
+// NewBucketFileDownloader creates a new BucketFileDownloader with the given configuration
+func NewBucketFileDownloader(config *BucketConfig) *BucketFileDownloader {
+	return &BucketFileDownloader{
 		config:  config,
 		wrapper: NewMinioWrapper(config),
 	}
 }
 
-// downloadObject downloads the S3 object and returns it as a buffer
-func (s *S3FileDownloader) downloadObject(ctx context.Context, path string) (*bytes.Buffer, error) {
+// downloadObject downloads the bucket object and returns it as a buffer
+func (s *BucketFileDownloader) downloadObject(ctx context.Context, path string) (*bytes.Buffer, error) {
 	log := logr.FromContextOrDiscard(ctx)
 
-	log.V(1).Info("Starting S3 GetObject operation")
+	log.V(1).Info("Starting GetObject operation")
 	object, err := s.config.Client.GetObject(ctx, s.config.BucketName, path, minio.GetObjectOptions{})
 	if err != nil {
-		log.Error(err, "Failed to get file from S3")
-		return nil, errors.Wrap(err, "failed to get file from S3")
+		log.Error(err, "Failed to get file from bucket")
+		return nil, errors.Wrap(err, "failed to get file from bucket")
 	}
 	defer object.Close() //nolint:errcheck
 
@@ -57,10 +56,10 @@ func (s *S3FileDownloader) downloadObject(ctx context.Context, path string) (*by
 	return buf, nil
 }
 
-// DownloadFile downloads a file from S3 and returns a writer containing the file contents and metadata
+// DownloadFile downloads a file from bucket and returns a writer containing the file contents and metadata
 // The path should be in the format <env>/<group>/<team>/<fileName>
 // Metadata will include X-File-Content-Type and X-File-Checksum headers if available
-func (s *S3FileDownloader) DownloadFile(ctx context.Context, path string) (*io.Writer, map[string]string, error) {
+func (s *BucketFileDownloader) DownloadFile(ctx context.Context, path string) (*io.Writer, map[string]string, error) {
 	// Get logger from context first, falling back to the configured logger if not available
 	log := logr.FromContextOrDiscard(ctx)
 

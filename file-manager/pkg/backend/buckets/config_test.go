@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package s3
+package buckets
 
 import (
 	"os"
@@ -13,9 +13,9 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-func TestNewS3Config(t *testing.T) {
+func TestNewBucketConfig(t *testing.T) {
 	// Test with default values
-	config, err := NewS3Config()
+	config, err := NewBucketConfig()
 	if err != nil {
 		// In a real environment, this would succeed, but in a test environment without AWS credentials,
 		// it will fail. So we just check the error message.
@@ -31,7 +31,7 @@ func TestNewS3Config(t *testing.T) {
 	testRole := "test-role"
 	testTokenPath := "test-token-path"
 
-	config, _ = NewS3Config(
+	config, _ = NewBucketConfig(
 		WithEndpoint(testEndpoint),
 		WithSTSEndpoint(testSTSEndpoint),
 		WithBucketName(testBucket),
@@ -60,11 +60,11 @@ func TestNewS3Config(t *testing.T) {
 	}
 }
 
-func TestNewS3ConfigWithLogger(t *testing.T) {
+func TestNewBucketConfigWithLogger(t *testing.T) {
 	// Test with custom logger
 	testLogger := logr.Discard()
 
-	config, err := NewS3ConfigWithLogger(testLogger)
+	config, err := NewBucketConfigWithLogger(testLogger)
 	if err != nil {
 		// In a test environment without AWS credentials, this will fail.
 		// Just verify that the function signature works
@@ -125,7 +125,7 @@ func TestConfigOptions(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			config := &S3Config{}
+			config := &BucketConfig{}
 			tc.option(config)
 
 			var actualValue string
@@ -152,7 +152,7 @@ func TestConfigOptions(t *testing.T) {
 func TestWithLogger(t *testing.T) {
 	// Test WithLogger option
 	testLogger := logr.Discard()
-	config := &S3Config{}
+	config := &BucketConfig{}
 
 	WithLogger(testLogger)(config)
 	if config.Logger != testLogger {
@@ -165,7 +165,7 @@ func TestClientConfigCombinations(t *testing.T) {
 	// client initialization is robust
 
 	// Test with minimum required configuration (should fall back to anonymous credentials)
-	minConfig := &S3Config{
+	minConfig := &BucketConfig{
 		Logger:   logr.Discard(),
 		Endpoint: "test-endpoint",
 	}
@@ -177,7 +177,7 @@ func TestClientConfigCombinations(t *testing.T) {
 	}
 
 	// Test with missing endpoint (should fail)
-	missingEndpointConfig := &S3Config{
+	missingEndpointConfig := &BucketConfig{
 		Logger: logr.Discard(),
 		// No endpoint
 	}
@@ -188,7 +188,7 @@ func TestClientConfigCombinations(t *testing.T) {
 	}
 
 	// Test with invalid endpoint format
-	invalidEndpointConfig := &S3Config{
+	invalidEndpointConfig := &BucketConfig{
 		Logger:   logr.Discard(),
 		Endpoint: "invalid://endpoint", // Invalid URL format
 	}
@@ -204,7 +204,7 @@ func TestClientConfigCombinations(t *testing.T) {
 	os.Setenv(WebIdentityTokenEnvVar, "env-token-for-client") //nolint:errcheck
 	defer os.Unsetenv(WebIdentityTokenEnvVar)                 //nolint:errcheck
 
-	envTokenConfig := &S3Config{
+	envTokenConfig := &BucketConfig{
 		Logger:         logr.Discard(),
 		Endpoint:       "test-endpoint",
 		STSEndpoint:    "test-sts-endpoint",
@@ -221,7 +221,7 @@ func TestClientConfigCombinations(t *testing.T) {
 
 func TestCreateMinioClient(t *testing.T) {
 	// Test creating a Minio client with credentials
-	config := &S3Config{
+	config := &BucketConfig{
 		Endpoint: "test-endpoint",
 		Logger:   logr.Discard(),
 	}
@@ -242,7 +242,7 @@ func TestCreateMinioClient(t *testing.T) {
 
 func TestInitClient(t *testing.T) {
 	// Test case 1: Basic client initialization with default config
-	config := &S3Config{
+	config := &BucketConfig{
 		Logger:         logr.Discard(),
 		Endpoint:       "test-endpoint",
 		STSEndpoint:    "test-sts-endpoint",
@@ -262,7 +262,7 @@ func TestInitClient(t *testing.T) {
 	}
 
 	// Test case 2: Client initialization with missing required config
-	configMissingFields := &S3Config{
+	configMissingFields := &BucketConfig{
 		Logger: logr.Discard(),
 		// Missing endpoint and other required fields
 	}
@@ -274,7 +274,7 @@ func TestInitClient(t *testing.T) {
 	}
 
 	// Test case 3: Client initialization with token file
-	tempDir, err := os.MkdirTemp("", "s3-client-test")
+	tempDir, err := os.MkdirTemp("", "client-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -287,7 +287,7 @@ func TestInitClient(t *testing.T) {
 		t.Fatalf("Failed to write test token file: %v", err)
 	}
 
-	configWithToken := &S3Config{
+	configWithToken := &BucketConfig{
 		Logger:         logr.Discard(),
 		Endpoint:       "test-endpoint",
 		STSEndpoint:    "test-sts-endpoint",

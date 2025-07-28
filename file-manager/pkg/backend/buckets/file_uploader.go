@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package s3
+package buckets
 
 import (
 	"context"
@@ -15,23 +15,23 @@ import (
 	"github.com/telekom/controlplane/file-manager/pkg/constants"
 )
 
-var _ backend.FileUploader = &S3FileUploader{}
+var _ backend.FileUploader = &BucketFileUploader{}
 
-type S3FileUploader struct {
-	config  *S3Config
+type BucketFileUploader struct {
+	config  *BucketConfig
 	wrapper *MinioWrapper
 }
 
-// NewS3FileUploader creates a new S3FileUploader with the given configuration
-func NewS3FileUploader(config *S3Config) *S3FileUploader {
-	return &S3FileUploader{
+// NewBucketFileUploader creates a new BucketFileUploader with the given configuration
+func NewBucketFileUploader(config *BucketConfig) *BucketFileUploader {
+	return &BucketFileUploader{
 		config:  config,
 		wrapper: NewMinioWrapper(config),
 	}
 }
 
-// prepareMetadata processes the input metadata and returns UserMetadata for S3 and the content type
-func (s *S3FileUploader) prepareMetadata(ctx context.Context, metadata map[string]string) (map[string]string, string) {
+// prepareMetadata processes the input metadata and returns UserMetadata for bucket and the content type
+func (s *BucketFileUploader) prepareMetadata(ctx context.Context, metadata map[string]string) (map[string]string, string) {
 	log := logr.FromContextOrDiscard(ctx)
 
 	// Prepare minio UserMetadata from our metadata map
@@ -56,8 +56,8 @@ func (s *S3FileUploader) prepareMetadata(ctx context.Context, metadata map[strin
 	return userMetadata, contentType
 }
 
-// uploadToS3 handles the actual upload operation to S3
-func (s *S3FileUploader) uploadToS3(ctx context.Context, path string, reader io.Reader, contentType string, userMetadata map[string]string) error {
+// uploadToBucket handles the actual upload operation to the bucket
+func (s *BucketFileUploader) uploadToBucket(ctx context.Context, path string, reader io.Reader, contentType string, userMetadata map[string]string) error {
 	log := logr.FromContextOrDiscard(ctx)
 
 	// Configure PutObjectOptions
@@ -67,12 +67,12 @@ func (s *S3FileUploader) uploadToS3(ctx context.Context, path string, reader io.
 		SendContentMd5: true, // Enable MD5 checksum calculation and verification
 	}
 
-	// Upload file using the S3 path directly
-	log.V(1).Info("Starting S3 PutObject operation")
+	// Upload file using the path directly
+	log.V(1).Info("Starting bucket PutObject operation")
 	_, err := s.config.Client.PutObject(ctx, s.config.BucketName, path, reader, -1, putOptions)
 
 	if err != nil {
-		log.Error(err, "Failed to upload file to S3")
+		log.Error(err, "Failed to upload file to bucket")
 		return backend.ErrUploadFailed(path, err.Error())
 	}
 
@@ -80,7 +80,7 @@ func (s *S3FileUploader) uploadToS3(ctx context.Context, path string, reader io.
 }
 
 // validateUploadedMetadata validates that the uploaded object metadata matches expectations
-func (s *S3FileUploader) validateUploadedMetadata(ctx context.Context, path string, metadata map[string]string) error {
+func (s *BucketFileUploader) validateUploadedMetadata(ctx context.Context, path string, metadata map[string]string) error {
 	// Extract metadata fields that need validation
 	requestContentType := ""
 	requestChecksum := ""
@@ -99,26 +99,26 @@ func (s *S3FileUploader) validateUploadedMetadata(ctx context.Context, path stri
 	return s.wrapper.ValidateObjectMetadata(ctx, path, requestContentType, requestChecksum)
 }
 
-// UploadFile uploads a file to S3 and returns the file ID
+// UploadFile uploads a file to bucket and returns the file ID
 // The fileId should follow the convention <env>--<group>--<team>--<fileName>
 // Metadata already includes X-File-Content-Type and X-File-Checksum headers
-// convertFileIdToPath converts a fileId to an S3 path and logs the result
-func (s *S3FileUploader) convertFileIdToPath(ctx context.Context, fileId string) (string, error) {
+// convertFileIdToPath converts a fileId to a path and logs the result
+func (s *BucketFileUploader) convertFileIdToPath(ctx context.Context, fileId string) (string, error) {
 	log := logr.FromContextOrDiscard(ctx)
 
-	// Convert fileId to S3 path format
+	// Convert fileId to path format
 	path, err := identifier.ConvertFileIdToPath(fileId)
 	if err != nil {
-		log.Error(err, "Failed to convert fileId to S3 path")
+		log.Error(err, "Failed to convert fileId to path")
 		return "", backend.ErrInvalidFileId(fileId)
 	}
 
-	log.V(1).Info("Using S3 path", "path", path)
+	log.V(1).Info("Using path", "path", path)
 	return path, nil
 }
 
 // initializeUpload validates the client and updates credentials
-func (s *S3FileUploader) initializeUpload(ctx context.Context) error {
+func (s *BucketFileUploader) initializeUpload(ctx context.Context) error {
 	// Validate client initialization
 	if err := s.wrapper.ValidateClient(ctx); err != nil {
 		return backend.ErrClientInitialization(err.Error())
@@ -129,7 +129,7 @@ func (s *S3FileUploader) initializeUpload(ctx context.Context) error {
 	return nil
 }
 
-func (s *S3FileUploader) UploadFile(ctx context.Context, fileId string, reader io.Reader, metadata map[string]string) (string, error) {
+func (s *BucketFileUploader) UploadFile(ctx context.Context, fileId string, reader io.Reader, metadata map[string]string) (string, error) {
 	log := logr.FromContextOrDiscard(ctx)
 
 	// Initialize upload (client validation and credential updates)
@@ -139,21 +139,21 @@ func (s *S3FileUploader) UploadFile(ctx context.Context, fileId string, reader i
 
 	log.V(1).Info("Uploading file", "fileId", fileId, "bucket", s.config.BucketName)
 
-	// Convert fileId to S3 path
+	// Convert fileId to path
 	path, err := s.convertFileIdToPath(ctx, fileId)
 	if err != nil {
 		return "", err
 	}
 
-	// Prepare metadata for S3 upload
+	// Prepare metadata for upload
 	userMetadata, contentType := s.prepareMetadata(ctx, metadata)
 
-	// Upload file to S3
-	err = s.uploadToS3(ctx, path, reader, contentType, userMetadata)
+	// Upload file to bucket
+	err = s.uploadToBucket(ctx, path, reader, contentType, userMetadata)
 	if err != nil {
 		return "", err
 	}
-	log.V(1).Info("File uploaded successfully", "fileId", fileId, "s3Path", path)
+	log.V(1).Info("File uploaded successfully", "fileId", fileId, "path", path)
 
 	// Validate metadata after upload
 	if err := s.validateUploadedMetadata(ctx, path, metadata); err != nil {

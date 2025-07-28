@@ -21,18 +21,18 @@ func ConvertFileIdToPath(fileId string) (string, error) {
 	}
 
 	// Build the path with slashes
-	s3Path := parts.Env + "/" + parts.Group + "/" + parts.Team + "/" + parts.FileName
+	path := parts.Env + "/" + parts.Group + "/" + parts.Team + "/" + parts.FileName
 
-	return s3Path, nil
+	return path, nil
 }
 
 // ConvertPathToFileId converts a path with virtual folders back to a fileId
 // This is the reverse operation of ConvertFileIdToPath
-func ConvertPathToFileId(s3Path string) (string, error) {
+func ConvertPathToFileId(path string) (string, error) {
 	// Split the path into parts
-	parts := strings.SplitN(s3Path, "/", 4)
+	parts := strings.SplitN(path, "/", 4)
 	if len(parts) != 4 {
-		return "", errors.New("invalid S3 path format, expected <env>/<group>/<team>/<fileName>")
+		return "", errors.New("invalid path format, expected <env>/<group>/<team>/<fileName>")
 	}
 
 	// Extract the parts
