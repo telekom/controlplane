@@ -15,6 +15,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/common-server/api/util"
+	"github.com/telekom/controlplane/common-server/pkg/middleware/k8s"
 	cs "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/serve"
 	"github.com/telekom/controlplane/file-manager/cmd/server/config"
@@ -166,18 +168,18 @@ func main() {
 	log.Info("Registering bearer token middleware")
 	apiGroup.Use(middleware.BearerAuthMiddleware(log))
 
-	//  if cfg.Security.Enabled {
-	//	  opts := []k8s.KubernetesAuthOption{
-	//		  k8s.WithTrustedIssuers(cfg.Security.TrustedIssuers...),
-	//		  k8s.WithJWKSetURLs(cfg.Security.JWKSetURLs...),
-	//		  k8s.WithAccessConfig(cfg.Security.AccessConfig...),
-	//	  }
-	//	  if util.IsRunningInCluster() {
-	//		  log.Info("🔑 Running in cluster")
-	//		  opts = append(opts, k8s.WithInClusterIssuer())
-	//	  }
-	//	  apiGroup.Use(k8s.NewKubernetesAuthz(opts...))
-	//  }
+	if cfg.Security.Enabled {
+		opts := []k8s.KubernetesAuthOption{
+			k8s.WithTrustedIssuers(cfg.Security.TrustedIssuers...),
+			k8s.WithJWKSetURLs(cfg.Security.JWKSetURLs...),
+			k8s.WithAccessConfig(cfg.Security.AccessConfig...),
+		}
+		if util.IsRunningInCluster() {
+			log.Info("🔑 Running in cluster")
+			opts = append(opts, k8s.WithInClusterIssuer())
+		}
+		apiGroup.Use(k8s.NewKubernetesAuthz(opts...))
+	}
 
 	api.RegisterHandlersWithOptions(apiGroup, handler, api.FiberServerOptions{})
 
