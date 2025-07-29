@@ -15,3 +15,20 @@
     name: cert-volume
     mountPath: /etc/tls
     readOnly: true
+# This patch will configure the necessary service account token projection for the file manager client
+- op: add
+  path: /spec/template/spec/volumes/-
+  value:
+    name: filemgr-token
+    projected:
+      sources:
+        - serviceAccountToken:
+            path: filemgr-token
+            expirationSeconds: 600
+            audience: sts.amazonaws.com
+- op: add
+  path: /spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: filemgr-token
+    mountPath: /var/run/files/filemgr
+    readOnly: true
