@@ -8,7 +8,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	accesstoken2 "github.com/telekom/controlplane/common-server/api/accesstoken"
+
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
@@ -61,9 +62,9 @@ func main() {
 		opts = append(opts, api.WithURL(url))
 	}
 	if token != "" {
-		opts = append(opts, api.WithAccessToken(accesstoken2.NewStaticAccessToken(token)))
+		opts = append(opts, api.WithAccessToken(accesstoken.NewStaticAccessToken(token)))
 	} else if tokenFile != "" {
-		opts = append(opts, api.WithAccessToken(accesstoken2.NewAccessToken(tokenFile)))
+		opts = append(opts, api.WithAccessToken(accesstoken.NewAccessToken(tokenFile)))
 	}
 
 	onboardingApi = api.NewOnboarding(opts...)

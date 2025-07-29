@@ -23,10 +23,9 @@ import (
 type AccessType string
 
 const (
-	AccessTypeNone               AccessType = "none"
-	AccessTypeSecretsRead        AccessType = "secrets_read"
-	AccessTypeSecretsWrite       AccessType = "secrets_write"
-	AccessTypeAppOnboardingWrite AccessType = "onboarding_write"
+	AccessTypeNone  AccessType = "none"
+	AccessTypeRead  AccessType = "read"
+	AccessTypeWrite AccessType = "write"
 )
 
 var (
@@ -50,7 +49,6 @@ type ServiceAccessConfig struct {
 	DeploymentName     string       `yaml:"deployment_name" json:"deployment_name"`
 	Namespace          string       `yaml:"namespace" json:"namespace"`
 	AllowedAccess      []AccessType `yaml:"allowed_access" json:"allowed_access"`
-	AllowedSecrets     []string     `yaml:"allowed_secrets" json:"allowed_secrets"`
 	allowedAccessSet   AccessTypeSet
 }
 
@@ -187,24 +185,16 @@ func isReadOnly(c *fiber.Ctx) bool {
 	return false
 }
 
-func isOnboardingRequest(c *fiber.Ctx) bool {
-	return strings.HasPrefix(c.Path(), "/api/v1/onboarding/")
-}
-
 func isAccessAllowed(c *fiber.Ctx, accessTypesSet AccessTypeSet) bool {
 	if accessTypesSet == nil {
 		logr.FromContextOrDiscard(c.UserContext()).Error(nil, "No access types defined")
 		return false
 	}
 
-	if isOnboardingRequest(c) {
-		return accessTypesSet.Has(AccessTypeAppOnboardingWrite)
-	}
-
 	if isReadOnly(c) {
-		return accessTypesSet.Has(AccessTypeSecretsRead)
+		return accessTypesSet.Has(AccessTypeRead)
 	} else {
-		return accessTypesSet.Has(AccessTypeSecretsWrite)
+		return accessTypesSet.Has(AccessTypeWrite)
 	}
 }
 

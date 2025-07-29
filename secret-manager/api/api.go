@@ -8,11 +8,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/telekom/controlplane/common-server/api/accesstoken"
-	"github.com/telekom/controlplane/common-server/api/util"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/telekom/controlplane/common-server/pkg/client"
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
+	"github.com/telekom/controlplane/common-server/pkg/util"
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/secret-manager/api/gen"
@@ -24,7 +26,8 @@ const (
 	StartTag  = "$<"
 	EndTag    = ">"
 
-	CaFilePath = "/var/run/secrets/trust-bundle/trust-bundle.pem"
+	CaFilePath    = "/var/run/secrets/trust-bundle/trust-bundle.pem"
+	TokenFilePath = "/var/run/secrets/secretmgr/token"
 
 	// KeywordRotate is a special keyword to indicate that the secret should be rotated.
 	KeywordRotate = "rotate"
@@ -83,7 +86,7 @@ func defaultOptions() *Options {
 	if util.IsRunningInCluster() {
 		return &Options{
 			URL:   inCluster,
-			Token: accesstoken.NewAccessToken(accesstoken.TokenFilePath),
+			Token: accesstoken.NewAccessToken(TokenFilePath),
 		}
 	} else {
 		return &Options{
@@ -132,11 +135,11 @@ func New(opts ...Option) SecretManager {
 	}
 	skipTlsVerify := os.Getenv("SKIP_TLS_VERIFY") == "true" || options.SkipTLSVerify
 	httpClient, err := gen.NewClientWithResponses(options.URL, gen.WithHTTPClient(
-		util.NewHttpClientOrDie(
-			util.WithClientName("secret-manager"),
-			util.WithReplacePattern(`^\/api\/v1\/(secrets|onboarding)\/(?P<redacted>.*)$`),
-			util.WithSkipTlsVerify(skipTlsVerify),
-			util.WithCaFilepath(CaFilePath),
+		client.NewHttpClientOrDie(
+			client.WithClientName("secret-manager"),
+			client.WithReplacePattern(`^\/api\/v1\/(secrets|onboarding)\/(?P<redacted>.*)$`),
+			client.WithSkipTlsVerify(skipTlsVerify),
+			client.WithCaFilepath(CaFilePath),
 		)),
 		gen.WithRequestEditorFn(options.accessTokenReqEditor))
 	if err != nil {

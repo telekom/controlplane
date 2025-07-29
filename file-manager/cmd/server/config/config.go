@@ -10,7 +10,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/telekom/controlplane/common-server/pkg/middleware/k8s"
+	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
 )
 
 type BackendConfig struct {
