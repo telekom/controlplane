@@ -4,12 +4,12 @@
 
 with-expecter: True
 mockname: "Mock{{.InterfaceName}}"
-dir: "../test/mocks"
-outpkg: "mocks"
+dir: "../api/gen/mock"
+outpkg: "gen_test"
 filename: "mock_{{.InterfaceName}}.go"
 packages:
   github.com/telekom/controlplane/file-manager/api/gen:
     config:
     interfaces:
-      ClientWithResponsesInterface:
+      ClientInterface:
         config:

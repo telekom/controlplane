@@ -2,28 +2,30 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package api
+package api_test
 
 import (
 	"bytes"
 	"context"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/telekom/controlplane/file-manager/api/gen"
-	"github.com/telekom/controlplane/file-manager/pkg/constants"
-	"github.com/telekom/controlplane/file-manager/test/mocks"
+	"github.com/telekom/controlplane/file-manager/api"
+	"github.com/telekom/controlplane/file-manager/api/constants"
+	gen_test "github.com/telekom/controlplane/file-manager/api/gen/mock"
 )
 
 func TestUploadFile(t *testing.T) {
 	type fields struct {
-		mockResp *gen.UploadFileResponse
+		mockResp *http.Response
 		mockErr  error
 	}
+
 	tests := []struct {
 		name           string
 		fields         fields
@@ -38,17 +40,13 @@ func TestUploadFile(t *testing.T) {
 		{
 			name: "success",
 			fields: fields{
-				mockResp: &gen.UploadFileResponse{
-					HTTPResponse: &http.Response{
-						StatusCode: http.StatusOK,
-						Header: http.Header{
-							constants.XFileChecksum:    []string{"abc123"},
-							constants.XFileContentType: []string{"application/pdf"},
-						},
+				mockResp: &http.Response{
+					StatusCode: http.StatusOK,
+					Header: http.Header{
+						constants.XFileChecksum:    []string{"abc123"},
+						constants.XFileContentType: []string{"application/pdf"},
 					},
-					JSON200: &gen.FileUploadResponse{
-						Id: "file123",
-					},
+					Body: io.NopCloser(strings.NewReader(`{"id": "file123"}`)),
 				},
 			},
 			fileID:         "file123",
@@ -61,17 +59,16 @@ func TestUploadFile(t *testing.T) {
 		{
 			name: "not found",
 			fields: fields{
-				mockResp: &gen.UploadFileResponse{
-					HTTPResponse: &http.Response{
-						StatusCode: http.StatusNotFound,
-					},
+				mockResp: &http.Response{
+					StatusCode: http.StatusNotFound,
+					Body:       io.NopCloser(nil),
 				},
 			},
 			fileID:      "missing-file",
 			contentType: "application/pdf",
 			content:     []byte("hello"),
 			wantErr:     true,
-			expectedErr: ErrNotFound,
+			expectedErr: api.ErrNotFound,
 		},
 		{
 			name: "http error",
@@ -89,16 +86,16 @@ func TestUploadFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockClient := &mocks.MockClientWithResponsesInterface{}
-			mockClient.On("UploadFileWithBodyWithResponse", mock.Anything, tt.fileID, mock.Anything, "application/octet-stream", mock.Anything).
+			mockClient := &gen_test.MockClientInterface{}
+			mockClient.On("UploadFileWithBody", mock.Anything, tt.fileID, mock.Anything, "application/octet-stream", mock.Anything).
 				Return(tt.fields.mockResp, tt.fields.mockErr)
 
-			f := &fileManagerAPI{
-				client: mockClient,
+			f := &api.FileManagerAPI{
+				Client: mockClient,
 			}
 
-			r := io.Reader(bytes.NewReader(tt.content))
-			resp, err := f.UploadFile(context.TODO(), tt.fileID, tt.contentType, &r)
+			r := bytes.NewReader(tt.content)
+			resp, err := f.UploadFile(context.TODO(), tt.fileID, tt.contentType, r)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -118,7 +115,7 @@ func TestUploadFile(t *testing.T) {
 
 func TestDownloadFile(t *testing.T) {
 	type fields struct {
-		mockResp *gen.DownloadFileResponse
+		mockResp *http.Response
 		mockErr  error
 	}
 	tests := []struct {
@@ -134,36 +131,32 @@ func TestDownloadFile(t *testing.T) {
 		{
 			name: "success",
 			fields: fields{
-				mockResp: &gen.DownloadFileResponse{
-					HTTPResponse: &http.Response{
-						StatusCode: http.StatusOK,
-						Header: http.Header{
-							constants.XFileChecksum:    []string{"abc123"},
-							constants.XFileContentType: []string{"application/yaml"},
-						},
+				mockResp: &http.Response{
+					StatusCode: http.StatusOK,
+					Header: http.Header{
+						constants.XFileChecksum:    []string{"0QtMP/Ejsm3AaNQ6i+8tIw=="},
+						constants.XFileContentType: []string{"application/yaml"},
 					},
-					Body: []byte("file content"),
+					Body: io.NopCloser(strings.NewReader("file content")),
 				},
 			},
 			fileID:                    "file123",
 			wantContent:               "file content",
 			wantErr:                   false,
-			expectedChecksumHeader:    "abc123",
+			expectedChecksumHeader:    "0QtMP/Ejsm3AaNQ6i+8tIw==",
 			expectedContentTypeHeader: "application/yaml",
 		},
 		{
 			name: "not found",
 			fields: fields{
-				mockResp: &gen.DownloadFileResponse{
-					HTTPResponse: &http.Response{
-						StatusCode: http.StatusNotFound,
-					},
-					Body: nil,
+				mockResp: &http.Response{
+					StatusCode: http.StatusNotFound,
+					Body:       io.NopCloser(nil),
 				},
 			},
 			fileID:      "missing",
 			wantErr:     true,
-			expectedErr: ErrNotFound,
+			expectedErr: api.ErrNotFound,
 		},
 		{
 			name: "http error",
@@ -178,15 +171,17 @@ func TestDownloadFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockClient := &mocks.MockClientWithResponsesInterface{}
-			mockClient.On("DownloadFileWithResponse", mock.Anything, tt.fileID).
+			mockClient := &gen_test.MockClientInterface{}
+			mockClient.On("DownloadFile", mock.Anything, tt.fileID).
 				Return(tt.fields.mockResp, tt.fields.mockErr)
 
-			f := &fileManagerAPI{
-				client: mockClient,
+			f := &api.FileManagerAPI{
+				Client: mockClient,
 			}
 
-			resp, err := f.DownloadFile(context.TODO(), tt.fileID)
+			buf := bytes.NewBuffer(nil)
+
+			resp, err := f.DownloadFile(context.TODO(), tt.fileID, buf)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -196,7 +191,7 @@ func TestDownloadFile(t *testing.T) {
 				assert.Nil(t, resp)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantContent, string(resp.Content))
+				assert.Equal(t, tt.wantContent, buf.String())
 				assert.Equal(t, tt.expectedContentTypeHeader, resp.ContentType)
 				assert.Equal(t, tt.expectedChecksumHeader, resp.MD5Hash)
 			}

@@ -10,7 +10,7 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/file-manager/pkg/constants"
+	"github.com/telekom/controlplane/file-manager/api/constants"
 )
 
 // MockMinioWrapper provides a mock implementation for testing the validator

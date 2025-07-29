@@ -9,9 +9,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
+	"github.com/telekom/controlplane/file-manager/api/constants"
 	"github.com/telekom/controlplane/file-manager/internal/middleware"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
-	"github.com/telekom/controlplane/file-manager/pkg/constants"
 )
 
 // MinioWrapper provides common functionality for bucket operations

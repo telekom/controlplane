@@ -113,7 +113,6 @@ func (siw *ServerInterfaceWrapper) UploadFile(c *fiber.Ctx) error {
 	if value, found := headers[http.CanonicalHeaderKey("X-File-Content-Type")]; found {
 		var XFileContentType string
 
-		// TODO: Manually modified to get the first value from the header. This looks like a bug in the generated code.
 		err = runtime.BindStyledParameterWithOptions("simple", "X-File-Content-Type", value[0], &XFileContentType, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false})
 		if err != nil {
 			return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter X-File-Content-Type: %w", err).Error())
@@ -127,7 +126,6 @@ func (siw *ServerInterfaceWrapper) UploadFile(c *fiber.Ctx) error {
 	if value, found := headers[http.CanonicalHeaderKey("X-File-Checksum")]; found {
 		var XFileChecksum string
 
-		// TODO: Manually modified to get the first value from the header. This looks like a bug in the generated code.
 		err = runtime.BindStyledParameterWithOptions("simple", "X-File-Checksum", value[0], &XFileChecksum, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false})
 		if err != nil {
 			return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter X-File-Checksum: %w", err).Error())
@@ -373,17 +371,17 @@ var swaggerSpec = []string{
 	"bPvkDTV+b+rOy8w6Y9FRTxglpx0LzFIOJSw+hT3rfWK7gronsY09TmvKQgy40j46z71Xhe5S++1krh3E",
 	"0dMRo8/MvuIeJTOalUTWL7Jsu92mLhczlIqMS40rMpeL8P/L8xc/pyXVFSQnmZVIXFUTUBJQ2hPXAieF",
 	"njg1fiRSmrBAF2SkqJo+RX387q6kKN2bGPQlA9aJKkvAo2icot2HELvOtSvkDt2yofLw9na4id59vITT",
-	"0nz38ZK9itsYmWvUjDdUoqaeJUPiguVO2+EiCynoql3p3AxM4yIyDesYYiAulf9VG5sSVnht6lQGtzSP",
-	"Ki+XF69XHyCBxlW9xpBUiRusQsZGhzI4o9WSeVXbqi+8mmteoGO5cT3LlC4Y13J/mYb3sDVeipUS2F8Q",
-	"PZil5aJE9jSdjxIa75S97uX7FSSwQec7BPN0nj6BBG5m3KqZ4ISFcbuDY20CxqLmVsECnqXz9FkoRk5l",
-	"TFa2eZJFPNlt+FnJNqwWSOd1f4HkFG7QD90gd6buugG6Dbqp7rCSKbsskSnJfGmaSrLcVJXZxm3C6E1I",
-	"s9EhGCHWMd8rCQsY+l9wPeJ1vEaK99CnU2ArOWZ/cqcl9lcznz8TqDfxAWezbqFwprHHS4S8Pl4J6n/n",
-	"NXarEIoOFjGWh3LqoghjZpFr8K7LZ30yrDydz780cez3ZZNDQpvA84ccPh6H2gRefMWpEftjUsa8/7QO",
-	"XvmmrnmsxQFpXzqBwLwIuYQRMWDdJmCbidLrGuq+8Mj8V2XXGfoWii55cDf9AdMiTRjhDWU7Xlf9Y5hd",
-	"fmRUcmJbVVXsCoemy/246Ua43RBxADzV3/8d2qlJ45FghrHmXq4OnzW7L3Nm9OWTnX/2tF/L+JPJ8n/L",
-	"9w7nOdv3TRHW7UMURoZP0e+tcawyglesb9R1GK9Pm3jYURpPi5fzl3MIGnsgp+rebNDtqAzd2WHBXezT",
-	"oYKG/s3j9Lzv3sfU83BeoEvNUEtrVKCUGWZujdtTBYeQ3Ktk/0WGN8rTBJjxZdqu238CAAD//2bgHsaR",
-	"DwAA",
+	"0nz38ZK9itsYmWvUjDdUoqaeJUPiguVO2+EiCynoql3p3AxM4yIyDesYYiDupPK/amNTwgqvTZ3K4Jfm",
+	"Uefl8uL16gMk0LiqVxmyKnGDVUjZ6FAGZ7xaMq9qW/WVV3PNC3QsN66nmdIF41rub9PwHrbGW7FSAvsb",
+	"ogeztFyUyJ6m81FG46Wy1718v4IENuh8h2CeztMnkMDNjFs1E5ywMG53cKxNwFjU3CpYwLN0nj4L1cip",
+	"jNnKNk+yiCe7DT8r2YbVAum88C+QnMIN+qEd5M7UXTtAt0E31R5WMmWXJTIlmS9NU0mWm6oy27hNGL0J",
+	"eTY6BCPEOiZ8JWEBQwMMrke8jtdI8SL6dApsJcf0T+60xP5q5vNnAvUmPuBs1i0UzjT2eImQ18crQf3v",
+	"vMZuFULVwSLG8lBOXRRhTC1yDd51+6xPppWn8/mXRo79vmxySmgTeP6Qw8fzUJvAi684NaJ/TMqY+J/W",
+	"wSvf1DWPtTgg7UsnMJgXIZcwIgas2wRsM1F6XUfdFx6Z/6rsOkPfQtElD26nP2BapAkjvKFsx+uqfwzD",
+	"y4+MSk5sq6qKXeHQdbkfd90It5siDoCnGvy/Qzs1ajwSzDDX3MvV4btm92XOjD59svPvnvZrGX8yWv5v",
+	"+d7hPGf7vinCun2IwsjwKfq9NY5VRvCK9Y26DvP1aRMPO0rjafFy/nIOQWMP5FTdmw26HZWhOzsswsCg",
+	"i1hBQ//mcXzed+9j6nk4L9ClZqilNSpQygxDt8btqYJDSO5Vsv8kwxvlaQLM+DJt1+0/AQAA//+Afiad",
+	"kg8AAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

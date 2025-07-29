@@ -13,5 +13,4 @@ type FileUploadResponse struct {
 type FileDownloadResponse struct {
 	MD5Hash     string
 	ContentType string
-	Content     []byte
 }

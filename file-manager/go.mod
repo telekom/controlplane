@@ -8,25 +8,28 @@ go 1.24.4
 
 require github.com/telekom/controlplane/common-server v0.0.0
 
+replace (
+	github.com/telekom/controlplane/common-server => ../common-server
+	github.com/telekom/controlplane/secret-manager => ../secret-manager
+)
+
+tool github.com/vektra/mockery/v2
+
+tool github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
+
 require (
 	github.com/getkin/kin-openapi v0.132.0
 	github.com/go-logr/logr v1.4.3
 	github.com/go-logr/zapr v1.3.0
 	github.com/gofiber/fiber/v2 v2.52.8
 	github.com/minio/minio-go/v7 v7.0.95
-	github.com/oapi-codegen/oapi-codegen/v2 v2.5.0
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.10.0
-	github.com/vektra/mockery/v2 v2.53.4
 	go.uber.org/zap v1.27.0
 	gopkg.in/yaml.v3 v3.0.1
 	sigs.k8s.io/controller-runtime v0.21.0
 )
-
-replace github.com/telekom/controlplane/common-server => ../common-server
-
-replace github.com/telekom/controlplane/secret-manager => ../secret-manager
 
 require (
 	github.com/MicahParks/keyfunc/v2 v2.1.0 // indirect
@@ -78,6 +81,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/oapi-codegen/oapi-codegen/v2 v2.5.0 // indirect
 	github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037 // indirect
 	github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
@@ -107,6 +111,7 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.58.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
+	github.com/vektra/mockery/v2 v2.53.4 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

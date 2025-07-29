@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/file-manager/pkg/constants"
+	"github.com/telekom/controlplane/file-manager/api/constants"
 )
 
 // MockFileUploader is a mock implementation of the FileUploader interface for testing

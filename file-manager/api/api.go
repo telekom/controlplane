@@ -7,6 +7,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
 
@@ -19,8 +20,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/api/accesstoken"
 	"github.com/telekom/controlplane/common-server/api/util"
+	"github.com/telekom/controlplane/file-manager/api/constants"
 	"github.com/telekom/controlplane/file-manager/api/gen"
-	"github.com/telekom/controlplane/file-manager/pkg/constants"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -38,11 +39,11 @@ var (
 )
 
 type DownloadApi interface {
-	DownloadFile(ctx context.Context, fileId string) (*FileDownloadResponse, error)
+	DownloadFile(ctx context.Context, fileId string, w io.Writer) (*FileDownloadResponse, error)
 }
 
 type UploadApi interface {
-	UploadFile(ctx context.Context, fileId string, fileContentType string, content *io.Reader) (*FileUploadResponse, error)
+	UploadFile(ctx context.Context, fileId string, fileContentType string, r io.Reader) (*FileUploadResponse, error)
 }
 
 type FileManager interface {
@@ -50,16 +51,18 @@ type FileManager interface {
 	DownloadApi
 }
 
-var _ FileManager = (*fileManagerAPI)(nil)
+var _ FileManager = (*FileManagerAPI)(nil)
 
-type fileManagerAPI struct {
-	client gen.ClientWithResponsesInterface
+type FileManagerAPI struct {
+	Client           gen.ClientInterface
+	ValidateChecksum bool
 }
 
 type Options struct {
-	URL           string
-	Token         accesstoken.AccessToken
-	SkipTLSVerify bool
+	URL              string
+	Token            accesstoken.AccessToken
+	SkipTLSVerify    bool
+	ValidateChecksum bool
 }
 
 func (o *Options) accessTokenReqEditor(ctx context.Context, req *http.Request) error {
@@ -75,20 +78,43 @@ func (o *Options) accessTokenReqEditor(ctx context.Context, req *http.Request) e
 }
 
 func defaultOptions() *Options {
-	if util.IsRunningInCluster() {
-		return &Options{
-			URL:   inCluster,
-			Token: accesstoken.NewAccessToken(tokenFilePath),
-		}
-	} else {
-		return &Options{
-			URL:   localhost,
-			Token: nil,
-		}
+	opts := &Options{
+		ValidateChecksum: true,
 	}
+	if util.IsRunningInCluster() {
+		opts.URL = inCluster
+		opts.Token = accesstoken.NewAccessToken(tokenFilePath)
+	} else {
+		opts.URL = localhost
+	}
+
+	return opts
 }
 
 type Option func(*Options)
+
+func WithURL(url string) Option {
+	return func(o *Options) {
+		o.URL = url
+	}
+}
+func WithAccessToken(token accesstoken.AccessToken) Option {
+	return func(o *Options) {
+		o.Token = token
+	}
+}
+
+func WithSkipTLSVerify(skip bool) Option {
+	return func(o *Options) {
+		o.SkipTLSVerify = skip
+	}
+}
+
+func WithValidateChecksum(validate bool) Option {
+	return func(o *Options) {
+		o.ValidateChecksum = validate
+	}
+}
 
 func New(opts ...Option) FileManager {
 	options := defaultOptions()
@@ -113,8 +139,9 @@ func New(opts ...Option) FileManager {
 	if err != nil {
 		panic(fmt.Sprintf("Failed to create client: %v", err))
 	}
-	return &fileManagerAPI{
-		client: httpClient,
+	return &FileManagerAPI{
+		Client:           httpClient,
+		ValidateChecksum: options.ValidateChecksum,
 	}
 }
 
@@ -127,83 +154,88 @@ func GetFileManager(opts ...Option) FileManager {
 	return api
 }
 
-func (f *fileManagerAPI) UploadFile(ctx context.Context, fileId string, fileContentType string, content *io.Reader) (*FileUploadResponse, error) {
+func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileContentType string, r io.Reader) (*FileUploadResponse, error) {
 	log := log.FromContext(ctx)
 	log.V(1).Info("Uploading file ", "fileId", fileId, "fileContentType", fileContentType)
 
-	// calculate the MD5 hash
-	data, err := io.ReadAll(*content)
+	buf := bytes.NewBuffer(nil)
+	_, md5hash, err := copyAndHash(buf, r, md5.New())
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to read content of file while calculating MD5 hash")
+		return nil, errors.Wrap(err, "Failed to copy content")
 	}
 
-	md5hash, err := Md5Base64(bytes.NewReader(data))
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to calculate MD5 hash")
+	params := &gen.UploadFileParams{
+		XFileContentType: &fileContentType,
 	}
-
+	if f.ValidateChecksum {
+		params.XFileChecksum = &md5hash
+	}
 	// use generated client code to call the file manager server
-	response, err := f.client.UploadFileWithBodyWithResponse(ctx, fileId, &gen.UploadFileParams{
-		XFileContentType: stringPtr(fileContentType),
-		XFileChecksum:    stringPtr(md5hash),
-	}, uploadRequestContentType, io.NopCloser(bytes.NewReader(data)))
+	response, err := f.Client.UploadFileWithBody(ctx, fileId, params, uploadRequestContentType, buf)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to upload file")
 	}
+	defer response.Body.Close() //nolint:errcheck
 
 	// evaluate the response
-	switch response.StatusCode() {
+	switch response.StatusCode {
 	case http.StatusOK:
+		var res gen.FileUploadResponse
+		if err := json.NewDecoder(response.Body).Decode(&res); err != nil {
+			return nil, errors.Wrap(err, "failed to decode response body")
+		}
+		checksum := extractHeader(response, constants.XFileChecksum)
+		if f.ValidateChecksum && checksum != md5hash {
+			return nil, fmt.Errorf("checksum mismatch: expected %s, got %s", checksum, md5hash)
+		}
 		return &FileUploadResponse{
-			MD5Hash:     extractHeader(response.HTTPResponse, constants.XFileChecksum),
-			FileId:      response.JSON200.Id,
-			ContentType: extractHeader(response.HTTPResponse, constants.XFileContentType),
+			MD5Hash:     checksum,
+			FileId:      res.Id,
+			ContentType: extractHeader(response, constants.XFileContentType),
 		}, nil
+
 	case http.StatusNotFound:
 		return nil, ErrNotFound
 	default:
 		var err gen.ErrorResponse
-		if err := json.Unmarshal(response.Body, &err); err != nil {
-			return nil, err
+		if err := json.NewDecoder(response.Body).Decode(&err); err != nil {
+			return nil, errors.Wrap(err, "failed to decode error response")
 		}
 		return nil, fmt.Errorf("error %s: %s", err.Type, err.Detail)
 	}
 }
 
-func (f *fileManagerAPI) DownloadFile(ctx context.Context, fileId string) (*FileDownloadResponse, error) {
-	log := log.FromContext(ctx)
-	response, err := f.client.DownloadFileWithResponse(ctx, fileId)
+func (f *FileManagerAPI) DownloadFile(ctx context.Context, fileId string, w io.Writer) (*FileDownloadResponse, error) {
+	response, err := f.Client.DownloadFile(ctx, fileId)
 	if err != nil {
 		return nil, err
 	}
-	switch response.StatusCode() {
+	defer response.Body.Close() //nolint:errcheck
+
+	switch response.StatusCode {
 	case http.StatusOK:
-		// read to body and close the reader here
-		bodyReadCloser := io.NopCloser(bytes.NewReader(response.Body))
-		defer func(bodyReadCloser io.ReadCloser) {
-			err := bodyReadCloser.Close()
-			if err != nil {
-				log.Error(err, "failed to close response body")
-			}
-		}(bodyReadCloser)
-
-		data, err := io.ReadAll(bodyReadCloser)
+		_, hash, err := copyAndHash(w, response.Body, md5.New())
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to read response body")
+			return nil, errors.Wrap(err, "failed to copy file content")
 		}
+		log.FromContext(ctx).V(1).Info("Downloaded file", "fileId", fileId, "md5Hash", hash)
 
-		// construct the response
+		expectedChecksum := extractHeader(response, constants.XFileChecksum)
+		if f.ValidateChecksum && hash != expectedChecksum {
+			return nil, fmt.Errorf("checksum mismatch: expected %s, got %s", expectedChecksum, hash)
+		}
 		return &FileDownloadResponse{
-			MD5Hash:     extractHeader(response.HTTPResponse, constants.XFileChecksum),
-			ContentType: extractHeader(response.HTTPResponse, constants.XFileContentType),
-			Content:     data,
+			MD5Hash:     expectedChecksum,
+			ContentType: extractHeader(response, constants.XFileContentType),
 		}, nil
+
 	case http.StatusNotFound:
 		return nil, ErrNotFound
 	default:
 		var err gen.ErrorResponse
-		if err := json.Unmarshal(response.Body, &err); err != nil {
-			return nil, errors.Wrap(err, "failed to read response body of error response")
+		if err := json.NewDecoder(response.Body).Decode(&err); err != nil {
+			return nil, errors.Wrap(err, "failed to decode error response")
 		}
 		return nil, fmt.Errorf("error %s: %s", err.Type, err.Detail)
 	}
