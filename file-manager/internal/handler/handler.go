@@ -10,8 +10,8 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/file-manager/api/constants"
 	"github.com/telekom/controlplane/file-manager/internal/api"
-	"github.com/telekom/controlplane/file-manager/pkg/constants"
 	"github.com/telekom/controlplane/file-manager/pkg/controller"
 )
 

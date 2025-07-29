@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
-	"github.com/telekom/controlplane/file-manager/pkg/constants"
+	"github.com/telekom/controlplane/file-manager/api/constants"
 )
 
 func TestMinioWrapper_ValidateClient(t *testing.T) {

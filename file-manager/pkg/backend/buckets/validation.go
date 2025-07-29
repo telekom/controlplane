@@ -9,8 +9,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
+	"github.com/telekom/controlplane/file-manager/api/constants"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
-	"github.com/telekom/controlplane/file-manager/pkg/constants"
 )
 
 // BucketClientValidator defines the interface for client validation

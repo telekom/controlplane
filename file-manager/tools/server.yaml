@@ -16,3 +16,4 @@ output-options:
   name-normalizer: ToCamelCase
   user-templates:
     strict/strict-fiber.tmpl: templates/custom-strict-fiber.tmpl
+    fiber/fiber-middleware.tmpl: templates/custom-fiber-middleware.tmpl
