@@ -5,9 +5,10 @@
 package config
 
 import (
-	"github.com/telekom/controlplane/common-server/pkg/middleware/k8s"
 	"io"
 	"os"
+
+	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
 
 	"gopkg.in/yaml.v3"
 )

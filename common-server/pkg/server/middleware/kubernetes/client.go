@@ -7,13 +7,14 @@ package k8s
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"github.com/telekom/controlplane/common-server/api/accesstoken"
 	"net/http"
 	"sync"
 	"time"
 
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
+	"github.com/telekom/controlplane/common-server/pkg/util"
+
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common-server/api/util"
 )
 
 var (

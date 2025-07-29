@@ -9,6 +9,7 @@ go 1.24.4
 require github.com/telekom/controlplane/secret-manager v0.0.0
 
 require (
+	github.com/MicahParks/keyfunc/v2 v2.1.0
 	github.com/bytedance/sonic v1.13.3
 	github.com/dgraph-io/badger/v4 v4.7.0
 	github.com/go-logr/logr v1.4.3
@@ -37,7 +38,6 @@ require (
 replace github.com/telekom/controlplane/secret-manager => ../secret-manager
 
 require (
-	github.com/MicahParks/keyfunc/v2 v2.1.0 // indirect
 	github.com/andybalholm/brotli v1.1.1 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect

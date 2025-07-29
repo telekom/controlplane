@@ -4,6 +4,6 @@
 
 package metrics
 
-import "github.com/telekom/controlplane/common-server/pkg/client"
+import "github.com/telekom/controlplane/common-server/pkg/client/metrics"
 
-var RegisterPrometheusMetrics = client.Register
+var RegisterPrometheusMetrics = metrics.Register

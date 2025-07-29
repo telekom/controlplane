@@ -18,8 +18,9 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common-server/api/accesstoken"
-	"github.com/telekom/controlplane/common-server/api/util"
+	"github.com/telekom/controlplane/common-server/pkg/client"
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
+	"github.com/telekom/controlplane/common-server/pkg/util"
 	"github.com/telekom/controlplane/file-manager/api/constants"
 	"github.com/telekom/controlplane/file-manager/api/gen"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -36,6 +37,8 @@ var (
 	ErrNotFound = errors.New("resource not found")
 	once        sync.Once
 	api         FileManager
+
+	newHash = md5.New
 )
 
 type DownloadApi interface {
@@ -128,11 +131,11 @@ func New(opts ...Option) FileManager {
 	skipTlsVerify := os.Getenv("SKIP_TLS_VERIFY") == "true" || options.SkipTLSVerify
 
 	httpClient, err := gen.NewClientWithResponses(options.URL, gen.WithHTTPClient(
-		util.NewHttpClientOrDie(
-			util.WithClientName("file-manager"),
-			util.WithReplacePattern(`^\/api\/v1\/files\/(?P<redacted>.*)$`),
-			util.WithSkipTlsVerify(skipTlsVerify),
-			util.WithCaFilepath(""),
+		client.NewHttpClientOrDie(
+			client.WithClientName("file-manager"),
+			client.WithReplacePattern(`^\/api\/v1\/files\/(?P<redacted>.*)$`),
+			client.WithSkipTlsVerify(skipTlsVerify),
+			client.WithCaFilepath(""),
 		)),
 		gen.WithRequestEditorFn(options.accessTokenReqEditor))
 
@@ -159,7 +162,7 @@ func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 	log.V(1).Info("Uploading file ", "fileId", fileId, "fileContentType", fileContentType)
 
 	buf := bytes.NewBuffer(nil)
-	_, md5hash, err := copyAndHash(buf, r, md5.New())
+	_, md5hash, err := copyAndHash(buf, r, newHash())
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to copy content")
 	}
@@ -215,7 +218,7 @@ func (f *FileManagerAPI) DownloadFile(ctx context.Context, fileId string, w io.W
 
 	switch response.StatusCode {
 	case http.StatusOK:
-		_, hash, err := copyAndHash(w, response.Body, md5.New())
+		_, hash, err := copyAndHash(w, response.Body, newHash())
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to copy file content")
 		}

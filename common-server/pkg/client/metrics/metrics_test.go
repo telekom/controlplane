@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package client_test
+package metrics_test
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/telekom/controlplane/common-server/pkg/client"
+	client "github.com/telekom/controlplane/common-server/pkg/client/metrics"
 )
 
 var _ = Describe("Client Metrics", func() {

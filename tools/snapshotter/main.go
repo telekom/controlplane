@@ -16,7 +16,7 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common-server/api/accesstoken"
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"

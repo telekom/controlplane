@@ -8,10 +8,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/telekom/controlplane/common-server/api/util"
-	"github.com/telekom/controlplane/common-server/pkg/middleware/k8s"
 	"os"
 	"time"
+
+	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
+	"github.com/telekom/controlplane/common-server/pkg/util"
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"

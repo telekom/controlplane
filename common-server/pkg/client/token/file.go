@@ -12,15 +12,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	TokenFilePath = "/var/run/secrets/secretmgr/token"
-)
-
 type AccessToken interface {
 	Read() (string, error)
 }
 
-type KubernetesAccessToken struct {
+type FileAccessToken struct {
 	filePath     string
 	data         string
 	expiresAt    int64
@@ -29,14 +25,14 @@ type KubernetesAccessToken struct {
 }
 
 func NewAccessToken(filePath string) AccessToken {
-	return &KubernetesAccessToken{
+	return &FileAccessToken{
 		filePath:     filePath,
 		graceSeconds: 30,
 		jwtParser:    jwt.NewParser(jwt.WithExpirationRequired()),
 	}
 }
 
-func (k *KubernetesAccessToken) Read() (string, error) {
+func (k *FileAccessToken) Read() (string, error) {
 	if k.data == "" || k.IsExpired() {
 		if err := k.readTokenFile(); err != nil {
 			return "", err
@@ -45,7 +41,7 @@ func (k *KubernetesAccessToken) Read() (string, error) {
 	return k.data, nil
 }
 
-func (k *KubernetesAccessToken) readTokenFile() error {
+func (k *FileAccessToken) readTokenFile() error {
 	if k.filePath == "" {
 		return errors.New("file path is empty")
 	}
@@ -65,14 +61,14 @@ func (k *KubernetesAccessToken) readTokenFile() error {
 }
 
 // IsExpired checks if the token is expired
-func (k *KubernetesAccessToken) IsExpired() bool {
+func (k *FileAccessToken) IsExpired() bool {
 	if k.expiresAt == 0 {
 		return true
 	}
 	return time.Now().Unix() > k.expiresAt
 }
 
-func (k *KubernetesAccessToken) setExpiresAt(graceSeconds int64) error {
+func (k *FileAccessToken) setExpiresAt(graceSeconds int64) error {
 	claims, err := k.parseJwt(k.data)
 	if err != nil {
 		return err
@@ -82,7 +78,7 @@ func (k *KubernetesAccessToken) setExpiresAt(graceSeconds int64) error {
 	return nil
 }
 
-func (k *KubernetesAccessToken) parseJwt(raw string) (*jwt.RegisteredClaims, error) {
+func (k *FileAccessToken) parseJwt(raw string) (*jwt.RegisteredClaims, error) {
 	claims := &jwt.RegisteredClaims{}
 	_, _, err := k.jwtParser.ParseUnverified(raw, claims)
 	if err != nil {

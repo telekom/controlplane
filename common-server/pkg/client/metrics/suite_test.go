@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package client_test
+package metrics_test
 
 import (
 	"net/http"
@@ -10,7 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/pkg/client"
+	client "github.com/telekom/controlplane/common-server/pkg/client/metrics"
 )
 
 var _ client.HttpRequestDoer = &mockClient{}
