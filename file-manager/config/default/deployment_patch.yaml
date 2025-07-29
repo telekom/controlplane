@@ -19,16 +19,16 @@
 - op: add
   path: /spec/template/spec/volumes/-
   value:
-    name: filemgr-token
+    name: file-manager-token
     projected:
       sources:
         - serviceAccountToken:
-            path: filemgr-token
+            path: file-manager-token
             expirationSeconds: 600
             audience: sts.amazonaws.com
 - op: add
   path: /spec/template/spec/containers/0/volumeMounts/-
   value:
-    name: filemgr-token
-    mountPath: /var/run/files/filemgr
+    name: file-manager-token
+    mountPath: /var/run/secrets/file-manager
     readOnly: true
