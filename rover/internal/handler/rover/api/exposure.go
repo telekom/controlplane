@@ -74,7 +74,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 
 		ownerTeamName := strings.Split(owner.Namespace, "--")
 		if len(ownerTeamName) != 3 {
-			return errors.New("invalid owner team name")
+			return errors.Errorf("invalid owner team name: '%s'. Expected format: 'env--group--team'", owner.Namespace)
 		}
 		apiExposure.Spec.Approval.TrustedTeams = append(apiExposure.Spec.Approval.TrustedTeams, types.ObjectRef{
 			Name:      ownerTeamName[1] + "--" + ownerTeamName[2],
