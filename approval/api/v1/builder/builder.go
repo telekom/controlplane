@@ -7,6 +7,7 @@ package builder
 import (
 	"context"
 	"reflect"
+	"strings"
 	"sync/atomic"
 
 	"github.com/pkg/errors"
@@ -43,6 +44,7 @@ type ApprovalBuilder interface {
 	WithStrategy(strategy v1.ApprovalStrategy) ApprovalBuilder
 	WithDecider(decider v1.Decider) ApprovalBuilder
 	WithAction(action string) ApprovalBuilder
+	WithTrustedTeams(trustedTeams []string) ApprovalBuilder
 	Build(ctx context.Context) (ApprovalResult, error)
 
 	GetApprovalRequest() *v1.ApprovalRequest
@@ -53,11 +55,12 @@ type ApprovalBuilder interface {
 var _ ApprovalBuilder = &approvalBuilder{}
 
 type approvalBuilder struct {
-	ran      atomic.Bool
-	Client   cclient.JanitorClient
-	Owner    types.Object
-	Request  *v1.ApprovalRequest
-	Approval *v1.Approval
+	ran          atomic.Bool
+	Client       cclient.JanitorClient
+	Owner        types.Object
+	Request      *v1.ApprovalRequest
+	Approval     *v1.Approval
+	TrustedTeams []string
 
 	hashValue any
 }
@@ -95,6 +98,11 @@ func (b *approvalBuilder) setWithHash() {
 	b.Request.Name = v1.ApprovalRequestName(b.Owner, b.hashValue)
 	b.Request.Namespace = b.Owner.GetNamespace()
 	b.Request.Spec.Resource = *types.TypedObjectRefFromObject(b.Owner, b.Client.Scheme())
+}
+
+func (b *approvalBuilder) WithTrustedTeams(trustedTeams []string) ApprovalBuilder {
+	b.TrustedTeams = trustedTeams
+	return b
 }
 
 func (b *approvalBuilder) WithRequester(requester *v1.Requester) ApprovalBuilder {
@@ -148,6 +156,10 @@ func (b *approvalBuilder) Build(ctx context.Context) (ApprovalResult, error) {
 		}
 
 		approvalReq.Spec = b.Request.Spec
+
+		if b.isRequesterFromTrustedTeam() {
+			approvalReq.Spec.Strategy = v1.ApprovalStrategyAuto
+		}
 
 		if approvalReq.Spec.Strategy == v1.ApprovalStrategyAuto {
 			approvalReq.Spec.State = v1.ApprovalStateGranted
@@ -216,4 +228,15 @@ func (b *approvalBuilder) GetApproval() *v1.Approval {
 
 func (b *approvalBuilder) GetOwner() types.Object {
 	return b.Owner
+}
+
+func (b *approvalBuilder) isRequesterFromTrustedTeam() bool {
+	requesterTeamName := b.Request.Spec.Requester.Name
+
+	for i := range b.TrustedTeams {
+		if strings.ToLower(b.TrustedTeams[i]) == strings.ToLower(requesterTeamName) {
+			return true
+		}
+	}
+	return false
 }

@@ -212,8 +212,8 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 			// Team1 should remain auto-approved
 			verifyApprovalStrategy(team1Sub, approvalapi.ApprovalStrategyAuto)
 
-			// Team2 should now require manual approval
-			verifyApprovalStrategy(team2Sub, approvalapi.ApprovalStrategyFourEyes)
+			// Team2 should stay approved
+			verifyApprovalStrategy(team2Sub, approvalapi.ApprovalStrategyAuto)
 
 			// Team3 should now be auto-approved
 			verifyApprovalStrategy(team3Sub, approvalapi.ApprovalStrategyAuto)
