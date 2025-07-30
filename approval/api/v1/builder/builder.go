@@ -234,7 +234,7 @@ func (b *approvalBuilder) isRequesterFromTrustedTeam() bool {
 	requesterTeamName := b.Request.Spec.Requester.Name
 
 	for i := range b.TrustedTeams {
-		if strings.ToLower(b.TrustedTeams[i]) == strings.ToLower(requesterTeamName) {
+		if strings.EqualFold(b.TrustedTeams[i], requesterTeamName) {
 			return true
 		}
 	}

@@ -210,59 +210,6 @@ var _ = Describe("Approval Builder", Ordered, func() {
 				g.Expect(ar.Spec.State).To(BeEquivalentTo("Granted"))
 			}, timeout, interval).Should(Succeed())
 		})
-
-		It("should not override strategy when requester is not from trusted team", func() {
-			By("building the Approval with trusted teams but non-matching requester")
-
-			err := requester.SetProperties(properties)
-			Expect(err).NotTo(HaveOccurred())
-
-			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
-
-			owner := test.NewObject("apisub", testNamespace)
-			owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
-			owner.SetLabels(map[string]string{
-				config.EnvironmentLabelKey: testEnvironment,
-			})
-
-			builder := NewApprovalBuilder(jclient, owner)
-
-			// Set up a requester that doesn't match any trusted team
-			nonTrustedRequester := &approvalv1.Requester{
-				Name:   "NonTrustedTeam",
-				Email:  "non.trusted@telekom.de",
-				Reason: "I need access to this API!!",
-			}
-			err = nonTrustedRequester.SetProperties(properties)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Configure the builder with trusted teams that don't match the requester
-			trustedTeams := []string{"TrustedTeam", "AnotherTeam"}
-
-			builder.WithHashValue(nonTrustedRequester.Properties)
-			builder.WithRequester(nonTrustedRequester)
-			builder.WithTrustedTeams(trustedTeams)
-			// Set to Simple and expect it to remain Simple
-			builder.WithStrategy(approvalv1.ApprovalStrategySimple)
-
-			res, err := builder.Build(ctx)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(res).To(Equal(ApprovalResultPending))
-
-			Eventually(func(g Gomega) {
-				ar := &approvalv1.ApprovalRequest{}
-				err := k8sClient.Get(ctx, client.ObjectKey{
-					Name:      builder.GetApprovalRequest().Name,
-					Namespace: testNamespace,
-				}, ar)
-				g.Expect(err).ToNot(HaveOccurred())
-
-				// Verify that the strategy remained Simple
-				g.Expect(ar.Spec.Strategy).To(BeEquivalentTo("Simple"))
-				// And that the state was not set to Granted
-				g.Expect(ar.Spec.State).To(BeEquivalentTo("Pending"))
-			}, timeout, interval).Should(Succeed())
-		})
 	})
 
 	Context("Approval exists", func() {
@@ -296,6 +243,7 @@ var _ = Describe("Approval Builder", Ordered, func() {
 			builder.WithHashValue(requester.Properties)
 			builder.WithRequester(requester)
 			builder.WithStrategy(approvalv1.ApprovalStrategyAuto)
+			builder.WithTrustedTeams([]string{"IOnlyTrustThisRandomTeam"})
 
 			_, err = builder.Build(ctx)
 			Expect(err).NotTo(HaveOccurred())
