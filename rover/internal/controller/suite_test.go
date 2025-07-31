@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -156,5 +157,8 @@ func createNamespace(name string) {
 			Name: name,
 		},
 	}
-	Expect(k8sClient.Create(ctx, ns)).To(Succeed())
+	err := k8sClient.Create(ctx, ns)
+	if !errors.IsAlreadyExists(err) {
+		Expect(err).NotTo(HaveOccurred())
+	}
 }

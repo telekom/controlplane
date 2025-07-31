@@ -14,6 +14,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/util"
 
 	rover "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,14 +54,28 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		}
 
 		apiExposure.Spec = apiapi.ApiExposureSpec{
-			ApiBasePath:    exp.BasePath,
-			Visibility:     apiapi.Visibility(exp.Visibility.String()),
-			Approval:       apiapi.ApprovalStrategy(exp.Approval.Strategy),
+			ApiBasePath: exp.BasePath,
+			Visibility:  apiapi.Visibility(exp.Visibility.String()),
+			Approval: apiapi.Approval{
+				Strategy: apiapi.ApprovalStrategy(exp.Approval.Strategy),
+			},
 			Zone:           zoneRef,
 			Upstreams:      make([]apiapi.Upstream, len(exp.Upstreams)),
 			Security:       mapSecurityToApiSecurity(exp.Security),
 			Transformation: mapTransformationtoApiTransformation(exp.Transformation),
 		}
+
+		apiExposure.Spec.Approval.TrustedTeams, err = mapTrustedTeamsToApiTrustedTeams(ctx, c, exp.Approval.TrustedTeams)
+		if err != nil {
+			return errors.Wrap(err, "failed to map trusted teams")
+		}
+
+		//add owner to trusted teams
+		ownerTeam, err := util.FindTeam(ctx, c, owner.Namespace)
+		if err != nil {
+			return errors.Wrap(err, "failed to find owner team")
+		}
+		apiExposure.Spec.Approval.TrustedTeams = append(apiExposure.Spec.Approval.TrustedTeams, ownerTeam.GetName())
 
 		failoverZones, hasFailover := getFailoverZones(environment, exp.Traffic.Failover)
 		if hasFailover {
@@ -91,6 +106,23 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		Namespace: apiExposure.Namespace,
 	})
 	return err
+}
+
+func mapTrustedTeamsToApiTrustedTeams(ctx context.Context, c client.JanitorClient, teams []rover.TrustedTeam) ([]string, error) {
+	if len(teams) == 0 {
+		return nil, nil
+	}
+
+	apiTrustedTeams := make([]string, 0, len(teams))
+	for _, team := range teams {
+		t, err := util.FindTeam(ctx, c, contextutil.EnvFromContextOrDie(ctx)+"--"+team.Group+"--"+team.Team)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to find team")
+		}
+		apiTrustedTeams = append(apiTrustedTeams, t.GetName())
+	}
+
+	return apiTrustedTeams, nil
 }
 
 func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
