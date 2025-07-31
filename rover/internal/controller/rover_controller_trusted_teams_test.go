@@ -10,7 +10,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -290,7 +292,7 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 
 				// Check that the resource has error condition
 				g.Expect(found.Status.Conditions).NotTo(BeEmpty())
-				readyCondition := getConditionByType(found.Status.Conditions, "Ready")
+				readyCondition := meta.FindStatusCondition(found.Status.Conditions, condition.ConditionTypeReady)
 				g.Expect(readyCondition).NotTo(BeNil())
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
 				g.Expect(readyCondition.Message).To(ContainSubstring("failed to get trusted team"))
