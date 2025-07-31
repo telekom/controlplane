@@ -145,6 +145,5 @@ jobs:
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
       module: rover-server
-      run_tests: false
       run_check_generated_files: false
       ko_build_path: "cmd/main.go"
