@@ -14,6 +14,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/metrics"
@@ -93,6 +94,9 @@ func NewAppConfig() AppConfig {
 
 func NewAppWithConfig(cfg AppConfig) *fiber.App {
 	app := fiber.New(cfg.Config)
+	app.Use(recover.New(recover.Config{
+		EnableStackTrace: true,
+	}))
 	if cfg.EnableLogging {
 		if cfg.CtxLog != nil {
 			app.Use(middleware.NewContextLogger(cfg.CtxLog))

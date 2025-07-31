@@ -1,0 +1,68 @@
+
+[Exposure Security Mapper (Out) mapExposureSecurity must map BasicAuth security correctly - 1]
+api.BasicAuth{Password:"testpass", Type:"basicAuth", Username:"testuser"}
+---
+
+[Exposure Security Mapper (Out) mapExposureSecurity must map OAuth2 ExternalIDP security correctly - 1]
+api.Oauth2{
+    ClientId:      "client-id",
+    ClientKey:     "client-key",
+    ClientSecret:  "client-secret",
+    GrantType:     "client_credentials",
+    Password:      "",
+    RefreshToken:  "",
+    Scopes:        nil,
+    TokenEndpoint: "https://test.com/token",
+    TokenRequest:  "basic",
+    Type:          "oauth2",
+    Username:      "",
+}
+---
+
+[Exposure Security Mapper (Out) mapExposureSecurity must map OAuth2 with username/password correctly - 1]
+api.Oauth2{
+    ClientId:      "",
+    ClientKey:     "",
+    ClientSecret:  "",
+    GrantType:     "password",
+    Password:      "testpass",
+    RefreshToken:  "",
+    Scopes:        nil,
+    TokenEndpoint: "https://test.com/token",
+    TokenRequest:  "",
+    Type:          "oauth2",
+    Username:      "testuser",
+}
+---
+
+[Exposure Security Mapper (Out) mapExposureSecurity must map OAuth2 scopes correctly - 1]
+api.Oauth2{
+    ClientId:      "",
+    ClientKey:     "",
+    ClientSecret:  "",
+    GrantType:     "",
+    Password:      "",
+    RefreshToken:  "",
+    Scopes:        {"read", "write"},
+    TokenEndpoint: "",
+    TokenRequest:  "",
+    Type:          "oauth2",
+    Username:      "",
+}
+---
+
+[Exposure Security Mapper (Out) mapExposureSecurity must map combined scopes with ExternalIDP - 1]
+api.Oauth2{
+    ClientId:      "",
+    ClientKey:     "",
+    ClientSecret:  "",
+    GrantType:     "",
+    Password:      "",
+    RefreshToken:  "",
+    Scopes:        {"read", "write"},
+    TokenEndpoint: "https://test.com/token",
+    TokenRequest:  "",
+    Type:          "oauth2",
+    Username:      "",
+}
+---

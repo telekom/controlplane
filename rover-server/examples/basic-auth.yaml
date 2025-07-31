@@ -1,0 +1,25 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: basic-auth-example
+team: hyperion
+zone: dataplane1
+icto: icto-12345
+exposures:
+  - type: api
+    basePath: /api/basic-auth-service
+    visibility: ENTERPRISE
+    approval: AUTO
+    upstream: https://backend-service.example.com
+    security:
+      type: basicAuth
+      username: service-user
+      password: service-password
+subscriptions:
+  - type: api
+    basePath: /api/partner-service
+    security:
+      type: basicAuth
+      username: consumer-user
+      password: consumer-password
