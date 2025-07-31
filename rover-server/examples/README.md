@@ -48,14 +48,6 @@ This directory contains example Rover definitions in JSON format that demonstrat
 - **File**: [remove-headers.yaml](remove-headers.yaml)
 - **Description**: Shows how to configure header removal for API exposures.
 
-## Event Handling Examples
-
-- **File**: [event-exposure.yaml](event-exposure.yaml)
-- **Description**: Demonstrates how to configure an event exposure with custom scopes and triggers.
-
-- **File**: [event-subscription.yaml](event-subscription.yaml)
-- **Description**: Shows how to configure an event subscription with various options including callback URL, filters, and delivery settings.
-
 ## Usage
 
 These examples are provided in JSON format for easy consumption by the Rover API. You can use these as starting points for your own Rover configurations.
