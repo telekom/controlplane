@@ -1,0 +1,122 @@
+
+[Rover Status Mapper MapRoverStatus must map rover status correctly - 1]
+{
+ "errors": [
+  {
+   "cause": "Application: rover-local-sub, Cause: NoApproval",
+   "message": "Approval is either rejected or suspended"
+  }
+ ],
+ "processingState": "done",
+ "state": "blocked",
+ "time": "<Any value>",
+ "warnings": [
+  {
+   "message": "Atleast one sub-resource is being processed"
+  }
+ ]
+}
+---
+
+[Rover Status Mapper MapRoverResponse must map rover response correctly - 1]
+{
+ "errors": [
+  {
+   "cause": "NoApproval",
+   "context": "Application: rover-local-sub",
+   "details": "Condition: Ready, Status: False, Message: Approval is either rejected or suspended",
+   "message": "Approval is either rejected or suspended",
+   "resource": {
+    "apiVersion": "rover.cp.ei.telekom.de/v1",
+    "kind": "Rover",
+    "name": "rover-local-sub",
+    "namespace": "poc--eni--hyperion"
+   }
+  }
+ ],
+ "overallStatus": "blocked",
+ "processingState": "done",
+ "state": "blocked"
+}
+---
+
+[Rover Status Mapper FillStateInfo if no processing condition exists status will be none and warnings are created - 1]
+{
+ "processingState": "none",
+ "state": "none",
+ "time": "",
+ "warnings": [
+  {
+   "message": "Processing condition not found"
+  }
+ ]
+}
+---
+
+[Rover Status Mapper FillStateInfo if no ready condition exists status will be none and warnings are created - 1]
+{
+ "processingState": "none",
+ "state": "none",
+ "time": "",
+ "warnings": [
+  {
+   "message": "Ready condition not found"
+  }
+ ]
+}
+---
+
+[Rover Status Mapper FillStateInfo if processing condition status will be blocked and processing - 1]
+{
+ "processingState": "processing",
+ "state": "blocked",
+ "time": ""
+}
+---
+
+[Rover Status Mapper FillStateInfo if processing condition is blocked status will be blocked and warning - 1]
+{
+ "processingState": "done",
+ "state": "blocked",
+ "time": "",
+ "warnings": [
+  {
+   "message": "Blocked due to dependency"
+  }
+ ]
+}
+---
+
+[Rover Status Mapper FillStateInfo if processing done and ready true status will be complete - 1]
+{
+ "processingState": "done",
+ "state": "complete",
+ "time": ""
+}
+---
+
+[Rover Status Mapper FillStateInfo if processing done and ready false status will be blocked and warning - 1]
+{
+ "processingState": "done",
+ "state": "blocked",
+ "time": "",
+ "warnings": [
+  {
+   "message": "Not ready yet"
+  }
+ ]
+}
+---
+
+[Rover Status Mapper FillStateInfo if processing failed status will be failed and error - 1]
+{
+ "errors": [
+  {
+   "message": "Processing failed"
+  }
+ ],
+ "processingState": "failed",
+ "state": "",
+ "time": ""
+}
+---

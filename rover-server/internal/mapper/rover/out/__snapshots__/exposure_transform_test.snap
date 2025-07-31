@@ -1,0 +1,4 @@
+
+[Exposure Transformation Mapper (Out) mapExposureTransformation must map request headers transformation correctly - 1]
+[]string{"X-Test-Header", "Authorization"}
+---
