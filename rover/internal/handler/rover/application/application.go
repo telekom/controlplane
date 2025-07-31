@@ -6,9 +6,9 @@ package application
 
 import (
 	"context"
-	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -19,7 +19,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
-	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
@@ -37,7 +36,7 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 		},
 	}
 
-	team, err := findTeam(ctx, c, owner)
+	team, err := util.FindTeam(ctx, c, owner.Namespace)
 	if err != nil {
 		return err
 	}
@@ -106,29 +105,4 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 	}
 
 	return err
-}
-
-// findTeam finds the team for the given owner identified by the resource namespace.
-func findTeam(ctx context.Context, c client.JanitorClient, owner *roverv1.Rover) (*organizationv1.Team, error) {
-
-	// find owners team with help of resource namespace <environment>--<group>--<team>
-	roverNamespaceParts := strings.Split(owner.Namespace, "--")
-
-	if len(roverNamespaceParts) != 3 {
-		return nil, errors.New("invalid rover resource namespace")
-	}
-
-	team := &organizationv1.Team{}
-	teamRef := types.ObjectRef{
-		Name:      roverNamespaceParts[1] + "--" + roverNamespaceParts[2],
-		Namespace: roverNamespaceParts[0],
-	}
-
-	err := c.Get(ctx, teamRef.K8s(), team)
-
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get team %s", teamRef.Name)
-	}
-
-	return team, nil
 }

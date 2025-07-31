@@ -43,7 +43,7 @@ type Approval struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinItems=0
 	// +kubebuilder:validation:MaxItems=10
-	TrustedTeams []ctypes.ObjectRef `json:"trustedTeams,omitempty"`
+	TrustedTeams []string `json:"trustedTeams,omitempty"`
 }
 
 func (exposure *ApiExposure) HasExternalIdp() bool {

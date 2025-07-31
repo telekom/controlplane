@@ -6,7 +6,6 @@ package api
 
 import (
 	"context"
-	"strings"
 
 	"github.com/pkg/errors"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
@@ -15,11 +14,10 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/util"
 
 	rover "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -72,14 +70,12 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 			return errors.Wrap(err, "failed to map trusted teams")
 		}
 
-		ownerTeamName := strings.Split(owner.Namespace, "--")
-		if len(ownerTeamName) != 3 {
-			return errors.Errorf("invalid owner team name: '%s'. Expected format: 'env--group--team'", owner.Namespace)
+		//add owner to trusted teams
+		ownerTeam, err := util.FindTeam(ctx, c, owner.Namespace)
+		if err != nil {
+			return errors.Wrap(err, "failed to find owner team")
 		}
-		apiExposure.Spec.Approval.TrustedTeams = append(apiExposure.Spec.Approval.TrustedTeams, types.ObjectRef{
-			Name:      ownerTeamName[1] + "--" + ownerTeamName[2],
-			Namespace: contextutil.EnvFromContextOrDie(ctx),
-		})
+		apiExposure.Spec.Approval.TrustedTeams = append(apiExposure.Spec.Approval.TrustedTeams, ownerTeam.GetName())
 
 		failoverZones, hasFailover := getFailoverZones(environment, exp.Traffic.Failover)
 		if hasFailover {
@@ -112,20 +108,18 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 	return err
 }
 
-func mapTrustedTeamsToApiTrustedTeams(ctx context.Context, c client.JanitorClient, teams []rover.TrustedTeam) ([]types.ObjectRef, error) {
+func mapTrustedTeamsToApiTrustedTeams(ctx context.Context, c client.JanitorClient, teams []rover.TrustedTeam) ([]string, error) {
 	if len(teams) == 0 {
 		return nil, nil
 	}
 
-	apiTrustedTeams := make([]types.ObjectRef, 0, len(teams))
+	apiTrustedTeams := make([]string, 0, len(teams))
 	for _, team := range teams {
-		foundTeam := &organizationv1.Team{}
-		err := c.Get(ctx, k8sclient.ObjectKey{Namespace: contextutil.EnvFromContextOrDie(ctx), Name: team.Group + "--" + team.Team}, foundTeam)
+		t, err := util.FindTeam(ctx, c, contextutil.EnvFromContextOrDie(ctx)+"--"+team.Group+"--"+team.Team)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get trusted team '%s' in namespace '%s'", team.Group+"--"+team.Team, contextutil.EnvFromContextOrDie(ctx))
+			return nil, errors.Wrap(err, "failed to find team")
 		}
-
-		apiTrustedTeams = append(apiTrustedTeams, *types.ObjectRefFromObject(foundTeam))
+		apiTrustedTeams = append(apiTrustedTeams, t.GetName())
 	}
 
 	return apiTrustedTeams, nil

@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -175,12 +174,7 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 				g.Expect(apiExposure.Spec.Approval.TrustedTeams).To(HaveLen(3))
 
 				// Check that trusted teams reference the correct Team objects
-				trustedTeamNames := make([]string, len(apiExposure.Spec.Approval.TrustedTeams))
-				for i, teamRef := range apiExposure.Spec.Approval.TrustedTeams {
-					trustedTeamNames[i] = teamRef.Name
-					g.Expect(teamRef.Namespace).To(Equal(testEnvironment))
-				}
-				g.Expect(trustedTeamNames).To(ContainElements(
+				g.Expect(apiExposure.Spec.Approval.TrustedTeams).To(ContainElements(
 					"trusted-group-1--trusted-team-1",
 					"trusted-group-2--trusted-team-2",
 				))
@@ -236,11 +230,8 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 				// Verify approval strategy
 				g.Expect(apiExposure.Spec.Approval.Strategy).To(Equal(apiapi.ApprovalStrategySimple))
 
-				// Verify trusted teams list is empty/nil
-				g.Expect(apiExposure.Spec.Approval.TrustedTeams).To(ContainElement(types.ObjectRef{
-					Name:      "eni--hyperion",
-					Namespace: testEnvironment,
-				}))
+				// Verify trusted teams list only contains owner
+				g.Expect(apiExposure.Spec.Approval.TrustedTeams).To(ContainElement("eni--hyperion"))
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -295,7 +286,7 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 				readyCondition := meta.FindStatusCondition(found.Status.Conditions, condition.ConditionTypeReady)
 				g.Expect(readyCondition).NotTo(BeNil())
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
-				g.Expect(readyCondition.Message).To(ContainSubstring("failed to get trusted team"))
+				g.Expect(readyCondition.Message).To(ContainSubstring("failed to map trusted teams"))
 				g.Expect(readyCondition.Message).To(ContainSubstring("nonexistent-group--nonexistent-team"))
 			}, timeout, interval).Should(Succeed())
 		})
@@ -421,8 +412,7 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 
 				// Verify trusted teams are still mapped correctly
 				g.Expect(apiExposure.Spec.Approval.TrustedTeams).To(HaveLen(2))
-				g.Expect(apiExposure.Spec.Approval.TrustedTeams[0].Name).To(Equal("trusted-group-1--trusted-team-1"))
-				g.Expect(apiExposure.Spec.Approval.TrustedTeams[0].Namespace).To(Equal(testEnvironment))
+				g.Expect(apiExposure.Spec.Approval.TrustedTeams[0]).To(Equal("trusted-group-1--trusted-team-1"))
 			}, timeout, interval).Should(Succeed())
 		})
 	})

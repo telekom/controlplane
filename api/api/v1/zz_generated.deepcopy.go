@@ -380,10 +380,8 @@ func (in *Approval) DeepCopyInto(out *Approval) {
 	*out = *in
 	if in.TrustedTeams != nil {
 		in, out := &in.TrustedTeams, &out.TrustedTeams
-		*out = make([]types.ObjectRef, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
-		}
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 }
 

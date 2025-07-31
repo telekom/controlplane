@@ -97,8 +97,8 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 			apiExposure = NewApiExposure(apiBasePath, zoneName)
 			apiExposure.Spec.Approval = apiv1.Approval{
 				Strategy: apiapi.ApprovalStrategyFourEyes,
-				TrustedTeams: []types.ObjectRef{
-					team1, team2,
+				TrustedTeams: []string{
+					team1.GetName(), team2.GetName(),
 				},
 			}
 
@@ -113,8 +113,8 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 
 				g.Expect(apiExposure.Spec.Approval.TrustedTeams).To(HaveLen(2))
 				teamNames := []string{
-					apiExposure.Spec.Approval.TrustedTeams[0].Name,
-					apiExposure.Spec.Approval.TrustedTeams[1].Name,
+					apiExposure.Spec.Approval.TrustedTeams[0],
+					apiExposure.Spec.Approval.TrustedTeams[1],
 				}
 				g.Expect(teamNames).To(ConsistOf("group1--team1", "group2--team2"))
 			}, timeout*3, interval).Should(Succeed())
@@ -187,9 +187,9 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 			By("Updating the trusted teams list to include team3 instead of team2")
 			err = k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
 			Expect(err).ToNot(HaveOccurred())
-			apiExposure.Spec.Approval.TrustedTeams = []types.ObjectRef{
-				team1,
-				team3,
+			apiExposure.Spec.Approval.TrustedTeams = []string{
+				team1.GetName(),
+				team3.GetName(),
 			}
 			err = k8sClient.Update(ctx, apiExposure)
 			Expect(err).ToNot(HaveOccurred())
@@ -202,8 +202,8 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 
 				g.Expect(updatedExposure.Spec.Approval.TrustedTeams).To(HaveLen(2))
 				teamNames := []string{
-					updatedExposure.Spec.Approval.TrustedTeams[0].Name,
-					updatedExposure.Spec.Approval.TrustedTeams[1].Name,
+					updatedExposure.Spec.Approval.TrustedTeams[0],
+					updatedExposure.Spec.Approval.TrustedTeams[1],
 				}
 				g.Expect(teamNames).To(ConsistOf("group1--team1", "group3--team3"))
 			}, timeout*3, interval).Should(Succeed())
@@ -217,35 +217,6 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 
 			// Team3 should now be auto-approved
 			verifyApprovalStrategy(team3Sub, approvalapi.ApprovalStrategyAuto)
-		})
-
-		It("should handle invalid namespace in trusted team reference", func() {
-			By("Creating an ApiExposure with trusted team having invalid namespace")
-			invalidNamespaceExposure := NewApiExposure(apiBasePath+"/badns", zoneName)
-			invalidNamespaceExposure.Name = "badns-teams-exposure"
-
-			invalidNamespaceExposure.Spec.Approval = apiv1.Approval{
-				Strategy: apiapi.ApprovalStrategyFourEyes,
-				TrustedTeams: []types.ObjectRef{
-					{
-						Name:      "group1--team1",
-						Namespace: "non-existent-namespace", // Invalid namespace
-					},
-				},
-			}
-
-			err := k8sClient.Create(ctx, invalidNamespaceExposure)
-			Expect(err).ToNot(HaveOccurred()) // Should be created despite invalid reference
-
-			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(invalidNamespaceExposure), invalidNamespaceExposure)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(invalidNamespaceExposure.Spec.Approval.TrustedTeams).To(HaveLen(1))
-				g.Expect(invalidNamespaceExposure.Spec.Approval.TrustedTeams[0].Namespace).To(Equal("non-existent-namespace"))
-			}, timeout*3, interval).Should(Succeed())
-
-			err = k8sClient.Delete(ctx, invalidNamespaceExposure)
-			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 })
