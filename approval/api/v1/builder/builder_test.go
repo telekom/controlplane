@@ -188,7 +188,7 @@ var _ = Describe("Approval Builder", Ordered, func() {
 
 			builder.WithHashValue(requesterFromTrustedTeam.Properties)
 			builder.WithRequester(requesterFromTrustedTeam)
-			builder.WithTrustedTeams(trustedTeams)
+			builder.WithTrustedRequesters(trustedTeams)
 			// Set to Simple, but expect it to be overridden to Auto
 			builder.WithStrategy(approvalv1.ApprovalStrategySimple)
 
@@ -243,7 +243,7 @@ var _ = Describe("Approval Builder", Ordered, func() {
 			builder.WithHashValue(requester.Properties)
 			builder.WithRequester(requester)
 			builder.WithStrategy(approvalv1.ApprovalStrategyAuto)
-			builder.WithTrustedTeams([]string{"IOnlyTrustThisRandomTeam"})
+			builder.WithTrustedRequesters([]string{"IOnlyTrustThisRandomTeam"})
 
 			_, err = builder.Build(ctx)
 			Expect(err).NotTo(HaveOccurred())

@@ -44,7 +44,7 @@ type ApprovalBuilder interface {
 	WithStrategy(strategy v1.ApprovalStrategy) ApprovalBuilder
 	WithDecider(decider v1.Decider) ApprovalBuilder
 	WithAction(action string) ApprovalBuilder
-	WithTrustedTeams(trustedTeams []string) ApprovalBuilder
+	WithTrustedRequesters(trustedRequesters []string) ApprovalBuilder
 	Build(ctx context.Context) (ApprovalResult, error)
 
 	GetApprovalRequest() *v1.ApprovalRequest
@@ -55,12 +55,12 @@ type ApprovalBuilder interface {
 var _ ApprovalBuilder = &approvalBuilder{}
 
 type approvalBuilder struct {
-	ran          atomic.Bool
-	Client       cclient.JanitorClient
-	Owner        types.Object
-	Request      *v1.ApprovalRequest
-	Approval     *v1.Approval
-	TrustedTeams []string
+	ran               atomic.Bool
+	Client            cclient.JanitorClient
+	Owner             types.Object
+	Request           *v1.ApprovalRequest
+	Approval          *v1.Approval
+	TrustedRequesters []string
 
 	hashValue any
 }
@@ -100,8 +100,8 @@ func (b *approvalBuilder) setWithHash() {
 	b.Request.Spec.Resource = *types.TypedObjectRefFromObject(b.Owner, b.Client.Scheme())
 }
 
-func (b *approvalBuilder) WithTrustedTeams(trustedTeams []string) ApprovalBuilder {
-	b.TrustedTeams = trustedTeams
+func (b *approvalBuilder) WithTrustedRequesters(trustedRequesters []string) ApprovalBuilder {
+	b.TrustedRequesters = trustedRequesters
 	return b
 }
 
@@ -157,7 +157,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (ApprovalResult, error) {
 
 		approvalReq.Spec = b.Request.Spec
 
-		if b.isRequesterFromTrustedTeam() {
+		if b.isRequesterFromTrustedRequesters() {
 			approvalReq.Spec.Strategy = v1.ApprovalStrategyAuto
 		}
 
@@ -230,11 +230,11 @@ func (b *approvalBuilder) GetOwner() types.Object {
 	return b.Owner
 }
 
-func (b *approvalBuilder) isRequesterFromTrustedTeam() bool {
+func (b *approvalBuilder) isRequesterFromTrustedRequesters() bool {
 	requesterTeamName := b.Request.Spec.Requester.Name
 
-	for i := range b.TrustedTeams {
-		if strings.EqualFold(b.TrustedTeams[i], requesterTeamName) {
+	for i := range b.TrustedRequesters {
+		if strings.EqualFold(b.TrustedRequesters[i], requesterTeamName) {
 			return true
 		}
 	}

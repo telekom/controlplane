@@ -170,7 +170,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		for i := range apiExposure.Spec.Approval.TrustedTeams {
 			trustedTeams[i] = apiExposure.Spec.Approval.TrustedTeams[i].Name
 		}
-		approvalBuilder.WithTrustedTeams(trustedTeams)
+		approvalBuilder.WithTrustedRequesters(trustedTeams)
 	}
 
 	res, err := approvalBuilder.Build(ctx)
