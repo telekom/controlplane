@@ -8,7 +8,7 @@ backend:
   sts_endpoint: "https://sts.amazonaws.com"
   bucket_name: "my-s3-bucket" # Replace with your actual S3 bucket name
   role_arn: "arn:aws:iam::123456789012:role/my-sample-role" # Replace with your actual IAM role ARN
-  token_path: "/var/run/files/filemgr/filemgr-token"
+  token_path: "/var/run/secrets/file-manager/file-manager-token"
 
 
 security:

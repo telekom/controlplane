@@ -1,0 +1,20 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: trust.cert-manager.io/v1alpha1
+kind: Bundle
+metadata:
+  name: file-manager-trust-bundle
+spec:
+  sources:
+  # This only works because `app.trust.namespace=file-manager-system`, see https://cert-manager.io/docs/trust/trust-manager/installation/#trust-namespace
+  - secret:
+      name: file-manager-cert
+      key: ca.crt
+  target:
+    configMap:
+      key: trust-bundle.pem
+    namespaceSelector:
+      matchLabels:
+        cp.ei.telekom.de/file-manager: enabled
