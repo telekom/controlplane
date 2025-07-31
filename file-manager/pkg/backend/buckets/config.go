@@ -67,8 +67,9 @@ func NewBucketConfigWithLogger(log logr.Logger, options ...ConfigOption) (*Bucke
 func (c *BucketConfig) createMinioClient(creds *credentials.Credentials) (*minio.Client, error) {
 	c.Logger.V(1).Info("Creating Minio client", "endpoint", c.Endpoint)
 	client, err := minio.New(c.Endpoint, &minio.Options{
-		Creds:  creds,
-		Secure: true,
+		Creds:           creds,
+		Secure:          true,
+		TrailingHeaders: true, // Enable trailing headers for CRC64NVME checksum support
 	})
 	if err != nil {
 		c.Logger.Error(err, "Failed to create client")

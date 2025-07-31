@@ -57,30 +57,32 @@ func (s *BucketFileUploader) prepareMetadata(ctx context.Context, metadata map[s
 }
 
 // uploadToBucket handles the actual upload operation to the bucket
-func (s *BucketFileUploader) uploadToBucket(ctx context.Context, path string, reader io.Reader, contentType string, userMetadata map[string]string) error {
+func (s *BucketFileUploader) uploadToBucket(ctx context.Context, path string, reader io.Reader, contentType string, userMetadata map[string]string) (string, error) {
 	log := logr.FromContextOrDiscard(ctx)
 
 	// Configure PutObjectOptions
 	putOptions := minio.PutObjectOptions{
 		ContentType:    contentType,
 		UserMetadata:   userMetadata,
-		SendContentMd5: true, // Enable MD5 checksum calculation and verification
+		SendContentMd5: false,                   // Disable MD5 checksum calculation as we're using CRC64NVME
+		Checksum:       minio.ChecksumCRC64NVME, // Use CRC64NVME checksum algorithm
 	}
 
 	// Upload file using the path directly
-	log.V(1).Info("Starting bucket PutObject operation")
-	_, err := s.config.Client.PutObject(ctx, s.config.BucketName, path, reader, -1, putOptions)
+	log.V(1).Info("Starting bucket PutObject operation", "path", path, "putOptions", putOptions)
+	uploadInfo, err := s.config.Client.PutObject(ctx, s.config.BucketName, path, reader, -1, putOptions)
+	log.V(1).Info("Finished bucket PutObject operation", "uploadInfo", uploadInfo)
 
 	if err != nil {
 		log.Error(err, "Failed to upload file to bucket")
-		return backend.ErrUploadFailed(path, err.Error())
+		return "", backend.ErrUploadFailed(path, err.Error())
 	}
 
-	return nil
+	return uploadInfo.ChecksumCRC64NVME, nil
 }
 
 // validateUploadedMetadata validates that the uploaded object metadata matches expectations
-func (s *BucketFileUploader) validateUploadedMetadata(ctx context.Context, path string, metadata map[string]string) error {
+func (s *BucketFileUploader) validateUploadedMetadata(ctx context.Context, path string, metadata map[string]string, uploadedCRC64 string) error {
 	// Extract metadata fields that need validation
 	requestContentType := ""
 	requestChecksum := ""
@@ -96,12 +98,9 @@ func (s *BucketFileUploader) validateUploadedMetadata(ctx context.Context, path 
 	}
 
 	// Validate the metadata using the wrapper
-	return s.wrapper.ValidateObjectMetadata(ctx, path, requestContentType, requestChecksum)
+	return s.wrapper.ValidateObjectMetadata(ctx, path, requestContentType, requestChecksum, uploadedCRC64)
 }
 
-// UploadFile uploads a file to bucket and returns the file ID
-// The fileId should follow the convention <env>--<group>--<team>--<fileName>
-// Metadata already includes X-File-Content-Type and X-File-Checksum headers
 // convertFileIdToPath converts a fileId to a path and logs the result
 func (s *BucketFileUploader) convertFileIdToPath(ctx context.Context, fileId string) (string, error) {
 	log := logr.FromContextOrDiscard(ctx)
@@ -129,6 +128,9 @@ func (s *BucketFileUploader) initializeUpload(ctx context.Context) error {
 	return nil
 }
 
+// UploadFile uploads a file to bucket and returns the file ID
+// The fileId should follow the convention <env>--<group>--<team>--<fileName>
+// Metadata already includes X-File-Content-Type and X-File-Checksum headers
 func (s *BucketFileUploader) UploadFile(ctx context.Context, fileId string, reader io.Reader, metadata map[string]string) (string, error) {
 	log := logr.FromContextOrDiscard(ctx)
 
@@ -148,15 +150,15 @@ func (s *BucketFileUploader) UploadFile(ctx context.Context, fileId string, read
 	// Prepare metadata for upload
 	userMetadata, contentType := s.prepareMetadata(ctx, metadata)
 
-	// Upload file to bucket
-	err = s.uploadToBucket(ctx, path, reader, contentType, userMetadata)
+	// Upload file to bucket and get CRC64
+	uploadedCRC64, err := s.uploadToBucket(ctx, path, reader, contentType, userMetadata)
 	if err != nil {
 		return "", err
 	}
 	log.V(1).Info("File uploaded successfully", "fileId", fileId, "path", path)
 
-	// Validate metadata after upload
-	if err := s.validateUploadedMetadata(ctx, path, metadata); err != nil {
+	// Validate metadata after upload, passing CRC64
+	if err := s.validateUploadedMetadata(ctx, path, metadata, uploadedCRC64); err != nil {
 		return "", err
 	}
 
