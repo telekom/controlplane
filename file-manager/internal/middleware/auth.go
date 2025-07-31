@@ -24,7 +24,7 @@ func BearerAuthMiddleware(log logr.Logger) fiber.Handler {
 			token := strings.TrimPrefix(authHeader, "Bearer ")
 
 			// Add token to context
-			ctx := WithBearerToken(c.Context(), token)
+			ctx := WithBearerToken(c.UserContext(), token)
 			c.SetUserContext(ctx)
 
 			log.V(1).Info("Bearer token extracted and added to context")

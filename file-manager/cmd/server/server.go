@@ -10,8 +10,6 @@ import (
 	"fmt"
 	"os"
 
-	"go.uber.org/zap"
-
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
@@ -25,6 +23,7 @@ import (
 	"github.com/telekom/controlplane/file-manager/internal/middleware"
 	"github.com/telekom/controlplane/file-manager/pkg/backend/buckets"
 	"github.com/telekom/controlplane/file-manager/pkg/controller"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	ctrlr "sigs.k8s.io/controller-runtime"
 )
@@ -65,8 +64,8 @@ func setupLog(logLevel string) logr.Logger {
 	return zapr.NewLogger(zapLog)
 }
 
-//nolint:unparam
-func newController(ctx context.Context, cfg *config.ServerConfig, log logr.Logger) (c controller.Controller, err error) {
+func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.Controller, err error) {
+	log := logr.FromContextOrDiscard(ctx)
 	if backendType != "" {
 		cfg.Backend.Type = backendType
 	}
@@ -140,14 +139,14 @@ func main() {
 
 	ctx := cs.SignalHandler(context.Background())
 	// Add logger to context early so it can be used by newController
-	ctx = logr.NewContext(ctx, log)
+	ctx = logr.NewContext(ctx, log.WithName("initialize server"))
 
 	ctrlr.SetLogger(log)
 	log.Info("Loading configuration file", "path", configFile)
 	cfg := config.GetConfigOrDie(configFile)
 	log.Info("Configuration loaded successfully")
 
-	ctrl, err := newController(ctx, cfg, log)
+	ctrl, err := newController(ctx, cfg)
 	if err != nil {
 		log.Error(err, "failed to create controller")
 		return
@@ -193,9 +192,7 @@ func main() {
 			return
 		}
 
-		// Add server name to the logger that was already set in the context
-		ctxLog := logr.FromContextOrDiscard(ctx)
-		ctx = logr.NewContext(ctx, ctxLog.WithName("server"))
+		ctx = logr.NewContext(ctx, log.WithName("server"))
 		if err := serve.ServeTLS(ctx, app, address, tlsCert, tlsKey); err != nil {
 			log.Error(err, "failed to start server")
 			os.Exit(1)
