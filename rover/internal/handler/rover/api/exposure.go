@@ -59,16 +59,8 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 			Zone:           zoneRef,
 			Upstreams:      make([]apiapi.Upstream, len(exp.Upstreams)),
 			Security:       mapSecurityToApiSecurity(exp.Security),
-			Transformation: mapTransformationtoApiTransformation(exp.Transformation),
-		}
-
-		failoverZones, hasFailover := getFailoverZones(environment, exp.Traffic.Failover)
-		if hasFailover {
-			apiExposure.Spec.Traffic = apiapi.Traffic{
-				Failover: &apiapi.Failover{
-					Zones: failoverZones,
-				},
-			}
+			Transformation: mapTransformationToApiTransformation(exp.Transformation),
+			Traffic:        mapTrafficToApiTraffic(environment, exp.Traffic),
 		}
 
 		for i, upstream := range exp.Upstreams {
@@ -93,6 +85,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 	return err
 }
 
+// security
 func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
 	if roverSecurity == nil {
 		return nil
@@ -127,7 +120,8 @@ func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
 
 }
 
-func mapTransformationtoApiTransformation(roverTransformation *rover.Transformation) *apiapi.Transformation {
+// transformation
+func mapTransformationToApiTransformation(roverTransformation *rover.Transformation) *apiapi.Transformation {
 	if roverTransformation == nil {
 		return nil
 	}
@@ -139,4 +133,68 @@ func mapTransformationtoApiTransformation(roverTransformation *rover.Transformat
 	}
 
 	return apiTransformation
+}
+
+// traffic
+func mapTrafficToApiTraffic(env string, roverTraffic *rover.Traffic) apiapi.Traffic {
+	if roverTraffic == nil {
+		return apiapi.Traffic{}
+	}
+
+	apiTraffic := apiapi.Traffic{}
+
+	// Handle failover
+	failoverZones, hasFailover := getFailoverZones(env, roverTraffic.Failover)
+	if hasFailover {
+		apiTraffic.Failover = &apiapi.Failover{
+			Zones: failoverZones,
+		}
+	}
+
+	// Handle rate limits
+	if roverTraffic.RateLimit != nil {
+		apiTraffic.RateLimit = mapRateLimitToApiRateLimit(roverTraffic.RateLimit.Provider)
+
+		if roverTraffic.RateLimit.Consumers != nil {
+			apiTraffic.SubscriberRateLimit = mapConsumerRateLimitToApiRateLimit(roverTraffic.RateLimit.Consumers)
+		}
+	}
+
+	return apiTraffic
+}
+
+func mapRateLimitToApiRateLimit(roverRateLimitConfig *rover.RateLimitConfig) *apiapi.RateLimit {
+	var rateLimitConfig *apiapi.RateLimit
+
+	if roverRateLimitConfig != nil {
+		rateLimitConfig = &apiapi.RateLimit{
+			Limits: apiapi.LimitConfig{
+				Second: roverRateLimitConfig.Limits.Second,
+				Minute: roverRateLimitConfig.Limits.Minute,
+				Hour:   roverRateLimitConfig.Limits.Hour,
+			},
+			Options: apiapi.LimitOptions{
+				HideClientHeaders: roverRateLimitConfig.Options.HideClientHeaders,
+				FaultTolerant:     roverRateLimitConfig.Options.FaultTolerant,
+			},
+		}
+	}
+	return rateLimitConfig
+}
+
+func mapConsumerRateLimitToApiRateLimit(consumerRateLimits *rover.ConsumerRateLimits) *apiapi.SubscriberRateLimit {
+	if consumerRateLimits == nil || consumerRateLimits.Default == nil {
+		return nil
+	}
+
+	overrides := map[string]apiapi.RateLimit{}
+	for k, v := range consumerRateLimits.Overrides {
+		overrides[k] = *mapRateLimitToApiRateLimit(&v)
+	}
+
+	// For subscriber rate limits, we use the default consumer rate limit
+	return &apiapi.SubscriberRateLimit{
+		Default:   mapRateLimitToApiRateLimit(consumerRateLimits.Default),
+		Overrides: &overrides,
+	}
 }

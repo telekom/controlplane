@@ -235,7 +235,7 @@ type ApiExposure struct {
 	Transformation *Transformation `json:"transformation"`
 	// Traffic defines optional traffic management configuration for this API
 	// +kubebuilder:validation:Optional
-	Traffic Traffic `json:"traffic"`
+	Traffic *Traffic `json:"traffic"`
 	// Security defines optional security configuration for this API
 	// +kubebuilder:validation:Optional
 	Security *Security `json:"security,omitempty"`
