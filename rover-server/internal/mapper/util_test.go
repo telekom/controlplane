@@ -45,31 +45,6 @@ func TestCopyFromTo_ValidSource_CopiesData(t *testing.T) {
 	assert.Equal(t, "value", target.Field)
 }
 
-func TestLen_NilSlice_ReturnsZero(t *testing.T) {
-	var slice *[]int
-
-	result := Len(slice)
-
-	assert.Equal(t, 0, result)
-}
-
-func TestLen_NonEmptySlice_ReturnsLength(t *testing.T) {
-	slice := &[]int{1, 2, 3}
-
-	result := Len(slice)
-
-	assert.Equal(t, 3, result)
-}
-
-func TestToPtr_Value_ReturnsPointer(t *testing.T) {
-	value := 42
-
-	result := ToPtr(value)
-
-	assert.NotNil(t, result)
-	assert.Equal(t, 42, *result)
-}
-
 func TestMakeResourceId_ValidNamespace_ReturnsResourceId(t *testing.T) {
 	obj := &roverv1.Rover{
 		ObjectMeta: metav1.ObjectMeta{

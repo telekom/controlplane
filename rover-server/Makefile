@@ -21,4 +21,4 @@ build: fmt vet ## Run go build against code.
 
 .PHONY: test
 test: fmt vet ## Run tests.
-	go test $$(go list ./... | grep -vE "(/test|/cmd|/internal/api)") -coverprofile cover.out -json
+	go test $$(go list ./... | grep -vE "(/test|/cmd|/internal/api)") -coverprofile cover.out -mod=readonly -race -json 2>&1 | tee gotest.log | gotestfmt

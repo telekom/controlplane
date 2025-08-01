@@ -35,17 +35,6 @@ func CopyFromTo[S any, T any](from S, to T) error {
 	return nil
 }
 
-func Len[T any](v *[]T) int {
-	if v == nil {
-		return 0
-	}
-	return len(*v)
-}
-
-func ToPtr[T any](v T) *T {
-	return &v
-}
-
 func MakeResourceId(obj client.Object) string {
 	parts := nsRE.FindStringSubmatch(obj.GetNamespace())
 	if len(parts) == 4 {
