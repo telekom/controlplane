@@ -35,7 +35,7 @@ var (
 	}
 )
 
-func TestMapper(t *testing.T) {
+func TestApiSpecificationMapper(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Mapper Suite")
+	RunSpecs(t, "ApiSpecification Mapper Suite")
 }
