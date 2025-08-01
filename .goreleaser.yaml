@@ -33,6 +33,15 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: file-manager
+    dir: file-manager
+    main: cmd/server/server.go
+    binary: file-manager
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
   - id: approval
     dir: approval
     main: cmd/main.go
@@ -168,6 +177,26 @@ kos:
     working_dir: secret-manager/cmd/server
     repositories:
       - ghcr.io/telekom/controlplane/secret-manager
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    base_image: gcr.io/distroless/static:nonroot
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: file-manager
+    build: file-manager
+    main: .
+    working_dir: file-manager/cmd/server
+    repositories:
+      - ghcr.io/telekom/controlplane/file-manager
     labels:
       org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
       org.opencontainers.image.url: "https://developer.telekom.de/"

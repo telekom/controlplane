@@ -4,6 +4,7 @@
 
 resources:
   - ../../secret-manager/config/default
+  - ../../file-manager/config/default
   - ../../identity/config/default
   - ../../gateway/config/default
   - ../../approval/config/default
@@ -27,6 +28,20 @@ configMapGenerator:
       disableNameSuffixHash: true
     literals: []
 
+  - name: file-manager-config
+    namespace: file-manager-system
+    behavior: replace
+    files:
+      - config.yaml=file-manager-config.yaml
+    options:
+      disableNameSuffixHash: true
+
+  - name: file-manager-env
+    behavior: merge
+    options:
+      disableNameSuffixHash: true
+    literals: [ ]
+
 patches:
   - target:
       kind: Deployment
@@ -47,6 +62,9 @@ images:
     newTag: latest
   - name: ghcr.io/telekom/controlplane/secret-manager
     newName: ghcr.io/telekom/controlplane/secret-manager
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/file-manager
+    newName: ghcr.io/telekom/controlplane/file-manager
     newTag: latest
   - name: ghcr.io/telekom/controlplane/rover
     newName: ghcr.io/telekom/controlplane/rover
