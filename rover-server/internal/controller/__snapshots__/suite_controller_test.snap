@@ -1,268 +1,4 @@
 
-[ApiSpecification Controller Get ApiSpecification resource should return the ApiSpecification successfully - 1]
-{
- "category": "other",
- "id": "eni--hyperion--apispec-sample",
- "name": "",
- "specification": {
-  "info": {
-   "title": "Rover API",
-   "version": "1.0.0"
-  },
-  "openapi": "3.0.0",
-  "servers": {
-   "url": "http://rover-api/eni/distr/v1"
-  }
- },
- "status": {
-  "processingState": "done",
-  "state": "complete",
-  "time": "<Any value>"
- },
- "vendorApi": false
-}
----
-
-[ApiSpecification Controller Get ApiSpecification resource should fail to get a non-existent ApiSpecification - 1]
-{
- "detail": "Resource eni--hyperion--blabla not found",
- "instance": "",
- "status": 404,
- "title": "Not found",
- "type": "NotFound"
-}
----
-
-[ApiSpecification Controller Get ApiSpecification resource should fail to get an ApiSpecification from a different team - 1]
-{
- "detail": "Access to requested resource not allowed",
- "instance": "",
- "status": 403,
- "title": "Access Denied",
- "type": "Forbidden"
-}
----
-
-[ApiSpecification Controller GetAll ApiSpecifications resource should return all ApiSpecifications successfully - 1]
-{
- "_links": {
-  "next": "",
-  "self": "http://example.com/apispecifications?cursor="
- },
- "items": [
-  {
-   "category": "other",
-   "id": "eni--hyperion--apispec-sample",
-   "name": "",
-   "specification": {
-    "info": {
-     "title": "Rover API",
-     "version": "1.0.0"
-    },
-    "openapi": "3.0.0",
-    "servers": {
-     "url": "http://rover-api/eni/distr/v1"
-    }
-   },
-   "status": {
-    "processingState": "done",
-    "state": "complete",
-    "time": "<Any value>"
-   },
-   "vendorApi": false
-  }
- ]
-}
----
-
-[ApiSpecification Controller GetAll ApiSpecifications resource should return all ApiSpecifications successfully - 2]
-{
- "_links": {
-  "next": "",
-  "self": "http://example.com/apispecifications?cursor="
- },
- "items": [
-  {
-   "category": "other",
-   "id": "eni--hyperion--apispec-sample",
-   "name": "",
-   "specification": {
-    "info": {
-     "title": "Rover API",
-     "version": "1.0.0"
-    },
-    "openapi": "3.0.0",
-    "servers": {
-     "url": "http://rover-api/eni/distr/v1"
-    }
-   },
-   "status": {
-    "processingState": "done",
-    "state": "complete",
-    "time": "<Any value>"
-   },
-   "vendorApi": false
-  }
- ]
-}
----
-
-[ApiSpecification Controller GetAll ApiSpecifications resource should return an empty list if no ApiSpecifications exist - 1]
-{
- "_links": {
-  "next": "",
-  "self": "http://example.com/apispecifications?cursor="
- },
- "items": [
-  {
-   "category": "other",
-   "id": "eni--hyperion--apispec-sample",
-   "name": "",
-   "specification": {
-    "info": {
-     "title": "Rover API",
-     "version": "1.0.0"
-    },
-    "openapi": "3.0.0",
-    "servers": {
-     "url": "http://rover-api/eni/distr/v1"
-    }
-   },
-   "status": {
-    "processingState": "done",
-    "state": "complete",
-    "time": "<Any value>"
-   },
-   "vendorApi": false
-  }
- ]
-}
----
-
-[ApiSpecification Controller GetAll ApiSpecifications resource should return an empty list if no ApiSpecifications exist - 2]
-{
- "_links": {
-  "next": "",
-  "self": "http://example.com/apispecifications?cursor="
- },
- "items": [
-  {
-   "category": "other",
-   "id": "eni--hyperion--apispec-sample",
-   "name": "",
-   "specification": {
-    "info": {
-     "title": "Rover API",
-     "version": "1.0.0"
-    },
-    "openapi": "3.0.0",
-    "servers": {
-     "url": "http://rover-api/eni/distr/v1"
-    }
-   },
-   "status": {
-    "processingState": "done",
-    "state": "complete",
-    "time": "<Any value>"
-   },
-   "vendorApi": false
-  }
- ]
-}
----
-
-[ApiSpecification Controller Delete ApiSpecification resource should fail to delete a non-existent ApiSpecification - 1]
-{
- "detail": "Resource eni--hyperion--blabla not found",
- "instance": "",
- "status": 404,
- "title": "Not found",
- "type": "NotFound"
-}
----
-
-[ApiSpecification Controller Delete ApiSpecification resource should fail to delete an ApiSpecification from a different team - 1]
-{
- "detail": "Access to requested resource not allowed",
- "instance": "",
- "status": 403,
- "title": "Access Denied",
- "type": "Forbidden"
-}
----
-
-[ApiSpecification Controller GetStatus ApiSpecification resource should return the status of the ApiSpecification successfully - 1]
-{
- "overallStatus": "complete",
- "processingState": "done",
- "state": "complete"
-}
----
-
-[ApiSpecification Controller GetStatus ApiSpecification resource should fail to get the status of a non-existent ApiSpecification - 1]
-{
- "detail": "Resource eni--hyperion--blabla not found",
- "instance": "",
- "status": 404,
- "title": "Not found",
- "type": "NotFound"
-}
----
-
-[ApiSpecification Controller GetStatus ApiSpecification resource should fail to get the status of an ApiSpecification from a different team - 1]
-{
- "detail": "Access to requested resource not allowed",
- "instance": "",
- "status": 403,
- "title": "Access Denied",
- "type": "Forbidden"
-}
----
-
-[ApiSpecification Controller Update ApiSpecification resource should update the ApiSpecification successfully - 1]
-{
- "category": "other",
- "id": "eni--hyperion--apispec-sample",
- "name": "",
- "specification": {
-  "info": {
-   "title": "Rover API",
-   "version": "1.0.0"
-  },
-  "openapi": "3.0.0",
-  "servers": {
-   "url": "http://rover-api/eni/distr/v1"
-  }
- },
- "status": {
-  "processingState": "done",
-  "state": "complete",
-  "time": "<Any value>"
- },
- "vendorApi": false
-}
----
-
-[ApiSpecification Controller Update ApiSpecification resource should fail to update a non-existent ApiSpecification - 1]
-{
- "detail": "Resource eni--hyperion--blabla not found",
- "instance": "",
- "status": 404,
- "title": "Not found",
- "type": "NotFound"
-}
----
-
-[ApiSpecification Controller Update ApiSpecification resource should fail to update an ApiSpecification from a different team - 1]
-{
- "detail": "Access to requested resource not allowed",
- "instance": "",
- "status": 403,
- "title": "Access Denied",
- "type": "Forbidden"
-}
----
-
 [Rover Controller GetAll rover resources should return all rovers successfully - 1]
 {
  "_links": {
@@ -783,6 +519,270 @@
 ---
 
 [Rover Controller Reset rover secret should fail to reset the secret from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[ApiSpecification Controller Get ApiSpecification resource should return the ApiSpecification successfully - 1]
+{
+ "category": "other",
+ "id": "eni--hyperion--apispec-sample",
+ "name": "",
+ "specification": {
+  "info": {
+   "title": "Rover API",
+   "version": "1.0.0"
+  },
+  "openapi": "3.0.0",
+  "servers": {
+   "url": "http://rover-api/eni/distr/v1"
+  }
+ },
+ "status": {
+  "processingState": "done",
+  "state": "complete",
+  "time": "<Any value>"
+ },
+ "vendorApi": false
+}
+---
+
+[ApiSpecification Controller Get ApiSpecification resource should fail to get a non-existent ApiSpecification - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[ApiSpecification Controller Get ApiSpecification resource should fail to get an ApiSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[ApiSpecification Controller GetAll ApiSpecifications resource should return all ApiSpecifications successfully - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apispecifications?cursor="
+ },
+ "items": [
+  {
+   "category": "other",
+   "id": "eni--hyperion--apispec-sample",
+   "name": "",
+   "specification": {
+    "info": {
+     "title": "Rover API",
+     "version": "1.0.0"
+    },
+    "openapi": "3.0.0",
+    "servers": {
+     "url": "http://rover-api/eni/distr/v1"
+    }
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete",
+    "time": "<Any value>"
+   },
+   "vendorApi": false
+  }
+ ]
+}
+---
+
+[ApiSpecification Controller GetAll ApiSpecifications resource should return all ApiSpecifications successfully - 2]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apispecifications?cursor="
+ },
+ "items": [
+  {
+   "category": "other",
+   "id": "eni--hyperion--apispec-sample",
+   "name": "",
+   "specification": {
+    "info": {
+     "title": "Rover API",
+     "version": "1.0.0"
+    },
+    "openapi": "3.0.0",
+    "servers": {
+     "url": "http://rover-api/eni/distr/v1"
+    }
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete",
+    "time": "<Any value>"
+   },
+   "vendorApi": false
+  }
+ ]
+}
+---
+
+[ApiSpecification Controller GetAll ApiSpecifications resource should return an empty list if no ApiSpecifications exist - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apispecifications?cursor="
+ },
+ "items": [
+  {
+   "category": "other",
+   "id": "eni--hyperion--apispec-sample",
+   "name": "",
+   "specification": {
+    "info": {
+     "title": "Rover API",
+     "version": "1.0.0"
+    },
+    "openapi": "3.0.0",
+    "servers": {
+     "url": "http://rover-api/eni/distr/v1"
+    }
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete",
+    "time": "<Any value>"
+   },
+   "vendorApi": false
+  }
+ ]
+}
+---
+
+[ApiSpecification Controller GetAll ApiSpecifications resource should return an empty list if no ApiSpecifications exist - 2]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apispecifications?cursor="
+ },
+ "items": [
+  {
+   "category": "other",
+   "id": "eni--hyperion--apispec-sample",
+   "name": "",
+   "specification": {
+    "info": {
+     "title": "Rover API",
+     "version": "1.0.0"
+    },
+    "openapi": "3.0.0",
+    "servers": {
+     "url": "http://rover-api/eni/distr/v1"
+    }
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete",
+    "time": "<Any value>"
+   },
+   "vendorApi": false
+  }
+ ]
+}
+---
+
+[ApiSpecification Controller Delete ApiSpecification resource should fail to delete a non-existent ApiSpecification - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[ApiSpecification Controller Delete ApiSpecification resource should fail to delete an ApiSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[ApiSpecification Controller GetStatus ApiSpecification resource should return the status of the ApiSpecification successfully - 1]
+{
+ "overallStatus": "complete",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[ApiSpecification Controller GetStatus ApiSpecification resource should fail to get the status of a non-existent ApiSpecification - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[ApiSpecification Controller GetStatus ApiSpecification resource should fail to get the status of an ApiSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[ApiSpecification Controller Update ApiSpecification resource should update the ApiSpecification successfully - 1]
+{
+ "category": "other",
+ "id": "eni--hyperion--apispec-sample",
+ "name": "",
+ "specification": {
+  "info": {
+   "title": "Rover API",
+   "version": "1.0.0"
+  },
+  "openapi": "3.0.0",
+  "servers": {
+   "url": "http://rover-api/eni/distr/v1"
+  }
+ },
+ "status": {
+  "processingState": "done",
+  "state": "complete",
+  "time": "<Any value>"
+ },
+ "vendorApi": false
+}
+---
+
+[ApiSpecification Controller Update ApiSpecification resource should fail to update a non-existent ApiSpecification - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[ApiSpecification Controller Update ApiSpecification resource should fail to update an ApiSpecification from a different team - 1]
 {
  "detail": "Access to requested resource not allowed",
  "instance": "",
