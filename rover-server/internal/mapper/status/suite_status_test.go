@@ -34,9 +34,9 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 	}
 }
 
-func TestMapper(t *testing.T) {
+func TestStatusMapper(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Status Suite")
+	RunSpecs(t, "Status Mapper Suite")
 }
 
 type ContextKey string

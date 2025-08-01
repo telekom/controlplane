@@ -130,6 +130,7 @@ func expectResponseWithStatus(response *http.Response, statusCode int, contentTy
 }
 
 func expectResponseWithBody(response *http.Response, matchers ...match.JSONMatcher) {
-	b, _ := io.ReadAll(response.Body)
+	b, err := io.ReadAll(response.Body)
+	Expect(err).ToNot(HaveOccurred())
 	snaps.MatchJSON(GinkgoT(), string(b), matchers...)
 }
