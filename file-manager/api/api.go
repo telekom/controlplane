@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	localhost                = "http://localhost:9090/api"
+	localhost                = "http://localhost:8443/api"
 	inCluster                = "https://file-manager.file-manager-system.svc.cluster.local/api"
 	tokenFilePath            = "/var/run/secrets/tokens/sa-token"
 	uploadRequestContentType = "application/octet-stream"
@@ -158,7 +158,7 @@ func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 	log.V(1).Info("Uploading file ", "fileId", fileId, "fileContentType", fileContentType)
 
 	buf := bytes.NewBuffer(nil)
-	_, hash, err := copyAndHash(buf, r)
+	hash, err := copyAndHash(buf, r)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to copy content")
 	}
@@ -189,9 +189,9 @@ func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 			return nil, fmt.Errorf("checksum mismatch: expected %s, got %s", checksum, hash)
 		}
 		return &FileUploadResponse{
-			MD5Hash:     checksum,
-			FileId:      res.Id,
-			ContentType: extractHeader(response, constants.XFileContentType),
+			CRC64NVMEHash: checksum,
+			FileId:        res.Id,
+			ContentType:   extractHeader(response, constants.XFileContentType),
 		}, nil
 
 	case http.StatusNotFound:
@@ -214,19 +214,19 @@ func (f *FileManagerAPI) DownloadFile(ctx context.Context, fileId string, w io.W
 
 	switch response.StatusCode {
 	case http.StatusOK:
-		_, hash, err := copyAndHash(w, response.Body)
+		hash, err := copyAndHash(w, response.Body)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to copy file content")
 		}
-		log.FromContext(ctx).V(1).Info("Downloaded file", "fileId", fileId, "md5Hash", hash)
+		log.FromContext(ctx).V(1).Info("Downloaded file", "fileId", fileId, "crc64nvmeHash", hash)
 
 		expectedChecksum := extractHeader(response, constants.XFileChecksum)
 		if f.ValidateChecksum && hash != expectedChecksum {
 			return nil, fmt.Errorf("checksum mismatch: expected %s, got %s", expectedChecksum, hash)
 		}
 		return &FileDownloadResponse{
-			MD5Hash:     expectedChecksum,
-			ContentType: extractHeader(response, constants.XFileContentType),
+			CRC64NVMEHash: expectedChecksum,
+			ContentType:   extractHeader(response, constants.XFileContentType),
 		}, nil
 
 	case http.StatusNotFound:

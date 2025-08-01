@@ -5,12 +5,12 @@
 package api
 
 type FileUploadResponse struct {
-	MD5Hash     string
-	FileId      string
-	ContentType string
+	CRC64NVMEHash string
+	FileId        string
+	ContentType   string
 }
 
 type FileDownloadResponse struct {
-	MD5Hash     string
-	ContentType string
+	CRC64NVMEHash string
+	ContentType   string
 }

@@ -13,17 +13,17 @@ import (
 )
 
 // copyAndHash copies data from src to dst while also computing a hash of the data.
-// It returns the number of bytes written, the computed hash as a base64 encoded string,
+// It returns the computed hash as a base64 encoded string,
 // and any error encountered during the copy operation.
-func copyAndHash(dst io.Writer, src io.Reader) (written int, hash string, err error) {
+func copyAndHash(dst io.Writer, src io.Reader) (hash string, err error) {
 	data, err := io.ReadAll(src)
 	if err != nil {
-		return 0, "", err
+		return "", err
 	}
 
-	written, err = dst.Write(data)
+	_, err = dst.Write(data)
 	if err != nil {
-		return 0, "", err
+		return "", err
 	}
 
 	sum := crc64nvme.Checksum(data)
@@ -31,5 +31,5 @@ func copyAndHash(dst io.Writer, src io.Reader) (written int, hash string, err er
 	binary.BigEndian.PutUint64(sumBytes, sum)
 	hash = base64.StdEncoding.EncodeToString(sumBytes)
 
-	return written, hash, nil
+	return hash, nil
 }
