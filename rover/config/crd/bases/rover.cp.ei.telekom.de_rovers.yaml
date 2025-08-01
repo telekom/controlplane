@@ -271,6 +271,95 @@ spec:
                                         applied to all consumers not specifically
                                         overridden
                                       properties:
+                                        limits:
+                                          properties:
+                                            hour:
+                                              description: Hour defines the maximum
+                                                number of requests allowed per hour
+                                              minimum: 0
+                                              type: integer
+                                            minute:
+                                              description: Minute defines the maximum
+                                                number of requests allowed per minute
+                                              minimum: 0
+                                              type: integer
+                                            second:
+                                              description: Second defines the maximum
+                                                number of requests allowed per second
+                                              minimum: 0
+                                              type: integer
+                                          type: object
+                                        options:
+                                          properties:
+                                            faultTolerant:
+                                              description: FaultTolerant defines if
+                                                the rate limit plugin should be fault
+                                                tolerant, if gateway is not able to
+                                                access the config store
+                                              type: boolean
+                                            hideClientHeaders:
+                                              description: HideClientHeaders hides
+                                                additional client headers which give
+                                                information about the rate-limit,
+                                                reset and remaining requests for consumers
+                                                if set to true.
+                                              type: boolean
+                                          type: object
+                                      required:
+                                      - limits
+                                      type: object
+                                    overrides:
+                                      additionalProperties:
+                                        description: RateLimitConfig defines rate
+                                          limits for different time windows
+                                        properties:
+                                          limits:
+                                            properties:
+                                              hour:
+                                                description: Hour defines the maximum
+                                                  number of requests allowed per hour
+                                                minimum: 0
+                                                type: integer
+                                              minute:
+                                                description: Minute defines the maximum
+                                                  number of requests allowed per minute
+                                                minimum: 0
+                                                type: integer
+                                              second:
+                                                description: Second defines the maximum
+                                                  number of requests allowed per second
+                                                minimum: 0
+                                                type: integer
+                                            type: object
+                                          options:
+                                            properties:
+                                              faultTolerant:
+                                                description: FaultTolerant defines
+                                                  if the rate limit plugin should
+                                                  be fault tolerant, if gateway is
+                                                  not able to access the config store
+                                                type: boolean
+                                              hideClientHeaders:
+                                                description: HideClientHeaders hides
+                                                  additional client headers which
+                                                  give information about the rate-limit,
+                                                  reset and remaining requests for
+                                                  consumers if set to true.
+                                                type: boolean
+                                            type: object
+                                        required:
+                                        - limits
+                                        type: object
+                                      description: Overrides defines consumer-specific
+                                        rate limits, keyed by consumer identifier
+                                      type: object
+                                  type: object
+                                provider:
+                                  description: Provider defines rate limits applied
+                                    by the API provider (owner)
+                                  properties:
+                                    limits:
+                                      properties:
                                         hour:
                                           description: Hour defines the maximum number
                                             of requests allowed per hour
@@ -287,50 +376,23 @@ spec:
                                           minimum: 0
                                           type: integer
                                       type: object
-                                    overrides:
-                                      additionalProperties:
-                                        description: RateLimitConfig defines rate
-                                          limits for different time windows
-                                        properties:
-                                          hour:
-                                            description: Hour defines the maximum
-                                              number of requests allowed per hour
-                                            minimum: 0
-                                            type: integer
-                                          minute:
-                                            description: Minute defines the maximum
-                                              number of requests allowed per minute
-                                            minimum: 0
-                                            type: integer
-                                          second:
-                                            description: Second defines the maximum
-                                              number of requests allowed per second
-                                            minimum: 0
-                                            type: integer
-                                        type: object
-                                      description: Overrides defines consumer-specific
-                                        rate limits, keyed by consumer identifier
+                                    options:
+                                      properties:
+                                        faultTolerant:
+                                          description: FaultTolerant defines if the
+                                            rate limit plugin should be fault tolerant,
+                                            if gateway is not able to access the config
+                                            store
+                                          type: boolean
+                                        hideClientHeaders:
+                                          description: HideClientHeaders hides additional
+                                            client headers which give information
+                                            about the rate-limit, reset and remaining
+                                            requests for consumers if set to true.
+                                          type: boolean
                                       type: object
-                                  type: object
-                                provider:
-                                  description: Provider defines rate limits applied
-                                    by the API provider (owner)
-                                  properties:
-                                    hour:
-                                      description: Hour defines the maximum number
-                                        of requests allowed per hour
-                                      minimum: 0
-                                      type: integer
-                                    minute:
-                                      description: Minute defines the maximum number
-                                        of requests allowed per minute
-                                      minimum: 0
-                                      type: integer
-                                    second:
-                                      description: Second defines the maximum number
-                                        of requests allowed per second
-                                      minimum: 0
-                                      type: integer
+                                  required:
+                                  - limits
                                   type: object
                               type: object
                           type: object
@@ -562,21 +624,40 @@ spec:
                               description: RateLimit defines request rate limiting
                                 for this API
                               properties:
-                                hour:
-                                  description: Hour defines the maximum number of
-                                    requests allowed per hour
-                                  minimum: 0
-                                  type: integer
-                                minute:
-                                  description: Minute defines the maximum number of
-                                    requests allowed per minute
-                                  minimum: 0
-                                  type: integer
-                                second:
-                                  description: Second defines the maximum number of
-                                    requests allowed per second
-                                  minimum: 0
-                                  type: integer
+                                limits:
+                                  properties:
+                                    hour:
+                                      description: Hour defines the maximum number
+                                        of requests allowed per hour
+                                      minimum: 0
+                                      type: integer
+                                    minute:
+                                      description: Minute defines the maximum number
+                                        of requests allowed per minute
+                                      minimum: 0
+                                      type: integer
+                                    second:
+                                      description: Second defines the maximum number
+                                        of requests allowed per second
+                                      minimum: 0
+                                      type: integer
+                                  type: object
+                                options:
+                                  properties:
+                                    faultTolerant:
+                                      description: FaultTolerant defines if the rate
+                                        limit plugin should be fault tolerant, if
+                                        gateway is not able to access the config store
+                                      type: boolean
+                                    hideClientHeaders:
+                                      description: HideClientHeaders hides additional
+                                        client headers which give information about
+                                        the rate-limit, reset and remaining requests
+                                        for consumers if set to true.
+                                      type: boolean
+                                  type: object
+                              required:
+                              - limits
                               type: object
                           type: object
                         transformation:

@@ -18,7 +18,7 @@ type ApiSubscriptionSpec struct {
 	Requestor    Requestor           `json:"requestor"`
 	Zone         ctypes.ObjectRef    `json:"zone"`
 
-	Traffic Traffic `json:"traffic"`
+	Traffic SubscriberTraffic `json:"traffic"`
 }
 
 func (api *ApiSubscription) HasM2M() bool {
@@ -39,6 +39,10 @@ func (api *ApiSubscription) HasM2MClient() bool {
 
 func (a *ApiSubscription) HasFailover() bool {
 	return a.Spec.Traffic.Failover != nil
+}
+
+func (a *ApiSubscription) HasRateLimit() bool {
+	return a.Spec.Traffic.RateLimit != nil
 }
 
 type Requestor struct {
