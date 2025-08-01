@@ -66,6 +66,14 @@ func (a *ApiExposure) HasFailover() bool {
 	return a.Spec.Traffic.Failover != nil
 }
 
+func (a *ApiExposure) HasRateLimit() bool {
+	return a.Spec.Traffic.RateLimit != nil
+}
+
+func (a *ApiExposure) HasSubscriberRateLimit() bool {
+	return a.Spec.Traffic.SubscriberRateLimit != nil
+}
+
 func (a *ApiExposure) HasM2M() bool {
 	if a.Spec.Security == nil {
 		return false
