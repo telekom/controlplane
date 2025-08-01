@@ -5,68 +5,81 @@
 package status
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
 
-func TestAppendStateInfos_AppendsNewStateInfos(t *testing.T) {
-	existingStateInfos := []api.StateInfo{
-		{Message: "Existing state info"},
-	}
-	newStateInfos := []api.StateInfo{
-		{Message: "New state info"},
-	}
+var _ = Describe("AppendStateInfos", func() {
+	Context("when appending new state infos", func() {
+		It("appends the new state infos to the existing ones", func() {
+			existingStateInfos := []api.StateInfo{
+				{Message: "Existing state info"},
+			}
+			newStateInfos := []api.StateInfo{
+				{Message: "New state info"},
+			}
 
-	result := AppendStateInfos(existingStateInfos, newStateInfos)
+			result := AppendStateInfos(existingStateInfos, newStateInfos)
 
-	assert.Len(t, result, 2)
-	assert.Equal(t, "Existing state info", result[0].Message)
-	assert.Equal(t, "New state info", result[1].Message)
-}
+			Expect(result).To(HaveLen(2))
+			Expect(result[0].Message).To(Equal("Existing state info"))
+			Expect(result[1].Message).To(Equal("New state info"))
+		})
+	})
 
-func TestAppendStateInfos_NoNewStateInfos(t *testing.T) {
-	existingStateInfos := []api.StateInfo{
-		{Message: "Existing state info"},
-	}
+	Context("when there are no new state infos", func() {
+		It("returns only the existing state infos", func() {
+			existingStateInfos := []api.StateInfo{
+				{Message: "Existing state info"},
+			}
 
-	result := AppendStateInfos(existingStateInfos, nil)
+			result := AppendStateInfos(existingStateInfos, nil)
 
-	assert.Len(t, result, 1)
-	assert.Equal(t, "Existing state info", result[0].Message)
-}
+			Expect(result).To(HaveLen(1))
+			Expect(result[0].Message).To(Equal("Existing state info"))
+		})
+	})
+})
 
-func TestMapProblemsToStateInfos_ReturnsMappedStateInfos(t *testing.T) {
-	problems := []api.Problem{
-		{Message: "Problem 1", Context: "Context 1", Cause: "Cause 1"},
-		{Message: "Problem 2", Context: "Context 2", Cause: "Cause 2"},
-	}
-	expectedStateInfos := []api.StateInfo{
-		{Message: "Problem 1", Cause: "Context 1, Cause: Cause 1"},
-		{Message: "Problem 2", Cause: "Context 2, Cause: Cause 2"},
-	}
+var _ = Describe("MapProblemsToStateInfos", func() {
+	Context("when mapping problems to state infos", func() {
+		It("returns correctly mapped state infos", func() {
+			problems := []api.Problem{
+				{Message: "Problem 1", Context: "Context 1", Cause: "Cause 1"},
+				{Message: "Problem 2", Context: "Context 2", Cause: "Cause 2"},
+			}
+			expectedStateInfos := []api.StateInfo{
+				{Message: "Problem 1", Cause: "Context 1, Cause: Cause 1"},
+				{Message: "Problem 2", Cause: "Context 2, Cause: Cause 2"},
+			}
 
-	stateInfos := mapProblemsToStateInfos(problems)
+			stateInfos := mapProblemsToStateInfos(problems)
 
-	assert.Equal(t, expectedStateInfos, stateInfos)
-}
+			Expect(stateInfos).To(Equal(expectedStateInfos))
+		})
+	})
 
-func TestMapProblemsToStateInfos_EmptyProblems(t *testing.T) {
-	problems := []api.Problem{}
-	expectedStateInfos := []api.StateInfo{}
+	Context("when given empty problems slice", func() {
+		It("returns empty state infos", func() {
+			problems := []api.Problem{}
+			expectedStateInfos := []api.StateInfo{}
 
-	stateInfos := mapProblemsToStateInfos(problems)
+			stateInfos := mapProblemsToStateInfos(problems)
 
-	assert.Equal(t, expectedStateInfos, stateInfos)
-}
+			Expect(stateInfos).To(Equal(expectedStateInfos))
+		})
+	})
 
-func TestMapProblemsToStateInfos_NilProblems(t *testing.T) {
-	var problems []api.Problem
-	expectedStateInfos := []api.StateInfo{}
+	Context("when given nil problems", func() {
+		It("returns empty state infos", func() {
+			var problems []api.Problem
+			expectedStateInfos := []api.StateInfo{}
 
-	stateInfos := mapProblemsToStateInfos(problems)
+			stateInfos := mapProblemsToStateInfos(problems)
 
-	assert.Equal(t, expectedStateInfos, stateInfos)
-}
+			Expect(stateInfos).To(Equal(expectedStateInfos))
+		})
+	})
+})

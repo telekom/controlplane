@@ -7,9 +7,9 @@ package status
 import (
 	"context"
 	"fmt"
-	"testing"
 
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	commonStore "github.com/telekom/controlplane/common-server/pkg/store"
@@ -112,101 +112,117 @@ var (
 	expectNoProblems = []api.Problem{}
 )
 
-func TestGetAllProblemsInSubResource_ReturnsProblems(t *testing.T) {
-	// given
-	ctx := context.Background()
-	mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
-	mockStore.On("List", ctx, mock.Anything).Return(
-		&commonStore.ListResponse[*apiv1.ApiSubscription]{
-			Items: []*apiv1.ApiSubscription{apiSubscription}}, nil).Once()
+var _ = Describe("GetAllProblemsInSubResource", func() {
+	Context("when sub-resource has problems", func() {
+		It("returns problems", func() {
+			// given
+			ctx := context.Background()
+			mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
+			mockStore.On("List", ctx, mock.Anything).Return(
+				&commonStore.ListResponse[*apiv1.ApiSubscription]{
+					Items: []*apiv1.ApiSubscription{apiSubscription}}, nil).Once()
 
-	// when
-	problems, err := GetAllProblemsInSubResource[*apiv1.ApiSubscription](ctx, rover, mockStore)
+			// when
+			problems, err := GetAllProblemsInSubResource(ctx, rover, mockStore)
 
-	// then
-	assert.NoError(t, err)
-	assert.Equal(t, expectedProblems, problems)
-	mockStore.AssertExpectations(t)
-}
+			// then
+			Expect(err).NotTo(HaveOccurred())
+			Expect(problems).To(Equal(expectedProblems))
+			mockStore.AssertExpectations(GinkgoT())
+		})
+	})
 
-func TestGetAllProblemsInSubResource_NoProblems(t *testing.T) {
-	// given
-	ctx := context.Background()
-	mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
-	mockStore.On("List", ctx, mock.Anything).Return(
-		&commonStore.ListResponse[*apiv1.ApiSubscription]{
-			Items: []*apiv1.ApiSubscription{}}, nil).Once()
+	Context("when there are no problems in sub-resource", func() {
+		It("returns no problems", func() {
+			// given
+			ctx := context.Background()
+			mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
+			mockStore.On("List", ctx, mock.Anything).Return(
+				&commonStore.ListResponse[*apiv1.ApiSubscription]{
+					Items: []*apiv1.ApiSubscription{}}, nil).Once()
 
-	// when
-	problems, err := GetAllProblemsInSubResource[*apiv1.ApiSubscription](ctx, rover, mockStore)
+			// when
+			problems, err := GetAllProblemsInSubResource(ctx, rover, mockStore)
 
-	// then
-	assert.NoError(t, err)
-	assert.Equal(t, expectNoProblems, problems)
-	mockStore.AssertExpectations(t)
-}
+			// then
+			Expect(err).NotTo(HaveOccurred())
+			Expect(problems).To(Equal(expectNoProblems))
+			mockStore.AssertExpectations(GinkgoT())
+		})
+	})
 
-func TestGetAllProblemsInSubResource_Error(t *testing.T) {
-	// given
-	ctx := context.Background()
-	mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
-	expectedError := fmt.Errorf("error retrieving sub-resources")
-	mockStore.On("List", ctx, mock.Anything).Return(
-		(*commonStore.ListResponse[*apiv1.ApiSubscription])(nil), expectedError).Once()
+	Context("when there is an error retrieving sub-resources", func() {
+		It("returns the error", func() {
+			// given
+			ctx := context.Background()
+			mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
+			expectedError := fmt.Errorf("error retrieving sub-resources")
+			mockStore.On("List", ctx, mock.Anything).Return(
+				(*commonStore.ListResponse[*apiv1.ApiSubscription])(nil), expectedError).Once()
 
-	// when
-	problems, err := GetAllProblemsInSubResource[*apiv1.ApiSubscription](ctx, rover, mockStore)
+			// when
+			problems, err := GetAllProblemsInSubResource(ctx, rover, mockStore)
 
-	// then
-	assert.Error(t, err)
-	assert.Nil(t, problems)
-	assert.Equal(t, expectedError, err)
-	mockStore.AssertExpectations(t)
-}
+			// then
+			Expect(err).To(HaveOccurred())
+			Expect(problems).To(BeNil())
+			Expect(err).To(Equal(expectedError))
+			mockStore.AssertExpectations(GinkgoT())
+		})
+	})
+})
 
-func TestGetNotReadyCondition_ReturnsNotReadyCondition(t *testing.T) {
-	conditions := []metav1.Condition{
-		{
-			Type:    condition.ConditionTypeReady,
-			Status:  metav1.ConditionFalse,
-			Reason:  "SomeReason",
-			Message: "Not ready",
-		},
-		{
-			Type:   "OtherCondition",
-			Status: metav1.ConditionTrue,
-		},
-	}
+var _ = Describe("GetNotReadyCondition", func() {
+	Context("when there is a not ready condition", func() {
+		It("returns the not ready condition", func() {
+			conditions := []metav1.Condition{
+				{
+					Type:    condition.ConditionTypeReady,
+					Status:  metav1.ConditionFalse,
+					Reason:  "SomeReason",
+					Message: "Not ready",
+				},
+				{
+					Type:   "OtherCondition",
+					Status: metav1.ConditionTrue,
+				},
+			}
 
-	result := getNotReadyCondition(conditions)
+			result := getNotReadyCondition(conditions)
 
-	assert.NotNil(t, result)
-	assert.Equal(t, metav1.ConditionFalse, result.Status)
-	assert.Equal(t, "SomeReason", result.Reason)
-	assert.Equal(t, "Not ready", result.Message)
-}
+			Expect(result).NotTo(BeNil())
+			Expect(result.Status).To(Equal(metav1.ConditionFalse))
+			Expect(result.Reason).To(Equal("SomeReason"))
+			Expect(result.Message).To(Equal("Not ready"))
+		})
+	})
 
-func TestGetNotReadyCondition_NoNotReadyCondition(t *testing.T) {
-	conditions := []metav1.Condition{
-		{
-			Type:   condition.ConditionTypeReady,
-			Status: metav1.ConditionTrue,
-		},
-		{
-			Type:   "OtherCondition",
-			Status: metav1.ConditionTrue,
-		},
-	}
+	Context("when there is no not ready condition", func() {
+		It("returns nil", func() {
+			conditions := []metav1.Condition{
+				{
+					Type:   condition.ConditionTypeReady,
+					Status: metav1.ConditionTrue,
+				},
+				{
+					Type:   "OtherCondition",
+					Status: metav1.ConditionTrue,
+				},
+			}
 
-	result := getNotReadyCondition(conditions)
+			result := getNotReadyCondition(conditions)
 
-	assert.Nil(t, result)
-}
+			Expect(result).To(BeNil())
+		})
+	})
 
-func TestGetNotReadyCondition_EmptyConditions(t *testing.T) {
-	var conditions []metav1.Condition
+	Context("when conditions are empty", func() {
+		It("returns nil", func() {
+			var conditions []metav1.Condition
 
-	result := getNotReadyCondition(conditions)
+			result := getNotReadyCondition(conditions)
 
-	assert.Nil(t, result)
-}
+			Expect(result).To(BeNil())
+		})
+	})
+})

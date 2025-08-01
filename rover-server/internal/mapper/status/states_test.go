@@ -5,59 +5,82 @@
 package status
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
 
-func TestCalculateOverallStatus_ProcessingStateProcessing_ReturnsProcessing(t *testing.T) {
-	result := CalculateOverallStatus(api.Complete, api.ProcessingStateProcessing)
-	assert.Equal(t, api.OverallStatusProcessing, result)
-}
+var _ = Describe("CalculateOverallStatus", func() {
+	Context("when processing state is Processing", func() {
+		It("returns Processing", func() {
+			result := CalculateOverallStatus(api.Complete, api.ProcessingStateProcessing)
+			Expect(result).To(Equal(api.OverallStatusProcessing))
+		})
+	})
 
-func TestCalculateOverallStatus_ProcessingStateFailed_ReturnsFailed(t *testing.T) {
-	result := CalculateOverallStatus(api.Complete, api.ProcessingStateFailed)
-	assert.Equal(t, api.OverallStatusFailed, result)
-}
+	Context("when processing state is Failed", func() {
+		It("returns Failed", func() {
+			result := CalculateOverallStatus(api.Complete, api.ProcessingStateFailed)
+			Expect(result).To(Equal(api.OverallStatusFailed))
+		})
+	})
 
-func TestCalculateOverallStatus_StateBlocked_ReturnsBlocked(t *testing.T) {
-	result := CalculateOverallStatus(api.Blocked, api.ProcessingStatePending)
-	assert.Equal(t, api.OverallStatusBlocked, result)
-}
+	Context("when state is Blocked", func() {
+		It("returns Blocked", func() {
+			result := CalculateOverallStatus(api.Blocked, api.ProcessingStatePending)
+			Expect(result).To(Equal(api.OverallStatusBlocked))
+		})
+	})
 
-func TestCalculateOverallStatus_CompleteAndDone_ReturnsComplete(t *testing.T) {
-	result := CalculateOverallStatus(api.Complete, api.ProcessingStateDone)
-	assert.Equal(t, api.OverallStatusComplete, result)
-}
+	Context("when state is Complete and processing state is Done", func() {
+		It("returns Complete", func() {
+			result := CalculateOverallStatus(api.Complete, api.ProcessingStateDone)
+			Expect(result).To(Equal(api.OverallStatusComplete))
+		})
+	})
 
-func TestCalculateOverallStatus_UnknownState_ReturnsNone(t *testing.T) {
-	result := CalculateOverallStatus("unknown", api.ProcessingStateNone)
-	assert.Equal(t, api.OverallStatusNone, result)
-}
+	Context("when state is unknown", func() {
+		It("returns None", func() {
+			result := CalculateOverallStatus("unknown", api.ProcessingStateNone)
+			Expect(result).To(Equal(api.OverallStatusNone))
+		})
+	})
+})
 
-func TestCompareAndReturn_FailedTakesPrecedence(t *testing.T) {
-	result := CompareAndReturn(api.OverallStatusProcessing, api.OverallStatusFailed)
-	assert.Equal(t, api.OverallStatusFailed, result)
-}
+var _ = Describe("CompareAndReturn", func() {
+	Context("when comparing Failed with other statuses", func() {
+		It("Failed takes precedence", func() {
+			result := CompareAndReturn(api.OverallStatusProcessing, api.OverallStatusFailed)
+			Expect(result).To(Equal(api.OverallStatusFailed))
+		})
+	})
 
-func TestCompareAndReturn_BlockedTakesPrecedenceOverProcessing(t *testing.T) {
-	result := CompareAndReturn(api.OverallStatusProcessing, api.OverallStatusBlocked)
-	assert.Equal(t, api.OverallStatusBlocked, result)
-}
+	Context("when comparing Blocked with Processing", func() {
+		It("Blocked takes precedence over Processing", func() {
+			result := CompareAndReturn(api.OverallStatusProcessing, api.OverallStatusBlocked)
+			Expect(result).To(Equal(api.OverallStatusBlocked))
+		})
+	})
 
-func TestCompareAndReturn_ProcessingTakesPrecedenceOverPending(t *testing.T) {
-	result := CompareAndReturn(api.OverallStatusPending, api.OverallStatusProcessing)
-	assert.Equal(t, api.OverallStatusProcessing, result)
-}
+	Context("when comparing Processing with Pending", func() {
+		It("Processing takes precedence over Pending", func() {
+			result := CompareAndReturn(api.OverallStatusPending, api.OverallStatusProcessing)
+			Expect(result).To(Equal(api.OverallStatusProcessing))
+		})
+	})
 
-func TestCompareAndReturn_CompleteWhenBothAreComplete(t *testing.T) {
-	result := CompareAndReturn(api.OverallStatusComplete, api.OverallStatusComplete)
-	assert.Equal(t, api.OverallStatusComplete, result)
-}
+	Context("when comparing Complete with Complete", func() {
+		It("returns Complete", func() {
+			result := CompareAndReturn(api.OverallStatusComplete, api.OverallStatusComplete)
+			Expect(result).To(Equal(api.OverallStatusComplete))
+		})
+	})
 
-func TestCompareAndReturn_NoneWhenNoHigherStatus(t *testing.T) {
-	result := CompareAndReturn(api.OverallStatusNone, api.OverallStatusNone)
-	assert.Equal(t, api.OverallStatusNone, result)
-}
+	Context("when comparing None with None", func() {
+		It("returns None", func() {
+			result := CompareAndReturn(api.OverallStatusNone, api.OverallStatusNone)
+			Expect(result).To(Equal(api.OverallStatusNone))
+		})
+	})
+})
