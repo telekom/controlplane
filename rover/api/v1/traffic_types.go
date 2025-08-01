@@ -65,6 +65,12 @@ type RateLimit struct {
 
 // RateLimitConfig defines rate limits for different time windows
 type RateLimitConfig struct {
+	Limits LimitConfig `json:"limits"`
+	// +kubebuilder:validation:Optional
+	Options LimitOptions `json:"options,omitempty"`
+}
+
+type LimitConfig struct {
 	// Second defines the maximum number of requests allowed per second
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
@@ -77,6 +83,13 @@ type RateLimitConfig struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
 	Hour int `json:"hour,omitempty"`
+}
+
+type LimitOptions struct {
+	// HideClientHeaders hides additional client headers which give information about the rate-limit, reset and remaining requests for consumers if set to true.
+	HideClientHeaders bool `json:"hideClientHeaders,omitempty"`
+	// FaultTolerant defines if the rate limit plugin should be fault tolerant, if gateway is not able to access the config store
+	FaultTolerant bool `json:"faultTolerant,omitempty"`
 }
 
 // ConsumerRateLimits defines rate limits for API consumers
