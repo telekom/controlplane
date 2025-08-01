@@ -52,40 +52,33 @@ func (c *BucketConfig) getCredentials(tokenAvailable bool, token string) (*crede
 	}
 }
 
-// UpdateBearerToken updates the current token and recreates the client credentials if the token has changed
-// This should be called before each request to ensure the client has the latest token
-func (c *BucketConfig) UpdateBearerToken(token string) error {
-	// If token is unchanged, no need to update
+// RefreshCredentialsOrDiscard checks if the token has changed and updates credentials if needed.
+// If the token is unchanged or unavailable, does nothing.
+func (c *BucketConfig) RefreshCredentialsOrDiscard() error {
+	token, available := c.getTokenFromSources()
+	if !available {
+		c.Logger.V(1).Info("No token available, skipping credential refresh")
+		return nil
+	}
 	if c.currentToken == token {
 		c.Logger.V(1).Info("Token unchanged, skipping credentials update")
 		return nil
 	}
-
-	// Update the current token
 	c.Logger.V(1).Info("Token changed, updating credentials")
 	c.currentToken = token
-
-	// Get credentials with the new token
 	creds, err := c.getCredentials(true, token)
 	if err != nil {
 		return err
 	}
-
-	// Store the new credentials
 	c.currentCreds = creds
-
-	// For the minio client, we need to recreate it with the new credentials
 	if c.Client != nil {
 		client, err := c.createMinioClient(creds)
 		if err != nil {
 			return errors.Wrap(err, "failed to create new client with updated credentials")
 		}
-
-		// Replace the client
 		c.Client = client
 		c.Logger.V(1).Info("Updated client with new credentials")
 	}
-
 	return nil
 }
 

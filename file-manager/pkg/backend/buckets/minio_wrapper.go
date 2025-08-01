@@ -10,7 +10,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
 	"github.com/telekom/controlplane/file-manager/api/constants"
-	"github.com/telekom/controlplane/file-manager/internal/middleware"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
 )
 
@@ -26,20 +25,11 @@ func NewMinioWrapper(config *BucketConfig) *MinioWrapper {
 	}
 }
 
-// UpdateCredentialsFromContext extracts and updates bearer token from the context if available
+// UpdateCredentialsFromContext now refreshes credentials from the token source, ignoring the request context.
 func (w *MinioWrapper) UpdateCredentialsFromContext(ctx context.Context) {
 	log := logr.FromContextOrDiscard(ctx)
-
-	// Extract bearer token from context and update client credentials
-	token, err := middleware.ExtractBearerTokenFromContext(ctx)
-	if err == nil {
-		// Update token only if found in context
-		if err := w.config.UpdateBearerToken(token); err != nil {
-			log.Error(err, "Failed to update bearer token")
-			// Continue with old token if update fails
-		}
-	} else {
-		log.V(1).Info("No bearer token in context, using existing credentials")
+	if err := w.config.RefreshCredentialsOrDiscard(); err != nil {
+		log.Error(err, "Failed to refresh credentials from token source")
 	}
 }
 
