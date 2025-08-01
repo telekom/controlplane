@@ -21,6 +21,11 @@ on:
         required: false
         type: boolean
         default: true
+      allow_tests_failure:
+        description: "Set to true to allow tests to fail without failing the job"
+        required: false
+        type: boolean
+        default: false
       run_build_image:
         description: "Set to true to build the container image using Ko"
         required: false
@@ -155,6 +160,7 @@ jobs:
         env:
           ENVTEST_K8S_VERSION: "1.31.0"
         run: make test
+        continue-on-error: ${{ inputs.allow_tests_failure }}
 
       - name: Generate HTML coverage report
         shell: bash
@@ -283,13 +289,8 @@ jobs:
 
   build:
     name: "Build Image for ${{ inputs.module }}"
-    needs: tests
-    if: |
-      inputs.run_build_image && 
-      (
-        !inputs.run_tests || 
-        inputs.run_tests && needs.tests.result == 'success'
-      )
+    if: ${{ inputs.run_build_image && (needs.static_checks.result != 'failure') && (needs.tests.result != 'failure') }}
+    needs: [tests]
     runs-on: ubuntu-latest
     outputs:
       image_digest: ${{ steps.build_image_ko_step.outputs.digest }}
