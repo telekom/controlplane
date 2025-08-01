@@ -76,7 +76,7 @@ func main() {
 			fmt.Println("Error opening file:", err)
 			return
 		}
-		defer file.Close()
+		defer file.Close() //nolint:errcheck
 
 		contentType, err := detectContentType(file)
 		if err != nil {
@@ -100,7 +100,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			defer file.Close()
+			defer file.Close() //nolint:errcheck
 			w = file
 		}
 		fileInfo, err := fileManager.DownloadFile(ctx, fileId, w)
@@ -125,7 +125,7 @@ func detectContentType(file *os.File) (string, error) {
 	if err != nil && err != io.EOF {
 		return "", err
 	}
-	file.Seek(0, 0)
+	file.Seek(0, 0) //nolint:errcheck
 
 	contentType = http.DetectContentType(buffer)
 	return contentType, nil

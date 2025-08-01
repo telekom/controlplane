@@ -41,7 +41,7 @@ func TestObjectMetadataValidator_ValidateObjectMetadata(t *testing.T) {
 	}
 	validator := NewObjectMetadataValidator(mockWrapper)
 
-	err := validator.ValidateObjectMetadata(context.Background(), "test/path", "text/plain", "abc123")
+	err := validator.ValidateObjectMetadata(context.Background(), "test/path", "text/plain", "abc123", "")
 	if err == nil {
 		t.Error("Expected error when client validation fails, got nil")
 	}
@@ -53,7 +53,7 @@ func TestObjectMetadataValidator_ValidateObjectMetadata(t *testing.T) {
 	}
 	validator = NewObjectMetadataValidator(mockWrapper)
 
-	err = validator.ValidateObjectMetadata(context.Background(), "test/path", "text/plain", "abc123")
+	err = validator.ValidateObjectMetadata(context.Background(), "test/path", "text/plain", "abc123", "")
 	if err == nil {
 		t.Error("Expected error when GetObjectInfo fails, got nil")
 	}
@@ -68,7 +68,7 @@ func TestObjectMetadataValidator_ValidateObjectMetadata(t *testing.T) {
 	}
 	validator = NewObjectMetadataValidator(mockWrapper)
 
-	err = validator.ValidateObjectMetadata(context.Background(), "test/path", "text/plain", "abc123")
+	err = validator.ValidateObjectMetadata(context.Background(), "test/path", "text/plain", "abc123", "")
 	if err == nil {
 		t.Error("Expected error when content type mismatches, got nil")
 	}
@@ -83,7 +83,7 @@ func TestObjectMetadataValidator_ValidateObjectMetadata(t *testing.T) {
 	}
 	validator = NewObjectMetadataValidator(mockWrapper)
 
-	err = validator.ValidateObjectMetadata(context.Background(), "test/path", "text/plain", "abc123")
+	err = validator.ValidateObjectMetadata(context.Background(), "test/path", "text/plain", "abc123", "")
 	if err == nil {
 		t.Error("Expected error when checksum mismatches, got nil")
 	}
@@ -98,7 +98,7 @@ func TestObjectMetadataValidator_ValidateObjectMetadata(t *testing.T) {
 	}
 	validator = NewObjectMetadataValidator(mockWrapper)
 
-	err = validator.ValidateObjectMetadata(context.Background(), "test/path", "text/plain", "abc123")
+	err = validator.ValidateObjectMetadata(context.Background(), "test/path", "text/plain", "abc123", "")
 	if err != nil {
 		t.Errorf("Expected successful validation, got error: %v", err)
 	}
@@ -113,7 +113,7 @@ func TestObjectMetadataValidator_ValidateObjectMetadata(t *testing.T) {
 	}
 	validator = NewObjectMetadataValidator(mockWrapper)
 
-	err = validator.ValidateObjectMetadata(context.Background(), "test/path", "", "")
+	err = validator.ValidateObjectMetadata(context.Background(), "test/path", "", "", "")
 	if err != nil {
 		t.Errorf("Expected successful validation with empty expectations, got error: %v", err)
 	}
@@ -131,8 +131,24 @@ func TestObjectMetadataValidator_ValidateObjectMetadata(t *testing.T) {
 	}
 	validator = NewObjectMetadataValidator(mockWrapper)
 
-	err = validator.ValidateObjectMetadata(context.Background(), "test/path", "text/plain", "user-checksum")
+	err = validator.ValidateObjectMetadata(context.Background(), "test/path", "text/plain", "user-checksum", "")
 	if err != nil {
 		t.Errorf("Expected successful validation with user metadata checksum, got error: %v", err)
+	}
+
+	// Test case 8: uploadedCRC64 is used for checksum validation
+	mockWrapper = &MockMinioWrapper{
+		ClientValid: true,
+		MockObjectInfo: minio.ObjectInfo{
+			ContentType:  "text/plain",
+			ETag:         "should-not-match",
+			UserMetadata: map[string]string{},
+		},
+	}
+	validator = NewObjectMetadataValidator(mockWrapper)
+
+	err = validator.ValidateObjectMetadata(context.Background(), "test/path", "text/plain", "", "crc64-value")
+	if err != nil {
+		t.Errorf("Expected successful validation with uploadedCRC64, got error: %v", err)
 	}
 }

@@ -33,7 +33,7 @@ func NewObjectMetadataValidator(wrapper BucketClientValidator) *ObjectMetadataVa
 }
 
 // ValidateObjectMetadata validates that the uploaded object metadata matches expectations
-func (v *ObjectMetadataValidator) ValidateObjectMetadata(ctx context.Context, path string, expectedContentType string, expectedChecksum string) error {
+func (v *ObjectMetadataValidator) ValidateObjectMetadata(ctx context.Context, path string, expectedContentType string, expectedChecksum string, uploadedCRC64 string) error {
 	log := logr.FromContextOrDiscard(ctx)
 
 	// First validate the client
@@ -55,7 +55,7 @@ func (v *ObjectMetadataValidator) ValidateObjectMetadata(ctx context.Context, pa
 	}
 
 	// Validate Checksum if provided
-	if err := v.validateChecksum(ctx, objInfo, expectedChecksum); err != nil {
+	if err := v.validateChecksum(ctx, objInfo, expectedChecksum, uploadedCRC64); err != nil {
 		return err
 	}
 
@@ -83,7 +83,7 @@ func (v *ObjectMetadataValidator) validateContentType(ctx context.Context, actua
 }
 
 // validateChecksum checks if the stored checksum matches the expected checksum
-func (v *ObjectMetadataValidator) validateChecksum(ctx context.Context, objInfo interface{}, expectedChecksum string) error {
+func (v *ObjectMetadataValidator) validateChecksum(ctx context.Context, objInfo interface{}, expectedChecksum string, uploadedCRC64 string) error {
 	log := logr.FromContextOrDiscard(ctx)
 
 	// Skip validation if no checksum was expected
@@ -97,14 +97,19 @@ func (v *ObjectMetadataValidator) validateChecksum(ctx context.Context, objInfo 
 		return backend.ErrClientInitialization("invalid object info type for checksum validation")
 	}
 
-	// Use the generated checksum instead of the UserMetadata
+	// Use uploadedCRC64 if provided, otherwise fall back to object info
 	var storedChecksum string
-	if objInfoTyped.ETag != "" {
-		// Use the generated checksum if available
+	if uploadedCRC64 != "" {
+		storedChecksum = uploadedCRC64
+		log.V(1).Info("Using uploaded CRC64NVME checksum for validation", "checksum", storedChecksum)
+	} else if objInfoTyped.ChecksumCRC64NVME != "" {
+		storedChecksum = objInfoTyped.ChecksumCRC64NVME
+		log.V(1).Info("Using CRC64NVME checksum from object info for validation", "checksum", storedChecksum)
+	} else if objInfoTyped.ETag != "" {
 		storedChecksum = objInfoTyped.ETag
-		log.V(1).Info("Using generated checksum for validation", "checksum", storedChecksum)
+		log.V(1).Info("Using generated checksum (ETag) for validation", "checksum", storedChecksum)
 	} else {
-		// Fall back to UserMetadata if ETag is not available
+		// Fall back to UserMetadata if neither CRC64 nor ETag is available
 		storedChecksum = objInfoTyped.UserMetadata[constants.XFileChecksum]
 		log.V(1).Info("Using UserMetadata checksum for validation", "userMetadataChecksum", storedChecksum)
 	}
@@ -112,7 +117,11 @@ func (v *ObjectMetadataValidator) validateChecksum(ctx context.Context, objInfo 
 	// If checksum differs from what was expected, return an error
 	if storedChecksum != expectedChecksum {
 		checksumSource := "UserMetadata"
-		if objInfoTyped.ETag != "" {
+		if uploadedCRC64 != "" {
+			checksumSource = "UploadedCRC64NVME"
+		} else if objInfoTyped.ChecksumCRC64NVME != "" {
+			checksumSource = "CRC64NVME"
+		} else if objInfoTyped.ETag != "" {
 			checksumSource = "S3 ETag"
 		}
 		log.Error(nil, "Checksum mismatch",

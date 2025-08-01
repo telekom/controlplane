@@ -16,64 +16,6 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-func TestUpdateBearerToken(t *testing.T) {
-	// Create a config with initial settings
-	config := &BucketConfig{
-		Logger:       logr.Discard(),
-		Endpoint:     "test-endpoint",
-		STSEndpoint:  "test-sts-endpoint",
-		BucketName:   "test-bucket",
-		TokenPath:    "/dev/null", // Use a valid path that always exists
-		currentToken: "",          // Start with empty token
-	}
-
-	// Test case 1: Update with a new token
-	err := config.UpdateBearerToken("test-token-1")
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if config.currentToken != "test-token-1" {
-		t.Errorf("Expected token test-token-1, got %s", config.currentToken)
-	}
-	if config.currentCreds == nil {
-		t.Error("Expected credentials to be created, got nil")
-	}
-
-	// Store the credentials for comparison
-	firstCreds := config.currentCreds
-
-	// Test case 2: Update with the same token - should not create new credentials
-	err = config.UpdateBearerToken("test-token-1")
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if config.currentCreds != firstCreds {
-		t.Error("Expected credentials to be the same, got different credentials")
-	}
-
-	// Test case 3: Update with a new token - should create new credentials
-	err = config.UpdateBearerToken("test-token-2")
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if config.currentToken != "test-token-2" {
-		t.Errorf("Expected token test-token-2, got %s", config.currentToken)
-	}
-	if config.currentCreds == firstCreds {
-		t.Error("Expected new credentials to be created, got the same credentials")
-	}
-
-	// Test case 4: Update with an empty token - this passes in current implementation
-	// but may change in the future if empty tokens are disallowed
-	err = config.UpdateBearerToken("")
-	if err != nil {
-		t.Errorf("Unexpected error with empty token: %v", err)
-	}
-	if config.currentToken != "" {
-		t.Errorf("Expected empty token to be stored, got %s", config.currentToken)
-	}
-}
-
 func TestGetWebIDTokenFromEnv(t *testing.T) {
 	config := &BucketConfig{
 		Logger: logr.Discard(),
@@ -394,7 +336,65 @@ func TestGetCredentials(t *testing.T) {
 	}
 }
 
-// TestTokenRefreshScenario tests a complete token refresh scenario
+func TestRefreshCredentialsOrDiscard(t *testing.T) {
+	// Create a temp directory for token file
+	tempDir, err := os.MkdirTemp("", "bucket-refresh-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir) //nolint:errcheck
+
+	// Create initial token file
+	tokenFile := filepath.Join(tempDir, "token")
+	initialToken := "initial-token"
+	err = os.WriteFile(tokenFile, []byte(initialToken), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write initial token file: %v", err)
+	}
+
+	// Create config with the token file
+	config := &BucketConfig{
+		Logger:    logr.Discard(),
+		TokenPath: tokenFile,
+	}
+
+	// Initial refresh should update the token
+	err = config.RefreshCredentialsOrDiscard()
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+	if config.currentToken != initialToken {
+		t.Errorf("Expected currentToken to be %s, got %s", initialToken, config.currentToken)
+	}
+
+	// Refresh again with no change (should not update)
+	oldCreds := config.currentCreds
+	err = config.RefreshCredentialsOrDiscard()
+	if err != nil {
+		t.Errorf("Expected no error on unchanged token, got %v", err)
+	}
+	if config.currentCreds != oldCreds {
+		t.Error("Expected credentials to remain unchanged on same token")
+	}
+
+	// Update token file and refresh again
+	newToken := "new-token"
+	err = os.WriteFile(tokenFile, []byte(newToken), 0644)
+	if err != nil {
+		t.Fatalf("Failed to update token file: %v", err)
+	}
+	err = config.RefreshCredentialsOrDiscard()
+	if err != nil {
+		t.Errorf("Expected no error after token update, got %v", err)
+	}
+	if config.currentToken != newToken {
+		t.Errorf("Expected currentToken to be %s after refresh, got %s", newToken, config.currentToken)
+	}
+	if config.currentCreds == oldCreds {
+		t.Error("Expected credentials to change after token update")
+	}
+}
+
 func TestTokenRefreshScenario(t *testing.T) {
 	// Create a temp directory for token file
 	tempDir, err := os.MkdirTemp("", "bucket-refresh-test")
@@ -431,8 +431,8 @@ func TestTokenRefreshScenario(t *testing.T) {
 		t.Errorf("Expected initial token %s, got %s", initialToken, token)
 	}
 
-	// Update bearer token
-	_ = config.UpdateBearerToken(token)
+	// Update token
+	_ = config.RefreshCredentialsOrDiscard()
 	// In test environment this might fail to create STS credentials, but token should be updated
 	if config.currentToken != initialToken {
 		t.Errorf("Expected current token to be updated to %s, got %s", initialToken, config.currentToken)
@@ -455,8 +455,8 @@ func TestTokenRefreshScenario(t *testing.T) {
 		t.Errorf("Expected token to be updated to %s after refresh, got %s", newToken, token)
 	}
 
-	// Update bearer token again
-	_ = config.UpdateBearerToken(token)
+	// Update token again
+	_ = config.RefreshCredentialsOrDiscard()
 	// In test environment this might fail to create STS credentials, but token should be updated
 	if config.currentToken != newToken {
 		t.Errorf("Expected current token to be updated to %s after refresh, got %s", newToken, config.currentToken)

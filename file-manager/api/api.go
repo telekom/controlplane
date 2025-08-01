@@ -7,10 +7,8 @@ package api
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
-
 	"io"
 	"net/http"
 	"os"
@@ -27,7 +25,7 @@ import (
 )
 
 const (
-	localhost                = "http://localhost:9090/api"
+	localhost                = "http://localhost:8443/api"
 	inCluster                = "https://file-manager.file-manager-system.svc.cluster.local/api"
 	tokenFilePath            = "/var/run/secrets/tokens/sa-token"
 	uploadRequestContentType = "application/octet-stream"
@@ -37,8 +35,6 @@ var (
 	ErrNotFound = errors.New("resource not found")
 	once        sync.Once
 	api         FileManager
-
-	newHash = md5.New
 )
 
 type DownloadApi interface {
@@ -162,7 +158,7 @@ func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 	log.V(1).Info("Uploading file ", "fileId", fileId, "fileContentType", fileContentType)
 
 	buf := bytes.NewBuffer(nil)
-	_, md5hash, err := copyAndHash(buf, r, newHash())
+	hash, err := copyAndHash(buf, r)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to copy content")
 	}
@@ -171,7 +167,7 @@ func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 		XFileContentType: &fileContentType,
 	}
 	if f.ValidateChecksum {
-		params.XFileChecksum = &md5hash
+		params.XFileChecksum = &hash
 	}
 	// use generated client code to call the file manager server
 	response, err := f.Client.UploadFileWithBody(ctx, fileId, params, uploadRequestContentType, buf)
@@ -189,13 +185,13 @@ func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 			return nil, errors.Wrap(err, "failed to decode response body")
 		}
 		checksum := extractHeader(response, constants.XFileChecksum)
-		if f.ValidateChecksum && checksum != md5hash {
-			return nil, fmt.Errorf("checksum mismatch: expected %s, got %s", checksum, md5hash)
+		if f.ValidateChecksum && checksum != hash {
+			return nil, fmt.Errorf("checksum mismatch: expected %s, got %s", checksum, hash)
 		}
 		return &FileUploadResponse{
-			MD5Hash:     checksum,
-			FileId:      res.Id,
-			ContentType: extractHeader(response, constants.XFileContentType),
+			CRC64NVMEHash: checksum,
+			FileId:        res.Id,
+			ContentType:   extractHeader(response, constants.XFileContentType),
 		}, nil
 
 	case http.StatusNotFound:
@@ -218,19 +214,19 @@ func (f *FileManagerAPI) DownloadFile(ctx context.Context, fileId string, w io.W
 
 	switch response.StatusCode {
 	case http.StatusOK:
-		_, hash, err := copyAndHash(w, response.Body, newHash())
+		hash, err := copyAndHash(w, response.Body)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to copy file content")
 		}
-		log.FromContext(ctx).V(1).Info("Downloaded file", "fileId", fileId, "md5Hash", hash)
+		log.FromContext(ctx).V(1).Info("Downloaded file", "fileId", fileId, "crc64nvmeHash", hash)
 
 		expectedChecksum := extractHeader(response, constants.XFileChecksum)
 		if f.ValidateChecksum && hash != expectedChecksum {
 			return nil, fmt.Errorf("checksum mismatch: expected %s, got %s", expectedChecksum, hash)
 		}
 		return &FileDownloadResponse{
-			MD5Hash:     expectedChecksum,
-			ContentType: extractHeader(response, constants.XFileContentType),
+			CRC64NVMEHash: expectedChecksum,
+			ContentType:   extractHeader(response, constants.XFileContentType),
 		}, nil
 
 	case http.StatusNotFound:

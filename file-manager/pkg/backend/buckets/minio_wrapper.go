@@ -10,7 +10,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
 	"github.com/telekom/controlplane/file-manager/api/constants"
-	"github.com/telekom/controlplane/file-manager/internal/middleware"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
 )
 
@@ -26,20 +25,11 @@ func NewMinioWrapper(config *BucketConfig) *MinioWrapper {
 	}
 }
 
-// UpdateCredentialsFromContext extracts and updates bearer token from the context if available
+// UpdateCredentialsFromContext now refreshes credentials from the token source, ignoring the request context.
 func (w *MinioWrapper) UpdateCredentialsFromContext(ctx context.Context) {
 	log := logr.FromContextOrDiscard(ctx)
-
-	// Extract bearer token from context and update client credentials
-	token, err := middleware.ExtractBearerTokenFromContext(ctx)
-	if err == nil {
-		// Update token only if found in context
-		if err := w.config.UpdateBearerToken(token); err != nil {
-			log.Error(err, "Failed to update bearer token")
-			// Continue with old token if update fails
-		}
-	} else {
-		log.V(1).Info("No bearer token in context, using existing credentials")
+	if err := w.config.RefreshCredentialsOrDiscard(); err != nil {
+		log.Error(err, "Failed to refresh credentials from token source")
 	}
 }
 
@@ -68,12 +58,15 @@ func (w *MinioWrapper) ExtractMetadata(ctx context.Context, objInfo minio.Object
 	}
 
 	// Add Checksum to metadata
-	// Prefer bucket's Checksum over UserMetadata
-	if objInfo.ETag != "" {
+	// Prefer CRC64NVME over ETag or UserMetadata
+	if objInfo.ChecksumCRC64NVME != "" {
+		metadata[constants.XFileChecksum] = objInfo.ChecksumCRC64NVME
+		log.V(1).Info("Added CRC64NVME checksum to response metadata", "checksum", objInfo.ChecksumCRC64NVME)
+	} else if objInfo.ETag != "" {
 		metadata[constants.XFileChecksum] = objInfo.ETag
 		log.V(1).Info("Added generated checksum to response metadata", "checksum", objInfo.ETag)
 	} else if checksum, ok := objInfo.UserMetadata[constants.XFileChecksum]; ok && checksum != "" {
-		// Fall back to UserMetadata if ETag is not available
+		// Fall back to UserMetadata if neither CRC64 nor ETag is available
 		metadata[constants.XFileChecksum] = checksum
 		log.V(1).Info("Added UserMetadata checksum to response metadata", "checksum", checksum)
 	}
@@ -98,12 +91,12 @@ var validator *ObjectMetadataValidator
 
 // ValidateObjectMetadata delegates to the ObjectMetadataValidator
 // This method maintains backwards compatibility with existing code
-func (w *MinioWrapper) ValidateObjectMetadata(ctx context.Context, path string, expectedContentType string, expectedChecksum string) error {
+func (w *MinioWrapper) ValidateObjectMetadata(ctx context.Context, path string, expectedContentType string, expectedChecksum string, uploadedCRC64 string) error {
 	// Create the validator if it doesn't exist yet
 	if validator == nil {
 		validator = NewObjectMetadataValidator(w)
 	}
 
 	// Delegate to the validator
-	return validator.ValidateObjectMetadata(ctx, path, expectedContentType, expectedChecksum)
+	return validator.ValidateObjectMetadata(ctx, path, expectedContentType, expectedChecksum, uploadedCRC64)
 }
