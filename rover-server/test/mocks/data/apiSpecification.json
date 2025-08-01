@@ -1,0 +1,33 @@
+{
+  "apiVersion": "rover.cp.ei.telekom.de/v1",
+  "kind": "ApiSpecification",
+  "metadata": {
+    "name": "apispec-sample",
+    "namespace": "poc--eni--hyperion"
+  },
+  "spec": {
+    "specification": "{\"openapi\": \"3.0.0\",\"info\": {\"title\": \"Rover API\",\"version\": \"1.0.0\",},\"servers\": {\"url\": \"http://rover-api/eni/distr/v1\",},}"
+  },
+  "status": {
+    "api":{
+      "name": "eni-admin-operator-test-v1",
+      "namespace": "poc--eni--hyperion"
+    },
+    "basePath": "/eni/admin-operator-test/v1",
+    "category": "other",
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "Provisioned",
+        "message": "API is ready"
+      },
+      {
+        "type": "Processing",
+        "status": "False",
+        "reason": "Done",
+        "message": "API created"
+      }
+    ]
+  }
+}

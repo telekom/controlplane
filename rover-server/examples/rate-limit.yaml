@@ -1,0 +1,32 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: rate-limit-example
+zone: dataplane1
+exposures:
+  - type: api
+    approval: AUTO
+    visibility: ENTERPRISE
+    basePath: /api/v1/rate-limited
+    upstream: https://rate-limited-api.example.com/v1
+    rateLimit:
+      provider:
+        second: 10
+        minute: 100
+        hour: 1000
+        faultTolerant: true
+        hideClientHeaders: false
+      consumerDefault:
+        second: 5
+        minute: 50
+        hour: 500
+      consumers:
+        - id: premium-client-id
+          second: 20
+          minute: 200
+          hour: 2000
+        - id: basic-client-id
+          second: 2
+          minute: 20
+          hour: 200

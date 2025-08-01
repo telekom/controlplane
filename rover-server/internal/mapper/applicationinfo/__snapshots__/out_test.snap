@@ -1,0 +1,126 @@
+
+[ApplicationInfo Mapper FillExposureInfo must fill exposure info correctly - 1]
+{
+ "errors": null,
+ "exposures": [
+  {
+   "approval": "Simple",
+   "basePath": "/eni/distr/v1",
+   "type": "api",
+   "upstream": "https://httpbin.org/anything",
+   "visibility": "World"
+  }
+ ],
+ "infos": null,
+ "irisClientId": "",
+ "irisClientSecret": "",
+ "irisIssuerUrl": "",
+ "irisTokenEndpointUrl": "",
+ "name": "",
+ "status": "",
+ "subscriptions": null,
+ "variables": null,
+ "warnings": null,
+ "zone": ""
+}
+---
+
+[ApplicationInfo Mapper FillSubscriptionInfo must fill subscription info correctly - 1]
+{
+ "errors": [
+  {
+   "cause": "Approval is either rejected or suspended",
+   "message": "ApiSubscription 'poc--eni--hyperion/rover-local-sub--eni-distr-v1' is not ready",
+   "resource": {
+    "apiVersion": "stargate.cp.ei.telekom.de/v1",
+    "kind": "ApiSubscription",
+    "name": "rover-local-sub--eni-distr-v1",
+    "namespace": "poc--eni--hyperion"
+   }
+  }
+ ],
+ "exposures": null,
+ "infos": null,
+ "irisClientId": "",
+ "irisClientSecret": "",
+ "irisIssuerUrl": "",
+ "irisTokenEndpointUrl": "",
+ "name": "",
+ "status": "blocked",
+ "subscriptions": [
+  {
+   "basePath": "",
+   "type": "api"
+  }
+ ],
+ "variables": null,
+ "warnings": null,
+ "zone": ""
+}
+---
+
+[ApplicationInfo Mapper FillApplicationInfo must fill application info correctly - 1]
+{
+ "errors": null,
+ "exposures": null,
+ "infos": null,
+ "irisClientId": "hyperion--rover-local-sub",
+ "irisClientSecret": "abcdefghijklmnop",
+ "irisIssuerUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc",
+ "irisTokenEndpointUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token",
+ "name": "",
+ "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
+ "stargatePublishEventUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1",
+ "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
+ "status": "blocked",
+ "subscriptions": null,
+ "variables": null,
+ "warnings": null,
+ "zone": ""
+}
+---
+
+[ApplicationInfo Mapper MapApplicationInfo must map application info correctly - 1]
+{
+ "errors": [
+  {
+   "cause": "Approval is either rejected or suspended",
+   "message": "ApiSubscription 'poc--eni--hyperion/rover-local-sub--eni-distr-v1' is not ready",
+   "resource": {
+    "apiVersion": "stargate.cp.ei.telekom.de/v1",
+    "kind": "ApiSubscription",
+    "name": "rover-local-sub--eni-distr-v1",
+    "namespace": "poc--eni--hyperion"
+   }
+  }
+ ],
+ "exposures": [
+  {
+   "approval": "Simple",
+   "basePath": "/eni/distr/v1",
+   "type": "api",
+   "upstream": "https://httpbin.org/anything",
+   "visibility": "World"
+  }
+ ],
+ "infos": null,
+ "irisClientId": "hyperion--rover-local-sub",
+ "irisClientSecret": "abcdefghijklmnop",
+ "irisIssuerUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc",
+ "irisTokenEndpointUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token",
+ "name": "rover-local-sub",
+ "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
+ "stargatePublishEventUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1",
+ "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
+ "status": "blocked",
+ "subscriptions": [
+  {
+   "basePath": "",
+   "type": "api"
+  }
+ ],
+ "variables": null,
+ "warnings": null,
+ "zone": "dataplane1"
+}
+---

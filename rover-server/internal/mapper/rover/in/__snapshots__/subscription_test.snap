@@ -1,0 +1,38 @@
+
+[Subscription Mapper MapApiSubscription must map ApiSubscription correctly - 1]
+&v1.ApiSubscription{
+    BasePath:       "/eni/distr/v1",
+    Organization:   "",
+    Transformation: (*v1.Transformation)(nil),
+    Traffic:        v1.SubscriberTraffic{},
+    Security:       (*v1.SubscriberSecurity)(nil),
+}
+---
+
+[Subscription Mapper MapApiSubscription must handle empty ApiSubscription input - 1]
+&v1.ApiSubscription{}
+---
+
+[Subscription Mapper mapSubscription must map an ApiSubscription correctly - 1]
+&v1.Subscription{
+    Api: &v1.ApiSubscription{
+        BasePath:       "/eni/distr/v1",
+        Organization:   "",
+        Transformation: (*v1.Transformation)(nil),
+        Traffic:        v1.SubscriberTraffic{},
+        Security:       (*v1.SubscriberSecurity)(nil),
+    },
+    Event: (*v1.EventSubscription)(nil),
+}
+---
+
+[Subscription Mapper mapSubscription must map an EventSubscription correctly - 1]
+&v1.Subscription{
+    Api:   (*v1.ApiSubscription)(nil),
+    Event: &v1.EventSubscription{EventType:"test-event"},
+}
+---
+
+[Subscription Mapper mapSubscription must return an error if Discriminator fails - 1]
+&v1.Subscription{}
+---

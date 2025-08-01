@@ -1,0 +1,25 @@
+
+[ApiSpecification Mapper MapRequest must map a ApiSpecificationUpdateRequest to an ApiSpecification correctly - 1]
+&v1.ApiSpecification{
+    TypeMeta:   v1.TypeMeta{Kind:"ApiSpecification", APIVersion:"rover.cp.ei.telekom.de/v1"},
+    ObjectMeta: v1.ObjectMeta{
+        Name:                       "rover-local-sub",
+        GenerateName:               "",
+        Namespace:                  "poc--poc--eni--hyperion",
+        SelfLink:                   "",
+        UID:                        "",
+        ResourceVersion:            "",
+        Generation:                 0,
+        CreationTimestamp:          time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
+        DeletionTimestamp:          (*v1.Time)(nil),
+        DeletionGracePeriodSeconds: (*int64)(nil),
+        Labels:                     {"cp.ei.telekom.de/environment":"poc"},
+        Annotations:                {},
+        OwnerReferences:            nil,
+        Finalizers:                 nil,
+        ManagedFields:              nil,
+    },
+    Spec:   v1.ApiSpecificationSpec{Specification:"info:\n    title: Rover API\n    version: 1.0.0\nopenapi: 3.0.0\nservers:\n    url: http://rover-api/eni/distr/v1\n"},
+    Status: v1.ApiSpecificationStatus{},
+}
+---

@@ -1,0 +1,45 @@
+{
+  "apiVersion": "application.cp.ei.telekom.de/v1",
+  "kind": "Application",
+  "metadata": {
+    "name": "rover-local-sub",
+    "namespace": "poc--eni--hyperion",
+    "ownerReferences": [
+      {
+        "apiVersion": "rover.cp.ei.telekom.de/v1",
+        "kind": "Rover",
+        "name": "rover-local-sub",
+        "uid": "549badcc-18b6-48ac-a8ce-b3242523d827"
+      }
+    ]
+  },
+  "spec": {
+    "needsClient": true,
+    "needsConsumer": true,
+    "secret": "abcdefghijklmnop",
+    "team": "hyperion",
+    "teamEmail": "hyperion@telekom.de",
+    "zone": {
+      "name": "dataplane1",
+      "namespace": "poc"
+    }
+  },
+  "status": {
+    "clientId": "hyperion--rover-local-sub",
+    "clientSecret": "abcdefghijklmnop",
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "SubResourceProvisioned",
+        "message": "All sub-resources are up to date"
+      },
+      {
+        "type": "Processing",
+        "status": "False",
+        "reason": "Done",
+        "message": "All sub-resources are up to date"
+      }
+    ]
+  }
+}

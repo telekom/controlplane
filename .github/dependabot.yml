@@ -24,6 +24,7 @@ updates:
       - api
       - rover
       - approval
+      - rover-server
     groups:
       default: 
         update-types:
