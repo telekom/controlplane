@@ -283,8 +283,13 @@ jobs:
 
   build:
     name: "Build Image for ${{ inputs.module }}"
-    if: ${{ inputs.run_build_image && (needs.static_checks.result != 'failure') && (!inputs.run_tests || needs.tests.result != 'failure') }}
-    needs: ${{ inputs.run_tests && fromJSON('["tests"]') || fromJSON('[]') }}
+    needs: tests
+    if: |
+      inputs.run_build_image && 
+      (
+        !inputs.run_tests || 
+        inputs.run_tests && needs.tests.result == 'success'
+      )
     runs-on: ubuntu-latest
     outputs:
       image_digest: ${{ steps.build_image_ko_step.outputs.digest }}
