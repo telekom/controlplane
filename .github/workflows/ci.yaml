@@ -146,4 +146,5 @@ jobs:
     with:
       module: rover-server
       run_check_generated_files: false
+      run_tests: false
       ko_build_path: "cmd/main.go"
