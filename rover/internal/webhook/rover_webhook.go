@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go-logr/logr"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/controller"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
@@ -32,7 +33,7 @@ func SetupWebhookWithManager(mgr ctrl.Manager, secretManager secretsapi.SecretMa
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&roverv1.Rover{}).
 		WithDefaulter(&RoverDefaulter{mgr.GetClient(), secretManager}).
-		WithValidator(&RoverValidator{mgr.GetClient(), secretManager}).
+		WithValidator(&RoverValidator{mgr.GetClient()}).
 		Complete()
 }
 
@@ -51,7 +52,11 @@ func (r *RoverDefaulter) Default(ctx context.Context, obj runtime.Object) error 
 	if !ok {
 		return apierrors.NewBadRequest("not a rover")
 	}
-
+	// No need to default if the object is being deleted
+	if controller.IsBeingDeleted(rover) {
+		return nil
+	}
+	ctx = logr.NewContext(ctx, roverlog.WithValues("name", rover.GetName(), "namespace", rover.GetNamespace()))
 	err := OnboardApplication(ctx, rover, r.secretManager)
 	if err != nil {
 		return apierrors.NewInternalError(fmt.Errorf("failed to onboard application: %w", err))
@@ -64,41 +69,46 @@ func (r *RoverDefaulter) Default(ctx context.Context, obj runtime.Object) error 
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 
 type RoverValidator struct {
-	client        client.Client
-	secretManager secretsapi.SecretManager
+	client client.Client
 }
 
 var _ webhook.CustomValidator = &RoverValidator{}
 
-func (r *RoverValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+func (r *RoverValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	roverlog.Info("validate create")
 
 	return r.ValidateCreateOrUpdate(ctx, obj)
 }
 
-func (r *RoverValidator) ValidateUpdate(ctx context.Context, oldObj, obj runtime.Object) (warnings admission.Warnings, err error) {
+func (r *RoverValidator) ValidateUpdate(ctx context.Context, oldObj, obj runtime.Object) (admission.Warnings, error) {
 	roverlog.Info("validate update")
 
 	return r.ValidateCreateOrUpdate(ctx, obj)
 }
 
-func (r *RoverValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+func (r *RoverValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	roverlog.Info("validate delete")
 
-	return
+	return nil, nil // No validation needed on delete
 }
 
-func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	rover, ok := obj.(*roverv1.Rover)
 	if !ok {
 		return nil, apierrors.NewBadRequest("not a rover")
 	}
-	roverlog.Info("validate create or update", "name", rover.GetName())
+
+	log := roverlog.WithValues("name", rover.GetName(), "namespace", rover.GetNamespace())
+	ctx = logr.NewContext(ctx, log)
+
+	log.Info("validate create or update")
+
 	valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), rover)
 
 	environment, ok := controller.GetEnvironment(rover)
 	if !ok {
-		valErr.AddInvalidError(MetadataEnvPath, nil, "environment label is required")
+		valErr.AddInvalidError(MetadataEnvPath, "", "environment label is required")
+		return nil, valErr.BuildError()
 	}
 
 	zoneRef := client.ObjectKey{
@@ -110,6 +120,7 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime
 			return nil, err
 		}
 		valErr.AddInvalidError(field.NewPath("spec").Child("zone"), rover.Spec.Zone, fmt.Sprintf("zone '%s' not found", rover.Spec.Zone))
+		return nil, valErr.BuildError()
 	}
 
 	if err := MustNotHaveDuplicates(valErr, rover.Spec.Subscriptions, rover.Spec.Exposures); err != nil {
@@ -117,13 +128,15 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime
 	}
 
 	for i, sub := range rover.Spec.Subscriptions {
-		if err = r.ValidateSubscription(ctx, valErr, environment, sub, i); err != nil {
+		log.Info("validate subscription", "index", i, "subscription", sub)
+		if err := r.ValidateSubscription(ctx, valErr, environment, sub, i); err != nil {
 			return nil, err
 		}
 	}
 
 	for i, exposure := range rover.Spec.Exposures {
-		if err = r.ValidateExposure(ctx, valErr, environment, exposure, zoneRef, i); err != nil {
+		log.Info("validate exposure", "index", i, "exposure", exposure)
+		if err := r.ValidateExposure(ctx, valErr, environment, exposure, zoneRef, i); err != nil {
 			return nil, err
 		}
 	}
@@ -142,8 +155,8 @@ func (r *RoverValidator) ResourceMustExist(ctx context.Context, objRef client.Ob
 	return true, nil
 }
 
-func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *ValidationError, environment string, sub roverv1.Subscription, idx int) (err error) {
-	roverlog.Info("validate subscription")
+func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *ValidationError, environment string, sub roverv1.Subscription, idx int) error {
+	logr.FromContextOrDiscard(ctx).Info("validate subscription")
 
 	if sub.Api != nil && sub.Api.Organization != "" {
 		remoteOrgRef := client.ObjectKey{
@@ -161,10 +174,10 @@ func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *Valid
 		}
 	}
 
-	return
+	return nil
 }
 
-func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) (err error) {
+func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
 	if exposure.Api != nil {
 		for _, upstream := range exposure.Api.Upstreams {
 			if upstream.URL == "" {
@@ -200,11 +213,11 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *Validatio
 	}
 
 	// Header removal is generally allowed everywhere, except the "Authorization" header, which is only allowed to be configured for removal on external zones - currently space/canis
-	if err = r.validateRemoveHeaders(ctx, valErr, exposure, zoneRef, idx); err != nil {
+	if err := r.validateRemoveHeaders(ctx, valErr, exposure, zoneRef, idx); err != nil {
 		return err
 	}
 
-	return
+	return nil
 }
 
 func CheckWeightSetOnAllOrNone(upstreams []roverv1.Upstream) (allSet, noneSet bool) {
@@ -230,6 +243,9 @@ func CheckWeightSetOnAllOrNone(upstreams []roverv1.Upstream) (allSet, noneSet bo
 
 // MustNotHaveDuplicates checks if there are no duplicates in the subscriptions and exposures
 func MustNotHaveDuplicates(valErr *ValidationError, subs []roverv1.Subscription, exps []roverv1.Exposure) error {
+	if len(subs) == 0 && len(exps) == 0 {
+		return nil // No subscriptions or exposures, no duplicates to check
+	}
 	exisitingSubs := make(map[string]bool)
 	for idx, sub := range subs {
 		if sub.Api != nil {

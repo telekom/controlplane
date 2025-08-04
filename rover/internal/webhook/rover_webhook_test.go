@@ -122,23 +122,6 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				Expect(err).To(BeNil())
 			})
 
-			// Commenting out due to current implementation behavior
-			// This test needs to be modified once the environment validation is fixed
-			/*
-				It("should fail when environment label is missing", func() {
-					roverWithoutEnv := roverObj.DeepCopy()
-					roverWithoutEnv.Labels = map[string]string{}
-					roverWithoutEnv.Namespace = testNamespace
-					warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithoutEnv)
-					Expect(warnings).To(BeNil())
-					Expect(err).To(HaveOccurred())
-					statuserr, ok := err.(*apierrors.StatusError)
-					Expect(ok).To(BeTrue())
-					Expect(statuserr.ErrStatus.Details.Causes).To(HaveLen(1))
-					Expect(statuserr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring("environment label"))
-				})
-			*/
-
 			It("should fail when zone doesn't exist", func() {
 				roverWithInvalidZone := roverObj.DeepCopy()
 				roverWithInvalidZone.Spec.Zone = "non-existent-zone"
