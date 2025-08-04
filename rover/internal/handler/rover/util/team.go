@@ -12,6 +12,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/types"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 // FindTeam finds the team for the given owner identified by the resource namespace.
@@ -32,7 +33,9 @@ func FindTeam(ctx context.Context, c client.JanitorClient, namespace string) (*o
 
 	err := c.Get(ctx, teamRef.K8s(), team)
 
-	if err != nil {
+	if err != nil && apierrors.IsNotFound(err) {
+		return nil, err
+	} else if err != nil {
 		return nil, errors.Wrapf(err, "failed to get team %s", teamRef.Name)
 	}
 

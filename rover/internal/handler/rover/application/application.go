@@ -6,11 +6,14 @@ package application
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/util"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -23,6 +26,7 @@ import (
 )
 
 func HandleApplication(ctx context.Context, c client.JanitorClient, owner *roverv1.Rover) error {
+	log := log.FromContext(ctx)
 	environment := contextutil.EnvFromContextOrDie(ctx)
 	zoneRef := types.ObjectRef{
 		Name:      owner.Spec.Zone,
@@ -37,7 +41,9 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 	}
 
 	team, err := util.FindTeam(ctx, c, owner.Namespace)
-	if err != nil {
+	if err != nil && apierrors.IsNotFound(err) {
+		log.Info(fmt.Sprintf("Team not found for application %s, err: %v", owner.Name, err))
+	} else if err != nil {
 		return err
 	}
 

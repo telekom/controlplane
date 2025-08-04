@@ -235,7 +235,7 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 			}, timeout, interval).Should(Succeed())
 		})
 
-		It("should fail when trusted team does not exist", func() {
+		It("should continue when trusted team does not exist", func() {
 			spec := roverv1.RoverSpec{
 				Zone:         testEnvironment,
 				ClientSecret: "topsecret",
@@ -285,9 +285,7 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 				g.Expect(found.Status.Conditions).NotTo(BeEmpty())
 				readyCondition := meta.FindStatusCondition(found.Status.Conditions, condition.ConditionTypeReady)
 				g.Expect(readyCondition).NotTo(BeNil())
-				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
-				g.Expect(readyCondition.Message).To(ContainSubstring("failed to map trusted teams"))
-				g.Expect(readyCondition.Message).To(ContainSubstring("nonexistent-group--nonexistent-team"))
+				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionTrue))
 			}, timeout, interval).Should(Succeed())
 		})
 
