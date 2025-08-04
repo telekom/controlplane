@@ -2,11 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: rover-server-ingress
-  namespace: system
-spec:
-  rules:
-  - host: custom-rover-server.example.com  # This value will override the default host
+- op: replace
+  path: /spec/rules/0/host
+  value: "custom-rover-server.example.com" # Example host that can be overridden via kustomize
