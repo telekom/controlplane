@@ -95,9 +95,9 @@ type RoverSpec struct {
 	IpRestrictions *IpRestrictions `json:"ipRestrictions,omitempty"`
 
 	// ClientSecret is the secret used for client authentication
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
-	ClientSecret string `json:"clientSecret"`
+	// If not specified, a randomly generated secret will be used
+	// +kubebuilder:validation:Optional
+	ClientSecret string `json:"clientSecret,optional"`
 
 	// Exposures is a list of APIs and Events that this Rover exposes to consumers
 	// +kubebuilder:validation:Optional
@@ -239,6 +239,14 @@ type ApiExposure struct {
 	// Security defines optional security configuration for this API
 	// +kubebuilder:validation:Optional
 	Security *Security `json:"security,omitempty"`
+}
+
+func (apiExp *ApiExposure) HasM2M() bool {
+	if apiExp.Security == nil {
+		return false
+	}
+
+	return apiExp.Security.M2M != nil
 }
 
 // EventExposure defines an event that is published by this Rover

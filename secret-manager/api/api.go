@@ -8,14 +8,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"os"
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/secret-manager/api/accesstoken"
 	"github.com/telekom/controlplane/secret-manager/api/gen"
-	"github.com/telekom/controlplane/secret-manager/api/util"
 )
 
 const (
@@ -34,6 +30,21 @@ var (
 	ErrNotFound = errors.New("resource not found")
 )
 
+type OnboardingOptions struct {
+	SecretValues map[string]any
+}
+
+type OnboardingOption func(*OnboardingOptions)
+
+func WithSecretValue(name string, value any) OnboardingOption {
+	return func(o *OnboardingOptions) {
+		if o.SecretValues == nil {
+			o.SecretValues = make(map[string]any)
+		}
+		o.SecretValues[name] = value
+	}
+}
+
 type SecretsApi interface {
 	Get(ctx context.Context, secretID string) (value string, err error)
 	Set(ctx context.Context, secretID string, secretValue string) (newID string, err error)
@@ -41,9 +52,9 @@ type SecretsApi interface {
 }
 
 type OnboardingApi interface {
-	UpsertEnvironment(ctx context.Context, envID string) (availableSecrets []gen.ListSecretItem, err error)
-	UpsertTeam(ctx context.Context, envID, teamID string) (availableSecrets []gen.ListSecretItem, err error)
-	UpsertApplication(ctx context.Context, envID, teamID, appID string) (availableSecrets []gen.ListSecretItem, err error)
+	UpsertEnvironment(ctx context.Context, envID string) (availableSecrets map[string]string, err error)
+	UpsertTeam(ctx context.Context, envID, teamID string) (availableSecrets map[string]string, err error)
+	UpsertApplication(ctx context.Context, envID, teamID, appID string, opts ...OnboardingOption) (availableSecrets map[string]string, err error)
 
 	DeleteEnvironment(ctx context.Context, envID string) (err error)
 	DeleteTeam(ctx context.Context, envID, teamID string) (err error)
@@ -59,85 +70,6 @@ var _ SecretManager = (*secretManagerAPI)(nil)
 
 type secretManagerAPI struct {
 	client gen.ClientWithResponsesInterface
-}
-
-type Options struct {
-	URL           string
-	Token         accesstoken.AccessToken
-	SkipTLSVerify bool
-}
-
-func (o *Options) accessTokenReqEditor(ctx context.Context, req *http.Request) error {
-	if o.Token == nil {
-		return nil
-	}
-	token, err := o.Token.Read()
-	if err != nil {
-		return errors.Wrap(err, "failed to read access token")
-	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-	return nil
-}
-
-func defaultOptions() *Options {
-	if util.IsRunningInCluster() {
-		return &Options{
-			URL:   inCluster,
-			Token: accesstoken.NewAccessToken(accesstoken.TokenFilePath),
-		}
-	} else {
-		return &Options{
-			URL:   localhost,
-			Token: nil,
-		}
-	}
-}
-
-type Option func(*Options)
-
-func WithURL(url string) Option {
-	return func(o *Options) {
-		o.URL = url
-	}
-}
-
-func WithAccessToken(token accesstoken.AccessToken) Option {
-	return func(o *Options) {
-		o.Token = token
-	}
-}
-
-func WithSkipTLSVerify() Option {
-	return func(o *Options) {
-		o.SkipTLSVerify = true
-	}
-}
-
-func NewOnboarding(opts ...Option) OnboardingApi {
-	return New(opts...)
-}
-
-func NewSecrets(opts ...Option) SecretsApi {
-	return New(opts...)
-}
-
-func New(opts ...Option) SecretManager {
-	options := defaultOptions()
-	for _, opt := range opts {
-		opt(options)
-	}
-
-	if !strings.HasPrefix(options.URL, "https://") {
-		fmt.Println("⚠️\tWarning: Using HTTP instead of HTTPS. This is not secure.")
-	}
-	skipTlsVerify := os.Getenv("SKIP_TLS_VERIFY") == "true" || options.SkipTLSVerify
-	httpClient, err := gen.NewClientWithResponses(options.URL, gen.WithHTTPClient(util.NewHttpClientOrDie(skipTlsVerify, CaFilePath)), gen.WithRequestEditorFn(options.accessTokenReqEditor))
-	if err != nil {
-		panic(fmt.Sprintf("Failed to create client: %v", err))
-	}
-	return &secretManagerAPI{
-		client: httpClient,
-	}
 }
 
 func (s *secretManagerAPI) Get(ctx context.Context, secretID string) (value string, err error) {
@@ -189,14 +121,14 @@ func (s *secretManagerAPI) Rotate(ctx context.Context, secretID string) (newID s
 	return s.Set(ctx, secretID, KeywordRotate)
 }
 
-func (s *secretManagerAPI) UpsertEnvironment(ctx context.Context, envID string) (availableSecrets []gen.ListSecretItem, err error) {
+func (s *secretManagerAPI) UpsertEnvironment(ctx context.Context, envID string) (availableSecrets map[string]string, err error) {
 	res, err := s.client.UpsertEnvironmentWithResponse(ctx, envID)
 	if err != nil {
 		return nil, err
 	}
 	switch res.StatusCode() {
 	case 200:
-		return res.JSON200.Items, nil
+		return toMap(res.JSON200.Items), nil
 	case 204:
 		return nil, nil
 	case 404:
@@ -210,14 +142,14 @@ func (s *secretManagerAPI) UpsertEnvironment(ctx context.Context, envID string) 
 	}
 }
 
-func (s *secretManagerAPI) UpsertTeam(ctx context.Context, envID, teamID string) (availableSecrets []gen.ListSecretItem, err error) {
+func (s *secretManagerAPI) UpsertTeam(ctx context.Context, envID, teamID string) (availableSecrets map[string]string, err error) {
 	res, err := s.client.UpsertTeamWithResponse(ctx, envID, teamID)
 	if err != nil {
 		return nil, err
 	}
 	switch res.StatusCode() {
 	case 200:
-		return res.JSON200.Items, nil
+		return toMap(res.JSON200.Items), nil
 	case 204:
 		return nil, nil
 	case 404:
@@ -231,14 +163,43 @@ func (s *secretManagerAPI) UpsertTeam(ctx context.Context, envID, teamID string)
 	}
 }
 
-func (s *secretManagerAPI) UpsertApplication(ctx context.Context, envID, teamID, appID string) (availableSecrets []gen.ListSecretItem, err error) {
-	res, err := s.client.UpsertAppWithResponse(ctx, envID, teamID, appID)
+func (s *secretManagerAPI) UpsertApplication(ctx context.Context, envID, teamID, appID string, opts ...OnboardingOption) (availableSecrets map[string]string, err error) {
+	options := &OnboardingOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	reqBody := gen.UpsertAppJSONRequestBody{
+		Secrets: &[]gen.NamedSecret{},
+	}
+	for name, value := range options.SecretValues {
+		switch v := value.(type) {
+		case string:
+			*reqBody.Secrets = append(*reqBody.Secrets, gen.NamedSecret{
+				Name:  name,
+				Value: v,
+			})
+		case map[string]any:
+			jsonValue, err := json.Marshal(v)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to marshal secret value for %s", name)
+			}
+			*reqBody.Secrets = append(*reqBody.Secrets, gen.NamedSecret{
+				Name:  name,
+				Value: string(jsonValue),
+			})
+		default:
+			return nil, fmt.Errorf("unsupported secret value type for %s: %T", name, value)
+		}
+	}
+
+	res, err := s.client.UpsertAppWithResponse(ctx, envID, teamID, appID, reqBody)
 	if err != nil {
 		return nil, err
 	}
 	switch res.StatusCode() {
 	case 200:
-		return res.JSON200.Items, nil
+		return toMap(res.JSON200.Items), nil
 	case 204:
 		return nil, nil
 	case 404:
@@ -317,11 +278,9 @@ func (s *secretManagerAPI) DeleteApplication(ctx context.Context, envID, teamID,
 
 // FindSecretId will find the secret ID for the given name in the list of secrets.
 // It will automatically convert the secret ID to a reference.
-func FindSecretId(items []gen.ListSecretItem, name string) (string, bool) {
-	for _, item := range items {
-		if item.Name == name {
-			return ToRef(item.Id), true
-		}
+func FindSecretId(availableSecrets map[string]string, name string) (string, bool) {
+	if id, ok := availableSecrets[name]; ok {
+		return ToRef(id), true
 	}
 	return "", false
 }
@@ -329,12 +288,16 @@ func FindSecretId(items []gen.ListSecretItem, name string) (string, bool) {
 // FromRef will strip the tags from the given string if it is a placeholder.
 // Otherwise, it will return the string as is.
 func FromRef(ref string) (string, bool) {
-	if !strings.HasPrefix(ref, StartTag) || !strings.HasSuffix(ref, EndTag) {
+	if !IsRef(ref) {
 		return ref, false
 	}
 	ref = strings.TrimPrefix(ref, StartTag)
 	ref = strings.TrimSuffix(ref, EndTag)
 	return ref, true
+}
+
+func IsRef(ref string) bool {
+	return strings.HasPrefix(ref, StartTag) && strings.HasSuffix(ref, EndTag)
 }
 
 // ToRef will add the tags to the given string.
@@ -344,4 +307,12 @@ func ToRef(id string) string {
 		return id
 	}
 	return StartTag + id + EndTag
+}
+
+func toMap(items []gen.ListSecretItem) map[string]string {
+	secretMap := make(map[string]string)
+	for _, item := range items {
+		secretMap[item.Name] = ToRef(item.Id)
+	}
+	return secretMap
 }

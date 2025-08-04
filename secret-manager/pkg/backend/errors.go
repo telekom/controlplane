@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	TypeErrForbidden       = "Forbidden"
 	TypeErrNotFound        = "NotFound"
 	TypeErrBadChecksum     = "BadChecksum"
 	TypeErrInvalidSecretId = "InvalidSecretId"
@@ -91,4 +92,8 @@ func IsIncorrectStateErr(err error) bool {
 		return backendErr.Type == "IncorrectState"
 	}
 	return false
+}
+
+func Forbidden(id SecretId, err error) *BackendError {
+	return NewBackendError(id, err, TypeErrForbidden)
 }

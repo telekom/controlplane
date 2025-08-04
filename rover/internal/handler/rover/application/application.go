@@ -109,7 +109,7 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 }
 
 // findTeam finds the team for the given owner identified by the resource namespace.
-func findTeam(ctx context.Context, c client.JanitorClient, owner *roverv1.Rover) (*organizationv1.Team, error) {
+func findTeam(ctx context.Context, c client.ScopedClient, owner *roverv1.Rover) (*organizationv1.Team, error) {
 
 	// find owners team with help of resource namespace <environment>--<group>--<team>
 	roverNamespaceParts := strings.Split(owner.Namespace, "--")

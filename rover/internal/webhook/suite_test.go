@@ -120,7 +120,7 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	err = SetupWebhookWithManager(mgr)
+	err = SetupWebhookWithManager(mgr, nil)
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Creating the namespace for the test")
