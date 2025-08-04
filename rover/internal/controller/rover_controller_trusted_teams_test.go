@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -61,6 +62,8 @@ var _ = Describe("Rover Controller - Trusted Teams", Ordered, func() {
 		err := k8sClient.Get(ctx, typeNamespacedName, resource)
 		if err == nil {
 			By("Cleanup the specific resource instance Rover")
+			secretManagerMock.EXPECT().DeleteApplication(mock.Anything, testEnvironment, group+"--"+teamName, resourceName).Return(nil).Times(1)
+
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, typeNamespacedName, resource)

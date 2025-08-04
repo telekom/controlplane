@@ -124,23 +124,6 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				Expect(err).To(BeNil())
 			})
 
-			// Commenting out due to current implementation behavior
-			// This test needs to be modified once the environment validation is fixed
-			/*
-				It("should fail when environment label is missing", func() {
-					roverWithoutEnv := roverObj.DeepCopy()
-					roverWithoutEnv.Labels = map[string]string{}
-					roverWithoutEnv.Namespace = testNamespace
-					warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithoutEnv)
-					Expect(warnings).To(BeNil())
-					Expect(err).To(HaveOccurred())
-					statuserr, ok := err.(*apierrors.StatusError)
-					Expect(ok).To(BeTrue())
-					Expect(statuserr.ErrStatus.Details.Causes).To(HaveLen(1))
-					Expect(statuserr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring("environment label"))
-				})
-			*/
-
 			It("should fail when zone doesn't exist", func() {
 				roverWithInvalidZone := roverObj.DeepCopy()
 				roverWithInvalidZone.Spec.Zone = "non-existent-zone"
@@ -803,6 +786,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 		})
 
 		It("Should validate when all trusted teams exist", func() {
+			validationErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 			approval := roverv1.Approval{
 				Strategy: roverv1.ApprovalStrategyFourEyes,
 				TrustedTeams: []roverv1.TrustedTeam{
@@ -817,21 +801,25 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				},
 			}
 
-			err := validator.validateApproval(ctx, testNamespace, approval)
+			err := validator.validateApproval(ctx, validationErr, testNamespace, approval)
 			Expect(err).NotTo(HaveOccurred())
+			Expect(validationErr.HasErrors()).To(BeFalse())
 		})
 
 		It("Should validate when trusted teams list is empty", func() {
+			validationErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 			approval := roverv1.Approval{
 				Strategy:     roverv1.ApprovalStrategySimple,
 				TrustedTeams: []roverv1.TrustedTeam{},
 			}
 
-			err := validator.validateApproval(ctx, testNamespace, approval)
+			err := validator.validateApproval(ctx, validationErr, testNamespace, approval)
 			Expect(err).NotTo(HaveOccurred())
+			Expect(validationErr.HasErrors()).To(BeFalse())
 		})
 
 		It("Should fail validation when a trusted team doesn't exist", func() {
+			validationErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 			approval := roverv1.Approval{
 				Strategy: roverv1.ApprovalStrategyFourEyes,
 				TrustedTeams: []roverv1.TrustedTeam{
@@ -842,38 +830,12 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				},
 			}
 
-			err := validator.validateApproval(ctx, testNamespace, approval)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Team not found"))
-		})
-
-		It("Should validate the trusted teams in a Rover resource", func() {
-			roverObj := NewRover(testZone)
-			roverObj.Spec.Exposures[0].Api.Approval.TrustedTeams = []roverv1.TrustedTeam{
-				{
-					Group: "trusted-group-1",
-					Team:  "trusted-team-1",
-				},
-			}
-
-			warnings, err := validator.ValidateCreate(ctx, roverObj)
-			Expect(warnings).To(BeNil())
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("Should fail validation when a Rover contains non-existent trusted teams", func() {
-			roverObj := NewRover(testZone)
-			roverObj.Spec.Exposures[0].Api.Approval.TrustedTeams = []roverv1.TrustedTeam{
-				{
-					Group: "nonexistent-group",
-					Team:  "nonexistent-team",
-				},
-			}
-
-			warnings, err := validator.ValidateCreate(ctx, roverObj)
-			Expect(warnings).To(BeNil())
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Team not found"))
+			err := validator.validateApproval(ctx, validationErr, testNamespace, approval)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(validationErr.HasErrors()).To(BeTrue())
+			Expect(validationErr.errors).To(HaveLen(1))
+			Expect(validationErr.errors[0].Field).To(ContainSubstring("approval.trustedTeams"))
+			Expect(validationErr.errors[0].Detail).To(ContainSubstring("team 'nonexistent-group--nonexistent-team' not found"))
 		})
 	})
 

@@ -25,7 +25,6 @@ subscriptions:
     basePath: /scoped-api/v1
     security:
       type: oauth2
-      tokenEndpoint: https://auth.example.com/oauth2/token
       clientId: scoped-subscriber-id
       clientSecret: scoped-subscriber-secret
       grantType: CLIENT_CREDENTIALS

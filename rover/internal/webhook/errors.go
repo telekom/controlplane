@@ -47,7 +47,7 @@ func (e *ValidationError) AddRequiredError(path *field.Path, message string) {
 	e.AddError(field.Required(path, message))
 }
 
-func (e *ValidationError) BuildError() *apierrors.StatusError {
+func (e *ValidationError) BuildError() error {
 	if len(e.errors) == 0 {
 		return nil
 	}

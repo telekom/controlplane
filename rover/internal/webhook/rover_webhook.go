@@ -9,11 +9,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/types"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -34,7 +37,7 @@ func SetupWebhookWithManager(mgr ctrl.Manager, secretManager secretsapi.SecretMa
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&roverv1.Rover{}).
 		WithDefaulter(&RoverDefaulter{mgr.GetClient(), secretManager}).
-		WithValidator(&RoverValidator{mgr.GetClient(), secretManager}).
+		WithValidator(&RoverValidator{mgr.GetClient()}).
 		Complete()
 }
 
@@ -53,7 +56,11 @@ func (r *RoverDefaulter) Default(ctx context.Context, obj runtime.Object) error 
 	if !ok {
 		return apierrors.NewBadRequest("not a rover")
 	}
-
+	// No need to default if the object is being deleted
+	if controller.IsBeingDeleted(rover) {
+		return nil
+	}
+	ctx = logr.NewContext(ctx, roverlog.WithValues("name", rover.GetName(), "namespace", rover.GetNamespace()))
 	err := OnboardApplication(ctx, rover, r.secretManager)
 	if err != nil {
 		return apierrors.NewInternalError(fmt.Errorf("failed to onboard application: %w", err))
@@ -66,41 +73,46 @@ func (r *RoverDefaulter) Default(ctx context.Context, obj runtime.Object) error 
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 
 type RoverValidator struct {
-	client        client.Client
-	secretManager secretsapi.SecretManager
+	client client.Client
 }
 
 var _ webhook.CustomValidator = &RoverValidator{}
 
-func (r *RoverValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+func (r *RoverValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	roverlog.Info("validate create")
 
 	return r.ValidateCreateOrUpdate(ctx, obj)
 }
 
-func (r *RoverValidator) ValidateUpdate(ctx context.Context, oldObj, obj runtime.Object) (warnings admission.Warnings, err error) {
+func (r *RoverValidator) ValidateUpdate(ctx context.Context, oldObj, obj runtime.Object) (admission.Warnings, error) {
 	roverlog.Info("validate update")
 
 	return r.ValidateCreateOrUpdate(ctx, obj)
 }
 
-func (r *RoverValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+func (r *RoverValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	roverlog.Info("validate delete")
 
-	return
+	return nil, nil // No validation needed on delete
 }
 
-func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	rover, ok := obj.(*roverv1.Rover)
 	if !ok {
 		return nil, apierrors.NewBadRequest("not a rover")
 	}
-	roverlog.Info("validate create or update", "name", rover.GetName())
+
+	log := roverlog.WithValues("name", rover.GetName(), "namespace", rover.GetNamespace())
+	ctx = logr.NewContext(ctx, log)
+
+	log.Info("validate create or update")
+
 	valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), rover)
 
 	environment, ok := controller.GetEnvironment(rover)
 	if !ok {
-		valErr.AddInvalidError(MetadataEnvPath, nil, "environment label is required")
+		valErr.AddInvalidError(MetadataEnvPath, "", "environment label is required")
+		return nil, valErr.BuildError()
 	}
 
 	zoneRef := client.ObjectKey{
@@ -112,6 +124,7 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime
 			return nil, err
 		}
 		valErr.AddInvalidError(field.NewPath("spec").Child("zone"), rover.Spec.Zone, fmt.Sprintf("zone '%s' not found", rover.Spec.Zone))
+		return nil, valErr.BuildError()
 	}
 
 	if err := MustNotHaveDuplicates(valErr, rover.Spec.Subscriptions, rover.Spec.Exposures); err != nil {
@@ -119,13 +132,15 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime
 	}
 
 	for i, sub := range rover.Spec.Subscriptions {
-		if err = r.ValidateSubscription(ctx, valErr, environment, sub, i); err != nil {
+		log.Info("validate subscription", "index", i, "subscription", sub)
+		if err := r.ValidateSubscription(ctx, valErr, environment, sub, i); err != nil {
 			return nil, err
 		}
 	}
 
 	for i, exposure := range rover.Spec.Exposures {
-		if err = r.ValidateExposure(ctx, valErr, environment, exposure, zoneRef, i); err != nil {
+		log.Info("validate exposure", "index", i, "exposure", exposure)
+		if err := r.ValidateExposure(ctx, valErr, environment, exposure, zoneRef, i); err != nil {
 			return nil, err
 		}
 	}
@@ -144,8 +159,8 @@ func (r *RoverValidator) ResourceMustExist(ctx context.Context, objRef client.Ob
 	return true, nil
 }
 
-func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *ValidationError, environment string, sub roverv1.Subscription, idx int) (err error) {
-	roverlog.Info("validate subscription")
+func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *ValidationError, environment string, sub roverv1.Subscription, idx int) error {
+	logr.FromContextOrDiscard(ctx).Info("validate subscription")
 
 	if sub.Api != nil && sub.Api.Organization != "" {
 		remoteOrgRef := client.ObjectKey{
@@ -163,10 +178,10 @@ func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *Valid
 		}
 	}
 
-	return
+	return nil
 }
 
-func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) (err error) {
+func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
 	if exposure.Api != nil {
 		for _, upstream := range exposure.Api.Upstreams {
 			if upstream.URL == "" {
@@ -199,30 +214,36 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *Validatio
 				exposure.Api.Upstreams, "all upstreams must have a weight set or none must have a weight set",
 			)
 		}
+
+		if err := r.validateApproval(ctx, valErr, environment, exposure.Api.Approval); err != nil {
+			return errors.Wrap(err, "failed to validate approval")
+		}
+
 	}
 
 	// Header removal is generally allowed everywhere, except the "Authorization" header, which is only allowed to be configured for removal on external zones - currently space/canis
-	if err = r.validateRemoveHeaders(ctx, valErr, exposure, zoneRef, idx); err != nil {
+	if err := r.validateRemoveHeaders(ctx, valErr, exposure, zoneRef, idx); err != nil {
 		return err
 	}
 
-	//
-	if err = r.validateApproval(ctx, environment, exposure.Api.Approval); err != nil {
-		return nil, err
-	}
-
-	return
+	return nil
 }
 
-func (r *RoverValidator) validateApproval(ctx context.Context, environment string, approval roverv1.Approval) error {
-
+func (r *RoverValidator) validateApproval(ctx context.Context, valErr *ValidationError, environment string, approval roverv1.Approval) error {
 	for i := range approval.TrustedTeams {
 		ref := types.ObjectRef{
 			Name:      approval.TrustedTeams[i].Group + "--" + approval.TrustedTeams[i].Team,
 			Namespace: environment,
 		}
 		if _, err := r.GetTeam(ctx, ref.K8s()); err != nil {
-			return err
+			if apierrors.IsNotFound(err) {
+				valErr.AddInvalidError(
+					field.NewPath("spec").Child("exposures").Index(0).Child("api").Child("approval").Child("trustedTeams").Index(i),
+					ref.Name, fmt.Sprintf("team '%s' not found", ref.Name),
+				)
+				continue
+			}
+			return errors.Wrap(err, "failed to get team")
 		}
 	}
 
@@ -252,49 +273,52 @@ func CheckWeightSetOnAllOrNone(upstreams []roverv1.Upstream) (allSet, noneSet bo
 
 // MustNotHaveDuplicates checks if there are no duplicates in the subscriptions and exposures
 func MustNotHaveDuplicates(valErr *ValidationError, subs []roverv1.Subscription, exps []roverv1.Exposure) error {
-	exisitingSubs := make(map[string]bool)
+	if len(subs) == 0 && len(exps) == 0 {
+		return nil // No subscriptions or exposures, no duplicates to check
+	}
+	existingSubs := make(map[string]bool)
 	for idx, sub := range subs {
 		if sub.Api != nil {
-			if _, exists := exisitingSubs[sub.Api.BasePath]; exists {
+			if _, exists := existingSubs[sub.Api.BasePath]; exists {
 				valErr.AddInvalidError(
 					field.NewPath("spec").Child("subscriptions").Index(idx).Child("api").Child("basePath"),
 					sub.Api.BasePath, fmt.Sprintf("duplicate subscription for base path %s", sub.Api.BasePath),
 				)
 			}
-			exisitingSubs[sub.Api.BasePath] = true
+			existingSubs[sub.Api.BasePath] = true
 		}
 
 		if sub.Event != nil {
-			if _, exists := exisitingSubs[sub.Event.EventType]; exists {
+			if _, exists := existingSubs[sub.Event.EventType]; exists {
 				valErr.AddInvalidError(
 					field.NewPath("spec").Child("subscriptions").Index(idx).Child("event").Child("eventType"),
 					sub.Event.EventType, fmt.Sprintf("duplicate subscription for event-type %s", sub.Event.EventType),
 				)
 			}
-			exisitingSubs[sub.Event.EventType] = true
+			existingSubs[sub.Event.EventType] = true
 		}
 	}
 
-	exisitingExps := make(map[string]bool)
+	existingExps := make(map[string]bool)
 	for idx, exposure := range exps {
 		if exposure.Api != nil {
-			if _, exists := exisitingExps[exposure.Api.BasePath]; exists {
+			if _, exists := existingExps[exposure.Api.BasePath]; exists {
 				valErr.AddInvalidError(
 					field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("basePath"),
 					exposure.Api.BasePath, fmt.Sprintf("duplicate exposure for base path %s", exposure.Api.BasePath),
 				)
 			}
-			exisitingExps[exposure.Api.BasePath] = true
+			existingExps[exposure.Api.BasePath] = true
 		}
 
 		if exposure.Event != nil {
-			if _, exists := exisitingExps[exposure.Event.EventType]; exists {
+			if _, exists := existingExps[exposure.Event.EventType]; exists {
 				valErr.AddInvalidError(
 					field.NewPath("spec").Child("exposures").Index(idx).Child("event").Child("eventType"),
 					exposure.Event.EventType, fmt.Sprintf("duplicate exposure for event-type %s", exposure.Event.EventType),
 				)
 			}
-			exisitingExps[exposure.Event.EventType] = true
+			existingExps[exposure.Event.EventType] = true
 		}
 	}
 
@@ -346,12 +370,6 @@ func (r *RoverValidator) GetZone(ctx context.Context, zoneRef client.ObjectKey) 
 func (r *RoverValidator) GetTeam(ctx context.Context, teamRef client.ObjectKey) (*organizationv1.Team, error) {
 	team := &organizationv1.Team{}
 	err := r.client.Get(ctx, teamRef, team)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil, apierrors.NewBadRequest(fmt.Sprintf("%s not found", reflect.TypeOf(team).Elem().Name()))
-		}
-		return nil, apierrors.NewInternalError(err)
-	}
-	return team, nil
+	return team, err
 
 }

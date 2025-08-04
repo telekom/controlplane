@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common/pkg/types"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -108,7 +109,7 @@ var _ = Describe("ValidationError", func() {
 			valErr.AddInvalidError(field.NewPath("spec").Child("field2"), "/invalid", "field2 is invalid")
 
 			// Build the error
-			statusErr := valErr.BuildError()
+			statusErr := valErr.BuildError().(*apierrors.StatusError)
 			Expect(statusErr).NotTo(BeNil())
 
 			// Verify error details
@@ -139,7 +140,7 @@ var _ = Describe("ValidationError", func() {
 			valErr.errors = append(valErr.errors, field.Duplicate(path2, "duplicate value"))
 
 			// Build the error
-			statusErr := valErr.BuildError()
+			statusErr := valErr.BuildError().(*apierrors.StatusError)
 			Expect(statusErr).NotTo(BeNil())
 
 			// Verify types are preserved
@@ -211,7 +212,7 @@ var _ = Describe("ValidationError", func() {
 			valErr.AddInvalidError(field.NewPath("spec").Child("zone"), "", "zone is required")
 
 			// Build error and verify
-			statusErr := valErr.BuildError()
+			statusErr := valErr.BuildError().(*apierrors.StatusError)
 			Expect(statusErr).NotTo(BeNil())
 
 			Expect(statusErr.ErrStatus.Details.Name).To(Equal("test-rover"))

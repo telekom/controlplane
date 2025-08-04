@@ -7,6 +7,7 @@ package webhook
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -37,7 +38,7 @@ func GetExternalSecrets(ctx context.Context, rover *roverv1.Rover) map[string]st
 	secretMap := make(map[string]string)
 
 	for _, subscription := range rover.Spec.Subscriptions {
-		if subscription.Api.HasM2M() {
+		if subscription.Api != nil && subscription.Api.HasM2M() {
 			if subscription.Api.Security.M2M.Client != nil && subscription.Api.Security.M2M.Client.ClientSecret != "" {
 				secretMap[makeKey(subscription.Api.BasePath, "clientSecret")] = subscription.Api.Security.M2M.Client.ClientSecret
 			}
@@ -48,7 +49,7 @@ func GetExternalSecrets(ctx context.Context, rover *roverv1.Rover) map[string]st
 	}
 
 	for _, exposure := range rover.Spec.Exposures {
-		if exposure.Api.HasM2M() {
+		if exposure.Api != nil && exposure.Api.HasM2M() {
 			if exposure.Api.Security.M2M.ExternalIDP != nil {
 				if exposure.Api.Security.M2M.ExternalIDP.Client != nil && exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret != "" {
 					secretMap[makeKey(exposure.Api.BasePath, "externalIDP/clientSecret")] = exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret
@@ -68,9 +69,12 @@ func GetExternalSecrets(ctx context.Context, rover *roverv1.Rover) map[string]st
 
 // TODO: refactor this to make it more generic and reusable
 func SetExternalSecrets(ctx context.Context, rover *roverv1.Rover, availableSecrets map[string]string) error {
+	log := logr.FromContextOrDiscard(ctx)
+	log.V(1).Info("Setting external secrets for rover", "availableSecrets", availableSecrets)
+
 	var ok bool
 	for _, subscription := range rover.Spec.Subscriptions {
-		if subscription.Api.HasM2M() {
+		if subscription.Api != nil && subscription.Api.HasM2M() {
 			if subscription.Api.Security.M2M.Client != nil && subscription.Api.Security.M2M.Client.ClientSecret != "" {
 				subscription.Api.Security.M2M.Client.ClientSecret, ok = secretsapi.FindSecretId(availableSecrets, makeKey(subscription.Api.BasePath, "clientSecret"))
 				if !ok {
@@ -88,7 +92,7 @@ func SetExternalSecrets(ctx context.Context, rover *roverv1.Rover, availableSecr
 	}
 
 	for _, exposure := range rover.Spec.Exposures {
-		if exposure.Api.HasM2M() {
+		if exposure.Api != nil && exposure.Api.HasM2M() {
 			if exposure.Api.Security.M2M.ExternalIDP != nil {
 				if exposure.Api.Security.M2M.ExternalIDP.Client != nil && exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret != "" {
 					exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret, ok = secretsapi.FindSecretId(availableSecrets, makeKey(exposure.Api.BasePath, "externalIDP/clientSecret"))
@@ -125,7 +129,10 @@ func OnboardApplication(ctx context.Context, rover *roverv1.Rover, secretManager
 	if !ok {
 		return apierrors.NewBadRequest("environment label is required")
 	}
-	teamId := "eni--hyperion" // TODO: Get team ID from rover or context
+
+	// TODO: Get team ID from rover or context
+	parts := strings.SplitN(rover.GetNamespace(), "--", 2)
+	teamId := parts[1]
 	appId := rover.GetName()
 
 	options := []secretsapi.OnboardingOption{}
@@ -140,6 +147,8 @@ func OnboardApplication(ctx context.Context, rover *roverv1.Rover, secretManager
 			options = append(options, secretsapi.WithSecretValue(key, value))
 		}
 	}
+
+	log.V(0).Info("Onboarding application", "envName", envName, "teamId", teamId, "appId", appId, "externalSecrets", len(externalSecrets))
 
 	availableSecrets, err := secretManager.UpsertApplication(ctx, envName, teamId, appId, options...)
 	if err != nil {
@@ -157,6 +166,8 @@ func OnboardApplication(ctx context.Context, rover *roverv1.Rover, secretManager
 		log.Error(err, "Failed to set external secrets for application", "availableSecrets", availableSecrets)
 		return apierrors.NewInternalError(errors.New("failed to set external secrets for application"))
 	}
+
+	log.V(0).Info("Successfully onboarded application", "envName", envName, "teamId", teamId, "appId", appId)
 
 	return nil
 }

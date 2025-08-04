@@ -151,11 +151,11 @@ func Fetch(ctx context.Context, client client.Client, namespacedName types.Names
 	return nil
 }
 
-func IsBeingDeleted(object client.Object) bool {
+func IsBeingDeleted(object metav1.Object) bool {
 	return !object.GetDeletionTimestamp().IsZero()
 }
 
-func GetEnvironment(object client.Object) (string, bool) {
+func GetEnvironment(object metav1.Object) (string, bool) {
 	labels := object.GetLabels()
 	if labels == nil {
 		return "", false
