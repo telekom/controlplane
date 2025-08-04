@@ -643,7 +643,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 
 				// Verify overrides
 				g.Expect(apiExposure.Spec.Traffic.SubscriberRateLimit.Overrides).NotTo(BeNil())
-				overrides := *apiExposure.Spec.Traffic.SubscriberRateLimit.Overrides
+				overrides := apiExposure.Spec.Traffic.SubscriberRateLimit.Overrides
 				g.Expect(overrides).To(HaveKey("premium-client"))
 				g.Expect(overrides["premium-client"].Limits.Second).To(Equal(50))
 				g.Expect(overrides["premium-client"].Limits.Minute).To(Equal(500))

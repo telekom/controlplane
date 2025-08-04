@@ -194,6 +194,17 @@ spec:
                             minimum: 0
                             type: integer
                         type: object
+                        x-kubernetes-validations:
+                        - message: Second must be less than minute
+                          rule: self.second < self.minute || self.second == 0 || self.minute
+                            == 0
+                        - message: Minute must be less than hour
+                          rule: self.minute < self.hour || self.minute == 0 || self.hour
+                            == 0
+                        - message: At least one of second, minute, or hour must be
+                            specified
+                          rule: self.second != 0 || self.minute != 0 || self.hour
+                            != 0
                       options:
                         description: LimitOptions defines additional configuration
                           options for rate limiting

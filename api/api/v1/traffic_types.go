@@ -44,7 +44,12 @@ type SubscriberRateLimit struct {
 	Default *RateLimit `json:"default,omitempty"`
 	// Overrides defines consumer-specific rate limits, keyed by consumer identifier
 	// +kubebuilder:validation:Optional
-	Overrides *map[string]RateLimit `json:"overrides,omitempty"`
+	Overrides []RateLimitOverrides `json:"overrides,omitempty"`
+}
+
+type RateLimitOverrides struct {
+	Consumer  string `json:"consumer"`
+	RateLimit `json:",inline"`
 }
 
 // RateLimit defines rate limits for different time windows
@@ -55,6 +60,9 @@ type RateLimit struct {
 }
 
 // LimitConfig defines the actual rate limit values for different time windows
+// +kubebuilder:validation:XValidation:rule="self.second < self.minute || self.second == 0 || self.minute == 0",message="Second must be less than minute"
+// +kubebuilder:validation:XValidation:rule="self.minute < self.hour || self.minute == 0 || self.hour == 0",message="Minute must be less than hour"
+// +kubebuilder:validation:XValidation:rule="self.second != 0 || self.minute != 0 || self.hour != 0",message="At least one of second, minute, or hour must be specified"
 type LimitConfig struct {
 	// Second defines the maximum number of requests allowed per second
 	// +kubebuilder:validation:Optional

@@ -272,6 +272,8 @@ spec:
                                         overridden
                                       properties:
                                         limits:
+                                          description: LimitConfig defines the actual
+                                            rate limit values for different time windows
                                           properties:
                                             hour:
                                               description: Hour defines the maximum
@@ -289,6 +291,17 @@ spec:
                                               minimum: 0
                                               type: integer
                                           type: object
+                                          x-kubernetes-validations:
+                                          - message: Second must be less than minute
+                                            rule: self.second < self.minute || self.second
+                                              == 0 || self.minute == 0
+                                          - message: Minute must be less than hour
+                                            rule: self.minute < self.hour || self.minute
+                                              == 0 || self.hour == 0
+                                          - message: At least one of second, minute,
+                                              or hour must be specified
+                                            rule: self.second != 0 || self.minute
+                                              != 0 || self.hour != 0
                                         options:
                                           properties:
                                             faultTolerant:
@@ -309,11 +322,16 @@ spec:
                                       - limits
                                       type: object
                                     overrides:
-                                      additionalProperties:
-                                        description: RateLimitConfig defines rate
-                                          limits for different time windows
+                                      description: Overrides defines consumer-specific
+                                        rate limits, keyed by consumer identifier
+                                      items:
                                         properties:
+                                          consumer:
+                                            type: string
                                           limits:
+                                            description: LimitConfig defines the actual
+                                              rate limit values for different time
+                                              windows
                                             properties:
                                               hour:
                                                 description: Hour defines the maximum
@@ -331,6 +349,17 @@ spec:
                                                 minimum: 0
                                                 type: integer
                                             type: object
+                                            x-kubernetes-validations:
+                                            - message: Second must be less than minute
+                                              rule: self.second < self.minute || self.second
+                                                == 0 || self.minute == 0
+                                            - message: Minute must be less than hour
+                                              rule: self.minute < self.hour || self.minute
+                                                == 0 || self.hour == 0
+                                            - message: At least one of second, minute,
+                                                or hour must be specified
+                                              rule: self.second != 0 || self.minute
+                                                != 0 || self.hour != 0
                                           options:
                                             properties:
                                               faultTolerant:
@@ -348,17 +377,19 @@ spec:
                                                 type: boolean
                                             type: object
                                         required:
+                                        - consumer
                                         - limits
                                         type: object
-                                      description: Overrides defines consumer-specific
-                                        rate limits, keyed by consumer identifier
-                                      type: object
+                                      maxItems: 10
+                                      type: array
                                   type: object
                                 provider:
                                   description: Provider defines rate limits applied
                                     by the API provider (owner)
                                   properties:
                                     limits:
+                                      description: LimitConfig defines the actual
+                                        rate limit values for different time windows
                                       properties:
                                         hour:
                                           description: Hour defines the maximum number
@@ -376,6 +407,17 @@ spec:
                                           minimum: 0
                                           type: integer
                                       type: object
+                                      x-kubernetes-validations:
+                                      - message: Second must be less than minute
+                                        rule: self.second < self.minute || self.second
+                                          == 0 || self.minute == 0
+                                      - message: Minute must be less than hour
+                                        rule: self.minute < self.hour || self.minute
+                                          == 0 || self.hour == 0
+                                      - message: At least one of second, minute, or
+                                          hour must be specified
+                                        rule: self.second != 0 || self.minute != 0
+                                          || self.hour != 0
                                     options:
                                       properties:
                                         faultTolerant:
@@ -625,6 +667,8 @@ spec:
                                 for this API
                               properties:
                                 limits:
+                                  description: LimitConfig defines the actual rate
+                                    limit values for different time windows
                                   properties:
                                     hour:
                                       description: Hour defines the maximum number
@@ -642,6 +686,17 @@ spec:
                                       minimum: 0
                                       type: integer
                                   type: object
+                                  x-kubernetes-validations:
+                                  - message: Second must be less than minute
+                                    rule: self.second < self.minute || self.second
+                                      == 0 || self.minute == 0
+                                  - message: Minute must be less than hour
+                                    rule: self.minute < self.hour || self.minute ==
+                                      0 || self.hour == 0
+                                  - message: At least one of second, minute, or hour
+                                      must be specified
+                                    rule: self.second != 0 || self.minute != 0 ||
+                                      self.hour != 0
                                 options:
                                   properties:
                                     faultTolerant:

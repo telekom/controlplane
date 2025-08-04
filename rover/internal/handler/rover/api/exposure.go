@@ -236,14 +236,17 @@ func mapConsumerRateLimitToApiRateLimit(consumerRateLimits *rover.ConsumerRateLi
 		return nil
 	}
 
-	overrides := map[string]apiapi.RateLimit{}
-	for k, v := range consumerRateLimits.Overrides {
-		overrides[k] = *mapRateLimitToApiRateLimit(&v)
+	overrides := []apiapi.RateLimitOverrides{}
+	for i := range consumerRateLimits.Overrides {
+		overrides = append(overrides, apiapi.RateLimitOverrides{
+			Consumer:  consumerRateLimits.Overrides[i].Consumer,
+			RateLimit: *mapRateLimitToApiRateLimit(&consumerRateLimits.Overrides[i].RateLimitConfig),
+		})
 	}
 
 	// For subscriber rate limits, we use the default consumer rate limit
 	return &apiapi.SubscriberRateLimit{
 		Default:   mapRateLimitToApiRateLimit(consumerRateLimits.Default),
-		Overrides: &overrides,
+		Overrides: overrides,
 	}
 }
