@@ -95,6 +95,48 @@ There are three approval strategies supported by the `Approval` resource:
 2. **Simple**: The request requires a single approval to grant access. 
 3. **FourEyes**: The request requires two approvals to grant access. This strategy is suitable for production environments.
 
+### Trusted Teams
+
+Trusted teams provide a mechanism to streamline the approval process for specific teams that are pre-authorized by the API owner. This feature enables automatic approval of subscription requests from designated trusted teams, bypassing the standard approval workflow.
+
+#### How Trusted Teams Work
+
+1. **Designation**: API owners can designate specific teams as "trusted" when exposing their APIs. These trusted teams are stored as `ObjectRef` references in the `ApiExposure` resource.
+
+2. **Automatic Approval**: When a team designated as "trusted" requests access to an API, the system automatically applies the `Auto` approval strategy, regardless of the API's default approval strategy.
+
+3. **Implementation**: The system verifies if the requester's team matches any of the trusted teams defined in the API exposure:
+   ```go
+   isTrustedTeamRequester, err = util.IsRequesterFromTrustedTeam(ctx, apiSub, apiExposure.Spec.Approval.TrustedTeams)
+   if isTrustedTeamRequester {
+       // Override to Auto approval strategy
+       approvalStrategy = apiapi.ApprovalStrategyAuto
+   }
+   ```
+#### Example Configuration
+
+In a Rover resource that exposes an API:
+
+```yaml
+apiVersion: rover.ei.telekom.de/v1
+kind: Rover
+spec:
+  exposures:
+    - api:
+        approval:
+          strategy: Simple
+          trustedTeams:
+            - group: "trusted-group-1"
+              team: "trusted-team-1"
+            - group: "trusted-group-2"
+              team: "trusted-team-2"
+```
+
+When a subscription request comes from any of these trusted teams, the approval is automatically granted without requiring manual intervention, regardless of the default `FourEyes` strategy.
+
+> [!Note]
+> The owner's team is automatically added as a trusted team, allowing them to subscribe to their own APIs without requiring approval.
+
 ### Approval States
 The `Approval` resource has the following states. 
 The transition between these states so so-called `Actions`, are defined in the `Approval` resource. 
