@@ -27,7 +27,9 @@ func (a *Secrets) GetSecrets() (map[string]SecretValue, error) {
 	var err error
 	if a.subSecrets != nil {
 		for key, subSecrets := range a.subSecrets {
-			if !a.secrets[key].IsEmpty() {
+			// Must not set sub-secrets for non-empty secrets
+			// "{}" is considered an empty json object
+			if !a.secrets[key].IsEmpty() && a.secrets[key].Value() != "{}" {
 				return nil, fmt.Errorf("cannot set sub-secrets for non-empty secret %s", key)
 			}
 			secrets[key], err = JSON(subSecrets)
@@ -76,7 +78,7 @@ var (
 		return &Secrets{
 			secrets: map[string]SecretValue{
 				"clientSecret": InitialString(uuid.NewString()),
-				"teamToken":    InitialString(""),
+				"teamToken":    InitialString(uuid.NewString()),
 			},
 		}
 	}
@@ -85,7 +87,7 @@ var (
 		return &Secrets{
 			secrets: map[string]SecretValue{
 				"clientSecret":    InitialString(uuid.NewString()),
-				"externalSecrets": InitialString(""),
+				"externalSecrets": InitialString("{}"),
 			},
 		}
 	}
