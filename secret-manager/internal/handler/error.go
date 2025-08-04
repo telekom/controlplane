@@ -38,6 +38,12 @@ func ErrorHandler(c *fiber.Ctx, err error) error {
 				Title:  "Too Many Requests",
 				Detail: backendErr.Err.Error(),
 			})
+		case backend.TypeErrForbidden:
+			return c.Status(fiber.StatusForbidden).JSON(api.ErrorResponse{
+				Status: fiber.StatusForbidden,
+				Title:  "Forbidden",
+				Detail: backendErr.Err.Error(),
+			})
 		default:
 			return c.Status(fiber.StatusInternalServerError).JSON(api.ErrorResponse{
 				Status: fiber.StatusInternalServerError,

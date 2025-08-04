@@ -6,10 +6,12 @@ package kubernetes_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/kubernetes"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -76,6 +78,8 @@ var _ = Describe("Kubernetes Onboarder", func() {
 			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: teamId, Namespace: env}, secret)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(secret).ToNot(BeNil())
+
+			Expect(mockK8sClient.Delete(ctx, secret)).To(Succeed())
 		})
 
 		It("should delete a team", func() {
@@ -126,6 +130,46 @@ var _ = Describe("Kubernetes Onboarder", func() {
 			secret := &corev1.Secret{}
 			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: appId, Namespace: fmt.Sprintf("%s--%s", env, teamId)}, secret)
 			Expect(err).To(HaveOccurred())
+		})
+
+		It("should fail on unknown onboarding secret", func() {
+			onboarder := kubernetes.NewOnboarder(mockK8sClient)
+
+			// Attempt to onboard an application with an unknown secret
+			_, err := onboarder.OnboardApplication(ctx, env, teamId, appId, backend.WithSecretValue("extraSecret1", backend.String("topsecret")))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Forbidden: secret extraSecret1 is not allowed for application onboarding"))
+		})
+
+		It("should onboard an application with additional secrets", func() {
+			onboarder := kubernetes.NewOnboarder(mockK8sClient)
+
+			res, err := onboarder.OnboardApplication(ctx, env, teamId, appId,
+				backend.WithSecretValue("externalSecrets/key1", backend.String("value1")),
+				backend.WithSecretValue("externalSecrets/key2/sub", backend.String("value2")),
+			)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).ToNot(BeNil())
+			Expect(res.SecretRefs()).To(HaveLen(4))
+			Expect(res.SecretRefs()).To(HaveKey("clientSecret"))
+			Expect(res.SecretRefs()).To(HaveKey("externalSecrets"))
+			Expect(res.SecretRefs()).To(HaveKeyWithValue("externalSecrets/key1", MatchRegexp("test-env:test-team:test-app:externalSecrets/key1:.*")))
+			Expect(res.SecretRefs()).To(HaveKeyWithValue("externalSecrets/key2/sub", MatchRegexp("test-env:test-team:test-app:externalSecrets/key2/sub:.*")))
+
+			// Verify that the application secret was created
+			secret := &corev1.Secret{}
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: appId, Namespace: fmt.Sprintf("%s--%s", env, teamId)}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret).ToNot(BeNil())
+			Expect(secret.Data).To(HaveLen(2))
+			Expect(secret.Data).To(HaveKey("clientSecret"))
+			b, ok := secret.Data["externalSecrets"]
+			Expect(ok).To(BeTrue())
+			var v map[string]any
+			err = json.Unmarshal(b, &v)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(v).To(HaveKeyWithValue("key1", "value1"))
+			Expect(v).To(HaveKeyWithValue("key2/sub", "value2"))
 		})
 	})
 })

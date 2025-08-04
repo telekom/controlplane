@@ -50,23 +50,21 @@ func (k *KubernetesBackend) Get(ctx context.Context, secretId Id) (res backend.D
 		}
 	}
 
-	key, subPath := secretId.JsonPath()
-	log.Info("get secret", "key", key, "subPath", subPath)
+	subPath := secretId.SubPath()
+	path := secretId.Path()
+	log.Info("get secret", "path", path, "subPath", subPath)
 	if subPath != "" {
-		data, ok := obj.Data[key]
+		data, ok := obj.Data[path]
 		if !ok {
 			return res, backend.ErrSecretNotFound(secretId)
 		}
 		result := gjson.GetBytes(data, subPath)
-		if err != nil {
-			return res, backend.ErrSecretNotFound(secretId)
-		}
 		if !result.Exists() {
 			return res, backend.ErrSecretNotFound(secretId)
 		}
 		return backend.NewDefaultSecret(secretId, result.String()), nil
 	}
-	data, ok := obj.Data[key]
+	data, ok := obj.Data[path]
 	if !ok {
 		return res, backend.ErrSecretNotFound(secretId)
 	}
@@ -100,8 +98,9 @@ func (k *KubernetesBackend) Set(ctx context.Context, secretId Id, secretValue ba
 		},
 	}
 
-	key, subPath := secretId.JsonPath()
-	log.Info("set secret", "key", key, "subPath", subPath)
+	subPath := secretId.SubPath()
+	path := secretId.Path()
+	log.Info("set secret", "path", path, "subPath", subPath)
 
 	mutate := func() error {
 		if k.MatchResourceVersion {
@@ -111,7 +110,7 @@ func (k *KubernetesBackend) Set(ctx context.Context, secretId Id, secretValue ba
 		}
 
 		if subPath != "" {
-			data, ok := obj.Data[key]
+			data, ok := obj.Data[path]
 			if !ok {
 				return backend.ErrSecretNotFound(secretId)
 			}
@@ -121,14 +120,14 @@ func (k *KubernetesBackend) Set(ctx context.Context, secretId Id, secretValue ba
 				return handleError(err, secretId)
 			}
 
-			obj.Data[key] = newData
+			obj.Data[path] = newData
 			return nil
 		}
 
 		if obj.Data == nil {
 			obj.Data = make(map[string][]byte)
 		}
-		obj.Data[key] = []byte(secretValue.Value())
+		obj.Data[path] = []byte(secretValue.Value())
 		return nil
 	}
 	_, err = controllerutil.CreateOrUpdate(ctx, k.client, obj, mutate)
@@ -155,10 +154,11 @@ func (k *KubernetesBackend) Delete(ctx context.Context, secretId Id) error {
 			return backend.ErrSecretNotFound(secretId)
 		}
 
-		key, subPath := secretId.JsonPath()
-		log.Info("delete secret", "key", key, "subPath", subPath)
+		subPath := secretId.SubPath()
+		path := secretId.Path()
+		log.Info("delete secret", "path", path, "subPath", subPath)
 		if subPath != "" {
-			data, ok := obj.Data[key]
+			data, ok := obj.Data[path]
 			if !ok {
 				return backend.ErrSecretNotFound(secretId)
 			}
@@ -166,12 +166,12 @@ func (k *KubernetesBackend) Delete(ctx context.Context, secretId Id) error {
 			if err != nil {
 				return handleError(err, secretId)
 			}
-			obj.Data[key] = newData
+			obj.Data[path] = newData
 			return nil
 		}
 
-		if obj.Data[key] != nil {
-			delete(obj.Data, key)
+		if obj.Data[path] != nil {
+			delete(obj.Data, path)
 		}
 		return nil
 	}

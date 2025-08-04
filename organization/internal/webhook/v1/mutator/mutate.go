@@ -10,7 +10,6 @@ import (
 
 	organisationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/secret"
-	"github.com/telekom/controlplane/secret-manager/api/gen"
 	"k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -20,7 +19,7 @@ func wrapCommunicationError(err error, purposeOfCommunication string) error {
 
 func MutateSecret(ctx context.Context, env string, teamObj *organisationv1.Team) error {
 	var err error
-	var availableSecrets []gen.ListSecretItem
+	var availableSecrets map[string]string
 
 	switch teamObj.Spec.Secret {
 	case "":

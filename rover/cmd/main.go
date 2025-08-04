@@ -182,7 +182,7 @@ func main() {
 	}
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err = internal_webhook.SetupWebhookWithManager(mgr); err != nil {
+		if err = internal_webhook.SetupWebhookWithManager(mgr, nil); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Rover")
 			os.Exit(1)
 		}
