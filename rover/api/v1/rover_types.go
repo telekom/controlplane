@@ -97,7 +97,7 @@ type RoverSpec struct {
 	// ClientSecret is the secret used for client authentication
 	// If not specified, a randomly generated secret will be used
 	// +kubebuilder:validation:Optional
-	ClientSecret string `json:"clientSecret,optional"`
+	ClientSecret string `json:"clientSecret"`
 
 	// Exposures is a list of APIs and Events that this Rover exposes to consumers
 	// +kubebuilder:validation:Optional
