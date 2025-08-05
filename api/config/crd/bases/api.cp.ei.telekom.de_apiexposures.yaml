@@ -50,12 +50,26 @@ spec:
               apiBasePath:
                 type: string
               approval:
-                default: Auto
-                enum:
-                - Auto
-                - Simple
-                - FourEyes
-                type: string
+                properties:
+                  strategy:
+                    default: Auto
+                    enum:
+                    - Auto
+                    - Simple
+                    - FourEyes
+                    type: string
+                  trustedTeams:
+                    description: |-
+                      TrustedTeams identifies teams that are trusted for approving this API
+                      Per default your own team is trusted
+                    items:
+                      type: string
+                    maxItems: 10
+                    minItems: 0
+                    type: array
+                required:
+                - strategy
+                type: object
               security:
                 description: |-
                   Security defines the security configuration for the Rover

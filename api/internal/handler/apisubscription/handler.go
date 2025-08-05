@@ -163,7 +163,11 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	approvalBuilder := builder.NewApprovalBuilder(scopedClient, apiSub)
 	approvalBuilder.WithHashValue(requester.Properties)
 	approvalBuilder.WithRequester(requester)
-	approvalBuilder.WithStrategy(approvalapi.ApprovalStrategy(apiExposure.Spec.Approval))
+	approvalBuilder.WithStrategy(approvalapi.ApprovalStrategy(apiExposure.Spec.Approval.Strategy))
+
+	if len(apiExposure.Spec.Approval.TrustedTeams) > 0 {
+		approvalBuilder.WithTrustedRequesters(apiExposure.Spec.Approval.TrustedTeams)
+	}
 
 	res, err := approvalBuilder.Build(ctx)
 	if err != nil {

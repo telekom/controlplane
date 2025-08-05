@@ -23,17 +23,27 @@ type ApiExposureSpec struct {
 	ApiBasePath string     `json:"apiBasePath"`
 	Upstreams   []Upstream `json:"upstreams"`
 	// +kubebuilder:validation:Enum=World;Zone;Enterprise
-	Visibility Visibility `json:"visibility"`
-	// +kubebuilder:validation:Enum=Auto;Simple;FourEyes
-	// +kubebuilder:default=Auto
-	Approval ApprovalStrategy `json:"approval"`
-	Zone     ctypes.ObjectRef `json:"zone"`
+	Visibility Visibility       `json:"visibility"`
+	Approval   Approval         `json:"approval"`
+	Zone       ctypes.ObjectRef `json:"zone"`
 
 	Traffic Traffic `json:"traffic"`
 
 	Transformation *Transformation `json:"transformation,omitempty"`
 
 	Security *Security `json:"security,omitempty"`
+}
+
+type Approval struct {
+	// +kubebuilder:validation:Enum=Auto;Simple;FourEyes
+	// +kubebuilder:default=Auto
+	Strategy ApprovalStrategy `json:"strategy"`
+	// TrustedTeams identifies teams that are trusted for approving this API
+	// Per default your own team is trusted
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinItems=0
+	// +kubebuilder:validation:MaxItems=10
+	TrustedTeams []string `json:"trustedTeams,omitempty"`
 }
 
 func (exposure *ApiExposure) HasExternalIdp() bool {

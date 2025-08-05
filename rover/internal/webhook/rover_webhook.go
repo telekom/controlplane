@@ -12,6 +12,8 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/controller"
+	"github.com/telekom/controlplane/common/pkg/types"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -172,7 +174,27 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, environment strin
 		return nil, err
 	}
 
+	//
+	if err = r.validateApproval(ctx, environment, exposure.Api.Approval); err != nil {
+		return nil, err
+	}
+
 	return
+}
+
+func (r *RoverValidator) validateApproval(ctx context.Context, environment string, approval roverv1.Approval) error {
+
+	for i := range approval.TrustedTeams {
+		ref := types.ObjectRef{
+			Name:      approval.TrustedTeams[i].Group + "--" + approval.TrustedTeams[i].Team,
+			Namespace: environment,
+		}
+		if _, err := r.GetTeam(ctx, ref.K8s()); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func CheckWeightSetOnAllOrNone(upstreams []roverv1.Upstream) (allSet, noneSet bool) {
@@ -267,5 +289,18 @@ func (r *RoverValidator) GetZone(ctx context.Context, zoneRef client.ObjectKey) 
 		return nil, apierrors.NewInternalError(err)
 	}
 	return zone, nil
+
+}
+
+func (r *RoverValidator) GetTeam(ctx context.Context, teamRef client.ObjectKey) (*organizationv1.Team, error) {
+	team := &organizationv1.Team{}
+	err := r.client.Get(ctx, teamRef, team)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, apierrors.NewBadRequest(fmt.Sprintf("%s not found", reflect.TypeOf(team).Elem().Name()))
+		}
+		return nil, apierrors.NewInternalError(err)
+	}
+	return team, nil
 
 }

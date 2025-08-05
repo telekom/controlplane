@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -137,6 +138,135 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 			Expect(warnings).To(BeNil())
 			Expect(err).ToNot(HaveOccurred())
 
+		})
+	})
+
+	Context("When validating trusted teams in approval", func() {
+		var (
+			team1, team2 *organizationv1.Team
+		)
+
+		BeforeAll(func() {
+			// Create test teams
+			team1 = &organizationv1.Team{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "trusted-group-1--trusted-team-1",
+					Namespace: testNamespace,
+				},
+				Spec: organizationv1.TeamSpec{
+					Name:  "trusted-team-1",
+					Group: "trusted-group-1",
+					Email: "team1@example.com",
+					Members: []organizationv1.Member{
+						{
+							Name:  "name",
+							Email: "name@example.com",
+						},
+					},
+				},
+			}
+
+			team2 = &organizationv1.Team{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "trusted-group-2--trusted-team-2",
+					Namespace: testNamespace,
+				},
+				Spec: organizationv1.TeamSpec{
+					Name:  "trusted-team-2",
+					Group: "trusted-group-2",
+					Email: "team2@example.com",
+					Members: []organizationv1.Member{
+						{
+							Name:  "name",
+							Email: "name@example.com",
+						},
+					},
+				},
+			}
+
+			// Create the teams in the test environment
+			Expect(k8sClient.Create(ctx, team1)).To(Succeed())
+			Expect(k8sClient.Create(ctx, team2)).To(Succeed())
+		})
+
+		AfterAll(func() {
+			// Clean up the teams
+			Expect(k8sClient.Delete(ctx, team1)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, team2)).To(Succeed())
+		})
+
+		It("Should validate when all trusted teams exist", func() {
+			approval := roverv1.Approval{
+				Strategy: roverv1.ApprovalStrategyFourEyes,
+				TrustedTeams: []roverv1.TrustedTeam{
+					{
+						Group: "trusted-group-1",
+						Team:  "trusted-team-1",
+					},
+					{
+						Group: "trusted-group-2",
+						Team:  "trusted-team-2",
+					},
+				},
+			}
+
+			err := validator.validateApproval(ctx, testNamespace, approval)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("Should validate when trusted teams list is empty", func() {
+			approval := roverv1.Approval{
+				Strategy:     roverv1.ApprovalStrategySimple,
+				TrustedTeams: []roverv1.TrustedTeam{},
+			}
+
+			err := validator.validateApproval(ctx, testNamespace, approval)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("Should fail validation when a trusted team doesn't exist", func() {
+			approval := roverv1.Approval{
+				Strategy: roverv1.ApprovalStrategyFourEyes,
+				TrustedTeams: []roverv1.TrustedTeam{
+					{
+						Group: "nonexistent-group",
+						Team:  "nonexistent-team",
+					},
+				},
+			}
+
+			err := validator.validateApproval(ctx, testNamespace, approval)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Team not found"))
+		})
+
+		It("Should validate the trusted teams in a Rover resource", func() {
+			roverObj := NewRover(*testZone)
+			roverObj.Spec.Exposures[0].Api.Approval.TrustedTeams = []roverv1.TrustedTeam{
+				{
+					Group: "trusted-group-1",
+					Team:  "trusted-team-1",
+				},
+			}
+
+			warnings, err := validator.ValidateCreate(ctx, roverObj)
+			Expect(warnings).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("Should fail validation when a Rover contains non-existent trusted teams", func() {
+			roverObj := NewRover(*testZone)
+			roverObj.Spec.Exposures[0].Api.Approval.TrustedTeams = []roverv1.TrustedTeam{
+				{
+					Group: "nonexistent-group",
+					Team:  "nonexistent-team",
+				},
+			}
+
+			warnings, err := validator.ValidateCreate(ctx, roverObj)
+			Expect(warnings).To(BeNil())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Team not found"))
 		})
 	})
 
