@@ -36,6 +36,12 @@ type OnboardingOptions struct {
 
 type OnboardingOption func(*OnboardingOptions)
 
+// WithSecretValue allows you to set a secret value for the onboarding process.
+// The secret name must be known to the secret manager.
+// Example: If the secret manager has a secret named "externalSecrets",
+// Then you can set the value directly or create sub-secrets like so
+// WithSecretValue("externalSecrets.foo.my-secret", "my-secret-value").
+// IMPORTANT: The {{rotate}} keyword is not supported here.
 func WithSecretValue(name string, value any) OnboardingOption {
 	return func(o *OnboardingOptions) {
 		if o.SecretValues == nil {
@@ -277,7 +283,7 @@ func (s *secretManagerAPI) DeleteApplication(ctx context.Context, envID, teamID,
 }
 
 // FindSecretId will find the secret ID for the given name in the list of secrets.
-// It will automatically convert the secret ID to a reference.
+// It will automatically convert the secret ID to a secret Reference.
 func FindSecretId(availableSecrets map[string]string, name string) (string, bool) {
 	if id, ok := availableSecrets[name]; ok {
 		return ToRef(id), true
