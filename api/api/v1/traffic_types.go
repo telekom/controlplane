@@ -47,27 +47,19 @@ type RateLimit struct {
 
 // RateLimitConfig defines rate limits for different time windows
 type RateLimitConfig struct {
-	// +kubebuilder:validation:Required
-	Limits Limits `json:"limits"`
-	// +kubebuilder:validation:Optional
+	Limits  Limits           `json:"limits"`
 	Options RateLimitOptions `json:"options,omitempty"`
 }
 
 // Limits defines the actual rate limit values for different time windows
-// +kubebuilder:validation:XValidation:rule="self.second < self.minute || self.second == 0 || self.minute == 0",message="Second must be less than minute"
-// +kubebuilder:validation:XValidation:rule="self.minute < self.hour || self.minute == 0 || self.hour == 0",message="Minute must be less than hour"
-// +kubebuilder:validation:XValidation:rule="self.second != 0 || self.minute != 0 || self.hour != 0",message="At least one of second, minute, or hour must be specified"
 type Limits struct {
 	// Second defines the maximum number of requests allowed per second
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
 	Second int `json:"second,omitempty"`
 	// Minute defines the maximum number of requests allowed per minute
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
 	Minute int `json:"minute,omitempty"`
 	// Hour defines the maximum number of requests allowed per hour
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
 	Hour int `json:"hour,omitempty"`
 }
@@ -88,17 +80,15 @@ type SubscriberRateLimits struct {
 	// +kubebuilder:validation:Optional
 	Default *RateLimitConfig `json:"default,omitempty"`
 	// Overrides defines consumer-specific rate limits, keyed by consumer identifier
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10
 	Overrides []RateLimitOverrides `json:"overrides,omitempty"`
 }
 
 type RateLimitOverrides struct {
-	// +kubebuilder:validation:Required
+	// Subscriber is the unique identifier of the subscriber
 	// +kubebuilder:validation:MinLength=1
-	Subscriber string `json:"subscriber"`
-	// +kubebuilder:validation:Required
-	RateLimitConfig `json:",inline"`
+	Subscriber string          `json:"subscriber"`
+	Config     RateLimitConfig `json:"config"`
 }
 
 func (t *Traffic) HasFailover() bool {
@@ -110,6 +100,9 @@ func (t *Traffic) HasRateLimit() bool {
 }
 
 func (t *Traffic) HasSubscriberRateLimit() bool {
+	if !t.HasRateLimit() {
+		return false
+	}
 	return t.RateLimit.SubscriberRateLimit != nil
 }
 

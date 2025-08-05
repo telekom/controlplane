@@ -579,15 +579,11 @@ var _ = Describe("Rover Controller", Ordered, func() {
 										Overrides: []roverv1.RateLimitOverrides{
 											{
 												Consumer: "premium-client",
-												RateLimitConfig: roverv1.RateLimitConfig{
+												Config: roverv1.RateLimitConfig{
 													Limits: roverv1.Limits{
 														Second: 50,
 														Minute: 500,
 														Hour:   5000,
-													},
-													Options: roverv1.RateLimitOptions{
-														HideClientHeaders: false,
-														FaultTolerant:     true,
 													},
 												},
 											},
@@ -638,12 +634,12 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				// Verify overrides
 				overrides := apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides
 				g.Expect(overrides).NotTo(BeNil())
-				g.Expect(overrides[0].Subscriber).To(HaveKey("premium-client"))
-				g.Expect(overrides[0].Limits.Second).To(Equal(50))
-				g.Expect(overrides[0].Limits.Minute).To(Equal(500))
-				g.Expect(overrides[0].Limits.Hour).To(Equal(5000))
-				g.Expect(overrides[0].Options.HideClientHeaders).To(BeFalse())
-				g.Expect(overrides[0].Options.FaultTolerant).To(BeTrue())
+				g.Expect(overrides[0].Subscriber).To(Equal("premium-client"))
+				g.Expect(overrides[0].Config.Limits.Second).To(Equal(50))
+				g.Expect(overrides[0].Config.Limits.Minute).To(Equal(500))
+				g.Expect(overrides[0].Config.Limits.Hour).To(Equal(5000))
+				g.Expect(overrides[0].Config.Options.HideClientHeaders).To(BeFalse())
+				g.Expect(overrides[0].Config.Options.FaultTolerant).To(BeTrue())
 
 				// Verify helper methods
 				g.Expect(apiExposure.HasFailover()).To(BeTrue())
@@ -701,7 +697,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				// Verify traffic configuration is empty but valid
 				g.Expect(apiExposure.Spec.Traffic.Failover).To(BeNil())
 				g.Expect(apiExposure.Spec.Traffic.RateLimit).To(BeNil())
-				g.Expect(apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit).To(BeNil())
+				g.Expect(apiExposure.Spec.Traffic.HasSubscriberRateLimit()).To(BeFalse())
 
 				// Verify helper methods
 				g.Expect(apiExposure.HasFailover()).To(BeFalse())

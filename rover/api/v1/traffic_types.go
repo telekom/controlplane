@@ -73,9 +73,6 @@ type RateLimitConfig struct {
 }
 
 // Limits defines the actual rate limit values for different time windows
-// +kubebuilder:validation:XValidation:rule="self.second < self.minute || self.second == 0 || self.minute == 0",message="Second must be less than minute"
-// +kubebuilder:validation:XValidation:rule="self.minute < self.hour || self.minute == 0 || self.hour == 0",message="Minute must be less than hour"
-// +kubebuilder:validation:XValidation:rule="self.second != 0 || self.minute != 0 || self.hour != 0",message="At least one of second, minute, or hour must be specified"
 type Limits struct {
 	// Second defines the maximum number of requests allowed per second
 	// +kubebuilder:validation:Optional
@@ -107,7 +104,6 @@ type ConsumerRateLimits struct {
 	// +kubebuilder:validation:Optional
 	Default *RateLimitConfig `json:"default,omitempty"`
 	// Overrides defines consumer-specific rate limits
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10
 	Overrides []RateLimitOverrides `json:"overrides,omitempty"`
 }
@@ -117,7 +113,7 @@ type RateLimitOverrides struct {
 	// +kubebuilder:validation:MinLength=1
 	Consumer string `json:"consumer"`
 	// +kubebuilder:validation:Required
-	RateLimitConfig `json:",inline"`
+	Config RateLimitConfig `json:"config"`
 }
 
 func (t *Traffic) HasFailover() bool {

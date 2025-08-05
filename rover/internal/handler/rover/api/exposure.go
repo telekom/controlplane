@@ -200,6 +200,10 @@ func mapTrafficToApiTraffic(env string, roverTraffic *rover.Traffic) apiapi.Traf
 		}
 	}
 
+	if roverTraffic.HasRateLimit() {
+		apiTraffic.RateLimit = &apiapi.RateLimit{}
+	}
+
 	// Handle rate limits
 	if roverTraffic.HasProviderRateLimit() {
 		apiTraffic.RateLimit.Provider = mapRateLimitConfigToApiRateLimitConfig(roverTraffic.RateLimit.Provider)
@@ -243,8 +247,8 @@ func mapConsumerRateLimitToApiSubscriberRateLimit(consumerRateLimits *rover.Cons
 		var overrides []apiapi.RateLimitOverrides
 		for _, override := range consumerRateLimits.Overrides {
 			overrides = append(overrides, apiapi.RateLimitOverrides{
-				Subscriber:      override.Consumer,
-				RateLimitConfig: *mapRateLimitConfigToApiRateLimitConfig(&override.RateLimitConfig),
+				Subscriber: override.Consumer,
+				Config:     *mapRateLimitConfigToApiRateLimitConfig(&override.Config),
 			})
 		}
 		subscriberRateLimits.Overrides = overrides
