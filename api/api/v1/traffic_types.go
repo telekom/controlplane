@@ -17,18 +17,12 @@ type Traffic struct {
 	// RateLimit defines request rate limiting for this API
 	// +kubebuilder:validation:Optional
 	RateLimit *RateLimit `json:"rateLimit,omitempty"`
-	// SubscriberRateLimit defines request rate limiting for this API per subscriber
-	// +kubebuilder:validation:Optional
-	SubscriberRateLimit *SubscriberRateLimit `json:"subscriberRateLimit,omitempty"`
 }
 
 type SubscriberTraffic struct {
 	// Failover defines the failover configuration for the API exposure.
 	// +kubebuilder:validation:Optional
 	Failover *Failover `json:"failover,omitempty"`
-	// RateLimit defines request rate limiting for this API
-	// +kubebuilder:validation:Optional
-	RateLimit *RateLimit `json:"rateLimit,omitempty"`
 }
 
 type Failover struct {
@@ -37,33 +31,33 @@ type Failover struct {
 	Zones []ctypes.ObjectRef `json:"zone"`
 }
 
-// SubscriberRateLimit defines rate limits for API consumers
-type SubscriberRateLimit struct {
-	// Default defines the rate limit applied to all consumers not specifically overridden
-	// +kubebuilder:validation:Optional
-	Default *RateLimit `json:"default,omitempty"`
-	// Overrides defines consumer-specific rate limits, keyed by consumer identifier
-	// +kubebuilder:validation:Optional
-	Overrides []RateLimitOverrides `json:"overrides,omitempty"`
-}
+// -------
+// Rate Limiting Section
+// -------
 
-type RateLimitOverrides struct {
-	Consumer  string `json:"consumer"`
-	RateLimit `json:",inline"`
-}
-
-// RateLimit defines rate limits for different time windows
+// RateLimit defines rate limiting configuration for an API
 type RateLimit struct {
-	Limits LimitConfig `json:"limits"`
+	// Provider defines request rate limiting for this API
 	// +kubebuilder:validation:Optional
-	Options LimitOptions `json:"options,omitempty"`
+	Provider *RateLimitConfig `json:"provider,omitempty"`
+	// SubscriberRateLimit defines request rate limiting for this API per subscriber
+	// +kubebuilder:validation:Optional
+	SubscriberRateLimit *SubscriberRateLimits `json:"subscriberRateLimit,omitempty"`
 }
 
-// LimitConfig defines the actual rate limit values for different time windows
+// RateLimitConfig defines rate limits for different time windows
+type RateLimitConfig struct {
+	// +kubebuilder:validation:Required
+	Limits Limits `json:"limits"`
+	// +kubebuilder:validation:Optional
+	Options RateLimitOptions `json:"options,omitempty"`
+}
+
+// Limits defines the actual rate limit values for different time windows
 // +kubebuilder:validation:XValidation:rule="self.second < self.minute || self.second == 0 || self.minute == 0",message="Second must be less than minute"
 // +kubebuilder:validation:XValidation:rule="self.minute < self.hour || self.minute == 0 || self.hour == 0",message="Minute must be less than hour"
 // +kubebuilder:validation:XValidation:rule="self.second != 0 || self.minute != 0 || self.hour != 0",message="At least one of second, minute, or hour must be specified"
-type LimitConfig struct {
+type Limits struct {
 	// Second defines the maximum number of requests allowed per second
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
@@ -78,12 +72,33 @@ type LimitConfig struct {
 	Hour int `json:"hour,omitempty"`
 }
 
-// LimitOptions defines additional configuration options for rate limiting
-type LimitOptions struct {
+// RateLimitOptions defines additional configuration options for rate limiting
+type RateLimitOptions struct {
 	// HideClientHeaders hides additional client headers which give information about the rate-limit, reset and remaining requests for consumers if set to true.
+	// +kubebuilder:default=false
 	HideClientHeaders bool `json:"hideClientHeaders,omitempty"`
 	// FaultTolerant defines if the rate limit plugin should be fault tolerant, if gateway is not able to access the config store
+	// +kubebuilder:default=true
 	FaultTolerant bool `json:"faultTolerant,omitempty"`
+}
+
+// SubscriberRateLimits defines rate limits for API subscribers
+type SubscriberRateLimits struct {
+	// Default defines the rate limit applied to all consumers not specifically overridden
+	// +kubebuilder:validation:Optional
+	Default *RateLimitConfig `json:"default,omitempty"`
+	// Overrides defines consumer-specific rate limits, keyed by consumer identifier
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MaxItems=10
+	Overrides []RateLimitOverrides `json:"overrides,omitempty"`
+}
+
+type RateLimitOverrides struct {
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Subscriber string `json:"subscriber"`
+	// +kubebuilder:validation:Required
+	RateLimitConfig `json:",inline"`
 }
 
 func (t *Traffic) HasFailover() bool {
@@ -95,7 +110,7 @@ func (t *Traffic) HasRateLimit() bool {
 }
 
 func (t *Traffic) HasSubscriberRateLimit() bool {
-	return t.SubscriberRateLimit != nil
+	return t.RateLimit.SubscriberRateLimit != nil
 }
 
 func (f Failover) ContainsZone(zone ctypes.ObjectRef) bool {

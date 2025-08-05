@@ -201,52 +201,53 @@ func mapTrafficToApiTraffic(env string, roverTraffic *rover.Traffic) apiapi.Traf
 	}
 
 	// Handle rate limits
-	if roverTraffic.RateLimit != nil {
-		apiTraffic.RateLimit = mapRateLimitToApiRateLimit(roverTraffic.RateLimit.Provider)
+	if roverTraffic.HasProviderRateLimit() {
+		apiTraffic.RateLimit.Provider = mapRateLimitConfigToApiRateLimitConfig(roverTraffic.RateLimit.Provider)
+	}
 
-		if roverTraffic.RateLimit.Consumers != nil {
-			apiTraffic.SubscriberRateLimit = mapConsumerRateLimitToApiRateLimit(roverTraffic.RateLimit.Consumers)
-		}
+	if roverTraffic.HasConsumerRateLimit() {
+		apiTraffic.RateLimit.SubscriberRateLimit = mapConsumerRateLimitToApiSubscriberRateLimit(roverTraffic.RateLimit.Consumers)
 	}
 
 	return apiTraffic
 }
 
-func mapRateLimitToApiRateLimit(roverRateLimitConfig *rover.RateLimitConfig) *apiapi.RateLimit {
-	var rateLimitConfig *apiapi.RateLimit
-
-	if roverRateLimitConfig != nil {
-		rateLimitConfig = &apiapi.RateLimit{
-			Limits: apiapi.LimitConfig{
-				Second: roverRateLimitConfig.Limits.Second,
-				Minute: roverRateLimitConfig.Limits.Minute,
-				Hour:   roverRateLimitConfig.Limits.Hour,
-			},
-			Options: apiapi.LimitOptions{
-				HideClientHeaders: roverRateLimitConfig.Options.HideClientHeaders,
-				FaultTolerant:     roverRateLimitConfig.Options.FaultTolerant,
-			},
-		}
-	}
-	return rateLimitConfig
-}
-
-func mapConsumerRateLimitToApiRateLimit(consumerRateLimits *rover.ConsumerRateLimits) *apiapi.SubscriberRateLimit {
-	if consumerRateLimits == nil || consumerRateLimits.Default == nil {
+func mapRateLimitConfigToApiRateLimitConfig(roverRateLimitConfig *rover.RateLimitConfig) *apiapi.RateLimitConfig {
+	if roverRateLimitConfig == nil {
 		return nil
 	}
 
-	overrides := []apiapi.RateLimitOverrides{}
-	for i := range consumerRateLimits.Overrides {
-		overrides = append(overrides, apiapi.RateLimitOverrides{
-			Consumer:  consumerRateLimits.Overrides[i].Consumer,
-			RateLimit: *mapRateLimitToApiRateLimit(&consumerRateLimits.Overrides[i].RateLimitConfig),
-		})
+	return &apiapi.RateLimitConfig{
+		Limits: apiapi.Limits{
+			Second: roverRateLimitConfig.Limits.Second,
+			Minute: roverRateLimitConfig.Limits.Minute,
+			Hour:   roverRateLimitConfig.Limits.Hour,
+		},
+		Options: apiapi.RateLimitOptions{
+			HideClientHeaders: roverRateLimitConfig.Options.HideClientHeaders,
+			FaultTolerant:     roverRateLimitConfig.Options.FaultTolerant,
+		},
+	}
+}
+
+func mapConsumerRateLimitToApiSubscriberRateLimit(consumerRateLimits *rover.ConsumerRateLimits) *apiapi.SubscriberRateLimits {
+	if consumerRateLimits == nil {
+		return nil
 	}
 
-	// For subscriber rate limits, we use the default consumer rate limit
-	return &apiapi.SubscriberRateLimit{
-		Default:   mapRateLimitToApiRateLimit(consumerRateLimits.Default),
-		Overrides: overrides,
+	subscriberRateLimits := &apiapi.SubscriberRateLimits{
+		Default: mapRateLimitConfigToApiRateLimitConfig(consumerRateLimits.Default),
 	}
+
+	if len(consumerRateLimits.Overrides) > 0 {
+		var overrides []apiapi.RateLimitOverrides
+		for _, override := range consumerRateLimits.Overrides {
+			overrides = append(overrides, apiapi.RateLimitOverrides{
+				Subscriber:      override.Consumer,
+				RateLimitConfig: *mapRateLimitConfigToApiRateLimitConfig(&override.RateLimitConfig),
+			})
+		}
+		subscriberRateLimits.Overrides = overrides
+	}
+	return subscriberRateLimits
 }

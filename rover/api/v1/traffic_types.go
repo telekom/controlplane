@@ -21,9 +21,6 @@ type SubscriberTraffic struct {
 	// Failover defines disaster recovery configuration for this API
 	// +kubebuilder:validation:Optional
 	Failover *Failover `json:"failover,omitempty"`
-	// RateLimit defines request rate limiting for this API
-	// +kubebuilder:validation:Optional
-	RateLimit *RateLimitConfig `json:"rateLimit,omitempty"`
 }
 
 // LoadBalancing defines load balancing strategy for multiple upstreams
@@ -53,6 +50,10 @@ type Failover struct {
 	Zones []string `json:"zones,omitempty"`
 }
 
+// -------
+// Rate Limiting Section
+// -------
+
 // RateLimit defines rate limiting configuration for an API
 type RateLimit struct {
 	// Provider defines rate limits applied by the API provider (owner)
@@ -65,16 +66,17 @@ type RateLimit struct {
 
 // RateLimitConfig defines rate limits for different time windows
 type RateLimitConfig struct {
-	Limits LimitConfig `json:"limits"`
+	// +kubebuilder:validation:Required
+	Limits Limits `json:"limits"`
 	// +kubebuilder:validation:Optional
-	Options LimitOptions `json:"options,omitempty"`
+	Options RateLimitOptions `json:"options,omitempty"`
 }
 
-// LimitConfig defines the actual rate limit values for different time windows
+// Limits defines the actual rate limit values for different time windows
 // +kubebuilder:validation:XValidation:rule="self.second < self.minute || self.second == 0 || self.minute == 0",message="Second must be less than minute"
 // +kubebuilder:validation:XValidation:rule="self.minute < self.hour || self.minute == 0 || self.hour == 0",message="Minute must be less than hour"
 // +kubebuilder:validation:XValidation:rule="self.second != 0 || self.minute != 0 || self.hour != 0",message="At least one of second, minute, or hour must be specified"
-type LimitConfig struct {
+type Limits struct {
 	// Second defines the maximum number of requests allowed per second
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=0
@@ -89,25 +91,53 @@ type LimitConfig struct {
 	Hour int `json:"hour,omitempty"`
 }
 
-type LimitOptions struct {
+// RateLimitOptions defines additional configuration options for rate limiting
+type RateLimitOptions struct {
 	// HideClientHeaders hides additional client headers which give information about the rate-limit, reset and remaining requests for consumers if set to true.
+	// +kubebuilder:default=false
 	HideClientHeaders bool `json:"hideClientHeaders,omitempty"`
 	// FaultTolerant defines if the rate limit plugin should be fault tolerant, if gateway is not able to access the config store
+	// +kubebuilder:default=true
 	FaultTolerant bool `json:"faultTolerant,omitempty"`
 }
 
-// ConsumerRateLimits defines rate limits for API consumers
+// ConsumerRateLimits defines rate limits for API consumers on a per-consumer basis and a default config
 type ConsumerRateLimits struct {
 	// Default defines the rate limit applied to all consumers not specifically overridden
 	// +kubebuilder:validation:Optional
 	Default *RateLimitConfig `json:"default,omitempty"`
-	// Overrides defines consumer-specific rate limits, keyed by consumer identifier
+	// Overrides defines consumer-specific rate limits
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10
-	Overrides *[]RateLimitOverrides `json:"overrides,omitempty"`
+	Overrides []RateLimitOverrides `json:"overrides,omitempty"`
 }
 
 type RateLimitOverrides struct {
-	Consumer        string `json:"consumer"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Consumer string `json:"consumer"`
+	// +kubebuilder:validation:Required
 	RateLimitConfig `json:",inline"`
+}
+
+func (t *Traffic) HasFailover() bool {
+	return t.Failover != nil && len(t.Failover.Zones) > 0
+}
+
+func (t *Traffic) HasRateLimit() bool {
+	return t.RateLimit != nil
+}
+
+func (t *Traffic) HasProviderRateLimit() bool {
+	if !t.HasRateLimit() {
+		return false
+	}
+	return t.RateLimit.Provider != nil
+}
+
+func (t *Traffic) HasConsumerRateLimit() bool {
+	if !t.HasRateLimit() {
+		return false
+	}
+	return t.RateLimit.Consumers != nil
 }

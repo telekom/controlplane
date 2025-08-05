@@ -41,10 +41,6 @@ func (a *ApiSubscription) HasFailover() bool {
 	return a.Spec.Traffic.Failover != nil
 }
 
-func (a *ApiSubscription) HasRateLimit() bool {
-	return a.Spec.Traffic.RateLimit != nil
-}
-
 type Requestor struct {
 	Application ctypes.ObjectRef `json:"application"`
 }

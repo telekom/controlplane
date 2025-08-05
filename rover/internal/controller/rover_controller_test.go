@@ -554,38 +554,41 @@ var _ = Describe("Rover Controller", Ordered, func() {
 								},
 								RateLimit: &roverv1.RateLimit{
 									Provider: &roverv1.RateLimitConfig{
-										Limits: roverv1.LimitConfig{
+										Limits: roverv1.Limits{
 											Second: 100,
 											Minute: 1000,
 											Hour:   10000,
 										},
-										Options: roverv1.LimitOptions{
+										Options: roverv1.RateLimitOptions{
 											HideClientHeaders: true,
 											FaultTolerant:     true,
 										},
 									},
 									Consumers: &roverv1.ConsumerRateLimits{
 										Default: &roverv1.RateLimitConfig{
-											Limits: roverv1.LimitConfig{
+											Limits: roverv1.Limits{
 												Second: 10,
 												Minute: 100,
 												Hour:   1000,
 											},
-											Options: roverv1.LimitOptions{
+											Options: roverv1.RateLimitOptions{
 												HideClientHeaders: false,
 												FaultTolerant:     true,
 											},
 										},
-										Overrides: map[string]roverv1.RateLimitConfig{
-											"premium-client": {
-												Limits: roverv1.LimitConfig{
-													Second: 50,
-													Minute: 500,
-													Hour:   5000,
-												},
-												Options: roverv1.LimitOptions{
-													HideClientHeaders: false,
-													FaultTolerant:     true,
+										Overrides: []roverv1.RateLimitOverrides{
+											{
+												Consumer: "premium-client",
+												RateLimitConfig: roverv1.RateLimitConfig{
+													Limits: roverv1.Limits{
+														Second: 50,
+														Minute: 500,
+														Hour:   5000,
+													},
+													Options: roverv1.RateLimitOptions{
+														HideClientHeaders: false,
+														FaultTolerant:     true,
+													},
 												},
 											},
 										},
@@ -626,35 +629,26 @@ var _ = Describe("Rover Controller", Ordered, func() {
 
 				// Verify provider rate limit configuration
 				g.Expect(apiExposure.Spec.Traffic.RateLimit).NotTo(BeNil())
-				g.Expect(apiExposure.Spec.Traffic.RateLimit.Limits.Second).To(Equal(100))
-				g.Expect(apiExposure.Spec.Traffic.RateLimit.Limits.Minute).To(Equal(1000))
-				g.Expect(apiExposure.Spec.Traffic.RateLimit.Limits.Hour).To(Equal(10000))
-				g.Expect(apiExposure.Spec.Traffic.RateLimit.Options.HideClientHeaders).To(BeTrue())
-				g.Expect(apiExposure.Spec.Traffic.RateLimit.Options.FaultTolerant).To(BeTrue())
-
-				// Verify subscriber rate limit configuration
-				g.Expect(apiExposure.Spec.Traffic.SubscriberRateLimit).NotTo(BeNil())
-				g.Expect(apiExposure.Spec.Traffic.SubscriberRateLimit.Default).NotTo(BeNil())
-				g.Expect(apiExposure.Spec.Traffic.SubscriberRateLimit.Default.Limits.Second).To(Equal(10))
-				g.Expect(apiExposure.Spec.Traffic.SubscriberRateLimit.Default.Limits.Minute).To(Equal(100))
-				g.Expect(apiExposure.Spec.Traffic.SubscriberRateLimit.Default.Limits.Hour).To(Equal(1000))
-				g.Expect(apiExposure.Spec.Traffic.SubscriberRateLimit.Default.Options.HideClientHeaders).To(BeFalse())
-				g.Expect(apiExposure.Spec.Traffic.SubscriberRateLimit.Default.Options.FaultTolerant).To(BeTrue())
+				g.Expect(apiExposure.Spec.Traffic.RateLimit.Provider.Limits.Second).To(Equal(100))
+				g.Expect(apiExposure.Spec.Traffic.RateLimit.Provider.Limits.Minute).To(Equal(1000))
+				g.Expect(apiExposure.Spec.Traffic.RateLimit.Provider.Limits.Hour).To(Equal(10000))
+				g.Expect(apiExposure.Spec.Traffic.RateLimit.Provider.Options.HideClientHeaders).To(BeTrue())
+				g.Expect(apiExposure.Spec.Traffic.RateLimit.Provider.Options.FaultTolerant).To(BeTrue())
 
 				// Verify overrides
-				g.Expect(apiExposure.Spec.Traffic.SubscriberRateLimit.Overrides).NotTo(BeNil())
-				overrides := apiExposure.Spec.Traffic.SubscriberRateLimit.Overrides
-				g.Expect(overrides).To(HaveKey("premium-client"))
-				g.Expect(overrides["premium-client"].Limits.Second).To(Equal(50))
-				g.Expect(overrides["premium-client"].Limits.Minute).To(Equal(500))
-				g.Expect(overrides["premium-client"].Limits.Hour).To(Equal(5000))
-				g.Expect(overrides["premium-client"].Options.HideClientHeaders).To(BeFalse())
-				g.Expect(overrides["premium-client"].Options.FaultTolerant).To(BeTrue())
+				overrides := apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides
+				g.Expect(overrides).NotTo(BeNil())
+				g.Expect(overrides[0].Subscriber).To(HaveKey("premium-client"))
+				g.Expect(overrides[0].Limits.Second).To(Equal(50))
+				g.Expect(overrides[0].Limits.Minute).To(Equal(500))
+				g.Expect(overrides[0].Limits.Hour).To(Equal(5000))
+				g.Expect(overrides[0].Options.HideClientHeaders).To(BeFalse())
+				g.Expect(overrides[0].Options.FaultTolerant).To(BeTrue())
 
 				// Verify helper methods
 				g.Expect(apiExposure.HasFailover()).To(BeTrue())
 				g.Expect(apiExposure.HasRateLimit()).To(BeTrue())
-				g.Expect(apiExposure.HasSubscriberRateLimit()).To(BeTrue())
+				g.Expect(apiExposure.Spec.Traffic.HasSubscriberRateLimit()).To(BeTrue())
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -707,12 +701,11 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				// Verify traffic configuration is empty but valid
 				g.Expect(apiExposure.Spec.Traffic.Failover).To(BeNil())
 				g.Expect(apiExposure.Spec.Traffic.RateLimit).To(BeNil())
-				g.Expect(apiExposure.Spec.Traffic.SubscriberRateLimit).To(BeNil())
+				g.Expect(apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit).To(BeNil())
 
 				// Verify helper methods
 				g.Expect(apiExposure.HasFailover()).To(BeFalse())
 				g.Expect(apiExposure.HasRateLimit()).To(BeFalse())
-				g.Expect(apiExposure.HasSubscriberRateLimit()).To(BeFalse())
 			}, timeout, interval).Should(Succeed())
 		})
 	})

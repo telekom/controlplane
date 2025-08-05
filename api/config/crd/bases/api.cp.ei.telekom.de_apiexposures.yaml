@@ -224,67 +224,13 @@ spec:
                     description: RateLimit defines request rate limiting for this
                       API
                     properties:
-                      limits:
-                        description: LimitConfig defines the actual rate limit values
-                          for different time windows
-                        properties:
-                          hour:
-                            description: Hour defines the maximum number of requests
-                              allowed per hour
-                            minimum: 0
-                            type: integer
-                          minute:
-                            description: Minute defines the maximum number of requests
-                              allowed per minute
-                            minimum: 0
-                            type: integer
-                          second:
-                            description: Second defines the maximum number of requests
-                              allowed per second
-                            minimum: 0
-                            type: integer
-                        type: object
-                        x-kubernetes-validations:
-                        - message: Second must be less than minute
-                          rule: self.second < self.minute || self.second == 0 || self.minute
-                            == 0
-                        - message: Minute must be less than hour
-                          rule: self.minute < self.hour || self.minute == 0 || self.hour
-                            == 0
-                        - message: At least one of second, minute, or hour must be
-                            specified
-                          rule: self.second != 0 || self.minute != 0 || self.hour
-                            != 0
-                      options:
-                        description: LimitOptions defines additional configuration
-                          options for rate limiting
-                        properties:
-                          faultTolerant:
-                            description: FaultTolerant defines if the rate limit plugin
-                              should be fault tolerant, if gateway is not able to
-                              access the config store
-                            type: boolean
-                          hideClientHeaders:
-                            description: HideClientHeaders hides additional client
-                              headers which give information about the rate-limit,
-                              reset and remaining requests for consumers if set to
-                              true.
-                            type: boolean
-                        type: object
-                    required:
-                    - limits
-                    type: object
-                  subscriberRateLimit:
-                    description: SubscriberRateLimit defines request rate limiting
-                      for this API per subscriber
-                    properties:
-                      default:
-                        description: Default defines the rate limit applied to all
-                          consumers not specifically overridden
+                      provider:
+                        description: Provider defines request rate limiting for this
+                          API
                         properties:
                           limits:
-                            description: LimitConfig defines the actual rate limit
-                              values for different time windows
+                            description: Limits defines the actual rate limit values
+                              for different time windows
                             properties:
                               hour:
                                 description: Hour defines the maximum number of requests
@@ -314,15 +260,17 @@ spec:
                               rule: self.second != 0 || self.minute != 0 || self.hour
                                 != 0
                           options:
-                            description: LimitOptions defines additional configuration
+                            description: RateLimitOptions defines additional configuration
                               options for rate limiting
                             properties:
                               faultTolerant:
+                                default: true
                                 description: FaultTolerant defines if the rate limit
                                   plugin should be fault tolerant, if gateway is not
                                   able to access the config store
                                 type: boolean
                               hideClientHeaders:
+                                default: false
                                 description: HideClientHeaders hides additional client
                                   headers which give information about the rate-limit,
                                   reset and remaining requests for consumers if set
@@ -332,65 +280,131 @@ spec:
                         required:
                         - limits
                         type: object
-                      overrides:
-                        description: Overrides defines consumer-specific rate limits,
-                          keyed by consumer identifier
-                        items:
-                          properties:
-                            consumer:
-                              type: string
-                            limits:
-                              description: LimitConfig defines the actual rate limit
-                                values for different time windows
+                      subscriberRateLimit:
+                        description: SubscriberRateLimit defines request rate limiting
+                          for this API per subscriber
+                        properties:
+                          default:
+                            description: Default defines the rate limit applied to
+                              all consumers not specifically overridden
+                            properties:
+                              limits:
+                                description: Limits defines the actual rate limit
+                                  values for different time windows
+                                properties:
+                                  hour:
+                                    description: Hour defines the maximum number of
+                                      requests allowed per hour
+                                    minimum: 0
+                                    type: integer
+                                  minute:
+                                    description: Minute defines the maximum number
+                                      of requests allowed per minute
+                                    minimum: 0
+                                    type: integer
+                                  second:
+                                    description: Second defines the maximum number
+                                      of requests allowed per second
+                                    minimum: 0
+                                    type: integer
+                                type: object
+                                x-kubernetes-validations:
+                                - message: Second must be less than minute
+                                  rule: self.second < self.minute || self.second ==
+                                    0 || self.minute == 0
+                                - message: Minute must be less than hour
+                                  rule: self.minute < self.hour || self.minute ==
+                                    0 || self.hour == 0
+                                - message: At least one of second, minute, or hour
+                                    must be specified
+                                  rule: self.second != 0 || self.minute != 0 || self.hour
+                                    != 0
+                              options:
+                                description: RateLimitOptions defines additional configuration
+                                  options for rate limiting
+                                properties:
+                                  faultTolerant:
+                                    default: true
+                                    description: FaultTolerant defines if the rate
+                                      limit plugin should be fault tolerant, if gateway
+                                      is not able to access the config store
+                                    type: boolean
+                                  hideClientHeaders:
+                                    default: false
+                                    description: HideClientHeaders hides additional
+                                      client headers which give information about
+                                      the rate-limit, reset and remaining requests
+                                      for consumers if set to true.
+                                    type: boolean
+                                type: object
+                            required:
+                            - limits
+                            type: object
+                          overrides:
+                            description: Overrides defines consumer-specific rate
+                              limits, keyed by consumer identifier
+                            items:
                               properties:
-                                hour:
-                                  description: Hour defines the maximum number of
-                                    requests allowed per hour
-                                  minimum: 0
-                                  type: integer
-                                minute:
-                                  description: Minute defines the maximum number of
-                                    requests allowed per minute
-                                  minimum: 0
-                                  type: integer
-                                second:
-                                  description: Second defines the maximum number of
-                                    requests allowed per second
-                                  minimum: 0
-                                  type: integer
+                                limits:
+                                  description: Limits defines the actual rate limit
+                                    values for different time windows
+                                  properties:
+                                    hour:
+                                      description: Hour defines the maximum number
+                                        of requests allowed per hour
+                                      minimum: 0
+                                      type: integer
+                                    minute:
+                                      description: Minute defines the maximum number
+                                        of requests allowed per minute
+                                      minimum: 0
+                                      type: integer
+                                    second:
+                                      description: Second defines the maximum number
+                                        of requests allowed per second
+                                      minimum: 0
+                                      type: integer
+                                  type: object
+                                  x-kubernetes-validations:
+                                  - message: Second must be less than minute
+                                    rule: self.second < self.minute || self.second
+                                      == 0 || self.minute == 0
+                                  - message: Minute must be less than hour
+                                    rule: self.minute < self.hour || self.minute ==
+                                      0 || self.hour == 0
+                                  - message: At least one of second, minute, or hour
+                                      must be specified
+                                    rule: self.second != 0 || self.minute != 0 ||
+                                      self.hour != 0
+                                options:
+                                  description: RateLimitOptions defines additional
+                                    configuration options for rate limiting
+                                  properties:
+                                    faultTolerant:
+                                      default: true
+                                      description: FaultTolerant defines if the rate
+                                        limit plugin should be fault tolerant, if
+                                        gateway is not able to access the config store
+                                      type: boolean
+                                    hideClientHeaders:
+                                      default: false
+                                      description: HideClientHeaders hides additional
+                                        client headers which give information about
+                                        the rate-limit, reset and remaining requests
+                                        for consumers if set to true.
+                                      type: boolean
+                                  type: object
+                                subscriber:
+                                  minLength: 1
+                                  type: string
+                              required:
+                              - ""
+                              - limits
+                              - subscriber
                               type: object
-                              x-kubernetes-validations:
-                              - message: Second must be less than minute
-                                rule: self.second < self.minute || self.second ==
-                                  0 || self.minute == 0
-                              - message: Minute must be less than hour
-                                rule: self.minute < self.hour || self.minute == 0
-                                  || self.hour == 0
-                              - message: At least one of second, minute, or hour must
-                                  be specified
-                                rule: self.second != 0 || self.minute != 0 || self.hour
-                                  != 0
-                            options:
-                              description: LimitOptions defines additional configuration
-                                options for rate limiting
-                              properties:
-                                faultTolerant:
-                                  description: FaultTolerant defines if the rate limit
-                                    plugin should be fault tolerant, if gateway is
-                                    not able to access the config store
-                                  type: boolean
-                                hideClientHeaders:
-                                  description: HideClientHeaders hides additional
-                                    client headers which give information about the
-                                    rate-limit, reset and remaining requests for consumers
-                                    if set to true.
-                                  type: boolean
-                              type: object
-                          required:
-                          - consumer
-                          - limits
-                          type: object
-                        type: array
+                            maxItems: 10
+                            type: array
+                        type: object
                     type: object
                 type: object
               transformation:
