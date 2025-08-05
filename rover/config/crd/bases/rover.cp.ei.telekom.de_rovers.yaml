@@ -534,10 +534,6 @@ spec:
                                   used together
                                 rule: 'self == null || (has(self.client) ? (!has(self.basic))
                                   : true)'
-                              - message: Scopes and basic authentication cannot be
-                                  used together
-                                rule: 'self == null || (has(self.scopes) ? (!has(self.basic))
-                                  : true)'
                               - message: At least one of client, basic, or scopes
                                   must be provided
                                 rule: self == null || has(self.client) || has(self.basic)
