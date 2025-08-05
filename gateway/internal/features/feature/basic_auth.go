@@ -33,24 +33,38 @@ func (b *BasicAuthFeature) Priority() int {
 }
 
 func (b *BasicAuthFeature) IsUsed(ctx context.Context, builder features.FeaturesBuilder) bool {
+	// Check if route exists
 	route, ok := builder.GetRoute()
 	if !ok {
 		return false
 	}
 
-	notPassThrough := !route.Spec.PassThrough
-	isPrimaryRoute := !route.IsProxy()
-	isConfigured := false
-
-	if route.HasFailoverSecurity() {
-		isConfigured = route.Spec.Traffic.Failover.Security.HasBasicAuth()
+	// Skip if passthrough is enabled
+	if route.Spec.PassThrough {
+		return false
 	}
 
-	if isPrimaryRoute && route.HasM2M() {
-		isConfigured = route.Spec.Security.HasBasicAuth()
+	// Check for failover security with basic auth
+	if route.HasFailoverSecurity() && route.Spec.Traffic.Failover.Security.HasBasicAuth() {
+		return true
 	}
 
-	return notPassThrough && isConfigured
+	// For primary routes, check route security and all consumers
+	if !route.IsProxy() {
+		// Check if route itself has basic auth configured
+		if route.HasM2M() && route.Spec.Security.HasBasicAuth() {
+			return true
+		}
+
+		// Check if any consumer has basic auth configured
+		for _, consumer := range builder.GetAllowedConsumers() {
+			if consumer.HasM2M() && consumer.Spec.Security.HasBasicAuth() {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) error {
@@ -65,13 +79,15 @@ func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesB
 		security = route.Spec.Traffic.Failover.Security
 	}
 
-	passwordValue, err := secretManagerApi.Get(ctx, security.M2M.Basic.Password)
-	if err != nil {
-		return errors.Wrapf(err, "cannot get basic auth password for route %s", route.GetName())
-	}
-	jumperConfig.BasicAuth[plugin.ConsumerId(DefaultProviderKey)] = plugin.BasicAuthCredentials{
-		Username: security.M2M.Basic.Username,
-		Password: passwordValue,
+	if security != nil && security.HasBasicAuth() {
+		passwordValue, err := secretManagerApi.Get(ctx, security.M2M.Basic.Password)
+		if err != nil {
+			return errors.Wrapf(err, "cannot get basic auth password for route %s", route.GetName())
+		}
+		jumperConfig.BasicAuth[plugin.ConsumerId(DefaultProviderKey)] = plugin.BasicAuthCredentials{
+			Username: security.M2M.Basic.Username,
+			Password: passwordValue,
+		}
 	}
 
 	for _, consumer := range builder.GetAllowedConsumers() {
