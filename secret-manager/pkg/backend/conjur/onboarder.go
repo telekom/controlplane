@@ -244,7 +244,7 @@ func (c *ConjurOnboarder) createSecrets(ctx context.Context, env, teamId, appId 
 		return secretRefMap, nil
 	}
 	for secretPath, secretValue := range secrets {
-		secretId := New(env, teamId, appId, secretPath, "")
+		secretId := New(env, teamId, appId, secretPath, backend.MakeChecksum(secretValue.Value()))
 		log.Info("Creating secret", "secretId", secretId.String())
 		secret, err := c.secretWriter.Set(ctx, secretId, secretValue)
 		if err != nil {

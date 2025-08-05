@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"regexp"
 
 	"github.com/cyberark/conjur-api-go/conjurapi"
 	. "github.com/onsi/ginkgo/v2"
@@ -214,8 +215,8 @@ var _ = Describe("Conjur Onboarder", func() {
 		externalSecretsCreated := false
 
 		runAndReturnSecret := func(ctx context.Context, secretId conjur.ConjurSecretId, secretValue backend.SecretValue) (backend.DefaultSecret[conjur.ConjurSecretId], error) {
-			if secretId.String() == "test-env:test-team:test-app:clientSecret:" {
-				Expect(secretId.String()).To(Equal("test-env:test-team:test-app:clientSecret:"))
+			if regexp.MustCompile(`^test-env:test-team:test-app:clientSecret:(.+)$`).MatchString(secretId.String()) {
+				Expect(secretId.String()).To(MatchRegexp("test-env:test-team:test-app:clientSecret:.+"))
 				Expect(secretValue.AllowChange()).To(BeFalse())
 				Expect(secretValue.Value()).To(Not(BeEmpty()))
 				clientSecretCreated = true
@@ -223,7 +224,7 @@ var _ = Describe("Conjur Onboarder", func() {
 			}
 
 			Expect(externalSecretsCreated).To(BeFalse())
-			Expect(secretId.String()).To(Equal("test-env:test-team:test-app:externalSecrets:"))
+			Expect(secretId.String()).To(MatchRegexp("test-env:test-team:test-app:externalSecrets:.+"))
 			Expect(secretValue.AllowChange()).To(BeTrue())
 			Expect(secretValue.Value()).To(Equal(`{"key1":"value1","key2":"value2"}`))
 			externalSecretsCreated = true
@@ -241,7 +242,7 @@ var _ = Describe("Conjur Onboarder", func() {
 		Expect(externalSecretsCreated).To(BeTrue())
 
 		Expect(res.SecretRefs()).To(HaveLen(4))
-		Expect(res.SecretRefs()).To(HaveKey("clientSecret"))
+		Expect(res.SecretRefs()).To(HaveKeyWithValue("clientSecret", MatchRegexp("test-env:test-team:test-app:clientSecret:.+")))
 		Expect(res.SecretRefs()).To(HaveKey("externalSecrets"))
 		Expect(res.SecretRefs()).To(HaveKeyWithValue("externalSecrets/key1", MatchRegexp("test-env:test-team:test-app:externalSecrets/key1:.*")))
 		Expect(res.SecretRefs()).To(HaveKeyWithValue("externalSecrets/key2", MatchRegexp("test-env:test-team:test-app:externalSecrets/key2:.*")))

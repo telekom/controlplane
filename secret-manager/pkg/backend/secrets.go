@@ -27,9 +27,7 @@ func (a *Secrets) GetSecrets() (map[string]SecretValue, error) {
 	var err error
 	if a.subSecrets != nil {
 		for key, subSecrets := range a.subSecrets {
-			// Must not set sub-secrets for non-empty secrets
-			// "{}" is considered an empty json object
-			if !a.secrets[key].IsEmpty() && a.secrets[key].Value() != "{}" {
+			if !a.secrets[key].IsEmpty() {
 				return nil, fmt.Errorf("cannot set sub-secrets for non-empty secret %s", key)
 			}
 			secrets[key], err = JSON(subSecrets)

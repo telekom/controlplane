@@ -151,10 +151,10 @@ var _ = Describe("Kubernetes Onboarder", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).ToNot(BeNil())
 			Expect(res.SecretRefs()).To(HaveLen(4))
-			Expect(res.SecretRefs()).To(HaveKey("clientSecret"))
+			Expect(res.SecretRefs()).To(HaveKeyWithValue("clientSecret", MatchRegexp("test-env:test-team:test-app:clientSecret:.+")))
 			Expect(res.SecretRefs()).To(HaveKey("externalSecrets"))
-			Expect(res.SecretRefs()).To(HaveKeyWithValue("externalSecrets/key1", MatchRegexp("test-env:test-team:test-app:externalSecrets/key1:.*")))
-			Expect(res.SecretRefs()).To(HaveKeyWithValue("externalSecrets/key2/sub", MatchRegexp("test-env:test-team:test-app:externalSecrets/key2/sub:.*")))
+			Expect(res.SecretRefs()).To(HaveKeyWithValue("externalSecrets/key1", MatchRegexp("test-env:test-team:test-app:externalSecrets/key1:.+")))
+			Expect(res.SecretRefs()).To(HaveKeyWithValue("externalSecrets/key2/sub", MatchRegexp("test-env:test-team:test-app:externalSecrets/key2/sub:.+")))
 
 			// Verify that the application secret was created
 			secret := &corev1.Secret{}
