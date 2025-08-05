@@ -7,9 +7,11 @@ package feature
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	v1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
+	secretManagerApi "github.com/telekom/controlplane/secret-manager/api"
 )
 
 var _ features.Feature = (*BasicAuthFeature)(nil)
@@ -63,9 +65,13 @@ func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesB
 		security = route.Spec.Traffic.Failover.Security
 	}
 
+	passwordValue, err := secretManagerApi.Get(ctx, security.M2M.Basic.Password)
+	if err != nil {
+		return errors.Wrapf(err, "cannot get basic auth password for route %s", route.GetName())
+	}
 	jumperConfig.BasicAuth[plugin.ConsumerId(DefaultProviderKey)] = plugin.BasicAuthCredentials{
 		Username: security.M2M.Basic.Username,
-		Password: security.M2M.Basic.Password,
+		Password: passwordValue,
 	}
 
 	for _, consumer := range builder.GetAllowedConsumers() {
@@ -77,9 +83,13 @@ func (b *BasicAuthFeature) Apply(ctx context.Context, builder features.FeaturesB
 		if !security.HasBasicAuth() {
 			continue
 		}
+		passwordValue, err := secretManagerApi.Get(ctx, security.M2M.Basic.Password)
+		if err != nil {
+			return errors.Wrapf(err, "cannot get basic auth password for consumer %s", consumer.Spec.ConsumerName)
+		}
 		jumperConfig.BasicAuth[plugin.ConsumerId(consumer.Spec.ConsumerName)] = plugin.BasicAuthCredentials{
 			Username: security.M2M.Basic.Username,
-			Password: security.M2M.Basic.Password,
+			Password: passwordValue,
 		}
 	}
 
