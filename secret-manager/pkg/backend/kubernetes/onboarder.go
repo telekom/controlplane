@@ -6,8 +6,8 @@ package kubernetes
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	corev1 "k8s.io/api/core/v1"
@@ -85,6 +85,7 @@ func (k *KubernetesOnboarder) OnboardTeam(ctx context.Context, env string, teamI
 }
 
 func (k *KubernetesOnboarder) OnboardApplication(ctx context.Context, env string, teamId string, appId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
+	log := logr.FromContextOrDiscard(ctx)
 	options := backend.OnboardOptions{}
 	for _, opt := range opts {
 		opt(&options)
@@ -124,7 +125,7 @@ func (k *KubernetesOnboarder) OnboardApplication(ctx context.Context, env string
 		if _, ok := secretRefs[secretPath]; !ok {
 			secretRefs[secretPath] = New(env, teamId, appId, secretPath, obj.GetResourceVersion())
 		} else {
-			fmt.Printf("Value for secret %s already exists\n", secretPath)
+			log.Info("Value for secret already exists", "secretPath", secretPath)
 		}
 	}
 
