@@ -27,7 +27,14 @@ configMapGenerator:
     options:
       disableNameSuffixHash: true
     literals: []
-
+  - name: rover-server-env
+    behavior: merge
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - LOG_LEVEL=info
+      - SECURITY_TRUSTEDISSUERS=""
+      - SECURITY_LMS_BASEPATH=""
 patches:
   - target:
       kind: Deployment
@@ -39,31 +46,31 @@ patches:
 images:
   - name: ghcr.io/telekom/controlplane/approval
     newName: ghcr.io/telekom/controlplane/approval
-    newTag: feat-external-secrets-support
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/gateway
     newName: ghcr.io/telekom/controlplane/gateway
-    newTag: feat-external-secrets-support
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/identity
     newName: ghcr.io/telekom/controlplane/identity
-    newTag: feat-external-secrets-support
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/secret-manager
     newName: ghcr.io/telekom/controlplane/secret-manager
-    newTag: feat-external-secrets-support
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/rover
-    newName: ko.local
-    newTag: rover-test
+    newName: ghcr.io/telekom/controlplane/rover
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/application
     newName: ghcr.io/telekom/controlplane/application
-    newTag: feat-external-secrets-support
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/api
     newName: ghcr.io/telekom/controlplane/api
-    newTag: feat-external-secrets-support
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/organization
     newName: ghcr.io/telekom/controlplane/organization
-    newTag: feat-external-secrets-support
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/admin
     newName: ghcr.io/telekom/controlplane/admin
-    newTag: feat-external-secrets-support
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/rover-server
     newName: ghcr.io/telekom/controlplane/rover-server
-    newTag: feat-external-secrets-support
+    newTag: latest
