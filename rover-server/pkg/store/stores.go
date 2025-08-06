@@ -12,7 +12,9 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common-server/pkg/store/inmemory"
+	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
@@ -26,6 +28,20 @@ var ApiExposureStore store.ObjectStore[*apiv1.ApiExposure]
 var ZoneStore store.ObjectStore[*adminv1.Zone]
 
 var dynamicClient dynamic.Interface
+
+var secretsForKinds = map[string][]string{
+	"Rover": {
+		"spec.clientSecret",
+		"spec.subscriptions.#.api.security.m2m.client.clientSecret",
+		"spec.subscriptions.#.api.security.m2m.basic.password",
+		"spec.exposures.#.api.security.m2m.externalIDP.client.clientSecret",
+		"spec.exposures.#.api.security.m2m.externalIDP.basic.password",
+		"spec.exposures.#.api.security.m2m.basic.password",
+	},
+	"Application": {
+		"status.clientSecret",
+	},
+}
 
 var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 	dynamicClient = dynamic.NewForConfigOrDie(cfg)
@@ -45,5 +61,13 @@ func NewOrDie[T store.Object](ctx context.Context, gvr schema.GroupVersionResour
 		AllowedSorts: []string{},
 		Client:       dynamicClient,
 	}
-	return inmemory.NewSortableOrDie[T](ctx, storeOpts)
+
+	s := inmemory.NewSortableOrDie[T](ctx, storeOpts)
+	secretJsonPaths, ok := secretsForKinds[gvk.Kind]
+	if !ok || len(secretJsonPaths) == 0 {
+		return s
+	}
+
+	secretsApi := secretsapi.NewSecrets()
+	return secrets.WrapStore(s, secretJsonPaths, secrets.NewSecretManagerResolver(secretsApi))
 }

@@ -32,6 +32,8 @@ func main() {
 		panic(errors.Wrap(err, "failed to load configuration"))
 	}
 
+	log.Init()
+
 	store.InitOrDie(rootCtx, kconfig.GetConfigOrDie())
 
 	app := cserver.NewApp()

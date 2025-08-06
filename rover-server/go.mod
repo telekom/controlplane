@@ -13,6 +13,7 @@ require (
 	github.com/telekom/controlplane/common v0.0.0
 	github.com/telekom/controlplane/common-server v0.0.0
 	github.com/telekom/controlplane/rover/api v0.0.0
+	github.com/telekom/controlplane/secret-manager v0.0.0
 )
 
 replace (
@@ -22,6 +23,7 @@ replace (
 	github.com/telekom/controlplane/common => ../common
 	github.com/telekom/controlplane/common-server => ../common-server
 	github.com/telekom/controlplane/rover/api => ../rover/api
+	github.com/telekom/controlplane/secret-manager => ../secret-manager
 )
 
 require (

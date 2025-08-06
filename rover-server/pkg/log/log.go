@@ -5,10 +5,9 @@
 package log
 
 import (
-	"os"
-
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -20,15 +19,15 @@ const (
 	consoleLogging = "console"
 )
 
-func init() {
+func Init() {
 	logCfg := zap.NewProductionConfig()
 	logCfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
-	zapLogLevel, err := zapcore.ParseLevel("info")
+	zapLogLevel, err := zapcore.ParseLevel(viper.GetString("log.level"))
 	if err != nil {
 		zapLogLevel = zapcore.InfoLevel
 	}
 
-	encoding := os.Getenv("LOG_ENCODING")
+	encoding := viper.GetString("log.encoding")
 	if encoding == consoleLogging {
 		logCfg.Encoding = consoleLogging
 	} else {

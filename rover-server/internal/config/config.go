@@ -14,6 +14,7 @@ import (
 type ServerConfig struct {
 	Address  string         `json:"address"`
 	Security SecurityConfig `json:"security"`
+	Log      LogConfig      `json:"log"`
 }
 
 type SecurityConfig struct {
@@ -28,12 +29,16 @@ type LMSConfig struct {
 	BasePath string `json:"basePath"`
 }
 
+type LogConfig struct {
+	Encoding string `json:"encoding"`
+	Level    string `json:"level"`
+}
+
 func LoadConfig() (*ServerConfig, error) {
 
 	setDefaults()
 
 	viper.AutomaticEnv()
-	viper.SetEnvPrefix("ROVER")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	var config ServerConfig
@@ -45,7 +50,11 @@ func LoadConfig() (*ServerConfig, error) {
 }
 
 func setDefaults() {
-	viper.SetDefault("server.address", ":8080")
+	viper.SetDefault("address", ":8080")
+
+	// Logging
+	viper.SetDefault("log.encoding", "json")
+	viper.SetDefault("log.level", "info")
 
 	// Security
 	viper.SetDefault("security.enabled", true)
