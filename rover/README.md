@@ -65,21 +65,23 @@ Additionally, you can configure the following options for rate limits:
 - **HideClientHeaders**: When set to `true`, rate limit headers will not be sent to clients
 - **FaultTolerant**: When set to `true`, the system will not fail requests if the rate limiting service is unavailable
 
-#### Consumer Identification
-
-Consumer names in rate limit overrides refer to the client identifier that will be extracted from the request. This is typically:
-- The API key identifier for API key-based authentication
-- The client ID for OAuth2/OIDC-based authentication
-- The consumer name configured in the subscription for the API
-
-The system automatically matches the extracted consumer identifier with the configured overrides to apply the appropriate rate limits.
-
 #### Validation Rules
 
 The Rover admission webhook enforces the following validation rules for rate limits:
 - At least one time window (second, minute, or hour) must be specified
 - When multiple time windows are specified, they must follow the ordering: second < minute < hour
 - These rules apply to both provider rate limits and consumer rate limits (default and overrides)
+
+#### Consumer Identification
+
+Consumer names in `ratelimit.overrides` refer to the client identifier that will be extracted from the request.
+The system automatically matches the extracted consumer identifier with the configured overrides to apply the appropriate rate limits.
+
+The consumer ID format follows the pattern `{team}--{applicationName}` where:
+- `team` is the team name from the Application's spec
+- `applicationName` is the name of the Application resource
+
+When configuring consumer-specific rate limits, you must use this exact format to ensure proper matching.
 
 #### Example Configuration
 
