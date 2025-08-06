@@ -44,8 +44,8 @@ type Limits struct {
 type RateLimitOptions struct {
 	// HideClientHeaders hides additional client headers which give information about the rate-limit, reset and remaining requests for consumers if set to true.
 	// +kubebuilder:default=false
-	HideClientHeaders bool `json:"hideClientHeaders,omitempty"`
+	HideClientHeaders *bool `json:"hideClientHeaders,omitempty"`
 	// FaultTolerant defines if the rate limit plugin should be fault tolerant, if gateway is not able to access the config store
 	// +kubebuilder:default=true
-	FaultTolerant bool `json:"faultTolerant,omitempty"`
+	FaultTolerant *bool `json:"faultTolerant,omitempty"`
 }
