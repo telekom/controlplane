@@ -72,19 +72,22 @@ func SetExternalSecrets(ctx context.Context, rover *roverv1.Rover, availableSecr
 	log := logr.FromContextOrDiscard(ctx)
 	log.V(1).Info("Setting external secrets for rover", "availableSecrets", availableSecrets)
 
-	var ok bool
 	for _, subscription := range rover.Spec.Subscriptions {
 		if subscription.Api != nil && subscription.Api.HasM2M() {
 			if subscription.Api.Security.M2M.Client != nil && subscription.Api.Security.M2M.Client.ClientSecret != "" {
-				subscription.Api.Security.M2M.Client.ClientSecret, ok = secretsapi.FindSecretId(availableSecrets, makeKey(subscription.Api.BasePath, "clientSecret"))
+				secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(subscription.Api.BasePath, "clientSecret"))
 				if !ok {
-					return apierrors.NewInternalError(fmt.Errorf("clientSecret not found in available secrets: %v", availableSecrets))
+					log.V(1).Info("clientSecret not found in available secrets")
+				} else {
+					subscription.Api.Security.M2M.Client.ClientSecret = secretRef
 				}
 			}
 			if subscription.Api.Security.M2M.Basic != nil && subscription.Api.Security.M2M.Basic.Password != "" {
-				subscription.Api.Security.M2M.Basic.Password, ok = secretsapi.FindSecretId(availableSecrets, makeKey(subscription.Api.BasePath, "password"))
+				secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(subscription.Api.BasePath, "password"))
 				if !ok {
-					return apierrors.NewInternalError(fmt.Errorf("password not found in available secrets: %v", availableSecrets))
+					log.V(1).Info("password not found in available secrets")
+				} else {
+					subscription.Api.Security.M2M.Basic.Password = secretRef
 				}
 			}
 		}
@@ -95,22 +98,28 @@ func SetExternalSecrets(ctx context.Context, rover *roverv1.Rover, availableSecr
 		if exposure.Api != nil && exposure.Api.HasM2M() {
 			if exposure.Api.Security.M2M.ExternalIDP != nil {
 				if exposure.Api.Security.M2M.ExternalIDP.Client != nil && exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret != "" {
-					exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret, ok = secretsapi.FindSecretId(availableSecrets, makeKey(exposure.Api.BasePath, "externalIDP/clientSecret"))
+					secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(exposure.Api.BasePath, "externalIDP/clientSecret"))
 					if !ok {
-						return apierrors.NewInternalError(fmt.Errorf("externalIDP clientSecret not found in available secrets: %v", availableSecrets))
+						log.V(1).Info("externalIDP clientSecret not found in available secrets")
+					} else {
+						exposure.Api.Security.M2M.ExternalIDP.Client.ClientSecret = secretRef
 					}
 				}
 				if exposure.Api.Security.M2M.ExternalIDP.Basic != nil && exposure.Api.Security.M2M.ExternalIDP.Basic.Password != "" {
-					exposure.Api.Security.M2M.ExternalIDP.Basic.Password, ok = secretsapi.FindSecretId(availableSecrets, makeKey(exposure.Api.BasePath, "externalIDP/password"))
+					secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(exposure.Api.BasePath, "externalIDP/password"))
 					if !ok {
-						return apierrors.NewInternalError(fmt.Errorf("externalIDP password not found in available secrets: %v", availableSecrets))
+						log.V(1).Info("externalIDP password not found in available secrets")
+					} else {
+						exposure.Api.Security.M2M.ExternalIDP.Basic.Password = secretRef
 					}
 				}
 			}
 			if exposure.Api.Security.M2M.Basic != nil && exposure.Api.Security.M2M.Basic.Password != "" {
-				exposure.Api.Security.M2M.Basic.Password, ok = secretsapi.FindSecretId(availableSecrets, makeKey(exposure.Api.BasePath, "basicAuth/password"))
+				secretRef, ok := secretsapi.FindSecretId(availableSecrets, makeKey(exposure.Api.BasePath, "basicAuth/password"))
 				if !ok {
-					return apierrors.NewInternalError(fmt.Errorf("basicAuth password not found in available secrets: %v", availableSecrets))
+					log.V(1).Info("basicAuth password not found in available secrets")
+				} else {
+					exposure.Api.Security.M2M.Basic.Password = secretRef
 				}
 			}
 		}
@@ -143,6 +152,10 @@ func OnboardApplication(ctx context.Context, rover *roverv1.Rover, secretManager
 	externalSecrets := GetExternalSecrets(ctx, rover)
 	if len(externalSecrets) > 0 {
 		for key, value := range externalSecrets {
+			if secretsapi.IsRef(value) {
+				log.V(1).Info("Skipping external secret as it is a reference", "key", key)
+				continue
+			}
 			log.V(1).Info("Setting external secret for application", "key", key)
 			options = append(options, secretsapi.WithSecretValue(key, value))
 		}

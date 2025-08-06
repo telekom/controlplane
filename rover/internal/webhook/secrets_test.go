@@ -267,5 +267,58 @@ var _ = Describe("Secrets Handling", func() {
 
 		})
 
+		It("should skip secrets that already are a reference", func() {
+			rover.Spec.ClientSecret = "$<existing:clientSecret:checksum>"
+			rover.Spec.Subscriptions = []roverv1.Subscription{
+				{
+					Api: &roverv1.ApiSubscription{
+						BasePath: "/api1",
+						Security: &roverv1.SubscriberSecurity{
+							M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+								Client: &roverv1.OAuth2ClientCredentials{
+									ClientSecret: "$<existing:clientSecret:checksum>",
+								},
+							},
+						},
+					},
+				},
+			}
+			rover.Spec.Exposures = []roverv1.Exposure{
+				{
+					Api: &roverv1.ApiExposure{
+						BasePath: "/api1",
+						Security: &roverv1.Security{
+							M2M: &roverv1.Machine2MachineAuthentication{
+								ExternalIDP: &roverv1.ExternalIdentityProvider{
+									TokenEndpoint: "https://example.com/token",
+									Basic: &roverv1.BasicAuthCredentials{
+										Username: "user",
+										Password: "$<existing:externalIDPPassword:checksum>",
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			runAndReturnApplication := func(ctx context.Context, envId, teamId, appId string, opts ...api.OnboardingOption) (map[string]string, error) {
+				Expect(opts).To(HaveLen(0)) // No new secrets should be set
+
+				return map[string]string{
+					"clientSecret":    "existing:clientSecret:checksum",
+					"externalSecrets": `{"api1": {"clientSecret": "existing:clientSecret:checksum", "externalIDP": {"password": "existing:externalIDPPassword:checksum"}}}`,
+				}, nil
+			}
+			fakeSecretManager.EXPECT().UpsertApplication(ctx, "test", "eni--hyperion", "test-rover").RunAndReturn(runAndReturnApplication)
+
+			err := webhook.OnboardApplication(ctx, rover, fakeSecretManager)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(rover.Spec.ClientSecret).To(Equal("$<existing:clientSecret:checksum>"))
+			Expect(rover.Spec.Subscriptions[0].Api.Security.M2M.Client.ClientSecret).To(Equal("$<existing:clientSecret:checksum>"))
+			Expect(rover.Spec.Exposures[0].Api.Security.M2M.ExternalIDP.Basic.Password).To(Equal("$<existing:externalIDPPassword:checksum>"))
+		})
+
 	})
 })
