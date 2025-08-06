@@ -15,6 +15,7 @@ type ConsumeRouteSpec struct {
 	Route        types.ObjectRef       `json:"route"`
 	ConsumerName string                `json:"consumerName"`
 	Security     *ConsumeRouteSecurity `json:"security,omitempty"`
+	Traffic      *ConsumeRouteTraffic  `json:"traffic,omitempty"`
 }
 
 func (c *ConsumeRoute) HasM2M() bool {

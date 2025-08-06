@@ -329,6 +329,10 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 		route.Spec.Transformation = mapTransformation(apiExposure.Spec.Transformation)
 		route.Spec.Security = mapSecurity(apiExposure.Spec.Security)
 
+		if apiExposure.HasProviderRateLimit() {
+			route.Spec.Traffic.RateLimit = mapRateLimit(apiExposure.Spec.Traffic.RateLimit.Provider)
+		}
+
 		return nil
 	}
 
@@ -457,4 +461,21 @@ func mapTransformation(apiTransformation *apiapi.Transformation) *gatewayapi.Tra
 	}
 
 	return transformation
+}
+
+func mapRateLimit(apiRateLimit *apiapi.RateLimitConfig) *gatewayapi.RateLimit {
+	if apiRateLimit == nil {
+		return nil
+	}
+	return &gatewayapi.RateLimit{
+		Limits: gatewayapi.Limits{
+			Second: apiRateLimit.Limits.Second,
+			Minute: apiRateLimit.Limits.Minute,
+			Hour:   apiRateLimit.Limits.Hour,
+		},
+		Options: gatewayapi.RateLimitOptions{
+			HideClientHeaders: apiRateLimit.Options.HideClientHeaders,
+			FaultTolerant:     apiRateLimit.Options.FaultTolerant,
+		},
+	}
 }

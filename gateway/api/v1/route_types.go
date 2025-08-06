@@ -117,16 +117,6 @@ func (route *Route) HasM2MExternalIdpBasic() bool {
 	return route.Spec.Security.M2M.ExternalIDP.Basic != nil
 }
 
-type Traffic struct {
-	Failover *Failover `json:"failover,omitempty"`
-}
-
-type Failover struct {
-	TargetZoneName string     `json:"targetZoneName"`
-	Upstreams      []Upstream `json:"upstreams"`
-	Security       *Security  `json:"security,omitempty"`
-}
-
 // RouteStatus defines the observed state of Route
 type RouteStatus struct {
 	// +listType=map
@@ -219,6 +209,11 @@ func (g *Route) IsFailoverSecondary() bool {
 	return slices.ContainsFunc(g.Spec.Traffic.Failover.Upstreams, func(upstream Upstream) bool {
 		return !upstream.IsProxy()
 	})
+}
+
+// HasRateLimit checks if the route has rate limit configuration
+func (g *Route) HasRateLimit() bool {
+	return g.Spec.Traffic.RateLimit != nil
 }
 
 // +kubebuilder:object:root=true
