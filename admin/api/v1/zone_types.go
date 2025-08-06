@@ -46,7 +46,7 @@ type GatewayConfig struct {
 }
 
 type ApiConfig struct {
-	// Name is the name of the created route. It must be unique withing the zone.
+	// Name is the name of the created route. It must be unique within the zone.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=^[a-z0-9]+(-?[a-z0-9]+)*$
 	Name string `json:"name"`
