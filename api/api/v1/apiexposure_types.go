@@ -91,6 +91,25 @@ func (a *ApiExposure) HasDefaultSubscriberRateLimit() bool {
 	return a.Spec.Traffic.RateLimit.SubscriberRateLimit.Default != nil
 }
 
+func (a *ApiExposure) HasOverriddenSubscriberRateLimit() bool {
+	if !a.HasSubscriberRateLimit() {
+		return false
+	}
+	return len(a.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides) > 0
+}
+
+func (a *ApiExposure) GetOverriddenSubscriberRateLimit(subscriber string) (RateLimitConfig, bool) {
+	if !a.HasOverriddenSubscriberRateLimit() {
+		return RateLimitConfig{}, false
+	}
+	for i := range a.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides {
+		if a.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides[i].Subscriber == subscriber {
+			return a.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides[i].Config, true
+		}
+	}
+	return RateLimitConfig{}, false
+}
+
 func (a *ApiExposure) HasM2M() bool {
 	if a.Spec.Security == nil {
 		return false

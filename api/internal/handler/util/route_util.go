@@ -35,6 +35,12 @@ type CreateRouteOptions struct {
 
 type CreateRouteOption func(*CreateRouteOptions)
 
+type CreateConsumeRouteOptions struct {
+	RateLimit *apiapi.RateLimitConfig // Rate limit configuration for the consumer
+}
+
+type CreateConsumeRouteOption func(*CreateConsumeRouteOptions)
+
 // WithFailoverUpstreams sets the failover upstreams for the route.
 // A Proxy-Route created using CreateProxyRoute with this option will have the failover upstreams set
 // and automatically be a failover secondary route.
@@ -80,6 +86,13 @@ func (o *CreateRouteOptions) IsFailoverSecondary() bool {
 // This means that this route is used as a proxy to the failover zone.
 func (o *CreateRouteOptions) HasFailover() bool {
 	return o.FailoverZone.Name != "" && o.FailoverZone.Namespace != ""
+}
+
+// WithRateLimit sets the rate limit configuration for the ConsumeRoute
+func WithRateLimit(rateLimit apiapi.RateLimitConfig) CreateConsumeRouteOption {
+	return func(opts *CreateConsumeRouteOptions) {
+		opts.RateLimit = &rateLimit
+	}
 }
 
 func MakeRouteName(apiBasePath, realmName string) string {
@@ -344,8 +357,13 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 	return route, nil
 }
 
-func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, downstreamZoneRef types.ObjectRef, routeRef types.ObjectRef, clientId string) (*gatewayapi.ConsumeRoute, error) {
+func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, downstreamZoneRef types.ObjectRef, routeRef types.ObjectRef, clientId string, opts ...CreateConsumeRouteOption) (*gatewayapi.ConsumeRoute, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
+
+	options := &CreateConsumeRouteOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
 
 	name := downstreamZoneRef.Name + "--" + apiSub.GetName()
 	routeConsumer := &gatewayapi.ConsumeRoute{
@@ -365,6 +383,13 @@ func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, dow
 			Route:        routeRef,
 			ConsumerName: clientId,
 			Security:     mapConsumerSecurity(apiSub.Spec.Security),
+		}
+
+		if options.RateLimit != nil {
+			if routeConsumer.Spec.Traffic == nil {
+				routeConsumer.Spec.Traffic = &gatewayapi.ConsumeRouteTraffic{}
+			}
+			routeConsumer.Spec.Traffic.RateLimit = mapRateLimit(options.RateLimit)
 		}
 
 		return nil

@@ -227,7 +227,15 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	}
 	apiSub.Status.Route = types.ObjectRefFromObject(proxyRoute)
 
-	consumeRoute, err := util.CreateConsumeRoute(ctx, apiSub, apiSub.Spec.Zone, *types.ObjectRefFromObject(proxyRoute), application.Status.ClientId)
+	consumeRouteOptions := []util.CreateConsumeRouteOption{}
+
+	if rateLimit, ok := apiExposure.GetOverriddenSubscriberRateLimit(application.Status.ClientId); ok {
+		consumeRouteOptions = append(consumeRouteOptions, util.WithRateLimit(rateLimit))
+	} else if apiExposure.HasDefaultSubscriberRateLimit() {
+		consumeRouteOptions = append(consumeRouteOptions, util.WithRateLimit(*apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Default))
+	}
+
+	consumeRoute, err := util.CreateConsumeRoute(ctx, apiSub, apiSub.Spec.Zone, *types.ObjectRefFromObject(proxyRoute), application.Status.ClientId, consumeRouteOptions...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create normal ConsumeRoute")
 	}
