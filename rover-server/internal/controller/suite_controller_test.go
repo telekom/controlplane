@@ -18,8 +18,9 @@ import (
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 
+	"github.com/telekom/controlplane/rover-server/internal/config"
 	"github.com/telekom/controlplane/rover-server/internal/server"
 	"github.com/telekom/controlplane/rover-server/pkg/log"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
@@ -60,7 +61,7 @@ var _ = BeforeSuite(func() {
 	// This is where you would set up any necessary test data or configurations
 	// For example, you might want to create a mock store or set up a test database connection
 
-	InitOrDie(ctx, config.GetConfigOrDie())
+	InitOrDie(ctx, kconfig.GetConfigOrDie())
 
 	// TODO Add more tests with teamToken in apispecification, eventspecification, rover
 	// Can be done once the issue with the team token is fixed in common-server
@@ -72,6 +73,7 @@ var _ = BeforeSuite(func() {
 
 	// Create a new server
 	s := server.Server{
+		Config:              &config.ServerConfig{},
 		Log:                 log.Log,
 		ApiSpecifications:   NewApiSpecificationController(),
 		Rovers:              NewRoverController(),
