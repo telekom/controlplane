@@ -46,9 +46,18 @@ type GatewayConfig struct {
 }
 
 type ApiConfig struct {
+	// Name is the name of the created route. It must be unique withing the zone.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=^[a-z0-9]+(-?[a-z0-9]+)*$
 	Name string `json:"name"`
+	// Path is the path of the route exposed on the gateway.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^/.*$`
 	Path string `json:"path"`
-	Url  string `json:"url"`
+	// Url is the upstream URL of the route.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Format=uri
+	Url string `json:"url"`
 }
 
 type TeamApiConfig struct {
