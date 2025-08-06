@@ -6,6 +6,7 @@ package secrets
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -36,6 +37,7 @@ func NewDefaultSecretManagerResolver() *SecretManagerResolver {
 }
 
 func (s *SecretManagerResolver) ReplaceAll(ctx context.Context, obj any, jsonPaths []string) (any, error) {
+	log := logr.FromContextOrDiscard(ctx)
 	if obj == nil {
 		return nil, nil
 	}
@@ -70,6 +72,22 @@ func (s *SecretManagerResolver) ReplaceAll(ctx context.Context, obj any, jsonPat
 		return u, nil
 	}
 
+	b, err := json.Marshal(obj)
+	if err == nil {
+		log.V(1).Info("Replacing secrets in object", "type", fmt.Sprintf("%T", obj))
+
+		b, err = s.ReplaceAllFromBytes(ctx, b, jsonPaths)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to replace all from json")
+		}
+		err = json.Unmarshal(b, &obj)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal replaced json")
+		}
+		log.V(1).Info("Replaced secrets in object", "type", fmt.Sprintf("%T", obj))
+		return obj, nil
+	}
+
 	return nil, fmt.Errorf("unsupported type %T", obj)
 }
 
@@ -81,7 +99,14 @@ func (s *SecretManagerResolver) ReplaceAllFromBytes(ctx context.Context, b []byt
 			continue
 		}
 		if result.IsArray() {
-			return nil, errors.New("array not supported")
+			var err error
+			paths := result.Paths(string(b))
+			log.V(1).Info("Replacing secrets in array", "jsonPath", paths)
+			b, err = s.ReplaceAllFromBytes(ctx, b, paths)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to replace all from bytes for json path %s", jsonPath)
+			}
+			continue
 		}
 		if result.IsObject() {
 			return nil, errors.New("object not supported")
@@ -93,6 +118,7 @@ func (s *SecretManagerResolver) ReplaceAllFromBytes(ctx context.Context, b []byt
 			log.V(1).Info("Secret is not a placeholder, skipping ...")
 			continue
 		}
+		log.V(1).Info("Replacing secret", "jsonPath", jsonPath, "secretRef", secretRef)
 		secretValue, err := s.M.Get(ctx, secretRef)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get secret value")
@@ -102,6 +128,7 @@ func (s *SecretManagerResolver) ReplaceAllFromBytes(ctx context.Context, b []byt
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to set secret value")
 		}
+		log.V(1).Info("Replaced secret", "jsonPath", jsonPath, "secretValue", secretValue)
 	}
 
 	return b, nil
@@ -110,7 +137,13 @@ func (s *SecretManagerResolver) ReplaceAllFromBytes(ctx context.Context, b []byt
 func (s *SecretManagerResolver) ReplaceAllFromMap(ctx context.Context, m map[string]any, jsonPaths []string) (map[string]any, error) {
 	log := logr.FromContextOrDiscard(ctx)
 	for _, jsonPath := range jsonPaths {
+		// TODO: refactor this to support arrays
+		if strings.Contains(jsonPath, "#") {
+			return nil, errors.New("arrays are not supported when using maps")
+		}
+
 		parts := strings.Split(jsonPath, ".")
+
 		result, ok, err := unstructured.NestedString(m, parts...)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get json path")
