@@ -28,6 +28,9 @@ spec:
       containers:
         - args: []
           env: []
+          envFrom:
+            - configMapRef:
+                name: rover-server-env
           image: ghcr.io/telekom/controlplane/rover-server:stable
           name: server
           securityContext:

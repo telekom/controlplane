@@ -16,6 +16,7 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	"github.com/telekom/controlplane/rover-server/internal/config"
 )
 
 type RoverController interface {
@@ -67,6 +68,7 @@ var securityTemplates = map[security.ClientType]security.ComparisonTemplates{
 }
 
 type Server struct {
+	Config              *config.ServerConfig
 	Log                 logr.Logger
 	ApiSpecifications   ApiSpecificationController
 	Rovers              RoverController
@@ -78,13 +80,13 @@ func (s *Server) RegisterRoutes(router fiber.Router) {
 		Enabled: true,
 		Log:     s.Log,
 		JWTOpts: []security.Option[*security.JWTOpts]{
-			security.WithLmsCheck(""),
-			security.WithTrustedIssuers(nil),
+			security.WithLmsCheck(s.Config.Security.LMS.BasePath),
+			security.WithTrustedIssuers(s.Config.Security.TrustedIssuers),
 		},
 		BusinessContextOpts: []security.Option[*security.BusinessContextOpts]{
-			security.WithDefaultScope("tardis:team:all"),
+			security.WithDefaultScope(s.Config.Security.DefaultScope),
 			security.WithLog(s.Log),
-			security.WithScopePrefix("tardis"),
+			security.WithScopePrefix(s.Config.Security.ScopePrefix),
 		},
 		CheckAccessOpts: []security.Option[*security.CheckAccessOpts]{
 			security.WithPathParamKey("resourceId"),
