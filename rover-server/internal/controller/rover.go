@@ -189,6 +189,7 @@ func (r *RoverController) GetApplicationsInfo(ctx context.Context, params api.Ge
 	}
 
 	listOpts := store.NewListOpts()
+	store.EnforcePrefix(bCtx.Environment+"--"+bCtx.Group+"--"+bCtx.Team, &listOpts)
 	objList, err := r.Store.List(ctx, listOpts)
 	if err != nil {
 		return res, err
