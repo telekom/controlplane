@@ -1,115 +1,143 @@
-// Copyright 2025 Deutsche Telekom IT GmbH
-//
-// SPDX-License-Identifier: Apache-2.0
-
-package controller
+package controller_test
 
 import (
 	"context"
-	"io"
-	"strings"
-	"testing"
-
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/file-manager/api/constants"
+	"github.com/telekom/controlplane/file-manager/pkg/controller"
+	"github.com/telekom/controlplane/file-manager/test/mocks"
+	"strings"
+
+	"io"
 )
 
-// MockFileUploader is a mock implementation of the FileUploader interface for testing
-type MockFileUploader struct {
-	UploadIdCalled string
-	UploadReader   io.Reader
-	UploadMetadata map[string]string
-	MockReturnId   string
-	MockError      error
-}
+var _ = Describe("UploadController", func() {
 
-// UploadFile is a mock implementation that records the inputs passed to it
-func (m *MockFileUploader) UploadFile(ctx context.Context, fileId string, reader io.Reader, metadata map[string]string) (string, error) {
-	// Record the inputs that were passed to verify they were passed correctly
-	m.UploadIdCalled = fileId
-	m.UploadReader = reader
-	m.UploadMetadata = metadata
+	Context("Upload controller", func() {
 
-	if m.MockError != nil {
-		return "", m.MockError
-	}
+		var mockedBackend *mocks.MockFileUploader
+		BeforeEach(func() {
+			mockedBackend = &mocks.MockFileUploader{}
+		})
 
-	return m.MockReturnId, nil
-}
+		It("should upload file successfully", func() {
+			ctx := context.Background()
+			ctrl := controller.NewUploadController(mockedBackend)
 
-func TestUploadController_UploadFile(t *testing.T) {
-	// Create mock uploader
-	mockUploader := &MockFileUploader{
-		MockReturnId: "test-file-id",
-		MockError:    nil,
-	}
+			var reader io.Reader = strings.NewReader("test content")
+			var backendMetadata = make(map[string]string)
+			backendMetadata["X-File-Content-Type"] = "application/octet-stream"
+			backendMetadata["X-File-Checksum"] = "test-checksum"
 
-	// Create controller with mock uploader
-	controller := NewUploadController(mockUploader)
+			mockedBackend.EXPECT().UploadFile(any(ctx), "poc--eni--hyperion--my-test-file", reader, backendMetadata).Return("poc--eni--hyperion--my-test-file", nil)
 
-	// Test case 1: Valid fileId
-	fileId := "env--group--team--file.txt"
-	reader := strings.NewReader("test content")
-	var r io.Reader = reader
-	metadata := map[string]string{constants.XFileChecksum: "test-checksum"}
+			var callMetadata = make(map[string]string)
+			callMetadata["X-File-Content-Type"] = "application/octet-stream"
+			callMetadata["X-File-Checksum"] = "test-checksum"
 
-	resultId, err := controller.UploadFile(context.Background(), fileId, &r, metadata)
+			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", &reader, callMetadata)
+			By("returning no error and the same fileId as supplied")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(file).To(Equal("poc--eni--hyperion--my-test-file"))
+		})
 
-	// Check that there was no error
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
+		It("should upload file successfully - content type detection", func() {
+			ctx := context.Background()
+			ctrl := controller.NewUploadController(mockedBackend)
 
-	// Check that the correct fileId was passed to the uploader
-	if mockUploader.UploadIdCalled != fileId {
-		t.Errorf("Expected fileId %s to be passed to uploader, got %s",
-			fileId, mockUploader.UploadIdCalled)
-	}
+			var reader io.Reader = strings.NewReader("test content")
+			var backendMetadata = make(map[string]string)
+			backendMetadata["X-File-Checksum"] = "test-checksum"
+			backendMetadata["X-File-Content-Type"] = "application/octet-stream"
+			backendMetadata["X-File-Content-Type-Source"] = "auto-detected"
 
-	// Check that the result ID is what we expected
-	if resultId != mockUploader.MockReturnId {
-		t.Errorf("Expected result ID %s, got %s", mockUploader.MockReturnId, resultId)
-	}
+			mockedBackend.EXPECT().UploadFile(any(ctx), "poc--eni--hyperion--my-test-file", reader, backendMetadata).Return("poc--eni--hyperion--my-test-file", nil)
 
-	// Reader has been passed through, but we can't compare interfaces directly
-	// Just ensure it's not nil
-	if mockUploader.UploadReader == nil {
-		t.Error("Reader was not correctly passed to uploader")
-	}
+			var callMetadata = make(map[string]string)
+			callMetadata["X-File-Checksum"] = "test-checksum"
 
-	// Check that content type was added to metadata
-	contentType := mockUploader.UploadMetadata["X-File-Content-Type"]
-	if contentType == "" {
-		t.Error("Content type was not added to metadata")
-	}
-	expectedType := "text/plain; charset=utf-8" // Go's mime package adds charset for text types
-	if contentType != expectedType {
-		t.Errorf("Expected content type %s for .txt file, got %s", expectedType, contentType)
-	}
+			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", &reader, callMetadata)
+			By("returning no error and the same fileId as supplied")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(file).To(Equal("poc--eni--hyperion--my-test-file"))
+		})
 
-	// Test case 2: Invalid fileId should fail with error
-	invalidFileId := "invalid-file-id"
-	_, err = controller.UploadFile(context.Background(), invalidFileId, &r, metadata)
+		It("should upload file successfully - content type detection with filename extension", func() {
+			ctx := context.Background()
+			ctrl := controller.NewUploadController(mockedBackend)
 
-	// Check that there was an error for invalid fileId
-	if err == nil {
-		t.Error("Expected error for invalid fileId, got nil")
-	}
+			var reader io.Reader = strings.NewReader("test content")
+			var backendMetadata = make(map[string]string)
+			backendMetadata["X-File-Checksum"] = "test-checksum"
+			backendMetadata["X-File-Content-Type"] = "text/plain; charset=utf-8"
+			backendMetadata["X-File-Content-Type-Source"] = "auto-detected"
 
-	// Test case 3: Nil reader should fail with error
-	_, err = controller.UploadFile(context.Background(), fileId, nil, metadata)
+			mockedBackend.EXPECT().UploadFile(any(ctx), "poc--eni--hyperion--my-test-file.txt", reader, backendMetadata).Return("poc--eni--hyperion--my-test-file.txt", nil)
 
-	// Check that there was an error for nil reader
-	if err == nil {
-		t.Error("Expected error for nil reader, got nil")
-	}
+			var callMetadata = make(map[string]string)
+			callMetadata["X-File-Checksum"] = "test-checksum"
 
-	// Test case 4: Uploader returning error should be propagated
-	mockUploader.MockError = errors.New("upload failed")
-	_, err = controller.UploadFile(context.Background(), fileId, &r, metadata)
+			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file.txt", &reader, callMetadata)
+			By("returning no error and the same fileId as supplied")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(file).To(Equal("poc--eni--hyperion--my-test-file.txt"))
+		})
 
-	// Check that the error was propagated
-	if err == nil {
-		t.Error("Expected error to be propagated from uploader, got nil")
-	}
-}
+		It("should not upload file - wrong file id", func() {
+			ctx := context.Background()
+			ctrl := controller.NewUploadController(mockedBackend)
+
+			var reader io.Reader = strings.NewReader("test content")
+
+			var callMetadata = make(map[string]string)
+			callMetadata["X-File-Checksum"] = "test-checksum"
+
+			file, err := ctrl.UploadFile(ctx, "i-dont-need-coffee", &reader, callMetadata)
+			By("returning an error")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("InvalidFileId: invalid file ID 'i-dont-need-coffee'"))
+			Expect(file).To(BeEmpty())
+		})
+
+		It("should not upload file - nil reader", func() {
+			ctx := context.Background()
+			ctrl := controller.NewUploadController(mockedBackend)
+
+			var reader io.Reader = nil
+
+			var callMetadata = make(map[string]string)
+			callMetadata["X-File-Checksum"] = "test-checksum"
+
+			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", &reader, callMetadata)
+			By("returning an error")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("UploadFailed: failed to upload file 'poc--eni--hyperion--my-test-file': file reader is nil"))
+			Expect(file).To(BeEmpty())
+		})
+
+		It("should not upload file - backend error propagated", func() {
+			ctx := context.Background()
+			ctrl := controller.NewUploadController(mockedBackend)
+
+			var reader io.Reader = strings.NewReader("test content")
+			var backendMetadata = make(map[string]string)
+			backendMetadata["X-File-Checksum"] = "test-checksum"
+			backendMetadata["X-File-Content-Type"] = "application/octet-stream"
+			backendMetadata["X-File-Content-Type-Source"] = "auto-detected"
+
+			mockedBackend.EXPECT().UploadFile(any(ctx), "poc--eni--hyperion--my-test-file", reader, backendMetadata).Return("", errors.New("this is a test error message"))
+
+			var callMetadata = make(map[string]string)
+			callMetadata["X-File-Checksum"] = "test-checksum"
+
+			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", &reader, callMetadata)
+			By("returning an error")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("this is a test error message"))
+			Expect(file).To(BeEmpty())
+		})
+
+	})
+
+})

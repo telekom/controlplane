@@ -1,80 +1,70 @@
-// Copyright 2025 Deutsche Telekom IT GmbH
-//
-// SPDX-License-Identifier: Apache-2.0
-
-package controller
+package controller_test
 
 import (
 	"context"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/telekom/controlplane/file-manager/pkg/controller"
+	"github.com/telekom/controlplane/file-manager/test/mocks"
+
 	"io"
-	"testing"
 )
 
-// MockFileDownloader is a mock implementation of the FileDownloader interface for testing
-type MockFileDownloader struct {
-	DownloadPathCalled string
-	MockContent        string
-	MockMetadata       map[string]string
-	MockError          error
-}
+const (
+	XFileContentType = "X-File-Content-Type"
+	XFileChecksum    = "X-File-Checksum"
+)
 
-// DownloadFile is a mock implementation that records the path that was passed to it
-func (m *MockFileDownloader) DownloadFile(ctx context.Context, path string) (*io.Writer, map[string]string, error) {
-	// Record the path that was passed to verify conversion happened correctly
-	m.DownloadPathCalled = path
+var _ = Describe("DownloadController", func() {
 
-	if m.MockError != nil {
-		return nil, nil, m.MockError
-	}
+	Context("Download controller", func() {
 
-	// Create a writer with mock content
-	var writer io.Writer = &mockWriter{content: m.MockContent}
-	return &writer, m.MockMetadata, nil
-}
+		var mockedBackend = &mocks.MockFileDownloader{}
 
-// mockWriter implements io.Writer for testing purposes
-type mockWriter struct {
-	content string
-}
+		It("Should download files", func() {
+			ctx := context.Background()
+			ctrl := controller.NewDownloadController(mockedBackend)
 
-func (m *mockWriter) Write(p []byte) (n int, err error) {
-	return len(p), nil
-}
+			var writer *io.Writer
+			var headers = make(map[string]string)
+			headers[XFileContentType] = "application/yaml"
+			headers[XFileChecksum] = "thisIsATestChecksum"
 
-func TestDownloadController_DownloadFile(t *testing.T) {
-	// Create mock downloader
-	mockDownloader := &MockFileDownloader{
-		MockContent:  "test file content",
-		MockMetadata: map[string]string{"X-File-Content-Type": "text/plain"},
-		MockError:    nil,
-	}
+			mockedBackend.EXPECT().DownloadFile(any(ctx), "poc/eni/hyperion/my-test-file").Return(writer, headers, nil)
 
-	// Create controller with mock downloader
-	controller := NewDownloadController(mockDownloader)
+			file, m, err := ctrl.DownloadFile(ctx, "poc--eni--hyperion--my-test-file")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(file).To(Equal(writer))
 
-	// Test case 1: Valid fileId with proper conversion
-	fileId := "env--group--team--file.txt"
-	expectedPath := "env/group/team/file.txt"
+			By("checking the returned headers")
+			Expect(m).To(HaveKeyWithValue("X-File-Content-Type", "application/yaml"))
+			Expect(m).To(HaveKeyWithValue("X-File-Checksum", "thisIsATestChecksum"))
+		})
 
-	_, _, err := controller.DownloadFile(context.Background(), fileId)
+		It("Should not download files with wrong fileId format - complete nonsense", func() {
+			ctx := context.Background()
+			ctrl := controller.NewDownloadController(mockedBackend)
 
-	// Check that there was no error
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
+			file, m, err := ctrl.DownloadFile(ctx, "obviously_wrong/id")
+			Expect(err).To(HaveOccurred())
+			By("returning the correct error message")
+			Expect(err.Error()).To(BeEquivalentTo("InvalidFileId: invalid file ID 'obviously_wrong/id'"))
+			Expect(m).To(BeNil())
+			Expect(file).To(BeNil())
+		})
 
-	// Check that the correct path was passed to the downloader
-	if mockDownloader.DownloadPathCalled != expectedPath {
-		t.Errorf("Expected path %s to be passed to downloader, got %s",
-			expectedPath, mockDownloader.DownloadPathCalled)
-	}
+		It("Should not download files with wrong fileId format - wrong number of parts", func() {
+			ctx := context.Background()
+			ctrl := controller.NewDownloadController(mockedBackend)
 
-	// Test case 2: Invalid fileId should fail with error
-	invalidFileId := "invalid-file-id"
-	_, _, err = controller.DownloadFile(context.Background(), invalidFileId)
+			file, m, err := ctrl.DownloadFile(ctx, "poc--eni--fileId")
+			Expect(err).To(HaveOccurred())
+			By("returning the correct error message")
+			Expect(err.Error()).To(BeEquivalentTo("InvalidFileId: invalid file ID 'poc--eni--fileId'"))
+			Expect(m).To(BeNil())
+			Expect(file).To(BeNil())
+		})
 
-	// Check that there was an error for invalid fileId
-	if err == nil {
-		t.Error("Expected error for invalid fileId, got nil")
-	}
-}
+	})
+
+})
