@@ -337,7 +337,6 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 		})
 	})
 
-
 	Context("When validating trusted teams in approval", func() {
 		var (
 			team1, team2 *organizationv1.Team

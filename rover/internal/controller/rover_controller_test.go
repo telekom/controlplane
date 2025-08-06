@@ -18,8 +18,6 @@ import (
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
-func pntBool(b bool) *bool { return &b }
-
 var _ = Describe("Rover Controller", Ordered, func() {
 
 	const (
@@ -709,3 +707,5 @@ var _ = Describe("Rover Controller", Ordered, func() {
 		})
 	})
 })
+
+func pntBool(b bool) *bool { return &b }

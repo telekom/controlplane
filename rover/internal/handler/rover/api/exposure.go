@@ -82,15 +82,6 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		}
 		apiExposure.Spec.Approval.TrustedTeams = append(apiExposure.Spec.Approval.TrustedTeams, ownerTeam.GetName())
 
-		failoverZones, hasFailover := getFailoverZones(environment, exp.Traffic.Failover)
-		if hasFailover {
-			apiExposure.Spec.Traffic = apiapi.Traffic{
-				Failover: &apiapi.Failover{
-					Zones: failoverZones,
-				},
-			}
-		}
-
 		for i, upstream := range exp.Upstreams {
 			apiExposure.Spec.Upstreams[i] = apiapi.Upstream{
 				Url:    upstream.URL,
@@ -169,7 +160,6 @@ func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
 
 }
 
-// transformation
 func mapTransformationToApiTransformation(roverTransformation *rover.Transformation) *apiapi.Transformation {
 	if roverTransformation == nil {
 		return nil
@@ -184,7 +174,6 @@ func mapTransformationToApiTransformation(roverTransformation *rover.Transformat
 	return apiTransformation
 }
 
-// traffic
 func mapTrafficToApiTraffic(env string, roverTraffic *rover.Traffic) apiapi.Traffic {
 	if roverTraffic == nil {
 		return apiapi.Traffic{}

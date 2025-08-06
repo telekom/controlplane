@@ -97,7 +97,9 @@ func NewApiExposureWithConsumerRateLimit(apiBasePath, zoneName, consumerClientId
 				},
 			},
 			Visibility: apiapi.VisibilityWorld,
-			Approval:   apiapi.ApprovalStrategyAuto,
+			Approval: apiapi.Approval{
+				Strategy: apiapi.ApprovalStrategyAuto,
+			},
 			Zone: types.ObjectRef{
 				Name:      zoneName,
 				Namespace: testEnvironment,
