@@ -76,9 +76,9 @@ var _ = Describe("Team Controller", Ordered, func() {
 			},
 			Spec: adminv1.ZoneSpec{
 				TeamApis: &adminv1.TeamApiConfig{Apis: []adminv1.ApiConfig{{
-					Name: "Team API 1",
+					Name: "team-api-1",
 					Path: "/teamAPI",
-					Url:  "example.org",
+					Url:  "http://example.org",
 				}}},
 				Visibility: adminv1.ZoneVisibilityWorld,
 			},
