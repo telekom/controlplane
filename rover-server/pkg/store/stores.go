@@ -21,8 +21,12 @@ import (
 )
 
 var RoverStore store.ObjectStore[*roverv1.Rover]
-var ApiSpecificationStore store.ObjectStore[*roverv1.ApiSpecification]
+var RoverSecretStore store.ObjectStore[*roverv1.Rover]
+
 var ApplicationStore store.ObjectStore[*applicationv1.Application]
+var ApplicationSecretStore store.ObjectStore[*applicationv1.Application]
+
+var ApiSpecificationStore store.ObjectStore[*roverv1.ApiSpecification]
 var ApiSubscriptionStore store.ObjectStore[*apiv1.ApiSubscription]
 var ApiExposureStore store.ObjectStore[*apiv1.ApiExposure]
 var ZoneStore store.ObjectStore[*adminv1.Zone]
@@ -52,6 +56,10 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 	ApiSubscriptionStore = NewOrDie[*apiv1.ApiSubscription](ctx, apiv1.GroupVersion.WithResource("apisubscriptions"), apiv1.GroupVersion.WithKind("ApiSubscription"))
 	ApiExposureStore = NewOrDie[*apiv1.ApiExposure](ctx, apiv1.GroupVersion.WithResource("apiexposures"), apiv1.GroupVersion.WithKind("ApiExposure"))
 	ZoneStore = NewOrDie[*adminv1.Zone](ctx, adminv1.GroupVersion.WithResource("zones"), adminv1.GroupVersion.WithKind("Zone"))
+
+	secretsApi := secretsapi.NewSecrets()
+	RoverSecretStore = secrets.WrapStore(RoverStore, secretsForKinds["Rover"], secrets.NewSecretManagerResolver(secretsApi))
+	ApplicationSecretStore = secrets.WrapStore(ApplicationStore, secretsForKinds["Application"], secrets.NewSecretManagerResolver(secretsApi))
 }
 
 func NewOrDie[T store.Object](ctx context.Context, gvr schema.GroupVersionResource, gvk schema.GroupVersionKind) store.ObjectStore[T] {
@@ -62,12 +70,5 @@ func NewOrDie[T store.Object](ctx context.Context, gvr schema.GroupVersionResour
 		Client:       dynamicClient,
 	}
 
-	s := inmemory.NewSortableOrDie[T](ctx, storeOpts)
-	secretJsonPaths, ok := secretsForKinds[gvk.Kind]
-	if !ok || len(secretJsonPaths) == 0 {
-		return s
-	}
-
-	secretsApi := secretsapi.NewSecrets()
-	return secrets.WrapStore(s, secretJsonPaths, secrets.NewSecretManagerResolver(secretsApi))
+	return inmemory.NewSortableOrDie[T](ctx, storeOpts)
 }

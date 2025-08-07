@@ -36,7 +36,9 @@
   },
   "spec": {
     "apiBasePath": "/eni/distr/v1",
-    "approval": "Simple",
+    "approval": {
+      "strategy": "Simple"
+    },
     "visibility": "World",
     "upstreams": [
       {

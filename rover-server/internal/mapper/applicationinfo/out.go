@@ -65,7 +65,7 @@ func MapApplicationInfo(ctx context.Context, rover *roverv1.Rover) (*api.Applica
 }
 
 func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo) error {
-	appStore := store.ApplicationStore
+	appStore := store.ApplicationSecretStore
 
 	if rover == nil || rover.Status.Application == nil {
 		return errors.New("rover resource is not processed and does not contain an application")
@@ -164,7 +164,7 @@ func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 		apiExpInfo := api.ApiExposureInfo{
 			BasePath:   apiExp.Spec.ApiBasePath,
 			Upstream:   apiExp.Spec.Upstreams[0].Url,
-			Approval:   api.ApprovalStrategy(apiExp.Spec.Approval),
+			Approval:   api.ApprovalStrategy(apiExp.Spec.Approval.Strategy),
 			Visibility: api.Visibility(apiExp.Spec.Visibility),
 		}
 		if err := expInfo.FromApiExposureInfo(apiExpInfo); err != nil {

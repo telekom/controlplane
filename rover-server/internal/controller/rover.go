@@ -30,12 +30,14 @@ import (
 var _ server.RoverController = &RoverController{}
 
 type RoverController struct {
-	Store store.ObjectStore[*roverv1.Rover]
+	Store       store.ObjectStore[*roverv1.Rover]
+	SecretStore store.ObjectStore[*roverv1.Rover]
 }
 
 func NewRoverController() *RoverController {
 	return &RoverController{
-		Store: s.RoverStore,
+		Store:       s.RoverStore,
+		SecretStore: s.RoverSecretStore,
 	}
 }
 
@@ -72,7 +74,7 @@ func (r *RoverController) Get(ctx context.Context, resourceId string) (res api.R
 	}
 
 	ns := id.Environment + "--" + id.Namespace
-	rover, err := r.Store.Get(ctx, ns, id.Name)
+	rover, err := r.SecretStore.Get(ctx, ns, id.Name)
 	if err != nil {
 		return res, problems.NotFound(resourceId, err.Error())
 	}
@@ -85,7 +87,7 @@ func (r *RoverController) GetAll(ctx context.Context, params api.GetAllRoversPar
 	listOpts := store.NewListOpts()
 	listOpts.Cursor = params.Cursor
 
-	objList, err := r.Store.List(ctx, listOpts)
+	objList, err := r.SecretStore.List(ctx, listOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +160,7 @@ func (r *RoverController) GetApplicationInfo(ctx context.Context, resourceId str
 	}
 
 	ns := id.Environment + "--" + id.Namespace
-	rover, err := r.Store.Get(ctx, ns, id.Name)
+	rover, err := r.SecretStore.Get(ctx, ns, id.Name)
 	if err != nil {
 		return res, problems.NotFound(resourceId, err.Error())
 	}

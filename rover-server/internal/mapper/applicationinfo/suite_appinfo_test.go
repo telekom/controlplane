@@ -28,10 +28,12 @@ var rover *roverv1.Rover
 var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 	if mockObjectStore {
 		store.RoverStore = mocks.NewRoverStoreMock(GinkgoT())
+		store.RoverSecretStore = store.RoverStore
 		store.ApiSpecificationStore = mocks.NewApiSpecificationStoreMock(GinkgoT())
 		store.ApiSubscriptionStore = mocks.NewApiSubscriptionStoreMock(GinkgoT())
 		store.ApiExposureStore = mocks.NewApiExposureStoreMock(GinkgoT())
 		store.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
+		store.ApplicationSecretStore = store.ApplicationStore
 		store.ZoneStore = mocks.NewZoneStoreMock(GinkgoT())
 	}
 }
