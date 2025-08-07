@@ -66,7 +66,7 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 					Minute: route.Spec.Traffic.RateLimit.Limits.Minute,
 					Hour:   route.Spec.Traffic.RateLimit.Limits.Hour,
 				}
-				rateLimitPlugin = setOptions(rateLimitPlugin, allowedConsumer.Spec.Traffic.RateLimit.Options)
+				rateLimitPlugin = setOptions(rateLimitPlugin, route.Spec.Traffic.RateLimit.Options)
 			}
 		}
 	} else {
