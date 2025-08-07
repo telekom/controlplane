@@ -21,6 +21,7 @@ const (
 
 func Init() {
 	logCfg := zap.NewProductionConfig()
+	logCfg.DisableStacktrace = true
 	logCfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
 	zapLogLevel, err := zapcore.ParseLevel(viper.GetString("log.level"))
 	if err != nil {

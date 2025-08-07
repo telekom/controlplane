@@ -101,6 +101,9 @@ func (s *SecretManagerResolver) ReplaceAllFromBytes(ctx context.Context, b []byt
 		if result.IsArray() {
 			var err error
 			paths := result.Paths(string(b))
+			if len(paths) == 0 {
+				continue
+			}
 			log.V(1).Info("Replacing secrets in array", "jsonPath", paths)
 			b, err = s.ReplaceAllFromBytes(ctx, b, paths)
 			if err != nil {
