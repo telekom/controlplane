@@ -36,33 +36,74 @@ func (f *RateLimitFeature) IsUsed(ctx context.Context, builder features.Features
 	if !ok {
 		return false
 	}
-	hasRateLimitConfigured := false
 
-	return !route.Spec.PassThrough && hasRateLimitConfigured
+	return !route.Spec.PassThrough && route.HasRateLimit()
 }
 
 func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
-	rateLimitPlugin := builder.RateLimitPlugin()
-
-	// TODO: get this from gateway or something
-	rateLimitPlugin.Config.Policy = plugin.PolicyRedis
-	rateLimitPlugin.Config.RedisConfig = plugin.RedisConfig{
-		Host: "redis",
-		Port: 443,
+	route, ok := builder.GetRoute()
+	if !ok {
+		return nil
 	}
 
-	rateLimitPlugin.Config.Limits = plugin.Limits{
-		Consumer: &plugin.LimitConfig{
-			Second: 10,
-			Minute: 100,
-			Hour:   1000,
-		},
-		Service: &plugin.LimitConfig{
-			Second: 20,
-			Minute: 200,
-			Hour:   2000,
-		},
+	var rateLimitPlugin *plugin.RateLimitPlugin
+	if route.IsProxy() {
+		for _, allowedConsumer := range builder.GetAllowedConsumers() {
+			if allowedConsumer.HasTrafficRateLimit() || route.HasRateLimit() {
+				rateLimitPlugin = builder.RateLimitPluginConsumeRoute(allowedConsumer)
+				rateLimitPlugin = setCommonConfigs(rateLimitPlugin, builder.GetGateway())
+			}
+			if allowedConsumer.HasTrafficRateLimit() {
+				rateLimitPlugin.Config.Limits.Consumer = &plugin.LimitConfig{
+					Second: allowedConsumer.Spec.Traffic.RateLimit.Limits.Second,
+					Minute: allowedConsumer.Spec.Traffic.RateLimit.Limits.Minute,
+					Hour:   allowedConsumer.Spec.Traffic.RateLimit.Limits.Hour,
+				}
+			}
+			if route.HasRateLimit() {
+				rateLimitPlugin.Config.Limits.Service = &plugin.LimitConfig{
+					Second: route.Spec.Traffic.RateLimit.Limits.Second,
+					Minute: route.Spec.Traffic.RateLimit.Limits.Minute,
+					Hour:   route.Spec.Traffic.RateLimit.Limits.Hour,
+				}
+				rateLimitPlugin = setOptions(rateLimitPlugin, allowedConsumer.Spec.Traffic.RateLimit.Options)
+			}
+		}
+	} else {
+		if route.HasRateLimit() {
+			rateLimitPlugin = builder.RateLimitPluginRoute()
+			rateLimitPlugin = setCommonConfigs(rateLimitPlugin, builder.GetGateway())
+			rateLimitPlugin.Config.Limits = plugin.Limits{
+				Service: &plugin.LimitConfig{
+					Second: route.Spec.Traffic.RateLimit.Limits.Second,
+					Minute: route.Spec.Traffic.RateLimit.Limits.Minute,
+					Hour:   route.Spec.Traffic.RateLimit.Limits.Hour,
+				},
+			}
+			rateLimitPlugin = setOptions(rateLimitPlugin, route.Spec.Traffic.RateLimit.Options)
+		}
 	}
 
 	return nil
+}
+
+func setCommonConfigs(rateLimitPlugin *plugin.RateLimitPlugin, gateway *gatewayv1.Gateway) *plugin.RateLimitPlugin {
+	rateLimitPlugin.Config.Policy = plugin.PolicyRedis
+	rateLimitPlugin.Config.RedisConfig = plugin.RedisConfig{
+		Host: gateway.Spec.Redis.Host,
+		Port: gateway.Spec.Redis.Port,
+	}
+	rateLimitPlugin.Config.OmitConsumer = "gateway"
+	return rateLimitPlugin
+}
+
+func setOptions(rateLimitPlugin *plugin.RateLimitPlugin, options gatewayv1.RateLimitOptions) *plugin.RateLimitPlugin {
+	if options.HideClientHeaders != nil {
+		rateLimitPlugin.Config.HideClientHeaders = *options.HideClientHeaders
+	}
+
+	if options.FaultTolerant != nil {
+		rateLimitPlugin.Config.FaultTolerant = *options.FaultTolerant
+	}
+	return rateLimitPlugin
 }

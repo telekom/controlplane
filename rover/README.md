@@ -74,7 +74,7 @@ The Rover admission webhook enforces the following validation rules for rate lim
 
 #### Consumer Identification
 
-Consumer names in `ratelimit.overrides` refer to the client identifier that will be extracted from the request.
+Consumer names in `ratelimit.consumers.overrides` refer to the client identifier that will be extracted from the request.
 The system automatically matches the extracted consumer identifier with the configured overrides to apply the appropriate rate limits.
 
 The consumer ID format follows the pattern `{team}--{applicationName}` where:
@@ -114,25 +114,17 @@ spec:
                 second: 10
                 minute: 100
                 hour: 1000
-              options: # values are optional. If not provided, default values will be applied
-                hideClientHeaders: true
-                faultTolerant: false
             # Override limits for specific consumers
             overrides:
-            - consumer: alpha--premium-client  # Matches client ID <group--team>
-              config:
-                limits:
-                  second: 50
-                  minute: 500
-                  hour: 5000
-                options:
-                  hideClientHeaders: false 
-                  faultTolerant: true
-            - consumer: myGroup--internal-service  # Matches client ID or API key identifier
-              config:
-                limits:
-                  minute: 2000
-                  hour: 20000
+            - consumer: alpha--premium-client 
+              limits:
+                second: 50
+                minute: 500
+                hour: 5000
+            - consumer: myGroup--internal-service 
+              limits:
+                minute: 2000
+                hour: 20000
 ```
 
 ## Getting Started

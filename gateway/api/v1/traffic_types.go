@@ -10,7 +10,7 @@ type Traffic struct {
 }
 
 type ConsumeRouteTraffic struct {
-	RateLimit *RateLimit `json:"rateLimit,omitempty"`
+	RateLimit *ConsumeRouteRateLimit `json:"rateLimit,omitempty"`
 }
 
 type Failover struct {
@@ -25,6 +25,11 @@ type RateLimit struct {
 	Limits Limits `json:"limits"`
 	// +kubebuilder:validation:Optional
 	Options RateLimitOptions `json:"options,omitempty"`
+}
+
+type ConsumeRouteRateLimit struct {
+	// +kubebuilder:validation:Required
+	Limits Limits `json:"limits"`
 }
 
 // Limits defines the actual rate limit values for different time windows

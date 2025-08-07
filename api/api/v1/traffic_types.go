@@ -78,17 +78,22 @@ type RateLimitOptions struct {
 type SubscriberRateLimits struct {
 	// Default defines the rate limit applied to all consumers not specifically overridden
 	// +kubebuilder:validation:Optional
-	Default *RateLimitConfig `json:"default,omitempty"`
+	Default *SubscriberRateLimitDefaults `json:"default,omitempty"`
 	// Overrides defines consumer-specific rate limits, keyed by consumer identifier
 	// +kubebuilder:validation:MaxItems=10
 	Overrides []RateLimitOverrides `json:"overrides,omitempty"`
 }
 
+type SubscriberRateLimitDefaults struct {
+	// +kubebuilder:validation:Required
+	Limits Limits `json:"limits"`
+}
+
 type RateLimitOverrides struct {
 	// Subscriber is the unique identifier of the subscriber
 	// +kubebuilder:validation:MinLength=1
-	Subscriber string          `json:"subscriber"`
-	Config     RateLimitConfig `json:"config"`
+	Subscriber string `json:"subscriber"`
+	Limits     Limits `json:"limits"`
 }
 
 func (t *Traffic) HasFailover() bool {

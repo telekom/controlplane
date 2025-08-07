@@ -19,8 +19,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// NewApiExposureWithConsumerRateLimit creates an ApiExposure with a specific rate limit for a consumer
-func NewApiExposureWithConsumerRateLimit(apiBasePath, zoneName, consumerClientId string) *apiapi.ApiExposure {
+// Helper functions for creating test resources with rate limits
+
+// NewApiExposureWithRateLimit creates an ApiExposure with both provider and consumer rate limits
+func NewApiExposureWithRateLimit(apiBasePath, zoneName, consumerClientId string) *apiapi.ApiExposure {
 	return &apiapi.ApiExposure{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      labelutil.NormalizeValue(apiBasePath),
@@ -52,30 +54,20 @@ func NewApiExposureWithConsumerRateLimit(apiBasePath, zoneName, consumerClientId
 						},
 					},
 					SubscriberRateLimit: &apiapi.SubscriberRateLimits{
-						Default: &apiapi.RateLimitConfig{
+						Default: &apiapi.SubscriberRateLimitDefaults{
 							Limits: apiapi.Limits{
 								Second: 10,
 								Minute: 100,
 								Hour:   1000,
 							},
-							Options: apiapi.RateLimitOptions{
-								HideClientHeaders: pntBool(true),
-								FaultTolerant:     pntBool(true),
-							},
 						},
 						Overrides: []apiapi.RateLimitOverrides{
 							{
 								Subscriber: consumerClientId,
-								Config: apiapi.RateLimitConfig{
-									Limits: apiapi.Limits{
-										Second: 20,
-										Minute: 200,
-										Hour:   2000,
-									},
-									Options: apiapi.RateLimitOptions{
-										HideClientHeaders: pntBool(false),
-										FaultTolerant:     pntBool(false),
-									},
+								Limits: apiapi.Limits{
+									Second: 20,
+									Minute: 200,
+									Hour:   2000,
 								},
 							},
 						},
@@ -108,6 +100,103 @@ func NewApiExposureWithConsumerRateLimit(apiBasePath, zoneName, consumerClientId
 	}
 }
 
+// NewApiExposureWithConsumerOnlyRateLimit creates an ApiExposure with only consumer rate limits (no provider rate limits)
+func NewApiExposureWithConsumerOnlyRateLimit(apiBasePath, zoneName, consumerClientId string) *apiapi.ApiExposure {
+	apiExposure := NewApiExposureWithRateLimit(apiBasePath, zoneName, consumerClientId)
+	apiExposure.Spec.Traffic.RateLimit.Provider = nil
+	return apiExposure
+}
+
+// NewApiExposureWithProviderOnlyRateLimit creates an ApiExposure with only provider rate limits (no consumer rate limits)
+func NewApiExposureWithProviderOnlyRateLimit(apiBasePath, zoneName string) *apiapi.ApiExposure {
+	apiExposure := NewApiExposureWithRateLimit(apiBasePath, zoneName, "")
+	apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit = nil
+	return apiExposure
+}
+
+// createAndApproveSubscription creates an ApiSubscription and approves it
+func createAndApproveSubscription(apiBasePath, zoneName, appName string, zoneRef *types.ObjectRef) *apiapi.ApiSubscription {
+	// Create subscription
+	subscription := NewApiSubscription(apiBasePath, zoneName, appName)
+
+	// Set zone if provided
+	if zoneRef != nil {
+		subscription.Spec.Zone = *zoneRef
+	}
+
+	err := k8sClient.Create(ctx, subscription)
+	Expect(err).ToNot(HaveOccurred())
+
+	// Wait for approval request
+	Eventually(func(g Gomega) {
+		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(subscription), subscription)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(subscription.Status.ApprovalRequest).ToNot(BeNil())
+	}, timeout, interval).Should(Succeed())
+
+	// Approve subscription
+	approvalRequest := &approvalapi.ApprovalRequest{}
+	err = k8sClient.Get(ctx, subscription.Status.ApprovalRequest.K8s(), approvalRequest)
+	Expect(err).ToNot(HaveOccurred())
+
+	approvalRequest = ProgressApprovalRequest(subscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
+	ProgressApproval(subscription, approvalapi.ApprovalStateGranted, approvalRequest)
+
+	return subscription
+}
+
+// verifyConsumeRouteRateLimits verifies that a ConsumeRoute has the expected rate limits
+func verifyConsumeRouteRateLimits(subscription *apiapi.ApiSubscription, expectedLimits apiapi.Limits) {
+	Eventually(func(g Gomega) {
+		// Refresh subscription
+		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(subscription), subscription)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(subscription.Status.ConsumeRoute).ToNot(BeNil())
+
+		// Get the ConsumeRoute
+		consumeRoute := &gatewayapi.ConsumeRoute{}
+		err = k8sClient.Get(ctx, subscription.Status.ConsumeRoute.K8s(), consumeRoute)
+		g.Expect(err).ToNot(HaveOccurred())
+
+		// Verify rate limit configuration
+		g.Expect(consumeRoute.Spec.Traffic.RateLimit).ToNot(BeNil(), "ConsumeRoute should have rate limit configuration")
+
+		// Verify rate limit values
+		g.Expect(consumeRoute.Spec.Traffic.RateLimit.Limits.Second).To(Equal(expectedLimits.Second))
+		g.Expect(consumeRoute.Spec.Traffic.RateLimit.Limits.Minute).To(Equal(expectedLimits.Minute))
+		g.Expect(consumeRoute.Spec.Traffic.RateLimit.Limits.Hour).To(Equal(expectedLimits.Hour))
+	}, timeout, interval).Should(Succeed())
+}
+
+// verifyRouteRateLimits verifies that a Route has the expected provider rate limits
+func verifyRouteRateLimits(route *types.ObjectRef, providerRateLimit *apiapi.RateLimitConfig, isProxyRoute bool) {
+	Eventually(func(g Gomega) {
+		// Get the Route
+		routeObj := &gatewayapi.Route{}
+		err := k8sClient.Get(ctx, route.K8s(), routeObj)
+		g.Expect(err).ToNot(HaveOccurred())
+
+		// Verify rate limit configuration
+		g.Expect(routeObj.Spec.Traffic.RateLimit).ToNot(BeNil(), "Route should have rate limit configuration")
+
+		// Verify rate limit values
+		g.Expect(routeObj.Spec.Traffic.RateLimit.Limits.Second).To(Equal(providerRateLimit.Limits.Second))
+		g.Expect(routeObj.Spec.Traffic.RateLimit.Limits.Minute).To(Equal(providerRateLimit.Limits.Minute))
+		g.Expect(routeObj.Spec.Traffic.RateLimit.Limits.Hour).To(Equal(providerRateLimit.Limits.Hour))
+
+		// Verify rate limit options
+		g.Expect(routeObj.Spec.Traffic.RateLimit.Options.HideClientHeaders).To(Equal(providerRateLimit.Options.HideClientHeaders))
+		g.Expect(routeObj.Spec.Traffic.RateLimit.Options.FaultTolerant).To(Equal(providerRateLimit.Options.FaultTolerant))
+
+		// Verify proxy route labeling
+		if isProxyRoute {
+			g.Expect(routeObj.Labels[config.BuildLabelKey("type")]).To(Equal("proxy"))
+		} else {
+			g.Expect(routeObj.Labels[config.BuildLabelKey("type")]).ToNot(Equal("proxy"))
+		}
+	}, timeout, interval).Should(Succeed())
+}
+
 var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 	// API that is used for the tests
 	var apiBasePath = "/ratelimit/test/v1"
@@ -118,7 +207,9 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 
 	// Provider/Exposure zone
 	var zoneName = "ratelimit-test"
+	var secondZoneName = "ratelimit-test-2"
 	var zone *adminapi.Zone
+	var secondZone *adminapi.Zone
 
 	// Consumer side
 	var appName = "rate-limit-app"
@@ -131,13 +222,18 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 	var defaultApiSubscription *apiapi.ApiSubscription
 
 	BeforeAll(func() {
-		By("Creating the Zone")
+		By("Creating the Zones")
 		zone = CreateZone(zoneName)
 		CreateGatewayClient(zone)
+		secondZone = CreateZone(secondZoneName)
+		CreateGatewayClient(secondZone)
 
-		By("Creating the Realm")
+		By("Creating the Realms")
 		realm := NewRealm(testEnvironment, zone.Name)
 		err := k8sClient.Create(ctx, realm)
+		Expect(err).ToNot(HaveOccurred())
+		secondRealm := NewRealm(testEnvironment, secondZone.Name)
+		err = k8sClient.Create(ctx, secondRealm)
 		Expect(err).ToNot(HaveOccurred())
 
 		By("Creating the Applications")
@@ -152,22 +248,15 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 		err = k8sClient.Create(ctx, api)
 		Expect(err).ToNot(HaveOccurred())
 
-		By("Creating the APIExposure with consumer-specific rate limit")
-		apiExposure = NewApiExposureWithConsumerRateLimit(apiBasePath, zoneName, application.Status.ClientId)
+		By("Creating the APIExposure with rate limits")
+		apiExposure = NewApiExposureWithRateLimit(apiBasePath, zoneName, application.Status.ClientId)
 		err = k8sClient.Create(ctx, apiExposure)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Set APIExposure as active with a route
 		Eventually(func(g Gomega) {
 			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
 			g.Expect(err).ToNot(HaveOccurred())
-			apiExposure.Status.Active = true
-			apiExposure.Status.Route = &types.ObjectRef{
-				Name:      "test-route",
-				Namespace: zone.Status.Namespace,
-			}
-			err = k8sClient.Status().Update(ctx, apiExposure)
-			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(apiExposure.Status.Active).To(BeTrue())
 		}, timeout, interval).Should(Succeed())
 	})
 
@@ -186,298 +275,184 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	Context("Consumer-specific rate limiting", func() {
+	Context("Rate Limit Propagation Tests", func() {
 		It("should pass consumer-specific rate limit configuration to ConsumeRoute", func() {
-			By("Creating the ApiSubscription")
-			apiSubscription = NewApiSubscription(apiBasePath, zoneName, appName)
-			err := k8sClient.Create(ctx, apiSubscription)
-			Expect(err).ToNot(HaveOccurred())
+			By("Creating and approving the ApiSubscription")
+			apiSubscription = createAndApproveSubscription(apiBasePath, zoneName, appName, nil)
 
-			By("Verifying the ApiSubscription is created")
-			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(apiSubscription.Status.ApprovalRequest).ToNot(BeNil())
-			}, timeout, interval).Should(Succeed())
-
-			By("Approving the subscription")
-			approvalRequest := &approvalapi.ApprovalRequest{}
-			err = k8sClient.Get(ctx, apiSubscription.Status.ApprovalRequest.K8s(), approvalRequest)
-			Expect(err).ToNot(HaveOccurred())
-
-			// Progress the approval workflow
-			approvalRequest = ProgressApprovalRequest(apiSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
-			ProgressApproval(apiSubscription, approvalapi.ApprovalStateGranted, approvalRequest)
-
-			By("Verifying the ConsumeRoute is created with the consumer-specific rate limit")
-			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(apiSubscription.Status.ConsumeRoute).ToNot(BeNil())
-
-				// Get the ConsumeRoute
-				consumeRoute := &gatewayapi.ConsumeRoute{}
-				err = k8sClient.Get(ctx, apiSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
-				g.Expect(err).ToNot(HaveOccurred())
-
-				// Verify that the ConsumeRoute has rate limit configuration
-				g.Expect(consumeRoute.Spec.Traffic).ToNot(BeNil(), "ConsumeRoute should have traffic configuration")
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit).ToNot(BeNil(), "ConsumeRoute should have rate limit configuration")
-
-				// Get the consumer-specific override from the ApiExposure
-				var consumerRateLimit apiapi.RateLimitConfig
-				var ok bool
-				consumerRateLimit, ok = apiExposure.GetOverriddenSubscriberRateLimit(application.Status.ClientId)
-				g.Expect(ok).To(BeTrue(), "ApiExposure should have a rate limit override for this consumer")
-				g.Expect(consumerRateLimit).ToNot(BeNil())
-
-				// Verify that the consumer-specific rate limit values are correctly passed
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Limits.Second).To(Equal(consumerRateLimit.Limits.Second))
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Limits.Minute).To(Equal(consumerRateLimit.Limits.Minute))
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Limits.Hour).To(Equal(consumerRateLimit.Limits.Hour))
-
-				// Verify that the consumer-specific rate limit options are correctly passed
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Options.HideClientHeaders).To(Equal(consumerRateLimit.Options.HideClientHeaders))
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Options.FaultTolerant).To(Equal(consumerRateLimit.Options.FaultTolerant))
-
-				// Verify that the consumer-specific rate limit is different from the default
-				defaultRateLimit := apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Default
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Limits.Second).ToNot(Equal(defaultRateLimit.Limits.Second))
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Options.FaultTolerant).ToNot(Equal(defaultRateLimit.Options.FaultTolerant))
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Options.HideClientHeaders).NotTo(Equal(defaultRateLimit.Options.HideClientHeaders))
-
-			}, timeout, interval).Should(Succeed())
+			By("Verifying the ConsumeRoute has the consumer-specific rate limit")
+			consumerRateLimit, ok := apiExposure.GetOverriddenSubscriberRateLimit(application.Status.ClientId)
+			Expect(ok).To(BeTrue(), "ApiExposure should have a rate limit override for this consumer")
+			verifyConsumeRouteRateLimits(apiSubscription, consumerRateLimit)
 		})
 
 		It("should pass default rate limit configuration to ConsumeRoute when no consumer-specific override exists", func() {
-			By("Creating the ApiSubscription for the default application")
-			defaultApiSubscription = NewApiSubscription(apiBasePath, zoneName, defaultAppName)
-			err := k8sClient.Create(ctx, defaultApiSubscription)
-			Expect(err).ToNot(HaveOccurred())
+			By("Creating and approving the ApiSubscription for the default application")
+			defaultApiSubscription = createAndApproveSubscription(apiBasePath, zoneName, defaultAppName, nil)
 
-			By("Verifying the ApiSubscription is created")
+			By("Verifying the ConsumeRoute has the default rate limit")
+			defaultRateLimit := apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Default.Limits
+			verifyConsumeRouteRateLimits(defaultApiSubscription, defaultRateLimit)
+
+			// Verify no consumer-specific override exists for this application
+			_, ok := apiExposure.GetOverriddenSubscriberRateLimit(defaultApplication.Status.ClientId)
+			Expect(ok).To(BeFalse(), "ApiExposure should not have a rate limit override for this consumer")
+		})
+
+		It("should pass provider rate limiting configuration to routes", func() {
+			By("Verifying the Route is created with provider rate limits")
 			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(defaultApiSubscription), defaultApiSubscription)
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(defaultApiSubscription.Status.ApprovalRequest).ToNot(BeNil())
+				g.Expect(apiExposure.Status.Route).ToNot(BeNil())
 			}, timeout, interval).Should(Succeed())
 
-			By("Approving the subscription")
-			approvalRequest := &approvalapi.ApprovalRequest{}
-			err = k8sClient.Get(ctx, defaultApiSubscription.Status.ApprovalRequest.K8s(), approvalRequest)
+			// Verify regular route has correct provider rate limits
+			verifyRouteRateLimits(apiExposure.Status.Route, apiExposure.Spec.Traffic.RateLimit.Provider, false)
+
+			By("Creating a subscription in a different zone to test proxy route")
+			proxyAppName := "proxy-app"
+			proxyApplication := CreateApplication(proxyAppName)
+			proxyApplication.Status.ClientId = "proxy-client-id"
+			err := k8sClient.Status().Update(ctx, proxyApplication)
 			Expect(err).ToNot(HaveOccurred())
 
-			// Progress the approval workflow
-			approvalRequest = ProgressApprovalRequest(defaultApiSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
-			ProgressApproval(defaultApiSubscription, approvalapi.ApprovalStateGranted, approvalRequest)
+			// Create and approve subscription in second zone
+			zoneRef := &types.ObjectRef{
+				Name:      secondZoneName,
+				Namespace: testEnvironment,
+			}
+			proxyApiSubscription := createAndApproveSubscription(apiBasePath, secondZoneName, proxyAppName, zoneRef)
 
-			By("Verifying the ConsumeRoute is created with the default rate limit")
+			By("Verifying the ProxyRoute is created with provider rate limits")
 			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(defaultApiSubscription), defaultApiSubscription)
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(proxyApiSubscription), proxyApiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(defaultApiSubscription.Status.ConsumeRoute).ToNot(BeNil())
+				g.Expect(proxyApiSubscription.Status.Route).ToNot(BeNil())
+			}, timeout, interval).Should(Succeed())
+
+			// Verify proxy route has correct provider rate limits and is labeled as proxy
+			verifyRouteRateLimits(proxyApiSubscription.Status.Route, apiExposure.Spec.Traffic.RateLimit.Provider, true)
+
+			// Verify consume route has default rate limits
+			defaultRateLimit := apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Default.Limits
+			verifyConsumeRouteRateLimits(proxyApiSubscription, defaultRateLimit)
+
+			// Clean up
+			err = k8sClient.Delete(ctx, proxyApplication)
+			Expect(err).ToNot(HaveOccurred())
+			err = k8sClient.Delete(ctx, proxyApiSubscription)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should apply consumer rate limits to ConsumeRoute even when provider rate limits are not specified", func() {
+			// Create a new API with only consumer rate limits
+			consumerOnlyApiBasePath := "/ratelimit/consumer-only/v1"
+
+			By("Creating the API")
+			consumerOnlyApi := NewApi(consumerOnlyApiBasePath)
+			err := k8sClient.Create(ctx, consumerOnlyApi)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Creating the APIExposure with only consumer rate limits")
+			consumerOnlyApiExposure := NewApiExposureWithConsumerOnlyRateLimit(consumerOnlyApiBasePath, zoneName, application.Status.ClientId)
+			err = k8sClient.Create(ctx, consumerOnlyApiExposure)
+			Expect(err).ToNot(HaveOccurred())
+
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(consumerOnlyApiExposure), consumerOnlyApiExposure)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(consumerOnlyApiExposure.Status.Active).To(BeTrue())
+			}, timeout, interval).Should(Succeed())
+
+			By("Creating and approving a subscription")
+			consumerOnlySubscription := createAndApproveSubscription(consumerOnlyApiBasePath, zoneName, appName, nil)
+
+			By("Verifying the ConsumeRoute has consumer rate limits even without provider rate limits")
+			consumerRateLimit, ok := consumerOnlyApiExposure.GetOverriddenSubscriberRateLimit(application.Status.ClientId)
+			Expect(ok).To(BeTrue(), "ApiExposure should have a rate limit override for this consumer")
+			verifyConsumeRouteRateLimits(consumerOnlySubscription, consumerRateLimit)
+
+			By("Verifying the Route has no rate limits")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(consumerOnlyApiExposure), consumerOnlyApiExposure)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(consumerOnlyApiExposure.Status.Route).ToNot(BeNil())
+
+				// Get the Route
+				routeObj := &gatewayapi.Route{}
+				err = k8sClient.Get(ctx, consumerOnlyApiExposure.Status.Route.K8s(), routeObj)
+				g.Expect(err).ToNot(HaveOccurred())
+
+				// Verify route has no rate limit configuration
+				g.Expect(routeObj.Spec.Traffic.RateLimit).To(BeNil(), "Route should not have rate limit configuration")
+			}, timeout, interval).Should(Succeed())
+
+			// Clean up
+			err = k8sClient.Delete(ctx, consumerOnlySubscription)
+			Expect(err).ToNot(HaveOccurred())
+			err = k8sClient.Delete(ctx, consumerOnlyApiExposure)
+			Expect(err).ToNot(HaveOccurred())
+			err = k8sClient.Delete(ctx, consumerOnlyApi)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should not apply consumer rate limits to ConsumeRoute when no consumer rate limits are specified", func() {
+			// Create a new API with only provider rate limits
+			providerOnlyApiBasePath := "/ratelimit/provider-only/v1"
+
+			By("Creating the API")
+			providerOnlyApi := NewApi(providerOnlyApiBasePath)
+			err := k8sClient.Create(ctx, providerOnlyApi)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Creating the APIExposure with only provider rate limits")
+			providerOnlyApiExposure := NewApiExposureWithProviderOnlyRateLimit(providerOnlyApiBasePath, zoneName)
+			err = k8sClient.Create(ctx, providerOnlyApiExposure)
+			Expect(err).ToNot(HaveOccurred())
+
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(providerOnlyApiExposure), providerOnlyApiExposure)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(providerOnlyApiExposure.Status.Active).To(BeTrue())
+			}, timeout, interval).Should(Succeed())
+
+			By("Creating and approving a subscription")
+			providerOnlySubscription := createAndApproveSubscription(providerOnlyApiBasePath, zoneName, appName, nil)
+
+			By("Verifying the Route has provider rate limits")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(providerOnlyApiExposure), providerOnlyApiExposure)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(providerOnlyApiExposure.Status.Route).ToNot(BeNil())
+			}, timeout, interval).Should(Succeed())
+
+			verifyRouteRateLimits(providerOnlyApiExposure.Status.Route, providerOnlyApiExposure.Spec.Traffic.RateLimit.Provider, false)
+
+			By("Verifying the ConsumeRoute has no rate limits")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(providerOnlySubscription), providerOnlySubscription)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(providerOnlySubscription.Status.ConsumeRoute).ToNot(BeNil())
 
 				// Get the ConsumeRoute
 				consumeRoute := &gatewayapi.ConsumeRoute{}
-				err = k8sClient.Get(ctx, defaultApiSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
+				err = k8sClient.Get(ctx, providerOnlySubscription.Status.ConsumeRoute.K8s(), consumeRoute)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				// Verify that the ConsumeRoute has rate limit configuration
-				g.Expect(consumeRoute.Spec.Traffic).ToNot(BeNil(), "ConsumeRoute should have traffic configuration")
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit).ToNot(BeNil(), "ConsumeRoute should have rate limit configuration")
-
-				// Verify no consumer-specific override exists for this application
-				_, ok := apiExposure.GetOverriddenSubscriberRateLimit(defaultApplication.Status.ClientId)
-				g.Expect(ok).To(BeFalse(), "ApiExposure should not have a rate limit override for this consumer")
-
-				// Get the default rate limit from the ApiExposure
-				defaultRateLimit := apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Default
-				g.Expect(defaultRateLimit).ToNot(BeNil())
-
-				// Verify that the default rate limit values are correctly passed
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Limits.Second).To(Equal(defaultRateLimit.Limits.Second))
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Limits.Minute).To(Equal(defaultRateLimit.Limits.Minute))
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Limits.Hour).To(Equal(defaultRateLimit.Limits.Hour))
-
-				// Verify that the default rate limit options are correctly passed
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Options.HideClientHeaders).To(Equal(defaultRateLimit.Options.HideClientHeaders))
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Options.FaultTolerant).To(Equal(defaultRateLimit.Options.FaultTolerant))
-
-				// Verify that the default rate limit is different from the consumer-specific one
-				consumerRateLimit, _ := apiExposure.GetOverriddenSubscriberRateLimit(application.Status.ClientId)
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Limits.Second).ToNot(Equal(consumerRateLimit.Limits.Second))
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Options.HideClientHeaders).ToNot(Equal(consumerRateLimit.Options.HideClientHeaders))
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Options.FaultTolerant).ToNot(Equal(consumerRateLimit.Options.FaultTolerant))
-
-			}, timeout, interval).Should(Succeed())
-		})
-	})
-
-	Context("No default rate limiting with consumer-specific overrides", func() {
-		// API that is used for this specific test
-		var noDefaultApiBasePath = "/ratelimit/nodefault/v1"
-		var noDefaultApi *apiapi.Api
-		var noDefaultApiExposure *apiapi.ApiExposure
-
-		// Applications for this test
-		var limitedAppName = "limited-app"
-		var unlimitedAppName = "unlimited-app"
-		var limitedApplication *applicationapi.Application
-		var unlimitedApplication *applicationapi.Application
-		var limitedApiSubscription *apiapi.ApiSubscription
-		var unlimitedApiSubscription *apiapi.ApiSubscription
-
-		BeforeAll(func() {
-			By("Creating the applications for no-default test")
-			limitedApplication = CreateApplication(limitedAppName)
-			unlimitedApplication = CreateApplication(unlimitedAppName)
-			unlimitedApplication.Status.ClientId = "unlimited-test-client-id"
-			err := k8sClient.Status().Update(ctx, unlimitedApplication)
-			Expect(err).ToNot(HaveOccurred())
-
-			By("Initializing the API for no-default test")
-			noDefaultApi = NewApi(noDefaultApiBasePath)
-			err = k8sClient.Create(ctx, noDefaultApi)
-			Expect(err).ToNot(HaveOccurred())
-
-			By("Creating the APIExposure with only consumer-specific rate limit")
-			noDefaultApiExposure = NewApiExposureWithConsumerRateLimit(noDefaultApiBasePath, zoneName, limitedApplication.Status.ClientId)
-			noDefaultApiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Default = nil
-
-			err = k8sClient.Create(ctx, noDefaultApiExposure)
-			Expect(err).ToNot(HaveOccurred())
-
-			// Set APIExposure as active with a route
-			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(noDefaultApiExposure), noDefaultApiExposure)
-				g.Expect(err).ToNot(HaveOccurred())
-				noDefaultApiExposure.Status.Active = true
-				noDefaultApiExposure.Status.Route = &types.ObjectRef{
-					Name:      "no-default-test-route",
-					Namespace: zone.Status.Namespace,
-				}
-				err = k8sClient.Status().Update(ctx, noDefaultApiExposure)
-				g.Expect(err).ToNot(HaveOccurred())
-			}, timeout, interval).Should(Succeed())
-		})
-
-		AfterAll(func() {
-			By("Cleaning up no-default test resources")
-			err := k8sClient.Delete(ctx, noDefaultApiExposure)
-			Expect(err).ToNot(HaveOccurred())
-
-			err = k8sClient.Delete(ctx, noDefaultApi)
-			Expect(err).ToNot(HaveOccurred())
-
-			err = k8sClient.Delete(ctx, limitedApplication)
-			Expect(err).ToNot(HaveOccurred())
-
-			err = k8sClient.Delete(ctx, unlimitedApplication)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("should apply rate limit to application with specific override", func() {
-			By("Creating the ApiSubscription for the limited application")
-			limitedApiSubscription = NewApiSubscription(noDefaultApiBasePath, zoneName, limitedAppName)
-			err := k8sClient.Create(ctx, limitedApiSubscription)
-			Expect(err).ToNot(HaveOccurred())
-
-			By("Verifying the ApiSubscription is created")
-			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(limitedApiSubscription), limitedApiSubscription)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(limitedApiSubscription.Status.ApprovalRequest).ToNot(BeNil())
-			}, timeout, interval).Should(Succeed())
-
-			By("Approving the subscription")
-			approvalRequest := &approvalapi.ApprovalRequest{}
-			err = k8sClient.Get(ctx, limitedApiSubscription.Status.ApprovalRequest.K8s(), approvalRequest)
-			Expect(err).ToNot(HaveOccurred())
-
-			// Progress the approval workflow
-			approvalRequest = ProgressApprovalRequest(limitedApiSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
-			ProgressApproval(limitedApiSubscription, approvalapi.ApprovalStateGranted, approvalRequest)
-
-			By("Verifying the ConsumeRoute is created with the consumer-specific rate limit")
-			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(limitedApiSubscription), limitedApiSubscription)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(limitedApiSubscription.Status.ConsumeRoute).ToNot(BeNil())
-
-				// Get the ConsumeRoute
-				consumeRoute := &gatewayapi.ConsumeRoute{}
-				err = k8sClient.Get(ctx, limitedApiSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
-				g.Expect(err).ToNot(HaveOccurred())
-
-				// Verify that the ConsumeRoute has rate limit configuration
-				g.Expect(consumeRoute.Spec.Traffic).ToNot(BeNil(), "ConsumeRoute should have traffic configuration")
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit).ToNot(BeNil(), "ConsumeRoute should have rate limit configuration")
-
-				// Get the consumer-specific override from the ApiExposure
-				var consumerRateLimit apiapi.RateLimitConfig
-				var ok bool
-				consumerRateLimit, ok = noDefaultApiExposure.GetOverriddenSubscriberRateLimit(limitedApplication.Status.ClientId)
-				g.Expect(ok).To(BeTrue(), "ApiExposure should have a rate limit override for this consumer")
-
-				// Verify that the consumer-specific rate limit values are correctly passed
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Limits.Second).To(Equal(consumerRateLimit.Limits.Second))
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Limits.Minute).To(Equal(consumerRateLimit.Limits.Minute))
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Limits.Hour).To(Equal(consumerRateLimit.Limits.Hour))
-
-				// Verify that the consumer-specific rate limit options are correctly passed
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Options.HideClientHeaders).To(Equal(consumerRateLimit.Options.HideClientHeaders))
-				g.Expect(consumeRoute.Spec.Traffic.RateLimit.Options.FaultTolerant).To(Equal(consumerRateLimit.Options.FaultTolerant))
-
-				// Verify that there is no default rate limit
-				g.Expect(noDefaultApiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Default).To(BeNil(), "ApiExposure should not have a default rate limit")
-			}, timeout, interval).Should(Succeed())
-		})
-
-		It("should not apply any rate limit to application without specific override", func() {
-			By("Creating the ApiSubscription for the unlimited application")
-			unlimitedApiSubscription = NewApiSubscription(noDefaultApiBasePath, zoneName, unlimitedAppName)
-			err := k8sClient.Create(ctx, unlimitedApiSubscription)
-			Expect(err).ToNot(HaveOccurred())
-
-			By("Verifying the ApiSubscription is created")
-			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(unlimitedApiSubscription), unlimitedApiSubscription)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(unlimitedApiSubscription.Status.ApprovalRequest).ToNot(BeNil())
-			}, timeout, interval).Should(Succeed())
-
-			By("Approving the subscription")
-			approvalRequest := &approvalapi.ApprovalRequest{}
-			err = k8sClient.Get(ctx, unlimitedApiSubscription.Status.ApprovalRequest.K8s(), approvalRequest)
-			Expect(err).ToNot(HaveOccurred())
-
-			// Progress the approval workflow
-			approvalRequest = ProgressApprovalRequest(unlimitedApiSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
-			ProgressApproval(unlimitedApiSubscription, approvalapi.ApprovalStateGranted, approvalRequest)
-
-			By("Verifying the ConsumeRoute is created without any rate limit")
-			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(unlimitedApiSubscription), unlimitedApiSubscription)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(unlimitedApiSubscription.Status.ConsumeRoute).ToNot(BeNil())
-
-				// Get the ConsumeRoute
-				consumeRoute := &gatewayapi.ConsumeRoute{}
-				err = k8sClient.Get(ctx, unlimitedApiSubscription.Status.ConsumeRoute.K8s(), consumeRoute)
-				g.Expect(err).ToNot(HaveOccurred())
-
-				// Verify that the ConsumeRoute has no rate limit configuration
+				// Verify consume route has no rate limit configuration
 				if consumeRoute.Spec.Traffic != nil {
 					g.Expect(consumeRoute.Spec.Traffic.RateLimit).To(BeNil(), "ConsumeRoute should not have rate limit configuration")
 				}
-
-				// Verify no consumer-specific override exists for this application
-				_, ok := noDefaultApiExposure.GetOverriddenSubscriberRateLimit(unlimitedApplication.Status.ClientId)
-				g.Expect(ok).To(BeFalse(), "ApiExposure should not have a rate limit override for this consumer")
-
-				// Verify that there is no default rate limit
-				g.Expect(noDefaultApiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Default).To(BeNil(), "ApiExposure should not have a default rate limit")
 			}, timeout, interval).Should(Succeed())
+
+			// Clean up
+			err = k8sClient.Delete(ctx, providerOnlySubscription)
+			Expect(err).ToNot(HaveOccurred())
+			err = k8sClient.Delete(ctx, providerOnlyApiExposure)
+			Expect(err).ToNot(HaveOccurred())
+			err = k8sClient.Delete(ctx, providerOnlyApi)
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 })

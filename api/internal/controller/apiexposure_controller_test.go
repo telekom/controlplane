@@ -103,30 +103,20 @@ func NewApiExposure(apiBasePath, zoneName string) *apiv1.ApiExposure {
 						},
 					},
 					SubscriberRateLimit: &apiv1.SubscriberRateLimits{
-						Default: &apiv1.RateLimitConfig{
+						Default: &apiv1.SubscriberRateLimitDefaults{
 							Limits: apiv1.Limits{
 								Second: 10,
 								Minute: 100,
 								Hour:   1000,
 							},
-							Options: apiv1.RateLimitOptions{
-								HideClientHeaders: pntBool(true),
-								FaultTolerant:     pntBool(true),
-							},
 						},
 						Overrides: []apiv1.RateLimitOverrides{
 							{
 								Subscriber: "test-subscriber",
-								Config: apiv1.RateLimitConfig{
-									Limits: apiv1.Limits{
-										Second: 10,
-										Minute: 100,
-										Hour:   1000,
-									},
-									Options: apiv1.RateLimitOptions{
-										HideClientHeaders: pntBool(true),
-										FaultTolerant:     pntBool(true),
-									},
+								Limits: apiv1.Limits{
+									Second: 10,
+									Minute: 100,
+									Hour:   1000,
 								},
 							},
 						},

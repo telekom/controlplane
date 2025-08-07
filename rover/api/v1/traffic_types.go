@@ -65,9 +65,10 @@ type RateLimit struct {
 }
 
 // RateLimitConfig defines rate limits for different time windows
+// +kubebuilder:validation:XValidation:rule="has(self.limits) || has(self.options)", message="At least on of limits or options must be provided"
 type RateLimitConfig struct {
-	// +kubebuilder:validation:Required
-	Limits Limits `json:"limits"`
+	// +kubebuilder:validation:Optional
+	Limits *Limits `json:"limits,omitempty"`
 	// +kubebuilder:validation:Optional
 	Options RateLimitOptions `json:"options,omitempty"`
 }
@@ -102,18 +103,23 @@ type RateLimitOptions struct {
 type ConsumerRateLimits struct {
 	// Default defines the rate limit applied to all consumers not specifically overridden
 	// +kubebuilder:validation:Optional
-	Default *RateLimitConfig `json:"default,omitempty"`
+	Default *ConsumerRateLimitDefaults `json:"default,omitempty"`
 	// Overrides defines consumer-specific rate limits
 	// +kubebuilder:validation:MaxItems=10
-	Overrides []RateLimitOverrides `json:"overrides,omitempty"`
+	Overrides []ConsumerRateLimitOverrides `json:"overrides,omitempty"`
 }
 
-type RateLimitOverrides struct {
+type ConsumerRateLimitDefaults struct {
+	// +kubebuilder:validation:Required
+	Limits Limits `json:"limits"`
+}
+
+type ConsumerRateLimitOverrides struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	Consumer string `json:"consumer"`
 	// +kubebuilder:validation:Required
-	Config RateLimitConfig `json:"config"`
+	Limits Limits `json:"limits"`
 }
 
 func (t *Traffic) HasFailover() bool {
@@ -131,9 +137,30 @@ func (t *Traffic) HasProviderRateLimit() bool {
 	return t.RateLimit.Provider != nil
 }
 
+func (t *Traffic) HasProviderRateLimitLimits() bool {
+	if !t.HasProviderRateLimit() {
+		return false
+	}
+	return t.RateLimit.Provider.Limits != nil
+}
+
 func (t *Traffic) HasConsumerRateLimit() bool {
 	if !t.HasRateLimit() {
 		return false
 	}
 	return t.RateLimit.Consumers != nil
+}
+
+func (t *Traffic) HasConsumerDefaultsRateLimit() bool {
+	if !t.HasConsumerRateLimit() {
+		return false
+	}
+	return t.RateLimit.Consumers.Default != nil
+}
+
+func (t *Traffic) HasConsumerOverridesRateLimit() bool {
+	if !t.HasConsumerRateLimit() {
+		return false
+	}
+	return t.RateLimit.Consumers.Overrides != nil
 }

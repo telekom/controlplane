@@ -218,6 +218,16 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		options = append(options, util.WithFailoverZone(failoverZone))
 	}
 
+	if apiExposure.HasProviderRateLimit() {
+		options = append(options, util.WithServiceRateLimit(apiExposure.Spec.Traffic.RateLimit.Provider))
+	}
+
+	if limits, ok := apiExposure.GetOverriddenSubscriberRateLimit(application.Status.ClientId); ok {
+		options = append(options, util.WithConsumerRateLimit(&limits))
+	} else if apiExposure.HasDefaultSubscriberRateLimit() {
+		options = append(options, util.WithConsumerRateLimit(&apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Default.Limits))
+	}
+
 	proxyRoute, err := util.CreateProxyRoute(ctx, apiSub.Spec.Zone, apiExposure.Spec.Zone, apiSub.Spec.ApiBasePath,
 		contextutil.EnvFromContextOrDie(ctx),
 		options...,
@@ -229,10 +239,10 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	consumeRouteOptions := []util.CreateConsumeRouteOption{}
 
-	if rateLimit, ok := apiExposure.GetOverriddenSubscriberRateLimit(application.Status.ClientId); ok {
-		consumeRouteOptions = append(consumeRouteOptions, util.WithRateLimit(rateLimit))
+	if limits, ok := apiExposure.GetOverriddenSubscriberRateLimit(application.Status.ClientId); ok {
+		consumeRouteOptions = append(consumeRouteOptions, util.WithConsumerRouteRateLimit(limits))
 	} else if apiExposure.HasDefaultSubscriberRateLimit() {
-		consumeRouteOptions = append(consumeRouteOptions, util.WithRateLimit(*apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Default))
+		consumeRouteOptions = append(consumeRouteOptions, util.WithConsumerRouteRateLimit(apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Default.Limits))
 	}
 
 	consumeRoute, err := util.CreateConsumeRoute(ctx, apiSub, apiSub.Spec.Zone, *types.ObjectRefFromObject(proxyRoute), application.Status.ClientId, consumeRouteOptions...)

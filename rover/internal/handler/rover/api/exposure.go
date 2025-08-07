@@ -223,13 +223,27 @@ func mapRateLimitConfigToApiRateLimitConfig(roverRateLimitConfig *rover.RateLimi
 	}
 }
 
+func mapConsumerRateLimitDefaultsToApiSubscriberRateLimitDefaults(roverRateLimitConfig *rover.ConsumerRateLimitDefaults) *apiapi.SubscriberRateLimitDefaults {
+	if roverRateLimitConfig == nil {
+		return nil
+	}
+
+	return &apiapi.SubscriberRateLimitDefaults{
+		Limits: apiapi.Limits{
+			Second: roverRateLimitConfig.Limits.Second,
+			Minute: roverRateLimitConfig.Limits.Minute,
+			Hour:   roverRateLimitConfig.Limits.Hour,
+		},
+	}
+}
+
 func mapConsumerRateLimitToApiSubscriberRateLimit(consumerRateLimits *rover.ConsumerRateLimits) *apiapi.SubscriberRateLimits {
 	if consumerRateLimits == nil {
 		return nil
 	}
 
 	subscriberRateLimits := &apiapi.SubscriberRateLimits{
-		Default: mapRateLimitConfigToApiRateLimitConfig(consumerRateLimits.Default),
+		Default: mapConsumerRateLimitDefaultsToApiSubscriberRateLimitDefaults(consumerRateLimits.Default),
 	}
 
 	if len(consumerRateLimits.Overrides) > 0 {
@@ -237,7 +251,11 @@ func mapConsumerRateLimitToApiSubscriberRateLimit(consumerRateLimits *rover.Cons
 		for _, override := range consumerRateLimits.Overrides {
 			overrides = append(overrides, apiapi.RateLimitOverrides{
 				Subscriber: override.Consumer,
-				Config:     *mapRateLimitConfigToApiRateLimitConfig(&override.Config),
+				Limits: apiapi.Limits{
+					Second: override.Limits.Second,
+					Minute: override.Limits.Minute,
+					Hour:   override.Limits.Hour,
+				},
 			})
 		}
 		subscriberRateLimits.Overrides = overrides

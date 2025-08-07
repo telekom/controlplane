@@ -141,13 +141,13 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 		})
 
 		Context("When validating rate limit configurations", func() {
-			It("Should deny if no rate limit time window is specified", func() {
+			It("Should deny if no rate limit time window is specified but structure is provided", func() {
 				By("Creating a Rover with empty rate limits")
 				roverObj = NewRover(*testZone)
 				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
 					RateLimit: &roverv1.RateLimit{
 						Provider: &roverv1.RateLimitConfig{
-							Limits: roverv1.Limits{
+							Limits: &roverv1.Limits{
 								// All values are 0 (default)
 							},
 						},
@@ -164,7 +164,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
 					RateLimit: &roverv1.RateLimit{
 						Provider: &roverv1.RateLimitConfig{
-							Limits: roverv1.Limits{
+							Limits: &roverv1.Limits{
 								Second: 10,
 								Minute: 10,
 							},
@@ -180,7 +180,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
 					RateLimit: &roverv1.RateLimit{
 						Provider: &roverv1.RateLimitConfig{
-							Limits: roverv1.Limits{
+							Limits: &roverv1.Limits{
 								Second: 20,
 								Minute: 10,
 							},
@@ -198,7 +198,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
 					RateLimit: &roverv1.RateLimit{
 						Provider: &roverv1.RateLimitConfig{
-							Limits: roverv1.Limits{
+							Limits: &roverv1.Limits{
 								Minute: 100,
 								Hour:   100,
 							},
@@ -214,7 +214,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
 					RateLimit: &roverv1.RateLimit{
 						Provider: &roverv1.RateLimitConfig{
-							Limits: roverv1.Limits{
+							Limits: &roverv1.Limits{
 								Minute: 200,
 								Hour:   100,
 							},
@@ -232,7 +232,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
 					RateLimit: &roverv1.RateLimit{
 						Consumers: &roverv1.ConsumerRateLimits{
-							Default: &roverv1.RateLimitConfig{
+							Default: &roverv1.ConsumerRateLimitDefaults{
 								Limits: roverv1.Limits{
 									Second: 10,
 									Minute: 5, // Invalid: Second > Minute
@@ -252,14 +252,12 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
 					RateLimit: &roverv1.RateLimit{
 						Consumers: &roverv1.ConsumerRateLimits{
-							Overrides: []roverv1.RateLimitOverrides{
+							Overrides: []roverv1.ConsumerRateLimitOverrides{
 								{
 									Consumer: "test-consumer",
-									Config: roverv1.RateLimitConfig{
-										Limits: roverv1.Limits{
-											Minute: 100,
-											Hour:   50, // Invalid: Minute > Hour
-										},
+									Limits: roverv1.Limits{
+										Minute: 100,
+										Hour:   50, // Invalid: Minute > Hour
 									},
 								},
 							},
@@ -267,16 +265,17 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 				warnings, err := validator.ValidateCreate(ctx, roverObj)
-				expectedErrorMessage := "invalid consumer override rate limit at index 0: minute (100) must be less than hour (50)"
+				expectedErrorMessage := "invalid consumer override rate limit for consumer test-consumer: minute (100) must be less than hour (50)"
 				assertValidationFailedWith(warnings, err, errors.IsBadRequest, expectedErrorMessage)
 			})
+
 			It("Should admit valid rate limit configurations", func() {
 				By("Creating a Rover with valid provider rate limits")
 				roverObj = NewRover(*testZone)
 				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
 					RateLimit: &roverv1.RateLimit{
 						Provider: &roverv1.RateLimitConfig{
-							Limits: roverv1.Limits{
+							Limits: &roverv1.Limits{
 								Second: 5,
 								Minute: 60,
 								Hour:   1000,
@@ -293,22 +292,20 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
 					RateLimit: &roverv1.RateLimit{
 						Consumers: &roverv1.ConsumerRateLimits{
-							Default: &roverv1.RateLimitConfig{
+							Default: &roverv1.ConsumerRateLimitDefaults{
 								Limits: roverv1.Limits{
 									Second: 3,
 									Minute: 30,
 									Hour:   300,
 								},
 							},
-							Overrides: []roverv1.RateLimitOverrides{
+							Overrides: []roverv1.ConsumerRateLimitOverrides{
 								{
 									Consumer: "test-consumer",
-									Config: roverv1.RateLimitConfig{
-										Limits: roverv1.Limits{
-											Second: 10,
-											Minute: 100,
-											Hour:   1000,
-										},
+									Limits: roverv1.Limits{
+										Second: 10,
+										Minute: 100,
+										Hour:   1000,
 									},
 								},
 							},
@@ -324,13 +321,34 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
 					RateLimit: &roverv1.RateLimit{
 						Provider: &roverv1.RateLimitConfig{
-							Limits: roverv1.Limits{
+							Limits: &roverv1.Limits{
 								Second: 5, // Only second specified
 							},
 						},
 					},
 				}
 				warnings, err = validator.ValidateCreate(ctx, roverObj)
+				Expect(warnings).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("Should not panic if rate limit fields are nil", func() {
+				By("Creating a Rover with nil rate limit fields")
+				roverObj = NewRover(*testZone)
+				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
+					RateLimit: &roverv1.RateLimit{
+						Consumers: &roverv1.ConsumerRateLimits{
+							Overrides: nil,
+							Default:   nil,
+						},
+						Provider: &roverv1.RateLimitConfig{
+							Limits: nil,
+						},
+					},
+				}
+				warnings, err := validator.ValidateCreate(ctx, roverObj)
+				// This should pass validation since we're just testing that no panic occurs
+				// with nil fields - the webhook should handle nil fields gracefully
 				Expect(warnings).To(BeNil())
 				Expect(err).ToNot(HaveOccurred())
 			})

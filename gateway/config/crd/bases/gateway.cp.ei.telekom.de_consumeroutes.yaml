@@ -131,8 +131,6 @@ spec:
               traffic:
                 properties:
                   rateLimit:
-                    description: RateLimit defines rate limits for different time
-                      windows
                     properties:
                       limits:
                         description: Limits defines the actual rate limit values for
@@ -153,24 +151,6 @@ spec:
                               allowed per second
                             minimum: 0
                             type: integer
-                        type: object
-                      options:
-                        description: RateLimitOptions defines additional configuration
-                          options for rate limiting
-                        properties:
-                          faultTolerant:
-                            default: true
-                            description: FaultTolerant defines if the rate limit plugin
-                              should be fault tolerant, if gateway is not able to
-                              access the config store
-                            type: boolean
-                          hideClientHeaders:
-                            default: false
-                            description: HideClientHeaders hides additional client
-                              headers which give information about the rate-limit,
-                              reset and remaining requests for consumers if set to
-                              true.
-                            type: boolean
                         type: object
                     required:
                     - limits
