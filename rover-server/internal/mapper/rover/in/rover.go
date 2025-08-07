@@ -27,9 +27,7 @@ func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *rove
 				config.EnvironmentLabelKey: id.Environment,
 			},
 		},
-		Spec: roverv1.RoverSpec{
-			ClientSecret: "topsecret", // TODO: generate secret
-		},
+		Spec: roverv1.RoverSpec{},
 	}
 	if err = MapRover(in, res); err != nil {
 		return res, errors.Wrap(err, "Get All Rovers")
