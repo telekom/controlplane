@@ -37,6 +37,8 @@ func mapApiExposure(in *roverv1.ApiExposure) api.ApiExposure {
 		Approval:   toApiApprovalStrategy(in.Approval.Strategy),
 	}
 
+	mapTrustedTeams(in, &apiExposure)
+
 	if len(in.Upstreams) == 1 {
 		apiExposure.Upstream = in.Upstreams[0].URL
 	} else {
@@ -163,4 +165,17 @@ func mapExposureTraffic(in *roverv1.ApiExposure, out *api.ApiExposure) {
 	}
 
 	// todo: ratelimit (ignore for now until implementation is clear)
+}
+
+func mapTrustedTeams(in *roverv1.ApiExposure, out *api.ApiExposure) {
+	if in.Approval.TrustedTeams == nil {
+		return
+	}
+
+	out.TrustedTeams = make([]api.TrustedTeam, len(in.Approval.TrustedTeams))
+	for i, team := range in.Approval.TrustedTeams {
+		out.TrustedTeams[i] = api.TrustedTeam{
+			Team: team.Group + "--" + team.Team,
+		}
+	}
 }
