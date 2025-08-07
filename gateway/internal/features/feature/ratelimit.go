@@ -37,7 +37,16 @@ func (f *RateLimitFeature) IsUsed(ctx context.Context, builder features.Features
 		return false
 	}
 
-	return !route.Spec.PassThrough && route.HasRateLimit()
+	anyConsumerHasRateLimiting := false
+	consumers := builder.GetAllowedConsumers()
+	for _, allowedConsumer := range consumers {
+		if allowedConsumer.HasTrafficRateLimit() {
+			anyConsumerHasRateLimiting = true
+			break
+		}
+	}
+
+	return !route.Spec.PassThrough && (route.HasRateLimit() || anyConsumerHasRateLimiting)
 }
 
 func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {

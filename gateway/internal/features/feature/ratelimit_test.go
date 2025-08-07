@@ -59,16 +59,46 @@ var _ = Describe("RateLimitFeature", func() {
 					},
 				}
 				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
+				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
 			})
 
-			It("should not be used when route has no rate limit", func() {
+			It("should not be used when route and consumer has no rate limit", func() {
 				route := &gatewayv1.Route{
 					Spec: gatewayv1.RouteSpec{
 						PassThrough: false,
 					},
 				}
 				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
+				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
+				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
+			})
+
+			It("should not be used when consumeroute has rate limit and route is pass-through", func() {
+				route := &gatewayv1.Route{
+					Spec: gatewayv1.RouteSpec{
+						PassThrough: true,
+					},
+				}
+
+				consumeRoutes := []*gatewayv1.ConsumeRoute{
+					{
+						Spec: gatewayv1.ConsumeRouteSpec{
+							Traffic: &gatewayv1.ConsumeRouteTraffic{
+								RateLimit: &gatewayv1.ConsumeRouteRateLimit{
+									Limits: gatewayv1.Limits{
+										Second: 100,
+										Minute: 1000,
+										Hour:   10000,
+									},
+								},
+							},
+						},
+					},
+				}
+
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
+				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return(consumeRoutes)
 				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
 			})
 
@@ -88,8 +118,38 @@ var _ = Describe("RateLimitFeature", func() {
 					},
 				}
 				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
+				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeTrue())
 			})
+
+			It("should be used when consumeroute has rate limit and route is not pass-through", func() {
+				route := &gatewayv1.Route{
+					Spec: gatewayv1.RouteSpec{
+						PassThrough: false,
+					},
+				}
+
+				consumeRoutes := []*gatewayv1.ConsumeRoute{
+					{
+						Spec: gatewayv1.ConsumeRouteSpec{
+							Traffic: &gatewayv1.ConsumeRouteTraffic{
+								RateLimit: &gatewayv1.ConsumeRouteRateLimit{
+									Limits: gatewayv1.Limits{
+										Second: 100,
+										Minute: 1000,
+										Hour:   10000,
+									},
+								},
+							},
+						},
+					},
+				}
+
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
+				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return(consumeRoutes)
+				Expect(feature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeTrue())
+			})
+
 		})
 
 		Context("Apply", func() {
