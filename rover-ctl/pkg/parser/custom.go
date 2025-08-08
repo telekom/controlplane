@@ -4,7 +4,9 @@
 
 package parser
 
-import "github.com/telekom/controlplane/rover-ctl/pkg/types"
+import (
+	"github.com/telekom/controlplane/rover-ctl/pkg/types"
+)
 
 var Opts = []Option{
 	WithHook(HookAfterParse, func(obj types.Object) error {
@@ -12,7 +14,7 @@ var Opts = []Option{
 		if isOpenapiSpec {
 			obj.SetKind("ApiSpecification")
 			obj.SetApiVersion("tcp.ei.telekom.de/v1")
-			obj.SetName("tbd")
+			return ParseApiSpecification(obj)
 		}
 
 		obj.SetProperty("name", obj.GetName())

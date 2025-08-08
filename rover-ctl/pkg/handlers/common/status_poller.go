@@ -8,6 +8,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-logr/logr"
+	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
 
@@ -17,14 +19,15 @@ type StatusHandler interface {
 
 type StatusEvalFunc func(ctx context.Context, status types.ObjectStatus) (continuePolling bool, err error)
 
-var defaultStatusEvalFunc StatusEvalFunc = func(_ context.Context, status types.ObjectStatus) (bool, error) {
-	if status.ProcessingState() == "done" {
+var defaultStatusEvalFunc StatusEvalFunc = func(_ context.Context, status types.ObjectStatus) (continuePolling bool, err error) {
+	if status.GetProcessingState() == "done" {
 		return false, nil
 	}
 	return true, nil
 }
 
 type StatusPoller struct {
+	logger   logr.Logger
 	handler  StatusHandler
 	timeout  time.Duration
 	interval time.Duration
@@ -36,6 +39,7 @@ func NewStatusPoller(handler StatusHandler, evalFunc StatusEvalFunc) *StatusPoll
 		evalFunc = defaultStatusEvalFunc
 	}
 	return &StatusPoller{
+		logger:   log.L().WithName("status-poller"),
 		handler:  handler,
 		evalFunc: evalFunc,
 		timeout:  30 * time.Second,
@@ -44,6 +48,7 @@ func NewStatusPoller(handler StatusHandler, evalFunc StatusEvalFunc) *StatusPoll
 }
 
 func (p *StatusPoller) Start(ctx context.Context, name string) (types.ObjectStatus, error) {
+
 	ctx, cancel := context.WithTimeout(ctx, p.timeout)
 	defer cancel()
 
@@ -59,11 +64,11 @@ func (p *StatusPoller) Start(ctx context.Context, name string) (types.ObjectStat
 			if err != nil {
 				return nil, err
 			}
-			done, err := p.evalFunc(ctx, status)
+			continuePolling, err := p.evalFunc(ctx, status)
 			if err != nil {
 				return nil, err
 			}
-			if done {
+			if !continuePolling {
 				return status, nil
 			}
 		}

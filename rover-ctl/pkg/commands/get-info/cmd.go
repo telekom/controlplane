@@ -46,7 +46,7 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "failed to get rover handler")
 	}
 
-	c.Logger.V(1).Info("Getting info for resource", "name", c.Name)
+	c.Logger().V(1).Info("Getting info for resource", "name", c.Name)
 
 	info, err := roverHandler.Info(cmd.Context(), c.Name)
 	if err != nil {
@@ -63,7 +63,7 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "failed to write output")
 	}
 
-	c.Logger.V(1).Info("Successfully retrieved info for resource", "name", c.Name)
+	c.Logger().V(1).Info("Successfully retrieved info for resource", "name", c.Name)
 
 	return nil
 }
