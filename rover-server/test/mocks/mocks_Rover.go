@@ -7,10 +7,9 @@ package mocks
 import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/mock"
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewRoverStoreMock(testing ginkgo.FullGinkgoTInterface) store.ObjectStore[*roverv1.Rover] {
@@ -65,7 +64,7 @@ func configureRoverNotFound(mockedStore *MockObjectStore[*roverv1.Rover]) {
 		mock.MatchedBy(func(s string) bool {
 			return s != "rover-local-sub"
 		}),
-	).Return(nil, apierrors.NewNotFound(schema.ParseGroupResource("rover.cp.ei.telekom.de"), "unknown")).Maybe()
+	).Return(nil, problems.NotFound("rover not found")).Maybe()
 
 	mockedStore.EXPECT().Delete(
 		mock.AnythingOfType("*context.valueCtx"),
@@ -75,5 +74,5 @@ func configureRoverNotFound(mockedStore *MockObjectStore[*roverv1.Rover]) {
 		mock.MatchedBy(func(s string) bool {
 			return s != "rover-local-sub"
 		}),
-	).Return(apierrors.NewNotFound(schema.ParseGroupResource("rover.cp.ei.telekom.de"), "unknown")).Maybe()
+	).Return(problems.NotFound("rover not found")).Maybe()
 }

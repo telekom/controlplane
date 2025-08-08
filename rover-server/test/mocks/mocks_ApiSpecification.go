@@ -7,10 +7,9 @@ package mocks
 import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/mock"
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewApiSpecificationStoreMock(testing ginkgo.FullGinkgoTInterface) store.ObjectStore[*roverv1.ApiSpecification] {
@@ -67,7 +66,7 @@ func configureNotFound(mockedStore *MockObjectStore[*roverv1.ApiSpecification]) 
 		mock.MatchedBy(func(s string) bool {
 			return s != "apispec-sample"
 		}),
-	).Return(nil, apierrors.NewNotFound(schema.ParseGroupResource("rover.cp.ei.telekom.de"), "unknown")).Maybe()
+	).Return(nil, problems.NotFound("apispec not found")).Maybe()
 
 	mockedStore.EXPECT().Delete(
 		mock.AnythingOfType("*context.valueCtx"),
@@ -75,5 +74,5 @@ func configureNotFound(mockedStore *MockObjectStore[*roverv1.ApiSpecification]) 
 		mock.MatchedBy(func(s string) bool {
 			return s != "apispec-sample"
 		}),
-	).Return(apierrors.NewNotFound(schema.ParseGroupResource("rover.cp.ei.telekom.de"), "unknown")).Maybe()
+	).Return(problems.NotFound("apispec not found")).Maybe()
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
@@ -55,12 +54,10 @@ func (a *ApiSpecificationController) Delete(ctx context.Context, resourceId stri
 	ns := id.Environment + "--" + id.Namespace
 	err = a.Store.Delete(ctx, ns, id.Name)
 	if err != nil {
-		notFound := errors.IsNotFound(err)
-		if notFound {
-			return problems.NotFound(resourceId, err.Error())
+		if problems.IsNotFound(err) {
+			return problems.NotFound(resourceId)
 		}
-
-		return problems.InternalServerError("Failed to delete resource", err.Error())
+		return err
 	}
 	return nil
 }
@@ -75,7 +72,10 @@ func (a *ApiSpecificationController) Get(ctx context.Context, resourceId string)
 	ns := id.Environment + "--" + id.Namespace
 	apiSpec, err := a.Store.Get(ctx, ns, id.Name)
 	if err != nil {
-		return res, problems.NotFound(resourceId, err.Error())
+		if problems.IsNotFound(err) {
+			return res, problems.NotFound(resourceId)
+		}
+		return res, err
 	}
 
 	return out.MapResponse(apiSpec)
@@ -139,7 +139,10 @@ func (a *ApiSpecificationController) GetStatus(ctx context.Context, resourceId s
 	ns := id.Environment + "--" + id.Namespace
 	apiSpec, err := a.Store.Get(ctx, ns, id.Name)
 	if err != nil {
-		return res, problems.NotFound(resourceId, err.Error())
+		if problems.IsNotFound(err) {
+			return res, problems.NotFound(resourceId)
+		}
+		return res, err
 	}
 
 	return status.MapResponse(apiSpec.Status.Conditions)

@@ -61,6 +61,9 @@ func (r *RoverController) Delete(ctx context.Context, resourceId string) error {
 	ns := id.Environment + "--" + id.Namespace
 	err = r.Store.Delete(ctx, ns, id.Name)
 	if err != nil {
+		if problems.IsNotFound(err) {
+			return problems.NotFound(resourceId)
+		}
 		return err
 	}
 	return nil
@@ -76,7 +79,10 @@ func (r *RoverController) Get(ctx context.Context, resourceId string) (res api.R
 	ns := id.Environment + "--" + id.Namespace
 	rover, err := r.SecretStore.Get(ctx, ns, id.Name)
 	if err != nil {
-		return res, problems.NotFound(resourceId, err.Error())
+		if problems.IsNotFound(err) {
+			return res, problems.NotFound(resourceId)
+		}
+		return res, err
 	}
 
 	return out.MapRoverResponse(ctx, rover)
@@ -142,7 +148,10 @@ func (r *RoverController) GetStatus(ctx context.Context, resourceId string) (res
 	ns := id.Environment + "--" + id.Namespace
 	rover, err := r.Store.Get(ctx, ns, id.Name)
 	if err != nil {
-		return res, problems.NotFound(resourceId, err.Error())
+		if problems.IsNotFound(err) {
+			return res, problems.NotFound(resourceId)
+		}
+		return res, err
 	}
 
 	return status.MapRoverResponse(ctx, rover)
@@ -162,7 +171,10 @@ func (r *RoverController) GetApplicationInfo(ctx context.Context, resourceId str
 	ns := id.Environment + "--" + id.Namespace
 	rover, err := r.SecretStore.Get(ctx, ns, id.Name)
 	if err != nil {
-		return res, problems.NotFound(resourceId, err.Error())
+		if problems.IsNotFound(err) {
+			return res, problems.NotFound(resourceId)
+		}
+		return res, err
 	}
 
 	appInfo, err := applicationinfo.MapApplicationInfo(ctx, rover)
@@ -226,7 +238,7 @@ func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId strin
 	ns := id.Environment + "--" + id.Namespace
 	rover, err := r.Store.Get(ctx, ns, id.Name)
 	if err != nil {
-		return res, problems.NotFound(resourceId, err.Error())
+		return res, problems.NotFound(resourceId)
 	}
 
 	if rover == nil || rover.Status.Application == nil {
