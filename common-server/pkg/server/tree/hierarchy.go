@@ -45,7 +45,7 @@ var LookupResourceHierarchy = &ResourceHierarchy{
 }
 
 func init() {
-	roverRef := TreeResourceInfo{APIVersion: "rover.apimanager.telekom.de/v1", Kind: "Rover"}
+	roverRef := TreeResourceInfo{APIVersion: "rover.cp.ei.telekom.de/v1", Kind: "Rover"}
 
 	LookupResourceHierarchy.AddChild(roverRef, TreeResourceInfo{APIVersion: "stargate.cp.ei.telekom.de/v1", Kind: "ApiExposure"})
 	LookupResourceHierarchy.AddChild(roverRef, TreeResourceInfo{APIVersion: "stargate.cp.ei.telekom.de/v1", Kind: "ApiSubscription"})

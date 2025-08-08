@@ -95,7 +95,7 @@ func (h *Handler) UpsertTeam(ctx context.Context, request api.UpsertTeamRequestO
 }
 
 func (h *Handler) UpsertApp(ctx context.Context, request api.UpsertAppRequestObject) (api.UpsertAppResponseObject, error) {
-	res, err := h.ctrl.OnboardApplication(ctx, request.EnvId, request.TeamId, request.AppId)
+	res, err := h.ctrl.OnboardApplication(ctx, request.EnvId, request.TeamId, request.AppId, controller.WithSecretValues(parseAdditionalSecrets(request.Body.Secrets)))
 	if err != nil {
 		return nil, err
 	}
@@ -142,4 +142,19 @@ func mapOnboardingResponseItems(items map[string]string) []api.ListSecretItem {
 		})
 	}
 	return list
+}
+
+func parseAdditionalSecrets(optionalSecrets *[]api.NamedSecret) map[string]string {
+	if optionalSecrets == nil {
+		return nil
+	}
+	secrets := *optionalSecrets
+
+	additionalSecrets := make(map[string]string, len(secrets))
+	for _, secret := range secrets {
+		if secret.Name != "" && secret.Value != "" {
+			additionalSecrets[secret.Name] = secret.Value
+		}
+	}
+	return additionalSecrets
 }

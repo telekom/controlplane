@@ -1,0 +1,33 @@
+{
+  "apiVersion": "admin.cp.ei.telekom.de/v1",
+  "kind": "Zone",
+  "metadata": {
+    "name": "dataplane1",
+    "namespace": "poc",
+    "labels": {
+      "cp.ei.telekom.de/environment": "poc"
+    }
+  },
+  "spec": {},
+  "status": {
+    "links": {
+      "GatewayIssuer": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc",
+      "GatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
+      "StargateLmsIssuer": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc"
+    },
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "ZoneProvisioned",
+        "message": "Zone has been provisioned"
+      },
+      {
+        "type": "Processing",
+        "status": "False",
+        "reason": "Done",
+        "message": "Zone has been provisioned"
+      }
+    ]
+  }
+}

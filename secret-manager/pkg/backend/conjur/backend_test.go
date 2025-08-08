@@ -117,6 +117,27 @@ var _ = Describe("Conjur Backend", func() {
 			Expect(err).To(HaveOccurred())
 		})
 
+		It("should return a sub-secret", func() {
+			ctx := context.Background()
+			conjurBackend := conjur.NewBackend(writeAPI, readAPI)
+
+			readAPI.EXPECT().RetrieveSecret("controlplane/test/my-team/my-app/externalSecrets").Return([]byte(`{"key1":"value1","key2/sub":"value2"}`), nil).Times(1)
+
+			secretId := conjur.New("test", "my-team", "my-app", "externalSecrets/key1", "checksum")
+			secretValue, err := conjurBackend.Get(ctx, secretId)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secretValue).ToNot(BeNil())
+			Expect(secretValue.Value()).To(Equal("value1"))
+
+			readAPI.EXPECT().RetrieveSecret("controlplane/test/my-team/my-app/externalSecrets").Return([]byte(`{"key1":"value1","key2/sub":"value2"}`), nil).Times(1)
+
+			secretId = conjur.New("test", "my-team", "my-app", "externalSecrets/key2/sub", "checksum")
+			secretValue, err = conjurBackend.Get(ctx, secretId)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secretValue).ToNot(BeNil())
+			Expect(secretValue.Value()).To(Equal("value2"))
+		})
+
 	})
 
 	Context("Set", func() {

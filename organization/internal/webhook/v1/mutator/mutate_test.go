@@ -14,7 +14,6 @@ import (
 	"github.com/telekom/controlplane/organization/internal/secret"
 	"github.com/telekom/controlplane/organization/internal/secret/mock"
 	"github.com/telekom/controlplane/secret-manager/api"
-	"github.com/telekom/controlplane/secret-manager/api/gen"
 )
 
 // Future improvement: use automated mocks such as: https://github.com/uber-go/mock or https://github.com/stretchr/testify?tab=readme-ov-file#mock-package
@@ -26,7 +25,7 @@ func TestMutateSecret(t *testing.T) {
 		teamObj           *organizationv1.Team
 		env               string
 		mock              func() api.SecretManager
-		mockFindSecretId  func([]gen.ListSecretItem, string) (string, bool)
+		mockFindSecretId  func(map[string]string, string) (string, bool)
 		expectedError     bool
 		expectedNewSecret bool
 	}{
@@ -164,16 +163,16 @@ func (f faultyMock) Rotate(ctx context.Context, secretID string) (newID string, 
 	return "", fmt.Errorf("faulty mock")
 }
 
-func (f faultyMock) UpsertEnvironment(ctx context.Context, envID string) (availableSecrets []gen.ListSecretItem, err error) {
-	return []gen.ListSecretItem{}, fmt.Errorf("faulty mock")
+func (f faultyMock) UpsertEnvironment(ctx context.Context, envID string) (availableSecrets map[string]string, err error) {
+	return make(map[string]string), fmt.Errorf("faulty mock")
 }
 
-func (f faultyMock) UpsertTeam(ctx context.Context, envID, teamID string) (availableSecrets []gen.ListSecretItem, err error) {
-	return []gen.ListSecretItem{}, fmt.Errorf("faulty mock")
+func (f faultyMock) UpsertTeam(ctx context.Context, envID, teamID string) (availableSecrets map[string]string, err error) {
+	return make(map[string]string), fmt.Errorf("faulty mock")
 }
 
-func (f faultyMock) UpsertApplication(ctx context.Context, envID, teamID, appID string) (availableSecrets []gen.ListSecretItem, err error) {
-	return []gen.ListSecretItem{}, fmt.Errorf("faulty mock")
+func (f faultyMock) UpsertApplication(ctx context.Context, envID, teamID, appID string, opts ...api.OnboardingOption) (availableSecrets map[string]string, err error) {
+	return make(map[string]string), fmt.Errorf("faulty mock")
 }
 
 func (f faultyMock) DeleteEnvironment(ctx context.Context, envID string) (err error) {
@@ -188,6 +187,6 @@ func (f faultyMock) DeleteApplication(ctx context.Context, envID, teamID, appID 
 	return fmt.Errorf("faulty mock")
 }
 
-func emptyAvailableSecrets(availableSecrets []gen.ListSecretItem, secretType string) (string, bool) {
+func emptyAvailableSecrets(availableSecrets map[string]string, secretType string) (string, bool) {
 	return "", false
 }

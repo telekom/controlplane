@@ -33,6 +33,8 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
+	secretsapifake "github.com/telekom/controlplane/secret-manager/api/fake"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -56,6 +58,8 @@ var (
 
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	secretManagerMock *secretsapifake.MockSecretManager
 )
 
 func TestControllers(t *testing.T) {
@@ -135,6 +139,12 @@ var _ = BeforeSuite(func() {
 		Recorder: &mock.EventRecorder{},
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
+
+	// Mock SecretManager
+	secretManagerMock = secretsapifake.NewMockSecretManager(GinkgoT())
+	secretsapi.API = func() secretsapi.SecretManager {
+		return secretManagerMock
+	}
 
 	go func() {
 		defer GinkgoRecover()

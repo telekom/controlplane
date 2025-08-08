@@ -6,7 +6,11 @@ package rover
 
 import (
 	"context"
+	"strings"
+
+	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/api"
 	"github.com/telekom/controlplane/rover/internal/handler/rover/application"
 
@@ -16,6 +20,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 )
 
 var _ handler.Handler[*roverv1.Rover] = (*RoverHandler)(nil)
@@ -24,6 +29,7 @@ type RoverHandler struct{}
 
 func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rover) error {
 	c := client.ClientFromContextOrDie(ctx)
+	log := logr.FromContextOrDiscard(ctx)
 	c.AddKnownTypeToState(&apiapi.ApiExposure{})
 	c.AddKnownTypeToState(&apiapi.ApiSubscription{})
 
@@ -44,7 +50,8 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 			}
 
 		case roverv1.TypeEvent:
-			return errors.New("event exposure not implemented")
+			log.Info("event exposure not implemented, skipping")
+			continue
 
 		default:
 			return errors.New("unknown exposure type: " + exp.Type().String())
@@ -62,7 +69,8 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 			}
 
 		case roverv1.TypeEvent:
-			return errors.New("event subscription not implemented")
+			log.Info("event subscription not implemented, skipping")
+			continue
 
 		default:
 			return errors.New("unknown subscription type: " + sub.Type().String())
@@ -88,5 +96,14 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 }
 
 func (h *RoverHandler) Delete(ctx context.Context, rover *roverv1.Rover) error {
+	envId := contextutil.EnvFromContextOrDie(ctx)
+	parts := strings.SplitN(rover.GetNamespace(), "--", 2)
+	teamId := parts[1]
+	appId := rover.GetName()
+	err := secretsapi.API().DeleteApplication(ctx, envId, teamId, appId)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete application from secret manager")
+	}
+
 	return nil
 }

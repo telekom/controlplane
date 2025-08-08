@@ -1,0 +1,10 @@
+
+[Exposure Traffic Mapper mapExposureTraffic must map failover zones correctly - 1]
+v1.Traffic{
+    LoadBalancing: (*v1.LoadBalancing)(nil),
+    Failover:      &v1.Failover{
+        Zones: {"zone1", "zone2"},
+    },
+    RateLimit: (*v1.RateLimit)(nil),
+}
+---

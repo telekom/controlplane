@@ -31,7 +31,7 @@ var _ = Describe("Secrets Resolver", func() {
 
 		b := []byte(`{"root": "$<test:::mySecret:>", "sub": {"key": "$<test:::mySecret:>"}}`)
 
-		It("should replace all secrets in a byte array", func() {
+		It("should replace all secrets", func() {
 			mockedSecretManager.EXPECT().Get(ctx, "test:::mySecret:").Return("mySecretValue", nil).Times(2)
 			result, err := resolver.ReplaceAll(ctx, b, []string{"root", "sub.key"})
 			Expect(err).ToNot(HaveOccurred())
@@ -48,13 +48,24 @@ var _ = Describe("Secrets Resolver", func() {
 			Expect(err.Error()).To(ContainSubstring("failed to get secret value"))
 		})
 
-		It("should also work with strings", func() {
+		It("should work with strings", func() {
 			mockedSecretManager.EXPECT().Get(ctx, "test:::mySecret:").Return("mySecretValue", nil).Times(2)
 			result, err := resolver.ReplaceAll(ctx, string(b), []string{"root", "sub.key"})
 			Expect(err).ToNot(HaveOccurred())
 			str, ok := result.(string)
 			Expect(ok).To(BeTrue())
 			Expect(str).To(Equal(`{"root": "mySecretValue", "sub": {"key": "mySecretValue"}}`))
+		})
+
+		It("should work with objects in arrays", func() {
+			mockedSecretManager.EXPECT().Get(ctx, "test:::mySecret:").Return("mySecretValue", nil).Times(2)
+			b := []byte(`{"root": [{"key": "$<test:::mySecret:>"}, {"key": "$<test:::mySecret:>"}]}`)
+
+			result, err := resolver.ReplaceAll(ctx, b, []string{"root.#.key"})
+			Expect(err).ToNot(HaveOccurred())
+			b, ok := result.([]byte)
+			Expect(ok).To(BeTrue())
+			Expect(string(b)).To(Equal(`{"root": [{"key": "mySecretValue"}, {"key": "mySecretValue"}]}`))
 		})
 
 	})

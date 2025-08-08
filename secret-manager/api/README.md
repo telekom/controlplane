@@ -21,14 +21,14 @@ This API allows you to manage secrets. You can get and set secrets. The API is d
 
 ```go
 // Global default API
-api.Get(ctx, "{{poc:eni--hyperion:my-foo-app:clientSecret:<some-hash>}}")
-api.Set(ctx, "{{poc:eni--hyperion:my-foo-app:clientSecret:<some-hash>}}", "my-new-value")
+api.Get(ctx, "{{poc:eni--hyperion:my-foo-app:clientSecret:<some-checksum>}}")
+api.Set(ctx, "{{poc:eni--hyperion:my-foo-app:clientSecret:<some-checksum>}}", "my-new-value")
 
 // API with custom options
 // Note: This API needs the clean ID of the secret without the start and end tags
 secretsApi := api.NewSecrets()
-secretsApi.Set(ctx, "poc:eni--hyperion:my-foo-app:clientSecret:<some-hash>", "my-new-value")
-secretsApi.Get(ctx, "poc:eni--hyperion:my-foo-app:clientSecret:<some-hash>")
+secretsApi.Set(ctx, "poc:eni--hyperion:my-foo-app:clientSecret:<some-checksum>", "my-new-value")
+secretsApi.Get(ctx, "poc:eni--hyperion:my-foo-app:clientSecret:<some-checksum>")
 ```
 
 The global API is automatically initialized with the default options. It is recommended to use the global API for most use cases.
@@ -50,7 +50,28 @@ onboardingApi.UpsertTeam(ctx, "poc", "eni--hyperion")
 
 // Create a new application
 onboardingApi.UpsertApplication(ctx, "poc", "eni--hyperion", "my-foo-app")
+
+// You are also able to set secret-values directly in the onboarding request using the options-pattern
+options := []api.OnboardingOption{
+	api.WithSecretValue("clientSecret", "my-custom-value"),
+    api.WithSecretValue("externalSecrets/foo/password", "my-foo-password")
+}
+availableSecrets, err := onboardingApi.UpsertApplication(ctx, "poc", "eni--hyperion", "my-foo-app", options...)
+// handle error
+// If you now want the secretId of the created secrets, you can do the following:
+secretRef, ok := api.FindSecretId(availableSecrets, "externalSecrets/foo/password")
+if !ok {
+    // handle error
+}
+// $<poc:eni--hyperion:my-foo-app:externalSecrets/foo/password:checksum>
+fmt.Println("Secret Ref:", secretRef)
 ```
+
+> [!IMPORTANT]
+> You may only set secrets which were already defined in the `SecretManager` configuration.
+> This is to ensure that the secrets are properly managed and do not conflict with existing secrets.
+> Example: If the application has `externalSecrets` configured, you can set secrets like `externalSecrets/foo/password` or `externalSecrets/bar/username`.
+> The character used to indicate the hierarchy is a `/`.
 
 ## Vocabulary
 

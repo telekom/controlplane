@@ -7,6 +7,7 @@ package backend
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"strings"
 )
 
 // MakeChecksum is used to generate a checksum for a given string.
@@ -16,4 +17,20 @@ func MakeChecksum(input string) string {
 	// Use the first 6 bytes of the hash to reduce size
 	// Collisions are unlikely
 	return hex.EncodeToString(hash[:6])
+}
+
+func GetSubPath(secretPath string) string {
+	parts := strings.SplitN(secretPath, "/", 2)
+	if len(parts) > 1 {
+		return parts[1]
+	}
+	return ""
+}
+
+func GetPath(secretPath string) string {
+	parts := strings.SplitN(secretPath, "/", 2)
+	if len(parts) > 1 {
+		return parts[0]
+	}
+	return secretPath
 }

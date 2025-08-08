@@ -228,8 +228,8 @@ func (s *InmemoryObjectStore[T]) CreateOrReplace(ctx context.Context, in T) erro
 	}
 
 	if problems.IsNotFound(err) {
-		s.log.Info("creating object", "namespace", obj.GetNamespace(), "name", obj.GetName())
 		obj.GetObjectKind().SetGroupVersionKind(s.gvk)
+		s.log.Info("creating object", "namespace", obj.GetNamespace(), "name", obj.GetName(), "gvk", s.gvk)
 
 		// check if not found
 		obj, err = s.k8sClient.Namespace(obj.GetNamespace()).Create(ctx, obj, metav1.CreateOptions{

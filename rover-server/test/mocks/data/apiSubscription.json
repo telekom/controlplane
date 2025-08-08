@@ -1,0 +1,48 @@
+{
+  "apiVersion": "stargate.cp.ei.telekom.de/v1",
+  "kind": "ApiSubscription",
+  "metadata": {
+    "name": "rover-local-sub--eni-distr-v1",
+    "namespace": "poc--eni--hyperion",
+    "ownerReferences": [
+      {
+        "apiVersion": "rover.cp.ei.telekom.de/v1",
+        "kind": "Rover",
+        "name": "rover-local-sub",
+        "uid": "549badcc-18b6-48ac-a8ce-b3242523d827"
+      }
+    ]
+  },
+  "status": {
+    "approval": {
+      "name": "apisubscription--rover-local-sub--eni-distr-v1",
+      "namespace": "poc--eni--hyperion"
+    },
+    "approvalRequest": {
+      "name": "rover-local-sub--eni-distr-v1--58bb9fb895",
+      "namespace": "poc--eni--hyperion"
+    },
+    "consumeRoute": {
+      "name": " rover-local-sub--eni-distr-v1",
+      "namespace": "poc--eni--hyperion"
+    },
+    "route": {
+      "name": "eni-distr-v1",
+      "namespace": " poc--dataplane1"
+    },
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "False",
+        "reason": "NoApproval",
+        "message": "Approval is either rejected or suspended"
+      },
+      {
+        "type": "Processing",
+        "status": "False",
+        "reason": "Blocked",
+        "message": "Approval is either rejected or suspended"
+      }
+    ]
+  }
+}

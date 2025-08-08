@@ -111,11 +111,10 @@ func (id Id) CopyWithChecksum(resourceId string) Id {
 	return new
 }
 
-// JsonPath returns the path to the secret in the JSON object
-func (id Id) JsonPath() (key string, subPath string) {
-	parts := strings.SplitN(id.path, "/", 2)
-	if len(parts) == 1 {
-		return id.path, ""
-	}
-	return parts[0], parts[1]
+func (id Id) SubPath() string {
+	return backend.GetSubPath(id.path)
+}
+
+func (id Id) Path() string {
+	return backend.GetPath(id.path)
 }

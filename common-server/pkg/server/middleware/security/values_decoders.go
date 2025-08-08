@@ -21,10 +21,10 @@ var defaultValuesDecoders = map[string]ValueDecoder{
 			return "", invalidCtx
 		}
 		parts := strings.Split(client, "--")
-		if len(parts) != 2 {
+		if len(parts) != 3 {
 			return "", invalidCtx
 		}
-		if parts[1] == "" {
+		if parts[0] == "" {
 			return "", invalidCtx
 		}
 		return parts[0], nil
@@ -35,7 +35,7 @@ var defaultValuesDecoders = map[string]ValueDecoder{
 			return "", invalidCtx
 		}
 		parts := strings.Split(client, "--")
-		if len(parts) != 2 {
+		if len(parts) != 3 {
 			return "", invalidCtx
 		}
 		if parts[1] == "" {

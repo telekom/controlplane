@@ -152,6 +152,8 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        $ref: '#/components/requestBodies/ApplicationWriteRequest'
       responses:
         '200':
           $ref: '#/components/responses/OnboardingResponse'
@@ -338,6 +340,17 @@ components:
                   Otherwise, you can set any string value.
                 example: "{{rotate}}"
                 type: string
+    ApplicationWriteRequest:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              secrets:
+                type: array
+                description: A list of secrets to be created or updated for the application
+                items:
+                  $ref: '#/components/schemas/NamedSecret'
   schemas:
     ApiProblem:
       description: Based on https://www.rfc-editor.org/rfc/rfc9457.html
@@ -372,6 +385,18 @@ components:
         value:
           type: string
           description: If empty, a random secret will be generated
+    NamedSecret:
+      type: object
+      required:
+        - name
+        - value
+      properties:
+        name:
+          type: string
+          description: The name of the secret
+        value:
+          type: string
+          description: The value of the secret
     ListSecretItem:
       type: object
       required:

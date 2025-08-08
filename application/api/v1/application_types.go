@@ -26,7 +26,6 @@ type ApplicationSpec struct {
 	// Secret is the secret used to authenticate the application
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=64
 	Secret string `json:"secret"`
 
 	// Zone is the primary zone for the application

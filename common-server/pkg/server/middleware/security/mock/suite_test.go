@@ -32,7 +32,7 @@ var _ = Describe("JWT Mock Middleware", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(claims["env"]).To(Equal("test"))
-			Expect(claims["clientId"]).To(Equal("group--team"))
+			Expect(claims["clientId"]).To(Equal("group--team--user"))
 		})
 	})
 

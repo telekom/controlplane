@@ -65,7 +65,7 @@ func NewJWTMock() fiber.Handler {
 func NewMockAccessToken(env, group, team string, scopes []string) string {
 	claims := jwt.MapClaims{
 		"env":      env,
-		"clientId": fmt.Sprintf("%s--%s", group, team),
+		"clientId": fmt.Sprintf("%s--%s--%s", group, team, "user"),
 		"scopes":   strings.Join(scopes, " "),
 	}
 

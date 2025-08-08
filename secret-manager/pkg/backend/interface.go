@@ -19,6 +19,8 @@ type IdParser[T SecretId] interface {
 type SecretId interface {
 	Env() string
 	String() string
+	Path() string
+	SubPath() string
 }
 
 // Secret contains the value of the secret and its ID.
@@ -69,6 +71,21 @@ type OnboardResponse interface {
 	SecretRefs() map[string]SecretRef
 }
 
+type OnboardOptions struct {
+	SecretValues map[string]SecretValue
+}
+
+type OnboardOption func(*OnboardOptions)
+
+func WithSecretValue(key string, value SecretValue) OnboardOption {
+	return func(o *OnboardOptions) {
+		if o.SecretValues == nil {
+			o.SecretValues = make(map[string]SecretValue)
+		}
+		o.SecretValues[key] = value
+	}
+}
+
 // Onboarder is the interface that must be implemented by all onboarders.
 // Each steps of this process depends on the previous one.
 // It is used to onboard a new environment, team or application.
@@ -76,18 +93,9 @@ type OnboardResponse interface {
 type Onboarder interface {
 	OnboardEnvironment(ctx context.Context, env string) (OnboardResponse, error)
 	OnboardTeam(ctx context.Context, env, id string) (OnboardResponse, error)
-	OnboardApplication(ctx context.Context, env, teamId, appId string) (OnboardResponse, error)
+	OnboardApplication(ctx context.Context, env, teamId, appId string, opts ...OnboardOption) (OnboardResponse, error)
 
 	DeleteEnvironment(ctx context.Context, env string) error
 	DeleteTeam(ctx context.Context, env, id string) error
 	DeleteApplication(ctx context.Context, env, teamId, appId string) error
 }
-
-var (
-	// Secrets that are per-default created for each environment
-	EnvironmentSecrets = []string{"zones"}
-	// Secrets that are per-default created for each team
-	TeamSecrets = []string{"clientSecret", "teamToken"}
-	// Secrets that are per-default created for each application
-	ApplicationSecrets = []string{"clientSecret", "externalSecrets"}
-)

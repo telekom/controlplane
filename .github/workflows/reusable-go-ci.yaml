@@ -21,6 +21,11 @@ on:
         required: false
         type: boolean
         default: true
+      allow_tests_failure:
+        description: "Set to true to allow tests to fail without failing the job"
+        required: false
+        type: boolean
+        default: false
       run_build_image:
         description: "Set to true to build the container image using Ko"
         required: false
@@ -155,6 +160,7 @@ jobs:
         env:
           ENVTEST_K8S_VERSION: "1.31.0"
         run: make test
+        continue-on-error: ${{ inputs.allow_tests_failure }}
 
       - name: Generate HTML coverage report
         shell: bash

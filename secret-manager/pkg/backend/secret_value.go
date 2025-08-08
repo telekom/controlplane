@@ -17,8 +17,10 @@ func (s secretValue) Value() string {
 	return s.value
 }
 
+// IsEmpty checks if the secret value is empty.
+// An empty value is defined as an empty string or an empty JSON object "{}".
 func (s secretValue) IsEmpty() bool {
-	return s.value == ""
+	return s.value == "" || s.value == "{}"
 }
 
 func (s secretValue) EqualString(value string) bool {

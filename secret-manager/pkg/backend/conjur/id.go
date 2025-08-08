@@ -94,11 +94,11 @@ func (c ConjurSecretId) VariableId() string {
 }
 
 func (c ConjurSecretId) SubPath() string {
-	parts := strings.SplitN(c.path, "/", 2)
-	if len(parts) == 2 {
-		return parts[1]
-	}
-	return ""
+	return backend.GetSubPath(c.path)
+}
+
+func (c ConjurSecretId) Path() string {
+	return backend.GetPath(c.path)
 }
 
 func (c ConjurSecretId) CopyWithChecksum(checksum string) ConjurSecretId {

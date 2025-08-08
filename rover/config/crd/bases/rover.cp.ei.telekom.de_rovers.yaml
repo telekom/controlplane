@@ -50,8 +50,9 @@ spec:
             description: Spec defines the desired state of the Rover resource
             properties:
               clientSecret:
-                description: ClientSecret is the secret used for client authentication
-                minLength: 1
+                description: |-
+                  ClientSecret is the secret used for client authentication
+                  If not specified, a randomly generated secret will be used
                 type: string
               exposures:
                 description: Exposures is a list of APIs and Events that this Rover
@@ -533,10 +534,6 @@ spec:
                                   used together
                                 rule: 'self == null || (has(self.client) ? (!has(self.basic))
                                   : true)'
-                              - message: Scopes and basic authentication cannot be
-                                  used together
-                                rule: 'self == null || (has(self.scopes) ? (!has(self.basic))
-                                  : true)'
                               - message: At least one of client, basic, or scopes
                                   must be provided
                                 rule: self == null || has(self.client) || has(self.basic)
@@ -638,7 +635,6 @@ spec:
                 minLength: 1
                 type: string
             required:
-            - clientSecret
             - zone
             type: object
           status:

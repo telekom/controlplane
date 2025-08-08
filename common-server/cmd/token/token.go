@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
@@ -30,6 +31,6 @@ func init() {
 func main() {
 	flag.Parse()
 	scopes = strings.Split(rawScopes, ",")
-	fmt.Printf("Creating token for environment=%s, group=%s, team=%s, scopes=%v\n", environment, group, team, scopes)
-	fmt.Printf("`%s`\n", mock.NewMockAccessToken(environment, group, team, scopes))
+	fmt.Fprintf(os.Stderr, "Creating token for environment=%s, group=%s, team=%s, scopes=%v\n", environment, group, team, scopes)
+	fmt.Fprintf(os.Stdout, "%s\n", mock.NewMockAccessToken(environment, group, team, scopes))
 }

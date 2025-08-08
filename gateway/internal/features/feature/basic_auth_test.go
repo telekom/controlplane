@@ -131,7 +131,34 @@ var _ = Describe("BasicAuthFeature", func() {
 					},
 				}
 				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return(nil).Times(1)
 				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
+			})
+
+			It("should be used when any allowed consumer has basic auth", func() {
+				route := &gatewayv1.Route{
+					Spec: gatewayv1.RouteSpec{
+						PassThrough: false,
+					},
+				}
+
+				consumer := &gatewayv1.ConsumeRoute{
+					Spec: gatewayv1.ConsumeRouteSpec{
+						Security: &gatewayv1.ConsumeRouteSecurity{
+							M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
+								Basic: &gatewayv1.BasicAuthCredentials{
+									Username: "consumeruser",
+									Password: "consumerpass",
+								},
+							},
+						},
+					},
+				}
+
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Times(1)
+				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{consumer}).Times(1)
+
+				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeTrue())
 			})
 		})
 
@@ -267,6 +294,50 @@ var _ = Describe("BasicAuthFeature", func() {
 				// Consumer2 should not have basic auth creds
 				_, hasConsumer2Creds := jumperConfig.BasicAuth[plugin.ConsumerId("consumer2")]
 				Expect(hasConsumer2Creds).To(BeFalse())
+			})
+
+			It("should apply basic auth credentials for consumer only configuration", func() {
+				// Setup
+				jumperConfig := plugin.NewJumperConfig()
+				route := &gatewayv1.Route{
+					Spec: gatewayv1.RouteSpec{
+						PassThrough: false,
+						Security:    nil,
+					},
+				}
+
+				consumer := &gatewayv1.ConsumeRoute{
+					Spec: gatewayv1.ConsumeRouteSpec{
+						ConsumerName: "consumer",
+						Security: &gatewayv1.ConsumeRouteSecurity{
+							M2M: &gatewayv1.ConsumerMachine2MachineAuthentication{
+								Basic: &gatewayv1.BasicAuthCredentials{
+									Username: "consumeruser",
+									Password: "consumerpass",
+								},
+							},
+						},
+					},
+				}
+
+				mockFeatureBuilder.EXPECT().JumperConfig().Return(jumperConfig)
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{consumer})
+
+				// Execute
+				err := feature.InstanceBasicAuthFeature.Apply(context.Background(), mockFeatureBuilder)
+
+				// Verify
+				Expect(err).ToNot(HaveOccurred())
+
+				// Check consumer creds
+				consumerCreds := jumperConfig.BasicAuth[plugin.ConsumerId("consumer")]
+				Expect(consumerCreds.Username).To(Equal("consumeruser"))
+				Expect(consumerCreds.Password).To(Equal("consumerpass"))
+
+				// Default provider should not have creds
+				_, hasDefaultCreds := jumperConfig.BasicAuth[plugin.ConsumerId(feature.DefaultProviderKey)]
+				Expect(hasDefaultCreds).To(BeFalse())
 			})
 
 			It("should skip consumers with nil security", func() {
