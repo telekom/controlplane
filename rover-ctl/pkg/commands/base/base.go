@@ -17,7 +17,7 @@ import (
 // BaseCommand is the base structure for all commands
 type BaseCommand struct {
 	Cmd      *cobra.Command
-	Logger   logr.Logger
+	logger   logr.Logger
 	FailFast bool
 }
 
@@ -29,12 +29,18 @@ func NewCommand(use, short, long string) *BaseCommand {
 			Short: short,
 			Long:  long,
 		},
-		Logger: log.L().WithName(fmt.Sprintf("%s-cmd", use)),
 	}
 
 	cmd.Cmd.PersistentFlags().BoolVar(&cmd.FailFast, "fail-fast", true, "Stop processing on the first error encountered")
 
 	return cmd
+}
+
+func (c *BaseCommand) Logger() logr.Logger {
+	if c.logger.IsZero() {
+		c.logger = log.L().WithName(fmt.Sprintf("%s-cmd", c.Cmd.Use))
+	}
+	return c.logger
 }
 
 // SetupToken sets up the authorization token for the command

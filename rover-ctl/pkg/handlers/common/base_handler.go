@@ -27,6 +27,10 @@ const (
 	PostRequestHook HandlerHookStage = "post-request"
 )
 
+type HttpDoer interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 // BaseHandler provides common functionality for all resource handlers
 type BaseHandler struct {
 	Kind       string
@@ -40,14 +44,15 @@ type BaseHandler struct {
 	serverURL string
 
 	logger     logr.Logger
-	httpClient *http.Client
+	httpClient HttpDoer
 
 	MakeResourceName func(obj types.Object) string
 
 	// Hooks allow to register functions that are called before or after requests
 	Hooks map[HandlerHookStage][]func(ctx context.Context, obj types.Object) error
 
-	StatusPoller *StatusPoller
+	applyStatusPoller  *StatusPoller
+	deleteStatusPoller *StatusPoller
 }
 
 func NewBaseHandler(apiVersion, kind, resource string, priority int) *BaseHandler {
@@ -59,7 +64,10 @@ func NewBaseHandler(apiVersion, kind, resource string, priority int) *BaseHandle
 		logger:     log.L().WithName(fmt.Sprintf("%s-handler", resource)),
 		Hooks:      make(map[HandlerHookStage][]func(ctx context.Context, obj types.Object) error),
 	}
-	handler.StatusPoller = NewStatusPoller(handler, nil)
+	handler.applyStatusPoller = NewStatusPoller(handler, nil)
+	handler.deleteStatusPoller = NewStatusPoller(handler, func(ctx context.Context, status types.ObjectStatus) (continuePolling bool, err error) {
+		return !status.IsGone(), nil
+	})
 
 	return handler
 }
@@ -126,8 +134,8 @@ func (h *BaseHandler) Apply(ctx context.Context, obj types.Object) error {
 
 // Delete implements the generic Delete operation using REST API
 func (h *BaseHandler) Delete(ctx context.Context, obj types.Object) error {
-	h.setup(ctx)
-	url := h.getRequestUrl("", "", "")
+	token := h.setup(ctx)
+	url := h.getRequestUrl(token.Group, token.Team, h.getResourceName(obj))
 
 	// Send the request
 	resp, err := h.sendRequest(ctx, obj, http.MethodDelete, url)
@@ -137,7 +145,7 @@ func (h *BaseHandler) Delete(ctx context.Context, obj types.Object) error {
 	defer resp.Body.Close()
 
 	// Check response
-	err = checkResponseCode(resp, http.StatusOK, http.StatusNoContent)
+	err = checkResponseCode(resp, http.StatusOK, http.StatusNoContent, http.StatusNotFound)
 	if err != nil {
 		return err
 	}
@@ -237,16 +245,24 @@ func (h *BaseHandler) Status(ctx context.Context, name string) (types.ObjectStat
 	defer resp.Body.Close()
 
 	// Check response
-	err = checkResponseCode(resp, http.StatusOK)
+	err = checkResponseCode(resp, http.StatusOK, http.StatusNotFound)
 	if err != nil {
 		return nil, err
 	}
 
+	if resp.StatusCode == http.StatusNotFound {
+		h.logger.V(1).Info("Status not found", "name", name)
+		return &ObjectStatusResponse{Gone: true}, nil
+	}
+
 	// Parse response
 	var status ObjectStatusResponse
-	if err := json.NewDecoder(resp.Body).Decode(&status); err != nil {
-		return nil, errors.Wrap(err, "failed to parse response")
+	err = json.NewDecoder(resp.Body).Decode(&status)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse status response")
 	}
+
+	h.logger.V(1).Info("Status response", "status", status)
 
 	return &status, nil
 }
@@ -352,7 +368,7 @@ func (h *BaseHandler) sendRequest(ctx context.Context, obj types.Object, method,
 
 func (h *BaseHandler) WaitForReady(ctx context.Context, name string) (types.ObjectStatus, error) {
 	h.logger.Info("Waiting for readiness", "name", name)
-	status, err := h.StatusPoller.Start(ctx, name)
+	status, err := h.applyStatusPoller.Start(ctx, name)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to wait for readiness")
 	}
@@ -362,7 +378,7 @@ func (h *BaseHandler) WaitForReady(ctx context.Context, name string) (types.Obje
 
 func (h *BaseHandler) WaitForDeleted(ctx context.Context, name string) (types.ObjectStatus, error) {
 	h.logger.Info("Waiting for deletion", "name", name)
-	status, err := h.StatusPoller.Start(ctx, name)
+	status, err := h.deleteStatusPoller.Start(ctx, name)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to wait for deletion")
 	}

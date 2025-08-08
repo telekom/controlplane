@@ -4,8 +4,6 @@
 
 package types
 
-import "io"
-
 type ObjectMetadata struct {
 	Name string `yaml:"name" json:"name" validate:"required"`
 }
@@ -25,11 +23,29 @@ type Object interface {
 	SetProperty(name string, value any)
 }
 
+type ObjectRef struct {
+	ApiVersion string `json:"apiVersion"`
+	Kind       string `json:"kind"`
+	Name       string `json:"name"`
+	Namespace  string `json:"namespace"`
+}
+
+type StatusInfo struct {
+	Cause    string    `json:"cause"`
+	Message  string    `json:"message"`
+	Details  string    `json:"details,omitempty"`
+	Resource ObjectRef `json:"resource"`
+}
+
 type ObjectStatus interface {
-	OverallStatus() string
-	ProcessingState() string
+	GetOverallStatus() string
+	GetProcessingState() string
 	HasErrors() bool
 	HasWarnings() bool
 	HasInfo() bool
-	Print(io.Writer)
+	IsGone() bool
+
+	GetErrors() []StatusInfo
+	GetInfo() []StatusInfo
+	GetWarnings() []StatusInfo
 }
