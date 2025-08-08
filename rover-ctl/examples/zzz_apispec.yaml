@@ -6,3 +6,6 @@ openapi: 3.0.0
 info:
   title: Test API 
   version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/basic-auth-service
+    description: Local server for testing

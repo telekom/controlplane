@@ -37,7 +37,7 @@ func NewCommand() *cobra.Command {
 
 // Run executes the delete command
 func (c *Command) Run(cmd *cobra.Command, args []string) error {
-	c.Logger.V(1).Info("Starting delete command")
+	c.Logger().V(1).Info("Starting delete command")
 
 	if err := c.ParseFiles(); err != nil {
 		return err
@@ -47,17 +47,17 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 	count := 0
 
 	for _, obj := range handlers.Sort(c.Parser.Objects()) {
-		c.Logger.V(1).Info("Processing object", "kind", obj.GetKind(), "name", obj.GetName())
+		c.Logger().V(1).Info("Processing object", "kind", obj.GetKind(), "name", obj.GetName())
 
 		if err := c.deleteObject(obj); err != nil {
-			c.Logger.Error(err, "Failed to delete object", "kind", obj.GetKind(), "name", obj.GetName())
+			c.Logger().Error(err, "Failed to delete object", "kind", obj.GetKind(), "name", obj.GetName())
 			return errors.Wrapf(err, "failed to delete object %s", obj.GetName())
 		}
 		count++
 	}
 
 	// Print summary
-	c.Logger.V(0).Info("Successfully deleted resources", "count", count)
+	c.Logger().V(0).Info("Successfully deleted resources", "count", count)
 	cmd.Printf("Successfully deleted %d resource(s)\n", count)
 	return nil
 }
@@ -71,7 +71,7 @@ func (c *Command) deleteObject(obj types.Object) error {
 			obj.GetApiVersion(), obj.GetKind())
 	}
 
-	c.Logger.Info("🧹 Deleting object using handler",
+	c.Logger().Info("🧹 Deleting object using handler",
 		"kind", obj.GetKind(),
 		"apiVersion", obj.GetApiVersion(),
 		"name", obj.GetName())
@@ -81,14 +81,16 @@ func (c *Command) deleteObject(obj types.Object) error {
 		return errors.Wrap(err, "handler failed to delete object")
 	}
 
-	_, err = handler.WaitForDeleted(c.Cmd.Context(), obj.GetName())
+	status, err := handler.WaitForDeleted(c.Cmd.Context(), obj.GetName())
 	if err != nil {
 		return errors.Wrap(err, "failed to wait for deletion")
 	}
 
-	c.Logger.Info("✅ SSuccessfully deleted object",
-		"kind", obj.GetKind(),
-		"name", obj.GetName())
+	if status.IsGone() {
+		c.Logger().Info("✅ SSuccessfully deleted object",
+			"kind", obj.GetKind(),
+			"name", obj.GetName())
+	}
 
 	return nil
 }

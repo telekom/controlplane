@@ -108,7 +108,7 @@ func (c *Command) newListCommand() *cobra.Command {
 
 // runGet executes the get command
 func (c *Command) runGet(cmd *cobra.Command, args []string) error {
-	c.Logger.V(1).Info("Starting get command",
+	c.Logger().V(1).Info("Starting get command",
 		"kind", c.Options.Kind,
 		"apiVersion", c.Options.ApiVersion,
 		"name", c.Options.Name)
@@ -119,20 +119,20 @@ func (c *Command) runGet(cmd *cobra.Command, args []string) error {
 			c.Options.ApiVersion, c.Options.Kind)
 	}
 
-	c.Logger.V(1).Info("Getting resource", "name", c.Options.Name)
+	c.Logger().V(1).Info("Getting resource", "name", c.Options.Name)
 	obj, err := handler.Get(cmd.Context(), c.Options.Name)
 	if err != nil {
 		return errors.Wrap(err, "failed to get resource")
 	}
 
 	format := viper.GetString("output.format")
-	c.Logger.V(1).Info("Formatting output", "format", format)
+	c.Logger().V(1).Info("Formatting output", "format", format)
 	output, err := util.FormatOutput(obj, format)
 	if err != nil {
 		return errors.Wrap(err, "failed to format output")
 	}
 
-	c.Logger.V(0).Info("Successfully retrieved resource",
+	c.Logger().V(0).Info("Successfully retrieved resource",
 		"kind", c.Options.Kind,
 		"name", c.Options.Name)
 
@@ -143,33 +143,33 @@ func (c *Command) runGet(cmd *cobra.Command, args []string) error {
 
 // runList executes the list command
 func (c *Command) runList(cmd *cobra.Command, args []string) error {
-	c.Logger.V(1).Info("Starting list command",
+	c.Logger().V(1).Info("Starting list command",
 		"kind", c.Options.Kind,
 		"apiVersion", c.Options.ApiVersion)
 
 	handler, err := handlers.GetHandler(c.Options.Kind, c.Options.ApiVersion)
 	if err != nil {
-		c.Logger.Error(err, "Handler not found",
+		c.Logger().Error(err, "Handler not found",
 			"kind", c.Options.Kind,
 			"apiVersion", c.Options.ApiVersion)
 		return errors.Wrapf(err, "no handler found for %s/%s",
 			c.Options.ApiVersion, c.Options.Kind)
 	}
 
-	c.Logger.V(1).Info("Listing resources")
+	c.Logger().V(1).Info("Listing resources")
 	objects, err := handler.List(cmd.Context())
 	if err != nil {
 		return errors.Wrap(err, "failed to list resources")
 	}
 
 	format := viper.GetString("output.format")
-	c.Logger.V(1).Info("Formatting output", "format", format)
+	c.Logger().V(1).Info("Formatting output", "format", format)
 	output, err := util.FormatOutput(objects, format)
 	if err != nil {
 		return errors.Wrap(err, "failed to format output")
 	}
 
-	c.Logger.V(0).Info("Successfully listed resources", "kind", c.Options.Kind)
+	c.Logger().V(0).Info("Successfully listed resources", "kind", c.Options.Kind)
 
 	cmd.Println(output)
 

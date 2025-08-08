@@ -7,8 +7,10 @@ package apply
 import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/base"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
+	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
 
@@ -38,7 +40,7 @@ func NewCommand() *cobra.Command {
 
 // Run executes the apply command
 func (c *Command) Run(cmd *cobra.Command, args []string) error {
-	c.Logger.V(1).Info("Starting apply command")
+	c.Logger().V(1).Info("Starting apply command")
 
 	if err := c.ParseFiles(); err != nil {
 		return err
@@ -46,7 +48,7 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 
 	// Process objects
 	for _, obj := range handlers.Sort(c.Parser.Objects()) {
-		c.Logger.V(1).Info("Processing object", "kind", obj.GetKind(), "name", obj.GetName())
+		c.Logger().V(1).Info("Processing object", "kind", obj.GetKind(), "name", obj.GetName())
 
 		if err := c.applyObject(obj); err != nil {
 			return errors.Wrapf(err, "failed to apply object %s", obj.GetName())
@@ -66,7 +68,7 @@ func (c *Command) applyObject(obj types.Object) error {
 			obj.GetApiVersion(), obj.GetKind())
 	}
 
-	c.Logger.Info("🚀 Applying object",
+	c.Logger().Info("🚀 Applying object",
 		"kind", obj.GetKind(),
 		"name", obj.GetName())
 
@@ -75,22 +77,31 @@ func (c *Command) applyObject(obj types.Object) error {
 		if c.FailFast {
 			return errors.Wrap(err, "failed to apply object")
 		}
-		c.Logger.Error(err, "Failed to apply object, continuing due to fail-fast setting")
+		c.Logger().Error(err, "Failed to apply object, continuing due to fail-fast setting")
 		return nil
 	}
 
-	_, err = handler.WaitForReady(c.Cmd.Context(), obj.GetName())
+	status, err := handler.WaitForReady(c.Cmd.Context(), obj.GetName())
 	if err != nil {
 		if c.FailFast {
 			return errors.Wrap(err, "failed to get status")
 		}
-		c.Logger.Error(err, "Failed to get status, continuing due to fail-fast setting")
+		c.Logger().Error(err, "Failed to get status, continuing due to fail-fast setting")
 		return nil
 	}
 
-	c.Logger.Info("✅ Successfully applied object",
-		"kind", obj.GetKind(),
-		"name", obj.GetName())
+	statusEval := common.NewStatusEval(obj, status)
+	if statusEval.IsSuccess() {
+		c.Logger().Info("✅ Successfully applied object",
+			"kind", obj.GetKind(),
+			"name", obj.GetName())
+	} else {
+		if err := statusEval.PrettyPrint(c.Cmd.OutOrStdout(), viper.GetString("log.format")); err != nil {
+			if c.FailFast {
+				return errors.Wrap(err, "failed to print status")
+			}
+		}
+	}
 
 	return nil
 }

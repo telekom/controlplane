@@ -5,37 +5,52 @@
 package common
 
 import (
-	"io"
-
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
 
 var _ types.ObjectStatus = &ObjectStatusResponse{}
 
 type ObjectStatusResponse struct {
+	Gone            bool               `json:"-"`
+	OverallStatus   string             `json:"overallStatus"`
+	ProcessingState string             `json:"processingState"`
+	Errors          []types.StatusInfo `json:"errors"`
+	Warnings        []types.StatusInfo `json:"warnings"`
+	Info            []types.StatusInfo `json:"info"`
 }
 
-func (o *ObjectStatusResponse) OverallStatus() string {
-	return "unknown"
+func (o *ObjectStatusResponse) GetOverallStatus() string {
+	return o.OverallStatus
 }
 
-func (o *ObjectStatusResponse) ProcessingState() string {
-	return "unknown"
+func (o *ObjectStatusResponse) GetProcessingState() string {
+	return o.ProcessingState
 }
 
 func (o *ObjectStatusResponse) HasErrors() bool {
-	return false
+	return len(o.Errors) > 0
 }
 
 func (o *ObjectStatusResponse) HasWarnings() bool {
-	return false
+	return len(o.Warnings) > 0
 }
 
 func (o *ObjectStatusResponse) HasInfo() bool {
-	return false
+	return len(o.Info) > 0
 }
 
-func (o *ObjectStatusResponse) Print(w io.Writer) {
-	// Group errors, warnings and infos by resource
-	// Print using a structured format and "eye-catchers" ❌ ⚠️ ℹ️
+func (o *ObjectStatusResponse) IsGone() bool {
+	return o.Gone
+}
+
+func (o *ObjectStatusResponse) GetErrors() []types.StatusInfo {
+	return o.Errors
+}
+
+func (o *ObjectStatusResponse) GetInfo() []types.StatusInfo {
+	return o.Info
+}
+
+func (o *ObjectStatusResponse) GetWarnings() []types.StatusInfo {
+	return o.Warnings
 }

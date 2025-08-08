@@ -37,7 +37,7 @@ func NewFileCommand(use, short, long string) *FileCommand {
 func (c *FileCommand) InitParser() error {
 	c.Parser = parser.NewObjectParser(parser.Opts...)
 
-	c.Logger.V(1).Info("Initialized parser")
+	c.Logger().V(1).Info("Initialized parser")
 
 	return nil
 }
@@ -45,19 +45,19 @@ func (c *FileCommand) InitParser() error {
 // ParseFiles parses files using the configured parser
 func (c *FileCommand) ParseFiles() error {
 	if c.Parser == nil {
-		c.Logger.V(1).Info("Parser not initialized, initializing now")
+		c.Logger().V(1).Info("Parser not initialized, initializing now")
 		if err := c.InitParser(); err != nil {
 			return err
 		}
 	}
 
-	c.Logger.V(1).Info("Parsing files", "path", c.FilePath)
+	c.Logger().V(1).Info("Parsing files", "path", c.FilePath)
 
 	if err := c.Parser.Parse(c.FilePath); err != nil {
 		return errors.Wrap(err, "failed to parse files")
 	}
 
-	c.Logger.V(1).Info("Successfully parsed files", "count", len(c.Parser.Objects()))
+	c.Logger().V(1).Info("Successfully parsed files", "count", len(c.Parser.Objects()))
 
 	return nil
 }
