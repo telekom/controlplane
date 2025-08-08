@@ -34,7 +34,7 @@ type StatusPoller struct {
 	evalFunc StatusEvalFunc
 }
 
-func NewStatusPoller(handler StatusHandler, evalFunc StatusEvalFunc) *StatusPoller {
+func NewStatusPoller(handler StatusHandler, evalFunc StatusEvalFunc, timeout, interval time.Duration) *StatusPoller {
 	if evalFunc == nil {
 		evalFunc = defaultStatusEvalFunc
 	}
@@ -42,8 +42,8 @@ func NewStatusPoller(handler StatusHandler, evalFunc StatusEvalFunc) *StatusPoll
 		logger:   log.L().WithName("status-poller"),
 		handler:  handler,
 		evalFunc: evalFunc,
-		timeout:  30 * time.Second,
-		interval: 2 * time.Second,
+		timeout:  timeout,
+		interval: interval,
 	}
 }
 

@@ -1,0 +1,39 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: anchored-rover
+spec:
+  zone: dataplane1
+  
+  # Define common configurations as anchors
+  
+  # Common security settings using YAML anchor
+  securitySettings: &oauthSecurity
+    tokenEndpoint: https://auth.example.com/oauth2/token
+    clientId: client_xyz
+    clientSecret: secret_123
+    
+  # Common path settings using YAML anchor
+  commonPath: &servicePath
+    basePath: /api/shared-service
+    visibility: ENTERPRISE
+    approval: AUTO
+    
+  # Using the anchors in multiple exposures
+  exposures:
+  - <<: *servicePath
+    upstream: https://primary-backend.example.com
+    security: *oauthSecurity
+    
+  - <<: *servicePath
+    basePath: /api/backup-service  # Override the basePath from the anchor
+    upstream: https://backup-backend.example.com
+    security: 
+      <<: *oauthSecurity
+      clientId: backup_client  # Override a specific field from the security anchor
+      
+  subscriptions:

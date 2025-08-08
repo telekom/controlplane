@@ -14,9 +14,11 @@ spec:
     approval: AUTO
     upstream: https://backend-service.example.com
     security:
-      type: oauth2
       tokenEndpoint: https://auth.example.com/oauth2/token
       clientId: foo
       clientSecret: bar
   subscriptions:
-  - basePath: /api/partner-service
+  - basePath: /api/basic-auth-service
+    security:
+      username: user
+      password: pass
