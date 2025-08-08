@@ -71,7 +71,7 @@ func (c *Command) deleteObject(obj types.Object) error {
 			obj.GetApiVersion(), obj.GetKind())
 	}
 
-	c.Logger().Info("🧹 Deleting object using handler",
+	c.Logger().Info("🧹 Deleting object",
 		"kind", obj.GetKind(),
 		"apiVersion", obj.GetApiVersion(),
 		"name", obj.GetName())
@@ -87,7 +87,7 @@ func (c *Command) deleteObject(obj types.Object) error {
 	}
 
 	if status.IsGone() {
-		c.Logger().Info("✅ SSuccessfully deleted object",
+		c.Logger().Info("✅ Successfully deleted object",
 			"kind", obj.GetKind(),
 			"name", obj.GetName())
 	}
