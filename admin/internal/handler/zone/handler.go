@@ -180,9 +180,10 @@ func createTeamApiRoute(ctx context.Context, handlingContext HandlingContext, te
 			return errors.Wrapf(err, "Cannot parse upstream url of team route %s", teamRouteConfig.Url)
 		}
 		upstream := gatewayapi.Upstream{
-			Host: upstreamUrl.Host,
-			Port: 0,
-			Path: upstreamUrl.Path,
+			Scheme: upstreamUrl.Scheme,
+			Host:   upstreamUrl.Host,
+			Port:   gatewayapi.GetPortOrDefaultFromScheme(upstreamUrl),
+			Path:   upstreamUrl.Path,
 		}
 
 		downstreamUrl, err := urls.ForRouteDownstream(handlingContext.Zone.Spec.Gateway.Url, teamRouteConfig)
