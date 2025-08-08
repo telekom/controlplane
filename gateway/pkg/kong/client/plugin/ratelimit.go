@@ -76,6 +76,10 @@ func (p *RateLimitPlugin) SetId(id string) {
 	if p.route != nil {
 		p.route.SetProperty("kongRateLimitingPluginId", id)
 	}
+	// TODO: Setting the id on the consume route is currently not supported
+	// This is currently limited by the setup, that all configurations are done on the route since otherwise the last applied configuration would win.
+	// The route watches all changes on the consumeRoute.
+	// The verify the rate limit configuration is done nonetheless, take a look at {{kong-url}}/admin-api/routes/{{routeID}}/plugins
 	if p.consumeRoute != nil {
 		p.consumeRoute.SetProperty("kongRateLimitingPluginId", id)
 	}

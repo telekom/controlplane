@@ -64,7 +64,8 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 			Zone:           zoneRef,
 			Upstreams:      make([]apiapi.Upstream, len(exp.Upstreams)),
 			Security:       mapSecurityToApiSecurity(exp.Security),
-			Transformation: mapTransformationtoApiTransformation(exp.Transformation),
+			Transformation: mapTransformationToApiTransformation(exp.Transformation),
+			Traffic:        mapTrafficToApiTraffic(environment, exp.Traffic),
 		}
 
 		apiExposure.Spec.Approval.TrustedTeams, err = mapTrustedTeamsToApiTrustedTeams(ctx, c, exp.Approval.TrustedTeams)
@@ -80,15 +81,6 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 			return err
 		}
 		apiExposure.Spec.Approval.TrustedTeams = append(apiExposure.Spec.Approval.TrustedTeams, ownerTeam.GetName())
-
-		failoverZones, hasFailover := getFailoverZones(environment, exp.Traffic.Failover)
-		if hasFailover {
-			apiExposure.Spec.Traffic = apiapi.Traffic{
-				Failover: &apiapi.Failover{
-					Zones: failoverZones,
-				},
-			}
-		}
 
 		for i, upstream := range exp.Upstreams {
 			apiExposure.Spec.Upstreams[i] = apiapi.Upstream{
@@ -168,7 +160,7 @@ func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
 
 }
 
-func mapTransformationtoApiTransformation(roverTransformation *rover.Transformation) *apiapi.Transformation {
+func mapTransformationToApiTransformation(roverTransformation *rover.Transformation) *apiapi.Transformation {
 	if roverTransformation == nil {
 		return nil
 	}
@@ -180,4 +172,93 @@ func mapTransformationtoApiTransformation(roverTransformation *rover.Transformat
 	}
 
 	return apiTransformation
+}
+
+func mapTrafficToApiTraffic(env string, roverTraffic *rover.Traffic) apiapi.Traffic {
+	if roverTraffic == nil {
+		return apiapi.Traffic{}
+	}
+
+	apiTraffic := apiapi.Traffic{}
+
+	// Handle failover
+	failoverZones, hasFailover := getFailoverZones(env, roverTraffic.Failover)
+	if hasFailover {
+		apiTraffic.Failover = &apiapi.Failover{
+			Zones: failoverZones,
+		}
+	}
+
+	if roverTraffic.HasRateLimit() {
+		apiTraffic.RateLimit = &apiapi.RateLimit{}
+	}
+
+	// Handle rate limits
+	if roverTraffic.HasProviderRateLimit() {
+		apiTraffic.RateLimit.Provider = mapRateLimitConfigToApiRateLimitConfig(roverTraffic.RateLimit.Provider)
+	}
+
+	if roverTraffic.HasConsumerRateLimit() {
+		apiTraffic.RateLimit.SubscriberRateLimit = mapConsumerRateLimitToApiSubscriberRateLimit(roverTraffic.RateLimit.Consumers)
+	}
+
+	return apiTraffic
+}
+
+func mapRateLimitConfigToApiRateLimitConfig(roverRateLimitConfig *rover.RateLimitConfig) *apiapi.RateLimitConfig {
+	if roverRateLimitConfig == nil {
+		return nil
+	}
+
+	return &apiapi.RateLimitConfig{
+		Limits: apiapi.Limits{
+			Second: roverRateLimitConfig.Limits.Second,
+			Minute: roverRateLimitConfig.Limits.Minute,
+			Hour:   roverRateLimitConfig.Limits.Hour,
+		},
+		Options: apiapi.RateLimitOptions{
+			HideClientHeaders: roverRateLimitConfig.Options.HideClientHeaders,
+			FaultTolerant:     roverRateLimitConfig.Options.FaultTolerant,
+		},
+	}
+}
+
+func mapConsumerRateLimitDefaultsToApiSubscriberRateLimitDefaults(roverRateLimitConfig *rover.ConsumerRateLimitDefaults) *apiapi.SubscriberRateLimitDefaults {
+	if roverRateLimitConfig == nil {
+		return nil
+	}
+
+	return &apiapi.SubscriberRateLimitDefaults{
+		Limits: apiapi.Limits{
+			Second: roverRateLimitConfig.Limits.Second,
+			Minute: roverRateLimitConfig.Limits.Minute,
+			Hour:   roverRateLimitConfig.Limits.Hour,
+		},
+	}
+}
+
+func mapConsumerRateLimitToApiSubscriberRateLimit(consumerRateLimits *rover.ConsumerRateLimits) *apiapi.SubscriberRateLimits {
+	if consumerRateLimits == nil {
+		return nil
+	}
+
+	subscriberRateLimits := &apiapi.SubscriberRateLimits{
+		Default: mapConsumerRateLimitDefaultsToApiSubscriberRateLimitDefaults(consumerRateLimits.Default),
+	}
+
+	if len(consumerRateLimits.Overrides) > 0 {
+		var overrides []apiapi.RateLimitOverrides
+		for _, override := range consumerRateLimits.Overrides {
+			overrides = append(overrides, apiapi.RateLimitOverrides{
+				Subscriber: override.Consumer,
+				Limits: apiapi.Limits{
+					Second: override.Limits.Second,
+					Minute: override.Limits.Minute,
+					Hour:   override.Limits.Hour,
+				},
+			})
+		}
+		subscriberRateLimits.Overrides = overrides
+	}
+	return subscriberRateLimits
 }
