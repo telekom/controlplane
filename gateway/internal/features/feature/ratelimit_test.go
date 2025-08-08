@@ -198,6 +198,7 @@ var _ = Describe("RateLimitFeature", func() {
 				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true)
 				mockFeatureBuilder.EXPECT().RateLimitPluginRoute().Return(rateLimitPlugin)
 				mockFeatureBuilder.EXPECT().GetGateway().Return(gateway)
+				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
 				// Apply feature
 				Expect(feature.Apply(context.Background(), mockFeatureBuilder)).To(Succeed())

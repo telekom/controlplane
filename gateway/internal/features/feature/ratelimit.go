@@ -56,29 +56,7 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 	}
 
 	var rateLimitPlugin *plugin.RateLimitPlugin
-	if route.IsProxy() {
-		for _, allowedConsumer := range builder.GetAllowedConsumers() {
-			if allowedConsumer.HasTrafficRateLimit() || route.HasRateLimit() {
-				rateLimitPlugin = builder.RateLimitPluginConsumeRoute(allowedConsumer)
-				rateLimitPlugin = setCommonConfigs(rateLimitPlugin, builder.GetGateway())
-			}
-			if allowedConsumer.HasTrafficRateLimit() {
-				rateLimitPlugin.Config.Limits.Consumer = &plugin.LimitConfig{
-					Second: allowedConsumer.Spec.Traffic.RateLimit.Limits.Second,
-					Minute: allowedConsumer.Spec.Traffic.RateLimit.Limits.Minute,
-					Hour:   allowedConsumer.Spec.Traffic.RateLimit.Limits.Hour,
-				}
-			}
-			if route.HasRateLimit() {
-				rateLimitPlugin.Config.Limits.Service = &plugin.LimitConfig{
-					Second: route.Spec.Traffic.RateLimit.Limits.Second,
-					Minute: route.Spec.Traffic.RateLimit.Limits.Minute,
-					Hour:   route.Spec.Traffic.RateLimit.Limits.Hour,
-				}
-				rateLimitPlugin = setOptions(rateLimitPlugin, route.Spec.Traffic.RateLimit.Options)
-			}
-		}
-	} else {
+	if !route.IsProxy() {
 		if route.HasRateLimit() {
 			rateLimitPlugin = builder.RateLimitPluginRoute()
 			rateLimitPlugin = setCommonConfigs(rateLimitPlugin, builder.GetGateway())
@@ -88,6 +66,32 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 					Minute: route.Spec.Traffic.RateLimit.Limits.Minute,
 					Hour:   route.Spec.Traffic.RateLimit.Limits.Hour,
 				},
+			}
+			rateLimitPlugin = setOptions(rateLimitPlugin, route.Spec.Traffic.RateLimit.Options)
+		}
+	}
+
+	for _, allowedConsumer := range builder.GetAllowedConsumers() {
+		routeRef := allowedConsumer.Spec.Route
+		if !routeRef.Equals(route) {
+			continue
+		}
+		if allowedConsumer.HasTrafficRateLimit() || route.HasRateLimit() {
+			rateLimitPlugin = builder.RateLimitPluginConsumeRoute(allowedConsumer)
+			rateLimitPlugin = setCommonConfigs(rateLimitPlugin, builder.GetGateway())
+		}
+		if allowedConsumer.HasTrafficRateLimit() {
+			rateLimitPlugin.Config.Limits.Consumer = &plugin.LimitConfig{
+				Second: allowedConsumer.Spec.Traffic.RateLimit.Limits.Second,
+				Minute: allowedConsumer.Spec.Traffic.RateLimit.Limits.Minute,
+				Hour:   allowedConsumer.Spec.Traffic.RateLimit.Limits.Hour,
+			}
+		}
+		if route.HasRateLimit() {
+			rateLimitPlugin.Config.Limits.Service = &plugin.LimitConfig{
+				Second: route.Spec.Traffic.RateLimit.Limits.Second,
+				Minute: route.Spec.Traffic.RateLimit.Limits.Minute,
+				Hour:   route.Spec.Traffic.RateLimit.Limits.Hour,
 			}
 			rateLimitPlugin = setOptions(rateLimitPlugin, route.Spec.Traffic.RateLimit.Options)
 		}
