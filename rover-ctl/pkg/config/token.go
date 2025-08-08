@@ -99,14 +99,14 @@ func (t *Token) GeneratedString() string {
 	if t.GeneratedAt == 0 {
 		return "unknown"
 	}
-	return time.Unix(t.GeneratedAt, 1000).Format(time.RFC3339) // TODO: old cp uses milliseconds, new cp uses seconds
+	return time.UnixMilli(t.GeneratedAt).Format(time.RFC3339)
 }
 
 func (t *Token) TimeSinceGenerated() string {
 	if t.GeneratedAt == 0 {
 		return "unknown"
 	}
-	delta := time.Since(time.Unix(t.GeneratedAt, 1000)).Abs() // TODO: old cp uses milliseconds, new cp uses seconds
+	delta := time.Since(time.UnixMilli(t.GeneratedAt)).Abs()
 
 	if delta < time.Minute {
 		return "just now"
