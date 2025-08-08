@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"slices"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -64,10 +65,10 @@ func NewBaseHandler(apiVersion, kind, resource string, priority int) *BaseHandle
 		logger:     log.L().WithName(fmt.Sprintf("%s-handler", resource)),
 		Hooks:      make(map[HandlerHookStage][]func(ctx context.Context, obj types.Object) error),
 	}
-	handler.applyStatusPoller = NewStatusPoller(handler, nil)
+	handler.applyStatusPoller = NewStatusPoller(handler, nil, 30*time.Second, 1*time.Second)
 	handler.deleteStatusPoller = NewStatusPoller(handler, func(ctx context.Context, status types.ObjectStatus) (continuePolling bool, err error) {
 		return !status.IsGone(), nil
-	})
+	}, 30*time.Second, 1*time.Second)
 
 	return handler
 }
