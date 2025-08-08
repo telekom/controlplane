@@ -232,10 +232,10 @@ type ApiExposure struct {
 
 	// Transformation defines optional request/response transformations for this API
 	// +kubebuilder:validation:Optional
-	Transformation *Transformation `json:"transformation"`
+	Transformation *Transformation `json:"transformation,omitempty"`
 	// Traffic defines optional traffic management configuration for this API
 	// +kubebuilder:validation:Optional
-	Traffic *Traffic `json:"traffic"`
+	Traffic *Traffic `json:"traffic,omitempty"`
 	// Security defines optional security configuration for this API
 	// +kubebuilder:validation:Optional
 	Security *Security `json:"security,omitempty"`
