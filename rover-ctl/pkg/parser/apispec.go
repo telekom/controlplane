@@ -27,8 +27,6 @@ func ParseApiSpecification(obj types.Object) error {
 		return errors.Wrap(err, "failed to marshal OpenAPI spec content")
 	}
 	config := datamodel.NewDocumentConfiguration()
-	config.AllowFileReferences = true
-	config.AllowRemoteReferences = true
 	document, err := libopenapi.NewDocumentWithConfiguration(b, config)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse OpenAPI document")

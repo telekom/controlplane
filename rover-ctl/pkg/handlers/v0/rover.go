@@ -36,20 +36,28 @@ func PatchRoverRequest(ctx context.Context, obj types.Object) error {
 	}
 	exposures, exist := spec["exposures"]
 	if exist {
-		exposures, ok := exposures.([]any)
-		if !ok {
-			return errors.New("invalid exposures format")
+		if exposures == nil {
+			delete(spec, "exposures")
+		} else {
+			exposures, ok := exposures.([]any)
+			if !ok {
+				return errors.New("invalid exposures format")
+			}
+			spec["exposures"] = PatchExposures(exposures)
 		}
-		spec["exposures"] = PatchExposures(exposures)
 	}
 
 	subscriptions, exist := spec["subscriptions"]
 	if exist {
-		subscriptions, ok := subscriptions.([]any)
-		if !ok {
-			return errors.New("invalid subscriptions format")
+		if subscriptions == nil {
+			delete(spec, "subscriptions")
+		} else {
+			subscriptions, ok := subscriptions.([]any)
+			if subscriptions != nil && !ok {
+				return errors.New("invalid subscriptions format")
+			}
+			spec["subscriptions"] = PatchSubscriptions(subscriptions)
 		}
-		spec["subscriptions"] = PatchSubscriptions(subscriptions)
 	}
 
 	obj.SetContent(spec)
@@ -57,6 +65,9 @@ func PatchRoverRequest(ctx context.Context, obj types.Object) error {
 }
 
 func PatchExposures(exposures []any) []map[string]any {
+	if exposures == nil || len(exposures) == 0 {
+		return nil
+	}
 	exposuresMaps := make([]map[string]any, len(exposures))
 	for i, exposure := range exposures {
 		exposureMap, ok := exposure.(map[string]any)
@@ -71,12 +82,19 @@ func PatchExposures(exposures []any) []map[string]any {
 		} else if _, exist := exposure["port"]; exist {
 			exposuresMaps[i]["type"] = "port"
 		}
+		security, exist := exposure["security"]
+		if exist {
+			PatchSecurity(security)
+		}
 	}
 
 	return exposuresMaps
 }
 
 func PatchSubscriptions(subscriptions []any) []map[string]any {
+	if subscriptions == nil || len(subscriptions) == 0 {
+		return nil
+	}
 	subscriptionsMaps := make([]map[string]any, len(subscriptions))
 	for i, subscription := range subscriptions {
 		subscriptionMap, ok := subscription.(map[string]any)
@@ -91,8 +109,36 @@ func PatchSubscriptions(subscriptions []any) []map[string]any {
 		} else if _, exist := subscription["port"]; exist {
 			subscriptionsMaps[i]["type"] = "port"
 		}
+		security, exist := subscription["security"]
+		if exist {
+			PatchSecurity(security)
+		}
 	}
 
 	return subscriptionsMaps
+
+}
+
+func PatchSecurity(security any) {
+	if security == nil {
+		return
+	}
+	securityMap, ok := security.(map[string]any)
+	if !ok {
+		return
+	}
+
+	if _, exist := securityMap["tokenEndpoint"]; exist {
+		securityMap["type"] = "oauth2"
+		return
+	}
+	if _, exist := securityMap["clientId"]; exist {
+		securityMap["type"] = "oauth2"
+		return
+	}
+	if _, exist := securityMap["username"]; exist {
+		securityMap["type"] = "basicAuth"
+		return
+	}
 
 }
