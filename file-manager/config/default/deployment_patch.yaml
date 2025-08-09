@@ -15,20 +15,20 @@
     name: cert-volume
     mountPath: /etc/tls
     readOnly: true
-# This patch will configure the necessary service account token projection for the file manager client
+# This patch will configure the necessary service account token projection S3 integration
 - op: add
   path: /spec/template/spec/volumes/-
   value:
-    name: file-manager-token
+    name: buckets-token-volume
     projected:
       sources:
         - serviceAccountToken:
-            path: file-manager-token
+            path: token
             expirationSeconds: 600
             audience: sts.amazonaws.com
 - op: add
   path: /spec/template/spec/containers/0/volumeMounts/-
   value:
-    name: file-manager-token
-    mountPath: /var/run/secrets/file-manager
+    name: buckets-token-volume
+    mountPath: /var/run/secrets/buckets
     readOnly: true

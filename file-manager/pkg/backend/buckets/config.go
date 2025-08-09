@@ -11,6 +11,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	// BucketsBackendTokenPath per convention - /var/run/secrets/:backendName/token
+	BucketsBackendTokenPath = "/var/run/secrets/buckets/token"
+)
+
 // BucketConfig holds all configuration needed for bucket operations
 type BucketConfig struct {
 	Endpoint       string
@@ -34,7 +39,7 @@ func NewBucketConfig(options ...ConfigOption) (*BucketConfig, error) {
 		STSEndpoint:    "https://sts.amazonaws.com",
 		BucketName:     "my-s3-bucket",
 		RoleSessionArn: "arn:aws:iam::123456789012:role/my-sample-role",
-		TokenPath:      "/var/run/files/filemgr/filemgr-token",
+		TokenPath:      BucketsBackendTokenPath,
 	}
 
 	// Apply all options

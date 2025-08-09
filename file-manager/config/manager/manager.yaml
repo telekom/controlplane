@@ -90,7 +90,7 @@ spec:
             - name: file-manager-config
               mountPath: /etc/file-manager
               readOnly: true
-      serviceAccountName: file-manager
+      serviceAccountName: default
       terminationGracePeriodSeconds: 10
       volumes:
         - name: file-manager-config
