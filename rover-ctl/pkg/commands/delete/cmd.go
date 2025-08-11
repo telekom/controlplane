@@ -5,6 +5,8 @@
 package delete
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/base"
@@ -71,8 +73,8 @@ func (c *Command) deleteObject(obj types.Object) error {
 			obj.GetApiVersion(), obj.GetKind())
 	}
 
-	c.Logger().Info("🧹 Deleting object",
-		"kind", obj.GetKind(),
+	c.Logger().Info(fmt.Sprintf("🧹 Deleting %s",
+		obj.GetKind()),
 		"apiVersion", obj.GetApiVersion(),
 		"name", obj.GetName())
 
@@ -87,8 +89,8 @@ func (c *Command) deleteObject(obj types.Object) error {
 	}
 
 	if status.IsGone() {
-		c.Logger().Info("✅ Successfully deleted object",
-			"kind", obj.GetKind(),
+		c.Logger().Info(fmt.Sprintf("✅ Successfully deleted %s",
+			obj.GetKind()),
 			"name", obj.GetName())
 	}
 
