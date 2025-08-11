@@ -5,6 +5,7 @@
 package controller_test
 
 import (
+	"bytes"
 	"context"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -29,7 +30,8 @@ var _ = Describe("DownloadController", func() {
 			ctx := context.Background()
 			ctrl := controller.NewDownloadController(mockedBackend)
 
-			var writer *io.Writer
+			writer := getMockWriterWithContent("this is a test file content")
+
 			var headers = make(map[string]string)
 			headers[XFileContentType] = "application/yaml"
 			headers[XFileChecksum] = "thisIsATestChecksum"
@@ -37,6 +39,11 @@ var _ = Describe("DownloadController", func() {
 			mockedBackend.EXPECT().DownloadFile(any(ctx), "poc/eni/hyperion/my-test-file").Return(writer, headers, nil)
 
 			file, m, err := ctrl.DownloadFile(ctx, "poc--eni--hyperion--my-test-file")
+
+			// check contents
+			if buf, ok := (*file).(*bytes.Buffer); ok {
+				Expect(buf.String()).To(Equal("this is a test file content"))
+			}
 			Expect(err).NotTo(HaveOccurred())
 			Expect(file).To(Equal(writer))
 
@@ -72,3 +79,9 @@ var _ = Describe("DownloadController", func() {
 	})
 
 })
+
+func getMockWriterWithContent(content string) *io.Writer {
+	buf := bytes.NewBuffer([]byte(content))
+	var w io.Writer = buf
+	return &w
+}

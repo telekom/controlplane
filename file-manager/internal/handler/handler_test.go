@@ -121,6 +121,12 @@ func TestHandler_DownloadFile(t *testing.T) {
 		t.Error("Expected DownloadFile200BinaryResponse")
 	}
 
+	downloadResponse := response.(api.DownloadFile200ApplicationoctetStreamResponse)
+	rawContent, err := io.ReadAll(downloadResponse.Body)
+	if "test content" != string(rawContent) {
+		t.Error("Expected response of download to have body \"test content\"")
+	}
+
 	// Test case 2: Download error
 	request.FileId = "error--case"
 	_, err = h.DownloadFile(context.Background(), request)
