@@ -17,6 +17,7 @@ updates:
       - common-server
       - secret-manager
       - organization
+      - file-manager
       - gateway
       - identity
       - admin

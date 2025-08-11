@@ -12,3 +12,6 @@ charts
 # ignore test output
 gotest.log
 snapshots
+
+# ignore Claude AI files
+CLAUDE.md

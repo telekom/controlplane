@@ -9,12 +9,13 @@ go 1.24.4
 require github.com/telekom/controlplane/secret-manager v0.0.0
 
 require (
+	github.com/MicahParks/keyfunc/v2 v2.1.0
 	github.com/bytedance/sonic v1.13.3
 	github.com/dgraph-io/badger/v4 v4.7.0
 	github.com/go-logr/logr v1.4.3
 	github.com/go-logr/zapr v1.3.0
 	github.com/gofiber/contrib/jwt v1.1.2
-	github.com/gofiber/fiber/v2 v2.52.8
+	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
 	github.com/onsi/ginkgo/v2 v2.23.4
@@ -37,7 +38,6 @@ require (
 replace github.com/telekom/controlplane/secret-manager => ../secret-manager
 
 require (
-	github.com/MicahParks/keyfunc/v2 v2.1.0 // indirect
 	github.com/andybalholm/brotli v1.1.1 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect

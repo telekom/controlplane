@@ -1,0 +1,14 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+package: gen
+generate:
+  fiber-server: false
+  strict-server: false
+  models: true
+  client: true
+  embedded-spec: false
+output: ../api/gen/client.gen.go
+additional-imports:
+  - package: ""
