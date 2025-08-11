@@ -1241,12 +1241,7 @@ components:
         security:
           $ref: '#/components/schemas/Security'
         rateLimit:
-          allOf:
-            - type: object
-              properties:
-                provider:
-                  $ref: '#/components/schemas/RateLimit'
-            - $ref: '#/components/schemas/ConsumerRateLimitContainer'
+          $ref: '#/components/schemas/RateLimitContainer'
         failover:
           $ref: '#/components/schemas/Failover'
         loadBalancing:
@@ -1511,6 +1506,23 @@ components:
         - done
         - none
       type: string
+    RateLimitContainer:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ConsumerRateLimitContainer'
+        - properties:
+            provider:
+              $ref: '#/components/schemas/RateLimit'
+    ConsumerRateLimit:
+      type: object
+      required:
+        - id
+      allOf:
+        - $ref: '#/components/schemas/RateLimit'
+        - properties: 
+            id:
+              type: string
+              description: The unique ID of this consumer (their clientId)
     RateLimit:
       type: object
       properties:
@@ -1531,24 +1543,14 @@ components:
         type: object
         properties:
           consumerDefault:
-            allOf:
-              - $ref: '#/components/schemas/RateLimit'
-              - description: Default rate limit for all consumers
+            $ref: '#/components/schemas/RateLimit'
           consumers:
             type: array
             description: >
               Rate limits for specific consumers. This will be merged with the default
               rate limit. This will take precedence over the default rate limit.
             items:
-              type: object
-              required:
-                - id
-              allOf:
-                - $ref: '#/components/schemas/RateLimit'
-                - properties:
-                    id:
-                      type: string
-                      description: The unique ID of this consumer (their clientId)
+              $ref: '#/components/schemas/ConsumerRateLimit'
     ResourceRef:
       type: object
       readOnly: true

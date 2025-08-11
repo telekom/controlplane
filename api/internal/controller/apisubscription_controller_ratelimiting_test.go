@@ -49,8 +49,8 @@ func NewApiExposureWithRateLimit(apiBasePath, zoneName, consumerClientId string)
 							Hour:   10000,
 						},
 						Options: apiapi.RateLimitOptions{
-							HideClientHeaders: pntBool(false),
-							FaultTolerant:     pntBool(true),
+							HideClientHeaders: false,
+							FaultTolerant:     true,
 						},
 					},
 					SubscriberRateLimit: &apiapi.SubscriberRateLimits{
@@ -456,5 +456,3 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 		})
 	})
 })
-
-func pntBool(b bool) *bool { return &b }

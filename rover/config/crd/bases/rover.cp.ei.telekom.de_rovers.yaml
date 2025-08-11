@@ -375,10 +375,6 @@ spec:
                                           type: boolean
                                       type: object
                                   type: object
-                                  x-kubernetes-validations:
-                                  - message: At least on of limits or options must
-                                      be provided
-                                    rule: has(self.limits) || has(self.options)
                               type: object
                           type: object
                         transformation:
