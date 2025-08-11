@@ -70,7 +70,10 @@ func (s *BucketFileUploader) uploadToBucket(ctx context.Context, path string, re
 
 	// Upload file using the path directly
 	log.V(1).Info("Starting bucket PutObject operation", "path", path, "putOptions", putOptions)
-	uploadInfo, err := s.config.Client.PutObject(ctx, s.config.BucketName, path, reader, -1, putOptions)
+
+	// !IMPORTANT
+	// the size parameter is switching between multipart and atomic, single request put, the multipart pre-allocates cca 500 MB of memory - not needed for our usecase
+	uploadInfo, err := s.config.Client.PutObject(ctx, s.config.BucketName, path, reader, 0, putOptions)
 	log.V(1).Info("Finished bucket PutObject operation", "uploadInfo", uploadInfo)
 
 	if err != nil {
