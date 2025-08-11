@@ -9,8 +9,11 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
+	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 )
 
@@ -41,6 +44,15 @@ func (c *BaseCommand) Logger() logr.Logger {
 		c.logger = log.L().WithName(fmt.Sprintf("%s-cmd", c.Cmd.Use))
 	}
 	return c.logger
+}
+
+func (c *BaseCommand) HandleError(err error, ctxInfo string) error {
+	common.PrintTo(err, c.Cmd.OutOrStderr(), viper.GetString("log.format"))
+	if c.FailFast {
+		return errors.Wrapf(err, "failed to %s", ctxInfo)
+	}
+	c.Logger().Info(fmt.Sprintf("⚠️ Failed to %s", ctxInfo))
+	return nil
 }
 
 // SetupToken sets up the authorization token for the command

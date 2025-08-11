@@ -37,15 +37,18 @@ type StatusInfo struct {
 	Resource ObjectRef `json:"resource"`
 }
 
+type StateInfoContainer interface {
+	GetErrors() []StatusInfo
+	GetInfo() []StatusInfo
+	GetWarnings() []StatusInfo
+}
+
 type ObjectStatus interface {
+	StateInfoContainer
 	GetOverallStatus() string
 	GetProcessingState() string
 	HasErrors() bool
 	HasWarnings() bool
 	HasInfo() bool
 	IsGone() bool
-
-	GetErrors() []StatusInfo
-	GetInfo() []StatusInfo
-	GetWarnings() []StatusInfo
 }

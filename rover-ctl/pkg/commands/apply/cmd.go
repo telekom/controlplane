@@ -31,6 +31,8 @@ func NewCommand() *cobra.Command {
 		),
 	}
 
+	cmd.Cmd.MarkFlagRequired("file")
+
 	// Set the run function
 	cmd.Cmd.RunE = cmd.Run
 	cmd.Cmd.PreRunE = func(_ *cobra.Command, args []string) error {
@@ -76,20 +78,12 @@ func (c *Command) applyObject(obj types.Object) error {
 
 	// Apply the object using the handler
 	if err := handler.Apply(c.Cmd.Context(), obj); err != nil {
-		if c.FailFast {
-			return errors.Wrap(err, "failed to apply object")
-		}
-		c.Logger().Error(err, "Failed to apply object, continuing due to fail-fast setting")
-		return nil
+		return c.HandleError(err, fmt.Sprintf("apply %s", obj.GetKind()))
 	}
 
 	status, err := handler.WaitForReady(c.Cmd.Context(), obj.GetName())
 	if err != nil {
-		if c.FailFast {
-			return errors.Wrap(err, "failed to get status")
-		}
-		c.Logger().Error(err, "Failed to get status, continuing due to fail-fast setting")
-		return nil
+		return c.HandleError(err, fmt.Sprintf("wait for %s to be ready", obj.GetKind()))
 	}
 
 	statusEval := common.NewStatusEval(obj, status)

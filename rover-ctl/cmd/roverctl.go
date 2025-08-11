@@ -15,6 +15,7 @@ import (
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/apply"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/delete"
 	getinfo "github.com/telekom/controlplane/rover-ctl/pkg/commands/get-info"
+	resetsecret "github.com/telekom/controlplane/rover-ctl/pkg/commands/reset-secret"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/resource"
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
@@ -67,13 +68,13 @@ It handles configuration files and maps them to the appropriate resource handler
 	viper.BindPFlag("log.format", rootCmd.PersistentFlags().Lookup("log-format"))
 
 	// Add output format flag
-	rootCmd.PersistentFlags().String("output-format", viper.GetString("output.format"), "Output format (yaml|json)")
-	viper.BindPFlag("output.format", rootCmd.PersistentFlags().Lookup("output-format"))
+	rootCmd.PersistentFlags().String("format", viper.GetString("output.format"), "Output format (yaml|json)")
+	viper.BindPFlag("output.format", rootCmd.PersistentFlags().Lookup("format"))
 
 	// Add output file flag
-	rootCmd.PersistentFlags().String("output-file", "stdout", "Output file path")
+	rootCmd.PersistentFlags().StringP("output", "o", "stdout", "Output file path")
 
-	viper.BindPFlag("output.file", rootCmd.PersistentFlags().Lookup("output-file"))
+	viper.BindPFlag("output.file", rootCmd.PersistentFlags().Lookup("output"))
 
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if viper.GetBool("debug") {
@@ -115,6 +116,7 @@ It handles configuration files and maps them to the appropriate resource handler
 		delete.NewCommand(),
 		resource.NewCommand(),
 		getinfo.NewCommand(),
+		resetsecret.NewCommand(),
 	)
 
 	return rootCmd

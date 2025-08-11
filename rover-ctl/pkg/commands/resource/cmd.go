@@ -122,7 +122,7 @@ func (c *Command) runGet(cmd *cobra.Command, args []string) error {
 	c.Logger().V(1).Info("Getting resource", "name", c.Options.Name)
 	obj, err := handler.Get(cmd.Context(), c.Options.Name)
 	if err != nil {
-		return errors.Wrap(err, "failed to get resource")
+		return c.HandleError(err, "get resource")
 	}
 
 	format := viper.GetString("output.format")
@@ -159,7 +159,7 @@ func (c *Command) runList(cmd *cobra.Command, args []string) error {
 	c.Logger().V(1).Info("Listing resources")
 	objects, err := handler.List(cmd.Context())
 	if err != nil {
-		return errors.Wrap(err, "failed to list resources")
+		return c.HandleError(err, "list resources")
 	}
 
 	format := viper.GetString("output.format")

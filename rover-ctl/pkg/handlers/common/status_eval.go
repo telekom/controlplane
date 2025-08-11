@@ -42,12 +42,12 @@ func (s StatusEval) ConsolePrettyPrint(w io.Writer) error {
 	buf := bytes.NewBuffer(nil)
 
 	// Print resource details
-	fmt.Fprintf(buf, "\n%s: %s/%s\n", "Resource", s.obj.GetKind(), s.obj.GetName())
-	fmt.Fprintf(buf, "Status: %s | Processing: %s\n\n", s.status.GetOverallStatus(), s.status.GetProcessingState())
+	fmt.Fprintf(buf, "%s: %s/%s\n", "Resource", s.obj.GetKind(), s.obj.GetName())
+	fmt.Fprintf(buf, "Status: %s | Processing: %s\n", s.status.GetOverallStatus(), s.status.GetProcessingState())
 
 	// Group information messages by kind
 	if len(s.status.GetInfo()) > 0 {
-		fmt.Fprintf(buf, "ℹ️  Information\n")
+		fmt.Fprintf(buf, "\nℹ️  Information\n")
 		fmt.Fprintf(buf, "-------------\n")
 
 		// Group by kind
@@ -73,7 +73,7 @@ func (s StatusEval) ConsolePrettyPrint(w io.Writer) error {
 
 	// Group warning messages by kind
 	if len(s.status.GetWarnings()) > 0 {
-		fmt.Fprintf(buf, "⚠️  Warnings\n")
+		fmt.Fprintf(buf, "\n⚠️  Warnings\n")
 		fmt.Fprintf(buf, "----------\n")
 
 		// Group by kind
@@ -99,7 +99,7 @@ func (s StatusEval) ConsolePrettyPrint(w io.Writer) error {
 
 	// Group error messages by kind
 	if len(s.status.GetErrors()) > 0 {
-		fmt.Fprintf(buf, "❌ Errors\n")
+		fmt.Fprintf(buf, "\n❌ Errors\n")
 		fmt.Fprintf(buf, "--------\n")
 
 		// Group by kind
