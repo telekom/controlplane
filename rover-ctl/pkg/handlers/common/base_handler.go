@@ -391,6 +391,21 @@ func checkResponseCode(resp *http.Response, expectedCodes ...int) error {
 	if slices.Contains(expectedCodes, resp.StatusCode) {
 		return nil
 	}
-	body, _ := io.ReadAll(resp.Body)
-	return errors.Errorf("unexpected response code: %d - %s", resp.StatusCode, string(body))
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read response body: %s", resp.Status)
+	}
+
+	apiErr := &ApiError{}
+	if err := json.Unmarshal(body, apiErr); err != nil {
+		return &ApiError{
+			Type:     "UnknownError",
+			Status:   resp.StatusCode,
+			Title:    "Unexpected Response",
+			Detail:   string(body),
+			Instance: fmt.Sprintf("%s/%s", resp.Request.Method, resp.Request.URL),
+		}
+	}
+
+	return apiErr
 }

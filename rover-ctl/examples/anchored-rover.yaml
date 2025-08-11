@@ -21,7 +21,7 @@ spec:
   commonPath: &servicePath
     basePath: /api/shared-service
     visibility: ENTERPRISE
-    approval: AUTO
+    approval: SIMPLE
     
   # Using the anchors in multiple exposures
   exposures:

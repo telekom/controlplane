@@ -24,11 +24,7 @@ func NewFileCommand(use, short, long string) *FileCommand {
 		BaseCommand: baseCmd,
 	}
 
-	// Add file-specific flags
 	baseCmd.Cmd.Flags().StringVarP(&cmd.FilePath, "file", "f", "", "Path to the file or directory containing resource definitions")
-
-	// File flag is required
-	baseCmd.Cmd.MarkFlagRequired("file")
 
 	return cmd
 }

@@ -29,6 +29,8 @@ func NewCommand() *cobra.Command {
 		),
 	}
 
+	cmd.Cmd.MarkFlagRequired("file")
+
 	// Set the run function
 	cmd.Cmd.RunE = cmd.Run
 	cmd.Cmd.PreRunE = func(_ *cobra.Command, args []string) error {
@@ -80,12 +82,12 @@ func (c *Command) deleteObject(obj types.Object) error {
 
 	// Delete the object using the handler
 	if err := handler.Delete(c.Cmd.Context(), obj); err != nil {
-		return errors.Wrap(err, "handler failed to delete object")
+		return c.HandleError(err, fmt.Sprintf("delete %s", obj.GetKind()))
 	}
 
 	status, err := handler.WaitForDeleted(c.Cmd.Context(), obj.GetName())
 	if err != nil {
-		return errors.Wrap(err, "failed to wait for deletion")
+		return c.HandleError(err, fmt.Sprintf("wait for %s to be deleted", obj.GetKind()))
 	}
 
 	if status.IsGone() {
