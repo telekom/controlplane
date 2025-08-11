@@ -5,6 +5,8 @@
 package apply
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -68,8 +70,8 @@ func (c *Command) applyObject(obj types.Object) error {
 			obj.GetApiVersion(), obj.GetKind())
 	}
 
-	c.Logger().Info("🚀 Applying object",
-		"kind", obj.GetKind(),
+	c.Logger().Info(fmt.Sprintf("🚀 Applying %s",
+		obj.GetKind()),
 		"name", obj.GetName())
 
 	// Apply the object using the handler
@@ -92,8 +94,8 @@ func (c *Command) applyObject(obj types.Object) error {
 
 	statusEval := common.NewStatusEval(obj, status)
 	if statusEval.IsSuccess() {
-		c.Logger().Info("✅ Successfully applied object",
-			"kind", obj.GetKind(),
+		c.Logger().Info(fmt.Sprintf("✅ Successfully applied %s",
+			obj.GetKind()),
 			"name", obj.GetName())
 	} else {
 		if err := statusEval.PrettyPrint(c.Cmd.OutOrStdout(), viper.GetString("log.format")); err != nil {
