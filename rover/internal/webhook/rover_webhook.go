@@ -206,35 +206,9 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *Validatio
 			}
 		}
 
-		// Validate rate limit configuration if present
-		if exposure.Api.Traffic != nil {
-			if exposure.Api.Traffic.HasRateLimit() {
-				// Validate provider rate limits
-				if exposure.Api.Traffic.HasProviderRateLimitLimits() {
-					if err := validateLimits(*exposure.Api.Traffic.RateLimit.Provider.Limits); err != nil {
-						return apierrors.NewBadRequest(fmt.Sprintf("invalid provider rate limit: %v", err))
-					}
-				}
-
-				// Validate consumer rate limits
-				if exposure.Api.Traffic.HasConsumerRateLimit() {
-					// Validate default consumer rate limit
-					if exposure.Api.Traffic.HasConsumerDefaultsRateLimit() {
-						if err := validateLimits(exposure.Api.Traffic.RateLimit.Consumers.Default.Limits); err != nil {
-							return apierrors.NewBadRequest(fmt.Sprintf("invalid default consumer rate limit: %v", err))
-						}
-					}
-
-					// Validate consumer overrides
-					if exposure.Api.Traffic.HasConsumerOverridesRateLimit() {
-						for _, override := range exposure.Api.Traffic.RateLimit.Consumers.Overrides {
-							if err := validateLimits(override.Limits); err != nil {
-								return apierrors.NewBadRequest(fmt.Sprintf("invalid consumer override rate limit for consumer %s: %v", override.Consumer, err))
-							}
-						}
-					}
-				}
-			}
+		// Validate rate limits if they are set
+		if err := r.validateExposureRateLimit(ctx, valErr, exposure, idx); err != nil {
+			return errors.Wrap(err, "failed to validate exposure rate limits")
 		}
 
 		// Check if all upstreams have a weight set or none
@@ -260,7 +234,65 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *Validatio
 	return nil
 }
 
+func (r *RoverValidator) validateExposureRateLimit(ctx context.Context, valErr *ValidationError, exposure roverv1.Exposure, idx int) error {
+	// Check if API is nil
+	if exposure.Api == nil {
+		return nil
+	}
+
+	// Check if Traffic is nil
+	if exposure.Api.Traffic == nil {
+		return nil
+	}
+
+	// Check if RateLimit is nil
+	if exposure.Api.Traffic.RateLimit == nil {
+		return nil
+	}
+
+	// Validate provider rate limits
+	if exposure.Api.Traffic.RateLimit.Provider != nil &&
+		exposure.Api.Traffic.RateLimit.Provider.Limits != nil {
+		if err := validateLimits(*exposure.Api.Traffic.RateLimit.Provider.Limits); err != nil {
+			valErr.AddInvalidError(
+				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("traffic").Child("rateLimit").Child("provider").Child("limits"),
+				exposure.Api.Traffic.RateLimit.Provider.Limits, fmt.Sprintf("invalid provider rate limit: %v", err),
+			)
+		}
+	}
+
+	// Validate consumer rate limits
+	if exposure.Api.Traffic.RateLimit.Consumers == nil {
+		return nil
+	}
+
+	// Validate default consumer rate limit
+	if exposure.Api.Traffic.RateLimit.Consumers.Default != nil {
+		if err := validateLimits(exposure.Api.Traffic.RateLimit.Consumers.Default.Limits); err != nil {
+			valErr.AddInvalidError(
+				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("traffic").Child("rateLimit").Child("consumers").Child("default").Child("limits"),
+				exposure.Api.Traffic.RateLimit.Consumers.Default.Limits, fmt.Sprintf("invalid default consumer rate limit: %v", err),
+			)
+		}
+	}
+
+	// Validate consumer overrides
+	if exposure.Api.Traffic.RateLimit.Consumers.Overrides != nil {
+		for i, override := range exposure.Api.Traffic.RateLimit.Consumers.Overrides {
+			if err := validateLimits(override.Limits); err != nil {
+				valErr.AddInvalidError(
+					field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("traffic").Child("rateLimit").Child("consumers").Child("overrides").Index(i).Child("limits"),
+					override.Limits, fmt.Sprintf("invalid consumer override rate limit: %v", err),
+				)
+			}
+		}
+	}
+
+	return nil
+}
+
 func (r *RoverValidator) validateApproval(ctx context.Context, valErr *ValidationError, environment string, approval roverv1.Approval) error {
+
 	for i := range approval.TrustedTeams {
 		ref := types.ObjectRef{
 			Name:      approval.TrustedTeams[i].Group + "--" + approval.TrustedTeams[i].Team,
