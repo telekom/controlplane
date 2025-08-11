@@ -78,7 +78,6 @@ spec:
                 type: boolean
               secret:
                 description: Secret is the secret used to authenticate the application
-                maxLength: 64
                 minLength: 1
                 type: string
               security:

@@ -11,7 +11,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/hash"
 	"github.com/telekom/controlplane/organization/internal/secret"
 	"github.com/telekom/controlplane/secret-manager/api"
-	"github.com/telekom/controlplane/secret-manager/api/gen"
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
@@ -53,26 +52,21 @@ func (m *mockManager) Rotate(ctx context.Context, secretID string) (newID string
 	return m.Set(ctx, secretID, string(uuid.NewUUID()))
 }
 
-func (m *mockManager) UpsertEnvironment(_ context.Context, _ string) (availableSecrets []gen.ListSecretItem, err error) {
+func (m *mockManager) UpsertEnvironment(_ context.Context, _ string) (availableSecrets map[string]string, err error) {
 	panic("not implemented")
 }
 
-func (m *mockManager) UpsertTeam(ctx context.Context, envID, teamID string) (availableSecrets []gen.ListSecretItem, err error) {
+func (m *mockManager) UpsertTeam(ctx context.Context, envID, teamID string) (availableSecrets map[string]string, err error) {
 	combined := envID + ":" + teamID
 	teamTokenId, _ := m.Set(ctx, combined+":"+secret.TeamToken, string(uuid.NewUUID()))
 	clientSecretId, _ := m.Set(ctx, combined+":"+secret.ClientSecret, string(uuid.NewUUID()))
-	return []gen.ListSecretItem{
-		{
-			Id:   teamTokenId,
-			Name: secret.TeamToken,
-		}, {
-			Id:   clientSecretId,
-			Name: secret.ClientSecret,
-		},
+	return map[string]string{
+		secret.TeamToken:    teamTokenId,
+		secret.ClientSecret: clientSecretId,
 	}, nil
 }
 
-func (m *mockManager) UpsertApplication(_ context.Context, _, _, _ string) (availableSecrets []gen.ListSecretItem, err error) {
+func (m *mockManager) UpsertApplication(_ context.Context, _, _, _ string, opts ...api.OnboardingOption) (availableSecrets map[string]string, err error) {
 	panic("not implemented")
 }
 

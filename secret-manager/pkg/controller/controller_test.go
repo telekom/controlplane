@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/controller"
 	"github.com/telekom/controlplane/secret-manager/test/mocks"
@@ -146,6 +147,36 @@ var _ = Describe("Controller", func() {
 
 			err := ctrl.DeleteApplication(ctx, "env-id", "team-id", "app-id")
 			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should onboard an application with options", func() {
+			ctx := context.Background()
+			ctrl := controller.NewOnboardController(mockedOnboarder)
+
+			opts := []controller.OnboardOption{
+				controller.WithSecretValues(map[string]string{"key1": "value1", "key2": "value2"}),
+			}
+
+			mockedOnboarder.EXPECT().OnboardApplication(ctx, "env-id", "team-id", "app-id",
+				mock.AnythingOfType("backend.OnboardOption"), mock.AnythingOfType("backend.OnboardOption"),
+			).RunAndReturn(func(ctx context.Context, envId, teamId, appId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
+
+				Expect(opts).To(HaveLen(2))
+				options := &backend.OnboardOptions{}
+				for _, opt := range opts {
+					opt(options)
+				}
+				Expect(options.SecretValues["key1"].AllowChange()).To(BeTrue())
+				Expect(options.SecretValues["key1"].Value()).To(Equal("value1"))
+				Expect(options.SecretValues["key2"].AllowChange()).To(BeTrue())
+				Expect(options.SecretValues["key2"].Value()).To(Equal("value2"))
+
+				return backend.NewDefaultOnboardResponse(nil), nil
+			})
+
+			res, err := ctrl.OnboardApplication(ctx, "env-id", "team-id", "app-id", opts...)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).ToNot(BeNil())
 		})
 	})
 })

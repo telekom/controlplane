@@ -1,0 +1,50 @@
+
+[Subscription Security Mapper mapSubscriptionSecurity must map BasicAuth security correctly - 1]
+&v1.SubscriberSecurity{
+    M2M: &v1.SubscriberMachine2MachineAuthentication{
+        Client: (*v1.OAuth2ClientCredentials)(nil),
+        Basic:  &v1.BasicAuthCredentials{Username:"testuser", Password:"testpass"},
+        Scopes: nil,
+    },
+}
+---
+
+[Subscription Security Mapper mapSubscriptionSecurity must map OAuth2 client credentials correctly - 1]
+&v1.SubscriberSecurity{
+    M2M: &v1.SubscriberMachine2MachineAuthentication{
+        Client: &v1.OAuth2ClientCredentials{ClientId:"client-id", ClientSecret:"client-secret", ClientKey:"client-key"},
+        Basic:  (*v1.BasicAuthCredentials)(nil),
+        Scopes: nil,
+    },
+}
+---
+
+[Subscription Security Mapper mapSubscriptionSecurity must map OAuth2 username/password correctly - 1]
+&v1.SubscriberSecurity{
+    M2M: &v1.SubscriberMachine2MachineAuthentication{
+        Client: (*v1.OAuth2ClientCredentials)(nil),
+        Basic:  &v1.BasicAuthCredentials{Username:"testuser", Password:"testpass"},
+        Scopes: nil,
+    },
+}
+---
+
+[Subscription Security Mapper mapSubscriptionSecurity must map OAuth2 scopes correctly - 1]
+&v1.SubscriberSecurity{
+    M2M: &v1.SubscriberMachine2MachineAuthentication{
+        Client: (*v1.OAuth2ClientCredentials)(nil),
+        Basic:  (*v1.BasicAuthCredentials)(nil),
+        Scopes: {"read", "write"},
+    },
+}
+---
+
+[Subscription Security Mapper mapSubscriptionSecurity must map combined OAuth2 configuration correctly - 1]
+&v1.SubscriberSecurity{
+    M2M: &v1.SubscriberMachine2MachineAuthentication{
+        Client: &v1.OAuth2ClientCredentials{ClientId:"client-id", ClientSecret:"client-secret", ClientKey:""},
+        Basic:  (*v1.BasicAuthCredentials)(nil),
+        Scopes: {"read", "write"},
+    },
+}
+---
