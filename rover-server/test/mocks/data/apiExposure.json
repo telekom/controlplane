@@ -1,0 +1,54 @@
+{
+  "apiVersion": "stargate.cp.ei.telekom.de/v1",
+  "kind": "ApiExposure",
+  "metadata": {
+    "name": "rover-local-exp--eni-distr-v1",
+    "namespace": "poc--eni--hyperion",
+    "ownerReferences": [
+      {
+        "apiVersion": "rover.cp.ei.telekom.de/v1",
+        "kind": "Rover",
+        "name": "rover-local-exp",
+        "uid": "549badcc-18b6-48ac-a8ce-b3242523d827"
+      }
+    ]
+  },
+  "status": {
+    "active": true,
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "Provisioned",
+        "message": "Successfully provisioned subresources"
+      },
+      {
+        "type": "Processing",
+        "status": "False",
+        "reason": "Done",
+        "message": "Successfully provisioned subresources"
+      }
+    ],
+    "route": {
+        "name": "eni-distr-v1",
+        "namespace": "poc--dataplane1"
+    }
+  },
+  "spec": {
+    "apiBasePath": "/eni/distr/v1",
+    "approval": {
+      "strategy": "Simple"
+    },
+    "visibility": "World",
+    "upstreams": [
+      {
+        "url": "https://httpbin.org/anything",
+        "weight": 100
+      }
+    ],
+    "zone": {
+        "name": "dataplane1",
+        "namespace": "poc"
+    }
+  }
+}

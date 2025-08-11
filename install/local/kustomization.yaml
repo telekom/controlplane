@@ -12,6 +12,7 @@ resources:
   - ../../organization/config/default
   - ../../api/config/default
   - ../../admin/config/default
+  - ../../rover-server/config/default
 
 configMapGenerator:
   - name: secret-manager-config
@@ -26,7 +27,14 @@ configMapGenerator:
     options:
       disableNameSuffixHash: true
     literals: []
-
+  - name: rover-server-env
+    behavior: merge
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - LOG_LEVEL=info
+      - SECURITY_TRUSTEDISSUERS=""
+      - SECURITY_LMS_BASEPATH=""
 patches:
   - target:
       kind: Deployment
@@ -62,4 +70,7 @@ images:
     newTag: latest
   - name: ghcr.io/telekom/controlplane/admin
     newName: ghcr.io/telekom/controlplane/admin
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/rover-server
+    newName: ghcr.io/telekom/controlplane/rover-server
     newTag: latest

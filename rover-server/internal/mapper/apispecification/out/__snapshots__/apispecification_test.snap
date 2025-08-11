@@ -1,0 +1,28 @@
+
+[ApiSpecificationResponse Mapper MapRequest must map a ApiSpecification to an ApiSpecificationResponse correctly - 1]
+{
+ "category": "other",
+ "id": "eni--hyperion--apispec-sample",
+ "name": "",
+ "specification": {
+  "info": {
+   "title": "Rover API",
+   "version": "1.0.0"
+  },
+  "openapi": "3.0.0",
+  "servers": {
+   "url": "http://rover-api/eni/distr/v1"
+  }
+ },
+ "status": {
+  "processingState": "done",
+  "state": "complete",
+  "time": "<Any value>"
+ },
+ "vendorApi": false
+}
+---
+
+[ApiSpecificationResponse Mapper MapRequest must return an error if the input ApiSpecification is nil - 1]
+api.ApiSpecificationResponse{}
+---

@@ -104,7 +104,7 @@ spec:
                       properties:
                         name:
                           description: Name is the name of the created route. It must
-                            be unique withing the zone.
+                            be unique within the zone.
                           pattern: ^[a-z0-9]+(-?[a-z0-9]+)*$
                           type: string
                         path:

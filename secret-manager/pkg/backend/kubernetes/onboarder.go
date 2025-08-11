@@ -7,7 +7,8 @@ package kubernetes
 import (
 	"context"
 
-	"github.com/google/uuid"
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -33,30 +34,24 @@ func NewOnboarder(client client.Client) *KubernetesOnboarder {
 func (k *KubernetesOnboarder) OnboardEnvironment(ctx context.Context, env string) (backend.OnboardResponse, error) {
 	obj := NewSecretObj(env, "", "")
 
+	secrets, err := backend.NewEnvironmentSecrets().GetSecrets()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get allowed secrets")
+	}
+
 	mutate := func() error {
 		controllerutil.AddFinalizer(obj, FinalizerName)
-
-		obj.Labels = map[string]string{
-			"cp.ei.telekom.de/environment": env,
-			"app.kubernetes.io/managed-by": "secret-manager",
-		}
-		obj.Type = corev1.SecretTypeOpaque
-		if obj.Data == nil {
-			obj.Data = map[string][]byte{
-				"zones": []byte(""),
-			}
-		}
-
+		obj.Data = mergeDataFormat(obj.Data, secrets)
 		return nil
 	}
-	_, err := controllerutil.CreateOrUpdate(ctx, k.client, obj, mutate)
+	_, err = controllerutil.CreateOrUpdate(ctx, k.client, obj, mutate)
 	if err != nil {
 		return backend.NewDefaultOnboardResponse(nil), backend.NewBackendError(nil, err, "failed to create or update environment")
 	}
 
-	secretRefs := make(map[string]backend.SecretRef, len(backend.EnvironmentSecrets))
-	for _, secret := range backend.EnvironmentSecrets {
-		secretRefs[secret] = New(env, "", "", secret, obj.GetResourceVersion())
+	secretRefs := make(map[string]backend.SecretRef, len(secrets))
+	for secretName := range secrets {
+		secretRefs[secretName] = New(env, "", "", secretName, obj.GetResourceVersion())
 	}
 
 	return backend.NewDefaultOnboardResponse(secretRefs), nil
@@ -65,61 +60,73 @@ func (k *KubernetesOnboarder) OnboardEnvironment(ctx context.Context, env string
 func (k *KubernetesOnboarder) OnboardTeam(ctx context.Context, env string, teamId string) (backend.OnboardResponse, error) {
 	obj := NewSecretObj(env, teamId, "")
 
+	secrets, err := backend.NewTeamSecrets().GetSecrets()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get allowed secrets")
+	}
+
 	mutate := func() error {
 		controllerutil.AddFinalizer(obj, FinalizerName)
-
-		obj.Labels = map[string]string{
-			"cp.ei.telekom.de/environment": env,
-			"cp.ei.telekom.de/team":        teamId,
-			"app.kubernetes.io/managed-by": "secret-manager",
-		}
-		obj.Type = corev1.SecretTypeOpaque
-		if obj.Data == nil { // Only do the initial onboarding. After that, the data can only be changed using the secrets-API
-			obj.Data = map[string][]byte{
-				"clientSecret": []byte(uuid.NewString()),
-				"teamToken":    []byte(uuid.NewString()),
-			}
-		}
+		obj.Data = mergeDataFormat(obj.Data, secrets)
 		return nil
 	}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, k.client, obj, mutate)
+	_, err = controllerutil.CreateOrUpdate(ctx, k.client, obj, mutate)
 	if err != nil {
 		return backend.NewDefaultOnboardResponse(nil), backend.NewBackendError(nil, err, "failed to create or update team")
 	}
 
-	secretRefs := make(map[string]backend.SecretRef, len(backend.TeamSecrets))
-	for _, secret := range backend.TeamSecrets {
-		secretRefs[secret] = New(env, teamId, "", secret, obj.GetResourceVersion())
+	secretRefs := make(map[string]backend.SecretRef, len(secrets))
+	for secretName := range secrets {
+		secretRefs[secretName] = New(env, teamId, "", secretName, obj.GetResourceVersion())
 	}
 
 	return backend.NewDefaultOnboardResponse(secretRefs), nil
 }
 
-func (k *KubernetesOnboarder) OnboardApplication(ctx context.Context, env string, teamId string, appId string) (backend.OnboardResponse, error) {
+func (k *KubernetesOnboarder) OnboardApplication(ctx context.Context, env string, teamId string, appId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
+	log := logr.FromContextOrDiscard(ctx)
+	options := backend.OnboardOptions{}
+	for _, opt := range opts {
+		opt(&options)
+	}
 	obj := NewSecretObj(env, teamId, appId)
+
+	allowedSecrets := backend.NewApplicationSecrets()
+	for key, value := range options.SecretValues {
+		ok := allowedSecrets.TrySetSecret(key, value)
+		if !ok {
+			secretId := New(env, teamId, appId, key, "")
+			return nil, backend.Forbidden(secretId, errors.Errorf("secret %s is not allowed for application onboarding", key))
+		}
+	}
+	secrets, err := allowedSecrets.GetSecrets()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get allowed secrets")
+	}
 
 	mutate := func() error {
 		controllerutil.AddFinalizer(obj, FinalizerName)
-
-		if obj.Data == nil { // Only do the initial onboarding. After that, the data can only be changed using the secrets-API
-			appData := map[string]string{
-				"clientSecret":    uuid.NewString(),
-				"externalSecrets": "{}",
-			}
-			obj.Data = convertToDataFormat(appData)
-		}
+		obj.Data = mergeDataFormat(obj.Data, secrets)
 		return nil
 	}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, k.client, obj, mutate)
+	_, err = controllerutil.CreateOrUpdate(ctx, k.client, obj, mutate)
 	if err != nil {
 		return backend.NewDefaultOnboardResponse(nil), backend.NewBackendError(nil, err, "failed to create or update application")
 	}
 
-	secretRefs := make(map[string]backend.SecretRef, len(backend.ApplicationSecrets))
-	for _, secret := range backend.ApplicationSecrets {
-		secretRefs[secret] = New(env, teamId, appId, secret, obj.GetResourceVersion())
+	secretRefs := make(map[string]backend.SecretRef, len(secrets)+len(options.SecretValues))
+	for secretPath := range secrets {
+		secretRefs[secretPath] = New(env, teamId, appId, secretPath, obj.GetResourceVersion())
+	}
+
+	for secretPath := range options.SecretValues {
+		if _, ok := secretRefs[secretPath]; !ok {
+			secretRefs[secretPath] = New(env, teamId, appId, secretPath, obj.GetResourceVersion())
+		} else {
+			log.Info("Value for secret already exists", "secretPath", secretPath)
+		}
 	}
 
 	return backend.NewDefaultOnboardResponse(secretRefs), nil
@@ -216,10 +223,18 @@ func RemoveFinalizer(ctx context.Context, c client.Client, obj client.Object) er
 	return nil
 }
 
-func convertToDataFormat(in map[string]string) map[string][]byte {
-	out := map[string][]byte{}
-	for k, v := range in {
-		out[k] = []byte(v)
+func mergeDataFormat(existing map[string][]byte, newData map[string]backend.SecretValue) map[string][]byte {
+	result := make(map[string][]byte)
+	for k, v := range newData {
+		_, keyExists := existing[k]
+		if keyExists && !v.AllowChange() {
+			result[k] = existing[k]
+			continue
+		}
+		if v.IsEmpty() {
+			continue
+		}
+		result[k] = []byte(v.Value())
 	}
-	return out
+	return result
 }

@@ -1,0 +1,793 @@
+
+[Rover Controller GetAll rover resources should return all rovers successfully - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/rovers?cursor="
+ },
+ "items": [
+  {
+   "exposures": [
+    {
+     "approval": "SIMPLE",
+     "basePath": "/eni/distr/v1",
+     "type": "api",
+     "upstream": "https://httpbin.org/anything",
+     "visibility": "WORLD"
+    }
+   ],
+   "id": "eni--hyperion--rover-local-sub",
+   "name": "rover-local-sub",
+   "status": {
+    "errors": [
+     {
+      "cause": "Application: rover-local-sub, Cause: NoApproval",
+      "message": "Approval is either rejected or suspended"
+     }
+    ],
+    "processingState": "done",
+    "state": "blocked",
+    "time": "<Any value>",
+    "warnings": [
+     {
+      "message": "Atleast one sub-resource is being processed"
+     }
+    ]
+   },
+   "subscriptions": [
+    {
+     "basePath": "/eni/distr/v1",
+     "type": "api"
+    }
+   ],
+   "zone": "dataplane1"
+  }
+ ]
+}
+---
+
+[Rover Controller GetAll rover resources should return all rovers successfully - 2]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/rovers?cursor="
+ },
+ "items": [
+  {
+   "exposures": [
+    {
+     "approval": "SIMPLE",
+     "basePath": "/eni/distr/v1",
+     "type": "api",
+     "upstream": "https://httpbin.org/anything",
+     "visibility": "WORLD"
+    }
+   ],
+   "id": "eni--hyperion--rover-local-sub",
+   "name": "rover-local-sub",
+   "status": {
+    "errors": [
+     {
+      "cause": "Application: rover-local-sub, Cause: NoApproval",
+      "message": "Approval is either rejected or suspended"
+     }
+    ],
+    "processingState": "done",
+    "state": "blocked",
+    "time": "<Any value>",
+    "warnings": [
+     {
+      "message": "Atleast one sub-resource is being processed"
+     }
+    ]
+   },
+   "subscriptions": [
+    {
+     "basePath": "/eni/distr/v1",
+     "type": "api"
+    }
+   ],
+   "zone": "dataplane1"
+  }
+ ]
+}
+---
+
+[Rover Controller GetAll rover resources should return an empty list if no rovers exist - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/rovers?cursor="
+ },
+ "items": [
+  {
+   "exposures": [
+    {
+     "approval": "SIMPLE",
+     "basePath": "/eni/distr/v1",
+     "type": "api",
+     "upstream": "https://httpbin.org/anything",
+     "visibility": "WORLD"
+    }
+   ],
+   "id": "eni--hyperion--rover-local-sub",
+   "name": "rover-local-sub",
+   "status": {
+    "errors": [
+     {
+      "cause": "Application: rover-local-sub, Cause: NoApproval",
+      "message": "Approval is either rejected or suspended"
+     }
+    ],
+    "processingState": "done",
+    "state": "blocked",
+    "time": "<Any value>",
+    "warnings": [
+     {
+      "message": "Atleast one sub-resource is being processed"
+     }
+    ]
+   },
+   "subscriptions": [
+    {
+     "basePath": "/eni/distr/v1",
+     "type": "api"
+    }
+   ],
+   "zone": "dataplane1"
+  }
+ ]
+}
+---
+
+[Rover Controller GetAll rover resources should return an empty list if no rovers exist - 2]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/rovers?cursor="
+ },
+ "items": [
+  {
+   "exposures": [
+    {
+     "approval": "SIMPLE",
+     "basePath": "/eni/distr/v1",
+     "type": "api",
+     "upstream": "https://httpbin.org/anything",
+     "visibility": "WORLD"
+    }
+   ],
+   "id": "eni--hyperion--rover-local-sub",
+   "name": "rover-local-sub",
+   "status": {
+    "errors": [
+     {
+      "cause": "Application: rover-local-sub, Cause: NoApproval",
+      "message": "Approval is either rejected or suspended"
+     }
+    ],
+    "processingState": "done",
+    "state": "blocked",
+    "time": "<Any value>",
+    "warnings": [
+     {
+      "message": "Atleast one sub-resource is being processed"
+     }
+    ]
+   },
+   "subscriptions": [
+    {
+     "basePath": "/eni/distr/v1",
+     "type": "api"
+    }
+   ],
+   "zone": "dataplane1"
+  }
+ ]
+}
+---
+
+[Rover Controller Get rover resource should get a rover successfully - 1]
+{
+ "exposures": [
+  {
+   "approval": "SIMPLE",
+   "basePath": "/eni/distr/v1",
+   "type": "api",
+   "upstream": "https://httpbin.org/anything",
+   "visibility": "WORLD"
+  }
+ ],
+ "id": "eni--hyperion--rover-local-sub",
+ "name": "rover-local-sub",
+ "status": {
+  "errors": [
+   {
+    "cause": "Application: rover-local-sub, Cause: NoApproval",
+    "message": "Approval is either rejected or suspended"
+   }
+  ],
+  "processingState": "done",
+  "state": "blocked",
+  "time": "<Any value>",
+  "warnings": [
+   {
+    "message": "Atleast one sub-resource is being processed"
+   }
+  ]
+ },
+ "subscriptions": [
+  {
+   "basePath": "/eni/distr/v1",
+   "type": "api"
+  }
+ ],
+ "zone": "dataplane1"
+}
+---
+
+[Rover Controller Get rover resource should fail to get a non-existent rover - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Rover Controller Get rover application info should return application info successfully - 1]
+{
+ "applications": [
+  {
+   "errors": [
+    {
+     "cause": "Approval is either rejected or suspended",
+     "message": "ApiSubscription 'poc--eni--hyperion/rover-local-sub--eni-distr-v1' is not ready",
+     "resource": {
+      "apiVersion": "stargate.cp.ei.telekom.de/v1",
+      "kind": "ApiSubscription",
+      "name": "rover-local-sub--eni-distr-v1",
+      "namespace": "poc--eni--hyperion"
+     }
+    }
+   ],
+   "exposures": [
+    {
+     "approval": "Simple",
+     "basePath": "/eni/distr/v1",
+     "type": "api",
+     "upstream": "https://httpbin.org/anything",
+     "visibility": "World"
+    }
+   ],
+   "infos": null,
+   "irisClientId": "hyperion--rover-local-sub",
+   "irisClientSecret": "abcdefghijklmnop",
+   "irisIssuerUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc",
+   "irisTokenEndpointUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token",
+   "name": "rover-local-sub",
+   "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
+   "stargatePublishEventUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1",
+   "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
+   "status": "blocked",
+   "subscriptions": [
+    {
+     "basePath": "",
+     "type": "api"
+    }
+   ],
+   "variables": null,
+   "warnings": null,
+   "zone": "dataplane1"
+  }
+ ],
+ "environment": "poc",
+ "hub": "eni",
+ "team": "hyperion"
+}
+---
+
+[Rover Controller Get rover application info should fail to get application info for a non-existent rover - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Rover Controller Get rover application info should fail to get application info from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Rover Controller Get all rover applications info should return all applications info successfully - 1]
+{
+ "applications": [
+  {
+   "errors": [
+    {
+     "cause": "Approval is either rejected or suspended",
+     "message": "ApiSubscription 'poc--eni--hyperion/rover-local-sub--eni-distr-v1' is not ready",
+     "resource": {
+      "apiVersion": "stargate.cp.ei.telekom.de/v1",
+      "kind": "ApiSubscription",
+      "name": "rover-local-sub--eni-distr-v1",
+      "namespace": "poc--eni--hyperion"
+     }
+    }
+   ],
+   "exposures": [
+    {
+     "approval": "Simple",
+     "basePath": "/eni/distr/v1",
+     "type": "api",
+     "upstream": "https://httpbin.org/anything",
+     "visibility": "World"
+    }
+   ],
+   "infos": null,
+   "irisClientId": "hyperion--rover-local-sub",
+   "irisClientSecret": "abcdefghijklmnop",
+   "irisIssuerUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc",
+   "irisTokenEndpointUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token",
+   "name": "rover-local-sub",
+   "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
+   "stargatePublishEventUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1",
+   "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
+   "status": "blocked",
+   "subscriptions": [
+    {
+     "basePath": "",
+     "type": "api"
+    }
+   ],
+   "variables": null,
+   "warnings": null,
+   "zone": "dataplane1"
+  }
+ ],
+ "environment": "poc",
+ "hub": "eni",
+ "team": "hyperion"
+}
+---
+
+[Rover Controller Get all rover applications info should fail to get applications info for unauthorized client type - 1]
+{
+ "detail": "Only team clients are allowed to get all applications",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[Rover Controller Get rover status should return the status of a rover successfully - 1]
+{
+ "errors": [
+  {
+   "cause": "NoApproval",
+   "context": "Application: rover-local-sub",
+   "details": "Condition: Ready, Status: False, Message: Approval is either rejected or suspended",
+   "message": "Approval is either rejected or suspended",
+   "resource": {
+    "apiVersion": "rover.cp.ei.telekom.de/v1",
+    "kind": "Rover",
+    "name": "rover-local-sub",
+    "namespace": "poc--eni--hyperion"
+   }
+  }
+ ],
+ "overallStatus": "blocked",
+ "processingState": "done",
+ "state": "blocked"
+}
+---
+
+[Rover Controller Get rover status should fail to get the status of a non-existent rover - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Rover Controller Get rover status should fail to get the status from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Rover Controller Delete rover resource should fail to delete a non-existent rover - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Rover Controller Create rover resource should fail to create a rover with invalid input - 1]
+{
+ "detail": "error in openapi3filter.RequestError: request body has an error: doesn't match schema #/components/schemas/RoverCreateRequest: Error at \"/zone\": property \"zone\" is missing",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[Rover Controller Update rover resource should update a rover successfully - 1]
+{
+ "exposures": [
+  {
+   "approval": "SIMPLE",
+   "basePath": "/eni/distr/v1",
+   "type": "api",
+   "upstream": "https://httpbin.org/anything",
+   "visibility": "WORLD"
+  }
+ ],
+ "id": "eni--hyperion--rover-local-sub",
+ "name": "rover-local-sub",
+ "status": {
+  "errors": [
+   {
+    "cause": "Application: rover-local-sub, Cause: NoApproval",
+    "message": "Approval is either rejected or suspended"
+   }
+  ],
+  "processingState": "done",
+  "state": "blocked",
+  "time": "<Any value>",
+  "warnings": [
+   {
+    "message": "Atleast one sub-resource is being processed"
+   }
+  ]
+ },
+ "subscriptions": [
+  {
+   "basePath": "/eni/distr/v1",
+   "type": "api"
+  }
+ ],
+ "zone": "dataplane1"
+}
+---
+
+[Rover Controller Update rover resource should fail to update a rover with invalid input - 1]
+{
+ "detail": "multiple errors encountered: readOnly property \"id\" in request",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[Rover Controller Update rover resource should fail to update a rover for a non-existent rover - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Rover Controller Update rover resource should fail to update a rover from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Rover Controller Reset rover secret should reset the rover secret successfully - 1]
+{
+ "id": "hyperion--rover-local-sub",
+ "secret": "<Any value>"
+}
+---
+
+[Rover Controller Reset rover secret should fail to reset the secret for a non-existent rover - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Rover Controller Reset rover secret should fail to reset the secret from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[ApiSpecification Controller Get ApiSpecification resource should return the ApiSpecification successfully - 1]
+{
+ "category": "other",
+ "id": "eni--hyperion--apispec-sample",
+ "name": "",
+ "specification": {
+  "info": {
+   "title": "Rover API",
+   "version": "1.0.0"
+  },
+  "openapi": "3.0.0",
+  "servers": {
+   "url": "http://rover-api/eni/distr/v1"
+  }
+ },
+ "status": {
+  "processingState": "done",
+  "state": "complete",
+  "time": "<Any value>"
+ },
+ "vendorApi": false
+}
+---
+
+[ApiSpecification Controller Get ApiSpecification resource should fail to get a non-existent ApiSpecification - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[ApiSpecification Controller Get ApiSpecification resource should fail to get an ApiSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[ApiSpecification Controller GetAll ApiSpecifications resource should return all ApiSpecifications successfully - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apispecifications?cursor="
+ },
+ "items": [
+  {
+   "category": "other",
+   "id": "eni--hyperion--apispec-sample",
+   "name": "",
+   "specification": {
+    "info": {
+     "title": "Rover API",
+     "version": "1.0.0"
+    },
+    "openapi": "3.0.0",
+    "servers": {
+     "url": "http://rover-api/eni/distr/v1"
+    }
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete",
+    "time": "<Any value>"
+   },
+   "vendorApi": false
+  }
+ ]
+}
+---
+
+[ApiSpecification Controller GetAll ApiSpecifications resource should return all ApiSpecifications successfully - 2]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apispecifications?cursor="
+ },
+ "items": [
+  {
+   "category": "other",
+   "id": "eni--hyperion--apispec-sample",
+   "name": "",
+   "specification": {
+    "info": {
+     "title": "Rover API",
+     "version": "1.0.0"
+    },
+    "openapi": "3.0.0",
+    "servers": {
+     "url": "http://rover-api/eni/distr/v1"
+    }
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete",
+    "time": "<Any value>"
+   },
+   "vendorApi": false
+  }
+ ]
+}
+---
+
+[ApiSpecification Controller GetAll ApiSpecifications resource should return an empty list if no ApiSpecifications exist - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apispecifications?cursor="
+ },
+ "items": [
+  {
+   "category": "other",
+   "id": "eni--hyperion--apispec-sample",
+   "name": "",
+   "specification": {
+    "info": {
+     "title": "Rover API",
+     "version": "1.0.0"
+    },
+    "openapi": "3.0.0",
+    "servers": {
+     "url": "http://rover-api/eni/distr/v1"
+    }
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete",
+    "time": "<Any value>"
+   },
+   "vendorApi": false
+  }
+ ]
+}
+---
+
+[ApiSpecification Controller GetAll ApiSpecifications resource should return an empty list if no ApiSpecifications exist - 2]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apispecifications?cursor="
+ },
+ "items": [
+  {
+   "category": "other",
+   "id": "eni--hyperion--apispec-sample",
+   "name": "",
+   "specification": {
+    "info": {
+     "title": "Rover API",
+     "version": "1.0.0"
+    },
+    "openapi": "3.0.0",
+    "servers": {
+     "url": "http://rover-api/eni/distr/v1"
+    }
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete",
+    "time": "<Any value>"
+   },
+   "vendorApi": false
+  }
+ ]
+}
+---
+
+[ApiSpecification Controller Delete ApiSpecification resource should fail to delete a non-existent ApiSpecification - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[ApiSpecification Controller Delete ApiSpecification resource should fail to delete an ApiSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[ApiSpecification Controller GetStatus ApiSpecification resource should return the status of the ApiSpecification successfully - 1]
+{
+ "overallStatus": "complete",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[ApiSpecification Controller GetStatus ApiSpecification resource should fail to get the status of a non-existent ApiSpecification - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[ApiSpecification Controller GetStatus ApiSpecification resource should fail to get the status of an ApiSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[ApiSpecification Controller Update ApiSpecification resource should update the ApiSpecification successfully - 1]
+{
+ "category": "other",
+ "id": "eni--hyperion--apispec-sample",
+ "name": "",
+ "specification": {
+  "info": {
+   "title": "Rover API",
+   "version": "1.0.0"
+  },
+  "openapi": "3.0.0",
+  "servers": {
+   "url": "http://rover-api/eni/distr/v1"
+  }
+ },
+ "status": {
+  "processingState": "done",
+  "state": "complete",
+  "time": "<Any value>"
+ },
+ "vendorApi": false
+}
+---
+
+[ApiSpecification Controller Update ApiSpecification resource should fail to update a non-existent ApiSpecification - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[ApiSpecification Controller Update ApiSpecification resource should fail to update an ApiSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---

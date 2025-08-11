@@ -1,0 +1,11 @@
+
+[Exposure Transformation Mapper mapExposureTransformation must map removeHeaders correctly - 1]
+&v1.Transformation{
+    Request: v1.RequestResponseTransformation{
+        Headers: v1.HeaderTransformation{
+            Remove: {"X-Test-Header", "Authorization"},
+            Add:    nil,
+        },
+    },
+}
+---

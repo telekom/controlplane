@@ -38,6 +38,7 @@ import (
 
 	//+kubebuilder:scaffold:imports
 
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
 )
 
@@ -182,7 +183,7 @@ func main() {
 	}
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err = internal_webhook.SetupWebhookWithManager(mgr); err != nil {
+		if err = internal_webhook.SetupWebhookWithManager(mgr, secretsapi.API()); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Rover")
 			os.Exit(1)
 		}

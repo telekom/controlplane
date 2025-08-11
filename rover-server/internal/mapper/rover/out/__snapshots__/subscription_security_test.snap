@@ -1,0 +1,52 @@
+
+[Subscription Security Mapper (Out) mapSubscriptionSecurity must map BasicAuth security correctly - 1]
+api.BasicAuth{Password:"testpass", Type:"basicAuth", Username:"testuser"}
+---
+
+[Subscription Security Mapper (Out) mapSubscriptionSecurity must map OAuth2 client credentials correctly - 1]
+api.Oauth2{
+    ClientId:      "client-id",
+    ClientKey:     "client-key",
+    ClientSecret:  "client-secret",
+    GrantType:     "",
+    Password:      "",
+    RefreshToken:  "",
+    Scopes:        nil,
+    TokenEndpoint: "",
+    TokenRequest:  "",
+    Type:          "oauth2",
+    Username:      "",
+}
+---
+
+[Subscription Security Mapper (Out) mapSubscriptionSecurity must map OAuth2 scopes correctly - 1]
+api.Oauth2{
+    ClientId:      "",
+    ClientKey:     "",
+    ClientSecret:  "",
+    GrantType:     "",
+    Password:      "",
+    RefreshToken:  "",
+    Scopes:        {"read", "write"},
+    TokenEndpoint: "",
+    TokenRequest:  "",
+    Type:          "oauth2",
+    Username:      "",
+}
+---
+
+[Subscription Security Mapper (Out) mapSubscriptionSecurity must map combined client credentials and scopes - 1]
+api.Oauth2{
+    ClientId:      "client-id",
+    ClientKey:     "",
+    ClientSecret:  "client-secret",
+    GrantType:     "",
+    Password:      "",
+    RefreshToken:  "",
+    Scopes:        {"read", "write"},
+    TokenEndpoint: "",
+    TokenRequest:  "",
+    Type:          "oauth2",
+    Username:      "",
+}
+---
