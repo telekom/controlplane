@@ -8,6 +8,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/gofiber/fiber/v2"
 	"os"
 
 	"github.com/go-logr/logr"
@@ -25,6 +26,10 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	ctrlr "sigs.k8s.io/controller-runtime"
+
+	"github.com/valyala/fasthttp/fasthttpadaptor"
+	"net/http"
+	"net/http/pprof"
 )
 
 var (
@@ -155,6 +160,24 @@ func main() {
 	appCfg.CtxLog = &log
 	appCfg.ErrorHandler = handler.ErrorHandler
 	app := cs.NewAppWithConfig(appCfg)
+
+	// pprof
+	// Helper to adapt net/http handler to fiber handler
+	adapt := func(h http.Handler) fiber.Handler {
+		return func(c *fiber.Ctx) error {
+			fasthttpadaptor.NewFastHTTPHandler(h)(c.Context())
+			return nil
+		}
+	}
+
+	// Register pprof handlers
+	app.Get("/debug/pprof/", adapt(http.HandlerFunc(pprof.Index)))
+	app.Get("/debug/pprof/cmdline", adapt(http.HandlerFunc(pprof.Cmdline)))
+	app.Get("/debug/pprof/profile", adapt(http.HandlerFunc(pprof.Profile)))
+	app.Get("/debug/pprof/symbol", adapt(http.HandlerFunc(pprof.Symbol)))
+	app.Get("/debug/pprof/trace", adapt(http.HandlerFunc(pprof.Trace)))
+
+	// end pprof
 
 	probesCtrl := cs.NewProbesController()
 	probesCtrl.Register(app, cs.ControllerOpts{})
