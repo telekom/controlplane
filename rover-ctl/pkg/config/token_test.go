@@ -30,7 +30,7 @@ var _ = Describe("Token", func() {
 		Expect(token.ServerUrl).To(Equal("http://localhost:8080"))
 		Expect(token.GeneratedAt).To(BeNumerically(">", 0))
 		Expect(token.TimeSinceGenerated()).To(Equal("more than a year ago"))
-		Expect(token.GeneratedString()).To(Equal("2024-05-23T16:24:54+02:00"))
+		Expect(token.GeneratedString()).To(Equal("2024-05-23T14:24:54Z"))
 	})
 
 	It("should parse a valid token string and retain the URLs in the token", func() {

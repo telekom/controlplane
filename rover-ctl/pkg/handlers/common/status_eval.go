@@ -160,13 +160,13 @@ func (s StatusEval) JsonPrettyPrint(w io.Writer) error {
 
 	// Create a structured representation of the status for JSON output
 	output := struct {
-		Resource        string            `json:"resource"`
-		Status          string            `json:"status"`
-		ProcessingState string            `json:"processingState"`
-		Errors          GroupedStatusInfo `json:"errors,omitempty"`
-		Warnings        GroupedStatusInfo `json:"warnings,omitempty"`
-		Info            GroupedStatusInfo `json:"info,omitempty"`
-		Success         bool              `json:"success"`
+		Resource        string                `json:"resource"`
+		Status          types.OverallStatus   `json:"status"`
+		ProcessingState types.ProcessingState `json:"processingState"`
+		Errors          GroupedStatusInfo     `json:"errors,omitempty"`
+		Warnings        GroupedStatusInfo     `json:"warnings,omitempty"`
+		Info            GroupedStatusInfo     `json:"info,omitempty"`
+		Success         bool                  `json:"success"`
 	}{
 		Resource:        fmt.Sprintf("%s/%s", s.obj.GetKind(), s.obj.GetName()),
 		Status:          s.status.GetOverallStatus(),
@@ -189,17 +189,17 @@ func (s StatusEval) JsonPrettyPrint(w io.Writer) error {
 }
 
 func (s StatusEval) IsSuccess() bool {
-	return s.status.GetOverallStatus() == "complete" && s.status.GetProcessingState() == "done"
+	return s.status.GetOverallStatus() == types.OverallStatusComplete && s.status.GetProcessingState() == types.ProcessingStateDone
 }
 
 func (s StatusEval) IsFailure() bool {
-	return s.status.GetOverallStatus() == "failed"
+	return s.status.GetOverallStatus() == types.OverallStatusFailed
 }
 
 func (s StatusEval) IsBlocked() bool {
-	return s.status.GetOverallStatus() == "blocked"
+	return s.status.GetOverallStatus() == types.OverallStatusBlocked
 }
 
 func (s StatusEval) IsProcessed() bool {
-	return s.status.GetProcessingState() == "done"
+	return s.status.GetProcessingState() == types.ProcessingStateDone
 }

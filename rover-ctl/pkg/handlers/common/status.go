@@ -11,19 +11,19 @@ import (
 var _ types.ObjectStatus = &ObjectStatusResponse{}
 
 type ObjectStatusResponse struct {
-	Gone            bool               `json:"-"`
-	OverallStatus   string             `json:"overallStatus"`
-	ProcessingState string             `json:"processingState"`
-	Errors          []types.StatusInfo `json:"errors"`
-	Warnings        []types.StatusInfo `json:"warnings"`
-	Info            []types.StatusInfo `json:"info"`
+	Gone            bool                  `json:"-"`
+	OverallStatus   types.OverallStatus   `json:"overallStatus"`
+	ProcessingState types.ProcessingState `json:"processingState"`
+	Errors          []types.StatusInfo    `json:"errors"`
+	Warnings        []types.StatusInfo    `json:"warnings"`
+	Info            []types.StatusInfo    `json:"info"`
 }
 
-func (o *ObjectStatusResponse) GetOverallStatus() string {
+func (o *ObjectStatusResponse) GetOverallStatus() types.OverallStatus {
 	return o.OverallStatus
 }
 
-func (o *ObjectStatusResponse) GetProcessingState() string {
+func (o *ObjectStatusResponse) GetProcessingState() types.ProcessingState {
 	return o.ProcessingState
 }
 

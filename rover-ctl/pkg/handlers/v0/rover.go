@@ -55,7 +55,7 @@ func PatchRoverRequest(ctx context.Context, obj types.Object) error {
 			delete(spec, "subscriptions")
 		} else {
 			subscriptions, ok := subscriptions.([]any)
-			if subscriptions != nil && !ok {
+			if !ok {
 				return errors.New("invalid subscriptions format")
 			}
 			spec["subscriptions"] = PatchSubscriptions(subscriptions)
@@ -81,9 +81,9 @@ func PatchExposures(exposures []any) []map[string]any {
 	for i, exposure := range exposuresMaps {
 		if _, exist := exposure["basePath"]; exist {
 			exposuresMaps[i]["type"] = "api"
-		} else if _, exist := exposure["port"]; exist {
-			exposuresMaps[i]["type"] = "port"
-		}
+		} else if _, exist := exposure["eventType"]; exist {
+			exposuresMaps[i]["type"] = "event"
+		} // TODO: add more types as needed
 		security, exist := exposure["security"]
 		if exist {
 			PatchSecurity(security)

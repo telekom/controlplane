@@ -7,6 +7,7 @@ package handlers
 import (
 	"sort"
 
+	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
 
@@ -24,6 +25,7 @@ func Sort(objects []types.Object) []types.Object {
 		handlerJ, errJ := GetHandler(sorted[j].GetKind(), sorted[j].GetApiVersion())
 
 		if errI != nil || errJ != nil {
+			log.L().V(1).Info("Handler not found for sorting", "objectI", sorted[i], "objectJ", sorted[j], "errorI", errI, "errorJ", errJ)
 			return false // If any handler is not found, do not sort
 		}
 

@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -28,7 +29,7 @@ var (
 var validate = validator.New()
 
 type Token struct {
-	Prefix      string `json:"prefix"`
+	Prefix      string `json:"-"`
 	Environment string `json:"environment" validate:"required"`
 	Group       string `json:"group" validate:"required"`
 	Team        string `json:"team" validate:"required"`
@@ -99,14 +100,16 @@ func (t *Token) GeneratedString() string {
 	if t.GeneratedAt == 0 {
 		return "unknown"
 	}
-	return time.UnixMilli(t.GeneratedAt).Format(time.RFC3339)
+	timezone := time.FixedZone("GMT", 0)
+	return time.UnixMilli(t.GeneratedAt).In(timezone).Format(time.RFC3339)
 }
 
 func (t *Token) TimeSinceGenerated() string {
 	if t.GeneratedAt == 0 {
 		return "unknown"
 	}
-	delta := time.Since(time.UnixMilli(t.GeneratedAt)).Abs()
+	timezone := time.Local
+	delta := time.Since(time.UnixMilli(t.GeneratedAt).In(timezone)).Abs()
 
 	if delta < time.Minute {
 		return "just now"
@@ -146,21 +149,17 @@ func (t *Token) Validate() error {
 	return nil
 }
 
-// String returns the token in a human-readable format
-// It will obfuscate sensitive information like ClientSecret
-// and return the rest of the token details.
-func (t *Token) String() string {
-	return "Token{" +
-		"Environment: " + t.Environment + ", " +
-		"Group: " + t.Group + ", " +
-		"Team: " + t.Team + ", " +
-		"ClientId: " + t.ClientId + ", " +
-		"ClientSecret: [REDACTED], " +
-		"TokenUrl: " + t.TokenUrl + ", " +
-		"ServerUrl: " + t.ServerUrl + ", " +
-		"GeneratedAt: " + t.GeneratedString() +
-		"}"
+func (t *Token) Encode() (string, error) {
+	value, err := json.Marshal(t)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to marshal token")
+	}
 
+	b64Value := base64.StdEncoding.EncodeToString(value)
+	if t.Prefix != "" {
+		return fmt.Sprintf("%s.%s", t.Prefix, b64Value), nil
+	}
+	return b64Value, nil
 }
 
 func NewContext(ctx context.Context, token *Token) context.Context {

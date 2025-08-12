@@ -237,7 +237,10 @@ func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId strin
 	ns := id.Environment + "--" + id.Namespace
 	rover, err := r.Store.Get(ctx, ns, id.Name)
 	if err != nil {
-		return res, problems.NotFound(resourceId)
+		if problems.IsNotFound(err) {
+			return res, problems.NotFound(resourceId)
+		}
+		return res, err
 	}
 
 	newClientSecret := uuid.NewString()

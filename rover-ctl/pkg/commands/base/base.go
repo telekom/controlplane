@@ -47,7 +47,7 @@ func (c *BaseCommand) Logger() logr.Logger {
 }
 
 func (c *BaseCommand) HandleError(err error, ctxInfo string) error {
-	common.PrintTo(err, c.Cmd.OutOrStderr(), viper.GetString("log.format"))
+	common.PrintTo(err, c.Cmd.ErrOrStderr(), viper.GetString("log.format"))
 	if c.FailFast {
 		return errors.Wrapf(err, "failed to %s", ctxInfo)
 	}
