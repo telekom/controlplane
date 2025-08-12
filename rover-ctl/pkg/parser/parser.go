@@ -179,8 +179,10 @@ func (p *ObjectParser) parseJSON(r io.Reader) error {
 		return errors.Wrap(err, "failed to parse JSON")
 	}
 
-	if err := p.validator.Struct(&obj); err != nil {
-		return errors.Wrap(err, "object validation failed")
+	if p.validator != nil {
+		if err := p.validator.Struct(&obj); err != nil {
+			return errors.Wrap(err, "object validation failed")
+		}
 	}
 
 	if err := p.RunHooks(HookAfterParse, &obj); err != nil {
