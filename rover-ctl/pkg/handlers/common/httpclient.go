@@ -13,7 +13,7 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
-func NewAuthorizedHttpClient(ctx context.Context, tokenUrl, clientId, clientSecret string) *http.Client {
+var NewAuthorizedHttpClient = func(ctx context.Context, tokenUrl, clientId, clientSecret string) HttpDoer {
 	baseClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: 100,

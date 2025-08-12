@@ -43,10 +43,47 @@ type StateInfoContainer interface {
 	GetWarnings() []StatusInfo
 }
 
+/*
+- invalid
+- processing
+- failed
+- blocked
+- pending
+- complete
+- done
+- none
+*/
+type OverallStatus string
+
+/*
+- none
+- pending
+- processing
+- failed
+- done
+*/
+type ProcessingState string
+
+const (
+	OverallStatusInvalid    OverallStatus = "invalid"
+	OverallStatusProcessing OverallStatus = "processing"
+	OverallStatusFailed     OverallStatus = "failed"
+	OverallStatusBlocked    OverallStatus = "blocked"
+	OverallStatusPending    OverallStatus = "pending"
+	OverallStatusComplete   OverallStatus = "complete"
+	OverallStatusDone       OverallStatus = "done"
+
+	ProcessingStateNone       ProcessingState = "none"
+	ProcessingStatePending    ProcessingState = "pending"
+	ProcessingStateProcessing ProcessingState = "processing"
+	ProcessingStateFailed     ProcessingState = "failed"
+	ProcessingStateDone       ProcessingState = "done"
+)
+
 type ObjectStatus interface {
 	StateInfoContainer
-	GetOverallStatus() string
-	GetProcessingState() string
+	GetOverallStatus() OverallStatus
+	GetProcessingState() ProcessingState
 	HasErrors() bool
 	HasWarnings() bool
 	HasInfo() bool

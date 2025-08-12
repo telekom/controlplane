@@ -114,6 +114,9 @@ func (h *BaseHandler) Priority() int {
 
 // Apply implements the generic Apply operation using REST API
 func (h *BaseHandler) Apply(ctx context.Context, obj types.Object) error {
+	if obj == nil {
+		return errors.New("object cannot be nil")
+	}
 	token := h.Setup(ctx)
 	url := h.GetRequestUrl(token.Group, token.Team, h.getResourceName(obj))
 
@@ -135,6 +138,9 @@ func (h *BaseHandler) Apply(ctx context.Context, obj types.Object) error {
 
 // Delete implements the generic Delete operation using REST API
 func (h *BaseHandler) Delete(ctx context.Context, obj types.Object) error {
+	if obj == nil {
+		return errors.New("object cannot be nil")
+	}
 	token := h.Setup(ctx)
 	url := h.GetRequestUrl(token.Group, token.Team, h.getResourceName(obj))
 
@@ -359,7 +365,6 @@ func (h *BaseHandler) SendRequest(ctx context.Context, obj types.Object, method,
 	// Run post-request hooks if object is provided
 	if obj != nil {
 		if err := h.RunHooks(PostRequestHook, ctx, obj); err != nil {
-			resp.Body.Close() // Close the body to avoid resource leaks
 			return nil, err
 		}
 	}

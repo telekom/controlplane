@@ -5,14 +5,20 @@
 package resetsecret
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/base"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
-	v0 "github.com/telekom/controlplane/rover-ctl/pkg/handlers/v0"
 	"github.com/telekom/controlplane/rover-ctl/pkg/util"
 )
+
+type ResetSecretHandler interface {
+	handlers.ResourceHandler
+	ResetSecret(ctx context.Context, name string) (clientId, clientSecret string, err error)
+}
 
 type Command struct {
 	*base.BaseCommand
@@ -48,7 +54,7 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "failed to get rover handler")
 	}
 
-	roverHandler, ok := handler.(*v0.RoverHandler)
+	roverHandler, ok := handler.(ResetSecretHandler)
 	if !ok {
 		return errors.New("invalid rover handler type")
 	}
