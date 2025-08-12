@@ -61,7 +61,7 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 	if !route.IsProxy() {
 		if route.HasRateLimit() {
 			rateLimitPlugin = builder.RateLimitPluginRoute()
-			if err = setCommonConfigs(rateLimitPlugin, builder.GetGateway()); err != nil {
+			if err = setCommonConfigs(ctx, rateLimitPlugin, builder.GetGateway()); err != nil {
 				return err
 			}
 			rateLimitPlugin.Config.Limits = plugin.Limits{
@@ -82,7 +82,7 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 		}
 		if allowedConsumer.HasTrafficRateLimit() || route.HasRateLimit() {
 			rateLimitPlugin = builder.RateLimitPluginConsumeRoute(allowedConsumer)
-			if err = setCommonConfigs(rateLimitPlugin, builder.GetGateway()); err != nil {
+			if err = setCommonConfigs(ctx, rateLimitPlugin, builder.GetGateway()); err != nil {
 				return err
 			}
 		}
@@ -106,9 +106,9 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 	return nil
 }
 
-func setCommonConfigs(rateLimitPlugin *plugin.RateLimitPlugin, gateway *gatewayv1.Gateway) error {
+func setCommonConfigs(ctx context.Context, rateLimitPlugin *plugin.RateLimitPlugin, gateway *gatewayv1.Gateway) error {
 	rateLimitPlugin.Config.Policy = plugin.PolicyRedis
-	redisPassword, err := secretManagerApi.Get(context.Background(), gateway.Spec.Redis.Password)
+	redisPassword, err := secretManagerApi.Get(ctx, gateway.Spec.Redis.Password)
 	if err != nil {
 		return errors.Wrapf(err, "cannot get redis password for gateway %s", gateway.GetName())
 	}
