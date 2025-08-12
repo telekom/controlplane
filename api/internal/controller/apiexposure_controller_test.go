@@ -98,8 +98,8 @@ func NewApiExposure(apiBasePath, zoneName string) *apiv1.ApiExposure {
 							Hour:   10000,
 						},
 						Options: apiv1.RateLimitOptions{
-							HideClientHeaders: pntBool(true),
-							FaultTolerant:     pntBool(true),
+							HideClientHeaders: true,
+							FaultTolerant:     true,
 						},
 					},
 					SubscriberRateLimit: &apiv1.SubscriberRateLimits{

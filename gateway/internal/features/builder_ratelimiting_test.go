@@ -65,8 +65,8 @@ func NewRateLimitRoute(isProxyRoute bool) *gatewayv1.Route {
 						Hour:   10000,
 					},
 					Options: gatewayv1.RateLimitOptions{
-						HideClientHeaders: ptrBool(true),
-						FaultTolerant:     ptrBool(false),
+						HideClientHeaders: true,
+						FaultTolerant:     false,
 					},
 				},
 			},
@@ -175,11 +175,6 @@ var _ = Describe("FeatureBuilder RateLimiting", Ordered, func() {
 
 	})
 })
-
-// Helper functions
-func ptrBool(b bool) *bool {
-	return &b
-}
 
 func buildRateLimitFeature(ctx context.Context, route *gatewayv1.Route, isProxyRoute bool, consumeRoutes []*gatewayv1.ConsumeRoute, gateway *gatewayv1.Gateway, realm *gatewayv1.Realm) *features.Builder {
 

@@ -562,8 +562,8 @@ var _ = Describe("Rover Controller", Ordered, func() {
 											Minute: 1000,
 										},
 										Options: roverv1.RateLimitOptions{
-											HideClientHeaders: pntBool(true),
-											FaultTolerant:     pntBool(true),
+											HideClientHeaders: true,
+											FaultTolerant:     true,
 										},
 									},
 									Consumers: &roverv1.ConsumerRateLimits{
@@ -622,8 +622,8 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				g.Expect(apiExposure.Spec.Traffic.RateLimit).NotTo(BeNil())
 				g.Expect(apiExposure.Spec.Traffic.RateLimit.Provider.Limits.Second).To(Equal(100))
 				g.Expect(apiExposure.Spec.Traffic.RateLimit.Provider.Limits.Minute).To(Equal(1000))
-				g.Expect(*apiExposure.Spec.Traffic.RateLimit.Provider.Options.HideClientHeaders).To(BeTrue())
-				g.Expect(*apiExposure.Spec.Traffic.RateLimit.Provider.Options.FaultTolerant).To(BeTrue())
+				g.Expect(apiExposure.Spec.Traffic.RateLimit.Provider.Options.HideClientHeaders).To(BeTrue())
+				g.Expect(apiExposure.Spec.Traffic.RateLimit.Provider.Options.FaultTolerant).To(BeTrue())
 
 				// Verify overrides
 				overrides := apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides
@@ -697,5 +697,3 @@ var _ = Describe("Rover Controller", Ordered, func() {
 		})
 	})
 })
-
-func pntBool(b bool) *bool { return &b }

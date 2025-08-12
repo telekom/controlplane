@@ -171,8 +171,8 @@ var _ = Describe("RateLimitFeature", func() {
 									Hour:   10000,
 								},
 								Options: gatewayv1.RateLimitOptions{
-									HideClientHeaders: ptrBool(true),
-									FaultTolerant:     ptrBool(false),
+									HideClientHeaders: true,
+									FaultTolerant:     false,
 								},
 							},
 						},
@@ -234,8 +234,8 @@ var _ = Describe("RateLimitFeature", func() {
 									Hour:   10000,
 								},
 								Options: gatewayv1.RateLimitOptions{
-									HideClientHeaders: ptrBool(true),
-									FaultTolerant:     ptrBool(false),
+									HideClientHeaders: true,
+									FaultTolerant:     false,
 								},
 							},
 						},

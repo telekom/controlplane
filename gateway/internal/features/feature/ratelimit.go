@@ -111,12 +111,7 @@ func setCommonConfigs(rateLimitPlugin *plugin.RateLimitPlugin, gateway *gatewayv
 }
 
 func setOptions(rateLimitPlugin *plugin.RateLimitPlugin, options gatewayv1.RateLimitOptions) *plugin.RateLimitPlugin {
-	if options.HideClientHeaders != nil {
-		rateLimitPlugin.Config.HideClientHeaders = *options.HideClientHeaders
-	}
-
-	if options.FaultTolerant != nil {
-		rateLimitPlugin.Config.FaultTolerant = *options.FaultTolerant
-	}
+	rateLimitPlugin.Config.HideClientHeaders = options.HideClientHeaders
+	rateLimitPlugin.Config.FaultTolerant = options.FaultTolerant
 	return rateLimitPlugin
 }
