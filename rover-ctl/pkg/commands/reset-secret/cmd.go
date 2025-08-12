@@ -5,8 +5,13 @@
 package resetsecret
 
 import (
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/base"
+	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
+	v0 "github.com/telekom/controlplane/rover-ctl/pkg/handlers/v0"
+	"github.com/telekom/controlplane/rover-ctl/pkg/util"
 )
 
 type Command struct {
@@ -26,7 +31,7 @@ func NewCommand() *cobra.Command {
 	}
 
 	baseCmd.Cmd.Flags().StringVarP(&cmd.Name, "application", "a", "", "Name of the application to reset the secret for")
-	baseCmd.Cmd.MarkFlagRequired("name")
+	baseCmd.Cmd.MarkFlagRequired("application")
 
 	cmd.Cmd.RunE = cmd.Run
 	cmd.Cmd.PreRunE = func(_ *cobra.Command, args []string) error {
@@ -38,7 +43,38 @@ func NewCommand() *cobra.Command {
 
 func (c *Command) Run(cmd *cobra.Command, args []string) error {
 
-	// TODO: Implement the logic to reset the secret for the specified application
+	handler, err := handlers.GetHandler("Rover", "tcp.ei.telekom.de/v1")
+	if err != nil {
+		return errors.Wrap(err, "failed to get rover handler")
+	}
+
+	roverHandler, ok := handler.(*v0.RoverHandler)
+	if !ok {
+		return errors.New("invalid rover handler type")
+	}
+
+	c.Logger().V(1).Info("Starting reset-secret command")
+
+	clientId, clientSecret, err := roverHandler.ResetSecret(c.Cmd.Context(), c.Name)
+	if err != nil {
+		return c.HandleError(err, "reset secret")
+	}
+
+	prettyString, err := util.FormatOutput(map[string]string{
+		"clientId":     clientId,
+		"clientSecret": clientSecret,
+	}, viper.GetString("output.format"))
+
+	if err != nil {
+		return errors.Wrap(err, "failed to format output")
+	}
+
+	_, err = c.Cmd.OutOrStdout().Write([]byte(prettyString))
+	if err != nil {
+		return errors.Wrap(err, "failed to write output")
+	}
+
+	c.Logger().V(1).Info("Successfully reset secret for application", "name", c.Name)
 
 	return nil
 }

@@ -6,6 +6,8 @@ package v0
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
@@ -141,4 +143,27 @@ func PatchSecurity(security any) {
 		return
 	}
 
+}
+
+func (h *RoverHandler) ResetSecret(ctx context.Context, name string) (clientId string, clientSecret string, err error) {
+	token := h.Setup(ctx)
+	url := h.GetRequestUrl(token.Group, token.Team, name, "secret")
+
+	resp, err := h.SendRequest(ctx, nil, http.MethodPatch, url)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+
+	err = common.CheckResponseCode(resp, http.StatusOK, http.StatusAccepted)
+	if err != nil {
+		return "", "", err
+	}
+
+	var response map[string]string
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return "", "", errors.Wrap(err, "failed to parse response")
+	}
+
+	return response["clientId"], response["secret"], nil
 }

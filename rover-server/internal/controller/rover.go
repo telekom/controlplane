@@ -10,7 +10,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
@@ -241,23 +240,23 @@ func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId strin
 		return res, problems.NotFound(resourceId)
 	}
 
-	if rover == nil || rover.Status.Application == nil {
-		return res, errors.New("rover resource is not processed and does not contain an application")
+	newClientSecret := uuid.NewString()
+	rover.Spec.ClientSecret = newClientSecret
+	if err := r.Store.CreateOrReplace(ctx, rover); err != nil {
+		return res, err
 	}
 
+	if rover.Status.Application == nil {
+		return res, problems.BadRequest("Application not found or not fully processed. Try again later.")
+	}
 	app, err := s.ApplicationStore.Get(ctx, rover.Status.Application.Namespace, rover.Status.Application.Name)
 	if err != nil {
 		return res, err
 	}
 
-	app.Spec.Secret = uuid.NewString()
-	if err := s.ApplicationStore.CreateOrReplace(ctx, app); err != nil {
-		return res, err
-	}
-
 	return api.RoverSecretResponse{
 		Id:     app.Status.ClientId,
-		Secret: app.Spec.Secret,
+		Secret: newClientSecret,
 	}, nil
 
 }

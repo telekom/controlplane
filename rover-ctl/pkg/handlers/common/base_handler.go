@@ -73,7 +73,7 @@ func NewBaseHandler(apiVersion, kind, resource string, priority int) *BaseHandle
 	return handler
 }
 
-func (h *BaseHandler) setup(ctx context.Context) *config.Token {
+func (h *BaseHandler) Setup(ctx context.Context) *config.Token {
 	token := config.FromContextOrDie(ctx)
 	if h.httpClient == nil {
 		h.httpClient = NewAuthorizedHttpClient(ctx, token.TokenUrl, token.ClientId, token.ClientSecret)
@@ -91,7 +91,7 @@ func (h *BaseHandler) getResourceName(obj types.Object) string {
 	return obj.GetName()
 }
 
-func (h *BaseHandler) getRequestUrl(groupName, teamName, resourceName string, subResources ...string) string {
+func (h *BaseHandler) GetRequestUrl(groupName, teamName, resourceName string, subResources ...string) string {
 	var url string
 	if resourceName == "" {
 		url = fmt.Sprintf("%s/%s", h.serverURL, h.Resource)
@@ -114,18 +114,18 @@ func (h *BaseHandler) Priority() int {
 
 // Apply implements the generic Apply operation using REST API
 func (h *BaseHandler) Apply(ctx context.Context, obj types.Object) error {
-	token := h.setup(ctx)
-	url := h.getRequestUrl(token.Group, token.Team, h.getResourceName(obj))
+	token := h.Setup(ctx)
+	url := h.GetRequestUrl(token.Group, token.Team, h.getResourceName(obj))
 
 	// Send the request
-	resp, err := h.sendRequest(ctx, obj, http.MethodPut, url)
+	resp, err := h.SendRequest(ctx, obj, http.MethodPut, url)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
 	// Check response
-	err = checkResponseCode(resp, http.StatusOK, http.StatusAccepted)
+	err = CheckResponseCode(resp, http.StatusOK, http.StatusAccepted)
 	if err != nil {
 		return err
 	}
@@ -135,18 +135,18 @@ func (h *BaseHandler) Apply(ctx context.Context, obj types.Object) error {
 
 // Delete implements the generic Delete operation using REST API
 func (h *BaseHandler) Delete(ctx context.Context, obj types.Object) error {
-	token := h.setup(ctx)
-	url := h.getRequestUrl(token.Group, token.Team, h.getResourceName(obj))
+	token := h.Setup(ctx)
+	url := h.GetRequestUrl(token.Group, token.Team, h.getResourceName(obj))
 
 	// Send the request
-	resp, err := h.sendRequest(ctx, obj, http.MethodDelete, url)
+	resp, err := h.SendRequest(ctx, obj, http.MethodDelete, url)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
 	// Check response
-	err = checkResponseCode(resp, http.StatusOK, http.StatusNoContent, http.StatusNotFound)
+	err = CheckResponseCode(resp, http.StatusOK, http.StatusNoContent, http.StatusNotFound)
 	if err != nil {
 		return err
 	}
@@ -156,18 +156,18 @@ func (h *BaseHandler) Delete(ctx context.Context, obj types.Object) error {
 
 // Get implements the generic Get operation using REST API
 func (h *BaseHandler) Get(ctx context.Context, name string) (any, error) {
-	token := h.setup(ctx)
-	url := h.getRequestUrl(token.Group, token.Team, name)
+	token := h.Setup(ctx)
+	url := h.GetRequestUrl(token.Group, token.Team, name)
 
 	// Send the request (no obj, so no hooks will be executed)
-	resp, err := h.sendRequest(ctx, nil, http.MethodGet, url)
+	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	// Check response
-	err = checkResponseCode(resp, http.StatusOK)
+	err = CheckResponseCode(resp, http.StatusOK)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func (h *BaseHandler) Get(ctx context.Context, name string) (any, error) {
 // List implements the generic List operation using REST API
 func (h *BaseHandler) List(ctx context.Context) ([]any, error) {
 	items := make([]any, 0)
-	h.setup(ctx)
+	h.Setup(ctx)
 	nextCursor := ""
 	for {
 		h.logger.V(1).Info("Listing resources", "resource", h.Resource, "cursor", nextCursor)
@@ -204,8 +204,8 @@ func (h *BaseHandler) List(ctx context.Context) ([]any, error) {
 }
 
 func (h *BaseHandler) ListWithCursor(ctx context.Context, cursor string) (*ListResponse, error) {
-	h.setup(ctx)
-	url := h.getRequestUrl("", "", "")
+	h.Setup(ctx)
+	url := h.GetRequestUrl("", "", "")
 
 	// Add cursor parameter if provided
 	if cursor != "" {
@@ -213,14 +213,14 @@ func (h *BaseHandler) ListWithCursor(ctx context.Context, cursor string) (*ListR
 	}
 
 	// Send the request (no obj, so no hooks will be executed)
-	resp, err := h.sendRequest(ctx, nil, http.MethodGet, url)
+	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	// Check response
-	err = checkResponseCode(resp, http.StatusOK)
+	err = CheckResponseCode(resp, http.StatusOK)
 	if err != nil {
 		return nil, err
 	}
@@ -235,18 +235,18 @@ func (h *BaseHandler) ListWithCursor(ctx context.Context, cursor string) (*ListR
 }
 
 func (h *BaseHandler) Status(ctx context.Context, name string) (types.ObjectStatus, error) {
-	token := h.setup(ctx)
-	url := h.getRequestUrl(token.Group, token.Team, name, "status")
+	token := h.Setup(ctx)
+	url := h.GetRequestUrl(token.Group, token.Team, name, "status")
 
 	// Send the request (no obj, so no hooks will be executed)
-	resp, err := h.sendRequest(ctx, nil, http.MethodGet, url)
+	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	// Check response
-	err = checkResponseCode(resp, http.StatusOK, http.StatusNotFound)
+	err = CheckResponseCode(resp, http.StatusOK, http.StatusNotFound)
 	if err != nil {
 		return nil, err
 	}
@@ -272,18 +272,18 @@ func (h *BaseHandler) Info(ctx context.Context, name string) (any, error) {
 	if !h.SupportsInfo {
 		return nil, errors.Errorf("info operation is not supported for %s", h.Resource)
 	}
-	token := h.setup(ctx)
-	url := h.getRequestUrl(token.Group, token.Team, name, "info")
+	token := h.Setup(ctx)
+	url := h.GetRequestUrl(token.Group, token.Team, name, "info")
 
 	// Send the request (no obj, so no hooks will be executed)
-	resp, err := h.sendRequest(ctx, nil, http.MethodGet, url)
+	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	// Check response
-	err = checkResponseCode(resp, http.StatusOK)
+	err = CheckResponseCode(resp, http.StatusOK)
 	if err != nil {
 		return nil, err
 	}
@@ -315,8 +315,8 @@ func (h *BaseHandler) RunHooks(stage HandlerHookStage, ctx context.Context, obj 
 	return nil
 }
 
-// sendRequest handles common request operations including running hooks
-func (h *BaseHandler) sendRequest(ctx context.Context, obj types.Object, method, url string) (*http.Response, error) {
+// SendRequest handles common request operations including running hooks
+func (h *BaseHandler) SendRequest(ctx context.Context, obj types.Object, method, url string) (*http.Response, error) {
 
 	// Run pre-request hooks if object is provided
 	if obj != nil {
@@ -387,7 +387,7 @@ func (h *BaseHandler) WaitForDeleted(ctx context.Context, name string) (types.Ob
 	return status, nil
 }
 
-func checkResponseCode(resp *http.Response, expectedCodes ...int) error {
+func CheckResponseCode(resp *http.Response, expectedCodes ...int) error {
 	if slices.Contains(expectedCodes, resp.StatusCode) {
 		return nil
 	}
