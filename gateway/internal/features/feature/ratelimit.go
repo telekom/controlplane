@@ -7,9 +7,11 @@ package feature
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
+	secretManagerApi "github.com/telekom/controlplane/secret-manager/api"
 )
 
 var _ features.Feature = &RateLimitFeature{}
@@ -59,7 +61,9 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 	if !route.IsProxy() {
 		if route.HasRateLimit() {
 			rateLimitPlugin = builder.RateLimitPluginRoute()
-			rateLimitPlugin = setCommonConfigs(rateLimitPlugin, builder.GetGateway())
+			if err = setCommonConfigs(rateLimitPlugin, builder.GetGateway()); err != nil {
+				return err
+			}
 			rateLimitPlugin.Config.Limits = plugin.Limits{
 				Service: &plugin.LimitConfig{
 					Second: route.Spec.Traffic.RateLimit.Limits.Second,
@@ -78,7 +82,9 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 		}
 		if allowedConsumer.HasTrafficRateLimit() || route.HasRateLimit() {
 			rateLimitPlugin = builder.RateLimitPluginConsumeRoute(allowedConsumer)
-			rateLimitPlugin = setCommonConfigs(rateLimitPlugin, builder.GetGateway())
+			if err = setCommonConfigs(rateLimitPlugin, builder.GetGateway()); err != nil {
+				return err
+			}
 		}
 		if allowedConsumer.HasTrafficRateLimit() {
 			rateLimitPlugin.Config.Limits.Consumer = &plugin.LimitConfig{
@@ -100,14 +106,19 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 	return nil
 }
 
-func setCommonConfigs(rateLimitPlugin *plugin.RateLimitPlugin, gateway *gatewayv1.Gateway) *plugin.RateLimitPlugin {
+func setCommonConfigs(rateLimitPlugin *plugin.RateLimitPlugin, gateway *gatewayv1.Gateway) error {
 	rateLimitPlugin.Config.Policy = plugin.PolicyRedis
+	redisPassword, err := secretManagerApi.Get(context.Background(), gateway.Spec.Redis.Password)
+	if err != nil {
+		return errors.Wrapf(err, "cannot get redis password for gateway %s", gateway.GetName())
+	}
 	rateLimitPlugin.Config.RedisConfig = plugin.RedisConfig{
-		Host: gateway.Spec.Redis.Host,
-		Port: gateway.Spec.Redis.Port,
+		Host:     gateway.Spec.Redis.Host,
+		Port:     gateway.Spec.Redis.Port,
+		Password: redisPassword,
 	}
 	rateLimitPlugin.Config.OmitConsumer = "gateway"
-	return rateLimitPlugin
+	return nil
 }
 
 func setOptions(rateLimitPlugin *plugin.RateLimitPlugin, options gatewayv1.RateLimitOptions) *plugin.RateLimitPlugin {
