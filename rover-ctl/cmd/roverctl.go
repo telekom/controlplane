@@ -49,7 +49,7 @@ func main() {
 // NewRootCommand creates the root command for rover-ctl
 func NewRootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "rover-ctl",
+		Use:   "roverctl",
 		Short: "Rover Control CLI tool",
 		Long: `Rover Control CLI tool for managing rover resources via REST API.
 It handles configuration files and maps them to the appropriate resource handlers.`,
