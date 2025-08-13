@@ -205,14 +205,14 @@ func (b *Builder) RateLimitPluginConsumeRoute(consumeRoute *gatewayv1.ConsumeRou
 	var rateLimitPlugin *plugin.RateLimitPlugin
 	consumerName := consumeRoute.Spec.ConsumerName
 
-	if p, ok := b.Plugins["rate-limiting-consumerRoute-"+consumerName]; ok {
+	if p, ok := b.Plugins["rate-limiting-consumer--"+consumerName]; ok {
 		rateLimitPlugin, ok = p.(*plugin.RateLimitPlugin)
 		if !ok {
 			panic("plugin is not a RateLimitPlugin")
 		}
 	} else {
 		rateLimitPlugin = plugin.RateLimitPluginFromConsumeRoute(consumeRoute)
-		b.Plugins["rate-limiting-consumerRoute-"+consumerName] = rateLimitPlugin
+		b.Plugins["rate-limiting-consumer--"+consumerName] = rateLimitPlugin
 	}
 
 	return rateLimitPlugin
