@@ -5,6 +5,7 @@
 package buckets
 
 import (
+	"bytes"
 	"context"
 	"io"
 
@@ -71,9 +72,12 @@ func (s *BucketFileUploader) uploadToBucket(ctx context.Context, path string, re
 	// Upload file using the path directly
 	log.V(1).Info("Starting bucket PutObject operation", "path", path, "putOptions", putOptions)
 
-	// !IMPORTANT
-	// the size parameter is switching between multipart and atomic, single request put, the multipart pre-allocates cca 500 MB of memory - not needed for our usecase
-	uploadInfo, err := s.config.Client.PutObject(ctx, s.config.BucketName, path, reader, 0, putOptions)
+	copyReader, contentSize, err := copyAndMeasure(reader)
+	if err != nil {
+		return "", backend.ErrUploadFailed(path, "Failed to measure content size :"+err.Error())
+	}
+
+	uploadInfo, err := s.config.Client.PutObject(ctx, s.config.BucketName, path, copyReader, contentSize, putOptions)
 	log.V(1).Info("Finished bucket PutObject operation", "uploadInfo", uploadInfo)
 
 	if err != nil {
@@ -167,4 +171,13 @@ func (s *BucketFileUploader) UploadFile(ctx context.Context, fileId string, read
 
 	// Return the original fileId
 	return fileId, nil
+}
+
+func copyAndMeasure(r io.Reader) (io.Reader, int64, error) {
+	var buf bytes.Buffer
+	n, err := io.Copy(&buf, r)
+	if err != nil {
+		return nil, 0, err
+	}
+	return bytes.NewReader(buf.Bytes()), n, nil
 }
