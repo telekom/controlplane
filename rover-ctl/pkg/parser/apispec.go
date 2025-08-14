@@ -38,7 +38,7 @@ func ParseApiSpecification(obj types.Object) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to get name from Swagger spec")
 		}
-		obj.SetName(name)
+		obj.SetProperty("name", name)
 	}
 
 	if strings.HasPrefix(version, "3.") {
@@ -46,7 +46,7 @@ func ParseApiSpecification(obj types.Object) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to get name from OpenAPI spec")
 		}
-		obj.SetName(name)
+		obj.SetProperty("name", name)
 	}
 
 	return nil

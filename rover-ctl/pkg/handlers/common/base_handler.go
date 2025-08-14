@@ -16,6 +16,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
@@ -334,10 +335,15 @@ func (h *BaseHandler) SendRequest(ctx context.Context, obj types.Object, method,
 	var body io.ReadWriter
 	if obj != nil {
 		content := obj.GetContent()
-		body = bytes.NewBuffer(nil)
-		err := json.NewEncoder(body).Encode(content)
+		buf := bytes.NewBuffer(nil)
+		err := json.NewEncoder(buf).Encode(content)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to encode request body")
+		}
+		body = buf
+
+		if viper.GetBool("debug") {
+			h.logger.V(1).Info("Request details", "method", method, "url", url, "body", buf.String())
 		}
 	}
 

@@ -12,8 +12,8 @@ var Opts = []Option{
 	WithHook(HookAfterParse, func(obj types.Object) error {
 		_, isOpenapiSpec := obj.GetContent()["openapi"]
 		if isOpenapiSpec {
-			obj.SetKind("ApiSpecification")
-			obj.SetApiVersion("tcp.ei.telekom.de/v1")
+			obj.SetProperty("kind", "ApiSpecification")
+			obj.SetProperty("apiVersion", "tcp.ei.telekom.de/v1")
 			return ParseApiSpecification(obj)
 		}
 
