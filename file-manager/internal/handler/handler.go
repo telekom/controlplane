@@ -53,7 +53,7 @@ func (h *Handler) UploadFile(ctx context.Context, request api.UploadFileRequestO
 	// Now `data` has the contents read (same as originalReader)
 	// `buf.Bytes()` contains an exact copy of what was read
 
-	log.V(1).Info("Debug file contents", "contents", string(buf.String()))
+	log.Info("Debug file contents", "contents", buf.String())
 	fileData = bytes.NewReader(data)
 	// end debug
 
