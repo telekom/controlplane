@@ -5,10 +5,12 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/file-manager/api/constants"
 	"github.com/telekom/controlplane/file-manager/internal/api"
@@ -28,12 +30,32 @@ func NewHandler(ctrl controller.Controller) *Handler {
 }
 
 func (h *Handler) UploadFile(ctx context.Context, request api.UploadFileRequestObject) (res api.UploadFileResponseObject, err error) {
+	log := logr.FromContextOrDiscard(ctx)
+
 	fileId := request.FileId
 	fileData := request.Body
 
 	if fileData == nil {
 		return nil, errors.New("no file data provided")
 	}
+
+	// debug the file contents
+
+	var buf bytes.Buffer // buffer to store a copy
+	tee := io.TeeReader(fileData, &buf)
+
+	// Now read from tee instead of originalReader
+	data, err := io.ReadAll(tee)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("cannot copy teeReader"))
+	}
+
+	// Now `data` has the contents read (same as originalReader)
+	// `buf.Bytes()` contains an exact copy of what was read
+
+	log.V(1).Info("Debug file contents", "contents", string(buf.String()))
+	fileData = bytes.NewReader(data)
+	// end debug
 
 	// Extract metadata headers from request
 	metadata := make(map[string]string)
