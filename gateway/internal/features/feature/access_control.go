@@ -52,19 +52,21 @@ func (f *AccessControlFeature) Apply(ctx context.Context, builder features.Featu
 		builder.JwtPlugin()
 	}
 
-	if route.Spec.Security != nil && !route.Spec.Security.DisableAccessControl {
-		aclPlugin := builder.AclPlugin()
+	// If access control is disabled, we skip the ACL plugin setup
+	if route.Spec.Security != nil && route.Spec.Security.DisableAccessControl {
+		return nil
+	}
 
-		aclPlugin.Config.Allow.Add("gateway")
-		for _, defaultConsumer := range builder.GetRealm().Spec.DefaultConsumers {
-			aclPlugin.Config.Allow.Add(defaultConsumer)
-		}
+	aclPlugin := builder.AclPlugin()
+	aclPlugin.Config.Allow.Add("gateway")
+	for _, defaultConsumer := range builder.GetRealm().Spec.DefaultConsumers {
+		aclPlugin.Config.Allow.Add(defaultConsumer)
+	}
 
-		for _, consumer := range builder.GetAllowedConsumers() {
-			if consumer.Spec.Route.Equals(route) {
-				// Only add allowed consumers that actually belong to this specific route
-				aclPlugin.Config.Allow.Add(consumer.Spec.ConsumerName)
-			}
+	for _, consumer := range builder.GetAllowedConsumers() {
+		if consumer.Spec.Route.Equals(route) {
+			// Only add allowed consumers that actually belong to this specific route
+			aclPlugin.Config.Allow.Add(consumer.Spec.ConsumerName)
 		}
 	}
 

@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	cc "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -63,10 +64,16 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 		if err != nil {
 			return errors.Wrap(err, "failed to list route consumers")
 		}
-		log.Info("Found consumers", "count", len(routeConsumers.Items))
+
 		for _, consumer := range routeConsumers.Items {
+			if controller.IsBeingDeleted(&consumer) {
+				log.V(1).Info("Skipping consumer that is being deleted", "consumer", consumer.Name)
+				continue
+			}
 			builder.AddAllowedConsumers(&consumer)
 		}
+		log.Info("Found consumers", "count", len(builder.GetAllowedConsumers()), "sum", len(routeConsumers.Items))
+
 	}
 
 	if err := builder.Build(ctx); err != nil {
