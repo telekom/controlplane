@@ -389,8 +389,8 @@ spec:
                             type: integer
                         type: object
                       options:
-                        description: RateLimitOptions defines additional configuration
-                          options for rate limiting
+                        description: Options defines additional configuration options
+                          for rate limiting
                         properties:
                           faultTolerant:
                             default: true

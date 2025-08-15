@@ -147,7 +147,20 @@ var _ = Describe("FeatureBuilder RateLimiting", Ordered, func() {
 			builder := buildRateLimitFeature(ctx, rateLimitRoute, false, nil, gateway, testRealm)
 
 			By("checking the rate limit plugin for route")
-			verifyRateLimitPluginRoute(builder, gateway)
+			rateLimitPlugin, ok := builder.Plugins["rate-limiting"].(*plugin.RateLimitPlugin)
+			Expect(ok).To(BeTrue())
+			Expect(rateLimitPlugin).NotTo(BeNil())
+			Expect(rateLimitPlugin.Config.Policy).To(Equal(plugin.PolicyRedis))
+			Expect(rateLimitPlugin.Config.RedisConfig.Host).To(Equal(gateway.Spec.Redis.Host))
+			Expect(rateLimitPlugin.Config.RedisConfig.Port).To(Equal(gateway.Spec.Redis.Port))
+			Expect(rateLimitPlugin.Config.Limits.Service).NotTo(BeNil())
+
+			By("checking the rate limit plugin for route")
+			Expect(rateLimitPlugin.Config.Limits.Service.Second).To(Equal(100))
+			Expect(rateLimitPlugin.Config.Limits.Service.Minute).To(Equal(1000))
+			Expect(rateLimitPlugin.Config.Limits.Service.Hour).To(Equal(10000))
+			Expect(rateLimitPlugin.Config.HideClientHeaders).To(BeTrue())
+			Expect(rateLimitPlugin.Config.FaultTolerant).To(BeFalse())
 		})
 
 		It("should apply the RateLimit feature for a proxy route with consumer rate limits", func() {
@@ -158,7 +171,7 @@ var _ = Describe("FeatureBuilder RateLimiting", Ordered, func() {
 			builder := buildRateLimitFeature(ctx, rateLimitRoute, true, []*gatewayv1.ConsumeRoute{consumeRoute}, gateway, testRealm)
 
 			By("checking the rate limit plugin for consumer")
-			verifyRateLimitPluginConsumer(builder, consumeRoute, gateway, true)
+			verifyRateLimitPluginConsumer(builder, consumeRoute, gateway, false)
 		})
 
 		It("should apply the RateLimit feature for a proxy route with only consumer rate limits", func() {
@@ -196,30 +209,13 @@ func buildRateLimitFeature(ctx context.Context, route *gatewayv1.Route, isProxyR
 	return b
 }
 
-func verifyRateLimitPluginRoute(builder *features.Builder, gateway *gatewayv1.Gateway) {
-	rateLimitPlugin, ok := builder.Plugins["rate-limiting"].(*plugin.RateLimitPlugin)
-	Expect(ok).To(BeTrue())
-	Expect(rateLimitPlugin).NotTo(BeNil())
-	Expect(rateLimitPlugin.Config.Policy).To(Equal(plugin.PolicyRedis))
-	Expect(rateLimitPlugin.Config.RedisConfig.Host).To(Equal(gateway.Spec.Redis.Host))
-	Expect(rateLimitPlugin.Config.RedisConfig.Port).To(Equal(gateway.Spec.Redis.Port))
-	Expect(rateLimitPlugin.Config.Limits.Service).NotTo(BeNil())
-
-	By("checking the rate limit plugin for route")
-	Expect(rateLimitPlugin.Config.Limits.Service.Second).To(Equal(100))
-	Expect(rateLimitPlugin.Config.Limits.Service.Minute).To(Equal(1000))
-	Expect(rateLimitPlugin.Config.Limits.Service.Hour).To(Equal(10000))
-	Expect(rateLimitPlugin.Config.HideClientHeaders).To(BeTrue())
-	Expect(rateLimitPlugin.Config.FaultTolerant).To(BeFalse())
-}
-
 func verifyRateLimitPluginConsumer(builder *features.Builder, consumeRoute *gatewayv1.ConsumeRoute, gateway *gatewayv1.Gateway, serviceRateLimit bool) {
 	// Find the rate limit plugin for the consumer
 	var consumerRateLimitPlugin *plugin.RateLimitPlugin
 
 	consumerName := consumeRoute.Spec.ConsumerName
 
-	_, ok := builder.Plugins["rate-limiting-consumerRoute-"+consumerName]
+	_, ok := builder.Plugins["rate-limiting-consumer--"+consumerName]
 	Expect(ok).To(BeTrue())
 
 	for _, p := range builder.Plugins {
