@@ -31,9 +31,23 @@ type CreateRouteOptions struct {
 	FailoverZone        types.ObjectRef
 	FailoverSecurity    *apiapi.Security
 	ReturnReferenceOnly bool // If true, the route will not be created, but only the reference will be returned.
+
+	// Rate limit configuration for the consumer
+	ServiceRateLimit *apiapi.RateLimitConfig
+
+	// In case of proxy route, consumer rate limits must be set as well
+	ConsumerRateLimit *apiapi.Limits
 }
 
 type CreateRouteOption func(*CreateRouteOptions)
+
+type CreateConsumeRouteOptions struct {
+	ConsumerRateLimit *apiapi.Limits // Rate limit configuration for the consumer
+}
+
+func (o *CreateConsumeRouteOptions) HasConsumerRateLimit() bool { return o.ConsumerRateLimit != nil }
+
+type CreateConsumeRouteOption func(*CreateConsumeRouteOptions)
 
 // WithFailoverUpstreams sets the failover upstreams for the route.
 // A Proxy-Route created using CreateProxyRoute with this option will have the failover upstreams set
@@ -70,6 +84,18 @@ func ReturnReferenceOnly() CreateRouteOption {
 	}
 }
 
+func WithServiceRateLimit(rateLimit *apiapi.RateLimitConfig) CreateRouteOption {
+	return func(opts *CreateRouteOptions) {
+		opts.ServiceRateLimit = rateLimit
+	}
+}
+
+func WithConsumerRateLimit(limits *apiapi.Limits) CreateRouteOption {
+	return func(opts *CreateRouteOptions) {
+		opts.ConsumerRateLimit = limits
+	}
+}
+
 // IsFailoverSecondary checks if the route is a failover secondary route.
 // This means that this route has the real upstream as a failover upstream.
 func (o *CreateRouteOptions) IsFailoverSecondary() bool {
@@ -80,6 +106,17 @@ func (o *CreateRouteOptions) IsFailoverSecondary() bool {
 // This means that this route is used as a proxy to the failover zone.
 func (o *CreateRouteOptions) HasFailover() bool {
 	return o.FailoverZone.Name != "" && o.FailoverZone.Namespace != ""
+}
+
+func (o *CreateRouteOptions) HasServiceRateLimit() bool {
+	return o.ServiceRateLimit != nil
+}
+
+// WithRateLimit sets the rate limit configuration for the ConsumeRoute
+func WithConsumerRouteRateLimit(rateLimit apiapi.Limits) CreateConsumeRouteOption {
+	return func(opts *CreateConsumeRouteOptions) {
+		opts.ConsumerRateLimit = &rateLimit
+	}
 }
 
 func MakeRouteName(apiBasePath, realmName string) string {
@@ -154,6 +191,12 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 
 		log.Info("Creating proxy route", "route", proxyRoute.Name, "namespace", proxyRoute.Namespace, "failover", options.HasFailover())
 
+		if options.HasServiceRateLimit() {
+			proxyRoute.Spec.Traffic = gatewayapi.Traffic{
+				RateLimit: mapProviderRateLimitToGatewayRateLimit(options.ServiceRateLimit),
+			}
+		}
+
 		if options.IsFailoverSecondary() {
 			proxyRoute.Labels[LabelFailoverSecondary] = "true"
 
@@ -178,7 +221,6 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 			if options.FailoverSecurity != nil {
 				proxyRoute.Spec.Traffic.Failover.Security = mapSecurity(options.FailoverSecurity)
 			}
-
 		}
 
 		if options.HasFailover() {
@@ -329,6 +371,10 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 		route.Spec.Transformation = mapTransformation(apiExposure.Spec.Transformation)
 		route.Spec.Security = mapSecurity(apiExposure.Spec.Security)
 
+		if apiExposure.HasProviderRateLimit() {
+			route.Spec.Traffic.RateLimit = mapProviderRateLimitToGatewayRateLimit(apiExposure.Spec.Traffic.RateLimit.Provider)
+		}
+
 		return nil
 	}
 
@@ -340,8 +386,13 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 	return route, nil
 }
 
-func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, downstreamZoneRef types.ObjectRef, routeRef types.ObjectRef, clientId string) (*gatewayapi.ConsumeRoute, error) {
+func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, downstreamZoneRef types.ObjectRef, routeRef types.ObjectRef, clientId string, opts ...CreateConsumeRouteOption) (*gatewayapi.ConsumeRoute, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
+
+	options := &CreateConsumeRouteOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
 
 	name := downstreamZoneRef.Name + "--" + apiSub.GetName()
 	routeConsumer := &gatewayapi.ConsumeRoute{
@@ -361,6 +412,15 @@ func CreateConsumeRoute(ctx context.Context, apiSub *apiapi.ApiSubscription, dow
 			Route:        routeRef,
 			ConsumerName: clientId,
 			Security:     mapConsumerSecurity(apiSub.Spec.Security),
+		}
+
+		if options.HasConsumerRateLimit() {
+			if routeConsumer.Spec.Traffic == nil {
+				routeConsumer.Spec.Traffic = &gatewayapi.ConsumeRouteTraffic{}
+			}
+			routeConsumer.Spec.Traffic.RateLimit = &gatewayapi.ConsumeRouteRateLimit{
+				Limits: mapLimitsToGatewayLimits(*options.ConsumerRateLimit),
+			}
 		}
 
 		return nil
@@ -457,4 +517,29 @@ func mapTransformation(apiTransformation *apiapi.Transformation) *gatewayapi.Tra
 	}
 
 	return transformation
+}
+
+func mapProviderRateLimitToGatewayRateLimit(apiRateLimitConfig *apiapi.RateLimitConfig) *gatewayapi.RateLimit {
+	if apiRateLimitConfig == nil {
+		return nil
+	}
+	return &gatewayapi.RateLimit{
+		Limits:  mapLimitsToGatewayLimits(apiRateLimitConfig.Limits),
+		Options: mapLimitOptionsToGatewayLimitOptions(apiRateLimitConfig.Options),
+	}
+}
+
+func mapLimitsToGatewayLimits(apiLimits apiapi.Limits) gatewayapi.Limits {
+	return gatewayapi.Limits{
+		Second: apiLimits.Second,
+		Minute: apiLimits.Minute,
+		Hour:   apiLimits.Hour,
+	}
+}
+
+func mapLimitOptionsToGatewayLimitOptions(apiRateLimitOptions apiapi.RateLimitOptions) gatewayapi.RateLimitOptions {
+	return gatewayapi.RateLimitOptions{
+		HideClientHeaders: apiRateLimitOptions.HideClientHeaders,
+		FaultTolerant:     apiRateLimitOptions.FaultTolerant,
+	}
 }

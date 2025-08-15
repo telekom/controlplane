@@ -89,6 +89,40 @@ func NewApiExposure(apiBasePath, zoneName string) *apiv1.ApiExposure {
 					},
 				},
 			},
+			Traffic: apiv1.Traffic{
+				RateLimit: &apiv1.RateLimit{
+					Provider: &apiv1.RateLimitConfig{
+						Limits: apiv1.Limits{
+							Second: 100,
+							Minute: 1000,
+							Hour:   10000,
+						},
+						Options: apiv1.RateLimitOptions{
+							HideClientHeaders: true,
+							FaultTolerant:     true,
+						},
+					},
+					SubscriberRateLimit: &apiv1.SubscriberRateLimits{
+						Default: &apiv1.SubscriberRateLimitDefaults{
+							Limits: apiv1.Limits{
+								Second: 10,
+								Minute: 100,
+								Hour:   1000,
+							},
+						},
+						Overrides: []apiv1.RateLimitOverrides{
+							{
+								Subscriber: "test-subscriber",
+								Limits: apiv1.Limits{
+									Second: 10,
+									Minute: 100,
+									Hour:   1000,
+								},
+							},
+						},
+					},
+				},
+			},
 			Security: &apiapi.Security{
 				M2M: &apiapi.Machine2MachineAuthentication{
 					ExternalIDP: &apiapi.ExternalIdentityProvider{
@@ -188,6 +222,35 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 
 			}, timeout, interval).Should(Succeed())
 
+		})
+
+		It("should pass rate limit configuration from ApiExposure to Route", func() {
+			By("Checking if the rate limit configuration is passed to the route")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(apiExposure.Status.Route).ToNot(BeNil())
+				g.Expect(apiExposure.HasRateLimit()).To(BeTrue(), "ApiExposure should have rate limit configuration")
+				g.Expect(apiExposure.HasProviderRateLimit()).To(BeTrue(), "ApiExposure should have provider rate limit")
+
+				route := &gatewayapi.Route{}
+				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), route)
+				g.Expect(err).ToNot(HaveOccurred())
+
+				// Verify that the route has rate limit configuration
+				g.Expect(route.HasRateLimit()).To(BeTrue(), "Route should have rate limit configuration")
+				g.Expect(route.Spec.Traffic.RateLimit).ToNot(BeNil(), "Route should have rate limit in traffic spec")
+
+				// Verify that the provider rate limit values are correctly passed
+				g.Expect(route.Spec.Traffic.RateLimit.Limits.Second).To(Equal(apiExposure.Spec.Traffic.RateLimit.Provider.Limits.Second))
+				g.Expect(route.Spec.Traffic.RateLimit.Limits.Minute).To(Equal(apiExposure.Spec.Traffic.RateLimit.Provider.Limits.Minute))
+				g.Expect(route.Spec.Traffic.RateLimit.Limits.Hour).To(Equal(apiExposure.Spec.Traffic.RateLimit.Provider.Limits.Hour))
+
+				// Verify that the provider rate limit options are correctly passed
+				g.Expect(route.Spec.Traffic.RateLimit.Options.HideClientHeaders).To(Equal(apiExposure.Spec.Traffic.RateLimit.Provider.Options.HideClientHeaders))
+				g.Expect(route.Spec.Traffic.RateLimit.Options.FaultTolerant).To(Equal(apiExposure.Spec.Traffic.RateLimit.Provider.Options.FaultTolerant))
+
+			}, timeout, interval).Should(Succeed())
 		})
 	})
 

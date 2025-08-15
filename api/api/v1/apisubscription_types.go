@@ -18,7 +18,7 @@ type ApiSubscriptionSpec struct {
 	Requestor    Requestor           `json:"requestor"`
 	Zone         ctypes.ObjectRef    `json:"zone"`
 
-	Traffic Traffic `json:"traffic"`
+	Traffic SubscriberTraffic `json:"traffic"`
 }
 
 func (api *ApiSubscription) HasM2M() bool {

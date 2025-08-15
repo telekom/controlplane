@@ -49,7 +49,8 @@ type FeaturesBuilder interface {
 	RequestTransformerPlugin() *plugin.RequestTransformerPlugin
 	AclPlugin() *plugin.AclPlugin
 	JwtPlugin() *plugin.JwtPlugin
-	RateLimitPlugin() *plugin.RateLimitPlugin
+	RateLimitPluginRoute() *plugin.RateLimitPlugin
+	RateLimitPluginConsumeRoute(*gatewayv1.ConsumeRoute) *plugin.RateLimitPlugin
 	JumperConfig() *plugin.JumperConfig
 	RoutingConfigs() *plugin.RoutingConfigs
 	IpRestrictionPlugin() *plugin.IpRestrictionPlugin
@@ -184,7 +185,7 @@ func (b *Builder) JwtPlugin() *plugin.JwtPlugin {
 	return jwtPlugin
 }
 
-func (b *Builder) RateLimitPlugin() *plugin.RateLimitPlugin {
+func (b *Builder) RateLimitPluginRoute() *plugin.RateLimitPlugin {
 	var rateLimitPlugin *plugin.RateLimitPlugin
 
 	if p, ok := b.Plugins["rate-limiting"]; ok {
@@ -195,6 +196,23 @@ func (b *Builder) RateLimitPlugin() *plugin.RateLimitPlugin {
 	} else {
 		rateLimitPlugin = plugin.RateLimitPluginFromRoute(b.Route)
 		b.Plugins["rate-limiting"] = rateLimitPlugin
+	}
+
+	return rateLimitPlugin
+}
+
+func (b *Builder) RateLimitPluginConsumeRoute(consumeRoute *gatewayv1.ConsumeRoute) *plugin.RateLimitPlugin {
+	var rateLimitPlugin *plugin.RateLimitPlugin
+	consumerName := consumeRoute.Spec.ConsumerName
+
+	if p, ok := b.Plugins["rate-limiting-consumer--"+consumerName]; ok {
+		rateLimitPlugin, ok = p.(*plugin.RateLimitPlugin)
+		if !ok {
+			panic("plugin is not a RateLimitPlugin")
+		}
+	} else {
+		rateLimitPlugin = plugin.RateLimitPluginFromConsumeRoute(consumeRoute)
+		b.Plugins["rate-limiting-consumer--"+consumerName] = rateLimitPlugin
 	}
 
 	return rateLimitPlugin

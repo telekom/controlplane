@@ -531,4 +531,169 @@ var _ = Describe("Rover Controller", Ordered, func() {
 
 		})
 	})
+
+	Context("Rover with rate limit configuration", func() {
+		It("should successfully map rate limit configuration from rover to api exposure", func() {
+			// Create a rover with rate limit configuration
+			spec := roverv1.RoverSpec{
+				Zone:         testEnvironment,
+				ClientSecret: "topsecret",
+				Exposures: []roverv1.Exposure{
+					{
+						Api: &roverv1.ApiExposure{
+							BasePath: BasePath,
+							Upstreams: []roverv1.Upstream{
+								{
+									URL: upstream,
+								},
+							},
+							Visibility: roverv1.VisibilityWorld,
+							Approval: roverv1.Approval{
+								Strategy: roverv1.ApprovalStrategyAuto,
+							},
+							Traffic: &roverv1.Traffic{
+								Failover: &roverv1.Failover{
+									Zones: []string{testEnvironment},
+								},
+								RateLimit: &roverv1.RateLimit{
+									Provider: &roverv1.RateLimitConfig{
+										Limits: &roverv1.Limits{
+											Second: 100,
+											Minute: 1000,
+										},
+										Options: roverv1.RateLimitOptions{
+											HideClientHeaders: true,
+											FaultTolerant:     true,
+										},
+									},
+									Consumers: &roverv1.ConsumerRateLimits{
+										Default: &roverv1.ConsumerRateLimitDefaults{
+											Limits: roverv1.Limits{
+												Second: 10,
+												Minute: 100,
+												Hour:   1000,
+											},
+										},
+										Overrides: []roverv1.ConsumerRateLimitOverrides{
+											{
+												Consumer: "premium-client",
+												Limits: roverv1.Limits{
+													Second: 50,
+													Hour:   5000,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			rover := createRover(resourceName, teamNamespace, testEnvironment, spec)
+
+			By("creating the custom resource with rate limit configuration")
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      resourceName,
+					Namespace: teamNamespace,
+				}, rover)
+
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(rover.Status.ApiExposures).To(HaveLen(1))
+
+				apiExposure := &apiapi.ApiExposure{}
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Name:      "test-resource--eni-api-v1",
+					Namespace: teamNamespace,
+				}, apiExposure)
+
+				g.Expect(err).NotTo(HaveOccurred())
+
+				// Verify failover configuration
+				g.Expect(apiExposure.Spec.Traffic.Failover).NotTo(BeNil())
+				g.Expect(apiExposure.Spec.Traffic.Failover.Zones).To(HaveLen(1))
+				g.Expect(apiExposure.Spec.Traffic.Failover.Zones[0].Name).To(Equal(testEnvironment))
+
+				// Verify provider rate limit configuration
+				g.Expect(apiExposure.Spec.Traffic.RateLimit).NotTo(BeNil())
+				g.Expect(apiExposure.Spec.Traffic.RateLimit.Provider.Limits.Second).To(Equal(100))
+				g.Expect(apiExposure.Spec.Traffic.RateLimit.Provider.Limits.Minute).To(Equal(1000))
+				g.Expect(apiExposure.Spec.Traffic.RateLimit.Provider.Options.HideClientHeaders).To(BeTrue())
+				g.Expect(apiExposure.Spec.Traffic.RateLimit.Provider.Options.FaultTolerant).To(BeTrue())
+
+				// Verify overrides
+				overrides := apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides
+				g.Expect(overrides).NotTo(BeNil())
+				g.Expect(overrides[0].Subscriber).To(Equal("premium-client"))
+				g.Expect(overrides[0].Limits.Second).To(Equal(50))
+				g.Expect(overrides[0].Limits.Hour).To(Equal(5000))
+
+				// Verify helper methods
+				g.Expect(apiExposure.HasFailover()).To(BeTrue())
+				g.Expect(apiExposure.HasRateLimit()).To(BeTrue())
+				g.Expect(apiExposure.Spec.Traffic.HasSubscriberRateLimit()).To(BeTrue())
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should handle null traffic configuration gracefully", func() {
+			// Create a rover without traffic configuration
+			spec := roverv1.RoverSpec{
+				Zone:         testEnvironment,
+				ClientSecret: "topsecret",
+				Exposures: []roverv1.Exposure{
+					{
+						Api: &roverv1.ApiExposure{
+							BasePath: BasePath,
+							Upstreams: []roverv1.Upstream{
+								{
+									URL: upstream,
+								},
+							},
+							Visibility: roverv1.VisibilityWorld,
+							Approval: roverv1.Approval{
+								Strategy: roverv1.ApprovalStrategyAuto,
+							},
+							// Traffic is nil
+						},
+					},
+				},
+			}
+
+			rover := createRover(resourceName, teamNamespace, testEnvironment, spec)
+
+			By("creating the custom resource without traffic configuration")
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      resourceName,
+					Namespace: teamNamespace,
+				}, rover)
+
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(rover.Status.ApiExposures).To(HaveLen(1))
+
+				apiExposure := &apiapi.ApiExposure{}
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Name:      "test-resource--eni-api-v1",
+					Namespace: teamNamespace,
+				}, apiExposure)
+
+				g.Expect(err).NotTo(HaveOccurred())
+
+				// Verify traffic configuration is empty but valid
+				g.Expect(apiExposure.Spec.Traffic.Failover).To(BeNil())
+				g.Expect(apiExposure.Spec.Traffic.RateLimit).To(BeNil())
+				g.Expect(apiExposure.Spec.Traffic.HasSubscriberRateLimit()).To(BeFalse())
+
+				// Verify helper methods
+				g.Expect(apiExposure.HasFailover()).To(BeFalse())
+				g.Expect(apiExposure.HasRateLimit()).To(BeFalse())
+			}, timeout, interval).Should(Succeed())
+		})
+	})
 })

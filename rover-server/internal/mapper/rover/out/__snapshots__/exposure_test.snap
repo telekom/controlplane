@@ -5,7 +5,7 @@ api.ApiExposure{
     BasePath:      "/eni/distr/v1",
     Failover:      api.Failover{},
     LoadBalancing: api.LoadBalancing{},
-    RateLimit:     struct { ConsumerDefault struct { FaultTolerant bool "json:\"faultTolerant,omitempty,omitzero\""; HideClientHeaders bool "json:\"hideClientHeaders,omitempty,omitzero\""; Hour int32 "json:\"hour,omitempty,omitzero\""; Minute int32 "json:\"minute,omitempty,omitzero\""; Second int32 "json:\"second,omitempty,omitzero\"" } "json:\"consumerDefault,omitempty,omitzero\""; Consumers []struct { FaultTolerant bool "json:\"faultTolerant,omitempty,omitzero\""; HideClientHeaders bool "json:\"hideClientHeaders,omitempty,omitzero\""; Hour int32 "json:\"hour,omitempty,omitzero\""; Id string "json:\"id,omitempty,omitzero\""; Minute int32 "json:\"minute,omitempty,omitzero\""; Second int32 "json:\"second,omitempty,omitzero\"" } "json:\"consumers,omitempty,omitzero\""; Provider api.RateLimit "json:\"provider,omitempty,omitzero\"" }{},
+    RateLimit:     api.RateLimitContainer{},
     RemoveHeaders: nil,
     Security:      api.Security{},
     TrustedTeams:  nil,
@@ -25,7 +25,7 @@ api.ApiExposure{
         Servers: {
         },
     },
-    RateLimit:     struct { ConsumerDefault struct { FaultTolerant bool "json:\"faultTolerant,omitempty,omitzero\""; HideClientHeaders bool "json:\"hideClientHeaders,omitempty,omitzero\""; Hour int32 "json:\"hour,omitempty,omitzero\""; Minute int32 "json:\"minute,omitempty,omitzero\""; Second int32 "json:\"second,omitempty,omitzero\"" } "json:\"consumerDefault,omitempty,omitzero\""; Consumers []struct { FaultTolerant bool "json:\"faultTolerant,omitempty,omitzero\""; HideClientHeaders bool "json:\"hideClientHeaders,omitempty,omitzero\""; Hour int32 "json:\"hour,omitempty,omitzero\""; Id string "json:\"id,omitempty,omitzero\""; Minute int32 "json:\"minute,omitempty,omitzero\""; Second int32 "json:\"second,omitempty,omitzero\"" } "json:\"consumers,omitempty,omitzero\""; Provider api.RateLimit "json:\"provider,omitempty,omitzero\"" }{},
+    RateLimit:     api.RateLimitContainer{},
     RemoveHeaders: nil,
     Security:      api.Security{},
     TrustedTeams:  nil,

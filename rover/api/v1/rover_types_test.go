@@ -76,7 +76,7 @@ var _ = Describe("Rover V1 Test Suite", func() {
 									},
 								},
 							},
-							Traffic: v1.Traffic{
+							Traffic: &v1.Traffic{
 								LoadBalancing: &v1.LoadBalancing{
 									Strategy: v1.LoadBalancingRoundRobin,
 								},

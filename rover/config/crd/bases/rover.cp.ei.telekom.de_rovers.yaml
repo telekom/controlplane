@@ -272,6 +272,73 @@ spec:
                                         applied to all consumers not specifically
                                         overridden
                                       properties:
+                                        limits:
+                                          description: Limits defines the actual rate
+                                            limit values for different time windows
+                                          properties:
+                                            hour:
+                                              description: Hour defines the maximum
+                                                number of requests allowed per hour
+                                              minimum: 0
+                                              type: integer
+                                            minute:
+                                              description: Minute defines the maximum
+                                                number of requests allowed per minute
+                                              minimum: 0
+                                              type: integer
+                                            second:
+                                              description: Second defines the maximum
+                                                number of requests allowed per second
+                                              minimum: 0
+                                              type: integer
+                                          type: object
+                                      required:
+                                      - limits
+                                      type: object
+                                    overrides:
+                                      description: Overrides defines consumer-specific
+                                        rate limits
+                                      items:
+                                        properties:
+                                          consumer:
+                                            minLength: 1
+                                            type: string
+                                          limits:
+                                            description: Limits defines the actual
+                                              rate limit values for different time
+                                              windows
+                                            properties:
+                                              hour:
+                                                description: Hour defines the maximum
+                                                  number of requests allowed per hour
+                                                minimum: 0
+                                                type: integer
+                                              minute:
+                                                description: Minute defines the maximum
+                                                  number of requests allowed per minute
+                                                minimum: 0
+                                                type: integer
+                                              second:
+                                                description: Second defines the maximum
+                                                  number of requests allowed per second
+                                                minimum: 0
+                                                type: integer
+                                            type: object
+                                        required:
+                                        - consumer
+                                        - limits
+                                        type: object
+                                      maxItems: 10
+                                      type: array
+                                  type: object
+                                provider:
+                                  description: Provider defines rate limits applied
+                                    by the API provider (owner)
+                                  properties:
+                                    limits:
+                                      description: Limits defines the actual rate
+                                        limit values for different time windows
+                                      properties:
                                         hour:
                                           description: Hour defines the maximum number
                                             of requests allowed per hour
@@ -288,50 +355,25 @@ spec:
                                           minimum: 0
                                           type: integer
                                       type: object
-                                    overrides:
-                                      additionalProperties:
-                                        description: RateLimitConfig defines rate
-                                          limits for different time windows
-                                        properties:
-                                          hour:
-                                            description: Hour defines the maximum
-                                              number of requests allowed per hour
-                                            minimum: 0
-                                            type: integer
-                                          minute:
-                                            description: Minute defines the maximum
-                                              number of requests allowed per minute
-                                            minimum: 0
-                                            type: integer
-                                          second:
-                                            description: Second defines the maximum
-                                              number of requests allowed per second
-                                            minimum: 0
-                                            type: integer
-                                        type: object
-                                      description: Overrides defines consumer-specific
-                                        rate limits, keyed by consumer identifier
+                                    options:
+                                      description: RateLimitOptions defines additional
+                                        configuration options for rate limiting
+                                      properties:
+                                        faultTolerant:
+                                          default: true
+                                          description: FaultTolerant defines if the
+                                            rate limit plugin should be fault tolerant,
+                                            if gateway is not able to access the config
+                                            store
+                                          type: boolean
+                                        hideClientHeaders:
+                                          default: false
+                                          description: HideClientHeaders hides additional
+                                            client headers which give information
+                                            about the rate-limit, reset and remaining
+                                            requests for consumers if set to true.
+                                          type: boolean
                                       type: object
-                                  type: object
-                                provider:
-                                  description: Provider defines rate limits applied
-                                    by the API provider (owner)
-                                  properties:
-                                    hour:
-                                      description: Hour defines the maximum number
-                                        of requests allowed per hour
-                                      minimum: 0
-                                      type: integer
-                                    minute:
-                                      description: Minute defines the maximum number
-                                        of requests allowed per minute
-                                      minimum: 0
-                                      type: integer
-                                    second:
-                                      description: Second defines the maximum number
-                                        of requests allowed per second
-                                      minimum: 0
-                                      type: integer
                                   type: object
                               type: object
                           type: object
@@ -554,26 +596,6 @@ spec:
                                     type: string
                                   maxItems: 10
                                   type: array
-                              type: object
-                            rateLimit:
-                              description: RateLimit defines request rate limiting
-                                for this API
-                              properties:
-                                hour:
-                                  description: Hour defines the maximum number of
-                                    requests allowed per hour
-                                  minimum: 0
-                                  type: integer
-                                minute:
-                                  description: Minute defines the maximum number of
-                                    requests allowed per minute
-                                  minimum: 0
-                                  type: integer
-                                second:
-                                  description: Second defines the maximum number of
-                                    requests allowed per second
-                                  minimum: 0
-                                  type: integer
                               type: object
                           type: object
                         transformation:

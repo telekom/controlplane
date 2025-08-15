@@ -11,9 +11,10 @@ import (
 )
 
 type RedisConfig struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Password string `json:"password"`
+	Host      string `json:"host"`
+	Port      int    `json:"port"`
+	Password  string `json:"password"`
+	EnableTLS bool   `json:"enableTLS"`
 }
 
 type AdminConfig struct {

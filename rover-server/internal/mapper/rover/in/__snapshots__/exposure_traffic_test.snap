@@ -1,10 +1,51 @@
 
 [Exposure Traffic Mapper mapExposureTraffic must map failover zones correctly - 1]
-v1.Traffic{
+&v1.Traffic{
     LoadBalancing: (*v1.LoadBalancing)(nil),
     Failover:      &v1.Failover{
         Zones: {"zone1", "zone2"},
     },
     RateLimit: (*v1.RateLimit)(nil),
+}
+---
+
+[Exposure Traffic Mapper mapExposureTraffic must map provider rate limits correctly - 1]
+&v1.RateLimit{
+    Provider: &v1.RateLimitConfig{
+        Limits:  &v1.Limits{Second:100, Minute:1000, Hour:10000},
+        Options: v1.RateLimitOptions{HideClientHeaders:true, FaultTolerant:true},
+    },
+    Consumers: (*v1.ConsumerRateLimits)(nil),
+}
+---
+
+[Exposure Traffic Mapper mapExposureTraffic must map consumer default rate limits correctly - 1]
+&v1.RateLimit{
+    Provider:  (*v1.RateLimitConfig)(nil),
+    Consumers: &v1.ConsumerRateLimits{
+        Default: &v1.ConsumerRateLimitDefaults{
+            Limits: v1.Limits{Second:50, Minute:500, Hour:5000},
+        },
+        Overrides: nil,
+    },
+}
+---
+
+[Exposure Traffic Mapper mapExposureTraffic must map consumer overrides correctly - 1]
+&v1.RateLimit{
+    Provider:  (*v1.RateLimitConfig)(nil),
+    Consumers: &v1.ConsumerRateLimits{
+        Default:   (*v1.ConsumerRateLimitDefaults)(nil),
+        Overrides: {
+            {
+                Consumer: "consumer1",
+                Limits:   v1.Limits{Second:25, Minute:250, Hour:2500},
+            },
+            {
+                Consumer: "consumer2",
+                Limits:   v1.Limits{Second:75, Minute:750, Hour:7500},
+            },
+        },
+    },
 }
 ---
