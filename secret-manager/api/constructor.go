@@ -7,6 +7,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -25,7 +26,7 @@ type Options struct {
 
 func (o *Options) accessTokenReqEditor(ctx context.Context, req *http.Request) error {
 	if o.Token == nil {
-		return nil
+		return errors.New("access token is not set")
 	}
 	token, err := o.Token.Read()
 	if err != nil {
@@ -38,13 +39,15 @@ func (o *Options) accessTokenReqEditor(ctx context.Context, req *http.Request) e
 func defaultOptions() *Options {
 	if util.IsRunningInCluster() {
 		return &Options{
-			URL:   inCluster,
-			Token: accesstoken.NewAccessToken(accesstoken.TokenFilePath),
+			URL:           inCluster,
+			Token:         accesstoken.NewAccessToken(accesstoken.TokenFilePath),
+			SkipTLSVerify: false,
 		}
 	} else {
 		return &Options{
-			URL:   localhost,
-			Token: nil,
+			URL:           localhost,
+			Token:         accesstoken.NewStaticAccessToken(os.Getenv("SECRET_MANAGER_TOKEN")),
+			SkipTLSVerify: true,
 		}
 	}
 }
@@ -89,7 +92,7 @@ func New(opts ...Option) SecretManager {
 	skipTlsVerify := os.Getenv("SKIP_TLS_VERIFY") == "true" || options.SkipTLSVerify
 	httpClient, err := gen.NewClientWithResponses(options.URL, gen.WithHTTPClient(util.NewHttpClientOrDie(skipTlsVerify, CaFilePath)), gen.WithRequestEditorFn(options.accessTokenReqEditor))
 	if err != nil {
-		panic(fmt.Sprintf("Failed to create client: %v", err))
+		log.Fatalf("Failed to create HTTP client: %v", err)
 	}
 	return &secretManagerAPI{
 		client: httpClient,

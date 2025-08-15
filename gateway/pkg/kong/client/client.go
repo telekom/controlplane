@@ -533,7 +533,7 @@ func (c *kongClient) addConsumerToGroup(ctx context.Context, consumerName string
 	if err != nil {
 		return err
 	}
-	if err := CheckStatusCode(response, 200); err != nil {
+	if err := CheckStatusCode(response, 200, 201); err != nil {
 		return fmt.Errorf("failed to add consumer to group (%d): %s", response.StatusCode(), string(response.Body))
 	}
 

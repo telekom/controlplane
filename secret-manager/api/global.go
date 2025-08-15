@@ -6,6 +6,7 @@ package api
 
 import (
 	"context"
+	"log"
 	"sync"
 
 	"github.com/go-logr/logr"
@@ -60,6 +61,10 @@ var API = func() SecretManager {
 		once.Do(func() {
 			api = New()
 		})
+
+		if api == nil {
+			log.Fatal("SecretManager API is not initialized.")
+		}
 	}
 	return api
 }
