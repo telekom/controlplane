@@ -1,0 +1,78 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+namespace: file-manager-system
+
+# Labels to add to all resources and selectors.
+labels:
+  - includeSelectors: true
+    pairs:
+      domain: file-management
+      app.kubernetes.io/instance: file-manager
+      app.kubernetes.io/managed-by: kustomize
+      app.kubernetes.io/name: file-manager
+      app.kubernetes.io/part-of: file-management
+
+resources:
+  - ../manager
+  - ../rbac
+  - ../certmanager
+  - ../network-policy
+  - ../prometheus
+
+# Default configuration
+# Use your own kustomization file to override the default configuration.
+configMapGenerator:
+  - name: file-manager-config
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - config.yaml= # the server will use its default configuration if this is empty.
+  - name: file-manager-env
+    options:
+      disableNameSuffixHash: true
+    literals: []
+
+patches:
+  # This is only needed when using the cert-manager to issue certificates.
+  - path: deployment_patch.yaml
+    target:
+      kind: Deployment
+
+# This is only needed when using the cert-manager to issue certificates.
+replacements:
+  - source:
+      kind: Service
+      version: v1
+      name: file-manager
+      fieldPath: .metadata.name
+    targets:
+      - select:
+          kind: Certificate
+          group: cert-manager.io
+          version: v1
+        fieldPaths:
+          - .spec.dnsNames.0
+          - .spec.dnsNames.1
+        options:
+          delimiter: "."
+          index: 0
+          create: true
+  - source:
+      kind: Service
+      version: v1
+      name: file-manager
+      fieldPath: .metadata.namespace
+    targets:
+      - select:
+          kind: Certificate
+          group: cert-manager.io
+          version: v1
+        fieldPaths:
+          - .spec.dnsNames.0
+          - .spec.dnsNames.1
+        options:
+          delimiter: "."
+          index: 1
+          create: true

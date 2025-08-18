@@ -13,9 +13,10 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/secret-manager/api/accesstoken"
+	"github.com/telekom/controlplane/common-server/pkg/client"
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
+	"github.com/telekom/controlplane/common-server/pkg/util"
 	"github.com/telekom/controlplane/secret-manager/api/gen"
-	"github.com/telekom/controlplane/secret-manager/api/util"
 )
 
 type Options struct {
@@ -40,7 +41,7 @@ func defaultOptions() *Options {
 	if util.IsRunningInCluster() {
 		return &Options{
 			URL:           inCluster,
-			Token:         accesstoken.NewAccessToken(accesstoken.TokenFilePath),
+			Token:         accesstoken.NewAccessToken(TokenFilePath),
 			SkipTLSVerify: false,
 		}
 	} else {
@@ -90,7 +91,7 @@ func New(opts ...Option) SecretManager {
 		fmt.Println("⚠️\tWarning: Using HTTP instead of HTTPS. This is not secure.")
 	}
 	skipTlsVerify := os.Getenv("SKIP_TLS_VERIFY") == "true" || options.SkipTLSVerify
-	httpClient, err := gen.NewClientWithResponses(options.URL, gen.WithHTTPClient(util.NewHttpClientOrDie(skipTlsVerify, CaFilePath)), gen.WithRequestEditorFn(options.accessTokenReqEditor))
+	httpClient, err := gen.NewClientWithResponses(options.URL, gen.WithHTTPClient(client.NewHttpClientOrDie(client.WithSkipTlsVerify(skipTlsVerify), client.WithCaFilepath(CaFilePath))), gen.WithRequestEditorFn(options.accessTokenReqEditor))
 	if err != nil {
 		log.Fatalf("Failed to create HTTP client: %v", err)
 	}

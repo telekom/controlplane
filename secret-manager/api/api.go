@@ -21,7 +21,8 @@ const (
 	StartTag  = "$<"
 	EndTag    = ">"
 
-	CaFilePath = "/var/run/secrets/trust-bundle/trust-bundle.pem"
+	CaFilePath    = "/var/run/secrets/trust-bundle/trust-bundle.pem"
+	TokenFilePath = "/var/run/secrets/secretmgr/token"
 
 	// KeywordRotate is a special keyword to indicate that the secret should be rotated.
 	KeywordRotate = "rotate"

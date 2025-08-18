@@ -13,7 +13,7 @@ resources:
   - https://github.com/telekom/controlplane//api/config/default/?timeout=120&ref=main
   - https://github.com/telekom/controlplane//admin/config/default/?timeout=120&ref=main
   - https://github.com/telekom/controlplane//rover-server/config/default/?timeout=120&ref=main
-
+  - https://github.com/telekom/controlplane//file-manager/config/default/?timeout=120&ref=main
 
 images:
   - name: ghcr.io/telekom/controlplane/approval
@@ -27,6 +27,9 @@ images:
     newTag: main
   - name: ghcr.io/telekom/controlplane/secret-manager
     newName: ghcr.io/telekom/controlplane/secret-manager
+    newTag: main
+  - name: ghcr.io/telekom/controlplane/file-manager
+    newName: ghcr.io/telekom/controlplane/file-manager
     newTag: main
   - name: ghcr.io/telekom/controlplane/rover
     newName: ghcr.io/telekom/controlplane/rover
