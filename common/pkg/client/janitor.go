@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -127,6 +128,10 @@ func (c *janitorClient) CleanupAll(ctx context.Context, listOpts []client.ListOp
 	deleted := 0
 	for gvk, keys := range c.state {
 		log.V(1).Info("Cleaning up state", "gvk", gvk)
+		if !strings.Contains(gvk.Group, config.LabelKeyPrefix) {
+			log.Info("Skipping cleanup for non-controlplane resources", "gvk", gvk)
+			continue
+		}
 
 		n, _, err := cleanupStateUnstructured(ctx, c, listOpts, gvk, keys)
 		if err != nil {

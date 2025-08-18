@@ -6,6 +6,7 @@ package client
 
 import (
 	"context"
+	"reflect"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -23,7 +24,8 @@ func cleanupState(ctx context.Context, c ScopedClient, listOpts []client.ListOpt
 		return deleted, errors.Wrap(err, "failed to list objects")
 	}
 	log := log.FromContext(ctx)
-	log.V(1).Info("cleanup state", "found", len(objectList.GetItems()), "desired", len(desiredStateSet))
+	listKind := reflect.TypeOf(objectList).Elem().Name()
+	log.V(1).Info("cleanup state", "found", len(objectList.GetItems()), "desired", len(desiredStateSet), "kind", listKind)
 
 	for _, object := range objectList.GetItems() {
 		if _, ok := desiredStateSet[client.ObjectKey{Name: object.GetName(), Namespace: object.GetNamespace()}]; !ok {
@@ -73,7 +75,7 @@ func cleanupStateUnstructured(ctx context.Context, c ScopedClient, listOpts []cl
 		return deleted, objectList, errors.Wrap(err, "failed to list objects")
 	}
 
-	log.V(1).Info("cleanup state", "found", len(objectList.GetItems()), "desired", len(desiredStateSet))
+	log.V(1).Info("cleanup state", "found", len(objectList.GetItems()), "desired", len(desiredStateSet), "kind", gvk.Kind)
 
 	for _, object := range objectList.GetItems() {
 		if _, ok := desiredStateSet[client.ObjectKey{Name: object.GetName(), Namespace: object.GetNamespace()}]; !ok {

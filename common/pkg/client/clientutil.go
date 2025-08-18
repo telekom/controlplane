@@ -7,6 +7,7 @@ package client
 import (
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller/index"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -46,4 +47,27 @@ func DoNothing() controllerutil.MutateFn {
 	return func() error {
 		return nil
 	}
+}
+
+func SetLabelsControllerReference(owner client.Object, controlled client.Object) error {
+	ownerUid := owner.GetUID()
+	ownerName := owner.GetName()
+	ownerNamespace := owner.GetNamespace()
+
+	ownerGVK := owner.GetObjectKind().GroupVersionKind()
+	ownerKind := ownerGVK.Kind
+	ownerApiVersion := labelutil.NormalizeValue(ownerGVK.GroupVersion().String())
+
+	controlledLabels := controlled.GetLabels()
+	if controlledLabels == nil {
+		controlledLabels = make(map[string]string)
+	}
+
+	controlledLabels[config.OwnerUidLabelKey] = string(ownerUid)
+	controlledLabels[config.OwnerNameLabelKey] = ownerName
+	controlledLabels[config.OwnerNamespaceLabelKey] = ownerNamespace
+	controlledLabels[config.OwnerKindLabelKey] = ownerKind
+	controlledLabels[config.OwnerApiVersionLabelKey] = ownerApiVersion
+
+	return nil
 }

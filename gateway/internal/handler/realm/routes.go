@@ -67,7 +67,7 @@ func CreateRoute(ctx context.Context, realm *gatewayv1.Realm, routeType RouteTyp
 	}
 
 	mutator := func() error {
-		err := controllerutil.SetControllerReference(realm, route, c.Scheme())
+		err := controllerutil.SetControllerReference(realm, route, c.Scheme(), controllerutil.WithBlockOwnerDeletion(true))
 		if err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
 		}

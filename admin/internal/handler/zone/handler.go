@@ -61,11 +61,15 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 			config.EnvironmentLabelKey:          environment.Name,
 			config.BuildLabelKey(zoneLabelName): obj.Name,
 		}
+		if err := cclient.SetLabelsControllerReference(obj, namespace); err != nil {
+			return errors.Wrapf(err, "failed to set owner reference %s", namespace.Name)
+		}
+
 		return nil
 	}
 	_, err = c.CreateOrUpdate(ctx, namespace, mutator)
 	if err != nil {
-		return errors.Wrapf(err, "❌ failed to create or update namespace %s", namespace.Name)
+		return errors.Wrapf(err, "failed to create or update namespace %s", namespace.Name)
 	}
 
 	obj.Status.Namespace = namespace.Name
@@ -157,6 +161,13 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 	obj.SetCondition(condition.NewReadyCondition("ZoneProvisioned", "Zone has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("Zone has been provisioned"))
 
+	janitorClient := cclient.ClientFromContextOrDie(ctx)
+
+	_, err = janitorClient.CleanupAll(ctx, cclient.OwnedByLabel(obj))
+	if err != nil {
+		return errors.Wrapf(err, "failed to cleanup resources owned by zone %s", obj.Name)
+	}
+
 	return nil
 }
 
@@ -173,6 +184,10 @@ func createTeamApiRoute(ctx context.Context, handlingContext HandlingContext, te
 		teamRoute.Labels = map[string]string{
 			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
+		}
+
+		if err := cclient.SetLabelsControllerReference(handlingContext.Zone, teamRoute); err != nil {
+			return errors.Wrapf(err, "failed to set owner reference %s", teamRoute.Name)
 		}
 
 		upstreamUrl, err := url.Parse(teamRouteConfig.Url)
@@ -233,6 +248,10 @@ func createGatewayConsumer(ctx context.Context, handlingContext HandlingContext,
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
+		if err := cclient.SetLabelsControllerReference(handlingContext.Zone, gatewayConsumer); err != nil {
+			return errors.Wrapf(err, "failed to set owner reference %s", gatewayConsumer.Name)
+		}
+
 		gatewayConsumer.Spec = gatewayapi.ConsumerSpec{
 			Realm: *types.ObjectRefFromObject(gatewayRealm),
 			Name:  naming.ForGatewayConsumer(),
@@ -260,6 +279,10 @@ func createGatewayRealm(ctx context.Context, handlingContext HandlingContext, ga
 		gatewayRealm.Labels = map[string]string{
 			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
+		}
+
+		if err := cclient.SetLabelsControllerReference(handlingContext.Zone, gatewayRealm); err != nil {
+			return errors.Wrapf(err, "failed to set owner reference %s", gatewayRealm.Name)
 		}
 
 		gatewayRealm.Spec = gatewayapi.RealmSpec{
@@ -291,6 +314,10 @@ func createGateway(ctx context.Context, handlingContext HandlingContext) (*gatew
 		gateway.Labels = map[string]string{
 			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
+		}
+
+		if err := cclient.SetLabelsControllerReference(handlingContext.Zone, gateway); err != nil {
+			return errors.Wrapf(err, "failed to set owner reference %s", gateway.Name)
 		}
 
 		var adminUrl string
@@ -339,36 +366,23 @@ func createIdentityClient(ctx context.Context, handlingContext HandlingContext, 
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
-		var clientSecret string
-		// we don't want to rotate the secret everytime the zone is processed
-		existingClient, err := getIdentityClient(ctx, types.ObjectRefFromObject(identityClient))
-		if err != nil {
-			clientSecret = uuid.NewString()
-		} else {
-			clientSecret = existingClient.Spec.ClientSecret
+		if err := cclient.SetLabelsControllerReference(handlingContext.Zone, identityClient); err != nil {
+			return errors.Wrapf(err, "failed to set owner reference %s", identityClient.Name)
+		}
+
+		if identityClient.Spec.ClientSecret == "" {
+			identityClient.Spec.ClientSecret = uuid.NewString()
 		}
 
 		identityClient.Spec = identityapi.ClientSpec{
 			Realm:    types.ObjectRefFromObject(identityRealm),
 			ClientId: naming.ForGatewayClient(),
-			// the value will come from a call to the secrets manager, currently stays like this
-			ClientSecret: clientSecret,
 		}
 		return nil
 	}
 	_, err := scopedClient.CreateOrUpdate(ctx, identityClient, mutator)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create or update Identity Client: %s in zone: %s", identityClient.Name, handlingContext.Zone.Name)
-	}
-	return identityClient, nil
-}
-
-func getIdentityClient(ctx context.Context, ref *types.ObjectRef) (*identityapi.Client, error) {
-	c := cclient.ClientFromContextOrDie(ctx)
-	identityClient := &identityapi.Client{}
-	err := c.Get(ctx, ref.K8s(), identityClient)
-	if err != nil {
-		return nil, errors.Wrapf(err, "faled to get identity client %s", ref.Name)
 	}
 	return identityClient, nil
 }
@@ -387,6 +401,11 @@ func createIdentityRealm(ctx context.Context, handlingContext HandlingContext, i
 		identityRealm.Labels = map[string]string{
 			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
+		}
+
+		err := cclient.SetLabelsControllerReference(handlingContext.Zone, identityRealm)
+		if err != nil {
+			return errors.Wrapf(err, "failed to set owner reference %s", identityProvider.Name)
 		}
 
 		identityRealm.Spec = identityapi.RealmSpec{
@@ -420,6 +439,11 @@ func createIdentityProvider(ctx context.Context, handlingContext HandlingContext
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
+		err := cclient.SetLabelsControllerReference(handlingContext.Zone, identityProvider)
+		if err != nil {
+			return errors.Wrapf(err, "failed to set owner reference %s", identityProvider.Name)
+		}
+
 		var adminUrl string
 		if handlingContext.Zone.Spec.IdentityProvider.Admin.Url != nil {
 			adminUrl = *handlingContext.Zone.Spec.IdentityProvider.Admin.Url
@@ -445,5 +469,19 @@ func createIdentityProvider(ctx context.Context, handlingContext HandlingContext
 }
 
 func (h *ZoneHandler) Delete(ctx context.Context, obj *adminv1.Zone) error {
+	janitorClient := cclient.ClientFromContextOrDie(ctx)
+
+	janitorClient.AddKnownTypeToState(&identityapi.IdentityProvider{})
+	janitorClient.AddKnownTypeToState(&identityapi.Realm{})
+	janitorClient.AddKnownTypeToState(&identityapi.Client{})
+	janitorClient.AddKnownTypeToState(&gatewayapi.Gateway{})
+	janitorClient.AddKnownTypeToState(&gatewayapi.Realm{})
+	janitorClient.AddKnownTypeToState(&gatewayapi.Consumer{})
+	janitorClient.AddKnownTypeToState(&gatewayapi.Route{})
+
+	if _, err := janitorClient.CleanupAll(ctx, cclient.OwnedByLabel(obj)); err != nil {
+		return errors.Wrapf(err, "failed to delete resources owned by zone %s", obj.Name)
+	}
+
 	return nil
 }
