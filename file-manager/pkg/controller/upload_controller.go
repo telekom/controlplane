@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"maps"
+
 	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/file-manager/api/constants"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
@@ -18,7 +20,7 @@ import (
 )
 
 type UploadController interface {
-	UploadFile(ctx context.Context, fileId string, file *io.Reader, metadata map[string]string) (string, error)
+	UploadFile(ctx context.Context, fileId string, file io.Reader, metadata map[string]string) (string, error)
 }
 
 type uploadController struct {
@@ -40,9 +42,7 @@ func (u uploadController) detectContentType(ctx context.Context, fileName string
 	} else {
 		// Create a copy of the metadata
 		metadataCopy := make(map[string]string, len(metadata))
-		for k, v := range metadata {
-			metadataCopy[k] = v
-		}
+		maps.Copy(metadataCopy, metadata)
 		metadata = metadataCopy
 	}
 
@@ -93,24 +93,20 @@ func (u uploadController) detectContentType(ctx context.Context, fileName string
 	}
 }
 
-func (u uploadController) UploadFile(ctx context.Context, fileId string, reader *io.Reader, metadata map[string]string) (string, error) {
-	log := logr.FromContextOrDiscard(ctx)
-
+func (u uploadController) UploadFile(ctx context.Context, fileId string, reader io.Reader, metadata map[string]string) (string, error) {
 	// Validate fileId format first
 	if err := identifier.ValidateFileID(fileId); err != nil {
 		return "", backend.ErrInvalidFileId(fileId)
 	}
 
 	// Validate reader input
-	if reader == nil || *reader == nil {
-		log.Error(nil, "File reader is nil")
+	if reader == nil {
 		return "", backend.ErrUploadFailed(fileId, "file reader is nil")
 	}
 
 	// Parse the fileId to extract the filename for content type detection
 	fileIdParts, err := identifier.ParseFileID(fileId)
 	if err != nil {
-		log.Error(err, "Failed to parse fileId for content type detection")
 		return "", backend.ErrInvalidFileId(fileId)
 	}
 
@@ -118,5 +114,5 @@ func (u uploadController) UploadFile(ctx context.Context, fileId string, reader 
 	_, metadata = u.detectContentType(ctx, fileIdParts.FileName, metadata)
 
 	// Use the fileUploader to upload the file with the fileId and processed metadata
-	return u.FileUploader.UploadFile(ctx, fileId, *reader, metadata)
+	return u.FileUploader.UploadFile(ctx, fileId, reader, metadata)
 }

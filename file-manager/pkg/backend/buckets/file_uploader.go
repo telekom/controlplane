@@ -9,6 +9,8 @@ import (
 	"context"
 	"io"
 
+	"maps"
+
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
 	"github.com/telekom/controlplane/file-manager/api/constants"
@@ -38,9 +40,7 @@ func (s *BucketFileUploader) prepareMetadata(ctx context.Context, metadata map[s
 	// Prepare minio UserMetadata from our metadata map
 	userMetadata := make(map[string]string)
 	// Copy all metadata fields to UserMetadata
-	for k, v := range metadata {
-		userMetadata[k] = v
-	}
+	maps.Copy(userMetadata, metadata)
 
 	// Get content type from metadata
 	contentType := constants.DefaultContentType // fallback default
@@ -81,7 +81,6 @@ func (s *BucketFileUploader) uploadToBucket(ctx context.Context, path string, re
 	log.V(1).Info("Finished bucket PutObject operation", "uploadInfo", uploadInfo)
 
 	if err != nil {
-		log.Error(err, "Failed to upload file to bucket")
 		return "", backend.ErrUploadFailed(path, err.Error())
 	}
 
@@ -115,7 +114,6 @@ func (s *BucketFileUploader) convertFileIdToPath(ctx context.Context, fileId str
 	// Convert fileId to path format
 	path, err := identifier.ConvertFileIdToPath(fileId)
 	if err != nil {
-		log.Error(err, "Failed to convert fileId to path")
 		return "", backend.ErrInvalidFileId(fileId)
 	}
 
@@ -174,10 +172,10 @@ func (s *BucketFileUploader) UploadFile(ctx context.Context, fileId string, read
 }
 
 func copyAndMeasure(r io.Reader) (io.Reader, int64, error) {
-	var buf bytes.Buffer
-	n, err := io.Copy(&buf, r)
+	buf := bytes.NewBuffer(nil)
+	n, err := io.Copy(buf, r)
 	if err != nil {
 		return nil, 0, err
 	}
-	return bytes.NewReader(buf.Bytes()), n, nil
+	return buf, n, nil
 }

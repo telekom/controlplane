@@ -152,6 +152,7 @@ func main() {
 	}
 
 	appCfg := cs.NewAppConfig()
+	appCfg.BodyLimit = 10 * 1024 * 1024 // 10 MB
 	appCfg.CtxLog = &log
 	appCfg.ErrorHandler = handler.ErrorHandler
 	app := cs.NewAppWithConfig(appCfg)

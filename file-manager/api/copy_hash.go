@@ -15,21 +15,20 @@ import (
 // copyAndHash copies data from src to dst while also computing a hash of the data.
 // It returns the computed hash as a base64 encoded string,
 // and any error encountered during the copy operation.
-func copyAndHash(dst io.Writer, src io.Reader) (hash string, err error) {
-	data, err := io.ReadAll(src)
+func copyAndHash(dst io.Writer, src io.Reader) (size int64, hash string, err error) {
+	hasher := crc64nvme.New()
+
+	multiWriter := io.MultiWriter(dst, hasher)
+
+	size, err = io.Copy(multiWriter, src)
 	if err != nil {
-		return "", err
+		return size, "", err
 	}
 
-	_, err = dst.Write(data)
-	if err != nil {
-		return "", err
-	}
+	// Get the hash value and encode it to base64
+	hashBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(hashBytes, hasher.Sum64())
+	hash = base64.StdEncoding.EncodeToString(hashBytes)
 
-	sum := crc64nvme.Checksum(data)
-	sumBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(sumBytes, sum)
-	hash = base64.StdEncoding.EncodeToString(sumBytes)
-
-	return hash, nil
+	return size, hash, nil
 }

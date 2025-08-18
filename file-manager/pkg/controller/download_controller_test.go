@@ -7,6 +7,7 @@ package controller_test
 import (
 	"bytes"
 	"context"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/file-manager/pkg/controller"
@@ -41,7 +42,7 @@ var _ = Describe("DownloadController", func() {
 			file, m, err := ctrl.DownloadFile(ctx, "poc--eni--hyperion--my-test-file")
 
 			// check contents
-			if buf, ok := (*file).(*bytes.Buffer); ok {
+			if buf, ok := (file).(*bytes.Buffer); ok {
 				Expect(buf.String()).To(Equal("this is a test file content"))
 			}
 			Expect(err).NotTo(HaveOccurred())
@@ -80,8 +81,6 @@ var _ = Describe("DownloadController", func() {
 
 })
 
-func getMockWriterWithContent(content string) *io.Writer {
-	buf := bytes.NewBuffer([]byte(content))
-	var w io.Writer = buf
-	return &w
+func getMockWriterWithContent(content string) io.ReadWriter {
+	return bytes.NewBuffer([]byte(content))
 }

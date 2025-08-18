@@ -6,12 +6,13 @@ package controller_test
 
 import (
 	"context"
+	"strings"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/file-manager/pkg/controller"
 	"github.com/telekom/controlplane/file-manager/test/mocks"
-	"strings"
 
 	"io"
 )
@@ -40,7 +41,7 @@ var _ = Describe("UploadController", func() {
 			callMetadata["X-File-Content-Type"] = "application/octet-stream"
 			callMetadata["X-File-Checksum"] = "test-checksum"
 
-			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", &reader, callMetadata)
+			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", reader, callMetadata)
 			By("returning no error and the same fileId as supplied")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(file).To(Equal("poc--eni--hyperion--my-test-file"))
@@ -61,7 +62,7 @@ var _ = Describe("UploadController", func() {
 			var callMetadata = make(map[string]string)
 			callMetadata["X-File-Checksum"] = "test-checksum"
 
-			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", &reader, callMetadata)
+			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", reader, callMetadata)
 			By("returning no error and the same fileId as supplied")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(file).To(Equal("poc--eni--hyperion--my-test-file"))
@@ -82,7 +83,7 @@ var _ = Describe("UploadController", func() {
 			var callMetadata = make(map[string]string)
 			callMetadata["X-File-Checksum"] = "test-checksum"
 
-			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file.txt", &reader, callMetadata)
+			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file.txt", reader, callMetadata)
 			By("returning no error and the same fileId as supplied")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(file).To(Equal("poc--eni--hyperion--my-test-file.txt"))
@@ -97,7 +98,7 @@ var _ = Describe("UploadController", func() {
 			var callMetadata = make(map[string]string)
 			callMetadata["X-File-Checksum"] = "test-checksum"
 
-			file, err := ctrl.UploadFile(ctx, "i-dont-need-coffee", &reader, callMetadata)
+			file, err := ctrl.UploadFile(ctx, "i-dont-need-coffee", reader, callMetadata)
 			By("returning an error")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("InvalidFileId: invalid file ID 'i-dont-need-coffee'"))
@@ -113,7 +114,7 @@ var _ = Describe("UploadController", func() {
 			var callMetadata = make(map[string]string)
 			callMetadata["X-File-Checksum"] = "test-checksum"
 
-			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", &reader, callMetadata)
+			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", reader, callMetadata)
 			By("returning an error")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("UploadFailed: failed to upload file 'poc--eni--hyperion--my-test-file': file reader is nil"))
@@ -135,7 +136,7 @@ var _ = Describe("UploadController", func() {
 			var callMetadata = make(map[string]string)
 			callMetadata["X-File-Checksum"] = "test-checksum"
 
-			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", &reader, callMetadata)
+			file, err := ctrl.UploadFile(ctx, "poc--eni--hyperion--my-test-file", reader, callMetadata)
 			By("returning an error")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("this is a test error message"))

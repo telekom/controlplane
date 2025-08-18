@@ -59,7 +59,7 @@ func (s *BucketFileDownloader) downloadObject(ctx context.Context, path string) 
 // DownloadFile downloads a file from bucket and returns a writer containing the file contents and metadata
 // The path should be in the format <env>/<group>/<team>/<fileName>
 // Metadata will include X-File-Content-Type and X-File-Checksum headers if available
-func (s *BucketFileDownloader) DownloadFile(ctx context.Context, path string) (*io.Writer, map[string]string, error) {
+func (s *BucketFileDownloader) DownloadFile(ctx context.Context, path string) (io.Reader, map[string]string, error) {
 	// Get logger from context first, falling back to the configured logger if not available
 	log := logr.FromContextOrDiscard(ctx)
 
@@ -90,7 +90,5 @@ func (s *BucketFileDownloader) DownloadFile(ctx context.Context, path string) (*
 
 	log.V(1).Info("File downloaded successfully", "path", path)
 
-	// Create a writer from the buffer
-	var writer io.Writer = buf
-	return &writer, metadata, nil
+	return buf, metadata, nil
 }

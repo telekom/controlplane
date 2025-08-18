@@ -6,6 +6,7 @@ package buckets
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -56,10 +57,12 @@ func TestMinioWrapper_ExtractMetadata(t *testing.T) {
 	}
 	wrapper := NewMinioWrapper(config)
 
-	// Test case 1: Object with ContentType and ETag
 	objInfo := minio.ObjectInfo{
 		ContentType: "text/plain",
-		ETag:        "abc123",
+		ETag:        "etag",
+		Metadata: http.Header{
+			"X-Amz-Meta-X-File-Checksum": []string{"abc123"},
+		},
 	}
 
 	metadata := wrapper.ExtractMetadata(context.Background(), objInfo)
@@ -71,35 +74,6 @@ func TestMinioWrapper_ExtractMetadata(t *testing.T) {
 
 	if metadata[constants.XFileChecksum] != "abc123" {
 		t.Errorf("Expected checksum to be abc123, got %s", metadata[constants.XFileChecksum])
-	}
-
-	// Test case 2: Object with ContentType but no ETag, using UserMetadata instead
-	objInfo = minio.ObjectInfo{
-		ContentType: "application/json",
-		ETag:        "",
-		UserMetadata: map[string]string{
-			constants.XFileChecksum: "def456",
-		},
-	}
-
-	metadata = wrapper.ExtractMetadata(context.Background(), objInfo)
-
-	// Verify metadata was extracted correctly
-	if metadata[constants.XFileContentType] != "application/json" {
-		t.Errorf("Expected content type to be application/json, got %s", metadata[constants.XFileContentType])
-	}
-
-	if metadata[constants.XFileChecksum] != "def456" {
-		t.Errorf("Expected checksum to be def456, got %s", metadata[constants.XFileChecksum])
-	}
-
-	// Test case 3: Object with no metadata
-	objInfo = minio.ObjectInfo{}
-	metadata = wrapper.ExtractMetadata(context.Background(), objInfo)
-
-	// Verify no metadata was added
-	if len(metadata) != 0 {
-		t.Errorf("Expected empty metadata, got %d entries", len(metadata))
 	}
 }
 

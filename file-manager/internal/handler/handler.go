@@ -5,12 +5,10 @@
 package handler
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/file-manager/api/constants"
 	"github.com/telekom/controlplane/file-manager/internal/api"
@@ -30,32 +28,12 @@ func NewHandler(ctrl controller.Controller) *Handler {
 }
 
 func (h *Handler) UploadFile(ctx context.Context, request api.UploadFileRequestObject) (res api.UploadFileResponseObject, err error) {
-	log := logr.FromContextOrDiscard(ctx)
-
 	fileId := request.FileId
 	fileData := request.Body
 
 	if fileData == nil {
 		return nil, errors.New("no file data provided")
 	}
-
-	// debug the file contents
-
-	var buf bytes.Buffer // buffer to store a copy
-	tee := io.TeeReader(fileData, &buf)
-
-	// Now read from tee instead of originalReader
-	data, err := io.ReadAll(tee)
-	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("cannot copy teeReader"))
-	}
-
-	// Now `data` has the contents read (same as originalReader)
-	// `buf.Bytes()` contains an exact copy of what was read
-
-	log.Info("Debug file contents", "contents", buf.String())
-	fileData = bytes.NewReader(data)
-	// end debug
 
 	// Extract metadata headers from request
 	metadata := make(map[string]string)
@@ -67,7 +45,7 @@ func (h *Handler) UploadFile(ctx context.Context, request api.UploadFileRequestO
 	}
 
 	// Use the controller to upload the file with metadata
-	id, err := h.ctrl.UploadFile(ctx, fileId, &fileData, metadata)
+	id, err := h.ctrl.UploadFile(ctx, fileId, fileData, metadata)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("failed to upload file with ID %s", fileId))
 	}
@@ -105,7 +83,7 @@ func (h *Handler) DownloadFile(ctx context.Context, request api.DownloadFileRequ
 	}
 
 	// Convert the writer to a reader for the response
-	writer := *fileData
+	writer := fileData
 	var reader io.Reader
 
 	// If it's a type that can be converted to a reader

@@ -27,24 +27,24 @@ func (_m *MockFileDownloader) EXPECT() *MockFileDownloader_Expecter {
 }
 
 // DownloadFile provides a mock function with given fields: ctx, fileId
-func (_m *MockFileDownloader) DownloadFile(ctx context.Context, fileId string) (*io.Writer, map[string]string, error) {
+func (_m *MockFileDownloader) DownloadFile(ctx context.Context, fileId string) (io.Reader, map[string]string, error) {
 	ret := _m.Called(ctx, fileId)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DownloadFile")
 	}
 
-	var r0 *io.Writer
+	var r0 io.Reader
 	var r1 map[string]string
 	var r2 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*io.Writer, map[string]string, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string) (io.Reader, map[string]string, error)); ok {
 		return rf(ctx, fileId)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *io.Writer); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string) io.Reader); ok {
 		r0 = rf(ctx, fileId)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*io.Writer)
+			r0 = ret.Get(0).(io.Reader)
 		}
 	}
 
@@ -84,12 +84,12 @@ func (_c *MockFileDownloader_DownloadFile_Call) Run(run func(ctx context.Context
 	return _c
 }
 
-func (_c *MockFileDownloader_DownloadFile_Call) Return(_a0 *io.Writer, _a1 map[string]string, _a2 error) *MockFileDownloader_DownloadFile_Call {
+func (_c *MockFileDownloader_DownloadFile_Call) Return(_a0 io.Reader, _a1 map[string]string, _a2 error) *MockFileDownloader_DownloadFile_Call {
 	_c.Call.Return(_a0, _a1, _a2)
 	return _c
 }
 
-func (_c *MockFileDownloader_DownloadFile_Call) RunAndReturn(run func(context.Context, string) (*io.Writer, map[string]string, error)) *MockFileDownloader_DownloadFile_Call {
+func (_c *MockFileDownloader_DownloadFile_Call) RunAndReturn(run func(context.Context, string) (io.Reader, map[string]string, error)) *MockFileDownloader_DownloadFile_Call {
 	_c.Call.Return(run)
 	return _c
 }

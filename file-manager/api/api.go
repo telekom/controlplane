@@ -155,13 +155,13 @@ func GetFileManager(opts ...Option) FileManager {
 
 func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileContentType string, r io.Reader) (*FileUploadResponse, error) {
 	log := log.FromContext(ctx)
-	log.V(1).Info("Uploading file ", "fileId", fileId, "fileContentType", fileContentType)
 
 	buf := bytes.NewBuffer(nil)
-	hash, err := copyAndHash(buf, r)
+	size, hash, err := copyAndHash(buf, r)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to copy content")
 	}
+	log.V(1).Info("Uploading file ", "fileId", fileId, "fileContentType", fileContentType, "size", size, "hash", hash)
 
 	params := &gen.UploadFileParams{
 		XFileContentType: &fileContentType,
@@ -214,11 +214,11 @@ func (f *FileManagerAPI) DownloadFile(ctx context.Context, fileId string, w io.W
 
 	switch response.StatusCode {
 	case http.StatusOK:
-		hash, err := copyAndHash(w, response.Body)
+		size, hash, err := copyAndHash(w, response.Body)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to copy file content")
 		}
-		log.FromContext(ctx).V(1).Info("Downloaded file", "fileId", fileId, "crc64nvmeHash", hash)
+		log.FromContext(ctx).V(1).Info("Downloaded file", "fileId", fileId, "size", size, "hash", hash)
 
 		expectedChecksum := extractHeader(response, constants.XFileChecksum)
 		if f.ValidateChecksum && hash != expectedChecksum {

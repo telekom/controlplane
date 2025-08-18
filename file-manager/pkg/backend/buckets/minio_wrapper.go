@@ -51,24 +51,18 @@ func (w *MinioWrapper) ExtractMetadata(ctx context.Context, objInfo minio.Object
 	log := logr.FromContextOrDiscard(ctx)
 	metadata := make(map[string]string)
 
+	log.V(1).Info("Extracting metadata from object info", "objectInfo", objInfo)
+
 	// Add Content-Type to metadata
 	if objInfo.ContentType != "" {
 		metadata[constants.XFileContentType] = objInfo.ContentType
 		log.V(1).Info("Added content type to response metadata", "contentType", objInfo.ContentType)
 	}
 
-	// Add Checksum to metadata
-	// Prefer CRC64NVME over ETag or UserMetadata
-	if objInfo.ChecksumCRC64NVME != "" {
-		metadata[constants.XFileChecksum] = objInfo.ChecksumCRC64NVME
-		log.V(1).Info("Added CRC64NVME checksum to response metadata", "checksum", objInfo.ChecksumCRC64NVME)
-	} else if objInfo.ETag != "" {
-		metadata[constants.XFileChecksum] = objInfo.ETag
-		log.V(1).Info("Added generated checksum to response metadata", "checksum", objInfo.ETag)
-	} else if checksum, ok := objInfo.UserMetadata[constants.XFileChecksum]; ok && checksum != "" {
-		// Fall back to UserMetadata if neither CRC64 nor ETag is available
-		metadata[constants.XFileChecksum] = checksum
-		log.V(1).Info("Added UserMetadata checksum to response metadata", "checksum", checksum)
+	checksum := objInfo.Metadata.Get("X-Amz-Meta-X-File-Checksum")
+	if checksum != "" {
+		metadata[constants.XFileChecksum] = objInfo.Metadata.Get("X-Amz-Meta-X-File-Checksum")
+		log.V(1).Info("Added checksum to response metadata", "checksum", checksum)
 	}
 
 	return metadata
@@ -76,10 +70,7 @@ func (w *MinioWrapper) ExtractMetadata(ctx context.Context, objInfo minio.Object
 
 // ValidateClient checks if the client is properly initialized
 func (w *MinioWrapper) ValidateClient(ctx context.Context) error {
-	log := logr.FromContextOrDiscard(ctx)
-
 	if w.config == nil || w.config.Client == nil {
-		log.Error(nil, "client not initialized")
 		return backend.ErrClientInitialization("client not initialized")
 	}
 
