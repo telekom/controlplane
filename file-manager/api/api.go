@@ -10,18 +10,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/pkg/client"
 	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 	"github.com/telekom/controlplane/common-server/pkg/util"
 	"github.com/telekom/controlplane/file-manager/api/constants"
 	"github.com/telekom/controlplane/file-manager/api/gen"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -136,7 +137,7 @@ func New(opts ...Option) FileManager {
 		gen.WithRequestEditorFn(options.accessTokenReqEditor))
 
 	if err != nil {
-		panic(fmt.Sprintf("Failed to create client: %v", err))
+		log.Fatalf("Failed to create file manager client: %v", err)
 	}
 	return &FileManagerAPI{
 		Client:           httpClient,
@@ -154,7 +155,7 @@ func GetFileManager(opts ...Option) FileManager {
 }
 
 func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileContentType string, r io.Reader) (*FileUploadResponse, error) {
-	log := log.FromContext(ctx)
+	log := logr.FromContextOrDiscard(ctx)
 
 	buf := bytes.NewBuffer(nil)
 	size, hash, err := copyAndHash(buf, r)
@@ -186,7 +187,7 @@ func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 		}
 		checksum := extractHeader(response, constants.XFileChecksum)
 		if f.ValidateChecksum && checksum != hash {
-			return nil, fmt.Errorf("checksum mismatch: expected %s, got %s", checksum, hash)
+			return nil, errors.Errorf("checksum mismatch: expected %s, got %s", checksum, hash)
 		}
 		return &FileUploadResponse{
 			CRC64NVMEHash: checksum,
@@ -201,11 +202,12 @@ func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 		if err := json.NewDecoder(response.Body).Decode(&err); err != nil {
 			return nil, errors.Wrap(err, "failed to decode error response")
 		}
-		return nil, fmt.Errorf("error %s: %s", err.Type, err.Detail)
+		return nil, errors.Errorf("error %s: %s", err.Type, err.Detail)
 	}
 }
 
 func (f *FileManagerAPI) DownloadFile(ctx context.Context, fileId string, w io.Writer) (*FileDownloadResponse, error) {
+	log := logr.FromContextOrDiscard(ctx)
 	response, err := f.Client.DownloadFile(ctx, fileId)
 	if err != nil {
 		return nil, err
@@ -218,11 +220,11 @@ func (f *FileManagerAPI) DownloadFile(ctx context.Context, fileId string, w io.W
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to copy file content")
 		}
-		log.FromContext(ctx).V(1).Info("Downloaded file", "fileId", fileId, "size", size, "hash", hash)
+		log.V(1).Info("Downloaded file", "fileId", fileId, "size", size, "hash", hash)
 
 		expectedChecksum := extractHeader(response, constants.XFileChecksum)
 		if f.ValidateChecksum && hash != expectedChecksum {
-			return nil, fmt.Errorf("checksum mismatch: expected %s, got %s", expectedChecksum, hash)
+			return nil, errors.Errorf("checksum mismatch: expected %s, got %s", expectedChecksum, hash)
 		}
 		return &FileDownloadResponse{
 			CRC64NVMEHash: expectedChecksum,
@@ -236,6 +238,6 @@ func (f *FileManagerAPI) DownloadFile(ctx context.Context, fileId string, w io.W
 		if err := json.NewDecoder(response.Body).Decode(&err); err != nil {
 			return nil, errors.Wrap(err, "failed to decode error response")
 		}
-		return nil, fmt.Errorf("error %s: %s", err.Type, err.Detail)
+		return nil, errors.Errorf("error %s: %s", err.Type, err.Detail)
 	}
 }

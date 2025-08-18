@@ -9,11 +9,11 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/pkg/errors"
 	client "github.com/telekom/controlplane/common-server/pkg/client/metrics"
 )
 
@@ -40,7 +40,7 @@ func NewHttpClientOrDie(opts ...Option) client.HttpRequestDoer {
 		certRefresher := NewCertRefresher(options.CaFilepath)
 		err := certRefresher.Start(context.Background())
 		if err != nil {
-			panic(err)
+			log.Fatalf("Failed to start cert refresher: %v", err)
 		}
 		caPool = certRefresher.Pool
 	}
@@ -58,7 +58,7 @@ func NewHttpClientOrDie(opts ...Option) client.HttpRequestDoer {
 		var err error
 		timeout, err = time.ParseDuration(EnvClientTimeout)
 		if err != nil {
-			panic(errors.Wrap(err, "failed to parse CLIENT_TIMEOUT"))
+			log.Fatalf("Invalid CLIENT_TIMEOUT value: %v", err)
 		}
 	}
 
