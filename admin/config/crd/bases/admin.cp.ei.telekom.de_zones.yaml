@@ -103,10 +103,18 @@ spec:
                     items:
                       properties:
                         name:
+                          description: Name is the name of the created route. It must
+                            be unique within the zone.
+                          pattern: ^[a-z0-9]+(-?[a-z0-9]+)*$
                           type: string
                         path:
+                          description: Path is the path of the route exposed on the
+                            gateway.
+                          pattern: ^/.*$
                           type: string
                         url:
+                          description: Url is the upstream URL of the route.
+                          format: uri
                           type: string
                       required:
                       - name

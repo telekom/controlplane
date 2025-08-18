@@ -114,6 +114,15 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: rover-server
+    dir: rover-server
+    main: cmd/main.go
+    binary: rover-server
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
 archives:
   - formats: [tar.gz]
     name_template: >-
@@ -350,6 +359,25 @@ kos:
     working_dir: rover/cmd
     repositories:
       - ghcr.io/telekom/controlplane/rover
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: rover-server
+    build: rover-server
+    main: .
+    working_dir: rover-server/cmd
+    repositories:
+      - ghcr.io/telekom/controlplane/rover-server
     labels:
       org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
       org.opencontainers.image.url: "https://developer.telekom.de/"

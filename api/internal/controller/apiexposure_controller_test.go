@@ -105,7 +105,7 @@ func NewApiExposure(apiBasePath, zoneName string) *apiv1.ApiExposure {
 				},
 			},
 			Visibility: apiv1.VisibilityWorld,
-			Approval:   apiv1.ApprovalStrategyAuto,
+			Approval:   apiv1.Approval{Strategy: apiapi.ApprovalStrategyAuto},
 			Zone: types.ObjectRef{
 				Name:      zoneName,
 				Namespace: testEnvironment,

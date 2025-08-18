@@ -307,8 +307,10 @@ func VerifyZone(ctx context.Context, g Gomega, namespacedName client.ObjectKey, 
 		PassThrough: false,
 		Upstreams: []gatewayapi.Upstream{
 			{
-				Host: "test-team-api-host.de",
-				Path: "/test-team-api-v1",
+				Scheme: "https",
+				Host:   "test-team-api-host.de",
+				Port:   443,
+				Path:   "/test-team-api-v1",
 			},
 		},
 		Downstreams: []gatewayapi.Downstream{

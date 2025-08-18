@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -54,6 +55,8 @@ var _ = Describe("Rover Controller", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Cleanup the specific resource instance Rover")
+		secretManagerMock.EXPECT().DeleteApplication(mock.Anything, testEnvironment, group+"--"+teamName, resourceName).Return(nil).Times(1)
+
 		Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		Eventually(func(g Gomega) {
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
@@ -528,5 +531,4 @@ var _ = Describe("Rover Controller", Ordered, func() {
 
 		})
 	})
-
 })

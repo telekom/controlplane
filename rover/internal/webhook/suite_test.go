@@ -19,6 +19,7 @@ import (
 	. "github.com/onsi/gomega"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,6 +69,7 @@ var _ = BeforeSuite(func() {
 		CRDDirectoryPaths: append(
 			[]string{
 				filepath.Join("..", "..", "..", "admin", "config", "crd", "bases"),
+				filepath.Join("..", "..", "..", "organization", "config", "crd", "bases"),
 			},
 			filepath.Join("..", "..", "config", "crd", "bases")),
 		ErrorIfCRDPathMissing: true,
@@ -100,6 +102,9 @@ var _ = BeforeSuite(func() {
 	err = adminv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = organizationv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
 	// +kubebuilder:scaffold:scheme
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
@@ -120,7 +125,7 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	err = SetupWebhookWithManager(mgr)
+	err = SetupWebhookWithManager(mgr, nil)
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Creating the namespace for the test")

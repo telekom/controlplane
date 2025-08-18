@@ -1,0 +1,45 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Adds namespace to all resources.
+namespace: rover-system
+
+# Labels to add to all resources and selectors.
+labels:
+  - includeSelectors: true
+    pairs:
+      domain: rover
+
+resources:
+  - ../rbac
+  - ../server
+  - ../ingress
+  # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
+  - ../prometheus
+  # [METRICS] Expose the controller manager metrics service.
+  - metrics_service.yaml
+
+# Default configuration
+# Use your own kustomization file to override the default configuration.
+configMapGenerator:
+  - name: rover-server-env
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - SECURITY_TRUSTEDISSUERS=""
+      - SECURITY_LMS_BASEPATH=""
+
+patches:
+  # [SECRET_MANAGER] The following patch will add the secret manager to the deployment.
+  - path: deployment_patch.yaml
+    target:
+      kind: Deployment
+  - path: namespace_patch.yaml
+    target:
+      kind: Namespace
+  # [INGRESS] The following patch allows overriding the ingress host. Adjust it as needed.
+  # - path: ingress_host_patch.yaml
+  #   target:
+  #     kind: Ingress
+  #     name: rover-server-ingress

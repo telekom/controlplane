@@ -1,0 +1,68 @@
+{
+  "apiVersion": "rover.cp.ei.telekom.de/v1",
+  "kind": "Rover",
+  "metadata": {
+    "name": "rover-local-sub",
+    "namespace": "poc--eni--hyperion",
+    "uid": "549badcc-18b6-48ac-a8ce-b3242523d827"
+  },
+  "spec": {
+    "zone": "dataplane1",
+    "subscriptions": [
+      {
+        "api": {
+          "basePath": "/eni/distr/v1"
+        }
+      }
+    ],
+    "exposures": [
+      {
+        "api": {
+          "approval": {
+            "strategy": "simple"
+          },
+          "basePath": "/eni/distr/v1",
+          "upstreams": [
+            {
+              "url": "https://httpbin.org/anything"
+            }
+          ],
+          "visibility": "World"
+        }
+      }
+    ]
+  },
+  "status": {
+    "apiSubscriptions": [
+      {
+        "name": "rover-local-sub--eni-distr-v1",
+        "namespace": "poc--eni--hyperion"
+      }
+    ],
+    "apiExposures": [
+      {
+        "name": "rover-local-exp--eni-distr-v1",
+        "namespace": "poc--eni--hyperion"
+      }
+    ],
+    "application": {
+      "name": "rover-local-sub",
+      "namespace": "poc--eni--hyperion"
+    },
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "False",
+        "reason": "SubResourceNotReady",
+        "message": "Atleast one sub-resource is being processed"
+      },
+      {
+        "type": "Processing",
+        "status": "False",
+        "reason": "Done",
+        "message": "Provisioned all sub-resources"
+      }
+    ]
+  }
+
+}

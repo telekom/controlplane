@@ -16,10 +16,22 @@ type OnboardResponse struct {
 	SecretRefs map[string]string
 }
 
+type ControllerOptions struct {
+	SecretValues map[string]string
+}
+
+type OnboardOption func(*ControllerOptions)
+
+func WithSecretValues(secrets map[string]string) OnboardOption {
+	return func(opts *ControllerOptions) {
+		opts.SecretValues = secrets
+	}
+}
+
 type OnboardController interface {
 	OnboardEnvironment(ctx context.Context, envId string) (OnboardResponse, error)
 	OnboardTeam(ctx context.Context, envId, teamId string) (OnboardResponse, error)
-	OnboardApplication(ctx context.Context, envId, teamId, appId string) (OnboardResponse, error)
+	OnboardApplication(ctx context.Context, envId, teamId, appId string, opts ...OnboardOption) (OnboardResponse, error)
 
 	DeleteEnvironment(ctx context.Context, envId string) error
 	DeleteTeam(ctx context.Context, envId, teamId string) error
@@ -72,7 +84,7 @@ func (c *onboardController) OnboardTeam(ctx context.Context, envId, teamId strin
 	return res, nil
 }
 
-func (c *onboardController) OnboardApplication(ctx context.Context, envId, teamId, appId string) (res OnboardResponse, err error) {
+func (c *onboardController) OnboardApplication(ctx context.Context, envId, teamId, appId string, opts ...OnboardOption) (res OnboardResponse, err error) {
 	if envId == "" {
 		return res, errors.New("envId cannot be empty")
 	}
@@ -82,8 +94,17 @@ func (c *onboardController) OnboardApplication(ctx context.Context, envId, teamI
 	if appId == "" {
 		return res, errors.New("appId cannot be empty")
 	}
+	options := ControllerOptions{}
+	for _, opt := range opts {
+		opt(&options)
+	}
 
-	o, err := c.Onboarder.OnboardApplication(ctx, envId, teamId, appId)
+	onboardOpts := make([]backend.OnboardOption, 0, len(options.SecretValues))
+	for key, value := range options.SecretValues {
+		onboardOpts = append(onboardOpts, backend.WithSecretValue(key, backend.String(value)))
+	}
+
+	o, err := c.Onboarder.OnboardApplication(ctx, envId, teamId, appId, onboardOpts...)
 	if err != nil {
 		return res, errors.Wrap(err, "failed to onboard application")
 	}

@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -32,6 +33,8 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
+	secretsapifake "github.com/telekom/controlplane/secret-manager/api/fake"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -55,6 +58,8 @@ var (
 
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	secretManagerMock *secretsapifake.MockSecretManager
 )
 
 func TestControllers(t *testing.T) {
@@ -135,6 +140,12 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
+	// Mock SecretManager
+	secretManagerMock = secretsapifake.NewMockSecretManager(GinkgoT())
+	secretsapi.API = func() secretsapi.SecretManager {
+		return secretManagerMock
+	}
+
 	go func() {
 		defer GinkgoRecover()
 		err = k8sManager.Start(ctx)
@@ -156,5 +167,8 @@ func createNamespace(name string) {
 			Name: name,
 		},
 	}
-	Expect(k8sClient.Create(ctx, ns)).To(Succeed())
+	err := k8sClient.Create(ctx, ns)
+	if !errors.IsAlreadyExists(err) {
+		Expect(err).NotTo(HaveOccurred())
+	}
 }

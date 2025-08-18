@@ -1,0 +1,52 @@
+
+[Exposure Security Mapper mapExposureSecurity must map BasicAuth security correctly - 1]
+&v1.Security{
+    M2M: &v1.Machine2MachineAuthentication{
+        ExternalIDP: (*v1.ExternalIdentityProvider)(nil),
+        Basic:       &v1.BasicAuthCredentials{Username:"testuser", Password:"testpass"},
+        Scopes:      nil,
+    },
+}
+---
+
+[Exposure Security Mapper mapExposureSecurity must map OAuth2 ExternalIDP security correctly - 1]
+&v1.Security{
+    M2M: &v1.Machine2MachineAuthentication{
+        ExternalIDP: &v1.ExternalIdentityProvider{
+            TokenEndpoint: "https://test.com/token",
+            TokenRequest:  "basic",
+            GrantType:     "client_credentials",
+            Basic:         (*v1.BasicAuthCredentials)(nil),
+            Client:        &v1.OAuth2ClientCredentials{ClientId:"client-id", ClientSecret:"client-secret", ClientKey:"client-key"},
+        },
+        Basic:  (*v1.BasicAuthCredentials)(nil),
+        Scopes: nil,
+    },
+}
+---
+
+[Exposure Security Mapper mapExposureSecurity must map OAuth2 with username/password correctly - 1]
+&v1.Security{
+    M2M: &v1.Machine2MachineAuthentication{
+        ExternalIDP: &v1.ExternalIdentityProvider{
+            TokenEndpoint: "https://test.com/token",
+            TokenRequest:  "basic",
+            GrantType:     "password",
+            Basic:         &v1.BasicAuthCredentials{Username:"testuser", Password:"testpass"},
+            Client:        (*v1.OAuth2ClientCredentials)(nil),
+        },
+        Basic:  (*v1.BasicAuthCredentials)(nil),
+        Scopes: nil,
+    },
+}
+---
+
+[Exposure Security Mapper mapExposureSecurity must map OAuth2 scopes correctly - 1]
+&v1.Security{
+    M2M: &v1.Machine2MachineAuthentication{
+        ExternalIDP: (*v1.ExternalIdentityProvider)(nil),
+        Basic:       (*v1.BasicAuthCredentials)(nil),
+        Scopes:      {"read", "write"},
+    },
+}
+---

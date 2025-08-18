@@ -14,7 +14,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/telekom/controlplane/secret-manager/api"
-	"github.com/telekom/controlplane/secret-manager/api/gen"
 	"go.uber.org/zap"
 )
 
@@ -162,13 +161,13 @@ func onboardOrDeleteApp(ctx context.Context, onboardingApi api.OnboardingApi, en
 	}
 }
 
-func listAvailableSecrets(ctx context.Context, availableSecrets []gen.ListSecretItem) {
-	for _, secret := range availableSecrets {
-		res, err := secretsApi.Get(ctx, secret.Id)
+func listAvailableSecrets(ctx context.Context, availableSecrets map[string]string) {
+	for secretName, secretId := range availableSecrets {
+		res, err := secretsApi.Get(ctx, secretId)
 		if err != nil {
 			panic(err)
 		}
 
-		fmt.Printf("%s='%s'\n", secret.Name, res)
+		fmt.Printf("%s='%s'\n", secretName, res)
 	}
 }
