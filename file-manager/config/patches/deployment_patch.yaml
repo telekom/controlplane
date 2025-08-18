@@ -17,5 +17,5 @@
   path: /spec/template/spec/containers/0/volumeMounts/-
   value:
     name: filemgr-token
-    mountPath: /var/run/files/filemgr
+    mountPath: /var/run/secrets/filemgr
     readOnly: true
