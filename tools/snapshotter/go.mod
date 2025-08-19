@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/tools/snapshotter
 
-go 1.24.4
+go 1.24.6
 
 require (
 	github.com/telekom/controlplane/gateway v0.0.0
@@ -18,6 +18,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.10.0
+	github.com/telekom/controlplane/common-server v0.0.0
 	github.com/tidwall/sjson v1.2.5
 	k8s.io/api v0.33.2
 	k8s.io/apimachinery v0.33.2
@@ -64,7 +65,6 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/telekom/controlplane/common v0.0.0 // indirect
-	github.com/telekom/controlplane/common-server v0.0.0 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
