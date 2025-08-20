@@ -163,5 +163,5 @@ jobs:
     with:
       module: rover-ctl
       run_check_generated_files: false
-      ko_build_path: "cmd/roverctl.go"
+      ko_build_path: "main.go"
       use_version_ldflags: true

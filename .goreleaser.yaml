@@ -409,7 +409,7 @@ kos:
   - id: rover-ctl
     build: rover-ctl
     main: .
-    working_dir: rover-ctl/cmd
+    working_dir: rover-ctl
     repositories:
       - ghcr.io/telekom/controlplane/rover-ctl
     labels:
