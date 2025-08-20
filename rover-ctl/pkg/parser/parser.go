@@ -16,6 +16,7 @@ import (
 	yaml "github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/rover-ctl/pkg/cmderrors"
+	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
 
@@ -173,29 +174,34 @@ func (p *ObjectParser) parseYAML(r io.Reader) error {
 }
 
 func (p *ObjectParser) parseJSON(r io.Reader) error {
-	var obj types.UnstructuredObject
-	err := json.NewDecoder(r).Decode(&obj)
+	content := make(map[string]any)
+	err := json.NewDecoder(r).Decode(&content)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse JSON")
 	}
 
+	obj := &types.UnstructuredObject{
+		Content: content,
+	}
+	obj.SetProperty("filename", r.(*os.File).Name())
+
 	if p.validator != nil {
-		if err := p.validator.Struct(&obj); err != nil {
+		if err := p.validator.Struct(obj); err != nil {
 			return errors.Wrap(err, "object validation failed")
 		}
 	}
 
-	if err := p.RunHooks(HookAfterParse, &obj); err != nil {
+	if err := p.RunHooks(HookAfterParse, obj); err != nil {
 		return errors.Wrap(err, "after parse hook failed")
 	}
 
-	p.objects = append(p.objects, &obj)
+	p.objects = append(p.objects, obj)
 	return nil
 }
 
 func (p *ObjectParser) Iterate() iter.Seq[types.Object] {
 	return func(yield func(types.Object) bool) {
-		for _, obj := range p.objects {
+		for _, obj := range removeUnknownObjects(p.objects) {
 			if !yield(obj) {
 				break
 			}
@@ -205,7 +211,7 @@ func (p *ObjectParser) Iterate() iter.Seq[types.Object] {
 
 // Objects returns the slice of parsed objects
 func (p *ObjectParser) Objects() []types.Object {
-	return p.objects
+	return removeUnknownObjects(p.objects)
 }
 
 func (p *ObjectParser) RunHooks(stage HookStage, obj types.Object) error {
@@ -213,4 +219,16 @@ func (p *ObjectParser) RunHooks(stage HookStage, obj types.Object) error {
 		return hook(obj)
 	}
 	return nil
+}
+
+func removeUnknownObjects(objects []types.Object) []types.Object {
+	var filtered []types.Object
+	for _, obj := range objects {
+		if obj.GetKind() != "" && obj.GetApiVersion() != "" {
+			filtered = append(filtered, obj)
+		} else {
+			log.L().V(1).Info("Skipping unknown object", "filename", obj.GetProperty("filename"), "name", obj.GetName())
+		}
+	}
+	return filtered
 }

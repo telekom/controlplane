@@ -9,10 +9,14 @@ func CleanObject(o Object) {
 		return
 	}
 
-	RemoveNilFields(o.GetContent())
+	RemoveNilFields(o.GetContent(), 10)
 }
 
-func RemoveNilFields(m map[string]any) {
+func RemoveNilFields(m map[string]any, maxDepth int) {
+	if m == nil || maxDepth <= 0 {
+		return
+	}
+
 	for k, v := range m {
 		if v == nil {
 			delete(m, k)
@@ -20,7 +24,7 @@ func RemoveNilFields(m map[string]any) {
 		}
 		switch vv := v.(type) {
 		case map[string]any:
-			RemoveNilFields(vv)
+			RemoveNilFields(vv, maxDepth-1)
 			if len(vv) == 0 {
 				delete(m, k)
 			}
@@ -28,7 +32,7 @@ func RemoveNilFields(m map[string]any) {
 		case []any:
 			for _, item := range vv {
 				if subMap, ok := item.(map[string]any); ok {
-					RemoveNilFields(subMap)
+					RemoveNilFields(subMap, maxDepth-1)
 				}
 			}
 			if len(vv) == 0 {

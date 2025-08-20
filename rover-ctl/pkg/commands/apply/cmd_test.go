@@ -213,16 +213,15 @@ spec:
 				handlers.ResetRegistryForTest()
 			})
 
-			It("should return an error", func() {
+			It("should only log the error", func() {
 				// Set args for command
 				cmd.SetArgs([]string{"--file", yamlFile})
 
 				// Run the command
 				err := cmd.Execute()
 
-				// Verify error
-				Expect(err).To(HaveOccurred())
-				Expect(stderr.String()).To(ContainSubstring("no handler found"))
+				// Verify no error is returned
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 	})

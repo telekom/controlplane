@@ -7,8 +7,8 @@ package types
 var _ Object = &UnstructuredObject{}
 
 type UnstructuredObject struct {
-	Properties map[string]any `yaml:"-"`
-	Content    map[string]any `yaml:",inline"`
+	Properties map[string]any `json:"-" yaml:"-"`
+	Content    map[string]any `json:",inline" yaml:",inline"`
 }
 
 func (o *UnstructuredObject) GetApiVersion() string {

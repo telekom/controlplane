@@ -68,8 +68,13 @@ func (c *Command) applyObject(obj types.Object) error {
 	// Get the appropriate handler based on the object kind and API version
 	handler, err := handlers.GetHandler(obj.GetKind(), obj.GetApiVersion())
 	if err != nil {
-		return errors.Wrapf(err, "no handler found for %s/%s",
-			obj.GetApiVersion(), obj.GetKind())
+		if errors.Is(err, handlers.ErrNoHandlerFound) {
+			c.Logger().Info("Handler not found. Ignoring...",
+				"kind", obj.GetKind(),
+				"apiVersion", obj.GetApiVersion())
+			return nil
+		}
+		return err
 	}
 
 	c.Logger().Info(fmt.Sprintf("🚀 Applying %s",

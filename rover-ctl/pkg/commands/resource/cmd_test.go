@@ -153,7 +153,7 @@ var _ = Describe("Resource Command", func() {
 		})
 
 		Context("when the handler is not found", func() {
-			It("should return an error", func() {
+			It("should only log the error", func() {
 				// Set args for command with non-existent handler
 				cmd.SetArgs([]string{
 					"get",
@@ -165,9 +165,8 @@ var _ = Describe("Resource Command", func() {
 				// Run the command
 				err := cmd.Execute()
 
-				// Verify error
-				Expect(err).To(HaveOccurred())
-				Expect(stderr.String()).To(ContainSubstring("no handler found"))
+				// Verify no error is returned
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 	})
@@ -233,7 +232,7 @@ var _ = Describe("Resource Command", func() {
 		})
 
 		Context("when the handler is not found", func() {
-			It("should return an error", func() {
+			It("should only log the error", func() {
 				// Set args for command with non-existent handler
 				cmd.SetArgs([]string{
 					"list",
@@ -244,9 +243,8 @@ var _ = Describe("Resource Command", func() {
 				// Run the command
 				err := cmd.Execute()
 
-				// Verify error
-				Expect(err).To(HaveOccurred())
-				Expect(stderr.String()).To(ContainSubstring("no handler found"))
+				// Verify no error is returned
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 	})

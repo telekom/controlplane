@@ -2,11 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package cmd
 
 import (
+	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -17,7 +19,6 @@ import (
 	getinfo "github.com/telekom/controlplane/rover-ctl/pkg/commands/get-info"
 	resetsecret "github.com/telekom/controlplane/rover-ctl/pkg/commands/reset-secret"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/resource"
-	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 )
@@ -30,29 +31,26 @@ func ErrorHandler(err error) {
 	} else {
 		logger.Info("Command executed successfully")
 	}
-
 }
 
-func main() {
-	config.Initialize()
-	// Create the root command
-	rootCmd := NewRootCommand()
-	rootCmd.SetOut(os.Stdout)
-	rootCmd.SetErr(os.Stderr)
+type VersionInfo struct {
+	BuildTime string
+	GitCommit string
+	Version   string
+}
 
-	// Execute the command
-	if err := rootCmd.Execute(); err != nil {
-		ErrorHandler(err)
-	}
+func (i VersionInfo) String() string {
+	return fmt.Sprintf("%s (build-time: %s, git-commit: %s)", i.Version, i.BuildTime, i.GitCommit)
 }
 
 // NewRootCommand creates the root command for rover-ctl
-func NewRootCommand() *cobra.Command {
+func NewRootCommand(versionInfo VersionInfo) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "roverctl",
-		Short: "Rover Control CLI tool",
-		Long: `Rover Control CLI tool for managing rover resources via REST API.
-It handles configuration files and maps them to the appropriate resource handlers.`,
+		Short: "Rover Control Plane CLI",
+		Long: `Rover Control Plane CLI tool for managing Control Plane resources.
+This tool allows you to apply, delete, and manage resources in the Rover Control Plane.`,
+		Version:       versionInfo.String(),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
@@ -97,6 +95,8 @@ It handles configuration files and maps them to the appropriate resource handler
 
 		handlers.RegisterHandlers()
 
+		printBanner(cmd, "Rover Control Plane CLI", versionInfo)
+
 		return nil
 	}
 
@@ -120,4 +120,43 @@ It handles configuration files and maps them to the appropriate resource handler
 	)
 
 	return rootCmd
+}
+
+func printBanner(cmd *cobra.Command, title string, versionInfo VersionInfo) {
+	w := cmd.ErrOrStderr()
+
+	// Content lines
+	titleLine := fmt.Sprintf("  %s  ", title)
+	versionLine := fmt.Sprintf("  Version: %-20s  ", versionInfo.Version)
+	gitCommitLine := fmt.Sprintf("  Git Commit: %-16s  ", versionInfo.GitCommit)
+	buildTimeLine := fmt.Sprintf("  Build Time: %-17s  ", versionInfo.BuildTime)
+
+	// Find the longest line for border width
+	lines := []string{titleLine, versionLine, gitCommitLine, buildTimeLine}
+	maxWidth := 0
+	for _, line := range lines {
+		if len(line) > maxWidth {
+			maxWidth = len(line)
+		}
+	}
+
+	// Create horizontal border
+	border := strings.Repeat("=", maxWidth)
+
+	// Pad lines to max width
+	for i, line := range lines {
+		padding := strings.Repeat(" ", maxWidth-len(line))
+		lines[i] = line + padding
+	}
+
+	// Construct banner
+	banner := fmt.Sprintf("\n┌%s┐\n", border)
+	for _, line := range lines {
+		banner += fmt.Sprintf("│%s│\n", line)
+	}
+	banner += fmt.Sprintf("└%s┘\n", border)
+
+	fmt.Fprintln(w, banner)
+	fmt.Fprintln(w, "Use 'roverctl --help' for more information.")
+	fmt.Fprintln(w)
 }

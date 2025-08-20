@@ -13,6 +13,8 @@ import (
 	"github.com/telekom/controlplane/rover-ctl/pkg/util"
 )
 
+var defaultApiVersion = "tcp.ei.telekom.de/v1"
+
 // ResourceCommandOptions contains options specific to resource commands
 type ResourceCommandOptions struct {
 	Kind       string
@@ -99,7 +101,7 @@ func (c *Command) newListCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&c.Options.Kind, "kind", "", "Resource kind")
-	cmd.Flags().StringVar(&c.Options.ApiVersion, "api-version", "", "API version")
+	cmd.Flags().StringVar(&c.Options.ApiVersion, "api-version", defaultApiVersion, "API version")
 	cmd.MarkFlagRequired("kind")
 	cmd.MarkFlagRequired("api-version")
 
@@ -115,8 +117,13 @@ func (c *Command) runGet(cmd *cobra.Command, args []string) error {
 
 	handler, err := handlers.GetHandler(c.Options.Kind, c.Options.ApiVersion)
 	if err != nil {
-		return errors.Wrapf(err, "no handler found for %s/%s",
-			c.Options.ApiVersion, c.Options.Kind)
+		if errors.Is(err, handlers.ErrNoHandlerFound) {
+			c.Logger().Info("Handler not found. Ignoring...",
+				"kind", c.Options.Kind,
+				"apiVersion", c.Options.ApiVersion)
+			return nil
+		}
+		return err
 	}
 
 	c.Logger().V(1).Info("Getting resource", "name", c.Options.Name)
@@ -149,11 +156,13 @@ func (c *Command) runList(cmd *cobra.Command, args []string) error {
 
 	handler, err := handlers.GetHandler(c.Options.Kind, c.Options.ApiVersion)
 	if err != nil {
-		c.Logger().Error(err, "Handler not found",
-			"kind", c.Options.Kind,
-			"apiVersion", c.Options.ApiVersion)
-		return errors.Wrapf(err, "no handler found for %s/%s",
-			c.Options.ApiVersion, c.Options.Kind)
+		if errors.Is(err, handlers.ErrNoHandlerFound) {
+			c.Logger().Info("Handler not found. Ignoring...",
+				"kind", c.Options.Kind,
+				"apiVersion", c.Options.ApiVersion)
+			return nil
+		}
+		return err
 	}
 
 	c.Logger().V(1).Info("Listing resources")

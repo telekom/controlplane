@@ -7,13 +7,11 @@ package cmderrors
 import "fmt"
 
 type Error struct {
-	Message string `json:"message"`
-	Reason  string `json:"reason,omitempty"`
-
-	// Optional fields
-	Code       int    `json:"code"`
-	ApiVersion string `json:"apiVersion"`
-	Kind       string `json:"kind"`
+	Message    string `json:"message"`
+	Reason     string `json:"reason,omitempty"`
+	Code       int    `json:"code,omitempty"`
+	ApiVersion string `json:"apiVersion,omitempty"`
+	Kind       string `json:"kind,omitempty"`
 }
 
 func (e *Error) Error() string {

@@ -17,6 +17,8 @@ import (
 var (
 	registry = make(map[string]ResourceHandler)
 	mutex    sync.RWMutex
+
+	ErrNoHandlerFound = errors.New("no handler found for the specified resource")
 )
 
 // RegisterHandler registers a handler for a specific resource kind and API version
@@ -37,7 +39,7 @@ func GetHandler(kind, apiVersion string) (ResourceHandler, error) {
 	key := handlerKey(kind, apiVersion)
 	handler, exists := registry[key]
 	if !exists {
-		return nil, errors.Errorf("no handler registered for %s", key)
+		return nil, ErrNoHandlerFound
 	}
 
 	return handler, nil

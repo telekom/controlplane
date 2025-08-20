@@ -113,7 +113,7 @@ var _ = Describe("Registry", func() {
 
 				// Verify
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("no handler registered for"))
+				Expect(err.Error()).To(ContainSubstring("no handler found for the specified resource"))
 			})
 		})
 
