@@ -56,7 +56,7 @@ func (f *RateLimitFeature) IsUsed(ctx context.Context, builder features.Features
 func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
 	route, ok := builder.GetRoute()
 	if !ok {
-		return nil
+		return features.ErrNoRoute
 	}
 
 	if !route.IsProxy() && route.HasRateLimit() {
@@ -107,10 +107,9 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 
 				rateLimitPlugin = setOptions(rateLimitPlugin,
 					&route.Spec.Traffic.RateLimit.Options,
-					allowedConsumer.Spec.Traffic.RateLimit.Options,
 				)
-			} else {
-				rateLimitPlugin = setOptions(rateLimitPlugin, allowedConsumer.Spec.Traffic.RateLimit.Options)
+			} else if route.HasRateLimit() {
+				rateLimitPlugin = setOptions(rateLimitPlugin, &route.Spec.Traffic.RateLimit.Options)
 			}
 		}
 	}

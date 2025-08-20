@@ -33,9 +33,6 @@ type RateLimit struct {
 type ConsumeRouteRateLimit struct {
 	// +kubebuilder:validation:Required
 	Limits Limits `json:"limits"`
-	// Options defines additional configuration options for rate limiting
-	// +kubebuilder:validation:Optional
-	Options *RateLimitOptions `json:"options,omitempty"`
 }
 
 // Limits defines the actual rate limit values for different time windows

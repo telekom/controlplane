@@ -277,10 +277,6 @@ var _ = Describe("RateLimitFeature", func() {
 									Minute: 500,
 									Hour:   5000,
 								},
-								Options: &gatewayv1.RateLimitOptions{ // Overwrite defaults of route
-									HideClientHeaders: true,
-									FaultTolerant:     true,
-								},
 							},
 						},
 					},
@@ -330,7 +326,7 @@ var _ = Describe("RateLimitFeature", func() {
 					},
 				}))
 				Expect(consumerRateLimitPlugin.Config.HideClientHeaders).To(BeTrue())
-				Expect(consumerRateLimitPlugin.Config.FaultTolerant).To(BeTrue())
+				Expect(consumerRateLimitPlugin.Config.FaultTolerant).To(BeFalse())
 
 				Expect(providerRateLimitPlugin.Config.Policy).To(Equal(plugin.PolicyRedis))
 				Expect(providerRateLimitPlugin.Config.Limits).To(Equal(plugin.Limits{
