@@ -1,0 +1,21 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# This patch will configure the necessary service account token projection for the file manager client
+- op: add
+  path: /spec/template/spec/volumes/0
+  value:
+    name: filemgr-token
+    projected:
+      sources:
+      - serviceAccountToken:
+          path: token
+          expirationSeconds: 600
+          audience: filemgr
+- op: add
+  path: /spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: filemgr-token
+    mountPath: /var/run/secrets/filemgr
+    readOnly: true

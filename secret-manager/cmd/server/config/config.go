@@ -8,7 +8,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/telekom/controlplane/secret-manager/pkg/middleware"
+	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
+
 	"gopkg.in/yaml.v3"
 )
 
@@ -35,10 +36,10 @@ func (c BackendConfig) GetDefault(key string, defaultValue string) string {
 }
 
 type SecurityConfig struct {
-	Enabled        bool                             `yaml:"enabled"`
-	TrustedIssuers []string                         `yaml:"trusted_issuers"`
-	JWKSetURLs     []string                         `yaml:"jwk_set_urls"`
-	AccessConfig   []middleware.ServiceAccessConfig `yaml:"access_config"`
+	Enabled        bool                      `yaml:"enabled"`
+	TrustedIssuers []string                  `yaml:"trusted_issuers"`
+	JWKSetURLs     []string                  `yaml:"jwk_set_urls"`
+	AccessConfig   []k8s.ServiceAccessConfig `yaml:"access_config"`
 }
 
 type ServerConfig struct {
