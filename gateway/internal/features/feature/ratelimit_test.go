@@ -126,7 +126,7 @@ var _ = Describe("RateLimitFeature", func() {
 		Context("Apply", func() {
 			It("should do nothing when no route is available", func() {
 				mockFeatureBuilder.EXPECT().GetRoute().Return(nil, false)
-				Expect(feature.Apply(context.Background(), mockFeatureBuilder)).To(Succeed())
+				Expect(feature.Apply(context.Background(), mockFeatureBuilder)).To(HaveOccurred())
 			})
 
 			It("should configure rate limit plugin for a primary route", func() {
