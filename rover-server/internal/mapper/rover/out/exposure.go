@@ -35,6 +35,8 @@ func mapApiExposure(in *roverv1.ApiExposure) api.ApiExposure {
 		BasePath:   in.BasePath,
 		Visibility: toApiVisibility(in.Visibility),
 		Approval:   toApiApprovalStrategy(in.Approval.Strategy),
+		// Initialize with empty RateLimitContainer to avoid nil pointer issues
+		RateLimit: api.RateLimitContainer{},
 	}
 
 	mapTrustedTeams(in, &apiExposure)
@@ -155,16 +157,6 @@ func mapExposureTransformation(in *roverv1.ApiExposure, out *api.ApiExposure) {
 	if len(in.Transformation.Request.Headers.Remove) > 0 {
 		out.RemoveHeaders = in.Transformation.Request.Headers.Remove
 	}
-}
-
-func mapExposureTraffic(in *roverv1.ApiExposure, out *api.ApiExposure) {
-	if in.Traffic.Failover != nil {
-		out.Failover = api.Failover{
-			Zones: in.Traffic.Failover.Zones,
-		}
-	}
-
-	// todo: ratelimit (ignore for now until implementation is clear)
 }
 
 func mapTrustedTeams(in *roverv1.ApiExposure, out *api.ApiExposure) {

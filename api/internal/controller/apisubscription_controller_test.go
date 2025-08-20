@@ -959,7 +959,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				Namespace: testEnvironment,
 			}
 			// Configure multiple failover zones
-			multiFailoverSubscription.Spec.Traffic = apiapi.Traffic{
+			multiFailoverSubscription.Spec.Traffic = apiapi.SubscriberTraffic{
 				Failover: &apiapi.Failover{
 					Zones: []types.ObjectRef{
 						{
@@ -1095,7 +1095,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			By("Creating ApiSubscription in different zone with provider zone as failover")
 			subscription = NewApiSubscription(apiBasePath, differentZoneName, appName)
 			// Configure failover zone to be the same as ApiExposure zone
-			subscription.Spec.Traffic = apiapi.Traffic{
+			subscription.Spec.Traffic = apiapi.SubscriberTraffic{
 				Failover: &apiapi.Failover{
 					Zones: []types.ObjectRef{
 						apiExposure.Spec.Zone, // Failover Zone is same zone as ApiExposure
