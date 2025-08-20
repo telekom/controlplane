@@ -66,6 +66,50 @@ func (a *ApiExposure) HasFailover() bool {
 	return a.Spec.Traffic.Failover != nil
 }
 
+func (a *ApiExposure) HasRateLimit() bool {
+	return a.Spec.Traffic.RateLimit != nil
+}
+
+func (a *ApiExposure) HasProviderRateLimit() bool {
+	if !a.HasRateLimit() {
+		return false
+	}
+	return a.Spec.Traffic.RateLimit.Provider != nil
+}
+
+func (a *ApiExposure) HasSubscriberRateLimit() bool {
+	if !a.HasRateLimit() {
+		return false
+	}
+	return a.Spec.Traffic.RateLimit.SubscriberRateLimit != nil
+}
+
+func (a *ApiExposure) HasDefaultSubscriberRateLimit() bool {
+	if !a.HasSubscriberRateLimit() {
+		return false
+	}
+	return a.Spec.Traffic.RateLimit.SubscriberRateLimit.Default != nil
+}
+
+func (a *ApiExposure) HasOverriddenSubscriberRateLimit() bool {
+	if !a.HasSubscriberRateLimit() {
+		return false
+	}
+	return len(a.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides) > 0
+}
+
+func (a *ApiExposure) GetOverriddenSubscriberRateLimit(subscriber string) (Limits, bool) {
+	if !a.HasOverriddenSubscriberRateLimit() {
+		return Limits{}, false
+	}
+	for i := range a.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides {
+		if a.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides[i].Subscriber == subscriber {
+			return a.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides[i].Limits, true
+		}
+	}
+	return Limits{}, false
+}
+
 func (a *ApiExposure) HasM2M() bool {
 	if a.Spec.Security == nil {
 		return false

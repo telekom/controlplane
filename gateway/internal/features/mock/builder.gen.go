@@ -312,18 +312,32 @@ func (mr *MockFeaturesBuilderMockRecorder) JwtPlugin() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JwtPlugin", reflect.TypeOf((*MockFeaturesBuilder)(nil).JwtPlugin))
 }
 
-// RateLimitPlugin mocks base method.
-func (m *MockFeaturesBuilder) RateLimitPlugin() *plugin.RateLimitPlugin {
+// RateLimitPluginConsumeRoute mocks base method.
+func (m *MockFeaturesBuilder) RateLimitPluginConsumeRoute(arg0 *v1.ConsumeRoute) *plugin.RateLimitPlugin {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RateLimitPlugin")
+	ret := m.ctrl.Call(m, "RateLimitPluginConsumeRoute", arg0)
 	ret0, _ := ret[0].(*plugin.RateLimitPlugin)
 	return ret0
 }
 
-// RateLimitPlugin indicates an expected call of RateLimitPlugin.
-func (mr *MockFeaturesBuilderMockRecorder) RateLimitPlugin() *gomock.Call {
+// RateLimitPluginConsumeRoute indicates an expected call of RateLimitPluginConsumeRoute.
+func (mr *MockFeaturesBuilderMockRecorder) RateLimitPluginConsumeRoute(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RateLimitPlugin", reflect.TypeOf((*MockFeaturesBuilder)(nil).RateLimitPlugin))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RateLimitPluginConsumeRoute", reflect.TypeOf((*MockFeaturesBuilder)(nil).RateLimitPluginConsumeRoute), arg0)
+}
+
+// RateLimitPluginRoute mocks base method.
+func (m *MockFeaturesBuilder) RateLimitPluginRoute() *plugin.RateLimitPlugin {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RateLimitPluginRoute")
+	ret0, _ := ret[0].(*plugin.RateLimitPlugin)
+	return ret0
+}
+
+// RateLimitPluginRoute indicates an expected call of RateLimitPluginRoute.
+func (mr *MockFeaturesBuilderMockRecorder) RateLimitPluginRoute() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RateLimitPluginRoute", reflect.TypeOf((*MockFeaturesBuilder)(nil).RateLimitPluginRoute))
 }
 
 // RequestTransformerPlugin mocks base method.

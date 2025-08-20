@@ -308,9 +308,10 @@ func createGateway(ctx context.Context, handlingContext HandlingContext) (*gatew
 				Url:          adminUrl,
 			},
 			Redis: gatewayapi.RedisConfig{
-				Host:     handlingContext.Zone.Spec.Redis.Host,
-				Port:     handlingContext.Zone.Spec.Redis.Port,
-				Password: handlingContext.Zone.Spec.Redis.Password,
+				Host:      handlingContext.Zone.Spec.Redis.Host,
+				Port:      handlingContext.Zone.Spec.Redis.Port,
+				Password:  handlingContext.Zone.Spec.Redis.Password,
+				EnableTLS: handlingContext.Zone.Spec.Redis.EnableTLS,
 			},
 		}
 		return nil

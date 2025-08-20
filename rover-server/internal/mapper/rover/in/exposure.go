@@ -178,16 +178,6 @@ func mapExposureTransformation(in api.ApiExposure, out *roverv1.ApiExposure) {
 
 }
 
-func mapExposureTraffic(in api.ApiExposure, out *roverv1.ApiExposure) {
-	if len(in.Failover.Zones) > 0 {
-		out.Traffic.Failover = &roverv1.Failover{
-			Zones: in.Failover.Zones,
-		}
-	}
-
-	// todo: ratelimit (ignore for now until implementation is clear)
-}
-
 func mapTrustedTeams(in api.ApiExposure, out *roverv1.ApiExposure) {
 	if in.TrustedTeams == nil {
 		return
