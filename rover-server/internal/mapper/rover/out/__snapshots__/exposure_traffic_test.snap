@@ -1,0 +1,33 @@
+
+[Exposure Traffic Mapper mapExposureTraffic must map failover zones correctly - 1]
+api.Failover{
+    Zones: {"zone1", "zone2"},
+}
+---
+
+[Exposure Traffic Mapper mapExposureTraffic must map provider rate limits correctly - 1]
+api.RateLimitContainer{
+    ConsumerDefault: api.RateLimit{},
+    Consumers:       nil,
+    Provider:        api.RateLimit{FaultTolerant:true, HideClientHeaders:true, Hour:10000, Minute:1000, Second:100},
+}
+---
+
+[Exposure Traffic Mapper mapExposureTraffic must map consumer default rate limits correctly - 1]
+api.RateLimitContainer{
+    ConsumerDefault: api.RateLimit{FaultTolerant:false, HideClientHeaders:false, Hour:5000, Minute:500, Second:50},
+    Consumers:       nil,
+    Provider:        api.RateLimit{},
+}
+---
+
+[Exposure Traffic Mapper mapExposureTraffic must map consumer overrides correctly - 1]
+api.RateLimitContainer{
+    ConsumerDefault: api.RateLimit{},
+    Consumers:       {
+        {FaultTolerant:false, HideClientHeaders:false, Hour:2500, Id:"consumer1", Minute:250, Second:25},
+        {FaultTolerant:false, HideClientHeaders:false, Hour:7500, Id:"consumer2", Minute:750, Second:75},
+    },
+    Provider: api.RateLimit{},
+}
+---

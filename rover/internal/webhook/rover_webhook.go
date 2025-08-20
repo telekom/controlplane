@@ -206,6 +206,11 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *Validatio
 			}
 		}
 
+		// Validate rate limits if they are set
+		if err := r.validateExposureRateLimit(ctx, valErr, exposure, idx); err != nil {
+			return errors.Wrap(err, "failed to validate exposure rate limits")
+		}
+
 		// Check if all upstreams have a weight set or none
 		all, none := CheckWeightSetOnAllOrNone(exposure.Api.Upstreams)
 		if !all && !none {
@@ -229,7 +234,65 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *Validatio
 	return nil
 }
 
+func (r *RoverValidator) validateExposureRateLimit(ctx context.Context, valErr *ValidationError, exposure roverv1.Exposure, idx int) error {
+	// Check if API is nil
+	if exposure.Api == nil {
+		return nil
+	}
+
+	// Check if Traffic is nil
+	if exposure.Api.Traffic == nil {
+		return nil
+	}
+
+	// Check if RateLimit is nil
+	if exposure.Api.Traffic.RateLimit == nil {
+		return nil
+	}
+
+	// Validate provider rate limits
+	if exposure.Api.Traffic.RateLimit.Provider != nil &&
+		exposure.Api.Traffic.RateLimit.Provider.Limits != nil {
+		if err := validateLimits(*exposure.Api.Traffic.RateLimit.Provider.Limits); err != nil {
+			valErr.AddInvalidError(
+				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("traffic").Child("rateLimit").Child("provider").Child("limits"),
+				exposure.Api.Traffic.RateLimit.Provider.Limits, fmt.Sprintf("invalid provider rate limit: %v", err),
+			)
+		}
+	}
+
+	// Validate consumer rate limits
+	if exposure.Api.Traffic.RateLimit.Consumers == nil {
+		return nil
+	}
+
+	// Validate default consumer rate limit
+	if exposure.Api.Traffic.RateLimit.Consumers.Default != nil {
+		if err := validateLimits(exposure.Api.Traffic.RateLimit.Consumers.Default.Limits); err != nil {
+			valErr.AddInvalidError(
+				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("traffic").Child("rateLimit").Child("consumers").Child("default").Child("limits"),
+				exposure.Api.Traffic.RateLimit.Consumers.Default.Limits, fmt.Sprintf("invalid default consumer rate limit: %v", err),
+			)
+		}
+	}
+
+	// Validate consumer overrides
+	if exposure.Api.Traffic.RateLimit.Consumers.Overrides != nil {
+		for i, override := range exposure.Api.Traffic.RateLimit.Consumers.Overrides {
+			if err := validateLimits(override.Limits); err != nil {
+				valErr.AddInvalidError(
+					field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("traffic").Child("rateLimit").Child("consumers").Child("overrides").Index(i).Child("limits"),
+					override.Limits, fmt.Sprintf("invalid consumer override rate limit: %v", err),
+				)
+			}
+		}
+	}
+
+	return nil
+}
+
 func (r *RoverValidator) validateApproval(ctx context.Context, valErr *ValidationError, environment string, approval roverv1.Approval) error {
+
 	for i := range approval.TrustedTeams {
 		ref := types.ObjectRef{
 			Name:      approval.TrustedTeams[i].Group + "--" + approval.TrustedTeams[i].Team,
@@ -245,6 +308,25 @@ func (r *RoverValidator) validateApproval(ctx context.Context, valErr *Validatio
 			}
 			return errors.Wrap(err, "failed to get team")
 		}
+	}
+
+	return nil
+}
+
+func validateLimits(limits roverv1.Limits) error {
+	// Check if at least one time window is specified
+	if limits.Second == 0 && limits.Minute == 0 && limits.Hour == 0 {
+		return fmt.Errorf("at least one of second, minute, or hour must be specified")
+	}
+
+	// Check that second < minute if both are specified
+	if limits.Second > 0 && limits.Minute > 0 && limits.Second >= limits.Minute {
+		return fmt.Errorf("second (%d) must be less than minute (%d)", limits.Second, limits.Minute)
+	}
+
+	// Check that minute < hour if both are specified
+	if limits.Minute > 0 && limits.Hour > 0 && limits.Minute >= limits.Hour {
+		return fmt.Errorf("minute (%d) must be less than hour (%d)", limits.Minute, limits.Hour)
 	}
 
 	return nil

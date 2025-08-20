@@ -128,6 +128,36 @@ spec:
                       rule: self == null || has(self.client) || has(self.basic) ||
                         has(self.scopes)
                 type: object
+              traffic:
+                properties:
+                  rateLimit:
+                    description: RateLimit defines the rate limit configuration for
+                      the ConsumeRoute
+                    properties:
+                      limits:
+                        description: Limits defines the actual rate limit values for
+                          different time windows
+                        properties:
+                          hour:
+                            description: Hour defines the maximum number of requests
+                              allowed per hour
+                            minimum: 0
+                            type: integer
+                          minute:
+                            description: Minute defines the maximum number of requests
+                              allowed per minute
+                            minimum: 0
+                            type: integer
+                          second:
+                            description: Second defines the maximum number of requests
+                              allowed per second
+                            minimum: 0
+                            type: integer
+                        type: object
+                    required:
+                    - limits
+                    type: object
+                type: object
             required:
             - consumerName
             - route

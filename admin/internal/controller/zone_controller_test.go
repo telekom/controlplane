@@ -55,9 +55,10 @@ func NewZone(name string, namespace string) *adminv1.Zone {
 				Url: "https://test-stargate.de/",
 			},
 			Redis: adminv1.RedisConfig{
-				Host:     "http://test-redis.de/",
-				Port:     123,
-				Password: "test-redis-password",
+				Host:      "http://test-redis.de/",
+				Port:      123,
+				Password:  "test-redis-password",
+				EnableTLS: true,
 			},
 			TeamApis: &adminv1.TeamApiConfig{
 				Apis: []adminv1.ApiConfig{{
@@ -223,9 +224,10 @@ func VerifyZone(ctx context.Context, g Gomega, namespacedName client.ObjectKey, 
 
 	gatewaySpec := gatewayapi.GatewaySpec{
 		Redis: gatewayapi.RedisConfig{
-			Host:     "http://test-redis.de/",
-			Port:     123,
-			Password: "test-redis-password",
+			Host:      "http://test-redis.de/",
+			Port:      123,
+			Password:  "test-redis-password",
+			EnableTLS: true,
 		},
 		Admin: gatewayapi.AdminConfig{
 			ClientId:     "rover",
