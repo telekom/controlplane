@@ -71,6 +71,11 @@ on:
         required: false
         type: string
         default: ${{ github.event_name == 'schedule' && 'nightly' || '' }}
+      use_version_ldflags:
+        description: "Add version info ldflags to the build (-X main.version etc.)"
+        required: false
+        type: boolean
+        default: false
 
     outputs:
       image_digest:
@@ -343,7 +348,20 @@ jobs:
           fi
 
           echo "Building with tags: $effective_tags"
-          output=$(ko build ${{ inputs.ko_build_path }} --bare --tags "$effective_tags")
+          
+          if [[ "${{ inputs.use_version_ldflags }}" == "true" ]]; then
+            # Set build variables for version info
+            BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            VERSION=$(git describe --tags --always --dirty || echo 'develop')
+            GIT_COMMIT=$(git rev-parse HEAD)
+            
+            echo "Building with version info ldflags"
+            LDFLAGS="-ldflags=-X 'main.version=${VERSION}' -X 'main.buildTime=${BUILD_TIME}' -X 'main.gitCommit=${GIT_COMMIT}'"
+            output=$(ko build ${{ inputs.ko_build_path }} --bare --tags "$effective_tags" $LDFLAGS)
+          else
+            output=$(ko build ${{ inputs.ko_build_path }} --bare --tags "$effective_tags")
+          fi
+          
           echo "Ko output: $output"
           digest=$(echo "$output" | grep -o 'sha256:[a-f0-9]\{64\}')
           echo "digest=$digest" >> $GITHUB_OUTPUT
