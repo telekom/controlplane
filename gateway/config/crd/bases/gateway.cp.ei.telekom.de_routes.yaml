@@ -206,6 +206,10 @@ spec:
                 type: object
               traffic:
                 properties:
+                  circuitBreaker:
+                    description: used internally to bypass gateway CB configuration,
+                      false by default
+                    type: boolean
                   failover:
                     properties:
                       security:

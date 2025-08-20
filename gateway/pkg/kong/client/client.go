@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	"io"
 	"net/http"
 	"slices"
@@ -25,7 +26,7 @@ type MutatorFunc[T any] func(T) (T, error)
 
 //go:generate mockgen -source=client.go -destination=mock/client.gen.go -package=mock
 type KongClient interface {
-	CreateOrReplaceRoute(ctx context.Context, route CustomRoute, upstream Upstream) error
+	CreateOrReplaceRoute(ctx context.Context, route CustomRoute, upstream Upstream, gateway *gatewayapi.Gateway) error
 	DeleteRoute(ctx context.Context, route CustomRoute) error
 
 	CreateOrReplaceConsumer(ctx context.Context, consumer CustomConsumer) (kongConsumer *kong.Consumer, err error)
@@ -385,17 +386,91 @@ func (c *kongClient) getPluginMatchingTags(
 	}
 }
 
-func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute, upstream Upstream) error {
+func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute, upstream Upstream, gateway *gatewayapi.Gateway) error {
 	if upstream == nil {
 		return fmt.Errorf("upstream is required")
 	}
 
 	routeName := route.GetName()
 	upstreamPath := upstream.GetPath()
+	serviceName := routeName
+	serviceHost := upstream.GetHost()
+
+	// if CB is enabled (either global config for gateway, or bypass configured directly on Route)
+	if isCircuitBreakerEnabled(ctx, gateway, route) {
+		upstreamAlgorithm := kong.RoundRobin
+		passiveHealthcheckType := kong.CreateUpstreamRequestHealthchecksPassiveTypeHttp
+		activeHealthcheckType := kong.CreateUpstreamRequestHealthchecksActiveTypeHttp
+		upstreamName := routeName
+		upstreamBody := kong.CreateUpstreamJSONRequestBody{
+			Algorithm: &upstreamAlgorithm,
+			Name:      upstreamName,
+			Healthchecks: &kong.CreateUpstreamRequestHealthchecks{
+				Active: &kong.CreateUpstreamRequestHealthchecksActive{
+					Healthy: &kong.CreateUpstreamRequestHealthchecksActiveHealthy{
+						HttpStatuses: &gateway.Spec.CircuitBreaker.Active.HealthyHttpStatuses,
+					},
+					Type: &activeHealthcheckType,
+					Unhealthy: &kong.CreateUpstreamRequestHealthchecksActiveUnhealthy{
+						HttpStatuses: &gateway.Spec.CircuitBreaker.Active.UnhealthyHttpStatuses,
+					},
+				},
+				Passive: &kong.CreateUpstreamRequestHealthchecksPassive{
+					Healthy: &kong.CreateUpstreamRequestHealthchecksPassiveHealthy{
+						HttpStatuses: toPassiveHealthyHttpStatuses(gateway.Spec.CircuitBreaker.Passive.HealthyHttpStatuses),
+						Successes:    &gateway.Spec.CircuitBreaker.Passive.HealthySuccesses,
+					},
+					Type: &passiveHealthcheckType,
+					Unhealthy: &kong.CreateUpstreamRequestHealthchecksPassiveUnhealthy{
+						HttpFailures: &gateway.Spec.CircuitBreaker.Passive.UnhealthyHttpFailures,
+						HttpStatuses: toPassiveUnhealthyHttpStatuses(gateway.Spec.CircuitBreaker.Passive.UnhealthyHttpStatuses),
+						TcpFailures:  &gateway.Spec.CircuitBreaker.Passive.UnhealthyTcpFailures,
+						Timeouts:     &gateway.Spec.CircuitBreaker.Passive.UnhealthyTimeouts,
+					},
+				},
+			},
+			Tags: &[]string{
+				buildTag("env", contextutil.EnvFromContextOrDie(ctx)),
+				buildTag("upstream", upstreamName),
+			},
+		}
+
+		upstreamResponse, err := c.client.UpsertUpstreamWithResponse(ctx, upstreamName, upstreamBody)
+		if err != nil {
+			return errors.Wrap(err, "failed to create upstream")
+		}
+		if err := CheckStatusCode(upstreamResponse, 200); err != nil {
+			return errors.Wrap(fmt.Errorf("failed to create upstream: %s", string(upstreamResponse.Body)), "failed to create upstream")
+		}
+
+		// important - the service needs to explicitly use this upstream for circuit breaker to work
+		serviceHost = upstreamName
+
+		targetsName := routeName
+		targetsTarget := "localhost:8080"
+		targetsWeight := 100
+		targetsBody := kong.CreateTargetForUpstreamJSONRequestBody{
+			Tags: &[]string{
+				buildTag("env", contextutil.EnvFromContextOrDie(ctx)),
+				buildTag("targets", targetsName),
+			},
+			Target: &targetsTarget,
+			Weight: &targetsWeight,
+		}
+
+		targetsResponse, err := c.client.UpsertTargetForUpstreamWithResponse(ctx, upstreamName, targetsName, targetsBody)
+		if err != nil {
+			return errors.Wrap(err, "failed to create targets for upstream")
+		}
+		if err := CheckStatusCode(upstreamResponse, 200); err != nil {
+			return errors.Wrap(fmt.Errorf("failed to create targets for upstream: %s", string(targetsResponse.Body)), "failed to create targets for upstream")
+		}
+	}
+
 	serviceBody := kong.CreateServiceJSONRequestBody{
 		Enabled:  true,
-		Name:     &routeName,
-		Host:     upstream.GetHost(),
+		Name:     &serviceName,
+		Host:     serviceHost,
 		Path:     &upstreamPath,
 		Protocol: kong.CreateServiceRequestProtocol(upstream.GetScheme()),
 		Port:     upstream.GetPort(),
@@ -575,4 +650,42 @@ func encodeTags(tags []string) *string {
 	}
 	strTags := strings.Join(tags, ",")
 	return &strTags
+}
+
+// isCircuitBreakerEnabled if CB is defined (thus enabled). Its possible to override it via an internal field in the Route.Spec.Traffic.CircuitBreaker
+func isCircuitBreakerEnabled(ctx context.Context, gateway *gatewayapi.Gateway, route CustomRoute) bool {
+	log := logr.FromContextOrDiscard(ctx)
+	// check if the route is trying to bypass the GW config
+	r, err := route.(*gatewayapi.Route)
+	if err {
+		log.Info("Cannot convert CustomRoute to gatewayapi.Route when attempting to resolve if CircuitBreaker should be configured. Assuming the value is FALSE!", "routeName", route.GetName())
+	}
+	if r.Spec.Traffic.CircuitBreaker != nil {
+		log.Info("Route has explicitly defined a CircuitBreaker value - bypassing gateway configuration!", "routeName", route.GetName())
+		return *r.Spec.Traffic.CircuitBreaker
+	}
+
+	if gateway == nil {
+		return false
+	}
+	if gateway.Spec.CircuitBreaker != nil {
+		return true
+	}
+	return false
+}
+
+func toPassiveUnhealthyHttpStatuses(statuses []int) *[]kong.CreateUpstreamRequestHealthchecksPassiveUnhealthyHttpStatuses {
+	result := make([]kong.CreateUpstreamRequestHealthchecksPassiveUnhealthyHttpStatuses, len(statuses))
+	for i, status := range statuses {
+		result[i] = kong.CreateUpstreamRequestHealthchecksPassiveUnhealthyHttpStatuses(status)
+	}
+	return &result
+}
+
+func toPassiveHealthyHttpStatuses(statuses []int) *[]kong.CreateUpstreamRequestHealthchecksPassiveHealthyHttpStatuses {
+	result := make([]kong.CreateUpstreamRequestHealthchecksPassiveHealthyHttpStatuses, len(statuses))
+	for i, status := range statuses {
+		result[i] = kong.CreateUpstreamRequestHealthchecksPassiveHealthyHttpStatuses(status)
+	}
+	return &result
 }

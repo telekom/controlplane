@@ -119,6 +119,8 @@ func (route *Route) HasM2MExternalIdpBasic() bool {
 
 type Traffic struct {
 	Failover *Failover `json:"failover,omitempty"`
+	// used internally to bypass gateway CB configuration, false by default
+	CircuitBreaker *bool `json:"circuitBreaker,omitempty"`
 }
 
 type Failover struct {

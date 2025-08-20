@@ -23,12 +23,33 @@ type AdminConfig struct {
 	Url          string `json:"url"`
 }
 
+type CircuitBreaker struct {
+	Passive PassiveHealthcheck `json:"passive"`
+	Active  ActiveHealthCheck  `json:"active"`
+}
+
+type PassiveHealthcheck struct {
+	HealthyHttpStatuses   []int `json:"healthyHttpStatuses"`
+	HealthySuccesses      int   `json:"healthySuccesses"`
+	UnhealthyHttpFailures int   `json:"unhealthyHttpFailures"`
+	UnhealthyHttpStatuses []int `json:"unhealthyHttpStatuses"`
+	UnhealthyTcpFailures  int   `json:"unhealthyTcpFailures"`
+	UnhealthyTimeouts     int   `json:"unhealthyTimeouts"`
+}
+
+type ActiveHealthCheck struct {
+	HealthyHttpStatuses   []int `json:"healthyHttpStatuses"`
+	UnhealthyHttpStatuses []int `json:"unhealthyHttpStatuses"`
+}
+
 // GatewaySpec defines the desired state of Gateway
 type GatewaySpec struct {
 	Redis RedisConfig `json:"redis,omitempty"`
 	Admin AdminConfig `json:"admin,omitempty"`
 
 	Features []FeatureType `json:"features,omitempty"`
+
+	CircuitBreaker *CircuitBreaker `json:"circuitBreaker,omitempty"`
 }
 
 // GatewayStatus defines the observed state of Gateway
