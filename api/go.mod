@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/api
 
-go 1.24.4
+go 1.24.6
 
 require (
 	github.com/telekom/controlplane/admin/api v0.0.0
