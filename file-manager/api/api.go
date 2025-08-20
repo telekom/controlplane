@@ -28,7 +28,7 @@ import (
 const (
 	localhost                = "http://localhost:8443/api"
 	inCluster                = "https://file-manager.file-manager-system.svc.cluster.local/api"
-	tokenFilePath            = "/var/run/secrets/tokens/sa-token"
+	TokenFilePath            = "/var/run/secrets/filemgr/token"
 	uploadRequestContentType = "application/octet-stream"
 )
 
@@ -83,7 +83,7 @@ func defaultOptions() *Options {
 	}
 	if util.IsRunningInCluster() {
 		opts.URL = inCluster
-		opts.Token = accesstoken.NewAccessToken(tokenFilePath)
+		opts.Token = accesstoken.NewAccessToken(TokenFilePath)
 	} else {
 		opts.URL = localhost
 	}
