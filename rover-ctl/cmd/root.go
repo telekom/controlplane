@@ -5,10 +5,8 @@
 package cmd
 
 import (
-	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -33,24 +31,14 @@ func ErrorHandler(err error) {
 	}
 }
 
-type VersionInfo struct {
-	BuildTime string
-	GitCommit string
-	Version   string
-}
-
-func (i VersionInfo) String() string {
-	return fmt.Sprintf("%s (build-time: %s, git-commit: %s)", i.Version, i.BuildTime, i.GitCommit)
-}
-
 // NewRootCommand creates the root command for rover-ctl
-func NewRootCommand(versionInfo VersionInfo) *cobra.Command {
+func NewRootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "roverctl",
 		Short: "Rover Control Plane CLI",
 		Long: `Rover Control Plane CLI tool for managing Control Plane resources.
 This tool allows you to apply, delete, and manage resources in the Rover Control Plane.`,
-		Version:       versionInfo.String(),
+		Version:       viper.GetString("version.full"),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
@@ -95,8 +83,6 @@ This tool allows you to apply, delete, and manage resources in the Rover Control
 
 		handlers.RegisterHandlers()
 
-		printBanner(cmd, "Rover Control Plane CLI", versionInfo)
-
 		return nil
 	}
 
@@ -120,43 +106,4 @@ This tool allows you to apply, delete, and manage resources in the Rover Control
 	)
 
 	return rootCmd
-}
-
-func printBanner(cmd *cobra.Command, title string, versionInfo VersionInfo) {
-	w := cmd.ErrOrStderr()
-
-	// Content lines
-	titleLine := fmt.Sprintf("  %s  ", title)
-	versionLine := fmt.Sprintf("  Version: %-20s  ", versionInfo.Version)
-	gitCommitLine := fmt.Sprintf("  Git Commit: %-16s  ", versionInfo.GitCommit)
-	buildTimeLine := fmt.Sprintf("  Build Time: %-17s  ", versionInfo.BuildTime)
-
-	// Find the longest line for border width
-	lines := []string{titleLine, versionLine, gitCommitLine, buildTimeLine}
-	maxWidth := 0
-	for _, line := range lines {
-		if len(line) > maxWidth {
-			maxWidth = len(line)
-		}
-	}
-
-	// Create horizontal border
-	border := strings.Repeat("=", maxWidth)
-
-	// Pad lines to max width
-	for i, line := range lines {
-		padding := strings.Repeat(" ", maxWidth-len(line))
-		lines[i] = line + padding
-	}
-
-	// Construct banner
-	banner := fmt.Sprintf("\n┌%s┐\n", border)
-	for _, line := range lines {
-		banner += fmt.Sprintf("│%s│\n", line)
-	}
-	banner += fmt.Sprintf("└%s┘\n", border)
-
-	fmt.Fprintln(w, banner)
-	fmt.Fprintln(w, "Use 'roverctl --help' for more information.")
-	fmt.Fprintln(w)
 }

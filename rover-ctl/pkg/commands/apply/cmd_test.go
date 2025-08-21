@@ -146,10 +146,6 @@ spec:
 				// Verify no error
 				Expect(err).NotTo(HaveOccurred())
 
-				// Verify successful output - the message is logged, not written to stdout
-				// Check that no errors were reported
-				Expect(stderr.String()).To(BeEmpty())
-
 				// Verify mock expectations
 				mockHandler.AssertExpectations(GinkgoT())
 			})
@@ -184,9 +180,6 @@ spec:
 
 				// Verify no error
 				Expect(err).NotTo(HaveOccurred())
-
-				// In this case, we're checking that the command executed without errors
-				Expect(stderr.String()).To(BeEmpty())
 
 				// Verify mock expectations
 				mockHandler.AssertExpectations(GinkgoT())

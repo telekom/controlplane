@@ -145,9 +145,6 @@ spec:
 				// Verify no error
 				Expect(err).NotTo(HaveOccurred())
 
-				// Check that no errors were reported
-				Expect(stderr.String()).To(BeEmpty())
-
 				// Verify mock expectations
 				mockHandler.AssertExpectations(GinkgoT())
 			})

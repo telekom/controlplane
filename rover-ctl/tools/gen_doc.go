@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	if err := doc.GenMarkdownTree(cmd.NewRootCommand(cmd.VersionInfo{}), "docs"); err != nil {
+	if err := doc.GenMarkdownTree(cmd.NewRootCommand(), "docs"); err != nil {
 		log.Fatalf("Failed to generate markdown docs: %v", err)
 	}
 }

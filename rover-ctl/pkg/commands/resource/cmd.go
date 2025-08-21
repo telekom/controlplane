@@ -63,6 +63,7 @@ func (c *Command) newGetCommand() *cobra.Command {
 		Long:  "Get a resource from the server by its kind, api version, and name",
 		RunE:  c.runGet,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			base.PrintBanner(cmd)
 			ctx, err := base.SetupTokenInContext(cmd.Context())
 			if err != nil {
 				return errors.Wrap(err, "failed to set up token in context")
@@ -91,6 +92,7 @@ func (c *Command) newListCommand() *cobra.Command {
 		Long:  "List all resources of specified kind and api version",
 		RunE:  c.runList,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			base.PrintBanner(cmd)
 			ctx, err := base.SetupTokenInContext(cmd.Context())
 			if err != nil {
 				return errors.Wrap(err, "failed to set up token in context")

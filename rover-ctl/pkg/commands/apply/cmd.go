@@ -35,9 +35,6 @@ func NewCommand() *cobra.Command {
 
 	// Set the run function
 	cmd.Cmd.RunE = cmd.Run
-	cmd.Cmd.PreRunE = func(_ *cobra.Command, args []string) error {
-		return cmd.SetupToken()
-	}
 
 	return cmd.Cmd
 }

@@ -37,9 +37,6 @@ func NewCommand() *cobra.Command {
 	baseCmd.Cmd.Flags().BoolVarP(&cmd.Shallow, "shallow", "s", false, "Get only basic information without details")
 
 	cmd.Cmd.RunE = cmd.Run
-	cmd.Cmd.PreRunE = func(_ *cobra.Command, args []string) error {
-		return cmd.SetupToken()
-	}
 
 	return cmd.Cmd
 }

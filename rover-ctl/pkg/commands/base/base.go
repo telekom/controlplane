@@ -36,6 +36,11 @@ func NewCommand(use, short, long string) *BaseCommand {
 
 	cmd.Cmd.PersistentFlags().BoolVar(&cmd.FailFast, "fail-fast", true, "Stop processing on the first error encountered")
 
+	cmd.Cmd.PreRunE = func(_ *cobra.Command, args []string) error {
+		PrintBanner(cmd.Cmd)
+		return cmd.SetupToken()
+	}
+
 	return cmd
 }
 
