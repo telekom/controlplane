@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	metrics "github.com/telekom/controlplane/common-server/pkg/client/metrics"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	"golang.org/x/oauth2"
@@ -102,8 +103,12 @@ var NewClientFor = func(gwCfg GatewayAdminConfig) (kong.ClientWithResponsesInter
 	}
 
 	httpClient := tokenCfg.Client(ctx)
+	metricsClient := metrics.WithMetrics(httpClient,
+		metrics.WithClientName("gateway"),
+		metrics.WithReplacePatterns(`([^\/]+--[^\/]+--[^\/]+)`, `([^\/]+--[^\/]+)`, metrics.ReplacePatternUID),
+	)
 
-	apiClient, err := kong.NewClientWithResponses(url.String(), kong.WithHTTPClient(httpClient))
+	apiClient, err := kong.NewClientWithResponses(url.String(), kong.WithHTTPClient(metricsClient))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create kong client")
 	}
