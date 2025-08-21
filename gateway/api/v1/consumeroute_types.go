@@ -15,6 +15,7 @@ type ConsumeRouteSpec struct {
 	Route        types.ObjectRef       `json:"route"`
 	ConsumerName string                `json:"consumerName"`
 	Security     *ConsumeRouteSecurity `json:"security,omitempty"`
+	Traffic      *ConsumeRouteTraffic  `json:"traffic,omitempty"`
 }
 
 func (c *ConsumeRoute) HasM2M() bool {
@@ -36,6 +37,17 @@ func (c *ConsumeRoute) HasM2MBasic() bool {
 		return false
 	}
 	return c.Spec.Security.M2M.Basic != nil
+}
+
+func (c *ConsumeRoute) HasTraffic() bool {
+	return c.Spec.Traffic != nil
+}
+
+func (c *ConsumeRoute) HasTrafficRateLimit() bool {
+	if !c.HasTraffic() {
+		return false
+	}
+	return c.Spec.Traffic.RateLimit != nil
 }
 
 // ConsumeRouteStatus defines the observed state of ConsumeRoute
