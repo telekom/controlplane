@@ -1,3 +1,10 @@
+# [0.10.0](https://github.com/telekom/controlplane/compare/v0.9.0...v0.10.0) (2025-08-20)
+
+
+### Features
+
+* add rate-limiting ([#114](https://github.com/telekom/controlplane/issues/114)) ([d3eec5b](https://github.com/telekom/controlplane/commit/d3eec5bcc580ccef2514c0d00a74580e35c85134))
+
 # [0.9.0](https://github.com/telekom/controlplane/compare/v0.8.0...v0.9.0) (2025-08-19)
 
 
