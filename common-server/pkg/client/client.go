@@ -68,8 +68,16 @@ func NewHttpClientOrDie(opts ...Option) client.HttpRequestDoer {
 		Timeout:   timeout,
 	}
 
+	var replaceFunc client.ReplaceFunc
+	if options.ReplacePattern != "" {
+		re, err := regexp.Compile(options.ReplacePattern)
+		if err != nil {
+			log.Fatalf("Invalid ReplacePattern regex: %v", err)
+		}
+		replaceFunc = client.NewReplacePath(re)
+	}
 	return client.WithMetrics(httpClient,
 		client.WithClientName(options.ClientName),
-		client.WithReplaceFunc(client.NewReplacePath(regexp.MustCompile(options.ReplacePattern))),
+		client.WithReplaceFunc(replaceFunc),
 	)
 }

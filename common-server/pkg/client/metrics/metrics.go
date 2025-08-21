@@ -5,7 +5,6 @@
 package metrics
 
 import (
-	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -76,7 +75,6 @@ func WithReplacePatterns(patterns ...string) Option {
 		re := regexp.MustCompile(strings.Join(patterns, "|"))
 		o.ReplaceFunc = func(path string) string {
 			new := re.ReplaceAllString(path, "redacted")
-			fmt.Println("Replacing path:", path, "->", new)
 			return new
 		}
 	}
