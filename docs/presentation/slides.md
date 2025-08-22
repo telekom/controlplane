@@ -1,6 +1,6 @@
 ---
-theme: default
-background: https://source.unsplash.com/collection/94734566/1920x1080
+theme: seriph
+background: none
 class: text-center
 highlighter: shiki
 lineNumbers: false
@@ -11,7 +11,60 @@ drawings:
   persist: false
 transition: slide-left
 title: Controlplane Technical Framework Overview
+colorSchema: dark
+themeConfig:
+  primary: '#E20074'  # Telekom magenta
+css: unocss
+monaco: false  # set to true to enable Monaco editor
 ---
+
+<style>
+/* Add the platform element directly in the slides for simplicity */
+.slidev-page::before {
+  content: "";
+  position: absolute;
+  top: -100px;
+  left: -100px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(226, 0, 116, 0.1) 0%, rgba(226, 0, 116, 0) 70%);
+  border-radius: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.logo {
+  width: 180px;
+  height: auto;
+  margin-bottom: 1rem;
+}
+
+/* Architecture diagram scaling */
+.slidev-layout[layout="image-right"] .slidev-image-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.slidev-layout[layout="image-right"] .slidev-image {
+  max-width: 100%;
+  max-height: 90%;
+  object-fit: contain;
+}
+</style>
+
+<div class="logo-container">
+  <img src="/images/otip-logo.svg" alt="OTIP Logo" class="logo" />
+</div>
 
 # Controlplane Technical Framework Overview
 ## Technical Stack & Architecture
@@ -25,9 +78,13 @@ image: './images/architecture.drawio.svg'
 
 The Control Plane is the central management layer for the Open Telekom Integration Platform.
 
+<div class="glass-card">
+
 - **Kubernetes Operators** - Custom controllers for complex domain apps
 - **API Servers** - RESTful interfaces for k8s resources
 - **Libraries** - Shared code modules
+
+</div>
 
 ---
 layout: two-cols
@@ -76,6 +133,7 @@ func (r *FileManagerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 # Web & API Frameworks
 
+<div class="glass-card">
 <v-clicks>
 
 - **Gofiber** (v2.52.8)
@@ -89,6 +147,7 @@ func (r *FileManagerReconciler) Reconcile(ctx context.Context, req ctrl.Request)
   - Self-documenting APIs
 
 </v-clicks>
+</div>
 
 ---
 layout: two-cols
@@ -132,11 +191,13 @@ type FileDownloader interface {
 ```
 
 ---
-layout: statement
+layout: center
+class: text-center
 ---
 
 # Testing Frameworks
 
+<div class="glass-card">
 <v-clicks>
 
 - **Testify** - Rich assertion library
@@ -144,11 +205,13 @@ layout: statement
 - **Controller-Runtime Test Environment** - K8s API testing
 
 </v-clicks>
+</div>
 
 ---
 
 # Authentication & Security
 
+<div class="glass-card">
 <v-clicks>
 
 - **JWT**
@@ -160,11 +223,13 @@ layout: statement
   - Request validation
 
 </v-clicks>
+</div>
 
 ---
 
 # Infrastructure & Deployment
 
+<div class="glass-card">
 <v-clicks>
 
 - **Kubernetes Native**
@@ -177,6 +242,7 @@ layout: statement
   - Environment configuration
 
 </v-clicks>
+</div>
 
 ---
 layout: two-cols
@@ -207,9 +273,12 @@ log := zapr.NewLogger(zapLog)
 ```
 
 ---
-layout: end
+layout: center
+class: text-center
 ---
 
 # Thank You
 
+<div class="glass-card">
 Explore the detailed documentation for each component
+</div>
