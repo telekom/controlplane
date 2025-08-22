@@ -1,0 +1,38 @@
+/* Custom styles for the presentation */
+
+:root {
+  --slidev-theme-primary: #e20074; /* Deutsche Telekom magenta */
+}
+
+/* Title slide */
+.slidev-layout.cover {
+  background-color: #ffffff;
+  color: var(--slidev-theme-primary);
+}
+
+/* Regular slides */
+.slidev-layout {
+  background-color: #ffffff;
+}
+
+/* Code blocks */
+.slidev-code {
+  border-radius: 5px;
+  font-size: 0.9em;
+}
+
+/* Lists */
+ul li {
+  margin-bottom: 0.5em;
+}
+
+/* Headings */
+h1 {
+  color: var(--slidev-theme-primary);
+}
+
+/* End slide */
+.slidev-layout.end {
+  background-color: var(--slidev-theme-primary);
+  color: white;
+}
