@@ -1,24 +1,126 @@
-/* Custom styles for the presentation */
+/* Custom styles for Deutsche Telekom themed presentation */
 
+/* Telekom colors */
 :root {
-  --slidev-theme-primary: #e20074; /* Deutsche Telekom magenta */
+  --telekom-magenta: #E20074;
+  --telekom-magenta-dark: #c40063;
+  --telekom-magenta-light: #f50082;
+  --telekom-black: #191919;
+  --telekom-dark: #121212;
+  --telekom-white: #FFFFFF;
+  --telekom-gray-dark: #262626;
+  --telekom-gray-medium: #4A4A4A;
+  --telekom-gray-light: #E2E2E2;
+  
+  /* Keep this for backward compatibility */
+  --slidev-theme-primary: var(--telekom-magenta);
 }
 
-/* Title slide */
-.slidev-layout.cover {
-  background-color: #ffffff;
-  color: var(--slidev-theme-primary);
-}
-
-/* Regular slides */
+/* Platform-inspired background with subtle grid and glass effect */
 .slidev-layout {
-  background-color: #ffffff;
+  background-color: var(--telekom-dark);
+  color: var(--telekom-white);
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  position: relative;
+  overflow: hidden;
 }
 
-/* Code blocks */
-.slidev-code {
-  border-radius: 5px;
-  font-size: 0.9em;
+/* Grid background */
+.slidev-layout::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(226, 0, 116, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(226, 0, 116, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: center center;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Platform-like curved shape in the background */
+.slidev-layout::after {
+  content: "";
+  position: absolute;
+  bottom: -150px;
+  right: -150px;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(226, 0, 116, 0.15) 0%, rgba(226, 0, 116, 0) 70%);
+  border-radius: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Additional platform element - top left */
+.platform-element-top {
+  position: absolute;
+  top: -100px;
+  left: -100px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(226, 0, 116, 0.1) 0%, rgba(226, 0, 116, 0) 70%);
+  border-radius: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Make sure content stays above background elements */
+.slidev-layout > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Glass-like container for content */
+.slidev-layout > div {
+  position: relative;
+}
+
+/* Cover slide with special styling */
+.slidev-layout.cover {
+  background-color: var(--telekom-dark);
+  color: var(--telekom-white);
+}
+
+.slidev-layout.cover::before {
+  opacity: 0.7;
+}
+
+.slidev-layout.cover::after {
+  width: 700px;
+  height: 700px;
+  opacity: 0.8;
+}
+
+.slidev-layout.cover h1 {
+  color: var(--telekom-magenta);
+  font-weight: 600;
+  text-shadow: 0 0 20px rgba(226, 0, 116, 0.3);
+}
+
+/* Glass effect cards for specific content */
+.glass-card {
+  background: rgba(38, 38, 38, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Headings */
+h1, h2, h3, h4 {
+  color: var(--telekom-magenta);
+}
+
+/* Bullet points */
+ul li::marker {
+  color: var(--telekom-magenta);
 }
 
 /* Lists */
@@ -26,13 +128,93 @@ ul li {
   margin-bottom: 0.5em;
 }
 
-/* Headings */
-h1 {
-  color: var(--slidev-theme-primary);
+/* Code blocks with glass effect */
+.slidev-code {
+  border-radius: 8px;
+  border-left: 4px solid var(--telekom-magenta);
+  background-color: rgba(38, 38, 38, 0.7) !important;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  font-size: 0.9em;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Inline code */
+code {
+  color: var(--telekom-magenta-light);
+  background: rgba(226, 0, 116, 0.1);
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+}
+
+/* Strong text */
+strong {
+  color: var(--telekom-white);
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(226, 0, 116, 0.3);
+}
+
+/* Links */
+a {
+  color: var(--telekom-magenta-light);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--telekom-magenta-light);
+  transition: all 0.3s ease;
+}
+
+a:hover {
+  color: var(--telekom-magenta);
+  border-bottom: 1px solid var(--telekom-magenta);
+  text-shadow: 0 0 8px rgba(226, 0, 116, 0.5);
+}
+
+/* Two column layout */
+.slidev-layout.two-cols .col-left,
+.slidev-layout.two-cols .col-right {
+  padding: 1rem;
+}
+
+/* Center layout */
+.slidev-layout.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.slidev-layout.center h1 {
+  text-shadow: 0 0 20px rgba(226, 0, 116, 0.5);
 }
 
 /* End slide */
 .slidev-layout.end {
-  background-color: var(--slidev-theme-primary);
+  background: linear-gradient(135deg, var(--telekom-magenta-dark) 0%, var(--telekom-magenta) 100%);
   color: white;
+}
+
+.slidev-layout.end::before {
+  opacity: 0.1;
+}
+
+/* Click animations for v-clicks */
+.v-click {
+  transition: all 0.3s ease;
+}
+
+.v-after {
+  opacity: 0.7;
+}
+
+/* Add platform element to each slide */
+.slidev-layout {
+  position: relative;
+}
+
+/* Telekom logo watermark */
+.telekom-logo {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  height: 20px;
+  opacity: 0.5;
 }
