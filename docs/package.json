@@ -1,0 +1,20 @@
+{
+  "name": "controlplane-docs",
+  "version": "1.0.0",
+  "description": "Technical documentation and presentation for the Open Telekom Integration Platform controlplane",
+  "scripts": {
+    "docs:dev": "cd docs && npm run start",
+    "docs:build": "cd docs && npm run build",
+    "docs:serve": "cd docs && npm run serve",
+    "presentation:dev": "cd presentation && npm run dev",
+    "presentation:build": "cd presentation && npm run build",
+    "presentation:export": "cd presentation && npm run export"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "private": true,
+  "workspaces": [
+    "docs",
+    "presentation"
+  ]
+}
