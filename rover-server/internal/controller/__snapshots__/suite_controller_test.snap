@@ -532,7 +532,7 @@
 {
  "category": "other",
  "id": "eni--hyperion--apispec-sample",
- "name": "",
+ "name": "rover-api",
  "specification": {
   "info": {
    "title": "Rover API",
@@ -582,7 +582,7 @@
   {
    "category": "other",
    "id": "eni--hyperion--apispec-sample",
-   "name": "",
+   "name": "rover-api",
    "specification": {
     "info": {
      "title": "Rover API",
@@ -614,7 +614,7 @@
   {
    "category": "other",
    "id": "eni--hyperion--apispec-sample",
-   "name": "",
+   "name": "rover-api",
    "specification": {
     "info": {
      "title": "Rover API",
@@ -646,7 +646,7 @@
   {
    "category": "other",
    "id": "eni--hyperion--apispec-sample",
-   "name": "",
+   "name": "rover-api",
    "specification": {
     "info": {
      "title": "Rover API",
@@ -678,7 +678,7 @@
   {
    "category": "other",
    "id": "eni--hyperion--apispec-sample",
-   "name": "",
+   "name": "rover-api",
    "specification": {
     "info": {
      "title": "Rover API",
@@ -752,7 +752,7 @@
 {
  "category": "other",
  "id": "eni--hyperion--apispec-sample",
- "name": "",
+ "name": "rover-api",
  "specification": {
   "info": {
    "title": "Rover API",

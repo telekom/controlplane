@@ -15,6 +15,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
+	filesapi "github.com/telekom/controlplane/file-manager/api"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/telekom/controlplane/rover-server/internal/config"
@@ -44,7 +45,7 @@ func main() {
 	s := server.Server{
 		Config:              cfg,
 		Log:                 log.Log,
-		ApiSpecifications:   controller.NewApiSpecificationController(),
+		ApiSpecifications:   controller.NewApiSpecificationController(filesapi.New()),
 		Rovers:              controller.NewRoverController(),
 		EventSpecifications: controller.NewEventSpecificationController(),
 	}

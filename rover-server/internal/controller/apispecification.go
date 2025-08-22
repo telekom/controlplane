@@ -5,13 +5,17 @@
 package controller
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/store"
+	filesapi "github.com/telekom/controlplane/file-manager/api"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	"gopkg.in/yaml.v3"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
@@ -25,12 +29,14 @@ import (
 var _ server.ApiSpecificationController = &ApiSpecificationController{}
 
 type ApiSpecificationController struct {
-	Store store.ObjectStore[*roverv1.ApiSpecification]
+	Store    store.ObjectStore[*roverv1.ApiSpecification]
+	filesAPI filesapi.FileManager
 }
 
-func NewApiSpecificationController() *ApiSpecificationController {
+func NewApiSpecificationController(filesAPI filesapi.FileManager) *ApiSpecificationController {
 	return &ApiSpecificationController{
-		Store: s.ApiSpecificationStore,
+		Store:    s.ApiSpecificationStore,
+		filesAPI: filesAPI,
 	}
 }
 
@@ -52,6 +58,8 @@ func (a *ApiSpecificationController) Delete(ctx context.Context, resourceId stri
 	}
 
 	ns := id.Environment + "--" + id.Namespace
+
+	//todo: filesapi does not support delete at the moment
 	err = a.Store.Delete(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
@@ -78,7 +86,22 @@ func (a *ApiSpecificationController) Get(ctx context.Context, resourceId string)
 		return res, err
 	}
 
-	return out.MapResponse(apiSpec)
+	b, err := a.downloadFile(ctx, apiSpec.Spec.Specification)
+	if err != nil {
+		return res, err
+	}
+
+	if b.Len() == 0 {
+		return res, errors.New("api specification response is empty")
+	}
+
+	m := make(map[string]any)
+	err = yaml.Unmarshal(b.Bytes(), &m)
+	if err != nil {
+		return res, err
+	}
+
+	return out.MapResponse(apiSpec, &m)
 }
 
 // GetAll implements server.ApiSpecificationController.
@@ -92,8 +115,17 @@ func (a *ApiSpecificationController) GetAll(ctx context.Context, params api.GetA
 	}
 
 	list := make([]api.ApiSpecificationResponse, 0, len(objList.Items))
-	for _, apispec := range objList.Items {
-		resp, err := out.MapResponse(apispec)
+	for _, apiSpec := range objList.Items {
+		b, err := a.downloadFile(ctx, apiSpec.Spec.Specification)
+		if err != nil {
+			return nil, problems.InternalServerError("Failed to download resource", err.Error())
+		}
+		m := make(map[string]any)
+		err = yaml.Unmarshal(b.Bytes(), &m)
+		if err != nil {
+			return nil, problems.InternalServerError("Failed to marshal resource", err.Error())
+		}
+		resp, err := out.MapResponse(apiSpec, &m)
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to map resource", err.Error())
 		}
@@ -115,7 +147,9 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 	if err != nil {
 		return res, err
 	}
-	obj, err := in.MapRequest(&req, id)
+
+	fileAPIResp, err := a.uploadFile(ctx, &req, id.ResourceId)
+	obj, err := in.MapRequest(ctx, &req, fileAPIResp, id)
 	if err != nil {
 		return res, err
 	}
@@ -146,4 +180,26 @@ func (a *ApiSpecificationController) GetStatus(ctx context.Context, resourceId s
 	}
 
 	return status.MapResponse(apiSpec.Status.Conditions)
+}
+
+func (a *ApiSpecificationController) uploadFile(ctx context.Context, req *api.ApiSpecification, resourceId string) (*filesapi.FileUploadResponse, error) {
+	if req == nil {
+		return nil, errors.New("input api specification is nil")
+	}
+
+	bCtx := ReceiveBCtxOrDie(ctx)
+	data, err := yaml.Marshal(*req)
+	if err != nil {
+		return nil, err
+	}
+	return a.filesAPI.UploadFile(ctx, bCtx.Environment+"--"+bCtx.Group+"--"+bCtx.Team+"--"+resourceId, "application/yaml", bytes.NewReader(data))
+}
+
+func (a *ApiSpecificationController) downloadFile(ctx context.Context, fileId string) (*bytes.Buffer, error) {
+	var b bytes.Buffer
+	_, err := a.filesAPI.DownloadFile(ctx, fileId, &b)
+	if err != nil {
+		return nil, err
+	}
+	return &b, nil
 }

@@ -6,28 +6,27 @@ package out
 
 import (
 	"github.com/pkg/errors"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	"gopkg.in/yaml.v3"
-
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
-func MapResponse(in *roverv1.ApiSpecification) (res api.ApiSpecificationResponse, err error) {
+func MapResponse(in *roverv1.ApiSpecification, inFile *map[string]any) (res api.ApiSpecificationResponse, err error) {
 	if in == nil {
-		return res, errors.New("input api specification is nil")
+		return res, errors.New("input api specification crd is nil")
 	}
-	m := map[string]any{}
-	err = yaml.Unmarshal([]byte(in.Spec.Specification), &m)
-	if err != nil {
-		return
+
+	if inFile == nil {
+		return res, errors.New("input api specification is nil")
 	}
 
 	res = api.ApiSpecificationResponse{
-		Category:      in.Status.Category,
-		Specification: m,
+		Category:      in.Spec.Category,
 		Id:            mapper.MakeResourceId(in),
+		Name:          in.Spec.ApiName,
+		Specification: *inFile,
+		VendorApi:     in.Spec.XVendor,
 	}
 	res.Status = status.MapStatus(in.Status.Conditions)
 

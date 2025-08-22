@@ -14,7 +14,7 @@ import (
 var _ = Describe("ApiSpecificationResponse Mapper", func() {
 	Context("MapRequest", func() {
 		It("must map a ApiSpecification to an ApiSpecificationResponse correctly", func() {
-			output, err := MapResponse(apiSpecification)
+			output, err := MapResponse(apiSpecification, openapi)
 
 			Expect(err).To(BeNil())
 
@@ -23,13 +23,13 @@ var _ = Describe("ApiSpecificationResponse Mapper", func() {
 		})
 
 		It("must return an error if the input ApiSpecification is nil", func() {
-			output, err := MapResponse(nil)
+			output, err := MapResponse(nil, nil)
 
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)
 
 			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(ContainSubstring("input api specification is nil"))
+			Expect(err.Error()).To(ContainSubstring("input api specification crd is nil"))
 		})
 
 	})

@@ -19,12 +19,18 @@ func EnsureLabelsOrDie(ctx context.Context, obj client.Object) {
 	}
 	defer obj.SetLabels(labels)
 
+	bCtx := ReceiveBCtxOrDie(ctx)
+
+	labels[config.EnvironmentLabelKey] = bCtx.Environment
+	labels[config.BuildLabelKey("team")] = bCtx.Team
+	labels[config.BuildLabelKey("group")] = bCtx.Group
+}
+
+func ReceiveBCtxOrDie(ctx context.Context) *security.BusinessContext {
 	bCtx, ok := security.FromContext(ctx)
 	if !ok {
 		panic("security context not found")
 	}
 
-	labels[config.EnvironmentLabelKey] = bCtx.Environment
-	labels[config.BuildLabelKey("team")] = bCtx.Team
-	labels[config.BuildLabelKey("group")] = bCtx.Group
+	return bCtx
 }
