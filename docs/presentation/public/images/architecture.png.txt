@@ -1,0 +1,2 @@
+This is a placeholder for the architecture diagram image. 
+In a real implementation, you would replace this .txt file with an actual PNG image file.

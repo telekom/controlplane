@@ -1,0 +1,19 @@
+{
+  "name": "controlplane-presentation",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Technical presentation for the Open Telekom Integration Platform controlplane",
+  "scripts": {
+    "dev": "slidev --open",
+    "build": "slidev build",
+    "export": "slidev export"
+  },
+  "dependencies": {
+    "@slidev/cli": "^0.43.7",
+    "@slidev/theme-default": "^0.21.2",
+    "@slidev/theme-seriph": "^0.21.3"
+  },
+  "devDependencies": {
+    "playwright-chromium": "^1.38.0"
+  }
+}
