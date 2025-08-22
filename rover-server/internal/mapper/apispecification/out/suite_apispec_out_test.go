@@ -16,6 +16,7 @@ import (
 
 var (
 	apiSpecification *roverv1.ApiSpecification
+	openapi          *map[string]any
 )
 
 func TestMapper(t *testing.T) {
@@ -25,4 +26,5 @@ func TestMapper(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	apiSpecification = mocks.GetApiSpecification(GinkgoT(), mocks.ApiSpecificationFileName)
+	openapi = mocks.GetOpenApi(GinkgoT(), mocks.OpenApiFileName)
 })

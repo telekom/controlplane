@@ -22,8 +22,10 @@ var (
 				"title":   "Rover API",
 				"version": "1.0.0",
 			},
-			"servers": map[string]interface{}{
-				"url": "http://rover-api/eni/distr/v1",
+			"servers": []interface{}{
+				map[string]interface{}{
+					"url": "http://rover-api/eni/distr/v1",
+				},
 			},
 		},
 	}

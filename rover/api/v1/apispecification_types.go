@@ -12,6 +12,15 @@ import (
 
 type ApiSpecificationSpec struct {
 	Specification string `json:"specification"`
+	Category      string `json:"category"`
+
+	ApiName      string   `json:"apiName"`
+	ContentType  string   `json:"contentType"`
+	BasePath     string   `json:"basepath"`
+	Hash         string   `json:"hash"`
+	Oauth2Scopes []string `json:"scopes"`
+	XVendor      bool     `json:"xvendor"`
+	Version      string   `json:"version"`
 }
 
 type ApiSpecificationStatus struct {
@@ -24,10 +33,6 @@ type ApiSpecificationStatus struct {
 
 	// API reference
 	Api types.ObjectRef `json:"api,omitempty"`
-	// Base path of the API
-	BasePath string `json:"basePath,omitempty"`
-	// Category of the API
-	Category string `json:"category,omitempty"`
 }
 
 //+kubebuilder:object:root=true
