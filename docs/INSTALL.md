@@ -1,4 +1,4 @@
-# Installation Guide
+Whe# Installation Guide
 
 This guide will help you set up and run both the Slidev presentation and Docusaurus documentation for the controlplane project.
 
@@ -65,10 +65,10 @@ This will generate a PDF version of the presentation.
 
 ## Docusaurus Documentation Setup
 
-1. Navigate to the docs directory:
+1. Navigate to the docusaurus directory:
 
 ```bash
-cd docs
+cd docusaurus
 ```
 
 2. Install dependencies:
