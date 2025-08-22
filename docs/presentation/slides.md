@@ -96,7 +96,21 @@ layout: two-cols
 
 # Storage & Backend
 
-::highlight::
+<v-clicks>
+
+- **MinIO S3 Client**
+  - S3-compatible object storage
+  - Secure credential management
+  - Bucket and object operations
+
+- **Backend Interfaces**
+  - Clean separation of concerns
+  - Implementation agnostic
+  - Testable design
+
+</v-clicks>
+
+::right::
 
 ```go
 // MinIO S3 client for object storage
@@ -104,18 +118,16 @@ client, err := minio.New(endpoint, &minio.Options{
     Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
     Secure: useSSL,
 })
-```
 
-::code::
-
-```go
 // File-Manager Backend Interface
 type FileUploader interface {
-    UploadFile(ctx context.Context, fileID string, file io.Reader) error
+    UploadFile(ctx context.Context, fileID string, 
+               file io.Reader) error
 }
 
 type FileDownloader interface {
-    DownloadFile(ctx context.Context, fileID string) (io.ReadCloser, error)
+    DownloadFile(ctx context.Context, fileID string) 
+               (io.ReadCloser, error)
 }
 ```
 
