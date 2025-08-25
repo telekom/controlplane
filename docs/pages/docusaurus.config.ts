@@ -17,15 +17,16 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: 'https://your-docusaurus-site.example.com',
+  url: 'https://telekom.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/',
+  baseUrl: '/controlplane/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
   organizationName: 'telekom', // Usually your GitHub org/user name.
   projectName: 'controlplane', // Usually your repo name.
+  trailingSlash: false,
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
@@ -46,7 +47,7 @@ const config: Config = {
           sidebarPath: './sidebars.ts',
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl: 'https://github.com/yourusername/controlplane-docs/tree/main/docs/',
+          editUrl: 'https://github.com/telekom/controlplane/tree/main/docs/pages/',
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
         },
