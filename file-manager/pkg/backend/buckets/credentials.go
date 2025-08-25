@@ -85,14 +85,10 @@ func NewCredentials(provider CredentialProvider, opts ...CredentialOption) (*cre
 		staticToken := options.properties.GetDefault("token", os.Getenv("AWS_WEB_IDENTITY_TOKEN"))
 
 		var token accesstoken.AccessToken
-		var ok bool
 		if staticToken != "" {
 			token = accesstoken.NewStaticAccessToken(staticToken)
 		} else {
-			token, ok = accesstoken.NewAccessToken(tokenPath).(accesstoken.ExpirableAccessToken)
-			if !ok {
-				return nil, errors.New("failed to create access token from file")
-			}
+			token = accesstoken.NewAccessToken(tokenPath)
 		}
 
 		getWebIDTokenExpiry := func() (*credentials.WebIdentityToken, error) {
@@ -100,14 +96,8 @@ func NewCredentials(provider CredentialProvider, opts ...CredentialOption) (*cre
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to read access token from file")
 			}
-			expiry := 0
-			expirableToken, ok := token.(accesstoken.ExpirableAccessToken)
-			if ok {
-				expiry = int(expirableToken.GetExpiresAt())
-			}
 			return &credentials.WebIdentityToken{
-				Token:  tokenStr,
-				Expiry: expiry,
+				Token: tokenStr,
 			}, nil
 		}
 		stsOpts := func(si *credentials.STSWebIdentity) {
