@@ -458,7 +458,7 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 			Weight: &targetsWeight,
 		}
 
-		targetsResponse, err := c.client.UpsertTargetForUpstreamWithResponse(ctx, upstreamName, targetsName, targetsBody)
+		targetsResponse, err := c.client.CreateTargetForUpstreamWithResponse(ctx, upstreamName, targetsBody)
 		if err != nil {
 			return errors.Wrap(err, "failed to create targets for upstream")
 		}
@@ -656,8 +656,8 @@ func encodeTags(tags []string) *string {
 func isCircuitBreakerEnabled(ctx context.Context, gateway *gatewayapi.Gateway, route CustomRoute) bool {
 	log := logr.FromContextOrDiscard(ctx)
 	// check if the route is trying to bypass the GW config
-	r, err := route.(*gatewayapi.Route)
-	if err {
+	r, ok := route.(*gatewayapi.Route)
+	if ok {
 		log.Info("Cannot convert CustomRoute to gatewayapi.Route when attempting to resolve if CircuitBreaker should be configured. Assuming the value is FALSE!", "routeName", route.GetName())
 	}
 	if r.Spec.Traffic.CircuitBreaker != nil {
