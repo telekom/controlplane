@@ -16,6 +16,12 @@ type AccessToken interface {
 	Read() (string, error)
 }
 
+type ExpirableAccessToken interface {
+	AccessToken
+	IsExpired() bool
+	GetExpiresAt() int64
+}
+
 type FileAccessToken struct {
 	filePath     string
 	data         string
@@ -76,6 +82,13 @@ func (k *FileAccessToken) setExpiresAt(graceSeconds int64) error {
 	k.expiresAt = claims.ExpiresAt.Unix() - graceSeconds
 
 	return nil
+}
+
+func (k *FileAccessToken) GetExpiresAt() int64 {
+	if k.expiresAt == 0 {
+		return -1
+	}
+	return k.expiresAt
 }
 
 func (k *FileAccessToken) parseJwt(raw string) (*jwt.RegisteredClaims, error) {

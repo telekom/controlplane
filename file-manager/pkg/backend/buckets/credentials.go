@@ -9,166 +9,129 @@ import (
 
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/pkg/errors"
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 )
 
-const WebIdentityTokenEnvVar = "MC_WEB_IDENTITY_TOKEN"
+type CredentialProvider string
 
-// createTokenProvider creates a token provider function for a given token
-func (c *BucketConfig) createTokenProvider(token string) func() (*credentials.WebIdentityToken, error) {
-	return func() (*credentials.WebIdentityToken, error) {
-		return &credentials.WebIdentityToken{
-			Token: token,
-		}, nil
+const (
+	CredentialProviderEnvMinio       CredentialProvider = "env-minio"
+	CredentialProviderSTSWebIdentity CredentialProvider = "sts-web-identity"
+	CredentialProviderStatic         CredentialProvider = "static"
+)
+
+type Properties interface {
+	GetDefault(key string, defaultValue string) string
+	Get(key string) string
+}
+
+type propertiesMap map[string]string
+
+func (p propertiesMap) GetDefault(key string, defaultValue string) string {
+	value, exists := p[key]
+	if !exists {
+		return defaultValue
+	}
+	return value
+}
+
+func (p propertiesMap) Get(key string) string {
+	return p[key]
+}
+
+type CredentialOptions struct {
+	properties Properties
+}
+
+func WithProperties(props Properties) CredentialOption {
+	return func(o *CredentialOptions) {
+		o.properties = props
 	}
 }
 
-// createSTSCredentials creates STS web identity credentials using a token provider
-func (c *BucketConfig) createSTSCredentials(tokenProvider func() (*credentials.WebIdentityToken, error)) (*credentials.Credentials, error) {
-	c.Logger.V(1).Info("Creating STS web identity credentials")
-	creds, err := credentials.NewSTSWebIdentity(
-		c.STSEndpoint,
-		tokenProvider,
-		func(i *credentials.STSWebIdentity) {
-			i.RoleARN = c.RoleSessionArn
-			c.Logger.V(1).Info("Setting role ARN for STS", "roleARN", i.RoleARN)
-		},
-	)
-	if err != nil {
-		c.Logger.Error(err, "Failed to create STS web identity credentials")
-		return nil, errors.Wrap(err, "failed to create STS web identity credentials")
-	}
-	return creds, nil
-}
-
-// getCredentials returns appropriate credentials based on token availability
-func (c *BucketConfig) getCredentials(tokenAvailable bool, token string) (*credentials.Credentials, error) {
-	if tokenAvailable {
-		tokenProvider := c.createTokenProvider(token)
-		return c.createSTSCredentials(tokenProvider)
-	} else {
-		// Create anonymous credentials as fallback
-		c.Logger.V(0).Info("Using anonymous credentials - limited functionality may be available")
-		return credentials.NewStatic("", "", "", credentials.SignatureAnonymous), nil
-	}
-}
-
-// RefreshCredentialsOrDiscard checks if the token has changed and updates credentials if needed.
-// If the token is unchanged or unavailable, does nothing.
-func (c *BucketConfig) RefreshCredentialsOrDiscard() error {
-	token, available := c.getTokenFromSources()
-	if !available {
-		c.Logger.V(1).Info("No token available, skipping credential refresh")
-		return nil
-	}
-	if c.currentToken == token {
-		c.Logger.V(1).Info("Token unchanged, skipping credentials update")
-		return nil
-	}
-	c.Logger.V(1).Info("Token changed, updating credentials")
-	c.currentToken = token
-	creds, err := c.getCredentials(true, token)
-	if err != nil {
-		return err
-	}
-	c.currentCreds = creds
-	if c.Client != nil {
-		client, err := c.createMinioClient(creds)
-		if err != nil {
-			return errors.Wrap(err, "failed to create new client with updated credentials")
+func WithProperty(key, value string) CredentialOption {
+	return func(o *CredentialOptions) {
+		if o.properties == nil {
+			o.properties = propertiesMap{}
 		}
-		c.Client = client
-		c.Logger.V(1).Info("Updated client with new credentials")
+		o.properties.(propertiesMap)[key] = value
 	}
-	return nil
 }
 
-// getTokenFromSources tries to get a token from various sources (environment, file)
-// Returns the token, a boolean indicating whether it's available, and any error
-func (c *BucketConfig) getTokenFromSources() (string, bool) {
-	log := c.Logger
-	var token string
-	var available bool
+type CredentialOption func(*CredentialOptions)
 
-	// Try to get token from environment first
-	if os.Getenv(WebIdentityTokenEnvVar) != "" {
-		log.V(1).Info("Getting token from environment")
-		webToken, err := c.getWebIDTokenFromEnv()
-		if err == nil {
-			token = webToken.Token
-			available = true
-			return token, available
+func AutoDiscoverProvider(properties Properties) CredentialProvider {
+	if properties.GetDefault("roleArn", os.Getenv("AWS_ROLE_ARN")) != "" {
+		return CredentialProviderSTSWebIdentity
+	}
+
+	if properties.Get("accessKey") != "" && properties.Get("secretKey") != "" {
+		return CredentialProviderStatic
+	}
+	return CredentialProviderEnvMinio
+}
+
+func NewCredentials(provider CredentialProvider, opts ...CredentialOption) (*credentials.Credentials, error) {
+	options := &CredentialOptions{}
+	for _, o := range opts {
+		o(options)
+	}
+
+	switch provider {
+	case CredentialProviderSTSWebIdentity:
+		stsEndpoint := options.properties.GetDefault("stsEndpoint", "https://sts.amazonaws.com")
+		roleArn := options.properties.GetDefault("roleArn", os.Getenv("AWS_ROLE_ARN"))
+		tokenPath := options.properties.GetDefault("tokenPath", BucketsBackendTokenPath)
+		staticToken := options.properties.GetDefault("token", os.Getenv("AWS_WEB_IDENTITY_TOKEN"))
+
+		var token accesstoken.AccessToken
+		var ok bool
+		if staticToken != "" {
+			token = accesstoken.NewStaticAccessToken(staticToken)
 		} else {
-			log.V(1).Info("Failed to get token from environment", "error", err.Error())
+			token, ok = accesstoken.NewAccessToken(tokenPath).(accesstoken.ExpirableAccessToken)
+			if !ok {
+				return nil, errors.New("failed to create access token from file")
+			}
 		}
+
+		getWebIDTokenExpiry := func() (*credentials.WebIdentityToken, error) {
+			tokenStr, err := token.Read()
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to read access token from file")
+			}
+			expiry := 0
+			expirableToken, ok := token.(accesstoken.ExpirableAccessToken)
+			if ok {
+				expiry = int(expirableToken.GetExpiresAt())
+			}
+			return &credentials.WebIdentityToken{
+				Token:  tokenStr,
+				Expiry: expiry,
+			}, nil
+		}
+		stsOpts := func(si *credentials.STSWebIdentity) {
+			si.RoleARN = roleArn
+		}
+
+		creds, err := credentials.NewSTSWebIdentity(stsEndpoint, getWebIDTokenExpiry, stsOpts)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create STS web identity credentials")
+		}
+		return creds, nil
+
+	case CredentialProviderEnvMinio:
+		return credentials.New(&credentials.EnvMinio{}), nil
+
+	case CredentialProviderStatic:
+		accessKey := options.properties.Get("accessKey")
+		secretKey := options.properties.Get("secretKey")
+		if accessKey == "" || secretKey == "" {
+			return nil, errors.New("static credentials require both accessKey and secretKey properties")
+		}
+		return credentials.NewStaticV4(accessKey, secretKey, ""), nil
+
+	default:
+		return nil, errors.Errorf("unknown credential provider type: %s", provider)
 	}
-
-	// If no token from environment, try from file
-	log.V(1).Info("Trying to get token from file", "path", c.TokenPath)
-	webToken, err := c.getWebIDTokenFromFile()
-	if err == nil {
-		token = webToken.Token
-		available = true
-		return token, available
-	} else {
-		log.V(1).Info("Failed to get token from file", "error", err.Error())
-	}
-
-	// No token found
-	log.V(0).Info("No identity token found in environment or file")
-	return "", false
-}
-
-// getWebIDTokenFromEnv retrieves the web identity token from an environment variable
-func (c *BucketConfig) getWebIDTokenFromEnv() (*credentials.WebIdentityToken, error) {
-	// Use the configured logger
-	log := c.Logger
-
-	log.V(1).Info("Retrieving web identity token from environment variable")
-	data := os.Getenv(WebIdentityTokenEnvVar)
-	if data == "" {
-		log.Error(nil, WebIdentityTokenEnvVar+" environment variable not set")
-		return nil, errors.New(WebIdentityTokenEnvVar + " environment variable not set")
-	}
-
-	log.V(1).Info("Successfully retrieved token from environment variable")
-	return &credentials.WebIdentityToken{
-		Token: data,
-	}, nil
-}
-
-// getWebIDTokenFromFile retrieves the web identity token from a file
-func (c *BucketConfig) getWebIDTokenFromFile() (*credentials.WebIdentityToken, error) {
-	// Use the configured logger
-	log := c.Logger
-
-	// If token path is empty, return an error
-	if c.TokenPath == "" {
-		log.V(1).Info("No token file path specified")
-		return nil, errors.New("no token file path specified")
-	}
-
-	log.V(1).Info("Reading web identity token from file", "path", c.TokenPath)
-
-	// Check if file exists before trying to read it
-	if _, err := os.Stat(c.TokenPath); os.IsNotExist(err) {
-		log.V(1).Info("Token file does not exist", "path", c.TokenPath)
-		return nil, errors.New("token file does not exist")
-	}
-
-	data, err := os.ReadFile(c.TokenPath)
-	if err != nil {
-		log.V(1).Info("Failed to read web identity token file", "error", err.Error())
-		return nil, errors.Wrap(err, "failed to read web identity token file")
-	}
-
-	// Check if file is empty
-	if len(data) == 0 {
-		log.V(1).Info("Token file is empty", "path", c.TokenPath)
-		return nil, errors.New("token file is empty")
-	}
-
-	log.V(1).Info("Successfully read token from file")
-	return &credentials.WebIdentityToken{
-		Token: string(data),
-	}, nil
 }
