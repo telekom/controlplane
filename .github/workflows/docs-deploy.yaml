@@ -26,6 +26,7 @@ jobs:
         with:
           node-version: 18
           cache: npm
+          cache-dependency-path: docs/pages/package-lock.jso
 
       - name: Install dependencies
         run: cd docs/pages && npm ci
