@@ -117,6 +117,7 @@ func (route *Route) HasM2MExternalIdpBasic() bool {
 	return route.Spec.Security.M2M.ExternalIDP.Basic != nil
 }
 
+// TODO REMOVE THIS / MOVE THIS
 type Traffic struct {
 	Failover *Failover `json:"failover,omitempty"`
 	// used internally to bypass gateway CB configuration, false by default
@@ -128,6 +129,7 @@ type Failover struct {
 	Upstreams      []Upstream `json:"upstreams"`
 	Security       *Security  `json:"security,omitempty"`
 }
+// TODO REMOVE THIS / MOVE THIS
 
 // RouteStatus defines the observed state of Route
 type RouteStatus struct {
@@ -221,6 +223,11 @@ func (g *Route) IsFailoverSecondary() bool {
 	return slices.ContainsFunc(g.Spec.Traffic.Failover.Upstreams, func(upstream Upstream) bool {
 		return !upstream.IsProxy()
 	})
+}
+
+// HasRateLimit checks if the route has rate limit configuration
+func (g *Route) HasRateLimit() bool {
+	return g.Spec.Traffic.RateLimit != nil
 }
 
 // +kubebuilder:object:root=true

@@ -1,3 +1,31 @@
+# [0.10.0](https://github.com/telekom/controlplane/compare/v0.9.0...v0.10.0) (2025-08-20)
+
+
+### Features
+
+* add rate-limiting ([#114](https://github.com/telekom/controlplane/issues/114)) ([d3eec5b](https://github.com/telekom/controlplane/commit/d3eec5bcc580ccef2514c0d00a74580e35c85134))
+
+# [0.9.0](https://github.com/telekom/controlplane/compare/v0.8.0...v0.9.0) (2025-08-19)
+
+
+### Bug Fixes
+
+* **admin:** correct creation of team-routes ([#118](https://github.com/telekom/controlplane/issues/118)) ([1807f4b](https://github.com/telekom/controlplane/commit/1807f4b6199df8af335205bbb745d7e0281b53b7))
+* **file-manager-api:** correct token-path for client-jwt ([86cf202](https://github.com/telekom/controlplane/commit/86cf2029d26ac9342c6c9b879e83440008eee9e2))
+* **gateway:** fixed bug where acl was not created; only consumers that are not being deleted are considered; removed obsolete code ([#126](https://github.com/telekom/controlplane/issues/126)) ([a722062](https://github.com/telekom/controlplane/commit/a722062aee244e74d067b6a7f67c88431bd94926))
+* **organization:** register Prometheus metrics for secret manager communication ([#96](https://github.com/telekom/controlplane/issues/96)) ([ef65e15](https://github.com/telekom/controlplane/commit/ef65e15a6b2e05aea4d614734192fd4ba6ca968a))
+* **secret-manager:** exit application on fatal error when init secret-manager; changed localhost default url; skip-tls-verify=true for localhost ([#125](https://github.com/telekom/controlplane/issues/125)) ([1f878ba](https://github.com/telekom/controlplane/commit/1f878ba239a37335f7d3daadbb5d4bdeb2bc9157))
+* **security:** bump fiber to v2.52.9 ([#121](https://github.com/telekom/controlplane/issues/121)) ([6cd38cb](https://github.com/telekom/controlplane/commit/6cd38cb02620012097ca6edd498832315bfec436))
+
+
+### Features
+
+* add trusted teams ([#98](https://github.com/telekom/controlplane/issues/98)) ([79e08f0](https://github.com/telekom/controlplane/commit/79e08f0fe8b209d516779ecf82a8159882e252e5))
+* Added Private Key JWT feature ([#95](https://github.com/telekom/controlplane/issues/95)) ([89a5698](https://github.com/telekom/controlplane/commit/89a5698eb010c548e593f180881d8c65adf9bfb1))
+* added rover-server; improved rover-wehooks; improved secret-manager; fixed minor issues in other domains ([d27b183](https://github.com/telekom/controlplane/commit/d27b1839343ea267551716dcee41c5658dc94819))
+* **file-manager:** Add a file-manager client and server based on the OAS ([#108](https://github.com/telekom/controlplane/issues/108)) ([b9279fd](https://github.com/telekom/controlplane/commit/b9279fd38809098c265e72426665692a804b6d10))
+* **install-local:** Add installation and quickstart guide for the controlplane in a local environment ([#83](https://github.com/telekom/controlplane/issues/83)) ([4d01f17](https://github.com/telekom/controlplane/commit/4d01f17e838588dffb75bb94996321ea02998fb0))
+
 # [0.8.0](https://github.com/telekom/controlplane/compare/v0.7.0...v0.8.0) (2025-07-22)
 
 

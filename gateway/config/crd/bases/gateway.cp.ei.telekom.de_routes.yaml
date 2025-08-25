@@ -368,6 +368,51 @@ spec:
                     - targetZoneName
                     - upstreams
                     type: object
+                  rateLimit:
+                    description: RateLimit defines rate limits for different time
+                      windows
+                    properties:
+                      limits:
+                        description: Limits defines the actual rate limit values for
+                          different time windows
+                        properties:
+                          hour:
+                            description: Hour defines the maximum number of requests
+                              allowed per hour
+                            minimum: 0
+                            type: integer
+                          minute:
+                            description: Minute defines the maximum number of requests
+                              allowed per minute
+                            minimum: 0
+                            type: integer
+                          second:
+                            description: Second defines the maximum number of requests
+                              allowed per second
+                            minimum: 0
+                            type: integer
+                        type: object
+                      options:
+                        description: Options defines additional configuration options
+                          for rate limiting
+                        properties:
+                          faultTolerant:
+                            default: true
+                            description: FaultTolerant defines if the rate limit plugin
+                              should be fault tolerant, if gateway is not able to
+                              access the config store
+                            type: boolean
+                          hideClientHeaders:
+                            default: false
+                            description: HideClientHeaders hides additional client
+                              headers which give information about the rate-limit,
+                              reset and remaining requests for consumers if set to
+                              true.
+                            type: boolean
+                        type: object
+                    required:
+                    - limits
+                    type: object
                 type: object
               transformation:
                 description: Transformation defines optional request/response transformations

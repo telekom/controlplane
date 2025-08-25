@@ -110,6 +110,8 @@ spec:
                 type: array
               redis:
                 properties:
+                  enableTLS:
+                    type: boolean
                   host:
                     type: string
                   password:
@@ -117,6 +119,7 @@ spec:
                   port:
                     type: integer
                 required:
+                - enableTLS
                 - host
                 - password
                 - port

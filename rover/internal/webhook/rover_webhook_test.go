@@ -6,6 +6,7 @@ package webhook
 
 import (
 	"fmt"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -17,6 +18,7 @@ import (
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func NewRover(zone *adminv1.Zone) *roverv1.Rover {
@@ -49,6 +51,28 @@ func NewRemoteOrganization(name, namespace string) *adminv1.RemoteOrganization {
 			Namespace: namespace,
 		},
 	}
+}
+
+// Helper function to check validation failures
+func assertValidationFailedWith(warnings admission.Warnings, err error, expectedErrMsgSubstring string) {
+	Expect(warnings).To(BeNil())
+	Expect(err).To(HaveOccurred())
+	Expect(apierrors.IsInvalid(err)).To(BeTrue(), "Expected an Invalid error")
+
+	statusErr, ok := err.(*apierrors.StatusError)
+	Expect(ok).To(BeTrue(), "Expected a StatusError, got: %T", err)
+	Expect(statusErr.ErrStatus.Details.Causes).NotTo(BeEmpty(), "Expected error causes to not be empty")
+
+	found := false
+	for _, cause := range statusErr.ErrStatus.Details.Causes {
+		if strings.Contains(cause.Message, expectedErrMsgSubstring) {
+			found = true
+			break
+		}
+	}
+
+	Expect(found).To(BeTrue(), "Expected error message to contain: %s\nActual error: %v",
+		expectedErrMsgSubstring, statusErr.ErrStatus.Details.Causes)
 }
 
 var _ = Describe("Rover Webhook", Ordered, func() {
@@ -128,12 +152,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				roverWithInvalidZone := roverObj.DeepCopy()
 				roverWithInvalidZone.Spec.Zone = "non-existent-zone"
 				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithInvalidZone)
-				Expect(warnings).To(BeNil())
-				Expect(err).To(HaveOccurred())
-				statuserr, ok := err.(*apierrors.StatusError)
-				Expect(ok).To(BeTrue())
-				Expect(len(statuserr.ErrStatus.Details.Causes)).To(BeNumerically(">", 0))
-				Expect(statuserr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring("not found"))
+				assertValidationFailedWith(warnings, err, "not found")
 			})
 
 			It("should validate rover with subscriptions and API exposures only", func() {
@@ -211,12 +230,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				}
 
 				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithDuplicates)
-				Expect(warnings).To(BeNil())
-				Expect(err).To(HaveOccurred())
-				statuserr, ok := err.(*apierrors.StatusError)
-				Expect(ok).To(BeTrue())
-				Expect(statuserr.ErrStatus.Details.Causes).To(HaveLen(1))
-				Expect(statuserr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring("duplicate subscription"))
+				assertValidationFailedWith(warnings, err, "duplicate subscription")
 			})
 
 			It("should fail with duplicate exposures", func() {
@@ -244,12 +258,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				}
 
 				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithDuplicates)
-				Expect(warnings).To(BeNil())
-				Expect(err).To(HaveOccurred())
-				statuserr, ok := err.(*apierrors.StatusError)
-				Expect(ok).To(BeTrue())
-				Expect(statuserr.ErrStatus.Details.Causes).To(HaveLen(1))
-				Expect(statuserr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring("duplicate exposure"))
+				assertValidationFailedWith(warnings, err, "duplicate exposure")
 			})
 		})
 
@@ -727,6 +736,239 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
 				Expect(err).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeFalse())
+			})
+		})
+
+		Context("RateLimiting", func() {
+
+			var newRoverWithApiExposure = func(testZone *adminv1.Zone) *roverv1.Rover {
+				rover := NewRover(testZone)
+				rover.Spec.Exposures = []roverv1.Exposure{
+					{
+						Api: &roverv1.ApiExposure{
+							BasePath: "/test",
+							Upstreams: []roverv1.Upstream{
+								{URL: "https://example.com"},
+							},
+							Approval: roverv1.Approval{
+								Strategy: roverv1.ApprovalStrategySimple,
+							},
+						},
+					},
+				}
+				return rover
+			}
+
+			It("Should deny if no rate limit time window is specified but structure is provided", func() {
+				By("Creating a Rover with empty rate limits")
+				roverObj = newRoverWithApiExposure(testZone)
+				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
+					RateLimit: &roverv1.RateLimit{
+						Provider: &roverv1.RateLimitConfig{
+							Limits: &roverv1.Limits{
+								// All values are 0 (default)
+							},
+						},
+					},
+				}
+				warnings, err := validator.ValidateCreate(ctx, roverObj)
+				expectedErrorMessage := "at least one of second, minute, or hour must be specified"
+				assertValidationFailedWith(warnings, err, expectedErrorMessage)
+			})
+
+			It("Should deny if second >= minute", func() {
+				By("Creating a Rover with second equal to minute")
+				roverObj = newRoverWithApiExposure(testZone)
+				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
+					RateLimit: &roverv1.RateLimit{
+						Provider: &roverv1.RateLimitConfig{
+							Limits: &roverv1.Limits{
+								Second: 10,
+								Minute: 10,
+							},
+						},
+					},
+				}
+				warnings, err := validator.ValidateCreate(ctx, roverObj)
+				expectedErrorMessage := "second (10) must be less than minute (10)"
+				assertValidationFailedWith(warnings, err, expectedErrorMessage)
+
+				By("Creating a Rover with second greater than minute")
+				roverObj = newRoverWithApiExposure(testZone)
+				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
+					RateLimit: &roverv1.RateLimit{
+						Provider: &roverv1.RateLimitConfig{
+							Limits: &roverv1.Limits{
+								Second: 20,
+								Minute: 10,
+							},
+						},
+					},
+				}
+				warnings, err = validator.ValidateCreate(ctx, roverObj)
+				expectedErrorMessage = "second (20) must be less than minute (10)"
+				assertValidationFailedWith(warnings, err, expectedErrorMessage)
+			})
+
+			It("Should deny if minute >= hour", func() {
+				By("Creating a Rover with minute equal to hour")
+				roverObj = newRoverWithApiExposure(testZone)
+				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
+					RateLimit: &roverv1.RateLimit{
+						Provider: &roverv1.RateLimitConfig{
+							Limits: &roverv1.Limits{
+								Minute: 100,
+								Hour:   100,
+							},
+						},
+					},
+				}
+				warnings, err := validator.ValidateCreate(ctx, roverObj)
+				expectedErrorMessage := "minute (100) must be less than hour (100)"
+				assertValidationFailedWith(warnings, err, expectedErrorMessage)
+
+				By("Creating a Rover with minute greater than hour")
+				roverObj = newRoverWithApiExposure(testZone)
+				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
+					RateLimit: &roverv1.RateLimit{
+						Provider: &roverv1.RateLimitConfig{
+							Limits: &roverv1.Limits{
+								Minute: 200,
+								Hour:   100,
+							},
+						},
+					},
+				}
+				warnings, err = validator.ValidateCreate(ctx, roverObj)
+				expectedErrorMessage = "minute (200) must be less than hour (100)"
+				assertValidationFailedWith(warnings, err, expectedErrorMessage)
+			})
+
+			It("Should validate consumer default rate limits", func() {
+				By("Creating a Rover with invalid default consumer rate limits")
+				roverObj = newRoverWithApiExposure(testZone)
+				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
+					RateLimit: &roverv1.RateLimit{
+						Consumers: &roverv1.ConsumerRateLimits{
+							Default: &roverv1.ConsumerRateLimitDefaults{
+								Limits: roverv1.Limits{
+									Second: 10,
+									Minute: 5, // Invalid: Second > Minute
+								},
+							},
+						},
+					},
+				}
+				warnings, err := validator.ValidateCreate(ctx, roverObj)
+				expectedErrorMessage := "second (10) must be less than minute (5)"
+				assertValidationFailedWith(warnings, err, expectedErrorMessage)
+			})
+
+			It("Should validate consumer override rate limits", func() {
+				By("Creating a Rover with invalid consumer override rate limits")
+				roverObj = newRoverWithApiExposure(testZone)
+				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
+					RateLimit: &roverv1.RateLimit{
+						Consumers: &roverv1.ConsumerRateLimits{
+							Overrides: []roverv1.ConsumerRateLimitOverrides{
+								{
+									Consumer: "test-consumer",
+									Limits: roverv1.Limits{
+										Minute: 100,
+										Hour:   50, // Invalid: Minute > Hour
+									},
+								},
+							},
+						},
+					},
+				}
+				warnings, err := validator.ValidateCreate(ctx, roverObj)
+				expectedErrorMessage := "minute (100) must be less than hour (50)"
+				assertValidationFailedWith(warnings, err, expectedErrorMessage)
+			})
+
+			It("Should admit valid rate limit configurations", func() {
+				By("Creating a Rover with valid provider rate limits")
+				roverObj = newRoverWithApiExposure(testZone)
+				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
+					RateLimit: &roverv1.RateLimit{
+						Provider: &roverv1.RateLimitConfig{
+							Limits: &roverv1.Limits{
+								Second: 5,
+								Minute: 60,
+								Hour:   1000,
+							},
+						},
+					},
+				}
+				warnings, err := validator.ValidateCreate(ctx, roverObj)
+				Expect(warnings).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
+
+				By("Creating a Rover with valid consumer rate limits")
+				roverObj = newRoverWithApiExposure(testZone)
+				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
+					RateLimit: &roverv1.RateLimit{
+						Consumers: &roverv1.ConsumerRateLimits{
+							Default: &roverv1.ConsumerRateLimitDefaults{
+								Limits: roverv1.Limits{
+									Second: 3,
+									Minute: 30,
+									Hour:   300,
+								},
+							},
+							Overrides: []roverv1.ConsumerRateLimitOverrides{
+								{
+									Consumer: "test-consumer",
+									Limits: roverv1.Limits{
+										Second: 10,
+										Minute: 100,
+										Hour:   1000,
+									},
+								},
+							},
+						},
+					},
+				}
+				warnings, err = validator.ValidateCreate(ctx, roverObj)
+				Expect(warnings).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
+
+				By("Creating a Rover with only one time window specified")
+				roverObj = newRoverWithApiExposure(testZone)
+				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
+					RateLimit: &roverv1.RateLimit{
+						Provider: &roverv1.RateLimitConfig{
+							Limits: &roverv1.Limits{
+								Second: 5, // Only second specified
+							},
+						},
+					},
+				}
+				warnings, err = validator.ValidateCreate(ctx, roverObj)
+				Expect(warnings).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("Should not panic if rate limit fields are nil", func() {
+				By("Creating a Rover with nil rate limit fields")
+				roverObj = newRoverWithApiExposure(testZone)
+				roverObj.Spec.Exposures[0].Api.Traffic = &roverv1.Traffic{
+					RateLimit: &roverv1.RateLimit{
+						Consumers: &roverv1.ConsumerRateLimits{
+							Overrides: nil,
+							Default:   nil,
+						},
+						Provider: &roverv1.RateLimitConfig{
+							Limits: nil,
+						},
+					},
+				}
+				warnings, err := validator.ValidateCreate(ctx, roverObj)
+				// This should pass validation since we're just testing that no panic occurs
+				// with nil fields - the webhook should handle nil fields gracefully
+				Expect(warnings).To(BeNil())
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 	})
