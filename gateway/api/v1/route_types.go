@@ -117,20 +117,6 @@ func (route *Route) HasM2MExternalIdpBasic() bool {
 	return route.Spec.Security.M2M.ExternalIDP.Basic != nil
 }
 
-// TODO REMOVE THIS / MOVE THIS
-type Traffic struct {
-	Failover *Failover `json:"failover,omitempty"`
-	// used internally to bypass gateway CB configuration, false by default
-	CircuitBreaker *bool `json:"circuitBreaker,omitempty"`
-}
-
-type Failover struct {
-	TargetZoneName string     `json:"targetZoneName"`
-	Upstreams      []Upstream `json:"upstreams"`
-	Security       *Security  `json:"security,omitempty"`
-}
-// TODO REMOVE THIS / MOVE THIS
-
 // RouteStatus defines the observed state of Route
 type RouteStatus struct {
 	// +listType=map

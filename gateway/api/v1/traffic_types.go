@@ -7,6 +7,8 @@ package v1
 type Traffic struct {
 	Failover  *Failover  `json:"failover,omitempty"`
 	RateLimit *RateLimit `json:"rateLimit,omitempty"`
+	// used internally to bypass gateway CB configuration, false by default
+	CircuitBreaker *bool `json:"circuitBreaker,omitempty"`
 }
 
 type ConsumeRouteTraffic struct {
