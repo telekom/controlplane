@@ -85,7 +85,7 @@ const config: Config = {
           label: 'Documentation',
         },
         {
-          href: '/presentation',
+          href: 'https://github.com/telekom/controlplane/docs/presentation',
           label: 'Presentation',
           position: 'left',
         },
@@ -104,11 +104,11 @@ const config: Config = {
           items: [
             {
               label: 'Introduction',
-              to: '/docs/intro',
+              to: '/docs/Overview/intro',
             },
             {
               label: 'Core Technologies',
-              to: '/docs/core-tech/golang',
+              to: '/docs/Core-Technologies/golang',
             },
           ],
         },

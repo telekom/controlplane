@@ -63,4 +63,4 @@ graph TD
 
 ## Presentation
 
-Want a quick overview? Check out our [technical presentation](/presentation) for a concise introduction to the main frameworks and technologies used in the controlplane.
+Want a quick overview? Check out our [technical presentation](https://github.com/telekom/controlplane/docs/presentation) for a concise introduction to the main frameworks and technologies used in the controlplane.
