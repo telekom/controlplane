@@ -16,6 +16,8 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
+	"github.com/telekom/controlplane/secret-manager/api/accesstoken"
 	"golang.org/x/oauth2/clientcredentials"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,6 +33,7 @@ var (
 	team        string
 	basePath    string
 	application string
+	secretsApi  secretsapi.SecretsApi
 )
 
 func init() {
@@ -47,6 +50,12 @@ func init() {
 func main() {
 	ctx := context.Background()
 	flag.Parse()
+
+	secretsApi = secretsapi.NewSecrets(
+		secretsapi.WithURL("https://localhost:9090/api"),
+		secretsapi.WithAccessToken(accesstoken.NewStaticAccessToken(os.Getenv("SECRET_MANAGER_TOKEN"))),
+		secretsapi.WithSkipTLSVerify(),
+	)
 
 	kubeCfg, err := kconfig.GetConfigWithContext(kubecontext)
 	if err != nil {
@@ -114,6 +123,10 @@ func newClient(cfg *rest.Config) (client.Client, error) {
 }
 
 func newHttpClient(ctx context.Context, tokenUrl, clientId, clientSecret string) (*http.Client, error) {
+	clientSecret, err := secretsApi.Get(ctx, clientSecret)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to retrieve client secret from secret manager")
+	}
 	tokenCfg := clientcredentials.Config{
 		ClientID:     clientId,
 		ClientSecret: clientSecret,
