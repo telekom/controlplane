@@ -25,14 +25,6 @@ func NewMinioWrapper(config *BucketConfig) *MinioWrapper {
 	}
 }
 
-// UpdateCredentialsFromContext now refreshes credentials from the token source, ignoring the request context.
-func (w *MinioWrapper) UpdateCredentialsFromContext(ctx context.Context) {
-	log := logr.FromContextOrDiscard(ctx)
-	if err := w.config.RefreshCredentialsOrDiscard(); err != nil {
-		log.Error(err, "Failed to refresh credentials from token source")
-	}
-}
-
 // GetObjectInfo retrieves object metadata
 func (w *MinioWrapper) GetObjectInfo(ctx context.Context, path string) (minio.ObjectInfo, error) {
 	log := logr.FromContextOrDiscard(ctx)

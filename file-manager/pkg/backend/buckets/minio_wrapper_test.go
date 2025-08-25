@@ -77,21 +77,6 @@ func TestMinioWrapper_ExtractMetadata(t *testing.T) {
 	}
 }
 
-func TestMinioWrapper_UpdateCredentialsFromContext(t *testing.T) {
-	// Create a simple test
-	config := &BucketConfig{
-		Logger:   logr.Discard(),
-		Endpoint: "mock-endpoint",
-	}
-
-	wrapper := NewMinioWrapper(config)
-
-	// Just verify no panic with a basic context
-	ctx := context.Background()
-	// This should not panic
-	wrapper.UpdateCredentialsFromContext(ctx)
-}
-
 func TestMinioWrapper_ValidateObjectMetadata(t *testing.T) {
 	// Create a basic config for testing
 	config := &BucketConfig{

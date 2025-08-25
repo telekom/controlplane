@@ -68,9 +68,6 @@ func (s *BucketFileDownloader) DownloadFile(ctx context.Context, path string) (i
 		return nil, nil, err
 	}
 
-	// Update credentials using token from context if available
-	s.wrapper.UpdateCredentialsFromContext(ctx)
-
 	log.V(1).Info("Downloading file", "path", path, "bucket", s.config.BucketName)
 
 	// Get object info for metadata

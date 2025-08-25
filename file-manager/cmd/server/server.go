@@ -75,17 +75,12 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 
 	switch cfg.Backend.Type {
 	case "buckets":
-		// Create S3 config options from the server config
 		var options []buckets.ConfigOption
+		options = append(options, buckets.WithLogger(log))
 
 		if endpoint := cfg.Backend.Get("endpoint"); endpoint != "" {
 			options = append(options, buckets.WithEndpoint(endpoint))
 			log.Info("Using bucket endpoint", "endpoint", endpoint)
-		}
-
-		if stsEndpoint := cfg.Backend.Get("sts_endpoint"); stsEndpoint != "" {
-			options = append(options, buckets.WithSTSEndpoint(stsEndpoint))
-			log.Info("Using STS endpoint", "sts_endpoint", stsEndpoint)
 		}
 
 		if bucketName := cfg.Backend.Get("bucket_name"); bucketName != "" {
@@ -93,26 +88,11 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 			log.Info("Using bucket", "bucket_name", bucketName)
 		}
 
-		if roleArn := cfg.Backend.Get("role_arn"); roleArn != "" {
-			options = append(options, buckets.WithRoleSessionArn(roleArn))
-			log.Info("Using role ARN", "role_arn", roleArn)
-		}
+		// Create credentials
+		creds, err := buckets.NewCredentials(buckets.AutoDiscoverProvider(cfg.Backend), buckets.WithProperties(cfg.Backend))
+		options = append(options, buckets.WithCredentials(creds))
 
-		if tokenPath := cfg.Backend.Get("token_path"); tokenPath != "" {
-			options = append(options, buckets.WithTokenPath(tokenPath))
-			log.Info("Using token path", "token_path", tokenPath)
-		}
-
-		// Check if environment variable is set
-		if webToken := os.Getenv("MC_WEB_IDENTITY_TOKEN"); webToken != "" {
-			log.V(1).Info("Found MC_WEB_IDENTITY_TOKEN environment variable")
-		} else {
-			log.V(1).Info("MC_WEB_IDENTITY_TOKEN environment variable not set")
-		}
-
-		// Initialize bucket configuration with context
-		log.Info("Initializing bucket configuration")
-		bucketConfig, err := buckets.NewBucketConfigWithLogger(log, options...)
+		bucketConfig, err := buckets.NewBucketConfig(options...)
 		if err != nil {
 			log.Error(err, "Failed to initialize bucket configuration")
 			return nil, errors.Wrap(err, "failed to initialize bucket configuration")

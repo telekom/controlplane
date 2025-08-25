@@ -60,6 +60,37 @@ Currently, the FM supports the following backends.
 This backend uses [Amazon S3](https://aws.amazon.com/s3/) to store files. As long as you are able to connect to S3, this backend is available to you.
 As this is using a 3rd party storage solution the costs need to be considered.
 
+```yaml
+backend:
+  type: buckets
+  endpoint: s3.eu-central-1.amazonaws.com
+  bucket_name: my-bucket
+  stsEndpoint: https://sts.amazonaws.com
+  roleArn: arn:aws:iam::12345:role/my-sample-role
+```
+
+### MinIO
+
+This backend uses [MinIO](https://min.io/) to store files. MinIO is an open-source, self-hosted object storage solution that is compatible with the Amazon S3 API.
+
+```bash
+helm repo add minio https://charts.min.io/
+helm repo update
+
+kubectl create namespace minio
+helm install minio minio/minio -n minio 
+```
+
+```yaml
+backend:
+  type: buckets
+  endpoint: minio.minio.svc.cluster.local:9000
+  bucket_name: my-bucket
+  accessKey: myAccessKey # Copy these from MinIO console
+  secretKey: mySecret
+```
+
+
 ## Security
 
 ### Access Rights

@@ -1,0 +1,27 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+mode: standalone
+persistence:
+  size: 10Gi
+resources:
+  requests:
+    memory: 512Mi
+service:
+  type: ClusterIP
+  port: 9000
+  console:
+    type: ClusterIP
+    port: 9001
+rootUser: "placeholder"
+rootPassword: "placeholder"
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+  path: /
+  hosts: [] # todo: add host here

@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-
 	"maps"
 
 	"github.com/go-logr/logr"
@@ -63,28 +62,28 @@ func (s *BucketFileUploader) uploadToBucket(ctx context.Context, path string, re
 
 	// Configure PutObjectOptions
 	putOptions := minio.PutObjectOptions{
-		ContentType:    contentType,
-		UserMetadata:   userMetadata,
-		SendContentMd5: false,                   // Disable MD5 checksum calculation as we're using CRC64NVME
-		Checksum:       minio.ChecksumCRC64NVME, // Use CRC64NVME checksum algorithm
+		ContentType:      contentType,
+		UserMetadata:     userMetadata,
+		SendContentMd5:   false,
+		DisableMultipart: true,
+		Checksum:         minio.ChecksumSHA256,
 	}
-
-	// Upload file using the path directly
-	log.V(1).Info("Starting bucket PutObject operation", "path", path, "putOptions", putOptions)
 
 	copyReader, contentSize, err := copyAndMeasure(reader)
 	if err != nil {
 		return "", backend.ErrUploadFailed(path, "Failed to measure content size :"+err.Error())
 	}
 
-	uploadInfo, err := s.config.Client.PutObject(ctx, s.config.BucketName, path, copyReader, contentSize, putOptions)
-	log.V(1).Info("Finished bucket PutObject operation", "uploadInfo", uploadInfo)
+	// Upload file using the path directly
+	log.V(1).Info("Starting bucket PutObject operation", "path", path, "putOptions", putOptions, "contentSize", contentSize)
 
+	uploadInfo, err := s.config.Client.PutObject(ctx, s.config.BucketName, path, copyReader, contentSize, putOptions)
 	if err != nil {
 		return "", backend.ErrUploadFailed(path, err.Error())
 	}
+	log.V(1).Info("Finished bucket PutObject operation", "uploadInfo", uploadInfo)
 
-	return uploadInfo.ChecksumCRC64NVME, nil
+	return uploadInfo.ChecksumSHA256, nil
 }
 
 // validateUploadedMetadata validates that the uploaded object metadata matches expectations
@@ -128,8 +127,6 @@ func (s *BucketFileUploader) initializeUpload(ctx context.Context) error {
 		return backend.ErrClientInitialization(err.Error())
 	}
 
-	// Update credentials using token from context if available
-	s.wrapper.UpdateCredentialsFromContext(ctx)
 	return nil
 }
 
