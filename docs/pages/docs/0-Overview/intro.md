@@ -19,8 +19,9 @@ Key components include:
 
 The controlplane repository is organized into several key components:
 
-- **file-manager** - File upload/download service with S3 backend
+- **common** - Shared utilities and libraries
 - **common-server** - Shared server utilities and middleware
+- **file-manager** - File upload/download service with S3 backend
 - **admin** - Administrative APIs and controllers
 - **api** - API management and exposure
 - **gateway** - API Gateway functionality
