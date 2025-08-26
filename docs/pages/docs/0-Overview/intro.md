@@ -74,14 +74,14 @@ In addition to the core components, the control plane may also run custom operat
 Each operator encapsulates a distinct domain of responsibility, operating independently with minimal interdependencies, which promotes modularity, simplifies maintenance, and enhances the scalability of the overall control plane architecture.
 
 The following operators run on the control plane:
-- [Rover Operator](./rover): Manages the lifecycle of Rover-domain resources such as Rovers and ApiSpecifications.
-- [Application Operator](./application) Manages the lifecycle of resources of kind Application.
-- [Admin Operator](./admin): Manages the lifecycle of Admin-domain resources such as Environments, Zones and RemoteOrganizations.
-- [Organization Operator](./organization):  Manages the lifecycle of Organization-domain resources such as Groups and Teams.
-- [Api Operator](./api):  Manages the lifecycle of API-domain resources such as Apis, ApiExposures, ApiSubscriptions and RemoteApiSubscriptions.
-- [Gateway Operator}](./gateway):  Manages the lifecycle of Gateway-domain resources such as Gateways, Gateway-Realms, Consumers, Routes and ConsumerRoutes.
-- [Identity Operator](./identity):  Manages the lifecycle of Identity-domain resources such as IdentityProviders, Identity-Realms and Clients.
-- [Approval Operator](./approval):  Manages the lifecycle of resources of kind Approval.
+- [Rover Operator](https://github.com/telekom/controlplane/blob/main/rover): Manages the lifecycle of Rover-domain resources such as Rovers and ApiSpecifications.
+- [Application Operator](https://github.com/telekom/controlplane/blob/main/application) Manages the lifecycle of resources of kind Application.
+- [Admin Operator](https://github.com/telekom/controlplane/blob/main/admin): Manages the lifecycle of Admin-domain resources such as Environments, Zones and RemoteOrganizations.
+- [Organization Operator](https://github.com/telekom/controlplane/blob/main/organization):  Manages the lifecycle of Organization-domain resources such as Groups and Teams.
+- [Api Operator](https://github.com/telekom/controlplane/blob/main/api):  Manages the lifecycle of API-domain resources such as Apis, ApiExposures, ApiSubscriptions and RemoteApiSubscriptions.
+- [Gateway Operator}](https://github.com/telekom/controlplane/blob/main/gateway):  Manages the lifecycle of Gateway-domain resources such as Gateways, Gateway-Realms, Consumers, Routes and ConsumerRoutes.
+- [Identity Operator](https://github.com/telekom/controlplane/blob/main/identity):  Manages the lifecycle of Identity-domain resources such as IdentityProviders, Identity-Realms and Clients.
+- [Approval Operator](https://github.com/telekom/controlplane/blob/main/approval):  Manages the lifecycle of resources of kind Approval.
 
 These operators work alongside the Kubernetes API server and etcd, watching for changes to custom resources and ensuring the actual state of their managed components aligns with the desired configuration.
 
@@ -90,14 +90,14 @@ API Servers are  RESTful APIs for managing Kubernetes custom resources. They pro
 
 The following API Servers run on the control plane:
 
-- [Secret Manager](./secret-manager): RESTful API for managing secrets. It allows you to store, retrieve, and delete secrets securely.
-- [Rover-Server](./rover-server): RESTful API for managing Rover resources such as Rover Exposures and Subscriptions as well as ApiSpecifications
-- [Organization-Server](./organization-server): RESTful API for managing Organization resources such as Groups and Teams
-- [Controlplane API](./controlplane-api): RESTful API for reading custom resources from the control plane from all domains
+- [Secret Manager](https://github.com/telekom/controlplane/blob/main/secret-manager): RESTful API for managing secrets. It allows you to store, retrieve, and delete secrets securely.
+- [Rover-Server](https://github.com/telekom/controlplane/blob/main/rover-server): RESTful API for managing Rover resources such as Rover Exposures and Subscriptions as well as ApiSpecifications
+- [Organization-Server](https://github.com/telekom/controlplane/blob/main/organization): RESTful API for managing Organization resources such as Groups and Teams
+- [Controlplane API](https://github.com/telekom/controlplane/blob/main/cpapi): RESTful API for reading custom resources from the control plane from all domains
 
 ### Libraries
-- [Common](./common): A library that provides shared code between the different projects
-- [Common-Server](./common-server): Module used to dynamically create REST-APIs for Kubernetes-CRDs.
+- [Common](https://github.com/telekom/controlplane/blob/main/common): A library that provides shared code between the different projects
+- [Common-Server](https://github.com/telekom/controlplane/blob/main/common-server): Module used to dynamically create REST-APIs for Kubernetes-CRDs.
 
 ### Infrastructure
 
