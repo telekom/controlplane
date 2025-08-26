@@ -7,6 +7,8 @@ package controller
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -148,7 +150,7 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 		return res, err
 	}
 
-	fileAPIResp, err := a.uploadFile(ctx, &req, id.ResourceId)
+	fileAPIResp, err := a.uploadFile(ctx, &req, id)
 	obj, err := in.MapRequest(ctx, &req, fileAPIResp, id)
 	if err != nil {
 		return res, err
@@ -182,17 +184,51 @@ func (a *ApiSpecificationController) GetStatus(ctx context.Context, resourceId s
 	return status.MapResponse(apiSpec.Status.Conditions)
 }
 
-func (a *ApiSpecificationController) uploadFile(ctx context.Context, req *api.ApiSpecification, resourceId string) (*filesapi.FileUploadResponse, error) {
+func (a *ApiSpecificationController) uploadFile(ctx context.Context, req *api.ApiSpecification, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {
 	if req == nil {
 		return nil, errors.New("input api specification is nil")
 	}
 
-	bCtx := ReceiveBCtxOrDie(ctx)
 	data, err := yaml.Marshal(*req)
+
+	localHash, same, err := a.isHashEqual(ctx, id, &data)
 	if err != nil {
 		return nil, err
 	}
-	return a.filesAPI.UploadFile(ctx, bCtx.Environment+"--"+bCtx.Group+"--"+bCtx.Team+"--"+resourceId, "application/yaml", bytes.NewReader(data))
+
+	bCtx := ReceiveBCtxOrDie(ctx)
+	fileId := bCtx.Environment + "--" + bCtx.Group + "--" + bCtx.Team + "--" + id.ResourceId
+	fileContentType := "application/yaml"
+
+	resp := &filesapi.FileUploadResponse{
+		CRC64NVMEHash: localHash,
+		FileId:        fileId,
+		ContentType:   fileContentType,
+	}
+
+	if !same {
+		resp, err = a.filesAPI.UploadFile(ctx, fileId, fileContentType, bytes.NewReader(data))
+	}
+
+	return resp, err
+}
+
+// isHashEqual checks if the hash of the data is the same as the hash of the api specification in the store.
+// will return the hash of the data and a boolean indicating if the hash is the same as in the store
+func (a *ApiSpecificationController) isHashEqual(ctx context.Context, id mapper.ResourceIdInfo, data *[]byte) (string, bool, error) {
+	ns := id.Environment + "--" + id.Namespace
+	apiSpec, err := a.Store.Get(ctx, ns, id.Name)
+	if err != nil {
+		if problems.IsNotFound(err) {
+			return "", false, nil
+		}
+		return "", false, err
+	}
+
+	hasher := sha256.New()
+	hasher.Write(*data)
+	hash := base64.StdEncoding.EncodeToString(hasher.Sum(nil))
+	return hash, hash == apiSpec.Spec.Hash, nil
 }
 
 func (a *ApiSpecificationController) downloadFile(ctx context.Context, fileId string) (*bytes.Buffer, error) {
