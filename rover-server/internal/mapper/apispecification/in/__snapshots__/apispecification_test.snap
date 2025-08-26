@@ -26,9 +26,9 @@
         ContentType:   "application/yaml",
         BasePath:      "/eni/distr/v1",
         Hash:          "test-hash",
-        Oauth2Scopes:  {},
         XVendor:       false,
         Version:       "1.0.0",
+        Oauth2Scopes:  {},
     },
     Status: v1.ApiSpecificationStatus{},
 }
