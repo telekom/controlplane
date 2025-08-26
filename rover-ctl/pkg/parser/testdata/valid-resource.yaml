@@ -1,0 +1,7 @@
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: test-rover
+spec:
+  repository: https://github.com/example/repo
+  branch: main

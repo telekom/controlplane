@@ -1,0 +1,27 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+with-expecter: True
+mockname: "Mock{{.InterfaceName}}"
+dir: "../test/mocks"
+outpkg: "mocks"
+filename: "mock_{{.InterfaceName}}.go"
+packages:
+  github.com/telekom/controlplane/rover-ctl/pkg/handlers/common:
+    config:
+    interfaces:
+      HttpDoer:
+        config:
+      StatusHandler:
+        config:
+  github.com/telekom/controlplane/rover-ctl/pkg/handlers:
+    config:
+    interfaces:
+      ResourceHandler:
+        config:
+  github.com/telekom/controlplane/rover-ctl/pkg/commands/reset-secret:
+    config:
+    interfaces:
+      ResetSecretHandler:
+        config:

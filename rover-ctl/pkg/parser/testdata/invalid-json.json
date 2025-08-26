@@ -1,0 +1,11 @@
+{
+  "apiVersion": "tcp.ei.telekom.de/v1",
+  "kind": "InvalidJson",
+  "metadata": {
+    "name": "test-invalid-json"
+  },
+  "spec": {
+    "repository": "https://github.com/example/invalid-repo",
+    "branch": "main"
+  },
+  "invalid-json-here

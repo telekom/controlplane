@@ -29,9 +29,9 @@ type HttpRequestDoer interface {
 }
 
 type clientWrapper struct {
-	inner              HttpRequestDoer
-	clientName         string
-	pathReplacePattern *regexp.Regexp
+	inner       HttpRequestDoer
+	clientName  string
+	replaceFunc ReplaceFunc
 }
 
 func Register(reg prometheus.Registerer) {
@@ -40,19 +40,67 @@ func Register(reg prometheus.Registerer) {
 	})
 }
 
+type ReplaceFunc func(path string) string
+
+type Options struct {
+	ClientName         string
+	PathReplacePattern string
+	ReplaceFunc        ReplaceFunc
+}
+
+type Option func(o *Options)
+
+func WithClientName(name string) Option {
+	return func(o *Options) {
+		o.ClientName = name
+	}
+}
+
+func WithReplaceFunc(replaceFunc ReplaceFunc) Option {
+	return func(o *Options) {
+		o.ReplaceFunc = replaceFunc
+	}
+}
+
+const (
+	ReplacePatternUID = `[a-zA-Z0-9-]{36}`
+)
+
+func WithReplacePatterns(patterns ...string) Option {
+	return func(o *Options) {
+		if len(patterns) == 0 {
+			o.ReplaceFunc = nil
+			return
+		}
+		re := regexp.MustCompile(strings.Join(patterns, "|"))
+		o.ReplaceFunc = func(path string) string {
+			new := re.ReplaceAllString(path, "redacted")
+			return new
+		}
+	}
+}
+
 // WithMetrics wraps an HttpRequestDoer and records metrics for HTTP requests.
 // clientName is added as a label to the metrics.
 // pathReplacePattern is a regex pattern used to replace dynamic parts of the URL path in the metrics.
 // e.g. `\/api\/v1\/users\/(?P<resourceId>.*)` will replace "/api/v1/users/123" with "/api/v1/users/resourceId".
 // If no named groups are found, the original path will be used.
-func WithMetrics(inner HttpRequestDoer, clientName, pathReplacePattern string) HttpRequestDoer {
-	c := &clientWrapper{
-		inner:      inner,
-		clientName: clientName,
+func WithMetrics(inner HttpRequestDoer, opts ...Option) HttpRequestDoer {
+	options := &Options{
+		ClientName: "default",
+	}
+	for _, opt := range opts {
+		opt(options)
 	}
 
-	if pathReplacePattern != "" {
-		c.pathReplacePattern = regexp.MustCompile(pathReplacePattern)
+	c := &clientWrapper{
+		inner:       inner,
+		clientName:  options.ClientName,
+		replaceFunc: options.ReplaceFunc,
+	}
+
+	if options.PathReplacePattern != "" {
+		c.replaceFunc = NewReplacePath(regexp.MustCompile(options.PathReplacePattern))
 	}
 	Register(prometheus.DefaultRegisterer)
 
@@ -70,7 +118,12 @@ func (c *clientWrapper) Do(req *http.Request) (*http.Response, error) {
 
 	elapsed := time.Since(startTime).Seconds()
 	method := req.Method
-	path := ReplacePath(c.pathReplacePattern, req.URL.Path)
+	var path string
+	if c.replaceFunc != nil {
+		path = c.replaceFunc(req.URL.Path)
+	} else {
+		path = req.URL.Path
+	}
 	var status string
 
 	if res != nil {
@@ -83,39 +136,45 @@ func (c *clientWrapper) Do(req *http.Request) (*http.Response, error) {
 	return res, err
 }
 
-// ReplacePath replaces the named groups in the path with their corresponding names.
+// NewReplacePath replaces the named groups in the path with their corresponding names.
 // If no named groups are found, the original path is returned.
 // If the regex is nil, the original path is returned.
 // The named groups are replaced with their names, and the rest of the path is preserved.
 // For example, if the regex is `\/api\/v1\/users\/(?P<redacted>.*)` and the path is `/api/v1/users/123`,
 // the result will be `/api/v1/users/redacted`.
-func ReplacePath(re *regexp.Regexp, path string) string {
-	if re == nil {
-		return path
-	}
-	matches := re.FindStringSubmatchIndex(path)
-	if len(matches) < 4 {
-		return path
-	}
-	names := re.SubexpNames()
-	if len(names) == 0 {
-		return path
-	}
-	var sb strings.Builder
-	idx := 0
-	for i := 2; i < len(matches); i += 2 {
-		start, end := idx, matches[i]
-		if start < 0 || end < 0 {
-			break
+func NewReplacePath(re *regexp.Regexp) ReplaceFunc {
+	return func(path string) string {
+		if re == nil {
+			return path
 		}
-		idx = matches[i+1]
-		sb.WriteString(path[start:end])
-		placeholder := names[i/2]
-		if placeholder == "" {
-			sb.WriteString(path[matches[i]:matches[i+1]])
-		} else {
-			sb.WriteString(placeholder)
+		matches := re.FindStringSubmatchIndex(path)
+		if len(matches) < 4 {
+			return path
 		}
+		names := re.SubexpNames()
+		if len(names) == 0 {
+			return path
+		}
+		var sb strings.Builder
+		idx := 0
+		for i := 2; i < len(matches); i += 2 {
+			start, end := idx, matches[i]
+			if start < 0 || end < 0 {
+				break
+			}
+			idx = matches[i+1]
+			sb.WriteString(path[start:end])
+			placeholder := names[i/2]
+			if placeholder == "" {
+				sb.WriteString(path[matches[i]:matches[i+1]])
+			} else {
+				sb.WriteString(placeholder)
+			}
+		}
+		if idx < len(path) {
+			sb.WriteString(path[idx:])
+		}
+
+		return sb.String()
 	}
-	return sb.String()
 }
