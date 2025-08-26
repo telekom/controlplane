@@ -12,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"time"
 
 	client "github.com/telekom/controlplane/common-server/pkg/client/metrics"
@@ -67,5 +68,16 @@ func NewHttpClientOrDie(opts ...Option) client.HttpRequestDoer {
 		Timeout:   timeout,
 	}
 
-	return client.WithMetrics(httpClient, options.ClientName, options.ReplacePattern)
+	var replaceFunc client.ReplaceFunc
+	if options.ReplacePattern != "" {
+		re, err := regexp.Compile(options.ReplacePattern)
+		if err != nil {
+			log.Fatalf("Invalid ReplacePattern regex: %v", err)
+		}
+		replaceFunc = client.NewReplacePath(re)
+	}
+	return client.WithMetrics(httpClient,
+		client.WithClientName(options.ClientName),
+		client.WithReplaceFunc(replaceFunc),
+	)
 }

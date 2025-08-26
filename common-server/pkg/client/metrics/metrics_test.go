@@ -22,7 +22,7 @@ var _ = Describe("Client Metrics", func() {
 		It("should register the client wrapper", func() {
 			httpClient := http.DefaultClient
 
-			httpDoer := client.WithMetrics(httpClient, "testClient", "")
+			httpDoer := client.WithMetrics(httpClient, client.WithClientName("testClient"))
 			Expect(httpDoer).ToNot(BeNil())
 		})
 	})
@@ -33,7 +33,7 @@ var _ = Describe("Client Metrics", func() {
 		It("should collect metrics when asuccessful request is made", func() {
 			httpClient := &mockClient{}
 
-			httpDoer := client.WithMetrics(httpClient, "testClient", "")
+			httpDoer := client.WithMetrics(httpClient, client.WithClientName("testClient"))
 			Expect(httpDoer).ToNot(BeNil())
 
 			req := httptest.NewRequest("GET", "/test/path", nil)
@@ -82,7 +82,7 @@ var _ = Describe("Client Metrics", func() {
 				},
 			}
 
-			httpDoer := client.WithMetrics(httpClient, "testClient", "")
+			httpDoer := client.WithMetrics(httpClient, client.WithClientName("testClient"))
 			Expect(httpDoer).ToNot(BeNil())
 
 			req := httptest.NewRequest("GET", "/test/path", nil)
@@ -132,14 +132,14 @@ var _ = Describe("ReplacePath", func() {
 		path := "/api/v1/users/123"
 
 		re := regexp.MustCompile(pattern)
-		replacedPath := client.ReplacePath(re, path)
+		replacedPath := client.NewReplacePath(re)(path)
 		Expect(replacedPath).To(Equal("/api/v1/users/redacted"))
 	})
 
 	It("should return the original path if no pattern is provided", func() {
 		path := "/test/foo123/subpath/456"
 
-		replacedPath := client.ReplacePath(nil, path)
+		replacedPath := client.NewReplacePath(nil)(path)
 		Expect(replacedPath).To(Equal(path))
 	})
 
@@ -148,7 +148,7 @@ var _ = Describe("ReplacePath", func() {
 		path := "/foo123/subpath/456"
 
 		re := regexp.MustCompile(pattern)
-		replacedPath := client.ReplacePath(re, path)
+		replacedPath := client.NewReplacePath(re)(path)
 		Expect(replacedPath).To(Equal(path))
 	})
 
@@ -157,11 +157,20 @@ var _ = Describe("ReplacePath", func() {
 
 		re := regexp.MustCompile(pattern)
 
-		replacedPath := client.ReplacePath(re, "/api/v1/users/123")
+		replacedPath := client.NewReplacePath(re)("/api/v1/users/123")
 		Expect(replacedPath).To(Equal("/api/v1/users/resourceId"))
 
-		replacedPath = client.ReplacePath(re, "/api/v1/products/123")
+		replacedPath = client.NewReplacePath(re)("/api/v1/products/456")
 		Expect(replacedPath).To(Equal("/api/v1/products/resourceId"))
+	})
+
+	It("should support the redacted part in the middle of the path", func() {
+		pattern := `\/api\/v1\/(?P<redacted>.*)\/users\/.*`
+		path := "/api/v1/some/path/users/123"
+
+		re := regexp.MustCompile(pattern)
+		replacedPath := client.NewReplacePath(re)(path)
+		Expect(replacedPath).To(Equal("/api/v1/redacted/users/123"))
 	})
 
 })

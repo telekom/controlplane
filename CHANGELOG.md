@@ -1,3 +1,10 @@
+# [0.11.0](https://github.com/telekom/controlplane/compare/v0.10.0...v0.11.0) (2025-08-25)
+
+
+### Features
+
+* **client-metrics:** added metrics to gateway kong-client; updated common-client for options-pattern; updated secret-manager client metrics ([#137](https://github.com/telekom/controlplane/issues/137)) ([2a3250f](https://github.com/telekom/controlplane/commit/2a3250f5feab709788c87ed3446aa65c9c0d2c80))
+
 # [0.10.0](https://github.com/telekom/controlplane/compare/v0.9.0...v0.10.0) (2025-08-20)
 
 

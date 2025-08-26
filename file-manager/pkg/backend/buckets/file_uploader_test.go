@@ -17,9 +17,8 @@ import (
 func TestBucketFileUploader_UploadFile(t *testing.T) {
 	// Create a mock config (we'll skip client initialization for unit testing)
 	config := &BucketConfig{
-		Endpoint:       "mock-endpoint",
-		BucketName:     "mock-bucket",
-		RoleSessionArn: "mock-role",
+		Endpoint:   "mock-endpoint",
+		BucketName: "mock-bucket",
 	}
 
 	uploader := NewBucketFileUploader(config)

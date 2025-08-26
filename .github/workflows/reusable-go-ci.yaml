@@ -343,6 +343,9 @@ jobs:
           fi
 
           echo "Building with tags: $effective_tags"
+          export VERSION=$(git describe --tags --always --dirty || echo 'develop')
+          export BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
           output=$(ko build ${{ inputs.ko_build_path }} --bare --tags "$effective_tags")
           echo "Ko output: $output"
           digest=$(echo "$output" | grep -o 'sha256:[a-f0-9]\{64\}')
