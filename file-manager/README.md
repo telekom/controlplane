@@ -65,8 +65,8 @@ backend:
   type: buckets
   endpoint: s3.eu-central-1.amazonaws.com
   bucket_name: my-bucket
-  stsEndpoint: https://sts.amazonaws.com
-  roleArn: arn:aws:iam::12345:role/my-sample-role
+  sts_endpoint: https://sts.amazonaws.com
+  role_arn: arn:aws:iam::12345:role/my-sample-role
 ```
 
 ### MinIO
@@ -86,8 +86,8 @@ backend:
   type: buckets
   endpoint: minio.minio.svc.cluster.local:9000
   bucket_name: my-bucket
-  accessKey: myAccessKey # Copy these from MinIO console
-  secretKey: mySecret
+  access_key: myAccessKey # Copy these from MinIO console
+  secret_key: mySecret
 ```
 
 

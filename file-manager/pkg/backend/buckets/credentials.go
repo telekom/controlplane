@@ -61,11 +61,11 @@ func WithProperty(key, value string) CredentialOption {
 type CredentialOption func(*CredentialOptions)
 
 func AutoDiscoverProvider(properties Properties) CredentialProvider {
-	if properties.GetDefault("roleArn", os.Getenv("AWS_ROLE_ARN")) != "" {
+	if properties.GetDefault("role_arn", os.Getenv("AWS_ROLE_ARN")) != "" {
 		return CredentialProviderSTSWebIdentity
 	}
 
-	if properties.Get("accessKey") != "" && properties.Get("secretKey") != "" {
+	if properties.Get("access_key") != "" && properties.Get("secret_key") != "" {
 		return CredentialProviderStatic
 	}
 	return CredentialProviderEnvMinio
@@ -79,9 +79,9 @@ func NewCredentials(provider CredentialProvider, opts ...CredentialOption) (*cre
 
 	switch provider {
 	case CredentialProviderSTSWebIdentity:
-		stsEndpoint := options.properties.GetDefault("stsEndpoint", "https://sts.amazonaws.com")
-		roleArn := options.properties.GetDefault("roleArn", os.Getenv("AWS_ROLE_ARN"))
-		tokenPath := options.properties.GetDefault("tokenPath", BucketsBackendTokenPath)
+		stsEndpoint := options.properties.GetDefault("sts_endpoint", "https://sts.amazonaws.com")
+		roleArn := options.properties.GetDefault("role_arn", os.Getenv("AWS_ROLE_ARN"))
+		tokenPath := options.properties.GetDefault("token_path", BucketsBackendTokenPath)
 		staticToken := options.properties.GetDefault("token", os.Getenv("AWS_WEB_IDENTITY_TOKEN"))
 
 		var token accesstoken.AccessToken
@@ -114,10 +114,10 @@ func NewCredentials(provider CredentialProvider, opts ...CredentialOption) (*cre
 		return credentials.New(&credentials.EnvMinio{}), nil
 
 	case CredentialProviderStatic:
-		accessKey := options.properties.Get("accessKey")
-		secretKey := options.properties.Get("secretKey")
+		accessKey := options.properties.Get("access_key")
+		secretKey := options.properties.Get("secret_key")
 		if accessKey == "" || secretKey == "" {
-			return nil, errors.New("static credentials require both accessKey and secretKey properties")
+			return nil, errors.New("static credentials require both access_key and secret_key properties")
 		}
 		return credentials.NewStaticV4(accessKey, secretKey, ""), nil
 

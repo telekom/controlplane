@@ -32,7 +32,7 @@ func (m *mockProperties) Get(key string) string {
 func TestAutoDiscoverProvider(t *testing.T) {
 	t.Run("detect STS web identity", func(t *testing.T) {
 		props := newMockProperties(map[string]string{
-			"roleArn": "arn:aws:iam::123456789012:role/test-role",
+			"role_arn": "arn:aws:iam::123456789012:role/test-role",
 		})
 		provider := AutoDiscoverProvider(props)
 		assert.Equal(t, CredentialProviderSTSWebIdentity, provider)
@@ -40,8 +40,8 @@ func TestAutoDiscoverProvider(t *testing.T) {
 
 	t.Run("detect static credentials", func(t *testing.T) {
 		props := newMockProperties(map[string]string{
-			"accessKey": "test-access-key",
-			"secretKey": "test-secret-key",
+			"access_key": "test-access-key",
+			"secret_key": "test-secret-key",
 		})
 		provider := AutoDiscoverProvider(props)
 		assert.Equal(t, CredentialProviderStatic, provider)
@@ -57,8 +57,8 @@ func TestAutoDiscoverProvider(t *testing.T) {
 func TestNewCredentials(t *testing.T) {
 	t.Run("create static credentials", func(t *testing.T) {
 		props := newMockProperties(map[string]string{
-			"accessKey": "test-access-key",
-			"secretKey": "test-secret-key",
+			"access_key": "test-access-key",
+			"secret_key": "test-secret-key",
 		})
 
 		creds, err := NewCredentials(CredentialProviderStatic, WithProperties(props))
@@ -84,15 +84,15 @@ func TestNewCredentials(t *testing.T) {
 
 	t.Run("fail with missing static credentials", func(t *testing.T) {
 		props := newMockProperties(map[string]string{
-			"accessKey": "test-access-key",
-			// Missing secretKey
+			"access_key": "test-access-key",
+			// Missing secret_key
 		})
 
 		creds, err := NewCredentials(CredentialProviderStatic, WithProperties(props))
 
 		assert.Error(t, err)
 		assert.Nil(t, creds)
-		assert.Contains(t, err.Error(), "require both accessKey and secretKey")
+		assert.Contains(t, err.Error(), "require both access_key and secret_key")
 	})
 }
 
