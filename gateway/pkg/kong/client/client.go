@@ -40,14 +40,36 @@ type KongClient interface {
 	CleanupPlugins(ctx context.Context, route CustomRoute, consumer CustomConsumer, plugins []CustomPlugin) error
 }
 
+type KongAdminApi interface {
+	GetPluginWithResponse(ctx context.Context, pluginId string, reqEditors ...kong.RequestEditorFn) (*kong.GetPluginResponse, error)
+	DeletePluginWithResponse(ctx context.Context, pluginId string, reqEditors ...kong.RequestEditorFn) (*kong.DeletePluginResponse, error)
+	ListPluginWithResponse(ctx context.Context, params *kong.ListPluginParams, reqEditors ...kong.RequestEditorFn) (*kong.ListPluginResponse, error)
+
+	UpsertUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, body kong.UpsertUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertUpstreamResponse, error)
+	CreateTargetForUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, body kong.CreateTargetForUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.CreateTargetForUpstreamResponse, error)
+
+	UpsertServiceWithResponse(ctx context.Context, serviceIdOrName string, body kong.UpsertServiceJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertServiceResponse, error)
+
+	UpsertRouteWithResponse(ctx context.Context, routeIdOrName string, body kong.UpsertRouteJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertRouteResponse, error)
+	DeleteRouteWithResponse(ctx context.Context, routeIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteRouteResponse, error)
+	DeleteServiceWithResponse(ctx context.Context, serviceIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteServiceResponse, error)
+
+	UpsertConsumerWithResponse(ctx context.Context, consumerUsernameOrId string, body kong.UpsertConsumerJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertConsumerResponse, error)
+
+	DeleteConsumerWithResponse(ctx context.Context, consumerUsernameOrId string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteConsumerResponse, error)
+	AddConsumerToGroupWithResponse(ctx context.Context, consumerNameOrId string, body kong.AddConsumerToGroupJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.AddConsumerToGroupResponse, error)
+	ViewGroupConsumerWithResponse(ctx context.Context, consumerNameOrId string, reqEditors ...kong.RequestEditorFn) (*kong.ViewGroupConsumerResponse, error)
+}
+
 var _ KongClient = &kongClient{}
 
 type kongClient struct {
-	client     kong.ClientWithResponsesInterface
+	//client     kong.ClientWithResponsesInterface
+	client     KongAdminApi
 	commonTags []string
 }
 
-var NewKongClient = func(client kong.ClientWithResponsesInterface, commonTags ...string) KongClient {
+var NewKongClient = func(client KongAdminApi, commonTags ...string) KongClient {
 	return &kongClient{
 		client:     client,
 		commonTags: commonTags,
@@ -458,6 +480,7 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 			Weight: &targetsWeight,
 		}
 
+		// this is a special case with the kong admin API - this endpoint /upstreams/:upstreamName/targets actually accepts multiple POST requests, so this is not a mistake
 		targetsResponse, err := c.client.CreateTargetForUpstreamWithResponse(ctx, upstreamName, targetsBody)
 		if err != nil {
 			return errors.Wrap(err, "failed to create targets for upstream")
