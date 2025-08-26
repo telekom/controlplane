@@ -13,14 +13,16 @@ import (
 type ApiSpecificationSpec struct {
 	Specification string `json:"specification"`
 	Category      string `json:"category"`
+	ApiName       string `json:"apiName"`
+	ContentType   string `json:"contentType"`
+	BasePath      string `json:"basepath"`
+	Hash          string `json:"hash"`
 
-	ApiName      string   `json:"apiName"`
-	ContentType  string   `json:"contentType"`
-	BasePath     string   `json:"basepath"`
-	Hash         string   `json:"hash"`
-	Oauth2Scopes []string `json:"scopes"`
-	XVendor      bool     `json:"xvendor"`
-	Version      string   `json:"version"`
+	XVendor bool   `json:"xvendor"`
+	Version string `json:"version"`
+
+	// +kubebuilder:validation:Optional
+	Oauth2Scopes []string `json:"scopes,omitempty"`
 }
 
 type ApiSpecificationStatus struct {

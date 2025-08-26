@@ -41,10 +41,35 @@ spec:
             type: object
           spec:
             properties:
+              apiName:
+                type: string
+              basepath:
+                type: string
+              category:
+                type: string
+              contentType:
+                type: string
+              hash:
+                type: string
+              scopes:
+                items:
+                  type: string
+                type: array
               specification:
                 type: string
+              version:
+                type: string
+              xvendor:
+                type: boolean
             required:
+            - apiName
+            - basepath
+            - category
+            - contentType
+            - hash
             - specification
+            - version
+            - xvendor
             type: object
           status:
             properties:
@@ -65,12 +90,6 @@ spec:
                 - name
                 - namespace
                 type: object
-              basePath:
-                description: Base path of the API
-                type: string
-              category:
-                description: Category of the API
-                type: string
               conditions:
                 items:
                   description: Condition contains details for one aspect of the current

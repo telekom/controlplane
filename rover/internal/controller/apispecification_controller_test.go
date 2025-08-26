@@ -22,28 +22,6 @@ import (
 var _ = Describe("ApiSpecification Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-api"
-		const openapiSpec = `
-openapi: 3.0.0
-info:
-  title: Test API
-  version: 1.0.0
-  x-api-category: Test
-  x-vendor: true
-servers:
-  - url: http://localhost:8080/eni/api/v1
-components:
-  securitySchemes:
-    oAuth2:
-      type: oauth2
-      description: dummy oauth2
-      flows:
-        clientCredentials:
-          tokenUrl: >-
-            http://localhost:8080/proxy/auth/realms/default/protocol/openid-connect/token
-          scopes:
-            read: read dummy
-            write: write dummy
-`
 
 		ctx := context.Background()
 
@@ -66,7 +44,15 @@ components:
 						},
 					},
 					Spec: roverv1.ApiSpecificationSpec{
-						Specification: openapiSpec,
+						Specification: "some-random-id",
+						Category:      "other",
+						ApiName:       "eni-api-v1",
+						ContentType:   "application/yaml",
+						BasePath:      "eni/api/v1",
+						Hash:          "someHash",
+						Oauth2Scopes:  []string{"read", "write"},
+						XVendor:       true,
+						Version:       "1.0.0",
 					},
 				}
 				Expect(k8sClient.Create(ctx, obj)).To(Succeed())
