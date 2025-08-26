@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name: Deploy to GitHub Pages
+name: Build and Deploy Docs to GitHub Pages
 
 on:
   workflow_dispatch:
