@@ -26,6 +26,7 @@ updates:
       - rover
       - approval
       - rover-server
+      - rover-ctl
     groups:
       default: 
         update-types:

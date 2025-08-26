@@ -123,10 +123,25 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: rover-ctl
+    dir: rover-ctl
+    main: main.go
+    binary: roverctl
+    ldflags:
+      - -X 'main.version={{.Version}}'
+      - -X 'main.buildTime={{.Date}}'
+      - -X 'main.gitCommit={{.FullCommit}}'
+    goos:
+      - linux
+      - windows # only for rover-ctl
+    goarch:
+      - amd64
 archives:
-  - formats: [tar.gz]
+  - id: rover-ctl
+    ids: [rover-ctl]
+    formats: [tar.gz]
     name_template: >-
-      {{ .ProjectName }}_
+      roverctl_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
       {{- else if eq .Arch "386" }}i386
@@ -378,6 +393,25 @@ kos:
     working_dir: rover-server/cmd
     repositories:
       - ghcr.io/telekom/controlplane/rover-server
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: rover-ctl
+    build: rover-ctl
+    main: .
+    working_dir: rover-ctl
+    repositories:
+      - ghcr.io/telekom/controlplane/rover-ctl
     labels:
       org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
       org.opencontainers.image.url: "https://developer.telekom.de/"

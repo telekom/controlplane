@@ -6,3 +6,9 @@ defaultBaseImage: gcr.io/distroless/static:nonroot
 defaultPlatforms:
 - linux/arm64
 - linux/amd64
+defaultFlags:
+- -trimpath
+defaultLdflags:
+- -X=main.version={{.Env.VERSION}}
+- -X=main.buildTime={{.Env.BUILD_TIME}}
+- -X=main.gitCommit={{.Git.FullCommit}}
