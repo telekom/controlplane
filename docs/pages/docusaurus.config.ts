@@ -107,8 +107,16 @@ const config: Config = {
               to: '/docs/Overview/intro',
             },
             {
-              label: 'Core Technologies',
-              to: '/docs/Core-Technologies/golang',
+              label: 'Technology',
+              to: '/docs/Technology/Core-Technologies/golang',
+            },
+            {
+              label: 'Installation',
+              to: '/docs/Installation/installation',
+            },
+            {
+              label: 'Quickstart',
+              to: '/docs/Installation/quickstart',
             },
           ],
         },

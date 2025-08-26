@@ -61,7 +61,7 @@ controlplane-docs/
 │   ├── style.css          # Custom styling
 │   └── public/
 │       └── images/        # Presentation images
-└── docs/                  # Docusaurus documentation
+└── pages/                  # Docusaurus documentation
     ├── package.json       # Documentation dependencies
     ├── docusaurus.config.js # Docusaurus configuration
     ├── sidebars.js        # Navigation structure

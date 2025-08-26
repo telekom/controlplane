@@ -5,7 +5,7 @@ SPDX-License-Identifier: CC0-1.0
 -->
 
 <p align="center">
-  <img src="./docs/img/Open-Telekom-Integration-Platform_Visual.svg" alt="Open Telekom Integration Platform logo" width="200">
+  <img src="docs/pages/static/img/Open-Telekom-Integration-Platform_Visual.svg" alt="Open Telekom Integration Platform logo" width="200">
   <h1 align="center">Control Plane</h1>
 </p>
 
@@ -115,11 +115,11 @@ The Control Plane requires the following infrastructure components in order to o
 
 ## Architecture
 The diagram below shows the general flow and interfaces between the most important components of The Rover Control Plane.
-# ![Architecture](./docs//img/CP_Architecture.drawio.svg)
+# ![Architecture](docs/pages/static/img/CP_Architecture.drawio.svg)
 
 ## Getting started
-If you want to learn more about how to install and run the Control Plane in a Kubernetes environment in general, visit: [Installing Control Plane](./docs/files/installation.md)  
-But if you want to get started right away with a non-productive local environment and try out the Control Plane, we recommend visting: [Local installation (Quickstart)](./docs/files/quickstart.md).
+If you want to learn more about how to install and run the Control Plane in a Kubernetes environment in general, visit: [Installing Control Plane](docs/pages/docs/2-Installation/installation.md)  
+But if you want to get started right away with a non-productive local environment and try out the Control Plane, we recommend visting: [Local installation (Quickstart)](docs/pages/docs/2-Installation/quickstart.md).
 
 ## Code of Conduct
 

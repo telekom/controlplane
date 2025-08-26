@@ -1,3 +1,7 @@
+---
+sidebar_position: 1
+---
+
 # Installation 
 
 This is an installation guide for the controlplane project. It will help you to set up the controlplane in a local 
