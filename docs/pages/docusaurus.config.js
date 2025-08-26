@@ -9,7 +9,7 @@ import rehypeKatex from 'rehype-katex';
 export default {
   title: 'Controlplane Technical Documentation',
   tagline: 'Technical frameworks and architecture for the Open Telekom Integration Platform',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/eni-tardis-icon.png',
 
   // Set the production url of your site here
   url: 'https://your-docusaurus-site.example.com',
@@ -61,12 +61,12 @@ export default {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       // Replace with your project's social card
-      image: 'img/docusaurus-social-card.jpg',
+      image: 'img/eni-tardis.png',
       navbar: {
         title: 'Controlplane',
         logo: {
           alt: 'Controlplane Logo',
-          src: 'img/logo.svg',
+          src: 'img/eni-tardis-icon.png',
         },
         items: [
           {
