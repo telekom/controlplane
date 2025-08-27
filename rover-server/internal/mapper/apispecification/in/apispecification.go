@@ -27,6 +27,10 @@ func MapRequest(ctx context.Context, in *api.ApiSpecificationUpdateRequest, file
 		return nil, errors.New("input api specification is nil")
 	}
 
+	if fileAPIResp == nil {
+		return nil, errors.New("response from file manager is nil")
+	}
+
 	var spec *roverv1.ApiSpecificationSpec
 	var bytes []byte
 	bytes, err = yaml.Marshal(in.Specification)

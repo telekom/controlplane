@@ -151,6 +151,9 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 	}
 
 	fileAPIResp, err := a.uploadFile(ctx, &req, id)
+	if err != nil {
+		return res, err
+	}
 	obj, err := in.MapRequest(ctx, &req, fileAPIResp, id)
 	if err != nil {
 		return res, err
