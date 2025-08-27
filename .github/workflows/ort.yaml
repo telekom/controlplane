@@ -20,7 +20,7 @@ jobs:
       - name: Use HTTPS for Git cloning
         run: git config --global url.https://github.com/.insteadOf ssh://git@github.com/
       - name: Checkout project
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v5.0.0
       - name: Prepare ORT config
         # This allows us to customize the default ORT config available at
         # https://github.com/oss-review-toolkit/ort-config
