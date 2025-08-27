@@ -14,7 +14,6 @@ import (
 	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 )
 
@@ -22,7 +21,7 @@ var (
 	parseErr = "failed to parse specification"
 )
 
-func MapRequest(ctx context.Context, in *api.ApiSpecificationUpdateRequest, fileAPIResp *filesapi.FileUploadResponse, id mapper.ResourceIdInfo) (res *roverv1.ApiSpecification, err error) {
+func MapRequest(ctx context.Context, in *map[string]interface{}, fileAPIResp *filesapi.FileUploadResponse, id mapper.ResourceIdInfo) (res *roverv1.ApiSpecification, err error) {
 	if in == nil {
 		return nil, errors.New("input api specification is nil")
 	}
@@ -33,7 +32,7 @@ func MapRequest(ctx context.Context, in *api.ApiSpecificationUpdateRequest, file
 
 	var spec *roverv1.ApiSpecificationSpec
 	var bytes []byte
-	bytes, err = yaml.Marshal(in.Specification)
+	bytes, err = yaml.Marshal(in)
 	if err != nil {
 		return
 	}

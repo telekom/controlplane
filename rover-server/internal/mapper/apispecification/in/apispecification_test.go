@@ -31,7 +31,7 @@ var _ = Describe("ApiSpecification Mapper", func() {
 				ContentType:   "application/yaml",
 			}
 
-			output, err := MapRequest(ctx, apiSpecification, fileAPIResp, resourceIdInfo)
+			output, err := MapRequest(ctx, &apiSpecification.Specification, fileAPIResp, resourceIdInfo)
 
 			Expect(err).To(BeNil())
 

@@ -150,11 +150,11 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 		return res, err
 	}
 
-	fileAPIResp, err := a.uploadFile(ctx, &req, id)
+	fileAPIResp, err := a.uploadFile(ctx, &req.Specification, id)
 	if err != nil {
 		return res, err
 	}
-	obj, err := in.MapRequest(ctx, &req, fileAPIResp, id)
+	obj, err := in.MapRequest(ctx, &req.Specification, fileAPIResp, id)
 	if err != nil {
 		return res, err
 	}
@@ -187,12 +187,12 @@ func (a *ApiSpecificationController) GetStatus(ctx context.Context, resourceId s
 	return status.MapResponse(apiSpec.Status.Conditions)
 }
 
-func (a *ApiSpecificationController) uploadFile(ctx context.Context, req *api.ApiSpecification, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {
-	if req == nil {
+func (a *ApiSpecificationController) uploadFile(ctx context.Context, specData *map[string]interface{}, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {
+	if specData == nil {
 		return nil, errors.New("input api specification is nil")
 	}
 
-	data, err := yaml.Marshal(*req)
+	data, err := yaml.Marshal(specData)
 
 	localHash, same, err := a.isHashEqual(ctx, id, &data)
 	if err != nil {
