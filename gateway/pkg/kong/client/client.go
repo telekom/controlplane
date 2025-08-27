@@ -47,6 +47,8 @@ type KongAdminApi interface {
 
 	UpsertUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, body kong.UpsertUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertUpstreamResponse, error)
 	CreateTargetForUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, body kong.CreateTargetForUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.CreateTargetForUpstreamResponse, error)
+	DeleteUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteUpstreamResponse, error)
+	DeleteUpstreamTargetWithResponse(ctx context.Context, upstreamIdOrName string, targetIdOrTarget string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteUpstreamTargetResponse, error)
 
 	UpsertServiceWithResponse(ctx context.Context, serviceIdOrName string, body kong.UpsertServiceJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertServiceResponse, error)
 
@@ -464,6 +466,7 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		if err := CheckStatusCode(upstreamResponse, 200); err != nil {
 			return errors.Wrap(fmt.Errorf("failed to create upstream: %s", string(upstreamResponse.Body)), "failed to create upstream")
 		}
+		route.SetUpstreamId(*upstreamResponse.JSON200.Id)
 
 		// important - the service needs to explicitly use this upstream for circuit breaker to work
 		serviceHost = upstreamName
@@ -485,9 +488,10 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		if err != nil {
 			return errors.Wrap(err, "failed to create targets for upstream")
 		}
-		if err := CheckStatusCode(upstreamResponse, 200); err != nil {
+		if err := CheckStatusCode(targetsResponse, 200, 201); err != nil {
 			return errors.Wrap(fmt.Errorf("failed to create targets for upstream: %s", string(targetsResponse.Body)), "failed to create targets for upstream")
 		}
+		route.SetTargetsId(*targetsResponse.JSON200.Id)
 	}
 
 	serviceBody := kong.CreateServiceJSONRequestBody{
@@ -567,6 +571,26 @@ func (c *kongClient) DeleteRoute(ctx context.Context, route CustomRoute) error {
 	}
 	if err := CheckStatusCode(serviceResponse, 200, 204, 404); err != nil {
 		return fmt.Errorf("failed to delete service: %s", string(serviceResponse.Body))
+	}
+
+	// upstreamName = routeName
+	upstreamResponse, err := c.client.DeleteUpstreamWithResponse(ctx, routeName)
+	if err != nil {
+		return err
+	}
+	if err := CheckStatusCode(upstreamResponse, 200, 204, 404); err != nil {
+		return fmt.Errorf("failed to delete upstream: %s", string(upstreamResponse.Body))
+	}
+
+	if route.GetTargetsId() != "" {
+		// targets dont have names, so we use the ID directly
+		targetsResponse, err := c.client.DeleteUpstreamTargetWithResponse(ctx, routeName, route.GetTargetsId())
+		if err != nil {
+			return err
+		}
+		if err := CheckStatusCode(targetsResponse, 200, 204, 404); err != nil {
+			return fmt.Errorf("failed to delete upstream: %s", string(targetsResponse.Body))
+		}
 	}
 
 	return nil
