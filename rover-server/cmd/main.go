@@ -43,9 +43,11 @@ func main() {
 	probesCtrl.Register(app, cserver.ControllerOpts{})
 
 	s := server.Server{
-		Config:              cfg,
-		Log:                 log.Log,
-		ApiSpecifications:   controller.NewApiSpecificationController(filesapi.New()),
+		Config: cfg,
+		Log:    log.Log,
+		ApiSpecifications: controller.NewApiSpecificationController(filesapi.New(
+			filesapi.WithSkipTLSVerify(cfg.FileManager.SkipTLS),
+		)),
 		Rovers:              controller.NewRoverController(),
 		EventSpecifications: controller.NewEventSpecificationController(),
 	}

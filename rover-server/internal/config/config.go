@@ -12,9 +12,10 @@ import (
 )
 
 type ServerConfig struct {
-	Address  string         `json:"address"`
-	Security SecurityConfig `json:"security"`
-	Log      LogConfig      `json:"log"`
+	Address     string            `json:"address"`
+	Security    SecurityConfig    `json:"security"`
+	Log         LogConfig         `json:"log"`
+	FileManager FileManagerConfig `json:"fileManager"`
 }
 
 type SecurityConfig struct {
@@ -32,6 +33,10 @@ type LMSConfig struct {
 type LogConfig struct {
 	Encoding string `json:"encoding"`
 	Level    string `json:"level"`
+}
+
+type FileManagerConfig struct {
+	SkipTLS bool `json:"skipTLS"`
 }
 
 func LoadConfig() (*ServerConfig, error) {
@@ -63,4 +68,7 @@ func setDefaults() {
 	viper.SetDefault("security.scopePrefix", "tardis:")
 	// LMS
 	viper.SetDefault("security.lms.basePath", "")
+
+	//FileManager
+	viper.SetDefault("fileManager.skipTLS", true)
 }
