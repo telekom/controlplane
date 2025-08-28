@@ -42,24 +42,44 @@ spec:
           spec:
             properties:
               apiName:
+                description: ApiName is derived from the BasePath or URL path, with
+                  slashes replaced by hyphens "-"
                 type: string
               basepath:
+                description: BasePath represents the base path from OpenAPI v2 or
+                  derived from server URL in OpenAPI v3
                 type: string
               category:
+                default: other
+                description: Category of the API, defaults to "other" if not specified,
+                  is extracted from `x-category` in rover-server
                 type: string
               contentType:
+                description: ContentType of the API specification document, typically
+                  "application/yaml"
                 type: string
               hash:
+                description: Hash is the SHA-256 hash of the specification content
+                  for integrity verification
                 type: string
               scopes:
+                description: Oauth2Scopes contains the OAuth2 scopes extracted from
+                  security definitions/schemes
                 items:
                   type: string
                 type: array
               specification:
+                description: Specification contains the file ID reference from the
+                  file manager
                 type: string
               version:
+                description: Version of the API as specified in the OpenAPI document's
+                  info section
                 type: string
               xvendor:
+                default: false
+                description: XVendor indicates if this is a vendor extension API,
+                  defaults to false is extracted from `x-vendor` in rover-server
                 type: boolean
             required:
             - apiName
@@ -69,7 +89,6 @@ spec:
             - hash
             - specification
             - version
-            - xvendor
             type: object
           status:
             properties:
