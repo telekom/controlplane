@@ -47,7 +47,6 @@ var _ = Describe("ApiSpecification Controller", func() {
 						Specification: "some-random-id",
 						Category:      "other",
 						ApiName:       "eni-api-v1",
-						ContentType:   "application/yaml",
 						BasePath:      "eni/api/v1",
 						Hash:          "someHash",
 						Oauth2Scopes:  []string{"read", "write"},

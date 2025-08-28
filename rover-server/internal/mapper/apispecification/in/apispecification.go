@@ -36,7 +36,6 @@ func MapRequest(ctx context.Context, specMarshaled []byte, fileAPIResp *filesapi
 	}
 
 	spec.Hash = fileAPIResp.FileHash
-	spec.ContentType = fileAPIResp.ContentType
 	spec.Specification = fileAPIResp.FileId
 
 	res = &roverv1.ApiSpecification{

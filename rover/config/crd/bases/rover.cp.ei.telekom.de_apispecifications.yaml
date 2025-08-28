@@ -54,10 +54,6 @@ spec:
                 description: Category of the API, defaults to "other" if not specified,
                   is extracted from `x-category` in rover-server
                 type: string
-              contentType:
-                description: ContentType of the API specification document, typically
-                  "application/yaml"
-                type: string
               hash:
                 description: Hash is the SHA-256 hash of the specification content
                   for integrity verification
@@ -85,7 +81,6 @@ spec:
             - apiName
             - basepath
             - category
-            - contentType
             - hash
             - specification
             - version

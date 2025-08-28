@@ -23,7 +23,6 @@
         Specification: "test-file-id",
         Category:      "other",
         ApiName:       "eni-distr-v1",
-        ContentType:   "application/yaml",
         BasePath:      "/eni/distr/v1",
         Hash:          "test-hash",
         XVendor:       false,

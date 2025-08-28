@@ -24,10 +24,6 @@ type ApiSpecificationSpec struct {
 	// +kubebuilder:validation:Required
 	ApiName string `json:"apiName"`
 
-	// ContentType of the API specification document, typically "application/yaml"
-	// +kubebuilder:validation:Required
-	ContentType string `json:"contentType"`
-
 	// BasePath represents the base path from OpenAPI v2 or derived from server URL in OpenAPI v3
 	// +kubebuilder:validation:Required
 	BasePath string `json:"basepath"`
