@@ -104,7 +104,7 @@ const config: Config = {
           items: [
             {
               label: 'Introduction',
-              to: '/docs/Overview/intro',
+              to: '/docs/Overview/controlplane',
             },
             {
               label: 'Technology',

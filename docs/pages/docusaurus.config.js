@@ -95,7 +95,7 @@ export default {
             items: [
               {
                 label: 'Introduction',
-                to: '/docs/intro',
+                to: '/docs/controlplane',
               },
               {
                 label: 'Core Technologies',
