@@ -305,7 +305,7 @@ These operators work alongside the Kubernetes API server and etcd, watching for 
   The following API Servers run on the control plane:
 </InfoSection>
 
-<CardGrid columns={2}>
+<CardGrid columns={3}>
   <FeatureCard
     title="Secret Manager"
     description={
@@ -332,6 +332,16 @@ These operators work alongside the Kubernetes API server and etcd, watching for 
       <>
         <p>RESTful API for managing Organization resources such as Groups and Teams.</p>
         <a href="https://github.com/telekom/controlplane/blob/main/organization-server/README.md">Documentation →</a>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="File Manager"
+    description={
+      <>
+        <p>RESTful API for managing files. It allows you to store and retrieve files, keeping large data outside of Kubernetes.</p>
+        <a href="https://github.com/telekom/controlplane/blob/main/file-manager/README.md">Documentation →</a>
       </>
     }
   />
