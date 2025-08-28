@@ -16,6 +16,7 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
+	"github.com/telekom/controlplane/rover-server/internal/file"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"gopkg.in/yaml.v3"
 
@@ -31,14 +32,12 @@ import (
 var _ server.ApiSpecificationController = &ApiSpecificationController{}
 
 type ApiSpecificationController struct {
-	Store    store.ObjectStore[*roverv1.ApiSpecification]
-	filesAPI filesapi.FileManager
+	Store store.ObjectStore[*roverv1.ApiSpecification]
 }
 
-func NewApiSpecificationController(filesAPI filesapi.FileManager) *ApiSpecificationController {
+func NewApiSpecificationController() *ApiSpecificationController {
 	return &ApiSpecificationController{
-		Store:    s.ApiSpecificationStore,
-		filesAPI: filesAPI,
+		Store: s.ApiSpecificationStore,
 	}
 }
 
@@ -210,7 +209,7 @@ func (a *ApiSpecificationController) uploadFile(ctx context.Context, specData *m
 	}
 
 	if !same {
-		resp, err = a.filesAPI.UploadFile(ctx, fileId, fileContentType, bytes.NewReader(data))
+		resp, err = file.GetFileManager().UploadFile(ctx, fileId, fileContentType, bytes.NewReader(data))
 	}
 
 	return resp, err
@@ -236,7 +235,7 @@ func (a *ApiSpecificationController) isHashEqual(ctx context.Context, id mapper.
 
 func (a *ApiSpecificationController) downloadFile(ctx context.Context, fileId string) (*bytes.Buffer, error) {
 	var b bytes.Buffer
-	_, err := a.filesAPI.DownloadFile(ctx, fileId, &b)
+	_, err := file.GetFileManager().DownloadFile(ctx, fileId, &b)
 	if err != nil {
 		return nil, err
 	}

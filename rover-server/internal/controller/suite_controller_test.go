@@ -17,7 +17,9 @@ import (
 	. "github.com/onsi/gomega"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	securitymock "github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
+	"github.com/telekom/controlplane/file-manager/api"
 	filefake "github.com/telekom/controlplane/file-manager/api/fake"
+	"github.com/telekom/controlplane/rover-server/internal/file"
 	"k8s.io/client-go/rest"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 
@@ -57,6 +59,9 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 	}
 
 	mockFileManager = filefake.NewMockFileManager(GinkgoT())
+	file.GetFileManager = func() api.FileManager {
+		return mockFileManager
+	}
 }
 
 var _ = BeforeSuite(func() {
@@ -81,7 +86,7 @@ var _ = BeforeSuite(func() {
 	s := server.Server{
 		Config:              &config.ServerConfig{},
 		Log:                 log.Log,
-		ApiSpecifications:   NewApiSpecificationController(mockFileManager),
+		ApiSpecifications:   NewApiSpecificationController(),
 		Rovers:              NewRoverController(),
 		EventSpecifications: NewEventSpecificationController(),
 	}
