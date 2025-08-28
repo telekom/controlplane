@@ -149,11 +149,15 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 		return res, err
 	}
 
-	fileAPIResp, err := a.uploadFile(ctx, &req.Specification, id)
+	specMarshaled, err := yaml.Marshal(req.Specification)
 	if err != nil {
 		return res, err
 	}
-	obj, err := in.MapRequest(ctx, &req.Specification, fileAPIResp, id)
+	fileAPIResp, err := a.uploadFile(ctx, specMarshaled, id)
+	if err != nil {
+		return res, err
+	}
+	obj, err := in.MapRequest(ctx, specMarshaled, fileAPIResp, id)
 	if err != nil {
 		return res, err
 	}
@@ -186,14 +190,12 @@ func (a *ApiSpecificationController) GetStatus(ctx context.Context, resourceId s
 	return status.MapResponse(apiSpec.Status.Conditions)
 }
 
-func (a *ApiSpecificationController) uploadFile(ctx context.Context, specData *map[string]interface{}, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {
-	if specData == nil {
+func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {
+	if specMarshaled == nil {
 		return nil, errors.New("input api specification is nil")
 	}
 
-	data, err := yaml.Marshal(specData)
-
-	localHash, same, err := a.isHashEqual(ctx, id, data)
+	localHash, same, err := a.isHashEqual(ctx, id, specMarshaled)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +210,7 @@ func (a *ApiSpecificationController) uploadFile(ctx context.Context, specData *m
 	}
 
 	if !same {
-		resp, err = file.GetFileManager().UploadFile(ctx, fileId, fileContentType, bytes.NewReader(data))
+		resp, err = file.GetFileManager().UploadFile(ctx, fileId, fileContentType, bytes.NewReader(specMarshaled))
 	}
 
 	return resp, err

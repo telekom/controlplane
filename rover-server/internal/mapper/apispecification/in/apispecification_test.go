@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
+	"gopkg.in/yaml.v3"
 )
 
 var _ = Describe("ApiSpecification Mapper", func() {
@@ -31,8 +32,10 @@ var _ = Describe("ApiSpecification Mapper", func() {
 				ContentType: "application/yaml",
 			}
 
-			output, err := MapRequest(ctx, &apiSpecification.Specification, fileAPIResp, resourceIdInfo)
+			marshalled, err := yaml.Marshal(apiSpecification.Specification)
+			Expect(err).To(BeNil())
 
+			output, err := MapRequest(ctx, marshalled, fileAPIResp, resourceIdInfo)
 			Expect(err).To(BeNil())
 
 			Expect(output).ToNot(BeNil())
