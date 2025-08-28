@@ -198,8 +198,7 @@ func (a *ApiSpecificationController) uploadFile(ctx context.Context, specData *m
 		return nil, err
 	}
 
-	bCtx := ReceiveBCtxOrDie(ctx)
-	fileId := bCtx.Environment + "--" + bCtx.Group + "--" + bCtx.Team + "--" + id.ResourceId // ToDo
+	fileId := id.Environment + id.ResourceId + localHash
 	fileContentType := "application/yaml"
 
 	resp := &filesapi.FileUploadResponse{
