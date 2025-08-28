@@ -5,6 +5,7 @@
 package in
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -44,8 +45,16 @@ func parseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecifica
 			return nil, errors.New(parseErr + ": failed to build v2 model")
 		}
 
+		if model.Model.BasePath == "" {
+			return nil, fmt.Errorf("no basepath found. Basepath is required")
+		}
+
 		apiSpecificationSpec.ApiName = makeName(model.Model.BasePath)
 		apiSpecificationSpec.BasePath = model.Model.BasePath
+
+		if !verifyVersionAndBasePathMatch(model.Model.Info.Version, model.Model.BasePath) {
+			return nil, fmt.Errorf("major info version %s does not match major basepath version %s", model.Model.Info.Version, model.Model.BasePath)
+		}
 		apiSpecificationSpec.Version = model.Model.Info.Version
 		setExtensionValues(apiSpecificationSpec, model.Model.Info.Extensions)
 
@@ -69,11 +78,17 @@ func parseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecifica
 
 		path, err := getPathFromURL(model.Model.Servers[0].URL)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to make name from url")
+			return nil, errors.Wrap(err, "failed to get basePath from url")
+		} else if path == "" {
+			return nil, fmt.Errorf("no basepath found in the first server url %s. Basepath is required", model.Model.Servers[0].URL)
 		}
 
-		apiSpecificationSpec.ApiName = makeName(path) //ToDo find better name if empty
+		apiSpecificationSpec.ApiName = makeName(path)
 		apiSpecificationSpec.BasePath = path
+
+		if !verifyVersionAndBasePathMatch(model.Model.Info.Version, path) {
+			return nil, fmt.Errorf("major info version %s does not match major basepath version %s", model.Model.Info.Version, path)
+		}
 		apiSpecificationSpec.Version = model.Model.Info.Version
 
 		setExtensionValues(apiSpecificationSpec, model.Model.Info.Extensions)
@@ -152,4 +167,9 @@ func setSecuritySchemeValues(apiSpecificationSpec *roverv1.ApiSpecificationSpec,
 
 		}
 	}
+}
+
+func verifyVersionAndBasePathMatch(version, basePath string) bool {
+	basePathVersion := basePath[len(basePath)-1]
+	return basePathVersion == version[0]
 }
