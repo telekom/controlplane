@@ -72,7 +72,7 @@ func parseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecifica
 			return nil, errors.Wrap(err, "failed to make name from url")
 		}
 
-		apiSpecificationSpec.ApiName = makeName(path)
+		apiSpecificationSpec.ApiName = makeName(path) //ToDo find better name if empty
 		apiSpecificationSpec.BasePath = path
 		apiSpecificationSpec.Version = model.Model.Info.Version
 

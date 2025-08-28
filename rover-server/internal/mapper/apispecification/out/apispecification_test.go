@@ -14,7 +14,7 @@ import (
 var _ = Describe("ApiSpecificationResponse Mapper", func() {
 	Context("MapRequest", func() {
 		It("must map a ApiSpecification to an ApiSpecificationResponse correctly", func() {
-			output, err := MapResponse(apiSpecification, openapi)
+			output, err := MapResponse(apiSpecification, *openapi)
 
 			Expect(err).To(BeNil())
 

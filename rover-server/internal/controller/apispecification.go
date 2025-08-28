@@ -103,7 +103,7 @@ func (a *ApiSpecificationController) Get(ctx context.Context, resourceId string)
 		return res, err
 	}
 
-	return out.MapResponse(apiSpec, &m)
+	return out.MapResponse(apiSpec, m)
 }
 
 // GetAll implements server.ApiSpecificationController.
@@ -127,7 +127,7 @@ func (a *ApiSpecificationController) GetAll(ctx context.Context, params api.GetA
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to marshal resource", err.Error())
 		}
-		resp, err := out.MapResponse(apiSpec, &m)
+		resp, err := out.MapResponse(apiSpec, m)
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to map resource", err.Error())
 		}
@@ -194,13 +194,13 @@ func (a *ApiSpecificationController) uploadFile(ctx context.Context, specData *m
 
 	data, err := yaml.Marshal(specData)
 
-	localHash, same, err := a.isHashEqual(ctx, id, &data)
+	localHash, same, err := a.isHashEqual(ctx, id, data)
 	if err != nil {
 		return nil, err
 	}
 
 	bCtx := ReceiveBCtxOrDie(ctx)
-	fileId := bCtx.Environment + "--" + bCtx.Group + "--" + bCtx.Team + "--" + id.ResourceId
+	fileId := bCtx.Environment + "--" + bCtx.Group + "--" + bCtx.Team + "--" + id.ResourceId // ToDo
 	fileContentType := "application/yaml"
 
 	resp := &filesapi.FileUploadResponse{
@@ -218,7 +218,7 @@ func (a *ApiSpecificationController) uploadFile(ctx context.Context, specData *m
 
 // isHashEqual checks if the hash of the data is the same as the hash of the api specification in the store.
 // will return the hash of the data and a boolean indicating if the hash is the same as in the store
-func (a *ApiSpecificationController) isHashEqual(ctx context.Context, id mapper.ResourceIdInfo, data *[]byte) (string, bool, error) {
+func (a *ApiSpecificationController) isHashEqual(ctx context.Context, id mapper.ResourceIdInfo, data []byte) (string, bool, error) {
 	ns := id.Environment + "--" + id.Namespace
 	apiSpec, err := a.Store.Get(ctx, ns, id.Name)
 	if err != nil {
@@ -229,7 +229,7 @@ func (a *ApiSpecificationController) isHashEqual(ctx context.Context, id mapper.
 	}
 
 	hasher := sha256.New()
-	hasher.Write(*data)
+	hasher.Write(data)
 	hash := base64.StdEncoding.EncodeToString(hasher.Sum(nil))
 	return hash, hash == apiSpec.Spec.Hash, nil
 }
