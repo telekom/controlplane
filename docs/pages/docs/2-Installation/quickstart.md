@@ -4,21 +4,26 @@ sidebar_position: 1
 
 # Quickstart Guide
 
-This quickstart guide will help you set up a development environment and deploy the controlplane on a local Kubernetes 
-cluster. The guide covers setting up a local kind cluster, installing the controlplane components, and deploying 
-sample resources to verify the installation.
+This guide will help you quickly set up a development environment and deploy the controlplane on a local Kubernetes cluster. Follow these steps to get a working environment in minutes.
 
-## Local Setup
-
-The controlplane runs on Kubernetes. For local development and testing, we'll use [kind](https://kind.sigs.k8s.io/) (Kubernetes IN Docker) 
-to create a lightweight local Kubernetes cluster. The following steps will guide you through setting up your local 
-environment.
+:::tip What you'll accomplish
+By the end of this guide, you'll have:
+- A running local Kubernetes cluster
+- The controlplane components installed and running
+- Sample resources deployed to verify functionality
+:::
 
 ## Prerequisites
 
-Make sure you have [kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation), [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/), and the [GitHub CLI](https://cli.github.com/) installed before proceeding.
+Before starting, ensure you have the following tools installed:
 
-### Prepare local kind Cluster
+- [kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation) - Kubernetes in Docker
+- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) - Kubernetes command-line tool
+- [GitHub CLI](https://cli.github.com/) - For authentication with GitHub
+
+## Setup Process
+
+### Step 1: Prepare Local Kind Cluster
 
 First, we'll create a kind cluster and prepare it for the controlplane installation.
 
@@ -40,7 +45,7 @@ export GITHUB_TOKEN=$(gh auth token)
 bash ./install.sh --with-cert-manager --with-trust-manager --with-monitoring-crds
 ```
 
-### Install Controlplane
+### Step 2: Install Controlplane
 
 Now that we have a Kubernetes cluster with the necessary dependencies, we can install the controlplane components. 
 The controlplane consists of multiple controllers and custom resources that work together to manage workloads across 
@@ -60,11 +65,9 @@ kubectl get pods -A -l control-plane=controller-manager
 You should see the controlplane controller pods running. The controllers are responsible for reconciling the custom 
 resources and managing the platform.
 
-If you want to develop and test your own controllers against the controlplane, please refer to the 
-[Installation Guide](https://github.com/telekom/controlplane/tree/main/docs/files/installation.md) and the section `Testing my local Controllers` for detailed instructions on how to run 
-locally built controllers.
+If you want to develop and test your own controllers against the controlplane, please refer to the [Installation Guide](./installation.md) and the section "Development: Testing Local Controllers" for detailed instructions.
 
-### Install Sample Resources
+### Step 3: Install Sample Resources
 
 To verify that the controlplane is working correctly and to understand its functionality, we'll deploy some sample 
 resources. The controlplane uses a hierarchical resource model with admin, organization, and rover resources.
@@ -105,7 +108,27 @@ kubectl apply -k resources/rover
 kubectl wait --for=condition=Ready -n controlplane--phoenix--firebirds rovers/rover-echo-v1
 ```
 
-## Troubleshooting
+## Verification & Troubleshooting
+
+### Expected Results
+
+After successful installation, you should see:
+
+- Controller pods running in the `controlplane` namespace
+- Custom resources in `Ready` state
+- A namespace created for the sample team (`controlplane--phoenix--firebirds`)
+
+### Checking Resource Status
+
+```bash
+# Check all controlplane resources
+kubectl get zones,teams,rovers -A
+
+# Check that rover workloads are deployed
+kubectl get pods -n controlplane--phoenix--firebirds
+```
+
+### Common Issues
 
 If you encounter issues during the installation, here are some common troubleshooting steps:
 
@@ -128,10 +151,10 @@ If you encounter issues during the installation, here are some common troublesho
 
 Now that you have a working controlplane installation, you can:
 
-1. Explore the custom resources and their relationships
-2. Deploy your own Rover resources
-3. Learn about zone capabilities and workload scheduling
-4. Check out the detailed documentation for each component
+1. **Explore the architecture**: Learn about the [controlplane components](../0-Overview/intro.md#components) and how they work together
+2. **Deploy your own workloads**: Create custom [Rover resources](../3-Components/rover.md) for your applications
+3. **Understand resource relationships**: See how [admin, organization and rover resources](../0-Overview/intro.md#features) interact
+4. **Dive deeper**: Check out the [detailed installation guide](./installation.md) for more advanced options
 
-For more information, refer to the other sections of the documentation or visit the [GitHub repository](https://github.com/telekom/controlplane).
+For complete documentation, visit the [GitHub repository](https://github.com/telekom/controlplane).
 ```
