@@ -147,7 +147,7 @@ const config: Config = {
       additionalLanguages: ['go', 'yaml', 'bash'],
     },
     mermaid: {
-      theme: {light: 'neutral', dark: 'forest'},
+      theme: {light: 'neutral', dark: 'dark'},
     },
   } satisfies Preset.ThemeConfig,
 
