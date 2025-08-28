@@ -202,9 +202,9 @@ func (a *ApiSpecificationController) uploadFile(ctx context.Context, specData *m
 	fileContentType := "application/yaml"
 
 	resp := &filesapi.FileUploadResponse{
-		CRC64NVMEHash: localHash,
-		FileId:        fileId,
-		ContentType:   fileContentType,
+		FileHash:    localHash,
+		FileId:      fileId,
+		ContentType: fileContentType,
 	}
 
 	if !same {

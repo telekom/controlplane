@@ -39,8 +39,8 @@ servers:
 					w.Write([]byte(specV3))
 
 					return &fileApi.FileDownloadResponse{
-						CRC64NVMEHash: "randomHash",
-						ContentType:   "application/yaml",
+						FileHash:    "randomHash",
+						ContentType: "application/yaml",
 					}, nil
 				})
 			req := httptest.NewRequest(http.MethodGet, "/apispecifications/eni--hyperion--apispec-sample", nil)
@@ -69,8 +69,8 @@ servers:
 					w.Write([]byte(specV3))
 
 					return &fileApi.FileDownloadResponse{
-						CRC64NVMEHash: "randomHash",
-						ContentType:   "application/yaml",
+						FileHash:    "randomHash",
+						ContentType: "application/yaml",
 					}, nil
 				})
 
@@ -165,9 +165,9 @@ servers:
 
 			mockFileManager.EXPECT().UploadFile(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
 				&fileApi.FileUploadResponse{
-					CRC64NVMEHash: "randomHash",
-					FileId:        "randomId",
-					ContentType:   "application/yaml",
+					FileHash:    "randomHash",
+					FileId:      "randomId",
+					ContentType: "application/yaml",
 				}, nil)
 
 			req := httptest.NewRequest(http.MethodPut, "/apispecifications/eni--hyperion--apispec-sample",

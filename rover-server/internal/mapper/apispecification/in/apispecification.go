@@ -41,7 +41,7 @@ func MapRequest(ctx context.Context, in *map[string]interface{}, fileAPIResp *fi
 		return
 	}
 
-	spec.Hash = fileAPIResp.CRC64NVMEHash
+	spec.Hash = fileAPIResp.FileHash
 	spec.ContentType = fileAPIResp.ContentType
 	spec.Specification = fileAPIResp.FileId
 

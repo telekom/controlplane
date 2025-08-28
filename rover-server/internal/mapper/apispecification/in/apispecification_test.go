@@ -26,9 +26,9 @@ var _ = Describe("ApiSpecification Mapper", func() {
 
 			// Create a mock FileUploadResponse
 			fileAPIResp := &filesapi.FileUploadResponse{
-				CRC64NVMEHash: "test-hash",
-				FileId:        "test-file-id",
-				ContentType:   "application/yaml",
+				FileHash:    "test-hash",
+				FileId:      "test-file-id",
+				ContentType: "application/yaml",
 			}
 
 			output, err := MapRequest(ctx, &apiSpecification.Specification, fileAPIResp, resourceIdInfo)
@@ -49,9 +49,9 @@ var _ = Describe("ApiSpecification Mapper", func() {
 
 			// Create a mock FileUploadResponse
 			fileAPIResp := &filesapi.FileUploadResponse{
-				CRC64NVMEHash: "test-hash",
-				FileId:        "test-file-id",
-				ContentType:   "application/yaml",
+				FileHash:    "test-hash",
+				FileId:      "test-file-id",
+				ContentType: "application/yaml",
 			}
 
 			output, err := MapRequest(ctx, nil, fileAPIResp, resourceIdInfo)
