@@ -2,7 +2,7 @@
 [ApiSpecificationResponse Mapper MapRequest must map a ApiSpecification to an ApiSpecificationResponse correctly - 1]
 {
  "category": "other",
- "id": "eni--hyperion--apispec-sample",
+ "id": "eni--hyperion--eni-distr-v1",
  "name": "rover-api",
  "specification": {
   "info": {

@@ -43,7 +43,7 @@ servers:
 						ContentType: "application/yaml",
 					}, nil
 				})
-			req := httptest.NewRequest(http.MethodGet, "/apispecifications/eni--hyperion--apispec-sample", nil)
+			req := httptest.NewRequest(http.MethodGet, "/apispecifications/eni--hyperion--eni-distr-v1", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json", match.Any("status.time"))
 		})
@@ -55,7 +55,7 @@ servers:
 		})
 
 		It("should fail to get an ApiSpecification from a different team", func() {
-			req := httptest.NewRequest(http.MethodGet, "/apispecifications/other--team--apispec-sample", nil)
+			req := httptest.NewRequest(http.MethodGet, "/apispecifications/other--team--eni-distr-v1", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
@@ -94,7 +94,7 @@ servers:
 
 	Context("Delete ApiSpecification resource", func() {
 		It("should delete the ApiSpecification successfully", func() {
-			req := httptest.NewRequest(http.MethodDelete, "/apispecifications/eni--hyperion--apispec-sample", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/apispecifications/eni--hyperion--eni-distr-v1", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatus(responseGroup, err, http.StatusNoContent, "")
 		})
@@ -106,7 +106,7 @@ servers:
 		})
 
 		It("should fail to delete an ApiSpecification from a different team", func() {
-			req := httptest.NewRequest(http.MethodDelete, "/apispecifications/other--team--apispec-sample", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/apispecifications/other--team--eni-distr-v1", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
@@ -114,7 +114,7 @@ servers:
 
 	Context("GetStatus ApiSpecification resource", func() {
 		It("should return the status of the ApiSpecification successfully", func() {
-			req := httptest.NewRequest(http.MethodGet, "/apispecifications/eni--hyperion--apispec-sample/status", nil)
+			req := httptest.NewRequest(http.MethodGet, "/apispecifications/eni--hyperion--eni-distr-v1/status", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
 		})
@@ -126,7 +126,7 @@ servers:
 		})
 
 		It("should fail to get the status of an ApiSpecification from a different team", func() {
-			req := httptest.NewRequest(http.MethodGet, "/apispecifications/other--team--apispec-sample/status", nil)
+			req := httptest.NewRequest(http.MethodGet, "/apispecifications/other--team--eni-distr-v1/status", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
@@ -188,12 +188,12 @@ servers:
 					},
 					"servers": []map[string]interface{}{
 						{
-							"url": "http://rover-api.com/eni/distr/v1",
+							"url": "http://rover-api.com/not/there/v1",
 						},
 					},
 				},
 			})
-			req := httptest.NewRequest(http.MethodPut, "/apispecifications/eni--hyperion--eni-distr-v1",
+			req := httptest.NewRequest(http.MethodPut, "/apispecifications/eni--hyperion--not-there-v1",
 				bytes.NewReader(apiSpecification))
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")

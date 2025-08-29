@@ -2,7 +2,7 @@
   "apiVersion": "rover.cp.ei.telekom.de/v1",
   "kind": "ApiSpecification",
   "metadata": {
-    "name": "apispec-sample",
+    "name": "eni-distr-v1",
     "namespace": "poc--eni--hyperion"
   },
   "spec": {
