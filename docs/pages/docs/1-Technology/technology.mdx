@@ -26,49 +26,49 @@ import FeatureGrid from '@site/src/components/FeatureGrid';
     title="Core Technologies"
     description="The foundation of the Control Plane architecture, including Go language and Kubernetes."
     linkText="View Core Technologies"
-    linkUrl="1-Core-Technologies/golang"
+    linkUrl="Core-Technologies/golang"
   />
   
   <FeatureCard
     title="Web Frameworks"
     description="Fast and efficient HTTP frameworks that power the Control Plane's APIs and services."
     linkText="View Web Frameworks"
-    linkUrl="2-Web-Frameworks/gofiber"
+    linkUrl="Web-Frameworks/gofiber"
   />
   
   <FeatureCard
     title="Storage Solutions"
     description="Scalable and reliable storage technologies for managing data across the platform."
     linkText="View Storage Solutions"
-    linkUrl="3-Storage/minio"
+    linkUrl="Storage/minio"
   />
 
   <FeatureCard
     title="Testing Tools"
     description="Robust testing frameworks and mocking libraries to ensure code quality and reliability."
     linkText="View Testing Tools"
-    linkUrl="4-Testing/testify"
+    linkUrl="Testing/testify"
   />
   
   <FeatureCard
     title="Authentication"
     description="Secure authentication mechanisms to protect resources and validate identity."
     linkText="View Authentication"
-    linkUrl="5-Authentication/jwt"
+    linkUrl="Authentication/jwt"
   />
   
   <FeatureCard
     title="Infrastructure"
     description="Tools and platforms for deploying, managing, and scaling the Control Plane."
     linkText="View Infrastructure"
-    linkUrl="6-Infrastructure/kubernetes"
+    linkUrl="Infrastructure/kubernetes"
   />
   
   <FeatureCard
     title="Monitoring & Logging"
     description="Observability solutions to gain insights into system performance and behavior."
     linkText="View Monitoring & Logging"
-    linkUrl="7-Monitoring-Logging/prometheus"
+    linkUrl="Monitoring-Logging/prometheus"
   />
 </CardGrid>
 
@@ -98,21 +98,6 @@ The controlplane repository is organized into several key components:
 <ComponentTable 
   components={[
     {
-      name: "common",
-      description: "Shared utilities and libraries used across multiple components.",
-      link: { url: "https://github.com/telekom/controlplane/tree/main/common" }
-    },
-    {
-      name: "common-server",
-      description: "Shared server utilities and middleware for HTTP services.",
-      link: { url: "https://github.com/telekom/controlplane/tree/main/common-server" }
-    },
-    {
-      name: "file-manager",
-      description: "File upload/download service with S3 backend for storing and retrieving files.",
-      link: { url: "https://github.com/telekom/controlplane/tree/main/file-manager" }
-    },
-    {
       name: "admin",
       description: "Administrative APIs and controllers for platform management.",
       link: { url: "https://github.com/telekom/controlplane/tree/main/admin" }
@@ -123,6 +108,36 @@ The controlplane repository is organized into several key components:
       link: { url: "https://github.com/telekom/controlplane/tree/main/api" }
     },
     {
+      name: "application",
+      description: "Application lifecycle management and deployment orchestration.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/application" }
+    },
+    {
+      name: "approval",
+      description: "Workflow approval system for change management and governance.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/approval" }
+    },
+    {
+      name: "common",
+      description: "Shared utilities and libraries used across multiple components.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/common" }
+    },
+    {
+      name: "common-server",
+      description: "Shared server utilities and middleware for HTTP services.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/common-server" }
+    },
+    {
+      name: "cpapi",
+      description: "Core Control Plane API providing central access to platform capabilities.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/cpapi" }
+    },
+    {
+      name: "file-manager",
+      description: "File upload/download service with S3 backend for storing and retrieving files.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/file-manager" }
+    },
+    {
       name: "gateway",
       description: "API Gateway functionality for routing and managing external requests.",
       link: { url: "https://github.com/telekom/controlplane/tree/main/gateway" }
@@ -131,6 +146,31 @@ The controlplane repository is organized into several key components:
       name: "identity",
       description: "Authentication and identity management for users and services.",
       link: { url: "https://github.com/telekom/controlplane/tree/main/identity" }
+    },
+    {
+      name: "organization",
+      description: "Organization and team management for multi-tenant access control.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/organization" }
+    },
+    {
+      name: "rover",
+      description: "Distributed deployment and management agent for edge infrastructure.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/rover" }
+    },
+    {
+      name: "rover-ctl",
+      description: "Command-line interface for interacting with rover services and configurations.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/rover-ctl" }
+    },
+    {
+      name: "rover-server",
+      description: "Central server component for managing rover agents and deployments.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/rover-server" }
+    },
+    {
+      name: "secret-manager",
+      description: "Secure storage and management of credentials, certificates, and sensitive data.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/secret-manager" }
     }
   ]}
 />
@@ -171,43 +211,6 @@ The controlplane repository is organized into several key components:
     description: "Kubernetes and Helm charts for containerized deployment, providing scalable and consistent environments."
   }
 ]} />
-
-## Architecture Overview
-
-The Control Plane follows a modular architecture based on microservices and Kubernetes operators:
-
-```mermaid
-graph TD
-    User[User] --> API[API Gateway]
-    API --> FM[File Manager]
-    API --> SM[Secret Manager]
-    API --> Admin[Admin API]
-    
-    FM --> S3[(S3 Storage)]
-    SM --> Vault[(HashiCorp Vault)]
-    
-    Admin --> K8s[(Kubernetes API)]
-    
-    subgraph Operators[Operators]
-      ApiOp[API Operator]
-      GwOp[Gateway Operator]
-      IdOp[Identity Operator]
-    end
-    
-    Operators --> K8s
-    
-    classDef primary fill:#E20074,color:#ffffff,stroke:#E20074
-    classDef secondary fill:#f9f9f9,color:#333,stroke:#ccc
-    classDef storage fill:#2C3E50,color:#ffffff,stroke:#2C3E50
-    
-    class API,Admin primary
-    class FM,SM,ApiOp,GwOp,IdOp secondary
-    class S3,Vault,K8s storage
-```
-
-<InfoSection type="tip" title="Operator pattern">
-  The Control Plane extensively uses the Kubernetes Operator pattern to manage complex, stateful applications by automating operational knowledge through custom controllers.
-</InfoSection>
 
 ## Technology Integration
 
@@ -252,7 +255,7 @@ Want a quick overview? Check out our [technical presentation](https://github.com
     title="Core Technologies"
     description="Explore the foundational technologies used in the Control Plane, starting with the Go language."
     linkText="Go Language"
-    linkUrl="1-Core-Technologies/golang"
+    linkUrl="Core-Technologies/golang"
   />
   
   <FeatureCard
