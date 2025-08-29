@@ -526,7 +526,7 @@ The dashboards are stored in the repository under `grafana/` directories.
       <p>Calculate requests per second over 5 minutes:</p>
       <p><code>rate(http_requests_total[5m])</code></p>
       <p>With status code filter:</p>
-      <p><code>rate(http_requests_total{status=~"5.."}[5m])</code></p>
+      <p><code>{`rate(http_requests_total{status=~"5.."}[5m])`}</code></p>
     </>}
   />
   
@@ -534,7 +534,7 @@ The dashboards are stored in the repository under `grafana/` directories.
     title="Error Rate"
     description={<>
       <p>Calculate error percentage:</p>
-      <p><code>sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) * 100</code></p>
+      <p><code>{`sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) * 100`}</code></p>
     </>}
   />
   
@@ -542,7 +542,7 @@ The dashboards are stored in the repository under `grafana/` directories.
     title="Latency"
     description={<>
       <p>95th percentile response time:</p>
-      <p><code>histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, method, path))</code></p>
+      <p><code>{`histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, method, path))`}</code></p>
     </>}
   />
   
@@ -550,9 +550,9 @@ The dashboards are stored in the repository under `grafana/` directories.
     title="Resource Usage"
     description={<>
       <p>Memory usage per service:</p>
-      <p><code>sum by(service) (process_resident_memory_bytes)</code></p>
+      <p><code>{`sum by(service) (process_resident_memory_bytes)`}</code></p>
       <p>CPU usage per service:</p>
-      <p><code>rate(process_cpu_seconds_total[5m]) * 100</code></p>
+      <p><code>{`rate(process_cpu_seconds_total[5m]) * 100`}</code></p>
     </>}
   />
 </CardGrid>
