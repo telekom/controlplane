@@ -24,7 +24,7 @@ var (
 			},
 			"servers": []interface{}{
 				map[string]interface{}{
-					"url": "http://rover-api/eni/distr/v1",
+					"url": "http://rover-api.com/eni/distr/v1",
 				},
 			},
 		},

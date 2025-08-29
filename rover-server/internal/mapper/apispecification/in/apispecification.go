@@ -5,8 +5,6 @@
 package in
 
 import (
-	"context"
-
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/config"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
@@ -20,19 +18,14 @@ var (
 	parseErr = "failed to parse specification"
 )
 
-func MapRequest(ctx context.Context, specMarshaled []byte, fileAPIResp *filesapi.FileUploadResponse, id mapper.ResourceIdInfo) (res *roverv1.ApiSpecification, err error) {
-	if specMarshaled == nil {
-		return nil, errors.New("input api specification is nil")
-	}
-
+func MapRequest(spec *roverv1.ApiSpecificationSpec, fileAPIResp *filesapi.FileUploadResponse, id mapper.ResourceIdInfo) (res *roverv1.ApiSpecification, err error) {
 	if fileAPIResp == nil {
 		return nil, errors.New("response from file manager is nil")
 	}
 
-	var spec *roverv1.ApiSpecificationSpec
-	spec, err = parseSpecification(ctx, string(specMarshaled))
-	if err != nil {
-		return
+	if spec == nil {
+		return nil, errors.New("input api specification is nil")
+
 	}
 
 	spec.Hash = fileAPIResp.FileHash

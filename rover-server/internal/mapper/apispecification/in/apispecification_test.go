@@ -35,7 +35,10 @@ var _ = Describe("ApiSpecification Mapper", func() {
 			marshalled, err := yaml.Marshal(apiSpecification.Specification)
 			Expect(err).To(BeNil())
 
-			output, err := MapRequest(ctx, marshalled, fileAPIResp, resourceIdInfo)
+			spec, err := ParseSpecification(ctx, string(marshalled))
+			Expect(err).To(BeNil())
+
+			output, err := MapRequest(spec, fileAPIResp, resourceIdInfo)
 			Expect(err).To(BeNil())
 
 			Expect(output).ToNot(BeNil())
@@ -43,13 +46,6 @@ var _ = Describe("ApiSpecification Mapper", func() {
 		})
 
 		It("must return an error if the input ApiSpecificationUpdateRequest is nil", func() {
-			// Create a context with business context
-			ctx := context.WithValue(context.Background(), "businessContext", &security.BusinessContext{
-				Environment: "poc",
-				Group:       "eni",
-				Team:        "hyperion",
-			})
-
 			// Create a mock FileUploadResponse
 			fileAPIResp := &filesapi.FileUploadResponse{
 				FileHash:    "test-hash",
@@ -57,12 +53,13 @@ var _ = Describe("ApiSpecification Mapper", func() {
 				ContentType: "application/yaml",
 			}
 
-			output, err := MapRequest(ctx, nil, fileAPIResp, resourceIdInfo)
+			output, err := MapRequest(nil, fileAPIResp, resourceIdInfo)
 
 			Expect(output).To(BeNil())
 
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(ContainSubstring("input api specification is nil"))
 		})
+
 	})
 })

@@ -160,7 +160,7 @@ servers:
 	Context("When parsing a specification", func() {
 
 		It("should fail due to empty spec", func() {
-			_, err := parseSpecification(ctx, "")
+			_, err := ParseSpecification(ctx, "")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(
 				Equal("failed to parse specification: there is nothing in the spec, it's empty - so there is nothing to be done"),
@@ -168,7 +168,7 @@ servers:
 		})
 
 		It("should successfully parse the v2 spec", func() {
-			apiSpec, err := parseSpecification(ctx, specV2)
+			apiSpec, err := ParseSpecification(ctx, specV2)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(apiSpec.ApiName).To(Equal("eni-foo-v1"))
@@ -180,7 +180,7 @@ servers:
 		})
 
 		It("should successfully parse the v3.0 spec", func() {
-			apiSpec, err := parseSpecification(ctx, specV3_0)
+			apiSpec, err := ParseSpecification(ctx, specV3_0)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(apiSpec.ApiName).To(Equal("eni-foo-v1"))
@@ -192,23 +192,23 @@ servers:
 		})
 
 		It("should not successfully parse the v3.0 spec without basepath", func() {
-			_, err := parseSpecification(ctx, specV3_0_without_basepath)
+			_, err := ParseSpecification(ctx, specV3_0_without_basepath)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("no basepath found in the first server url"))
 		})
 
 		It("should not successfully parse the spec with version missmatch", func() {
-			_, err := parseSpecification(ctx, specV2_without_version_match)
+			_, err := ParseSpecification(ctx, specV2_without_version_match)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("major info version 2.0.0 does not match major basepath version /eni/foo/v1"))
 
-			_, err = parseSpecification(ctx, specV3_0_without_version_match)
+			_, err = ParseSpecification(ctx, specV3_0_without_version_match)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("major info version 1.0.0 does not match major basepath version /eni/foo/v2"))
 		})
 
 		It("should successfully parse the v3.1 spec", func() {
-			apiSpec, err := parseSpecification(ctx, specV3_1)
+			apiSpec, err := ParseSpecification(ctx, specV3_1)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(apiSpec.ApiName).To(Equal("eni-foo-v1"))
@@ -220,7 +220,7 @@ servers:
 		})
 
 		It("should successfully parse the spec without scopes, category, vendor", func() {
-			apiSpec, err := parseSpecification(ctx, specNoExtraFields)
+			apiSpec, err := ParseSpecification(ctx, specNoExtraFields)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(apiSpec.ApiName).To(Equal("eni-foo-v1"))

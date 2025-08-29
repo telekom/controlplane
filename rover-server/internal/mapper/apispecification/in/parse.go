@@ -23,7 +23,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func parseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecificationSpec, error) {
+func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecificationSpec, error) {
 	apiSpecificationSpec := &roverv1.ApiSpecificationSpec{
 		XVendor:      false,
 		Category:     "other",

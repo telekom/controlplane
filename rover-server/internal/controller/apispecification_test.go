@@ -28,7 +28,7 @@ info:
   version: "1.0.0"
   title: "Rover API"
 servers: 
-  url: "http://rover-api/eni/distr/v1"
+  - url: "http://rover-api.com/eni/distr/v1"
 `
 
 	Context("Get ApiSpecification resource", func() {
@@ -152,12 +152,12 @@ servers:
 					"info": map[string]interface{}{
 						"title":      "Rover API",
 						"version":    "1.0.0",
-						"x-category": "test",
+						"x-category": "other",
 						"x-vendor":   "true",
 					},
 					"servers": []map[string]interface{}{
 						{
-							"url": "http://rover-api/eni/distr/v1",
+							"url": "http://rover-api.com/eni/distr/v1",
 						},
 					},
 				},
@@ -170,7 +170,7 @@ servers:
 					ContentType: "application/yaml",
 				}, nil)
 
-			req := httptest.NewRequest(http.MethodPut, "/apispecifications/eni--hyperion--apispec-sample",
+			req := httptest.NewRequest(http.MethodPut, "/apispecifications/eni--hyperion--eni-distr-v1",
 				bytes.NewReader(apiSpecification))
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json", match.Any("status.time"))
@@ -188,12 +188,12 @@ servers:
 					},
 					"servers": []map[string]interface{}{
 						{
-							"url": "http://rover-api/eni/distr/v1",
+							"url": "http://rover-api.com/eni/distr/v1",
 						},
 					},
 				},
 			})
-			req := httptest.NewRequest(http.MethodPut, "/apispecifications/eni--hyperion--blabla",
+			req := httptest.NewRequest(http.MethodPut, "/apispecifications/eni--hyperion--eni-distr-v1",
 				bytes.NewReader(apiSpecification))
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
@@ -211,12 +211,12 @@ servers:
 					},
 					"servers": []map[string]interface{}{
 						{
-							"url": "http://rover-api/eni/distr/v1",
+							"url": "http://rover-api/eni/distr-other/v1",
 						},
 					},
 				},
 			})
-			req := httptest.NewRequest(http.MethodPut, "/apispecifications/other--team--apispec-sample",
+			req := httptest.NewRequest(http.MethodPut, "/apispecifications/other--team--eni-distr-other-v1",
 				bytes.NewReader(apiSpecification))
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")

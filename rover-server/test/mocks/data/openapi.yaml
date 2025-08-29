@@ -3,7 +3,7 @@ info:
   title: Rover API
   version: 1.0.0
 servers:
-  - url: http://rover-api/eni/distr/v1
+  - url: http://rover-api.com/eni/distr/v1
 paths:
   /resources:
     get:

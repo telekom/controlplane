@@ -539,9 +539,11 @@
    "version": "1.0.0"
   },
   "openapi": "3.0.0",
-  "servers": {
-   "url": "http://rover-api/eni/distr/v1"
-  }
+  "servers": [
+   {
+    "url": "http://rover-api.com/eni/distr/v1"
+   }
+  ]
  },
  "status": {
   "processingState": "done",
@@ -589,9 +591,11 @@
      "version": "1.0.0"
     },
     "openapi": "3.0.0",
-    "servers": {
-     "url": "http://rover-api/eni/distr/v1"
-    }
+    "servers": [
+     {
+      "url": "http://rover-api.com/eni/distr/v1"
+     }
+    ]
    },
    "status": {
     "processingState": "done",
@@ -621,9 +625,11 @@
      "version": "1.0.0"
     },
     "openapi": "3.0.0",
-    "servers": {
-     "url": "http://rover-api/eni/distr/v1"
-    }
+    "servers": [
+     {
+      "url": "http://rover-api.com/eni/distr/v1"
+     }
+    ]
    },
    "status": {
     "processingState": "done",
@@ -653,9 +659,11 @@
      "version": "1.0.0"
     },
     "openapi": "3.0.0",
-    "servers": {
-     "url": "http://rover-api/eni/distr/v1"
-    }
+    "servers": [
+     {
+      "url": "http://rover-api.com/eni/distr/v1"
+     }
+    ]
    },
    "status": {
     "processingState": "done",
@@ -685,9 +693,11 @@
      "version": "1.0.0"
     },
     "openapi": "3.0.0",
-    "servers": {
-     "url": "http://rover-api/eni/distr/v1"
-    }
+    "servers": [
+     {
+      "url": "http://rover-api.com/eni/distr/v1"
+     }
+    ]
    },
    "status": {
     "processingState": "done",
@@ -751,7 +761,7 @@
 [ApiSpecification Controller Update ApiSpecification resource should update the ApiSpecification successfully - 1]
 {
  "category": "other",
- "id": "eni--hyperion--apispec-sample",
+ "id": "eni--hyperion--eni-distr-v1",
  "name": "rover-api",
  "specification": {
   "info": {
@@ -760,7 +770,7 @@
   },
   "openapi": "3.0.0",
   "servers": {
-   "url": "http://rover-api/eni/distr/v1"
+   "url": "http://rover-api.com/eni/distr/v1"
   }
  },
  "status": {
@@ -774,7 +784,7 @@
 
 [ApiSpecification Controller Update ApiSpecification resource should fail to update a non-existent ApiSpecification - 1]
 {
- "detail": "Resource eni--hyperion--blabla not found",
+ "detail": "Resource eni--hyperion--eni-distr-v1 not found",
  "instance": "",
  "status": 404,
  "title": "Not found",
