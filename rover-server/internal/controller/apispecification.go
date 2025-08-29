@@ -216,7 +216,7 @@ func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshal
 		return nil, err
 	}
 
-	fileId := id.Environment + "--" + id.ResourceId + "--" + localHash //<env>--<group>--<team>--<apiSpecName>-<hash>
+	fileId := id.Environment + "--" + id.ResourceId //<env>--<group>--<team>--<apiSpecName>
 	fileContentType := "application/yaml"
 
 	resp := &filesapi.FileUploadResponse{
