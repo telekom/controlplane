@@ -1,0 +1,238 @@
+---
+sidebar_position: 6
+title: "CLIs"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+
+<PageHeader 
+  title="Control Plane CLI Tools"
+  description="Command-line tools for interacting with and managing the Control Plane"
+/>
+
+## CLI Overview
+
+<InfoSection type="info" title="Command-line tools">
+  The Control Plane provides several command-line tools that help users interact with the platform, test configurations, and manage resources.
+</InfoSection>
+
+These tools are designed to simplify common tasks and provide efficient interfaces for developers and operators working with the Control Plane.
+
+## Available CLI Tools
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="Rover-CTL"
+    description={
+      <>
+        <p>
+          The primary CLI tool for managing and interacting with the Rover control plane. It provides a user-friendly way to perform operations such as applying configurations, retrieving information, and managing resources within the Rover ecosystem.
+        </p>
+        <p>
+          <strong>Key capabilities:</strong>
+        </p>
+        <ul>
+          <li>Apply configurations</li>
+          <li>Manage resources</li>
+          <li>Retrieve information</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="Route-Tester"
+    description={
+      <>
+        <p>
+          A utility tool for testing if a Route is correctly configured. It functions as an automated version of `curl`, making it easy to verify API routes.
+        </p>
+        <p>
+          <strong>Key capabilities:</strong>
+        </p>
+        <ul>
+          <li>Test route configurations</li>
+          <li>Validate API endpoints</li>
+          <li>Automated API testing</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="Snapshotter"
+    description={
+      <>
+        <p>
+          A tool designed to create snapshots of the current state of the system, primarily for the gateway-domain. Useful for tracking changes and comparing configurations over time.
+        </p>
+        <p>
+          <strong>Key capabilities:</strong>
+        </p>
+        <ul>
+          <li>Create state snapshots</li>
+          <li>Compare configurations</li>
+          <li>Track system changes</li>
+        </ul>
+      </>
+    }
+  />
+</CardGrid>
+
+## Rover-CTL
+
+<InfoSection type="tip" title="Primary Control Plane CLI">
+  Rover-CTL is the primary command-line interface for the Control Plane, providing comprehensive management capabilities.
+</InfoSection>
+
+### About Rover-CTL
+
+Rover Control CLI (roverctl) is a command-line tool for managing rover resources via the REST API. It handles configuration files and maps them to the appropriate resource handlers.
+
+<div align="center">
+    <img height="400" src="/controlplane/img/roverctl-overview.drawio.svg" />
+</div>
+
+### Installation
+
+#### From Source
+
+To build and install `roverctl` from source, follow these steps:
+
+1. Clone the repository:
+   ```bash
+   git clone github.com/telekom/controlplane.git
+   cd controlplane/rover-ctl
+   ```
+
+2. Build the binary:
+   ```bash
+   make build
+   ```
+
+3. Install the binary:
+   ```bash
+   make install
+   ```
+
+### Configuration
+
+Rover-ctl can be configured using environment variables. The tool uses Viper for configuration management with the following options:
+
+#### Environment Variables
+
+All environment variables are prefixed with `ROVER_` and use underscores instead of dots for nested keys. For example, `server.url` becomes `ROVER_SERVER_URL`.
+
+| Environment Variable | Description | Default |
+|---------------------|-------------|---------| 
+| `ROVER_SERVER_URL` | URL of the Rover server | - |
+| `ROVER_TOKEN_URL` | URL for token authentication | - |
+| `ROVER_TOKEN` | Authentication token | - |
+| `ROVER_LOG_LEVEL` | Log level (debug, info, warn, error) | info |
+| `ROVER_LOG_FORMAT` | Log format (json or console) | console |
+| `ROVER_OUTPUT_FORMAT` | Output format (yaml or json) | yaml |
+
+### Authentication
+
+The CLI uses token-based authentication to interact with the Rover server. The token is a base64-encoded JSON object with the following structure:
+
+```json
+{
+  "environment": "required",
+  "group": "required",
+  "team": "required",
+  "client_id": "required",
+  "client_secret": "required",
+  "token_url": "required URL",
+  "server_url": "required URL",
+  "generated_at": 1692345678000
+}
+```
+
+The token can be set using the `ROVER_TOKEN` environment variable or through a configuration file.
+
+## Route-Tester
+
+<InfoSection type="note" title="API testing utility">
+  Route-Tester provides a simple way to verify that your routes are correctly configured.
+</InfoSection>
+
+### About Route-Tester
+
+The Route-Testing tool can be used to test if a Route is correctly configured. It's essentially an automated version of `curl` that simplifies API endpoint testing.
+
+### Installation
+
+```bash
+go build -o bin/rt main.go
+install -m 0755 bin/rt /usr/local/bin/rt
+```
+
+### Usage
+
+Run the tool with:
+
+```bash
+rt --app rover-sample-consumer --basepath /eni/foo/v2 --team sample-team --env poc | jq 
+```
+
+## Snapshotter
+
+<InfoSection type="note" title="System state management">
+  Snapshotter helps track and compare system configurations over time.
+</InfoSection>
+
+### About Snapshotter
+
+The Snapshotting Tool is intended to create snapshots of the current state of the system, mainly for the gateway-domain. It helps track changes and ensure consistency across deployments.
+
+### Installation
+
+```bash
+go build -o bin/snapshotter main.go
+install -m 0755 bin/snapshotter /usr/local/bin/snapshotter
+```
+
+### Configuration
+
+This tool can either be configured via environment variables or flags.
+
+Using a `.env` file:
+```bash
+GATEWAY_ENV="poc"
+GATEWAY_ZONE="dataplane1"
+GATEWAY_ROUTE="poc--my-route-v1"
+GATEWAY_ADMIN_URL="https://<host>/admin-api>"
+GATEWAY_ADMIN_CLIENT_ID="<client-id>"
+GATEWAY_ADMIN_CLIENT_SECRET="<client-secret>"
+GATEWAY_ADMIN_ISSUER="<issuer-url>"
+```
+
+### Usage
+
+Run with environment configuration:
+```bash
+snapshotter --from-env
+```
+
+Or using automatic setup via flags:
+```bash
+snapshotter --env poc --zone dataplane1 --route poc--my-route-v1
+```
+
+### Features
+
+1. By default, this tool outputs a snapshot in YAML format to `./snapshots/`. You can change the output directory using the `--output-dir` flag.
+
+2. If the snapshot file doesn't exist, it will be created with no further action.
+
+3. If the snapshot file already exists, it compares the current state with the snapshot and outputs the differences to the console.
+
+## Related Pages
+
+- [Components](components): Learn about the core components of the Control Plane
+- [Architecture](architecture): See how CLIs fit into the overall system design
+- [Installation](../Installation/installation): Get started with installing the Control Plane
