@@ -151,7 +151,7 @@ If you encounter issues during the installation, here are some common troublesho
 
 Now that you have a working controlplane installation, you can:
 
-1. **Explore the architecture**: Learn about the [controlplane components](../0-Overview/controlplane.mdx#components) and how they work together
+1. **Explore the architecture**: Learn about the [controlplane components](../0-Overview/components.mdx) and how they work together
 2. **Deploy your own workloads**: Create custom [Rover resources](https://github.com/telekom/controlplane/blob/main/rover/README.md) for your applications
 3. **Understand resource relationships**: See how [admin, organization and rover resources](../0-Overview/controlplane.mdx#features) interact
 4. **Dive deeper**: Check out the [detailed installation guide](./installation.md) for more advanced options
