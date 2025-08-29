@@ -37,3 +37,8 @@
   padding: 0 1rem;
   border-left: 3px solid var(--ifm-color-primary);
 }
+
+/* Hide auto-generated page titles when using PageHeader component */
+.theme-doc-markdown header h1 {
+  display: none;
+}
