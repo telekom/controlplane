@@ -1,9 +1,12 @@
 import React from 'react';
+import Link from '@docusaurus/Link';
 
 type FeatureCardProps = {
   title: string;
-  description: string;
+  description: string | JSX.Element;
   icon?: string;
+  linkText?: string;
+  linkUrl?: string;
 };
 
 /**
@@ -13,6 +16,8 @@ export default function FeatureCard({
   title,
   description,
   icon,
+  linkText,
+  linkUrl,
 }: FeatureCardProps): JSX.Element {
   return (
     <div className="card margin-bottom--lg">
@@ -20,8 +25,15 @@ export default function FeatureCard({
         <h3>{icon && <span>{icon} </span>}{title}</h3>
       </div>
       <div className="card__body">
-        <p>{description}</p>
+        {typeof description === 'string' ? <p>{description}</p> : description}
       </div>
+      {linkText && linkUrl && (
+        <div className="card__footer">
+          <Link className="button button--primary button--block" to={linkUrl}>
+            {linkText}
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
