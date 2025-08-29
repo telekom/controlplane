@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"io"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -87,17 +88,22 @@ func (a *ApiSpecificationController) Get(ctx context.Context, resourceId string)
 		return res, err
 	}
 
-	b, err := a.downloadFile(ctx, apiSpec.Spec.Specification)
+	reader, err := a.downloadFile(ctx, apiSpec.Spec.Specification)
 	if err != nil {
 		return res, err
 	}
 
-	if b.Len() == 0 {
+	b, err := io.ReadAll(reader)
+	if err != nil {
+		return res, err
+	}
+
+	if len(b) == 0 || b == nil {
 		return res, errors.New("api specification response is empty")
 	}
 
 	m := make(map[string]any)
-	err = yaml.Unmarshal(b.Bytes(), &m)
+	err = yaml.Unmarshal(b, &m)
 	if err != nil {
 		return res, err
 	}
@@ -117,12 +123,22 @@ func (a *ApiSpecificationController) GetAll(ctx context.Context, params api.GetA
 
 	list := make([]api.ApiSpecificationResponse, 0, len(objList.Items))
 	for _, apiSpec := range objList.Items {
-		b, err := a.downloadFile(ctx, apiSpec.Spec.Specification)
+		reader, err := a.downloadFile(ctx, apiSpec.Spec.Specification)
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to download resource", err.Error())
 		}
+
+		b, err := io.ReadAll(reader)
+		if err != nil {
+			return nil, problems.InternalServerError("Failed to read response from reader", err.Error())
+		}
+
+		if len(b) == 0 || b == nil {
+			return nil, errors.New("api specification response is empty")
+		}
+
 		m := make(map[string]any)
-		err = yaml.Unmarshal(b.Bytes(), &m)
+		err = yaml.Unmarshal(b, &m)
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to marshal resource", err.Error())
 		}
@@ -191,8 +207,8 @@ func (a *ApiSpecificationController) GetStatus(ctx context.Context, resourceId s
 }
 
 func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {
-	if specMarshaled == nil {
-		return nil, errors.New("input api specification is nil")
+	if len(specMarshaled) == 0 || specMarshaled == nil {
+		return nil, errors.New("input api specification has length 0 or nil")
 	}
 
 	localHash, same, err := a.isHashEqual(ctx, id, specMarshaled)
@@ -200,7 +216,7 @@ func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshal
 		return nil, err
 	}
 
-	fileId := id.Environment + "--" + id.ResourceId + "--" + localHash[:6] //<env>--<group>--<team>--<apiSpecName>-<hash>
+	fileId := id.Environment + "--" + id.ResourceId + "--" + localHash //<env>--<group>--<team>--<apiSpecName>-<hash>
 	fileContentType := "application/yaml"
 
 	resp := &filesapi.FileUploadResponse{
@@ -234,7 +250,7 @@ func (a *ApiSpecificationController) isHashEqual(ctx context.Context, id mapper.
 	return hash, hash == apiSpec.Spec.Hash, nil
 }
 
-func (a *ApiSpecificationController) downloadFile(ctx context.Context, fileId string) (*bytes.Buffer, error) {
+func (a *ApiSpecificationController) downloadFile(ctx context.Context, fileId string) (io.Reader, error) {
 	var b bytes.Buffer
 	_, err := file.GetFileManager().DownloadFile(ctx, fileId, &b)
 	if err != nil {
