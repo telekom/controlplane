@@ -161,15 +161,15 @@ can do:
 > [!WARNING]
 > You cannot test any webhook logic by running the controller like this!
 
-1. Before you run [Installing the Controlplane](#installing-the-controlplane), navigate to `install/local/kustomization.yaml`
+1. Before you run [Install the Controlplane](#step-2-install-the-controlplane), navigate to `install/local/kustomization.yaml`
 2. Edit the file and comment out all controller that you want to test locally, e.g. if I want to test rover, api and gateway:
     ```yaml
     resources:
       - ../../secret-manager/config/default
       - ../../identity/config/default
-    #  - ../../gateway/config/default
+      # - ../../gateway/config/default
       - ../../approval/config/default
-    #  - ../../rover/config/default
+      # - ../../rover/config/default
       - ../../application/config/default
       - ../../organization/config/default
       # - ../../api/config/default
