@@ -16,8 +16,8 @@ packages:
       KongAdminApi:
         # Modify package-level config for this specific interface (if applicable)
         config:
-      KongClient:
-        # Modify package-level config for this specific interface (if applicable)
-        config:
+#      KongClient:
+#        # Modify package-level config for this specific interface (if applicable)
+#        config:
 
 
