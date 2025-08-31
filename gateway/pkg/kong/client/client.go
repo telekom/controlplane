@@ -38,6 +38,8 @@ type KongClient interface {
 	DeletePlugin(ctx context.Context, plugin CustomPlugin) error
 
 	CleanupPlugins(ctx context.Context, route CustomRoute, consumer CustomConsumer, plugins []CustomPlugin) error
+
+	GetKongAdminApi() KongAdminApi
 }
 
 type KongAdminApi interface {
@@ -71,6 +73,10 @@ type kongClient struct {
 	commonTags []string
 }
 
+func (c *kongClient) GetKongAdminApi() KongAdminApi {
+	return c.client
+}
+
 var NewKongClient = func(client KongAdminApi, commonTags ...string) KongClient {
 	return &kongClient{
 		client:     client,
@@ -85,18 +91,18 @@ func (c *kongClient) LoadPlugin(
 	pluginId := plugin.GetId()
 	envName := contextutil.EnvFromContextOrDie(ctx)
 	tags := []string{
-		buildTag("env", envName),
-		buildTag("plugin", plugin.GetName()),
+		BuildTag("env", envName),
+		BuildTag("plugin", plugin.GetName()),
 	}
 
 	if plugin.GetRoute() != nil {
-		tags = append(tags, buildTag("route", *plugin.GetRoute()))
+		tags = append(tags, BuildTag("route", *plugin.GetRoute()))
 	}
 
 	if plugin.GetConsumer() != nil {
-		tags = append(tags, buildTag("consumer", *plugin.GetConsumer()))
+		tags = append(tags, BuildTag("consumer", *plugin.GetConsumer()))
 	} else {
-		tags = append(tags, buildTag("consumer", "none"))
+		tags = append(tags, BuildTag("consumer", "none"))
 	}
 
 	if pluginId != "" {
@@ -157,18 +163,18 @@ func (c *kongClient) CreateOrReplacePlugin(
 	isConsumerSpecific := plugin.GetConsumer() != nil
 
 	tags := []string{
-		buildTag("env", envName),
-		buildTag("plugin", plugin.GetName()),
+		BuildTag("env", envName),
+		BuildTag("plugin", plugin.GetName()),
 	}
 
 	if isRouteSpecific {
-		tags = append(tags, buildTag("route", *plugin.GetRoute()))
+		tags = append(tags, BuildTag("route", *plugin.GetRoute()))
 	}
 
 	if isConsumerSpecific {
-		tags = append(tags, buildTag("consumer", *plugin.GetConsumer()))
+		tags = append(tags, BuildTag("consumer", *plugin.GetConsumer()))
 	} else {
-		tags = append(tags, buildTag("consumer", "none"))
+		tags = append(tags, BuildTag("consumer", "none"))
 	}
 
 	kongPlugin, err = c.LoadPlugin(ctx, plugin, false)
@@ -277,8 +283,8 @@ func (c *kongClient) DeletePlugin(ctx context.Context, plugin CustomPlugin) (err
 	envName := contextutil.EnvFromContextOrDie(ctx)
 	pluginId := plugin.GetId()
 	tags := []string{
-		buildTag("env", envName),
-		buildTag("plugin", plugin.GetName()),
+		BuildTag("env", envName),
+		BuildTag("plugin", plugin.GetName()),
 	}
 
 	if plugin.GetRoute() == nil && plugin.GetConsumer() == nil {
@@ -286,11 +292,11 @@ func (c *kongClient) DeletePlugin(ctx context.Context, plugin CustomPlugin) (err
 	}
 
 	if plugin.GetRoute() != nil {
-		tags = append(tags, buildTag("route", *plugin.GetRoute()))
+		tags = append(tags, BuildTag("route", *plugin.GetRoute()))
 	}
 
 	if plugin.GetConsumer() != nil {
-		tags = append(tags, buildTag("consumer", *plugin.GetConsumer()))
+		tags = append(tags, BuildTag("consumer", *plugin.GetConsumer()))
 	}
 
 	if pluginId == "" {
@@ -319,7 +325,7 @@ func (c *kongClient) CleanupPlugins(ctx context.Context, route CustomRoute, cons
 	log := logr.FromContextOrDiscard(ctx)
 	envName := contextutil.EnvFromContextOrDie(ctx)
 	tags := []string{
-		buildTag("env", envName),
+		BuildTag("env", envName),
 	}
 
 	if route == nil && consumer == nil {
@@ -327,10 +333,10 @@ func (c *kongClient) CleanupPlugins(ctx context.Context, route CustomRoute, cons
 	}
 
 	if route != nil {
-		tags = append(tags, buildTag("route", route.GetName()))
+		tags = append(tags, BuildTag("route", route.GetName()))
 	}
 	if consumer != nil {
-		tags = append(tags, buildTag("consumer", consumer.GetConsumerName()))
+		tags = append(tags, BuildTag("consumer", consumer.GetConsumerName()))
 	}
 
 	kongPlugins, err := c.getPluginsMatchingTags(ctx, tags)
@@ -420,80 +426,6 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 	serviceName := routeName
 	serviceHost := upstream.GetHost()
 
-	// if CB is enabled (either global config for gateway, or bypass configured directly on Route)
-	if isCircuitBreakerEnabled(ctx, gateway, route) {
-		upstreamAlgorithm := kong.RoundRobin
-		passiveHealthcheckType := kong.CreateUpstreamRequestHealthchecksPassiveTypeHttp
-		activeHealthcheckType := kong.CreateUpstreamRequestHealthchecksActiveTypeHttp
-		upstreamName := routeName
-		upstreamBody := kong.CreateUpstreamJSONRequestBody{
-			Algorithm: &upstreamAlgorithm,
-			Name:      upstreamName,
-			Healthchecks: &kong.CreateUpstreamRequestHealthchecks{
-				Active: &kong.CreateUpstreamRequestHealthchecksActive{
-					Healthy: &kong.CreateUpstreamRequestHealthchecksActiveHealthy{
-						HttpStatuses: &gateway.Spec.CircuitBreaker.Active.HealthyHttpStatuses,
-					},
-					Type: &activeHealthcheckType,
-					Unhealthy: &kong.CreateUpstreamRequestHealthchecksActiveUnhealthy{
-						HttpStatuses: &gateway.Spec.CircuitBreaker.Active.UnhealthyHttpStatuses,
-					},
-				},
-				Passive: &kong.CreateUpstreamRequestHealthchecksPassive{
-					Healthy: &kong.CreateUpstreamRequestHealthchecksPassiveHealthy{
-						HttpStatuses: toPassiveHealthyHttpStatuses(gateway.Spec.CircuitBreaker.Passive.HealthyHttpStatuses),
-						Successes:    &gateway.Spec.CircuitBreaker.Passive.HealthySuccesses,
-					},
-					Type: &passiveHealthcheckType,
-					Unhealthy: &kong.CreateUpstreamRequestHealthchecksPassiveUnhealthy{
-						HttpFailures: &gateway.Spec.CircuitBreaker.Passive.UnhealthyHttpFailures,
-						HttpStatuses: toPassiveUnhealthyHttpStatuses(gateway.Spec.CircuitBreaker.Passive.UnhealthyHttpStatuses),
-						TcpFailures:  &gateway.Spec.CircuitBreaker.Passive.UnhealthyTcpFailures,
-						Timeouts:     &gateway.Spec.CircuitBreaker.Passive.UnhealthyTimeouts,
-					},
-				},
-			},
-			Tags: &[]string{
-				buildTag("env", contextutil.EnvFromContextOrDie(ctx)),
-				buildTag("upstream", upstreamName),
-			},
-		}
-
-		upstreamResponse, err := c.client.UpsertUpstreamWithResponse(ctx, upstreamName, upstreamBody)
-		if err != nil {
-			return errors.Wrap(err, "failed to create upstream")
-		}
-		if err := CheckStatusCode(upstreamResponse, 200); err != nil {
-			return errors.Wrap(fmt.Errorf("failed to create upstream: %s", string(upstreamResponse.Body)), "failed to create upstream")
-		}
-		route.SetUpstreamId(*upstreamResponse.JSON200.Id)
-
-		// important - the service needs to explicitly use this upstream for circuit breaker to work
-		serviceHost = upstreamName
-
-		targetsName := routeName
-		targetsTarget := "localhost:8080"
-		targetsWeight := 100
-		targetsBody := kong.CreateTargetForUpstreamJSONRequestBody{
-			Tags: &[]string{
-				buildTag("env", contextutil.EnvFromContextOrDie(ctx)),
-				buildTag("targets", targetsName),
-			},
-			Target: &targetsTarget,
-			Weight: &targetsWeight,
-		}
-
-		// this is a special case with the kong admin API - this endpoint /upstreams/:upstreamName/targets actually accepts multiple POST requests, so this is not a mistake
-		targetsResponse, err := c.client.CreateTargetForUpstreamWithResponse(ctx, upstreamName, targetsBody)
-		if err != nil {
-			return errors.Wrap(err, "failed to create targets for upstream")
-		}
-		if err := CheckStatusCode(targetsResponse, 200, 201); err != nil {
-			return errors.Wrap(fmt.Errorf("failed to create targets for upstream: %s", string(targetsResponse.Body)), "failed to create targets for upstream")
-		}
-		route.SetTargetsId(*targetsResponse.JSON200.Id)
-	}
-
 	serviceBody := kong.CreateServiceJSONRequestBody{
 		Enabled:  true,
 		Name:     &serviceName,
@@ -503,8 +435,8 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		Port:     upstream.GetPort(),
 
 		Tags: &[]string{
-			buildTag("env", contextutil.EnvFromContextOrDie(ctx)),
-			buildTag("route", route.GetName()),
+			BuildTag("env", contextutil.EnvFromContextOrDie(ctx)),
+			BuildTag("route", route.GetName()),
 		},
 	}
 	serviceResponse, err := c.client.UpsertServiceWithResponse(ctx, route.GetName(), serviceBody)
@@ -538,8 +470,8 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		HttpsRedirectStatusCode: 426,
 
 		Tags: &[]string{
-			buildTag("env", contextutil.EnvFromContextOrDie(ctx)),
-			buildTag("route", route.GetName()),
+			BuildTag("env", contextutil.EnvFromContextOrDie(ctx)),
+			BuildTag("route", route.GetName()),
 		},
 	}
 	routeResponse, err := c.client.UpsertRouteWithResponse(ctx, route.GetName(), routeBody)
@@ -583,7 +515,7 @@ func (c *kongClient) DeleteRoute(ctx context.Context, route CustomRoute) error {
 	}
 
 	if route.GetTargetsId() != "" {
-		// targets dont have names, so we use the ID directly
+		// targets don't have names, so we use the ID directly
 		targetsResponse, err := c.client.DeleteUpstreamTargetWithResponse(ctx, routeName, route.GetTargetsId())
 		if err != nil {
 			return err
@@ -600,8 +532,8 @@ func (c *kongClient) CreateOrReplaceConsumer(ctx context.Context, consumer Custo
 	envName := contextutil.EnvFromContextOrDie(ctx)
 	consumerName := consumer.GetConsumerName()
 	tags := []string{
-		buildTag("env", envName),
-		buildTag("consumer", consumerName),
+		BuildTag("env", envName),
+		BuildTag("consumer", consumerName),
 	}
 
 	response, err := c.client.UpsertConsumerWithResponse(ctx, consumerName, kong.CreateConsumerJSONRequestBody{
@@ -679,7 +611,7 @@ func (c *kongClient) isConsumerInGroup(ctx context.Context, consumerName string)
 	}
 }
 
-func buildTag(key, value string) string {
+func BuildTag(key, value string) string {
 	return fmt.Sprintf("%s--%s", key, value)
 }
 
@@ -697,42 +629,4 @@ func encodeTags(tags []string) *string {
 	}
 	strTags := strings.Join(tags, ",")
 	return &strTags
-}
-
-// isCircuitBreakerEnabled if CB is defined (thus enabled). Its possible to override it via an internal field in the Route.Spec.Traffic.CircuitBreaker
-func isCircuitBreakerEnabled(ctx context.Context, gateway *gatewayapi.Gateway, route CustomRoute) bool {
-	log := logr.FromContextOrDiscard(ctx)
-	// check if the route is trying to bypass the GW config
-	r, ok := route.(*gatewayapi.Route)
-	if ok {
-		log.Info("Cannot convert CustomRoute to gatewayapi.Route when attempting to resolve if CircuitBreaker should be configured. Assuming the value is FALSE!", "routeName", route.GetName())
-	}
-	if r.Spec.Traffic.CircuitBreaker != nil {
-		log.Info("Route has explicitly defined a CircuitBreaker value - bypassing gateway configuration!", "routeName", route.GetName())
-		return *r.Spec.Traffic.CircuitBreaker
-	}
-
-	if gateway == nil {
-		return false
-	}
-	if gateway.Spec.CircuitBreaker != nil {
-		return true
-	}
-	return false
-}
-
-func toPassiveUnhealthyHttpStatuses(statuses []int) *[]kong.CreateUpstreamRequestHealthchecksPassiveUnhealthyHttpStatuses {
-	result := make([]kong.CreateUpstreamRequestHealthchecksPassiveUnhealthyHttpStatuses, len(statuses))
-	for i, status := range statuses {
-		result[i] = kong.CreateUpstreamRequestHealthchecksPassiveUnhealthyHttpStatuses(status)
-	}
-	return &result
-}
-
-func toPassiveHealthyHttpStatuses(statuses []int) *[]kong.CreateUpstreamRequestHealthchecksPassiveHealthyHttpStatuses {
-	result := make([]kong.CreateUpstreamRequestHealthchecksPassiveHealthyHttpStatuses, len(statuses))
-	for i, status := range statuses {
-		result[i] = kong.CreateUpstreamRequestHealthchecksPassiveHealthyHttpStatuses(status)
-	}
-	return &result
 }

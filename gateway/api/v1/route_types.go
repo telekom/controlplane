@@ -179,6 +179,10 @@ func (g *Route) SetTargetsId(id string) {
 	g.SetProperty("targetsId", id)
 }
 
+func (g *Route) GetUpstreamId() string {
+	return g.GetProperty("upstreamId")
+}
+
 func (g *Route) GetTargetsId() string {
 	return g.GetProperty("targetsId")
 }

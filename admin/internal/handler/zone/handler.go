@@ -37,21 +37,6 @@ const (
 
 var _ handler.Handler[*adminv1.Zone] = &ZoneHandler{}
 
-var DefaultCircuitBreaker = &gatewayapi.CircuitBreaker{
-	Passive: gatewayapi.PassiveHealthcheck{
-		HealthyHttpStatuses:   []int{200, 201, 202, 203, 204, 205, 206, 207, 208, 226, 300, 301, 302, 303, 304, 305, 306, 307, 308},
-		HealthySuccesses:      30,
-		UnhealthyHttpFailures: 10,
-		UnhealthyHttpStatuses: []int{429, 500, 503},
-		UnhealthyTcpFailures:  10,
-		UnhealthyTimeouts:     10,
-	},
-	Active: gatewayapi.ActiveHealthCheck{
-		HealthyHttpStatuses:   []int{302, 200},
-		UnhealthyHttpStatuses: []int{429, 404, 500, 501, 502, 503, 504, 505},
-	},
-}
-
 type ZoneHandler struct{}
 
 func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) error {
@@ -328,12 +313,6 @@ func createGateway(ctx context.Context, handlingContext HandlingContext) (*gatew
 				Password:  handlingContext.Zone.Spec.Redis.Password,
 				EnableTLS: handlingContext.Zone.Spec.Redis.EnableTLS,
 			},
-			CircuitBreaker: nil,
-		}
-
-		// circuit breaker config is hardcoded, controlled by a flag
-		if handlingContext.Zone.Spec.Gateway.CircuitBreaker {
-			gateway.Spec.CircuitBreaker = DefaultCircuitBreaker
 		}
 
 		return nil
