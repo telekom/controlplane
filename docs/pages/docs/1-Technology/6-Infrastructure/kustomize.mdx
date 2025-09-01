@@ -1,0 +1,722 @@
+---
+sidebar_position: 3
+title: "Kustomize"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Kustomize"
+  description="Kubernetes native configuration management"
+/>
+
+Kustomize is used extensively in the Control Plane for customizing Kubernetes manifests across different environments and deployment scenarios, particularly for operators built with Kubebuilder.
+
+<InfoSection type="info" title="Configuration management">
+  Kustomize allows for template-free customization of Kubernetes manifests, enabling consistent deployment of Control Plane operators across different environments.
+</InfoSection>
+
+## Overview
+
+[Kustomize](https://kustomize.io/) is a Kubernetes-native configuration management tool that lets you customize untemplated YAML files for multiple environments while keeping the original files intact. It's now integrated into `kubectl` and is used extensively in the Control Plane for managing operator deployments.
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🔄 Overlay-Based Customization",
+    description: "Modify resources without templating using overlays and patches."
+  },
+  {
+    title: "📦 Resource Composition",
+    description: "Combine and organize related resources into cohesive packages."
+  },
+  {
+    title: "🎯 Environment-Specific Variants",
+    description: "Create environment-specific variations from a common base."
+  },
+  {
+    title: "🔍 No Templates",
+    description: "Use declarative approach without the complexity of templates."
+  },
+  {
+    title: "🧩 Component Reuse",
+    description: "Create reusable components for consistent application across deployments."
+  },
+  {
+    title: "⚙️ ConfigMap/Secret Generation",
+    description: "Generate ConfigMaps and Secrets from files or literals."
+  }
+]} />
+
+## Integration with Kubebuilder
+
+<InfoSection type="tip" title="Kubebuilder and Kustomize">
+  Kubebuilder generates Kustomize-based deployment configurations for all operators in the Control Plane, making it easy to customize deployments for different environments.
+</InfoSection>
+
+Kubebuilder automatically generates a Kustomize-based directory structure for deploying operators:
+
+```
+config/
+├── default/
+│   ├── kustomization.yaml         # Combines all components
+│   ├── manager_auth_proxy_patch.yaml
+│   └── manager_config_patch.yaml
+├── manager/
+│   ├── kustomization.yaml         # Base manager configuration
+│   └── manager.yaml               # Controller manager deployment
+├── rbac/
+│   ├── kustomization.yaml         # Role-based access control
+│   ├── leader_election_role.yaml
+│   ├── role.yaml
+│   └── role_binding.yaml
+├── crd/
+│   ├── kustomization.yaml         # Custom Resource Definitions
+│   └── bases/
+│       └── storage.cp.ei.telekom.de_filemanagers.yaml
+└── overlays/
+    ├── development/
+    │   └── kustomization.yaml     # Dev-specific customizations
+    └── production/
+        └── kustomization.yaml     # Production-specific customizations
+```
+
+## Basic Structure
+
+<InfoSection type="note" title="Kustomize components">
+  The key components of Kustomize configurations used in the Control Plane.
+</InfoSection>
+
+### kustomization.yaml
+
+The main configuration file that defines how resources are customized:
+
+```yaml
+# Basic kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# List of resources to include
+resources:
+  - deployment.yaml
+  - service.yaml
+
+# Namespace to add to all resources
+namespace: file-manager-system
+
+# Common labels to add to all resources
+commonLabels:
+  app.kubernetes.io/part-of: controlplane
+  app.kubernetes.io/managed-by: kustomize
+
+# Name prefix to add to all resources
+namePrefix: cp-
+
+# Configuration for generating ConfigMaps
+configMapGenerator:
+- name: file-manager-config
+  files:
+  - config.json
+
+# Patches to apply to resources
+patches:
+- path: deployment-patch.yaml
+  target:
+    kind: Deployment
+```
+
+## Overlays and Bases
+
+<InfoSection type="tip" title="Layered approach">
+  The Control Plane uses a base + overlay approach to customize manifests for different environments while maintaining consistency.
+</InfoSection>
+
+### Base Configuration
+
+Base configurations define the core resources that are common across all environments:
+
+```yaml
+# base/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- deployment.yaml
+- service.yaml
+- rbac.yaml
+```
+
+### Overlay Configuration
+
+Overlays customize the base for specific environments:
+
+```yaml
+# overlays/production/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Reference to the base
+resources:
+- ../../base
+
+# Environment-specific customizations
+namespace: production
+namePrefix: prod-
+
+# Production-specific patches
+patches:
+- path: increase-replicas.yaml
+- path: set-resource-limits.yaml
+
+# Production-specific configs
+configMapGenerator:
+- name: file-manager-config
+  behavior: replace
+  files:
+  - config.json
+```
+
+## Resource Patches
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Strategic Merge Patches"
+    description={<>
+      <p>Merge-based patches for modifying existing resources:</p>
+      <code>
+      # increase-replicas.yaml<br/>
+      apiVersion: apps/v1<br/>
+      kind: Deployment<br/>
+      metadata:<br/>
+      &nbsp;&nbsp;name: file-manager<br/>
+      spec:<br/>
+      &nbsp;&nbsp;replicas: 3
+      </code>
+    </>}
+  />
+  
+  <FeatureCard
+    title="JSON Patches"
+    description={<>
+      <p>JSON patch operations for precise modifications:</p>
+      <code>
+      # set-resource-limits.yaml<br/>
+      - op: replace<br/>
+      &nbsp;&nbsp;path: /spec/template/spec/containers/0/resources/limits/memory<br/>
+      &nbsp;&nbsp;value: 512Mi<br/>
+      - op: replace<br/>
+      &nbsp;&nbsp;path: /spec/template/spec/containers/0/resources/limits/cpu<br/>
+      &nbsp;&nbsp;value: 500m
+      </code>
+    </>}
+  />
+</CardGrid>
+
+## Practical Examples from Control Plane
+
+<InfoSection type="note" title="Real-world usage">
+  Examples of how Kustomize is used in the Control Plane for different deployment scenarios.
+</InfoSection>
+
+### Controller Manager Deployment
+
+The base deployment for a controller manager:
+
+```yaml
+# manager/manager.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller-manager
+  namespace: system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  template:
+    spec:
+      containers:
+      - name: manager
+        image: controller:latest
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 64Mi
+        args:
+        - --leader-elect
+```
+
+### Production Overlay
+
+Production-specific customizations:
+
+```yaml
+# overlays/production/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../../default
+
+namespace: controlplane-system
+
+images:
+- name: controller
+  newName: registry.controlplane.example.com/controller
+  newTag: v1.2.3
+
+patchesStrategicMerge:
+- |-
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: controller-manager
+    namespace: system
+  spec:
+    replicas: 3
+    template:
+      spec:
+        containers:
+        - name: manager
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 200m
+              memory: 256Mi
+          env:
+          - name: LOG_LEVEL
+            value: "info"
+```
+
+## Deployment Workflow
+
+<InfoSection type="tip" title="Operator deployment">
+  The workflow for deploying Control Plane operators using Kustomize.
+</InfoSection>
+
+```mermaid
+graph TD
+    A[Edit Base Resources] --> B[Create Environment Overlays]
+    B --> C[Build Kustomization]
+    C --> D{Apply Directly?}
+    D -->|Yes| E[kubectl apply -k]
+    D -->|No| F[kubectl kustomize > manifests.yaml]
+    F --> G[Apply Generated Manifests]
+    
+    classDef primary fill:#E20074,color:#ffffff,stroke:#E20074
+    classDef secondary fill:#00ADD8,color:#ffffff,stroke:#00ADD8
+    classDef action fill:#f9f9f9,color:#333,stroke:#ccc
+    
+    class A,B primary
+    class C,D secondary
+    class E,F,G action
+```
+
+### Common Commands
+
+```bash
+# Preview the generated manifests
+kubectl kustomize config/default
+
+# Apply the default configuration
+kubectl apply -k config/default
+
+# Apply environment-specific configuration
+kubectl apply -k config/overlays/production
+
+# Build manifests and pipe to a file
+kubectl kustomize config/overlays/production > production-manifests.yaml
+```
+
+## Generator Features
+
+<InfoSection type="note" title="Resource generation">
+  Kustomize can generate ConfigMaps and Secrets from various sources.
+</InfoSection>
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="ConfigMap Generation"
+    description={<>
+      <p>Generate ConfigMaps from files:</p>
+      <code>
+      configMapGenerator:<br/>
+      - name: file-manager-config<br/>
+      &nbsp;&nbsp;files:<br/>
+      &nbsp;&nbsp;- config.json<br/>
+      &nbsp;&nbsp;- settings.yaml
+      </code>
+      <p>This automatically hashes the ConfigMap name for change detection.</p>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Secret Generation"
+    description={<>
+      <p>Generate Secrets from literals or files:</p>
+      <code>
+      secretGenerator:<br/>
+      - name: file-manager-secrets<br/>
+      &nbsp;&nbsp;type: Opaque<br/>
+      &nbsp;&nbsp;literals:<br/>
+      &nbsp;&nbsp;- API_KEY=secret-api-key<br/>
+      &nbsp;&nbsp;files:<br/>
+      &nbsp;&nbsp;- tls.crt=certs/tls.crt<br/>
+      &nbsp;&nbsp;- tls.key=certs/tls.key
+      </code>
+    </>}
+  />
+</CardGrid>
+
+## Advanced Features
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Variants Management"
+    description={<>
+      <p>Manage multiple variants with components:</p>
+      <code>
+      # kustomization.yaml<br/>
+      components:<br/>
+      - ../components/monitoring<br/>
+      - ../components/high-availability
+      </code>
+      <p>Components allow reusable sets of patches and resources to be applied across bases.</p>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Resource Transformers"
+    description={<>
+      <p>Apply transformations across resources:</p>
+      <code>
+      transformers:<br/>
+      - metadataTransformer.yaml<br/><br/>
+      # metadataTransformer.yaml<br/>
+      apiVersion: builtin<br/>
+      kind: LabelTransformer<br/>
+      metadata:<br/>
+      &nbsp;&nbsp;name: addLabels<br/>
+      labels:<br/>
+      &nbsp;&nbsp;environment: production<br/>
+      &nbsp;&nbsp;region: eu-central<br/>
+      fieldSpecs:<br/>
+      - path: metadata/labels<br/>
+      &nbsp;&nbsp;create: true
+      </code>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Patching with Variables"
+    description={<>
+      <p>Use variables to make patches more dynamic:</p>
+      <code>
+      vars:<br/>
+      - name: SERVICE_NAME<br/>
+      &nbsp;&nbsp;objref:<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;kind: Service<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;name: file-manager<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;apiVersion: v1<br/>
+      &nbsp;&nbsp;fieldref:<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;fieldpath: metadata.name<br/><br/>
+      replacements:<br/>
+      - source:<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;kind: Service<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;version: v1<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;fieldPath: spec.clusterIP<br/>
+      &nbsp;&nbsp;targets:<br/>
+      &nbsp;&nbsp;- select:<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;kind: Deployment<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;fieldPaths:<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;- spec.template.spec.containers.[name=app].env.[name=SERVICE_IP].value
+      </code>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Composable Configurations"
+    description={<>
+      <p>Create composable, reusable configurations:</p>
+      <code>
+      # monitoring/kustomization.yaml<br/>
+      apiVersion: kustomize.config.k8s.io/v1beta1<br/>
+      kind: Component<br/><br/>
+      resources:<br/>
+      - prometheus-servicemonitor.yaml<br/><br/>
+      patchesStrategicMerge:<br/>
+      - enable-metrics.yaml
+      </code>
+    </>}
+  />
+</CardGrid>
+
+## Kubebuilder-Generated Structure
+
+<InfoSection type="note" title="Generated configurations">
+  Kubebuilder generates a specific Kustomize structure for operators in the Control Plane.
+</InfoSection>
+
+### Default Configuration
+
+The default kustomization combines CRDs, RBAC, and the manager:
+
+```yaml
+# config/default/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../crd
+- ../rbac
+- ../manager
+
+# Patches to apply
+patchesStrategicMerge:
+- manager_auth_proxy_patch.yaml
+- manager_webhook_patch.yaml
+- manager_config_patch.yaml
+
+# ConfigMap for the controller manager
+configMapGenerator:
+- name: manager-config
+  files:
+  - controller_manager_config.yaml
+```
+
+### CRD Configuration
+
+Custom Resource Definitions are kept separate to allow installation without the controller:
+
+```yaml
+# config/crd/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- bases/storage.cp.ei.telekom.de_filemanagers.yaml
+```
+
+### Manager Configuration
+
+The controller manager deployment:
+
+```yaml
+# config/manager/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- manager.yaml
+```
+
+## Best Practices
+
+<InfoSection type="tip" title="Kustomize best practices">
+  The Control Plane follows these best practices for Kustomize configurations.
+</InfoSection>
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🔄 Clear Base/Overlay Structure",
+    description: "Maintain a clear separation between base resources and environment-specific overlays."
+  },
+  {
+    title: "🧩 Modular Components",
+    description: "Create reusable components for features like monitoring, high availability, and security."
+  },
+  {
+    title: "📄 Minimal Patching",
+    description: "Keep patches small and focused on specific changes to improve maintainability."
+  },
+  {
+    title: "🏷️ Consistent Labels",
+    description: "Use commonLabels to ensure consistent labeling across all resources."
+  },
+  {
+    title: "📋 Resource Organization",
+    description: "Group related resources in separate directories (RBAC, CRDs, webhooks)."
+  },
+  {
+    title: "🧪 Validate Generated Output",
+    description: "Preview and validate manifests before applying them to a cluster."
+  }
+]} />
+
+## Common Patterns in Control Plane
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Multi-Environment Deployments"
+    description={<>
+      <p>Structure for development, staging, and production environments:</p>
+      <ul>
+        <li>Base with shared configuration</li>
+        <li>Environment overlays with specific settings</li>
+        <li>Separate namespaces for isolation</li>
+        <li>Environment-specific resource limits</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Operator Customization"
+    description={<>
+      <p>Customizing Kubebuilder-generated operators:</p>
+      <ul>
+        <li>Adding metrics configuration</li>
+        <li>Configuring webhooks</li>
+        <li>Setting up leader election</li>
+        <li>Adding sidecar containers (e.g., auth proxy)</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Versioned Deployments"
+    description={<>
+      <p>Managing version updates:</p>
+      <ul>
+        <li>Image tag updates for new versions</li>
+        <li>CRD version upgrades</li>
+        <li>Migration strategies between versions</li>
+        <li>Rollback support</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Security Configuration"
+    description={<>
+      <p>Security-focused customizations:</p>
+      <ul>
+        <li>Pod security context configuration</li>
+        <li>RBAC role refinement</li>
+        <li>Network policy application</li>
+        <li>Secret management integration</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Integration with CI/CD
+
+<InfoSection type="note" title="Automated deployments">
+  How Kustomize integrates with the Control Plane CI/CD pipelines.
+</InfoSection>
+
+```mermaid
+graph TD
+    A[Git Repository] --> B[CI Build]
+    B --> C[Run Tests]
+    C --> D[Build Container Image]
+    D --> E[Update Image in Kustomize]
+    E --> F[Generate Manifests]
+    F --> G[Apply to Target Cluster]
+    
+    classDef primary fill:#E20074,color:#ffffff,stroke:#E20074
+    classDef secondary fill:#00ADD8,color:#ffffff,stroke:#00ADD8
+    classDef action fill:#f9f9f9,color:#333,stroke:#ccc
+    
+    class A,B primary
+    class C,D secondary
+    class E,F,G action
+```
+
+### CI/CD Pipeline Example
+
+```yaml
+# Update image and deploy to dev environment
+- name: Update kustomization
+  run: |
+    cd config/overlays/development
+    kustomize edit set image controller=registry.controlplane.example.com/controller:${GITHUB_SHA::7}
+    
+- name: Deploy to development
+  run: |
+    kubectl apply -k config/overlays/development
+    
+- name: Wait for rollout
+  run: |
+    kubectl rollout status deployment/controller-manager -n development --timeout=180s
+```
+
+## Comparison with Helm
+
+<InfoSection type="note" title="Kustomize vs Helm">
+  The Control Plane uses both Kustomize and Helm for different purposes.
+</InfoSection>
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Kustomize in Control Plane"
+    description={<>
+      <p>When we use Kustomize:</p>
+      <ul>
+        <li>Operator deployments (from Kubebuilder)</li>
+        <li>Core infrastructure components</li>
+        <li>GitOps-based deployments</li>
+        <li>CRD management</li>
+        <li>RBAC configuration</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Helm in Control Plane"
+    description={<>
+      <p>When we use Helm:</p>
+      <ul>
+        <li>Application deployments</li>
+        <li>Third-party components</li>
+        <li>Release-based versioning</li>
+        <li>Complex deployments with conditionals</li>
+        <li>User-facing components</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Kubebuilder"
+    description="Learn about the framework used to build Control Plane operators."
+    linkText="View Kubebuilder"
+    linkUrl="../Core-Technologies/kubebuilder"
+  />
+  
+  <FeatureCard
+    title="Helm Charts"
+    description="Explore Helm, the other packaging system used in the Control Plane."
+    linkText="View Helm Charts"
+    linkUrl="helm"
+  />
+  
+  <FeatureCard
+    title="Kubernetes"
+    description="Understand the platform that Kustomize configures."
+    linkText="View Kubernetes"
+    linkUrl="kubernetes"
+  />
+  
+  <FeatureCard
+    title="Kubebuilder Testing"
+    description="Learn about testing operators built with Kubebuilder."
+    linkText="View Kubebuilder Testing"
+    linkUrl="../Testing/kubebuilder-testing"
+  />
+</CardGrid>

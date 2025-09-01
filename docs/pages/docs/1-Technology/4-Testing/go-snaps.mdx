@@ -1,0 +1,450 @@
+---
+sidebar_position: 5
+title: "Go-Snaps"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Go-Snaps"
+  description="Snapshot testing library for Go applications"
+/>
+
+[Go-Snaps](https://github.com/gkampitakis/go-snaps) is a snapshot testing library for Go used in the Control Plane to verify that complex outputs match expected values.
+
+<InfoSection type="info" title="Snapshot testing">
+  Snapshot testing captures a component's output and compares it to a previously saved reference output (the "snapshot"). This approach is particularly useful for testing complex structures that are difficult to verify with traditional assertions.
+</InfoSection>
+
+## Overview
+
+Go-Snaps provides a simple, effective way to implement snapshot testing in Go applications. It's particularly valuable for testing complex data structures, API responses, and generated code.
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "📸 Snapshot Capture",
+    description: "Automatically save output snapshots for future comparisons."
+  },
+  {
+    title: "🔄 Snapshot Updates",
+    description: "Update snapshots when expected behavior changes."
+  },
+  {
+    title: "📊 Diff Generation",
+    description: "Clear visualization of differences between current output and snapshot."
+  },
+  {
+    title: "🧩 Custom Serializers",
+    description: "Support for custom serialization of complex types."
+  },
+  {
+    title: "⏱️ Inline Snapshots",
+    description: "Store small snapshots directly in test files."
+  },
+  {
+    title: "🔧 CLI Integration",
+    description: "Command-line tools for managing snapshots."
+  }
+]} />
+
+## Integration in the Control Plane
+
+<InfoSection type="tip" title="Complex output testing">
+  In the Control Plane, Go-Snaps is used to test components that produce complex outputs such as CRD generators, API responses, and resource templates.
+</InfoSection>
+
+The Control Plane uses Go-Snaps for testing various components:
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="API Responses"
+    description={<>
+      <p>Testing the structure and content of API responses:</p>
+      <ul>
+        <li>JSON response bodies</li>
+        <li>Error response formats</li>
+        <li>Pagination structures</li>
+        <li>Content negotiation results</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Resource Templates"
+    description={<>
+      <p>Verifying generated Kubernetes resources:</p>
+      <ul>
+        <li>Deployment manifests</li>
+        <li>Service configurations</li>
+        <li>ConfigMap content</li>
+        <li>CRD definitions</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Code Generation"
+    description={<>
+      <p>Testing output of code generators:</p>
+      <ul>
+        <li>Controller boilerplate</li>
+        <li>Client code</li>
+        <li>Schema validation</li>
+        <li>Documentation generation</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Configuration Processing"
+    description={<>
+      <p>Testing configuration transformation logic:</p>
+      <ul>
+        <li>Config file parsing</li>
+        <li>Environment variable processing</li>
+        <li>Default value application</li>
+        <li>Validation error messages</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Basic Usage
+
+Go-Snaps can be used with the standard Go testing package or with BDD frameworks like Ginkgo:
+
+```go
+package example_test
+
+import (
+    "testing"
+    
+    "github.com/gkampitakis/go-snaps/snaps"
+)
+
+func TestAPIResponse(t *testing.T) {
+    // Set up test
+    api := NewAPI()
+    
+    // Get actual response
+    response := api.GetUserData(123)
+    
+    // Compare with snapshot
+    snaps.MatchJSON(t, response)
+}
+
+func TestTemplateRendering(t *testing.T) {
+    // Set up test
+    templateData := map[string]string{
+        "Name": "test-service",
+        "Namespace": "default",
+        "Replicas": "3",
+    }
+    
+    // Render template
+    output := RenderTemplate("deployment.yaml", templateData)
+    
+    // Compare with snapshot
+    snaps.MatchYAML(t, output)
+}
+```
+
+### With Ginkgo and Gomega
+
+```go
+package example_test
+
+import (
+    . "github.com/onsi/ginkgo/v2"
+    . "github.com/onsi/gomega"
+    "github.com/gkampitakis/go-snaps/snaps"
+)
+
+var _ = Describe("Template Renderer", func() {
+    It("should render deployment template correctly", func() {
+        templateData := map[string]string{
+            "Name": "test-service",
+            "Namespace": "default",
+            "Replicas": "3",
+        }
+        
+        output := RenderTemplate("deployment.yaml", templateData)
+        
+        snaps.MatchYAML(GinkgoT(), output)
+    })
+})
+```
+
+## Snapshot Storage
+
+<InfoSection type="note" title="Snapshot management">
+  Go-Snaps stores snapshots in a structured directory format that is version control friendly.
+</InfoSection>
+
+By default, Go-Snaps stores snapshots in a `__snapshots__` directory next to your test files:
+
+```
+pkg/controller/
+  ├── controller_test.go
+  ├── __snapshots__/
+  │   └── controller_test.snap
+  └── controller.go
+```
+
+Snapshots are stored in a readable format:
+
+```
+/* Test case: 'TestController/should_generate_valid_deployment' */
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-service
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: test-service
+  template:
+    metadata:
+      labels:
+        app: test-service
+    spec:
+      containers:
+      - name: test-service
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+```
+
+## Supported Formats
+
+<InfoSection type="note" title="Format-specific matching">
+  Go-Snaps provides format-specific matchers for common data formats used in the Control Plane.
+</InfoSection>
+
+<FeatureGrid columns={3} features={[
+  {
+    title: "MatchJSON",
+    description: "Match JSON data with normalized formatting."
+  },
+  {
+    title: "MatchYAML",
+    description: "Match YAML data with normalized formatting."
+  },
+  {
+    title: "MatchInline",
+    description: "Store small snapshots directly in test files."
+  },
+  {
+    title: "Match",
+    description: "Match any serializable data structure."
+  },
+  {
+    title: "MatchText",
+    description: "Match text content without normalization."
+  },
+  {
+    title: "MatchSnapshot",
+    description: "Low-level API for custom matching."
+  }
+]} />
+
+## Advanced Features
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Custom Serializers"
+    description={<>
+      <p>Define custom serialization for complex types:</p>
+      <code>
+      type MyStruct struct &#123;<br/>
+        ID string<br/>
+        CreatedAt time.Time<br/>
+      &#125;<br/>
+      <br/>
+      // Register custom serializer<br/>
+      snaps.AddSerializer(<br/>
+        func(v any) (any, error) &#123;<br/>
+          if s, ok := v.(MyStruct); ok &#123;<br/>
+            return map[string]string&#123;<br/>
+              "ID": s.ID,<br/>
+              "CreatedAt": "NORMALIZED_TIME",<br/>
+            &#125;, nil<br/>
+          &#125;<br/>
+          return v, nil<br/>
+        &#125;<br/>
+      )
+      </code>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Update Mode"
+    description={<>
+      <p>Update snapshots when behavior changes:</p>
+      <code>
+      // Run tests with update flag<br/>
+      GO_SNAPS=update go test ./...<br/>
+      <br/>
+      // Or update specific tests<br/>
+      GO_SNAPS=update go test ./pkg/controller -run TestDeployment
+      </code>
+      <p>This is useful when you intentionally change behavior and need to update snapshots.</p>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Exclusion Paths"
+    description={<>
+      <p>Exclude dynamic fields from comparison:</p>
+      <code>
+      snaps.MatchJSONWithOptions(t, response, snaps.SnapshotOptions&#123;<br/>
+        ExcludePaths: []string&#123;<br/>
+          "$.metadata.creationTimestamp",<br/>
+          "$.status.observedGeneration",<br/>
+        &#125;,<br/>
+      &#125;)
+      </code>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Inline Snapshots"
+    description={<>
+      <p>Store small snapshots directly in test files:</p>
+      <code>
+      func TestSmallResponse(t *testing.T) &#123;<br/>
+        response := GetSimpleResponse()<br/>
+        <br/>
+        snaps.MatchInline(t, response, `&#123;<br/>
+          "status": "success",<br/>
+          "message": "Operation completed"<br/>
+        &#125;`)
+      &#125;
+      </code>
+    </>}
+  />
+</CardGrid>
+
+## CLI Usage
+
+Go-Snaps provides a command-line tool for managing snapshots:
+
+```bash
+# Install the CLI
+go install github.com/gkampitakis/go-snaps/cmd/go-snaps@latest
+
+# Show differences in snapshots
+go-snaps diff
+
+# Clean up unused snapshots
+go-snaps cleanup
+
+# Update all snapshots
+go-snaps update
+
+# Update specific snapshots
+go-snaps update --test TestDeploymentController
+```
+
+## Best Practices in the Control Plane
+
+<InfoSection type="tip" title="Effective snapshot testing">
+  The Control Plane follows these best practices for effective snapshot testing.
+</InfoSection>
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🎯 Test Focused Cases",
+    description: "Create separate snapshots for specific behaviors rather than large, catch-all snapshots."
+  },
+  {
+    title: "💾 Version Control Snapshots",
+    description: "Always commit snapshot files to version control alongside code changes."
+  },
+  {
+    title: "🧹 Regular Cleanup",
+    description: "Use 'go-snaps cleanup' periodically to remove orphaned snapshots."
+  },
+  {
+    title: "🔍 Code Review Snapshots",
+    description: "Review snapshot changes carefully during code reviews to catch unintended changes."
+  },
+  {
+    title: "⏱️ Normalize Timestamps",
+    description: "Use custom serializers or exclusion paths to handle dynamic values like timestamps."
+  },
+  {
+    title: "📝 Descriptive Test Names",
+    description: "Use clear, descriptive test names that explain what the snapshot represents."
+  }
+]} />
+
+## Use Cases in the Control Plane
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="API Contract Testing"
+    description={<>
+      <p>Ensure API responses maintain the same structure and format, which is critical for maintaining backward compatibility with clients.</p>
+      <p>Example: Testing the Gateway API response format remains consistent after refactoring.</p>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Configuration Validation"
+    description={<>
+      <p>Verify that configuration processing and validation produces expected results, including proper error messages for invalid configurations.</p>
+      <p>Example: Testing error messages from the Rover configuration validator.</p>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Template Testing"
+    description={<>
+      <p>Ensure that templates for Kubernetes resources are rendered correctly with different input parameters.</p>
+      <p>Example: Testing Helm chart templates for the File Manager service.</p>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Complex Data Transformation"
+    description={<>
+      <p>Verify that complex data transformation logic works as expected, producing the correct output structure.</p>
+      <p>Example: Testing conversion between different API versions of a custom resource.</p>
+    </>}
+  />
+</CardGrid>
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Ginkgo"
+    description="BDD-style testing framework for Go applications."
+    linkText="View Ginkgo"
+    linkUrl="ginkgo"
+  />
+  
+  <FeatureCard
+    title="Gomega"
+    description="Matcher/assertion library that works well with Go-Snaps."
+    linkText="View Gomega"
+    linkUrl="gomega"
+  />
+  
+  <FeatureCard
+    title="Testify"
+    description="Another testing toolkit used in the Control Plane."
+    linkText="View Testify"
+    linkUrl="testify"
+  />
+</CardGrid>

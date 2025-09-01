@@ -1,0 +1,369 @@
+---
+sidebar_position: 3
+title: "Kubebuilder"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Kubebuilder"
+  description="Kubernetes API development framework"
+/>
+
+Kubebuilder is the framework used to build the Control Plane's operators and custom resources.
+
+<InfoSection type="tip" title="Development framework">
+  Kubebuilder provides the scaffolding and tooling used to develop the Control Plane's operators and custom resources.
+</InfoSection>
+
+## What is Kubebuilder?
+
+[Kubebuilder](https://book.kubebuilder.io/) is a framework for building Kubernetes APIs using CRDs, controllers, and webhooks. It's designed to simplify the development of Kubernetes operators and custom resources by providing code generation, scaffolding, and testing capabilities.
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🏗️ Scaffolding",
+    description: "Generate code and manifests for new API types and controllers."
+  },
+  {
+    title: "🧪 Testing",
+    description: "Framework for controller and webhook testing with envtest."
+  },
+  {
+    title: "🔒 RBAC",
+    description: "Automatic generation of role-based access control manifests."
+  },
+  {
+    title: "🔍 Webhooks",
+    description: "Infrastructure for validation and defaulting webhooks."
+  },
+  {
+    title: "📖 Documentation",
+    description: "Marker-based API documentation generation."
+  },
+  {
+    title: "🔧 CLI Tools",
+    description: "Command-line tools for project management and scaffolding."
+  }
+]} />
+
+## Project Structure
+
+The Control Plane follows the standard Kubebuilder project structure:
+
+```
+├── api/
+│   └── v1/
+│       ├── filemanager_types.go
+│       ├── groupversion_info.go
+│       └── zz_generated.deepcopy.go
+├── controllers/
+│   ├── filemanager_controller.go
+│   └── suite_test.go
+├── config/
+│   ├── crd/
+│   │   └── bases/
+│   │       └── storage.cp.ei.telekom.de_filemanagers.yaml
+│   ├── rbac/
+│   │   ├── role.yaml
+│   │   └── role_binding.yaml
+│   ├── manager/
+│   │   └── manager.yaml
+│   └── samples/
+│       └── storage_v1_filemanager.yaml
+└── main.go
+```
+
+<InfoSection type="note" title="Standardized organization">
+  The Kubebuilder project structure ensures consistency across all Control Plane operators, making it easier to navigate, understand, and maintain the codebase.
+</InfoSection>
+
+## Key Components
+
+### API Types
+
+API types define the custom resources managed by the Control Plane. These are defined in Go structs with marker annotations that generate CRDs and DeepCopy methods.
+
+```go
+// FileManagerSpec defines the desired state of FileManager
+type FileManagerSpec struct {
+    // Storage configuration for the FileManager
+    // +kubebuilder:validation:Required
+    Storage StorageSpec `json:"storage"`
+}
+
+// StorageSpec defines the storage configuration
+type StorageSpec struct {
+    // Type of storage backend to use
+    // +kubebuilder:validation:Enum=s3
+    Type string `json:"type"`
+
+    // S3 configuration when Type is "s3"
+    // +kubebuilder:validation:Required
+    S3 *S3Config `json:"s3,omitempty"`
+}
+
+// FileManagerStatus defines the observed state of FileManager
+type FileManagerStatus struct {
+    // Indicates whether the FileManager is ready
+    // +kubebuilder:default=false
+    Ready bool `json:"ready,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Ready",type="boolean",JSONPath=".status.ready"
+// +kubebuilder:resource:shortName=fm
+
+// FileManager is the Schema for the filemanagers API
+type FileManager struct {
+    metav1.TypeMeta   `json:",inline"`
+    metav1.ObjectMeta `json:"metadata,omitempty"`
+
+    Spec   FileManagerSpec   `json:"spec,omitempty"`
+    Status FileManagerStatus `json:"status,omitempty"`
+}
+```
+
+### Controllers
+
+Controllers implement the reconciliation logic for custom resources. The Control Plane controllers follow the Kubebuilder pattern:
+
+```go
+// FileManagerReconciler reconciles a FileManager object
+type FileManagerReconciler struct {
+    client.Client
+    Log    logr.Logger
+    Scheme *runtime.Scheme
+}
+
+// +kubebuilder:rbac:groups=storage.cp.ei.telekom.de,resources=filemanagers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=storage.cp.ei.telekom.de,resources=filemanagers/status,verbs=get;update;patch
+
+func (r *FileManagerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+    log := r.Log.WithValues("filemanager", req.NamespacedName)
+    
+    // Fetch the FileManager resource
+    fileManager := &apiV1.FileManager{}
+    if err := r.Get(ctx, req.NamespacedName, fileManager); err != nil {
+        return ctrl.Result{}, client.IgnoreNotFound(err)
+    }
+    
+    // Implement controller logic
+    if fileManager.Spec.Storage.Type == "s3" {
+        // Configure S3 backend
+        if err := r.configureS3Backend(ctx, fileManager); err != nil {
+            log.Error(err, "Failed to configure S3 backend")
+            return ctrl.Result{Requeue: true}, err
+        }
+    }
+    
+    // Update status
+    fileManager.Status.Ready = true
+    if err := r.Status().Update(ctx, fileManager); err != nil {
+        log.Error(err, "Failed to update FileManager status")
+        return ctrl.Result{Requeue: true}, err
+    }
+    
+    return ctrl.Result{}, nil
+}
+```
+
+### Webhooks
+
+The Control Plane uses Kubebuilder's webhook framework for validation, defaulting, and conversion. Webhooks are defined in separate files and include markers for automatic configuration generation.
+
+```go
+// +kubebuilder:webhook:path=/mutate-storage-cp-ei-telekom-de-v1-filemanager,mutating=true,failurePolicy=fail,sideEffects=None,groups=storage.cp.ei.telekom.de,resources=filemanagers,verbs=create;update,versions=v1,name=mfilemanager.kb.io,admissionReviewVersions=v1
+
+// FileManagerDefaulter defaults FileManager resources
+type FileManagerDefaulter struct {
+    Client client.Client
+}
+
+// Default sets default values for the FileManager
+func (d *FileManagerDefaulter) Default(ctx context.Context, obj runtime.Object) error {
+    fileManager, ok := obj.(*apiV1.FileManager)
+    if !ok {
+        return fmt.Errorf("expected a FileManager but got a %T", obj)
+    }
+    
+    // Set default values
+    if fileManager.Spec.Storage.S3 != nil && fileManager.Spec.Storage.S3.Region == "" {
+        fileManager.Spec.Storage.S3.Region = "eu-central-1"
+    }
+    
+    return nil
+}
+```
+
+## Working with Kubebuilder
+
+### Creating a New API
+
+The Control Plane uses Kubebuilder to scaffold new APIs and controllers:
+
+```bash
+# Create a new API with group 'gateway', version 'v1', kind 'Route'
+kubebuilder create api --group gateway --version v1 --kind Route
+
+# Create a new webhook for an existing API
+kubebuilder create webhook --group gateway --version v1 --kind Route --defaulting --programmatic-validation
+```
+
+### Generating CRDs
+
+Kubebuilder automatically generates CRDs from Go types with markers:
+
+```bash
+# Generate CRDs from API definitions
+make manifests
+
+# Install CRDs into a cluster
+make install
+```
+
+### Running Controllers Locally
+
+The Control Plane developers can run controllers locally for testing:
+
+```bash
+# Run controller against a remote cluster
+make run
+
+# Run controller with specific configuration
+KUBECONFIG=/path/to/kubeconfig ENABLE_WEBHOOKS=false make run
+```
+
+## Testing with Kubebuilder
+
+<InfoSection type="tip" title="Testing framework">
+  Kubebuilder provides the envtest package, which sets up a temporary API server for testing controllers without requiring a real Kubernetes cluster.
+</InfoSection>
+
+The Control Plane uses Kubebuilder's testing framework for controller tests:
+
+```go
+func TestFileManagerController(t *testing.T) {
+    // Set up test environment
+    testEnv := &envtest.Environment{
+        CRDDirectoryPaths: []string{filepath.Join("..", "config", "crd", "bases")},
+    }
+    cfg, err := testEnv.Start()
+    g.Expect(err).NotTo(gomega.HaveOccurred())
+    defer func() { _ = testEnv.Stop() }()
+    
+    // Create controller client
+    k8sClient, err := client.New(cfg, client.Options{Scheme: scheme})
+    g.Expect(err).NotTo(gomega.HaveOccurred())
+    
+    // Create and start controller
+    controller := &controllers.FileManagerReconciler{
+        Client: k8sClient,
+        Log:    logf.Log.WithName("test"),
+        Scheme: scheme,
+    }
+    
+    // Create test FileManager
+    fileManager := &apiV1.FileManager{
+        ObjectMeta: metav1.ObjectMeta{
+            Name:      "test",
+            Namespace: "default",
+        },
+        Spec: apiV1.FileManagerSpec{
+            Storage: apiV1.StorageSpec{
+                Type: "s3",
+                S3: &apiV1.S3Config{
+                    Endpoint: "https://s3.example.com",
+                    Bucket:   "test-bucket",
+                },
+            },
+        },
+    }
+    
+    // Test reconciliation
+    g.Expect(k8sClient.Create(context.Background(), fileManager)).To(gomega.Succeed())
+    // ... additional test assertions
+}
+```
+
+## Best Practices
+
+<InfoSection type="tip" title="Control Plane patterns">
+  The Control Plane follows these best practices for Kubebuilder-based development.
+</InfoSection>
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="API Design"
+    description={<>
+      <ul>
+        <li>Follow Kubernetes API conventions</li>
+        <li>Use CRD validation for all fields</li>
+        <li>Separate spec (desired state) from status (observed state)</li>
+        <li>Define clear ownership and dependency relationships</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Controller Implementation"
+    description={<>
+      <ul>
+        <li>Make reconciliation idempotent</li>
+        <li>Use finalizers for cleanup operations</li>
+        <li>Log relevant information at appropriate levels</li>
+        <li>Handle errors with appropriate retry strategies</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Resource Management"
+    description={<>
+      <ul>
+        <li>Implement owner references for garbage collection</li>
+        <li>Set resource requests and limits appropriately</li>
+        <li>Use metrics for performance monitoring</li>
+        <li>Implement proper error handling and reporting</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Testing"
+    description={<>
+      <ul>
+        <li>Write comprehensive unit tests</li>
+        <li>Use envtest for controller integration testing</li>
+        <li>Test failure scenarios and edge cases</li>
+        <li>Verify webhooks with admission review requests</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Kubernetes"
+    description="Learn about the core platform extended by Kubebuilder."
+    linkText="View Kubernetes"
+    linkUrl="kubernetes"
+  />
+  
+  <FeatureCard
+    title="Controller Runtime"
+    description="Explore the library that powers Kubebuilder-based controllers."
+    linkText="View Controller Runtime"
+    linkUrl="https://github.com/kubernetes-sigs/controller-runtime"
+  />
+</CardGrid>

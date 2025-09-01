@@ -375,65 +375,6 @@ spec:
   />
 </CardGrid>
 
-## Kubebuilder
-
-<InfoSection type="tip" title="Development framework">
-  Kubebuilder provides the scaffolding and tooling used to develop the Control Plane's operators and custom resources.
-</InfoSection>
-
-[Kubebuilder](https://book.kubebuilder.io/) is used as a framework for building Kubernetes APIs using CRDs, controllers, and webhooks. It provides:
-
-<FeatureGrid columns={2} features={[
-  {
-    title: "🏗️ Scaffolding",
-    description: "Generate code and manifests for new API types and controllers."
-  },
-  {
-    title: "🧪 Testing",
-    description: "Framework for controller and webhook testing with envtest."
-  },
-  {
-    title: "🔒 RBAC",
-    description: "Automatic generation of role-based access control manifests."
-  },
-  {
-    title: "🔍 Webhooks",
-    description: "Infrastructure for validation and defaulting webhooks."
-  },
-  {
-    title: "📖 Documentation",
-    description: "Marker-based API documentation generation."
-  },
-  {
-    title: "🔧 CLI Tools",
-    description: "Command-line tools for project management and scaffolding."
-  }
-]} />
-
-The Control Plane follows the Kubebuilder project structure:
-
-```
-├── api/
-│   └── v1/
-│       ├── filemanager_types.go
-│       ├── groupversion_info.go
-│       └── zz_generated.deepcopy.go
-├── controllers/
-│   ├── filemanager_controller.go
-│   └── suite_test.go
-├── config/
-│   ├── crd/
-│   │   └── bases/
-│   │       └── storage.cp.ei.telekom.de_filemanagers.yaml
-│   ├── rbac/
-│   │   ├── role.yaml
-│   │   └── role_binding.yaml
-│   ├── manager/
-│   │   └── manager.yaml
-│   └── samples/
-│       └── storage_v1_filemanager.yaml
-└── main.go
-```
 
 ## Deployment Model
 
@@ -602,6 +543,13 @@ spec:
     description="Learn about the programming language used to build the Control Plane operators."
     linkText="View Go Language"
     linkUrl="golang"
+  />
+  
+  <FeatureCard
+    title="Kubebuilder"
+    description="Learn about the framework used to build Kubernetes operators and custom resources."
+    linkText="View Kubebuilder"
+    linkUrl="kubebuilder"
   />
   
   <FeatureCard

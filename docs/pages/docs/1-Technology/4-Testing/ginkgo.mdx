@@ -1,0 +1,337 @@
+---
+sidebar_position: 3
+title: "Ginkgo"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Ginkgo"
+  description="BDD-style testing framework for Go applications"
+/>
+
+[Ginkgo](https://github.com/onsi/ginkgo) is a Behavior-Driven Development (BDD) testing framework for Go that is used in the Control Plane for writing expressive tests.
+
+<InfoSection type="info" title="Behavior-Driven Development">
+  Ginkgo encourages writing tests that describe the behavior of your application in a way that's easy to understand for both developers and non-technical stakeholders.
+</InfoSection>
+
+## Overview
+
+Ginkgo is designed to make writing and running tests productive and enjoyable. It integrates with Go's built-in testing package but offers a more expressive and feature-rich approach to testing.
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🧪 BDD-Style Tests",
+    description: "Write tests in a natural language style with Describe, Context, and It blocks."
+  },
+  {
+    title: "🔄 Nested Specs",
+    description: "Organize tests hierarchically with nested contexts and descriptions."
+  },
+  {
+    title: "⏱️ Focused Specs",
+    description: "Run specific tests with F-prefixed blocks (FDescribe, FContext, FIt)."
+  },
+  {
+    title: "⏭️ Skip Specs",
+    description: "Skip specific tests with X-prefixed blocks (XDescribe, XContext, XIt)."
+  },
+  {
+    title: "🏎️ Parallel Testing",
+    description: "Run tests in parallel for faster execution times."
+  },
+  {
+    title: "📝 Reporting",
+    description: "Generate detailed test reports with various output formats."
+  }
+]} />
+
+## Integration in the Control Plane
+
+<InfoSection type="tip" title="BDD for complex scenarios">
+  In the Control Plane, Ginkgo is particularly valuable for testing complex behaviors like API interactions and controller reconciliation loops.
+</InfoSection>
+
+The Control Plane uses Ginkgo to test complex components that benefit from the BDD approach:
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Controller Tests"
+    description={<>
+      <p>Tests for Kubernetes controllers that follow the BDD pattern:</p>
+      <ul>
+        <li>Controller initialization and setup</li>
+        <li>Resource creation and reconciliation</li>
+        <li>Error handling and edge cases</li>
+        <li>Status updates and finalizers</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Integration Tests"
+    description={<>
+      <p>Tests that verify interactions between components:</p>
+      <ul>
+        <li>API server and client communication</li>
+        <li>Service interactions and dependencies</li>
+        <li>End-to-end workflows</li>
+        <li>Cross-component behavior</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Basic Usage
+
+Ginkgo tests follow a descriptive, hierarchical structure:
+
+```go
+package controllers_test
+
+import (
+    "testing"
+
+    . "github.com/onsi/ginkgo/v2"
+    . "github.com/onsi/gomega"
+    
+    "github.com/telekom/controlplane/controllers"
+)
+
+func TestControllers(t *testing.T) {
+    RegisterFailHandler(Fail)
+    RunSpecs(t, "Controllers Suite")
+}
+
+var _ = Describe("FileManagerController", func() {
+    var controller *controllers.FileManagerController
+    
+    BeforeEach(func() {
+        controller = controllers.NewFileManagerController()
+    })
+    
+    Context("When reconciling a new FileManager resource", func() {
+        It("Should configure the S3 backend", func() {
+            // Test implementation
+            Expect(controller).NotTo(BeNil())
+        })
+        
+        It("Should update the status to Ready when successful", func() {
+            // Test implementation
+            Expect(true).To(BeTrue())
+        })
+    })
+    
+    Context("When reconciling a resource with invalid configuration", func() {
+        It("Should return an error", func() {
+            // Test implementation
+            Expect(false).To(BeFalse())
+        })
+        
+        It("Should not update the status to Ready", func() {
+            // Test implementation
+            Expect(1).To(Equal(1))
+        })
+    })
+})
+```
+
+## Advanced Features
+
+<InfoSection type="note" title="Powerful testing capabilities">
+  Ginkgo offers many advanced features that help with writing comprehensive tests for complex systems like the Control Plane.
+</InfoSection>
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="Asynchronous Testing"
+    description={<>
+      <p>Test asynchronous code with:</p>
+      <code>{`Eventually(func() int { return count }).Should(Equal(10))`}</code>
+      <p>Perfect for testing controllers that may reconcile resources asynchronously.</p>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Table-Driven Tests"
+    description={<>
+      <p>Concisely test multiple cases:</p>
+      <code>{`
+      DescribeTable("Validation",
+        func(input string, valid bool) {
+          Expect(isValid(input)).To(Equal(valid))
+        },
+        Entry("valid input", "good", true),
+        Entry("invalid input", "bad", false)
+      )
+      `}</code>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Setup & Teardown"
+    description={<>
+      <p>Hooks for test preparation:</p>
+      <ul>
+        <li>BeforeEach: Before each spec</li>
+        <li>AfterEach: After each spec</li>
+        <li>BeforeSuite: Before all specs</li>
+        <li>AfterSuite: After all specs</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Testing with Kubernetes envtest
+
+<InfoSection type="tip" title="Kubernetes integration">
+  Ginkgo works seamlessly with the Kubernetes envtest package, making it ideal for testing controllers in the Control Plane.
+</InfoSection>
+
+```go
+package controllers_test
+
+import (
+    "path/filepath"
+    "testing"
+
+    . "github.com/onsi/ginkgo/v2"
+    . "github.com/onsi/gomega"
+    "k8s.io/client-go/kubernetes/scheme"
+    "k8s.io/client-go/rest"
+    "sigs.k8s.io/controller-runtime/pkg/client"
+    "sigs.k8s.io/controller-runtime/pkg/envtest"
+    
+    myapiv1 "github.com/telekom/controlplane/api/v1"
+)
+
+var cfg *rest.Config
+var k8sClient client.Client
+var testEnv *envtest.Environment
+
+func TestControllers(t *testing.T) {
+    RegisterFailHandler(Fail)
+    RunSpecs(t, "Controller Suite")
+}
+
+var _ = BeforeSuite(func() {
+    By("bootstrapping test environment")
+    testEnv = &envtest.Environment{
+        CRDDirectoryPaths: []string{filepath.Join("..", "config", "crd", "bases")},
+    }
+
+    var err error
+    cfg, err = testEnv.Start()
+    Expect(err).NotTo(HaveOccurred())
+    Expect(cfg).NotTo(BeNil())
+
+    err = myapiv1.AddToScheme(scheme.Scheme)
+    Expect(err).NotTo(HaveOccurred())
+
+    k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+    Expect(err).NotTo(HaveOccurred())
+    Expect(k8sClient).NotTo(BeNil())
+})
+
+var _ = AfterSuite(func() {
+    By("tearing down the test environment")
+    err := testEnv.Stop()
+    Expect(err).NotTo(HaveOccurred())
+})
+
+var _ = Describe("FileManager Controller", func() {
+    // Test cases
+})
+```
+
+## Ginkgo CLI
+
+Ginkgo provides a powerful command-line interface for running tests:
+
+```bash
+# Install the Ginkgo CLI
+go install github.com/onsi/ginkgo/v2/ginkgo@latest
+
+# Run all tests in current package
+ginkgo
+
+# Run tests in watch mode (rerun on file changes)
+ginkgo watch
+
+# Run tests in specific packages
+ginkgo ./pkg/controllers/... ./pkg/apis/...
+
+# Generate test coverage report
+ginkgo -cover -coverprofile=coverage.out
+
+# Run tests in parallel
+ginkgo -p
+
+# Focus on specific tests
+ginkgo --focus "FileManager"
+
+# Skip specific tests
+ginkgo --skip "Database"
+```
+
+## Best Practices in the Control Plane
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🧩 Modular Test Structure",
+    description: "Organize tests hierarchically with Describe and Context blocks matching logical components."
+  },
+  {
+    title: "🔬 Clear Expectations",
+    description: "Write clear expectations with descriptive failure messages for easier debugging."
+  },
+  {
+    title: "♻️ Reusable Helpers",
+    description: "Create helper functions for common test setups to reduce duplication."
+  },
+  {
+    title: "🌐 Isolated Test Environments",
+    description: "Use BeforeEach and AfterEach to ensure tests start with a clean environment."
+  },
+  {
+    title: "📈 Test Coverage",
+    description: "Run tests with coverage reports to identify untested code paths."
+  },
+  {
+    title: "⚡ Fast Feedback",
+    description: "Run focused tests during development for quick feedback cycles."
+  }
+]} />
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Gomega"
+    description="The matcher/assertion library designed to work with Ginkgo."
+    linkText="View Gomega"
+    linkUrl="gomega"
+  />
+  
+  <FeatureCard
+    title="Testify"
+    description="Another testing toolkit used in the Control Plane."
+    linkText="View Testify"
+    linkUrl="testify"
+  />
+  
+  <FeatureCard
+    title="Go-Snaps"
+    description="Snapshot testing library for Go applications."
+    linkText="View Go-Snaps"
+    linkUrl="go-snaps"
+  />
+</CardGrid>
