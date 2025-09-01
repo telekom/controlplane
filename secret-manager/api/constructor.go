@@ -91,7 +91,16 @@ func New(opts ...Option) SecretManager {
 		fmt.Println("⚠️\tWarning: Using HTTP instead of HTTPS. This is not secure.")
 	}
 	skipTlsVerify := os.Getenv("SKIP_TLS_VERIFY") == "true" || options.SkipTLSVerify
-	httpClient, err := gen.NewClientWithResponses(options.URL, gen.WithHTTPClient(client.NewHttpClientOrDie(client.WithSkipTlsVerify(skipTlsVerify), client.WithCaFilepath(CaFilePath))), gen.WithRequestEditorFn(options.accessTokenReqEditor))
+	httpClient, err := gen.NewClientWithResponses(options.URL, gen.WithHTTPClient(
+		client.NewHttpClientOrDie(
+			client.WithSkipTlsVerify(skipTlsVerify),
+			client.WithCaFilepath(CaFilePath),
+			client.WithClientName("secret-manager"),
+			client.WithReplacePattern(`^\/api\/v1\/(secrets|onboarding)\/(?P<redacted>.*)$`),
+		),
+	),
+		gen.WithRequestEditorFn(options.accessTokenReqEditor),
+	)
 	if err != nil {
 		log.Fatalf("Failed to create HTTP client: %v", err)
 	}

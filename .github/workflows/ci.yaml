@@ -33,7 +33,7 @@ jobs:
       modules: ${{ steps.detect-changes.outputs.modules }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.2 # pin@v2.0.0
+        uses: actions/checkout@v5.0.0 # pin@v2.0.0
         with:
           fetch-depth: 0
       - name: Detect Changes
@@ -156,3 +156,11 @@ jobs:
       run_check_generated_files: false
       allow_tests_failure: true
       ko_build_path: "cmd/main.go"
+
+  rover-ctl:
+    name: Rover-CTL
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: rover-ctl
+      run_check_generated_files: false
+      ko_build_path: "main.go"

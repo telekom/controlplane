@@ -1,0 +1,21 @@
+# First document has no kind or apiVersion
+spec:
+  unknown: true
+---
+# Second document has kind but no apiVersion
+kind: SomeKind
+metadata:
+  name: no-api-version
+---
+# Third document has apiVersion but no kind
+apiVersion: test/v1
+metadata:
+  name: no-kind
+---
+# Fourth document is valid and should be kept
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: valid-object
+spec:
+  repository: https://github.com/example/valid-repo

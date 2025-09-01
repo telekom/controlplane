@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # pin@v2.7.0
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -129,7 +129,7 @@ jobs:
       test_reports_artifact_id: ${{ steps.upload_test_reports_artifact_step.outputs.artifact-id }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # pin@v2.7.0
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -209,7 +209,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # pin@v2.7.0
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -241,7 +241,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # pin@v2.7.0
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # pin@v2.7.0
         with:
           fetch-depth: 0 # CodeQL requires full history
 
@@ -262,7 +262,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@96f518a34f7a870018057716cc4d7a5c014bd61c # pinv3.29.10
+        uses: github/codeql-action/init@3c3833e0f8c1c83d449a7478aa59c036a9165498 # pinv3.29.11
         with:
           languages: go
           build-mode: manual # Set to manual as we provide a build step
@@ -283,7 +283,7 @@ jobs:
           fi
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@96f518a34f7a870018057716cc4d7a5c014bd61c # pinv3.29.10
+        uses: github/codeql-action/analyze@3c3833e0f8c1c83d449a7478aa59c036a9165498 # pinv3.29.11
         with:
           category: "/language:go"
 
@@ -296,7 +296,7 @@ jobs:
       image_digest: ${{ steps.build_image_ko_step.outputs.digest }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # pin@v2.7.0
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -343,6 +343,9 @@ jobs:
           fi
 
           echo "Building with tags: $effective_tags"
+          export VERSION=$(git describe --tags --always --dirty || echo 'develop')
+          export BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
           output=$(ko build ${{ inputs.ko_build_path }} --bare --tags "$effective_tags")
           echo "Ko output: $output"
           digest=$(echo "$output" | grep -o 'sha256:[a-f0-9]\{64\}')

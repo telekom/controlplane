@@ -1,0 +1,11 @@
+{
+  "kind": "Rover",
+  "apiVersion": "tcp.ei.telekom.de/v1",
+  "metadata": {
+    "name": "test-json-rover"
+  },
+  "spec": {
+    "repository": "https://github.com/example/json-repo",
+    "branch": "develop"
+  }
+}
