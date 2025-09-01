@@ -29,7 +29,7 @@ var _ = Describe("BasicAuthFeature", func() {
 	})
 
 	It("should have the correct priority", func() {
-		Expect(feature.InstanceCircuitBreakerFeature.Priority()).To(Equal(98))
+		Expect(feature.InstanceCircuitBreakerFeature.Priority()).To(Equal(99))
 	})
 
 	Context("with mocked feature builder", func() {

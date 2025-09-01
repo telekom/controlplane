@@ -22,7 +22,7 @@ import (
 
 var _ = Describe("Failover", func() {
 	It("should have the correct priority", func() {
-		Expect(feature.InstanceFailoverFeature.Priority()).To(Equal(feature.InstanceLastMileSecurityFeature.Priority() - 1))
+		Expect(feature.InstanceFailoverFeature.Priority()).To(Equal(feature.InstanceCircuitBreakerFeature.Priority() - 1))
 	})
 
 	Context("Correctly configure failover", func() {
@@ -136,7 +136,7 @@ var _ = Describe("Failover", func() {
 		})
 
 		It("should have the correct priority", func() {
-			Expect(feature.InstanceFailoverFeature.Priority()).To(Equal(feature.InstanceLastMileSecurityFeature.Priority() - 1))
+			Expect(feature.InstanceFailoverFeature.Priority()).To(Equal(feature.InstanceCircuitBreakerFeature.Priority() - 1))
 		})
 
 		It("should apply failover feature when it is used", func() {
@@ -253,7 +253,7 @@ var _ = Describe("Failover", func() {
 		})
 
 		It("should have the correct priority", func() {
-			Expect(feature.InstanceFailoverFeature.Priority()).To(Equal(feature.InstanceLastMileSecurityFeature.Priority() - 1))
+			Expect(feature.InstanceFailoverFeature.Priority()).To(Equal(feature.InstanceCircuitBreakerFeature.Priority() - 1))
 		})
 
 		It("should apply failover feature when it is used", func() {

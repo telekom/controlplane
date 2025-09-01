@@ -24,7 +24,7 @@ type CircuitBreakerFeature struct {
 }
 
 var InstanceCircuitBreakerFeature = &CircuitBreakerFeature{
-	priority: InstanceFailoverFeature.priority - 1,
+	priority: InstanceLastMileSecurityFeature.priority - 1,
 }
 
 func (c CircuitBreakerFeature) Name() gatewayv1.FeatureType {
@@ -40,6 +40,10 @@ func (c CircuitBreakerFeature) IsUsed(ctx context.Context, builder features.Feat
 	route, ok := builder.GetRoute()
 	if !ok {
 		// assume that CB is not used if there is no route
+		return false
+	}
+
+	if route.IsProxy() {
 		return false
 	}
 
