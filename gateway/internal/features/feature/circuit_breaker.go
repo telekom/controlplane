@@ -74,7 +74,12 @@ func (c CircuitBreakerFeature) Apply(ctx context.Context, builder features.Featu
 	kongAdminApi := kongClient.GetKongAdminApi()
 
 	// ! important - if CB is enabled then the kong service value needs to reference the kong upstream (same name as route name)
-	builder.SetUpstream(&client.CustomUpstream{Host: routeName})
+	builder.SetUpstream(&client.CustomUpstream{
+		Scheme: "http",
+		Host:   routeName,
+		Port:   8080,
+		Path:   "/proxy",
+	})
 
 	upstreamAlgorithm := kong.RoundRobin
 	passiveHealthcheckType := kong.CreateUpstreamRequestHealthchecksPassiveTypeHttp

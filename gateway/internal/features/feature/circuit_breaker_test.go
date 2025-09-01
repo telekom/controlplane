@@ -174,7 +174,10 @@ var _ = Describe("BasicAuthFeature", func() {
 				Expect(err).Should(Not(HaveOccurred()))
 				// pointer vs non-pointer
 				Expect(*setUpstreamArg).To(BeEquivalentTo(client.CustomUpstream{
-					Host: "test-route-name",
+					Scheme: "http",
+					Host:   "test-route-name",
+					Port:   8080,
+					Path:   "/proxy",
 				}))
 
 				Expect(upsertUpstreamWithResponse_upstreamNameArg).To(Equal("test-route-name"))
