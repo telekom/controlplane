@@ -11,19 +11,19 @@ require (
 	github.com/go-logr/zapr v1.3.0
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/goccy/go-yaml v1.18.0
-	github.com/onsi/ginkgo/v2 v2.25.0
-	github.com/onsi/gomega v1.38.0
-	github.com/pb33f/libopenapi v0.25.3
+	github.com/onsi/ginkgo/v2 v2.25.2
+	github.com/onsi/gomega v1.38.2
+	github.com/pb33f/libopenapi v0.25.9
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.27.0
 	golang.org/x/oauth2 v0.30.0
 )
 
 require (
-	github.com/Masterminds/semver/v3 v3.3.1 // indirect
+	github.com/Masterminds/semver/v3 v3.4.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/chigopher/pathlib v0.19.1 // indirect
@@ -59,9 +59,10 @@ require (
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/vektra/mockery/v2 v2.53.4 // indirect
+	github.com/vektra/mockery/v2 v2.53.5 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/mod v0.27.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
