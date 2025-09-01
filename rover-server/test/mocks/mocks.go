@@ -13,12 +13,14 @@ import (
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	"gopkg.in/yaml.v3"
 
 	"github.com/telekom/controlplane/rover-server/test/mocks/data"
 )
 
 const (
 	ApiSpecificationFileName = "apiSpecification.json"
+	OpenApiFileName          = "openapi.yaml"
 	apiSubscriptionFileName  = "apiSubscription.json"
 	apiExposureFileName      = "apiExposure.json"
 	applicationFileName      = "application.json"
@@ -78,4 +80,13 @@ func GetApiSpecification(testing ginkgo.FullGinkgoTInterface, filePath string) *
 	require.NoError(testing, err)
 
 	return &apiSpecification
+}
+
+func GetOpenApi(testing ginkgo.FullGinkgoTInterface, filePath string) *map[string]any {
+	file := data.ReadFile(testing, filePath)
+	var openapi map[string]any
+	err := yaml.Unmarshal(file, &openapi)
+	require.NoError(testing, err)
+
+	return &openapi
 }

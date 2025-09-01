@@ -5,12 +5,12 @@
 package api
 
 type FileUploadResponse struct {
-	CRC64NVMEHash string
-	FileId        string
-	ContentType   string
+	FileHash    string
+	FileId      string
+	ContentType string
 }
 
 type FileDownloadResponse struct {
-	CRC64NVMEHash string
-	ContentType   string
+	FileHash    string
+	ContentType string
 }
