@@ -4,6 +4,7 @@
 
 package file
 
+// TODO: Check if this should be moved to the file-manager/api package
 import (
 	"sync"
 
