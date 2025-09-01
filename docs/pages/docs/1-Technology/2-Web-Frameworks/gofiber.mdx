@@ -56,119 +56,17 @@ The Control Plane uses Gofiber v2.52.8 as its primary HTTP framework, particular
   }
 ]} />
 
-## Basic Usage Example
-
-Here's a simplified example of how Gofiber is used in the Control Plane:
-
-```go
-func setupRoutes(app *fiber.App, controller *Controller) {
-    // Group API routes
-    api := app.Group("/api/v1")
-    
-    // Apply middleware to all routes in this group
-    api.Use(middleware.JWT())
-    api.Use(middleware.Logger())
-    
-    // Define routes
-    api.Get("/files/:id", controller.GetFile)
-    api.Put("/files/:id", controller.UploadFile)
-}
-
-// Handler function
-func (c *Controller) GetFile(ctx *fiber.Ctx) error {
-    fileID := ctx.Params("id")
-    
-    file, err := c.service.GetFile(ctx.Context(), fileID)
-    if err != nil {
-        return fiber.NewError(fiber.StatusNotFound, "File not found")
-    }
-    
-    return ctx.Send(file)
-}
-```
-
 <InfoSection type="tip" title="Routing best practices">
   Group related endpoints under a common prefix and apply shared middleware to route groups rather than individual routes. This keeps your code DRY and makes middleware management more maintainable.
 </InfoSection>
 
-## Gofiber Architecture in Control Plane
 
-<CardGrid columns={2}>
-  <FeatureCard
-    title="API Layer"
-    description={
-      <>
-        <p>The Control Plane API layer uses Gofiber to:</p>
-        <ul>
-          <li>Define RESTful API endpoints</li>
-          <li>Handle HTTP requests and responses</li>
-          <li>Apply cross-cutting concerns via middleware</li>
-          <li>Validate request payloads</li>
-          <li>Handle content negotiation</li>
-        </ul>
-      </>
-    }
-  />
-  
-  <FeatureCard
-    title="Controller Layer"
-    description={
-      <>
-        <p>Controllers in the Control Plane:</p>
-        <ul>
-          <li>Map HTTP requests to business logic</li>
-          <li>Handle parameter extraction and validation</li>
-          <li>Manage request/response serialization</li>
-          <li>Implement proper error handling</li>
-          <li>Apply resource-specific authorization</li>
-        </ul>
-      </>
-    }
-  />
-</CardGrid>
-
-```mermaid
-graph TD
-    Client[Client] --> Router[Gofiber Router]
-    Router --> Middleware1[JWT Middleware]
-    Middleware1 --> Middleware2[Logger Middleware]
-    Middleware2 --> Handler[Route Handler]
-    Handler --> Controller[Controller]
-    Controller --> Service[Business Service]
-    Service --> Backend[Backend Implementation]
-    
-    classDef fiberLayer fill:#E20074,color:#ffffff,stroke:#E20074
-    classDef businessLayer fill:#00ADD8,color:#ffffff,stroke:#00ADD8
-    
-    class Router,Middleware1,Middleware2,Handler fiberLayer
-    class Controller,Service,Backend businessLayer
-```
 
 ## JWT Authentication
 
 <InfoSection type="note" title="Secure by default">
   All API endpoints in the Control Plane are secured by JWT authentication middleware by default, with specific public routes explicitly marked as unauthenticated.
 </InfoSection>
-
-The Control Plane uses Gofiber's JWT middleware for authentication:
-
-```go
-import "github.com/gofiber/contrib/jwt"
-
-func setupAuth(app *fiber.App) {
-    app.Use(jwt.New(jwt.Config{
-        SigningKey:    []byte(os.Getenv("JWT_SECRET")),
-        ErrorHandler: jwtError,
-    }))
-}
-
-func jwtError(c *fiber.Ctx, err error) error {
-    return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-        "error": "Unauthorized",
-        "message": "Invalid or expired JWT",
-    })
-}
-```
 
 ## Custom Middleware
 
@@ -197,82 +95,11 @@ The project includes several custom middleware components built on Gofiber:
   }
 ]} />
 
-### Example: Custom Logger Middleware
-
-```go
-func Logger() fiber.Handler {
-    return func(c *fiber.Ctx) error {
-        start := time.Now()
-        
-        // Get request ID or generate new one
-        requestID := c.Get("X-Request-ID")
-        if requestID == "" {
-            requestID = uuid.New().String()
-            c.Set("X-Request-ID", requestID)
-        }
-        
-        // Store in context
-        ctx := context.WithValue(c.Context(), "requestID", requestID)
-        c.SetUserContext(ctx)
-        
-        // Process request
-        err := c.Next()
-        
-        // Log after completion
-        latency := time.Since(start)
-        status := c.Response().StatusCode()
-        
-        logger.With(
-            "request_id", requestID,
-            "method", c.Method(),
-            "path", c.Path(),
-            "status", status,
-            "latency_ms", latency.Milliseconds(),
-            "ip", c.IP(),
-            "user_agent", c.Get("User-Agent"),
-        ).Info("request completed")
-        
-        return err
-    }
-}
-```
-
 ## Integration with OpenAPI
 
 <InfoSection type="tip" title="Code generation">
   The Control Plane uses OpenAPI specifications to generate server stubs, ensuring API documentation and implementation are always in sync.
 </InfoSection>
-
-The Gofiber routes are generated from OpenAPI specifications using code generators:
-
-```go
-// Generated server from OpenAPI spec
-func RegisterHandlers(app *fiber.App, si ServerInterface) {
-    app.Get("/v1/files/:fileId", func(c *fiber.Ctx) error {
-        var err error
-        
-        // Parameter bindings
-        var fileId string
-        fileId = c.Params("fileId")
-        
-        // Call handler function
-        err = si.DownloadFile(c, fileId)
-        return err
-    })
-    
-    app.Put("/v1/files/:fileId", func(c *fiber.Ctx) error {
-        var err error
-        
-        // Parameter bindings
-        var fileId string
-        fileId = c.Params("fileId")
-        
-        // Call handler function
-        err = si.UploadFile(c, fileId)
-        return err
-    })
-}
-```
 
 ## Error Handling
 
@@ -280,51 +107,8 @@ func RegisterHandlers(app *fiber.App, si ServerInterface) {
   Always use Gofiber's structured error handling to ensure consistent error responses across all APIs. This improves client experience and debuggability.
 </InfoSection>
 
-Gofiber provides a standardized way to handle errors:
-
-```go
-func errorHandler(ctx *fiber.Ctx, err error) error {
-    // Default 500 status code
-    code := fiber.StatusInternalServerError
-    
-    // Check if it's a fiber error
-    if e, ok := err.(*fiber.Error); ok {
-        code = e.Code
-    }
-    
-    // Format as API Problem (RFC 7807)
-    problem := &Problem{
-        Type:   "https://example.org/problems/general-error",
-        Title:  "An error occurred",
-        Status: code,
-        Detail: err.Error(),
-    }
-    
-    return ctx.Status(code).JSON(problem)
-}
-```
 
 ## Performance Configurations
-
-The Gofiber framework is configured for optimal performance:
-
-```go
-app := fiber.New(fiber.Config{
-    // Pre-allocate memory for the server
-    Prefork:               false,
-    ServerHeader:          "Controlplane",
-    StrictRouting:         true,
-    CaseSensitive:         true,
-    DisableStartupMessage: true,
-    
-    // JSON Configuration
-    JSONEncoder: json.Marshal,
-    JSONDecoder: json.Unmarshal,
-    
-    // Error Handler
-    ErrorHandler: errorHandler,
-})
-```
 
 <CardGrid columns={2}>
   <FeatureCard

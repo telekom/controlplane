@@ -64,7 +64,7 @@ import NoAutoTitle from '@site/src/components/NoAutoTitle';
     title="Infrastructure"
     description="Tools and platforms for deploying, managing, and scaling the Control Plane."
     linkText="View Infrastructure"
-    linkUrl="Infrastructure/kubernetes"
+    linkUrl="Infrastructure/kustomize"
   />
   
   <FeatureCard
@@ -191,11 +191,11 @@ The controlplane repository is organized into several key components:
   },
   {
     title: "🏗️ Framework",
-    description: "Kubernetes Operator pattern with controller-runtime for extending Kubernetes functionality with custom resources and controllers."
+    description: "Kubernetes Operator pattern with Kubebuilder for extending Kubernetes functionality with custom resources and controllers."
   },
   {
     title: "🌐 Web",
-    description: "Gofiber HTTP framework - a fast, lightweight framework for building web services with minimal overhead."
+    description: "Gofiber HTTP framework with OAPI-Codegen for type-safe OpenAPI-driven development of web services."
   },
   {
     title: "💾 Storage",
@@ -207,45 +207,17 @@ The controlplane repository is organized into several key components:
   },
   {
     title: "🧪 Testing",
-    description: "Testify for assertions and Mockery for mock generation, ensuring code reliability through comprehensive testing."
+    description: "Comprehensive testing suite with Testify, Ginkgo, Gomega, and Go-Snaps for BDD-style testing and snapshot verification."
   },
   {
     title: "🚀 Deployment",
-    description: "Kubernetes and Helm charts for containerized deployment, providing scalable and consistent environments."
+    description: "Kubernetes with Kustomize and Helm charts for containerized deployment, providing scalable and consistent environments."
+  },
+  {
+    title: "⚙️ Configuration",
+    description: "Cobra and Viper for powerful CLI applications and sophisticated configuration management across all components."
   }
 ]} />
-
-## Technology Integration
-
-The diagram below illustrates how different technologies interact within the Control Plane architecture:
-
-```mermaid
-graph TD
-    Go[Go Language] --> K8s[Kubernetes]
-    Go --> Fiber[Gofiber]
-    Go --> Minio[MinIO S3]
-    Go --> CtrlRuntime[controller-runtime]
-    
-    Fiber --> OpenAPI[OpenAPI/Swagger]
-    Fiber --> JWT[JWT Auth]
-    
-    CtrlRuntime --> CustomResources[Custom Resources]
-    CtrlRuntime --> Reconcilers[Reconciliation Loops]
-    
-    CustomResources --> K8s
-    Reconcilers --> K8s
-    
-    K8s --> Helm[Helm Charts]
-    K8s --> Prometheus[Prometheus]
-    
-    classDef lang fill:#00ADD8,color:#ffffff,stroke:#00ADD8
-    classDef framework fill:#E20074,color:#ffffff,stroke:#E20074
-    classDef infra fill:#2C3E50,color:#ffffff,stroke:#2C3E50
-    
-    class Go lang
-    class Fiber,CtrlRuntime,OpenAPI,JWT,Minio framework
-    class K8s,Helm,Prometheus,CustomResources,Reconcilers infra
-```
 
 ## Presentation
 

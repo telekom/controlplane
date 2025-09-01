@@ -118,69 +118,7 @@ The Control Plane uses Go-Snaps for testing various components:
 
 ## Basic Usage
 
-Go-Snaps can be used with the standard Go testing package or with BDD frameworks like Ginkgo:
-
-```go
-package example_test
-
-import (
-    "testing"
-    
-    "github.com/gkampitakis/go-snaps/snaps"
-)
-
-func TestAPIResponse(t *testing.T) {
-    // Set up test
-    api := NewAPI()
-    
-    // Get actual response
-    response := api.GetUserData(123)
-    
-    // Compare with snapshot
-    snaps.MatchJSON(t, response)
-}
-
-func TestTemplateRendering(t *testing.T) {
-    // Set up test
-    templateData := map[string]string{
-        "Name": "test-service",
-        "Namespace": "default",
-        "Replicas": "3",
-    }
-    
-    // Render template
-    output := RenderTemplate("deployment.yaml", templateData)
-    
-    // Compare with snapshot
-    snaps.MatchYAML(t, output)
-}
-```
-
-### With Ginkgo and Gomega
-
-```go
-package example_test
-
-import (
-    . "github.com/onsi/ginkgo/v2"
-    . "github.com/onsi/gomega"
-    "github.com/gkampitakis/go-snaps/snaps"
-)
-
-var _ = Describe("Template Renderer", func() {
-    It("should render deployment template correctly", func() {
-        templateData := map[string]string{
-            "Name": "test-service",
-            "Namespace": "default",
-            "Replicas": "3",
-        }
-        
-        output := RenderTemplate("deployment.yaml", templateData)
-        
-        snaps.MatchYAML(GinkgoT(), output)
-    })
-})
-```
+Go-Snaps can be used with the standard Go testing package or with BDD frameworks like Ginkgo.
 
 ## Snapshot Storage
 
@@ -198,31 +136,7 @@ pkg/controller/
   └── controller.go
 ```
 
-Snapshots are stored in a readable format:
-
-```
-/* Test case: 'TestController/should_generate_valid_deployment' */
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: test-service
-  namespace: default
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: test-service
-  template:
-    metadata:
-      labels:
-        app: test-service
-    spec:
-      containers:
-      - name: test-service
-        image: nginx:latest
-        ports:
-        - containerPort: 80
-```
+Snapshots are stored in a readable format.
 
 ## Supported Formats
 
@@ -262,75 +176,22 @@ spec:
 <CardGrid columns={2}>
   <FeatureCard
     title="Custom Serializers"
-    description={<>
-      <p>Define custom serialization for complex types:</p>
-      <code>
-      type MyStruct struct &#123;<br/>
-        ID string<br/>
-        CreatedAt time.Time<br/>
-      &#125;<br/>
-      <br/>
-      // Register custom serializer<br/>
-      snaps.AddSerializer(<br/>
-        func(v any) (any, error) &#123;<br/>
-          if s, ok := v.(MyStruct); ok &#123;<br/>
-            return map[string]string&#123;<br/>
-              "ID": s.ID,<br/>
-              "CreatedAt": "NORMALIZED_TIME",<br/>
-            &#125;, nil<br/>
-          &#125;<br/>
-          return v, nil<br/>
-        &#125;<br/>
-      )
-      </code>
-    </>}
+    description="Define custom serialization for complex types"
   />
   
   <FeatureCard
     title="Update Mode"
-    description={<>
-      <p>Update snapshots when behavior changes:</p>
-      <code>
-      // Run tests with update flag<br/>
-      GO_SNAPS=update go test ./...<br/>
-      <br/>
-      // Or update specific tests<br/>
-      GO_SNAPS=update go test ./pkg/controller -run TestDeployment
-      </code>
-      <p>This is useful when you intentionally change behavior and need to update snapshots.</p>
-    </>}
+    description="Update snapshots when behavior changes"
   />
   
   <FeatureCard
     title="Exclusion Paths"
-    description={<>
-      <p>Exclude dynamic fields from comparison:</p>
-      <code>
-      snaps.MatchJSONWithOptions(t, response, snaps.SnapshotOptions&#123;<br/>
-        ExcludePaths: []string&#123;<br/>
-          "$.metadata.creationTimestamp",<br/>
-          "$.status.observedGeneration",<br/>
-        &#125;,<br/>
-      &#125;)
-      </code>
-    </>}
+    description="Exclude dynamic fields from comparison"
   />
   
   <FeatureCard
     title="Inline Snapshots"
-    description={<>
-      <p>Store small snapshots directly in test files:</p>
-      <code>
-      func TestSmallResponse(t *testing.T) &#123;<br/>
-        response := GetSimpleResponse()<br/>
-        <br/>
-        snaps.MatchInline(t, response, `&#123;<br/>
-          "status": "success",<br/>
-          "message": "Operation completed"<br/>
-        &#125;`)
-      &#125;
-      </code>
-    </>}
+    description="Store small snapshots directly in test files"
   />
 </CardGrid>
 

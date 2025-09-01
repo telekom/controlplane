@@ -52,110 +52,6 @@ The Control Plane is primarily implemented in Go version 1.24.4, taking advantag
   }
 ]} />
 
-## Key Go Patterns Used
-
-<InfoSection type="tip" title="Idiomatic Go">
-  The Control Plane follows idiomatic Go patterns to ensure maintainable, readable, and efficient code.
-</InfoSection>
-
-### Context Propagation
-
-The Control Plane extensively uses Go's context package for propagating deadlines, cancellation signals, and request-scoped values.
-
-```go
-func (c *Controller) ProcessFile(ctx context.Context, fileID string) error {
-    // Context is passed through the call stack
-    logger := log.FromContext(ctx).WithValues("fileID", fileID)
-    
-    // Create child context with timeout
-    ctxWithTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
-    defer cancel()
-    
-    return c.backend.ProcessFile(ctxWithTimeout, fileID)
-}
-```
-
-<InfoSection type="note" title="Context best practices">
-  Always pass context as the first parameter and ensure proper cancellation to prevent resource leaks. Use context values sparingly and only for request-scoped data that crosses API boundaries.
-</InfoSection>
-
-### Error Handling
-
-We follow idiomatic Go error handling patterns:
-
-```go
-func (s *service) UploadFile(ctx context.Context, fileID string, content []byte) error {
-    if fileID == "" {
-        return errors.New("fileID cannot be empty")
-    }
-    
-    err := s.validateFileContent(content)
-    if err != nil {
-        return fmt.Errorf("invalid file content: %w", err)
-    }
-    
-    return s.storage.Store(ctx, fileID, content)
-}
-```
-
-<InfoSection type="warning" title="Error wrapping">
-  Use error wrapping with %w to maintain error context while allowing error checks with errors.Is() and errors.As(). This preserves the error chain for better diagnostics.
-</InfoSection>
-
-### Interfaces
-
-Interfaces are defined by consumers rather than implementers, following Go's interface philosophy:
-
-```go
-// Defined by the consumer
-type FileStorage interface {
-    Store(ctx context.Context, id string, content []byte) error
-    Retrieve(ctx context.Context, id string) ([]byte, error)
-}
-
-// Implemented elsewhere
-type S3Storage struct {
-    client *minio.Client
-    bucket string
-}
-
-func (s *S3Storage) Store(ctx context.Context, id string, content []byte) error {
-    // Implementation
-}
-```
-
-<CardGrid columns={2}>
-  <FeatureCard
-    title="Interface Design Philosophy"
-    description={
-      <>
-        <p>In Go, interfaces are designed to be:</p>
-        <ul>
-          <li><strong>Small</strong> - Focused on specific behavior</li>
-          <li><strong>Composable</strong> - Can be combined to form more complex behaviors</li>
-          <li><strong>Consumer-defined</strong> - Created by the code that uses them</li>
-        </ul>
-        <p>This approach leads to more maintainable and flexible code.</p>
-      </>
-    }
-  />
-  
-  <FeatureCard
-    title="Interface Implementation Pattern"
-    description={
-      <>
-        <p>The Control Plane follows these interface implementation patterns:</p>
-        <ul>
-          <li>Define interfaces in the package that uses them</li>
-          <li>Keep interfaces small and focused on specific behavior</li>
-          <li>Use interface composition for complex behaviors</li>
-          <li>Create mock implementations for testing</li>
-        </ul>
-      </>
-    }
-  />
-</CardGrid>
-
 ## Go Modules and Dependencies
 
 The Control Plane uses Go modules for dependency management. Key dependencies include:
@@ -163,24 +59,6 @@ The Control Plane uses Go modules for dependency management. Key dependencies in
 <InfoSection type="note" title="Dependency management">
   All dependencies are versioned and tracked in go.mod files, ensuring reproducible builds and controlled updates.
 </InfoSection>
-
-```mermaid
-graph TD
-    CP[Control Plane] --> CR[controller-runtime]
-    CP --> Fiber[gofiber]
-    CP --> Minio[minio-go]
-    CP --> Testify[testify]
-    CP --> Zap[zap]
-    
-    CR --> K8sClient[k8s.io/client-go]
-    Fiber --> FastHTTP[valyala/fasthttp]
-    
-    classDef primary fill:#00ADD8,color:#ffffff,stroke:#00ADD8
-    classDef secondary fill:#E20074,color:#ffffff,stroke:#E20074
-    
-    class CP,CR,Fiber,Minio,Testify,Zap primary
-    class K8sClient,FastHTTP secondary
-```
 
 ### Key Dependencies
 
@@ -194,16 +72,44 @@ graph TD
     description: "Fast HTTP framework used for building API servers and web services with minimal overhead and maximum performance."
   },
   {
+    title: "github.com/deepmap/oapi-codegen",
+    description: "OpenAPI code generator that creates type-safe Go code from OpenAPI 3 specifications for server and client implementations."
+  },
+  {
     title: "github.com/minio/minio-go/v7",
     description: "S3-compatible storage client for interfacing with object storage systems, used primarily in the file-manager component."
+  },
+  {
+    title: "github.com/spf13/cobra",
+    description: "CLI framework for creating powerful command-line interfaces with nested commands, flags, and documentation."
+  },
+  {
+    title: "github.com/spf13/viper",
+    description: "Configuration management library supporting multiple formats, environment variables, and dynamic reloading."
   },
   {
     title: "github.com/stretchr/testify",
     description: "Testing utilities that simplify writing assertions, mocks, and test suites for comprehensive test coverage."
   },
   {
+    title: "github.com/onsi/ginkgo/v2",
+    description: "BDD-style testing framework for writing expressive tests with a focus on readability and organization."
+  },
+  {
+    title: "github.com/onsi/gomega",
+    description: "Matcher/assertion library that pairs with Ginkgo to provide expressive, fluent assertions and asynchronous testing capabilities."
+  },
+  {
+    title: "github.com/gkampitakis/go-snaps",
+    description: "Snapshot testing library for capturing complex outputs and comparing them against saved references."
+  },
+  {
     title: "go.uber.org/zap",
     description: "Structured logging library that provides fast, leveled, structured logging with minimal allocations."
+  },
+  {
+    title: "sigs.k8s.io/kustomize/api",
+    description: "Kubernetes native configuration management library for customizing manifests without templates."
   }
 ]} />
 

@@ -62,29 +62,8 @@ MinIO is a high-performance, S3-compatible object storage system. The file-manag
 
 ## Integration Architecture
 
-The file-manager component follows a clean separation of concerns with well-defined interfaces between layers:
-
-```mermaid
-flowchart TD
-    API[API Layer] --> Controller
-    Controller[Controller Layer] --> Backend
-    Backend[Backend Layer] --> S3[S3 Implementation]
-    S3 --> MinioClient[MinIO Client]
-    MinioClient --> ObjectStorage[(Object Storage)]
-    
-    classDef apiLayer fill:#E20074,color:#ffffff,stroke:#E20074
-    classDef controllerLayer fill:#f9f9f9,color:#333,stroke:#ccc
-    classDef backendLayer fill:#00ADD8,color:#ffffff,stroke:#00ADD8
-    classDef storageLayer fill:#2C3E50,color:#ffffff,stroke:#2C3E50
-    
-    class API apiLayer
-    class Controller controllerLayer
-    class Backend,S3,MinioClient backendLayer
-    class ObjectStorage storageLayer
-```
-
 <InfoSection type="tip" title="Clean architecture">
-  This layered approach ensures that the file-manager component can be easily extended to support other storage backends in the future by implementing the same interfaces.
+  The layered approach ensures that the file-manager component can be easily extended to support other storage backends in the future by implementing the same interfaces.
 </InfoSection>
 
 ## Backend Interface
@@ -114,151 +93,21 @@ flowchart TD
         <ul>
           <li><strong>FileUploader</strong>: For file upload operations</li>
           <li><strong>FileDownloader</strong>: For file retrieval operations</li>
-          <li><strong>FileDeleter</strong>: For file removal operations</li>
-          <li><strong>FileLister</strong>: For listing available files</li>
-          <li><strong>FileMetadata</strong>: For managing file metadata</li>
         </ul>
       </>
     }
   />
 </CardGrid>
 
-The file-manager defines abstract interfaces for file operations:
-
-```go
-// pkg/backend/interface.go
-type FileUploader interface {
-    UploadFile(ctx context.Context, fileID string, file io.Reader) error
-}
-
-type FileDownloader interface {
-    DownloadFile(ctx context.Context, fileID string) (io.ReadCloser, error)
-}
-```
-
 <InfoSection type="note" title="Interface segregation">
   Following the Interface Segregation Principle, the file-manager splits functionality into focused interfaces rather than a single monolithic one. This allows components to depend only on the functionality they need.
 </InfoSection>
-
-## MinIO Implementation
-
-The S3 backend implementation uses the MinIO client to fulfill these interfaces:
-
-```go
-// pkg/backend/s3/minio_wrapper.go
-type MinioWrapper struct {
-    client    *minio.Client
-    bucket    string
-    logger    logr.Logger
-}
-
-func NewMinioWrapper(endpoint, accessKey, secretKey, bucket string, useSSL bool) (*MinioWrapper, error) {
-    // Initialize MinIO client
-    client, err := minio.New(endpoint, &minio.Options{
-        Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
-        Secure: useSSL,
-    })
-    if err != nil {
-        return nil, err
-    }
-
-    return &MinioWrapper{
-        client: client,
-        bucket: bucket,
-        logger: log.WithName("minio-wrapper"),
-    }, nil
-}
-```
-
-### File Upload Implementation
-
-<InfoSection type="tip" title="Error handling">
-  Note the careful error wrapping to preserve context while providing detailed error information. This is an important pattern throughout the codebase.
-</InfoSection>
-
-```go
-// pkg/backend/s3/file_uploader.go
-func (m *MinioWrapper) UploadFile(ctx context.Context, fileID string, file io.Reader) error {
-    // Get file size and create options
-    options := minio.PutObjectOptions{
-        ContentType: "application/octet-stream",
-    }
-
-    // Check if bucket exists and create it if needed
-    exists, err := m.client.BucketExists(ctx, m.bucket)
-    if err != nil {
-        return fmt.Errorf("failed to check bucket existence: %w", err)
-    }
-    
-    if !exists {
-        err = m.client.MakeBucket(ctx, m.bucket, minio.MakeBucketOptions{})
-        if err != nil {
-            return fmt.Errorf("failed to create bucket: %w", err)
-        }
-    }
-
-    // Upload the file
-    _, err = m.client.PutObject(ctx, m.bucket, fileID, file, -1, options)
-    if err != nil {
-        return fmt.Errorf("failed to upload file: %w", err)
-    }
-
-    return nil
-}
-```
-
-### File Download Implementation
-
-```go
-// pkg/backend/s3/file_downloader.go
-func (m *MinioWrapper) DownloadFile(ctx context.Context, fileID string) (io.ReadCloser, error) {
-    // Check if object exists
-    _, err := m.client.StatObject(ctx, m.bucket, fileID, minio.StatObjectOptions{})
-    if err != nil {
-        return nil, fmt.Errorf("file not found: %w", err)
-    }
-
-    // Get object
-    obj, err := m.client.GetObject(ctx, m.bucket, fileID, minio.GetObjectOptions{})
-    if err != nil {
-        return nil, fmt.Errorf("failed to get file: %w", err)
-    }
-
-    return obj, nil
-}
-```
 
 ## File Identifiers
 
 <InfoSection type="note" title="Structured file IDs">
   The file-manager uses a structured approach for file identifiers that incorporates environment, group, team, and filename to ensure proper organization and access control.
 </InfoSection>
-
-The file-manager uses a structured approach for file identifiers:
-
-```go
-// pkg/backend/identifier/fileid_parser.go
-type FileId struct {
-    Environment string
-    Group       string
-    Team        string
-    FileName    string
-}
-
-func ParseFileId(fileId string) (FileId, error) {
-    parts := strings.Split(fileId, "--")
-    if len(parts) != 4 {
-        return FileId{}, errors.New("invalid file id format")
-    }
-
-    return FileId{
-        Environment: parts[0],
-        Group:       parts[1],
-        Team:        parts[2],
-        FileName:    parts[3],
-    }, nil
-}
-```
 
 ### File ID Structure Example
 
@@ -291,20 +140,6 @@ func ParseFileId(fileId string) (FileId, error) {
 <InfoSection type="warning" title="Data integrity">
   Checksum validation is critical for ensuring file integrity throughout the upload and download process. Always verify file checksums when handling user uploads.
 </InfoSection>
-
-The file-manager uses CRC64 checksum validation to ensure file integrity:
-
-```go
-// api/copy_hash.go
-func CalculateChecksum(reader io.Reader) (string, error) {
-    hasher := crc64nvme.New()
-    if _, err := io.Copy(hasher, reader); err != nil {
-        return "", err
-    }
-    
-    return strconv.FormatUint(hasher.Sum64(), 16), nil
-}
-```
 
 ## Security Considerations
 
@@ -354,44 +189,6 @@ s3:
 <InfoSection type="tip" title="Kubernetes integration">
   In a Kubernetes environment, the MinIO credentials are typically stored in a Secret and injected as environment variables.
 </InfoSection>
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: minio-credentials
-type: Opaque
-data:
-  accessKey: base64-encoded-access-key
-  secretKey: base64-encoded-secret-key
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: file-manager
-spec:
-  template:
-    spec:
-      containers:
-      - name: file-manager
-        env:
-        - name: S3_ENDPOINT
-          value: "minio.storage.svc.cluster.local:9000"
-        - name: S3_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: minio-credentials
-              key: accessKey
-        - name: S3_SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: minio-credentials
-              key: secretKey
-        - name: S3_BUCKET
-          value: "file-manager"
-        - name: S3_USE_SSL
-          value: "true"
-```
 
 ## Advanced Features
 

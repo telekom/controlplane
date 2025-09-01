@@ -104,30 +104,6 @@ Zap is a fast, structured logging library for Go, designed with performance in m
   The Control Plane integrates Zap with Kubernetes' logging abstractions through the logr interface, enabling seamless integration with controller-runtime and other Kubernetes libraries.
 </InfoSection>
 
-The Control Plane integrates Zap with the Kubernetes [logr](https://github.com/go-logr/logr) interface using [zapr](https://github.com/go-logr/zapr):
-
-```go
-import (
-	"go.uber.org/zap"
-	"github.com/go-logr/zapr"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-)
-
-func SetupLogging() {
-	// Create a Zap logger
-	zapLog, err := zap.NewProduction()
-	if err != nil {
-		panic(fmt.Sprintf("Failed to init zap logger: %v", err))
-	}
-	defer zapLog.Sync()
-	
-	// Use zapr to convert the Zap logger to a logr.Logger
-	logger := zapr.NewLogger(zapLog)
-	
-	// Set the logr.Logger as the global logger
-	log.SetLogger(logger)
-}
-```
 
 ### Logging Architecture
 
@@ -135,27 +111,6 @@ func SetupLogging() {
   The Control Plane implements a consistent logging architecture from application code through to log aggregation and analysis.
 </InfoSection>
 
-```mermaid
-graph LR
-    A[Application Code] --> B[Zap Logger]
-    B --> C[zapr Adapter]
-    C --> D[logr Interface]
-    D --> E[Controller Runtime]
-    B --> F[JSON Output]
-    F --> G[Fluent Bit]
-    G --> H[Elasticsearch]
-    H --> I[Kibana]
-    
-    classDef app fill:#E20074,color:#ffffff,stroke:#E20074
-    classDef log fill:#00ADD8,color:#ffffff,stroke:#00ADD8
-    classDef infra fill:#2C3E50,color:#ffffff,stroke:#2C3E50
-    classDef viz fill:#f9f9f9,color:#333,stroke:#ccc
-    
-    class A app
-    class B,C,D,E log
-    class F,G,H infra
-    class I viz
-```
 
 ## Log Levels
 
@@ -163,84 +118,6 @@ graph LR
   The Control Plane uses different log levels for different environments, balancing verbosity with performance needs.
 </InfoSection>
 
-The Control Plane uses different log levels for different environments:
-
-<CardGrid columns={3}>
-  <FeatureCard
-    title="Production"
-    description={
-      <>
-        <p><strong>Info level and above</strong></p>
-        <ul>
-          <li>Info: Normal operations</li>
-          <li>Warn: Potential issues</li>
-          <li>Error: Failures requiring attention</li>
-          <li>DPanic: Critical errors in development</li>
-          <li>Panic: Critical errors that log and panic</li>
-          <li>Fatal: Critical errors that log and exit</li>
-        </ul>
-      </>
-    }
-  />
-  
-  <FeatureCard
-    title="Development"
-    description={
-      <>
-        <p><strong>Debug level and above</strong></p>
-        <ul>
-          <li>Debug: Fine-grained information</li>
-          <li>Info: Normal operations</li>
-          <li>Warn: Potential issues</li>
-          <li>Error: Failures requiring attention</li>
-          <li>DPanic: Critical errors that panic in development</li>
-          <li>Panic: Critical errors that log and panic</li>
-          <li>Fatal: Critical errors that log and exit</li>
-        </ul>
-      </>
-    }
-  />
-  
-  <FeatureCard
-    title="Testing"
-    description={
-      <>
-        <p><strong>Custom configurations</strong></p>
-        <ul>
-          <li>Can be adjusted per test suite</li>
-          <li>Often uses Warn and above to reduce noise</li>
-          <li>Can send to a memory buffer for assertions</li>
-          <li>Supports discarding output entirely</li>
-          <li>Can capture logs for test verification</li>
-        </ul>
-      </>
-    }
-  />
-</CardGrid>
-
-```go
-func getLogger(env string) *zap.Logger {
-	var logger *zap.Logger
-	var err error
-	
-	switch env {
-	case "production":
-		logger, err = zap.NewProduction()
-	case "development":
-		logger, err = zap.NewDevelopment()
-	default:
-		config := zap.NewProductionConfig()
-		config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-		logger, err = config.Build()
-	}
-	
-	if err != nil {
-		panic(fmt.Sprintf("Failed to initialize zap logger: %v", err))
-	}
-	
-	return logger
-}
-```
 
 ### Dynamic Log Level Management
 
@@ -248,83 +125,12 @@ func getLogger(env string) *zap.Logger {
   The Control Plane supports dynamic log level adjustment during runtime, allowing operators to increase logging verbosity temporarily for troubleshooting.
 </InfoSection>
 
-```go
-// Create an AtomicLevel to manage the log level
-atomicLevel := zap.NewAtomicLevel()
-atomicLevel.SetLevel(zap.InfoLevel)
-
-// Create a logger with the atomic level
-config := zap.Config{
-    Level:            atomicLevel,
-    Encoding:         "json",
-    OutputPaths:      []string{"stdout"},
-    ErrorOutputPaths: []string{"stderr"},
-    // Additional configuration...
-}
-
-logger, _ := config.Build()
-
-// Later, adjust the level dynamically
-atomicLevel.SetLevel(zap.DebugLevel)  // Temporarily increase verbosity
-// ... after troubleshooting
-atomicLevel.SetLevel(zap.InfoLevel)   // Return to normal level
-```
-
 ## Structured Logging
 
 <InfoSection type="tip" title="Log as data">
   Structured logging treats log messages as data records rather than text strings, making them machine-readable and enabling sophisticated filtering and analysis.
 </InfoSection>
 
-Zap's structured logging capabilities are used throughout the Control Plane:
-
-```go
-func (c *Controller) ProcessRequest(ctx context.Context, req *Request) error {
-	logger := log.FromContext(ctx).WithValues(
-		"requestID", req.ID,
-		"userID", req.UserID,
-		"operation", req.Operation,
-	)
-	
-	logger.Info("Processing request")
-	
-	// Business logic...
-	
-	if err != nil {
-		logger.Error("Failed to process request", "error", err)
-		return err
-	}
-	
-	logger.Info("Request processed successfully")
-	return nil
-}
-```
-
-### Example JSON Output
-
-<CardGrid columns={1}>
-  <FeatureCard
-    title="Structured Log Format"
-    description={
-      <>
-        <pre>
-{`{
-  "level": "info",
-  "ts": "2025-08-29T12:34:56.789Z",
-  "caller": "controller/request.go:42",
-  "msg": "Processing request",
-  "service": "file-manager",
-  "requestID": "req-abc-123",
-  "userID": "user-xyz-789",
-  "operation": "upload",
-  "environment": "production",
-  "version": "1.2.3"
-}`}
-        </pre>
-      </>
-    }
-  />
-</CardGrid>
 
 ## Performance Considerations
 
@@ -360,71 +166,6 @@ The Control Plane uses Zap's performance optimizations:
     description: "Internal object pools to minimize memory churn."
   }
 ]} />
-
-```go
-// Pre-allocated fields
-var baseLogger = zap.NewNop().With(
-	zap.String("service", "file-manager"),
-	zap.String("version", "1.0.0"),
-)
-
-func getContextLogger(ctx context.Context) *zap.Logger {
-	if requestID, ok := ctx.Value("requestID").(string); ok {
-		return baseLogger.With(zap.String("requestID", requestID))
-	}
-	return baseLogger
-}
-```
-
-### Performance Benchmark
-
-<CardGrid columns={1}>
-  <FeatureCard
-    title="Benchmark Results"
-    description={
-      <>
-        <p>Performance comparison on Control Plane logging workload:</p>
-        <table>
-          <thead>
-            <tr>
-              <th>Logger</th>
-              <th>Time per Operation</th>
-              <th>Memory Allocations</th>
-              <th>Bytes Allocated</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Zap (Sugar)</td>
-              <td>1,267 ns/op</td>
-              <td>5 allocs/op</td>
-              <td>864 B/op</td>
-            </tr>
-            <tr>
-              <td>Zap</td>
-              <td>842 ns/op</td>
-              <td>1 allocs/op</td>
-              <td>192 B/op</td>
-            </tr>
-            <tr>
-              <td>Zerolog</td>
-              <td>1,110 ns/op</td>
-              <td>6 allocs/op</td>
-              <td>976 B/op</td>
-            </tr>
-            <tr>
-              <td>Logrus</td>
-              <td>9,842 ns/op</td>
-              <td>24 allocs/op</td>
-              <td>3,984 B/op</td>
-            </tr>
-          </tbody>
-        </table>
-        <p><em>Lower values are better. Benchmark with 10 fields per log entry.</em></p>
-      </>
-    }
-  />
-</CardGrid>
 
 ## Logging Best Practices
 

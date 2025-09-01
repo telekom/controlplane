@@ -115,48 +115,6 @@ func setupAuth(app *fiber.App) {
   Routes can be selectively protected by applying middleware at different levels or to specific route groups.
 </InfoSection>
 
-```go
-func setupRoutes(app *fiber.App) {
-    // Public routes
-    app.Get("/health", healthCheck)
-    app.Get("/version", getVersion)
-    
-    // Protected API routes
-    api := app.Group("/api/v1")
-    api.Use(jwt.New(jwt.Config{
-        SigningKey: []byte(os.Getenv("JWT_SECRET")),
-    }))
-    
-    // Routes under /api/v1 now require valid JWT
-    api.Get("/files", listFiles)
-    api.Post("/files", uploadFile)
-    
-    // Admin routes with additional role check
-    admin := app.Group("/admin")
-    admin.Use(jwt.New(jwt.Config{
-        SigningKey: []byte(os.Getenv("JWT_SECRET")),
-    }))
-    admin.Use(requireAdmin) // Additional middleware for admin role check
-    
-    admin.Get("/metrics", getMetrics)
-    admin.Post("/users", createUser)
-}
-
-func requireAdmin(c *fiber.Ctx) error {
-    user := c.Locals("user").(*jwt.Token)
-    claims := user.Claims.(jwt.MapClaims)
-    
-    if !hasRole(claims, "admin") {
-        return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-            "error": "Forbidden",
-            "message": "Admin role required",
-        })
-    }
-    
-    return c.Next()
-}
-```
-
 ## JWT Structure
 
 <InfoSection type="note" title="Token structure">
@@ -296,61 +254,12 @@ graph LR
   Role-based access control is implemented through JWT claims, allowing for consistent access control across all Control Plane services.
 </InfoSection>
 
-The Control Plane implements Role-Based Access Control (RBAC) using JWT claims:
-
-```go
-func checkAccess(ctx *fiber.Ctx, requiredRole string) bool {
-    user := ctx.Locals("user").(*jwt.Token)
-    claims := user.Claims.(jwt.MapClaims)
-    
-    // Extract roles from the token
-    rolesData := claims["roles"]
-    if rolesData == nil {
-        return false
-    }
-    
-    roles := make([]string, 0)
-    if rolesArray, ok := rolesData.([]interface{}); ok {
-        for _, role := range rolesArray {
-            if roleStr, ok := role.(string); ok {
-                roles = append(roles, roleStr)
-            }
-        }
-    }
-    
-    // Check if the user has the required role
-    for _, role := range roles {
-        if role == requiredRole {
-            return true
-        }
-    }
-    
-    return false
-}
-```
-
 ### Role Hierarchy
 
 <InfoSection type="note" title="Role hierarchy">
   The Control Plane implements a role hierarchy where higher-level roles inherit permissions from lower-level roles.
 </InfoSection>
 
-```mermaid
-graph TD
-    A[Admin] --> B[Operator]
-    B --> C[Editor]
-    C --> D[Viewer]
-    
-    classDef admin fill:#E20074,color:#ffffff,stroke:#E20074
-    classDef operator fill:#00ADD8,color:#ffffff,stroke:#00ADD8
-    classDef editor fill:#f9f9f9,color:#333,stroke:#ccc
-    classDef viewer fill:#2C3E50,color:#ffffff,stroke:#2C3E50
-    
-    class A admin
-    class B operator
-    class C editor
-    class D viewer
-```
 
 ## Token Validation
 
@@ -387,31 +296,6 @@ The Control Plane validates JWTs for:
   }
 ]} />
 
-```go
-func validateToken(tokenString string) (*jwt.Token, error) {
-    token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-        // Validate signing method
-        if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-            return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-        }
-        
-        // Return the secret key for validation
-        return []byte(os.Getenv("JWT_SECRET")), nil
-    })
-    
-    if err != nil {
-        return nil, err
-    }
-    
-    // Check if token is valid
-    if !token.Valid {
-        return nil, errors.New("invalid token")
-    }
-    
-    return token, nil
-}
-```
-
 ## Token Generation
 
 <InfoSection type="note" title="Token issuance">
@@ -419,30 +303,6 @@ func validateToken(tokenString string) (*jwt.Token, error) {
 </InfoSection>
 
 Services in the Control Plane generate JWTs for clients:
-
-```go
-func generateToken(userID string, roles []string) (string, error) {
-    // Create claims
-    claims := jwt.MapClaims{
-        "sub":   userID,
-        "roles": roles,
-        "exp":   time.Now().Add(time.Hour * 24).Unix(),
-        "iat":   time.Now().Unix(),
-        "iss":   "controlplane",
-    }
-    
-    // Create token with claims
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    
-    // Generate signed token
-    signedToken, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
-    if err != nil {
-        return "", err
-    }
-    
-    return signedToken, nil
-}
-```
 
 ## Security Best Practices
 

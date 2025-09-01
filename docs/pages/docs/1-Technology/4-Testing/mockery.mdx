@@ -60,8 +60,6 @@ Mockery automatically generates mock implementations of Go interfaces to use in 
   The Control Plane uses Mockery extensively to enable thorough testing of all components without external dependencies.
 </InfoSection>
 
-The Control Plane uses Mockery to generate mocks for various interfaces:
-
 <CardGrid columns={3}>
   <FeatureCard
     title="Backend Interfaces"
@@ -109,61 +107,14 @@ The Control Plane uses Mockery to generate mocks for various interfaces:
   The Control Plane follows a consistent pattern for organizing mock implementations to make them easy to find and use.
 </InfoSection>
 
-Mocks in the Control Plane follow a consistent pattern:
-
-```
-pkg/
-  backend/
-    interface.go      # Contains the interface definitions
-    mock/
-      mock_backend.go # Generated mock implementations
-```
-
-```mermaid
-graph TD
-    A[pkg/] --> B[backend/]
-    B --> C[interface.go]
-    B --> D[mock/]
-    D --> E[mock_backend.go]
-    B --> F[s3/]
-    F --> G[minio_wrapper.go]
-    
-    classDef interface fill:#E20074,color:#ffffff,stroke:#E20074
-    classDef mock fill:#00ADD8,color:#ffffff,stroke:#00ADD8
-    classDef impl fill:#f9f9f9,color:#333,stroke:#ccc
-    
-    class C interface
-    class D,E mock
-    class F,G impl
-```
-
 ## Code Generation
 
 <InfoSection type="tip" title="Automated generation">
   Mocks are generated automatically during the build process, ensuring they're always up to date with the latest interface definitions.
 </InfoSection>
 
-Mocks are generated using the Mockery CLI tool. Configuration is stored in `mockery.yaml` files:
-
-```yaml
-with-expecter: true
-packages:
-  github.com/telekom/controlplane/file-manager/pkg/backend:
-    interfaces:
-      FileUploader:
-        config:
-          dir: "pkg/backend/mock"
-      FileDownloader:
-        config:
-          dir: "pkg/backend/mock"
-```
-
-The `tools/generate.go` file ensures consistent mock generation:
-
-```go
-//go:generate mockery --dir ../pkg/backend --name FileUploader --output ../pkg/backend/mock
-//go:generate mockery --dir ../pkg/backend --name FileDownloader --output ../pkg/backend/mock
-```
+Mocks are generated using the Mockery CLI tool. Configuration is stored in `mockery.yaml` files.
+The `tools/generate.go` file ensures consistent mock generation.
 
 ### Generating Mocks
 
@@ -196,70 +147,6 @@ The `tools/generate.go` file ensures consistent mock generation:
 <InfoSection type="note" title="Expecter API">
   The Control Plane uses Mockery's Expecter API, which provides a type-safe way to set expectations on mock methods.
 </InfoSection>
-
-Mocks are used extensively in the Control Plane test suite:
-
-```go
-func TestUploadController(t *testing.T) {
-    // Create a mock uploader
-    mockUploader := mocks.NewFileUploader(t)
-    
-    // Set expectations
-    mockUploader.On("UploadFile", mock.Anything, "test-id", mock.Anything).
-        Return(nil).
-        Once()
-    
-    // Create controller with mock dependency
-    controller := NewUploadController(mockUploader)
-    
-    // Call the controller method
-    err := controller.HandleUpload(context.Background(), "test-id", strings.NewReader("test content"))
-    
-    // Assertions
-    assert.NoError(t, err)
-    
-    // Verify all expectations were met
-    mockUploader.AssertExpectations(t)
-}
-```
-
-### Advanced Mock Usage
-
-<CardGrid columns={2}>
-  <FeatureCard
-    title="Argument Matching"
-    description={<>
-      <p>Control Plane tests use various matchers:</p>
-      <p><code>{`// Match exact values`}</code></p>
-      <p><code>{`mock.On("Method", "exact-value")`}</code></p>
-      <p><code>{`// Match any value`}</code></p>
-      <p><code>{`mock.On("Method", mock.Anything)`}</code></p>
-      <p><code>{`// Custom matchers`}</code></p>
-      <p><code>{`mock.On("Method", mock.MatchedBy(func(s string) bool {`}</code></p>
-      <p><code>{`    return strings.HasPrefix(s, "test-")`}</code></p>
-      <p><code>{`}))`}</code></p>
-    </>}
-  />
-  
-  <FeatureCard
-    title="Return Values"
-    description={<>
-      <p>Configure mock responses:</p>
-      <p><code>{`// Return static values`}</code></p>
-      <p><code>{`mock.On("Method").Return(result, nil)`}</code></p>
-      <p><code>{`// Return different values on successive calls`}</code></p>
-      <p><code>{`mock.On("Method").`}</code></p>
-      <p><code>{`    Return(nil, errors.New("first error")).Once().`}</code></p>
-      <p><code>{`    On("Method").`}</code></p>
-      <p><code>{`    Return("success", nil)`}</code></p>
-      <p><code>{`// Dynamic returns`}</code></p>
-      <p><code>{`mock.On("Method", mock.Anything).`}</code></p>
-      <p><code>{`    Return(func(arg string) string {`}</code></p>
-      <p><code>{`        return "processed-" + arg`}</code></p>
-      <p><code>{`    }, nil)`}</code></p>
-    </>}
-  />
-</CardGrid>
 
 ## Best Practices Used in Control Plane
 
@@ -299,32 +186,12 @@ func TestUploadController(t *testing.T) {
 <CardGrid columns={2}>
   <FeatureCard
     title="Dependency Injection"
-    description={<>
-      <p>The Control Plane uses dependency injection to make components testable:</p>
-      <p><code>{`// Constructor accepts interfaces, not implementations`}</code></p>
-      <p><code>{`func NewController(uploader FileUploader) *Controller {`}</code></p>
-      <p><code>{`    return &Controller{uploader: uploader}`}</code></p>
-      <p><code>{`}`}</code></p>
-      <p><code>{`// In tests, inject a mock`}</code></p>
-      <p><code>{`controller := NewController(mockUploader)`}</code></p>
-    </>}
+    description="The Control Plane uses dependency injection to make components testable."
   />
   
   <FeatureCard
     title="Test Setup Helpers"
-    description={<>
-      <p>Helper functions simplify test setup with mocks:</p>
-      <p><code>{`func setupTest(t *testing.T) (*Controller, *mocks.FileUploader) {`}</code></p>
-      <p><code>{`    mockUploader := mocks.NewFileUploader(t)`}</code></p>
-      <p><code>{`    controller := NewController(mockUploader)`}</code></p>
-      <p><code>{`    return controller, mockUploader`}</code></p>
-      <p><code>{`}`}</code></p>
-      <p><code>{`// In tests`}</code></p>
-      <p><code>{`func TestSomething(t *testing.T) {`}</code></p>
-      <p><code>{`    controller, mockUploader := setupTest(t)`}</code></p>
-      <p><code>{`    // Set expectations and continue test`}</code></p>
-      <p><code>{`}`}</code></p>
-    </>}
+    description="Helper functions simplify test setup with mocks."
   />
 </CardGrid>
 
