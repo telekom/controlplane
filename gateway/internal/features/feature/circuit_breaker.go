@@ -24,7 +24,6 @@ type CircuitBreakerFeature struct {
 }
 
 var InstanceCircuitBreakerFeature = &CircuitBreakerFeature{
-	// TODO check if this is ok, since failover might modify the upstream
 	priority: InstanceFailoverFeature.priority - 1,
 }
 
