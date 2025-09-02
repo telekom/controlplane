@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100">
+  <style>
+    text {
+      font-family: 'Arial', sans-serif;
+      font-size: 26px;
+      font-weight: bold;
+    }
+    .mockery {
+      fill: #6435c9;
+    }
+  </style>
+  <rect width="200" height="100" fill="#f8f9fa" rx="10" ry="10" />
+  <text x="50%" y="55%" text-anchor="middle">
+    <tspan class="mockery">mockery</tspan>
+  </text>
+</svg>

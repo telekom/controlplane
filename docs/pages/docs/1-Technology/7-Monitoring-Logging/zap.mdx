@@ -1,0 +1,387 @@
+---
+sidebar_position: 1
+title: "Zap Logger"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Zap Logger"
+  description="High-performance structured logging for the Control Plane"
+/>
+
+The Control Plane uses Uber's [Zap](https://github.com/uber-go/zap) library for structured, high-performance logging.
+
+<InfoSection type="info" title="Performance-focused logging">
+  Zap provides extremely fast, allocation-free logging that enables comprehensive system observability without sacrificing performance.
+</InfoSection>
+
+## Overview
+
+Zap is a fast, structured logging library for Go, designed with performance in mind. The Control Plane uses Zap for:
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "📊 Structured JSON Logging",
+    description: "Machine-parseable logs with consistent field formats for automated analysis."
+  },
+  {
+    title: "🧩 Contextual Fields",
+    description: "Rich metadata attached to log messages for improved debugging and tracing."
+  },
+  {
+    title: "🌳 Hierarchical Logging",
+    description: "Component-based logger organization reflecting system architecture."
+  },
+  {
+    title: "⚡ High Performance",
+    description: "Minimal allocations and optimized processing for performance-critical paths."
+  },
+  {
+    title: "🔍 Sampling",
+    description: "Intelligent log sampling for high-volume events to reduce overhead."
+  },
+  {
+    title: "🔄 Level Control",
+    description: "Dynamic log level adjustment without restarts for operational flexibility."
+  }
+]} />
+
+<div align="center">
+  <img src="/controlplane/img/logos/zap-logo.png" alt="Zap Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Why Zap?
+
+<InfoSection type="tip" title="Performance comparison">
+  In benchmark tests, Zap can be up to 10x faster than other structured logging libraries while allocating far fewer objects, which is critical for high-throughput services.
+</InfoSection>
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Performance Metrics"
+    description={
+      <>
+        <p>Zap significantly outperforms other logging libraries:</p>
+        <ul>
+          <li>10x faster than logrus in some scenarios</li>
+          <li>Near-zero memory allocations</li>
+          <li>Optimized JSON encoding</li>
+          <li>Minimal CPU overhead</li>
+          <li>Efficient level checking</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="Feature Comparison"
+    description={
+      <>
+        <p>Advantages over other logging solutions:</p>
+        <ul>
+          <li>Strongly typed fields preventing runtime errors</li>
+          <li>Flexible configuration options</li>
+          <li>Multiple output encoders (JSON, console)</li>
+          <li>Built-in sampling capabilities</li>
+          <li>Field namespacing for organization</li>
+        </ul>
+      </>
+    }
+  />
+</CardGrid>
+
+## Integration with Kubernetes
+
+<InfoSection type="note" title="logr compatibility">
+  The Control Plane integrates Zap with Kubernetes' logging abstractions through the logr interface, enabling seamless integration with controller-runtime and other Kubernetes libraries.
+</InfoSection>
+
+
+### Logging Architecture
+
+<InfoSection type="tip" title="Logging flow">
+  The Control Plane implements a consistent logging architecture from application code through to log aggregation and analysis.
+</InfoSection>
+
+
+## Log Levels
+
+<InfoSection type="note" title="Environment-specific configuration">
+  The Control Plane uses different log levels for different environments, balancing verbosity with performance needs.
+</InfoSection>
+
+
+### Dynamic Log Level Management
+
+<InfoSection type="tip" title="Runtime adjustment">
+  The Control Plane supports dynamic log level adjustment during runtime, allowing operators to increase logging verbosity temporarily for troubleshooting.
+</InfoSection>
+
+## Structured Logging
+
+<InfoSection type="tip" title="Log as data">
+  Structured logging treats log messages as data records rather than text strings, making them machine-readable and enabling sophisticated filtering and analysis.
+</InfoSection>
+
+
+## Performance Considerations
+
+<InfoSection type="note" title="Optimization techniques">
+  The Control Plane employs several techniques to maximize logging performance while maintaining comprehensive observability.
+</InfoSection>
+
+The Control Plane uses Zap's performance optimizations:
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🔄 Pre-allocated Fields",
+    description: "Base loggers with common fields to reduce per-log allocations."
+  },
+  {
+    title: "🧮 Minimal Allocations",
+    description: "Strongly typed fields and reused buffers to reduce GC pressure."
+  },
+  {
+    title: "⚡ Fast Marshaling",
+    description: "Optimized JSON encoders for efficient serialization."
+  },
+  {
+    title: "🔍 Level Checking",
+    description: "Early level checks to avoid unnecessary processing of disabled logs."
+  },
+  {
+    title: "📊 Sampling",
+    description: "Intelligent sampling for high-frequency events."
+  },
+  {
+    title: "📦 Object Pooling",
+    description: "Internal object pools to minimize memory churn."
+  }
+]} />
+
+## Logging Best Practices
+
+<InfoSection type="tip" title="Consistent approach">
+  The Control Plane follows these logging best practices to ensure logs are informative, consistent, and useful for debugging and monitoring.
+</InfoSection>
+
+### Log Levels
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="Debug"
+    description="Fine-grained development information useful during development and troubleshooting. Examples: variable values, function entry/exit, detailed flow control."
+  />
+  
+  <FeatureCard
+    title="Info"
+    description="General operational events describing normal system behavior. Examples: service startup/shutdown, user actions, task completion."
+  />
+  
+  <FeatureCard
+    title="Warning"
+    description="Non-critical issues that might indicate problems but don't interrupt operation. Examples: deprecated API usage, unexpected but handled conditions."
+  />
+  
+  <FeatureCard
+    title="Error"
+    description="Runtime errors that require attention but don't crash the system. Examples: API failures, rejected requests, database errors."
+  />
+  
+  <FeatureCard
+    title="Fatal/Panic"
+    description="Critical errors causing application shutdown or panic. Examples: missing configuration, failed startup requirements, internal inconsistencies."
+  />
+</CardGrid>
+
+### Contextual Information
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🔑 Request IDs",
+    description: "Include unique identifiers for each request to trace through the system."
+  },
+  {
+    title: "👤 User Information",
+    description: "Add user identifiers when available for user-specific troubleshooting."
+  },
+  {
+    title: "📦 Resource Identifiers",
+    description: "Include IDs for affected resources like files, databases, or API endpoints."
+  },
+  {
+    title: "🔄 Operation Names",
+    description: "Specify the high-level operation being performed for context."
+  },
+  {
+    title: "⏱️ Timing Information",
+    description: "Include duration for long-running operations or performance-critical paths."
+  },
+  {
+    title: "🌍 Environment Context",
+    description: "Add environment, region, or zone information for multi-environment setups."
+  }
+]} />
+
+### Standardized Format
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Field Naming Conventions"
+    description={
+      <>
+        <p>Standard field names used across the Control Plane:</p>
+        <ul>
+          <li><code>request_id</code>: Unique request identifier</li>
+          <li><code>user_id</code>: User identifier</li>
+          <li><code>service</code>: Service name</li>
+          <li><code>component</code>: Component within service</li>
+          <li><code>operation</code>: Operation being performed</li>
+          <li><code>duration_ms</code>: Operation duration in milliseconds</li>
+          <li><code>error</code>: Error message or type</li>
+          <li><code>version</code>: Software version</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="Metadata Standards"
+    description={
+      <>
+        <p>Additional standards for log metadata:</p>
+        <ul>
+          <li>ISO 8601 timestamps with timezone</li>
+          <li>Hierarchical logger names (service.component.subcomponent)</li>
+          <li>Source code file and line numbers</li>
+          <li>Consistent error formats</li>
+          <li>JSON format for all production logs</li>
+          <li>Human-readable format for development</li>
+          <li>Standard severity levels</li>
+        </ul>
+      </>
+    }
+  />
+</CardGrid>
+
+## Configuration Management
+
+<InfoSection type="note" title="Flexible configuration">
+  The Control Plane provides multiple ways to configure logging based on deployment needs and environments.
+</InfoSection>
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Environment Variables"
+    description={
+      <>
+        <p>Logger configuration through environment:</p>
+        <pre>
+{`LOG_LEVEL=debug
+LOG_FORMAT=json
+LOG_OUTPUT=stdout
+LOG_SAMPLING_INITIAL=100
+LOG_SAMPLING_THEREAFTER=100`}
+        </pre>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="Configuration File"
+    description={
+      <>
+        <p>YAML-based configuration:</p>
+        <pre>
+{`logging:
+  level: info
+  encoding: json
+  outputPaths:
+    - stdout
+    - /var/log/service.log
+  errorOutputPaths:
+    - stderr
+  encoderConfig:
+    timeKey: ts
+    timeEncoder: iso8601`}
+        </pre>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="Programmatic Configuration"
+    description={
+      <>
+        <p>Dynamic configuration in code:</p>
+        <pre>
+{`config := zap.Config{
+  Level:       zap.NewAtomicLevelAt(zap.InfoLevel),
+  Development: false,
+  Sampling: &zap.SamplingConfig{
+    Initial:    100,
+    Thereafter: 100,
+  },
+  Encoding: "json",
+  // Additional configuration...
+}
+
+logger, _ := config.Build()`}
+        </pre>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="Runtime Level Management"
+    description={
+      <>
+        <p>HTTP endpoint for dynamic level adjustment:</p>
+        <pre>
+{`app.Get("/loglevel", func(c *fiber.Ctx) error {
+  // Get current level
+  return c.JSON(fiber.Map{
+    "level": atomicLevel.String(),
+  })
+})
+
+app.Post("/loglevel", func(c *fiber.Ctx) error {
+  // Parse new level from request
+  level := c.FormValue("level")
+  zapLevel, err := zapcore.ParseLevel(level)
+  if err == nil {
+    atomicLevel.SetLevel(zapLevel)
+  }
+  return c.SendStatus(200)
+})`}
+        </pre>
+      </>
+    }
+  />
+</CardGrid>
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Prometheus Metrics"
+    description="Learn about the metrics collection system used alongside Zap logging."
+    linkText="View Prometheus Metrics"
+    linkUrl="prometheus"
+  />
+  
+  <FeatureCard
+    title="Architecture"
+    description="Understand how logging fits into the overall Control Plane architecture."
+    linkText="View Architecture"
+    linkUrl="../../Overview/architecture"
+  />
+</CardGrid>

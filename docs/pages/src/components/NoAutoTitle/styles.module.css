@@ -1,0 +1,4 @@
+.noAutoTitleWrapper {
+  /* This div does nothing but ensure the component renders */
+  display: none;
+}

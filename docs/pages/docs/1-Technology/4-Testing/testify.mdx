@@ -1,0 +1,213 @@
+---
+sidebar_position: 1
+title: "Testify"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Testify"
+  description="Comprehensive testing toolkit for Go applications"
+/>
+
+[Testify](https://github.com/stretchr/testify) is a toolkit for assertions and mocks used extensively in the Control Plane for testing.
+
+<InfoSection type="info" title="Testing framework of choice">
+  Testify enhances Go's native testing capabilities with expressive assertions, mocking, and test suite organization, making it easier to write comprehensive and maintainable tests.
+</InfoSection>
+
+## Overview
+
+Testify is a set of packages that extend Go's built-in testing package with additional functionality for assertions, mocking, and test suite organization. The Control Plane uses Testify extensively across its codebase to ensure robust testing and maintainability.
+
+<div align="center">
+  <img src="/controlplane/img/logos/testify-logo.svg" alt="Testify Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Why Testify?
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "✅ Expressive Assertions",
+    description: "Rich set of assertion functions that clearly express intent and provide helpful error messages."
+  },
+  {
+    title: "🧪 Comprehensive Testing",
+    description: "Supports unit, integration, and end-to-end testing with the same consistent API."
+  },
+  {
+    title: "🛠️ Mocking Framework",
+    description: "Built-in mocking capabilities for isolating components during testing."
+  },
+  {
+    title: "📦 Test Organization",
+    description: "Suite functionality for grouping related tests with shared setup and teardown."
+  },
+  {
+    title: "🔄 Go Integration",
+    description: "Seamlessly integrates with Go's built-in testing framework and tools."
+  },
+  {
+    title: "🧩 Extensibility",
+    description: "Can be extended with custom assertions and test helpers to fit project needs."
+  }
+]} />
+
+## Integration in the Control Plane
+
+<InfoSection type="tip" title="Key integration point">
+  Testify provides a consistent assertion and testing framework used throughout the Control Plane codebase.
+</InfoSection>
+
+The Control Plane uses Testify for multiple testing purposes, providing a unified approach to testing across various components:
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Unit Testing"
+    description={<>
+      <p>Core component testing:</p>
+      <ul>
+        <li>Service functions</li>
+        <li>Controller logic</li>
+        <li>Utility functions</li>
+        <li>Models and data structures</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Integration Testing"
+    description={<>
+      <p>Component interaction testing:</p>
+      <ul>
+        <li>API endpoints</li>
+        <li>Service interactions</li>
+        <li>Database operations</li>
+        <li>External service integrations</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Configuration
+
+<InfoSection type="note" title="Test organization and execution">
+  Testify provides several approaches to organize and run tests, which are used throughout the Control Plane.
+</InfoSection>
+
+### Running Tests
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Standard Commands"
+    description={
+      <>
+        <p>Run all tests:</p>
+        <pre><code>go test ./...</code></pre>
+        <p>Run specific tests:</p>
+        <pre><code>go test ./pkg/controller -run TestUpload</code></pre>
+        <p>Run with verbose output:</p>
+        <pre><code>go test -v ./...</code></pre>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="Coverage Reports"
+    description={
+      <>
+        <p>Run tests with coverage:</p>
+        <pre><code>go test -cover ./...</code></pre>
+        <p>Generate HTML coverage report:</p>
+        <pre><code>go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out</code></pre>
+      </>
+    }
+  />
+</CardGrid>
+
+### Core Packages
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="assert"
+    description={<>
+      <p>Non-fatal assertions that allow tests to continue:</p>
+      <pre><code>assert.Equal(t, expected, actual)</code></pre>
+    </>}
+  />
+  
+  <FeatureCard
+    title="require"
+    description={<>
+      <p>Fatal assertions that terminate test execution:</p>
+      <pre><code>require.NoError(t, err)</code></pre>
+    </>}
+  />
+  
+  <FeatureCard
+    title="mock"
+    description={<>
+      <p>Test double creation and expectations:</p>
+      <pre><code>mock.On("Method").Return(result)</code></pre>
+    </>}
+  />
+</CardGrid>
+
+## Best Practices Used in Control Plane
+
+<InfoSection type="tip" title="Testing best practices">
+  The Control Plane follows these testing best practices to ensure reliable, maintainable, and comprehensive tests.
+</InfoSection>
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🚫 Use require for fatal assertions",
+    description: "Prevents further test execution when critical assumptions fail, avoiding confusing cascade failures."
+  },
+  {
+    title: "📝 Use descriptive error messages",
+    description: "Clear messages help quickly identify and fix test failures without having to dig through code."
+  },
+  {
+    title: "🗂️ Create test suites for related functionality",
+    description: "Organizes tests logically and enables sharing of common setup and teardown code."
+  },
+  {
+    title: "🔄 Mock external dependencies",
+    description: "Isolates the code under test and enables testing of specific behaviors without external services."
+  },
+  {
+    title: "📊 Aim for high coverage",
+    description: "The Control Plane targets at least 80% test coverage for critical components."
+  },
+  {
+    title: "🧪 Test edge cases",
+    description: "Explicitly test error conditions, empty inputs, and boundary values for robust code."
+  }
+]} />
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Mockery"
+    description="Learn about the mock code generation tool used alongside Testify."
+    linkText="View Mockery"
+    linkUrl="mockery"
+  />
+  
+  <FeatureCard
+    title="Go Language"
+    description="Explore the foundational language used in the Control Plane."
+    linkText="View Go Language"
+    linkUrl="../Core-Technologies/golang"
+  />
+</CardGrid>

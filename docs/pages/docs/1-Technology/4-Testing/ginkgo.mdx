@@ -1,0 +1,218 @@
+---
+sidebar_position: 3
+title: "Ginkgo"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Ginkgo"
+  description="BDD-style testing framework for Go applications"
+/>
+
+[Ginkgo](https://github.com/onsi/ginkgo) is a Behavior-Driven Development (BDD) testing framework for Go that is used in the Control Plane for writing expressive tests.
+
+<InfoSection type="info" title="Behavior-Driven Development">
+  Ginkgo encourages writing tests that describe the behavior of your application in a way that's easy to understand for both developers and non-technical stakeholders.
+</InfoSection>
+
+## Overview
+
+Ginkgo is designed to make writing and running tests productive and enjoyable. It integrates with Go's built-in testing package but offers a more expressive and feature-rich approach to testing.
+
+<div align="center">
+  <img src="/controlplane/img/logos/ginkgo-logo.png" alt="Ginkgo Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Why Ginkgo?
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🧪 BDD-Style Tests",
+    description: "Write tests in a natural language style with Describe, Context, and It blocks."
+  },
+  {
+    title: "🔄 Nested Specs",
+    description: "Organize tests hierarchically with nested contexts and descriptions."
+  },
+  {
+    title: "⏱️ Focused Specs",
+    description: "Run specific tests with F-prefixed blocks (FDescribe, FContext, FIt)."
+  },
+  {
+    title: "⏭️ Skip Specs",
+    description: "Skip specific tests with X-prefixed blocks (XDescribe, XContext, XIt)."
+  },
+  {
+    title: "🏎️ Parallel Testing",
+    description: "Run tests in parallel for faster execution times."
+  },
+  {
+    title: "📝 Reporting",
+    description: "Generate detailed test reports with various output formats."
+  }
+]} />
+
+## Integration in the Control Plane
+
+<InfoSection type="tip" title="BDD for complex scenarios">
+  In the Control Plane, Ginkgo is particularly valuable for testing complex behaviors like API interactions and controller reconciliation loops.
+</InfoSection>
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Controller Tests"
+    description={<>
+      <p>Tests for Kubernetes controllers that follow the BDD pattern:</p>
+      <ul>
+        <li>Controller initialization and setup</li>
+        <li>Resource creation and reconciliation</li>
+        <li>Error handling and edge cases</li>
+        <li>Status updates and finalizers</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Integration Tests"
+    description={<>
+      <p>Tests that verify interactions between components:</p>
+      <ul>
+        <li>API server and client communication</li>
+        <li>Service interactions and dependencies</li>
+        <li>End-to-end workflows</li>
+        <li>Cross-component behavior</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Configuration
+
+<InfoSection type="note" title="Powerful testing capabilities">
+  Ginkgo offers many advanced features that help with writing comprehensive tests for complex systems like the Control Plane.
+</InfoSection>
+
+### Command Line Interface
+
+Ginkgo provides a powerful command-line interface for running tests:
+
+```bash
+# Install the Ginkgo CLI
+go install github.com/onsi/ginkgo/v2/ginkgo@latest
+
+# Run all tests in current package
+ginkgo
+
+# Run tests in watch mode (rerun on file changes)
+ginkgo watch
+
+# Run tests in specific packages
+ginkgo ./pkg/controllers/... ./pkg/apis/...
+
+# Generate test coverage report
+ginkgo -cover -coverprofile=coverage.out
+
+# Run tests in parallel
+ginkgo -p
+
+# Focus on specific tests
+ginkgo --focus "FileManager"
+
+# Skip specific tests
+ginkgo --skip "Database"
+```
+
+### Advanced Features
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="Asynchronous Testing"
+    description="Perfect for testing controllers that may reconcile resources asynchronously"
+  />
+  
+  <FeatureCard
+    title="Table-Driven Tests"
+    description="Concisely test multiple cases"
+  />
+  
+  <FeatureCard
+    title="Setup & Teardown"
+    description={<>
+      <p>Hooks for test preparation:</p>
+      <ul>
+        <li>BeforeEach: Before each spec</li>
+        <li>AfterEach: After each spec</li>
+        <li>BeforeSuite: Before all specs</li>
+        <li>AfterSuite: After all specs</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+### Kubernetes Integration
+
+<InfoSection type="tip" title="Kubernetes integration">
+  Ginkgo works seamlessly with the Kubernetes envtest package, making it ideal for testing controllers in the Control Plane.
+</InfoSection>
+
+## Best Practices in the Control Plane
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🧩 Modular Test Structure",
+    description: "Organize tests hierarchically with Describe and Context blocks matching logical components."
+  },
+  {
+    title: "🔬 Clear Expectations",
+    description: "Write clear expectations with descriptive failure messages for easier debugging."
+  },
+  {
+    title: "♻️ Reusable Helpers",
+    description: "Create helper functions for common test setups to reduce duplication."
+  },
+  {
+    title: "🌐 Isolated Test Environments",
+    description: "Use BeforeEach and AfterEach to ensure tests start with a clean environment."
+  },
+  {
+    title: "📈 Test Coverage",
+    description: "Run tests with coverage reports to identify untested code paths."
+  },
+  {
+    title: "⚡ Fast Feedback",
+    description: "Run focused tests during development for quick feedback cycles."
+  }
+]} />
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Gomega"
+    description="The matcher/assertion library designed to work with Ginkgo."
+    linkText="View Gomega"
+    linkUrl="gomega"
+  />
+  
+  <FeatureCard
+    title="Testify"
+    description="Another testing toolkit used in the Control Plane."
+    linkText="View Testify"
+    linkUrl="testify"
+  />
+  
+  <FeatureCard
+    title="Go-Snaps"
+    description="Snapshot testing library for Go applications."
+    linkText="View Go-Snaps"
+    linkUrl="go-snaps"
+  />
+</CardGrid>

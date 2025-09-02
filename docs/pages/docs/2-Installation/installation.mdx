@@ -1,0 +1,360 @@
+---
+sidebar_position: 2
+title: "Installation Guide"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Installation Guide"
+  description="Comprehensive guide for setting up the Control Plane on a local Kubernetes environment"
+/>
+
+This guide provides detailed instructions for setting up the Open Telekom Integration Platform Control Plane in a local Kubernetes environment.
+
+<InfoSection type="tip" title="Quick installation">
+  For a condensed version, see our <a href="../2-Installation/quickstart">Quickstart Guide</a>.
+</InfoSection>
+
+## Prerequisites
+
+Before beginning the installation, ensure you have the following tools installed:
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="Git"
+    description="Version control system for source code management"
+    linkText="Download"
+    linkUrl="https://git-scm.com/downloads"
+  />
+  
+  <FeatureCard
+    title="Docker"
+    description="Container runtime for building and running containers"
+    linkText="Download"
+    linkUrl="https://docs.docker.com/get-docker/"
+  />
+  
+  <FeatureCard
+    title="Kubectl"
+    description="Kubernetes command-line tool for cluster management"
+    linkText="Download"
+    linkUrl="https://kubernetes.io/docs/tasks/tools/#kubectl"
+  />
+  
+  <FeatureCard
+    title="Kind"
+    description="Kubernetes IN Docker - for local Kubernetes clusters"
+    linkText="Download"
+    linkUrl="https://kind.sigs.k8s.io/docs/user/quick-start/#installation"
+  />
+  
+  <FeatureCard
+    title="GitHub CLI"
+    description="Command-line tool for GitHub authentication"
+    linkText="Download"
+    linkUrl="https://cli.github.com/"
+  />
+  
+  <FeatureCard
+    title="Ko"
+    description="Container image builder for Go applications (for development)"
+    linkText="Download"
+    linkUrl="https://ko.build/install/"
+  />
+</CardGrid>
+
+## Installation Overview
+
+<InfoSection type="note" title="Process summary">
+  The installation process consists of four main steps:
+</InfoSection>
+
+<FeatureGrid columns={4} features={[
+  {
+    title: "1️⃣ Setup",
+    description: "Setting up a local Kubernetes cluster"
+  },
+  {
+    title: "2️⃣ Installation",
+    description: "Installing the Control Plane components"
+  },
+  {
+    title: "3️⃣ Resources",
+    description: "Creating the required resources"
+  },
+  {
+    title: "4️⃣ Verification",
+    description: "Verifying the installation"
+  }
+]} />
+
+## Local Environment Setup
+
+The Control Plane runs on Kubernetes. For local development and testing, we'll use [kind](https://kind.sigs.k8s.io/) (Kubernetes IN Docker) to create a lightweight local Kubernetes cluster.
+
+<InfoSection type="caution" title="Before you start">
+  Please read through the entire section before executing commands to ensure proper setup and avoid potential issues.
+</InfoSection>
+
+### Step 1: Set Up a Local Kind Cluster
+
+```bash
+# Clone the repository (if you haven't already)
+git clone --branch main https://github.com/telekom/controlplane.git
+cd controlplane
+
+# Create a new Kind cluster
+kind create cluster
+
+# Verify you're connected to the correct Kubernetes context
+kubectl config current-context
+# Output should be: kind-kind
+
+# Create the required namespace
+kubectl create namespace secret-manager-system
+
+# Set GitHub token to avoid rate limits
+export GITHUB_TOKEN=$(gh auth token)
+
+# Install required components with the script
+bash ./install.sh --with-cert-manager --with-trust-manager --with-monitoring-crds
+
+# Now your local kind-cluster is set up with the required components:
+# - cert-manager (for certificate management)
+# - trust-manager (for trust bundle management)
+# - monitoring CRDs (for Prometheus monitoring)
+```
+
+### Step 2: Install the Control Plane
+
+<InfoSection type="info" title="Components overview">
+  The Control Plane consists of multiple controllers and custom resources that manage workloads across Kubernetes clusters.
+</InfoSection>
+
+Follow these steps to install the Control Plane components:
+
+```bash
+# Navigate to the installation directory
+cd install/local
+
+# Apply the kustomization to install controlplane components
+kubectl apply -k .
+
+# Verify installation by checking that controller pods are running
+kubectl get pods -A -l control-plane=controller-manager
+```
+
+### Step 3: Create Required Resources
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="Admin Resources"
+    description="Configure the core platform and infrastructure components"
+  />
+  
+  <FeatureCard
+    title="Organization Resources"
+    description="Set up teams and organizational structure"
+  />
+  
+  <FeatureCard
+    title="Rover Resources"
+    description="Deploy workloads and applications on the platform"
+  />
+</CardGrid>
+
+#### 3.1 Create Admin Resources
+
+Navigate to the [example admin resource](https://github.com/telekom/controlplane/tree/main/install/local/resources/admin). 
+Adjust these resource as needed.
+
+Install the admin resources to your local cluster:
+```bash
+# Apply the admin resources
+kubectl apply -k resources/admin
+
+# Verify that the zone is ready
+kubectl wait --for=condition=Ready -n controlplane zones/dataplane1
+```
+
+#### 3.2 Create Organization Resources
+
+Navigate to the [example organization resource](https://github.com/telekom/controlplane/tree/main/install/local/resources/org). 
+Adjust these resource as needed.
+
+Install the organization resources to your local cluster:
+```bash
+# Apply the organization resources
+kubectl apply -k resources/org
+
+# Verify that the team is ready
+kubectl wait --for=condition=Ready -n controlplane teams/phoenix--firebirds
+```
+
+#### 3.3 Create Rover Resources
+
+Navigate to the [example rover resource](https://github.com/telekom/controlplane/tree/main/install/local/resources/rover). 
+Adjust these resource as needed.
+
+Install the rover resources to your local cluster:
+```bash
+# Apply the rover resources
+kubectl apply -k resources/rover
+
+# Verify that the rover is ready
+kubectl wait --for=condition=Ready -n controlplane--phoenix--firebirds rovers/rover-echo-v1
+```
+
+## Development: Testing Local Controllers
+
+<InfoSection type="tip" title="Development workflow">
+  For developers who want to test their own controller implementations, there are two approaches available.
+</InfoSection>
+
+To test your locally developed controller, you have multiple options that are described below.
+
+### Option 1: Replace Controller Images
+
+You now have the `stable` release deployed on your local kind-cluster. To change specific versions of controllers, you 
+can do:
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "1. Navigate",
+    description: "Go to install/local/kustomization.yaml"
+  },
+  {
+    title: "2. Build Controller",
+    description: "Build the controller you want to test"
+  },
+  {
+    title: "3. Update Image",
+    description: "Update the kustomization file with your new image"
+  },
+  {
+    title: "4. Apply Changes",
+    description: "Deploy the updated configuration to the cluster"
+  }
+]} />
+
+```bash
+# Example for rover controller
+cd rover
+
+export KO_DOCKER_REPO=ko.local
+ko build --bare cmd/main.go --tags rover-test
+kind load docker-image ko.local:rover-test
+```
+
+Update `install/local/kustomization.yaml` with the new rover-controller image, then install again:
+
+```bash
+# [optional] navigate back to the install/local directory
+cd install/local
+# Apply the changes
+kubectl apply -k .
+```
+
+**Success!** Your controller is now running with your local version.
+
+### Option 2: Run Controllers Locally
+
+<InfoSection type="warning" title="Webhook limitations">
+  You cannot test any webhook logic by running the controller like this!
+</InfoSection>
+
+1. Before you run [Install the Control Plane](#step-2-install-the-control-plane), navigate to `install/local/kustomization.yaml`
+2. Edit the file and comment out all controller that you want to test locally, e.g. if I want to test rover, api and gateway:
+    ```yaml
+    resources:
+      - ../../secret-manager/config/default
+      - ../../identity/config/default
+      # - ../../gateway/config/default
+      - ../../approval/config/default
+      # - ../../rover/config/default
+      - ../../application/config/default
+      - ../../organization/config/default
+      # - ../../api/config/default
+      - ../../admin/config/default
+    ```
+3. Apply it using `kubectl apply -k .`
+4. Now, the rover-, api- and gateway-controllers were not deployed. You need to do it manually
+    ```bash
+    # forEach controller
+    cd rover
+    make install # install the CRDs
+    export ENABLE_WEBHOOKS=false # if applicable, disable webhooks
+    go run cmd/main.go # start the controller process
+    ```
+5. **Success!** Your controllers are now running as separate processes connected to the kind-cluster
+
+## Troubleshooting
+
+<InfoSection type="note" title="Common issues">
+  If you encounter issues during installation, here are some common troubleshooting steps.
+</InfoSection>
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="Controller Logs"
+    description={<>
+      <p>Check controller logs for errors:</p>
+      <code>kubectl logs -n controlplane deploy/controlplane-controller-manager -c manager</code>
+    </>}
+  />
+  
+  <FeatureCard
+    title="CRD Verification"
+    description={<>
+      <p>Verify custom resource definitions:</p>
+      <code>kubectl get crds | grep controlplane</code>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Resource Status"
+    description={<>
+      <p>Check status of created resources:</p>
+      <code>kubectl get zones,teams,rovers -A</code>
+    </>}
+  />
+</CardGrid>
+
+## Next Steps
+
+After successful installation, you can:
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Explore Resources"
+    description="Use kubectl commands to examine the created resources and understand their relationships"
+    icon="🔍"
+  />
+  
+  <FeatureCard
+    title="Deploy Workloads"
+    description="Create and deploy your own workloads using Rover resources"
+    icon="🚀"
+  />
+  
+  <FeatureCard
+    title="Learn Architecture"
+    description="Study the Control Plane architecture and component interactions"
+    linkText="Architecture Overview"
+    linkUrl="../Overview/architecture"
+  />
+  
+  <FeatureCard
+    title="Test APIs"
+    description="Interact with API endpoints for resource management"
+    icon="🔌"
+  />
+</CardGrid>

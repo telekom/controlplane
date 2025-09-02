@@ -1,0 +1,258 @@
+---
+sidebar_position: 1
+title: "Controlplane"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import TableOfContents from '@site/src/components/TableOfContents';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import ButtonLink from '@site/src/components/ButtonLink';
+import InfoSection from '@site/src/components/InfoSection';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Controlplane"
+  description="A centralized management layer that maintains the desired state of your systems by orchestrating workloads, scheduling, and system operations through a set of core and custom controllers."
+  logo={{
+    src: "/controlplane/img/eni-tardis-small.png",
+    alt: "Open Telekom Integration Platform Logo",
+    width: 200
+  }}
+/>
+
+## Table of Contents
+
+<TableOfContents
+  items={[
+    {
+      title: "Documentation",
+      icon: "📓",
+      links: [
+        { text: "About Control Plane", url: "#about" },
+        { text: "Key Features", url: "#features" },
+        { text: "Component Overview", url: "#component-overview" },
+        { text: "Getting Started", url: "#getting-started" }
+      ]
+    },
+    {
+      title: "Detailed Guides",
+      icon: "📚",
+      links: [
+        { text: "Components", url: "components" },
+        { text: "Operators", url: "operators" },
+        { text: "Architecture", url: "architecture" },
+        { text: "Infrastructure", url: "infrastructure" }
+      ]
+    }
+  ]}
+/>
+
+## About
+
+<div className="row">
+  <div className="col col--8">
+    <p>
+      As part of the Open Telekom Integration Platform, the Control Plane is the central management layer that governs the operation of your Kubernetes cluster. It maintains the desired state of the system, manages workloads, and provides interfaces for user interaction and automation.
+    </p>
+    <p>
+      The Control Plane follows a modular architecture with specialized components that work together to provide a complete platform for API management and workload orchestration. It extends the native Kubernetes capabilities through custom controllers and operators that implement domain-specific logic.
+    </p>
+  </div>
+  <div className="col col--4">
+    <FeatureCard
+      title="Why Control Plane?"
+      description={
+        <ul>
+          <li>🌐 <b>Unified management</b> across clusters</li>
+          <li>🔒 <b>Security by design</b> with OAuth 2.0</li>
+          <li>🧲 <b>API-first approach</b> for integration</li>
+          <li>🔄 <b>Declarative configuration</b> for consistency</li>
+        </ul>
+      }
+    />
+  </div>
+</div>
+
+<hr />
+
+## Features
+
+<InfoSection type="info" title="Key capabilities">
+  The Open Telekom Integration Platform Control Plane supports the complete API lifecycle and enables seamless, cloud-independent integration of services. It provides fine-grained API access control with security by design through OAuth 2.0 and integrated permission management.
+</InfoSection>
+
+Key features of the Control Plane include:
+
+<FeatureGrid
+  columns={2}
+  features={[
+    {
+      title: "API Management",
+      description: "Complete API lifecycle management with cloud-independent service integration. Provides fine-grained access control with OAuth 2.0 security and integrated permission management."
+    },
+    {
+      title: "Approval Management",
+      description: "Secure and auditable access to APIs with features like 4-eyes-principle, approval expiration, recertification, and more."
+    },
+    {
+      title: "Organization and Admin",
+      description: "Administrative tools for efficient organization management, including zones, gateways, and identity providers."
+    },
+    {
+      title: "Team Management",
+      description: "Comprehensive team management with team creation, member management, and role-based access control."
+    },
+    {
+      title: "Secret Management",
+      description: "Securely store, access, and distribute sensitive information like passwords, API keys, and certificates. Ensures encryption at rest and secure transmission."
+    },
+    {
+      title: "REST APIs",
+      description: <>
+        <ul>
+          <li>Rover API: Manage Rover functionalities</li>
+          <li>Approval API: Handle approval processes</li>
+          <li>Team API: Manage teams and members</li>
+          <li>Catalog API: Access and manage API catalog</li>
+          <li>ControlPlane API: Access controlplane resources</li>
+        </ul>
+      </>
+    }
+  ]}
+/>
+
+<hr />
+
+## Component Overview
+
+The Control Plane consists of multiple specialized components organized in a hierarchical structure:
+
+<div className="card">
+  <div className="card__header">
+    <h3>Control Plane Component Categories</h3>
+  </div>
+  <div className="card__body">
+    <ul>
+      <li><b>Operators</b>: Specialized control loops for managing complex domain-specific resources</li>
+      <li><b>API Servers</b>: RESTful APIs for managing Kubernetes custom resources</li>
+      <li><b>Libraries</b>: Shared code modules between different projects</li>
+      <li><b>Infrastructure Components</b>: Essential services the Control Plane depends on</li>
+    </ul>
+    <p>For detailed information about each component type, visit the dedicated pages:</p>
+    <div className="button-group">
+      <ButtonLink to="components">Components Details</ButtonLink>
+      <ButtonLink to="operators">Operators</ButtonLink>
+      <ButtonLink to="architecture">Architecture</ButtonLink>
+      <ButtonLink to="infrastructure">Infrastructure</ButtonLink>
+    </div>
+  </div>
+</div>
+
+<hr />
+
+## Getting Started
+
+<InfoSection type="tip" title="Start your journey">
+  The Control Plane can be approached in different ways depending on your needs. Choose the path that suits you best.
+</InfoSection>
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="🧠 Learn"
+    description={
+      <>
+        <p>
+          Understand the technologies and frameworks used in the Control Plane and how they work together.
+        </p>
+        <ul>
+          <li>Core technologies overview</li>
+          <li>Architecture principles</li>
+          <li>Component interactions</li>
+        </ul>
+        <ButtonLink to="../Technology/technology" fullWidth>Technology Overview</ButtonLink>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="🚀 Try"
+    description={
+      <>
+        <p>
+          Set up a local development environment quickly to try out the Control Plane functionality.
+        </p>
+        <ul>
+          <li>5-minute local setup</li>
+          <li>Sample resources</li>
+          <li>Quick verification</li>
+        </ul>
+        <ButtonLink to="../Installation/quickstart" fullWidth>Quickstart Guide</ButtonLink>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="🛠️ Install"
+    description={
+      <>
+        <p>
+          Get detailed instructions for installing the Control Plane in a Kubernetes environment.
+        </p>
+        <ul>
+          <li>Production setup</li>
+          <li>Configuration options</li>
+          <li>Integration guides</li>
+        </ul>
+        <ButtonLink to="../Installation/installation" fullWidth>Installation Guide</ButtonLink>
+      </>
+    }
+  />
+</CardGrid>
+
+<hr />
+
+## Next Steps
+
+<InfoSection type="tip" title="Ready to dive deeper?">
+  Now that you've explored the Control Plane overview, take your next steps with these resources:
+</InfoSection>
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="📚 Documentation"
+    description={
+      <ul>
+        <li><a href="../Technology/technology">Technology Guides</a></li>
+        <li><a href="../Installation/installation">Installation Guide</a></li>
+        <li><a href="../Installation/quickstart">Quickstart Guide</a></li>
+      </ul>
+    }
+  />
+  
+  <FeatureCard
+    title="💻 Development"
+    description={
+      <ul>
+        <li><a href="https://github.com/telekom/controlplane">GitHub Repository</a></li>
+        <li><a href="https://github.com/telekom/controlplane/blob/main/CONTRIBUTING.md">Contributing Guide</a></li>
+        <li><a href="https://github.com/telekom/controlplane/issues">Issue Tracker</a></li>
+      </ul>
+    }
+  />
+  
+  <FeatureCard
+    title="👨‍💻 Community"
+    description={
+      <ul>
+        <li><a href="https://stackoverflow.com/questions/tagged/controlplane">Stack Overflow</a></li>
+        <li><a href="https://github.com/telekom/controlplane/discussions">GitHub Discussions</a></li>
+        <li><a href="https://github.com/telekom/controlplane/blob/main/CODE_OF_CONDUCT.md">Code of Conduct</a></li>
+        <li><a href="https://github.com/telekom/controlplane/tree/main/LICENSES">License Texts</a></li>
+      </ul>
+    }
+  />
+</CardGrid>

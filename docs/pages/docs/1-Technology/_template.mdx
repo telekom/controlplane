@@ -1,0 +1,169 @@
+---
+sidebar_position: 0
+title: "Technology Documentation Template"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="[Technology Name]"
+  description="[Concise one-line description of the technology]"
+/>
+
+[One-paragraph introduction to the technology and its role in the Control Plane]
+
+<InfoSection type="info" title="[Technology] in the Control Plane">
+  [Explanation of how this technology fits into the Control Plane architecture and its importance]
+</InfoSection>
+
+## Overview
+
+[Comprehensive explanation of what the technology is, its core concepts, and its primary purpose]
+
+<div align="center">
+  <img src="/img/logos/[technology-name]-logo.svg" alt="[Technology Name] Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Why [Technology]?
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🔑 [Key Benefit 1]",
+    description: "[Description of this benefit/feature]"
+  },
+  {
+    title: "⚡ [Key Benefit 2]",
+    description: "[Description of this benefit/feature]"
+  },
+  {
+    title: "🔄 [Key Benefit 3]",
+    description: "[Description of this benefit/feature]"
+  },
+  {
+    title: "🛡️ [Key Benefit 4]",
+    description: "[Description of this benefit/feature]"
+  },
+  {
+    title: "📈 [Key Benefit 5]",
+    description: "[Description of this benefit/feature]"
+  },
+  {
+    title: "🔍 [Key Benefit 6]",
+    description: "[Description of this benefit/feature]"
+  }
+]} />
+
+## Integration in the Control Plane
+
+<InfoSection type="tip" title="[Integration insight]">
+  [Key insight or best practice about how the technology is integrated]
+</InfoSection>
+
+[Detailed explanation of how the technology is specifically implemented and used within the Control Plane]
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="[Use Case 1]"
+    description={<>
+      <p>[Description of this use case]</p>
+      <ul>
+        <li>[Detail 1]</li>
+        <li>[Detail 2]</li>
+        <li>[Detail 3]</li>
+        <li>[Detail 4]</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="[Use Case 2]"
+    description={<>
+      <p>[Description of this use case]</p>
+      <ul>
+        <li>[Detail 1]</li>
+        <li>[Detail 2]</li>
+        <li>[Detail 3]</li>
+        <li>[Detail 4]</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Configuration
+
+<InfoSection type="note" title="[Configuration insight]">
+  [Important note about configuration patterns or requirements]
+</InfoSection>
+
+[Configuration details, options, and patterns used in the Control Plane]
+
+```yaml
+# Example configuration
+key: value
+nested:
+  option: setting
+  features:
+    - feature1
+    - feature2
+```
+
+## Best Practices
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "📝 [Best Practice 1]",
+    description: "[Description of this best practice]"
+  },
+  {
+    title: "🔍 [Best Practice 2]",
+    description: "[Description of this best practice]"
+  },
+  {
+    title: "🛡️ [Best Practice 3]",
+    description: "[Description of this best practice]"
+  },
+  {
+    title: "⚡ [Best Practice 4]",
+    description: "[Description of this best practice]"
+  },
+  {
+    title: "🔄 [Best Practice 5]",
+    description: "[Description of this best practice]"
+  },
+  {
+    title: "📊 [Best Practice 6]",
+    description: "[Description of this best practice]"
+  }
+]} />
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="[Related Technology 1]"
+    description="[Description of relationship to current technology]"
+    linkText="View [Related Technology 1]"
+    linkUrl="[relative path]"
+  />
+  
+  <FeatureCard
+    title="[Related Technology 2]"
+    description="[Description of relationship to current technology]"
+    linkText="View [Related Technology 2]"
+    linkUrl="[relative path]"
+  />
+  
+  <FeatureCard
+    title="[Related Technology 3]"
+    description="[Description of relationship to current technology]"
+    linkText="View [Related Technology 3]"
+    linkUrl="[relative path]"
+  />
+</CardGrid>

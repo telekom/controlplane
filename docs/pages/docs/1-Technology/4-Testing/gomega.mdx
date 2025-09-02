@@ -1,0 +1,195 @@
+---
+sidebar_position: 4
+title: "Gomega"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Gomega"
+  description="Expressive matcher/assertion library for Go"
+/>
+
+[Gomega](https://github.com/onsi/gomega) is a matcher and assertion library for Go, commonly used with Ginkgo for BDD-style testing in the Control Plane.
+
+<InfoSection type="info" title="Expressive assertions">
+  Gomega provides a fluent, expressive syntax for making assertions in tests, making tests both more readable and more maintainable.
+</InfoSection>
+
+## Overview
+
+Gomega enhances Go tests with readable assertions and powerful matching capabilities. While it's designed to work seamlessly with Ginkgo, it can also be used with Go's standard testing package.
+
+<div align="center">
+  <img src="/controlplane/img/logos/gomega-logo.png" alt="Gomega Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Why Gomega?
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🔍 Expressive Matchers",
+    description: "Clear, readable syntax for assertions with detailed failure messages."
+  },
+  {
+    title: "⏱️ Asynchronous Testing",
+    description: "Built-in support for testing asynchronous behavior with Eventually and Consistently."
+  },
+  {
+    title: "🔄 Custom Matchers",
+    description: "Ability to create custom matchers for domain-specific assertions."
+  },
+  {
+    title: "🧩 Combinable Matchers",
+    description: "Combine matchers with And, Or, and Not for complex assertions."
+  },
+  {
+    title: "🌐 Collection Matchers",
+    description: "Special matchers for arrays, slices, maps, and channels."
+  },
+  {
+    title: "⚙️ Error Handling",
+    description: "Specific matchers for error handling and propagation."
+  }
+]} />
+
+## Integration in the Control Plane
+
+<InfoSection type="tip" title="Consistent assertions">
+  Gomega provides a consistent way to express expectations across the Control Plane codebase, making tests more readable and maintainable.
+</InfoSection>
+
+The Control Plane uses Gomega for assertions in various types of tests:
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Unit Tests"
+    description={<>
+      <p>Basic assertions for functions and methods:</p>
+      <ul>
+        <li>Verifying return values</li>
+        <li>Checking error conditions</li>
+        <li>Validating data transformations</li>
+        <li>Testing boundary conditions</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Controller Tests"
+    description={<>
+      <p>Assertions for controller behavior:</p>
+      <ul>
+        <li>Resource creation and updates</li>
+        <li>Status field changes</li>
+        <li>Reconciliation results</li>
+        <li>Error handling and recovery</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+
+## Configuration
+
+<InfoSection type="note" title="Matcher types and options">
+  Gomega provides different types of matchers for various testing scenarios, with options to customize behavior.
+</InfoSection>
+
+### Common Matchers
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="Equality Matchers"
+    description={<>
+      <code>{`Equal(expected)`}</code>: Deep equality<br/>
+      <code>{`BeIdenticalTo(expected)`}</code>: Pointer identity<br/>
+      <code>{`BeEquivalentTo(expected)`}</code>: Type-converting equality<br/>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Comparison Matchers"
+    description={<>
+      <code>{`BeNumerically(">", 5)`}</code>: Numeric comparison<br/>
+      <code>{`BeLessThan(10)`}</code>: Less than<br/>
+      <code>{`BeGreaterThan(5)`}</code>: Greater than<br/>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Boolean Matchers"
+    description={<>
+      <code>{`BeTrue()`}</code>: Is true<br/>
+      <code>{`BeFalse()`}</code>: Is false<br/>
+      <code>{`BeTruthy()`}</code>: Evaluates to true<br/>
+    </>}
+  />
+</CardGrid>
+
+### Asynchronous Testing
+
+<InfoSection type="tip" title="Testing async behavior">
+  Gomega's Eventually and Consistently functions are particularly useful for testing controllers in the Control Plane, which often involve asynchronous reconciliation loops.
+</InfoSection>
+
+## Best Practices in the Control Plane
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "📝 Descriptive Assertions",
+    description: "Write assertions that clearly convey intent and provide meaningful failure messages."
+  },
+  {
+    title: "🔄 Eventually with Timeouts",
+    description: "Always specify reasonable timeouts for Eventually assertions to prevent long-running tests."
+  },
+  {
+    title: "🧩 Custom Domain Matchers",
+    description: "Create custom matchers for domain-specific concepts to make tests more readable."
+  },
+  {
+    title: "♻️ Reuse Complex Assertions",
+    description: "Extract complex assertions into helper functions for reuse and clarity."
+  },
+  {
+    title: "⚠️ Avoid Over-Specificity",
+    description: "Focus on testing behavior rather than implementation details to create more maintainable tests."
+  },
+  {
+    title: "🔍 Targeted Assertions",
+    description: "Test one concept per assertion for clearer failure messages and better test diagnostics."
+  }
+]} />
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Ginkgo"
+    description="BDD-style testing framework that pairs perfectly with Gomega."
+    linkText="View Ginkgo"
+    linkUrl="ginkgo"
+  />
+  
+  <FeatureCard
+    title="Testify"
+    description="Another testing toolkit used in the Control Plane."
+    linkText="View Testify"
+    linkUrl="testify"
+  />
+  
+  <FeatureCard
+    title="Go-Snaps"
+    description="Snapshot testing library for Go applications."
+    linkText="View Go-Snaps"
+    linkUrl="go-snaps"
+  />
+</CardGrid>
