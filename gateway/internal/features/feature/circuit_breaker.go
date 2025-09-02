@@ -15,6 +15,7 @@ import (
 	"github.com/telekom/controlplane/gateway/internal/features/feature/config"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
+	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
 )
 
 var _ features.Feature = &CircuitBreakerFeature{}
@@ -73,81 +74,103 @@ func (c CircuitBreakerFeature) Apply(ctx context.Context, builder features.Featu
 	kongClient := builder.GetKongClient()
 	kongAdminApi := kongClient.GetKongAdminApi()
 
-	// ! important - if CB is enabled then the kong service value needs to reference the kong upstream (same name as route name)
-	builder.SetUpstream(&client.CustomUpstream{
-		Scheme: "http",
-		Host:   routeName,
-		Port:   8080,
-		Path:   "/proxy",
-	})
+	if isDeleteScenario(route) {
+		builder.SetUpstream(client.NewUpstreamOrDie(plugin.LocalhostProxyUrl))
 
-	upstreamAlgorithm := kong.RoundRobin
-	passiveHealthcheckType := kong.CreateUpstreamRequestHealthchecksPassiveTypeHttp
-	activeHealthcheckType := kong.CreateUpstreamRequestHealthchecksActiveTypeHttp
-	upstreamName := routeName
-	upstreamBody := kong.CreateUpstreamJSONRequestBody{
-		Algorithm: &upstreamAlgorithm,
-		Name:      upstreamName,
-		Healthchecks: &kong.CreateUpstreamRequestHealthchecks{
-			Active: &kong.CreateUpstreamRequestHealthchecksActive{
-				Healthy: &kong.CreateUpstreamRequestHealthchecksActiveHealthy{
-					HttpStatuses: &config.DefaultCircuitBreaker.Active.HealthyHttpStatuses,
+		kongUpstreamName := route.GetUpstreamId()
+		upstreamDeleteResponse, err := kongAdminApi.DeleteUpstreamWithResponse(ctx, kongUpstreamName)
+		if err != nil {
+			return errors.Wrapf(err, "failed to delete upstream for route %s", routeName)
+		}
+		if err := client.CheckStatusCode(upstreamDeleteResponse, 200, 204); err != nil {
+			return errors.Wrapf(fmt.Errorf("error body from kong admin api: %s", string(upstreamDeleteResponse.Body)), "failed to create upstream for route %s", routeName)
+		}
+
+	} else {
+		// ! important - if CB is enabled then the kong service value needs to reference the kong upstream (same name as route name)
+		builder.SetUpstream(&client.CustomUpstream{
+			Scheme: "http",
+			Host:   routeName,
+			Port:   8080,
+			Path:   "/proxy",
+		})
+
+		upstreamAlgorithm := kong.RoundRobin
+		passiveHealthcheckType := kong.CreateUpstreamRequestHealthchecksPassiveTypeHttp
+		activeHealthcheckType := kong.CreateUpstreamRequestHealthchecksActiveTypeHttp
+		upstreamName := routeName
+		upstreamBody := kong.CreateUpstreamJSONRequestBody{
+			Algorithm: &upstreamAlgorithm,
+			Name:      upstreamName,
+			Healthchecks: &kong.CreateUpstreamRequestHealthchecks{
+				Active: &kong.CreateUpstreamRequestHealthchecksActive{
+					Healthy: &kong.CreateUpstreamRequestHealthchecksActiveHealthy{
+						HttpStatuses: &config.DefaultCircuitBreaker.Active.HealthyHttpStatuses,
+					},
+					Type: &activeHealthcheckType,
+					Unhealthy: &kong.CreateUpstreamRequestHealthchecksActiveUnhealthy{
+						HttpStatuses: &config.DefaultCircuitBreaker.Active.UnhealthyHttpStatuses,
+					},
 				},
-				Type: &activeHealthcheckType,
-				Unhealthy: &kong.CreateUpstreamRequestHealthchecksActiveUnhealthy{
-					HttpStatuses: &config.DefaultCircuitBreaker.Active.UnhealthyHttpStatuses,
+				Passive: &kong.CreateUpstreamRequestHealthchecksPassive{
+					Healthy: &kong.CreateUpstreamRequestHealthchecksPassiveHealthy{
+						HttpStatuses: config.ToPassiveHealthyHttpStatuses(config.DefaultCircuitBreaker.Passive.HealthyHttpStatuses),
+						Successes:    &config.DefaultCircuitBreaker.Passive.HealthySuccesses,
+					},
+					Type: &passiveHealthcheckType,
+					Unhealthy: &kong.CreateUpstreamRequestHealthchecksPassiveUnhealthy{
+						HttpFailures: &config.DefaultCircuitBreaker.Passive.UnhealthyHttpFailures,
+						HttpStatuses: config.ToPassiveUnhealthyHttpStatuses(config.DefaultCircuitBreaker.Passive.UnhealthyHttpStatuses),
+						TcpFailures:  &config.DefaultCircuitBreaker.Passive.UnhealthyTcpFailures,
+						Timeouts:     &config.DefaultCircuitBreaker.Passive.UnhealthyTimeouts,
+					},
 				},
 			},
-			Passive: &kong.CreateUpstreamRequestHealthchecksPassive{
-				Healthy: &kong.CreateUpstreamRequestHealthchecksPassiveHealthy{
-					HttpStatuses: config.ToPassiveHealthyHttpStatuses(config.DefaultCircuitBreaker.Passive.HealthyHttpStatuses),
-					Successes:    &config.DefaultCircuitBreaker.Passive.HealthySuccesses,
-				},
-				Type: &passiveHealthcheckType,
-				Unhealthy: &kong.CreateUpstreamRequestHealthchecksPassiveUnhealthy{
-					HttpFailures: &config.DefaultCircuitBreaker.Passive.UnhealthyHttpFailures,
-					HttpStatuses: config.ToPassiveUnhealthyHttpStatuses(config.DefaultCircuitBreaker.Passive.UnhealthyHttpStatuses),
-					TcpFailures:  &config.DefaultCircuitBreaker.Passive.UnhealthyTcpFailures,
-					Timeouts:     &config.DefaultCircuitBreaker.Passive.UnhealthyTimeouts,
-				},
+			Tags: &[]string{
+				client.BuildTag("env", contextutil.EnvFromContextOrDie(ctx)),
+				client.BuildTag("upstream", upstreamName),
 			},
-		},
-		Tags: &[]string{
-			client.BuildTag("env", contextutil.EnvFromContextOrDie(ctx)),
-			client.BuildTag("upstream", upstreamName),
-		},
-	}
+		}
 
-	upstreamResponse, err := kongAdminApi.UpsertUpstreamWithResponse(ctx, upstreamName, upstreamBody)
-	if err != nil {
-		return errors.Wrap(err, "failed to create upstream")
-	}
-	if err := client.CheckStatusCode(upstreamResponse, 200); err != nil {
-		return errors.Wrap(fmt.Errorf("failed to create upstream: %s", string(upstreamResponse.Body)), "failed to create upstream")
-	}
-	route.SetUpstreamId(*upstreamResponse.JSON200.Id)
+		upstreamResponse, err := kongAdminApi.UpsertUpstreamWithResponse(ctx, upstreamName, upstreamBody)
+		if err != nil {
+			return errors.Wrap(err, "failed to create upstream")
+		}
+		if err := client.CheckStatusCode(upstreamResponse, 200); err != nil {
+			return errors.Wrap(fmt.Errorf("error body from kong admin api: %s", string(upstreamResponse.Body)), "failed to create upstream")
+		}
+		route.SetUpstreamId(*upstreamResponse.JSON200.Id)
 
-	targetsName := routeName
-	targetsTarget := "localhost:8080"
-	targetsWeight := 100
-	targetsBody := kong.CreateTargetForUpstreamJSONRequestBody{
-		Tags: &[]string{
-			client.BuildTag("env", contextutil.EnvFromContextOrDie(ctx)),
-			client.BuildTag("targets", targetsName),
-		},
-		Target: &targetsTarget,
-		Weight: &targetsWeight,
-	}
+		targetsName := routeName
+		targetsTarget := "localhost:8080"
+		targetsWeight := 100
+		targetsBody := kong.CreateTargetForUpstreamJSONRequestBody{
+			Tags: &[]string{
+				client.BuildTag("env", contextutil.EnvFromContextOrDie(ctx)),
+				client.BuildTag("targets", targetsName),
+			},
+			Target: &targetsTarget,
+			Weight: &targetsWeight,
+		}
 
-	// this is a special case with the kong admin API - this endpoint /upstreams/:upstreamName/targets actually accepts multiple POST requests, so this is not a mistake
-	targetsResponse, err := kongAdminApi.CreateTargetForUpstreamWithResponse(ctx, upstreamName, targetsBody)
-	if err != nil {
-		return errors.Wrap(err, "failed to create targets for upstream")
+		// this is a special case with the kong admin API - this endpoint /upstreams/:upstreamName/targets actually accepts multiple POST requests, so this is not a mistake
+		targetsResponse, err := kongAdminApi.CreateTargetForUpstreamWithResponse(ctx, upstreamName, targetsBody)
+		if err != nil {
+			return errors.Wrap(err, "failed to create targets for upstream")
+		}
+		if err := client.CheckStatusCode(targetsResponse, 200, 201); err != nil {
+			return errors.Wrap(fmt.Errorf("error body from kong admin api: %s", string(targetsResponse.Body)), "failed to create targets for upstream")
+		}
+		route.SetTargetsId(*targetsResponse.JSON200.Id)
 	}
-	if err := client.CheckStatusCode(targetsResponse, 200, 201); err != nil {
-		return errors.Wrap(fmt.Errorf("failed to create targets for upstream: %s", string(targetsResponse.Body)), "failed to create targets for upstream")
-	}
-	route.SetTargetsId(*targetsResponse.JSON200.Id)
 
 	return nil
+}
+
+func isDeleteScenario(route *gatewayv1.Route) bool {
+	if !route.Spec.Traffic.CircuitBreaker && route.GetUpstreamId() != "" {
+		return true
+	} else {
+		return false
+	}
 }

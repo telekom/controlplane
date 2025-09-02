@@ -197,6 +197,62 @@ var _ = Describe("BasicAuthFeature", func() {
 				}))
 				Expect(route.GetTargetsId()).To(Equal("kong_target_response_id"))
 			})
+
+			It("should delete kong upstream and targets if CB is disabled and upstreamId is not empty", func() {
+				// Setup
+				ctx := context.Background()
+				ctx = contextutil.WithEnv(ctx, "test")
+				route := &gatewayv1.Route{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-route-name",
+					},
+					Spec: gatewayv1.RouteSpec{
+						Traffic: gatewayv1.Traffic{
+							CircuitBreaker: false,
+						},
+					},
+					Status: gatewayv1.RouteStatus{
+						Properties: map[string]string{"upstreamId": "kong_upstream_response_id"},
+					},
+				}
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Times(1)
+				mockFeatureBuilder.EXPECT().GetKongClient().Return(mockKongClient).Times(1)
+				mockKongClient.EXPECT().GetKongAdminApi().Return(mockKongAdminApi).Times(1)
+
+				var setUpstreamArg *client.CustomUpstream
+				mockFeatureBuilder.EXPECT().SetUpstream(gomock.Any()).Do(func(upstream *client.CustomUpstream) {
+					setUpstreamArg = upstream
+				})
+
+				// mock UpsertUpstreamWithResponse
+				var deleteUpstreamWithResponse_upstreamNameArg string
+				deleteUpstreamWithResponse_func := func(_ context.Context, upstreamName string, _ ...kong.RequestEditorFn) (*kong.DeleteUpstreamResponse, error) {
+					deleteUpstreamWithResponse_upstreamNameArg = upstreamName
+
+					return &kong.DeleteUpstreamResponse{
+						Body:         nil,
+						HTTPResponse: &http.Response{StatusCode: 204},
+						JSON401:      nil,
+					}, nil
+
+				}
+				mockKongAdminApi.EXPECT().DeleteUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(deleteUpstreamWithResponse_func).Times(1)
+
+				// Execute
+				err := feature.InstanceCircuitBreakerFeature.Apply(ctx, mockFeatureBuilder)
+
+				// Verify
+				Expect(err).Should(Not(HaveOccurred()))
+				// pointer vs non-pointer
+				Expect(*setUpstreamArg).To(BeEquivalentTo(client.CustomUpstream{
+					Scheme: "http",
+					Host:   "localhost",
+					Port:   8080,
+					Path:   "/proxy",
+				}))
+
+				Expect(deleteUpstreamWithResponse_upstreamNameArg).To(Equal("kong_upstream_response_id"))
+			})
 		})
 	})
 })
