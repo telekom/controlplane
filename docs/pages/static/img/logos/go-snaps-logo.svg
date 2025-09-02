@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100">
+  <style>
+    text {
+      font-family: 'Arial', sans-serif;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .go {
+      fill: #00ADD8;
+    }
+    .snaps {
+      fill: #2185d0;
+    }
+    .camera {
+      fill: #333;
+      font-size: 22px;
+    }
+  </style>
+  <rect width="200" height="100" fill="#f8f9fa" rx="10" ry="10" />
+  <text x="50%" y="55%" text-anchor="middle">
+    <tspan class="go">go</tspan><tspan class="snaps">-snaps</tspan>
+  </text>
+  <text x="75%" y="40%" class="camera">📸</text>
+</svg>
