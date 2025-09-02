@@ -17,6 +17,9 @@ type Traffic struct {
 	// RateLimit defines request rate limiting for this API
 	// +kubebuilder:validation:Optional
 	RateLimit *RateLimit `json:"rateLimit,omitempty"`
+	// CircuitBreaker flags if the Kong circuit breaker feature should be used
+	// +kubebuilder:validation:Optional
+	CircuitBreaker *bool `json:"circuitBreaker,omitempty"`
 }
 
 type SubscriberTraffic struct {

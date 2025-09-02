@@ -202,6 +202,10 @@ func mapTrafficToApiTraffic(env string, roverTraffic *rover.Traffic) apiapi.Traf
 		apiTraffic.RateLimit.SubscriberRateLimit = mapConsumerRateLimitToApiSubscriberRateLimit(roverTraffic.RateLimit.Consumers)
 	}
 
+	if roverTraffic.HasCircuitBreaker() {
+		apiTraffic.CircuitBreaker = roverTraffic.CircuitBreaker
+	}
+
 	return apiTraffic
 }
 

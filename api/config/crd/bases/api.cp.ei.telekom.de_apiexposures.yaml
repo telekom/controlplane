@@ -190,6 +190,10 @@ spec:
                 type: object
               traffic:
                 properties:
+                  circuitBreaker:
+                    description: CircuitBreaker flags if the Kong circuit breaker
+                      feature should be used
+                    type: boolean
                   failover:
                     description: Failover defines the failover configuration for the
                       API exposure.
