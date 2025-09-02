@@ -1,26 +1,28 @@
 
 [Exposure Mapper mapApiExposure must map ApiExposure correctly - 1]
 api.ApiExposure{
-    Approval:      "SIMPLE",
-    BasePath:      "/eni/distr/v1",
-    Failover:      api.Failover{},
-    LoadBalancing: api.LoadBalancing{},
-    RateLimit:     api.RateLimitContainer{},
-    RemoveHeaders: nil,
-    Security:      api.Security{},
-    TrustedTeams:  nil,
-    Type:          "",
-    Upstream:      "https://httpbin.org/anything",
-    Visibility:    "WORLD",
+    Approval:       "SIMPLE",
+    BasePath:       "/eni/distr/v1",
+    CircuitBreaker: false,
+    Failover:       api.Failover{},
+    LoadBalancing:  api.LoadBalancing{},
+    RateLimit:      api.RateLimitContainer{},
+    RemoveHeaders:  nil,
+    Security:       api.Security{},
+    TrustedTeams:   nil,
+    Type:           "",
+    Upstream:       "https://httpbin.org/anything",
+    Visibility:     "WORLD",
 }
 ---
 
 [Exposure Mapper mapApiExposure must handle empty ApiExposure input - 1]
 api.ApiExposure{
-    Approval:      "",
-    BasePath:      "",
-    Failover:      api.Failover{},
-    LoadBalancing: api.LoadBalancing{
+    Approval:       "",
+    BasePath:       "",
+    CircuitBreaker: false,
+    Failover:       api.Failover{},
+    LoadBalancing:  api.LoadBalancing{
         Health:  api.Health{},
         Servers: {
         },

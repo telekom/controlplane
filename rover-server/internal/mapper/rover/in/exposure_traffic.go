@@ -31,6 +31,8 @@ func mapExposureTraffic(in api.ApiExposure, out *roverv1.ApiExposure) {
 		}
 	}
 
+	out.Traffic.CircuitBreaker = &in.CircuitBreaker
+
 	// Map rate limiting configuration
 	mapRateLimit(in, out)
 }
