@@ -42,3 +42,26 @@
 .theme-doc-markdown header h1 {
   display: none;
 }
+
+/* InfoSection component custom styling */
+.admonition.admonition-tip,
+.alert.alert--tip {
+  --ifm-alert-background-color: rgba(82, 196, 26, 0.1);
+  --ifm-alert-background-color-highlight: rgba(82, 196, 26, 0.2);
+  --ifm-alert-border-color: #52c41a;
+}
+
+.admonition.admonition-note,
+.alert.alert--note {
+  --ifm-alert-background-color: rgba(137, 87, 229, 0.1);
+  --ifm-alert-background-color-highlight: rgba(137, 87, 229, 0.2);
+  --ifm-alert-border-color: #8957e5;
+}
+
+/* Override InfoSection text color to use default colors */
+.admonition.admonition-tip,
+.admonition.admonition-note,
+.alert.alert--tip,
+.alert.alert--note {
+  --ifm-alert-foreground-color: var(--ifm-font-color-base);
+}
