@@ -27,6 +27,10 @@ import NoAutoTitle from '@site/src/components/NoAutoTitle';
 
 OAPI-Codegen is a utility that generates Go code from OpenAPI 3.0 specifications, bridging the gap between API design and implementation. It supports various targets including server stubs, client code, type definitions, and spec validation.
 
+<div align="center">
+  <img src="/controlplane/img/logos/oapi-codegen-logo.svg" alt="OAPI-Codegen Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
 <FeatureGrid columns={2} features={[
   {
     title: "🔄 API Consistency",
@@ -51,6 +55,35 @@ OAPI-Codegen is a utility that generates Go code from OpenAPI 3.0 specifications
   {
     title: "📚 Self-documenting",
     description: "OpenAPI spec serves as living documentation for the API."
+  }
+]} />
+
+## Why OAPI-Codegen?
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "⚡ Developer Productivity",
+    description: "Eliminates repetitive boilerplate code, allowing developers to focus on business logic rather than API plumbing."
+  },
+  {
+    title: "📝 Contract-First Development",
+    description: "Enforces a contract-first approach where API design decisions are made deliberately before implementation."
+  },
+  {
+    title: "🧪 Reduced Testing Burden",
+    description: "Generated code is already tested by the library maintainers, reducing the need for extensive testing of API mechanics."
+  },
+  {
+    title: "🚫 Error Prevention",
+    description: "Prevents common API implementation errors like missed validation, incorrect types, or forgotten endpoints."
+  },
+  {
+    title: "🔁 Consistency Across Services",
+    description: "Ensures all services follow the same patterns for API implementation, improving maintainability."
+  },
+  {
+    title: "📋 Documentation as Code",
+    description: "API documentation is generated from the same source as the code, ensuring it's always accurate and up-to-date."
   }
 ]} />
 

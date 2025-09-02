@@ -27,6 +27,12 @@ import NoAutoTitle from '@site/src/components/NoAutoTitle';
 
 Ginkgo is designed to make writing and running tests productive and enjoyable. It integrates with Go's built-in testing package but offers a more expressive and feature-rich approach to testing.
 
+<div align="center">
+  <img src="/controlplane/img/logos/ginkgo-logo.png" alt="Ginkgo Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Why Ginkgo?
+
 <FeatureGrid columns={2} features={[
   {
     title: "🧪 BDD-Style Tests",
@@ -88,44 +94,13 @@ Ginkgo is designed to make writing and running tests productive and enjoyable. I
   />
 </CardGrid>
 
-## Advanced Features
+## Configuration
 
 <InfoSection type="note" title="Powerful testing capabilities">
   Ginkgo offers many advanced features that help with writing comprehensive tests for complex systems like the Control Plane.
 </InfoSection>
 
-<CardGrid columns={3}>
-  <FeatureCard
-    title="Asynchronous Testing"
-    description="Perfect for testing controllers that may reconcile resources asynchronously"
-  />
-  
-  <FeatureCard
-    title="Table-Driven Tests"
-    description="Concisely test multiple cases"
-  />
-  
-  <FeatureCard
-    title="Setup & Teardown"
-    description={<>
-      <p>Hooks for test preparation:</p>
-      <ul>
-        <li>BeforeEach: Before each spec</li>
-        <li>AfterEach: After each spec</li>
-        <li>BeforeSuite: Before all specs</li>
-        <li>AfterSuite: After all specs</li>
-      </ul>
-    </>}
-  />
-</CardGrid>
-
-## Testing with Kubernetes envtest
-
-<InfoSection type="tip" title="Kubernetes integration">
-  Ginkgo works seamlessly with the Kubernetes envtest package, making it ideal for testing controllers in the Control Plane.
-</InfoSection>
-
-## Ginkgo CLI
+### Command Line Interface
 
 Ginkgo provides a powerful command-line interface for running tests:
 
@@ -154,6 +129,39 @@ ginkgo --focus "FileManager"
 # Skip specific tests
 ginkgo --skip "Database"
 ```
+
+### Advanced Features
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="Asynchronous Testing"
+    description="Perfect for testing controllers that may reconcile resources asynchronously"
+  />
+  
+  <FeatureCard
+    title="Table-Driven Tests"
+    description="Concisely test multiple cases"
+  />
+  
+  <FeatureCard
+    title="Setup & Teardown"
+    description={<>
+      <p>Hooks for test preparation:</p>
+      <ul>
+        <li>BeforeEach: Before each spec</li>
+        <li>AfterEach: After each spec</li>
+        <li>BeforeSuite: Before all specs</li>
+        <li>AfterSuite: After all specs</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+### Kubernetes Integration
+
+<InfoSection type="tip" title="Kubernetes integration">
+  Ginkgo works seamlessly with the Kubernetes envtest package, making it ideal for testing controllers in the Control Plane.
+</InfoSection>
 
 ## Best Practices in the Control Plane
 

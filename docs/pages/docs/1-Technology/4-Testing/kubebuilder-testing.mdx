@@ -27,6 +27,12 @@ The Control Plane uses Kubebuilder's testing framework to validate controller be
 
 Kubebuilder's testing framework, built on the `controller-runtime` library's `envtest` package, allows you to test controllers without a real Kubernetes cluster. This approach offers several advantages:
 
+<div align="center">
+  <img src="/controlplane/img/logos/kubebuilder-logo.svg" alt="Kubebuilder Testing Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Why Kubebuilder Testing?
+
 <FeatureGrid columns={2} features={[
   {
     title: "🚀 Fast Execution",
@@ -54,11 +60,13 @@ Kubebuilder's testing framework, built on the `controller-runtime` library's `en
   }
 ]} />
 
-## In-Memory Testing Architecture
+## Configuration
 
-<InfoSection type="note" title="Test environment">
+<InfoSection type="note" title="Test environment setup">
   The test environment includes an API server, etcd, and controller-runtime components that closely simulate a real Kubernetes cluster.
 </InfoSection>
+
+### In-Memory Testing Architecture
 
 
 ## Best Practices for Controller Testing

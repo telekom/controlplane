@@ -27,6 +27,12 @@ import NoAutoTitle from '@site/src/components/NoAutoTitle';
 
 Mockery automatically generates mock implementations of Go interfaces to use in tests. This helps:
 
+<div align="center">
+  <img src="/controlplane/img/logos/mockery-logo.svg" alt="Mockery Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Why Mockery?
+
 <FeatureGrid columns={3} features={[
   {
     title: "🔄 Isolate Components",
@@ -101,13 +107,17 @@ Mockery automatically generates mock implementations of Go interfaces to use in 
   />
 </CardGrid>
 
-## Directory Structure
+## Configuration
 
-<InfoSection type="note" title="Mock organization">
-  The Control Plane follows a consistent pattern for organizing mock implementations to make them easy to find and use.
+<InfoSection type="note" title="Mock configuration and generation">
+  The Control Plane has a standardized approach to configuring and generating mocks across the codebase.
 </InfoSection>
 
-## Code Generation
+### Directory Structure
+
+The Control Plane follows a consistent pattern for organizing mock implementations to make them easy to find and use. Mocks are typically placed in a `mock` subdirectory of the package that contains the interface being mocked.
+
+### Code Generation
 
 <InfoSection type="tip" title="Automated generation">
   Mocks are generated automatically during the build process, ensuring they're always up to date with the latest interface definitions.
@@ -142,7 +152,7 @@ The `tools/generate.go` file ensures consistent mock generation.
   />
 </CardGrid>
 
-## Using Mocks in Tests
+### Using Mocks in Tests
 
 <InfoSection type="note" title="Expecter API">
   The Control Plane uses Mockery's Expecter API, which provides a type-safe way to set expectations on mock methods.

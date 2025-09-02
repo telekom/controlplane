@@ -23,9 +23,42 @@ Kubebuilder is the framework used to build the Control Plane's operators and cus
   Kubebuilder provides the scaffolding and tooling used to develop the Control Plane's operators and custom resources.
 </InfoSection>
 
-## What is Kubebuilder?
+## Overview
 
 [Kubebuilder](https://book.kubebuilder.io/) is a framework for building Kubernetes APIs using CRDs, controllers, and webhooks. It's designed to simplify the development of Kubernetes operators and custom resources by providing code generation, scaffolding, and testing capabilities.
+
+<div align="center">
+  <img src="/controlplane/img/logos/kubebuilder-logo.svg" alt="Kubebuilder Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Why Kubebuilder?
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🏗️ Standardized Structure",
+    description: "Provides a consistent project structure that follows Kubernetes community best practices."
+  },
+  {
+    title: "⚡ Rapid Development",
+    description: "Accelerates development with automatic generation of boilerplate code and manifests."
+  },
+  {
+    title: "🧩 Controller Runtime",
+    description: "Built on the battle-tested controller-runtime library used by Kubernetes core components."
+  },
+  {
+    title: "🔒 Security by Default",
+    description: "Automatically generates RBAC rules based on controller access patterns."
+  },
+  {
+    title: "🧪 Testing Framework",
+    description: "Includes a testing framework that simulates the Kubernetes API server for unit and integration tests."
+  },
+  {
+    title: "🚀 Production-Ready",
+    description: "Used by major Kubernetes projects and enterprises for building production operators."
+  }
+]} />
 
 <FeatureGrid columns={2} features={[
   {
@@ -127,14 +160,10 @@ KUBECONFIG=/path/to/kubeconfig ENABLE_WEBHOOKS=false make run
 
 ## Testing with Kubebuilder
 
-<InfoSection type="tip" title="Testing framework">
-  Kubebuilder provides the envtest package, which sets up a temporary API server for testing controllers without requiring a real Kubernetes cluster.
-</InfoSection>
-
 <CardGrid columns={1}>
   <FeatureCard
     title="Kubebuilder Testing"
-    description="Learn about testing operators built with Kubebuilder."
+    description="Kubebuilder provides the envtest package, which sets up a temporary API server for testing controllers without requiring a real Kubernetes cluster."
     linkText="View Kubebuilder Testing"
     linkUrl="../Testing/kubebuilder-testing"
   />

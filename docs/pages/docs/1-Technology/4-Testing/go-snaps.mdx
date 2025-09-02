@@ -27,6 +27,12 @@ import NoAutoTitle from '@site/src/components/NoAutoTitle';
 
 Go-Snaps provides a simple, effective way to implement snapshot testing in Go applications. It's particularly valuable for testing complex data structures, API responses, and generated code.
 
+<div align="center">
+  <img src="/controlplane/img/logos/go-snaps-logo.svg" alt="Go-Snaps Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Why Go-Snaps?
+
 <FeatureGrid columns={2} features={[
   {
     title: "📸 Snapshot Capture",
@@ -116,15 +122,13 @@ The Control Plane uses Go-Snaps for testing various components:
   />
 </CardGrid>
 
-## Basic Usage
+## Configuration
 
-Go-Snaps can be used with the standard Go testing package or with BDD frameworks like Ginkgo.
-
-## Snapshot Storage
-
-<InfoSection type="note" title="Snapshot management">
-  Go-Snaps stores snapshots in a structured directory format that is version control friendly.
+<InfoSection type="note" title="Snapshot configuration and formats">
+  Go-Snaps provides various configuration options and supports multiple data formats commonly used in the Control Plane.
 </InfoSection>
+
+### Snapshot Storage
 
 By default, Go-Snaps stores snapshots in a `__snapshots__` directory next to your test files:
 
@@ -136,13 +140,9 @@ pkg/controller/
   └── controller.go
 ```
 
-Snapshots are stored in a readable format.
+Snapshots are stored in a readable format that's version control friendly.
 
-## Supported Formats
-
-<InfoSection type="note" title="Format-specific matching">
-  Go-Snaps provides format-specific matchers for common data formats used in the Control Plane.
-</InfoSection>
+### Supported Formats
 
 <FeatureGrid columns={3} features={[
   {
@@ -171,7 +171,7 @@ Snapshots are stored in a readable format.
   }
 ]} />
 
-## Advanced Features
+### Advanced Features
 
 <CardGrid columns={2}>
   <FeatureCard
@@ -195,7 +195,7 @@ Snapshots are stored in a readable format.
   />
 </CardGrid>
 
-## CLI Usage
+### CLI Usage
 
 Go-Snaps provides a command-line tool for managing snapshots:
 
@@ -249,41 +249,6 @@ go-snaps update --test TestDeploymentController
   }
 ]} />
 
-## Use Cases in the Control Plane
-
-<CardGrid columns={2}>
-  <FeatureCard
-    title="API Contract Testing"
-    description={<>
-      <p>Ensure API responses maintain the same structure and format, which is critical for maintaining backward compatibility with clients.</p>
-      <p>Example: Testing the Gateway API response format remains consistent after refactoring.</p>
-    </>}
-  />
-  
-  <FeatureCard
-    title="Configuration Validation"
-    description={<>
-      <p>Verify that configuration processing and validation produces expected results, including proper error messages for invalid configurations.</p>
-      <p>Example: Testing error messages from the Rover configuration validator.</p>
-    </>}
-  />
-  
-  <FeatureCard
-    title="Template Testing"
-    description={<>
-      <p>Ensure that templates for Kubernetes resources are rendered correctly with different input parameters.</p>
-      <p>Example: Testing Helm chart templates for the File Manager service.</p>
-    </>}
-  />
-  
-  <FeatureCard
-    title="Complex Data Transformation"
-    description={<>
-      <p>Verify that complex data transformation logic works as expected, producing the correct output structure.</p>
-      <p>Example: Testing conversion between different API versions of a custom resource.</p>
-    </>}
-  />
-</CardGrid>
 
 ## Related Resources
 

@@ -23,6 +23,14 @@ import NoAutoTitle from '@site/src/components/NoAutoTitle';
   Testify enhances Go's native testing capabilities with expressive assertions, mocking, and test suite organization, making it easier to write comprehensive and maintainable tests.
 </InfoSection>
 
+## Overview
+
+Testify is a set of packages that extend Go's built-in testing package with additional functionality for assertions, mocking, and test suite organization. The Control Plane uses Testify extensively across its codebase to ensure robust testing and maintainability.
+
+<div align="center">
+  <img src="/controlplane/img/logos/testify-logo.svg" alt="Testify Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
 ## Why Testify?
 
 <FeatureGrid columns={2} features={[
@@ -52,6 +60,48 @@ import NoAutoTitle from '@site/src/components/NoAutoTitle';
   }
 ]} />
 
+## Integration in the Control Plane
+
+<InfoSection type="tip" title="Key integration point">
+  Testify provides a consistent assertion and testing framework used throughout the Control Plane codebase.
+</InfoSection>
+
+The Control Plane uses Testify for multiple testing purposes, providing a unified approach to testing across various components:
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Unit Testing"
+    description={<>
+      <p>Core component testing:</p>
+      <ul>
+        <li>Service functions</li>
+        <li>Controller logic</li>
+        <li>Utility functions</li>
+        <li>Models and data structures</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Integration Testing"
+    description={<>
+      <p>Component interaction testing:</p>
+      <ul>
+        <li>API endpoints</li>
+        <li>Service interactions</li>
+        <li>Database operations</li>
+        <li>External service integrations</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Configuration
+
+<InfoSection type="note" title="Test organization and execution">
+  Testify provides several approaches to organize and run tests, which are used throughout the Control Plane.
+</InfoSection>
+
 ### Running Tests
 
 <CardGrid columns={2}>
@@ -80,6 +130,34 @@ import NoAutoTitle from '@site/src/components/NoAutoTitle';
 go tool cover -html=coverage.out</code></pre>
       </>
     }
+  />
+</CardGrid>
+
+### Core Packages
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="assert"
+    description={<>
+      <p>Non-fatal assertions that allow tests to continue:</p>
+      <pre><code>assert.Equal(t, expected, actual)</code></pre>
+    </>}
+  />
+  
+  <FeatureCard
+    title="require"
+    description={<>
+      <p>Fatal assertions that terminate test execution:</p>
+      <pre><code>require.NoError(t, err)</code></pre>
+    </>}
+  />
+  
+  <FeatureCard
+    title="mock"
+    description={<>
+      <p>Test double creation and expectations:</p>
+      <pre><code>mock.On("Method").Return(result)</code></pre>
+    </>}
   />
 </CardGrid>
 
