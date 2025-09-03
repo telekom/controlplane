@@ -139,7 +139,12 @@ func (c CircuitBreakerFeature) Apply(ctx context.Context, builder features.Featu
 		if err := client.CheckStatusCode(upstreamResponse, 200); err != nil {
 			return errors.Wrap(fmt.Errorf("error body from kong admin api: %s", string(upstreamResponse.Body)), "failed to create upstream")
 		}
-		route.SetUpstreamId(*upstreamResponse.JSON200.Id)
+		log.V(1).Info("upstream response", "response", upstreamResponse)
+		if upstreamResponse.JSON200 != nil && upstreamResponse.JSON200.Id != nil {
+			route.SetUpstreamId(*upstreamResponse.JSON200.Id)
+		} else {
+			route.SetUpstreamId(upstreamName)
+		}
 
 		targetsName := routeName
 		targetsTarget := "localhost:8080"
@@ -161,7 +166,12 @@ func (c CircuitBreakerFeature) Apply(ctx context.Context, builder features.Featu
 		if err := client.CheckStatusCode(targetsResponse, 200, 201); err != nil {
 			return errors.Wrap(fmt.Errorf("error body from kong admin api: %s", string(targetsResponse.Body)), "failed to create targets for upstream")
 		}
-		route.SetTargetsId(*targetsResponse.JSON200.Id)
+		log.V(1).Info("targets response", "response", targetsResponse)
+		if targetsResponse.JSON200 != nil && targetsResponse.JSON200.Id != nil {
+			route.SetTargetsId(*targetsResponse.JSON200.Id)
+		} else {
+			route.SetTargetsId("targets id missing from kong response")
+		}
 	}
 
 	return nil
