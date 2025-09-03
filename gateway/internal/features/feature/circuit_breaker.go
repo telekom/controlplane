@@ -139,7 +139,8 @@ func (c CircuitBreakerFeature) Apply(ctx context.Context, builder features.Featu
 		if err := client.CheckStatusCode(upstreamResponse, 200); err != nil {
 			return errors.Wrap(fmt.Errorf("error body from kong admin api: %s", string(upstreamResponse.Body)), "failed to create upstream")
 		}
-		log.V(1).Info("upstream response", "response", upstreamResponse)
+		log.V(1).Info("upstream response", "response", upstreamResponse.JSON200)
+		log.V(1).Info("upstream response id", "id", *upstreamResponse.JSON200.Id)
 		if upstreamResponse.JSON200 != nil && upstreamResponse.JSON200.Id != nil {
 			route.SetUpstreamId(*upstreamResponse.JSON200.Id)
 		} else {
