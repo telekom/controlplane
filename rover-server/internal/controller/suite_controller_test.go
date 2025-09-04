@@ -16,7 +16,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
-	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
+	securitymock "github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
+	"github.com/telekom/controlplane/file-manager/api"
+	filefake "github.com/telekom/controlplane/file-manager/api/fake"
+	"github.com/telekom/controlplane/rover-server/internal/file"
 	"k8s.io/client-go/rest"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 
@@ -36,6 +39,7 @@ var cancel context.CancelFunc
 var teamToken string
 var groupToken string
 var app *fiber.App
+var mockFileManager *filefake.MockFileManager
 
 func TestController(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -53,6 +57,11 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 		store.ApplicationSecretStore = store.ApplicationStore
 		store.ZoneStore = mocks.NewZoneStoreMock(GinkgoT())
 	}
+
+	mockFileManager = filefake.NewMockFileManager(GinkgoT())
+	file.GetFileManager = func() api.FileManager {
+		return mockFileManager
+	}
 }
 
 var _ = BeforeSuite(func() {
@@ -67,8 +76,8 @@ var _ = BeforeSuite(func() {
 
 	// TODO Add more tests with teamToken in apispecification, eventspecification, rover
 	// Can be done once the issue with the team token is fixed in common-server
-	teamToken = mock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:team:all"})
-	groupToken = mock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:group:all"})
+	teamToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:team:all"})
+	groupToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:group:all"})
 
 	// Create a new Fiber app
 	app = cserver.NewApp()

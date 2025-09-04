@@ -7,22 +7,29 @@ package in
 import (
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/config"
+	filesapi "github.com/telekom/controlplane/file-manager/api"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 )
 
-func MapRequest(in *api.ApiSpecificationUpdateRequest, id mapper.ResourceIdInfo) (res *roverv1.ApiSpecification, err error) {
-	if in == nil {
+var (
+	parseErr = "failed to parse specification"
+)
+
+func MapRequest(spec *roverv1.ApiSpecificationSpec, fileAPIResp *filesapi.FileUploadResponse, id mapper.ResourceIdInfo) (res *roverv1.ApiSpecification, err error) {
+	if fileAPIResp == nil {
+		return nil, errors.New("response from file manager is nil")
+	}
+
+	if spec == nil {
 		return nil, errors.New("input api specification is nil")
+
 	}
-	b, err := yaml.Marshal(in.Specification)
-	if err != nil {
-		return
-	}
+
+	spec.Hash = fileAPIResp.FileHash
+	spec.Specification = fileAPIResp.FileId
 
 	res = &roverv1.ApiSpecification{
 		TypeMeta: metav1.TypeMeta{
@@ -36,9 +43,7 @@ func MapRequest(in *api.ApiSpecificationUpdateRequest, id mapper.ResourceIdInfo)
 				config.EnvironmentLabelKey: id.Environment,
 			},
 		},
-		Spec: roverv1.ApiSpecificationSpec{
-			Specification: string(b),
-		},
+		Spec: *spec,
 	}
 	return
 }

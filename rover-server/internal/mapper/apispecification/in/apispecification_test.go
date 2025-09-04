@@ -5,16 +5,40 @@
 package in
 
 import (
+	"context"
+
 	"github.com/gkampitakis/go-snaps/snaps"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	filesapi "github.com/telekom/controlplane/file-manager/api"
+	"gopkg.in/yaml.v3"
 )
 
 var _ = Describe("ApiSpecification Mapper", func() {
 	Context("MapRequest", func() {
 		It("must map a ApiSpecificationUpdateRequest to an ApiSpecification correctly", func() {
-			output, err := MapRequest(apiSpecification, resourceIdInfo)
+			// Create a context with business context
+			ctx := context.WithValue(context.Background(), "businessContext", &security.BusinessContext{
+				Environment: "poc",
+				Group:       "eni",
+				Team:        "hyperion",
+			})
 
+			// Create a mock FileUploadResponse
+			fileAPIResp := &filesapi.FileUploadResponse{
+				FileHash:    "test-hash",
+				FileId:      "test-file-id",
+				ContentType: "application/yaml",
+			}
+
+			marshalled, err := yaml.Marshal(apiSpecification.Specification)
+			Expect(err).To(BeNil())
+
+			spec, err := ParseSpecification(ctx, string(marshalled))
+			Expect(err).To(BeNil())
+
+			output, err := MapRequest(spec, fileAPIResp, resourceIdInfo)
 			Expect(err).To(BeNil())
 
 			Expect(output).ToNot(BeNil())
@@ -22,7 +46,14 @@ var _ = Describe("ApiSpecification Mapper", func() {
 		})
 
 		It("must return an error if the input ApiSpecificationUpdateRequest is nil", func() {
-			output, err := MapRequest(nil, resourceIdInfo)
+			// Create a mock FileUploadResponse
+			fileAPIResp := &filesapi.FileUploadResponse{
+				FileHash:    "test-hash",
+				FileId:      "test-file-id",
+				ContentType: "application/yaml",
+			}
+
+			output, err := MapRequest(nil, fileAPIResp, resourceIdInfo)
 
 			Expect(output).To(BeNil())
 

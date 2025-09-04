@@ -106,7 +106,7 @@ func TestUploadFile(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedFileID, resp.FileId)
-				assert.Equal(t, tt.expectedMD5, resp.CRC64NVMEHash)
+				assert.Equal(t, tt.expectedMD5, resp.FileHash)
 				assert.Equal(t, tt.contentType, resp.ContentType)
 			}
 		})
@@ -193,7 +193,7 @@ func TestDownloadFile(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantContent, buf.String())
 				assert.Equal(t, tt.expectedContentTypeHeader, resp.ContentType)
-				assert.Equal(t, tt.expectedChecksumHeader, resp.CRC64NVMEHash)
+				assert.Equal(t, tt.expectedChecksumHeader, resp.FileHash)
 			}
 		})
 	}

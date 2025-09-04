@@ -2,17 +2,41 @@
 [ApiSpecificationResponse Mapper MapRequest must map a ApiSpecification to an ApiSpecificationResponse correctly - 1]
 {
  "category": "other",
- "id": "eni--hyperion--apispec-sample",
- "name": "",
+ "id": "eni--hyperion--eni-distr-v1",
+ "name": "rover-api",
  "specification": {
   "info": {
    "title": "Rover API",
    "version": "1.0.0"
   },
   "openapi": "3.0.0",
-  "servers": {
-   "url": "http://rover-api/eni/distr/v1"
-  }
+  "paths": {
+   "/resources": {
+    "get": {
+     "responses": {
+      "200": {
+       "content": {
+        "application/json": {
+         "schema": {
+          "items": {
+           "type": "object"
+          },
+          "type": "array"
+         }
+        }
+       },
+       "description": "Successful response"
+      }
+     },
+     "summary": "List resources"
+    }
+   }
+  },
+  "servers": [
+   {
+    "url": "http://rover-api.com/eni/distr/v1"
+   }
+  ]
  },
  "status": {
   "processingState": "done",
