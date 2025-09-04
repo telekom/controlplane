@@ -6,3 +6,8 @@
 - op: add
   path: /metadata/labels/cp.ei.telekom.de~1secret-manager
   value: "enabled"
+
+# This patch is only needed when you want to use the network policy and/or the trust-manager
+- op: add
+  path: /metadata/labels/cp.ei.telekom.de~1file-manager
+  value: "enabled"
