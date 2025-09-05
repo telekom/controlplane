@@ -1,0 +1,224 @@
+---
+sidebar_position: 2
+title: "Mockery"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Mockery"
+  description="Automated mock generation for Go interfaces"
+/>
+
+[Mockery](https://github.com/vektra/mockery) is a mock code generation tool used in the Control Plane to generate mocks for interfaces.
+
+<InfoSection type="info" title="Auto-generated test doubles">
+  Mockery automatically generates type-safe mock implementations of Go interfaces, saving development time and ensuring mocks stay in sync with interface changes.
+</InfoSection>
+
+## Overview
+
+Mockery automatically generates mock implementations of Go interfaces to use in tests. This helps:
+
+<div align="center">
+  <img src="/controlplane/img/logos/mockery-logo.svg" alt="Mockery Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Why Mockery?
+
+<FeatureGrid columns={3} features={[
+  {
+    title: "🔄 Isolate Components",
+    description: "Test components in isolation without real dependencies for faster, more focused tests."
+  },
+  {
+    title: "🎮 Control Behavior",
+    description: "Precisely control how dependencies respond during tests to simulate various scenarios."
+  },
+  {
+    title: "✅ Verify Interactions",
+    description: "Confirm that components interact with dependencies correctly with expected arguments."
+  },
+  {
+    title: "🔄 Stay in Sync",
+    description: "Auto-generated mocks update when interfaces change, preventing test/implementation drift."
+  },
+  {
+    title: "⚡ Test Edge Cases",
+    description: "Easily simulate error conditions and edge cases that would be difficult with real implementations."
+  },
+  {
+    title: "🚀 Faster Tests",
+    description: "Avoid slow external dependencies like databases and APIs for quicker test execution."
+  }
+]} />
+
+## Integration in the Control Plane
+
+<InfoSection type="tip" title="Comprehensive mocking">
+  The Control Plane uses Mockery extensively to enable thorough testing of all components without external dependencies.
+</InfoSection>
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="Backend Interfaces"
+    description={<>
+      <p>Core storage and processing interfaces like:</p>
+      <ul>
+        <li>FileUploader</li>
+        <li>FileDownloader</li>
+        <li>FileDeleter</li>
+        <li>FileMetadata</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Client Interfaces"
+    description={<>
+      <p>External service clients such as:</p>
+      <ul>
+        <li>MinioClient</li>
+        <li>K8sClient</li>
+        <li>VaultClient</li>
+        <li>TokenService</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Service Interfaces"
+    description={<>
+      <p>Business logic interfaces including:</p>
+      <ul>
+        <li>FileService</li>
+        <li>AuthService</li>
+        <li>ValidationService</li>
+        <li>NotificationService</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Configuration
+
+<InfoSection type="note" title="Mock configuration and generation">
+  The Control Plane has a standardized approach to configuring and generating mocks across the codebase.
+</InfoSection>
+
+### Directory Structure
+
+The Control Plane follows a consistent pattern for organizing mock implementations to make them easy to find and use. Mocks are typically placed in a `mock` subdirectory of the package that contains the interface being mocked.
+
+### Code Generation
+
+<InfoSection type="tip" title="Automated generation">
+  Mocks are generated automatically during the build process, ensuring they're always up to date with the latest interface definitions.
+</InfoSection>
+
+Mocks are generated using the Mockery CLI tool. Configuration is stored in `mockery.yaml` files.
+The `tools/generate.go` file ensures consistent mock generation.
+
+### Generating Mocks
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Manual Generation"
+    description={<>
+      <p>To manually generate mocks:</p>
+      <p><code>go generate ./tools/generate.go</code></p>
+      <p>Or directly using mockery:</p>
+      <p><code>mockery --dir pkg/backend --name FileUploader --output pkg/backend/mock</code></p>
+    </>}
+  />
+  
+  <FeatureCard
+    title="CI/CD Integration"
+    description={<>
+      <p>Mocks are automatically verified in CI/CD:</p>
+      <ul>
+        <li>Pre-commit hooks generate mocks</li>
+        <li>CI checks that mocks are up to date</li>
+        <li>Tests fail if mocks don't match interfaces</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+### Using Mocks in Tests
+
+<InfoSection type="note" title="Expecter API">
+  The Control Plane uses Mockery's Expecter API, which provides a type-safe way to set expectations on mock methods.
+</InfoSection>
+
+## Best Practices Used in Control Plane
+
+<InfoSection type="tip" title="Mock best practices">
+  Following these best practices ensures effective and maintainable mocks throughout the codebase.
+</InfoSection>
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "📝 Generate mocks for all public interfaces",
+    description: "Ensures comprehensive testing coverage and flexibility for all public components."
+  },
+  {
+    title: "🎯 Use mock.Anything for irrelevant arguments",
+    description: "Simplifies test setup by only specifying values that matter for the test case."
+  },
+  {
+    title: "✅ Verify mock expectations",
+    description: "Always call AssertExpectations() to verify that mocks were used as expected."
+  },
+  {
+    title: "🔢 Specify call counts",
+    description: "Use Once(), Times(n), or Maybe() to verify the correct number of interactions."
+  },
+  {
+    title: "🧩 Mock at interface boundaries",
+    description: "Focus mocks on external dependencies and service boundaries, not internal implementation details."
+  },
+  {
+    title: "🔄 Regenerate mocks after interface changes",
+    description: "Keep mocks in sync with interfaces to avoid subtle test failures or false positives."
+  }
+]} />
+
+### Common Mock Patterns
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Dependency Injection"
+    description="The Control Plane uses dependency injection to make components testable."
+  />
+  
+  <FeatureCard
+    title="Test Setup Helpers"
+    description="Helper functions simplify test setup with mocks."
+  />
+</CardGrid>
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Testify"
+    description="Learn about the testing toolkit used alongside Mockery."
+    linkText="View Testify"
+    linkUrl="testify"
+  />
+  
+  <FeatureCard
+    title="Go Language"
+    description="Explore the foundational language used in the Control Plane."
+    linkText="View Go Language"
+    linkUrl="../Core-Technologies/golang"
+  />
+</CardGrid>

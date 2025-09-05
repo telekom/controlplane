@@ -1,0 +1,343 @@
+---
+sidebar_position: 2
+title: "Helm Charts"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Helm Charts"
+  description="Kubernetes package management for the Control Plane"
+/>
+
+Helm is used for packaging, versioning, and deploying the Control Plane components to Kubernetes clusters.
+
+<InfoSection type="info" title="Kubernetes package manager">
+  Helm provides a standardized way to package and deploy Control Plane components, handling complex dependencies and configurations through a template-based approach.
+</InfoSection>
+
+## Overview
+
+[Helm](https://helm.sh/) is the package manager for Kubernetes. The Control Plane uses Helm to:
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "📦 Package Components",
+    description: "Bundle applications, dependencies, and configurations as reusable charts."
+  },
+  {
+    title: "⚙️ Manage Configuration",
+    description: "Centralize and parameterize application settings through values files."
+  },
+  {
+    title: "🚀 Simplify Deployment",
+    description: "Streamline the process of deploying complex applications to Kubernetes."
+  },
+  {
+    title: "🔄 Version Control",
+    description: "Track application versions and changes through chart versioning."
+  },
+  {
+    title: "↩️ Handle Rollbacks",
+    description: "Quickly revert to previous versions if issues arise during updates."
+  },
+  {
+    title: "🔌 Manage Dependencies",
+    description: "Handle relationships between components and third-party services."
+  }
+]} />
+
+<div align="center">
+  <img src="/controlplane/img/logos/helm-logo.svg" alt="Helm Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Chart Structure
+
+<InfoSection type="tip" title="Standardized structure">
+  The Control Plane follows a consistent Helm chart structure across all components, making maintenance and updates more predictable.
+</InfoSection>
+
+The Control Plane components follow a standard Helm chart structure:
+
+```
+common-server/helm
+├── Chart.yaml             # Chart metadata
+├── values.yaml            # Default values
+└── templates/             # Kubernetes manifests templates
+    ├── _helpers.tpl       # Template helpers
+    ├── deployment.yaml    # Deployment template
+    ├── service.yaml       # Service template
+    ├── configmap.yaml     # ConfigMap template
+    ├── ingress.yaml       # Ingress template
+    ├── servicemonitor.yaml # Prometheus ServiceMonitor
+    └── rbac/              # RBAC templates
+        ├── binding.yaml
+        ├── clusterrole.yaml
+        └── serviceaccount.yaml
+```
+
+### Directory Structure Explained
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Chart.yaml"
+    description={
+      <>
+        <p>Contains metadata about the chart including:</p>
+        <ul>
+          <li>Chart name and version</li>
+          <li>Application version</li>
+          <li>Description and maintainer information</li>
+          <li>Dependencies on other charts</li>
+          <li>Keywords for searchability</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="values.yaml"
+    description={
+      <>
+        <p>Default configuration values for the chart:</p>
+        <ul>
+          <li>Image references and versions</li>
+          <li>Resource limits and requests</li>
+          <li>Service and ingress configurations</li>
+          <li>Feature flags and toggles</li>
+          <li>Environment-specific settings</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="templates/"
+    description={
+      <>
+        <p>Directory containing template files:</p>
+        <ul>
+          <li>Kubernetes resource definitions</li>
+          <li>Dynamic templates with Go templating</li>
+          <li>Helper functions in _helpers.tpl</li>
+          <li>NOTES.txt for post-install instructions</li>
+          <li>Tests for chart validation</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="Additional Files"
+    description={
+      <>
+        <p>Other important files in Control Plane charts:</p>
+        <ul>
+          <li>README.md for documentation</li>
+          <li>NOTES.txt for usage instructions</li>
+          <li>LICENSE for license information</li>
+          <li>requirements.yaml (for v2 charts)</li>
+          <li>values.schema.json for value validation</li>
+        </ul>
+      </>
+    }
+  />
+</CardGrid>
+
+### Chart Versioning Strategy
+
+<InfoSection type="tip" title="Semantic versioning">
+  The Control Plane uses semantic versioning (MAJOR.MINOR.PATCH) for all Helm charts, with careful separation of chart version and app version.
+</InfoSection>
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Chart Version"
+    description={
+      <>
+        <p>The version field in Chart.yaml follows these principles:</p>
+        <ul>
+          <li>MAJOR: Breaking changes to values schema or templates</li>
+          <li>MINOR: New features and backwards-compatible changes</li>
+          <li>PATCH: Bug fixes and minor template improvements</li>
+          <li>Always incremented when chart contents change</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="App Version"
+    description={
+      <>
+        <p>The appVersion field in Chart.yaml follows these principles:</p>
+        <ul>
+          <li>Represents the version of the application being deployed</li>
+          <li>Independent of the chart version</li>
+          <li>May change without chart version change (for image updates)</li>
+          <li>Used as the default tag for container images</li>
+        </ul>
+      </>
+    }
+  />
+</CardGrid>
+
+
+### Configuration Categories
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "📦 Deployment Configuration",
+    description: "Settings for the Deployment resource, including replica count, update strategy, and pod specifications."
+  },
+  {
+    title: "🖼️ Container Images",
+    description: "Image repository, tag, and pull policy settings for consistency across environments."
+  },
+  {
+    title: "🔌 Networking",
+    description: "Service, ingress, and network policy configurations for connectivity."
+  },
+  {
+    title: "⚙️ Resources",
+    description: "CPU, memory, and storage resource requests and limits to ensure proper scheduling."
+  },
+  {
+    title: "🧩 Dependencies",
+    description: "Configuration for dependent services like databases and message queues."
+  },
+  {
+    title: "🔍 Observability",
+    description: "Settings for monitoring, logging, and tracing integration."
+  }
+]} />
+
+## Best Practices
+
+<InfoSection type="tip" title="Helm best practices">
+  The Control Plane follows these best practices for Helm charts to ensure maintainability and reliability.
+</InfoSection>
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Configuration"
+    description={
+      <>
+        <p>Best practices for values and configuration:</p>
+        <ul>
+          <li>Parameterize all configurable values</li>
+          <li>Provide sensible defaults for all parameters</li>
+          <li>Document each value in values.yaml</li>
+          <li>Group related values logically</li>
+          <li>Use consistent naming conventions</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="Templates"
+    description={
+      <>
+        <p>Best practices for templates:</p>
+        <ul>
+          <li>Use conditionals for optional features</li>
+          <li>Leverage helper functions for common patterns</li>
+          <li>Maintain consistent indentation</li>
+          <li>Validate templates with <code>helm lint</code></li>
+          <li>Add comments for complex logic</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="Documentation"
+    description={
+      <>
+        <p>Best practices for chart documentation:</p>
+        <ul>
+          <li>Include NOTES.txt with usage instructions</li>
+          <li>Maintain a comprehensive README.md</li>
+          <li>Document all values with descriptions</li>
+          <li>Provide usage examples</li>
+          <li>Include upgrade notes for breaking changes</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="Versioning and Distribution"
+    description={
+      <>
+        <p>Best practices for chart release:</p>
+        <ul>
+          <li>Follow semantic versioning</li>
+          <li>Include a changelog</li>
+          <li>Sign charts for verification</li>
+          <li>Use a chart repository for distribution</li>
+          <li>Test charts in CI/CD pipeline</li>
+        </ul>
+      </>
+    }
+  />
+</CardGrid>
+
+### Control Plane Specific Practices
+
+<InfoSection type="note" title="Control Plane standards">
+  Beyond general Helm best practices, the Control Plane follows specific standards for consistency across all components.
+</InfoSection>
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🏷️ Standardized Labels",
+    description: "All resources use consistent labeling for improved organization and filtering."
+  },
+  {
+    title: "🔒 Security Context",
+    description: "Non-root users and read-only file systems are used wherever possible."
+  },
+  {
+    title: "🔍 Monitoring Integration",
+    description: "ServiceMonitor resources for automatic Prometheus integration."
+  },
+  {
+    title: "📊 Resource Management",
+    description: "All containers have explicit resource requests and limits."
+  },
+  {
+    title: "🩺 Health Checks",
+    description: "Comprehensive readiness and liveness probes for all services."
+  },
+  {
+    title: "🔐 Secret Management",
+    description: "Secure handling of secrets with external references where appropriate."
+  }
+]} />
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Kustomize"
+    description="Learn about Kustomize for managing Kubernetes configurations."
+    linkText="View Kustomize"
+    linkUrl="kustomize"
+  />
+  
+  <FeatureCard
+    title="Infrastructure"
+    description="Explore the overall infrastructure components of the Control Plane."
+    linkText="View Infrastructure"
+    linkUrl="../../Overview/infrastructure"
+  />
+</CardGrid>

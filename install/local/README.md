@@ -4,84 +4,59 @@ SPDX-FileCopyrightText: 2025 Deutsche Telekom AG
 SPDX-License-Identifier: CC0-1.0
 -->
 
+# Local Installation
 
-# Local Installation 
+This directory contains the Kubernetes manifests for installing the controlplane locally.
 
-## Updating resources
+## Documentation
 
-Before installing the operators and CRDs, ensure that you have updated the resources in the `resources\admin\zones`
-directory. This is important, because they contain configuration for the identity provider and the gateway. You either
-need to provide them on your local machine or use existing resources from a running environment.
+For complete installation instructions, please refer to:
+- [Quickstart Guide](https://telekom.github.io/controlplane/docs/Installation/quickstart)
+- [Detailed Installation Guide](https://telekom.github.io/controlplane/docs/Installation/installation)
 
-> [!IMPORTANT]
-> Please update `dataplane1.yaml` and `dataplane2.yaml` in the `resources/admin/zones` directory with your identity 
-> provider and gateway configuration:
+## Directory Structure
 
-**IdentityProvider**
+- `kustomization.yaml`: Main entry point for applying all resources
+- `resources/`: Sample resources to create after installation
+  - `admin/`: Admin resources (zones, environments)
+  - `org/`: Organization resources (teams, groups)
+  - `rover/`: Rover resources (workloads)
+
+## Important Configuration Notes
+
+Before installing, you may need to update the zone configuration files in `resources/admin/zones` with your identity provider and gateway configuration:
+
+**Identity Provider Configuration (in dataplane1.yaml and dataplane2.yaml)**
 ```yaml
-  identityProvider:
-    admin:
-      clientId: admin-cli
-      userName: admin
-      password: somePassword
-    url: https://my-idp.example.com/
+identityProvider:
+  admin:
+    clientId: admin-cli
+    userName: admin
+    password: somePassword
+  url: https://my-idp.example.com/
 ```
 
-**Gateway**
+**Gateway Configuration (in dataplane1.yaml and dataplane2.yaml)**
 ```yaml
-  gateway:
-    admin:
-      clientSecret: someSecret
-      url: https://my-gateway-admin.example.com/admin-api
-    url: https://my-gateway.example.com/
+gateway:
+  admin:
+    clientSecret: someSecret
+    url: https://my-gateway-admin.example.com/admin-api
+  url: https://my-gateway.example.com/
 ```
 
+## Basic Installation Commands
 
-## Installing Operators
-
-To install all operators and CRDs locally, you can use the following command:
+For quick reference, the basic installation sequence is:
 
 ```bash
-# cd install/local
+# Install controlplane components
 kubectl apply -k .
-```
 
-After all operators and CRDs are installed, you can verify the installation by checking the status of the operators:
-
-```bash
-kubectl get pods -A -l control-plane=controller-manager
-```
-
-## Install Admin CRs
-
-To install the admin CRs, you can use the following command. This will create an environment `default` and a zone `zone-a` in that environment.
-
-```bash
+# Install sample resources
 kubectl apply -k resources/admin
-
-# Verify
-kubectl wait --for=condition=Ready -n controlplane zones/dataplane1
-```
-
-## Install Organisational CRs
-
-To install the organisational CRs, you can use the following command. This will create a group `group-sample` and a team `team-sample` in that group. Both are in the environment `default`.
-
-```bash
 kubectl apply -k resources/org
-
-# Verify
-kubectl wait --for=condition=Ready -n controlplane teams/phoenix--firebirds
-```
-
-## Install Rover CRs
-
-To install the rover CRs, you can use the following command. This will create a rover `rover-sample` in the team namespace `default--group-sample--team-sample`. The rover will be assigned to the zone `zone-a` in the environment `default`.
-
-```bash
 kubectl apply -k resources/rover
-
-# Verify 
-kubectl wait --for=condition=Ready -n controlplane--phoenix--firebirds rovers/rover-echo-v1
 ```
 
+For detailed explanations, troubleshooting, and verification steps, please refer to the documentation site linked above.

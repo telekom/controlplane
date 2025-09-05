@@ -1,0 +1,280 @@
+---
+sidebar_position: 2
+title: "Kubernetes"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Kubernetes"
+  description="Cloud-native infrastructure and extension patterns"
+/>
+
+The Control Plane extensively uses Kubernetes and the Operator pattern to manage resources and implement business logic.
+
+<InfoSection type="info" title="Kubernetes at the core">
+  Kubernetes serves as the foundation for the Control Plane, providing a robust platform for deploying, scaling, and managing containerized services. The Control Plane extends Kubernetes with custom resources and operators to implement domain-specific functionality.
+</InfoSection>
+
+## Overview
+
+Kubernetes is an open-source container orchestration system for automating deployment, scaling, and management of containerized applications. The Control Plane uses Kubernetes as its foundation and extends it with custom resources and controllers to implement domain-specific functionality.
+
+<div align="center">
+  <img src="/controlplane/img/logos/kubernetes-logo.svg" alt="Kubernetes Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Why Kubernetes?
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🚀 Container Orchestration",
+    description: "Automated deployment, scaling, and management of containerized applications."
+  },
+  {
+    title: "⚖️ Workload Distribution",
+    description: "Efficient distribution of application instances across infrastructure."
+  },
+  {
+    title: "🔄 Self-healing",
+    description: "Automatic recovery from failures with restart, replacement, and rescheduling capabilities."
+  },
+  {
+    title: "📈 Horizontal Scaling",
+    description: "Automatic scaling based on resource usage and custom metrics."
+  },
+  {
+    title: "🔌 Service Discovery",
+    description: "Built-in DNS for service-to-service communication."
+  },
+  {
+    title: "🔧 Extensibility",
+    description: "Custom Resource Definitions (CRDs) and API extensions."
+  }
+]} />
+
+## Kubernetes Operators
+
+<CardGrid columns={1}>
+  <FeatureCard
+    title="Control Plane Operators"
+    description="The Control Plane implements the Kubernetes Operator pattern to extend the platform with domain-specific functionality. For comprehensive information about our operators, including architecture, custom resources, and examples, please refer to the dedicated Operators documentation."
+    linkText="View Operators Documentation"
+    linkUrl="../../Overview/operators"
+  />
+</CardGrid>
+
+## Controller Runtime
+
+<InfoSection type="tip" title="Core library">
+  The controller-runtime library provides the foundation for building Kubernetes operators in the Control Plane, offering high-level abstractions for interacting with the Kubernetes API.
+</InfoSection>
+
+The Control Plane uses the [controller-runtime](https://github.com/kubernetes-sigs/controller-runtime) library (v0.21.0) to build Kubernetes operators. This library provides high-level APIs for:
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🎮 Controllers",
+    description: "Creating and managing controllers that reconcile resources."
+  },
+  {
+    title: "📋 Custom Resources",
+    description: "Working with custom resource definitions and instances."
+  },
+  {
+    title: "🔄 Reconciliation",
+    description: "Implementing reconciliation loops for maintaining desired state."
+  },
+  {
+    title: "📣 Events",
+    description: "Managing events, predicates, and webhooks for resource notifications."
+  },
+  {
+    title: "🔌 Client-Go Integration",
+    description: "Seamless integration with Kubernetes client-go library."
+  },
+  {
+    title: "📊 Metrics",
+    description: "Built-in metrics for monitoring controller performance."
+  }
+]} />
+
+
+### Custom Resource Validation
+
+<InfoSection type="tip" title="Schema validation">
+  The Control Plane uses OpenAPI v3 schemas to validate custom resources, ensuring that only valid configurations are accepted.
+</InfoSection>
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Schema-based Validation"
+    description={
+      <>
+        <p>CRDs include comprehensive schemas for:</p>
+        <ul>
+          <li>Type validation (string, number, boolean, etc.)</li>
+          <li>Pattern matching with regular expressions</li>
+          <li>Enumeration of allowed values</li>
+          <li>Required fields and defaults</li>
+          <li>Maximum and minimum constraints</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="Admission Webhooks"
+    description={
+      <>
+        <p>For advanced validation beyond schemas:</p>
+        <ul>
+          <li>Cross-field validation logic</li>
+          <li>Existence checks against other resources</li>
+          <li>Custom business rule enforcement</li>
+          <li>Defaulting of complex fields</li>
+          <li>Status calculation and updates</li>
+        </ul>
+      </>
+    }
+  />
+</CardGrid>
+
+
+## Deployment Model
+
+<InfoSection type="note" title="Kubernetes-native deployment">
+  The Control Plane components are deployed as standard Kubernetes resources, leveraging the platform's built-in capabilities for high availability and scaling.
+</InfoSection>
+
+The Control Plane components are deployed as standard Kubernetes resources:
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Deployments"
+    description={
+      <>
+        <p>Used for controller managers and API servers with:</p>
+        <ul>
+          <li>Multiple replicas for high availability</li>
+          <li>Rolling update strategy for zero downtime</li>
+          <li>Resource limits and requests</li>
+          <li>Health probes for reliability</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="Services"
+    description={
+      <>
+        <p>Expose APIs with:</p>
+        <ul>
+          <li>ClusterIP for internal communication</li>
+          <li>LoadBalancer for external access</li>
+          <li>Named ports for clarity</li>
+          <li>Session affinity when needed</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="ConfigMaps"
+    description={
+      <>
+        <p>Store configuration data:</p>
+        <ul>
+          <li>Controller settings</li>
+          <li>Feature flags</li>
+          <li>Environment-specific values</li>
+          <li>Template files</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="Secrets"
+    description={
+      <>
+        <p>Store sensitive data:</p>
+        <ul>
+          <li>API keys</li>
+          <li>Credentials</li>
+          <li>TLS certificates</li>
+          <li>Encryption keys</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="NetworkPolicies"
+    description={
+      <>
+        <p>Secure network traffic with:</p>
+        <ul>
+          <li>Pod-to-pod communication rules</li>
+          <li>Namespace isolation</li>
+          <li>Ingress/egress controls</li>
+          <li>Protocol and port restrictions</li>
+        </ul>
+      </>
+    }
+  />
+  
+  <FeatureCard
+    title="PodDisruptionBudgets"
+    description={
+      <>
+        <p>Ensure availability during disruptions:</p>
+        <ul>
+          <li>Minimum available replicas</li>
+          <li>Maximum unavailable replicas</li>
+          <li>Protection during node maintenance</li>
+          <li>Controlled rollouts</li>
+        </ul>
+      </>
+    }
+  />
+</CardGrid>
+
+### High Availability Configuration
+
+<InfoSection type="tip" title="Resilience">
+  Control Plane components are designed for high availability with multiple replicas, anti-affinity rules, and careful resource management.
+</InfoSection>
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Go Language"
+    description="Learn about the programming language used to build the Control Plane operators."
+    linkText="View Go Language"
+    linkUrl="golang"
+  />
+  
+  <FeatureCard
+    title="Kubebuilder"
+    description="Learn about the framework used to build Kubernetes operators and custom resources."
+    linkText="View Kubebuilder"
+    linkUrl="kubebuilder"
+  />
+  
+  <FeatureCard
+    title="Infrastructure"
+    description="Explore the infrastructure components of the Control Plane."
+    linkText="View Infrastructure"
+    linkUrl="../../Overview/infrastructure"
+  />
+</CardGrid>

@@ -1,0 +1,396 @@
+---
+sidebar_position: 4
+title: "Cobra and Viper"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Cobra and Viper"
+  description="CLI and configuration libraries for Go applications"
+/>
+
+[Cobra](https://github.com/spf13/cobra) and [Viper](https://github.com/spf13/viper) are foundational libraries used throughout the Control Plane for building CLIs and managing configuration.
+
+<InfoSection type="info" title="Command and configuration framework">
+  Cobra provides a framework for building sophisticated command-line interfaces, while Viper offers a complete configuration solution. Together, they form the backbone of the Control Plane's CLI tools and configuration management.
+</InfoSection>
+
+## Overview
+
+Cobra and Viper are complementary libraries developed by the same team that together provide a powerful framework for building command-line applications with sophisticated configuration management.
+
+<div align="center">
+  <img src="/controlplane/img/logos/cobra-logo.png" alt="Cobra Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Cobra"
+    description={<>
+      <p>Cobra is a library for creating powerful command-line interfaces in Go. It's used in the Control Plane for building tools like:</p>
+      <ul>
+        <li>rover-ctl - The Control Plane management CLI</li>
+        <li>route-tester - API route testing utility</li>
+        <li>snapshotter - State capture tool</li>
+        <li>Admin and maintenance utilities</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Viper"
+    description={<>
+      <p>Viper is a configuration solution for Go applications that prioritizes configuration sources and works with:</p>
+      <ul>
+        <li>JSON, TOML, YAML, and other config formats</li>
+        <li>Environment variables</li>
+        <li>Command line flags</li>
+        <li>Remote config systems</li>
+        <li>Live configuration reloading</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Cobra in the Control Plane
+
+<InfoSection type="tip" title="CLI development framework">
+  Cobra's structured approach to command-line applications helps maintain consistency across all Control Plane CLIs.
+</InfoSection>
+
+### Usage in rover-ctl
+
+The Control Plane's primary CLI tool, rover-ctl, uses Cobra to define its command structure:
+
+```
+rover-ctl
+├── deploy       # Deploy Control Plane components
+│   ├── operator # Deploy specific operator
+│   └── service  # Deploy specific service
+├── config       # Manage configurations
+│   ├── view     # View current configuration
+│   ├── set      # Set configuration value
+│   └── import   # Import configuration from file
+├── get          # Get Control Plane resources
+│   ├── operator # List operators
+│   └── service  # List services
+└── logs         # View logs for Control Plane components
+```
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🧩 Modular Commands",
+    description: "Cobra enables modular command organization that scales with application complexity."
+  },
+  {
+    title: "🚩 Integrated Flags",
+    description: "Built-in flag support with Pflag library for consistent flag parsing."
+  },
+  {
+    title: "📚 Automatic Help",
+    description: "Automatic generation of help text based on command definitions."
+  },
+  {
+    title: "⚙️ Shell Completions",
+    description: "Generation of shell completion scripts for bash, zsh, and other shells."
+  },
+  {
+    title: "🔄 Middleware Support",
+    description: "Pre and post-run hooks for command execution."
+  },
+  {
+    title: "🧪 Testable Commands",
+    description: "Design that makes commands easy to test in isolation."
+  }
+]} />
+
+### Best Practices for Cobra in Control Plane
+
+<InfoSection type="note" title="CLI design patterns">
+  The Control Plane follows these best practices for CLI design with Cobra.
+</InfoSection>
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Command Organization"
+    description={<>
+      <p>Structure commands logically with a noun-verb pattern:</p>
+      <ul>
+        <li>Group related commands as subcommands</li>
+        <li>Use consistent naming conventions</li>
+        <li>Keep command hierarchy shallow (max 2-3 levels)</li>
+        <li>Use clear, descriptive command names</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Flag Design"
+    description={<>
+      <p>Design flags for usability and consistency:</p>
+      <ul>
+        <li>Use short flags for common options</li>
+        <li>Provide sensible defaults</li>
+        <li>Use consistent flag names across commands</li>
+        <li>Group related flags logically</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Error Handling"
+    description={<>
+      <p>Handle errors gracefully and informatively:</p>
+      <ul>
+        <li>Return detailed error messages</li>
+        <li>Set appropriate exit codes</li>
+        <li>Use color for error highlighting</li>
+        <li>Provide suggestions for common errors</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="User Experience"
+    description={<>
+      <p>Enhance user experience with:</p>
+      <ul>
+        <li>Progress indicators for long-running operations</li>
+        <li>Colorized output for readability</li>
+        <li>Confirmation prompts for destructive actions</li>
+        <li>Verbose mode for debugging</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Viper in the Control Plane
+
+<InfoSection type="tip" title="Configuration management">
+  Viper provides a complete configuration solution that gives the Control Plane flexibility in how configurations are loaded and prioritized.
+</InfoSection>
+
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🗃️ Multiple Formats",
+    description: "Support for JSON, YAML, TOML, HCL, and other configuration formats."
+  },
+  {
+    title: "🔄 Live Reloading",
+    description: "Watch and reload configuration changes without application restart."
+  },
+  {
+    title: "🧩 Nested Configuration",
+    description: "Support for nested configuration structures with dot notation access."
+  },
+  {
+    title: "🔌 Remote Config",
+    description: "Integration with remote configuration systems like etcd or Consul."
+  },
+  {
+    title: "🌐 Environment Variable Binding",
+    description: "Automatic binding of environment variables to configuration keys."
+  },
+  {
+    title: "🧬 Configuration Aliasing",
+    description: "Create aliases for configuration keys for backward compatibility."
+  }
+]} />
+
+### Best Practices for Viper in Control Plane
+
+<InfoSection type="note" title="Configuration patterns">
+  The Control Plane follows these best practices for configuration management with Viper.
+</InfoSection>
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Configuration Structure"
+    description={<>
+      <p>Organize configuration logically:</p>
+      <ul>
+        <li>Group related settings under namespaces</li>
+        <li>Use consistent naming conventions</li>
+        <li>Keep configuration flat when possible</li>
+        <li>Document all configuration options</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Environment Variables"
+    description={<>
+      <p>Standardized environment variable usage:</p>
+      <ul>
+        <li>Use CP_ prefix for all environment variables</li>
+        <li>Use uppercase with underscores</li>
+        <li>Map to dot notation config keys</li>
+        <li>Document environment variable mappings</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Secret Management"
+    description={<>
+      <p>Handle sensitive configuration carefully:</p>
+      <ul>
+        <li>Never store secrets in version control</li>
+        <li>Use environment variables for secrets</li>
+        <li>Support external secret managers</li>
+        <li>Mask secrets in logs and output</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Validation and Safety"
+    description={<>
+      <p>Ensure configuration is valid and safe:</p>
+      <ul>
+        <li>Validate configuration at startup</li>
+        <li>Provide helpful error messages for invalid config</li>
+        <li>Set reasonable defaults for all settings</li>
+        <li>Use typed configuration access</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Integration of Cobra and Viper
+
+<InfoSection type="tip" title="Seamless integration">
+  Cobra and Viper are designed to work together seamlessly, creating a powerful framework for CLI applications with sophisticated configuration management.
+</InfoSection>
+
+## Control Plane CLI Components
+
+The Control Plane includes several CLI tools built with Cobra and Viper:
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="rover-ctl"
+    description={<>
+      <p>The primary management CLI for the Control Plane:</p>
+      <ul>
+        <li>Resource deployment and management</li>
+        <li>Configuration management</li>
+        <li>Monitoring and diagnostics</li>
+        <li>User and access management</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="route-tester"
+    description={<>
+      <p>A utility for testing API routes:</p>
+      <ul>
+        <li>Route validation</li>
+        <li>Performance testing</li>
+        <li>Authentication testing</li>
+        <li>Response validation</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="snapshotter"
+    description={<>
+      <p>A tool for capturing system state:</p>
+      <ul>
+        <li>Resource state capture</li>
+        <li>Configuration export</li>
+        <li>Diagnostic information collection</li>
+        <li>Snapshot comparison</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="controller-gen"
+    description={<>
+      <p>Code generation utility for controllers:</p>
+      <ul>
+        <li>CRD generation from Go types</li>
+        <li>RBAC manifest generation</li>
+        <li>OpenAPI schema generation</li>
+        <li>Webhook configuration generation</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Common Configuration Patterns
+
+<InfoSection type="note" title="Configuration management patterns">
+  Common patterns for configuration management in the Control Plane.
+</InfoSection>
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🔒 Secure Configuration",
+    description: "Support for encrypted configuration values and external secret managers."
+  },
+  {
+    title: "📊 Environment-Specific Config",
+    description: "Environment-aware configuration loading (dev, staging, production)."
+  },
+  {
+    title: "📝 Schema Validation",
+    description: "JSON Schema validation for configuration files to catch errors early."
+  },
+  {
+    title: "🔄 Configuration Reloading",
+    description: "Hot reloading of configuration changes without service restart."
+  },
+  {
+    title: "📦 Cascading Configuration",
+    description: "Layered configuration from system to user to project levels."
+  },
+  {
+    title: "🌐 Remote Configuration",
+    description: "Support for loading configuration from centralized services."
+  }
+]} />
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Go Language"
+    description="Learn about the foundation language used for all Control Plane components."
+    linkText="View Go Language"
+    linkUrl="golang"
+  />
+  
+  <FeatureCard
+    title="CLI Overview"
+    description="Explore the CLI tools available in the Control Plane."
+    linkText="View CLI Overview"
+    linkUrl="../../Overview/clis"
+  />
+  
+  <FeatureCard
+    title="Official Cobra Documentation"
+    description="Visit the official Cobra documentation for comprehensive guides."
+    linkText="Visit Cobra"
+    linkUrl="https://github.com/spf13/cobra"
+  />
+  
+  <FeatureCard
+    title="Official Viper Documentation"
+    description="Visit the official Viper documentation for detailed configuration options."
+    linkText="Visit Viper"
+    linkUrl="https://github.com/spf13/viper"
+  />
+</CardGrid>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="60" cy="60" r="56" fill="#E20074" opacity="0.1"/>
+  <path d="M44 40H30C28.3431 40 27 41.3431 27 43V77C27 78.6569 28.3431 80 30 80H44C45.6569 80 47 78.6569 47 77V43C47 41.3431 45.6569 40 44 40Z" stroke="#E20074" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M90 40H76C74.3431 40 73 41.3431 73 43V77C73 78.6569 74.3431 80 76 80H90C91.6569 80 93 78.6569 93 77V43C93 41.3431 91.6569 40 90 40Z" stroke="#E20074" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M47 60H73" stroke="#E20074" stroke-width="3" stroke-linecap="round"/>
+  <path d="M67 54L73 60L67 66" stroke="#E20074" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M53 54L47 60L53 66" stroke="#E20074" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M35 50H39" stroke="#E20074" stroke-width="2" stroke-linecap="round"/>
+  <path d="M35 58H39" stroke="#E20074" stroke-width="2" stroke-linecap="round"/>
+  <path d="M35 66H39" stroke="#E20074" stroke-width="2" stroke-linecap="round"/>
+  <path d="M81 50H85" stroke="#E20074" stroke-width="2" stroke-linecap="round"/>
+  <path d="M81 58H85" stroke="#E20074" stroke-width="2" stroke-linecap="round"/>
+  <path d="M81 66H85" stroke="#E20074" stroke-width="2" stroke-linecap="round"/>
+</svg>

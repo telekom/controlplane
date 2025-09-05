@@ -1,0 +1,167 @@
+---
+sidebar_position: 2
+title: "OAPI-Codegen"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="OAPI-Codegen"
+  description="OpenAPI code generation for Go API services"
+/>
+
+[OAPI-Codegen](https://github.com/deepmap/oapi-codegen) is used in the Control Plane to generate server and client code from OpenAPI specifications, ensuring that APIs are consistent, well-documented, and type-safe.
+
+<InfoSection type="info" title="OpenAPI-driven development">
+  The Control Plane follows an OpenAPI-first approach, where API specifications are written first and code is generated from those specifications.
+</InfoSection>
+
+## Overview
+
+OAPI-Codegen is a utility that generates Go code from OpenAPI 3.0 specifications, bridging the gap between API design and implementation. It supports various targets including server stubs, client code, type definitions, and spec validation.
+
+<div align="center">
+  <img src="/controlplane/img/logos/oapi-codegen-logo.svg" alt="OAPI-Codegen Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🔄 API Consistency",
+    description: "Ensures API implementation matches the OpenAPI specification exactly."
+  },
+  {
+    title: "🏗️ Automatic Code Generation",
+    description: "Reduces boilerplate code and implementation errors."
+  },
+  {
+    title: "📝 Type Safety",
+    description: "Generates Go types that match API request and response schemas."
+  },
+  {
+    title: "🧩 Framework Integration",
+    description: "Works with multiple web frameworks including Gofiber, Echo, and Chi."
+  },
+  {
+    title: "🔍 Validation",
+    description: "Validates request data against the schema defined in the OpenAPI spec."
+  },
+  {
+    title: "📚 Self-documenting",
+    description: "OpenAPI spec serves as living documentation for the API."
+  }
+]} />
+
+## Why OAPI-Codegen?
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "⚡ Developer Productivity",
+    description: "Eliminates repetitive boilerplate code, allowing developers to focus on business logic rather than API plumbing."
+  },
+  {
+    title: "📝 Contract-First Development",
+    description: "Enforces a contract-first approach where API design decisions are made deliberately before implementation."
+  },
+  {
+    title: "🧪 Reduced Testing Burden",
+    description: "Generated code is already tested by the library maintainers, reducing the need for extensive testing of API mechanics."
+  },
+  {
+    title: "🚫 Error Prevention",
+    description: "Prevents common API implementation errors like missed validation, incorrect types, or forgotten endpoints."
+  },
+  {
+    title: "🔁 Consistency Across Services",
+    description: "Ensures all services follow the same patterns for API implementation, improving maintainability."
+  },
+  {
+    title: "📋 Documentation as Code",
+    description: "API documentation is generated from the same source as the code, ensuring it's always accurate and up-to-date."
+  }
+]} />
+
+## Integration in the Control Plane
+
+<InfoSection type="tip" title="API-first development workflow">
+  Control Plane developers define the API contract in OpenAPI specification files first, then generate server and client code, ensuring the implementation aligns with the design.
+</InfoSection>
+
+## Configuration Options
+
+<InfoSection type="note" title="Code generation control">
+  OAPI-Codegen offers fine-grained control over the generated code through a configuration file.
+</InfoSection>
+
+## Best Practices in the Control Plane
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "📜 API-First Development",
+    description: "Define the API contract in OpenAPI before writing any implementation code."
+  },
+  {
+    title: "🔄 Regenerate on Spec Changes",
+    description: "Automate code regeneration as part of the build process when specs change."
+  },
+  {
+    title: "🧩 Separate Generated Code",
+    description: "Keep generated code in separate files (*.gen.go) to distinguish from hand-written code."
+  },
+  {
+    title: "🚫 Don't Modify Generated Code",
+    description: "Implement custom logic by implementing interfaces, not by modifying generated code."
+  },
+  {
+    title: "📚 Consistent Error Formats",
+    description: "Use shared error schemas across all APIs for consistent client experiences."
+  },
+  {
+    title: "✅ Validate Input Data",
+    description: "Use the generated validation functions for all incoming data."
+  }
+]} />
+
+## Integration with Gofiber
+
+<InfoSection type="note" title="Framework integration">
+  OAPI-Codegen generates code specifically tailored for Gofiber in the Control Plane, making integration seamless.
+</InfoSection>
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="OpenAPI Specification"
+    description="The foundation of API design in the Control Plane."
+    linkText="OpenAPI Docs"
+    linkUrl="https://spec.openapis.org/oas/latest.html"
+  />
+  
+  <FeatureCard
+    title="Gofiber"
+    description="The high-performance web framework used with OAPI-Codegen."
+    linkText="View Gofiber"
+    linkUrl="gofiber"
+  />
+  
+  <FeatureCard
+    title="Swagger UI"
+    description="Interactive API documentation generated from OpenAPI specs."
+    linkText="View Swagger"
+    linkUrl="https://swagger.io/"
+  />
+  
+  <FeatureCard
+    title="API Design Patterns"
+    description="Best practices for API design in the Control Plane."
+    linkText="View API Patterns"
+    linkUrl="https://developer.telekom.de/docs/src/api_standards_conventions/"
+  />
+</CardGrid>
