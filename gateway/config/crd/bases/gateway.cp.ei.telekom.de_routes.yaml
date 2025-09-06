@@ -206,6 +206,8 @@ spec:
                 type: object
               traffic:
                 properties:
+                  circuitBreaker:
+                    type: boolean
                   failover:
                     properties:
                       security:

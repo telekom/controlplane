@@ -159,6 +159,7 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 	builder.EnableFeature(feature.InstanceFailoverFeature)
 	builder.EnableFeature(feature.InstanceHeaderTransformationFeature)
 	builder.EnableFeature(feature.InstanceBasicAuthFeature)
+	builder.EnableFeature(feature.InstanceCircuitBreakerFeature)
 
 	return builder, nil
 }

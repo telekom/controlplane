@@ -5,7 +5,8 @@
     Failover:      &v1.Failover{
         Zones: {"zone1", "zone2"},
     },
-    RateLimit: (*v1.RateLimit)(nil),
+    RateLimit:      (*v1.RateLimit)(nil),
+    CircuitBreaker: &bool(false),
 }
 ---
 
