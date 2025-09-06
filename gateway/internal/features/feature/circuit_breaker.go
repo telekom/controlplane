@@ -86,6 +86,10 @@ func (c CircuitBreakerFeature) Apply(ctx context.Context, builder features.Featu
 			return errors.Wrapf(fmt.Errorf("error body from kong admin api: %s", string(upstreamDeleteResponse.Body)), "failed to create upstream for route %s", routeName)
 		}
 
+		// remove the reference to the upstream from the route
+		route.SetUpstreamId("")
+		route.SetTargetsId("")
+
 	} else {
 		// ! important - if CB is enabled then the kong service value needs to reference the kong upstream (same name as route name)
 		builder.SetUpstream(&client.CustomUpstream{
