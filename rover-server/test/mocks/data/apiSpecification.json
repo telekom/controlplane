@@ -2,11 +2,17 @@
   "apiVersion": "rover.cp.ei.telekom.de/v1",
   "kind": "ApiSpecification",
   "metadata": {
-    "name": "apispec-sample",
+    "name": "eni-distr-v1",
     "namespace": "poc--eni--hyperion"
   },
   "spec": {
-    "specification": "{\"openapi\": \"3.0.0\",\"info\": {\"title\": \"Rover API\",\"version\": \"1.0.0\",},\"servers\": {\"url\": \"http://rover-api/eni/distr/v1\",},}"
+    "apiName": "rover-api",
+    "basePath": "/eni/distr/v1",
+    "version": "1.0.0",
+    "category": "other",
+    "xVendor": false,
+    "oauth2Scopes": [],
+    "specification": "randomId"
   },
   "status": {
     "api":{

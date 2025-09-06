@@ -24,7 +24,7 @@ func ConfigureApiSpecificationStoreMock(testing ginkgo.FullGinkgoTInterface, moc
 }
 
 func configureApiSpecification(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObjectStore[*roverv1.ApiSpecification]) {
-	apiSpecification := GetApiSpecification(testing, ApiSpecificationFileName) // apispec-sample
+	apiSpecification := GetApiSpecification(testing, ApiSpecificationFileName) // eni-distr-v1
 
 	mockedStore.EXPECT().Get(
 		mock.AnythingOfType("*context.valueCtx"),
@@ -32,7 +32,7 @@ func configureApiSpecification(testing ginkgo.FullGinkgoTInterface, mockedStore 
 			return s == "poc--eni--hyperion"
 		}),
 		mock.MatchedBy(func(s string) bool {
-			return s == "apispec-sample"
+			return s == "eni-distr-v1"
 		}),
 	).Return(apiSpecification, nil).Maybe()
 
@@ -49,7 +49,7 @@ func configureApiSpecification(testing ginkgo.FullGinkgoTInterface, mockedStore 
 			return s == "poc--eni--hyperion"
 		}),
 		mock.MatchedBy(func(s string) bool {
-			return s == "apispec-sample"
+			return s == "eni-distr-v1"
 		}),
 	).Return(nil).Maybe()
 
@@ -64,7 +64,7 @@ func configureNotFound(mockedStore *MockObjectStore[*roverv1.ApiSpecification]) 
 		mock.AnythingOfType("*context.valueCtx"),
 		mock.AnythingOfType("string"),
 		mock.MatchedBy(func(s string) bool {
-			return s != "apispec-sample"
+			return s != "eni-distr-v1"
 		}),
 	).Return(nil, problems.NotFound("apispec not found")).Maybe()
 

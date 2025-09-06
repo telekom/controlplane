@@ -1,0 +1,244 @@
+---
+sidebar_position: 3
+title: "Kubebuilder"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Kubebuilder"
+  description="Kubernetes API development framework"
+/>
+
+Kubebuilder is the framework used to build the Control Plane's operators and custom resources.
+
+<InfoSection type="info" title="Development framework">
+  Kubebuilder provides the scaffolding and tooling used to develop the Control Plane's operators and custom resources.
+</InfoSection>
+
+## Overview
+
+[Kubebuilder](https://book.kubebuilder.io/) is a framework for building Kubernetes APIs using CRDs, controllers, and webhooks. It's designed to simplify the development of Kubernetes operators and custom resources by providing code generation, scaffolding, and testing capabilities.
+
+<div align="center">
+  <img src="/controlplane/img/logos/kubebuilder-logo.png" alt="Kubebuilder Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Why Kubebuilder?
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🏗️ Standardized Structure",
+    description: "Provides a consistent project structure that follows Kubernetes community best practices."
+  },
+  {
+    title: "⚡ Rapid Development",
+    description: "Accelerates development with automatic generation of boilerplate code and manifests."
+  },
+  {
+    title: "🧩 Controller Runtime",
+    description: "Built on the battle-tested controller-runtime library used by Kubernetes core components."
+  },
+  {
+    title: "🔒 Security by Default",
+    description: "Automatically generates RBAC rules based on controller access patterns."
+  },
+  {
+    title: "🧪 Testing Framework",
+    description: "Includes a testing framework that simulates the Kubernetes API server for unit and integration tests."
+  },
+  {
+    title: "🚀 Production-Ready",
+    description: "Used by major Kubernetes projects and enterprises for building production operators."
+  }
+]} />
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🏗️ Scaffolding",
+    description: "Generate code and manifests for new API types and controllers."
+  },
+  {
+    title: "🧪 Testing",
+    description: "Framework for controller and webhook testing with envtest."
+  },
+  {
+    title: "🔒 RBAC",
+    description: "Automatic generation of role-based access control manifests."
+  },
+  {
+    title: "🔍 Webhooks",
+    description: "Infrastructure for validation and defaulting webhooks."
+  },
+  {
+    title: "📖 Documentation",
+    description: "Marker-based API documentation generation."
+  },
+  {
+    title: "🔧 CLI Tools",
+    description: "Command-line tools for project management and scaffolding."
+  }
+]} />
+
+## Project Structure
+
+The Control Plane follows the standard Kubebuilder project structure:
+
+```
+├── api/
+│   └── v1/
+│       ├── rover_types.go
+│       ├── apispecification_types.go
+│       ├── groupversion_info.go
+│       └── zz_generated.deepcopy.go
+├── controllers/
+│   ├── rover_controller.go
+│   ├── apispecification_controller.go
+│   └── suite_test.go
+├── config/
+│   ├── crd/
+│   │   └── bases/
+│   │       └── rover.cp.ei.telekom.de_rovers.yaml
+│   ├── rbac/
+│   │   ├── role.yaml
+│   │   └── role_binding.yaml
+│   ├── manager/
+│   │   └── manager.yaml
+│   └── samples/
+│       └── rover_v1_rover.yaml
+└── main.go
+```
+
+<InfoSection type="note" title="Standardized organization">
+  The Kubebuilder project structure ensures consistency across all Control Plane operators, making it easier to navigate, understand, and maintain the codebase.
+</InfoSection>
+
+## Working with Kubebuilder
+
+### Creating a New API
+
+The Control Plane uses Kubebuilder to scaffold new APIs and controllers:
+
+```bash
+# Create a new API with group 'gateway', version 'v1', kind 'Route'
+kubebuilder create api --group gateway --version v1 --kind Route
+
+# Create a new webhook for an existing API
+kubebuilder create webhook --group gateway --version v1 --kind Route --defaulting --programmatic-validation
+```
+
+### Generating CRDs
+
+Kubebuilder automatically generates CRDs from Go types with markers:
+
+```bash
+# Generate CRDs from API definitions
+make manifests
+
+# Install CRDs into a cluster
+make install
+```
+
+### Running Controllers Locally
+
+The Control Plane developers can run controllers locally for testing:
+
+```bash
+# Run controller against a remote cluster
+make run
+
+# Run controller with specific configuration
+KUBECONFIG=/path/to/kubeconfig ENABLE_WEBHOOKS=false make run
+```
+
+## Testing with Kubebuilder
+
+<CardGrid columns={1}>
+  <FeatureCard
+    title="Kubebuilder Testing"
+    description="Kubebuilder provides the envtest package, which sets up a temporary API server for testing controllers without requiring a real Kubernetes cluster."
+    linkText="View Kubebuilder Testing"
+    linkUrl="../Testing/kubebuilder-testing"
+  />
+</CardGrid>
+
+## Best Practices
+
+<InfoSection type="tip" title="Control Plane patterns">
+  The Control Plane follows these best practices for Kubebuilder-based development.
+</InfoSection>
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="API Design"
+    description={<>
+      <ul>
+        <li>Follow Kubernetes API conventions</li>
+        <li>Use CRD validation for all fields</li>
+        <li>Separate spec (desired state) from status (observed state)</li>
+        <li>Define clear ownership and dependency relationships</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Controller Implementation"
+    description={<>
+      <ul>
+        <li>Make reconciliation idempotent</li>
+        <li>Use finalizers for cleanup operations</li>
+        <li>Log relevant information at appropriate levels</li>
+        <li>Handle errors with appropriate retry strategies</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Resource Management"
+    description={<>
+      <ul>
+        <li>Implement owner references for garbage collection</li>
+        <li>Set resource requests and limits appropriately</li>
+        <li>Use metrics for performance monitoring</li>
+        <li>Implement proper error handling and reporting</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Testing"
+    description={<>
+      <ul>
+        <li>Write comprehensive unit tests</li>
+        <li>Use envtest for controller integration testing</li>
+        <li>Test failure scenarios and edge cases</li>
+        <li>Verify webhooks with admission review requests</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Kubernetes"
+    description="Learn about the core platform extended by Kubebuilder."
+    linkText="View Kubernetes"
+    linkUrl="kubernetes"
+  />
+  
+  <FeatureCard
+    title="Controller Runtime"
+    description="Explore the library that powers Kubebuilder-based controllers."
+    linkText="View Controller Runtime"
+    linkUrl="https://github.com/kubernetes-sigs/controller-runtime"
+  />
+</CardGrid>

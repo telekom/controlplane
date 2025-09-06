@@ -1,0 +1,257 @@
+---
+sidebar_position: 0
+title: "Overview"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import ComponentTable from '@site/src/components/ComponentTable';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Control Plane Technology Stack"
+  description="Comprehensive overview of the technologies powering the Control Plane"
+/>
+
+<InfoSection type="info" title="Modern cloud-native stack">
+  The Control Plane is built on a carefully selected set of modern technologies, optimized for cloud-native environments, high performance, and operational reliability.
+</InfoSection>
+
+## Technology Categories
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="Core Technologies"
+    description="The foundation of the Control Plane architecture, including Go language and Kubernetes."
+    linkText="View Core Technologies"
+    linkUrl="Core-Technologies/golang"
+  />
+  
+  <FeatureCard
+    title="Web Frameworks"
+    description="Fast and efficient HTTP frameworks that power the Control Plane's APIs and services."
+    linkText="View Web Frameworks"
+    linkUrl="Web-Frameworks/gofiber"
+  />
+  
+  <FeatureCard
+    title="Storage Solutions"
+    description="Scalable and reliable storage technologies for managing data across the platform."
+    linkText="View Storage Solutions"
+    linkUrl="Storage/minio"
+  />
+
+  <FeatureCard
+    title="Testing Tools"
+    description="Robust testing frameworks and mocking libraries to ensure code quality and reliability."
+    linkText="View Testing Tools"
+    linkUrl="Testing/testify"
+  />
+  
+  <FeatureCard
+    title="Authentication"
+    description="Secure authentication mechanisms to protect resources and validate identity."
+    linkText="View Authentication"
+    linkUrl="Authentication/jwt"
+  />
+  
+  <FeatureCard
+    title="Infrastructure"
+    description="Tools and platforms for deploying, managing, and scaling the Control Plane."
+    linkText="View Infrastructure"
+    linkUrl="Infrastructure/kustomize"
+  />
+  
+  <FeatureCard
+    title="Monitoring & Logging"
+    description="Observability solutions to gain insights into system performance and behavior."
+    linkText="View Monitoring & Logging"
+    linkUrl="Monitoring-Logging/prometheus"
+  />
+</CardGrid>
+
+## What is the Control Plane?
+
+The Control Plane is the central management layer for the Open Telekom Integration Platform, governing Kubernetes cluster operations. It maintains the system's desired state, manages workloads, and provides user interaction interfaces.
+
+<FeatureGrid columns={3} features={[
+  {
+    title: "⚙️ Operators",
+    description: "Specialized control loops managing complex domain-specific applications and configurations using the Kubernetes Operator pattern."
+  },
+  {
+    title: "🔌 API Servers",
+    description: "RESTful APIs for managing Kubernetes custom resources, providing a standardized interface for platform interaction."
+  },
+  {
+    title: "📚 Libraries",
+    description: "Shared code modules between different projects to ensure consistency, reduce duplication, and accelerate development."
+  }
+]} />
+
+## Repository Structure
+
+The controlplane repository is organized into several key components:
+
+<ComponentTable 
+  components={[
+    {
+      name: "admin",
+      description: "Administrative APIs and controllers for platform management.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/admin" }
+    },
+    {
+      name: "api",
+      description: "API management and exposure for external service integration.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/api" }
+    },
+    {
+      name: "application",
+      description: "Application lifecycle management and deployment orchestration.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/application" }
+    },
+    {
+      name: "approval",
+      description: "Workflow approval system for change management and governance.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/approval" }
+    },
+    {
+      name: "common",
+      description: "Shared utilities and libraries used across multiple components.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/common" }
+    },
+    {
+      name: "common-server",
+      description: "Shared server utilities and middleware for HTTP services.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/common-server" }
+    },
+    {
+      name: "cpapi",
+      description: "Core Control Plane API providing central access to platform capabilities.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/cpapi" }
+    },
+    {
+      name: "file-manager",
+      description: "File upload/download service with S3 backend for storing and retrieving files.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/file-manager" }
+    },
+    {
+      name: "gateway",
+      description: "API Gateway functionality for routing and managing external requests.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/gateway" }
+    },
+    {
+      name: "identity",
+      description: "Authentication and identity management for users and services.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/identity" }
+    },
+    {
+      name: "organization",
+      description: "Organization and team management for multi-tenant access control.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/organization" }
+    },
+    {
+      name: "rover",
+      description: "Distributed deployment and management agent for edge infrastructure.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/rover" }
+    },
+    {
+      name: "rover-ctl",
+      description: "Command-line interface for interacting with rover services and configurations.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/rover-ctl" }
+    },
+    {
+      name: "rover-server",
+      description: "Central server component for managing rover agents and deployments.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/rover-server" }
+    },
+    {
+      name: "secret-manager",
+      description: "Secure storage and management of credentials, certificates, and sensitive data.",
+      link: { url: "https://github.com/telekom/controlplane/tree/main/secret-manager" }
+    }
+  ]}
+/>
+
+## Technology Stack at a Glance
+
+<InfoSection type="note" title="Technology choices">
+  The Control Plane uses a carefully selected set of technologies to ensure performance, reliability, and maintainability.
+</InfoSection>
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🧩 Language",
+    description: "Go 1.24.4 - chosen for its concurrency model, strong typing, and excellent performance in cloud-native applications."
+  },
+  {
+    title: "🏗️ Framework",
+    description: "Kubernetes Operator pattern with Kubebuilder for extending Kubernetes functionality with custom resources and controllers."
+  },
+  {
+    title: "🌐 Web",
+    description: "Gofiber HTTP framework with OAPI-Codegen for type-safe OpenAPI-driven development of web services."
+  },
+  {
+    title: "💾 Storage",
+    description: "MinIO S3 client for object storage, providing a scalable, cloud-native storage solution."
+  },
+  {
+    title: "📝 Documentation",
+    description: "OpenAPI/Swagger for API documentation, enabling automated client generation and interactive exploration."
+  },
+  {
+    title: "🧪 Testing",
+    description: "Comprehensive testing suite with Testify, Ginkgo, Gomega, and Go-Snaps for BDD-style testing and snapshot verification."
+  },
+  {
+    title: "🚀 Deployment",
+    description: "Kubernetes with Kustomize and Helm charts for containerized deployment, providing scalable and consistent environments."
+  },
+  {
+    title: "⚙️ Configuration",
+    description: "Cobra and Viper for powerful CLI applications and sophisticated configuration management across all components."
+  }
+]} />
+
+## Presentation
+
+Want a quick overview? Check out our [technical presentation](https://github.com/telekom/controlplane/docs/presentation) for a concise introduction to the main frameworks and technologies used in the controlplane.
+
+## Documentation Standards
+
+The technology documentation follows a standardized structure for consistency and ease of navigation. For details on how to contribute to the technology documentation, see the [Documentation Guide](DOCUMENTATION_GUIDE.md).
+
+<InfoSection type="tip" title="Documentation consistency">
+  Following the established documentation structure helps maintain quality and provides a better experience for developers using the Control Plane.
+</InfoSection>
+
+## Next Steps
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="Core Technologies"
+    description="Explore the foundational technologies used in the Control Plane, starting with the Go language."
+    linkText="Go Language"
+    linkUrl="Core-Technologies/golang"
+  />
+  
+  <FeatureCard
+    title="Getting Started"
+    description="Ready to start using the Control Plane? Check out our quickstart guide."
+    linkText="Quickstart"
+    linkUrl="../Installation/quickstart"
+  />
+  
+  <FeatureCard
+    title="Documentation Template"
+    description="View the template for creating consistent technology documentation pages."
+    linkText="View Template"
+    linkUrl="https://github.com/telekom/controlplane/blob/main/docs/pages/docs/1-Technology/technology.mdx"
+  />
+</CardGrid>

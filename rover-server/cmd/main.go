@@ -15,6 +15,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
+	filesapi "github.com/telekom/controlplane/file-manager/api"
+	"github.com/telekom/controlplane/rover-server/internal/file"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/telekom/controlplane/rover-server/internal/config"
@@ -40,6 +42,10 @@ func main() {
 
 	probesCtrl := cserver.NewProbesController()
 	probesCtrl.Register(app, cserver.ControllerOpts{})
+
+	file.AppendOption(
+		filesapi.WithSkipTLSVerify(cfg.FileManager.SkipTLS),
+	)
 
 	s := server.Server{
 		Config:              cfg,

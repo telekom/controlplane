@@ -1,0 +1,276 @@
+---
+sidebar_position: 5
+title: "Go-Snaps"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Go-Snaps"
+  description="Snapshot testing library for Go applications"
+/>
+
+[Go-Snaps](https://github.com/gkampitakis/go-snaps) is a snapshot testing library for Go used in the Control Plane to verify that complex outputs match expected values.
+
+<InfoSection type="info" title="Snapshot testing">
+  Snapshot testing captures a component's output and compares it to a previously saved reference output (the "snapshot"). This approach is particularly useful for testing complex structures that are difficult to verify with traditional assertions.
+</InfoSection>
+
+## Overview
+
+Go-Snaps provides a simple, effective way to implement snapshot testing in Go applications. It's particularly valuable for testing complex data structures, API responses, and generated code.
+
+<div align="center">
+  <img src="/controlplane/img/logos/go-snaps-logo.svg" alt="Go-Snaps Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Why Go-Snaps?
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "📸 Snapshot Capture",
+    description: "Automatically save output snapshots for future comparisons."
+  },
+  {
+    title: "🔄 Snapshot Updates",
+    description: "Update snapshots when expected behavior changes."
+  },
+  {
+    title: "📊 Diff Generation",
+    description: "Clear visualization of differences between current output and snapshot."
+  },
+  {
+    title: "🧩 Custom Serializers",
+    description: "Support for custom serialization of complex types."
+  },
+  {
+    title: "⏱️ Inline Snapshots",
+    description: "Store small snapshots directly in test files."
+  },
+  {
+    title: "🔧 CLI Integration",
+    description: "Command-line tools for managing snapshots."
+  }
+]} />
+
+## Integration in the Control Plane
+
+<InfoSection type="tip" title="Complex output testing">
+  In the Control Plane, Go-Snaps is used to test components that produce complex outputs such as CRD generators, API responses, and resource templates.
+</InfoSection>
+
+The Control Plane uses Go-Snaps for testing various components:
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="API Responses"
+    description={<>
+      <p>Testing the structure and content of API responses:</p>
+      <ul>
+        <li>JSON response bodies</li>
+        <li>Error response formats</li>
+        <li>Pagination structures</li>
+        <li>Content negotiation results</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Resource Templates"
+    description={<>
+      <p>Verifying generated Kubernetes resources:</p>
+      <ul>
+        <li>Deployment manifests</li>
+        <li>Service configurations</li>
+        <li>ConfigMap content</li>
+        <li>CRD definitions</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Code Generation"
+    description={<>
+      <p>Testing output of code generators:</p>
+      <ul>
+        <li>Controller boilerplate</li>
+        <li>Client code</li>
+        <li>Schema validation</li>
+        <li>Documentation generation</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Configuration Processing"
+    description={<>
+      <p>Testing configuration transformation logic:</p>
+      <ul>
+        <li>Config file parsing</li>
+        <li>Environment variable processing</li>
+        <li>Default value application</li>
+        <li>Validation error messages</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Configuration
+
+<InfoSection type="note" title="Snapshot configuration and formats">
+  Go-Snaps provides various configuration options and supports multiple data formats commonly used in the Control Plane.
+</InfoSection>
+
+### Snapshot Storage
+
+By default, Go-Snaps stores snapshots in a `__snapshots__` directory next to your test files:
+
+```
+pkg/controller/
+  ├── controller_test.go
+  ├── __snapshots__/
+  │   └── controller_test.snap
+  └── controller.go
+```
+
+Snapshots are stored in a readable format that's version control friendly.
+
+### Supported Formats
+
+<FeatureGrid columns={3} features={[
+  {
+    title: "MatchJSON",
+    description: "Match JSON data with normalized formatting."
+  },
+  {
+    title: "MatchYAML",
+    description: "Match YAML data with normalized formatting."
+  },
+  {
+    title: "MatchInline",
+    description: "Store small snapshots directly in test files."
+  },
+  {
+    title: "Match",
+    description: "Match any serializable data structure."
+  },
+  {
+    title: "MatchText",
+    description: "Match text content without normalization."
+  },
+  {
+    title: "MatchSnapshot",
+    description: "Low-level API for custom matching."
+  }
+]} />
+
+### Advanced Features
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Custom Serializers"
+    description="Define custom serialization for complex types"
+  />
+  
+  <FeatureCard
+    title="Update Mode"
+    description="Update snapshots when behavior changes"
+  />
+  
+  <FeatureCard
+    title="Exclusion Paths"
+    description="Exclude dynamic fields from comparison"
+  />
+  
+  <FeatureCard
+    title="Inline Snapshots"
+    description="Store small snapshots directly in test files"
+  />
+</CardGrid>
+
+### CLI Usage
+
+Go-Snaps provides a command-line tool for managing snapshots:
+
+```bash
+# Install the CLI
+go install github.com/gkampitakis/go-snaps/cmd/go-snaps@latest
+
+# Show differences in snapshots
+go-snaps diff
+
+# Clean up unused snapshots
+go-snaps cleanup
+
+# Update all snapshots
+go-snaps update
+
+# Update specific snapshots
+go-snaps update --test TestDeploymentController
+```
+
+## Best Practices in the Control Plane
+
+<InfoSection type="tip" title="Effective snapshot testing">
+  The Control Plane follows these best practices for effective snapshot testing.
+</InfoSection>
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🎯 Test Focused Cases",
+    description: "Create separate snapshots for specific behaviors rather than large, catch-all snapshots."
+  },
+  {
+    title: "💾 Version Control Snapshots",
+    description: "Always commit snapshot files to version control alongside code changes."
+  },
+  {
+    title: "🧹 Regular Cleanup",
+    description: "Use 'go-snaps cleanup' periodically to remove orphaned snapshots."
+  },
+  {
+    title: "🔍 Code Review Snapshots",
+    description: "Review snapshot changes carefully during code reviews to catch unintended changes."
+  },
+  {
+    title: "⏱️ Normalize Timestamps",
+    description: "Use custom serializers or exclusion paths to handle dynamic values like timestamps."
+  },
+  {
+    title: "📝 Descriptive Test Names",
+    description: "Use clear, descriptive test names that explain what the snapshot represents."
+  }
+]} />
+
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Ginkgo"
+    description="BDD-style testing framework for Go applications."
+    linkText="View Ginkgo"
+    linkUrl="ginkgo"
+  />
+  
+  <FeatureCard
+    title="Gomega"
+    description="Matcher/assertion library that works well with Go-Snaps."
+    linkText="View Gomega"
+    linkUrl="gomega"
+  />
+  
+  <FeatureCard
+    title="Testify"
+    description="Another testing toolkit used in the Control Plane."
+    linkText="View Testify"
+    linkUrl="testify"
+  />
+</CardGrid>

@@ -11,7 +11,39 @@ import (
 )
 
 type ApiSpecificationSpec struct {
+	// Specification contains the file ID reference from the file manager
+	// +kubebuilder:validation:Required
 	Specification string `json:"specification"`
+
+	// Category of the API, defaults to "other" if not specified, is extracted from `x-category` in rover-server
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default:=other
+	Category string `json:"category"`
+
+	// ApiName is derived from the BasePath or URL path, with slashes replaced by hyphens "-"
+	// +kubebuilder:validation:Required
+	ApiName string `json:"apiName"`
+
+	// BasePath represents the base path from OpenAPI v2 or derived from server URL in OpenAPI v3
+	// +kubebuilder:validation:Required
+	BasePath string `json:"basepath"`
+
+	// Hash is the SHA-256 hash of the specification content for integrity verification
+	// +kubebuilder:validation:Required
+	Hash string `json:"hash"`
+
+	// XVendor indicates if this is a vendor extension API, defaults to false is extracted from `x-vendor` in rover-server
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default:=false
+	XVendor bool `json:"xvendor"`
+
+	// Version of the API as specified in the OpenAPI document's info section
+	// +kubebuilder:validation:Required
+	Version string `json:"version"`
+
+	// Oauth2Scopes contains the OAuth2 scopes extracted from security definitions/schemes
+	// +kubebuilder:validation:Optional
+	Oauth2Scopes []string `json:"scopes,omitempty"`
 }
 
 type ApiSpecificationStatus struct {
@@ -24,10 +56,6 @@ type ApiSpecificationStatus struct {
 
 	// API reference
 	Api types.ObjectRef `json:"api,omitempty"`
-	// Base path of the API
-	BasePath string `json:"basePath,omitempty"`
-	// Category of the API
-	Category string `json:"category,omitempty"`
 }
 
 //+kubebuilder:object:root=true

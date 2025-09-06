@@ -29,21 +29,13 @@ func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *r
 
 	c := client.ClientFromContextOrDie(ctx)
 
-	// Parsing APiSpecification
-	parsedApi, err := ParseSpecification(ctx, apiSpec.Spec.Specification)
-	if err != nil {
-		return err
-	}
-
 	api := &apiapi.Api{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      parsedApi.Name,
+			Name:      apiSpec.Spec.ApiName,
 			Namespace: apiSpec.Namespace,
 		},
 	}
 
-	apiSpec.Status.BasePath = parsedApi.Spec.BasePath
-	apiSpec.Status.Category = parsedApi.Spec.Category
 	apiSpec.Status.Api = *types.ObjectRefFromObject(api)
 
 	mutator := func() error {
@@ -53,15 +45,22 @@ func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *r
 		}
 
 		api.Labels = map[string]string{
-			apiapi.BasePathLabelKey: labelutil.NormalizeValue(parsedApi.Spec.BasePath),
+			apiapi.BasePathLabelKey: labelutil.NormalizeValue(apiSpec.Spec.BasePath),
 		}
 
-		api.Spec = parsedApi.Spec
+		api.Spec = apiapi.ApiSpec{
+			Name:         apiSpec.Spec.ApiName,
+			Version:      apiSpec.Spec.Version,
+			BasePath:     apiSpec.Spec.BasePath,
+			Category:     apiSpec.Spec.Category,
+			Oauth2Scopes: apiSpec.Spec.Oauth2Scopes,
+			XVendor:      apiSpec.Spec.XVendor,
+		}
 
 		return nil
 	}
 
-	_, err = c.CreateOrUpdate(ctx, api, mutator)
+	_, err := c.CreateOrUpdate(ctx, api, mutator)
 	if err != nil {
 		return errors.Wrap(err, "failed to create or update api")
 	}

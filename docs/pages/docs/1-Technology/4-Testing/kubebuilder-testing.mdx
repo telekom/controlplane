@@ -1,0 +1,204 @@
+---
+sidebar_position: 6
+title: "Kubebuilder Testing"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Kubebuilder Testing"
+  description="Testing Kubernetes controllers with in-memory API server"
+/>
+
+The Control Plane uses Kubebuilder's testing framework to validate controller behavior using an in-memory Kubernetes API server.
+
+<InfoSection type="info" title="Controller testing">
+  Testing Kubernetes controllers requires a special approach since they interact with the Kubernetes API server. Kubebuilder provides tools to set up an in-memory API server for efficient and reliable testing.
+</InfoSection>
+
+## Overview
+
+Kubebuilder's testing framework, built on the `controller-runtime` library's `envtest` package, allows you to test controllers without a real Kubernetes cluster. This approach offers several advantages:
+
+<div align="center">
+  <img src="/controlplane/img/logos/kubebuilder-logo.png" alt="Kubebuilder Testing Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Why Kubebuilder Testing?
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🚀 Fast Execution",
+    description: "Tests run quickly without the overhead of a full Kubernetes cluster."
+  },
+  {
+    title: "🔄 Isolation",
+    description: "Each test runs in a clean environment without side effects from other tests."
+  },
+  {
+    title: "💻 Local Development",
+    description: "No need for a real cluster during development and CI pipelines."
+  },
+  {
+    title: "📊 Comprehensive Testing",
+    description: "Test edge cases and error conditions that are hard to reproduce in real clusters."
+  },
+  {
+    title: "🛠️ Integration Testing",
+    description: "True integration tests with a real API server implementation."
+  },
+  {
+    title: "⚙️ CRD Support",
+    description: "Register and test Custom Resource Definitions (CRDs) used by your controllers."
+  }
+]} />
+
+## Configuration
+
+<InfoSection type="note" title="Test environment setup">
+  The test environment includes an API server, etcd, and controller-runtime components that closely simulate a real Kubernetes cluster.
+</InfoSection>
+
+### In-Memory Testing Architecture
+
+
+## Best Practices for Controller Testing
+
+<InfoSection type="tip" title="Testing guidelines">
+  The Control Plane follows these best practices for effective controller testing.
+</InfoSection>
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🔍 Test Isolation",
+    description: "Use unique namespaces for each test to prevent test interference."
+  },
+  {
+    title: "⏱️ Use Eventually",
+    description: "Use Eventually assertions for asynchronous operations with appropriate timeouts."
+  },
+  {
+    title: "🧪 Test All Resource Operations",
+    description: "Cover create, update, delete, and error scenarios in your tests."
+  },
+  {
+    title: "🧩 Mock External Dependencies",
+    description: "Use interfaces and mocks for external services to ensure tests are self-contained."
+  },
+  {
+    title: "📊 Verify Status Updates",
+    description: "Check that status fields are properly updated by controllers."
+  },
+  {
+    title: "🔄 Test Finalizers",
+    description: "Verify that finalizers are added/removed and cleanup logic runs correctly."
+  },
+  {
+    title: "⚠️ Test Error Handling",
+    description: "Simulate error conditions to test controller resilience and error propagation."
+  },
+  {
+    title: "🧹 Clean Up Resources",
+    description: "Ensure all resources are cleaned up after tests to prevent interference."
+  }
+]} />
+
+## Debugging Controller Tests
+
+<InfoSection type="note" title="Troubleshooting">
+  When controller tests fail, these debugging techniques can help identify the issue.
+</InfoSection>
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Enable Verbose Logging"
+    description="Increase log verbosity to see what's happening"
+  />
+  
+  <FeatureCard
+    title="Use Ginkgo Debug Capabilities"
+    description="Use Ginkgo's debugging features"
+  />
+  
+  <FeatureCard
+    title="Inspect API Objects"
+    description="Dump API object contents for inspection"
+  />
+  
+  <FeatureCard
+    title="Check Controller Logs"
+    description="Set up a custom logger to capture controller logs"
+  />
+</CardGrid>
+
+## Performance Considerations
+
+<InfoSection type="note" title="Test efficiency">
+  The in-memory test environment can be resource-intensive. These strategies help optimize test performance.
+</InfoSection>
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🚀 Single Test Environment",
+    description: "Start the test environment once for the whole test suite instead of per-test."
+  },
+  {
+    title: "📊 Selective Testing",
+    description: "Group and organize tests to minimize setup/teardown overhead."
+  },
+  {
+    title: "🔄 Resource Reuse",
+    description: "Reuse test environment resources when possible instead of recreating them."
+  },
+  {
+    title: "⏱️ Appropriate Timeouts",
+    description: "Use reasonable timeouts for Eventually assertions to avoid long waits."
+  },
+  {
+    title: "🧪 Parallelization",
+    description: "Run independent tests in parallel with Ginkgo's parallel testing features."
+  },
+  {
+    title: "🔍 Focused Testing",
+    description: "Use Ginkgo's focus features to run only relevant tests during development."
+  }
+]} />
+
+## Related Resources
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Kubebuilder"
+    description="Learn about the framework used to build Kubernetes operators."
+    linkText="View Kubebuilder"
+    linkUrl="../Core-Technologies/kubebuilder"
+  />
+  
+  <FeatureCard
+    title="Ginkgo"
+    description="BDD-style testing framework used with Kubebuilder."
+    linkText="View Ginkgo"
+    linkUrl="ginkgo"
+  />
+  
+  <FeatureCard
+    title="Gomega"
+    description="Matcher/assertion library used for controller testing."
+    linkText="View Gomega"
+    linkUrl="gomega"
+  />
+  
+  <FeatureCard
+    title="Controller Runtime"
+    description="The library that powers Kubebuilder-based controllers and their tests."
+    linkText="View Documentation"
+    linkUrl="https://github.com/kubernetes-sigs/controller-runtime"
+  />
+</CardGrid>

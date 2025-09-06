@@ -1,3 +1,12 @@
+# [0.12.0](https://github.com/telekom/controlplane/compare/v0.11.0...v0.12.0) (2025-09-05)
+
+
+### Features
+
+* add new component rover-ctl ([#119](https://github.com/telekom/controlplane/issues/119)) ([5dd6c1f](https://github.com/telekom/controlplane/commit/5dd6c1fa6c8cb3c93d42ceace21c46554526a89d))
+* **file-manager:** switched to sha256 checksum alg; added example for minio standalone server; updated credentials for buckets-backend; ([#140](https://github.com/telekom/controlplane/issues/140)) ([f9f7e97](https://github.com/telekom/controlplane/commit/f9f7e973946e6c65323286ab7f611607db0be8f3))
+* **rover:** File Client Integration ([#143](https://github.com/telekom/controlplane/issues/143)) ([74e42d9](https://github.com/telekom/controlplane/commit/74e42d94023e979780801057040ab73fd69b8397))
+
 # [0.11.0](https://github.com/telekom/controlplane/compare/v0.10.0...v0.11.0) (2025-08-25)
 
 

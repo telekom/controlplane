@@ -1,0 +1,273 @@
+---
+sidebar_position: 2
+title: "Prometheus Metrics"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import FeatureCard from '@site/src/components/FeatureCard';
+import CardGrid from '@site/src/components/CardGrid';
+import InfoSection from '@site/src/components/InfoSection';
+import FeatureGrid from '@site/src/components/FeatureGrid';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Prometheus Metrics"
+  description="Real-time monitoring and metrics collection for the Control Plane"
+/>
+
+The Control Plane uses Prometheus for monitoring and metrics collection.
+
+<InfoSection type="info" title="Comprehensive observability">
+  Prometheus enables real-time monitoring of Control Plane services, providing insights into performance, resource usage, and operational health through a robust metrics collection system.
+</InfoSection>
+
+## Overview
+
+[Prometheus](https://prometheus.io/) is an open-source systems monitoring and alerting toolkit. The Control Plane integrates Prometheus for:
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "📊 Performance Monitoring",
+    description: "Track response times, throughput, and error rates across all services."
+  },
+  {
+    title: "💻 Resource Utilization",
+    description: "Monitor CPU, memory, and network usage for capacity planning."
+  },
+  {
+    title: "🎯 SLO/SLI Measurements",
+    description: "Measure service level objectives and indicators for reliability."
+  },
+  {
+    title: "🔍 Operational Insights",
+    description: "Gain visibility into system behavior for troubleshooting."
+  },
+  {
+    title: "⚠️ Alerting",
+    description: "Trigger notifications when metrics exceed defined thresholds."
+  },
+  {
+    title: "📈 Trend Analysis",
+    description: "Track changes in system behavior over time for planning."
+  }
+]} />
+
+<div align="center">
+  <img src="/controlplane/img/logos/prometheus-logo.svg" alt="Prometheus Logo" style={{width: '250px', marginBottom: '2rem'}} />
+</div>
+
+## Why Prometheus?
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "🎯 Precise Targeting",
+    description: "Pull-based model allows for fine-grained control over what metrics are collected and when."
+  },
+  {
+    title: "🔍 Multi-dimensional Data",
+    description: "Powerful data model with metric names and key/value pairs enables detailed filtering and grouping."
+  },
+  {
+    title: "📊 Powerful Query Language",
+    description: "PromQL provides flexible querying capabilities for real-time analysis and visualization."
+  },
+  {
+    title: "⚡ Stand-alone Operation",
+    description: "No reliance on distributed storage; self-contained and easy to deploy and operate."
+  },
+  {
+    title: "📈 Time Series Focus",
+    description: "Optimized for time series data, making it ideal for monitoring systems metrics over time."
+  },
+  {
+    title: "🧩 Ecosystem Integration",
+    description: "Rich ecosystem of exporters, alert managers, and dashboarding tools like Grafana."
+  }
+]} />
+
+## Integration in the Control Plane
+
+<InfoSection type="tip" title="Standardized metrics collection">
+  The Control Plane implements a consistent metrics strategy across all components, enabling unified monitoring and alerting.
+</InfoSection>
+
+The Control Plane integrates Prometheus throughout its architecture for comprehensive observability:
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Service Instrumentation"
+    description={<>
+      <p>All Control Plane services expose standardized metrics:</p>
+      <ul>
+        <li>HTTP request duration, status codes, and rates</li>
+        <li>Database connection pools and query times</li>
+        <li>Resource utilization and system metrics</li>
+        <li>Business-level metrics for domain-specific operations</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Operator Metrics"
+    description={<>
+      <p>Kubernetes operators expose specialized metrics:</p>
+      <ul>
+        <li>Reconciliation duration and frequencies</li>
+        <li>Resource creation and deletion rates</li>
+        <li>Error counts by resource type</li>
+        <li>Controller queue depths and processing times</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Metric Types
+
+<InfoSection type="tip" title="Choosing the right metric type">
+  Select the appropriate metric type based on what you're measuring: counters for events that accumulate, gauges for values that rise and fall, histograms for distributions, and summaries for percentile calculations.
+</InfoSection>
+
+### Metric Naming Convention
+
+<CardGrid columns={1}>
+  <FeatureCard
+    title="Control Plane Metric Naming"
+    description={<>
+      <p>The Control Plane follows these naming conventions for metrics:</p>
+      <ul>
+        <li><strong>Component</strong>: Component name (e.g., <code>file_manager</code>, <code>api_operator</code>)</li>
+        <li><strong>Area</strong>: Functional area (e.g., <code>http</code>, <code>database</code>)</li>
+        <li><strong>Measurement</strong>: Specific measurement (e.g., <code>requests_total</code>, <code>latency_seconds</code>)</li>
+      </ul>
+      <p>Full format: <code>component_area_measurement</code></p>
+      <p>Examples:</p>
+      <ul>
+        <li><code>file_manager_http_requests_total</code></li>
+        <li><code>api_operator_reconcile_duration_seconds</code></li>
+        <li><code>gateway_router_cache_hits_total</code></li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Middleware Integration
+
+<InfoSection type="tip" title="Automated instrumentation">
+  Middleware integration automatically collects metrics for all HTTP requests without modifying business logic code.
+</InfoSection>
+
+The Control Plane integrates Prometheus metrics with Gofiber middleware.
+
+
+## Service Monitors
+
+<InfoSection type="note" title="Prometheus Operator">
+  The Control Plane uses the Prometheus Operator pattern with ServiceMonitor resources to declaratively define monitoring targets.
+</InfoSection>
+
+The Control Plane uses Prometheus Operator's ServiceMonitor resources to configure scraping.
+
+### ServiceMonitor Configuration
+
+<CardGrid columns={2}>
+  <FeatureCard
+    title="Endpoint Configuration"
+    description={<>
+      <p>Key settings for ServiceMonitor endpoints:</p>
+      <ul>
+        <li><strong>port</strong>: Named port to scrape (usually "metrics")</li>
+        <li><strong>path</strong>: HTTP path for metrics (default "/metrics")</li>
+        <li><strong>interval</strong>: Scrape frequency (e.g., "15s")</li>
+        <li><strong>scheme</strong>: HTTP or HTTPS for scraping</li>
+        <li><strong>tlsConfig</strong>: Optional TLS settings for secure endpoints</li>
+        <li><strong>bearerTokenSecret</strong>: For authenticated endpoints</li>
+      </ul>
+    </>}
+  />
+  
+  <FeatureCard
+    title="Target Selection"
+    description={<>
+      <p>How ServiceMonitors select targets:</p>
+      <ul>
+        <li><strong>selector</strong>: Label selector to find Services</li>
+        <li><strong>namespaceSelector</strong>: Controls which namespaces to search</li>
+        <li><strong>matchNames</strong>: Explicit namespace list</li>
+        <li><strong>anyNamespace</strong>: Search all namespaces when true</li>
+        <li><strong>sampleLimit</strong>: Maximum samples per scrape</li>
+      </ul>
+    </>}
+  />
+</CardGrid>
+
+## Metrics Endpoint
+
+<InfoSection type="tip" title="Standard exposure">
+  Each Control Plane service exposes a standard /metrics endpoint that follows Prometheus exposition format for consistent scraping.
+</InfoSection>
+
+## Grafana Dashboards
+
+<InfoSection type="note" title="Visualization">
+  The Control Plane includes pre-built Grafana dashboards that visualize key metrics for operational monitoring and troubleshooting.
+</InfoSection>
+
+## Best Practices
+
+<InfoSection type="note" title="Metric design principles">
+  Following consistent metric design principles helps ensure that metrics are useful, maintainable, and don't cause performance issues.
+</InfoSection>
+
+<FeatureGrid columns={2} features={[
+  {
+    title: "📊 Consistent Naming",
+    description: "Follow the component_subsystem_metric naming pattern with clear, descriptive names that indicate what's being measured."
+  },
+  {
+    title: "🏷️ Meaningful Labels",
+    description: "Use labels for dimensions that are useful for filtering and grouping, but avoid high-cardinality labels that can cause performance issues."
+  },
+  {
+    title: "⚖️ Metric Selection",
+    description: "Instrument what matters; focus on key performance indicators rather than collecting everything possible."
+  },
+  {
+    title: "📋 Documentation",
+    description: "Document all metrics with clear descriptions, units, and example queries to aid in dashboard creation and alerting."
+  },
+  {
+    title: "⚠️ Alert Design",
+    description: "Design alerts that trigger on symptoms (user impact) rather than causes, with clear runbooks for remediation."
+  },
+  {
+    title: "🔄 Rate Calculations",
+    description: "Use rates and averages over appropriate time windows to avoid noise from normal fluctuations in metrics."
+  }
+]} />
+
+## Related Resources
+
+<CardGrid columns={3}>
+  <FeatureCard
+    title="Zap Logging"
+    description="Learn about the structured logging used alongside Prometheus metrics."
+    linkText="View Zap Logging"
+    linkUrl="zap"
+  />
+  
+  <FeatureCard
+    title="Architecture"
+    description="Understand how monitoring fits into the overall Control Plane architecture."
+    linkText="View Architecture"
+    linkUrl="../../Overview/architecture"
+  />
+  
+  <FeatureCard
+    title="Kubernetes"
+    description="Discover how the Control Plane builds on Kubernetes observability patterns."
+    linkText="View Kubernetes"
+    linkUrl="../Core-Technologies/kubernetes"
+  />
+</CardGrid>

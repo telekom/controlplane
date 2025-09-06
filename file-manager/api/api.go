@@ -190,9 +190,9 @@ func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 			return nil, errors.Errorf("checksum mismatch: expected %s, got %s", checksum, hash)
 		}
 		return &FileUploadResponse{
-			CRC64NVMEHash: checksum,
-			FileId:        res.Id,
-			ContentType:   extractHeader(response, constants.XFileContentType),
+			FileHash:    checksum,
+			FileId:      res.Id,
+			ContentType: extractHeader(response, constants.XFileContentType),
 		}, nil
 
 	case http.StatusNotFound:
@@ -227,8 +227,8 @@ func (f *FileManagerAPI) DownloadFile(ctx context.Context, fileId string, w io.W
 			return nil, errors.Errorf("checksum mismatch: expected %s, got %s", expectedChecksum, hash)
 		}
 		return &FileDownloadResponse{
-			CRC64NVMEHash: expectedChecksum,
-			ContentType:   extractHeader(response, constants.XFileContentType),
+			FileHash:    expectedChecksum,
+			ContentType: extractHeader(response, constants.XFileContentType),
 		}, nil
 
 	case http.StatusNotFound:
