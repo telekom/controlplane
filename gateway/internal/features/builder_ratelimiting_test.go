@@ -248,7 +248,7 @@ func verifyRateLimitPluginConsumer(builder *features.Builder, consumeRoute *gate
 }
 
 func configureRouteLimitingMocks(ctx context.Context, route *gatewayv1.Route) {
-	mockKc.EXPECT().CreateOrReplaceRoute(ctx, route, gomock.Any()).Return(nil).Times(1)
+	mockKc.EXPECT().CreateOrReplaceRoute(ctx, route, gomock.Any(), gomock.Any()).Return(nil).Times(1)
 	mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
 	mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 }

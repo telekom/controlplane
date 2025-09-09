@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	"io"
 	"net/http"
 	"slices"
@@ -25,7 +26,7 @@ type MutatorFunc[T any] func(T) (T, error)
 
 //go:generate mockgen -source=client.go -destination=mock/client.gen.go -package=mock
 type KongClient interface {
-	CreateOrReplaceRoute(ctx context.Context, route CustomRoute, upstream Upstream) error
+	CreateOrReplaceRoute(ctx context.Context, route CustomRoute, upstream Upstream, gateway *gatewayapi.Gateway) error
 	DeleteRoute(ctx context.Context, route CustomRoute) error
 
 	CreateOrReplaceConsumer(ctx context.Context, consumer CustomConsumer) (kongConsumer *kong.Consumer, err error)
@@ -37,16 +38,46 @@ type KongClient interface {
 	DeletePlugin(ctx context.Context, plugin CustomPlugin) error
 
 	CleanupPlugins(ctx context.Context, route CustomRoute, consumer CustomConsumer, plugins []CustomPlugin) error
+
+	GetKongAdminApi() KongAdminApi
+}
+
+type KongAdminApi interface {
+	GetPluginWithResponse(ctx context.Context, pluginId string, reqEditors ...kong.RequestEditorFn) (*kong.GetPluginResponse, error)
+	DeletePluginWithResponse(ctx context.Context, pluginId string, reqEditors ...kong.RequestEditorFn) (*kong.DeletePluginResponse, error)
+	ListPluginWithResponse(ctx context.Context, params *kong.ListPluginParams, reqEditors ...kong.RequestEditorFn) (*kong.ListPluginResponse, error)
+
+	UpsertUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, body kong.UpsertUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertUpstreamResponse, error)
+	CreateTargetForUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, body kong.CreateTargetForUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.CreateTargetForUpstreamResponse, error)
+	DeleteUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteUpstreamResponse, error)
+	DeleteUpstreamTargetWithResponse(ctx context.Context, upstreamIdOrName string, targetIdOrTarget string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteUpstreamTargetResponse, error)
+
+	UpsertServiceWithResponse(ctx context.Context, serviceIdOrName string, body kong.UpsertServiceJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertServiceResponse, error)
+
+	UpsertRouteWithResponse(ctx context.Context, routeIdOrName string, body kong.UpsertRouteJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertRouteResponse, error)
+	DeleteRouteWithResponse(ctx context.Context, routeIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteRouteResponse, error)
+	DeleteServiceWithResponse(ctx context.Context, serviceIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteServiceResponse, error)
+
+	UpsertConsumerWithResponse(ctx context.Context, consumerUsernameOrId string, body kong.UpsertConsumerJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertConsumerResponse, error)
+
+	DeleteConsumerWithResponse(ctx context.Context, consumerUsernameOrId string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteConsumerResponse, error)
+	AddConsumerToGroupWithResponse(ctx context.Context, consumerNameOrId string, body kong.AddConsumerToGroupJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.AddConsumerToGroupResponse, error)
+	ViewGroupConsumerWithResponse(ctx context.Context, consumerNameOrId string, reqEditors ...kong.RequestEditorFn) (*kong.ViewGroupConsumerResponse, error)
 }
 
 var _ KongClient = &kongClient{}
 
 type kongClient struct {
-	client     kong.ClientWithResponsesInterface
+	//client     kong.ClientWithResponsesInterface
+	client     KongAdminApi
 	commonTags []string
 }
 
-var NewKongClient = func(client kong.ClientWithResponsesInterface, commonTags ...string) KongClient {
+func (c *kongClient) GetKongAdminApi() KongAdminApi {
+	return c.client
+}
+
+var NewKongClient = func(client KongAdminApi, commonTags ...string) KongClient {
 	return &kongClient{
 		client:     client,
 		commonTags: commonTags,
@@ -60,18 +91,18 @@ func (c *kongClient) LoadPlugin(
 	pluginId := plugin.GetId()
 	envName := contextutil.EnvFromContextOrDie(ctx)
 	tags := []string{
-		buildTag("env", envName),
-		buildTag("plugin", plugin.GetName()),
+		BuildTag("env", envName),
+		BuildTag("plugin", plugin.GetName()),
 	}
 
 	if plugin.GetRoute() != nil {
-		tags = append(tags, buildTag("route", *plugin.GetRoute()))
+		tags = append(tags, BuildTag("route", *plugin.GetRoute()))
 	}
 
 	if plugin.GetConsumer() != nil {
-		tags = append(tags, buildTag("consumer", *plugin.GetConsumer()))
+		tags = append(tags, BuildTag("consumer", *plugin.GetConsumer()))
 	} else {
-		tags = append(tags, buildTag("consumer", "none"))
+		tags = append(tags, BuildTag("consumer", "none"))
 	}
 
 	if pluginId != "" {
@@ -132,18 +163,18 @@ func (c *kongClient) CreateOrReplacePlugin(
 	isConsumerSpecific := plugin.GetConsumer() != nil
 
 	tags := []string{
-		buildTag("env", envName),
-		buildTag("plugin", plugin.GetName()),
+		BuildTag("env", envName),
+		BuildTag("plugin", plugin.GetName()),
 	}
 
 	if isRouteSpecific {
-		tags = append(tags, buildTag("route", *plugin.GetRoute()))
+		tags = append(tags, BuildTag("route", *plugin.GetRoute()))
 	}
 
 	if isConsumerSpecific {
-		tags = append(tags, buildTag("consumer", *plugin.GetConsumer()))
+		tags = append(tags, BuildTag("consumer", *plugin.GetConsumer()))
 	} else {
-		tags = append(tags, buildTag("consumer", "none"))
+		tags = append(tags, BuildTag("consumer", "none"))
 	}
 
 	kongPlugin, err = c.LoadPlugin(ctx, plugin, false)
@@ -252,8 +283,8 @@ func (c *kongClient) DeletePlugin(ctx context.Context, plugin CustomPlugin) (err
 	envName := contextutil.EnvFromContextOrDie(ctx)
 	pluginId := plugin.GetId()
 	tags := []string{
-		buildTag("env", envName),
-		buildTag("plugin", plugin.GetName()),
+		BuildTag("env", envName),
+		BuildTag("plugin", plugin.GetName()),
 	}
 
 	if plugin.GetRoute() == nil && plugin.GetConsumer() == nil {
@@ -261,11 +292,11 @@ func (c *kongClient) DeletePlugin(ctx context.Context, plugin CustomPlugin) (err
 	}
 
 	if plugin.GetRoute() != nil {
-		tags = append(tags, buildTag("route", *plugin.GetRoute()))
+		tags = append(tags, BuildTag("route", *plugin.GetRoute()))
 	}
 
 	if plugin.GetConsumer() != nil {
-		tags = append(tags, buildTag("consumer", *plugin.GetConsumer()))
+		tags = append(tags, BuildTag("consumer", *plugin.GetConsumer()))
 	}
 
 	if pluginId == "" {
@@ -294,7 +325,7 @@ func (c *kongClient) CleanupPlugins(ctx context.Context, route CustomRoute, cons
 	log := logr.FromContextOrDiscard(ctx)
 	envName := contextutil.EnvFromContextOrDie(ctx)
 	tags := []string{
-		buildTag("env", envName),
+		BuildTag("env", envName),
 	}
 
 	if route == nil && consumer == nil {
@@ -302,10 +333,10 @@ func (c *kongClient) CleanupPlugins(ctx context.Context, route CustomRoute, cons
 	}
 
 	if route != nil {
-		tags = append(tags, buildTag("route", route.GetName()))
+		tags = append(tags, BuildTag("route", route.GetName()))
 	}
 	if consumer != nil {
-		tags = append(tags, buildTag("consumer", consumer.GetConsumerName()))
+		tags = append(tags, BuildTag("consumer", consumer.GetConsumerName()))
 	}
 
 	kongPlugins, err := c.getPluginsMatchingTags(ctx, tags)
@@ -385,24 +416,27 @@ func (c *kongClient) getPluginMatchingTags(
 	}
 }
 
-func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute, upstream Upstream) error {
+func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute, upstream Upstream, gateway *gatewayapi.Gateway) error {
 	if upstream == nil {
 		return fmt.Errorf("upstream is required")
 	}
 
 	routeName := route.GetName()
 	upstreamPath := upstream.GetPath()
+	serviceName := routeName
+	serviceHost := upstream.GetHost()
+
 	serviceBody := kong.CreateServiceJSONRequestBody{
 		Enabled:  true,
-		Name:     &routeName,
-		Host:     upstream.GetHost(),
+		Name:     &serviceName,
+		Host:     serviceHost,
 		Path:     &upstreamPath,
 		Protocol: kong.CreateServiceRequestProtocol(upstream.GetScheme()),
 		Port:     upstream.GetPort(),
 
 		Tags: &[]string{
-			buildTag("env", contextutil.EnvFromContextOrDie(ctx)),
-			buildTag("route", route.GetName()),
+			BuildTag("env", contextutil.EnvFromContextOrDie(ctx)),
+			BuildTag("route", route.GetName()),
 		},
 	}
 	serviceResponse, err := c.client.UpsertServiceWithResponse(ctx, route.GetName(), serviceBody)
@@ -436,8 +470,8 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		HttpsRedirectStatusCode: 426,
 
 		Tags: &[]string{
-			buildTag("env", contextutil.EnvFromContextOrDie(ctx)),
-			buildTag("route", route.GetName()),
+			BuildTag("env", contextutil.EnvFromContextOrDie(ctx)),
+			BuildTag("route", route.GetName()),
 		},
 	}
 	routeResponse, err := c.client.UpsertRouteWithResponse(ctx, route.GetName(), routeBody)
@@ -471,6 +505,26 @@ func (c *kongClient) DeleteRoute(ctx context.Context, route CustomRoute) error {
 		return fmt.Errorf("failed to delete service: %s", string(serviceResponse.Body))
 	}
 
+	// upstreamName = routeName
+	upstreamResponse, err := c.client.DeleteUpstreamWithResponse(ctx, routeName)
+	if err != nil {
+		return err
+	}
+	if err := CheckStatusCode(upstreamResponse, 200, 204, 404); err != nil {
+		return fmt.Errorf("failed to delete upstream: %s", string(upstreamResponse.Body))
+	}
+
+	if route.GetTargetsId() != "" {
+		// targets don't have names, so we use the ID directly
+		targetsResponse, err := c.client.DeleteUpstreamTargetWithResponse(ctx, routeName, route.GetTargetsId())
+		if err != nil {
+			return err
+		}
+		if err := CheckStatusCode(targetsResponse, 200, 204, 404); err != nil {
+			return fmt.Errorf("failed to delete upstream: %s", string(targetsResponse.Body))
+		}
+	}
+
 	return nil
 }
 
@@ -478,8 +532,8 @@ func (c *kongClient) CreateOrReplaceConsumer(ctx context.Context, consumer Custo
 	envName := contextutil.EnvFromContextOrDie(ctx)
 	consumerName := consumer.GetConsumerName()
 	tags := []string{
-		buildTag("env", envName),
-		buildTag("consumer", consumerName),
+		BuildTag("env", envName),
+		BuildTag("consumer", consumerName),
 	}
 
 	response, err := c.client.UpsertConsumerWithResponse(ctx, consumerName, kong.CreateConsumerJSONRequestBody{
@@ -557,7 +611,7 @@ func (c *kongClient) isConsumerInGroup(ctx context.Context, consumerName string)
 	}
 }
 
-func buildTag(key, value string) string {
+func BuildTag(key, value string) string {
 	return fmt.Sprintf("%s--%s", key, value)
 }
 

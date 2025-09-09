@@ -57,6 +57,8 @@ type FeaturesBuilder interface {
 
 	Build(context.Context) error
 	BuildForConsumer(context.Context) error
+
+	GetKongClient() client.KongClient
 }
 
 var _ FeaturesBuilder = &Builder{}
@@ -87,6 +89,10 @@ type Builder struct {
 
 	// Features that are enabled for this builder
 	Features map[gatewayv1.FeatureType]Feature
+}
+
+func (b *Builder) GetKongClient() client.KongClient {
+	return b.kc
 }
 
 var NewFeatureBuilder = func(kc client.KongClient, route *gatewayv1.Route, consumer *gatewayv1.Consumer, realm *gatewayv1.Realm, gateway *gatewayv1.Gateway) FeaturesBuilder {
@@ -285,7 +291,7 @@ func (b *Builder) Build(ctx context.Context) error {
 		b.RequestTransformerPlugin().Config.Append.AddHeader(plugin.JumperConfigKey, plugin.ToBase64OrDie(b.jumperConfig))
 	}
 
-	err := b.kc.CreateOrReplaceRoute(ctx, b.Route, b.Upstream)
+	err := b.kc.CreateOrReplaceRoute(ctx, b.Route, b.Upstream, b.Gateway)
 	if err != nil {
 		return errors.Wrap(err, "failed to create or replace route")
 	}
