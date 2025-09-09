@@ -1,0 +1,79 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Dependabot Tidy
+
+on:
+  pull_request:
+    paths:
+      - '**/go.mod'
+      - '**/go.sum'
+
+jobs:
+  tidy:
+    name: Run go mod tidy
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          check-latest: true
+      
+      - name: Run go mod tidy on all modules
+        run: |
+          echo "Identified modules:"
+          MODULES=$(find . -name 'go.mod' -exec dirname {} \; | sort)
+          echo "$MODULES"
+          echo "\nRunning go mod tidy on all modules..."
+          echo "$MODULES" | while read -r module_dir; do
+            if [ -n "$module_dir" ]; then
+              echo "Processing: $module_dir"
+              (cd "$module_dir" && go mod tidy)
+            fi
+          done
+      
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected after running go mod tidy:"
+            git diff --name-only
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected after running go mod tidy"
+          fi
+      
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: run go mod tidy for modules updated by dependabot"
+          git push
+      
+      - name: Add comment to PR
+        if: steps.check_changes.outputs.changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ `go mod tidy` has been run for all Go modules and changes have been committed to this PR.'
+            })
