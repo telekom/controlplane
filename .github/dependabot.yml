@@ -8,13 +8,13 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: "monthly"
 
   # Admin module
   - package-ecosystem: "gomod"
     directory: "/admin"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default: 
         update-types:
@@ -27,7 +27,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/api"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default: 
         update-types:
@@ -40,7 +40,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/application"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default: 
         update-types:
@@ -53,7 +53,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/approval"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default: 
         update-types:
@@ -66,7 +66,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/common"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default: 
         update-types:
@@ -79,7 +79,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/common-server"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default: 
         update-types:
@@ -92,7 +92,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/cpapi"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default:
         update-types:
@@ -105,7 +105,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/file-manager"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default: 
         update-types:
@@ -118,7 +118,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/gateway"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default: 
         update-types:
@@ -131,7 +131,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/identity"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default: 
         update-types:
@@ -144,7 +144,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/organization"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default: 
         update-types:
@@ -157,7 +157,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/rover"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default: 
         update-types:
@@ -170,7 +170,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/rover-ctl"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default: 
         update-types:
@@ -183,7 +183,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/rover-server"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default: 
         update-types:
@@ -196,7 +196,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/secret-manager"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default: 
         update-types:
@@ -209,7 +209,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/tools/route-tester"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default:
         update-types:
@@ -222,7 +222,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/tools/snapshotter"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     groups:
       default:
         update-types:
