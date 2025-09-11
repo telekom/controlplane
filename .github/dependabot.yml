@@ -88,6 +88,19 @@ updates:
     post-update-commands:
       - go mod tidy
 
+  # cpapi module
+  - package-ecosystem: "gomod"
+    directory: "/cpapi"
+    schedule:
+      interval: "weekly"
+    groups:
+      default:
+        update-types:
+          - patch
+          - minor
+    post-update-commands:
+      - go mod tidy
+
   # File-manager module
   - package-ecosystem: "gomod"
     directory: "/file-manager"
@@ -186,6 +199,32 @@ updates:
       interval: "weekly"
     groups:
       default: 
+        update-types:
+          - patch
+          - minor
+    post-update-commands:
+      - go mod tidy
+
+  # Route-tester module
+  - package-ecosystem: "gomod"
+    directory: "/tools/route-tester"
+    schedule:
+      interval: "weekly"
+    groups:
+      default:
+        update-types:
+          - patch
+          - minor
+    post-update-commands:
+      - go mod tidy
+
+  # Snapshotter module
+  - package-ecosystem: "gomod"
+    directory: "/tools/snapshotter"
+    schedule:
+      interval: "weekly"
+    groups:
+      default:
         update-types:
           - patch
           - minor
