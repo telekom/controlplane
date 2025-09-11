@@ -9,26 +9,185 @@ updates:
     directory: /
     schedule:
       interval: weekly
+
+  # Admin module
   - package-ecosystem: "gomod"
+    directory: "/admin"
     schedule:
       interval: "weekly"
-    directories: 
-      - common
-      - common-server
-      - secret-manager
-      - organization
-      - file-manager
-      - gateway
-      - identity
-      - admin
-      - application
-      - api
-      - rover
-      - approval
-      - rover-server
-      - rover-ctl
     groups:
       default: 
         update-types:
           - patch
           - minor
+    post-update-commands:
+      - go mod tidy
+
+  # API module
+  - package-ecosystem: "gomod"
+    directory: "/api"
+    schedule:
+      interval: "weekly"
+    groups:
+      default: 
+        update-types:
+          - patch
+          - minor
+    post-update-commands:
+      - go mod tidy
+      
+  # Application module
+  - package-ecosystem: "gomod"
+    directory: "/application"
+    schedule:
+      interval: "weekly"
+    groups:
+      default: 
+        update-types:
+          - patch
+          - minor
+    post-update-commands:
+      - go mod tidy
+
+  # Approval module
+  - package-ecosystem: "gomod"
+    directory: "/approval"
+    schedule:
+      interval: "weekly"
+    groups:
+      default: 
+        update-types:
+          - patch
+          - minor
+    post-update-commands:
+      - go mod tidy
+
+  # Common module
+  - package-ecosystem: "gomod"
+    directory: "/common"
+    schedule:
+      interval: "weekly"
+    groups:
+      default: 
+        update-types:
+          - patch
+          - minor
+    post-update-commands:
+      - go mod tidy
+
+  # Common-server module
+  - package-ecosystem: "gomod"
+    directory: "/common-server"
+    schedule:
+      interval: "weekly"
+    groups:
+      default: 
+        update-types:
+          - patch
+          - minor
+    post-update-commands:
+      - go mod tidy
+
+  # File-manager module
+  - package-ecosystem: "gomod"
+    directory: "/file-manager"
+    schedule:
+      interval: "weekly"
+    groups:
+      default: 
+        update-types:
+          - patch
+          - minor
+    post-update-commands:
+      - go mod tidy
+
+  # Gateway module
+  - package-ecosystem: "gomod"
+    directory: "/gateway"
+    schedule:
+      interval: "weekly"
+    groups:
+      default: 
+        update-types:
+          - patch
+          - minor
+    post-update-commands:
+      - go mod tidy
+
+  # Identity module
+  - package-ecosystem: "gomod"
+    directory: "/identity"
+    schedule:
+      interval: "weekly"
+    groups:
+      default: 
+        update-types:
+          - patch
+          - minor
+    post-update-commands:
+      - go mod tidy
+
+  # Organization module
+  - package-ecosystem: "gomod"
+    directory: "/organization"
+    schedule:
+      interval: "weekly"
+    groups:
+      default: 
+        update-types:
+          - patch
+          - minor
+    post-update-commands:
+      - go mod tidy
+
+  # Rover module
+  - package-ecosystem: "gomod"
+    directory: "/rover"
+    schedule:
+      interval: "weekly"
+    groups:
+      default: 
+        update-types:
+          - patch
+          - minor
+    post-update-commands:
+      - go mod tidy
+
+  # Rover-ctl module
+  - package-ecosystem: "gomod"
+    directory: "/rover-ctl"
+    schedule:
+      interval: "weekly"
+    groups:
+      default: 
+        update-types:
+          - patch
+          - minor
+    post-update-commands:
+      - go mod tidy
+
+  # Rover-server module
+  - package-ecosystem: "gomod"
+    directory: "/rover-server"
+    schedule:
+      interval: "weekly"
+    groups:
+      default: 
+        update-types:
+          - patch
+          - minor
+    post-update-commands:
+      - go mod tidy
+
+  # Secret-manager module
+  - package-ecosystem: "gomod"
+    directory: "/secret-manager"
+    schedule:
+      interval: "weekly"
+    groups:
+      default: 
+        update-types:
+          - patch
+          - minor
+    post-update-commands:
+      - go mod tidy
