@@ -89,6 +89,10 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		return err
 	}
 	obj.Status.IdentityRealm = types.ObjectRefFromObject(identityRealm)
+	obj.Status.Links.Issuer, err = url.JoinPath(obj.Spec.IdentityProvider.Url, "auth/realms/", identityRealm.Name)
+	if err != nil {
+		return errors.Wrapf(err, "Cannot combine identityProviderBaseUrl %s with realm name %s", obj.Spec.IdentityProvider.Url, identityRealm.Name)
+	}
 
 	// Identity Client for gateway
 	// TBD - how to handle passwords for this client - will be regenerated with every reconciliation
@@ -111,6 +115,8 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		return err
 	}
 	obj.Status.GatewayRealm = types.ObjectRefFromObject(gatewayRealm)
+	obj.Status.Links.Url = obj.Spec.Gateway.Url
+	obj.Status.Links.LmsIssuer, err = url.JoinPath(obj.Spec.Gateway.Url, "auth/realms/", gatewayRealm.Name)
 
 	// Gateway consumer
 	gatewayConsumer, err := createGatewayConsumer(ctx, handlingContext, gatewayRealm)
@@ -134,6 +140,7 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 			return err
 		}
 		obj.Status.TeamApiGatewayRealm = types.ObjectRefFromObject(teamApisGatewayRealm)
+		obj.Status.Links.TeamIssuer = teamApisGatewayRealm.Spec.IssuerUrl
 
 		// Team api routes
 		var teamApiRouteRefs []types.ObjectRef
@@ -145,13 +152,11 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 			teamApiRouteRefs = append(teamApiRouteRefs, *types.ObjectRefFromObject(route))
 		}
 		obj.Status.TeamApiRoutes = teamApiRouteRefs
-	}
-
-	// fill the links - used by other domains, for example for getting the ApplicationInfo etc
-	obj.Status.Links = adminv1.Links{
-		GatewayUrl:        obj.Spec.Gateway.Url,
-		GatewayIssuer:     urls.ForGatewayRealm(obj.Spec.IdentityProvider.Url, gatewayRealm.GetName()),
-		StargateLmsIssuer: urls.ForStargateLmsIssuer(obj.Spec.Gateway.Url, gatewayRealm.GetName()),
+	} else {
+		obj.Status.TeamApiIdentityRealm = nil
+		obj.Status.TeamApiGatewayRealm = nil
+		obj.Status.TeamApiRoutes = nil
+		obj.Status.Links.TeamIssuer = ""
 	}
 
 	obj.SetCondition(condition.NewReadyCondition("ZoneProvisioned", "Zone has been provisioned"))
