@@ -13,17 +13,18 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	applicationv1 "github.com/telekom/controlplane/application/api/v1"
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-	secretsapi "github.com/telekom/controlplane/secret-manager/api"
-	"github.com/telekom/controlplane/secret-manager/api/accesstoken"
 	"golang.org/x/oauth2/clientcredentials"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
+
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 )
 
 var (
