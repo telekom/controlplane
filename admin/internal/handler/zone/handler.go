@@ -117,6 +117,9 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 	obj.Status.GatewayRealm = types.ObjectRefFromObject(gatewayRealm)
 	obj.Status.Links.Url = obj.Spec.Gateway.Url
 	obj.Status.Links.LmsIssuer, err = url.JoinPath(obj.Spec.Gateway.Url, "auth/realms/", gatewayRealm.Name)
+	if err != nil {
+		return errors.Wrapf(err, "Cannot combine gatewayUrl %s with realm name %s", obj.Spec.Gateway.Url, gatewayRealm.Name)
+	}
 
 	// Gateway consumer
 	gatewayConsumer, err := createGatewayConsumer(ctx, handlingContext, gatewayRealm)
