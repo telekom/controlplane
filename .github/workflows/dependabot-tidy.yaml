@@ -9,11 +9,12 @@ on:
     paths:
       - '**/go.mod'
       - '**/go.sum'
+  workflow_dispatch:
 
 jobs:
   tidy:
     name: Run go mod tidy
-    if: github.actor == 'dependabot[bot]'
+    if: github.actor == 'dependabot[bot]' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write
