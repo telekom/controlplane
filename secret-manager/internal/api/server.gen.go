@@ -94,7 +94,13 @@ type SecretWriteResponse struct {
 // ApplicationWriteRequest defines model for ApplicationWriteRequest.
 type ApplicationWriteRequest struct {
 	// Secrets A list of secrets to be created or updated for the application
-	Secrets *[]NamedSecret `json:"secrets,omitempty"`
+	Secrets []NamedSecret `json:"secrets"`
+}
+
+// EnvironmentWriteRequest defines model for EnvironmentWriteRequest.
+type EnvironmentWriteRequest struct {
+	// Secrets A list of secrets to be created or updated for the environment
+	Secrets []NamedSecret `json:"secrets"`
 }
 
 // SecretWriteRequest defines model for SecretWriteRequest.
@@ -106,10 +112,28 @@ type SecretWriteRequest struct {
 	Value string `json:"value"`
 }
 
+// TeamWriteRequest defines model for TeamWriteRequest.
+type TeamWriteRequest struct {
+	// Secrets A list of secrets to be created or updated for the team
+	Secrets []NamedSecret `json:"secrets"`
+}
+
+// UpsertEnvironmentJSONBody defines parameters for UpsertEnvironment.
+type UpsertEnvironmentJSONBody struct {
+	// Secrets A list of secrets to be created or updated for the environment
+	Secrets []NamedSecret `json:"secrets"`
+}
+
+// UpsertTeamJSONBody defines parameters for UpsertTeam.
+type UpsertTeamJSONBody struct {
+	// Secrets A list of secrets to be created or updated for the team
+	Secrets []NamedSecret `json:"secrets"`
+}
+
 // UpsertAppJSONBody defines parameters for UpsertApp.
 type UpsertAppJSONBody struct {
 	// Secrets A list of secrets to be created or updated for the application
-	Secrets *[]NamedSecret `json:"secrets,omitempty"`
+	Secrets []NamedSecret `json:"secrets"`
 }
 
 // ListSecretsParams defines parameters for ListSecrets.
@@ -126,6 +150,12 @@ type PutSecretJSONBody struct {
 	// Otherwise, you can set any string value.
 	Value string `json:"value"`
 }
+
+// UpsertEnvironmentJSONRequestBody defines body for UpsertEnvironment for application/json ContentType.
+type UpsertEnvironmentJSONRequestBody UpsertEnvironmentJSONBody
+
+// UpsertTeamJSONRequestBody defines body for UpsertTeam for application/json ContentType.
+type UpsertTeamJSONRequestBody UpsertTeamJSONBody
 
 // UpsertAppJSONRequestBody defines body for UpsertApp for application/json ContentType.
 type UpsertAppJSONRequestBody UpsertAppJSONBody
@@ -471,6 +501,7 @@ func (response DeleteEnvironment500ApplicationProblemPlusJSONResponse) VisitDele
 
 type UpsertEnvironmentRequestObject struct {
 	EnvId string `json:"envId"`
+	Body  *UpsertEnvironmentJSONRequestBody
 }
 
 type UpsertEnvironmentResponseObject interface {
@@ -545,6 +576,7 @@ func (response DeleteTeam500ApplicationProblemPlusJSONResponse) VisitDeleteTeamR
 type UpsertTeamRequestObject struct {
 	EnvId  string `json:"envId"`
 	TeamId string `json:"teamId"`
+	Body   *UpsertTeamJSONRequestBody
 }
 
 type UpsertTeamResponseObject interface {
@@ -848,6 +880,12 @@ func (sh *strictHandler) UpsertEnvironment(ctx *fiber.Ctx, envId string) error {
 
 	request.EnvId = envId
 
+	var body UpsertEnvironmentJSONRequestBody
+	if err := ctx.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	request.Body = &body
+
 	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
 		return sh.ssi.UpsertEnvironment(ctx.UserContext(), request.(UpsertEnvironmentRequestObject))
 	}
@@ -903,6 +941,12 @@ func (sh *strictHandler) UpsertTeam(ctx *fiber.Ctx, envId string, teamId string)
 
 	request.EnvId = envId
 	request.TeamId = teamId
+
+	var body UpsertTeamJSONRequestBody
+	if err := ctx.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	request.Body = &body
 
 	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
 		return sh.ssi.UpsertTeam(ctx.UserContext(), request.(UpsertTeamRequestObject))
@@ -1079,32 +1123,33 @@ func (sh *strictHandler) PutSecret(ctx *fiber.Ctx, secretId SecretId) error {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

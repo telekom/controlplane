@@ -128,6 +128,56 @@ var _ = Describe("Conjur Onboarder", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 		})
+
+		It("should onboard a team with defined secret", func() {
+			ctx := context.Background()
+			conjurOnboarder := conjur.NewOnboarder(writeAPI, writerBackend)
+			const env = "test-env"
+			const teamId = "test-team"
+
+			runAndReturn := func(pm conjurapi.PolicyMode, s string, r io.Reader) (*conjurapi.PolicyResponse, error) {
+				buf, err := io.ReadAll(r)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(buf)).To(Equal("\n- !policy\n  id: test-team\n  body:\n  - !variable clientSecret\n  - !variable teamToken\n"))
+				return nil, nil
+			}
+			writeAPI.EXPECT().LoadPolicy(conjurapi.PolicyModePost, "controlplane/test-env", mock.Anything).RunAndReturn(runAndReturn)
+
+			clientSecretCreated := false
+			teamTokenCreated := false
+
+			runAndReturnSecret := func(ctx context.Context, secretId conjur.ConjurSecretId, secretValue backend.SecretValue) (backend.DefaultSecret[conjur.ConjurSecretId], error) {
+				if regexp.MustCompile(`^test-env:test-team::clientSecret:(.+)$`).MatchString(secretId.String()) {
+					Expect(secretId.String()).To(MatchRegexp("test-env:test-team::clientSecret:.+"))
+					Expect(secretValue.Value()).To(Equal("topsecret"))
+					clientSecretCreated = true
+					return backend.NewDefaultSecret(secretId, secretValue.Value()), nil
+				}
+				if regexp.MustCompile(`^test-env:test-team::teamToken:(.+)$`).MatchString(secretId.String()) {
+					Expect(secretId.String()).To(MatchRegexp("test-env:test-team::teamToken:.+"))
+					Expect(secretValue.Value()).To((Equal("thisismyteamtoken")))
+					teamTokenCreated = true
+					return backend.NewDefaultSecret(secretId, secretValue.Value()), nil
+				}
+
+				return backend.NewDefaultSecret(secretId, secretValue.Value()), nil
+			}
+
+			writerBackend.EXPECT().Set(ctx, mock.Anything, mock.Anything).RunAndReturn(runAndReturnSecret).Times(2)
+
+			res, err := conjurOnboarder.OnboardTeam(ctx, env, teamId,
+				backend.WithSecretValue("teamToken", backend.String("thisismyteamtoken")),
+				backend.WithSecretValue("clientSecret", backend.String("topsecret")),
+			)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(clientSecretCreated).To(BeTrue())
+			Expect(teamTokenCreated).To(BeTrue())
+
+			Expect(res.SecretRefs()).To(HaveKeyWithValue("clientSecret", MatchRegexp("test-env:test-team::clientSecret:.+")))
+			Expect(res.SecretRefs()).To(HaveKeyWithValue("teamToken", MatchRegexp("test-env:test-team::teamToken:.+")))
+			Expect(res.SecretRefs()).To(HaveLen(2))
+
+		})
 	})
 
 	Context("Onboard Application", func() {
@@ -192,7 +242,7 @@ var _ = Describe("Conjur Onboarder", func() {
 			res, err := conjurOnboarder.OnboardApplication(ctx, env, teamId, appId, backend.WithSecretValue("extraSecret1", backend.String("topsecret")))
 			Expect(err).To(HaveOccurred())
 			Expect(res).To(BeNil())
-			Expect(err.Error()).To(ContainSubstring("Forbidden: secret extraSecret1 is not allowed for application onboarding"))
+			Expect(err.Error()).To(ContainSubstring("Forbidden: secret extraSecret1 is not allowed for onboarding"))
 		})
 	})
 
@@ -241,10 +291,10 @@ var _ = Describe("Conjur Onboarder", func() {
 		Expect(clientSecretCreated).To(BeTrue())
 		Expect(externalSecretsCreated).To(BeTrue())
 
-		Expect(res.SecretRefs()).To(HaveLen(4))
 		Expect(res.SecretRefs()).To(HaveKeyWithValue("clientSecret", MatchRegexp("test-env:test-team:test-app:clientSecret:.+")))
 		Expect(res.SecretRefs()).To(HaveKey("externalSecrets"))
 		Expect(res.SecretRefs()).To(HaveKeyWithValue("externalSecrets/key1", MatchRegexp("test-env:test-team:test-app:externalSecrets/key1:.*")))
 		Expect(res.SecretRefs()).To(HaveKeyWithValue("externalSecrets/key2", MatchRegexp("test-env:test-team:test-app:externalSecrets/key2:.*")))
+		Expect(res.SecretRefs()).To(HaveLen(4))
 	})
 })
