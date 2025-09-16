@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecificationSpec, error) {

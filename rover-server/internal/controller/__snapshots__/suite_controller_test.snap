@@ -424,7 +424,7 @@
 
 [Rover Controller Create rover resource should fail to create a rover with invalid input - 1]
 {
- "detail": "error in openapi3filter.RequestError: request body has an error: doesn't match schema #/components/schemas/RoverCreateRequest: Error at \"/zone\": property \"zone\" is missing",
+ "detail": "multiple errors encountered: Error at \"/zone\": property \"zone\" is missing\nSchema:\n  {\n    \"properties\": {\n      \"authentication\": {\n        \"$ref\": \"#/components/schemas/Authentication\"\n      },\n      \"exposures\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/Exposure\"\n        },\n        \"type\": \"array\"\n      },\n      \"icto\": {\n        \"example\": \"icto-12345\",\n        \"pattern\": \"^icto-[0-9]+$\",\n        \"type\": \"string\"\n      },\n      \"id\": {\n        \"example\": \"hub42--team2--myapp\",\n        \"readOnly\": true,\n        \"type\": \"string\"\n      },\n      \"ipRestrictions\": {\n        \"$ref\": \"#/components/schemas/IpRestrictions\"\n      },\n      \"status\": {\n        \"$ref\": \"#/components/schemas/Status\"\n      },\n      \"subscriptions\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/Subscription\"\n        },\n        \"type\": \"array\"\n      },\n      \"zone\": {\n        \"example\": \"aws\",\n        \"type\": \"string\"\n      }\n    },\n    \"required\": [\n      \"zone\"\n    ],\n    \"type\": \"object\"\n  }\n\nValue:\n  {\n    \"invalidField\": \"invalidValue\"\n  }\n",
  "instance": "",
  "status": 400,
  "title": "Bad Request",
