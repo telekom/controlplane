@@ -8,7 +8,7 @@ go 1.24.6
 
 require (
 	github.com/telekom/controlplane/application/api v0.0.0
-	github.com/telekom/controlplane/common-server v0.0.0 // indirect
+	github.com/telekom/controlplane/common-server v0.0.0
 	github.com/telekom/controlplane/gateway/api v0.0.0
 	github.com/telekom/controlplane/secret-manager v0.0.0
 )
