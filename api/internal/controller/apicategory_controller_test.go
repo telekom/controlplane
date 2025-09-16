@@ -26,7 +26,7 @@ func NewApiCategory(name string) *apiv1.ApiCategory {
 			},
 		},
 		Spec: apiv1.ApiCategorySpec{
-			TagValue:    labelutil.NormalizeValue(name),
+			LabelValue:  labelutil.NormalizeValue(name),
 			Active:      true,
 			Description: "Test category for API controller",
 			AllowTeams: &apiv1.AllowTeamsConfig{
@@ -57,7 +57,7 @@ var _ = Describe("ApiCategory Controller", func() {
 				fetchedCategory := &apiv1.ApiCategory{}
 				err := k8sClient.Get(ctx, client.ObjectKey{Name: apiCategory.Name, Namespace: testNamespace}, fetchedCategory)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(fetchedCategory.Spec.TagValue).To(Equal(labelutil.NormalizeValue(apiCategory.Name)))
+				g.Expect(fetchedCategory.Spec.LabelValue).To(Equal(labelutil.NormalizeValue(apiCategory.Name)))
 				g.Expect(fetchedCategory.Spec.Active).To(BeTrue())
 
 				g.Expect(fetchedCategory.Status.Conditions).To(HaveLen(2))

@@ -5,9 +5,15 @@
 package v1
 
 import (
+	"context"
+	"fmt"
+	"strings"
+
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -112,4 +118,42 @@ func (tl *TeamList) GetItems() []types.Object {
 
 func init() {
 	SchemeBuilder.Register(&Team{}, &TeamList{})
+}
+
+// FindTeamForNamespace finds the team for the given namespace.
+// The namespace must follow the naming convention <environment>--<group>--<team>.
+func FindTeamForNamespace(ctx context.Context, namespace string) (*Team, error) {
+	c, ok := cclient.ClientFromContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("client not found in context")
+	}
+
+	parts := strings.Split(namespace, "--")
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("namespace %q does not follow the naming convention <environment>--<group>--<team>", namespace)
+	}
+
+	team := &Team{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: parts[0],
+			Name:      parts[1] + "--" + parts[2],
+		},
+	}
+
+	err := c.Get(ctx, client.ObjectKeyFromObject(team), team)
+	if err != nil {
+		return nil, err
+	}
+
+	return team, nil
+}
+
+// FindTeamForObject finds the team for the given object.
+// The object must be namespaced and the namespace must follow the naming convention <environment>--<group>--<team>.
+func FindTeamForObject(ctx context.Context, obj types.NamedObject) (*Team, error) {
+	namespace := obj.GetNamespace()
+	if namespace == "" {
+		return nil, fmt.Errorf("object %q is not namespaced", obj.GetName())
+	}
+	return FindTeamForNamespace(ctx, namespace)
 }

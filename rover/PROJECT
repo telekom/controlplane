@@ -15,7 +15,7 @@ resources:
   domain: cp.ei.telekom.de
   group: rover
   kind: Rover
-  path: github.com/telekom/controlplane/api/v1
+  path: github.com/telekom/controlplane/rover/api/v1
   version: v1
   webhooks:
     defaulting: true
@@ -28,6 +28,9 @@ resources:
   domain: cp.ei.telekom.de
   group: rover
   kind: ApiSpecification
-  path: github.com/telekom/controlplane/api/v1
+  path: github.com/telekom/controlplane/rover/api/v1
   version: v1
+  webhooks:
+    validation: true
+    webhookVersion: v1
 version: "3"

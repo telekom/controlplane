@@ -7,10 +7,8 @@ package controller
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
-	opErrors "github.com/telekom/controlplane/common/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -192,28 +190,20 @@ func HandleError(ctx context.Context, err error, obj client.Object, recorder rec
 	if apierrors.IsConflict(err) {
 		log.V(0).Info("Conflict occurred during operation", "error", err)
 		if recorder != nil {
-			recorder.Event(obj, warningEventType, "OperationConflict", err.Error())
+			recorder.Event(obj, warningEventType, "Conflict", err.Error())
 		}
 		return reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}, nil
 	}
 
-	// handle OperatorError
-	var operatorError opErrors.OperatorError
-	if errors.As(err, &operatorError) {
-		log.Error(err, "Handling OperatorError")
-		if recorder != nil {
-			recorder.Event(obj, warningEventType, "Operator error", err.Error())
-		}
-		return reconcile.Result{Requeue: operatorError.Retriable(), RequeueAfter: config.RetryWithJitterOnError()}, nil
-	}
+	// TODO: add blocked error handling
 
 	if recorder != nil {
-		recorder.Event(obj, warningEventType, "OperationError", err.Error())
+		recorder.Event(obj, warningEventType, "UnknownError", err.Error())
 	}
 
-	log.Error(err, "Unknown error type, returning default reconciliation result")
+	log.Error(err, "Unknown error occurred during operation")
 	// unless explicitly stated otherwise, we should try to requeue
-	return reconcile.Result{}, err
+	return reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}, nil
 }
 
 // EnsureNotReadyOnError sets the Ready condition to false on the object if the error is not nil

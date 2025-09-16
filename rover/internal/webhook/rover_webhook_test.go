@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
+	cerrors "github.com/telekom/controlplane/common/pkg/errors"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -309,7 +310,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := validator.ValidateSubscription(ctx, valErr, testNamespace, sub, 0)
 				Expect(err).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeFalse())
@@ -323,15 +324,15 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := validator.ValidateSubscription(ctx, valErr, testNamespace, sub, 0)
 				Expect(err).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeTrue())
 
 				// Check error details
-				Expect(valErr.errors).To(HaveLen(1))
-				Expect(valErr.errors[0].Field).To(ContainSubstring("organization"))
-				Expect(valErr.errors[0].Detail).To(ContainSubstring("not found"))
+				Expect(valErr.Errors).To(HaveLen(1))
+				Expect(valErr.Errors[0].Field).To(ContainSubstring("organization"))
+				Expect(valErr.Errors[0].Detail).To(ContainSubstring("not found"))
 			})
 
 			It("should validate event subscription", func() {
@@ -341,7 +342,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := validator.ValidateSubscription(ctx, valErr, testNamespace, sub, 0)
 				Expect(err).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeFalse())
@@ -355,7 +356,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := validator.ValidateSubscription(ctx, valErr, testNamespace, sub, 0)
 				Expect(err).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeFalse())
@@ -374,7 +375,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
 				Expect(err).To(BeNil())
@@ -392,13 +393,13 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
 				Expect(err).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeTrue())
-				Expect(valErr.errors).To(HaveLen(1))
-				Expect(valErr.errors[0].Detail).To(Equal("upstream URL must not be empty"))
+				Expect(valErr.Errors).To(HaveLen(1))
+				Expect(valErr.Errors[0].Detail).To(Equal("upstream URL must not be empty"))
 			})
 
 			It("should fail when upstream URL doesn't start with http:// or https://", func() {
@@ -412,13 +413,13 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
 				Expect(err).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeTrue())
-				Expect(valErr.errors).To(HaveLen(1))
-				Expect(valErr.errors[0].Detail).To(ContainSubstring("must start with http://"))
+				Expect(valErr.Errors).To(HaveLen(1))
+				Expect(valErr.Errors[0].Detail).To(ContainSubstring("must start with http://"))
 			})
 
 			It("should fail when upstream URL contains 'localhost'", func() {
@@ -432,13 +433,13 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
 				Expect(err).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeTrue())
-				Expect(valErr.errors).To(HaveLen(1))
-				Expect(valErr.errors[0].Detail).To(ContainSubstring("must not contain 'localhost'"))
+				Expect(valErr.Errors).To(HaveLen(1))
+				Expect(valErr.Errors[0].Detail).To(ContainSubstring("must not contain 'localhost'"))
 			})
 
 			It("should validate event exposure", func() {
@@ -448,7 +449,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
 				Expect(err).To(BeNil())
@@ -467,13 +468,13 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
 				Expect(err).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeTrue())
-				Expect(valErr.errors).To(HaveLen(1))
-				Expect(valErr.errors[0].Detail).To(ContainSubstring("all upstreams must have a weight set or none must have a weight set"))
+				Expect(valErr.Errors).To(HaveLen(1))
+				Expect(valErr.Errors[0].Detail).To(ContainSubstring("all upstreams must have a weight set or none must have a weight set"))
 			})
 
 			It("should validate with all upstreams having weights", func() {
@@ -488,7 +489,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
 				Expect(err).To(BeNil())
@@ -535,7 +536,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 		})
 
 		Context("MustNotHaveDuplicates", func() {
-			It("should not report errors with unique items", func() {
+			It("should not report Errors with unique items", func() {
 				subs := []roverv1.Subscription{
 					{Api: &roverv1.ApiSubscription{BasePath: "/api1"}},
 					{Api: &roverv1.ApiSubscription{BasePath: "/api2"}},
@@ -550,55 +551,55 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					{Event: &roverv1.EventExposure{EventType: "event-exp2"}},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := MustNotHaveDuplicates(valErr, subs, exps)
 				Expect(err).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeFalse())
 			})
 
-			It("should report errors for duplicate API subscriptions", func() {
+			It("should report Errors for duplicate API subscriptions", func() {
 				subs := []roverv1.Subscription{
 					{Api: &roverv1.ApiSubscription{BasePath: "/api1"}},
 					{Api: &roverv1.ApiSubscription{BasePath: "/api1"}}, // Duplicate
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := MustNotHaveDuplicates(valErr, subs, []roverv1.Exposure{})
 				Expect(err).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeTrue())
 			})
 
-			It("should report errors for duplicate event subscriptions", func() {
+			It("should report Errors for duplicate event subscriptions", func() {
 				subs := []roverv1.Subscription{
 					{Event: &roverv1.EventSubscription{EventType: "event1"}},
 					{Event: &roverv1.EventSubscription{EventType: "event1"}}, // Duplicate
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := MustNotHaveDuplicates(valErr, subs, []roverv1.Exposure{})
 				Expect(err).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeTrue())
 			})
 
-			It("should report errors for duplicate API exposures", func() {
+			It("should report Errors for duplicate API exposures", func() {
 				exps := []roverv1.Exposure{
 					{Api: &roverv1.ApiExposure{BasePath: "/exp1"}},
 					{Api: &roverv1.ApiExposure{BasePath: "/exp1"}}, // Duplicate
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := MustNotHaveDuplicates(valErr, []roverv1.Subscription{}, exps)
 				Expect(err).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeTrue())
 			})
 
-			It("should report errors for duplicate event exposures", func() {
+			It("should report Errors for duplicate event exposures", func() {
 				exps := []roverv1.Exposure{
 					{Event: &roverv1.EventExposure{EventType: "event-exp1"}},
 					{Event: &roverv1.EventExposure{EventType: "event-exp1"}}, // Duplicate
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				err := MustNotHaveDuplicates(valErr, []roverv1.Subscription{}, exps)
 				Expect(err).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeTrue())
@@ -622,7 +623,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
 				Expect(err).To(BeNil())
@@ -652,13 +653,13 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: internalZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
 				Expect(err).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeTrue())
-				Expect(valErr.errors).To(HaveLen(1))
-				Expect(valErr.errors[0].Detail).To(ContainSubstring("removing 'Authorization' header is only allowed on external zones"))
+				Expect(valErr.Errors).To(HaveLen(1))
+				Expect(valErr.Errors[0].Detail).To(ContainSubstring("removing 'Authorization' header is only allowed on external zones"))
 			})
 
 			It("should allow removing non-Authorization headers in any zone", func() {
@@ -684,7 +685,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: internalZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
 				Expect(err).To(BeNil())
@@ -714,12 +715,12 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: internalZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
 				Expect(err).To(BeNil())
 				Expect(valErr.HasErrors()).To(BeTrue())
-				Expect(valErr.errors[0].Detail).To(ContainSubstring("removing 'Authorization' header is only allowed on external zones"))
+				Expect(valErr.Errors[0].Detail).To(ContainSubstring("removing 'Authorization' header is only allowed on external zones"))
 			})
 
 			It("should handle exposure without transformation", func() {
@@ -731,7 +732,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+				valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 				zoneRef := client.ObjectKey{Name: testZone.Name, Namespace: testNamespace}
 				err := validator.ValidateExposure(ctx, valErr, testNamespace, exposure, zoneRef, 0)
 				Expect(err).To(BeNil())
@@ -1028,7 +1029,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 		})
 
 		It("Should validate when all trusted teams exist", func() {
-			validationErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+			validationErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 			approval := roverv1.Approval{
 				Strategy: roverv1.ApprovalStrategyFourEyes,
 				TrustedTeams: []roverv1.TrustedTeam{
@@ -1049,7 +1050,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 		})
 
 		It("Should validate when trusted teams list is empty", func() {
-			validationErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+			validationErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 			approval := roverv1.Approval{
 				Strategy:     roverv1.ApprovalStrategySimple,
 				TrustedTeams: []roverv1.TrustedTeam{},
@@ -1061,7 +1062,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 		})
 
 		It("Should fail validation when a trusted team doesn't exist", func() {
-			validationErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
+			validationErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), roverObj)
 			approval := roverv1.Approval{
 				Strategy: roverv1.ApprovalStrategyFourEyes,
 				TrustedTeams: []roverv1.TrustedTeam{
@@ -1075,9 +1076,9 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 			err := validator.validateApproval(ctx, validationErr, testNamespace, approval)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(validationErr.HasErrors()).To(BeTrue())
-			Expect(validationErr.errors).To(HaveLen(1))
-			Expect(validationErr.errors[0].Field).To(ContainSubstring("approval.trustedTeams"))
-			Expect(validationErr.errors[0].Detail).To(ContainSubstring("team 'nonexistent-group--nonexistent-team' not found"))
+			Expect(validationErr.Errors).To(HaveLen(1))
+			Expect(validationErr.Errors[0].Field).To(ContainSubstring("approval.trustedTeams"))
+			Expect(validationErr.Errors[0].Detail).To(ContainSubstring("team 'nonexistent-group--nonexistent-team' not found"))
 		})
 	})
 

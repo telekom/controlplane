@@ -70,6 +70,13 @@ spec:
                   the API category.
                 maxLength: 256
                 type: string
+              labelValue:
+                description: |-
+                  LabelValue is the name of the API category in the specification.
+                  It must be unique within the cluster.
+                maxLength: 20
+                minLength: 1
+                type: string
               linting:
                 properties:
                   enabled:
@@ -86,16 +93,8 @@ spec:
                   MustHaveGroupPrefix indicates whether the API category must have contain
                   the name of the group in the basePath.
                 type: boolean
-              name:
-                description: |-
-                  TagValue is the name of the API category in the specification.
-                  It must be unique within the cluster.
-                maxLength: 63
-                minLength: 1
-                pattern: ^[a-zA-Z0-9-]+$
-                type: string
             required:
-            - name
+            - labelValue
             type: object
           status:
             description: status defines the observed state of ApiCategory

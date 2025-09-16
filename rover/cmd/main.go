@@ -34,8 +34,10 @@ import (
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
+
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
+	webhookv1 "github.com/telekom/controlplane/rover/internal/webhook/v1"
 	//+kubebuilder:scaffold:imports
 
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
@@ -185,6 +187,13 @@ func main() {
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = internal_webhook.SetupWebhookWithManager(mgr, secretsapi.API()); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Rover")
+			os.Exit(1)
+		}
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1.SetupApiSpecificationWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "ApiSpecification")
 			os.Exit(1)
 		}
 	}

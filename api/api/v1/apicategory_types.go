@@ -5,6 +5,8 @@
 package v1
 
 import (
+	"slices"
+
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,13 +14,12 @@ import (
 
 // ApiCategorySpec defines the desired state of ApiCategory
 type ApiCategorySpec struct {
-	// TagValue is the name of the API category in the specification.
+	// LabelValue is the name of the API category in the specification.
 	// It must be unique within the cluster.
-	// +kubebuilder:validation:Pattern=`^[a-zA-Z0-9-]+$`
-	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:MaxLength=20
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
-	TagValue string `json:"name"`
+	LabelValue string `json:"labelValue"`
 
 	// Active indicates whether the API category is active.
 	// If false, the API category is not used for new APIs.
@@ -98,6 +99,26 @@ func (r *ApiCategory) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&r.Status.Conditions, condition)
 }
 
+func (r *ApiCategory) IsAllowedForTeamCategory(teamCategory string) bool {
+	if r.Spec.AllowTeams == nil {
+		return true
+	}
+	if slices.Contains(r.Spec.AllowTeams.Categories, "*") {
+		return true
+	}
+	return slices.Contains(r.Spec.AllowTeams.Categories, teamCategory)
+}
+
+func (r *ApiCategory) IsAllowedForTeamName(teamName string) bool {
+	if r.Spec.AllowTeams == nil {
+		return true
+	}
+	if slices.Contains(r.Spec.AllowTeams.Names, "*") {
+		return true
+	}
+	return slices.Contains(r.Spec.AllowTeams.Names, teamName)
+}
+
 // +kubebuilder:object:root=true
 
 // ApiCategoryList contains a list of ApiCategory
@@ -115,6 +136,25 @@ func (r *ApiCategoryList) GetItems() []types.Object {
 		items[i] = &r.Items[i]
 	}
 	return items
+}
+
+func (r *ApiCategoryList) FindByLabelValue(labelValue string) (*ApiCategory, bool) {
+	for i := range r.Items {
+		if r.Items[i].Spec.LabelValue == labelValue {
+			return &r.Items[i], true
+		}
+	}
+	return nil, false
+}
+
+func (r *ApiCategoryList) AllowedLabelValues() []string {
+	values := make([]string, 0, len(r.Items))
+	for i := range r.Items {
+		if r.Items[i].Spec.Active {
+			values = append(values, r.Items[i].Spec.LabelValue)
+		}
+	}
+	return values
 }
 
 func init() {
