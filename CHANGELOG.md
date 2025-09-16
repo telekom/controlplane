@@ -1,3 +1,10 @@
+## [0.12.1](https://github.com/telekom/controlplane/compare/v0.12.0...v0.12.1) (2025-09-08)
+
+
+### Bug Fixes
+
+* **rover-ctl:** correctly map security object for oauth2 and basicauth ([#158](https://github.com/telekom/controlplane/issues/158)) ([68b4dee](https://github.com/telekom/controlplane/commit/68b4dee5e62aba889bd5f80013b0e4bea060a725))
+
 # [0.12.0](https://github.com/telekom/controlplane/compare/v0.11.0...v0.12.0) (2025-09-05)
 
 
