@@ -1,0 +1,26 @@
+name: CodeQL Aggregate
+
+on:
+  workflow_run:
+    workflows: ["Go CI"]
+    types:
+      - completed
+
+jobs:
+  aggregate-sarif:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download SARIF artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: sarif-files
+
+      - name: Merge SARIF files
+        run: |
+          pip install sarif-tools
+          sarif merge sarif-files/**/*.sarif > merged.sarif
+
+      - name: Upload merged SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: merged.sarif

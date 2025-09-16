@@ -294,24 +294,6 @@ jobs:
           name: ${{ inputs.module }}-codeql.sarif
           path: ${{ inputs.module }}-codeql.sarif
 
-  aggregate-sarif:
-    needs: codeql
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: sarif-files
-
-      - name: Merge SARIF files
-        run: |
-          pip install sarif-tools
-          sarif merge sarif-files/**/*.sarif > merged.sarif
-
-      - name: Upload merged SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: merged.sarif
-
   build:
     name: "Build Image for ${{ inputs.module }}"
     if: ${{ inputs.run_build_image && (needs.static_checks.result != 'failure') && (needs.tests.result != 'failure') }}
