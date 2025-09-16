@@ -155,10 +155,11 @@ var _ = Describe("Team Webhook", func() {
 					},
 				},
 				Spec: organizationv1.TeamSpec{
-					Group:   "group-test",
-					Name:    "team-test",
-					Email:   "test@example.com",
-					Members: testMember,
+					Group:    "group-test",
+					Name:     "team-test",
+					Email:    "test@example.com",
+					Members:  testMember,
+					Category: organizationv1.TeamCategoryCustomer,
 				},
 			}
 			err := k8sClient.Create(ctx, teamObj)
@@ -222,10 +223,11 @@ var _ = Describe("Team Webhook", func() {
 					},
 				},
 				Spec: organizationv1.TeamSpec{
-					Group:   "group-test",
-					Name:    "team-test",
-					Email:   "test@example.com",
-					Members: testMember,
+					Group:    "group-test",
+					Name:     "team-test",
+					Email:    "test@example.com",
+					Members:  testMember,
+					Category: organizationv1.TeamCategoryCustomer,
 				},
 			}
 			err := k8sClient.Create(ctx, teamObj)

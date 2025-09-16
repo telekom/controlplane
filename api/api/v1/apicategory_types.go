@@ -99,6 +99,7 @@ func (r *ApiCategory) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&r.Status.Conditions, condition)
 }
 
+// IsAllowedForTeamCategory checks if the given team category is allowed to use this ApiCategory.
 func (r *ApiCategory) IsAllowedForTeamCategory(teamCategory string) bool {
 	if r.Spec.AllowTeams == nil {
 		return true
@@ -109,14 +110,16 @@ func (r *ApiCategory) IsAllowedForTeamCategory(teamCategory string) bool {
 	return slices.Contains(r.Spec.AllowTeams.Categories, teamCategory)
 }
 
-func (r *ApiCategory) IsAllowedForTeamName(teamName string) bool {
+// IsAllowedForTeam checks if the given team is allowed to use this ApiCategory.
+// The provided team should follow the naming convention of "<group>--<team>".
+func (r *ApiCategory) IsAllowedForTeam(team string) bool {
 	if r.Spec.AllowTeams == nil {
 		return true
 	}
 	if slices.Contains(r.Spec.AllowTeams.Names, "*") {
 		return true
 	}
-	return slices.Contains(r.Spec.AllowTeams.Names, teamName)
+	return slices.Contains(r.Spec.AllowTeams.Names, team)
 }
 
 // +kubebuilder:object:root=true

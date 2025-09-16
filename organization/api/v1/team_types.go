@@ -16,9 +16,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 type Member struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
@@ -28,6 +25,13 @@ type Member struct {
 	// +kubebuilder:validation:Format=email
 	Email string `json:"email"`
 }
+
+type TeamCategory string
+
+const (
+	TeamCategoryCustomer       TeamCategory = "Customer"
+	TeamCategoryInfrastructure TeamCategory = "Infrastructure"
+)
 
 // TeamSpec defines the desired state of Team.
 type TeamSpec struct {
@@ -59,6 +63,13 @@ type TeamSpec struct {
 	// Secret for the teamToken and passed towards the identity client.
 	// +kubebuilder:validation:Optional
 	Secret string `json:"secret,omitempty"`
+
+	// Category is the category of the team
+	// The category is used to determine specific access rights.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=Customer;Infrastructure
+	// +kubebuilder:default=Customer
+	Category TeamCategory `json:"category"`
 }
 
 // TeamStatus defines the observed state of Team.

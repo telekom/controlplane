@@ -987,9 +987,10 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					Namespace: testNamespace,
 				},
 				Spec: organizationv1.TeamSpec{
-					Name:  "trusted-team-1",
-					Group: "trusted-group-1",
-					Email: "team1@example.com",
+					Name:     "trusted-team-1",
+					Group:    "trusted-group-1",
+					Email:    "team1@example.com",
+					Category: organizationv1.TeamCategoryCustomer,
 					Members: []organizationv1.Member{
 						{
 							Name:  "name",
@@ -1005,9 +1006,10 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					Namespace: testNamespace,
 				},
 				Spec: organizationv1.TeamSpec{
-					Name:  "trusted-team-2",
-					Group: "trusted-group-2",
-					Email: "team2@example.com",
+					Name:     "trusted-team-2",
+					Group:    "trusted-group-2",
+					Email:    "team2@example.com",
+					Category: organizationv1.TeamCategoryCustomer,
 					Members: []organizationv1.Member{
 						{
 							Name:  "name",

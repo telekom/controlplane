@@ -107,11 +107,19 @@ func (v *ApiSpecificationCustomValidator) ApiCategoryValidation(ctx context.Cont
 		if !foundApiCategory.Spec.Active {
 			valErr.AddInvalidError(field.NewPath("spec").Child("category"), providedCategory, "the provided ApiCategory is not active")
 		}
+		team, err := v.FindTeam(ctx, apispecification)
+		if err != nil {
+			return apierrors.NewInternalError(err)
+		}
+
+		if !foundApiCategory.IsAllowedForTeamCategory(string(team.Spec.Category)) {
+			valErr.AddInvalidError(field.NewPath("spec").Child("category"), providedCategory, fmt.Sprintf("ApiCategory %q is not allowed for team category %q", providedCategory, team.Spec.Category))
+		}
+		if !foundApiCategory.IsAllowedForTeam(team.GetName()) {
+			valErr.AddInvalidError(field.NewPath("spec").Child("category"), providedCategory, fmt.Sprintf("ApiCategory %q is not allowed for team name %q", providedCategory, team.GetName()))
+		}
+
 		if foundApiCategory.Spec.MustHaveGroupPrefix {
-			team, err := v.FindTeam(ctx, apispecification)
-			if err != nil {
-				return apierrors.NewInternalError(err)
-			}
 			expectedPrefix := team.Spec.Group
 			providedPrefix := strings.Split(apispecification.Spec.BasePath, "/")[0]
 			if expectedPrefix != providedPrefix {

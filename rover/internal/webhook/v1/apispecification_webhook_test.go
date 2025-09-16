@@ -34,6 +34,10 @@ var _ = Describe("ApiSpecification Webhook", func() {
 							Active:              true,
 							LabelValue:          "some-api-category",
 							MustHaveGroupPrefix: true,
+							AllowTeams: &apiv1.AllowTeamsConfig{
+								Categories: []string{"*"},
+								Names:      []string{"*"},
+							},
 						},
 					},
 					{
@@ -50,6 +54,17 @@ var _ = Describe("ApiSpecification Webhook", func() {
 							MustHaveGroupPrefix: false,
 						},
 					},
+					{
+						Spec: apiv1.ApiCategorySpec{
+							Active:              true,
+							LabelValue:          "not-allowed-api-category",
+							MustHaveGroupPrefix: false,
+							AllowTeams: &apiv1.AllowTeamsConfig{
+								Categories: []string{"not-allowed-team-category"},
+								Names:      []string{"not-allowed-team"},
+							},
+						},
+					},
 				},
 			}
 
@@ -59,7 +74,8 @@ var _ = Describe("ApiSpecification Webhook", func() {
 					Namespace: environment,
 				},
 				Spec: organizationv1.TeamSpec{
-					Group: teamGroup,
+					Group:    teamGroup,
+					Category: organizationv1.TeamCategoryCustomer,
 				},
 			}
 
@@ -133,7 +149,7 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			Expect(ok).To(BeTrue(), "Expected a StatusError, got: %T", err)
 			Expect(statusErr.ErrStatus.Details.Causes).To(HaveLen(1))
 			Expect(statusErr.ErrStatus.Details.Causes[0].Field).To(Equal("spec.category"))
-			Expect(statusErr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring(`ApiCategory "not-existing-category" not found. Allowed values are: [some-api-category, other-api-category]`))
+			Expect(statusErr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring(`ApiCategory "not-existing-category" not found. Allowed values are: [some-api-category, other-api-category, not-allowed-api-category]`))
 		})
 
 		It("should return an error when the group prefix is required but not set", func() {
@@ -255,6 +271,43 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			By("expecting no error")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(warnings).To(BeNil())
+
+		})
+
+		It("should block when the Team is not allowed", func() {
+			By("creating an ApiSpecification with a ApiCategory that is not allowed for the Team")
+			apispecification := &roverv1.ApiSpecification{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-api-specification",
+					Namespace: "test--my-group--my-team", // team with group "my-group"
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: "test",
+					},
+				},
+				Spec: roverv1.ApiSpecificationSpec{
+					Category: "not-allowed-api-category", // exists but not allowed for the team
+					BasePath: "any-group/my-api",
+				},
+			}
+
+			validator := NewApiSpecificationValidatorMock("my-group", "my-team")
+
+			By("validating the ApiSpecification")
+			warnings, err := validator.ValidateCreate(ctx, apispecification)
+
+			By("expecting an error about the not allowed ApiCategory")
+			Expect(err).To(HaveOccurred())
+			Expect(warnings).To(BeNil())
+			Expect(apierrors.IsInvalid(err)).To(BeTrue(), "Expected an Invalid error")
+
+			statusErr, ok := err.(*apierrors.StatusError)
+			Expect(ok).To(BeTrue(), "Expected a StatusError, got: %T", err)
+			Expect(statusErr.ErrStatus.Details.Causes).To(HaveLen(2))
+			Expect(statusErr.ErrStatus.Details.Causes[0].Field).To(Equal("spec.category"))
+			Expect(statusErr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring(`ApiCategory "not-allowed-api-category" is not allowed for team category "Customer"`))
+
+			Expect(statusErr.ErrStatus.Details.Causes[1].Field).To(Equal("spec.category"))
+			Expect(statusErr.ErrStatus.Details.Causes[1].Message).To(ContainSubstring(`ApiCategory "not-allowed-api-category" is not allowed for team name "my-group--my-team"`))
 
 		})
 	})
