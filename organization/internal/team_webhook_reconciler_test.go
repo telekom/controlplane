@@ -88,6 +88,11 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 				Name:      "team-api-gateway-realm",
 				Namespace: testNamespace,
 			},
+			Links: adminv1.Links{
+				Url:       "http://example.org",
+				Issuer:    "http://example.org/issuer",
+				LmsIssuer: "http://example.org/lms-issuer",
+			},
 		}
 
 		BeforeAll(func() {
