@@ -20,7 +20,7 @@ on:
         description: "Set to true to run unit tests and code coverage"
         required: false
         type: boolean
-        default: true
+        default: ${{ github.event_name == 'pull_request' || github.ref_name == 'main' }}
       allow_tests_failure:
         description: "Set to true to allow tests to fail without failing the job"
         required: false
