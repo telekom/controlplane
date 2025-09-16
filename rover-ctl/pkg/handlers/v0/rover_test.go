@@ -132,7 +132,9 @@ var _ = Describe("Rover Handler", func() {
 								map[string]any{
 									"basePath": "/api/v1",
 									"security": map[string]any{
-										"tokenEndpoint": "https://example.com/token",
+										"oauth2": map[string]any{
+											"tokenEndpoint": "https://example.com/token",
+										},
 									},
 								},
 							},
@@ -171,7 +173,9 @@ var _ = Describe("Rover Handler", func() {
 								map[string]any{
 									"eventType": "test.event",
 									"security": map[string]any{
-										"username": "testuser",
+										"basicAuth": map[string]any{
+											"username": "testuser",
+										},
 									},
 								},
 							},
@@ -265,7 +269,9 @@ var _ = Describe("Rover Handler", func() {
 					map[string]any{
 						"basePath": "/api/v1",
 						"security": map[string]any{
-							"tokenEndpoint": "https://example.com/token",
+							"oauth2": map[string]any{
+								"tokenEndpoint": "https://example.com/token",
+							},
 						},
 					},
 				}
@@ -285,7 +291,9 @@ var _ = Describe("Rover Handler", func() {
 					map[string]any{
 						"port": 8080,
 						"security": map[string]any{
-							"username": "testuser",
+							"basicAuth": map[string]any{
+								"username": "testuser",
+							},
 						},
 					},
 				}
@@ -333,34 +341,32 @@ var _ = Describe("Rover Handler", func() {
 
 	Describe("PatchSecurity", func() {
 		Context("when patching security objects", func() {
-			It("should add oauth2 type for tokenEndpoint", func() {
+			It("should add oauth2 type", func() {
 				security := map[string]any{
-					"tokenEndpoint": "https://example.com/token",
+					"oauth2": map[string]any{
+						"tokenEndpoint": "https://example.com/token",
+					},
 				}
 
 				v0.PatchSecurity(security)
 
 				Expect(security).To(HaveKeyWithValue("type", "oauth2"))
+				Expect(security).To(HaveKeyWithValue("tokenEndpoint", "https://example.com/token"))
+				Expect(security).NotTo(HaveKey("oauth2"))
 			})
 
-			It("should add oauth2 type for clientId", func() {
+			It("should add basicAuth type", func() {
 				security := map[string]any{
-					"clientId": "client-123",
-				}
-
-				v0.PatchSecurity(security)
-
-				Expect(security).To(HaveKeyWithValue("type", "oauth2"))
-			})
-
-			It("should add basicAuth type for username", func() {
-				security := map[string]any{
-					"username": "testuser",
+					"basicAuth": map[string]any{
+						"username": "testuser",
+					},
 				}
 
 				v0.PatchSecurity(security)
 
 				Expect(security).To(HaveKeyWithValue("type", "basicAuth"))
+				Expect(security).To(HaveKeyWithValue("username", "testuser"))
+				Expect(security).NotTo(HaveKey("basicAuth"))
 			})
 
 			It("should handle nil security", func() {

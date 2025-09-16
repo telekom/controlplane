@@ -7,6 +7,7 @@ package v0
 import (
 	"context"
 	"encoding/json"
+	"maps"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -130,19 +131,32 @@ func PatchSecurity(security any) {
 		return
 	}
 
-	if _, exist := securityMap["tokenEndpoint"]; exist {
-		securityMap["type"] = "oauth2"
-		return
-	}
-	if _, exist := securityMap["clientId"]; exist {
-		securityMap["type"] = "oauth2"
-		return
-	}
-	if _, exist := securityMap["username"]; exist {
-		securityMap["type"] = "basicAuth"
+	// if it already has the type set, return
+	if _, exist := securityMap["type"]; exist {
 		return
 	}
 
+	// check for known security schemes and set the type accordingly
+	if basicAuthCfg, exist := securityMap["basicAuth"]; exist {
+		basicAuthCfgMap, ok := basicAuthCfg.(map[string]any)
+		if !ok {
+			return
+		}
+		delete(securityMap, "basicAuth")
+		maps.Copy(securityMap, basicAuthCfgMap)
+		securityMap["type"] = "basicAuth"
+		return
+	}
+	if oauth2Cfg, exist := securityMap["oauth2"]; exist {
+		oauth2CfgMap, ok := oauth2Cfg.(map[string]any)
+		if !ok {
+			return
+		}
+		delete(securityMap, "oauth2")
+		maps.Copy(securityMap, oauth2CfgMap)
+		securityMap["type"] = "oauth2"
+		return
+	}
 }
 
 func (h *RoverHandler) ResetSecret(ctx context.Context, name string) (clientId string, clientSecret string, err error) {
