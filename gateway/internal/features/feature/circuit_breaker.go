@@ -48,7 +48,7 @@ func (c CircuitBreakerFeature) IsUsed(ctx context.Context, builder features.Feat
 		return false
 	}
 
-	if route.Spec.Traffic.CircuitBreaker {
+	if route.Spec.Traffic.CircuitBreaker != nil && route.Spec.Traffic.CircuitBreaker.Enabled {
 		return true
 	} else if route.GetUpstreamId() != "" {
 		// this means that CB was previously configured, but now is disabled
@@ -183,7 +183,8 @@ func (c CircuitBreakerFeature) Apply(ctx context.Context, builder features.Featu
 }
 
 func isDeleteScenario(route *gatewayv1.Route) bool {
-	if !route.Spec.Traffic.CircuitBreaker && route.GetUpstreamId() != "" {
+	// completely removed or turned to false
+	if (route.Spec.Traffic.CircuitBreaker != nil && route.Spec.Traffic.CircuitBreaker.Enabled == false) && route.GetUpstreamId() != "" {
 		return true
 	} else {
 		return false

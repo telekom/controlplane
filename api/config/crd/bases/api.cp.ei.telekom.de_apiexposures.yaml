@@ -191,9 +191,14 @@ spec:
               traffic:
                 properties:
                   circuitBreaker:
-                    description: CircuitBreaker flags if the Kong circuit breaker
-                      feature should be used
-                    type: boolean
+                    description: CircuitBreaker defines the Kong circuit breaker configuration
+                    properties:
+                      enabled:
+                        description: |-
+                          CircuitBreaker flags if the Kong circuit breaker feature should be used
+                          kubebuilder:default=false
+                        type: boolean
+                    type: object
                   failover:
                     description: Failover defines the failover configuration for the
                       API exposure.

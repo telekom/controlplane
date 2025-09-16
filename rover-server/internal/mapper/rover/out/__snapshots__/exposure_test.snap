@@ -3,7 +3,7 @@
 api.ApiExposure{
     Approval:       "SIMPLE",
     BasePath:       "/eni/distr/v1",
-    CircuitBreaker: false,
+    CircuitBreaker: api.CircuitBreaker{},
     Failover:       api.Failover{},
     LoadBalancing:  api.LoadBalancing{},
     RateLimit:      api.RateLimitContainer{},
@@ -20,7 +20,7 @@ api.ApiExposure{
 api.ApiExposure{
     Approval:       "",
     BasePath:       "",
-    CircuitBreaker: false,
+    CircuitBreaker: api.CircuitBreaker{},
     Failover:       api.Failover{},
     LoadBalancing:  api.LoadBalancing{
         Health:  api.Health{},

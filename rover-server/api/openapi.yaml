@@ -1252,8 +1252,7 @@ components:
             type: string
           description: "Allows you to specify a list of header names that will be removed before forwarding the request to the provider"
         circuitBreaker:
-          type: boolean
-          description: "Allows you to control if you wish the Kong circuit breaker to be active on your api exposure route"
+          $ref: '#/components/schemas/CircuitBreaker'
     EventExposure:
       type: object
       required:
@@ -1516,6 +1515,15 @@ components:
         - properties:
             provider:
               $ref: '#/components/schemas/RateLimit'
+    CircuitBreaker:
+      type: object
+      required:
+        - enabled
+      allOf:
+        - properties:
+            enabled:
+              type: boolean
+              description: Flags if the Kong circuit breaker feature should be used
     ConsumerRateLimit:
       type: object
       required:

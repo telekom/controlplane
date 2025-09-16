@@ -31,7 +31,8 @@ func mapExposureTraffic(in api.ApiExposure, out *roverv1.ApiExposure) {
 		}
 	}
 
-	out.Traffic.CircuitBreaker = &in.CircuitBreaker
+	// CircuitBreaker configuration
+	mapCircuitBreaker(in, out)
 
 	// Map rate limiting configuration
 	mapRateLimit(in, out)
@@ -107,5 +108,25 @@ func mapRateLimit(in api.ApiExposure, out *roverv1.ApiExposure) {
 			}
 			out.Traffic.RateLimit.Consumers.Overrides = overrides
 		}
+	}
+}
+
+func mapCircuitBreaker(in api.ApiExposure, out *roverv1.ApiExposure) {
+	// Check if CircuitBreaker is initialized to avoid nil pointer panics
+	if reflect.ValueOf(in.CircuitBreaker).IsZero() {
+		return
+	}
+
+	// initialize if needed
+	if out.Traffic == nil {
+		out.Traffic = &roverv1.Traffic{}
+	}
+
+	if out.Traffic.CircuitBreaker == nil {
+		out.Traffic.CircuitBreaker = &roverv1.CircuitBreaker{}
+	}
+
+	out.Traffic.CircuitBreaker = &roverv1.CircuitBreaker{
+		Enabled: in.CircuitBreaker.Enabled,
 	}
 }

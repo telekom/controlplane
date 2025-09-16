@@ -235,9 +235,15 @@ spec:
                             configuration for this API
                           properties:
                             circuitBreaker:
-                              description: CircuitBreaker flags if the Kong circuit
-                                breaker feature should be used
-                              type: boolean
+                              description: CircuitBreaker defines the Kong circuit
+                                breaker configuration
+                              properties:
+                                enabled:
+                                  default: false
+                                  description: CircuitBreaker flags if the Kong circuit
+                                    breaker feature should be used
+                                  type: boolean
+                              type: object
                             failover:
                               description: Failover defines disaster recovery configuration
                                 for this API

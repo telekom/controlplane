@@ -8,13 +8,19 @@ type Traffic struct {
 	Failover  *Failover  `json:"failover,omitempty"`
 	RateLimit *RateLimit `json:"rateLimit,omitempty"`
 
-	CircuitBreaker bool `json:"circuitBreaker,omitempty"`
+	CircuitBreaker *CircuitBreaker `json:"circuitBreaker,omitempty"`
 }
 
 type ConsumeRouteTraffic struct {
 	// RateLimit defines the rate limit configuration for the ConsumeRoute
 	// +kubebuilder:validation:Optional
 	RateLimit *ConsumeRouteRateLimit `json:"rateLimit,omitempty"`
+}
+
+type CircuitBreaker struct {
+	// CircuitBreaker flags if the Kong circuit breaker feature should be used
+	// +kubebuilder:validation:Optional
+	Enabled bool `json:"enabled,omitempty"`
 }
 
 type Failover struct {

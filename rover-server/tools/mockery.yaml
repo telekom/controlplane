@@ -8,7 +8,7 @@ dir: "../test/mocks"
 outpkg: "mocks"
 filename: "mock_{{.InterfaceName}}.go"
 packages:
-  cp.ei.telekom.de/common-server/pkg/store:
+  github.com/telekom/controlplane/common-server/pkg/store:
     # place your package-specific config here
     config:
     interfaces:

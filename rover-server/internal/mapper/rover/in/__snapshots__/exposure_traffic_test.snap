@@ -6,7 +6,7 @@
         Zones: {"zone1", "zone2"},
     },
     RateLimit:      (*v1.RateLimit)(nil),
-    CircuitBreaker: &bool(false),
+    CircuitBreaker: (*v1.CircuitBreaker)(nil),
 }
 ---
 
