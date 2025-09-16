@@ -52,7 +52,9 @@ var _ = Describe("BasicAuthFeature", func() {
 				route := &gatewayv1.Route{
 					Spec: gatewayv1.RouteSpec{
 						Traffic: gatewayv1.Traffic{
-							CircuitBreaker: false,
+							CircuitBreaker: &gatewayv1.CircuitBreaker{
+								Enabled: false,
+							},
 						},
 					},
 				}
@@ -65,7 +67,9 @@ var _ = Describe("BasicAuthFeature", func() {
 				route := &gatewayv1.Route{
 					Spec: gatewayv1.RouteSpec{
 						Traffic: gatewayv1.Traffic{
-							CircuitBreaker: false,
+							CircuitBreaker: &gatewayv1.CircuitBreaker{
+								Enabled: false,
+							},
 						},
 					},
 				}
@@ -79,7 +83,9 @@ var _ = Describe("BasicAuthFeature", func() {
 				route := &gatewayv1.Route{
 					Spec: gatewayv1.RouteSpec{
 						Traffic: gatewayv1.Traffic{
-							CircuitBreaker: true,
+							CircuitBreaker: &gatewayv1.CircuitBreaker{
+								Enabled: true,
+							},
 						},
 					},
 				}
@@ -117,7 +123,9 @@ var _ = Describe("BasicAuthFeature", func() {
 					},
 					Spec: gatewayv1.RouteSpec{
 						Traffic: gatewayv1.Traffic{
-							CircuitBreaker: true,
+							CircuitBreaker: &gatewayv1.CircuitBreaker{
+								Enabled: true,
+							},
 						},
 					},
 				}
@@ -208,7 +216,9 @@ var _ = Describe("BasicAuthFeature", func() {
 					},
 					Spec: gatewayv1.RouteSpec{
 						Traffic: gatewayv1.Traffic{
-							CircuitBreaker: false,
+							CircuitBreaker: &gatewayv1.CircuitBreaker{
+								Enabled: false,
+							},
 						},
 					},
 					Status: gatewayv1.RouteStatus{

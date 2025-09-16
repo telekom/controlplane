@@ -203,10 +203,20 @@ func mapTrafficToApiTraffic(env string, roverTraffic *rover.Traffic) apiapi.Traf
 	}
 
 	if roverTraffic.HasCircuitBreaker() {
-		apiTraffic.CircuitBreaker = roverTraffic.CircuitBreaker
+		apiTraffic.CircuitBreaker = mapCircuitBreakerToApiCircuitBreaker(roverTraffic.CircuitBreaker)
 	}
 
 	return apiTraffic
+}
+
+func mapCircuitBreakerToApiCircuitBreaker(breaker *rover.CircuitBreaker) *apiapi.CircuitBreaker {
+	if breaker == nil {
+		return nil
+	}
+
+	return &apiapi.CircuitBreaker{
+		Enabled: breaker.Enabled,
+	}
 }
 
 func mapRateLimitConfigToApiRateLimitConfig(roverRateLimitConfig *rover.RateLimitConfig) *apiapi.RateLimitConfig {

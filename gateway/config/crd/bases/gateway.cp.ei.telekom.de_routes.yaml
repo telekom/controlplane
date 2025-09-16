@@ -207,7 +207,12 @@ spec:
               traffic:
                 properties:
                   circuitBreaker:
-                    type: boolean
+                    properties:
+                      enabled:
+                        description: CircuitBreaker flags if the Kong circuit breaker
+                          feature should be used
+                        type: boolean
+                    type: object
                   failover:
                     properties:
                       security:
