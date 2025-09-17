@@ -72,7 +72,7 @@ var _ = Describe("Failover", func() {
 			gateway := NewGateway()
 
 			// Expects
-			mockCreateOrReplaceRoute := func(ctx context.Context, route client.CustomRoute, upstream client.Upstream, gateway *gatewayv1.Gateway) error {
+			mockCreateOrReplaceRoute := func(ctx context.Context, route client.CustomRoute, upstream client.Upstream) error {
 				Expect(route.GetName()).To(Equal("test-route"))
 				Expect(route.GetHost()).To(Equal("gateway1.example.com"))
 				Expect(route.GetPath()).To(Equal("/foo"))
@@ -82,7 +82,7 @@ var _ = Describe("Failover", func() {
 				Expect(upstream.GetPath()).To(Equal("/proxy"))
 				return nil
 			}
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(mockCreateOrReplaceRoute).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, gomock.Any(), gomock.Any()).DoAndReturn(mockCreateOrReplaceRoute).Times(1)
 
 			mockCreateOrReplacePlugin := func(ctx context.Context, customPlugin client.CustomPlugin) (kongPlugin *kong.Plugin, err error) {
 				switch p := customPlugin.(type) {
@@ -183,7 +183,7 @@ var _ = Describe("Failover", func() {
 			gateway := NewGateway()
 
 			// Expects
-			mockCreateOrReplaceRoute := func(ctx context.Context, route client.CustomRoute, upstream client.Upstream, gateway *gatewayv1.Gateway) error {
+			mockCreateOrReplaceRoute := func(ctx context.Context, route client.CustomRoute, upstream client.Upstream) error {
 				Expect(route.GetName()).To(Equal("test-route"))
 				Expect(route.GetHost()).To(Equal("gateway1.example.com"))
 				Expect(route.GetPath()).To(Equal("/foo"))
@@ -193,7 +193,7 @@ var _ = Describe("Failover", func() {
 				Expect(upstream.GetPath()).To(Equal("/proxy"))
 				return nil
 			}
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, gomock.Any(), gomock.Any(), gomock.AssignableToTypeOf(&gatewayv1.Gateway{})).DoAndReturn(mockCreateOrReplaceRoute).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, gomock.Any(), gomock.Any()).DoAndReturn(mockCreateOrReplaceRoute).Times(1)
 
 			mockCreateOrReplacePlugin := func(ctx context.Context, customPlugin client.CustomPlugin) (kongPlugin *kong.Plugin, err error) {
 				switch p := customPlugin.(type) {
@@ -293,7 +293,7 @@ var _ = Describe("Failover", func() {
 			gateway := NewGateway()
 
 			// Expects
-			mockCreateOrReplaceRoute := func(ctx context.Context, route client.CustomRoute, upstream client.Upstream, gateway *gatewayv1.Gateway) error {
+			mockCreateOrReplaceRoute := func(ctx context.Context, route client.CustomRoute, upstream client.Upstream) error {
 				Expect(route.GetName()).To(Equal("test-route"))
 				Expect(route.GetHost()).To(Equal("gateway1.example.com"))
 				Expect(route.GetPath()).To(Equal("/foo"))
@@ -303,7 +303,7 @@ var _ = Describe("Failover", func() {
 				Expect(upstream.GetPath()).To(Equal("/proxy"))
 				return nil
 			}
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(mockCreateOrReplaceRoute).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, gomock.Any(), gomock.Any()).DoAndReturn(mockCreateOrReplaceRoute).Times(1)
 
 			mockCreateOrReplacePlugin := func(ctx context.Context, customPlugin client.CustomPlugin) (kongPlugin *kong.Plugin, err error) {
 				switch p := customPlugin.(type) {

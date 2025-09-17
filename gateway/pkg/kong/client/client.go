@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	"io"
 	"net/http"
 	"slices"
@@ -26,7 +25,7 @@ type MutatorFunc[T any] func(T) (T, error)
 
 //go:generate mockgen -source=client.go -destination=mock/client.gen.go -package=mock
 type KongClient interface {
-	CreateOrReplaceRoute(ctx context.Context, route CustomRoute, upstream Upstream, gateway *gatewayapi.Gateway) error
+	CreateOrReplaceRoute(ctx context.Context, route CustomRoute, upstream Upstream) error
 	DeleteRoute(ctx context.Context, route CustomRoute) error
 
 	CreateOrReplaceConsumer(ctx context.Context, consumer CustomConsumer) (kongConsumer *kong.Consumer, err error)
@@ -416,7 +415,7 @@ func (c *kongClient) getPluginMatchingTags(
 	}
 }
 
-func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute, upstream Upstream, gateway *gatewayapi.Gateway) error {
+func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute, upstream Upstream) error {
 	if upstream == nil {
 		return fmt.Errorf("upstream is required")
 	}

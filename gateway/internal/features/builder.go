@@ -291,7 +291,7 @@ func (b *Builder) Build(ctx context.Context) error {
 		b.RequestTransformerPlugin().Config.Append.AddHeader(plugin.JumperConfigKey, plugin.ToBase64OrDie(b.jumperConfig))
 	}
 
-	err := b.kc.CreateOrReplaceRoute(ctx, b.Route, b.Upstream, b.Gateway)
+	err := b.kc.CreateOrReplaceRoute(ctx, b.Route, b.Upstream)
 	if err != nil {
 		return errors.Wrap(err, "failed to create or replace route")
 	}

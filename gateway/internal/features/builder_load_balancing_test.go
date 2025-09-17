@@ -168,7 +168,7 @@ func enableLoadBalancing(isProxyRoute bool) *gatewayv1.Route {
 }
 
 func configureMocks(ctx context.Context, loadBalancingRoute *gatewayv1.Route) {
-	mockKc.EXPECT().CreateOrReplaceRoute(ctx, loadBalancingRoute, gomock.Any(), gomock.AssignableToTypeOf(&gatewayv1.Gateway{})).Return(nil).Times(1)
+	mockKc.EXPECT().CreateOrReplaceRoute(ctx, loadBalancingRoute, gomock.Any()).Return(nil).Times(1)
 	mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
 	mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 }

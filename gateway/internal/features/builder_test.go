@@ -65,7 +65,7 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			builder := features.NewFeatureBuilder(mockKc, passThroughRoute, nil, realm, gateway)
 			builder.EnableFeature(feature.InstancePassThroughFeature)
 
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, passThroughRoute, gomock.Any(), gomock.AssignableToTypeOf(&gatewayv1.Gateway{})).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, passThroughRoute, gomock.Any()).Return(nil).Times(1)
 			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 			By("building the features")
@@ -95,7 +95,7 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			builder.EnableFeature(feature.InstancePassThroughFeature)
 			builder.EnableFeature(feature.InstanceAccessControlFeature)
 
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, acRoute, gomock.Any(), gomock.AssignableToTypeOf(&gatewayv1.Gateway{})).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, acRoute, gomock.Any()).Return(nil).Times(1)
 			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(2)
 			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
@@ -133,7 +133,7 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 
 			builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
 
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, lmsRoute, gomock.Any(), gomock.AssignableToTypeOf(&gatewayv1.Gateway{})).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, lmsRoute, gomock.Any()).Return(nil).Times(1)
 			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
 			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
@@ -184,7 +184,7 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 
 			builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
 
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, lmsRoute, gomock.Any(), gomock.AssignableToTypeOf(&gatewayv1.Gateway{})).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, lmsRoute, gomock.Any()).Return(nil).Times(1)
 			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
 			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
@@ -222,7 +222,7 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			builder.EnableFeature(feature.InstanceCustomScopesFeature)
 			builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
 
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, scopesRoute, gomock.Any(), gomock.AssignableToTypeOf(&gatewayv1.Gateway{})).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, scopesRoute, gomock.Any()).Return(nil).Times(1)
 			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
 			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 

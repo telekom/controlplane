@@ -54,11 +54,7 @@ func (f *LastMileSecurityFeature) Apply(ctx context.Context, builder features.Fe
 
 	rtpPlugin := builder.RequestTransformerPlugin()
 
-	// if circuit breaker is enabled, the upstream must not be changed, otherwise the configuration would be ignored
-	// if CB is enabled, then the upstreamId is defined on the route
-	if route.GetUpstreamId() == "" {
-		builder.SetUpstream(client.NewUpstreamOrDie(plugin.LocalhostProxyUrl))
-	}
+	builder.SetUpstream(client.NewUpstreamOrDie(plugin.LocalhostProxyUrl))
 
 	if route.IsProxy() {
 		// Proxy Route

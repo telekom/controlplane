@@ -17,7 +17,6 @@ import (
 	context "context"
 	reflect "reflect"
 
-	v1 "github.com/telekom/controlplane/gateway/api/v1"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	client "github.com/telekom/controlplane/gateway/pkg/kong/client"
 	gomock "go.uber.org/mock/gomock"
@@ -92,17 +91,17 @@ func (mr *MockKongClientMockRecorder) CreateOrReplacePlugin(ctx, plugin any) *go
 }
 
 // CreateOrReplaceRoute mocks base method.
-func (m *MockKongClient) CreateOrReplaceRoute(ctx context.Context, route client.CustomRoute, upstream client.Upstream, gateway *v1.Gateway) error {
+func (m *MockKongClient) CreateOrReplaceRoute(ctx context.Context, route client.CustomRoute, upstream client.Upstream) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrReplaceRoute", ctx, route, upstream, gateway)
+	ret := m.ctrl.Call(m, "CreateOrReplaceRoute", ctx, route, upstream)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateOrReplaceRoute indicates an expected call of CreateOrReplaceRoute.
-func (mr *MockKongClientMockRecorder) CreateOrReplaceRoute(ctx, route, upstream, gateway any) *gomock.Call {
+func (mr *MockKongClientMockRecorder) CreateOrReplaceRoute(ctx, route, upstream any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrReplaceRoute", reflect.TypeOf((*MockKongClient)(nil).CreateOrReplaceRoute), ctx, route, upstream, gateway)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrReplaceRoute", reflect.TypeOf((*MockKongClient)(nil).CreateOrReplaceRoute), ctx, route, upstream)
 }
 
 // DeleteConsumer mocks base method.

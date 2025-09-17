@@ -22,14 +22,14 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-var _ = Describe("BasicAuthFeature", func() {
+var _ = Describe("CircuitBreakerFeature", func() {
 
 	It("should return the correct feature type", func() {
 		Expect(feature.InstanceCircuitBreakerFeature.Name()).To(Equal(gatewayv1.FeatureTypeCircuitBreaker))
 	})
 
 	It("should have the correct priority", func() {
-		Expect(feature.InstanceCircuitBreakerFeature.Priority()).To(Equal(99))
+		Expect(feature.InstanceCircuitBreakerFeature.Priority()).To(Equal(110))
 	})
 
 	Context("with mocked feature builder", func() {
@@ -199,7 +199,7 @@ var _ = Describe("BasicAuthFeature", func() {
 				expectedTargetTarget := "localhost:8080"
 				expectedTargetWeight := 100
 				Expect(createTargetForUpstreamWithResponse_targetBodyArg).To(Equal(kong.CreateTargetForUpstreamJSONRequestBody{
-					Tags:   &[]string{"env--test", "targets--test-route-name"},
+					Tags:   &[]string{"env--test", "targets--test-route-name", "route--test-route-name"},
 					Target: &expectedTargetTarget,
 					Weight: &expectedTargetWeight,
 				}))
@@ -302,6 +302,7 @@ func createTestCreateUpstreamJSONRequestBody(ctx context.Context, upstreamName s
 		Tags: &[]string{
 			client.BuildTag("env", contextutil.EnvFromContextOrDie(ctx)),
 			client.BuildTag("upstream", upstreamName),
+			client.BuildTag("route", "test-route-name"),
 		},
 	}
 	return &upstreamBody

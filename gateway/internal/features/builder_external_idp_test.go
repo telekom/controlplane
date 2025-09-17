@@ -287,7 +287,7 @@ func externalIDPProviderRouteOAuthJwt() *gatewayv1.Route {
 }
 
 func configureExternalIDPMocks(ctx context.Context, externalIDPRoute *gatewayv1.Route) {
-	mockKc.EXPECT().CreateOrReplaceRoute(ctx, externalIDPRoute, gomock.Any(), gomock.AssignableToTypeOf(&gatewayv1.Gateway{})).Return(nil).Times(1)
+	mockKc.EXPECT().CreateOrReplaceRoute(ctx, externalIDPRoute, gomock.Any()).Return(nil).Times(1)
 	mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
 	mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 }
