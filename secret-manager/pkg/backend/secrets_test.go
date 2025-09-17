@@ -187,7 +187,7 @@ var _ = Describe("Secret", func() {
 
 	Context("TryAddSecrets", func() {
 
-		var newFunc backend.NewFunc[*mocks.MockSecretId] = func(env, team, app, path, checksum string) *mocks.MockSecretId {
+		var newFunc backend.SecretIdConstructor[*mocks.MockSecretId] = func(env, team, app, path, checksum string) *mocks.MockSecretId {
 			mock := &mocks.MockSecretId{}
 			mock.On("Env").Return(env)
 			mock.On("Path").Return(path)
@@ -227,7 +227,7 @@ var _ = Describe("Secret", func() {
 
 	Context("MergeSecretRefs", func() {
 
-		var newFunc backend.NewFunc[*mocks.MockSecretId] = func(env, team, app, path, checksum string) *mocks.MockSecretId {
+		var newFunc backend.SecretIdConstructor[*mocks.MockSecretId] = func(env, team, app, path, checksum string) *mocks.MockSecretId {
 			mock := &mocks.MockSecretId{}
 			mock.On("Env").Return(env)
 			mock.On("Path").Return(path)
