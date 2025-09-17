@@ -5,8 +5,6 @@
 package internal
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -112,13 +110,6 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 
 		Context("Create a single team. Happy path", Ordered, func() {
 
-			type token struct {
-				ClientId     string `json:"client_id"`
-				ClientSecret string `json:"client_secret"`
-				Environment  string `json:"environment"`
-				GeneratedAt  int64  `json:"generated_at"`
-			}
-
 			var err error
 			var team *organizationv1.Team
 			var group *organizationv1.Group
@@ -189,9 +180,9 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
 				Expect(err).NotTo(HaveOccurred())
 
-				var previousToken, latestToken token
+				var previousToken, latestToken organizationv1.TeamToken
 				// previousTokenRef := team.Status.TeamToken
-				Expect(json.Unmarshal(getDecodedToken(team.Status.TeamToken), &previousToken)).NotTo(HaveOccurred())
+				previousToken = getDecodedToken(team.Status.TeamToken)
 				team.Spec.Secret = "rotate"
 				By("Updating the Team.Spec to rotate with delay to have a different timestamp")
 				time.Sleep(1 * time.Second)
@@ -205,7 +196,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					ExpectObjConditionToBeReady(g, team)
 
 					By("Checking the Webhook & Reconciler changes on the secret")
-					Expect(json.Unmarshal(getDecodedToken(team.Status.TeamToken), &latestToken)).NotTo(HaveOccurred())
+					latestToken = getDecodedToken(team.Status.TeamToken)
 					g.Expect(team.Spec.Secret).NotTo(BeEmpty())
 					g.Expect(previousToken.ClientSecret).NotTo(Equal(latestToken.ClientSecret))
 					g.Expect(previousToken.ClientId).To(Equal(latestToken.ClientId))
@@ -259,11 +250,11 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 
 })
 
-func getDecodedToken(secretId string) []byte {
+func getDecodedToken(secretId string) organizationv1.TeamToken {
 	By("Getting the token from mocked secret manager")
 	tokenEncoded, err := secret.GetSecretManager().Get(ctx, secretId)
 	Expect(err).NotTo(HaveOccurred())
-	tokenDecoded, err := base64.StdEncoding.DecodeString(tokenEncoded)
+	tokenDecoded, err := organizationv1.DecodeTeamToken(tokenEncoded)
 	Expect(err).NotTo(HaveOccurred())
 	return tokenDecoded
 }

@@ -39,7 +39,7 @@ func (i IdentityClientHandler) CreateOrUpdate(ctx context.Context, owner *organi
 	mutate := func() error {
 		var teamToken, teamTokenRef string
 		var clientSecret string
-		var decodedToken token
+		var decodedToken organisationv1.TeamToken
 		identityClient.Spec.ClientId = identityClient.GetName()
 		identityClient.Spec.ClientSecret = owner.Spec.Secret
 		identityClient.Spec.Realm = zoneObj.Status.TeamApiIdentityRealm
@@ -58,13 +58,17 @@ func (i IdentityClientHandler) CreateOrUpdate(ctx context.Context, owner *organi
 			}
 		}
 
-		decodedToken, err = decodeToken(teamToken)
+		decodedToken, err = organisationv1.DecodeTeamToken(teamToken)
 		if decodedToken.ClientSecret != clientSecret || err != nil { // if err != nil, we need to create a new token, since it is the first time a token is generated (secret manager does not know the token format)
-			teamToken, err = buildToken(
-				identityClient.Spec.ClientId,
-				clientSecret,
-				env,
-				time.Now())
+			teamToken, err = organisationv1.EncodeTeamToken(
+				organisationv1.TeamToken{
+					ClientId:     identityClient.Spec.ClientId,
+					ClientSecret: clientSecret,
+					Environment:  env,
+					GeneratedAt:  time.Now().Unix(),
+					ServerUrl:    "",
+					TokenUrl:     "",
+				}, owner.Spec.Group, owner.Spec.Name)
 			if err != nil {
 				return err
 			}

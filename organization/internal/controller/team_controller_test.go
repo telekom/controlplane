@@ -5,8 +5,6 @@
 package controller
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -661,11 +659,11 @@ func newNamespaceObj(name string) *corev1.Namespace {
 	}
 }
 
-func getDecodedToken(secretId string) []byte {
+func getDecodedToken(secretId string) organizationv1.TeamToken {
 	By("Getting the token from mocked secret manager")
 	tokenEncoded, err := secret.GetSecretManager().Get(ctx, secretId)
 	Expect(err).NotTo(HaveOccurred())
-	tokenDecoded, err := base64.StdEncoding.DecodeString(tokenEncoded)
+	tokenDecoded, err := organizationv1.DecodeTeamToken(tokenEncoded)
 	Expect(err).NotTo(HaveOccurred())
 	return tokenDecoded
 }
@@ -674,24 +672,13 @@ func compareToken(stringTokenA, stringTokenB, secretComparator, timestampCompara
 	tokenADecoded := getDecodedToken(stringTokenA)
 	tokenBDecoded := getDecodedToken(stringTokenB)
 
-	type token struct {
-		ClientId     string `json:"client_id"`
-		ClientSecret string `json:"client_secret"`
-		Environment  string `json:"environment"`
-		GeneratedAt  int64  `json:"generated_at"`
-	}
-	var aToken, bToken token
-	By("Decoding the tokens")
-	Expect(json.Unmarshal(tokenADecoded, &aToken)).ToNot(HaveOccurred())
-	Expect(json.Unmarshal(tokenBDecoded, &bToken)).ToNot(HaveOccurred())
-
 	By("Comparing the generation time stamps, by timestampComparator '" + timestampComparator + "'")
-	Expect(aToken.GeneratedAt).To(BeNumerically(timestampComparator, bToken.GeneratedAt))
+	Expect(tokenADecoded.GeneratedAt).To(BeNumerically(timestampComparator, tokenBDecoded.GeneratedAt))
 
 	By("Comparing the client secret, by secretComparator '" + secretComparator + "'")
 	if secretComparator == "==" {
-		Expect(aToken.ClientSecret).To(BeEquivalentTo(bToken.ClientSecret))
+		Expect(tokenADecoded.ClientSecret).To(BeEquivalentTo(tokenBDecoded.ClientSecret))
 	} else {
-		Expect(aToken.ClientSecret).ToNot(BeEquivalentTo(bToken.ClientSecret))
+		Expect(tokenADecoded.ClientSecret).ToNot(BeEquivalentTo(tokenBDecoded.ClientSecret))
 	}
 }
