@@ -163,8 +163,8 @@ var _ = Describe("ApiSpecification Webhook", func() {
 					},
 				},
 				Spec: roverv1.ApiSpecificationSpec{
-					Category: "some-api-category",  // requires group prefix
-					BasePath: "wrong-group/my-api", // does not start with "my-group"
+					Category: "some-api-category",   // requires group prefix
+					BasePath: "/wrong-group/my-api", // does not start with "my-group"
 				},
 			}
 
@@ -197,7 +197,7 @@ var _ = Describe("ApiSpecification Webhook", func() {
 				},
 				Spec: roverv1.ApiSpecificationSpec{
 					Category: "inactive-api-category", // is inactive
-					BasePath: "my-group/my-api",       // starts with "my-group"
+					BasePath: "/my-group/my-api",      // starts with "my-group"
 				},
 			}
 
@@ -230,7 +230,7 @@ var _ = Describe("ApiSpecification Webhook", func() {
 				},
 				Spec: roverv1.ApiSpecificationSpec{
 					Category: "some-api-category", // exists and requires group prefix
-					BasePath: "my-group/my-api",   // starts with "my-group"
+					BasePath: "/my-group/my-api",  // starts with "my-group"
 				},
 			}
 
@@ -286,7 +286,7 @@ var _ = Describe("ApiSpecification Webhook", func() {
 				},
 				Spec: roverv1.ApiSpecificationSpec{
 					Category: "not-allowed-api-category", // exists but not allowed for the team
-					BasePath: "any-group/my-api",
+					BasePath: "/any-group/my-api",
 				},
 			}
 

@@ -127,7 +127,7 @@ func (v *ApiSpecificationCustomValidator) ApiCategoryValidation(ctx context.Cont
 
 		if foundApiCategory.Spec.MustHaveGroupPrefix {
 			expectedPrefix := team.Spec.Group
-			providedPrefix := strings.Split(apispecification.Spec.BasePath, "/")[0]
+			providedPrefix := strings.Split(strings.Trim(apispecification.Spec.BasePath, "/"), "/")[0]
 			if expectedPrefix != providedPrefix {
 				valErr.AddInvalidError(field.NewPath("spec").Child("basePath"), providedPrefix, fmt.Sprintf("basePath must start with the team group prefix %q as ApiCategory %q requires it", expectedPrefix, providedCategory))
 			}
