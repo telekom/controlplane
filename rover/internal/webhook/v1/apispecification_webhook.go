@@ -85,6 +85,20 @@ func (v *ApiSpecificationCustomValidator) ValidateCreateOrUpdate(ctx context.Con
 
 	ctx = cclient.WithClient(ctx, cclient.NewJanitorClient(cclient.NewScopedClient(v.client, environment)))
 
+	// basePath must start with /
+	if !strings.HasPrefix(apispecification.Spec.BasePath, "/") {
+		valErr.AddInvalidError(field.NewPath("spec").Child("basePath"), apispecification.Spec.BasePath, "basePath must start with '/'")
+	}
+
+	// basePath must end with major version of the API
+	majorVersion := roverv1.Major(apispecification.Spec.Version)
+	parts := strings.Split(strings.Trim(apispecification.Spec.BasePath, "/"), "/")
+	versionSuffix := parts[len(parts)-1]
+	if versionSuffix != "v"+majorVersion {
+		valErr.AddInvalidError(field.NewPath("spec").Child("basePath"), apispecification.Spec.BasePath, fmt.Sprintf("basePath must end with major version 'v%s'", majorVersion))
+	}
+
+	// Validate ApiCategory
 	if err := v.ApiCategoryValidation(ctx, valErr, apispecification); err != nil {
 		return valErr.BuildWarnings(), err
 	}

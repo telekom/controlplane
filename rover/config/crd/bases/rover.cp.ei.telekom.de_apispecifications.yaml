@@ -41,10 +41,6 @@ spec:
             type: object
           spec:
             properties:
-              apiName:
-                description: ApiName is derived from the BasePath or URL path, with
-                  slashes replaced by hyphens "-"
-                type: string
               basepath:
                 description: BasePath represents the base path from OpenAPI v2 or
                   derived from server URL in OpenAPI v3
@@ -71,6 +67,7 @@ spec:
               version:
                 description: Version of the API as specified in the OpenAPI document's
                   info section
+                pattern: ^\d+.*$
                 type: string
               xvendor:
                 default: false
@@ -78,7 +75,6 @@ spec:
                   defaults to false is extracted from `x-vendor` in rover-server
                 type: boolean
             required:
-            - apiName
             - basepath
             - category
             - hash

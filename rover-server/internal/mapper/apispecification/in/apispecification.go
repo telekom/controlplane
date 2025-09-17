@@ -18,32 +18,29 @@ var (
 	parseErr = "failed to parse specification"
 )
 
-func MapRequest(spec *roverv1.ApiSpecificationSpec, fileAPIResp *filesapi.FileUploadResponse, id mapper.ResourceIdInfo) (res *roverv1.ApiSpecification, err error) {
+func MapRequest(apiSpec *roverv1.ApiSpecification, fileAPIResp *filesapi.FileUploadResponse, id mapper.ResourceIdInfo) (err error) {
 	if fileAPIResp == nil {
-		return nil, errors.New("response from file manager is nil")
+		return errors.New("response from file manager is nil")
 	}
 
-	if spec == nil {
-		return nil, errors.New("input api specification is nil")
+	if apiSpec == nil {
+		return errors.New("input api specification is nil")
 
 	}
 
-	spec.Hash = fileAPIResp.FileHash
-	spec.Specification = fileAPIResp.FileId
-
-	res = &roverv1.ApiSpecification{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ApiSpecification",
-			APIVersion: "rover.cp.ei.telekom.de/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      id.Name,
-			Namespace: id.Environment + "--" + id.Namespace,
-			Labels: map[string]string{
-				config.EnvironmentLabelKey: id.Environment,
-			},
-		},
-		Spec: *spec,
+	apiSpec.TypeMeta = metav1.TypeMeta{
+		Kind:       "ApiSpecification",
+		APIVersion: "rover.cp.ei.telekom.de/v1",
 	}
+
+	apiSpec.Spec.Hash = fileAPIResp.FileHash
+	apiSpec.Spec.Specification = fileAPIResp.FileId
+	apiSpec.Labels = map[string]string{
+		config.EnvironmentLabelKey: id.Environment,
+	}
+	if apiSpec.Name != id.Name {
+		return errors.Errorf("api specification name %q does not match expected name %q", apiSpec.Name, id.Name)
+	}
+	apiSpec.Namespace = id.Environment + "--" + id.Namespace
 	return
 }

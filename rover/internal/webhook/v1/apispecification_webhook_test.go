@@ -131,6 +131,8 @@ var _ = Describe("ApiSpecification Webhook", func() {
 					},
 				},
 				Spec: roverv1.ApiSpecificationSpec{
+					Version:  "1.0.0",
+					BasePath: "/my-group/my-api/v1",
 					Category: "not-existing-category", // does not exist
 				},
 			}
@@ -163,8 +165,9 @@ var _ = Describe("ApiSpecification Webhook", func() {
 					},
 				},
 				Spec: roverv1.ApiSpecificationSpec{
-					Category: "some-api-category",   // requires group prefix
-					BasePath: "/wrong-group/my-api", // does not start with "my-group"
+					Version:  "1.0.0",
+					Category: "some-api-category",      // requires group prefix
+					BasePath: "/wrong-group/my-api/v1", // does not start with "my-group"
 				},
 			}
 
@@ -196,8 +199,9 @@ var _ = Describe("ApiSpecification Webhook", func() {
 					},
 				},
 				Spec: roverv1.ApiSpecificationSpec{
+					Version:  "1.0.0",
 					Category: "inactive-api-category", // is inactive
-					BasePath: "/my-group/my-api",      // starts with "my-group"
+					BasePath: "/my-group/my-api/v1",   // starts with "my-group"
 				},
 			}
 
@@ -229,8 +233,9 @@ var _ = Describe("ApiSpecification Webhook", func() {
 					},
 				},
 				Spec: roverv1.ApiSpecificationSpec{
-					Category: "some-api-category", // exists and requires group prefix
-					BasePath: "/my-group/my-api",  // starts with "my-group"
+					Version:  "1.0.0",
+					Category: "some-api-category",   // exists and requires group prefix
+					BasePath: "/my-group/my-api/v1", // starts with "my-group"
 				},
 			}
 
@@ -255,8 +260,9 @@ var _ = Describe("ApiSpecification Webhook", func() {
 					},
 				},
 				Spec: roverv1.ApiSpecificationSpec{
+					Version:  "1.0.0",
 					Category: "any-category", // does not exist but should be allowed
-					BasePath: "any-group/my-api",
+					BasePath: "/any-group/my-api/v1",
 				},
 			}
 
@@ -285,8 +291,9 @@ var _ = Describe("ApiSpecification Webhook", func() {
 					},
 				},
 				Spec: roverv1.ApiSpecificationSpec{
+					Version:  "1.0.0",
 					Category: "not-allowed-api-category", // exists but not allowed for the team
-					BasePath: "/any-group/my-api",
+					BasePath: "/any-group/my-api/v1",
 				},
 			}
 
