@@ -24,18 +24,20 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
+
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 )
 
 // SetupApiSpecificationWebhookWithManager registers the webhook for ApiSpecification in the manager.
 func SetupApiSpecificationWebhookWithManager(mgr ctrl.Manager) error {
-	k8sClient := mgr.GetClient()
 	return ctrl.NewWebhookManagedBy(mgr).For(&roverv1.ApiSpecification{}).
 		WithValidator(&ApiSpecificationCustomValidator{
-			client:   k8sClient,
+			client:   mgr.GetClient(),
 			FindTeam: organizationv1.FindTeamForObject,
-			ListApiCategories: func(ctx context.Context, environment string) (*apiv1.ApiCategoryList, error) {
+			ListApiCategories: func(ctx context.Context) (*apiv1.ApiCategoryList, error) {
+				client := cclient.ClientFromContextOrDie(ctx)
 				apiCategories := &apiv1.ApiCategoryList{}
-				err := k8sClient.List(ctx, apiCategories, &client.ListOptions{Namespace: environment})
+				err := client.List(ctx, apiCategories)
 				return apiCategories, err
 			},
 		}).Complete()
@@ -43,10 +45,11 @@ func SetupApiSpecificationWebhookWithManager(mgr ctrl.Manager) error {
 
 // +kubebuilder:webhook:path=/validate-rover-cp-ei-telekom-de-v1-apispecification,mutating=false,failurePolicy=fail,sideEffects=None,groups=rover.cp.ei.telekom.de,resources=apispecifications,verbs=create;update,versions=v1,name=vapispecification-v1.kb.io,admissionReviewVersions=v1
 // +kubebuilder:rbac:groups=organization.cp.ei.telekom.de,resources=teams,verbs=get;list;watch
+
 type ApiSpecificationCustomValidator struct {
 	client            client.Client
 	FindTeam          func(ctx context.Context, obj types.NamedObject) (*organizationv1.Team, error)
-	ListApiCategories func(ctx context.Context, environment string) (*apiv1.ApiCategoryList, error)
+	ListApiCategories func(ctx context.Context) (*apiv1.ApiCategoryList, error)
 }
 
 var _ webhook.CustomValidator = &ApiSpecificationCustomValidator{}
@@ -74,6 +77,14 @@ func (v *ApiSpecificationCustomValidator) ValidateCreateOrUpdate(ctx context.Con
 
 	valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("ApiSpecification").GroupKind(), apispecification)
 
+	environment, ok := controller.GetEnvironment(apispecification)
+	if !ok {
+		valErr.AddInvalidError(cerrors.MetadataEnvPath, "", "environment label is required")
+		return valErr.BuildWarnings(), valErr.BuildError()
+	}
+
+	ctx = cclient.WithClient(ctx, cclient.NewJanitorClient(cclient.NewScopedClient(v.client, environment)))
+
 	if err := v.ApiCategoryValidation(ctx, valErr, apispecification); err != nil {
 		return valErr.BuildWarnings(), err
 	}
@@ -82,13 +93,8 @@ func (v *ApiSpecificationCustomValidator) ValidateCreateOrUpdate(ctx context.Con
 }
 
 func (v *ApiSpecificationCustomValidator) ApiCategoryValidation(ctx context.Context, valErr *cerrors.ValidationError, apispecification *roverv1.ApiSpecification) error {
-	environment, ok := controller.GetEnvironment(apispecification)
-	if !ok {
-		valErr.AddInvalidError(cerrors.MetadataEnvPath, "", "environment label is required")
-		return nil
-	}
 
-	apiCategories, err := v.ListApiCategories(ctx, environment)
+	apiCategories, err := v.ListApiCategories(ctx)
 	if err != nil {
 		return apierrors.NewInternalError(err)
 	}

@@ -83,7 +83,7 @@ var _ = Describe("ApiSpecification Webhook", func() {
 				FindTeam: func(ctx context.Context, obj types.NamedObject) (*organizationv1.Team, error) {
 					return team, nil
 				},
-				ListApiCategories: func(ctx context.Context, environment string) (*apiv1.ApiCategoryList, error) {
+				ListApiCategories: func(ctx context.Context) (*apiv1.ApiCategoryList, error) {
 					return apiCategoriesList, nil
 				},
 			}
@@ -261,7 +261,7 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			}
 
 			validator := NewApiSpecificationValidatorMock("my-group", "my-team")
-			validator.ListApiCategories = func(_ context.Context, _ string) (*apiv1.ApiCategoryList, error) {
+			validator.ListApiCategories = func(_ context.Context) (*apiv1.ApiCategoryList, error) {
 				return nil, nil // noop
 			}
 
