@@ -16,8 +16,7 @@ SPDX-License-Identifier: CC0-1.0
   <a href="#about"> About</a> •
   <a href="#features"> Features</a> •
   <a href="#dependencies">Dependencies</a> •
-  <a href="#crds">CRDs</a> •
-  <a href="#getting-started"> Getting started</a> •
+  <a href="#crds">CRDs</a>
 </p>
 
 ## About
@@ -31,6 +30,13 @@ The following diagram illustrates the architecture of the Api domain:
 ## Features
 
 - **Api Management**: Manage the whole API lifecycle, including registering, exposing and subscribing.
+- **Approval Handling**: Require approval when subscribing to APIs using the integration with the [Approval Domain](../approval).
+- **Api Categories**: Classify APIs into categories and customize their behavior based on these categories.
+
+### Api Categories
+
+You may create categories to classify your APIs. Each category can have specific properties that define its behavior.
+The check for allowed categories is done at the earliest point in the [Rover Domain](../rover).
 
 ## Dependencies
 - [Common](../common)
@@ -73,12 +79,13 @@ spec:
 <details>
 <summary>
 <strong>ApiExposure</strong>
-This CRD represents an API exposed on the Gateway.
+This CRD represents an API exposed on the Gateway. 
+For a full description of allowed properties, see <a href="./api/v1/apicategory_types.go#L16">ApiCategory</a>.
 </summary>  
 Example resource of kind ApiExposure:
 
 ```yaml
-apiVersion: stargate.cp.ei.telekom.de/v1
+apiVersion: api.cp.ei.telekom.de/v1
 kind: ApiExposure
 metadata:
   labels:
@@ -99,6 +106,7 @@ spec:
     name: zoneName
     namespace: env
 ```
+
 </details>
 <br />
 
@@ -110,7 +118,7 @@ This CRD represents a subscription to an exposed API.
 Example resource of kind ApiSubscription: 
 
 ```yaml
-apiVersion: stargate.cp.ei.telekom.de/v1
+apiVersion: api.cp.ei.telekom.de/v1
 kind: ApiSubscription
 metadata:
   labels:
@@ -134,13 +142,31 @@ spec:
 </details>
 <br />
 
-## Code of Conduct
+<details>
+<summary>
+<strong>ApiCategory</strong>
+This CRD represents a category to classify APIs.
+</summary>
+Example resource of kind ApiCategory:
 
-This project has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) in version 2.1 as our code of conduct. Please see the details in our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). All contributors must abide by the code of conduct.
+```yaml
+apiVersion: api.cp.ei.telekom.de/v1
+kind: ApiCategory
+metadata:
+  name: internal
+  namespace: env
+  labels:
+    cp.ei.telekom.de/environment: env
+spec:
+  active: true # Whether this category is active and can be used
+  description: APIs intended for internal use only.
+  labelValue: Internal # This is the expected value in the info.x-category field of the OpenAPI spec
+  allowTeams:
+    names:
+      - '*' # The name of the team allowed to register an API with this category. Use '*' to allow all teams.
+    categories:
+      - Infrastructure # These categories are defined in the organization domain and are just referenced here
+```
+</details>
+<br />
 
-By participating in this project, you agree to abide by its [Code of Conduct](./CODE_OF_CONDUCT.md) at all times.
-
-## Licensing
-
-This project follows the [REUSE standard for software licensing](https://reuse.software/). You can find a guide for developers at https://telekom.github.io/reuse-template/.   
-Each file contains copyright and license information, and license texts can be found in the [./LICENSES](./LICENSES) folder. For more information visit https://reuse.software/.
