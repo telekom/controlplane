@@ -28,9 +28,11 @@ type ApiCategoryReconciler struct {
 	cc.Controller[*apiv1.ApiCategory]
 }
 
+// +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups=api.cp.ei.telekom.de,resources=apicategories,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=api.cp.ei.telekom.de,resources=apicategories/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=api.cp.ei.telekom.de,resources=apicategories/finalizers,verbs=update
+
 func (r *ApiCategoryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &apiv1.ApiCategory{})
 }
