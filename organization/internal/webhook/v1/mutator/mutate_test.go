@@ -128,7 +128,7 @@ func TestMutateSecret(t *testing.T) {
 			if tt.mockFindSecretId != nil {
 				secret.FindSecretId = tt.mockFindSecretId
 			}
-			err := MutateSecret(context.Background(), tt.env, tt.teamObj)
+			err := MutateSecret(context.Background(), nil, tt.env, tt.teamObj)
 			if tt.expectedError {
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failure during communication with secret-manager when doing"))
