@@ -19,23 +19,16 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 )
 
-func wrapCommunicationError(err error, target, purposeOfCommunication string) error {
-	return errors.NewInternalError(fmt.Errorf("failure during communication with %s when doing '%s': '%w'", target, purposeOfCommunication, err))
+func wrapCommunicationError(err error, purposeOfCommunication string) error {
+	return errors.NewInternalError(fmt.Errorf("failure during communication with secret-manager when doing '%s': '%w'", purposeOfCommunication, err))
 }
 
-func MutateSecret(ctx context.Context, client client.Client, env string, teamObj *organisationv1.Team) error {
-	var err error
+func MutateSecret(ctx context.Context, env string, teamObj *organisationv1.Team, zoneObj *adminv1.Zone) error {
 	var availableSecrets map[string]string
 
 	switch teamObj.Spec.Secret {
 	case "":
-		// ToDo: Try to get Zone somehow
-		zone, err := GetZoneObjWithTeamInfo(ctx, client)
-		if err != nil {
-			return wrapCommunicationError(err, "admin domain", "get zone")
-		}
-
-		clientSecretValue, teamToken, err := generateSecretAndToken(env, teamObj, zone)
+		clientSecretValue, teamToken, err := generateSecretAndToken(env, teamObj, zoneObj)
 		if err != nil {
 			return fmt.Errorf("unable to generate team token: %w", err)
 		}
@@ -44,40 +37,78 @@ func MutateSecret(ctx context.Context, client client.Client, env string, teamObj
 			secret.WithSecretValue(secret.ClientSecret, clientSecretValue),
 			secret.WithSecretValue(secret.TeamToken, teamToken))
 		if err != nil {
-			return wrapCommunicationError(err, "secret-manager", "upsert team")
+			return wrapCommunicationError(err, "upsert team")
 		}
 
 		var ok bool
 		teamObj.Spec.Secret, ok = secret.FindSecretId(availableSecrets, secret.ClientSecret)
 		if !ok {
-			return wrapCommunicationError(fmt.Errorf("client secret ref not found in available secrets from secret-manager"), "secret-manager", "searching for client secret ref")
+			return wrapCommunicationError(fmt.Errorf("client secret ref not found in available secrets from secret-manager"), "searching for client secret ref")
 		}
 		teamObj.Status.TeamToken, ok = secret.FindSecretId(availableSecrets, secret.TeamToken) //ToDo: Check if this even works with the status
 		if !ok {
-			return wrapCommunicationError(fmt.Errorf("team token ref not found in available secrets from secret-manager"), "secret-manager", "searching for team token ref")
+			return wrapCommunicationError(fmt.Errorf("team token ref not found in available secrets from secret-manager"), "searching for team token ref")
 		}
-	case secret.KeywordRotate:
+	/*
+		case secret.KeywordRotate:
 		//ToDo: I don't have the new secret, since the rotation never left the secret-manager.
 		var newId string
 		availableSecrets, err = secret.GetSecretManager().UpsertTeam(ctx, env, teamObj.GetName())
 		if err != nil {
-			return wrapCommunicationError(err, "secret-manager", "checking available secrets")
+		return wrapCommunicationError(err, "secret-manager", "checking available secrets")
 		}
 
 		clientSecretRef, ok := secret.FindSecretId(availableSecrets, secret.ClientSecret)
 		if !ok {
-			return wrapCommunicationError(fmt.Errorf("client secret ref not found in available secrets from secret-manager"), "secret-manager", "searching for client secret ref")
+		return wrapCommunicationError(fmt.Errorf("client secret ref not found in available secrets from secret-manager"), "secret-manager", "searching for client secret ref")
 		}
 		newId, err = secret.GetSecretManager().Rotate(ctx, clientSecretRef)
 		if err != nil {
-			return wrapCommunicationError(err, "secret-manager", "rotate team secret")
+		return wrapCommunicationError(err, "secret-manager", "rotate team secret")
 		}
 		teamObj.Spec.Secret = newId
+		}
+	*/
+	case secret.KeywordRotate:
+		//ToDo: Check that the rotate is still being done
+		clientSecretValue, teamToken, err := generateSecretAndToken(env, teamObj, zoneObj)
+		if err != nil {
+			return fmt.Errorf("unable to generate team token: %w", err)
+		}
+
+		// Pass both secrets directly in the onboarding request
+		availableSecrets, err = secret.GetSecretManager().UpsertTeam(ctx, env, teamObj.GetName(),
+			secret.WithSecretValue(secret.ClientSecret, clientSecretValue),
+			secret.WithSecretValue(secret.TeamToken, teamToken))
+		if err != nil {
+			return wrapCommunicationError(err, "upsert team")
+		}
+
+		newId, ok := secret.FindSecretId(availableSecrets, secret.ClientSecret)
+		if !ok {
+			return wrapCommunicationError(fmt.Errorf("client secret ref not found in available secrets from secret-manager"), "searching for client secret ref")
+		}
+		teamObj.Spec.Secret = newId
+
+		newToken, ok := secret.FindSecretId(availableSecrets, secret.TeamToken)
+		if !ok {
+			return wrapCommunicationError(fmt.Errorf("team token ref not found in available secrets from secret-manager"), "searching for team token ref")
+		}
+		//ToDo: Check if the status can be updated here
+		teamObj.Status.TeamToken = newToken
 	}
 	return nil
 }
 
 func generateSecretAndToken(env string, teamObj *organisationv1.Team, zoneObj *adminv1.Zone) (string, string, error) {
+	if teamObj == nil {
+		return "", "", errors.NewInternalError(fmt.Errorf("teamObj is nil"))
+	}
+
+	if zoneObj == nil {
+		return "", "", errors.NewInternalError(fmt.Errorf("zoneObj is nil"))
+	}
+
 	clientSecretValue := string(uuid.NewUUID())
 
 	teamToken, err := organisationv1.EncodeTeamToken(

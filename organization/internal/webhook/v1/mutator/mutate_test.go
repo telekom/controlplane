@@ -9,20 +9,30 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+
 	. "github.com/onsi/gomega"
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/secret"
-	"github.com/telekom/controlplane/organization/internal/secret/mock"
 	"github.com/telekom/controlplane/secret-manager/api"
+	"github.com/telekom/controlplane/secret-manager/api/fake"
 )
 
-// Future improvement: use automated mocks such as: https://github.com/uber-go/mock or https://github.com/stretchr/testify?tab=readme-ov-file#mock-package
-
 func TestMutateSecret(t *testing.T) {
+
+	zone := &adminv1.Zone{
+		Spec: adminv1.ZoneSpec{
+			Gateway:          adminv1.GatewayConfig{Url: "https://example.com/gateway"},
+			IdentityProvider: adminv1.IdentityProviderConfig{Url: "https://example.com/identity"},
+		},
+	}
+
 	RegisterTestingT(t)
 	tests := []struct {
 		name              string
 		teamObj           *organizationv1.Team
+		zoneObj           *adminv1.Zone
 		env               string
 		mock              func() api.SecretManager
 		mockFindSecretId  func(map[string]string, string) (string, bool)
@@ -30,10 +40,20 @@ func TestMutateSecret(t *testing.T) {
 		expectedNewSecret bool
 	}{
 		{
-			name:              "Empty Inserts (new team or empty secret)",
-			teamObj:           &organizationv1.Team{},
-			env:               "",
-			mock:              mock.SecretManager,
+			name:    "Empty Inserts (new team or empty secret)",
+			teamObj: &organizationv1.Team{},
+			zoneObj: zone,
+			env:     "",
+			mock: func() api.SecretManager {
+				mockSecretManager := fake.NewMockSecretManager(t)
+				mockSecretManager.EXPECT().
+					UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(map[string]string{
+						"clientSecret": "found",
+						"teamToken":    "found",
+					}, nil)
+				return mockSecretManager
+			},
 			expectedError:     false,
 			expectedNewSecret: true,
 		},
@@ -45,7 +65,17 @@ func TestMutateSecret(t *testing.T) {
 					Secret: "rotate",
 				},
 			},
-			mock:              mock.SecretManager,
+			zoneObj: zone,
+			mock: func() api.SecretManager {
+				mockSecretManager := fake.NewMockSecretManager(t)
+				mockSecretManager.EXPECT().
+					UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(map[string]string{
+						"clientSecret": "found",
+						"teamToken":    "found",
+					}, nil)
+				return mockSecretManager
+			},
 			expectedError:     false,
 			expectedNewSecret: true,
 		},
@@ -57,15 +87,32 @@ func TestMutateSecret(t *testing.T) {
 					Secret: "super-secret",
 				},
 			},
-			mock:              mock.SecretManager,
+			zoneObj: zone,
+			mock: func() api.SecretManager {
+				mockSecretManager := fake.NewMockSecretManager(t)
+				mockSecretManager.EXPECT().
+					UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(map[string]string{
+						"clientSecret": "found",
+						"teamToken":    "found",
+					}, nil)
+				return mockSecretManager
+			},
 			expectedError:     false,
 			expectedNewSecret: false,
 		},
 		{
-			name:              "Faulty Mock: Empty Inserts (new team or empty secret)",
-			teamObj:           &organizationv1.Team{},
-			env:               "",
-			mock:              faultySecretManager,
+			name:    "Faulty Mock: Empty Inserts (new team or empty secret)",
+			teamObj: &organizationv1.Team{},
+			env:     "",
+			zoneObj: zone,
+			mock: func() api.SecretManager {
+				mockSecretManager := fake.NewMockSecretManager(t)
+				mockSecretManager.EXPECT().
+					UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(nil, fmt.Errorf("faulty implementation"))
+				return mockSecretManager
+			},
 			expectedError:     true,
 			expectedNewSecret: false,
 		},
@@ -77,7 +124,14 @@ func TestMutateSecret(t *testing.T) {
 					Secret: "rotate",
 				},
 			},
-			mock:              faultySecretManager,
+			zoneObj: zone,
+			mock: func() api.SecretManager {
+				mockSecretManager := fake.NewMockSecretManager(t)
+				mockSecretManager.EXPECT().
+					UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(nil, fmt.Errorf("faulty implementation"))
+				return mockSecretManager
+			},
 			expectedError:     true,
 			expectedNewSecret: false,
 		},
@@ -89,7 +143,14 @@ func TestMutateSecret(t *testing.T) {
 					Secret: "super-secret",
 				},
 			},
-			mock:              faultySecretManager,
+			zoneObj: zone,
+			mock: func() api.SecretManager {
+				mockSecretManager := fake.NewMockSecretManager(t)
+				mockSecretManager.EXPECT().
+					UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(nil, fmt.Errorf("faulty implementation"))
+				return mockSecretManager
+			},
 			expectedError:     false,
 			expectedNewSecret: false,
 		},
@@ -101,7 +162,17 @@ func TestMutateSecret(t *testing.T) {
 					Secret: "",
 				},
 			},
-			mock:              mock.SecretManager,
+			zoneObj: zone,
+			mock: func() api.SecretManager {
+				mockSecretManager := fake.NewMockSecretManager(t)
+				mockSecretManager.EXPECT().
+					UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(map[string]string{
+						"clientSecret": "found",
+						"teamToken":    "found",
+					}, nil)
+				return mockSecretManager
+			},
 			mockFindSecretId:  emptyAvailableSecrets,
 			expectedError:     true,
 			expectedNewSecret: false,
@@ -114,7 +185,17 @@ func TestMutateSecret(t *testing.T) {
 					Secret: "rotate",
 				},
 			},
-			mock:              mock.SecretManager,
+			zoneObj: zone,
+			mock: func() api.SecretManager {
+				mockSecretManager := fake.NewMockSecretManager(t)
+				mockSecretManager.EXPECT().
+					UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(map[string]string{
+						"clientSecret": "found",
+						"teamToken":    "found",
+					}, nil)
+				return mockSecretManager
+			},
 			mockFindSecretId:  emptyAvailableSecrets,
 			expectedError:     true,
 			expectedNewSecret: false,
@@ -128,7 +209,7 @@ func TestMutateSecret(t *testing.T) {
 			if tt.mockFindSecretId != nil {
 				secret.FindSecretId = tt.mockFindSecretId
 			}
-			err := MutateSecret(context.Background(), nil, tt.env, tt.teamObj)
+			err := MutateSecret(context.Background(), tt.env, tt.teamObj, tt.zoneObj)
 			if tt.expectedError {
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failure during communication with secret-manager when doing"))
@@ -144,49 +225,6 @@ func TestMutateSecret(t *testing.T) {
 	}
 }
 
-func faultySecretManager() api.SecretManager {
-	return &faultyMock{}
-}
-
-type faultyMock struct {
-}
-
-func (f faultyMock) Get(ctx context.Context, secretID string) (value string, err error) {
-	return "", fmt.Errorf("faulty mock")
-}
-
-func (f faultyMock) Set(ctx context.Context, secretID string, secretValue string) (newID string, err error) {
-	return "", fmt.Errorf("faulty mock")
-}
-
-func (f faultyMock) Rotate(ctx context.Context, secretID string) (newID string, err error) {
-	return "", fmt.Errorf("faulty mock")
-}
-
-func (f faultyMock) UpsertEnvironment(ctx context.Context, envID string, opts ...api.OnboardingOption) (availableSecrets map[string]string, err error) {
-	return make(map[string]string), fmt.Errorf("faulty mock")
-}
-
-func (f faultyMock) UpsertTeam(ctx context.Context, envID, teamID string, opts ...api.OnboardingOption) (availableSecrets map[string]string, err error) {
-	return make(map[string]string), fmt.Errorf("faulty mock")
-}
-
-func (f faultyMock) UpsertApplication(ctx context.Context, envID, teamID, appID string, opts ...api.OnboardingOption) (availableSecrets map[string]string, err error) {
-	return make(map[string]string), fmt.Errorf("faulty mock")
-}
-
-func (f faultyMock) DeleteEnvironment(ctx context.Context, envID string) (err error) {
-	return fmt.Errorf("faulty mock")
-}
-
-func (f faultyMock) DeleteTeam(ctx context.Context, envID, teamID string) (err error) {
-	return fmt.Errorf("faulty mock")
-}
-
-func (f faultyMock) DeleteApplication(ctx context.Context, envID, teamID, appID string) (err error) {
-	return fmt.Errorf("faulty mock")
-}
-
-func emptyAvailableSecrets(availableSecrets map[string]string, secretType string) (string, bool) {
+func emptyAvailableSecrets(_ map[string]string, _ string) (string, bool) {
 	return "", false
 }
