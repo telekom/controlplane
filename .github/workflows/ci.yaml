@@ -164,3 +164,23 @@ jobs:
       module: rover-ctl
       run_check_generated_files: false
       ko_build_path: "main.go"
+
+  aggregate-sarif:
+    runs-on: ubuntu-latest
+    needs: [common, common-server, common-server-helm, secret-manager, approval, file-manager, gateway, identity, organization, admin, application, api, rover, rover-server, rover-ctl]
+    if: github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.event == 'pull_request'
+    steps:
+      - name: Download SARIF artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: sarif-files
+
+      - name: Merge SARIF files
+        run: |
+          pip install sarif-tools
+          sarif merge sarif-files/**/*.sarif > merged.sarif
+
+      - name: Upload merged SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: merged.sarif
