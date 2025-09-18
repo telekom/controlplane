@@ -111,7 +111,7 @@ func setExtensionValues(apiSpecificationSpec *roverv1.ApiSpecificationSpec, exte
 	if extensionMap == nil {
 		return
 	}
-	value, ok := extensionMap.Get("x-category")
+	value, ok := extensionMap.Get("x-api-category")
 	if ok {
 		apiSpecificationSpec.Category = value.Value
 	}

@@ -48,7 +48,7 @@ spec:
               category:
                 default: other
                 description: Category of the API, defaults to "other" if not specified,
-                  is extracted from `x-category` in rover-server
+                  is extracted from `x-api-category` in rover
                 type: string
               hash:
                 description: Hash is the SHA-256 hash of the specification content

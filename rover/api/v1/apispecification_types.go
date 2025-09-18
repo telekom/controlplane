@@ -34,7 +34,7 @@ type ApiSpecificationSpec struct {
 	// +kubebuilder:validation:Required
 	Specification string `json:"specification"`
 
-	// Category of the API, defaults to "other" if not specified, is extracted from `x-category` in rover-server
+	// Category of the API, defaults to "other" if not specified, is extracted from `x-api-category` in rover
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default:=other
 	Category string `json:"category"`

@@ -20,7 +20,7 @@ swagger: "2.0"
 info:
   version: "1.0.0"
   title: "Test API"
-  x-category: "test"
+  x-api-category: "test"
   x-vendor: "true"
 basePath: "/eni/foo/v1"
 securityDefinitions:
@@ -39,7 +39,7 @@ openapi: "3.0.0"
 info:
   version: "1.0.0"
   title: "Test API"
-  x-category: "test"
+  x-api-category: "test"
   x-vendor: "true"
 servers:
 - url: "https://example.com/eni/foo/v1"
@@ -63,7 +63,7 @@ openapi: "3.0.0"
 info:
   version: "1.0.0"
   title: "Test API"
-  x-category: "test"
+  x-api-category: "test"
   x-vendor: "true"
 servers:
 - url: "https://example.com"
@@ -87,7 +87,7 @@ openapi: "3.1.0"
 info:
   version: "1.0.0"
   title: "Test API"
-  x-category: "test"
+  x-api-category: "test"
   x-vendor: "true"
 servers:
 - url: "https://example.com/eni/foo/v1"

@@ -160,7 +160,7 @@ metadata:
 spec:
   active: true # Whether this category is active and can be used
   description: APIs intended for internal use only.
-  labelValue: Internal # This is the expected value in the info.x-category field of the OpenAPI spec
+  labelValue: Internal # This is the expected value in the info.x-api-category field of the OpenAPI spec
   allowTeams:
     names:
       - '*' # The name of the team allowed to register an API with this category. Use '*' to allow all teams.
