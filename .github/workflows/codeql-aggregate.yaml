@@ -9,11 +9,12 @@ on:
     workflows: ["Run CI"]
     types:
       - completed
+  workflow_dispatch:
 
 jobs:
   aggregate-sarif:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' || github.ref_name == 'main' }}
+    if: github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.event == 'pull_request'
     steps:
       - name: Download SARIF artifacts
         uses: actions/download-artifact@v4
