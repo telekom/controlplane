@@ -14,7 +14,7 @@ import (
 var _ = Describe("Token", func() {
 
 	It("should parse a valid token string", func() {
-		tokenStr := "test--my-group--my-team.ewogICJlbnZpcm9ubWVudCIgOiAidGVzdCIsCiAgImdlbmVyYXRlZF9hdCIgOiAxNzE2NDc0Mjk0OTk3LAogICJjbGllbnRfc2VjcmV0IiA6ICJ0b3BzZWNyZXQiLAogICJjbGllbnRfaWQiIDogInRlc3QtZ3JvdXAtLXRlc3QtdGVhbS0tdGVhbS11c2VyIiwKICAidG9rZW5fdXJsIjogImh0dHBzOi8vZXhhbXBsZS5jb20vdG9rZW4iLAogICJzZXJ2ZXJfdXJsIjogImh0dHA6Ly9sb2NhbGhvc3Q6ODA4MCIKfQ=="
+		tokenStr := "test--my-group--my-team.ewogICJlbnZpcm9ubWVudCIgOiAidGVzdCIsCiAgImdlbmVyYXRlZF9hdCIgOiAxNzE2NDc0Mjk0LAogICJjbGllbnRfc2VjcmV0IiA6ICJ0b3BzZWNyZXQiLAogICJjbGllbnRfaWQiIDogInRlc3QtZ3JvdXAtLXRlc3QtdGVhbS0tdGVhbS11c2VyIiwKICAidG9rZW5fdXJsIjogImh0dHBzOi8vZXhhbXBsZS5jb20vdG9rZW4iLAogICJzZXJ2ZXJfdXJsIjogImh0dHA6Ly9sb2NhbGhvc3Q6ODA4MCIKfQ=="
 
 		token, err := config.ParseToken(tokenStr)
 		Expect(err).ToNot(HaveOccurred())
@@ -29,7 +29,8 @@ var _ = Describe("Token", func() {
 		Expect(token.TokenUrl).To(Equal("https://example.com/token"))
 		Expect(token.ServerUrl).To(Equal("http://localhost:8080"))
 		Expect(token.GeneratedAt).To(BeNumerically(">", 0))
-		Expect(token.TimeSinceGenerated()).To(Equal("more than a year ago"))
+		timeSince := token.TimeSinceGenerated()
+		Expect(timeSince).To(MatchRegexp(`\d+ year\(s\) ago`))
 		Expect(token.GeneratedString()).To(Equal("2024-05-23T14:24:54Z"))
 	})
 
