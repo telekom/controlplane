@@ -91,12 +91,12 @@ func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api
 
 	appInfo.IrisClientId = app.Status.ClientId
 	appInfo.IrisClientSecret = app.Status.ClientSecret
-	appInfo.IrisIssuerUrl = zone.Status.Links.GatewayIssuer
+	appInfo.IrisIssuerUrl = zone.Status.Links.Issuer
 	appInfo.IrisTokenEndpointUrl = appInfo.IrisIssuerUrl + IrisTokenEndpointSuffix
 
-	appInfo.StargateIssuerUrl = zone.Status.Links.StargateLmsIssuer
-	appInfo.StargateUrl = zone.Status.Links.GatewayUrl
-	appInfo.StargatePublishEventUrl = zone.Status.Links.GatewayUrl + HorizonPublishEventPathSuffix
+	appInfo.StargateIssuerUrl = zone.Status.Links.LmsIssuer
+	appInfo.StargateUrl = zone.Status.Links.Url
+	appInfo.StargatePublishEventUrl = zone.Status.Links.Url + HorizonPublishEventPathSuffix
 
 	appInfo.Status = status.GetOverallStatus(rover.Status.Conditions)
 	return nil
