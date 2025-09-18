@@ -19,8 +19,6 @@ import (
 	. "github.com/onsi/gomega"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/organization/internal/index"
-	"github.com/telekom/controlplane/organization/internal/secret"
-	"github.com/telekom/controlplane/organization/internal/secret/mock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -113,9 +111,6 @@ var _ = BeforeSuite(func() {
 
 	err = SetupTeamWebhookWithManager(mgr)
 	Expect(err).NotTo(HaveOccurred())
-
-	// setup mock secret manager
-	secret.GetSecretManager = mock.SecretManager
 
 	// +kubebuilder:scaffold:webhook
 

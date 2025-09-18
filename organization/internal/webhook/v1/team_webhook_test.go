@@ -9,12 +9,17 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
+	"github.com/telekom/controlplane/organization/internal/secret"
+	"github.com/telekom/controlplane/secret-manager/api"
+	"github.com/telekom/controlplane/secret-manager/api/fake"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -24,8 +29,9 @@ var (
 
 var _ = Describe("Team Webhook", func() {
 	var (
-		teamObj   *organizationv1.Team
-		validator TeamCustomValidator
+		secretManagerMock *fake.MockSecretManager
+		teamObj           *organizationv1.Team
+		validator         TeamCustomValidator
 	)
 	zone := &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{
@@ -69,6 +75,11 @@ var _ = Describe("Team Webhook", func() {
 
 		zone = freshZone
 
+		secretManagerMock = fake.NewMockSecretManager(GinkgoT())
+		secret.GetSecretManager = func() api.SecretManager {
+			return secretManagerMock
+		}
+
 		teamObj = &organizationv1.Team{}
 		validator = TeamCustomValidator{}
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
@@ -100,6 +111,10 @@ var _ = Describe("Team Webhook", func() {
 			warning, err := validator.ValidateCreate(ctx, teamObj)
 			Expect(warning).To(BeNil())
 			Expect(err).NotTo(HaveOccurred())
+
+			secretManagerMock.EXPECT().
+				DeleteTeam(mock.Anything, mock.Anything, mock.Anything).
+				Return(nil)
 			warning, err = validator.ValidateDelete(ctx, teamObj)
 			Expect(warning).To(BeNil())
 			Expect(err).NotTo(HaveOccurred())
@@ -124,6 +139,9 @@ var _ = Describe("Team Webhook", func() {
 			warning, err := validator.ValidateUpdate(ctx, teamObj, teamObj)
 			Expect(warning).To(BeNil())
 			Expect(err).NotTo(HaveOccurred())
+			secretManagerMock.EXPECT().
+				DeleteTeam(mock.Anything, mock.Anything, mock.Anything).
+				Return(nil)
 			warning, err = validator.ValidateDelete(ctx, teamObj)
 			Expect(warning).To(BeNil())
 			Expect(err).NotTo(HaveOccurred())
@@ -204,6 +222,12 @@ var _ = Describe("Team Webhook", func() {
 					Members: testMember,
 				},
 			}
+			secretManagerMock.EXPECT().
+				UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				Return(map[string]string{
+					"clientSecret": string(uuid.NewUUID()),
+					"teamToken":    string(uuid.NewUUID()),
+				}, nil)
 			err := k8sClient.Create(ctx, teamObj)
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -211,6 +235,9 @@ var _ = Describe("Team Webhook", func() {
 		AfterAll(
 			func() {
 				By("Deleting the team")
+				secretManagerMock.EXPECT().
+					DeleteTeam(mock.Anything, mock.Anything, mock.Anything).
+					Return(nil)
 				err := k8sClient.Delete(ctx, teamObj)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -230,6 +257,13 @@ var _ = Describe("Team Webhook", func() {
 			Expect(err).NotTo(HaveOccurred())
 			By("Setting the secret to empty")
 			teamObj.Spec.Secret = ""
+
+			secretManagerMock.EXPECT().
+				UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				Return(map[string]string{
+					"clientSecret": string(uuid.NewUUID()),
+					"teamToken":    string(uuid.NewUUID()),
+				}, nil)
 			err = k8sClient.Update(ctx, teamObj)
 			Eventually(func(g Gomega) {
 				By("Checking the team secret to be set")
@@ -243,6 +277,12 @@ var _ = Describe("Team Webhook", func() {
 			Expect(err).NotTo(HaveOccurred())
 			By("Setting the secret to rotate")
 			teamObj.Spec.Secret = "rotate"
+			secretManagerMock.EXPECT().
+				UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				Return(map[string]string{
+					"clientSecret": string(uuid.NewUUID()),
+					"teamToken":    string(uuid.NewUUID()),
+				}, nil)
 			err = k8sClient.Update(ctx, teamObj)
 			Eventually(func(g Gomega) {
 				By("Checking the team secret to be updated")
@@ -271,6 +311,12 @@ var _ = Describe("Team Webhook", func() {
 					Members: testMember,
 				},
 			}
+			secretManagerMock.EXPECT().
+				UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				Return(map[string]string{
+					"clientSecret": string(uuid.NewUUID()),
+					"teamToken":    string(uuid.NewUUID()),
+				}, nil)
 			err := k8sClient.Create(ctx, teamObj)
 			Expect(errors.IsInvalid(err)).To(BeTrue())
 			Expect(err.Error()).To(ContainSubstring("Invalid value: \"here-is-a--complete-mismatch\": must be equal to 'spec.group--spec.name'"))
