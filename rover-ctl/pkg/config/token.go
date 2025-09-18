@@ -101,30 +101,60 @@ func (t *Token) GeneratedString() string {
 		return "unknown"
 	}
 	timezone := time.FixedZone("GMT", 0)
-	return time.UnixMilli(t.GeneratedAt).In(timezone).Format(time.RFC3339)
+	return time.Unix(t.GeneratedAt, 0).In(timezone).Format(time.RFC3339)
 }
 
 func (t *Token) TimeSinceGenerated() string {
 	if t.GeneratedAt == 0 {
 		return "unknown"
 	}
-	timezone := time.Local
-	delta := time.Since(time.UnixMilli(t.GeneratedAt).In(timezone)).Abs()
+	timezone := time.FixedZone("GMT", 0)
+	tokenTime := time.Unix(t.GeneratedAt, 0).In(timezone)
+	delta := time.Since(tokenTime).Abs()
 
-	if delta < time.Minute {
+	// Very Recent
+	if delta < 5*time.Minute {
 		return "just now"
-	} else if delta < time.Hour {
-		return "less than an hour ago"
-	} else if delta < 24*time.Hour {
-		return "less than a day ago"
-	} else if delta < 7*24*time.Hour {
-		return "less than a week ago"
-	} else if delta < 30*24*time.Hour {
-		return "less than a month ago"
-	} else if delta < 365*24*time.Hour {
-		return "less than a year ago"
 	}
-	return "more than a year ago"
+
+	if delta < time.Hour {
+		minutes := int(delta.Minutes())
+		return fmt.Sprintf("%d minutes ago", minutes)
+	}
+
+	// Hours
+	if delta < 24*time.Hour {
+		hours := int(delta.Hours())
+		return fmt.Sprintf("%d hour(s) ago", hours)
+	}
+
+	// Days
+	if delta < 48*time.Hour {
+		return "yesterday"
+	}
+	if delta < 7*24*time.Hour {
+		days := int(delta.Hours() / 24)
+		return fmt.Sprintf("%d day(s) ago", days)
+	}
+
+	// Weeks
+	if delta < 30*24*time.Hour {
+		weeks := int(delta.Hours() / 24 / 7)
+		return fmt.Sprintf("%d week(s) ago", weeks)
+	}
+
+	// Months
+	if delta < 60*24*time.Hour {
+		return "1 month ago"
+	}
+	if delta < 365*24*time.Hour {
+		months := int(delta.Hours() / 24 / 30)
+		return fmt.Sprintf("%d months ago", months)
+	}
+
+	// Years
+	years := int(delta.Hours() / 24 / 365)
+	return fmt.Sprintf("%d year(s) ago", years)
 }
 
 func (t *Token) fillPrefixInfo() {
