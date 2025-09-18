@@ -17,6 +17,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	"github.com/telekom/controlplane/organization/internal/index"
 	"github.com/telekom/controlplane/organization/internal/secret"
 	"github.com/telekom/controlplane/organization/internal/secret/mock"
 	corev1 "k8s.io/api/core/v1"
@@ -92,6 +94,9 @@ var _ = BeforeSuite(func() {
 	err = organizationv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = adminv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
 	// start webhook server using Manager.
 	webhookInstallOptions := &testEnv.WebhookInstallOptions
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
@@ -117,6 +122,9 @@ var _ = BeforeSuite(func() {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
+
+	By("Registering all required indices")
+	index.RegisterIndicesOrDie(ctx, mgr)
 
 	By("Creating the environment namespace")
 	CreateNamespace(testEnvironment)

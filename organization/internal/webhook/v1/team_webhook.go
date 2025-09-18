@@ -66,7 +66,12 @@ func (t TeamCustomDefaulter) Default(ctx context.Context, obj runtime.Object) er
 	}
 
 	teamlog.V(1).Info("mutating secret")
-	err = mutator.MutateSecret(ctx, t.client, env, teamObj)
+
+	zoneObj, err := mutator.GetZoneObjWithTeamInfo(ctx, t.client)
+	if err != nil {
+		return err
+	}
+	err = mutator.MutateSecret(ctx, env, teamObj, zoneObj)
 	if err != nil {
 		return err
 	}

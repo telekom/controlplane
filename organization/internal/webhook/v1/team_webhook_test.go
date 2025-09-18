@@ -9,7 +9,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/types"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,8 +27,48 @@ var _ = Describe("Team Webhook", func() {
 		teamObj   *organizationv1.Team
 		validator TeamCustomValidator
 	)
+	zone := &adminv1.Zone{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      testEnvironment,
+			Namespace: testNamespace,
+			Labels: map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			},
+		},
+		Spec: adminv1.ZoneSpec{
+			TeamApis: &adminv1.TeamApiConfig{Apis: []adminv1.ApiConfig{{
+				Name: "team-api-1",
+				Path: "/teamAPI",
+				Url:  "http://example.org",
+			}}},
+			Visibility: adminv1.ZoneVisibilityWorld,
+		},
+	}
+
+	zoneStatus := adminv1.ZoneStatus{
+		TeamApiIdentityRealm: &types.ObjectRef{
+			Name:      "team-api-identity-realm",
+			Namespace: testNamespace,
+		},
+		TeamApiGatewayRealm: &types.ObjectRef{
+			Name:      "team-api-gateway-realm",
+			Namespace: testNamespace,
+		},
+	}
 
 	BeforeEach(func() {
+		By("Creating the Zone")
+		freshZone := zone.DeepCopy()
+		freshZone.ResourceVersion = ""
+		err := k8sClient.Create(ctx, freshZone)
+		Expect(err).NotTo(HaveOccurred())
+
+		freshZone.Status = zoneStatus
+		err = k8sClient.Status().Update(ctx, freshZone)
+		Expect(err).NotTo(HaveOccurred())
+
+		zone = freshZone
+
 		teamObj = &organizationv1.Team{}
 		validator = TeamCustomValidator{}
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
@@ -34,6 +76,7 @@ var _ = Describe("Team Webhook", func() {
 	})
 
 	AfterEach(func() {
+		Expect(k8sClient.Delete(ctx, zone)).NotTo(HaveOccurred())
 	})
 
 	Context("When CreateOrUpdate a valid team", Ordered, func() {
