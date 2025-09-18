@@ -40,6 +40,11 @@ func CreateZone(name string) *adminapi.Zone {
 	Expect(err).ToNot(HaveOccurred())
 
 	zone.Status.Namespace = testEnvironment + "--" + name
+	zone.Status.Links = adminapi.Links{
+		Url:       fmt.Sprintf("http://test.%s.de", name),
+		Issuer:    fmt.Sprintf("http://issuer.%s.de:8080/auth/realms/test", name),
+		LmsIssuer: fmt.Sprintf("http://lms-issuer.%s.de:8080/auth/realms/test", name),
+	}
 	err = k8sClient.Status().Update(ctx, zone)
 	Expect(err).ToNot(HaveOccurred())
 
