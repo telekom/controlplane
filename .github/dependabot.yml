@@ -8,27 +8,38 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: "monthly"
   - package-ecosystem: "gomod"
     schedule:
-      interval: "weekly"
-    directories: 
+      interval: "monthly"
+    directories:
+      - admin
+      - admin/api
+      - api
+      - api/api
+      - application
+      - application/api
+      - approval
+      - approval/api
       - common
       - common-server
-      - secret-manager
-      - organization
+      - cpapi/api
       - file-manager
       - gateway
+      - gateway/api
       - identity
-      - admin
-      - application
-      - api
+      - identity/api
+      - organization
+      - organization/api
       - rover
-      - approval
-      - rover-server
+      - rover/api
       - rover-ctl
+      - rover-server
+      - secret-manager
+      - tools/route-tester
+      - tools/snapshotter
     groups:
-      default: 
+      minor-patch:
         update-types:
           - patch
           - minor
