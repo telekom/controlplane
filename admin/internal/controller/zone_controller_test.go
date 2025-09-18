@@ -332,9 +332,10 @@ func VerifyZone(ctx context.Context, g Gomega, namespacedName client.ObjectKey, 
 
 	// verify the links
 	By("Checking if the links in the status are created and valid")
-	g.Expect(zone.Status.Links.GatewayIssuer).To(Equal("https://test-iris.de/auth/realms/test"))
-	g.Expect(zone.Status.Links.GatewayUrl).To(Equal("https://test-stargate.de/"))
-	g.Expect(zone.Status.Links.StargateLmsIssuer).To(Equal("https://test-stargate.de:443/auth/realms/test"))
+	g.Expect(zone.Status.Links.Issuer).To(Equal("https://test-iris.de/auth/realms/test"))
+	g.Expect(zone.Status.Links.Url).To(Equal("https://test-stargate.de/"))
+	g.Expect(zone.Status.Links.LmsIssuer).To(Equal("https://test-stargate.de/auth/realms/test"))
+	g.Expect(zone.Status.Links.TeamIssuer).To(Equal("https://test-iris.de/auth/realms/team-test"))
 
 	g.Expect(zone.Status.Conditions).To(HaveLen(2))
 	g.Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeProcessing)).To(BeFalse())
