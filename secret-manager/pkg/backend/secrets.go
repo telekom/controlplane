@@ -12,6 +12,35 @@ import (
 	"github.com/pkg/errors"
 )
 
+var (
+	// Secrets that are allowed for each environment
+	NewEnvironmentSecrets = func() *Secrets {
+		return &Secrets{
+			secrets: map[string]SecretValue{
+				"zones": InitialString("{}"),
+			},
+		}
+	}
+	// Secrets that are allowed for each team
+	NewTeamSecrets = func() *Secrets {
+		return &Secrets{
+			secrets: map[string]SecretValue{
+				"clientSecret": InitialString(uuid.NewString()),
+				"teamToken":    InitialString(uuid.NewString()),
+			},
+		}
+	}
+	// Secrets that are allowed for each application
+	NewApplicationSecrets = func() *Secrets {
+		return &Secrets{
+			secrets: map[string]SecretValue{
+				"clientSecret":    InitialString(uuid.NewString()),
+				"externalSecrets": InitialString("{}"),
+			},
+		}
+	}
+)
+
 type Secrets struct {
 	secrets    map[string]SecretValue
 	subSecrets map[string]map[string]string
@@ -62,31 +91,27 @@ func (a *Secrets) TrySetSecret(secretPath string, value SecretValue) bool {
 	return true
 }
 
-var (
-	// Secrets that are allowed for each environment
-	NewEnvironmentSecrets = func() *Secrets {
-		return &Secrets{
-			secrets: map[string]SecretValue{
-				"zones": InitialString("{}"),
-			},
+// SecretIdConstructor is a function type that constructs a SecretId instance.
+// It must be implemented by all backends to allow generic creation of SecretId instances.
+type SecretIdConstructor[T SecretId] func(env, team, app, path string, checksum string) T
+
+// TryAddSecrets adds the provided secrets to the allowed secrets using the provided new-function to create SecretId instances.
+func TryAddSecrets[T SecretId](newFunc SecretIdConstructor[T], allowedSecrets *Secrets, env, teamId, appId string, secrets map[string]SecretValue) error {
+	for key, value := range secrets {
+		secretId := newFunc(env, teamId, appId, key, "")
+		ok := allowedSecrets.TrySetSecret(key, value)
+		if !ok {
+			return Forbidden(secretId, errors.Errorf("secret %s is not allowed for onboarding", key))
 		}
 	}
-	// Secrets that are allowed for each team
-	NewTeamSecrets = func() *Secrets {
-		return &Secrets{
-			secrets: map[string]SecretValue{
-				"clientSecret": InitialString(uuid.NewString()),
-				"teamToken":    InitialString(uuid.NewString()),
-			},
+	return nil
+}
+
+// MergeSecretRefs adds missing secrets from the provided secrets map to the secretRefs map using the provided new-function to create SecretId instances.
+func MergeSecretRefs[T SecretId](newFunc SecretIdConstructor[T], secretRefs map[string]SecretRef, env, teamId, appId string, secrets map[string]SecretValue) {
+	for secretPath, secretValue := range secrets {
+		if _, ok := secretRefs[secretPath]; !ok {
+			secretRefs[secretPath] = newFunc(env, teamId, appId, secretPath, MakeChecksum(secretValue.Value()))
 		}
 	}
-	// Secrets that are allowed for each application
-	NewApplicationSecrets = func() *Secrets {
-		return &Secrets{
-			secrets: map[string]SecretValue{
-				"clientSecret":    InitialString(uuid.NewString()),
-				"externalSecrets": InitialString("{}"),
-			},
-		}
-	}
-)
+}

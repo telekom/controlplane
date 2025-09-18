@@ -163,11 +163,11 @@ func (f faultyMock) Rotate(ctx context.Context, secretID string) (newID string, 
 	return "", fmt.Errorf("faulty mock")
 }
 
-func (f faultyMock) UpsertEnvironment(ctx context.Context, envID string) (availableSecrets map[string]string, err error) {
+func (f faultyMock) UpsertEnvironment(ctx context.Context, envID string, opts ...api.OnboardingOption) (availableSecrets map[string]string, err error) {
 	return make(map[string]string), fmt.Errorf("faulty mock")
 }
 
-func (f faultyMock) UpsertTeam(ctx context.Context, envID, teamID string) (availableSecrets map[string]string, err error) {
+func (f faultyMock) UpsertTeam(ctx context.Context, envID, teamID string, opts ...api.OnboardingOption) (availableSecrets map[string]string, err error) {
 	return make(map[string]string), fmt.Errorf("faulty mock")
 }
 

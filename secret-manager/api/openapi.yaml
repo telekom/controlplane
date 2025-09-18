@@ -39,6 +39,8 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        $ref: '#/components/requestBodies/EnvironmentWriteRequest'
       responses:
         '200':
           $ref: '#/components/responses/OnboardingResponse'
@@ -90,6 +92,8 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        $ref: '#/components/requestBodies/TeamWriteRequest'
       responses:
         '200':
           $ref: '#/components/responses/OnboardingResponse'
@@ -340,17 +344,52 @@ components:
                   Otherwise, you can set any string value.
                 example: "{{rotate}}"
                 type: string
+    EnvironmentWriteRequest:
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - secrets
+            properties:
+              secrets:
+                type: array
+                description: A list of secrets to be created or updated for the environment
+                minItems: 0
+                maxItems: 10
+                items:
+                  $ref: '#/components/schemas/NamedSecret'
+    TeamWriteRequest:
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - secrets
+            properties:
+              secrets:
+                type: array
+                description: A list of secrets to be created or updated for the team
+                minItems: 0
+                maxItems: 10
+                items:
+                  $ref: '#/components/schemas/NamedSecret'
     ApplicationWriteRequest:
       content:
         application/json:
           schema:
             type: object
+            required:
+              - secrets
             properties:
               secrets:
                 type: array
+                minItems: 0
+                maxItems: 10
                 description: A list of secrets to be created or updated for the application
                 items:
                   $ref: '#/components/schemas/NamedSecret'
+
   schemas:
     ApiProblem:
       description: Based on https://www.rfc-editor.org/rfc/rfc9457.html

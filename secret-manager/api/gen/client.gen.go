@@ -92,7 +92,13 @@ type SecretWriteResponse struct {
 // ApplicationWriteRequest defines model for ApplicationWriteRequest.
 type ApplicationWriteRequest struct {
 	// Secrets A list of secrets to be created or updated for the application
-	Secrets *[]NamedSecret `json:"secrets,omitempty"`
+	Secrets []NamedSecret `json:"secrets"`
+}
+
+// EnvironmentWriteRequest defines model for EnvironmentWriteRequest.
+type EnvironmentWriteRequest struct {
+	// Secrets A list of secrets to be created or updated for the environment
+	Secrets []NamedSecret `json:"secrets"`
 }
 
 // SecretWriteRequest defines model for SecretWriteRequest.
@@ -104,10 +110,28 @@ type SecretWriteRequest struct {
 	Value string `json:"value"`
 }
 
+// TeamWriteRequest defines model for TeamWriteRequest.
+type TeamWriteRequest struct {
+	// Secrets A list of secrets to be created or updated for the team
+	Secrets []NamedSecret `json:"secrets"`
+}
+
+// UpsertEnvironmentJSONBody defines parameters for UpsertEnvironment.
+type UpsertEnvironmentJSONBody struct {
+	// Secrets A list of secrets to be created or updated for the environment
+	Secrets []NamedSecret `json:"secrets"`
+}
+
+// UpsertTeamJSONBody defines parameters for UpsertTeam.
+type UpsertTeamJSONBody struct {
+	// Secrets A list of secrets to be created or updated for the team
+	Secrets []NamedSecret `json:"secrets"`
+}
+
 // UpsertAppJSONBody defines parameters for UpsertApp.
 type UpsertAppJSONBody struct {
 	// Secrets A list of secrets to be created or updated for the application
-	Secrets *[]NamedSecret `json:"secrets,omitempty"`
+	Secrets []NamedSecret `json:"secrets"`
 }
 
 // ListSecretsParams defines parameters for ListSecrets.
@@ -124,6 +148,12 @@ type PutSecretJSONBody struct {
 	// Otherwise, you can set any string value.
 	Value string `json:"value"`
 }
+
+// UpsertEnvironmentJSONRequestBody defines body for UpsertEnvironment for application/json ContentType.
+type UpsertEnvironmentJSONRequestBody UpsertEnvironmentJSONBody
+
+// UpsertTeamJSONRequestBody defines body for UpsertTeam for application/json ContentType.
+type UpsertTeamJSONRequestBody UpsertTeamJSONBody
 
 // UpsertAppJSONRequestBody defines body for UpsertApp for application/json ContentType.
 type UpsertAppJSONRequestBody UpsertAppJSONBody
@@ -207,14 +237,18 @@ type ClientInterface interface {
 	// DeleteEnvironment request
 	DeleteEnvironment(ctx context.Context, envId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpsertEnvironment request
-	UpsertEnvironment(ctx context.Context, envId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpsertEnvironmentWithBody request with any body
+	UpsertEnvironmentWithBody(ctx context.Context, envId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpsertEnvironment(ctx context.Context, envId string, body UpsertEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteTeam request
 	DeleteTeam(ctx context.Context, envId string, teamId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpsertTeam request
-	UpsertTeam(ctx context.Context, envId string, teamId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpsertTeamWithBody request with any body
+	UpsertTeamWithBody(ctx context.Context, envId string, teamId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpsertTeam(ctx context.Context, envId string, teamId string, body UpsertTeamJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteApp request
 	DeleteApp(ctx context.Context, envId string, teamId string, appId string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -248,8 +282,20 @@ func (c *Client) DeleteEnvironment(ctx context.Context, envId string, reqEditors
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpsertEnvironment(ctx context.Context, envId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertEnvironmentRequest(c.Server, envId)
+func (c *Client) UpsertEnvironmentWithBody(ctx context.Context, envId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertEnvironmentRequestWithBody(c.Server, envId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertEnvironment(ctx context.Context, envId string, body UpsertEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertEnvironmentRequest(c.Server, envId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -272,8 +318,20 @@ func (c *Client) DeleteTeam(ctx context.Context, envId string, teamId string, re
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpsertTeam(ctx context.Context, envId string, teamId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpsertTeamRequest(c.Server, envId, teamId)
+func (c *Client) UpsertTeamWithBody(ctx context.Context, envId string, teamId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertTeamRequestWithBody(c.Server, envId, teamId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertTeam(ctx context.Context, envId string, teamId string, body UpsertTeamJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertTeamRequest(c.Server, envId, teamId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -402,8 +460,19 @@ func NewDeleteEnvironmentRequest(server string, envId string) (*http.Request, er
 	return req, nil
 }
 
-// NewUpsertEnvironmentRequest generates requests for UpsertEnvironment
-func NewUpsertEnvironmentRequest(server string, envId string) (*http.Request, error) {
+// NewUpsertEnvironmentRequest calls the generic UpsertEnvironment builder with application/json body
+func NewUpsertEnvironmentRequest(server string, envId string, body UpsertEnvironmentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpsertEnvironmentRequestWithBody(server, envId, "application/json", bodyReader)
+}
+
+// NewUpsertEnvironmentRequestWithBody generates requests for UpsertEnvironment with any type of body
+func NewUpsertEnvironmentRequestWithBody(server string, envId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -428,10 +497,12 @@ func NewUpsertEnvironmentRequest(server string, envId string) (*http.Request, er
 		return nil, err
 	}
 
-	req, err := http.NewRequest("PUT", queryURL.String(), nil)
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -477,8 +548,19 @@ func NewDeleteTeamRequest(server string, envId string, teamId string) (*http.Req
 	return req, nil
 }
 
-// NewUpsertTeamRequest generates requests for UpsertTeam
-func NewUpsertTeamRequest(server string, envId string, teamId string) (*http.Request, error) {
+// NewUpsertTeamRequest calls the generic UpsertTeam builder with application/json body
+func NewUpsertTeamRequest(server string, envId string, teamId string, body UpsertTeamJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpsertTeamRequestWithBody(server, envId, teamId, "application/json", bodyReader)
+}
+
+// NewUpsertTeamRequestWithBody generates requests for UpsertTeam with any type of body
+func NewUpsertTeamRequestWithBody(server string, envId string, teamId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -510,10 +592,12 @@ func NewUpsertTeamRequest(server string, envId string, teamId string) (*http.Req
 		return nil, err
 	}
 
-	req, err := http.NewRequest("PUT", queryURL.String(), nil)
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -803,14 +887,18 @@ type ClientWithResponsesInterface interface {
 	// DeleteEnvironmentWithResponse request
 	DeleteEnvironmentWithResponse(ctx context.Context, envId string, reqEditors ...RequestEditorFn) (*DeleteEnvironmentResponse, error)
 
-	// UpsertEnvironmentWithResponse request
-	UpsertEnvironmentWithResponse(ctx context.Context, envId string, reqEditors ...RequestEditorFn) (*UpsertEnvironmentResponse, error)
+	// UpsertEnvironmentWithBodyWithResponse request with any body
+	UpsertEnvironmentWithBodyWithResponse(ctx context.Context, envId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertEnvironmentResponse, error)
+
+	UpsertEnvironmentWithResponse(ctx context.Context, envId string, body UpsertEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertEnvironmentResponse, error)
 
 	// DeleteTeamWithResponse request
 	DeleteTeamWithResponse(ctx context.Context, envId string, teamId string, reqEditors ...RequestEditorFn) (*DeleteTeamResponse, error)
 
-	// UpsertTeamWithResponse request
-	UpsertTeamWithResponse(ctx context.Context, envId string, teamId string, reqEditors ...RequestEditorFn) (*UpsertTeamResponse, error)
+	// UpsertTeamWithBodyWithResponse request with any body
+	UpsertTeamWithBodyWithResponse(ctx context.Context, envId string, teamId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertTeamResponse, error)
+
+	UpsertTeamWithResponse(ctx context.Context, envId string, teamId string, body UpsertTeamJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertTeamResponse, error)
 
 	// DeleteAppWithResponse request
 	DeleteAppWithResponse(ctx context.Context, envId string, teamId string, appId string, reqEditors ...RequestEditorFn) (*DeleteAppResponse, error)
@@ -1054,9 +1142,17 @@ func (c *ClientWithResponses) DeleteEnvironmentWithResponse(ctx context.Context,
 	return ParseDeleteEnvironmentResponse(rsp)
 }
 
-// UpsertEnvironmentWithResponse request returning *UpsertEnvironmentResponse
-func (c *ClientWithResponses) UpsertEnvironmentWithResponse(ctx context.Context, envId string, reqEditors ...RequestEditorFn) (*UpsertEnvironmentResponse, error) {
-	rsp, err := c.UpsertEnvironment(ctx, envId, reqEditors...)
+// UpsertEnvironmentWithBodyWithResponse request with arbitrary body returning *UpsertEnvironmentResponse
+func (c *ClientWithResponses) UpsertEnvironmentWithBodyWithResponse(ctx context.Context, envId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertEnvironmentResponse, error) {
+	rsp, err := c.UpsertEnvironmentWithBody(ctx, envId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertEnvironmentResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpsertEnvironmentWithResponse(ctx context.Context, envId string, body UpsertEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertEnvironmentResponse, error) {
+	rsp, err := c.UpsertEnvironment(ctx, envId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -1072,9 +1168,17 @@ func (c *ClientWithResponses) DeleteTeamWithResponse(ctx context.Context, envId 
 	return ParseDeleteTeamResponse(rsp)
 }
 
-// UpsertTeamWithResponse request returning *UpsertTeamResponse
-func (c *ClientWithResponses) UpsertTeamWithResponse(ctx context.Context, envId string, teamId string, reqEditors ...RequestEditorFn) (*UpsertTeamResponse, error) {
-	rsp, err := c.UpsertTeam(ctx, envId, teamId, reqEditors...)
+// UpsertTeamWithBodyWithResponse request with arbitrary body returning *UpsertTeamResponse
+func (c *ClientWithResponses) UpsertTeamWithBodyWithResponse(ctx context.Context, envId string, teamId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertTeamResponse, error) {
+	rsp, err := c.UpsertTeamWithBody(ctx, envId, teamId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertTeamResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpsertTeamWithResponse(ctx context.Context, envId string, teamId string, body UpsertTeamJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertTeamResponse, error) {
+	rsp, err := c.UpsertTeam(ctx, envId, teamId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}

@@ -67,7 +67,7 @@ func (h *Handler) PutSecret(ctx context.Context, req api.PutSecretRequestObject)
 }
 
 func (h *Handler) UpsertEnvironment(ctx context.Context, request api.UpsertEnvironmentRequestObject) (api.UpsertEnvironmentResponseObject, error) {
-	res, err := h.ctrl.OnboardEnvironment(ctx, request.EnvId)
+	res, err := h.ctrl.OnboardEnvironment(ctx, request.EnvId, controller.WithSecretValues(parseAdditionalSecrets(request.Body.Secrets)))
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (h *Handler) UpsertEnvironment(ctx context.Context, request api.UpsertEnvir
 }
 
 func (h *Handler) UpsertTeam(ctx context.Context, request api.UpsertTeamRequestObject) (api.UpsertTeamResponseObject, error) {
-	res, err := h.ctrl.OnboardTeam(ctx, request.EnvId, request.TeamId)
+	res, err := h.ctrl.OnboardTeam(ctx, request.EnvId, request.TeamId, controller.WithSecretValues(parseAdditionalSecrets(request.Body.Secrets)))
 	if err != nil {
 		return nil, err
 	}
@@ -144,11 +144,10 @@ func mapOnboardingResponseItems(items map[string]string) []api.ListSecretItem {
 	return list
 }
 
-func parseAdditionalSecrets(optionalSecrets *[]api.NamedSecret) map[string]string {
-	if optionalSecrets == nil {
+func parseAdditionalSecrets(secrets []api.NamedSecret) map[string]string {
+	if secrets == nil {
 		return nil
 	}
-	secrets := *optionalSecrets
 
 	additionalSecrets := make(map[string]string, len(secrets))
 	for _, secret := range secrets {

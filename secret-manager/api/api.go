@@ -60,8 +60,8 @@ type SecretsApi interface {
 }
 
 type OnboardingApi interface {
-	UpsertEnvironment(ctx context.Context, envID string) (availableSecrets map[string]string, err error)
-	UpsertTeam(ctx context.Context, envID, teamID string) (availableSecrets map[string]string, err error)
+	UpsertEnvironment(ctx context.Context, envID string, opts ...OnboardingOption) (availableSecrets map[string]string, err error)
+	UpsertTeam(ctx context.Context, envID, teamID string, opts ...OnboardingOption) (availableSecrets map[string]string, err error)
 	UpsertApplication(ctx context.Context, envID, teamID, appID string, opts ...OnboardingOption) (availableSecrets map[string]string, err error)
 
 	DeleteEnvironment(ctx context.Context, envID string) (err error)
@@ -129,8 +129,19 @@ func (s *secretManagerAPI) Rotate(ctx context.Context, secretID string) (newID s
 	return s.Set(ctx, secretID, KeywordRotate)
 }
 
-func (s *secretManagerAPI) UpsertEnvironment(ctx context.Context, envID string) (availableSecrets map[string]string, err error) {
-	res, err := s.client.UpsertEnvironmentWithResponse(ctx, envID)
+func (s *secretManagerAPI) UpsertEnvironment(ctx context.Context, envID string, opts ...OnboardingOption) (availableSecrets map[string]string, err error) {
+	options := &OnboardingOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	reqBody := gen.UpsertEnvironmentJSONRequestBody{}
+	reqBody.Secrets, err = toNamedSecrets(options.SecretValues)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := s.client.UpsertEnvironmentWithResponse(ctx, envID, reqBody)
 	if err != nil {
 		return nil, err
 	}
@@ -150,8 +161,19 @@ func (s *secretManagerAPI) UpsertEnvironment(ctx context.Context, envID string) 
 	}
 }
 
-func (s *secretManagerAPI) UpsertTeam(ctx context.Context, envID, teamID string) (availableSecrets map[string]string, err error) {
-	res, err := s.client.UpsertTeamWithResponse(ctx, envID, teamID)
+func (s *secretManagerAPI) UpsertTeam(ctx context.Context, envID, teamID string, opts ...OnboardingOption) (availableSecrets map[string]string, err error) {
+	options := &OnboardingOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	reqBody := gen.UpsertTeamJSONRequestBody{}
+	reqBody.Secrets, err = toNamedSecrets(options.SecretValues)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := s.client.UpsertTeamWithResponse(ctx, envID, teamID, reqBody)
 	if err != nil {
 		return nil, err
 	}
@@ -177,28 +199,10 @@ func (s *secretManagerAPI) UpsertApplication(ctx context.Context, envID, teamID,
 		opt(options)
 	}
 
-	reqBody := gen.UpsertAppJSONRequestBody{
-		Secrets: &[]gen.NamedSecret{},
-	}
-	for name, value := range options.SecretValues {
-		switch v := value.(type) {
-		case string:
-			*reqBody.Secrets = append(*reqBody.Secrets, gen.NamedSecret{
-				Name:  name,
-				Value: v,
-			})
-		case map[string]any:
-			jsonValue, err := json.Marshal(v)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to marshal secret value for %s", name)
-			}
-			*reqBody.Secrets = append(*reqBody.Secrets, gen.NamedSecret{
-				Name:  name,
-				Value: string(jsonValue),
-			})
-		default:
-			return nil, fmt.Errorf("unsupported secret value type for %s: %T", name, value)
-		}
+	reqBody := gen.UpsertAppJSONRequestBody{}
+	reqBody.Secrets, err = toNamedSecrets(options.SecretValues)
+	if err != nil {
+		return nil, err
 	}
 
 	res, err := s.client.UpsertAppWithResponse(ctx, envID, teamID, appID, reqBody)
@@ -323,4 +327,30 @@ func toMap(items []gen.ListSecretItem) map[string]string {
 		secretMap[item.Name] = ToRef(item.Id)
 	}
 	return secretMap
+}
+
+func toNamedSecrets(secretValues map[string]any) ([]gen.NamedSecret, error) {
+	secrets := make([]gen.NamedSecret, 0, len(secretValues))
+	for name, value := range secretValues {
+		switch v := value.(type) {
+		case string:
+			secrets = append(secrets, gen.NamedSecret{
+				Name:  name,
+				Value: v,
+			})
+		case map[string]any:
+			jsonValue, err := json.Marshal(v)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to marshal secret value for %s", name)
+			}
+			secrets = append(secrets, gen.NamedSecret{
+				Name:  name,
+				Value: string(jsonValue),
+			})
+		default:
+			return nil, fmt.Errorf("unsupported secret value type for %s: %T", name, value)
+		}
+	}
+
+	return secrets, nil
 }

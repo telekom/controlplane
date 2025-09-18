@@ -7,7 +7,6 @@ package kubernetes
 import (
 	"context"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	corev1 "k8s.io/api/core/v1"
@@ -31,10 +30,19 @@ func NewOnboarder(client client.Client) *KubernetesOnboarder {
 	}
 }
 
-func (k *KubernetesOnboarder) OnboardEnvironment(ctx context.Context, env string) (backend.OnboardResponse, error) {
+func (k *KubernetesOnboarder) OnboardEnvironment(ctx context.Context, env string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
+	options := backend.OnboardOptions{}
+	for _, opt := range opts {
+		opt(&options)
+	}
+
 	obj := NewSecretObj(env, "", "")
 
-	secrets, err := backend.NewEnvironmentSecrets().GetSecrets()
+	allowedSecrets := backend.NewTeamSecrets()
+	if err := backend.TryAddSecrets(New, allowedSecrets, env, "", "", options.SecretValues); err != nil {
+		return nil, err
+	}
+	secrets, err := allowedSecrets.GetSecrets()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get allowed secrets")
 	}
@@ -53,14 +61,24 @@ func (k *KubernetesOnboarder) OnboardEnvironment(ctx context.Context, env string
 	for secretName := range secrets {
 		secretRefs[secretName] = New(env, "", "", secretName, obj.GetResourceVersion())
 	}
+	backend.MergeSecretRefs(New, secretRefs, env, "", "", options.SecretValues)
 
 	return backend.NewDefaultOnboardResponse(secretRefs), nil
 }
 
-func (k *KubernetesOnboarder) OnboardTeam(ctx context.Context, env string, teamId string) (backend.OnboardResponse, error) {
+func (k *KubernetesOnboarder) OnboardTeam(ctx context.Context, env string, teamId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
+	options := backend.OnboardOptions{}
+	for _, opt := range opts {
+		opt(&options)
+	}
+
 	obj := NewSecretObj(env, teamId, "")
 
-	secrets, err := backend.NewTeamSecrets().GetSecrets()
+	allowedSecrets := backend.NewTeamSecrets()
+	if err := backend.TryAddSecrets(New, allowedSecrets, env, teamId, "", options.SecretValues); err != nil {
+		return nil, err
+	}
+	secrets, err := allowedSecrets.GetSecrets()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get allowed secrets")
 	}
@@ -80,12 +98,12 @@ func (k *KubernetesOnboarder) OnboardTeam(ctx context.Context, env string, teamI
 	for secretName := range secrets {
 		secretRefs[secretName] = New(env, teamId, "", secretName, obj.GetResourceVersion())
 	}
+	backend.MergeSecretRefs(New, secretRefs, env, teamId, "", options.SecretValues)
 
 	return backend.NewDefaultOnboardResponse(secretRefs), nil
 }
 
 func (k *KubernetesOnboarder) OnboardApplication(ctx context.Context, env string, teamId string, appId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
-	log := logr.FromContextOrDiscard(ctx)
 	options := backend.OnboardOptions{}
 	for _, opt := range opts {
 		opt(&options)
@@ -93,12 +111,8 @@ func (k *KubernetesOnboarder) OnboardApplication(ctx context.Context, env string
 	obj := NewSecretObj(env, teamId, appId)
 
 	allowedSecrets := backend.NewApplicationSecrets()
-	for key, value := range options.SecretValues {
-		ok := allowedSecrets.TrySetSecret(key, value)
-		if !ok {
-			secretId := New(env, teamId, appId, key, "")
-			return nil, backend.Forbidden(secretId, errors.Errorf("secret %s is not allowed for application onboarding", key))
-		}
+	if err := backend.TryAddSecrets(New, allowedSecrets, env, teamId, appId, options.SecretValues); err != nil {
+		return nil, err
 	}
 	secrets, err := allowedSecrets.GetSecrets()
 	if err != nil {
@@ -120,14 +134,7 @@ func (k *KubernetesOnboarder) OnboardApplication(ctx context.Context, env string
 	for secretPath := range secrets {
 		secretRefs[secretPath] = New(env, teamId, appId, secretPath, obj.GetResourceVersion())
 	}
-
-	for secretPath := range options.SecretValues {
-		if _, ok := secretRefs[secretPath]; !ok {
-			secretRefs[secretPath] = New(env, teamId, appId, secretPath, obj.GetResourceVersion())
-		} else {
-			log.Info("Value for secret already exists", "secretPath", secretPath)
-		}
-	}
+	backend.MergeSecretRefs(New, secretRefs, env, teamId, appId, options.SecretValues)
 
 	return backend.NewDefaultOnboardResponse(secretRefs), nil
 }
