@@ -24,7 +24,7 @@ func MapResponse(in *roverv1.ApiSpecification, inFile map[string]any) (res api.A
 	res = api.ApiSpecificationResponse{
 		Category:      in.Spec.Category,
 		Id:            mapper.MakeResourceId(in),
-		Name:          in.Spec.ApiName,
+		Name:          in.Name,
 		Specification: inFile,
 		VendorApi:     in.Spec.XVendor,
 	}

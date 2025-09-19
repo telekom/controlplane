@@ -5,7 +5,6 @@
 package in
 
 import (
-	"fmt"
 	"net/url"
 	"strings"
 
@@ -16,6 +15,7 @@ import (
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -23,11 +23,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecificationSpec, error) {
-	apiSpecificationSpec := &roverv1.ApiSpecificationSpec{
-		XVendor:      false,
-		Category:     "other",
-		Oauth2Scopes: []string{},
+func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecification, error) {
+	apiSpecification := &roverv1.ApiSpecification{
+		Spec: roverv1.ApiSpecificationSpec{
+			XVendor:      false,
+			Oauth2Scopes: []string{},
+		},
 	}
 	log := log.FromContext(ctx)
 
@@ -42,69 +43,59 @@ func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecifica
 		model, errs := document.BuildV2Model()
 		if errs != nil {
 			log.Info("failed to build v2 model", zap.Errors("errors", errs))
-			return nil, errors.New(parseErr + ": failed to build v2 model")
+			return nil, problems.BadRequest("invalid format of OpenAPI v2 specification")
 		}
 
-		if model.Model.BasePath == "" {
-			return nil, fmt.Errorf("no basepath found. Basepath is required")
-		}
-
-		apiSpecificationSpec.ApiName = makeName(model.Model.BasePath)
-		apiSpecificationSpec.BasePath = model.Model.BasePath
-
-		if !verifyVersionAndBasePathMatch(model.Model.Info.Version, model.Model.BasePath) {
-			return nil, fmt.Errorf("major info version %s does not match major basepath version %s", model.Model.Info.Version, model.Model.BasePath)
-		}
-		apiSpecificationSpec.Version = model.Model.Info.Version
-		setExtensionValues(apiSpecificationSpec, model.Model.Info.Extensions)
+		apiSpecification.Spec.BasePath = model.Model.BasePath
+		apiSpecification.Spec.Version = model.Model.Info.Version
+		setExtensionValues(&apiSpecification.Spec, model.Model.Info.Extensions)
 
 		if model.Model.SecurityDefinitions != nil {
-			setSecurityDefinitionsValues(apiSpecificationSpec, model.Model.SecurityDefinitions.Definitions)
+			setSecurityDefinitionsValues(&apiSpecification.Spec, model.Model.SecurityDefinitions.Definitions)
 		}
 
-		return apiSpecificationSpec, nil
+		return apiSpecification, nil
 	}
 
 	if strings.HasPrefix(version, "3.") {
 		model, errs := document.BuildV3Model()
 		if errs != nil {
 			log.Info("failed to build v3 model", zap.Errors("errors", errs))
-			return nil, errors.New(parseErr + ": failed to build v3 model")
+			return nil, problems.BadRequest("invalid format of OpenAPI v3 specification")
 		}
 
 		if len(model.Model.Servers) == 0 {
-			return nil, errors.New(parseErr + ": there are no servers in the spec")
+			return nil, problems.ValidationErrors(map[string]string{
+				"servers[0]": "no servers defined in the specification",
+			})
 		}
 
 		path, err := getPathFromURL(model.Model.Servers[0].URL)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get basePath from url")
+			return nil, problems.ValidationErrors(map[string]string{
+				"servers[0].url": "invalid url format",
+			})
 		} else if path == "" {
-			return nil, fmt.Errorf("no basepath found in the first server url %s. Basepath is required", model.Model.Servers[0].URL)
+			return nil, problems.ValidationErrors(map[string]string{
+				"servers[0].url": "no basepath found in the first server url",
+			})
 		}
 
-		apiSpecificationSpec.ApiName = makeName(path)
-		apiSpecificationSpec.BasePath = path
+		apiSpecification.Spec.BasePath = path
 
-		if !verifyVersionAndBasePathMatch(model.Model.Info.Version, path) {
-			return nil, fmt.Errorf("major info version %s does not match major basepath version %s", model.Model.Info.Version, path)
-		}
-		apiSpecificationSpec.Version = model.Model.Info.Version
+		apiSpecification.Spec.Version = model.Model.Info.Version
 
-		setExtensionValues(apiSpecificationSpec, model.Model.Info.Extensions)
+		setExtensionValues(&apiSpecification.Spec, model.Model.Info.Extensions)
 
 		if model.Model.Components != nil {
-			setSecuritySchemeValues(apiSpecificationSpec, model.Model.Components.SecuritySchemes)
+			setSecuritySchemeValues(&apiSpecification.Spec, model.Model.Components.SecuritySchemes)
 		}
 
-		return apiSpecificationSpec, nil
+		apiSpecification.ObjectMeta.Name = roverv1.MakeName(apiSpecification)
+		return apiSpecification, nil
 	}
 
-	return nil, errors.New(parseErr + ": unsupported specification version")
-}
-
-func makeName(basePath string) string {
-	return strings.Trim(strings.ReplaceAll(basePath, "/", "-"), "-")
+	return nil, problems.BadRequest("only OpenAPI v2 and v3 are supported")
 }
 
 func getPathFromURL(rawURL string) (string, error) {
@@ -120,7 +111,7 @@ func setExtensionValues(apiSpecificationSpec *roverv1.ApiSpecificationSpec, exte
 	if extensionMap == nil {
 		return
 	}
-	value, ok := extensionMap.Get("x-category")
+	value, ok := extensionMap.Get("x-api-category")
 	if ok {
 		apiSpecificationSpec.Category = value.Value
 	}
@@ -167,9 +158,4 @@ func setSecuritySchemeValues(apiSpecificationSpec *roverv1.ApiSpecificationSpec,
 
 		}
 	}
-}
-
-func verifyVersionAndBasePathMatch(version, basePath string) bool {
-	basePathVersion := basePath[len(basePath)-1]
-	return basePathVersion == version[0]
 }

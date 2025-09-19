@@ -31,7 +31,7 @@ var (
 	}
 
 	resourceIdInfo = mapper.ResourceIdInfo{
-		Name:        "rover-local-sub",
+		Name:        "eni-distr-v1",
 		Environment: "poc",
 		Namespace:   "poc--eni--hyperion",
 	}

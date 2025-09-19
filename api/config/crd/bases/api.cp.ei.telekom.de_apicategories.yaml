@@ -7,20 +7,20 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.1
-  name: teams.organization.cp.ei.telekom.de
+  name: apicategories.api.cp.ei.telekom.de
 spec:
-  group: organization.cp.ei.telekom.de
+  group: api.cp.ei.telekom.de
   names:
-    kind: Team
-    listKind: TeamList
-    plural: teams
-    singular: team
+    kind: ApiCategory
+    listKind: ApiCategoryList
+    plural: apicategories
+    singular: apicategory
   scope: Namespaced
   versions:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: Team is the Schema for the teams API.
+        description: ApiCategory is the Schema for the apicategories API
         properties:
           apiVersion:
             description: |-
@@ -40,62 +40,64 @@ spec:
           metadata:
             type: object
           spec:
-            description: TeamSpec defines the desired state of Team.
+            description: spec defines the desired state of ApiCategory
             properties:
-              category:
-                default: Customer
+              active:
                 description: |-
-                  Category is the category of the team
-                  The category is used to determine specific access rights.
-                enum:
-                - Customer
-                - Infrastructure
-                type: string
-              email:
-                description: Email is the mail of the team
-                format: email
-                minLength: 1
-                type: string
-              group:
-                description: Group is the group of the team
-                minLength: 1
-                pattern: ^[a-z0-9]+(-?[a-z0-9]+)*$
-                type: string
-              members:
-                description: Members is the members of the team
-                items:
-                  properties:
-                    email:
-                      format: email
-                      minLength: 1
+                  Active indicates whether the API category is active.
+                  If false, the API category is not used for new APIs.
+                type: boolean
+              allowTeams:
+                properties:
+                  categories:
+                    description: |-
+                      Categories defines the list of team categories that are allowed to use this API category.
+                      If empty, all team categories are allowed.
+                    items:
                       type: string
-                    name:
-                      minLength: 1
+                    type: array
+                    x-kubernetes-list-type: set
+                  names:
+                    description: Names defines the list of team names that are allowed
+                      to use this API category.
+                    items:
                       type: string
-                  required:
-                  - email
-                  - name
-                  type: object
-                minItems: 1
-                type: array
-              name:
-                description: Name is the name of the team
+                    type: array
+                    x-kubernetes-list-type: set
+                type: object
+              description:
+                description: Description provides a human-readable description of
+                  the API category.
+                maxLength: 256
+                type: string
+              labelValue:
+                description: |-
+                  LabelValue is the name of the API category in the specification.
+                  It must be unique within the cluster.
+                maxLength: 20
                 minLength: 1
-                pattern: ^[a-z0-9]+(-?[a-z0-9]+)*$
                 type: string
-              secret:
-                description: Secret for the teamToken and passed towards the identity
-                  client.
-                type: string
+              linting:
+                properties:
+                  enabled:
+                    description: Enabled indicates whether linting is enabled for
+                      this API category.
+                    type: boolean
+                  ruleset:
+                    description: Ruleset specifies the ruleset to use for linting.
+                    type: string
+                type: object
+              mustHaveGroupPrefix:
+                default: true
+                description: |-
+                  MustHaveGroupPrefix indicates whether the API category must have contain
+                  the name of the group in the basePath.
+                type: boolean
             required:
-            - category
-            - email
-            - group
-            - members
-            - name
+            - labelValue
             type: object
           status:
-            description: TeamStatus defines the observed state of Team.
+            description: status defines the observed state of ApiCategory
             properties:
               conditions:
                 items:
@@ -156,51 +158,9 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
-              gatewayConsumerRef:
-                description: |-
-                  ObjectRef is a reference to a Kubernetes object
-                  It is similar to types.NamespacedName but has the required json tags for serialization
-                properties:
-                  name:
-                    type: string
-                  namespace:
-                    type: string
-                  uid:
-                    description: |-
-                      UID is a type that holds unique ID values, including UUIDs.  Because we
-                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
-                      intent and helps make sure that UIDs and names do not get conflated.
-                    type: string
-                required:
-                - name
-                - namespace
-                type: object
-              identityClientRef:
-                description: |-
-                  ObjectRef is a reference to a Kubernetes object
-                  It is similar to types.NamespacedName but has the required json tags for serialization
-                properties:
-                  name:
-                    type: string
-                  namespace:
-                    type: string
-                  uid:
-                    description: |-
-                      UID is a type that holds unique ID values, including UUIDs.  Because we
-                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
-                      intent and helps make sure that UIDs and names do not get conflated.
-                    type: string
-                required:
-                - name
-                - namespace
-                type: object
-              namespace:
-                type: string
-              teamToken:
-                type: string
-            required:
-            - namespace
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true
