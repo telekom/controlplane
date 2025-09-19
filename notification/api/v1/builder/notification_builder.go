@@ -8,8 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"maps"
-	"sync/atomic"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,7 +31,7 @@ import (
 // Usage example:
 //
 //	notification, err := builder.NewNotificationBuilder().
-//		WithNamespace("default").
+//		WithOwner(eventSourceResource). // eventSourceResource should be the Kubernetes object that triggered the notification
 //		WithPurpose("ApprovalGranted").
 //		WithSystemSender("ApprovalSystem").
 //		WithChannels("team-channel").
@@ -91,10 +89,6 @@ type notificationBuilder struct {
 	Owner client.Object
 
 	Errors []error
-
-	built *atomic.Bool
-
-	pollInterval time.Duration
 }
 
 // New creates a new NotificationBuilder
@@ -107,8 +101,6 @@ func New() NotificationBuilder {
 			},
 			Spec: notificationv1.NotificationSpec{},
 		},
-		built:        &atomic.Bool{},
-		pollInterval: 500 * time.Millisecond,
 	}
 }
 
@@ -187,16 +179,15 @@ func (n *notificationBuilder) Build() (*notificationv1.Notification, error) {
 		return nil, errors.New("purpose is required")
 	}
 
-	if n.built.Swap(true) {
-		n.Notification.Name = makeName(n.Notification)
-	}
+	n.Notification.Name = makeName(n.Notification)
 
 	return n.Notification, nil
 }
 
 func (n *notificationBuilder) Send(ctx context.Context) (*notificationv1.Notification, error) {
-	if !n.built.Load() {
-		return nil, errors.New("notification must be built before sending")
+	_, err := n.Build()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build notification")
 	}
 
 	k8sClient := cclient.ClientFromContextOrDie(ctx)
@@ -216,7 +207,7 @@ func (n *notificationBuilder) Send(ctx context.Context) (*notificationv1.Notific
 		return nil
 	}
 
-	_, err := k8sClient.CreateOrUpdate(ctx, notification, mutator)
+	_, err = k8sClient.CreateOrUpdate(ctx, notification, mutator)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to send notification")
 	}

@@ -135,7 +135,7 @@ The Notification domain provides a `NotificationBuilder` interface to simplify t
 ```go
 // Create and send a notification
 notification, err := builder.NewNotificationBuilder().
-    WithNamespace("default").
+    WithOwner(eventSourceResource).
     WithPurpose("ApprovalGranted").
     WithSender(notificationv1.SenderTypeSystem, "ApprovalService").
     WithChannels("team-channel").
@@ -151,5 +151,5 @@ notification, err := builder.NewNotificationBuilder().
 - **Fluent API**: Chain-style method calls for readable code
 - **Required Fields**: Ensures all required fields are set before sending
 - **Property Management**: Simple way to add template properties
-- **Delivery Options**: Support for both asynchronous and synchronous sending
+- **Delivery Options**: Support for asynchronous sending
 - **Self-Contained**: No dependencies on external domains

@@ -371,22 +371,6 @@ var _ = Describe("NotificationBuilder", func() {
 	})
 
 	Context("Send", func() {
-		It("fails if notification is not built first", func() {
-			// Create a notification builder but do not call Build()
-			notificationBuilder := builder.New().
-				WithNamespace("test-namespace").
-				WithPurpose("test-purpose").
-				WithChannels("test-channel").
-				WithSender(notificationv1.SenderTypeSystem, "test")
-
-			// Attempt to send the notification
-			notification, err := notificationBuilder.Send(ctx)
-
-			// Verify the error
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("notification must be built before sending"))
-			Expect(notification).To(BeNil())
-		})
 
 		It("creates a notification resource via the k8s client", func() {
 			// Setup the expected notification
@@ -432,12 +416,6 @@ var _ = Describe("NotificationBuilder", func() {
 			fakeClient.EXPECT().
 				CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Notification"), mock.Anything).
 				RunAndReturn(returnSuccess).Once()
-
-			// Setup the Scheme method expectation
-
-			fakeClient.EXPECT().
-				Scheme().
-				Return(k8sScheme).Maybe()
 
 			// Send the notification
 			notification, err := notificationBuilder.Send(ctx)
