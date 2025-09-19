@@ -19,8 +19,6 @@ import (
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/organization/internal/controller"
 	"github.com/telekom/controlplane/organization/internal/index"
-	"github.com/telekom/controlplane/organization/internal/secret"
-	secretmock "github.com/telekom/controlplane/organization/internal/secret/mock"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,10 +60,10 @@ var (
 	k8sClient client.Client
 )
 
-func TestControllers(t *testing.T) {
+func TestControllersWithWebhook(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	RunSpecs(t, "Controller Suite")
+	RunSpecs(t, "Controller & Webhook Suite")
 }
 
 var _ = BeforeSuite(func() {
@@ -152,9 +150,6 @@ var _ = BeforeSuite(func() {
 	By("setting up the team webhook")
 	err = webhhookv1.SetupTeamWebhookWithManager(k8sManager)
 	Expect(err).NotTo(HaveOccurred())
-
-	By("setting up the mocked secret manager for the webhook")
-	secret.GetSecretManager = secretmock.SecretManager
 
 	By("Creating the environment namespace")
 	CreateNamespace(testEnvironment)

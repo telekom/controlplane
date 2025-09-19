@@ -5,23 +5,34 @@
 package internal
 
 import (
-	"encoding/base64"
-	"encoding/json"
+	"context"
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/secret"
+	"github.com/telekom/controlplane/secret-manager/api"
+	"github.com/telekom/controlplane/secret-manager/api/fake"
 	"k8s.io/apimachinery/pkg/api/errors"
 	_ "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var onboardingOptions = &api.OnboardingOptions{
+	SecretValues: make(map[string]any),
+}
+
+var memoryTestStorage = make(map[string]string)
+
+var secretManagerMock *fake.MockSecretManager
 
 func NewGroupForTeam(teamObj *organizationv1.Team) *organizationv1.Group {
 	return &organizationv1.Group{
@@ -52,7 +63,7 @@ func NewTeam(name, group string, members []organizationv1.Member) *organizationv
 		Spec: organizationv1.TeamSpec{
 			Name:     name,
 			Group:    group,
-			Email:    "example@example.com",
+			Email:    "mail@example.com",
 			Members:  members,
 			Category: organizationv1.TeamCategoryCustomer,
 		},
@@ -90,13 +101,19 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 				Namespace: testNamespace,
 			},
 			Links: adminv1.Links{
-				Url:       "http://example.org",
-				Issuer:    "http://example.org/issuer",
-				LmsIssuer: "http://example.org/lms-issuer",
+				Url:       "https://example.org",
+				Issuer:    "https://example.org/issuer",
+				LmsIssuer: "https://example.org/lms-issuer",
 			},
 		}
 
 		BeforeAll(func() {
+
+			secretManagerMock = fake.NewMockSecretManager(GinkgoT())
+			secret.GetSecretManager = func() api.SecretManager {
+				return secretManagerMock
+			}
+
 			By("Creating the Zone")
 			err := k8sClient.Create(ctx, zone)
 			Expect(err).NotTo(HaveOccurred())
@@ -118,13 +135,6 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 
 		Context("Create a single team. Happy path", Ordered, func() {
 
-			type token struct {
-				ClientId     string `json:"client_id"`
-				ClientSecret string `json:"client_secret"`
-				Environment  string `json:"environment"`
-				GeneratedAt  int64  `json:"generated_at"`
-			}
-
 			var err error
 			var team *organizationv1.Team
 			var group *organizationv1.Group
@@ -134,7 +144,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 
 			BeforeAll(func() {
 				By("Initializing the Team & Group")
-				team = NewTeam(teamName, groupName, []organizationv1.Member{{Email: "example@example.com", Name: "member"}})
+				team = NewTeam(teamName, groupName, []organizationv1.Member{{Email: "mail@example.com", Name: "member"}})
 				group = NewGroupForTeam(team)
 			})
 
@@ -144,6 +154,9 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Tearing down the Teams & Groups")
+				secretManagerMock.EXPECT().
+					DeleteTeam(mock.Anything, mock.Anything, mock.Anything).
+					Return(nil)
 				err = k8sClient.Delete(ctx, team)
 				Expect(err).NotTo(HaveOccurred())
 				err = k8sClient.Delete(ctx, group)
@@ -160,6 +173,9 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 
 				err = k8sClient.Create(ctx, group)
 				Expect(err).NotTo(HaveOccurred())
+				secretManagerMock.EXPECT().
+					UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					RunAndReturn(runAndReturnForUpsertTeam())
 				err = k8sClient.Create(ctx, team)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -195,12 +211,16 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
 				Expect(err).NotTo(HaveOccurred())
 
-				var previousToken, latestToken token
-				// previousTokenRef := team.Status.TeamToken
-				Expect(json.Unmarshal(getDecodedToken(team.Status.TeamToken), &previousToken)).NotTo(HaveOccurred())
+				var previousToken, latestToken organizationv1.TeamToken
+				previousToken = getDecodedToken(team.Status.TeamToken)
 				team.Spec.Secret = "rotate"
+
 				By("Updating the Team.Spec to rotate with delay to have a different timestamp")
 				time.Sleep(1 * time.Second)
+				secretManagerMock.EXPECT().
+					UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					RunAndReturn(runAndReturnForUpsertTeam())
+
 				Expect(k8sClient.Update(ctx, team)).NotTo(HaveOccurred())
 
 				Eventually(func(g Gomega) {
@@ -211,7 +231,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					ExpectObjConditionToBeReady(g, team)
 
 					By("Checking the Webhook & Reconciler changes on the secret")
-					Expect(json.Unmarshal(getDecodedToken(team.Status.TeamToken), &latestToken)).NotTo(HaveOccurred())
+					latestToken = getDecodedToken(team.Status.TeamToken)
 					g.Expect(team.Spec.Secret).NotTo(BeEmpty())
 					g.Expect(previousToken.ClientSecret).NotTo(Equal(latestToken.ClientSecret))
 					g.Expect(previousToken.ClientId).To(Equal(latestToken.ClientId))
@@ -223,12 +243,85 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					g.Expect(k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)).NotTo(HaveOccurred())
 					g.Expect(identityClient.Spec.ClientSecret).To(Equal(team.Spec.Secret))
 
-					// By("Checking the previous secret has been deleted")
-					// value, _ := secret.GetSecretManager().Get(ctx, previousTokenRef)
-					// g.Expect(value).To(BeEmpty())
 				}, timeout, interval).Should(Succeed())
 			})
+			It("should watch identity clients and update team token with reconciler", func() {
+				By("Getting the latest version of team and identity client")
+				Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)).ToNot(HaveOccurred())
+				previousTokenReference := team.Status.TeamToken
+				identityClient := &identityv1.Client{}
+				Expect(k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)).ToNot(HaveOccurred())
+				By("Waiting 1 seconds to have an actual difference in the generation time stamps")
+				time.Sleep(1 * time.Second)
+				Eventually(func(g Gomega) {
+					By("Updating the client secret in the identity client")
+					identityClient.Spec.ClientSecret = "<obfuscated-new-secret>"
+					Expect(k8sClient.Update(ctx, identityClient)).ToNot(HaveOccurred())
+					By("Waiting 2 seconds to give time to process the update")
+					time.Sleep(2 * time.Second)
 
+					By("Getting the latest version of team object")
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)).ToNot(HaveOccurred())
+					ExpectObjConditionToBeReady(g, team)
+
+					By("Comparing that the team token has not changed")
+					latestTokenReference := team.Status.TeamToken
+					compareToken(latestTokenReference, previousTokenReference, "==", "==")
+				}, timeout, interval).Should(Succeed())
+
+			})
+			It("should be updated and return sub-resources to desired state", func() {
+				Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)).ToNot(HaveOccurred())
+
+				previousTokenReference := team.Status.TeamToken
+				By("Making undesired changes to id-c")
+				var identityClient = &identityv1.Client{}
+				Expect(k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)).ToNot(HaveOccurred())
+				identityClient.Spec = identityv1.ClientSpec{
+					Realm:        types.ObjectRefFromObject(identityClient),
+					ClientId:     "invalid-id",
+					ClientSecret: "invalid-secret",
+				}
+				Expect(k8sClient.Update(ctx, identityClient)).ToNot(HaveOccurred())
+
+				By("Changing the Team Members")
+				team.Spec.Members = append(team.Spec.Members, organizationv1.Member{
+					Name:  "member2",
+					Email: "mail@example.com",
+				})
+				Expect(k8sClient.Update(ctx, team)).ToNot(HaveOccurred())
+				Eventually(func(g Gomega) {
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)).ToNot(HaveOccurred())
+					ExpectObjConditionToBeReady(g, team)
+					g.Expect(team.Status.IdentityClientRef).NotTo(BeNil())
+					By("Checking the team changes have accorded")
+					g.Expect(team.Spec).To(BeEquivalentTo(organizationv1.TeamSpec{
+						Name:     teamName,
+						Group:    groupName,
+						Email:    "mail@example.com",
+						Members:  []organizationv1.Member{{Email: "mail@example.com", Name: "member"}, {Email: "mail@example.com", Name: "member2"}},
+						Category: organizationv1.TeamCategoryCustomer,
+						Secret:   "$<testgroup-alpha--team-alphasecret>",
+					}))
+					By("Checking the team identity client is back to desired state")
+					g.Expect(k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)).ToNot(HaveOccurred())
+					identityClient.Spec.ClientSecret = "<obfuscated>"
+					g.Expect(identityClient.Spec).To(BeEquivalentTo(identityv1.ClientSpec{
+						Realm: &types.ObjectRef{
+							Name:      "team-api-identity-realm",
+							Namespace: "default",
+							UID:       "",
+						},
+						ClientId:     groupName + "--" + teamName + "--team-user",
+						ClientSecret: "<obfuscated>",
+					}))
+
+					By("Comparing that the team token has not changed")
+					latestTokenReference := team.Status.TeamToken
+					compareToken(latestTokenReference, previousTokenReference, "==", "==")
+				}, timeout, interval).Should(Succeed())
+
+			})
 		})
 		Context("Create a single team. Unhappy path", Ordered, func() {
 			var err error
@@ -237,6 +330,9 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 
 			AfterEach(func() {
 				By("Tearing down the Teams & Groups")
+				secretManagerMock.EXPECT().
+					DeleteTeam(mock.Anything, mock.Anything, mock.Anything).
+					Return(nil)
 				err = k8sClient.DeleteAllOf(ctx, team)
 				if !errors.IsNotFound(err) {
 					Expect(err).NotTo(HaveOccurred())
@@ -248,9 +344,13 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 			})
 
 			It("should reject invalid names", func() {
-				team = NewTeam("team", "group", []organizationv1.Member{{Email: "example@example.com", Name: "member"}})
+				team = NewTeam("team", "group", []organizationv1.Member{{Email: "mail@example.com", Name: "member"}})
 				group = NewGroupForTeam(team)
 				By("Creating the Group")
+				secretManagerMock.EXPECT().
+					UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					RunAndReturn(runAndReturnForUpsertTeam())
+
 				err = k8sClient.Create(ctx, group)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -265,11 +365,53 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 
 })
 
-func getDecodedToken(secretId string) []byte {
+func runAndReturnForUpsertTeam() func(ctx2 context.Context, s string, s2 string, option ...api.OnboardingOption) (map[string]string, error) {
+	return func(ctx2 context.Context, s string, s2 string, option ...api.OnboardingOption) (map[string]string, error) {
+		for i := range option {
+			option[i](onboardingOptions)
+		}
+		tokenId := s + s2 + "token"
+		tokenValue := fmt.Sprintf("%s", onboardingOptions.SecretValues["teamToken"])
+		memoryTestStorage[tokenId] = tokenValue
+
+		secretId := s + s2 + "secret"
+		secretValue := fmt.Sprintf("%s", onboardingOptions.SecretValues["clientSecret"])
+		memoryTestStorage[secretId] = secretValue
+
+		return map[string]string{
+			"clientSecret": secretId,
+			"teamToken":    tokenId,
+		}, nil
+	}
+}
+
+func compareToken(stringTokenA, stringTokenB, secretComparator, timestampComparator string) {
+	tokenADecoded := getDecodedToken(stringTokenA)
+	tokenBDecoded := getDecodedToken(stringTokenB)
+
+	By("Comparing the generation time stamps, by timestampComparator '" + timestampComparator + "'")
+	Expect(tokenADecoded.GeneratedAt).To(BeNumerically(timestampComparator, tokenBDecoded.GeneratedAt))
+
+	By("Comparing the client secret, by secretComparator '" + secretComparator + "'")
+	if secretComparator == "==" {
+		Expect(tokenADecoded.ClientSecret).To(BeEquivalentTo(tokenBDecoded.ClientSecret))
+	} else {
+		Expect(tokenADecoded.ClientSecret).ToNot(BeEquivalentTo(tokenBDecoded.ClientSecret))
+	}
+}
+
+func getDecodedToken(secretId string) organizationv1.TeamToken {
 	By("Getting the token from mocked secret manager")
+
+	secretManagerMock.EXPECT().Get(mock.Anything, mock.Anything).RunAndReturn(
+		func(ctx context.Context, secretId string) (string, error) {
+			secretId, _ = api.FromRef(secretId)
+			return memoryTestStorage[secretId], nil
+		})
+
 	tokenEncoded, err := secret.GetSecretManager().Get(ctx, secretId)
 	Expect(err).NotTo(HaveOccurred())
-	tokenDecoded, err := base64.StdEncoding.DecodeString(tokenEncoded)
+	tokenDecoded, err := organizationv1.DecodeTeamToken(tokenEncoded)
 	Expect(err).NotTo(HaveOccurred())
 	return tokenDecoded
 }

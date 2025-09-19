@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -29,7 +30,7 @@ var teamlog = logf.Log.WithName("team-resource")
 func SetupTeamWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).For(&organizationv1.Team{}).
 		WithValidator(&TeamCustomValidator{}).
-		WithDefaulter(&TeamCustomDefaulter{}).
+		WithDefaulter(&TeamCustomDefaulter{mgr.GetClient()}).
 		Complete()
 }
 
@@ -48,7 +49,9 @@ var _ webhook.CustomValidator = &TeamCustomValidator{}
 
 // +kubebuilder:webhook:path=/mutate-organization-cp-ei-telekom-de-v1-team,mutating=true,failurePolicy=fail,sideEffects=None,groups=organization.cp.ei.telekom.de,resources=teams,verbs=create;update;delete,versions=v1,name=mteam-v1.kb.io,admissionReviewVersions=v1
 
-type TeamCustomDefaulter struct{}
+type TeamCustomDefaulter struct {
+	client client.Client
+}
 
 func (t TeamCustomDefaulter) Default(ctx context.Context, obj runtime.Object) error {
 	teamlog.V(1).Info("mutating webhook called")
@@ -63,7 +66,12 @@ func (t TeamCustomDefaulter) Default(ctx context.Context, obj runtime.Object) er
 	}
 
 	teamlog.V(1).Info("mutating secret")
-	err = mutator.MutateSecret(ctx, env, teamObj)
+
+	zoneObj, err := mutator.GetZoneObjWithTeamInfo(ctx, t.client)
+	if err != nil {
+		return err
+	}
+	err = mutator.MutateSecret(ctx, env, teamObj, zoneObj)
 	if err != nil {
 		return err
 	}
