@@ -5,22 +5,22 @@
 package in
 
 import (
+	"context"
 	"net/url"
 	"strings"
-
-	"context"
 
 	"github.com/pb33f/libopenapi"
 	v2 "github.com/pb33f/libopenapi/datamodel/high/v2"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common-server/pkg/problems"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	"gopkg.in/yaml.v3"
+	"github.com/telekom/controlplane/common-server/pkg/problems"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
+	"go.yaml.in/yaml/v4"
 )
 
 func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecification, error) {
