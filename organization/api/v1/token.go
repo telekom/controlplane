@@ -33,12 +33,12 @@ func EncodeTeamToken(token TeamToken, group, team string) (string, error) {
 
 func DecodeTeamToken(stringToken string) (TeamToken, error) {
 
-	splitted := strings.SplitN(stringToken, ".", 2)
-	if len(splitted) != 2 {
+	split := strings.SplitN(stringToken, ".", 2)
+	if len(split) != 2 {
 		return TeamToken{}, fmt.Errorf("failed to decode token. `env--group--team.` prefix is not present")
 	}
 
-	decoded, err := base64.StdEncoding.DecodeString(splitted[1])
+	decoded, err := base64.StdEncoding.DecodeString(split[1])
 	if err != nil {
 		return TeamToken{}, fmt.Errorf("failed to decode token: %w", err)
 	}
