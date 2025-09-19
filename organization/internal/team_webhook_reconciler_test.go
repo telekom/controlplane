@@ -48,10 +48,11 @@ func NewTeam(name, group string, members []organizationv1.Member) *organizationv
 			},
 		},
 		Spec: organizationv1.TeamSpec{
-			Name:    name,
-			Group:   group,
-			Email:   "example@example.com",
-			Members: members,
+			Name:     name,
+			Group:    group,
+			Email:    "example@example.com",
+			Members:  members,
+			Category: organizationv1.TeamCategoryCustomer,
 		},
 		Status: organizationv1.TeamStatus{},
 	}
@@ -85,6 +86,11 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 			TeamApiGatewayRealm: &types.ObjectRef{
 				Name:      "team-api-gateway-realm",
 				Namespace: testNamespace,
+			},
+			Links: adminv1.Links{
+				Url:       "http://example.org",
+				Issuer:    "http://example.org/issuer",
+				LmsIssuer: "http://example.org/lms-issuer",
 			},
 		}
 

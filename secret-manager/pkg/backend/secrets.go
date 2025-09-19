@@ -91,10 +91,12 @@ func (a *Secrets) TrySetSecret(secretPath string, value SecretValue) bool {
 	return true
 }
 
-type NewFunc[T SecretId] func(env, team, app, path string, checksum string) T
+// SecretIdConstructor is a function type that constructs a SecretId instance.
+// It must be implemented by all backends to allow generic creation of SecretId instances.
+type SecretIdConstructor[T SecretId] func(env, team, app, path string, checksum string) T
 
 // TryAddSecrets adds the provided secrets to the allowed secrets using the provided new-function to create SecretId instances.
-func TryAddSecrets[T SecretId](newFunc NewFunc[T], allowedSecrets *Secrets, env, teamId, appId string, secrets map[string]SecretValue) error {
+func TryAddSecrets[T SecretId](newFunc SecretIdConstructor[T], allowedSecrets *Secrets, env, teamId, appId string, secrets map[string]SecretValue) error {
 	for key, value := range secrets {
 		secretId := newFunc(env, teamId, appId, key, "")
 		ok := allowedSecrets.TrySetSecret(key, value)
@@ -106,7 +108,7 @@ func TryAddSecrets[T SecretId](newFunc NewFunc[T], allowedSecrets *Secrets, env,
 }
 
 // MergeSecretRefs adds missing secrets from the provided secrets map to the secretRefs map using the provided new-function to create SecretId instances.
-func MergeSecretRefs[T SecretId](newFunc NewFunc[T], secretRefs map[string]SecretRef, env, teamId, appId string, secrets map[string]SecretValue) {
+func MergeSecretRefs[T SecretId](newFunc SecretIdConstructor[T], secretRefs map[string]SecretRef, env, teamId, appId string, secrets map[string]SecretValue) {
 	for secretPath, secretValue := range secrets {
 		if _, ok := secretRefs[secretPath]; !ok {
 			secretRefs[secretPath] = newFunc(env, teamId, appId, secretPath, MakeChecksum(secretValue.Value()))

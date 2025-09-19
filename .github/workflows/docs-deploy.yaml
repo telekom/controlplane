@@ -9,17 +9,20 @@ on:
   push:
     branches:
       - main
-      - docs/pages
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs-build.yml'
+      - '.github/workflows/docs-deploy.yml'
 
 jobs:
   build:
     name: Build Docusaurus
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 18
           cache: npm
@@ -31,7 +34,7 @@ jobs:
         run: cd docs/pages && npm run build
 
       - name: Upload Build Artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: docs/pages/build
 

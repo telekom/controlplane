@@ -216,10 +216,11 @@ var _ = Describe("Team Webhook", func() {
 					},
 				},
 				Spec: organizationv1.TeamSpec{
-					Group:   "group-test",
-					Name:    "team-test",
-					Email:   "test@example.com",
-					Members: testMember,
+					Group:    "group-test",
+					Name:     "team-test",
+					Email:    "test@example.com",
+					Members:  testMember,
+					Category: organizationv1.TeamCategoryCustomer,
 				},
 			}
 			secretManagerMock.EXPECT().
@@ -305,10 +306,11 @@ var _ = Describe("Team Webhook", func() {
 					},
 				},
 				Spec: organizationv1.TeamSpec{
-					Group:   "group-test",
-					Name:    "team-test",
-					Email:   "test@example.com",
-					Members: testMember,
+					Group:    "group-test",
+					Name:     "team-test",
+					Email:    "test@example.com",
+					Members:  testMember,
+					Category: organizationv1.TeamCategoryCustomer,
 				},
 			}
 			secretManagerMock.EXPECT().

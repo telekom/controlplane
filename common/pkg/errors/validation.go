@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package webhook
+package errors
 
 import (
 	"fmt"
@@ -20,8 +20,8 @@ var (
 )
 
 type ValidationError struct {
-	errors   field.ErrorList
-	warnings admission.Warnings
+	Errors   field.ErrorList
+	Warnings admission.Warnings
 	gk       schema.GroupKind
 	ref      types.NamedObject
 }
@@ -30,13 +30,13 @@ func NewValidationError(gk schema.GroupKind, ref types.NamedObject) *ValidationE
 	return &ValidationError{
 		gk:       gk,
 		ref:      ref,
-		errors:   field.ErrorList{},
-		warnings: admission.Warnings{},
+		Errors:   field.ErrorList{},
+		Warnings: admission.Warnings{},
 	}
 }
 
 func (e *ValidationError) AddError(err *field.Error) {
-	e.errors = append(e.errors, err)
+	e.Errors = append(e.Errors, err)
 }
 
 func (e *ValidationError) AddInvalidError(path *field.Path, value any, message string) {
@@ -48,32 +48,32 @@ func (e *ValidationError) AddRequiredError(path *field.Path, message string) {
 }
 
 func (e *ValidationError) BuildError() error {
-	if len(e.errors) == 0 {
+	if len(e.Errors) == 0 {
 		return nil
 	}
 
 	return apierrors.NewInvalid(
 		e.gk,
 		e.ref.GetName(),
-		e.errors,
+		e.Errors,
 	)
 }
 
 func (e *ValidationError) HasErrors() bool {
-	return len(e.errors) > 0
+	return len(e.Errors) > 0
 }
 
 func (e *ValidationError) BuildWarnings() admission.Warnings {
-	if len(e.warnings) == 0 {
+	if len(e.Warnings) == 0 {
 		return nil
 	}
-	return e.warnings
+	return e.Warnings
 }
 
 func (e *ValidationError) AddWarning(message string) {
-	e.warnings = append(e.warnings, message)
+	e.Warnings = append(e.Warnings, message)
 }
 
 func (e *ValidationError) AddWarningf(path *field.Path, value any, format string, args ...any) {
-	e.warnings = append(e.warnings, fmt.Sprintf("%s: %s", path.String(), fmt.Sprintf(format, args...)))
+	e.Warnings = append(e.Warnings, fmt.Sprintf("%s: %s", path.String(), fmt.Sprintf(format, args...)))
 }

@@ -8,4 +8,5 @@ resources:
 - api_v1_apiexposure.yaml
 - api_v1_apisubscription.yaml
 - api_v1_remoteapisubscription.yaml
+- api_v1_apicategory.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

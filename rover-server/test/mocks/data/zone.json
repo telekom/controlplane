@@ -13,7 +13,7 @@
     "links": {
       "GatewayIssuer": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc",
       "GatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
-      "StargateLmsIssuer": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc"
+      "GatewayLmsIssuer": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc"
     },
     "conditions": [
       {

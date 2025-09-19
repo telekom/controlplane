@@ -150,10 +150,10 @@ servers:
 				Specification: map[string]interface{}{
 					"openapi": "3.0.0",
 					"info": map[string]interface{}{
-						"title":      "Rover API",
-						"version":    "1.0.0",
-						"x-category": "other",
-						"x-vendor":   "true",
+						"title":          "Rover API",
+						"version":        "1.0.0",
+						"x-api-category": "other",
+						"x-vendor":       "true",
 					},
 					"servers": []map[string]interface{}{
 						{
@@ -181,10 +181,10 @@ servers:
 				Specification: map[string]interface{}{
 					"openapi": "3.0.0",
 					"info": map[string]interface{}{
-						"title":      "Rover API",
-						"version":    "1.0.0",
-						"x-category": "test",
-						"x-vendor":   "true",
+						"title":          "Rover API",
+						"version":        "1.0.0",
+						"x-api-category": "test",
+						"x-vendor":       "true",
 					},
 					"servers": []map[string]interface{}{
 						{
@@ -204,10 +204,10 @@ servers:
 				Specification: map[string]interface{}{
 					"openapi": "3.0.0",
 					"info": map[string]interface{}{
-						"title":      "Rover API",
-						"version":    "1.0.0",
-						"x-category": "test",
-						"x-vendor":   "true",
+						"title":          "Rover API",
+						"version":        "1.0.0",
+						"x-api-category": "test",
+						"x-vendor":       "true",
 					},
 					"servers": []map[string]interface{}{
 						{

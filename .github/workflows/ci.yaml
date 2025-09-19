@@ -7,9 +7,11 @@ name: Run CI
 on:
   workflow_dispatch:
   push:
-  pull_request:
     branches:
       - "main"
+    tags:
+      - 'v*'
+  pull_request:
   schedule:
     - cron: '0 0 * * *'  # Runs every day at midnight UTC
 
@@ -33,7 +35,7 @@ jobs:
       modules: ${{ steps.detect-changes.outputs.modules }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5.0.0 # pin@v2.0.0
+        uses: actions/checkout@v5 # pin@v2.0.0
         with:
           fetch-depth: 0
       - name: Detect Changes

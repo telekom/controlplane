@@ -34,7 +34,6 @@ var (
 
 func init() {
 	controller.RegisterSchemesOrDie(scheme)
-	// +kubebuilder:scaffold:scheme
 }
 
 func main() {
@@ -168,6 +167,13 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr, syncer.NewSyncerFactory()); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "RemoteApiSubscription")
+		os.Exit(1)
+	}
+	if err := (&controller.ApiCategoryReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ApiCategory")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

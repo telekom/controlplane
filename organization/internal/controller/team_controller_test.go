@@ -53,10 +53,11 @@ func NewTeam(name, group string, members []organizationv1.Member) *organizationv
 			},
 		},
 		Spec: organizationv1.TeamSpec{
-			Name:    name,
-			Group:   group,
-			Email:   testMail,
-			Members: members,
+			Name:     name,
+			Group:    group,
+			Email:    testMail,
+			Members:  members,
+			Category: organizationv1.TeamCategoryCustomer,
 		},
 		Status: organizationv1.TeamStatus{},
 	}
@@ -90,6 +91,11 @@ var _ = Describe("Team Controller", Ordered, func() {
 			TeamApiGatewayRealm: &types.ObjectRef{
 				Name:      "team-api-gateway-realm",
 				Namespace: testNamespace,
+			},
+			Links: adminv1.Links{
+				Url:       "http://example.org",
+				Issuer:    "http://example.org/issuer",
+				LmsIssuer: "http://example.org/lms-issuer",
 			},
 		}
 
@@ -292,10 +298,11 @@ var _ = Describe("Team Controller", Ordered, func() {
 					g.Expect(team.Status.IdentityClientRef).NotTo(BeNil())
 					By("Checking the team changes have accorded")
 					g.Expect(team.Spec).To(BeEquivalentTo(organizationv1.TeamSpec{
-						Name:    teamName,
-						Group:   groupName,
-						Email:   testMail,
-						Members: []organizationv1.Member{{Email: testMail, Name: "member"}, {Email: testMail, Name: "member2"}},
+						Name:     teamName,
+						Group:    groupName,
+						Email:    testMail,
+						Members:  []organizationv1.Member{{Email: testMail, Name: "member"}, {Email: testMail, Name: "member2"}},
+						Category: organizationv1.TeamCategoryCustomer,
 					}))
 					By("Checking the team identity client is back to desired state")
 					g.Expect(k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)).ToNot(HaveOccurred())

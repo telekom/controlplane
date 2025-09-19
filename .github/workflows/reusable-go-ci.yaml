@@ -20,7 +20,7 @@ on:
         description: "Set to true to run unit tests and code coverage"
         required: false
         type: boolean
-        default: true
+        default: ${{ github.event_name == 'pull_request' || github.ref_name == 'main' }}
       allow_tests_failure:
         description: "Set to true to allow tests to fail without failing the job"
         required: false
@@ -262,7 +262,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@3c3833e0f8c1c83d449a7478aa59c036a9165498 # pinv3.29.11
+        uses: github/codeql-action/init@192325c86100d080feab897ff886c34abd4c83a3 # pinv3.30.3
         with:
           languages: go
           build-mode: manual # Set to manual as we provide a build step
@@ -283,7 +283,7 @@ jobs:
           fi
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@3c3833e0f8c1c83d449a7478aa59c036a9165498 # pinv3.29.11
+        uses: github/codeql-action/analyze@192325c86100d080feab897ff886c34abd4c83a3 # pinv3.30.3
         with:
           category: "/language:go"
 
@@ -359,7 +359,7 @@ jobs:
     steps:
       # No checkout or Go setup needed if only running Trivy on a remote image
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.33.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: ${{ inputs.container_registry }}/${{ inputs.github_repository }}/${{ inputs.module }}@${{ needs.build.outputs.image_digest }}
           exit-code: "1"

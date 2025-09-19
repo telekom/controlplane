@@ -25,6 +25,7 @@ rules:
 - apiGroups:
   - api.cp.ei.telekom.de
   resources:
+  - apicategories
   - apiexposures
   - apis
   - apisubscriptions
@@ -40,6 +41,7 @@ rules:
 - apiGroups:
   - api.cp.ei.telekom.de
   resources:
+  - apicategories/finalizers
   - apiexposures/finalizers
   - apis/finalizers
   - apisubscriptions/finalizers
@@ -49,6 +51,7 @@ rules:
 - apiGroups:
   - api.cp.ei.telekom.de
   resources:
+  - apicategories/status
   - apiexposures/status
   - apis/status
   - apisubscriptions/status
