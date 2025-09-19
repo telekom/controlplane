@@ -21,6 +21,7 @@ require (
 	github.com/onsi/gomega v1.38.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.10.0
+	github.com/telekom/controlplane/identity v0.0.0 // for identity/pkg/keycloak package
 	k8s.io/api v0.33.4
 	k8s.io/apimachinery v0.33.4
 	k8s.io/client-go v0.33.4
@@ -32,6 +33,7 @@ replace (
 	github.com/telekom/controlplane/common => ../common
 	github.com/telekom/controlplane/common-server => ../common-server // indirect
 	github.com/telekom/controlplane/gateway/api => ../gateway/api
+	github.com/telekom/controlplane/identity => ../identity
 	github.com/telekom/controlplane/identity/api => ../identity/api
 	github.com/telekom/controlplane/organization/api => ./api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
