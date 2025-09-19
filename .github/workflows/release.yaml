@@ -38,7 +38,7 @@ jobs:
             ~/.cache/go-build
             ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-      - uses: sigstore/cosign-installer@v3.9.2
+      - uses: sigstore/cosign-installer@v3.10.0
       - uses: anchore/sbom-action/download-syft@v0.20.5
       - name: Install GoReleaser
         uses: goreleaser/goreleaser-action@v6
