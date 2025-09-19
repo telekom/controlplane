@@ -108,15 +108,6 @@ flowchart TD
     Notification -- "Sent via" --> Channel
     Event -- "Creates" --> Notification
 
-    classDef team fill:#f9f,stroke:#333,stroke-width:2px
-    classDef channel fill:#bbf,stroke:#333,stroke-width:2px
-    classDef template fill:#bfb,stroke:#333,stroke-width:2px
-    classDef notification fill:#fbb,stroke:#333,stroke-width:2px
-
-    class Team team
-    class Channel channel
-    class Templates template
-    class Notification,Event notification
 ```
 
 </div>

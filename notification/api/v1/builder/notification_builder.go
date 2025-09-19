@@ -6,10 +6,24 @@ package builder
 
 import (
 	"context"
+	"encoding/json"
+	"maps"
+	"sync/atomic"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/pkg/errors"
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 )
+
+// +kubebuilder:rbac:groups=notification.cp.ei.telekom.de,resources=notifications,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=notification.cp.ei.telekom.de,resources=notificationchannels,verbs=get;list;watch
+// +kubebuilder:rbac:groups=notification.cp.ei.telekom.de,resources=notificationtemplates,verbs=get;list;watch
 
 // NotificationBuilder provides a fluent API for creating and sending notifications.
 // It abstracts the complexity of notification creation, allowing external domains
@@ -35,6 +49,12 @@ type NotificationBuilder interface {
 	// It is recommended to use the namespace of the resource that is triggering the notification.
 	WithNamespace(namespace string) NotificationBuilder
 
+	// WithOwner sets the owner of the notification.
+	// This is an optional field. If set, the notification will have an owner reference to the given object.
+	// It is recommended to set the owner to ensure proper garbage collection of the notification.
+	// If the namespace is not set, it will be set to the namespace of the owner.
+	WithOwner(owner client.Object) NotificationBuilder
+
 	// WithPurpose sets the purpose of the notification.
 	// This is a required field and must be set before building the object.
 	// It is used to select the notification template.
@@ -59,9 +79,147 @@ type NotificationBuilder interface {
 
 	// Send will send the notification asynchronously
 	Send(ctx context.Context) (*notificationv1.Notification, error)
-
-	// SendAndWait will send the notification and wait for it to be processed or timeout
-	SendAndWait(ctx context.Context, timeout time.Duration) (*notificationv1.Notification, error)
 }
 
-type notificationBuilder struct{}
+var _ NotificationBuilder = &notificationBuilder{}
+
+// notificationBuilder implements the NotificationBuilder interface
+type notificationBuilder struct {
+	// The notification object being built
+	Notification *notificationv1.Notification
+
+	Owner client.Object
+
+	Errors []error
+
+	built *atomic.Bool
+
+	pollInterval time.Duration
+}
+
+// New creates a new NotificationBuilder
+func New() NotificationBuilder {
+	return &notificationBuilder{
+		Notification: &notificationv1.Notification{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels:      map[string]string{},
+				Annotations: map[string]string{},
+			},
+			Spec: notificationv1.NotificationSpec{},
+		},
+		built:        &atomic.Bool{},
+		pollInterval: 500 * time.Millisecond,
+	}
+}
+
+// WithChannels implements NotificationBuilder.
+func (n *notificationBuilder) WithChannels(channels ...string) NotificationBuilder {
+	n.Notification.Spec.Channels = append(n.Notification.Spec.Channels, channels...)
+	return n
+}
+
+func (n *notificationBuilder) WithDefaultChannels(ctx context.Context, namespace string) NotificationBuilder {
+	k8sClient := cclient.ClientFromContextOrDie(ctx)
+	channelList := &notificationv1.NotificationChannelList{}
+	err := k8sClient.List(ctx, channelList, client.InNamespace(namespace))
+	if err != nil {
+		n.Errors = append(n.Errors, errors.Wrap(err, "failed to list notification channels"))
+		return n
+	}
+
+	for _, channel := range channelList.Items {
+		n.Notification.Spec.Channels = append(n.Notification.Spec.Channels, channel.Name)
+	}
+	return n
+}
+
+func (n *notificationBuilder) WithNamespace(namespace string) NotificationBuilder {
+	if n.Notification.Namespace != "" {
+		return n
+	}
+	n.Notification.Namespace = namespace
+	return n
+}
+
+func (n *notificationBuilder) WithOwner(owner client.Object) NotificationBuilder {
+	if owner == nil {
+		return n
+	}
+	n.Owner = owner
+	n.Notification.Namespace = owner.GetNamespace()
+	maps.Copy(n.Notification.Labels, owner.GetLabels())
+	maps.Copy(n.Notification.Annotations, owner.GetAnnotations())
+
+	return n
+}
+
+func (n *notificationBuilder) WithProperties(properties map[string]any) NotificationBuilder {
+	b, err := json.Marshal(properties)
+	if err != nil {
+		n.Errors = append(n.Errors, errors.Wrap(err, "failed to marshal properties"))
+		return n
+	}
+	n.Notification.Spec.Properties = runtime.RawExtension{Raw: b}
+	return n
+}
+
+func (n *notificationBuilder) WithPurpose(purpose string) NotificationBuilder {
+	n.Notification.Spec.Purpose = purpose
+	return n
+}
+
+func (n *notificationBuilder) WithSender(senderType notificationv1.SenderType, senderName string) NotificationBuilder {
+	n.Notification.Spec.Sender = notificationv1.Sender{
+		Type: senderType,
+		Name: senderName,
+	}
+	return n
+}
+
+func (n *notificationBuilder) Build() (*notificationv1.Notification, error) {
+	if len(n.Errors) > 0 {
+		return nil, n.Errors[0]
+	}
+	if n.Notification.Namespace == "" {
+		return nil, errors.New("namespace is required")
+	}
+	if n.Notification.Spec.Purpose == "" {
+		return nil, errors.New("purpose is required")
+	}
+
+	if n.built.Swap(true) {
+		n.Notification.Name = makeName(n.Notification)
+	}
+
+	return n.Notification, nil
+}
+
+func (n *notificationBuilder) Send(ctx context.Context) (*notificationv1.Notification, error) {
+	if !n.built.Load() {
+		return nil, errors.New("notification must be built before sending")
+	}
+
+	k8sClient := cclient.ClientFromContextOrDie(ctx)
+	notification := n.Notification.DeepCopy()
+
+	mutator := func() error {
+		if n.Owner != nil {
+			err := controllerutil.SetControllerReference(n.Owner, notification, k8sClient.Scheme())
+			if err != nil {
+				return errors.Wrap(err, "failed to set controller reference")
+			}
+		}
+
+		ensureLabels(notification)
+
+		notification.Spec = n.Notification.Spec
+		return nil
+	}
+
+	_, err := k8sClient.CreateOrUpdate(ctx, notification, mutator)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to send notification")
+	}
+
+	return notification, nil
+}
