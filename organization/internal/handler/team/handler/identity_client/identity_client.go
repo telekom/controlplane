@@ -7,7 +7,6 @@ package identity_client
 import (
 	"context"
 	"fmt"
-	"time"
 
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -37,54 +36,18 @@ func (i IdentityClientHandler) CreateOrUpdate(ctx context.Context, owner *organi
 	}
 
 	mutate := func() error {
-		var teamToken, teamTokenRef string
-		var clientSecret string
-		var decodedToken organisationv1.TeamToken
 		identityClient.Spec.ClientId = identityClient.GetName()
 		identityClient.Spec.ClientSecret = owner.Spec.Secret
 		identityClient.Spec.Realm = zoneObj.Status.TeamApiIdentityRealm
 		identityClient.SetLabels(owner.GetLabels())
 
-		clientSecret, err = secret.GetSecretManager().Get(ctx, owner.Spec.Secret)
+		availableSecrets, err := secret.GetSecretManager().UpsertTeam(ctx, env, owner.GetName())
 		if err != nil {
 			return err
 		}
-
-		if owner.Status.TeamToken != "" {
-			teamTokenRef = owner.Status.TeamToken
-			teamToken, err = secret.GetSecretManager().Get(ctx, teamTokenRef)
-			if err != nil {
-				return err
-			}
-		}
-
-		decodedToken, err = organisationv1.DecodeTeamToken(teamToken)
-		if decodedToken.ClientSecret != clientSecret || err != nil { // if err != nil, we need to create a new token, since it is the first time a token is generated (secret manager does not know the token format)
-			teamToken, err = organisationv1.EncodeTeamToken(
-				organisationv1.TeamToken{
-					ClientId:     identityClient.Spec.ClientId,
-					ClientSecret: clientSecret,
-					Environment:  env,
-					GeneratedAt:  time.Now().Unix(),
-					ServerUrl:    "",
-					TokenUrl:     "",
-				}, owner.Spec.Group, owner.Spec.Name)
-			if err != nil {
-				return err
-			}
-			availableSecrets, err := secret.GetSecretManager().UpsertTeam(ctx, env, owner.GetName())
-			if err != nil {
-				return err
-			}
-			teamTokenId, ok := secret.FindSecretId(availableSecrets, secret.TeamToken)
-			if !ok {
-				return fmt.Errorf("team token not found in available secrets from secret-manager")
-			}
-
-			teamTokenRef, err = secret.GetSecretManager().Set(ctx, teamTokenId, teamToken)
-			if err != nil {
-				return err
-			}
+		teamTokenRef, ok := secret.FindSecretId(availableSecrets, secret.TeamToken)
+		if !ok {
+			return fmt.Errorf("team token not found in available secrets from secret-manager")
 		}
 
 		owner.Status.TeamToken = teamTokenRef

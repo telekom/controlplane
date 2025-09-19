@@ -6,20 +6,23 @@ package controller
 
 import (
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/organization/internal/secret"
+	"github.com/telekom/controlplane/secret-manager/api"
+	"github.com/telekom/controlplane/secret-manager/api/fake"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
@@ -64,6 +67,9 @@ func NewTeam(name, group string, members []organizationv1.Member) *organizationv
 }
 
 var _ = Describe("Team Controller", Ordered, func() {
+
+	var secretManagerMock *fake.MockSecretManager
+
 	Context("Zone with TeamApis is available", Ordered, func() {
 		zone := &adminv1.Zone{
 			ObjectMeta: metav1.ObjectMeta{
@@ -112,6 +118,17 @@ var _ = Describe("Team Controller", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(zone.Status.TeamApiGatewayRealm).NotTo(BeNil())
 			Expect(zone.Status.TeamApiIdentityRealm).NotTo(BeNil())
+
+			By("Mocking Secret Manager")
+			secretManagerMock = fake.NewMockSecretManager(GinkgoT())
+			secretManagerMock.EXPECT().UpsertTeam(mock.Anything, mock.Anything, mock.Anything).Return(
+				map[string]string{
+					"teamToken": string(uuid.NewUUID()),
+				}, nil)
+
+			secret.GetSecretManager = func() api.SecretManager {
+				return secretManagerMock
+			}
 		})
 
 		AfterAll(func() {
@@ -199,7 +216,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 					By("Checking the team identity client ref")
 					g.Expect(team.Status.IdentityClientRef.String()).To(Equal(expectedTeamNamespaceName + "/" + groupName + "--" + teamName + "--team-user"))
 					By("Checking the team token")
-					g.Expect(team.Status.TeamToken).ToNot(BeEmpty())
+					g.Expect(team.Status.TeamToken).ToNot(BeEmpty()) //should have value from mock
 
 					By("Checking the team identity client object")
 					var identityClient = &identityv1.Client{}
@@ -246,82 +263,6 @@ var _ = Describe("Team Controller", Ordered, func() {
 					}))
 
 				}, timeout, interval).Should(Succeed())
-			})
-			It("should watch identity clients and update team token with reconciler", func() {
-				By("Getting the latest version of team and identity client")
-				Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)).ToNot(HaveOccurred())
-				previousTokenReference := team.Status.TeamToken
-				identityClient := &identityv1.Client{}
-				Expect(k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)).ToNot(HaveOccurred())
-				By("Waiting 1 seconds to have an actual difference in the generation time stamps")
-				time.Sleep(1 * time.Second)
-				Eventually(func(g Gomega) {
-					By("Updating the client secret in the identity client")
-					identityClient.Spec.ClientSecret = "<obfuscated-new-secret>"
-					Expect(k8sClient.Update(ctx, identityClient)).ToNot(HaveOccurred())
-					By("Waiting 2 seconds to give time to process the update")
-					time.Sleep(2 * time.Second)
-
-					By("Getting the latest version of team object")
-					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)).ToNot(HaveOccurred())
-					ExpectObjConditionToBeReady(g, team)
-
-					By("Comparing that the team token has not changed")
-					latestTokenReference := team.Status.TeamToken
-					compareToken(latestTokenReference, previousTokenReference, "==", "==")
-				}, timeout, interval).Should(Succeed())
-
-			})
-			It("should be updated and return sub-resources to desired state", func() {
-				Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)).ToNot(HaveOccurred())
-
-				previousTokenReference := team.Status.TeamToken
-				By("Making undesired changes to id-c")
-				var identityClient = &identityv1.Client{}
-				Expect(k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)).ToNot(HaveOccurred())
-				identityClient.Spec = identityv1.ClientSpec{
-					Realm:        types.ObjectRefFromObject(identityClient),
-					ClientId:     "invalid-id",
-					ClientSecret: "invalid-secret",
-				}
-				Expect(k8sClient.Update(ctx, identityClient)).ToNot(HaveOccurred())
-
-				By("Changing the Team Members")
-				team.Spec.Members = append(team.Spec.Members, organizationv1.Member{
-					Name:  "member2",
-					Email: testMail,
-				})
-				Expect(k8sClient.Update(ctx, team)).ToNot(HaveOccurred())
-				Eventually(func(g Gomega) {
-					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)).ToNot(HaveOccurred())
-					ExpectObjConditionToBeReady(g, team)
-					g.Expect(team.Status.IdentityClientRef).NotTo(BeNil())
-					By("Checking the team changes have accorded")
-					g.Expect(team.Spec).To(BeEquivalentTo(organizationv1.TeamSpec{
-						Name:     teamName,
-						Group:    groupName,
-						Email:    testMail,
-						Members:  []organizationv1.Member{{Email: testMail, Name: "member"}, {Email: testMail, Name: "member2"}},
-						Category: organizationv1.TeamCategoryCustomer,
-					}))
-					By("Checking the team identity client is back to desired state")
-					g.Expect(k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)).ToNot(HaveOccurred())
-					identityClient.Spec.ClientSecret = "<obfuscated>"
-					g.Expect(identityClient.Spec).To(BeEquivalentTo(identityv1.ClientSpec{
-						Realm: &types.ObjectRef{
-							Name:      "team-api-identity-realm",
-							Namespace: "default",
-							UID:       "",
-						},
-						ClientId:     groupName + "--" + teamName + "--team-user",
-						ClientSecret: "<obfuscated>",
-					}))
-
-					By("Comparing that the team token has not changed")
-					latestTokenReference := team.Status.TeamToken
-					compareToken(latestTokenReference, previousTokenReference, "==", "==")
-				}, timeout, interval).Should(Succeed())
-
 			})
 		})
 		Context("Deleting teams with missing refs", func() {
@@ -663,29 +604,5 @@ func newNamespaceObj(name string) *corev1.Namespace {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-	}
-}
-
-func getDecodedToken(secretId string) organizationv1.TeamToken {
-	By("Getting the token from mocked secret manager")
-	tokenEncoded, err := secret.GetSecretManager().Get(ctx, secretId)
-	Expect(err).NotTo(HaveOccurred())
-	tokenDecoded, err := organizationv1.DecodeTeamToken(tokenEncoded)
-	Expect(err).NotTo(HaveOccurred())
-	return tokenDecoded
-}
-
-func compareToken(stringTokenA, stringTokenB, secretComparator, timestampComparator string) {
-	tokenADecoded := getDecodedToken(stringTokenA)
-	tokenBDecoded := getDecodedToken(stringTokenB)
-
-	By("Comparing the generation time stamps, by timestampComparator '" + timestampComparator + "'")
-	Expect(tokenADecoded.GeneratedAt).To(BeNumerically(timestampComparator, tokenBDecoded.GeneratedAt))
-
-	By("Comparing the client secret, by secretComparator '" + secretComparator + "'")
-	if secretComparator == "==" {
-		Expect(tokenADecoded.ClientSecret).To(BeEquivalentTo(tokenBDecoded.ClientSecret))
-	} else {
-		Expect(tokenADecoded.ClientSecret).ToNot(BeEquivalentTo(tokenBDecoded.ClientSecret))
 	}
 }

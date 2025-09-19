@@ -167,10 +167,7 @@ func TestMutateSecret(t *testing.T) {
 				mockSecretManager := fake.NewMockSecretManager(t)
 				mockSecretManager.EXPECT().
 					UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-					Return(map[string]string{
-						"clientSecret": "found",
-						"teamToken":    "found",
-					}, nil)
+					Return(map[string]string{}, nil)
 				return mockSecretManager
 			},
 			mockFindSecretId:  emptyAvailableSecrets,
@@ -190,10 +187,7 @@ func TestMutateSecret(t *testing.T) {
 				mockSecretManager := fake.NewMockSecretManager(t)
 				mockSecretManager.EXPECT().
 					UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-					Return(map[string]string{
-						"clientSecret": "found",
-						"teamToken":    "found",
-					}, nil)
+					Return(map[string]string{}, nil)
 				return mockSecretManager
 			},
 			mockFindSecretId:  emptyAvailableSecrets,

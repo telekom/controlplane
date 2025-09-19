@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/telekom/controlplane/identity/pkg/keycloak"
 	"github.com/telekom/controlplane/organization/internal/index"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -27,7 +28,7 @@ func MutateSecret(ctx context.Context, env string, teamObj *organisationv1.Team,
 	var availableSecrets map[string]string
 
 	switch teamObj.Spec.Secret {
-	case "":
+	case "", secret.KeywordRotate:
 		clientSecretValue, teamToken, err := generateSecretAndToken(env, teamObj, zoneObj)
 		if err != nil {
 			return fmt.Errorf("unable to generate team token: %w", err)
@@ -41,62 +42,14 @@ func MutateSecret(ctx context.Context, env string, teamObj *organisationv1.Team,
 		}
 
 		var ok bool
-		teamObj.Spec.Secret, ok = secret.FindSecretId(availableSecrets, secret.ClientSecret)
+		secretRef, ok := secret.FindSecretId(availableSecrets, secret.ClientSecret)
 		if !ok {
 			return wrapCommunicationError(fmt.Errorf("client secret ref not found in available secrets from secret-manager"), "searching for client secret ref")
 		}
-		teamObj.Status.TeamToken, ok = secret.FindSecretId(availableSecrets, secret.TeamToken) //ToDo: Check if this even works with the status
-		if !ok {
-			return wrapCommunicationError(fmt.Errorf("team token ref not found in available secrets from secret-manager"), "searching for team token ref")
-		}
-	/*
-		case secret.KeywordRotate:
-		//ToDo: I don't have the new secret, since the rotation never left the secret-manager.
-		var newId string
-		availableSecrets, err = secret.GetSecretManager().UpsertTeam(ctx, env, teamObj.GetName())
-		if err != nil {
-		return wrapCommunicationError(err, "secret-manager", "checking available secrets")
-		}
-
-		clientSecretRef, ok := secret.FindSecretId(availableSecrets, secret.ClientSecret)
-		if !ok {
-		return wrapCommunicationError(fmt.Errorf("client secret ref not found in available secrets from secret-manager"), "secret-manager", "searching for client secret ref")
-		}
-		newId, err = secret.GetSecretManager().Rotate(ctx, clientSecretRef)
-		if err != nil {
-		return wrapCommunicationError(err, "secret-manager", "rotate team secret")
-		}
-		teamObj.Spec.Secret = newId
-		}
-	*/
-	case secret.KeywordRotate:
-		//ToDo: Check that the rotate is still being done
-		clientSecretValue, teamToken, err := generateSecretAndToken(env, teamObj, zoneObj)
-		if err != nil {
-			return fmt.Errorf("unable to generate team token: %w", err)
-		}
-
-		// Pass both secrets directly in the onboarding request
-		availableSecrets, err = secret.GetSecretManager().UpsertTeam(ctx, env, teamObj.GetName(),
-			secret.WithSecretValue(secret.ClientSecret, clientSecretValue),
-			secret.WithSecretValue(secret.TeamToken, teamToken))
-		if err != nil {
-			return wrapCommunicationError(err, "upsert team")
-		}
-
-		newId, ok := secret.FindSecretId(availableSecrets, secret.ClientSecret)
-		if !ok {
-			return wrapCommunicationError(fmt.Errorf("client secret ref not found in available secrets from secret-manager"), "searching for client secret ref")
-		}
-		teamObj.Spec.Secret = newId
-
-		newToken, ok := secret.FindSecretId(availableSecrets, secret.TeamToken)
-		if !ok {
-			return wrapCommunicationError(fmt.Errorf("team token ref not found in available secrets from secret-manager"), "searching for team token ref")
-		}
-		//ToDo: Check if the status can be updated here
-		teamObj.Status.TeamToken = newToken
+		teamObj.Spec.Secret = secretRef
+		// Due to status not being able to be set in the webhook, we will set the team-token in the identity-client handler
 	}
+
 	return nil
 }
 
@@ -117,8 +70,8 @@ func generateSecretAndToken(env string, teamObj *organisationv1.Team, zoneObj *a
 			ClientSecret: clientSecretValue,
 			Environment:  env,
 			GeneratedAt:  time.Now().Unix(),
-			ServerUrl:    zoneObj.Spec.Gateway.Url,
-			TokenUrl:     zoneObj.Spec.IdentityProvider.Url,
+			ServerUrl:    zoneObj.Status.Links.Url,
+			TokenUrl:     zoneObj.Status.Links.Issuer + keycloak.TokenEndpointSuffix,
 		}, teamObj.Spec.Group, teamObj.Spec.Name)
 
 	return clientSecretValue, teamToken, err

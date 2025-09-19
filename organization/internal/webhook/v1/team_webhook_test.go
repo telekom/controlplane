@@ -45,7 +45,7 @@ var _ = Describe("Team Webhook", func() {
 			TeamApis: &adminv1.TeamApiConfig{Apis: []adminv1.ApiConfig{{
 				Name: "team-api-1",
 				Path: "/teamAPI",
-				Url:  "http://example.org",
+				Url:  "https://example.org",
 			}}},
 			Visibility: adminv1.ZoneVisibilityWorld,
 		},
@@ -59,6 +59,11 @@ var _ = Describe("Team Webhook", func() {
 		TeamApiGatewayRealm: &types.ObjectRef{
 			Name:      "team-api-gateway-realm",
 			Namespace: testNamespace,
+		},
+		Links: adminv1.Links{
+			Url:       "https://example.org",
+			Issuer:    "https://example.org/issuer",
+			LmsIssuer: "https://example.org/lms-issuer",
 		},
 	}
 
