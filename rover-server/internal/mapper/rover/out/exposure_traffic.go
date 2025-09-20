@@ -21,6 +21,7 @@ func mapExposureTraffic(in *roverv1.ApiExposure, out *api.ApiExposure) {
 
 	// Map rate limiting configuration
 	mapRateLimit(in, out)
+	mapCircuitBreaker(in, out)
 }
 
 // mapRateLimit maps the rate limiting configuration from roverv1.ApiExposure to api.ApiExposure
@@ -87,6 +88,18 @@ func mapRateLimit(in *roverv1.ApiExposure, out *api.ApiExposure) {
 			}
 
 			out.RateLimit.Consumers = consumers
+		}
+	}
+}
+
+func mapCircuitBreaker(in *roverv1.ApiExposure, out *api.ApiExposure) {
+	if in.Traffic == nil || in.Traffic.CircuitBreaker == nil {
+		return
+	}
+
+	if in.Traffic.CircuitBreaker != nil {
+		out.CircuitBreaker = api.CircuitBreaker{
+			Enabled: in.Traffic.CircuitBreaker.Enabled,
 		}
 	}
 }

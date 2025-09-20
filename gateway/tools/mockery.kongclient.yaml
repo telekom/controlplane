@@ -4,15 +4,20 @@
 
 with-expecter: True
 mockname: "Mock{{.InterfaceName}}"
-dir: "../test/mocks"
-outpkg: "mocks"
+dir: "../pkg/kong/client/mock"
+outpkg: "mock"
 filename: "mock_{{.InterfaceName}}.go"
 packages:
-  github.com/telekom/controlplane/common-server/pkg/store:
+  github.com/telekom/controlplane/gateway/pkg/kong/client:
     # place your package-specific config here
     config:
     interfaces:
       # select the interfaces you want mocked
-      ObjectStore:
+      KongAdminApi:
         # Modify package-level config for this specific interface (if applicable)
         config:
+#      KongClient:
+#        # Modify package-level config for this specific interface (if applicable)
+#        config:
+
+

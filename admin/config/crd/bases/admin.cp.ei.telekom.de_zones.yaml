@@ -55,10 +55,16 @@ spec:
                     required:
                     - clientSecret
                     type: object
+                  circuitBreaker:
+                    description: CircuitBreaker flag that controls if circuit breaker
+                      should be enabled on this zone. the config of the CB itself
+                      comes from hardcoded values, not configurable
+                    type: boolean
                   url:
                     type: string
                 required:
                 - admin
+                - circuitBreaker
                 - url
                 type: object
               identityProvider:

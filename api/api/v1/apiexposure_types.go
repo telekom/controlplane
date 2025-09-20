@@ -98,6 +98,10 @@ func (a *ApiExposure) HasOverriddenSubscriberRateLimit() bool {
 	return len(a.Spec.Traffic.RateLimit.SubscriberRateLimit.Overrides) > 0
 }
 
+func (a *ApiExposure) HasCircuitBreaker() bool {
+	return a.Spec.Traffic.CircuitBreaker != nil
+}
+
 func (a *ApiExposure) GetOverriddenSubscriberRateLimit(subscriber string) (Limits, bool) {
 	if !a.HasOverriddenSubscriberRateLimit() {
 		return Limits{}, false

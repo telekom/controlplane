@@ -375,6 +375,11 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 			route.Spec.Traffic.RateLimit = mapProviderRateLimitToGatewayRateLimit(apiExposure.Spec.Traffic.RateLimit.Provider)
 		}
 
+		// switch from pointer to non-pointer (
+		if apiExposure.HasCircuitBreaker() {
+			route.Spec.Traffic.CircuitBreaker = mapCircuitBreaker(apiExposure.Spec.Traffic.CircuitBreaker)
+		}
+
 		return nil
 	}
 
@@ -527,6 +532,16 @@ func mapProviderRateLimitToGatewayRateLimit(apiRateLimitConfig *apiapi.RateLimit
 		Limits:  mapLimitsToGatewayLimits(apiRateLimitConfig.Limits),
 		Options: mapLimitOptionsToGatewayLimitOptions(apiRateLimitConfig.Options),
 	}
+}
+
+func mapCircuitBreaker(cb *apiapi.CircuitBreaker) *gatewayapi.CircuitBreaker {
+	circuitBreaker := &gatewayapi.CircuitBreaker{}
+	if cb == nil {
+		circuitBreaker.Enabled = false
+	} else {
+		circuitBreaker.Enabled = cb.Enabled
+	}
+	return circuitBreaker
 }
 
 func mapLimitsToGatewayLimits(apiLimits apiapi.Limits) gatewayapi.Limits {
