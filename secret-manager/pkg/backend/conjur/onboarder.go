@@ -47,9 +47,14 @@ func (c *ConjurOnboarder) WithBouncer(bouncer bouncer.Bouncer) *ConjurOnboarder 
 	return c
 }
 
-func (c *ConjurOnboarder) OnboardEnvironment(ctx context.Context, env string) (backend.OnboardResponse, error) {
+func (c *ConjurOnboarder) OnboardEnvironment(ctx context.Context, env string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
 	log := logr.FromContextOrDiscard(ctx)
 	log.Info("Onboarding environment", "env", env)
+
+	options := backend.OnboardOptions{}
+	for _, opt := range opts {
+		opt(&options)
+	}
 
 	policyPath := RootPolicyPath
 	buf := bytes.NewBuffer(nil)
@@ -71,21 +76,31 @@ func (c *ConjurOnboarder) OnboardEnvironment(ctx context.Context, env string) (b
 		return nil, err
 	}
 
-	secrets, err := backend.NewEnvironmentSecrets().GetSecrets()
+	allowedSecrets := backend.NewEnvironmentSecrets()
+	if err = backend.TryAddSecrets(New, allowedSecrets, env, "", "", options.SecretValues); err != nil {
+		return nil, err
+	}
+	secrets, err := allowedSecrets.GetSecrets()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get allowed secrets")
 	}
-	secretsIds, err := c.createSecrets(ctx, env, "", "", secrets)
+	secretRefs, err := c.createSecrets(ctx, env, "", "", secrets)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create secrets for environment %s", env)
+		return nil, errors.Wrapf(err, "failed to create secrets for env %s", env)
 	}
+	backend.MergeSecretRefs(New, secretRefs, env, "", "", options.SecretValues)
 
-	return backend.NewDefaultOnboardResponse(secretsIds), nil
+	return backend.NewDefaultOnboardResponse(secretRefs), nil
 }
 
-func (c *ConjurOnboarder) OnboardTeam(ctx context.Context, env, teamId string) (backend.OnboardResponse, error) {
+func (c *ConjurOnboarder) OnboardTeam(ctx context.Context, env, teamId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
 	log := logr.FromContextOrDiscard(ctx)
 	log.Info("Onboarding team", "env", env, "team", teamId)
+
+	options := backend.OnboardOptions{}
+	for _, opt := range opts {
+		opt(&options)
+	}
 	policyPath := RootPolicyPath + "/" + env
 
 	buf := bytes.NewBuffer(nil)
@@ -107,16 +122,21 @@ func (c *ConjurOnboarder) OnboardTeam(ctx context.Context, env, teamId string) (
 		return nil, err
 	}
 
-	secrets, err := backend.NewTeamSecrets().GetSecrets()
+	allowedSecrets := backend.NewTeamSecrets()
+	if err = backend.TryAddSecrets(New, allowedSecrets, env, teamId, "", options.SecretValues); err != nil {
+		return nil, err
+	}
+	secrets, err := allowedSecrets.GetSecrets()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get allowed secrets")
 	}
-	secretsIds, err := c.createSecrets(ctx, env, teamId, "", secrets)
+	secretRefs, err := c.createSecrets(ctx, env, teamId, "", secrets)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create secrets for team %s", teamId)
 	}
+	backend.MergeSecretRefs(New, secretRefs, env, teamId, "", options.SecretValues)
 
-	return backend.NewDefaultOnboardResponse(secretsIds), nil
+	return backend.NewDefaultOnboardResponse(secretRefs), nil
 }
 
 func (c *ConjurOnboarder) OnboardApplication(ctx context.Context, env, teamId, appId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
@@ -149,30 +169,20 @@ func (c *ConjurOnboarder) OnboardApplication(ctx context.Context, env, teamId, a
 	}
 
 	allowedSecrets := backend.NewApplicationSecrets()
-	for key, value := range options.SecretValues {
-		secretId := New(env, teamId, appId, key, "")
-		ok := allowedSecrets.TrySetSecret(key, value)
-		if !ok {
-			return nil, backend.Forbidden(secretId, errors.Errorf("secret %s is not allowed for application onboarding", key))
-		}
+	if err = backend.TryAddSecrets(New, allowedSecrets, env, teamId, appId, options.SecretValues); err != nil {
+		return nil, err
 	}
 	secrets, err := allowedSecrets.GetSecrets()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get allowed secrets")
 	}
-	secretsIds, err := c.createSecrets(ctx, env, teamId, appId, secrets)
+	secretRefs, err := c.createSecrets(ctx, env, teamId, appId, secrets)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create secrets for application %s", appId)
 	}
-	for secretPath, secretValue := range options.SecretValues {
-		if _, ok := secretsIds[secretPath]; !ok {
-			secretsIds[secretPath] = New(env, teamId, appId, secretPath, backend.MakeChecksum(secretValue.Value()))
-		} else {
-			log.V(0).Info("Value for secret already exists", "secretPath", secretPath)
-		}
-	}
+	backend.MergeSecretRefs(New, secretRefs, env, teamId, appId, options.SecretValues)
 
-	return backend.NewDefaultOnboardResponse(secretsIds), nil
+	return backend.NewDefaultOnboardResponse(secretRefs), nil
 }
 
 func (c *ConjurOnboarder) DeleteEnvironment(ctx context.Context, env string) error {

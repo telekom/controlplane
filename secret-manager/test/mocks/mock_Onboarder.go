@@ -247,9 +247,16 @@ func (_c *MockOnboarder_OnboardApplication_Call) RunAndReturn(run func(context.C
 	return _c
 }
 
-// OnboardEnvironment provides a mock function with given fields: ctx, env
-func (_m *MockOnboarder) OnboardEnvironment(ctx context.Context, env string) (backend.OnboardResponse, error) {
-	ret := _m.Called(ctx, env)
+// OnboardEnvironment provides a mock function with given fields: ctx, env, opts
+func (_m *MockOnboarder) OnboardEnvironment(ctx context.Context, env string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
+	_va := make([]interface{}, len(opts))
+	for _i := range opts {
+		_va[_i] = opts[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, env)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
 	if len(ret) == 0 {
 		panic("no return value specified for OnboardEnvironment")
@@ -257,19 +264,19 @@ func (_m *MockOnboarder) OnboardEnvironment(ctx context.Context, env string) (ba
 
 	var r0 backend.OnboardResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (backend.OnboardResponse, error)); ok {
-		return rf(ctx, env)
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...backend.OnboardOption) (backend.OnboardResponse, error)); ok {
+		return rf(ctx, env, opts...)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) backend.OnboardResponse); ok {
-		r0 = rf(ctx, env)
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...backend.OnboardOption) backend.OnboardResponse); ok {
+		r0 = rf(ctx, env, opts...)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(backend.OnboardResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, env)
+	if rf, ok := ret.Get(1).(func(context.Context, string, ...backend.OnboardOption) error); ok {
+		r1 = rf(ctx, env, opts...)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -285,13 +292,21 @@ type MockOnboarder_OnboardEnvironment_Call struct {
 // OnboardEnvironment is a helper method to define mock.On call
 //   - ctx context.Context
 //   - env string
-func (_e *MockOnboarder_Expecter) OnboardEnvironment(ctx interface{}, env interface{}) *MockOnboarder_OnboardEnvironment_Call {
-	return &MockOnboarder_OnboardEnvironment_Call{Call: _e.mock.On("OnboardEnvironment", ctx, env)}
+//   - opts ...backend.OnboardOption
+func (_e *MockOnboarder_Expecter) OnboardEnvironment(ctx interface{}, env interface{}, opts ...interface{}) *MockOnboarder_OnboardEnvironment_Call {
+	return &MockOnboarder_OnboardEnvironment_Call{Call: _e.mock.On("OnboardEnvironment",
+		append([]interface{}{ctx, env}, opts...)...)}
 }
 
-func (_c *MockOnboarder_OnboardEnvironment_Call) Run(run func(ctx context.Context, env string)) *MockOnboarder_OnboardEnvironment_Call {
+func (_c *MockOnboarder_OnboardEnvironment_Call) Run(run func(ctx context.Context, env string, opts ...backend.OnboardOption)) *MockOnboarder_OnboardEnvironment_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string))
+		variadicArgs := make([]backend.OnboardOption, len(args)-2)
+		for i, a := range args[2:] {
+			if a != nil {
+				variadicArgs[i] = a.(backend.OnboardOption)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), variadicArgs...)
 	})
 	return _c
 }
@@ -301,14 +316,21 @@ func (_c *MockOnboarder_OnboardEnvironment_Call) Return(_a0 backend.OnboardRespo
 	return _c
 }
 
-func (_c *MockOnboarder_OnboardEnvironment_Call) RunAndReturn(run func(context.Context, string) (backend.OnboardResponse, error)) *MockOnboarder_OnboardEnvironment_Call {
+func (_c *MockOnboarder_OnboardEnvironment_Call) RunAndReturn(run func(context.Context, string, ...backend.OnboardOption) (backend.OnboardResponse, error)) *MockOnboarder_OnboardEnvironment_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// OnboardTeam provides a mock function with given fields: ctx, env, id
-func (_m *MockOnboarder) OnboardTeam(ctx context.Context, env string, id string) (backend.OnboardResponse, error) {
-	ret := _m.Called(ctx, env, id)
+// OnboardTeam provides a mock function with given fields: ctx, env, id, opts
+func (_m *MockOnboarder) OnboardTeam(ctx context.Context, env string, id string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
+	_va := make([]interface{}, len(opts))
+	for _i := range opts {
+		_va[_i] = opts[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, env, id)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
 	if len(ret) == 0 {
 		panic("no return value specified for OnboardTeam")
@@ -316,19 +338,19 @@ func (_m *MockOnboarder) OnboardTeam(ctx context.Context, env string, id string)
 
 	var r0 backend.OnboardResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (backend.OnboardResponse, error)); ok {
-		return rf(ctx, env, id)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ...backend.OnboardOption) (backend.OnboardResponse, error)); ok {
+		return rf(ctx, env, id, opts...)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) backend.OnboardResponse); ok {
-		r0 = rf(ctx, env, id)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ...backend.OnboardOption) backend.OnboardResponse); ok {
+		r0 = rf(ctx, env, id, opts...)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(backend.OnboardResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, env, id)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, ...backend.OnboardOption) error); ok {
+		r1 = rf(ctx, env, id, opts...)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -345,13 +367,21 @@ type MockOnboarder_OnboardTeam_Call struct {
 //   - ctx context.Context
 //   - env string
 //   - id string
-func (_e *MockOnboarder_Expecter) OnboardTeam(ctx interface{}, env interface{}, id interface{}) *MockOnboarder_OnboardTeam_Call {
-	return &MockOnboarder_OnboardTeam_Call{Call: _e.mock.On("OnboardTeam", ctx, env, id)}
+//   - opts ...backend.OnboardOption
+func (_e *MockOnboarder_Expecter) OnboardTeam(ctx interface{}, env interface{}, id interface{}, opts ...interface{}) *MockOnboarder_OnboardTeam_Call {
+	return &MockOnboarder_OnboardTeam_Call{Call: _e.mock.On("OnboardTeam",
+		append([]interface{}{ctx, env, id}, opts...)...)}
 }
 
-func (_c *MockOnboarder_OnboardTeam_Call) Run(run func(ctx context.Context, env string, id string)) *MockOnboarder_OnboardTeam_Call {
+func (_c *MockOnboarder_OnboardTeam_Call) Run(run func(ctx context.Context, env string, id string, opts ...backend.OnboardOption)) *MockOnboarder_OnboardTeam_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string))
+		variadicArgs := make([]backend.OnboardOption, len(args)-3)
+		for i, a := range args[3:] {
+			if a != nil {
+				variadicArgs[i] = a.(backend.OnboardOption)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), args[2].(string), variadicArgs...)
 	})
 	return _c
 }
@@ -361,7 +391,7 @@ func (_c *MockOnboarder_OnboardTeam_Call) Return(_a0 backend.OnboardResponse, _a
 	return _c
 }
 
-func (_c *MockOnboarder_OnboardTeam_Call) RunAndReturn(run func(context.Context, string, string) (backend.OnboardResponse, error)) *MockOnboarder_OnboardTeam_Call {
+func (_c *MockOnboarder_OnboardTeam_Call) RunAndReturn(run func(context.Context, string, string, ...backend.OnboardOption) (backend.OnboardResponse, error)) *MockOnboarder_OnboardTeam_Call {
 	_c.Call.Return(run)
 	return _c
 }

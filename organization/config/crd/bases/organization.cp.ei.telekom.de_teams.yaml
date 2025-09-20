@@ -1,7 +1,6 @@
-# Copyright 2025 Deutsche Telekom IT GmbH
+# SPDX-FileCopyrightText: 2025 Deutsche Telekom IT GmbH
 #
 # SPDX-License-Identifier: Apache-2.0
-
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -43,6 +42,15 @@ spec:
           spec:
             description: TeamSpec defines the desired state of Team.
             properties:
+              category:
+                default: Customer
+                description: |-
+                  Category is the category of the team
+                  The category is used to determine specific access rights.
+                enum:
+                - Customer
+                - Infrastructure
+                type: string
               email:
                 description: Email is the mail of the team
                 format: email
@@ -80,6 +88,7 @@ spec:
                   client.
                 type: string
             required:
+            - category
             - email
             - group
             - members
@@ -150,7 +159,7 @@ spec:
               gatewayConsumerRef:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object
-                  It is similiar to types.NamespacedName but has the required json tags for serialization
+                  It is similar to types.NamespacedName but has the required json tags for serialization
                 properties:
                   name:
                     type: string
@@ -169,7 +178,7 @@ spec:
               identityClientRef:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object
-                  It is similiar to types.NamespacedName but has the required json tags for serialization
+                  It is similar to types.NamespacedName but has the required json tags for serialization
                 properties:
                   name:
                     type: string

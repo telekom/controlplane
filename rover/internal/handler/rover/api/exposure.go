@@ -15,9 +15,9 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-	"github.com/telekom/controlplane/rover/internal/handler/rover/util"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	rover "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -74,7 +74,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 		}
 
 		//add owner to trusted teams
-		ownerTeam, err := util.FindTeam(ctx, c, owner.Namespace)
+		ownerTeam, err := organizationv1.FindTeamForObject(ctx, owner)
 		if err != nil && apierrors.IsNotFound(err) {
 			log.Info(fmt.Sprintf("Team not found for application %s, err: %v", owner.Name, err))
 		} else if err != nil {
@@ -112,10 +112,11 @@ func mapTrustedTeamsToApiTrustedTeams(ctx context.Context, c client.JanitorClien
 
 	apiTrustedTeams := make([]string, 0, len(teams))
 	for _, team := range teams {
-		teamIdentifier := contextutil.EnvFromContextOrDie(ctx) + "--" + team.Group + "--" + team.Team
-		t, err := util.FindTeam(ctx, c, teamIdentifier)
+		namespace := contextutil.EnvFromContextOrDie(ctx) + "--" + team.Group + "--" + team.Team
+		t, err := organizationv1.FindTeamForNamespace(ctx, namespace)
 		if err != nil && apierrors.IsNotFound(err) {
-			log.Info(fmt.Sprintf("Team not found for trusted teams: %s, err: %v", teamIdentifier, err))
+			log.Info(fmt.Sprintf("Trusted team %s/%s not found", team.Group, team.Team), "error", err)
+
 		} else if err != nil {
 			return nil, err
 		} else {

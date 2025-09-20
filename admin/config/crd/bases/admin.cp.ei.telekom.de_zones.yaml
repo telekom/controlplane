@@ -326,15 +326,28 @@ spec:
               links:
                 properties:
                   gatewayIssuer:
+                    description: Issuer is the expected issuer of downstream tokens
+                      for this zone
+                    format: uri
+                    type: string
+                  gatewayLmsIssuer:
+                    description: LmsIssuer is the issuer of the Last-Mile-Security
+                      tokens (upstream) for this zone
+                    format: uri
                     type: string
                   gatewayUrl:
+                    description: Url is the base URL of the default gateway of this
+                      zone
+                    format: uri
                     type: string
-                  stargateLmsIssuer:
+                  teamApiIssuer:
+                    description: TeamIssuer is the expected issuer of downstream tokens
+                      for Team APIs in this zone
+                    format: uri
                     type: string
                 required:
                 - gatewayIssuer
                 - gatewayUrl
-                - stargateLmsIssuer
                 type: object
               namespace:
                 type: string

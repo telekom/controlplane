@@ -18,6 +18,14 @@ rules:
 - apiGroups:
   - api.cp.ei.telekom.de
   resources:
+  - apicategories
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - api.cp.ei.telekom.de
+  resources:
   - apiexposures
   - apis
   - apisubscriptions

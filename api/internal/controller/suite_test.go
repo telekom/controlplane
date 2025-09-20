@@ -26,9 +26,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	"github.com/telekom/controlplane/api/internal/handler/remoteapisubscription/syncer"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/api/internal/handler/remoteapisubscription/syncer"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -84,6 +86,9 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	RegisterSchemesOrDie(scheme.Scheme)
+	err = apiv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
 	// +kubebuilder:scaffold:scheme
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
@@ -130,6 +135,14 @@ var _ = BeforeSuite(func() {
 		Recorder: &mock.EventRecorder{},
 	}
 	err = remoteApiSubRec.SetupWithManager(k8sManager, syncerFactoryMock)
+	Expect(err).ToNot(HaveOccurred())
+
+	apiCategoryRec := &ApiCategoryReconciler{
+		Client:   k8sManager.GetClient(),
+		Scheme:   k8sManager.GetScheme(),
+		Recorder: &mock.EventRecorder{},
+	}
+	err = apiCategoryRec.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	By("Creating the environment namespace")

@@ -52,11 +52,11 @@ func (m *mockManager) Rotate(ctx context.Context, secretID string) (newID string
 	return m.Set(ctx, secretID, string(uuid.NewUUID()))
 }
 
-func (m *mockManager) UpsertEnvironment(_ context.Context, _ string) (availableSecrets map[string]string, err error) {
+func (m *mockManager) UpsertEnvironment(_ context.Context, _ string, _ ...api.OnboardingOption) (availableSecrets map[string]string, err error) {
 	panic("not implemented")
 }
 
-func (m *mockManager) UpsertTeam(ctx context.Context, envID, teamID string) (availableSecrets map[string]string, err error) {
+func (m *mockManager) UpsertTeam(ctx context.Context, envID, teamID string, opts ...api.OnboardingOption) (availableSecrets map[string]string, err error) {
 	combined := envID + ":" + teamID
 	teamTokenId, _ := m.Set(ctx, combined+":"+secret.TeamToken, string(uuid.NewUUID()))
 	clientSecretId, _ := m.Set(ctx, combined+":"+secret.ClientSecret, string(uuid.NewUUID()))

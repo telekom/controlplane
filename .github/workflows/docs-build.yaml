@@ -6,8 +6,10 @@ name: Build Docs
 
 on:
   pull_request:
-    branches:
-      - main
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs-build.yml'
+      - '.github/workflows/docs-deploy.yml'
 
 jobs:
   build:
@@ -17,7 +19,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 18
           cache: npm

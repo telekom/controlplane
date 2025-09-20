@@ -20,6 +20,17 @@ type ControllerOptions struct {
 	SecretValues map[string]string
 }
 
+func (o ControllerOptions) AsBackendOptions() []backend.OnboardOption {
+	if len(o.SecretValues) == 0 {
+		return nil
+	}
+	opts := make([]backend.OnboardOption, 0, len(o.SecretValues))
+	for key, value := range o.SecretValues {
+		opts = append(opts, backend.WithSecretValue(key, backend.String(value)))
+	}
+	return opts
+}
+
 type OnboardOption func(*ControllerOptions)
 
 func WithSecretValues(secrets map[string]string) OnboardOption {
@@ -29,8 +40,8 @@ func WithSecretValues(secrets map[string]string) OnboardOption {
 }
 
 type OnboardController interface {
-	OnboardEnvironment(ctx context.Context, envId string) (OnboardResponse, error)
-	OnboardTeam(ctx context.Context, envId, teamId string) (OnboardResponse, error)
+	OnboardEnvironment(ctx context.Context, envId string, opts ...OnboardOption) (OnboardResponse, error)
+	OnboardTeam(ctx context.Context, envId, teamId string, opts ...OnboardOption) (OnboardResponse, error)
 	OnboardApplication(ctx context.Context, envId, teamId, appId string, opts ...OnboardOption) (OnboardResponse, error)
 
 	DeleteEnvironment(ctx context.Context, envId string) error
@@ -46,12 +57,16 @@ func NewOnboardController(o backend.Onboarder) OnboardController {
 	return &onboardController{Onboarder: o}
 }
 
-func (c *onboardController) OnboardEnvironment(ctx context.Context, envId string) (res OnboardResponse, err error) {
+func (c *onboardController) OnboardEnvironment(ctx context.Context, envId string, opts ...OnboardOption) (res OnboardResponse, err error) {
 	if envId == "" {
 		return res, errors.New("envId cannot be empty")
 	}
+	options := ControllerOptions{}
+	for _, opt := range opts {
+		opt(&options)
+	}
 
-	o, err := c.Onboarder.OnboardEnvironment(ctx, envId)
+	o, err := c.Onboarder.OnboardEnvironment(ctx, envId, options.AsBackendOptions()...)
 	if err != nil {
 		return res, errors.Wrap(err, "failed to onboard environment")
 	}
@@ -64,15 +79,19 @@ func (c *onboardController) OnboardEnvironment(ctx context.Context, envId string
 	return res, nil
 }
 
-func (c *onboardController) OnboardTeam(ctx context.Context, envId, teamId string) (res OnboardResponse, err error) {
+func (c *onboardController) OnboardTeam(ctx context.Context, envId, teamId string, opts ...OnboardOption) (res OnboardResponse, err error) {
 	if envId == "" {
 		return res, errors.New("envId cannot be empty")
 	}
 	if teamId == "" {
 		return res, errors.New("teamId cannot be empty")
 	}
+	options := ControllerOptions{}
+	for _, opt := range opts {
+		opt(&options)
+	}
 
-	o, err := c.Onboarder.OnboardTeam(ctx, envId, teamId)
+	o, err := c.Onboarder.OnboardTeam(ctx, envId, teamId, options.AsBackendOptions()...)
 	if err != nil {
 		return res, errors.Wrap(err, "failed to onboard team")
 	}
@@ -99,12 +118,7 @@ func (c *onboardController) OnboardApplication(ctx context.Context, envId, teamI
 		opt(&options)
 	}
 
-	onboardOpts := make([]backend.OnboardOption, 0, len(options.SecretValues))
-	for key, value := range options.SecretValues {
-		onboardOpts = append(onboardOpts, backend.WithSecretValue(key, backend.String(value)))
-	}
-
-	o, err := c.Onboarder.OnboardApplication(ctx, envId, teamId, appId, onboardOpts...)
+	o, err := c.Onboarder.OnboardApplication(ctx, envId, teamId, appId, options.AsBackendOptions()...)
 	if err != nil {
 		return res, errors.Wrap(err, "failed to onboard application")
 	}

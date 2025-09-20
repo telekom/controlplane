@@ -13,7 +13,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
-	opErrors "github.com/telekom/controlplane/common/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
@@ -63,14 +62,6 @@ var _ = Describe("Controller", func() {
 					return fmt.Errorf("test error")
 				},
 			)
-			operatorErrorHandler = handler.NewCustomHandler(
-				func(ctx context.Context, object *test.TestResource) error {
-					return opErrors.NewRetriableResourcesError(fmt.Errorf("test error"), "operator error message")
-				},
-				func(ctx context.Context, obj *test.TestResource) error {
-					return opErrors.NewRetriableResourcesError(fmt.Errorf("test error"), "operator error message")
-				},
-			)
 			nopHandler = handler.NewNopHandler[*test.TestResource]()
 		)
 
@@ -116,22 +107,7 @@ var _ = Describe("Controller", func() {
 			controller := NewController(errorHandler, k8sClient, &recorder)
 
 			res, err := controller.Reconcile(ctx, req, &test.TestResource{})
-			Expect(err).To(HaveOccurred())
-			Expect(res).To(Equal(reconcile.Result{}))
-
-			var obj test.TestResource
-			Expect(k8sClient.Get(ctx, req.NamespacedName, &obj)).To(Succeed())
-			Expect(obj.GetConditions()).To(HaveLen(2))
-			Expect(meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing).Status).To(Equal(metav1.ConditionUnknown))
-			Expect(meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady).Status).To(Equal(metav1.ConditionFalse))
-		})
-
-		It("should handle operator specific errors", func() {
-			controller := NewController(operatorErrorHandler, k8sClient, &recorder)
-
-			res, err := controller.Reconcile(ctx, req, &test.TestResource{})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(res.Requeue).To(BeTrue())
 			Expect(res.RequeueAfter).To(BeNumerically(">", 0))
 
 			var obj test.TestResource

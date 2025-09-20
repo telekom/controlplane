@@ -419,9 +419,16 @@ func (_c *MockSecretManager_UpsertApplication_Call) RunAndReturn(run func(contex
 	return _c
 }
 
-// UpsertEnvironment provides a mock function with given fields: ctx, envID
-func (_m *MockSecretManager) UpsertEnvironment(ctx context.Context, envID string) (map[string]string, error) {
-	ret := _m.Called(ctx, envID)
+// UpsertEnvironment provides a mock function with given fields: ctx, envID, opts
+func (_m *MockSecretManager) UpsertEnvironment(ctx context.Context, envID string, opts ...api.OnboardingOption) (map[string]string, error) {
+	_va := make([]interface{}, len(opts))
+	for _i := range opts {
+		_va[_i] = opts[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, envID)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpsertEnvironment")
@@ -429,19 +436,19 @@ func (_m *MockSecretManager) UpsertEnvironment(ctx context.Context, envID string
 
 	var r0 map[string]string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (map[string]string, error)); ok {
-		return rf(ctx, envID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...api.OnboardingOption) (map[string]string, error)); ok {
+		return rf(ctx, envID, opts...)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) map[string]string); ok {
-		r0 = rf(ctx, envID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...api.OnboardingOption) map[string]string); ok {
+		r0 = rf(ctx, envID, opts...)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string]string)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, envID)
+	if rf, ok := ret.Get(1).(func(context.Context, string, ...api.OnboardingOption) error); ok {
+		r1 = rf(ctx, envID, opts...)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -457,13 +464,21 @@ type MockSecretManager_UpsertEnvironment_Call struct {
 // UpsertEnvironment is a helper method to define mock.On call
 //   - ctx context.Context
 //   - envID string
-func (_e *MockSecretManager_Expecter) UpsertEnvironment(ctx interface{}, envID interface{}) *MockSecretManager_UpsertEnvironment_Call {
-	return &MockSecretManager_UpsertEnvironment_Call{Call: _e.mock.On("UpsertEnvironment", ctx, envID)}
+//   - opts ...api.OnboardingOption
+func (_e *MockSecretManager_Expecter) UpsertEnvironment(ctx interface{}, envID interface{}, opts ...interface{}) *MockSecretManager_UpsertEnvironment_Call {
+	return &MockSecretManager_UpsertEnvironment_Call{Call: _e.mock.On("UpsertEnvironment",
+		append([]interface{}{ctx, envID}, opts...)...)}
 }
 
-func (_c *MockSecretManager_UpsertEnvironment_Call) Run(run func(ctx context.Context, envID string)) *MockSecretManager_UpsertEnvironment_Call {
+func (_c *MockSecretManager_UpsertEnvironment_Call) Run(run func(ctx context.Context, envID string, opts ...api.OnboardingOption)) *MockSecretManager_UpsertEnvironment_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string))
+		variadicArgs := make([]api.OnboardingOption, len(args)-2)
+		for i, a := range args[2:] {
+			if a != nil {
+				variadicArgs[i] = a.(api.OnboardingOption)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), variadicArgs...)
 	})
 	return _c
 }
@@ -473,14 +488,21 @@ func (_c *MockSecretManager_UpsertEnvironment_Call) Return(availableSecrets map[
 	return _c
 }
 
-func (_c *MockSecretManager_UpsertEnvironment_Call) RunAndReturn(run func(context.Context, string) (map[string]string, error)) *MockSecretManager_UpsertEnvironment_Call {
+func (_c *MockSecretManager_UpsertEnvironment_Call) RunAndReturn(run func(context.Context, string, ...api.OnboardingOption) (map[string]string, error)) *MockSecretManager_UpsertEnvironment_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// UpsertTeam provides a mock function with given fields: ctx, envID, teamID
-func (_m *MockSecretManager) UpsertTeam(ctx context.Context, envID string, teamID string) (map[string]string, error) {
-	ret := _m.Called(ctx, envID, teamID)
+// UpsertTeam provides a mock function with given fields: ctx, envID, teamID, opts
+func (_m *MockSecretManager) UpsertTeam(ctx context.Context, envID string, teamID string, opts ...api.OnboardingOption) (map[string]string, error) {
+	_va := make([]interface{}, len(opts))
+	for _i := range opts {
+		_va[_i] = opts[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, envID, teamID)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpsertTeam")
@@ -488,19 +510,19 @@ func (_m *MockSecretManager) UpsertTeam(ctx context.Context, envID string, teamI
 
 	var r0 map[string]string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (map[string]string, error)); ok {
-		return rf(ctx, envID, teamID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ...api.OnboardingOption) (map[string]string, error)); ok {
+		return rf(ctx, envID, teamID, opts...)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) map[string]string); ok {
-		r0 = rf(ctx, envID, teamID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ...api.OnboardingOption) map[string]string); ok {
+		r0 = rf(ctx, envID, teamID, opts...)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string]string)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, envID, teamID)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, ...api.OnboardingOption) error); ok {
+		r1 = rf(ctx, envID, teamID, opts...)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -517,13 +539,21 @@ type MockSecretManager_UpsertTeam_Call struct {
 //   - ctx context.Context
 //   - envID string
 //   - teamID string
-func (_e *MockSecretManager_Expecter) UpsertTeam(ctx interface{}, envID interface{}, teamID interface{}) *MockSecretManager_UpsertTeam_Call {
-	return &MockSecretManager_UpsertTeam_Call{Call: _e.mock.On("UpsertTeam", ctx, envID, teamID)}
+//   - opts ...api.OnboardingOption
+func (_e *MockSecretManager_Expecter) UpsertTeam(ctx interface{}, envID interface{}, teamID interface{}, opts ...interface{}) *MockSecretManager_UpsertTeam_Call {
+	return &MockSecretManager_UpsertTeam_Call{Call: _e.mock.On("UpsertTeam",
+		append([]interface{}{ctx, envID, teamID}, opts...)...)}
 }
 
-func (_c *MockSecretManager_UpsertTeam_Call) Run(run func(ctx context.Context, envID string, teamID string)) *MockSecretManager_UpsertTeam_Call {
+func (_c *MockSecretManager_UpsertTeam_Call) Run(run func(ctx context.Context, envID string, teamID string, opts ...api.OnboardingOption)) *MockSecretManager_UpsertTeam_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string))
+		variadicArgs := make([]api.OnboardingOption, len(args)-3)
+		for i, a := range args[3:] {
+			if a != nil {
+				variadicArgs[i] = a.(api.OnboardingOption)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), args[2].(string), variadicArgs...)
 	})
 	return _c
 }
@@ -533,7 +563,7 @@ func (_c *MockSecretManager_UpsertTeam_Call) Return(availableSecrets map[string]
 	return _c
 }
 
-func (_c *MockSecretManager_UpsertTeam_Call) RunAndReturn(run func(context.Context, string, string) (map[string]string, error)) *MockSecretManager_UpsertTeam_Call {
+func (_c *MockSecretManager_UpsertTeam_Call) RunAndReturn(run func(context.Context, string, string, ...api.OnboardingOption) (map[string]string, error)) *MockSecretManager_UpsertTeam_Call {
 	_c.Call.Return(run)
 	return _c
 }

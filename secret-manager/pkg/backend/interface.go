@@ -91,8 +91,8 @@ func WithSecretValue(key string, value SecretValue) OnboardOption {
 // It is used to onboard a new environment, team or application.
 // It is also used to delete an environment, team or application.
 type Onboarder interface {
-	OnboardEnvironment(ctx context.Context, env string) (OnboardResponse, error)
-	OnboardTeam(ctx context.Context, env, id string) (OnboardResponse, error)
+	OnboardEnvironment(ctx context.Context, env string, opts ...OnboardOption) (OnboardResponse, error)
+	OnboardTeam(ctx context.Context, env, id string, opts ...OnboardOption) (OnboardResponse, error)
 	OnboardApplication(ctx context.Context, env, teamId, appId string, opts ...OnboardOption) (OnboardResponse, error)
 
 	DeleteEnvironment(ctx context.Context, env string) error

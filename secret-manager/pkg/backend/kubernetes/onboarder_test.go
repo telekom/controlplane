@@ -98,6 +98,30 @@ var _ = Describe("Kubernetes Onboarder", func() {
 			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: teamId, Namespace: env}, secret)
 			Expect(err).To(HaveOccurred())
 		})
+
+		It("should onboard a team with defined secret", func() {
+			onboarder := kubernetes.NewOnboarder(mockK8sClient)
+
+			res, err := onboarder.OnboardTeam(ctx, env, teamId,
+				backend.WithSecretValue("teamToken", backend.String("myteamtokenvalue")),
+			)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).ToNot(BeNil())
+			Expect(res.SecretRefs()).To(HaveLen(2))
+			Expect(res.SecretRefs()).To(HaveKeyWithValue("clientSecret", MatchRegexp("test-env:test-team::clientSecret:.+")))
+			Expect(res.SecretRefs()).To(HaveKeyWithValue("teamToken", MatchRegexp("test-env:test-team::teamToken:.+")))
+
+			// Verify that the application secret was created
+			secret := &corev1.Secret{}
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: teamId, Namespace: env}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret).ToNot(BeNil())
+			Expect(secret.Data).To(HaveLen(2))
+			Expect(secret.Data).To(HaveKey("clientSecret"))
+			Expect(secret.Data["clientSecret"]).ToNot(BeEmpty())
+			Expect(secret.Data).To(HaveKey("teamToken"))
+			Expect(string(secret.Data["teamToken"])).To(Equal("myteamtokenvalue"))
+		})
 	})
 
 	Context("Onboard Application", func() {
@@ -138,7 +162,7 @@ var _ = Describe("Kubernetes Onboarder", func() {
 			// Attempt to onboard an application with an unknown secret
 			_, err := onboarder.OnboardApplication(ctx, env, teamId, appId, backend.WithSecretValue("extraSecret1", backend.String("topsecret")))
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Forbidden: secret extraSecret1 is not allowed for application onboarding"))
+			Expect(err.Error()).To(ContainSubstring("Forbidden: secret extraSecret1 is not allowed for onboarding"))
 		})
 
 		It("should onboard an application with additional secrets", func() {

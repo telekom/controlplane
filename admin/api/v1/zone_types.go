@@ -79,9 +79,20 @@ type ZoneSpec struct {
 }
 
 type Links struct {
-	GatewayUrl        string `json:"gatewayUrl"`
-	GatewayIssuer     string `json:"gatewayIssuer"`
-	StargateLmsIssuer string `json:"stargateLmsIssuer"`
+	// Url is the base URL of the default gateway of this zone
+	// +kubebuilder:validation:Format=uri
+	Url string `json:"gatewayUrl"`
+	// Issuer is the expected issuer of downstream tokens for this zone
+	// +kubebuilder:validation:Format=uri
+	Issuer string `json:"gatewayIssuer"`
+	// TeamIssuer is the expected issuer of downstream tokens for Team APIs in this zone
+	// +kubebuilder:validation:Format=uri
+	// +optional
+	TeamIssuer string `json:"teamApiIssuer,omitempty"`
+	// LmsIssuer is the issuer of the Last-Mile-Security tokens (upstream) for this zone
+	// +kubebuilder:validation:Format=uri
+	// +optional
+	LmsIssuer string `json:"gatewayLmsIssuer"`
 }
 
 // ZoneStatus defines the observed state of Zone
