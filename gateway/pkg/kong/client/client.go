@@ -38,6 +38,8 @@ type KongClient interface {
 
 	CleanupPlugins(ctx context.Context, route CustomRoute, consumer CustomConsumer, plugins []CustomPlugin) error
 
+	DeleteUpstream(ctx context.Context, route CustomRoute) error
+
 	GetKongAdminApi() KongAdminApi
 }
 
@@ -504,24 +506,9 @@ func (c *kongClient) DeleteRoute(ctx context.Context, route CustomRoute) error {
 		return fmt.Errorf("failed to delete service: %s", string(serviceResponse.Body))
 	}
 
-	// upstreamName = routeName
-	upstreamResponse, err := c.client.DeleteUpstreamWithResponse(ctx, routeName)
+	err = c.DeleteUpstream(ctx, route)
 	if err != nil {
 		return err
-	}
-	if err := CheckStatusCode(upstreamResponse, 200, 204, 404); err != nil {
-		return fmt.Errorf("failed to delete upstream: %s", string(upstreamResponse.Body))
-	}
-
-	if route.GetTargetsId() != "" {
-		// targets don't have names, so we use the ID directly
-		targetsResponse, err := c.client.DeleteUpstreamTargetWithResponse(ctx, routeName, route.GetTargetsId())
-		if err != nil {
-			return err
-		}
-		if err := CheckStatusCode(targetsResponse, 200, 204, 404); err != nil {
-			return fmt.Errorf("failed to delete upstream: %s", string(targetsResponse.Body))
-		}
 	}
 
 	return nil
@@ -608,6 +595,28 @@ func (c *kongClient) isConsumerInGroup(ctx context.Context, consumerName string)
 	} else {
 		return true, nil
 	}
+}
+
+func (c *kongClient) DeleteUpstream(ctx context.Context, route CustomRoute) error {
+	upstreamResponse, err := c.client.DeleteUpstreamWithResponse(ctx, route.GetName())
+	if err != nil {
+		return err
+	}
+	if err := CheckStatusCode(upstreamResponse, 200, 204, 404); err != nil {
+		return fmt.Errorf("failed to delete upstream: %s", string(upstreamResponse.Body))
+	}
+
+	if route.GetTargetsId() != "" {
+		// targets don't have names, so we use the ID directly
+		targetsResponse, err := c.client.DeleteUpstreamTargetWithResponse(ctx, route.GetName(), route.GetTargetsId())
+		if err != nil {
+			return err
+		}
+		if err := CheckStatusCode(targetsResponse, 200, 204, 404); err != nil {
+			return fmt.Errorf("failed to delete upstream targets: %s", string(targetsResponse.Body))
+		}
+	}
+	return nil
 }
 
 func BuildTag(key, value string) string {

@@ -146,6 +146,20 @@ func (mr *MockKongClientMockRecorder) DeleteRoute(ctx, route any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRoute", reflect.TypeOf((*MockKongClient)(nil).DeleteRoute), ctx, route)
 }
 
+// DeleteUpstream mocks base method.
+func (m *MockKongClient) DeleteUpstream(ctx context.Context, route client.CustomRoute) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUpstream", ctx, route)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteUpstream indicates an expected call of DeleteUpstream.
+func (mr *MockKongClientMockRecorder) DeleteUpstream(ctx, route any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUpstream", reflect.TypeOf((*MockKongClient)(nil).DeleteUpstream), ctx, route)
+}
+
 // GetKongAdminApi mocks base method.
 func (m *MockKongClient) GetKongAdminApi() client.KongAdminApi {
 	m.ctrl.T.Helper()

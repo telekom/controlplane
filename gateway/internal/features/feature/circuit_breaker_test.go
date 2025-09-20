@@ -227,7 +227,6 @@ var _ = Describe("CircuitBreakerFeature", func() {
 				}
 				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Times(1)
 				mockFeatureBuilder.EXPECT().GetKongClient().Return(mockKongClient).Times(1)
-				mockKongClient.EXPECT().GetKongAdminApi().Return(mockKongAdminApi).Times(1)
 
 				var setUpstreamArg *client.CustomUpstream
 				mockFeatureBuilder.EXPECT().SetUpstream(gomock.Any()).Do(func(upstream *client.CustomUpstream) {
@@ -235,18 +234,15 @@ var _ = Describe("CircuitBreakerFeature", func() {
 				})
 
 				// mock UpsertUpstreamWithResponse
-				var deleteUpstreamWithResponse_upstreamNameArg string
-				deleteUpstreamWithResponse_func := func(_ context.Context, upstreamName string, _ ...kong.RequestEditorFn) (*kong.DeleteUpstreamResponse, error) {
-					deleteUpstreamWithResponse_upstreamNameArg = upstreamName
+				var routeArg client.CustomRoute
+				deleteUpstream_func := func(_ context.Context, route client.CustomRoute) error {
+					routeArg = route
 
-					return &kong.DeleteUpstreamResponse{
-						Body:         nil,
-						HTTPResponse: &http.Response{StatusCode: 204},
-						JSON401:      nil,
-					}, nil
+					// happy path
+					return nil
 
 				}
-				mockKongAdminApi.EXPECT().DeleteUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(deleteUpstreamWithResponse_func).Times(1)
+				mockKongClient.EXPECT().DeleteUpstream(gomock.Any(), gomock.Any()).DoAndReturn(deleteUpstream_func).Times(1)
 
 				// Execute
 				err := feature.InstanceCircuitBreakerFeature.Apply(ctx, mockFeatureBuilder)
@@ -261,7 +257,11 @@ var _ = Describe("CircuitBreakerFeature", func() {
 					Path:   "/proxy",
 				}))
 
-				Expect(deleteUpstreamWithResponse_upstreamNameArg).To(Equal("kong_upstream_response_id"))
+				Expect(routeArg.GetName()).To(Equal(route.GetName()))
+				gwRoute, ok := routeArg.(*gatewayv1.Route)
+				Expect(ok).To(BeTrue())
+				Expect(gwRoute.GetUpstreamId()).To(Equal(""))
+
 			})
 		})
 	})

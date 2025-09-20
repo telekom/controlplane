@@ -84,17 +84,12 @@ func (c CircuitBreakerFeature) Apply(ctx context.Context, builder features.Featu
 }
 
 func handleDeletion(ctx context.Context, builder features.FeaturesBuilder, route *gatewayv1.Route) error {
+	// default configuration if CB is disabled
 	builder.SetUpstream(client.NewUpstreamOrDie(plugin.LocalhostProxyUrl))
 
-	kongAdminApi := builder.GetKongClient().GetKongAdminApi()
-
-	kongUpstreamName := route.GetUpstreamId()
-	upstreamDeleteResponse, err := kongAdminApi.DeleteUpstreamWithResponse(ctx, kongUpstreamName)
+	err := builder.GetKongClient().DeleteUpstream(ctx, route)
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete upstream for route %s", route.GetName())
-	}
-	if err := client.CheckStatusCode(upstreamDeleteResponse, 200, 204); err != nil {
-		return errors.Wrapf(fmt.Errorf("error body from kong admin api: %s", string(upstreamDeleteResponse.Body)), "failed to create upstream for route %s", route.GetName())
+		return err
 	}
 
 	// remove the reference to the upstream from the route
