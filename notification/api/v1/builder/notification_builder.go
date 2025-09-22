@@ -22,7 +22,6 @@ import (
 
 // +kubebuilder:rbac:groups=notification.cp.ei.telekom.de,resources=notifications,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=notification.cp.ei.telekom.de,resources=notificationchannels,verbs=get;list;watch
-// +kubebuilder:rbac:groups=notification.cp.ei.telekom.de,resources=notificationtemplates,verbs=get;list;watch
 
 // NotificationBuilder provides a fluent API for creating and sending notifications.
 // It abstracts the complexity of notification creation, allowing external domains
@@ -35,7 +34,7 @@ import (
 //		WithOwner(eventSourceResource). // eventSourceResource should be the Kubernetes object that triggered the notification
 //		WithPurpose("ApprovalGranted").
 //		WithSystemSender("ApprovalSystem").
-//		WithChannels("team-channel").
+//		WithChannels(types.ObjectRef{Name: "email", Namespace: "env--group--team"}).
 //		WithProperties(map[string]any{
 //			"resourceName": "example-resource",
 //			"approvedBy": "admin",

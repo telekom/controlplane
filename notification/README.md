@@ -138,7 +138,7 @@ notification, err := builder.NewNotificationBuilder().
     WithOwner(eventSourceResource).
     WithPurpose("ApprovalGranted").
     WithSender(notificationv1.SenderTypeSystem, "ApprovalService").
-    WithChannels("team-channel").
+    WithChannels(types.ObjectRef{Name: "email", Namespace: "env--group--team"}).
     WithProperties(map[string]any{
         "resourceName": "example-resource",
         "approvedBy": "admin",
