@@ -46,9 +46,24 @@ spec:
                 description: Channels defines the channels to send the notification
                   to.
                 items:
-                  type: string
-                maxItems: 5
-                minItems: 1
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
                 type: array
                 uniqueItems: true
                 x-kubernetes-list-type: set
@@ -87,7 +102,6 @@ spec:
                 - type
                 type: object
             required:
-            - channels
             - purpose
             - sender
             type: object
@@ -155,6 +169,26 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              states:
+                additionalProperties:
+                  properties:
+                    errorMessage:
+                      description: ErrorMessage contains the error message if the
+                        notification failed to send
+                      type: string
+                    sent:
+                      description: Sent indicates whether the notification was sent
+                        successfully
+                      type: boolean
+                    timestamp:
+                      format: date-time
+                      type: string
+                  required:
+                  - sent
+                  - timestamp
+                  type: object
+                description: States collects the states of the notification per channel
+                type: object
             type: object
         required:
         - spec

@@ -36,7 +36,7 @@ type NotificationTemplateSpec struct {
 	// +optional
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:Schemaless
-	Schema runtime.RawExtension `json:"schema,omitempty"`
+	Schema runtime.RawExtension `json:"schema"`
 }
 
 // NotificationTemplateStatus defines the observed state of NotificationTemplate.

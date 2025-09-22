@@ -21,6 +21,7 @@ import (
 
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
+	"github.com/telekom/controlplane/common/pkg/types"
 
 	"github.com/telekom/controlplane/common/pkg/test"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
@@ -55,10 +56,10 @@ var _ = Describe("NotificationBuilder", func() {
 	Context("WithNamespace", func() {
 		It("sets the namespace correctly", func() {
 			notificationBuilder := builder.New().WithNamespace("test-namespace")
-			notificationBuilder = notificationBuilder.WithPurpose("test-purpose")                         // Needed to pass validation
-			notificationBuilder = notificationBuilder.WithChannels("test-channel")                        // Needed to pass validation
-			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test") // Needed to pass validation
-			notification, err := notificationBuilder.Build()
+			notificationBuilder = notificationBuilder.WithPurpose("test-purpose")                                               // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithChannels(types.ObjectRef{Name: "test-channel", Namespace: "default"}) // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test")                       // Needed to pass validation
+			notification, err := notificationBuilder.Build(ctx)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(notification.Namespace).To(Equal("test-namespace"))
@@ -66,10 +67,10 @@ var _ = Describe("NotificationBuilder", func() {
 
 		It("does not override an already set namespace", func() {
 			notificationBuilder := builder.New().WithNamespace("first-namespace").WithNamespace("second-namespace")
-			notificationBuilder = notificationBuilder.WithPurpose("test-purpose")                         // Needed to pass validation
-			notificationBuilder = notificationBuilder.WithChannels("test-channel")                        // Needed to pass validation
-			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test") // Needed to pass validation
-			notification, err := notificationBuilder.Build()
+			notificationBuilder = notificationBuilder.WithPurpose("test-purpose")                                               // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithChannels(types.ObjectRef{Name: "test-channel", Namespace: "default"}) // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test")                       // Needed to pass validation
+			notification, err := notificationBuilder.Build(ctx)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(notification.Namespace).To(Equal("first-namespace"))
@@ -79,10 +80,10 @@ var _ = Describe("NotificationBuilder", func() {
 	Context("WithOwner", func() {
 		It("handles nil owner", func() {
 			notificationBuilder := builder.New().WithOwner(nil)
-			notificationBuilder = notificationBuilder.WithNamespace("test-namespace").WithPurpose("test-purpose") // Needed to pass validation
-			notificationBuilder = notificationBuilder.WithChannels("test-channel")                                // Needed to pass validation
-			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test")         // Needed to pass validation
-			notification, err := notificationBuilder.Build()
+			notificationBuilder = notificationBuilder.WithNamespace("test-namespace").WithPurpose("test-purpose")               // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithChannels(types.ObjectRef{Name: "test-channel", Namespace: "default"}) // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test")                       // Needed to pass validation
+			notification, err := notificationBuilder.Build(ctx)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(notification.Namespace).To(Equal("test-namespace"))
@@ -94,10 +95,10 @@ var _ = Describe("NotificationBuilder", func() {
 			owner.SetAnnotations(map[string]string{"owner-annotation-key": "owner-annotation-value"})
 
 			notificationBuilder := builder.New().WithOwner(owner)
-			notificationBuilder = notificationBuilder.WithPurpose("test-purpose")                         // Needed to pass validation
-			notificationBuilder = notificationBuilder.WithChannels("test-channel")                        // Needed to pass validation
-			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test") // Needed to pass validation
-			notification, err := notificationBuilder.Build()
+			notificationBuilder = notificationBuilder.WithPurpose("test-purpose")                                               // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithChannels(types.ObjectRef{Name: "test-channel", Namespace: "default"}) // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test")                       // Needed to pass validation
+			notification, err := notificationBuilder.Build(ctx)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(notification.Namespace).To(Equal("owner-namespace"))
@@ -111,9 +112,9 @@ var _ = Describe("NotificationBuilder", func() {
 	Context("WithPurpose", func() {
 		It("sets the purpose correctly", func() {
 			notificationBuilder := builder.New().WithNamespace("test-namespace").WithPurpose("test-purpose")
-			notificationBuilder = notificationBuilder.WithChannels("test-channel")                        // Needed to pass validation
-			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test") // Needed to pass validation
-			notification, err := notificationBuilder.Build()
+			notificationBuilder = notificationBuilder.WithChannels(types.ObjectRef{Name: "test-channel", Namespace: "default"}) // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test")                       // Needed to pass validation
+			notification, err := notificationBuilder.Build(ctx)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(notification.Spec.Purpose).To(Equal("test-purpose"))
@@ -121,9 +122,9 @@ var _ = Describe("NotificationBuilder", func() {
 
 		It("requires a purpose to build", func() {
 			notificationBuilder := builder.New().WithNamespace("test-namespace")
-			notificationBuilder = notificationBuilder.WithChannels("test-channel")                        // Needed to pass validation
-			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test") // Needed to pass validation
-			_, err := notificationBuilder.Build()
+			notificationBuilder = notificationBuilder.WithChannels(types.ObjectRef{Name: "test-channel", Namespace: "default"}) // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test")                       // Needed to pass validation
+			_, err := notificationBuilder.Build(ctx)
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("purpose is required"))
@@ -133,9 +134,9 @@ var _ = Describe("NotificationBuilder", func() {
 	Context("WithSender", func() {
 		It("sets the sender correctly for system sender", func() {
 			notificationBuilder := builder.New().WithNamespace("test-namespace").WithPurpose("test-purpose").WithSender(notificationv1.SenderTypeSystem, "system-name")
-			notificationBuilder = notificationBuilder.WithChannels("test-channel") // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithChannels(types.ObjectRef{Name: "test-channel", Namespace: "default"}) // Needed to pass validation
 
-			notification, err := notificationBuilder.Build()
+			notification, err := notificationBuilder.Build(ctx)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(notification.Spec.Sender.Type).To(Equal(notificationv1.SenderTypeSystem))
@@ -144,9 +145,9 @@ var _ = Describe("NotificationBuilder", func() {
 
 		It("sets the sender correctly for user sender", func() {
 			notificationBuilder := builder.New().WithNamespace("test-namespace").WithPurpose("test-purpose").WithSender(notificationv1.SenderTypeUser, "user-name")
-			notificationBuilder = notificationBuilder.WithChannels("test-channel") // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithChannels(types.ObjectRef{Name: "test-channel", Namespace: "default"}) // Needed to pass validation
 
-			notification, err := notificationBuilder.Build()
+			notification, err := notificationBuilder.Build(ctx)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(notification.Spec.Sender.Type).To(Equal(notificationv1.SenderTypeUser))
@@ -156,25 +157,30 @@ var _ = Describe("NotificationBuilder", func() {
 
 	Context("WithChannels", func() {
 		It("adds channels correctly", func() {
-			notificationBuilder := builder.New().WithNamespace("test-namespace").WithPurpose("test-purpose").WithChannels("channel1", "channel2")
+			notificationBuilder := builder.New().WithNamespace("test-namespace").WithPurpose("test-purpose").
+				WithChannels(types.ObjectRef{Name: "channel1", Namespace: "default"}, types.ObjectRef{Name: "channel2", Namespace: "default"})
 			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test") // Needed to pass validation
 
-			notification, err := notificationBuilder.Build()
+			notification, err := notificationBuilder.Build(ctx)
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(notification.Spec.Channels).To(ContainElements("channel1", "channel2"))
+			Expect(notification.Spec.Channels).To(ContainElements(types.ObjectRef{Name: "channel1", Namespace: "default"}, types.ObjectRef{Name: "channel2", Namespace: "default"}))
 		})
 
 		It("allows adding multiple channels in sequence", func() {
 			notificationBuilder := builder.New().WithNamespace("test-namespace").WithPurpose("test-purpose")
-			notificationBuilder = notificationBuilder.WithChannels("channel1")
-			notificationBuilder = notificationBuilder.WithChannels("channel2", "channel3")
+			notificationBuilder = notificationBuilder.WithChannels(types.ObjectRef{Name: "channel1", Namespace: "default"})
+			notificationBuilder = notificationBuilder.WithChannels(types.ObjectRef{Name: "channel2", Namespace: "default"}, types.ObjectRef{Name: "channel3", Namespace: "default"})
 			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test") // Needed to pass validation
 
-			notification, err := notificationBuilder.Build()
+			notification, err := notificationBuilder.Build(ctx)
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(notification.Spec.Channels).To(ContainElements("channel1", "channel2", "channel3"))
+			Expect(notification.Spec.Channels).To(ContainElements(
+				types.ObjectRef{Name: "channel1", Namespace: "default"},
+				types.ObjectRef{Name: "channel2", Namespace: "default"},
+				types.ObjectRef{Name: "channel3", Namespace: "default"},
+			))
 			Expect(len(notification.Spec.Channels)).To(Equal(3))
 		})
 	})
@@ -185,10 +191,10 @@ var _ = Describe("NotificationBuilder", func() {
 			channelList := &notificationv1.NotificationChannelList{
 				Items: []notificationv1.NotificationChannel{
 					{
-						ObjectMeta: metav1.ObjectMeta{Name: "channel1"},
+						ObjectMeta: metav1.ObjectMeta{Name: "channel1", Namespace: "test-namespace"},
 					},
 					{
-						ObjectMeta: metav1.ObjectMeta{Name: "channel2"},
+						ObjectMeta: metav1.ObjectMeta{Name: "channel2", Namespace: "test-namespace"},
 					},
 				},
 			}
@@ -214,11 +220,11 @@ var _ = Describe("NotificationBuilder", func() {
 			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test") // Needed to pass validation
 			notificationBuilder = notificationBuilder.WithDefaultChannels(ctx, "test-namespace")
 
-			notification, err := notificationBuilder.Build()
+			notification, err := notificationBuilder.Build(ctx)
 
 			// Verify results
 			Expect(err).NotTo(HaveOccurred())
-			Expect(notification.Spec.Channels).To(ContainElements("channel1", "channel2"))
+			Expect(notification.Spec.Channels).To(ContainElements(types.ObjectRef{Name: "channel1", Namespace: "test-namespace"}, types.ObjectRef{Name: "channel2", Namespace: "test-namespace"}))
 			Expect(len(notification.Spec.Channels)).To(Equal(2))
 
 			// Verify mock expectations were met
@@ -236,7 +242,7 @@ var _ = Describe("NotificationBuilder", func() {
 			notificationBuilder = notificationBuilder.WithDefaultChannels(ctx, "test-namespace")
 
 			// The error should be stored in the builder
-			_, err := notificationBuilder.Build()
+			_, err := notificationBuilder.Build(ctx)
 
 			// Verify results
 			Expect(err).To(HaveOccurred())
@@ -259,11 +265,11 @@ var _ = Describe("NotificationBuilder", func() {
 			}
 
 			notificationBuilder := builder.New().WithNamespace("test-namespace").WithPurpose("test-purpose")
-			notificationBuilder = notificationBuilder.WithChannels("test-channel")                        // Needed to pass validation
-			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test") // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithChannels(types.ObjectRef{Name: "test-channel", Namespace: "default"}) // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test")                       // Needed to pass validation
 			notificationBuilder = notificationBuilder.WithProperties(properties)
 
-			notification, err := notificationBuilder.Build()
+			notification, err := notificationBuilder.Build(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Verify properties are stored correctly
@@ -286,11 +292,11 @@ var _ = Describe("NotificationBuilder", func() {
 			}
 
 			notificationBuilder := builder.New().WithNamespace("test-namespace").WithPurpose("test-purpose")
-			notificationBuilder = notificationBuilder.WithChannels("test-channel")                        // Needed to pass validation
-			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test") // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithChannels(types.ObjectRef{Name: "test-channel", Namespace: "default"}) // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test")                       // Needed to pass validation
 			notificationBuilder = notificationBuilder.WithProperties(invalidProperties)
 
-			_, err := notificationBuilder.Build()
+			_, err := notificationBuilder.Build(ctx)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to marshal properties"))
 		})
@@ -300,9 +306,9 @@ var _ = Describe("NotificationBuilder", func() {
 		It("requires namespace to build", func() {
 			// Only set purpose, missing namespace
 			notificationBuilder := builder.New().WithPurpose("test-purpose")
-			notificationBuilder = notificationBuilder.WithChannels("test-channel")                        // Needed to pass validation
-			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test") // Needed to pass validation
-			_, err := notificationBuilder.Build()
+			notificationBuilder = notificationBuilder.WithChannels(types.ObjectRef{Name: "test-channel", Namespace: "default"}) // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test")                       // Needed to pass validation
+			_, err := notificationBuilder.Build(ctx)
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("namespace is required"))
@@ -311,9 +317,9 @@ var _ = Describe("NotificationBuilder", func() {
 		It("requires purpose to build", func() {
 			// Only set namespace, missing purpose
 			notificationBuilder := builder.New().WithNamespace("test-namespace")
-			notificationBuilder = notificationBuilder.WithChannels("test-channel")                        // Needed to pass validation
-			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test") // Needed to pass validation
-			_, err := notificationBuilder.Build()
+			notificationBuilder = notificationBuilder.WithChannels(types.ObjectRef{Name: "test-channel", Namespace: "default"}) // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test")                       // Needed to pass validation
+			_, err := notificationBuilder.Build(ctx)
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("purpose is required"))
@@ -326,7 +332,7 @@ var _ = Describe("NotificationBuilder", func() {
 
 			// This will fail at WithProperties and should return that error even though namespace and purpose are missing
 			notificationBuilder := builder.New().WithProperties(properties)
-			_, err := notificationBuilder.Build()
+			_, err := notificationBuilder.Build(ctx)
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to marshal properties"))
@@ -335,10 +341,10 @@ var _ = Describe("NotificationBuilder", func() {
 		It("builds a valid notification with all required fields", func() {
 			// Need to call Build twice to handle the name generation logic
 			notificationBuilder := builder.New().WithNamespace("test-namespace").WithPurpose("test-purpose")
-			notificationBuilder = notificationBuilder.WithChannels("test-channel")                        // Needed to pass validation
-			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test") // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithChannels(types.ObjectRef{Name: "test-channel", Namespace: "default"}) // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test")                       // Needed to pass validation
 			// First build sets the built flag
-			notification, err := notificationBuilder.Build()
+			notification, err := notificationBuilder.Build(ctx)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(notification).NotTo(BeNil())
@@ -346,7 +352,7 @@ var _ = Describe("NotificationBuilder", func() {
 			Expect(notification.Spec.Purpose).To(Equal("test-purpose"))
 
 			// Second build should set the name
-			notification, err = notificationBuilder.Build()
+			notification, err = notificationBuilder.Build(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(notification.Name).NotTo(BeEmpty()) // Name should be generated now
 		})
@@ -354,14 +360,14 @@ var _ = Describe("NotificationBuilder", func() {
 		It("sets the name based on purpose and spec hash", func() {
 			// Need to call Build twice to handle the name generation logic
 			notificationBuilder := builder.New().WithNamespace("test-namespace").WithPurpose("test-purpose")
-			notificationBuilder = notificationBuilder.WithChannels("test-channel")                        // Needed to pass validation
-			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test") // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithChannels(types.ObjectRef{Name: "test-channel", Namespace: "default"}) // Needed to pass validation
+			notificationBuilder = notificationBuilder.WithSender(notificationv1.SenderTypeSystem, "test")                       // Needed to pass validation
 			// First build sets the built flag
-			_, err := notificationBuilder.Build()
+			_, err := notificationBuilder.Build(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Second build should set the name
-			notification, err := notificationBuilder.Build()
+			notification, err := notificationBuilder.Build(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(notification.Name).To(HavePrefix("test-purpose--"))
 
@@ -378,11 +384,11 @@ var _ = Describe("NotificationBuilder", func() {
 				WithOwner(test.NewObject("owner-name", "owner-namespace")).
 				WithNamespace("test-namespace").
 				WithPurpose("test-purpose").
-				WithChannels("test-channel").
+				WithChannels(types.ObjectRef{Name: "test-channel", Namespace: "default"}).
 				WithSender(notificationv1.SenderTypeSystem, "test")
 
 			// Build the notification first
-			_, err := notificationBuilder.Build()
+			_, err := notificationBuilder.Build(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Setup the mock expectations
@@ -397,7 +403,7 @@ var _ = Describe("NotificationBuilder", func() {
 				Expect(ok).To(BeTrue())
 				Expect(notification.Namespace).To(Equal("owner-namespace"))
 				Expect(notification.Spec.Purpose).To(Equal("test-purpose"))
-				Expect(notification.Spec.Channels).To(ContainElement("test-channel"))
+				Expect(notification.Spec.Channels).To(ContainElement(types.ObjectRef{Name: "test-channel", Namespace: "default"}))
 				Expect(notification.Spec.Sender.Type).To(Equal(notificationv1.SenderTypeSystem))
 				Expect(notification.Spec.Sender.Name).To(Equal("test"))
 
@@ -425,7 +431,7 @@ var _ = Describe("NotificationBuilder", func() {
 			Expect(notification).NotTo(BeNil())
 			Expect(notification.Namespace).To(Equal("owner-namespace"))
 			Expect(notification.Spec.Purpose).To(Equal("test-purpose"))
-			Expect(notification.Spec.Channels).To(ContainElement("test-channel"))
+			Expect(notification.Spec.Channels).To(ContainElement(types.ObjectRef{Name: "test-channel", Namespace: "default"}))
 			Expect(notification.Spec.Sender.Type).To(Equal(notificationv1.SenderTypeSystem))
 			Expect(notification.Spec.Sender.Name).To(Equal("test"))
 

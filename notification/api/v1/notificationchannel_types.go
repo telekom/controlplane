@@ -38,12 +38,8 @@ type Authentication struct {
 }
 
 // NotificationChannelSpec defines the desired state of NotificationChannel
+// +kubebuilder:validation:XValidation:rule="(has(self.email) ? 1 : 0) + (has(self.msTeams) ? 1 : 0) + (has(self.webhook) ? 1 : 0) == 1",message="Exactly one of email, msTeams, webhook must be specified"
 type NotificationChannelSpec struct {
-	// Type defines the type of notification channel
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=Email;MsTeams;Webhook
-	Type string `json:"type"`
-
 	// Email configuration, required if Type is Email
 	// +optional
 	Email *EmailConfig `json:"email,omitempty"`
@@ -55,6 +51,13 @@ type NotificationChannelSpec struct {
 	// Webhook configuration, required if Type is Webhook
 	// +optional
 	Webhook *WebhookConfig `json:"webhook,omitempty"`
+
+	// A set of purposes this channel ignores
+	// +optional
+	// +kubebuilder:validation:MaxItems=100
+	// +kubebuilder:validation:UniqueItems=true
+	// +listType=set
+	Ignore []string `json:"ignore,omitempty"`
 }
 
 // EmailConfig defines configuration for Email channel

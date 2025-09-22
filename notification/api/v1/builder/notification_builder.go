@@ -16,6 +16,7 @@ import (
 
 	"github.com/pkg/errors"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/types"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 )
 
@@ -65,7 +66,7 @@ type NotificationBuilder interface {
 	// WithDefaultChannel will set all available channels for the given namespace
 	WithDefaultChannels(ctx context.Context, namespace string) NotificationBuilder
 	// WithChannels sets the channels to send the notification to.
-	WithChannels(channels ...string) NotificationBuilder
+	WithChannels(channels ...types.ObjectRef) NotificationBuilder
 
 	// WithProperties will add the given properties to the notification
 	// Properties are used to render the notification template
@@ -73,7 +74,7 @@ type NotificationBuilder interface {
 	WithProperties(properties map[string]any) NotificationBuilder
 
 	// Build builds the Notification object
-	Build() (*notificationv1.Notification, error)
+	Build(ctx context.Context) (*notificationv1.Notification, error)
 
 	// Send will send the notification asynchronously
 	Send(ctx context.Context) (*notificationv1.Notification, error)
@@ -105,7 +106,7 @@ func New() NotificationBuilder {
 }
 
 // WithChannels implements NotificationBuilder.
-func (n *notificationBuilder) WithChannels(channels ...string) NotificationBuilder {
+func (n *notificationBuilder) WithChannels(channels ...types.ObjectRef) NotificationBuilder {
 	n.Notification.Spec.Channels = append(n.Notification.Spec.Channels, channels...)
 	return n
 }
@@ -120,7 +121,7 @@ func (n *notificationBuilder) WithDefaultChannels(ctx context.Context, namespace
 	}
 
 	for _, channel := range channelList.Items {
-		n.Notification.Spec.Channels = append(n.Notification.Spec.Channels, channel.Name)
+		n.Notification.Spec.Channels = append(n.Notification.Spec.Channels, *types.ObjectRefFromObject(&channel))
 	}
 	return n
 }
@@ -168,7 +169,7 @@ func (n *notificationBuilder) WithSender(senderType notificationv1.SenderType, s
 	return n
 }
 
-func (n *notificationBuilder) Build() (*notificationv1.Notification, error) {
+func (n *notificationBuilder) Build(ctx context.Context) (*notificationv1.Notification, error) {
 	if len(n.Errors) > 0 {
 		return nil, n.Errors[0]
 	}
@@ -178,6 +179,9 @@ func (n *notificationBuilder) Build() (*notificationv1.Notification, error) {
 	if n.Notification.Spec.Purpose == "" {
 		return nil, errors.New("purpose is required")
 	}
+	if n.Notification.Spec.Channels == nil || len(n.Notification.Spec.Channels) == 0 {
+		n.WithDefaultChannels(ctx, n.Notification.Namespace)
+	}
 
 	n.Notification.Name = makeName(n.Notification)
 
@@ -185,7 +189,7 @@ func (n *notificationBuilder) Build() (*notificationv1.Notification, error) {
 }
 
 func (n *notificationBuilder) Send(ctx context.Context) (*notificationv1.Notification, error) {
-	_, err := n.Build()
+	_, err := n.Build(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build notification")
 	}

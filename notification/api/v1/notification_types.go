@@ -44,12 +44,9 @@ type NotificationSpec struct {
 	Sender Sender `json:"sender"`
 
 	// Channels defines the channels to send the notification to.
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=5
-	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:UniqueItems=true
 	// +listType=set
-	Channels []string `json:"channels"`
+	Channels []types.ObjectRef `json:"channels,omitempty"`
 
 	// Properties contains the properties that are used to render the notification template
 	// +optional
@@ -69,6 +66,20 @@ type NotificationStatus struct {
 	// +patchMergeKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+
+	// States collects the states of the notification per channel
+	States map[string]SendState `json:"states,omitempty"`
+}
+
+type SendState struct {
+	Timestamp metav1.Time `json:"timestamp"`
+
+	// Sent indicates whether the notification was sent successfully
+	Sent bool `json:"sent"`
+
+	// ErrorMessage contains the error message if the notification failed to send
+	// +optional
+	ErrorMessage string `json:"errorMessage,omitempty"`
 }
 
 // +kubebuilder:object:root=true
