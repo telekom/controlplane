@@ -92,8 +92,12 @@ func GetZoneObjWithTeamInfo(ctx context.Context, k8sClient client.Client) (*admi
 	}
 
 	for _, zone := range zoneList.GetItems() {
-		if zone.(*adminv1.Zone).Spec.TeamApis != nil {
-			teamApiZone = zone.(*adminv1.Zone).DeepCopy()
+		zoneObj, ok := zone.(*adminv1.Zone)
+		if !ok {
+			continue
+		}
+		if zoneObj.Spec.TeamApis != nil {
+			teamApiZone = zoneObj.DeepCopy()
 			break
 		}
 	}
