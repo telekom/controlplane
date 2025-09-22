@@ -10,6 +10,7 @@ resources:
 - bases/api.cp.ei.telekom.de_apiexposures.yaml
 - bases/api.cp.ei.telekom.de_apisubscriptions.yaml
 - bases/api.cp.ei.telekom.de_remoteapisubscriptions.yaml
+- bases/api.cp.ei.telekom.de_apicategories.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

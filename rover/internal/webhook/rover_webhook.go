@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/controller"
+	cerrors "github.com/telekom/controlplane/common/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
@@ -107,11 +108,11 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime
 
 	log.Info("validate create or update")
 
-	valErr := NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), rover)
+	valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), rover)
 
 	environment, ok := controller.GetEnvironment(rover)
 	if !ok {
-		valErr.AddInvalidError(MetadataEnvPath, "", "environment label is required")
+		valErr.AddInvalidError(cerrors.MetadataEnvPath, "", "environment label is required")
 		return nil, valErr.BuildError()
 	}
 
@@ -159,7 +160,7 @@ func (r *RoverValidator) ResourceMustExist(ctx context.Context, objRef client.Ob
 	return true, nil
 }
 
-func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *ValidationError, environment string, sub roverv1.Subscription, idx int) error {
+func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *cerrors.ValidationError, environment string, sub roverv1.Subscription, idx int) error {
 	logr.FromContextOrDiscard(ctx).Info("validate subscription")
 
 	if sub.Api != nil && sub.Api.Organization != "" {
@@ -181,7 +182,7 @@ func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *Valid
 	return nil
 }
 
-func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
+func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *cerrors.ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
 	if exposure.Api != nil {
 		for _, upstream := range exposure.Api.Upstreams {
 			if upstream.URL == "" {
@@ -234,7 +235,7 @@ func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *Validatio
 	return nil
 }
 
-func (r *RoverValidator) validateExposureRateLimit(ctx context.Context, valErr *ValidationError, exposure roverv1.Exposure, idx int) error {
+func (r *RoverValidator) validateExposureRateLimit(ctx context.Context, valErr *cerrors.ValidationError, exposure roverv1.Exposure, idx int) error {
 	// Check if API is nil
 	if exposure.Api == nil {
 		return nil
@@ -291,7 +292,7 @@ func (r *RoverValidator) validateExposureRateLimit(ctx context.Context, valErr *
 	return nil
 }
 
-func (r *RoverValidator) validateApproval(ctx context.Context, valErr *ValidationError, environment string, approval roverv1.Approval) error {
+func (r *RoverValidator) validateApproval(ctx context.Context, valErr *cerrors.ValidationError, environment string, approval roverv1.Approval) error {
 
 	for i := range approval.TrustedTeams {
 		ref := types.ObjectRef{
@@ -354,7 +355,7 @@ func CheckWeightSetOnAllOrNone(upstreams []roverv1.Upstream) (allSet, noneSet bo
 }
 
 // MustNotHaveDuplicates checks if there are no duplicates in the subscriptions and exposures
-func MustNotHaveDuplicates(valErr *ValidationError, subs []roverv1.Subscription, exps []roverv1.Exposure) error {
+func MustNotHaveDuplicates(valErr *cerrors.ValidationError, subs []roverv1.Subscription, exps []roverv1.Exposure) error {
 	if len(subs) == 0 && len(exps) == 0 {
 		return nil // No subscriptions or exposures, no duplicates to check
 	}
@@ -407,7 +408,7 @@ func MustNotHaveDuplicates(valErr *ValidationError, subs []roverv1.Subscription,
 	return nil
 }
 
-func (r *RoverValidator) validateRemoveHeaders(ctx context.Context, valErr *ValidationError, exp roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
+func (r *RoverValidator) validateRemoveHeaders(ctx context.Context, valErr *cerrors.ValidationError, exp roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
 	// Skip validation for event exposures
 	if exp.Api == nil {
 		return nil
