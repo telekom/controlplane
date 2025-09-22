@@ -9,9 +9,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
-	"fmt"
 	"io"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -174,14 +172,10 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 		return res, problems.BadRequest("spec is empty")
 	}
 
-	//todo validate
-	var spec *roverv1.ApiSpecificationSpec
-	spec, err = in.ParseSpecification(ctx, string(specMarshaled))
+	var apiSpec *roverv1.ApiSpecification
+	apiSpec, err = in.ParseSpecification(ctx, string(specMarshaled))
 	if err != nil {
-		return res, problems.BadRequest(err.Error())
-	}
-	if err = validatedWithResourceId(spec, id); err != nil {
-		return res, problems.BadRequest(err.Error())
+		return res, err
 	}
 
 	fileAPIResp, err := a.uploadFile(ctx, specMarshaled, id)
@@ -189,25 +183,18 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 		return res, err
 	}
 
-	obj, err := in.MapRequest(spec, fileAPIResp, id)
+	err = in.MapRequest(apiSpec, fileAPIResp, id)
 	if err != nil {
 		return res, problems.BadRequest(err.Error())
 	}
-	EnsureLabelsOrDie(ctx, obj)
+	EnsureLabelsOrDie(ctx, apiSpec)
 
-	err = a.Store.CreateOrReplace(ctx, obj)
+	err = a.Store.CreateOrReplace(ctx, apiSpec)
 	if err != nil {
 		return res, err
 	}
 
 	return a.Get(ctx, resourceId)
-}
-
-func validatedWithResourceId(spec *roverv1.ApiSpecificationSpec, id mapper.ResourceIdInfo) error {
-	if !strings.EqualFold(id.Name, spec.ApiName) {
-		return fmt.Errorf("propossed api spec name in request path '%s' does not equal the base api path '%s'", id.Name, spec.ApiName)
-	}
-	return nil
 }
 
 // GetStatus implements server.ApiSpecificationController.

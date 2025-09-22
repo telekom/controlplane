@@ -25,7 +25,6 @@ func NewApi(apiBasePath string) *apiv1.Api {
 			},
 		},
 		Spec: apiv1.ApiSpec{
-			Name:         labelutil.NormalizeValue(apiBasePath),
 			Version:      "v1",
 			BasePath:     apiBasePath,
 			Category:     "other",

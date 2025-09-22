@@ -37,10 +37,11 @@ func newTeam(name, group, namespace, env string) *organizationv1.Team {
 			},
 		},
 		Spec: organizationv1.TeamSpec{
-			Name:    name,
-			Group:   group,
-			Email:   "team@mail.de",
-			Members: []organizationv1.Member{{Email: "member@mail.de", Name: "member"}},
+			Name:     name,
+			Group:    group,
+			Email:    "team@mail.de",
+			Category: organizationv1.TeamCategoryCustomer,
+			Members:  []organizationv1.Member{{Email: "member@mail.de", Name: "member"}},
 		},
 		Status: organizationv1.TeamStatus{},
 	}
