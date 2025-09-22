@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/telekom/controlplane/identity/pkg/keycloak"
 	"github.com/telekom/controlplane/organization/internal/index"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -71,7 +70,7 @@ func generateSecretAndToken(env string, teamObj *organisationv1.Team, zoneObj *a
 			Environment:  env,
 			GeneratedAt:  time.Now().Unix(),
 			ServerUrl:    zoneObj.Status.Links.Url,
-			TokenUrl:     zoneObj.Status.Links.Issuer + keycloak.TokenEndpointSuffix,
+			TokenUrl:     zoneObj.Status.Links.Issuer + "/protocol/openid-connect/token",
 		}, teamObj.Spec.Group, teamObj.Spec.Name)
 
 	return clientSecretValue, teamToken, err

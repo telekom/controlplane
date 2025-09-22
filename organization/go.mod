@@ -11,7 +11,6 @@ require (
 	github.com/telekom/controlplane/common v0.0.0
 	github.com/telekom/controlplane/common-server v0.0.0 // indirect
 	github.com/telekom/controlplane/gateway/api v0.0.0
-	github.com/telekom/controlplane/identity v0.0.0 // for identity/pkg/keycloak package
 	github.com/telekom/controlplane/identity/api v0.0.0
 	github.com/telekom/controlplane/organization/api v0.0.0
 	github.com/telekom/controlplane/secret-manager v0.0.0
@@ -33,7 +32,6 @@ replace (
 	github.com/telekom/controlplane/common => ../common
 	github.com/telekom/controlplane/common-server => ../common-server // indirect
 	github.com/telekom/controlplane/gateway/api => ../gateway/api
-	github.com/telekom/controlplane/identity => ../identity
 	github.com/telekom/controlplane/identity/api => ../identity/api
 	github.com/telekom/controlplane/organization/api => ./api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
