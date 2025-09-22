@@ -31,7 +31,7 @@ func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *r
 
 	api := &apiapi.Api{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      apiSpec.Spec.ApiName,
+			Name:      rover.MakeName(apiSpec),
 			Namespace: apiSpec.Namespace,
 		},
 	}
@@ -49,7 +49,6 @@ func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *r
 		}
 
 		api.Spec = apiapi.ApiSpec{
-			Name:         apiSpec.Spec.ApiName,
 			Version:      apiSpec.Spec.Version,
 			BasePath:     apiSpec.Spec.BasePath,
 			Category:     apiSpec.Spec.Category,

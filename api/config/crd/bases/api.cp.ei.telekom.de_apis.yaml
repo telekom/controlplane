@@ -51,8 +51,6 @@ spec:
                 type: string
               category:
                 type: string
-              name:
-                type: string
               oauth2Scopes:
                 items:
                   type: string
@@ -64,7 +62,6 @@ spec:
             required:
             - basePath
             - category
-            - name
             - version
             - xVendor
             type: object

@@ -3,7 +3,7 @@
 {
  "category": "other",
  "id": "eni--hyperion--eni-distr-v1",
- "name": "rover-api",
+ "name": "eni-distr-v1",
  "specification": {
   "info": {
    "title": "Rover API",

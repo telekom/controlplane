@@ -2,15 +2,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package webhook
+package errors
 
 import (
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/types"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -62,8 +62,8 @@ var _ = Describe("ValidationError", func() {
 			Expect(valErr.BuildError()).To(BeNil())
 
 			// Verify internal state
-			Expect(valErr.errors).To(BeEmpty())
-			Expect(valErr.warnings).To(BeEmpty())
+			Expect(valErr.Errors).To(BeEmpty())
+			Expect(valErr.Warnings).To(BeEmpty())
 			Expect(valErr.gk).To(Equal(groupKind))
 			Expect(valErr.ref).To(Equal(testObj))
 		})
@@ -80,11 +80,11 @@ var _ = Describe("ValidationError", func() {
 
 			// Verify error was added
 			Expect(valErr.HasErrors()).To(BeTrue())
-			Expect(valErr.errors).To(HaveLen(1))
-			Expect(valErr.errors[0].Type).To(Equal(field.ErrorTypeInvalid))
-			Expect(valErr.errors[0].Field).To(Equal("spec.field"))
-			Expect(valErr.errors[0].BadValue).To(Equal(value))
-			Expect(valErr.errors[0].Detail).To(Equal(message))
+			Expect(valErr.Errors).To(HaveLen(1))
+			Expect(valErr.Errors[0].Type).To(Equal(field.ErrorTypeInvalid))
+			Expect(valErr.Errors[0].Field).To(Equal("spec.field"))
+			Expect(valErr.Errors[0].BadValue).To(Equal(value))
+			Expect(valErr.Errors[0].Detail).To(Equal(message))
 
 			// Add another error
 			path2 := field.NewPath("metadata").Child("name")
@@ -93,8 +93,8 @@ var _ = Describe("ValidationError", func() {
 			valErr.AddInvalidError(path2, value2, message2)
 
 			// Verify both errors exist
-			Expect(valErr.errors).To(HaveLen(2))
-			Expect(valErr.errors[1].Field).To(Equal("metadata.name"))
+			Expect(valErr.Errors).To(HaveLen(2))
+			Expect(valErr.Errors[1].Field).To(Equal("metadata.name"))
 		})
 	})
 
@@ -134,10 +134,10 @@ var _ = Describe("ValidationError", func() {
 		It("should use error type as is", func() {
 			// Add errors with different types
 			path1 := field.NewPath("spec").Child("required")
-			valErr.errors = append(valErr.errors, field.Required(path1, "required field is missing"))
+			valErr.Errors = append(valErr.Errors, field.Required(path1, "required field is missing"))
 
 			path2 := field.NewPath("spec").Child("duplicate")
-			valErr.errors = append(valErr.errors, field.Duplicate(path2, "duplicate value"))
+			valErr.Errors = append(valErr.Errors, field.Duplicate(path2, "duplicate value"))
 
 			// Build the error
 			statusErr := valErr.BuildError().(*apierrors.StatusError)
@@ -193,20 +193,20 @@ var _ = Describe("ValidationError", func() {
 	Context("Integration with Kubernetes objects", func() {
 		It("should work correctly with Kubernetes objects", func() {
 			// Create a real Kubernetes object
-			rover := &roverv1.Rover{
+			obj := &test.TestResource{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       "Rover",
-					APIVersion: roverv1.GroupVersion.String(),
+					Kind:       "TestResource",
+					APIVersion: "test.group/v1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-rover",
+					Name:      "test-object",
 					Namespace: "default",
 				},
 			}
 
 			// Create a validation error with it
-			gk := roverv1.GroupVersion.WithKind("Rover").GroupKind()
-			valErr := NewValidationError(gk, rover)
+			gk := schema.GroupKind{Group: "test.group", Kind: "TestResource"}
+			valErr := NewValidationError(gk, obj)
 
 			// Add some errors
 			valErr.AddInvalidError(field.NewPath("spec").Child("zone"), "", "zone is required")
@@ -215,9 +215,9 @@ var _ = Describe("ValidationError", func() {
 			statusErr := valErr.BuildError().(*apierrors.StatusError)
 			Expect(statusErr).NotTo(BeNil())
 
-			Expect(statusErr.ErrStatus.Details.Name).To(Equal("test-rover"))
-			Expect(statusErr.ErrStatus.Details.Kind).To(Equal("Rover"))
-			Expect(statusErr.ErrStatus.Details.Group).To(Equal(roverv1.GroupVersion.Group))
+			Expect(statusErr.ErrStatus.Details.Name).To(Equal("test-object"))
+			Expect(statusErr.ErrStatus.Details.Kind).To(Equal("TestResource"))
+			Expect(statusErr.ErrStatus.Details.Group).To(Equal("test.group"))
 		})
 	})
 })

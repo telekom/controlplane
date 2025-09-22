@@ -46,7 +46,6 @@ var _ = Describe("ApiSpecification Controller", func() {
 					Spec: roverv1.ApiSpecificationSpec{
 						Specification: "some-random-id",
 						Category:      "other",
-						ApiName:       "eni-api-v1",
 						BasePath:      "eni/api/v1",
 						Hash:          "someHash",
 						Oauth2Scopes:  []string{"read", "write"},
@@ -84,7 +83,6 @@ var _ = Describe("ApiSpecification Controller", func() {
 				}, api)
 
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(api.Spec.Name).To(Equal("eni-api-v1"))
 				g.Expect(api.Spec.Version).To(Equal("1.0.0"))
 				g.Expect(api.Spec.XVendor).To(Equal(true))
 				g.Expect(api.Spec.Category).To(Equal("other"))

@@ -12,7 +12,7 @@ spec:
     info:
       version: "1.0.0"
       title: "Echo API"
-      x-category: "test"
+      x-api-category: "test"
     servers:
       - url: "https://example.com/phoenix/echo/v1"
     security:
