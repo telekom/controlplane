@@ -18,8 +18,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/organization/internal/index"
-	"github.com/telekom/controlplane/organization/internal/secret"
-	secretmock "github.com/telekom/controlplane/organization/internal/secret/mock"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -140,9 +138,6 @@ var _ = BeforeSuite(func() {
 
 	By("Creating the environment namespace")
 	CreateNamespace(testEnvironment)
-
-	By("Mocking Secret Manager")
-	secret.GetSecretManager = secretmock.SecretManager
 
 	go func() {
 		defer GinkgoRecover()
