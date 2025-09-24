@@ -1251,6 +1251,8 @@ components:
           items:
             type: string
           description: "Allows you to specify a list of header names that will be removed before forwarding the request to the provider"
+        circuitBreaker:
+          $ref: '#/components/schemas/CircuitBreaker'
     EventExposure:
       type: object
       required:
@@ -1513,6 +1515,15 @@ components:
         - properties:
             provider:
               $ref: '#/components/schemas/RateLimit'
+    CircuitBreaker:
+      type: object
+      required:
+        - enabled
+      allOf:
+        - properties:
+            enabled:
+              type: boolean
+              description: Flags if the Kong circuit breaker feature should be used
     ConsumerRateLimit:
       type: object
       required:

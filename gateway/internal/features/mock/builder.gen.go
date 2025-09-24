@@ -241,6 +241,20 @@ func (mr *MockFeaturesBuilderMockRecorder) GetGateway() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGateway", reflect.TypeOf((*MockFeaturesBuilder)(nil).GetGateway))
 }
 
+// GetKongClient mocks base method.
+func (m *MockFeaturesBuilder) GetKongClient() client.KongClient {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetKongClient")
+	ret0, _ := ret[0].(client.KongClient)
+	return ret0
+}
+
+// GetKongClient indicates an expected call of GetKongClient.
+func (mr *MockFeaturesBuilderMockRecorder) GetKongClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKongClient", reflect.TypeOf((*MockFeaturesBuilder)(nil).GetKongClient))
+}
+
 // GetRealm mocks base method.
 func (m *MockFeaturesBuilder) GetRealm() *v1.Realm {
 	m.ctrl.T.Helper()
