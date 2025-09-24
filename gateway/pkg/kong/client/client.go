@@ -23,6 +23,8 @@ import (
 
 type MutatorFunc[T any] func(T) (T, error)
 
+// todo replace by mockery
+//
 //go:generate mockgen -source=client.go -destination=mock/client.gen.go -package=mock
 type KongClient interface {
 	CreateOrReplaceRoute(ctx context.Context, route CustomRoute, upstream Upstream) error
