@@ -77,7 +77,8 @@ type TeamStatus struct {
 	Namespace          string           `json:"namespace"`
 	IdentityClientRef  *types.ObjectRef `json:"identityClientRef,omitempty"`
 	GatewayConsumerRef *types.ObjectRef `json:"gatewayConsumerRef,omitempty"`
-	TeamToken          string           `json:"teamToken,omitempty"`
+	// TeamToken is ref for the authentication against teamAPIs
+	TeamToken string `json:"teamToken,omitempty"`
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge

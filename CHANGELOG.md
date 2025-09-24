@@ -1,3 +1,19 @@
+# [0.13.0](https://github.com/telekom/controlplane/compare/v0.12.1...v0.13.0) (2025-09-24)
+
+
+### Bug Fixes
+
+* **admin:** added missing link to team-api-issuer to zone-status ([#163](https://github.com/telekom/controlplane/issues/163)) ([33f61ac](https://github.com/telekom/controlplane/commit/33f61acc2f29511d67d599eea4735c9604523b93))
+* **route-tester:** Fix accesstoken import because it was moved from secret-manager to common-server ([#161](https://github.com/telekom/controlplane/issues/161)) ([ea4c310](https://github.com/telekom/controlplane/commit/ea4c310b8bbb27ee29bec99a9f7b94b801044377))
+
+
+### Features
+
+* added api-category crd to enforce conventions for different api types ([#167](https://github.com/telekom/controlplane/issues/167)) ([a5e68d6](https://github.com/telekom/controlplane/commit/a5e68d62591235ef4d1a5ae57277155041e80321))
+* **organization:** add prefix to token, add token_url + server_url to token ([#168](https://github.com/telekom/controlplane/issues/168)) ([60cf199](https://github.com/telekom/controlplane/commit/60cf199818b921321ebe0b3ffdc8fbc75ddd477c))
+* **rover-ctl:** improved debug-info about user to printed banner ([#169](https://github.com/telekom/controlplane/issues/169)) ([20e0d02](https://github.com/telekom/controlplane/commit/20e0d02d9eb1f37aab891b2f15dd8f9070e39aa2))
+* **secret-manager:** added support for setting onboarding secret-values for team and environment ([#164](https://github.com/telekom/controlplane/issues/164)) ([7e14901](https://github.com/telekom/controlplane/commit/7e14901dc189479a97668d67a7516e8ed75d2f0d))
+
 ## [0.12.1](https://github.com/telekom/controlplane/compare/v0.12.0...v0.12.1) (2025-09-08)
 
 
