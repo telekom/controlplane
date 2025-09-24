@@ -30,7 +30,7 @@ on:
         description: "Set to true to build the container image using Ko"
         required: false
         type: boolean
-        default: ${{ github.event_name == 'push' }}
+        default: ${{ github.event_name == 'pull_request' || github.ref_name == 'main' }}
       ko_build_path:
         description: "Path to the main package for ko build (e.g., cmd/main.go or ./cmd/server)"
         required: false
