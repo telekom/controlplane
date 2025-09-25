@@ -6,10 +6,14 @@ package inmemory
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/bytedance/sonic"
 	"github.com/dgraph-io/badger/v4"
+	"github.com/dgraph-io/badger/v4/options"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/internal/informer"
@@ -35,6 +39,12 @@ type StoreOpts struct {
 	GVR          schema.GroupVersionResource
 	GVK          schema.GroupVersionKind
 	AllowedSorts []string
+
+	Database DatabaseOpts
+}
+
+type DatabaseOpts struct {
+	Filepath string
 }
 
 type InmemoryObjectStore[T store.Object] struct {
@@ -49,9 +59,28 @@ type InmemoryObjectStore[T store.Object] struct {
 	sortValueCache sync.Map
 }
 
-func newDbOrDie(log logr.Logger) *badger.DB {
-	opts := badger.DefaultOptions("").WithInMemory(true)
-	opts.IndexCacheSize = 100 << 20
+func newDbOrDie(storeOpts StoreOpts, log logr.Logger) *badger.DB {
+	useFilesystem := storeOpts.Database.Filepath != ""
+	path := ""
+	if useFilesystem {
+		dbName := fmt.Sprintf("db-%s-%s-%s", strings.ToLower(storeOpts.GVR.Group), strings.ToLower(storeOpts.GVR.Version), strings.ToLower(storeOpts.GVR.Resource))
+		path = filepath.Join(storeOpts.Database.Filepath, dbName)
+	}
+
+	log.Info("initializing badger DB", "inMemory", !useFilesystem, "path", path)
+
+	opts := badger.DefaultOptions(path).
+		WithInMemory(!useFilesystem).
+		WithMetricsEnabled(false).
+		WithIndexCacheSize(0).
+		WithMemTableSize(32 << 20).     // 32 MB
+		WithValueLogFileSize(64 << 20). // 64 MB
+		WithBlockCacheSize(64 << 20).   // 64 MB
+		WithBlockSize(4 << 10).         // 4 KB
+		WithValueThreshold(1 << 20).    // 1 MB
+		WithBloomFalsePositive(0.01).
+		WithCompression(options.Snappy)
+
 	opts.Logger = NewLoggerShim(log)
 	db, err := badger.Open(opts)
 	if err != nil {
@@ -69,7 +98,7 @@ func NewOrDie[T store.Object](ctx context.Context, storeOpts StoreOpts) store.Ob
 		k8sClient: storeOpts.Client.Resource(storeOpts.GVR),
 	}
 	var err error
-	store.db = newDbOrDie(store.log)
+	store.db = newDbOrDie(storeOpts, store.log)
 	store.informer = informer.New(ctx, store.gvr, storeOpts.Client, store)
 
 	if err = store.informer.Start(); err != nil {

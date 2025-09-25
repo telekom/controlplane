@@ -56,6 +56,9 @@ type SecurityConfig struct {
 type ServerConfig struct {
 	Address  string `json:"address"`
 	BasePath string `json:"basepath"`
+	// Filepath is used to configure the database to use the filesystem.
+	// It is used as base path for the database files.
+	Filepath string `json:"filepath"`
 
 	AddGroupToPath bool               `yaml:"addGroupToPath" json:"addGroupToPath"`
 	Resources      []ResourceConfig   `json:"resources"`
@@ -166,6 +169,9 @@ func (c *ServerConfig) BuildServer(ctx context.Context, dynamicClient dynamic.In
 				GVR:          crd.GVR,
 				GVK:          crd.GVK,
 				AllowedSorts: resource.AllowedSorts,
+				Database: inmemory.DatabaseOpts{
+					Filepath: c.Filepath,
+				},
 			}
 
 			resourceId := strings.ToLower(crd.GVR.Resource)

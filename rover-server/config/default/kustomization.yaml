@@ -29,6 +29,7 @@ configMapGenerator:
     literals:
       - SECURITY_TRUSTEDISSUERS=""
       - SECURITY_LMS_BASEPATH=""
+      - DATABASE_FILEPATH=""
 
 patches:
   # [SECRET_MANAGER] The following patch will add the secret manager to the deployment.

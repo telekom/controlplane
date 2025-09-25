@@ -96,6 +96,10 @@ func SanitizeObject(obj *unstructured.Unstructured) {
 	}
 
 	delete(metadata, "managedFields")
+	annotations, ok := metadata["annotations"].(map[string]any)
+	if ok {
+		delete(annotations, "kubectl.kubernetes.io/last-applied-configuration")
+	}
 }
 
 func wrapEventHandler(ctx context.Context, log logr.Logger, eh EventHandler) cache.ResourceEventHandlerFuncs {
