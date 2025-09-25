@@ -171,6 +171,22 @@ func (g *Route) SetServiceId(id string) {
 	g.SetProperty("serviceId", id)
 }
 
+func (g *Route) SetUpstreamId(id string) {
+	g.SetProperty("upstreamId", id)
+}
+
+func (g *Route) SetTargetsId(id string) {
+	g.SetProperty("targetsId", id)
+}
+
+func (g *Route) GetUpstreamId() string {
+	return g.GetProperty("upstreamId")
+}
+
+func (g *Route) GetTargetsId() string {
+	return g.GetProperty("targetsId")
+}
+
 func (g *Route) SetProperty(key, val string) {
 	if g.Status.Properties == nil {
 		g.Status.Properties = make(map[string]string)

@@ -25,6 +25,9 @@ type CustomPlugin interface {
 type CustomRoute interface {
 	SetRouteId(string)
 	SetServiceId(string)
+	SetUpstreamId(string)
+	SetTargetsId(string)
+	GetTargetsId() string
 	GetName() string
 	GetHost() string
 	GetPath() string

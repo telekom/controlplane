@@ -146,6 +146,34 @@ func (mr *MockKongClientMockRecorder) DeleteRoute(ctx, route any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRoute", reflect.TypeOf((*MockKongClient)(nil).DeleteRoute), ctx, route)
 }
 
+// DeleteUpstream mocks base method.
+func (m *MockKongClient) DeleteUpstream(ctx context.Context, route client.CustomRoute) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUpstream", ctx, route)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteUpstream indicates an expected call of DeleteUpstream.
+func (mr *MockKongClientMockRecorder) DeleteUpstream(ctx, route any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUpstream", reflect.TypeOf((*MockKongClient)(nil).DeleteUpstream), ctx, route)
+}
+
+// GetKongAdminApi mocks base method.
+func (m *MockKongClient) GetKongAdminApi() client.KongAdminApi {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetKongAdminApi")
+	ret0, _ := ret[0].(client.KongAdminApi)
+	return ret0
+}
+
+// GetKongAdminApi indicates an expected call of GetKongAdminApi.
+func (mr *MockKongClientMockRecorder) GetKongAdminApi() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKongAdminApi", reflect.TypeOf((*MockKongClient)(nil).GetKongAdminApi))
+}
+
 // LoadPlugin mocks base method.
 func (m *MockKongClient) LoadPlugin(ctx context.Context, plugin client.CustomPlugin, copyConfig bool) (*kong.Plugin, error) {
 	m.ctrl.T.Helper()
@@ -159,4 +187,328 @@ func (m *MockKongClient) LoadPlugin(ctx context.Context, plugin client.CustomPlu
 func (mr *MockKongClientMockRecorder) LoadPlugin(ctx, plugin, copyConfig any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadPlugin", reflect.TypeOf((*MockKongClient)(nil).LoadPlugin), ctx, plugin, copyConfig)
+}
+
+// MockKongAdminApi is a mock of KongAdminApi interface.
+type MockKongAdminApi struct {
+	ctrl     *gomock.Controller
+	recorder *MockKongAdminApiMockRecorder
+	isgomock struct{}
+}
+
+// MockKongAdminApiMockRecorder is the mock recorder for MockKongAdminApi.
+type MockKongAdminApiMockRecorder struct {
+	mock *MockKongAdminApi
+}
+
+// NewMockKongAdminApi creates a new mock instance.
+func NewMockKongAdminApi(ctrl *gomock.Controller) *MockKongAdminApi {
+	mock := &MockKongAdminApi{ctrl: ctrl}
+	mock.recorder = &MockKongAdminApiMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockKongAdminApi) EXPECT() *MockKongAdminApiMockRecorder {
+	return m.recorder
+}
+
+// AddConsumerToGroupWithResponse mocks base method.
+func (m *MockKongAdminApi) AddConsumerToGroupWithResponse(ctx context.Context, consumerNameOrId string, body kong.AddConsumerToGroupJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.AddConsumerToGroupResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, consumerNameOrId, body}
+	for _, a := range reqEditors {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "AddConsumerToGroupWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.AddConsumerToGroupResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddConsumerToGroupWithResponse indicates an expected call of AddConsumerToGroupWithResponse.
+func (mr *MockKongAdminApiMockRecorder) AddConsumerToGroupWithResponse(ctx, consumerNameOrId, body any, reqEditors ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, consumerNameOrId, body}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddConsumerToGroupWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).AddConsumerToGroupWithResponse), varargs...)
+}
+
+// CreateTargetForUpstreamWithResponse mocks base method.
+func (m *MockKongAdminApi) CreateTargetForUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, body kong.CreateTargetForUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.CreateTargetForUpstreamResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, upstreamIdOrName, body}
+	for _, a := range reqEditors {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateTargetForUpstreamWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.CreateTargetForUpstreamResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateTargetForUpstreamWithResponse indicates an expected call of CreateTargetForUpstreamWithResponse.
+func (mr *MockKongAdminApiMockRecorder) CreateTargetForUpstreamWithResponse(ctx, upstreamIdOrName, body any, reqEditors ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, upstreamIdOrName, body}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTargetForUpstreamWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).CreateTargetForUpstreamWithResponse), varargs...)
+}
+
+// DeleteConsumerWithResponse mocks base method.
+func (m *MockKongAdminApi) DeleteConsumerWithResponse(ctx context.Context, consumerUsernameOrId string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteConsumerResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, consumerUsernameOrId}
+	for _, a := range reqEditors {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteConsumerWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.DeleteConsumerResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteConsumerWithResponse indicates an expected call of DeleteConsumerWithResponse.
+func (mr *MockKongAdminApiMockRecorder) DeleteConsumerWithResponse(ctx, consumerUsernameOrId any, reqEditors ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, consumerUsernameOrId}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteConsumerWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).DeleteConsumerWithResponse), varargs...)
+}
+
+// DeletePluginWithResponse mocks base method.
+func (m *MockKongAdminApi) DeletePluginWithResponse(ctx context.Context, pluginId string, reqEditors ...kong.RequestEditorFn) (*kong.DeletePluginResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, pluginId}
+	for _, a := range reqEditors {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeletePluginWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.DeletePluginResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeletePluginWithResponse indicates an expected call of DeletePluginWithResponse.
+func (mr *MockKongAdminApiMockRecorder) DeletePluginWithResponse(ctx, pluginId any, reqEditors ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, pluginId}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePluginWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).DeletePluginWithResponse), varargs...)
+}
+
+// DeleteRouteWithResponse mocks base method.
+func (m *MockKongAdminApi) DeleteRouteWithResponse(ctx context.Context, routeIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteRouteResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, routeIdOrName}
+	for _, a := range reqEditors {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteRouteWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.DeleteRouteResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteRouteWithResponse indicates an expected call of DeleteRouteWithResponse.
+func (mr *MockKongAdminApiMockRecorder) DeleteRouteWithResponse(ctx, routeIdOrName any, reqEditors ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, routeIdOrName}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRouteWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).DeleteRouteWithResponse), varargs...)
+}
+
+// DeleteServiceWithResponse mocks base method.
+func (m *MockKongAdminApi) DeleteServiceWithResponse(ctx context.Context, serviceIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteServiceResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, serviceIdOrName}
+	for _, a := range reqEditors {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteServiceWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.DeleteServiceResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteServiceWithResponse indicates an expected call of DeleteServiceWithResponse.
+func (mr *MockKongAdminApiMockRecorder) DeleteServiceWithResponse(ctx, serviceIdOrName any, reqEditors ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, serviceIdOrName}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteServiceWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).DeleteServiceWithResponse), varargs...)
+}
+
+// DeleteUpstreamTargetWithResponse mocks base method.
+func (m *MockKongAdminApi) DeleteUpstreamTargetWithResponse(ctx context.Context, upstreamIdOrName, targetIdOrTarget string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteUpstreamTargetResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, upstreamIdOrName, targetIdOrTarget}
+	for _, a := range reqEditors {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteUpstreamTargetWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.DeleteUpstreamTargetResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteUpstreamTargetWithResponse indicates an expected call of DeleteUpstreamTargetWithResponse.
+func (mr *MockKongAdminApiMockRecorder) DeleteUpstreamTargetWithResponse(ctx, upstreamIdOrName, targetIdOrTarget any, reqEditors ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, upstreamIdOrName, targetIdOrTarget}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUpstreamTargetWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).DeleteUpstreamTargetWithResponse), varargs...)
+}
+
+// DeleteUpstreamWithResponse mocks base method.
+func (m *MockKongAdminApi) DeleteUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteUpstreamResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, upstreamIdOrName}
+	for _, a := range reqEditors {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteUpstreamWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.DeleteUpstreamResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteUpstreamWithResponse indicates an expected call of DeleteUpstreamWithResponse.
+func (mr *MockKongAdminApiMockRecorder) DeleteUpstreamWithResponse(ctx, upstreamIdOrName any, reqEditors ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, upstreamIdOrName}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUpstreamWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).DeleteUpstreamWithResponse), varargs...)
+}
+
+// GetPluginWithResponse mocks base method.
+func (m *MockKongAdminApi) GetPluginWithResponse(ctx context.Context, pluginId string, reqEditors ...kong.RequestEditorFn) (*kong.GetPluginResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, pluginId}
+	for _, a := range reqEditors {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetPluginWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.GetPluginResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPluginWithResponse indicates an expected call of GetPluginWithResponse.
+func (mr *MockKongAdminApiMockRecorder) GetPluginWithResponse(ctx, pluginId any, reqEditors ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, pluginId}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPluginWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).GetPluginWithResponse), varargs...)
+}
+
+// ListPluginWithResponse mocks base method.
+func (m *MockKongAdminApi) ListPluginWithResponse(ctx context.Context, params *kong.ListPluginParams, reqEditors ...kong.RequestEditorFn) (*kong.ListPluginResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, params}
+	for _, a := range reqEditors {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListPluginWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.ListPluginResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListPluginWithResponse indicates an expected call of ListPluginWithResponse.
+func (mr *MockKongAdminApiMockRecorder) ListPluginWithResponse(ctx, params any, reqEditors ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, params}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPluginWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).ListPluginWithResponse), varargs...)
+}
+
+// UpsertConsumerWithResponse mocks base method.
+func (m *MockKongAdminApi) UpsertConsumerWithResponse(ctx context.Context, consumerUsernameOrId string, body kong.UpsertConsumerJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertConsumerResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, consumerUsernameOrId, body}
+	for _, a := range reqEditors {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpsertConsumerWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.UpsertConsumerResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpsertConsumerWithResponse indicates an expected call of UpsertConsumerWithResponse.
+func (mr *MockKongAdminApiMockRecorder) UpsertConsumerWithResponse(ctx, consumerUsernameOrId, body any, reqEditors ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, consumerUsernameOrId, body}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertConsumerWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).UpsertConsumerWithResponse), varargs...)
+}
+
+// UpsertRouteWithResponse mocks base method.
+func (m *MockKongAdminApi) UpsertRouteWithResponse(ctx context.Context, routeIdOrName string, body kong.UpsertRouteJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertRouteResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, routeIdOrName, body}
+	for _, a := range reqEditors {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpsertRouteWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.UpsertRouteResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpsertRouteWithResponse indicates an expected call of UpsertRouteWithResponse.
+func (mr *MockKongAdminApiMockRecorder) UpsertRouteWithResponse(ctx, routeIdOrName, body any, reqEditors ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, routeIdOrName, body}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertRouteWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).UpsertRouteWithResponse), varargs...)
+}
+
+// UpsertServiceWithResponse mocks base method.
+func (m *MockKongAdminApi) UpsertServiceWithResponse(ctx context.Context, serviceIdOrName string, body kong.UpsertServiceJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertServiceResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, serviceIdOrName, body}
+	for _, a := range reqEditors {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpsertServiceWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.UpsertServiceResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpsertServiceWithResponse indicates an expected call of UpsertServiceWithResponse.
+func (mr *MockKongAdminApiMockRecorder) UpsertServiceWithResponse(ctx, serviceIdOrName, body any, reqEditors ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, serviceIdOrName, body}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertServiceWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).UpsertServiceWithResponse), varargs...)
+}
+
+// UpsertUpstreamWithResponse mocks base method.
+func (m *MockKongAdminApi) UpsertUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, body kong.UpsertUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertUpstreamResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, upstreamIdOrName, body}
+	for _, a := range reqEditors {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpsertUpstreamWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.UpsertUpstreamResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpsertUpstreamWithResponse indicates an expected call of UpsertUpstreamWithResponse.
+func (mr *MockKongAdminApiMockRecorder) UpsertUpstreamWithResponse(ctx, upstreamIdOrName, body any, reqEditors ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, upstreamIdOrName, body}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertUpstreamWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).UpsertUpstreamWithResponse), varargs...)
+}
+
+// ViewGroupConsumerWithResponse mocks base method.
+func (m *MockKongAdminApi) ViewGroupConsumerWithResponse(ctx context.Context, consumerNameOrId string, reqEditors ...kong.RequestEditorFn) (*kong.ViewGroupConsumerResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, consumerNameOrId}
+	for _, a := range reqEditors {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ViewGroupConsumerWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.ViewGroupConsumerResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ViewGroupConsumerWithResponse indicates an expected call of ViewGroupConsumerWithResponse.
+func (mr *MockKongAdminApiMockRecorder) ViewGroupConsumerWithResponse(ctx, consumerNameOrId any, reqEditors ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, consumerNameOrId}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ViewGroupConsumerWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).ViewGroupConsumerWithResponse), varargs...)
 }
