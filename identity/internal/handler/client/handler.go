@@ -32,7 +32,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		return fmt.Errorf("client is nil")
 	}
 
-	SetStatusProcessing(&client.Status, client)
+	SetStatusProcessing(client)
 
 	// Get secret-values from secret-manager
 	client.Spec.ClientSecret, err = secrets.Get(ctx, client.Spec.ClientSecret)
@@ -46,7 +46,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 			contextutil.RecorderFromContextOrDie(ctx).
 				Eventf(client, "Warning", "RealmNotFound",
 					"Realm '%s' not found", client.Spec.Realm.String())
-			SetStatusBlocked(&client.Status, client)
+			SetStatusBlocked(client)
 			return nil
 		}
 		return err
@@ -67,7 +67,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		contextutil.RecorderFromContextOrDie(ctx).
 			Eventf(client, "Warning", "RealmNotValid",
 				"Realm '%s' not valid", client.Spec.Realm.String())
-		SetStatusWaiting(&client.Status, client)
+		SetStatusWaiting(client)
 		return errors.Wrap(err, "❌ failed to validate realm")
 	}
 
@@ -81,7 +81,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		return errors.Wrap(err, "❌ failed to create or update client")
 	}
 
-	SetStatusReady(&client.Status, client) //overwrittes status, which is fine!
+	SetStatusReady(client) //overwrittes status, which is fine!
 	var message = fmt.Sprintf("✅ RealmClient %s is ready", client.Spec.ClientId)
 	logger.V(1).Info(message, "IssuerUrl", &client.Status.IssuerUrl)
 

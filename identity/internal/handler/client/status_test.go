@@ -29,7 +29,8 @@ func TestSetStatusProcessingSetsClientStatusCorrectly(t *testing.T) {
 	}
 	client := &identityv1.Client{}
 
-	SetStatusProcessing(currentStatus, client)
+	client.Status = *currentStatus
+	SetStatusProcessing(client)
 
 	assert.Equal(t, currentStatus.IssuerUrl, client.Status.IssuerUrl)
 	assert.True(t, HasConditions(t, client, []v1.Condition{processingCondition, processingNotReadyCondition}))
@@ -41,7 +42,8 @@ func TestSetStatusBlockedSetsClientStatusCorrectly(t *testing.T) {
 	}
 	client := &identityv1.Client{}
 
-	SetStatusBlocked(currentStatus, client)
+	client.Status = *currentStatus
+	SetStatusBlocked(client)
 
 	assert.Equal(t, currentStatus.IssuerUrl, client.Status.IssuerUrl)
 	assert.True(t, HasConditions(t, client, []v1.Condition{blockedCondition, blockedNotReadyCondition}))
@@ -51,9 +53,10 @@ func TestSetStatusWaitingSetsClientStatusCorrectly(t *testing.T) {
 	currentStatus := &identityv1.ClientStatus{
 		IssuerUrl: "https://issuer.example.com",
 	}
-	client := &identityv1.Client{}
 
-	SetStatusWaiting(currentStatus, client)
+	client := &identityv1.Client{}
+	client.Status = *currentStatus
+	SetStatusWaiting(client)
 
 	assert.Equal(t, currentStatus.IssuerUrl, client.Status.IssuerUrl)
 	assert.True(t, HasConditions(t, client, []v1.Condition{waitingCondition, waitingNotReadyCondition}))
@@ -64,21 +67,18 @@ func TestSetStatusReadySetsClientStatusCorrectly(t *testing.T) {
 		IssuerUrl: "https://issuer.example.com",
 	}
 	client := &identityv1.Client{}
-
-	SetStatusReady(currentStatus, client)
+	client.Status = *currentStatus
+	SetStatusReady(client)
 
 	assert.Equal(t, currentStatus.IssuerUrl, client.Status.IssuerUrl)
 	assert.True(t, HasConditions(t, client, []v1.Condition{doneProcessingCondition, readyCondition}))
 }
 
 func TestSetStatusReadyHandlesNilClient(t *testing.T) {
-	currentStatus := &identityv1.ClientStatus{
-		IssuerUrl: "https://issuer.example.com",
-	}
 	var client *identityv1.Client
 
 	assert.Panics(t, func() {
-		SetStatusReady(currentStatus, client)
+		SetStatusReady(client)
 	})
 }
 
