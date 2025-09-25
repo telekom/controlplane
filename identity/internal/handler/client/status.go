@@ -32,10 +32,12 @@ var (
 	readyCondition          = condition.NewReadyCondition("Ready", "Client is ready")
 )
 
-func MapToClientStatus(realmStatus *identityv1.RealmStatus) identityv1.ClientStatus {
-	return identityv1.ClientStatus{
-		IssuerUrl: realmStatus.IssuerUrl,
+func MapToClientStatus(realmStatus *identityv1.RealmStatus, clientStatus *identityv1.ClientStatus) {
+	if clientStatus == nil {
+		clientStatus = &identityv1.ClientStatus{}
 	}
+
+	clientStatus.IssuerUrl = realmStatus.IssuerUrl
 }
 
 func SetStatusProcessing(currentStatus *identityv1.ClientStatus, client *identityv1.Client) {

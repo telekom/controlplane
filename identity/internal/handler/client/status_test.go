@@ -17,8 +17,8 @@ func TestMapToClientStatusMapsCorrectly(t *testing.T) {
 	realmStatus := &identityv1.RealmStatus{
 		IssuerUrl: "https://issuer.example.com",
 	}
-
-	clientStatus := MapToClientStatus(realmStatus)
+	var clientStatus identityv1.ClientStatus
+	MapToClientStatus(realmStatus, &clientStatus)
 
 	assert.Equal(t, "https://issuer.example.com", clientStatus.IssuerUrl)
 }

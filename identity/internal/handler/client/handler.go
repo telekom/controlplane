@@ -61,7 +61,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 	realmStatus := realmHandler.ObfuscateRealm(realm.Status)
 	logger.V(0).Info("Found Realm", "realm", realmStatus)
 
-	var clientStatus = MapToClientStatus(&realm.Status)
+	MapToClientStatus(&realm.Status, &client.Status)
 	err = realmHandler.ValidateRealmStatus(&realm.Status)
 	if err != nil {
 		contextutil.RecorderFromContextOrDie(ctx).
@@ -81,9 +81,9 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		return errors.Wrap(err, "❌ failed to create or update client")
 	}
 
-	SetStatusReady(&clientStatus, client)
+	SetStatusReady(&client.Status, client) //overwrittes status, which is fine!
 	var message = fmt.Sprintf("✅ RealmClient %s is ready", client.Spec.ClientId)
-	logger.V(1).Info(message, "IssuerUrl", clientStatus.IssuerUrl)
+	logger.V(1).Info(message, "IssuerUrl", &client.Status.IssuerUrl)
 
 	return nil
 }
