@@ -35,6 +35,10 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 	SetStatusProcessing(client)
 
 	// Get secret-values from secret-manager
+	oldSecretRef := client.Spec.ClientSecret
+	defer func() {
+		client.Spec.ClientSecret = oldSecretRef
+	}()
 	client.Spec.ClientSecret, err = secrets.Get(ctx, client.Spec.ClientSecret)
 	if err != nil {
 		return errors.Wrap(err, "failed to get client secret from secret-manager")
@@ -81,7 +85,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		return errors.Wrap(err, "❌ failed to create or update client")
 	}
 
-	SetStatusReady(client) //overwrittes status, which is fine!
+	SetStatusReady(client)
 	var message = fmt.Sprintf("✅ RealmClient %s is ready", client.Spec.ClientId)
 	logger.V(1).Info(message, "IssuerUrl", &client.Status.IssuerUrl)
 
