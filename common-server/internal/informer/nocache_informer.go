@@ -56,9 +56,9 @@ func NewNoCache(ctx context.Context, gvr schema.GroupVersionResource, k8sClient 
 		eventHandler: eventHandler,
 		log:          log.WithName(fmt.Sprintf("Informer:%s/%s", gvr.Group, gvr.Resource)),
 		bufferSize:   1000,
-		queue:        make(chan event, 1000),
+		queue:        make(chan event, 200),
 		initDone:     &atomic.Bool{},
-		workerCount:  10,
+		workerCount:  2,
 		resyncPeriod: time.Hour,
 	}
 }
