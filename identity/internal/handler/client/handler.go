@@ -32,7 +32,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		return fmt.Errorf("client is nil")
 	}
 
-	SetStatusProcessing(client)
+	// SetStatusProcessing(client)
 
 	// Get secret-values from secret-manager
 	oldSecretRef := client.Spec.ClientSecret
