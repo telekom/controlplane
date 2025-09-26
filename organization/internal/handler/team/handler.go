@@ -54,7 +54,7 @@ func getInternalObjectHandlersInOrder(order order) []internalHandler.ObjectHandl
 
 func (h *TeamHandler) CreateOrUpdate(ctx context.Context, teamObj *organizationv1.Team) error {
 	logger := log.FromContext(ctx)
-	teamObj.SetCondition(condition.NewProcessingCondition("Ready", "Team is being processed"))
+	// teamObj.SetCondition(condition.NewProcessingCondition("Ready", "Team is being processed"))
 	internalObjHandler := getInternalObjectHandlersInOrder(creation)
 
 	logger.V(1).Info(fmt.Sprintf("ℹ️ requesting group: %s", teamObj.Spec.Group))
