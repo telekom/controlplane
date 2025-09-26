@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/common-server/pkg/client/metrics"
 	"golang.org/x/oauth2"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
@@ -124,7 +125,13 @@ var NewClientFor = func(config AdminConfig) (*api.ClientWithResponses, error) {
 		return nil, errors.Wrap(err, "failed to parse keycloak admin URL")
 	}
 
-	apiClient, err := api.NewClientWithResponses(endpointUrl.String(), api.WithHTTPClient(oauth2Client))
+	// Add metrics wrapper around the HTTP client
+	metricsClient := metrics.WithMetrics(oauth2Client,
+		metrics.WithClientName("identity"),
+		metrics.WithReplacePatterns(`([^\/]+--[^\/]+--[^\/]+)`, `([^\/]+--[^\/]+)`, metrics.ReplacePatternUID),
+	)
+
+	apiClient, err := api.NewClientWithResponses(endpointUrl.String(), api.WithHTTPClient(metricsClient))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create keycloak admin client")
 	}

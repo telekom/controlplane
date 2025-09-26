@@ -32,9 +32,11 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		return fmt.Errorf("client is nil")
 	}
 
-	SetStatusProcessing(&client.Status, client)
-
 	// Get secret-values from secret-manager
+	oldSecretRef := client.Spec.ClientSecret
+	defer func() {
+		client.Spec.ClientSecret = oldSecretRef
+	}()
 	client.Spec.ClientSecret, err = secrets.Get(ctx, client.Spec.ClientSecret)
 	if err != nil {
 		return errors.Wrap(err, "failed to get client secret from secret-manager")
@@ -46,7 +48,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 			contextutil.RecorderFromContextOrDie(ctx).
 				Eventf(client, "Warning", "RealmNotFound",
 					"Realm '%s' not found", client.Spec.Realm.String())
-			SetStatusBlocked(&client.Status, client)
+			SetStatusBlocked(client)
 			return nil
 		}
 		return err
@@ -61,13 +63,13 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 	realmStatus := realmHandler.ObfuscateRealm(realm.Status)
 	logger.V(0).Info("Found Realm", "realm", realmStatus)
 
-	var clientStatus = MapToClientStatus(&realm.Status)
+	MapToClientStatus(&realm.Status, &client.Status)
 	err = realmHandler.ValidateRealmStatus(&realm.Status)
 	if err != nil {
 		contextutil.RecorderFromContextOrDie(ctx).
 			Eventf(client, "Warning", "RealmNotValid",
 				"Realm '%s' not valid", client.Spec.Realm.String())
-		SetStatusWaiting(&client.Status, client)
+		SetStatusWaiting(client)
 		return errors.Wrap(err, "❌ failed to validate realm")
 	}
 
@@ -81,9 +83,9 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		return errors.Wrap(err, "❌ failed to create or update client")
 	}
 
-	SetStatusReady(&clientStatus, client)
+	SetStatusReady(client)
 	var message = fmt.Sprintf("✅ RealmClient %s is ready", client.Spec.ClientId)
-	logger.V(1).Info(message, "IssuerUrl", clientStatus.IssuerUrl)
+	logger.V(1).Info(message, "IssuerUrl", &client.Status.IssuerUrl)
 
 	return nil
 }
