@@ -7,6 +7,7 @@ package informer
 import (
 	"context"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -19,6 +20,9 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
+// [experimental] NoCacheInformer implement the Informer pattern but it does not keep a local cache.
+// It will flush the events directly to the event handler.
+// This is useful for resources that are really large and would consume too much memory in a local cache.
 type NoCacheInformer struct {
 	ctx             context.Context
 	gvr             schema.GroupVersionResource
@@ -36,8 +40,11 @@ type NoCacheInformer struct {
 	cancel        context.CancelFunc
 
 	resyncPeriod time.Duration
+
+	mutex sync.Mutex
 }
 
+// [experimental] NewNoCache creates a new informer that does not use a local cache.
 func NewNoCache(ctx context.Context, gvr schema.GroupVersionResource, k8sClient dynamic.Interface, eventHandler EventHandler) *NoCacheInformer {
 	log := logr.FromContextOrDiscard(ctx)
 	lctx, cancel := context.WithCancel(ctx)
@@ -98,6 +105,7 @@ func (i *NoCacheInformer) list(ctx context.Context, inChan chan event) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to list resources")
 		}
+
 		i.log.Info("Listed resources", "count", len(list.Items))
 
 		for _, item := range list.Items {
@@ -107,11 +115,11 @@ func (i *NoCacheInformer) list(ctx context.Context, inChan chan event) error {
 			}
 		}
 
+		i.resourceVersion = list.GetResourceVersion()
 		continueToken = list.GetContinue()
 		if continueToken == "" {
 			break
 		}
-		i.resourceVersion = list.GetResourceVersion()
 	}
 	i.initDone.Store(true)
 
@@ -186,6 +194,9 @@ func (i *NoCacheInformer) resyncLoop(ctx context.Context, period time.Duration) 
 }
 
 func (i *NoCacheInformer) Start() error {
+	i.mutex.Lock()
+	defer i.mutex.Unlock()
+
 	if i.resyncPeriod > 0 {
 		go i.resyncLoop(i.ctx, i.resyncPeriod)
 	}
@@ -200,6 +211,9 @@ func (i *NoCacheInformer) Start() error {
 }
 
 func (i *NoCacheInformer) stopWatcher() {
+	i.mutex.Lock()
+	defer i.mutex.Unlock()
+
 	if i.watcher != nil {
 		i.watcher.Stop()
 		i.watcher = nil
@@ -211,6 +225,9 @@ func (i *NoCacheInformer) stopWatcher() {
 }
 
 func (i *NoCacheInformer) startWatcher() {
+	i.mutex.Lock()
+	defer i.mutex.Unlock()
+
 	i.resourceVersion = ""
 
 	err := i.list(i.ctx, i.queue)
@@ -218,7 +235,10 @@ func (i *NoCacheInformer) startWatcher() {
 		i.log.Error(err, "Failed to list resources")
 	}
 
-	i.watcher, err = i.k8sClient.Resource(i.gvr).Watch(i.ctx, metav1.ListOptions{
+	wctx, cancel := context.WithCancel(i.ctx)
+	i.watcherCancel = cancel
+
+	i.watcher, err = i.k8sClient.Resource(i.gvr).Watch(wctx, metav1.ListOptions{
 		Watch:           true,
 		ResourceVersion: i.resourceVersion,
 	})
@@ -239,6 +259,7 @@ func (i *NoCacheInformer) Ready() bool {
 }
 
 func (i *NoCacheInformer) Reload() error {
+
 	i.stopWatcher()
 	i.initDone.Store(false)
 	go i.startWatcher()
