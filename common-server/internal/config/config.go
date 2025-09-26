@@ -64,8 +64,6 @@ type ServerConfig struct {
 	Resources      []ResourceConfig   `json:"resources"`
 	Predefined     []PredefinedConfig `json:"predefined"`
 
-	Store StoreOpts `json:"store"`
-
 	Openapi  OpenapiConfig  `json:"openapi"`
 	Security SecurityConfig `json:"security"`
 
@@ -74,8 +72,12 @@ type ServerConfig struct {
 }
 
 type StoreOpts struct {
-	EnableInformerCache bool   `json:"enableInformerCache" yaml:"enableInformerCache"`
-	DatabaseFilepath    string `json:"databaseFilepath" yaml:"databaseFilepath"`
+	// DisableInformerCache if true, the informer will not use a local cache and will directly forward events to the event handler.
+	DisableInformerCache bool `json:"disableInformerCache" yaml:"disableInformerCache"`
+	// DatabaseFilepath is the filepath where the badger database will be stored. If empty, the database will be in-memory only.
+	DatabaseFilepath string `json:"databaseFilepath" yaml:"databaseFilepath"`
+	// OptimizeMemoryUsage if true, the database will be optimized for memory usage.
+	OptimizeMemoryUsage bool `json:"optimizeMemoryUsage" yaml:"optimizeMemoryUsage"`
 }
 
 type PProfConfig struct {
@@ -106,15 +108,16 @@ func (a Actions) GetAllowedList() []string {
 }
 
 type ResourceConfig struct {
-	Id           string   `json:"id"`
-	Group        string   `json:"group"`
-	Version      string   `json:"version"`
-	Resource     string   `json:"resource"`
-	AllowedSorts []string `yaml:"allowedSorts" json:"allowedSorts"`
-	Owns         []string `json:"owns"`
-	References   []string `json:"references"`
-	Secrets      []string `json:"secrets"`
-	Actions      Actions  `json:"actions"`
+	Id           string    `json:"id"`
+	Group        string    `json:"group"`
+	Version      string    `json:"version"`
+	Resource     string    `json:"resource"`
+	AllowedSorts []string  `yaml:"allowedSorts" json:"allowedSorts"`
+	Owns         []string  `json:"owns"`
+	References   []string  `json:"references"`
+	Secrets      []string  `json:"secrets"`
+	Actions      Actions   `json:"actions"`
+	Store        StoreOpts `json:"store"`
 }
 
 type PredefinedConfig struct {
@@ -183,10 +186,11 @@ func (c *ServerConfig) BuildServer(ctx context.Context, dynamicClient dynamic.In
 				GVK:          crd.GVK,
 				AllowedSorts: resource.AllowedSorts,
 				Database: inmemory.DatabaseOpts{
-					Filepath: c.Store.DatabaseFilepath,
+					Filepath:     resource.Store.DatabaseFilepath,
+					ReduceMemory: resource.Store.OptimizeMemoryUsage,
 				},
 				Informer: inmemory.InformerOpts{
-					EnableCache: c.Store.EnableInformerCache,
+					DisableCache: resource.Store.DisableInformerCache,
 				},
 			}
 
