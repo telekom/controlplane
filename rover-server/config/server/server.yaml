@@ -57,8 +57,12 @@ spec:
             requests:
               cpu: 10m
               memory: 64Mi
-          volumeMounts: []
-      volumes: []
+          volumeMounts:
+            - name: db-data
+              mountPath: /data
+      volumes:
+        - name: db-data
+          emptyDir: {}
       serviceAccountName: rover-server
       terminationGracePeriodSeconds: 10
 ---

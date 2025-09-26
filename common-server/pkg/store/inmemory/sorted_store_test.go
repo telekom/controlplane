@@ -26,7 +26,7 @@ var _ = Describe("Sorted Store", func() {
 		sortedStore := Sortable(
 			&InmemoryObjectStore[*unstructured.Unstructured]{
 				ctx: ctx,
-				db:  newDbOrDie(logr.Discard()),
+				db:  newDbOrDie(StoreOpts{}, logr.Discard()),
 				log: logr.Discard(),
 			},
 			StoreOpts{
@@ -136,7 +136,7 @@ func BenchmarkStore(b *testing.B) {
 	s := Sortable(
 		&InmemoryObjectStore[*unstructured.Unstructured]{
 			ctx: ctx,
-			db:  newDbOrDie(logr.Discard()),
+			db:  newDbOrDie(StoreOpts{}, logr.Discard()),
 			log: logr.Discard(),
 		},
 		StoreOpts{

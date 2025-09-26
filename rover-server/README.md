@@ -35,6 +35,7 @@ The server can be configured using environment variables or configuration files:
 - `SECURITY_TRUSTEDISSUERS`: Comma-separated list of trusted issuers for JWT validation
 - `SECURITY_LMS_BASEPATH`: Base path for the LMS (Last Mile Security) checking
 - `SECURITY_DEFAULTSCOPE`: Default scope if token does not contain one
+- `DATABASE_FILEPATH`: This enables the database to store data also in the filesystem. If empty, the database will be in-memory only.
 
 # Installation
 
