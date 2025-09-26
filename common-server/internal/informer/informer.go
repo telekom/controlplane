@@ -22,13 +22,18 @@ import (
 	"k8s.io/client-go/dynamic/dynamicinformer"
 )
 
+type Informer interface {
+	Start() error
+	Ready() bool
+}
+
 type EventHandler interface {
 	OnCreate(ctx context.Context, obj *unstructured.Unstructured) error
 	OnUpdate(ctx context.Context, obj *unstructured.Unstructured) error
 	OnDelete(ctx context.Context, obj *unstructured.Unstructured) error
 }
 
-type Informer struct {
+type KubeInformer struct {
 	ctx            context.Context
 	gvr            schema.GroupVersionResource
 	k8sClient      dynamic.Interface
@@ -38,9 +43,9 @@ type Informer struct {
 	informer       cache.SharedIndexInformer
 }
 
-func New(ctx context.Context, gvr schema.GroupVersionResource, k8sClient dynamic.Interface, eventHandler EventHandler) *Informer {
+func New(ctx context.Context, gvr schema.GroupVersionResource, k8sClient dynamic.Interface, eventHandler EventHandler) *KubeInformer {
 	log := logr.FromContextOrDiscard(ctx)
-	return &Informer{
+	return &KubeInformer{
 		ctx:            ctx,
 		gvr:            gvr,
 		k8sClient:      k8sClient,
@@ -50,7 +55,7 @@ func New(ctx context.Context, gvr schema.GroupVersionResource, k8sClient dynamic
 	}
 }
 
-func (i *Informer) Start() error {
+func (i *KubeInformer) Start() error {
 	listOpts := func(lo *metav1.ListOptions) {}
 	indexers := cache.Indexers{}
 	namespace := ""
@@ -85,7 +90,7 @@ func (i *Informer) Start() error {
 	return nil
 }
 
-func (i *Informer) Ready() bool {
+func (i *KubeInformer) Ready() bool {
 	return i.informer.HasSynced()
 }
 

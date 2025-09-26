@@ -26,6 +26,9 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+
+	"net/http"
+	_ "net/http/pprof"
 )
 
 type OpenapiConfig struct {
@@ -56,18 +59,28 @@ type SecurityConfig struct {
 type ServerConfig struct {
 	Address  string `json:"address"`
 	BasePath string `json:"basepath"`
-	// Filepath is used to configure the database to use the filesystem.
-	// It is used as base path for the database files.
-	Filepath string `json:"filepath"`
 
 	AddGroupToPath bool               `yaml:"addGroupToPath" json:"addGroupToPath"`
 	Resources      []ResourceConfig   `json:"resources"`
 	Predefined     []PredefinedConfig `json:"predefined"`
 
+	Store StoreOpts `json:"store"`
+
 	Openapi  OpenapiConfig  `json:"openapi"`
 	Security SecurityConfig `json:"security"`
 
-	Tree TreeConfig `json:"tree"`
+	Tree  TreeConfig  `json:"tree"`
+	Pprof PProfConfig `json:"pprof"`
+}
+
+type StoreOpts struct {
+	EnableInformerCache bool   `json:"enableInformerCache" yaml:"enableInformerCache"`
+	DatabaseFilepath    string `json:"databaseFilepath" yaml:"databaseFilepath"`
+}
+
+type PProfConfig struct {
+	Enabled bool `json:"enabled"`
+	Port    int  `json:"port"`
 }
 
 type TreeConfig struct {
@@ -170,7 +183,10 @@ func (c *ServerConfig) BuildServer(ctx context.Context, dynamicClient dynamic.In
 				GVK:          crd.GVK,
 				AllowedSorts: resource.AllowedSorts,
 				Database: inmemory.DatabaseOpts{
-					Filepath: c.Filepath,
+					Filepath: c.Store.DatabaseFilepath,
+				},
+				Informer: inmemory.InformerOpts{
+					EnableCache: c.Store.EnableInformerCache,
 				},
 			}
 
@@ -243,7 +259,17 @@ func (c *ServerConfig) BuildServer(ctx context.Context, dynamicClient dynamic.In
 			ctrlOpts := server.ControllerOpts{Prefix: c.BasePath + server.CalculatePrefix(gvr, c.AddGroupToPath), Security: securityOpts}
 			s.RegisterController(ctrl, ctrlOpts)
 		}
+	}
 
+	if c.Pprof.Enabled {
+		go func() {
+			addr := fmt.Sprintf(":%d", c.Pprof.Port)
+			log.Info("Starting pprof server", "address", addr)
+			err := http.ListenAndServe(addr, nil)
+			if err != nil {
+				log.Error(err, "pprof server failed", "address", addr)
+			}
+		}()
 	}
 
 	s.RegisterController(config.NewConfigController(log, storesToStoreInfos(stores)...), server.ControllerOpts{Prefix: c.BasePath})

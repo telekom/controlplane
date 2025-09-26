@@ -41,9 +41,15 @@ type StoreOpts struct {
 	AllowedSorts []string
 
 	Database DatabaseOpts
+	Informer InformerOpts
+}
+
+type InformerOpts struct {
+	EnableCache bool
 }
 
 type DatabaseOpts struct {
+	// Filepath will store the badger database on disk at the given filepath.
 	Filepath string
 }
 
@@ -53,7 +59,7 @@ type InmemoryObjectStore[T store.Object] struct {
 	gvr            schema.GroupVersionResource
 	gvk            schema.GroupVersionKind
 	k8sClient      dynamic.NamespaceableResourceInterface
-	informer       *informer.Informer
+	informer       informer.Informer
 	db             *badger.DB
 	allowedSorts   []string
 	sortValueCache sync.Map
@@ -69,15 +75,17 @@ func newDbOrDie(storeOpts StoreOpts, log logr.Logger) *badger.DB {
 
 	log.Info("initializing badger DB", "inMemory", !useFilesystem, "path", path)
 
-	opts := badger.DefaultOptions(path).
+	opts := badger.
+		DefaultOptions(path).
 		WithInMemory(!useFilesystem).
 		WithMetricsEnabled(false).
 		WithIndexCacheSize(0).
+		WithNumMemtables(2).
 		WithMemTableSize(32 << 20).     // 32 MB
 		WithValueLogFileSize(64 << 20). // 64 MB
-		WithBlockCacheSize(64 << 20).   // 64 MB
+		WithBlockCacheSize(32 << 20).   // 32 MB
 		WithBlockSize(4 << 10).         // 4 KB
-		WithValueThreshold(1 << 20).    // 1 MB
+		WithValueThreshold(512 << 10).  // 512 KB
 		WithBloomFalsePositive(0.01).
 		WithCompression(options.Snappy)
 
@@ -99,7 +107,12 @@ func NewOrDie[T store.Object](ctx context.Context, storeOpts StoreOpts) store.Ob
 	}
 	var err error
 	store.db = newDbOrDie(storeOpts, store.log)
-	store.informer = informer.New(ctx, store.gvr, storeOpts.Client, store)
+
+	if storeOpts.Informer.EnableCache {
+		store.informer = informer.New(ctx, store.gvr, storeOpts.Client, store)
+	} else {
+		store.informer = informer.NewNoCache(ctx, store.gvr, storeOpts.Client, store)
+	}
 
 	if err = store.informer.Start(); err != nil {
 		panic(errors.Wrap(err, "failed to start informer"))
