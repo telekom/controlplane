@@ -322,6 +322,7 @@ func createGateway(ctx context.Context, handlingContext HandlingContext) (*gatew
 				EnableTLS: handlingContext.Zone.Spec.Redis.EnableTLS,
 			},
 		}
+
 		return nil
 	}
 	_, err := scopedClient.CreateOrUpdate(ctx, gateway, mutator)
