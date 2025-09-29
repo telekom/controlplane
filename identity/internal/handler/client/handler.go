@@ -65,21 +65,21 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 			Eventf(client, "Warning", "RealmNotValid",
 				"Realm '%s' not valid", client.Spec.Realm.String())
 		SetStatusWaiting(client)
-		return errors.Wrap(err, "❌ failed to validate realm")
+		return errors.Wrap(err, "failed to validate realm")
 	}
 
 	realmClient, err := keycloak.GetClientFor(realm.Status)
 	if err != nil {
-		return errors.Wrap(err, "❌ failed to get keycloak client")
+		return errors.Wrap(err, "failed to get keycloak client")
 	}
 
 	err = realmClient.CreateOrUpdateRealmClient(ctx, realm, client)
 	if err != nil {
-		return errors.Wrap(err, "❌ failed to create or update client")
+		return errors.Wrap(err, "failed to create or update client")
 	}
 
 	SetStatusReady(client)
-	var message = fmt.Sprintf("✅ RealmClient %s is ready", client.Spec.ClientId)
+	var message = fmt.Sprintf("RealmClient %s is ready", client.Spec.ClientId)
 	logger.V(1).Info(message, "IssuerUrl", &client.Status.IssuerUrl)
 
 	return nil

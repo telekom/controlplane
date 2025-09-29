@@ -38,7 +38,7 @@ func (k *realmClient) GetRealm(ctx context.Context, realm string) (*api.GetRealm
 		return nil, fmt.Errorf("keycloak client is required")
 	}
 
-	logger.V(1).Info("GetRealm", "ℹ️ request realm", realm)
+	logger.V(1).Info("GetRealm", "request realm", realm)
 	start := time.Now()
 	getRealm, err := k.clientWithResponses.GetRealmWithResponse(ctx, realm)
 	IncreaseDurationMetrics(start, "GET", "GetRealm")
@@ -50,12 +50,12 @@ func (k *realmClient) GetRealm(ctx context.Context, realm string) (*api.GetRealm
 
 	if responseErr := CheckStatusCode(getRealm, http.StatusOK, http.StatusNotFound); responseErr != nil {
 		IncreaseErrorMetrics()
-		return nil, fmt.Errorf("❌ failed to get realm: %d -- Response for GET is: %s",
+		return nil, fmt.Errorf("failed to get realm: %d -- Response for GET is: %s",
 			getRealm.StatusCode(), string(getRealm.Body))
 	}
 	IncreaseStatusMetrics(strconv.Itoa(getRealm.StatusCode()), "GET", "GetRealm")
 
-	logger.V(1).Info("GetRealm", "ℹ️ response", getRealm.JSON2XX)
+	logger.V(1).Info("GetRealm", "response", getRealm.JSON2XX)
 	return getRealm, nil
 }
 
@@ -64,7 +64,7 @@ func checkForRealmChanges(realm *identityv1.Realm,
 	logger logr.Logger) *api.RealmRepresentation {
 	realmRepresentation := mapper.MapToRealmRepresentation(realm)
 	if mapper.CompareRealmRepresentation(existingRealmRepresentation, &realmRepresentation) {
-		var message = fmt.Sprintf("ℹ️ No changes detected for realm %s with ID %d",
+		var message = fmt.Sprintf("No changes detected for realm %s with ID %d",
 			realm.Name,
 			existingRealmRepresentation.Id)
 		logger.V(1).Info(message)
@@ -93,14 +93,14 @@ func (k *realmClient) PutRealm(ctx context.Context, realmName string,
 	if existingRealmRepresentation == nil {
 		var message = fmt.Sprintf("🔍 Realm with name %s not found", realmName)
 		logger.V(1).Info(message)
-		return nil, fmt.Errorf("❌ realm to update does not exist")
+		return nil, fmt.Errorf("realm to update does not exist")
 	}
 
 	// Check if there are any changes for the realm
 	body := checkForRealmChanges(realm, existingRealmRepresentation, logger)
 
-	logger.V(1).Info("PutRealm", "ℹ️ request realm", realmName)
-	logger.V(1).Info("PutRealm", "ℹ️ request body", body)
+	logger.V(1).Info("PutRealm", "request realm", realmName)
+	logger.V(1).Info("PutRealm", "request body", body)
 	start := time.Now()
 	put, err := k.clientWithResponses.PutRealmWithResponse(ctx, realmName, *body)
 
@@ -112,12 +112,12 @@ func (k *realmClient) PutRealm(ctx context.Context, realmName string,
 
 	if responseErr := CheckStatusCode(put, http.StatusNoContent); responseErr != nil {
 		IncreaseErrorMetrics()
-		return nil, fmt.Errorf("❌ failed to update realm: %d -- Response for PUT is: %s",
+		return nil, fmt.Errorf("failed to update realm: %d -- Response for PUT is: %s",
 			put.StatusCode(), string(put.Body))
 	}
 
 	IncreaseStatusMetrics(strconv.Itoa(put.StatusCode()), "PUT", "PutRealm")
-	logger.V(1).Info("PutRealm", "ℹ️ response", put.HTTPResponse.Body)
+	logger.V(1).Info("PutRealm", "response", put.HTTPResponse.Body)
 	return put, nil
 }
 
@@ -129,7 +129,7 @@ func (k *realmClient) PostRealm(ctx context.Context, realm *identityv1.Realm) (*
 
 	body := mapper.MapToRealmRepresentation(realm)
 
-	logger.V(1).Info("PostRealm", "️ℹ️ request body", body)
+	logger.V(1).Info("PostRealm", "️request body", body)
 	start := time.Now()
 	post, err := k.clientWithResponses.PostWithResponse(ctx, body)
 
@@ -141,12 +141,12 @@ func (k *realmClient) PostRealm(ctx context.Context, realm *identityv1.Realm) (*
 
 	if responseErr := CheckStatusCode(post, http.StatusCreated); responseErr != nil {
 		IncreaseErrorMetrics()
-		return nil, fmt.Errorf("❌ failed to create realm: %d -- Response for POST is: %s",
+		return nil, fmt.Errorf("failed to create realm: %d -- Response for POST is: %s",
 			post.StatusCode(), string(post.Body))
 	}
 
 	IncreaseStatusMetrics(strconv.Itoa(post.StatusCode()), "POST", "PostRealm")
-	logger.V(1).Info("PostRealm", "ℹ️ response", post.HTTPResponse.Body)
+	logger.V(1).Info("PostRealm", "response", post.HTTPResponse.Body)
 	return post, nil
 }
 
@@ -188,7 +188,7 @@ func (k *realmClient) DeleteRealm(ctx context.Context, realm string) error {
 		return fmt.Errorf("failed to delete realm: %s", string(response.Body))
 	}
 
-	var successMessage = fmt.Sprintf("✅ deleted realm %s", realm)
+	var successMessage = fmt.Sprintf("deleted realm %s", realm)
 	logger.V(1).Info(successMessage, "realm", response.Body)
 
 	return nil
@@ -207,8 +207,8 @@ func (k *realmClient) GetRealmClients(ctx context.Context, realm string,
 		ViewableOnly: ptr.To(true),
 	}
 
-	logger.V(1).Info("GetRealmClients", "ℹ️ request realm", realm)
-	logger.V(1).Info("GetRealmClients", "ℹ️ request params", getRealmClientsParams)
+	logger.V(1).Info("GetRealmClients", "request realm", realm)
+	logger.V(1).Info("GetRealmClients", "request params", getRealmClientsParams)
 
 	start := time.Now()
 	get, err := k.clientWithResponses.GetRealmClientsWithResponse(ctx, realm, getRealmClientsParams)
@@ -220,7 +220,7 @@ func (k *realmClient) GetRealmClients(ctx context.Context, realm string,
 
 	if responseErr := CheckStatusCode(get, http.StatusOK, http.StatusNotFound); responseErr != nil {
 		IncreaseErrorMetrics()
-		return nil, fmt.Errorf("❌ failed to list clients: %d -- Response for GET is: %s",
+		return nil, fmt.Errorf("failed to list clients: %d -- Response for GET is: %s",
 			get.StatusCode(), string(get.Body))
 	}
 
@@ -243,7 +243,7 @@ func (k *realmClient) getRealmClient(ctx context.Context, realmName string,
 		}
 		return existingClient, nil
 	} else {
-		return nil, fmt.Errorf("❌ failed to get client")
+		return nil, fmt.Errorf("failed to get client")
 	}
 }
 
@@ -254,7 +254,7 @@ func CheckForClientChanges(client *identityv1.Client,
 
 	clientRepresentation := mapper.MapToClientRepresentation(client)
 	if mapper.CompareClientRepresentation(existingClient, &clientRepresentation) {
-		var message = fmt.Sprintf("ℹ️ No changes detected client %s with ID %s", client.Spec.ClientId, id)
+		var message = fmt.Sprintf("No changes detected client %s with ID %s", client.Spec.ClientId, id)
 		logger.V(1).Info(message)
 		return &clientRepresentation
 	} else {
@@ -286,9 +286,9 @@ func (k *realmClient) PutRealmClient(ctx context.Context, realmName, id string,
 
 	// Check if there are any changes to the realm client
 	body := CheckForClientChanges(client, id, existingClient, logger)
-	logger.V(1).Info("PutRealmClient", "ℹ️ request realm", realmName)
-	logger.V(1).Info("PutRealmClient", "ℹ️ request ID", id)
-	logger.V(1).Info("PutRealmClient", "ℹ️ request clientId", client.Spec.ClientId)
+	logger.V(1).Info("PutRealmClient", "request realm", realmName)
+	logger.V(1).Info("PutRealmClient", "request ID", id)
+	logger.V(1).Info("PutRealmClient", "request clientId", client.Spec.ClientId)
 
 	start := time.Now()
 	put, err := k.clientWithResponses.PutRealmClientsIdWithResponse(ctx, realmName, id, *body)
@@ -301,7 +301,7 @@ func (k *realmClient) PutRealmClient(ctx context.Context, realmName, id string,
 
 	if responseErr := CheckStatusCode(put, http.StatusNoContent); responseErr != nil {
 		IncreaseErrorMetrics()
-		return nil, fmt.Errorf("❌ failed to update client: %d -- Response for PUT is: %s",
+		return nil, fmt.Errorf("failed to update client: %d -- Response for PUT is: %s",
 			put.StatusCode(), string(put.Body))
 	}
 
@@ -319,8 +319,8 @@ func (k *realmClient) PostRealmClient(ctx context.Context, realmName string,
 
 	body := mapper.MapToClientRepresentation(client)
 
-	logger.V(1).Info("PostRealmClient", "ℹ️ request realm", realmName)
-	logger.V(1).Info("PostRealmClient", "ℹ️ request clientId", client.Spec.ClientId)
+	logger.V(1).Info("PostRealmClient", "request realm", realmName)
+	logger.V(1).Info("PostRealmClient", "request clientId", client.Spec.ClientId)
 
 	start := time.Now()
 	post, err := k.clientWithResponses.PostRealmClientsWithResponse(ctx, realmName, body)
@@ -332,7 +332,7 @@ func (k *realmClient) PostRealmClient(ctx context.Context, realmName string,
 
 	if responseErr := CheckStatusCode(post, http.StatusCreated); responseErr != nil {
 		IncreaseErrorMetrics()
-		return nil, fmt.Errorf("❌ failed to create client: %d -- Response for POST is: %s",
+		return nil, fmt.Errorf("failed to create client: %d -- Response for POST is: %s",
 			post.StatusCode(), string(post.Body))
 	}
 
@@ -358,7 +358,7 @@ func (k *realmClient) CreateOrUpdateRealmClient(ctx context.Context, realm *iden
 		if err != nil {
 			return err
 		}
-		var successMessage = fmt.Sprintf("✅ updated existing client %s in realm %s", client.Spec.ClientId, realm.Name)
+		var successMessage = fmt.Sprintf("updated existing client %s in realm %s", client.Spec.ClientId, realm.Name)
 		logger.V(1).Info(successMessage, "client", putRealmClient.Body)
 	} else {
 		var message = fmt.Sprintf("client %s not found in keycloak", client.Spec.ClientId)
@@ -367,7 +367,7 @@ func (k *realmClient) CreateOrUpdateRealmClient(ctx context.Context, realm *iden
 		if err != nil {
 			return err
 		}
-		var successMessage = fmt.Sprintf("✅ created client %s in realm %s", client.Spec.ClientId, realm.Name)
+		var successMessage = fmt.Sprintf("created client %s in realm %s", client.Spec.ClientId, realm.Name)
 		logger.V(1).Info(successMessage, "client", postRealmClient.Body)
 	}
 
@@ -384,7 +384,7 @@ func (k *realmClient) DeleteRealmClient(ctx context.Context, realmName string, i
 		return fmt.Errorf("failed to delete realm client: %s", string(response.Body))
 	}
 
-	var successMessage = fmt.Sprintf("✅ deleted client %s in realm %s", id, realmName)
+	var successMessage = fmt.Sprintf("deleted client %s in realm %s", id, realmName)
 	logger.V(1).Info(successMessage, "client", response.Body)
 	return nil
 }
