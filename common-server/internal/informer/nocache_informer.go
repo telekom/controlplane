@@ -19,6 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 )
@@ -128,7 +129,7 @@ func (i *NoCacheInformer) handlerLoop(ctx context.Context, inChan chan event) {
 			queueSize.WithLabelValues(i.name).Dec()
 
 		case <-ctx.Done():
-			i.log.Info("Handler loop stopped")
+			i.log.V(2).Info("Handler loop stopped")
 			return
 		}
 	}
@@ -137,15 +138,16 @@ func (i *NoCacheInformer) handlerLoop(ctx context.Context, inChan chan event) {
 func (i *NoCacheInformer) list(ctx context.Context, inChan chan event) error {
 	var continueToken string
 
-	ctx, cancel := context.WithTimeout(ctx, i.resyncPeriod*9/10)
+	timeout := i.resyncPeriod * 9 / 10
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	i.log.Info("Listing resources")
-	listOperations.WithLabelValues(i.name).Inc()
+	i.log.Info("Listing resources", "timeout", timeout.String())
+	start := time.Now()
 
 	for {
 		if ctx.Err() != nil {
-			return errors.Wrap(ctx.Err(), "context cancelled while listing resources")
+			return errors.Wrap(ctx.Err(), "failed to list resources")
 		}
 
 		list, err := i.k8sClient.Resource(i.gvr).List(ctx, metav1.ListOptions{
@@ -185,6 +187,7 @@ func (i *NoCacheInformer) list(ctx context.Context, inChan chan event) error {
 		}
 	}
 	i.initDone.Store(true)
+	listOperationDuration.WithLabelValues(i.name).Set(time.Since(start).Seconds())
 
 	return nil
 }
@@ -207,7 +210,7 @@ func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface
 				}
 				counter.WithLabelValues(i.name, "ERROR", strconv.Itoa(int(status.Code))).Inc()
 				if status.Code == int32(410) { // gone
-					i.log.Info("Resource version expired, restarting watcher", "kind", status.Kind, "name", status.Details.Name)
+					i.log.Info("Resource version expired, restarting watcher", "resourceVersion", i.resourceVersion)
 					// Schedule reload in a separate goroutine to avoid blocking the watch loop
 					go func() {
 						if err := i.Reload(); err != nil {
@@ -219,8 +222,20 @@ func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface
 
 				i.log.Error(errors.New(status.Message), "Received error event", "kind", status.Kind, "name", status.Details.Name)
 				continue
-			case "", watch.Bookmark:
-				// Ignore bookmark events
+			case watch.Bookmark:
+				obj, ok := e.Object.(metav1.Object)
+				if !ok {
+					i.log.V(1).Info("Failed to cast bookmark object", "type", fmt.Sprintf("%T", e.Object))
+					continue
+				}
+
+				i.resourceVersion = obj.GetResourceVersion()
+				i.log.V(1).Info("Received bookmark", "resourceVersion", i.resourceVersion)
+				counter.WithLabelValues(i.name, "BOOKMARK", "0").Inc()
+				continue
+
+			case "":
+				// Ignore empty events
 				continue
 			}
 
@@ -247,7 +262,7 @@ func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface
 			eventProcessingLatency.WithLabelValues(i.name).Observe(time.Since(start).Seconds())
 
 		case <-ctx.Done():
-			i.log.Info("Watcher stopped")
+			i.log.V(1).Info("Watcher stopped")
 			watcher.Stop()
 			return
 		}
@@ -255,16 +270,22 @@ func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface
 }
 
 func (i *NoCacheInformer) resyncLoop(ctx context.Context, period time.Duration) {
-	ticker := time.NewTicker(period)
+	jitteredPeriod := wait.Jitter(period, 0.2)
+	ticker := time.NewTicker(jitteredPeriod)
+	defer ticker.Stop()
+	i.log.Info("Starting resync loop", "period", jitteredPeriod.String())
 	for {
 		select {
 		case <-ticker.C:
+			newJitteredPeriod := wait.Jitter(period, 0.2)
+			ticker.Reset(newJitteredPeriod)
+			i.log.Info("Resyncing informer", "period", newJitteredPeriod.String())
+
 			err := i.Reload()
 			if err != nil {
 				i.log.Error(err, "Failed to resync")
 			}
 		case <-ctx.Done():
-			ticker.Stop()
 			return
 		}
 	}
@@ -287,7 +308,12 @@ func (i *NoCacheInformer) Start() error {
 		}()
 	}
 
-	go i.startWatcher()
+	go func() {
+		err := i.startWatcher()
+		if err != nil {
+			i.log.Error(err, "Failed to start watcher")
+		}
+	}()
 
 	return nil
 }
@@ -296,47 +322,53 @@ func (i *NoCacheInformer) stopWatcher() {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
 
-	if i.watcher != nil {
-		i.watcher.Stop()
-		i.watcher = nil
-	}
 	if i.watcherCancel != nil {
 		i.watcherCancel()
 		i.watcherCancel = nil
 	}
+	if i.watcher != nil {
+		i.watcher.Stop()
+		i.watcher = nil
+	}
 }
 
-func (i *NoCacheInformer) startWatcher() {
+func (i *NoCacheInformer) startWatcher() (err error) {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
 
 	if i.currentlyLoading.Swap(true) {
-		return
+		// Another load is already in progress
+		return nil
 	}
 	defer i.currentlyLoading.Store(false)
 
-	i.resourceVersion = ""
-
-	err := i.list(i.ctx, i.queue)
-	if err != nil {
-		i.log.Error(err, "Failed to list resources")
+	if i.resourceVersion == "" {
+		err := i.list(i.ctx, i.queue)
+		if err != nil {
+			return errors.Wrap(err, "failed to start watcher")
+		}
 	}
 
 	watchCtx, cancel := context.WithCancel(i.ctx)
 	i.watcherCancel = cancel
 
+	// TODO: this should be wrapped in a backoff loop to handle transient errors
+	// see wait.Backoff
+
 	i.watcher, err = i.k8sClient.Resource(i.gvr).Watch(watchCtx, metav1.ListOptions{
 		Watch:               true,
 		ResourceVersion:     i.resourceVersion,
-		AllowWatchBookmarks: false,
+		AllowWatchBookmarks: true,
 	})
 
 	if err != nil {
-		i.log.Error(err, "Failed to start watcher")
-		return
+		i.resourceVersion = ""
+		return errors.Wrap(err, "failed to start watcher")
 	}
 
 	go i.watchLoop(watchCtx, i.watcher)
+
+	return nil
 }
 
 func (i *NoCacheInformer) Ready() bool {
@@ -344,16 +376,19 @@ func (i *NoCacheInformer) Ready() bool {
 }
 
 func (i *NoCacheInformer) Reload() error {
-
 	if i.currentlyLoading.Load() {
 		i.log.Info("Reload already in progress, skipping")
 		return nil
 	}
+	i.log.Info("Reloading informer")
 
 	reloads.WithLabelValues(i.name).Inc()
 	i.stopWatcher()
 
-	i.startWatcher()
+	err := i.startWatcher()
+	if err != nil {
+		return errors.Wrap(err, "failed to restart watcher")
+	}
 
 	return nil
 }

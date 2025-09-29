@@ -31,7 +31,6 @@ var (
 	}, []string{"informer"},
 	)
 
-	// Additional metrics for performance monitoring
 	activeWorkers = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "informer_active_workers",
 		Help: "Number of active worker goroutines",
@@ -51,9 +50,9 @@ var (
 	}, []string{"informer"},
 	)
 
-	listOperations = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "informer_list_operations_total",
-		Help: "Total number of list operations performed",
+	listOperationDuration = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "informer_list_operation_duration_seconds",
+		Help: "Duration of the last list operation",
 	}, []string{"informer"},
 	)
 
@@ -73,7 +72,7 @@ func Register(reg prometheus.Registerer) {
 		reg.MustRegister(activeWorkers)
 		reg.MustRegister(watchLoopIterations)
 		reg.MustRegister(eventProcessingLatency)
-		reg.MustRegister(listOperations)
+		reg.MustRegister(listOperationDuration)
 		reg.MustRegister(queueWaitTime)
 	})
 }
