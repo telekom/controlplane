@@ -32,11 +32,6 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		return fmt.Errorf("client is nil")
 	}
 
-	// Get secret-values from secret-manager
-	oldSecretRef := client.Spec.ClientSecret
-	defer func() {
-		client.Spec.ClientSecret = oldSecretRef
-	}()
 	client.Spec.ClientSecret, err = secrets.Get(ctx, client.Spec.ClientSecret)
 	if err != nil {
 		return errors.Wrap(err, "failed to get client secret from secret-manager")
