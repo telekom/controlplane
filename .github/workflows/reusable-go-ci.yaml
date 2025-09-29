@@ -67,7 +67,7 @@ on:
         type: string
         default: "ghcr.io"
       image_tags:
-        description: "Comma-separated list of tags to apply to the built image. If empty, GITHUB_REF_SLUG will be used."
+        description: "Comma-separated list of tags to apply to the built image. If empty, GITHUB_HEAD_REF_SLUG or latest will be used."
         required: false
         type: string
         default: ${{ github.event_name == 'schedule' && 'nightly' || '' }}
@@ -339,7 +339,7 @@ jobs:
           if [ -n "${{ inputs.image_tags }}" ]; then
             effective_tags="${{ inputs.image_tags }}"
           else
-            effective_tags="${GITHUB_REF_SLUG}"
+            effective_tags="${GITHUB_HEAD_REF_SLUG:-latest}"
           fi
 
           echo "Building with tags: $effective_tags"
