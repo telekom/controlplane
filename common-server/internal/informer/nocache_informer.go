@@ -23,51 +23,73 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
-// [experimental] NoCacheInformer implement the Informer pattern but it does not keep a local cache.
-// It will flush the events directly to the event handler.
-// This is useful for resources that are really large and would consume too much memory in a local cache.
+// NoCacheInformer implements the Informer pattern without keeping a local cache.
+// It flushes events directly to the event handler, which is useful for resources
+// that are too large to store efficiently in memory.
 type NoCacheInformer struct {
-	ctx                context.Context
-	gvr                schema.GroupVersionResource
-	name               string
-	k8sClient          dynamic.Interface
-	eventHandler       EventHandler
-	log                logr.Logger
-	bufferSize         int64
-	queue              chan event
-	initDone           *atomic.Bool
-	currentlyReloading *atomic.Bool
-	resourceVersion    string
-	workerCount        int
+	ctx              context.Context
+	gvr              schema.GroupVersionResource
+	name             string
+	k8sClient        dynamic.Interface
+	eventHandler     EventHandler
+	log              logr.Logger
+	bufferSize       int64        // Maximum number of items to retrieve per list call
+	queue            chan event   // Channel for event processing
+	initDone         *atomic.Bool // Tracks if initial list is complete
+	currentlyLoading *atomic.Bool // Prevents concurrent reloads
+	resourceVersion  string       // Current resource version for watch operations
+	workerCount      int          // Number of worker goroutines for event processing
 
-	watcher       watch.Interface
-	watcherCancel context.CancelFunc
-	cancel        context.CancelFunc
+	watcher       watch.Interface    // The Kubernetes watch client
+	watcherCancel context.CancelFunc // Function to cancel the watcher context
+	cancel        context.CancelFunc // Function to cancel the informer context
 
-	resyncPeriod time.Duration
+	resyncPeriod time.Duration // How often to perform a full resync
 
-	mutex sync.Mutex
+	mutex sync.Mutex // Protects access to shared fields
+}
+
+// NoCacheInformerOptions provides configurable options for the NoCacheInformer
+type NoCacheInformerOptions struct {
+	BufferSize   int64
+	QueueSize    int
+	WorkerCount  int
+	ResyncPeriod time.Duration
+}
+
+// DefaultNoCacheInformerOptions returns the default options for a NoCacheInformer
+func DefaultNoCacheInformerOptions() NoCacheInformerOptions {
+	return NoCacheInformerOptions{
+		BufferSize:   1000,
+		QueueSize:    200,
+		WorkerCount:  runtime.NumCPU(),
+		ResyncPeriod: 5 * time.Minute,
+	}
 }
 
 // [experimental] NewNoCache creates a new informer that does not use a local cache.
 func NewNoCache(ctx context.Context, gvr schema.GroupVersionResource, k8sClient dynamic.Interface, eventHandler EventHandler) *NoCacheInformer {
+	return NewNoCacheWithOptions(ctx, gvr, k8sClient, eventHandler, DefaultNoCacheInformerOptions())
+}
+
+func NewNoCacheWithOptions(ctx context.Context, gvr schema.GroupVersionResource, k8sClient dynamic.Interface, eventHandler EventHandler, options NoCacheInformerOptions) *NoCacheInformer {
 	log := logr.FromContextOrDiscard(ctx)
-	lctx, cancel := context.WithCancel(ctx)
+	ctxWithCancel, cancel := context.WithCancel(ctx)
 	name := fmt.Sprintf("NoCacheInformer:%s/%s", strings.ToLower(gvr.Group), strings.ToLower(gvr.Resource))
 	return &NoCacheInformer{
-		ctx:                lctx,
-		cancel:             cancel,
-		gvr:                gvr,
-		k8sClient:          k8sClient,
-		eventHandler:       eventHandler,
-		log:                log.WithName(name),
-		name:               name,
-		bufferSize:         1000,
-		queue:              make(chan event, 200),
-		initDone:           &atomic.Bool{},
-		currentlyReloading: &atomic.Bool{},
-		workerCount:        runtime.NumCPU(),
-		resyncPeriod:       time.Hour,
+		ctx:              ctxWithCancel,
+		cancel:           cancel,
+		gvr:              gvr,
+		k8sClient:        k8sClient,
+		eventHandler:     eventHandler,
+		log:              log.WithName(name),
+		name:             name,
+		bufferSize:       options.BufferSize,
+		queue:            make(chan event, options.QueueSize),
+		initDone:         &atomic.Bool{},
+		currentlyLoading: &atomic.Bool{},
+		workerCount:      options.WorkerCount,
+		resyncPeriod:     options.ResyncPeriod,
 	}
 }
 
@@ -80,7 +102,9 @@ func (i *NoCacheInformer) handlerLoop(ctx context.Context, inChan chan event) {
 	for {
 		select {
 		case e := <-inChan:
+			start := time.Now()
 			var err error
+
 			switch e.typ {
 			case "ADDED":
 				err = i.eventHandler.OnCreate(ctx, e.obj)
@@ -99,12 +123,13 @@ func (i *NoCacheInformer) handlerLoop(ctx context.Context, inChan chan event) {
 				counter.WithLabelValues(i.name, e.typ, "0").Inc()
 			}
 
+			// Record how long the event was being processed
+			queueWaitTime.WithLabelValues(i.name).Observe(time.Since(start).Seconds())
 			queueSize.WithLabelValues(i.name).Dec()
 
 		case <-ctx.Done():
-			i.log.Info("Watcher loop stopped")
+			i.log.Info("Handler loop stopped")
 			return
-
 		}
 	}
 }
@@ -112,16 +137,12 @@ func (i *NoCacheInformer) handlerLoop(ctx context.Context, inChan chan event) {
 func (i *NoCacheInformer) list(ctx context.Context, inChan chan event) error {
 	var continueToken string
 
-	if i.currentlyReloading.Swap(true) {
-		// another reload is already in progress
-		return nil
-	}
-	defer i.currentlyReloading.Store(false)
-
 	ctx, cancel := context.WithTimeout(ctx, i.resyncPeriod*9/10)
 	defer cancel()
 
 	i.log.Info("Listing resources")
+	listOperations.WithLabelValues(i.name).Inc()
+
 	for {
 		if ctx.Err() != nil {
 			return errors.Wrap(ctx.Err(), "context cancelled while listing resources")
@@ -137,12 +158,24 @@ func (i *NoCacheInformer) list(ctx context.Context, inChan chan event) error {
 
 		i.log.Info("Listed resources", "count", len(list.Items))
 
-		for _, item := range list.Items {
-			inChan <- event{
-				typ: "ADDED",
-				obj: item.DeepCopy(),
+		// Process items in batches to avoid CPU spikes
+		batchSize := 100
+		for j := 0; j < len(list.Items); j += batchSize {
+			end := min(j+batchSize, len(list.Items))
+
+			// Process this batch
+			for _, item := range list.Items[j:end] {
+				inChan <- event{
+					typ: "ADDED",
+					obj: &item,
+				}
+				queueSize.WithLabelValues(i.name).Inc()
 			}
-			queueSize.WithLabelValues(i.name).Inc()
+
+			// Give the system a small breather between batches
+			if end < len(list.Items) && len(list.Items) > batchSize {
+				time.Sleep(time.Millisecond * 50)
+			}
 		}
 
 		i.resourceVersion = list.GetResourceVersion()
@@ -160,6 +193,9 @@ func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface
 	for {
 		select {
 		case e := <-watcher.ResultChan():
+			watchLoopIterations.WithLabelValues(i.name).Inc()
+			start := time.Now()
+
 			i.log.V(1).Info("Received event", "type", e.Type)
 			switch e.Type {
 			case watch.Error:
@@ -171,21 +207,19 @@ func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface
 				}
 				counter.WithLabelValues(i.name, "ERROR", strconv.Itoa(int(status.Code))).Inc()
 				if status.Code == int32(410) { // gone
-					// TODO: add a metrics for this
 					i.log.Info("Resource version expired, restarting watcher", "kind", status.Kind, "name", status.Details.Name)
-					if err := i.Reload(); err != nil {
-						i.log.Error(err, "Failed to reload after resource version expired")
-					}
+					// Schedule reload in a separate goroutine to avoid blocking the watch loop
+					go func() {
+						if err := i.Reload(); err != nil {
+							i.log.Error(err, "Failed to reload after resource version expired")
+						}
+					}()
 					return
 				}
 
 				i.log.Error(errors.New(status.Message), "Received error event", "kind", status.Kind, "name", status.Details.Name)
-
 				continue
-			case "":
-				// Ignore empty events
-				continue
-			case watch.Bookmark:
+			case "", watch.Bookmark:
 				// Ignore bookmark events
 				continue
 			}
@@ -196,18 +230,27 @@ func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface
 				continue
 			}
 			SanitizeObject(obj)
-			i.queue <- event{
+
+			timeout := time.After(5 * time.Second)
+			select {
+			case i.queue <- event{
 				typ: string(e.Type),
-				obj: obj.DeepCopy(),
+				obj: obj,
+			}:
+				queueSize.WithLabelValues(i.name).Inc()
+			case <-timeout:
+				i.log.Error(nil, "Failed to enqueue event: queue full or blocked",
+					"type", e.Type, "name", obj.GetName())
 			}
-			queueSize.WithLabelValues(i.name).Inc()
+
+			// Record event processing latency
+			eventProcessingLatency.WithLabelValues(i.name).Observe(time.Since(start).Seconds())
 
 		case <-ctx.Done():
 			i.log.Info("Watcher stopped")
 			watcher.Stop()
 			return
 		}
-
 	}
 }
 
@@ -235,8 +278,13 @@ func (i *NoCacheInformer) Start() error {
 		go i.resyncLoop(i.ctx, i.resyncPeriod)
 	}
 
+	// Start worker goroutines for event processing
 	for range i.workerCount {
-		go i.handlerLoop(i.ctx, i.queue)
+		activeWorkers.WithLabelValues(i.name).Inc()
+		go func() {
+			i.handlerLoop(i.ctx, i.queue)
+			activeWorkers.WithLabelValues(i.name).Dec()
+		}()
 	}
 
 	go i.startWatcher()
@@ -262,6 +310,11 @@ func (i *NoCacheInformer) startWatcher() {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
 
+	if i.currentlyLoading.Swap(true) {
+		return
+	}
+	defer i.currentlyLoading.Store(false)
+
 	i.resourceVersion = ""
 
 	err := i.list(i.ctx, i.queue)
@@ -269,12 +322,13 @@ func (i *NoCacheInformer) startWatcher() {
 		i.log.Error(err, "Failed to list resources")
 	}
 
-	wctx, cancel := context.WithCancel(i.ctx)
+	watchCtx, cancel := context.WithCancel(i.ctx)
 	i.watcherCancel = cancel
 
-	i.watcher, err = i.k8sClient.Resource(i.gvr).Watch(wctx, metav1.ListOptions{
-		Watch:           true,
-		ResourceVersion: i.resourceVersion,
+	i.watcher, err = i.k8sClient.Resource(i.gvr).Watch(watchCtx, metav1.ListOptions{
+		Watch:               true,
+		ResourceVersion:     i.resourceVersion,
+		AllowWatchBookmarks: false,
 	})
 
 	if err != nil {
@@ -282,10 +336,7 @@ func (i *NoCacheInformer) startWatcher() {
 		return
 	}
 
-	for range i.workerCount {
-		go i.watchLoop(i.ctx, i.watcher)
-	}
-
+	go i.watchLoop(watchCtx, i.watcher)
 }
 
 func (i *NoCacheInformer) Ready() bool {
@@ -293,9 +344,17 @@ func (i *NoCacheInformer) Ready() bool {
 }
 
 func (i *NoCacheInformer) Reload() error {
+
+	if i.currentlyLoading.Load() {
+		i.log.Info("Reload already in progress, skipping")
+		return nil
+	}
+
 	reloads.WithLabelValues(i.name).Inc()
 	i.stopWatcher()
-	go i.startWatcher()
+
+	i.startWatcher()
+
 	return nil
 }
 
