@@ -203,5 +203,43 @@ var _ = Describe("Exposure Traffic Mapper", func() {
 			Expect(output.RateLimit.ConsumerDefault.Second).To(Equal(int32(0)))
 			Expect(output.RateLimit.Consumers).To(BeEmpty())
 		})
+
+		It("must map empty circuit breaker correctly", func() {
+			// Given
+			input := &roverv1.ApiExposure{
+				Traffic: &roverv1.Traffic{
+					CircuitBreaker: nil,
+				},
+			}
+
+			output := &api.ApiExposure{}
+
+			// When
+			mapCircuitBreaker(input, output)
+
+			// Then
+			Expect(output.CircuitBreaker).NotTo(BeNil())
+			Expect(output.CircuitBreaker.Enabled).To(BeFalse())
+		})
+
+		It("must map configured circuit breaker correctly", func() {
+			// Given
+			input := &roverv1.ApiExposure{
+				Traffic: &roverv1.Traffic{
+					CircuitBreaker: &roverv1.CircuitBreaker{
+						Enabled: true,
+					},
+				},
+			}
+
+			output := &api.ApiExposure{}
+
+			// When
+			mapCircuitBreaker(input, output)
+
+			// Then
+			Expect(output.CircuitBreaker).NotTo(BeNil())
+			Expect(output.CircuitBreaker.Enabled).To(BeTrue())
+		})
 	})
 })

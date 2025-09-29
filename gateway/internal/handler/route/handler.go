@@ -79,6 +79,7 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 	if err := builder.Build(ctx); err != nil {
 		return errors.Wrap(err, "failed to build route")
 	}
+	log.V(1).Info("route properties are", "properties", route.Status.Properties)
 
 	// Reset the consumers list to only contain the current consumer names
 	route.Status.Consumers = []string{}
@@ -159,6 +160,7 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 	builder.EnableFeature(feature.InstanceFailoverFeature)
 	builder.EnableFeature(feature.InstanceHeaderTransformationFeature)
 	builder.EnableFeature(feature.InstanceBasicAuthFeature)
+	builder.EnableFeature(feature.InstanceCircuitBreakerFeature)
 
 	return builder, nil
 }

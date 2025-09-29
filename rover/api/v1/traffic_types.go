@@ -15,6 +15,15 @@ type Traffic struct {
 	// RateLimit defines request rate limiting for this API
 	// +kubebuilder:validation:Optional
 	RateLimit *RateLimit `json:"rateLimit,omitempty"`
+	// CircuitBreaker defines the Kong circuit breaker configuration
+	// +kubebuilder:validation:Optional
+	CircuitBreaker *CircuitBreaker `json:"circuitBreaker,omitempty"`
+}
+
+type CircuitBreaker struct {
+	// CircuitBreaker flags if the Kong circuit breaker feature should be used
+	// +kubebuilder:default=false
+	Enabled bool `json:"enabled,omitempty"`
 }
 
 type SubscriberTraffic struct {
@@ -162,4 +171,8 @@ func (t *Traffic) HasConsumerOverridesRateLimit() bool {
 		return false
 	}
 	return t.RateLimit.Consumers.Overrides != nil
+}
+
+func (t *Traffic) HasCircuitBreaker() bool {
+	return t.CircuitBreaker != nil
 }

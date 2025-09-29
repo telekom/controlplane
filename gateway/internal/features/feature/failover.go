@@ -23,7 +23,7 @@ type FailoverFeature struct {
 }
 
 var InstanceFailoverFeature = &FailoverFeature{
-	priority: InstanceLastMileSecurityFeature.priority - 1,
+	priority: InstanceCircuitBreakerFeature.priority - 1,
 }
 
 func (f *FailoverFeature) Name() gatewayv1.FeatureType {
