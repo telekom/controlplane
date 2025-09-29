@@ -8,6 +8,8 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -27,6 +29,7 @@ import (
 type NoCacheInformer struct {
 	ctx                context.Context
 	gvr                schema.GroupVersionResource
+	name               string
 	k8sClient          dynamic.Interface
 	eventHandler       EventHandler
 	log                logr.Logger
@@ -50,13 +53,15 @@ type NoCacheInformer struct {
 func NewNoCache(ctx context.Context, gvr schema.GroupVersionResource, k8sClient dynamic.Interface, eventHandler EventHandler) *NoCacheInformer {
 	log := logr.FromContextOrDiscard(ctx)
 	lctx, cancel := context.WithCancel(ctx)
+	name := fmt.Sprintf("NoCacheInformer:%s/%s", strings.ToLower(gvr.Group), strings.ToLower(gvr.Resource))
 	return &NoCacheInformer{
 		ctx:                lctx,
 		cancel:             cancel,
 		gvr:                gvr,
 		k8sClient:          k8sClient,
 		eventHandler:       eventHandler,
-		log:                log.WithName(fmt.Sprintf("Informer:%s/%s", gvr.Group, gvr.Resource)),
+		log:                log.WithName(name),
+		name:               name,
 		bufferSize:         1000,
 		queue:              make(chan event, 200),
 		initDone:           &atomic.Bool{},
@@ -86,10 +91,16 @@ func (i *NoCacheInformer) handlerLoop(ctx context.Context, inChan chan event) {
 			default:
 				i.log.Info("Unknown event type", "type", e.typ)
 			}
+
 			if err != nil {
-				// TODO: Implement retry logic
 				i.log.Error(err, "Failed to handle event", "type", e.typ, "name", e.obj.GetName())
+				counter.WithLabelValues(i.name, e.typ, "1").Inc()
+			} else {
+				counter.WithLabelValues(i.name, e.typ, "0").Inc()
 			}
+
+			queueSize.WithLabelValues(i.name).Dec()
+
 		case <-ctx.Done():
 			i.log.Info("Watcher loop stopped")
 			return
@@ -131,6 +142,7 @@ func (i *NoCacheInformer) list(ctx context.Context, inChan chan event) error {
 				typ: "ADDED",
 				obj: item.DeepCopy(),
 			}
+			queueSize.WithLabelValues(i.name).Inc()
 		}
 
 		i.resourceVersion = list.GetResourceVersion()
@@ -153,9 +165,11 @@ func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface
 			case watch.Error:
 				status, ok := e.Object.(*metav1.Status)
 				if !ok {
+					counter.WithLabelValues(i.name, "ERROR", "unknown").Inc()
 					i.log.Error(errors.New("failed to cast to Status"), "Received unknown error event", "type", fmt.Sprintf("%T", e.Object))
 					continue
 				}
+				counter.WithLabelValues(i.name, "ERROR", strconv.Itoa(int(status.Code))).Inc()
 				if status.Code == int32(410) { // gone
 					// TODO: add a metrics for this
 					i.log.Info("Resource version expired, restarting watcher", "kind", status.Kind, "name", status.Details.Name)
@@ -186,6 +200,8 @@ func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface
 				typ: string(e.Type),
 				obj: obj.DeepCopy(),
 			}
+			queueSize.WithLabelValues(i.name).Inc()
+
 		case <-ctx.Done():
 			i.log.Info("Watcher stopped")
 			watcher.Stop()
@@ -277,6 +293,7 @@ func (i *NoCacheInformer) Ready() bool {
 }
 
 func (i *NoCacheInformer) Reload() error {
+	reloads.WithLabelValues(i.name).Inc()
 	i.stopWatcher()
 	go i.startWatcher()
 	return nil

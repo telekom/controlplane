@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -41,16 +42,19 @@ type KubeInformer struct {
 	log            logr.Logger
 	reloadInterval time.Duration
 	informer       cache.SharedIndexInformer
+	name           string
 }
 
 func New(ctx context.Context, gvr schema.GroupVersionResource, k8sClient dynamic.Interface, eventHandler EventHandler) *KubeInformer {
 	log := logr.FromContextOrDiscard(ctx)
+	name := fmt.Sprintf("Informer:%s/%s", strings.ToLower(gvr.Group), strings.ToLower(gvr.Resource))
 	return &KubeInformer{
 		ctx:            ctx,
 		gvr:            gvr,
 		k8sClient:      k8sClient,
 		eventHandler:   eventHandler,
-		log:            log.WithName(fmt.Sprintf("Informer:%s/%s", gvr.Group, gvr.Resource)),
+		name:           name,
+		log:            log.WithName(name),
 		reloadInterval: 600 * time.Second,
 	}
 }
@@ -61,7 +65,7 @@ func (i *KubeInformer) Start() error {
 	namespace := ""
 
 	i.informer = dynamicinformer.NewFilteredDynamicInformer(i.k8sClient, i.gvr, namespace, i.reloadInterval, indexers, listOpts).Informer()
-	_, err := i.informer.AddEventHandlerWithResyncPeriod(wrapEventHandler(i.ctx, i.log, i.eventHandler), i.reloadInterval)
+	_, err := i.informer.AddEventHandlerWithResyncPeriod(i.wrapEventHandler(i.ctx, i.log, i.eventHandler), i.reloadInterval)
 	if err != nil {
 		return errors.Wrapf(err, "failed to add event handler for %s", i.gvr)
 	}
@@ -80,6 +84,7 @@ func (i *KubeInformer) Start() error {
 	}
 
 	err = i.informer.SetWatchErrorHandler(func(r *cache.Reflector, err error) {
+		counter.WithLabelValues(i.name, "ERROR", "1").Inc()
 		i.log.Error(err, "watch error")
 	})
 	if err != nil {
@@ -107,7 +112,7 @@ func SanitizeObject(obj *unstructured.Unstructured) {
 	}
 }
 
-func wrapEventHandler(ctx context.Context, log logr.Logger, eh EventHandler) cache.ResourceEventHandlerFuncs {
+func (i *KubeInformer) wrapEventHandler(ctx context.Context, log logr.Logger, eh EventHandler) cache.ResourceEventHandlerFuncs {
 	return cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
 			o, ok := obj.(*unstructured.Unstructured)
@@ -117,7 +122,11 @@ func wrapEventHandler(ctx context.Context, log logr.Logger, eh EventHandler) cac
 			}
 			if err := eh.OnCreate(ctx, o); err != nil {
 				log.Error(err, "failed to handle create event")
+				counter.WithLabelValues(i.name, "ADDED", "1").Inc()
+			} else {
+				counter.WithLabelValues(i.name, "ADDED", "0").Inc()
 			}
+
 		},
 		UpdateFunc: func(oldObj, newObj any) {
 			o, ok := newObj.(*unstructured.Unstructured)
@@ -127,7 +136,11 @@ func wrapEventHandler(ctx context.Context, log logr.Logger, eh EventHandler) cac
 			}
 			if err := eh.OnUpdate(ctx, o); err != nil {
 				log.Error(err, "failed to handle update event")
+				counter.WithLabelValues(i.name, "MODIFIED", "1").Inc()
+			} else {
+				counter.WithLabelValues(i.name, "MODIFIED", "0").Inc()
 			}
+
 		},
 		DeleteFunc: func(obj any) {
 			o, ok := obj.(*unstructured.Unstructured)
@@ -137,6 +150,9 @@ func wrapEventHandler(ctx context.Context, log logr.Logger, eh EventHandler) cac
 			}
 			if err := eh.OnDelete(ctx, o); err != nil {
 				log.Error(err, "failed to handle delete event")
+				counter.WithLabelValues(i.name, "DELETED", "1").Inc()
+			} else {
+				counter.WithLabelValues(i.name, "DELETED", "0").Inc()
 			}
 		},
 	}

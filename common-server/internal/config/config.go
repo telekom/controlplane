@@ -13,7 +13,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/telekom/controlplane/common-server/internal/crd"
+	"github.com/telekom/controlplane/common-server/internal/informer"
 	"github.com/telekom/controlplane/common-server/pkg/openapi"
 	"github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/config"
@@ -223,6 +225,8 @@ func (c *ServerConfig) BuildServer(ctx context.Context, dynamicClient dynamic.In
 			resurces[resourceId] = resource
 		}
 	}
+
+	informer.Register(prometheus.DefaultRegisterer)
 
 	for id, store := range stores {
 		gvr, _ := store.Info()
