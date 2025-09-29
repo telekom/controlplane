@@ -13,6 +13,10 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	ctrlr "sigs.k8s.io/controller-runtime"
+
 	cs "github.com/telekom/controlplane/common-server/pkg/server"
 	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
 	"github.com/telekom/controlplane/common-server/pkg/server/serve"
@@ -22,9 +26,6 @@ import (
 	"github.com/telekom/controlplane/file-manager/internal/handler"
 	"github.com/telekom/controlplane/file-manager/pkg/backend/buckets"
 	"github.com/telekom/controlplane/file-manager/pkg/controller"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	ctrlr "sigs.k8s.io/controller-runtime"
 )
 
 var (
@@ -103,7 +104,10 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 		fileDownloader := buckets.NewBucketFileDownloader(bucketConfig)
 		fileUploader := buckets.NewBucketFileUploader(bucketConfig)
 
-		c = controller.NewController(fileDownloader, fileUploader)
+		// Create file deleter and wire into controller
+		fileDeleter := buckets.NewBucketFileDeleter(bucketConfig)
+
+		c = controller.NewController(fileDownloader, fileUploader, fileDeleter)
 
 	default:
 		return nil, errors.Errorf("unknown backend type: %s", cfg.Backend.Type)

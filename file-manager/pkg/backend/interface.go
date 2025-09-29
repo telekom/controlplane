@@ -21,3 +21,9 @@ type FileDownloader interface {
 	// The metadata map can contain content type (X-File-Content-Type) and checksum (X-File-Checksum) values
 	DownloadFile(ctx context.Context, fileId string) (io.Reader, map[string]string, error)
 }
+
+type FileDeleter interface {
+	// DeleteFile deletes a file with the given fileId
+	// The fileId should follow the convention <env>--<group>--<team>--<fileName>
+	DeleteFile(ctx context.Context, fileId string) error
+}

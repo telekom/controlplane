@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/file-manager/internal/api"
 )
 
@@ -19,6 +20,7 @@ import (
 type MockController struct {
 	UploadMock   func(ctx context.Context, fileId string, file io.Reader, metadata map[string]string) (string, error)
 	DownloadMock func(ctx context.Context, fileId string) (io.Reader, map[string]string, error)
+	DeleteMock   func(ctx context.Context, fileId string) error
 }
 
 func (m *MockController) UploadFile(ctx context.Context, fileId string, file io.Reader, metadata map[string]string) (string, error) {
@@ -27,6 +29,10 @@ func (m *MockController) UploadFile(ctx context.Context, fileId string, file io.
 
 func (m *MockController) DownloadFile(ctx context.Context, fileId string) (io.Reader, map[string]string, error) {
 	return m.DownloadMock(ctx, fileId)
+}
+
+func (m *MockController) DeleteFile(ctx context.Context, fileId string) error {
+	return m.DeleteMock(ctx, fileId)
 }
 
 func TestHandler_UploadFile(t *testing.T) {
