@@ -54,7 +54,7 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 			Eventf(identityProvider, "Warning", "IdentityProviderNotValid",
 				"IdentityProvider '%s' not valid", realm.Spec.IdentityProvider.String())
 		SetStatusWaiting(&realm.Status, realm)
-		return errors.Wrap(err, "❌ failed to validate IdentityProvider")
+		return errors.Wrap(err, "failed to validate IdentityProvider")
 	}
 
 	// Create a copy of the realmStatus so that we NEVER modify the original status
@@ -67,16 +67,16 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 
 	realmClient, err := keycloak.GetClientFor(*replacedRealmStatus)
 	if err != nil {
-		return errors.Wrap(err, "❌ failed to get keycloak client")
+		return errors.Wrap(err, "failed to get keycloak client")
 	}
 
 	err = realmClient.CreateOrUpdateRealm(ctx, realm)
 	if err != nil {
-		return errors.Wrap(err, "❌ failed to create or update realm")
+		return errors.Wrap(err, "failed to create or update realm")
 	}
 
 	SetStatusReady(&realmStatus, realm)
-	var message = fmt.Sprintf("✅ Realm %s is ready", realm.Name)
+	var message = fmt.Sprintf("Realm %s is ready", realm.Name)
 	logger.V(0).Info(message)
 	return nil
 }
