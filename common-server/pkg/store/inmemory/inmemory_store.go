@@ -149,6 +149,7 @@ func NewOrDie[T store.Object](ctx context.Context, storeOpts StoreOpts) store.Ob
 	store.db = newDbOrDie(storeOpts, store.log)
 
 	if storeOpts.Informer.DisableCache {
+		store.log.Info("disabling informer cache")
 		store.informer = informer.NewNoCache(ctx, store.gvr, storeOpts.Client, store)
 	} else {
 		store.informer = informer.New(ctx, store.gvr, storeOpts.Client, store)

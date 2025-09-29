@@ -7,6 +7,7 @@ package informer
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -24,16 +25,17 @@ import (
 // It will flush the events directly to the event handler.
 // This is useful for resources that are really large and would consume too much memory in a local cache.
 type NoCacheInformer struct {
-	ctx             context.Context
-	gvr             schema.GroupVersionResource
-	k8sClient       dynamic.Interface
-	eventHandler    EventHandler
-	log             logr.Logger
-	bufferSize      int64
-	queue           chan event
-	initDone        *atomic.Bool
-	resourceVersion string
-	workerCount     int
+	ctx                context.Context
+	gvr                schema.GroupVersionResource
+	k8sClient          dynamic.Interface
+	eventHandler       EventHandler
+	log                logr.Logger
+	bufferSize         int64
+	queue              chan event
+	initDone           *atomic.Bool
+	currentlyReloading *atomic.Bool
+	resourceVersion    string
+	workerCount        int
 
 	watcher       watch.Interface
 	watcherCancel context.CancelFunc
@@ -49,17 +51,18 @@ func NewNoCache(ctx context.Context, gvr schema.GroupVersionResource, k8sClient 
 	log := logr.FromContextOrDiscard(ctx)
 	lctx, cancel := context.WithCancel(ctx)
 	return &NoCacheInformer{
-		ctx:          lctx,
-		cancel:       cancel,
-		gvr:          gvr,
-		k8sClient:    k8sClient,
-		eventHandler: eventHandler,
-		log:          log.WithName(fmt.Sprintf("Informer:%s/%s", gvr.Group, gvr.Resource)),
-		bufferSize:   1000,
-		queue:        make(chan event, 200),
-		initDone:     &atomic.Bool{},
-		workerCount:  2,
-		resyncPeriod: time.Hour,
+		ctx:                lctx,
+		cancel:             cancel,
+		gvr:                gvr,
+		k8sClient:          k8sClient,
+		eventHandler:       eventHandler,
+		log:                log.WithName(fmt.Sprintf("Informer:%s/%s", gvr.Group, gvr.Resource)),
+		bufferSize:         1000,
+		queue:              make(chan event, 200),
+		initDone:           &atomic.Bool{},
+		currentlyReloading: &atomic.Bool{},
+		workerCount:        runtime.NumCPU(),
+		resyncPeriod:       time.Hour,
 	}
 }
 
@@ -97,7 +100,22 @@ func (i *NoCacheInformer) handlerLoop(ctx context.Context, inChan chan event) {
 
 func (i *NoCacheInformer) list(ctx context.Context, inChan chan event) error {
 	var continueToken string
+
+	if i.currentlyReloading.Swap(true) {
+		// another reload is already in progress
+		return nil
+	}
+	defer i.currentlyReloading.Store(false)
+
+	ctx, cancel := context.WithTimeout(ctx, i.resyncPeriod*9/10)
+	defer cancel()
+
+	i.log.Info("Listing resources")
 	for {
+		if ctx.Err() != nil {
+			return errors.Wrap(ctx.Err(), "context cancelled while listing resources")
+		}
+
 		list, err := i.k8sClient.Resource(i.gvr).List(ctx, metav1.ListOptions{
 			Limit:    i.bufferSize,
 			Continue: continueToken,
@@ -259,9 +277,7 @@ func (i *NoCacheInformer) Ready() bool {
 }
 
 func (i *NoCacheInformer) Reload() error {
-
 	i.stopWatcher()
-	i.initDone.Store(false)
 	go i.startWatcher()
 	return nil
 }
