@@ -44,6 +44,17 @@ The general download flow is as follows:
 4. The file manager will return the fileId, its content and metadata to the calling domain.
 5. The domain operators will then use this reference (fileId) and the metadata to access the original file's contents.
 
+### Deleting a file
+![about](docs/delete.drawio.svg)
+
+The general delete flow is as follows:
+1. Any domain can access the FM to delete a file, if configured to do so by calling the delete endpoint.
+2. In the request, the domain will send a reference **fileId**, which is a unique identifier for the file to be deleted.
+3. The file manager will validate the fileId format and convert it to the appropriate path format.
+4. The file manager will then delete the file from the configured backend.
+5. The file manager will return a success response (HTTP 204 No Content) to the calling domain.
+6. The file manager will return a not found response (HTTP 404 Not found) if the file does not exist. If applicable, the operation can still be treated as successful since the desired state (file not existing) is achieved.
+
 ## Architecture
 
 The following diagram provides a high-level overview of how the FM is integrated into the Controlplane.
@@ -97,8 +108,9 @@ backend:
 
 We have implemented a simple access control mechanism that allows you to define which services are allowed to access the FM at different levels.
 
-* `files_read`: Allows GET requests to the FM.
-* `files_write`: Allows PUT requests to the FM.
+* `files_read`: Allows GET requests to the FM (download operations).
+* `files_write`: Allows PUT requests to the FM (upload operations).
+* `files_delete`: Allows DELETE requests to the FM (delete operations).
 
 For more details on how to configure, see the [Server](#server) section.
 
