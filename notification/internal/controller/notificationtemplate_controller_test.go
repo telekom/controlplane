@@ -6,14 +6,16 @@ package controller
 
 import (
 	"context"
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 )
@@ -26,27 +28,36 @@ var _ = Describe("NotificationTemplate Controller", func() {
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
+			Namespace: "default",
 		}
-		notificationtemplate := &notificationv1.NotificationTemplate{}
+		notificationTemplate := &notificationv1.NotificationTemplate{}
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind NotificationTemplate")
-			err := k8sClient.Get(ctx, typeNamespacedName, notificationtemplate)
+			err := k8sClient.Get(ctx, typeNamespacedName, notificationTemplate)
 			if err != nil && errors.IsNotFound(err) {
 				resource := &notificationv1.NotificationTemplate{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
+						Labels: map[string]string{
+							config.EnvironmentLabelKey: testEnvironment,
+						},
 					},
-					// TODO(user): Specify other spec details if needed.
+
+					Spec: notificationv1.NotificationTemplateSpec{
+						Purpose:         "ApiSubscriptionApproved",
+						ChannelType:     "Email",
+						SubjectTemplate: "test-subjectTemplate",
+						Template:        "test-template",
+						Schema:          runtime.RawExtension{},
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
 			resource := &notificationv1.NotificationTemplate{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
@@ -54,19 +65,25 @@ var _ = Describe("NotificationTemplate Controller", func() {
 			By("Cleanup the specific resource instance NotificationTemplate")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
-		It("should successfully reconcile the resource", func() {
-			By("Reconciling the created resource")
-			controllerReconciler := &NotificationTemplateReconciler{
-				Client: k8sClient,
-				Scheme: k8sClient.Scheme(),
-			}
 
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: typeNamespacedName,
-			})
-			Expect(err).NotTo(HaveOccurred())
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
+		It("should successfully reconcile the resource", func() {
+			By("Checking if the Notification template is created and all conditions are set")
+
+			Eventually(func(g Gomega) {
+				template := &notificationv1.NotificationTemplate{}
+				err := k8sClient.Get(ctx, typeNamespacedName, template)
+				g.Expect(err).To(BeNil())
+
+				g.Expect(template.Spec.Purpose).To(Equal("ApiSubscriptionApproved"))
+				g.Expect(template.Spec.ChannelType).To(Equal("Email"))
+				g.Expect(template.Spec.SubjectTemplate).To(Equal("test-subjectTemplate"))
+				g.Expect(template.Spec.Template).To(Equal("test-template"))
+				g.Expect(template.Spec.Schema).To(Equal(runtime.RawExtension{}))
+
+				g.Expect(template.Status.Conditions).To(HaveLen(2))
+				g.Expect(meta.IsStatusConditionTrue(template.Status.Conditions, condition.ConditionTypeProcessing)).To(BeFalse())
+				g.Expect(meta.IsStatusConditionTrue(template.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+			}, timeout, interval).Should(Succeed())
 		})
 	})
 })

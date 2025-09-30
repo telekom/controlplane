@@ -98,7 +98,6 @@ spec:
                   type: string
                 maxItems: 100
                 type: array
-                uniqueItems: true
                 x-kubernetes-list-type: set
               msTeams:
                 description: MsTeams configuration, required if Type is MsTeams

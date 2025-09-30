@@ -44,17 +44,13 @@ type NotificationSpec struct {
 	Sender Sender `json:"sender"`
 
 	// Channels defines the channels to send the notification to.
-	// +kubebuilder:validation:UniqueItems=true
-	// +listType=set
 	Channels []types.ObjectRef `json:"channels,omitempty"`
 
 	// Properties contains the properties that are used to render the notification template
 	// +optional
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:Schemaless
-	// +kubebuilder:default={ }
-	// +kubebuilder:validation:XValidation:rule="!has(self) || (has(self) && self.size() <= 1024)",message="properties must not exceed 1024 bytes"
-	Properties runtime.RawExtension `json:"properties"`
+	Properties runtime.RawExtension `json:"properties,omitempty"`
 }
 
 // NotificationStatus defines the observed state of Notification.

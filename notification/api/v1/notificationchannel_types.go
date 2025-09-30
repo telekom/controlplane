@@ -55,7 +55,6 @@ type NotificationChannelSpec struct {
 	// A set of purposes this channel ignores
 	// +optional
 	// +kubebuilder:validation:MaxItems=100
-	// +kubebuilder:validation:UniqueItems=true
 	// +listType=set
 	Ignore []string `json:"ignore,omitempty"`
 }

@@ -65,16 +65,10 @@ spec:
                   - namespace
                   type: object
                 type: array
-                uniqueItems: true
-                x-kubernetes-list-type: set
               properties:
-                default: {}
                 description: Properties contains the properties that are used to render
                   the notification template
                 x-kubernetes-preserve-unknown-fields: true
-                x-kubernetes-validations:
-                - message: properties must not exceed 1024 bytes
-                  rule: '!has(self) || (has(self) && self.size() <= 1024)'
               purpose:
                 description: |-
                   Purpose defines the purpose of the notification.
