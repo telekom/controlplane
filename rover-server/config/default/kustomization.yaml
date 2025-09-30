@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Adds namespace to all resources.
-namespace: rover-system
+namespace: controlplane-system
 
 # Labels to add to all resources and selectors.
 labels:

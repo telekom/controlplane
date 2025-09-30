@@ -20,5 +20,5 @@ spec:
   - SERVICE_NAME.SERVICE_NAMESPACE.svc.cluster.local
   issuerRef:
     kind: Issuer
-    name: selfsigned-issuer
-  secretName: webhook-server-cert
+    name: controlplane-issuer
+  secretName: organization-webhook-server-cert # this secret will not be prefixed, since it's not managed by kustomize
