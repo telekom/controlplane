@@ -21,9 +21,6 @@ type controller struct {
 }
 
 func NewController(fd backend.FileDownloader, fu backend.FileUploader, del backend.FileDeleter) Controller {
-	if del == nil {
-		del = nil // use default deleter
-	}
 	return &controller{
 		UploadController:   NewUploadController(fu),
 		DownloadController: NewDownloadController(fd),

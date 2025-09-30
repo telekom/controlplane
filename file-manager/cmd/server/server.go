@@ -100,11 +100,9 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 		}
 		log.Info("Bucket configuration initialized successfully")
 
-		// Create file uploader and downloader with the shared config
+		// Create file uploader, downloader and deleter with the shared config
 		fileDownloader := buckets.NewBucketFileDownloader(bucketConfig)
 		fileUploader := buckets.NewBucketFileUploader(bucketConfig)
-
-		// Create file deleter and wire into controller
 		fileDeleter := buckets.NewBucketFileDeleter(bucketConfig)
 
 		c = controller.NewController(fileDownloader, fileUploader, fileDeleter)
