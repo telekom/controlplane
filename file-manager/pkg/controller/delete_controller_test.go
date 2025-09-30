@@ -93,6 +93,19 @@ var _ = Describe("DeleteController", func() {
 			Expect(err.Error()).To(ContainSubstring("backend error"))
 		})
 
+		It("Should return error when fileId has empty parts (conversion fails)", func() {
+			ctx := context.Background()
+			ctrl := controller.NewDeleteController(mockedBackend)
+
+			// FileId with empty parts - has correct number of separators but empty values
+			err := ctrl.DeleteFile(ctx, "poc----file.txt")
+
+			Expect(err).To(HaveOccurred())
+			By("returning an InvalidFileId error")
+			Expect(err.Error()).To(ContainSubstring("InvalidFileId"))
+			Expect(err.Error()).To(ContainSubstring("poc----file.txt"))
+		})
+
 	})
 
 })
