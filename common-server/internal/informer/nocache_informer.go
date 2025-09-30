@@ -24,7 +24,7 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
-// NoCacheInformer implements the Informer pattern without keeping a local cache.
+// [experimental] NoCacheInformer implements the Informer pattern without keeping a local cache.
 // It flushes events directly to the event handler, which is useful for resources
 // that are too large to store efficiently in memory.
 type NoCacheInformer struct {
@@ -73,6 +73,7 @@ func NewNoCache(ctx context.Context, gvr schema.GroupVersionResource, k8sClient 
 	return NewNoCacheWithOptions(ctx, gvr, k8sClient, eventHandler, DefaultNoCacheInformerOptions())
 }
 
+// [experimental] NewNoCacheWithOptions creates a new informer that does not use a local cache with custom options.
 func NewNoCacheWithOptions(ctx context.Context, gvr schema.GroupVersionResource, k8sClient dynamic.Interface, eventHandler EventHandler, options NoCacheInformerOptions) *NoCacheInformer {
 	log := logr.FromContextOrDiscard(ctx)
 	ctxWithCancel, cancel := context.WithCancel(ctx)
@@ -91,6 +92,7 @@ func NewNoCacheWithOptions(ctx context.Context, gvr schema.GroupVersionResource,
 		currentlyLoading: &atomic.Bool{},
 		workerCount:      options.WorkerCount,
 		resyncPeriod:     options.ResyncPeriod,
+		resourceVersion:  "0",
 	}
 }
 
@@ -180,7 +182,7 @@ func (i *NoCacheInformer) list(ctx context.Context, inChan chan event) error {
 			}
 		}
 
-		i.resourceVersion = list.GetResourceVersion()
+		i.setResourceVersion(list.GetResourceVersion())
 		continueToken = list.GetContinue()
 		if continueToken == "" {
 			break
@@ -195,8 +197,18 @@ func (i *NoCacheInformer) list(ctx context.Context, inChan chan event) error {
 func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface) {
 	for {
 		select {
-		case e := <-watcher.ResultChan():
+		case e, ok := <-watcher.ResultChan():
 			watchLoopIterations.WithLabelValues(i.name).Inc()
+			if !ok {
+				i.log.Info("Watcher channel closed, restarting watcher")
+				// Schedule reload in a separate goroutine to avoid blocking the watch loop
+				go func() {
+					if err := i.Reload(); err != nil {
+						i.log.Error(err, "Failed to reload after watcher channel closed")
+					}
+				}()
+				return
+			}
 			start := time.Now()
 
 			i.log.V(1).Info("Received event", "type", e.Type)
@@ -211,6 +223,8 @@ func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface
 				counter.WithLabelValues(i.name, "ERROR", strconv.Itoa(int(status.Code))).Inc()
 				if status.Code == int32(410) { // gone
 					i.log.Info("Resource version expired, restarting watcher", "resourceVersion", i.resourceVersion)
+					// Reset resource version to force a full relist
+					i.setResourceVersion("0")
 					// Schedule reload in a separate goroutine to avoid blocking the watch loop
 					go func() {
 						if err := i.Reload(); err != nil {
@@ -229,8 +243,8 @@ func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface
 					continue
 				}
 
-				i.resourceVersion = obj.GetResourceVersion()
-				i.log.V(1).Info("Received bookmark", "resourceVersion", i.resourceVersion)
+				i.setResourceVersion(obj.GetResourceVersion())
+				i.log.V(1).Info("Received bookmark", "resourceVersion", obj.GetResourceVersion())
 				counter.WithLabelValues(i.name, "BOOKMARK", "0").Inc()
 				continue
 
@@ -244,6 +258,8 @@ func (i *NoCacheInformer) watchLoop(ctx context.Context, watcher watch.Interface
 				i.log.Info("Failed to cast object", "type", fmt.Sprintf("%T", e.Object))
 				continue
 			}
+			i.setResourceVersion(obj.GetResourceVersion())
+
 			SanitizeObject(obj)
 
 			timeout := time.After(5 * time.Second)
@@ -279,7 +295,7 @@ func (i *NoCacheInformer) resyncLoop(ctx context.Context, period time.Duration) 
 		case <-ticker.C:
 			newJitteredPeriod := wait.Jitter(period, 0.2)
 			ticker.Reset(newJitteredPeriod)
-			i.log.Info("Resyncing informer", "period", newJitteredPeriod.String())
+			i.log.Info("Resyncing informer", "nextPeriod", newJitteredPeriod.String())
 
 			err := i.Reload()
 			if err != nil {
@@ -342,7 +358,9 @@ func (i *NoCacheInformer) startWatcher() (err error) {
 	}
 	defer i.currentlyLoading.Store(false)
 
-	if i.resourceVersion == "" {
+	// Perform an initial list if we don't have a valid resource version
+	// (i.e. at startup or after a forced reload)
+	if len(i.resourceVersion) < 2 {
 		err := i.list(i.ctx, i.queue)
 		if err != nil {
 			return errors.Wrap(err, "failed to start watcher")
@@ -362,7 +380,7 @@ func (i *NoCacheInformer) startWatcher() (err error) {
 	})
 
 	if err != nil {
-		i.resourceVersion = ""
+		i.setResourceVersion("0")
 		return errors.Wrap(err, "failed to start watcher")
 	}
 
@@ -396,4 +414,11 @@ func (i *NoCacheInformer) Reload() error {
 func (i *NoCacheInformer) Stop() {
 	i.stopWatcher()
 	i.cancel()
+}
+
+func (i *NoCacheInformer) setResourceVersion(rv string) {
+	if rv == "" {
+		return
+	}
+	i.resourceVersion = rv
 }

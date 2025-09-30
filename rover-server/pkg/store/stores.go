@@ -70,7 +70,11 @@ func NewOrDie[T store.Object](ctx context.Context, gvr schema.GroupVersionResour
 		GVK:          gvk,
 		AllowedSorts: []string{},
 		Database: inmemory.DatabaseOpts{
-			Filepath: viper.GetString("database.filepath"),
+			Filepath:     viper.GetString("database.filepath"),
+			ReduceMemory: viper.GetBool("database.reduceMemory"),
+		},
+		Informer: inmemory.InformerOpts{
+			DisableCache: viper.GetBool("informer.disableCache"),
 		},
 	}
 
