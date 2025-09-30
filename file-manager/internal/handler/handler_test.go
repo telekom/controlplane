@@ -137,3 +137,48 @@ func TestHandler_DownloadFile(t *testing.T) {
 		t.Error("Expected error from controller")
 	}
 }
+
+func TestHandler_DeleteFile(t *testing.T) {
+	// Create mock controller
+	mockCtrl := &MockController{
+		DeleteMock: func(ctx context.Context, fileId string) error {
+			if fileId == "success--test--case--file.txt" {
+				return nil
+			}
+			if fileId == "not--found--file.txt" {
+				return errors.New("FileNotFound: file not found")
+			}
+			return errors.New("mock error")
+		},
+	}
+
+	h := NewHandler(mockCtrl)
+
+	// Test case 1: Successful deletion
+	request := api.DeleteFileRequestObject{
+		FileId: "success--test--case--file.txt",
+	}
+
+	response, err := h.DeleteFile(context.Background(), request)
+	if err != nil {
+		t.Errorf("Expected success, got error: %v", err)
+	}
+
+	if _, ok := response.(api.DeleteFile204Response); !ok {
+		t.Error("Expected DeleteFile204Response")
+	}
+
+	// Test case 2: File not found
+	request.FileId = "not--found--file.txt"
+	_, err = h.DeleteFile(context.Background(), request)
+	if err == nil {
+		t.Error("Expected error for file not found")
+	}
+
+	// Test case 3: Delete error
+	request.FileId = "error--case"
+	_, err = h.DeleteFile(context.Background(), request)
+	if err == nil {
+		t.Error("Expected error from controller")
+	}
+}
