@@ -8,7 +8,6 @@ metadata:
   name: file-manager-trust-bundle
 spec:
   sources:
-  # This only works because `app.trust.namespace=file-manager-system`, see https://cert-manager.io/docs/trust/trust-manager/installation/#trust-namespace
   - secret:
       name: file-manager-cert
       key: ca.crt

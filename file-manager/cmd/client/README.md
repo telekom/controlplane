@@ -33,7 +33,7 @@ If the service is also secured using the k8s-authenticator, you will need to pro
 
 ```bash
 # First, create a proxy to the remote service
-kubectl -n file-manager-system port-forward svc/file-manager 8443:443
+kubectl -n controlplane-system port-forward svc/file-manager 8443:443
 
 # Then, get an access token for the relevant service account
 export NAMESPACE="rover-system"

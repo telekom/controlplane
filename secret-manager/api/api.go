@@ -17,7 +17,7 @@ import (
 const (
 	// Using port-forward to the secret manager API in the cluster
 	localhost = "https://localhost:9090/api"
-	inCluster = "https://secret-manager.secret-manager-system.svc.cluster.local/api"
+	inCluster = "https://secret-manager.controlplane-system.svc.cluster.local/api"
 	StartTag  = "$<"
 	EndTag    = ">"
 
