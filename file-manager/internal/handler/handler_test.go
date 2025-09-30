@@ -125,8 +125,8 @@ func TestHandler_DownloadFile(t *testing.T) {
 	}
 
 	downloadResponse := response.(api.DownloadFile200ApplicationoctetStreamResponse)
-	rawContent, err := io.ReadAll(downloadResponse.Body)
-	if "test content" != string(rawContent) {
+	rawContent, _ := io.ReadAll(downloadResponse.Body)
+	if string(rawContent) != "test content" {
 		t.Error("Expected response of download to have body \"test content\"")
 	}
 

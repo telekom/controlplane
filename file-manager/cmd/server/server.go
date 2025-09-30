@@ -90,7 +90,7 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 		}
 
 		// Create credentials
-		creds, err := buckets.NewCredentials(buckets.AutoDiscoverProvider(cfg.Backend), buckets.WithProperties(cfg.Backend))
+		creds, _ := buckets.NewCredentials(buckets.AutoDiscoverProvider(cfg.Backend), buckets.WithProperties(cfg.Backend))
 		options = append(options, buckets.WithCredentials(creds))
 
 		bucketConfig, err := buckets.NewBucketConfig(options...)
