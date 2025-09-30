@@ -9,49 +9,49 @@ namespace: controlplane-system
 resources:
   - namespace.yaml
   - certmanager
-  - https://github.com/telekom/controlplane//approval/config/default/?timeout=120&ref=v0.13.0
-  - https://github.com/telekom/controlplane//secret-manager/config/default/?timeout=120&ref=v0.13.0
-  - https://github.com/telekom/controlplane//rover/config/default/?timeout=120&ref=v0.13.0
-  - https://github.com/telekom/controlplane//identity/config/default/?timeout=120&ref=v0.13.0
-  - https://github.com/telekom/controlplane//gateway/config/default/?timeout=120&ref=v0.13.0
-  - https://github.com/telekom/controlplane//application/config/default/?timeout=120&ref=v0.13.0
-  - https://github.com/telekom/controlplane//organization/config/default/?timeout=120&ref=v0.13.0
-  - https://github.com/telekom/controlplane//api/config/default/?timeout=120&ref=v0.13.0
-  - https://github.com/telekom/controlplane//admin/config/default/?timeout=120&ref=v0.13.0
-  - https://github.com/telekom/controlplane//rover-server/config/default/?timeout=120&ref=v0.13.0
-  - https://github.com/telekom/controlplane//file-manager/config/default/?timeout=120&ref=v0.13.0
+  - https://github.com/telekom/controlplane//approval/config/default/?timeout=120&ref=feat/single-namespace
+  - https://github.com/telekom/controlplane//secret-manager/config/default/?timeout=120&ref=feat/single-namespace
+  - https://github.com/telekom/controlplane//rover/config/default/?timeout=120&ref=feat/single-namespace
+  - https://github.com/telekom/controlplane//identity/config/default/?timeout=120&ref=feat/single-namespace
+  - https://github.com/telekom/controlplane//gateway/config/default/?timeout=120&ref=feat/single-namespace
+  - https://github.com/telekom/controlplane//application/config/default/?timeout=120&ref=feat/single-namespace
+  - https://github.com/telekom/controlplane//organization/config/default/?timeout=120&ref=feat/single-namespace
+  - https://github.com/telekom/controlplane//api/config/default/?timeout=120&ref=feat/single-namespace
+  - https://github.com/telekom/controlplane//admin/config/default/?timeout=120&ref=feat/single-namespace
+  - https://github.com/telekom/controlplane//rover-server/config/default/?timeout=120&ref=feat/single-namespace
+  - https://github.com/telekom/controlplane//file-manager/config/default/?timeout=120&ref=feat/single-namespace
 
 images:
   - name: ghcr.io/telekom/controlplane/approval
     newName: ghcr.io/telekom/controlplane/approval
-    newTag: v0.13.0
+    newTag: feat-single-namespace
   - name: ghcr.io/telekom/controlplane/gateway
     newName: ghcr.io/telekom/controlplane/gateway
-    newTag: v0.13.0
+    newTag: feat-single-namespace
   - name: ghcr.io/telekom/controlplane/identity
     newName: ghcr.io/telekom/controlplane/identity
-    newTag: v0.13.0
+    newTag: feat-single-namespace
   - name: ghcr.io/telekom/controlplane/secret-manager
     newName: ghcr.io/telekom/controlplane/secret-manager
-    newTag: v0.13.0
+    newTag: feat-single-namespace
   - name: ghcr.io/telekom/controlplane/file-manager
     newName: ghcr.io/telekom/controlplane/file-manager
-    newTag: v0.13.0
+    newTag: feat-single-namespace
   - name: ghcr.io/telekom/controlplane/rover
     newName: ghcr.io/telekom/controlplane/rover
-    newTag: v0.13.0
+    newTag: feat-single-namespace
   - name: ghcr.io/telekom/controlplane/application
     newName: ghcr.io/telekom/controlplane/application
-    newTag: v0.13.0
+    newTag: feat-single-namespace
   - name: ghcr.io/telekom/controlplane/api
     newName: ghcr.io/telekom/controlplane/api
-    newTag: v0.13.0
+    newTag: feat-single-namespace
   - name: ghcr.io/telekom/controlplane/organization
     newName: ghcr.io/telekom/controlplane/organization
-    newTag: v0.13.0
+    newTag: feat-single-namespace
   - name: ghcr.io/telekom/controlplane/admin
     newName: ghcr.io/telekom/controlplane/admin
-    newTag: v0.13.0
+    newTag: feat-single-namespace
   - name: ghcr.io/telekom/controlplane/rover-server
     newName: ghcr.io/telekom/controlplane/rover-server
-    newTag: v0.13.0
+    newTag: feat-single-namespace
