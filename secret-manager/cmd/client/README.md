@@ -33,10 +33,10 @@ If the service is also secured using the k8s-authenticator, you will need to pro
 
 ```bash
 # First, create a proxy to the remote service
-kubectl -n secret-manager-system port-forward svc/secret-manager 8443:443
+kubectl -n controlplane-system port-forward svc/secret-manager 8443:443
 
 # Then, get an access token for the relevant service account
-export NAMESPACE="secret-manager-system"
+export NAMESPACE="controlplane-system"
 export SERVICE_ACCOUNT="secret-manager"
 export TOKEN=$(kubectl create token -n $NAMESPACE $SERVICE_ACCOUNT --duration 10m)
 

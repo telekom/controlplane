@@ -27,7 +27,7 @@ import (
 
 const (
 	localhost                = "http://localhost:8443/api"
-	inCluster                = "https://file-manager.file-manager-system.svc.cluster.local/api"
+	inCluster                = "https://file-manager.controlplane-system.svc.cluster.local/api"
 	TokenFilePath            = "/var/run/secrets/filemgr/token"
 	uploadRequestContentType = "application/octet-stream"
 )

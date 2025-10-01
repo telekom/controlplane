@@ -8,7 +8,6 @@ metadata:
   name: secret-manager-trust-bundle
 spec:
   sources:
-  # This only works because `app.trust.namespace=secret-manager-system`, see https://cert-manager.io/docs/trust/trust-manager/installation/#trust-namespace
   - secret:
       name: secret-manager-cert 
       key: ca.crt
