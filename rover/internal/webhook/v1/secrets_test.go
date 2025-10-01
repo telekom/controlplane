@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package webhook_test
+package v1_test
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/telekom/controlplane/common/pkg/config"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	"github.com/telekom/controlplane/rover/internal/webhook"
+	webhookv1 "github.com/telekom/controlplane/rover/internal/webhook/v1"
 	"github.com/telekom/controlplane/secret-manager/api"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -101,7 +101,7 @@ var _ = Describe("Secrets Handling", func() {
 				},
 			}
 
-			secrets := webhook.GetExternalSecrets(context.Background(), rover)
+			secrets := webhookv1.GetExternalSecrets(context.Background(), rover)
 			Expect(secrets).To(HaveLen(5))
 			Expect(secrets).To(Equal(map[string]string{
 				"externalSecrets/api1/clientSecret":             "topsecret",
@@ -120,7 +120,7 @@ var _ = Describe("Secrets Handling", func() {
 				},
 			}
 
-			secrets := webhook.GetExternalSecrets(context.Background(), rover)
+			secrets := webhookv1.GetExternalSecrets(context.Background(), rover)
 			Expect(secrets).To(BeEmpty())
 		})
 
@@ -146,7 +146,7 @@ var _ = Describe("Secrets Handling", func() {
 				},
 			}
 
-			secrets := webhook.GetExternalSecrets(context.Background(), rover)
+			secrets := webhookv1.GetExternalSecrets(context.Background(), rover)
 			Expect(secrets).To(BeEmpty())
 		})
 	})
@@ -180,7 +180,7 @@ var _ = Describe("Secrets Handling", func() {
 			}
 			fakeSecretManager.EXPECT().UpsertApplication(ctx, "test", "eni--hyperion", "test-rover", mock.Anything).RunAndReturn(runAndReturnApplication)
 
-			err := webhook.OnboardApplication(ctx, rover, fakeSecretManager)
+			err := webhookv1.OnboardApplication(ctx, rover, fakeSecretManager)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -240,7 +240,7 @@ var _ = Describe("Secrets Handling", func() {
 			onboardingOption := mock.AnythingOfType("api.OnboardingOption")
 			fakeSecretManager.EXPECT().UpsertApplication(ctx, "test", "eni--hyperion", "test-rover", onboardingOption, onboardingOption, onboardingOption).RunAndReturn(runAndReturnApplication)
 
-			err := webhook.OnboardApplication(ctx, rover, fakeSecretManager)
+			err := webhookv1.OnboardApplication(ctx, rover, fakeSecretManager)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(rover.Spec.ClientSecret).To(Equal("$<some:id:clientSecret:checksum>"))
@@ -260,7 +260,7 @@ var _ = Describe("Secrets Handling", func() {
 			}
 			fakeSecretManager.EXPECT().UpsertApplication(ctx, "test", "eni--hyperion", "test-rover").RunAndReturn(runAndReturnApplication)
 
-			err := webhook.OnboardApplication(ctx, rover, fakeSecretManager)
+			err := webhookv1.OnboardApplication(ctx, rover, fakeSecretManager)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(rover.Spec.ClientSecret).To(Equal("$<existing:clientSecret:checksum>"))
@@ -312,7 +312,7 @@ var _ = Describe("Secrets Handling", func() {
 			}
 			fakeSecretManager.EXPECT().UpsertApplication(ctx, "test", "eni--hyperion", "test-rover").RunAndReturn(runAndReturnApplication)
 
-			err := webhook.OnboardApplication(ctx, rover, fakeSecretManager)
+			err := webhookv1.OnboardApplication(ctx, rover, fakeSecretManager)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(rover.Spec.ClientSecret).To(Equal("$<existing:clientSecret:checksum>"))
