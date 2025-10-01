@@ -72,8 +72,7 @@ func main() {
 
 	go func() {
 		if err := server.Start(serverCfg.Address); err != nil {
-			log.Error(err, "Failed to start server")
-			return
+			panic(err)
 		}
 	}()
 
