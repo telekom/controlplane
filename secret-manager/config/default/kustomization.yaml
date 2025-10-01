@@ -13,6 +13,11 @@ labels:
       app.kubernetes.io/managed-by: kustomize
       app.kubernetes.io/name: secret-manager
       app.kubernetes.io/part-of: secret-management
+    fields:
+      - path: spec/selector/matchLabels
+        create: true
+        kind: ServiceMonitor
+        group: monitoring.coreos.com
 
 resources:
   - ../manager
