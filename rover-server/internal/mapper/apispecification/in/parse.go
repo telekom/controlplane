@@ -40,9 +40,9 @@ func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecifica
 
 	version := document.GetVersion()
 	if strings.HasPrefix(version, "2.") {
-		model, errs := document.BuildV2Model()
-		if errs != nil {
-			log.Info("failed to build v2 model", zap.Errors("errors", errs))
+		model, err := document.BuildV2Model()
+		if err != nil {
+			log.Info("failed to build v2 model", zap.Error(err))
 			return nil, problems.BadRequest("invalid format of OpenAPI v2 specification")
 		}
 
@@ -58,9 +58,9 @@ func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecifica
 	}
 
 	if strings.HasPrefix(version, "3.") {
-		model, errs := document.BuildV3Model()
-		if errs != nil {
-			log.Info("failed to build v3 model", zap.Errors("errors", errs))
+		model, err := document.BuildV3Model()
+		if err != nil {
+			log.Info("failed to build v3 model", zap.Error(err))
 			return nil, problems.BadRequest("invalid format of OpenAPI v3 specification")
 		}
 
