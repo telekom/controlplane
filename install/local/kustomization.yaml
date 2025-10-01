@@ -2,9 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+namespace: controlplane-system
+
 resources:
-  - ../../secret-manager/config/default
+  - namespace.yaml
+  - issuer.yaml
   - ../../file-manager/config/default
+  - ../../secret-manager/config/default
   - ../../identity/config/default
   - ../../gateway/config/default
   - ../../approval/config/default
@@ -17,7 +21,6 @@ resources:
 
 configMapGenerator:
   - name: secret-manager-config
-    namespace: secret-manager-system
     behavior: replace
     files:
       - config.yaml=secret-manager-config.yaml
@@ -30,7 +33,6 @@ configMapGenerator:
     literals: []
 
   - name: file-manager-config
-    namespace: file-manager-system
     behavior: replace
     files:
       - config.yaml=file-manager-config.yaml
@@ -51,6 +53,7 @@ configMapGenerator:
       - LOG_LEVEL=info
       - SECURITY_TRUSTEDISSUERS=""
       - SECURITY_LMS_BASEPATH=""
+
 patches:
   - target:
       kind: Deployment

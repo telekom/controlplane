@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-namespace: secret-manager-system
+namespace: controlplane-system
 
 # Labels to add to all resources and selectors.
 labels:

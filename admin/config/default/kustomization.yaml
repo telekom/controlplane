@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Adds namespace to all resources.
-namespace: admin-system
+namespace: controlplane-system
 
 # Value of this field is prepended to the
 # names of all resources, e.g. a deployment named

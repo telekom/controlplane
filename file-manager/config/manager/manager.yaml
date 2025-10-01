@@ -3,11 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: system
----
-apiVersion: v1
 kind: Service
 metadata:
   name: file-manager
@@ -90,7 +85,7 @@ spec:
             - name: file-manager-config
               mountPath: /etc/file-manager
               readOnly: true
-      serviceAccountName: default
+      serviceAccountName: file-manager
       terminationGracePeriodSeconds: 10
       volumes:
         - name: file-manager-config
