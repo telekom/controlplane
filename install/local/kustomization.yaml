@@ -6,7 +6,7 @@ namespace: controlplane-system
 
 resources:
   - namespace.yaml
-  - certmanager
+  - issuer.yaml
   - ../../file-manager/config/default
   - ../../secret-manager/config/default
   - ../../identity/config/default
