@@ -12,7 +12,6 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel"
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
 
@@ -53,12 +52,9 @@ func ParseApiSpecification(obj types.Object) error {
 }
 
 func GetNameFromOpenapiSpec(document libopenapi.Document) (string, error) {
-	model, errs := document.BuildV3Model()
-	if errs != nil {
-		for _, err := range errs {
-			log.L().Error(err, "failed to build OpenAPI v3 model")
-		}
-		return "", errors.New("failed to build OpenAPI v3 model")
+	model, err := document.BuildV3Model()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to build OpenAPI v3 model")
 	}
 	if len(model.Model.Servers) == 0 {
 		return "", errors.New("there are no servers in the spec")
@@ -71,12 +67,9 @@ func GetNameFromOpenapiSpec(document libopenapi.Document) (string, error) {
 }
 
 func GetNameFromSwaggerSpec(document libopenapi.Document) (string, error) {
-	model, errs := document.BuildV2Model()
-	if errs != nil {
-		for _, err := range errs {
-			log.L().Error(err, "failed to build Swagger v2 model")
-		}
-		return "", errors.New("failed to build Swagger v2 model")
+	model, err := document.BuildV2Model()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to build Swagger v2 model")
 	}
 	return SanitizeName(model.Model.BasePath), nil
 }
