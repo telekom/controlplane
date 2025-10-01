@@ -60,7 +60,7 @@ func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecifica
 	if strings.HasPrefix(version, "3.") {
 		model, err := document.BuildV3Model()
 		if err != nil {
-			log.Info("failed to build v3 model", zap.Errors("errors", []error{err}))
+			log.Info("failed to build v3 model", zap.Error(err))
 			return nil, problems.BadRequest("invalid format of OpenAPI v3 specification")
 		}
 
