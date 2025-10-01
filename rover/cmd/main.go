@@ -28,8 +28,6 @@ import (
 
 	"github.com/telekom/controlplane/rover/internal/controller"
 
-	internal_webhook "github.com/telekom/controlplane/rover/internal/webhook"
-
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
@@ -185,7 +183,7 @@ func main() {
 	}
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err = internal_webhook.SetupWebhookWithManager(mgr, secretsapi.API()); err != nil {
+		if err = webhookv1.SetupWebhookWithManager(mgr, secretsapi.API()); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Rover")
 			os.Exit(1)
 		}

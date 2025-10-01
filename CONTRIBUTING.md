@@ -9,6 +9,7 @@ SPDX-License-Identifier: CC0-1.0
 ## Table of contents
 
   - [Pre-commit Hooks](#pre-commit-hooks)
+  - [Kubebuilder](#kubebuilder)
 
 ## Pre-commit hooks
 
@@ -55,4 +56,29 @@ To run it for **all files at once**, use the following command:
 
 ```bash
 pre-commit run --all-files
+```
+
+## Kubebuilder
+
+We use Kubebuilder to scaffold and manage Kubernetes APIs/controllers. 
+For local development and code generation, we require a pinned version:
+
+- **Version**: 4.9.0
+- **Release notes**: https://github.com/kubernetes-sigs/kubebuilder/releases/tag/v4.9.0
+
+### Install Kubebuilder 4.9.0
+
+
+For detailed information, please take a look at [Kubebuilder's installation instructions](https://book.kubebuilder.io/quick-start#installation) to get the installation guide for your platform.
+For reference, to valid your Kubebuilder version, type the following command:
+
+```console
+kubebuilder version
+```
+
+The output should look like something like this:
+
+```
+❯  kubebuilder version
+Version: cmd.version{KubeBuilderVersion:"4.9.0", KubernetesVendor:"1.34.0", GitCommit:"5e331e74c7a25c8e8fc0d9d5c33c319b7268f395", BuildDate:"2025-09-22T10:53:21Z", GoOs:"linux", GoArch:"amd64"}
 ```
