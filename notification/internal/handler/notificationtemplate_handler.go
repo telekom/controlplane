@@ -18,6 +18,7 @@ type NotificationTemplateHandler struct {
 }
 
 func (n *NotificationTemplateHandler) CreateOrUpdate(ctx context.Context, template *notificationv1.NotificationTemplate) error {
+
 	template.SetCondition(condition.NewReadyCondition("Provisioned", "Notification template is provisioned"))
 	template.SetCondition(condition.NewDoneProcessingCondition("Notification template is done processing"))
 	return nil

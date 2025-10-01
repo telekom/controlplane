@@ -18,6 +18,17 @@ type NotificationHandler struct {
 }
 
 func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *notificationv1.Notification) error {
+
+	// get channels to get recipients
+
+	// get template for rendering
+
+	// check template / placeholders ?
+
+	// do the rendering -> service
+
+	// pass everything to the adapter thingy - notificationForwarder ?
+
 	notification.SetCondition(condition.NewReadyCondition("Provisioned", "Notification is provisioned"))
 	notification.SetCondition(condition.NewDoneProcessingCondition("Notification is done processing"))
 	return nil
