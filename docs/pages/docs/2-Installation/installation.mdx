@@ -119,7 +119,7 @@ kubectl config current-context
 # Output should be: kind-kind
 
 # Create the required namespace
-kubectl create namespace secret-manager-system
+kubectl create namespace controlplane-system
 
 # Set GitHub token to avoid rate limits
 export GITHUB_TOKEN=$(gh auth token)

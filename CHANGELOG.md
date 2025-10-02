@@ -1,3 +1,19 @@
+# [0.14.0](https://github.com/telekom/controlplane/compare/v0.13.0...v0.14.0) (2025-10-01)
+
+
+### Bug Fixes
+
+* changes from debs ([#187](https://github.com/telekom/controlplane/issues/187)) ([618bc6d](https://github.com/telekom/controlplane/commit/618bc6d76192347ff25882ffee0d64a1f40bb0ff))
+* **ci:** build image in PRs ([#179](https://github.com/telekom/controlplane/issues/179)) ([2491c0f](https://github.com/telekom/controlplane/commit/2491c0fa158b6f24e105bff46da876f0c082864c))
+* improve memory-usage for inmemory-store ([#180](https://github.com/telekom/controlplane/issues/180)) ([919c549](https://github.com/telekom/controlplane/commit/919c549aa8cb2657c062428959628ede3c6ec1be))
+* resolve reconciler loops in organization + identity ([#178](https://github.com/telekom/controlplane/issues/178)) ([0504b8e](https://github.com/telekom/controlplane/commit/0504b8e36cfde0b42fa71a07084e4b9bec1267a1))
+
+
+### Features
+
+* **circuit-breaker:** add the circuit breaker feature ([826bcaf](https://github.com/telekom/controlplane/commit/826bcafa040440fbcfc364d86958856d13e57d7f))
+* moved entire controlplane into single namespace ([#183](https://github.com/telekom/controlplane/issues/183)) ([d646615](https://github.com/telekom/controlplane/commit/d64661582163901640dc62871f2f6311fae21d3c))
+
 # [0.13.0](https://github.com/telekom/controlplane/compare/v0.12.1...v0.13.0) (2025-09-24)
 
 

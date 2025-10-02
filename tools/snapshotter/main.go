@@ -54,7 +54,7 @@ var (
 	waitGroup               sync.WaitGroup
 	kubeCfg                 *rest.Config
 	secretsApi              secrets.SecretsApi
-	serviceAccountNamespace = "secret-manager-system"
+	serviceAccountNamespace = "controlplane-system"
 	serviceAccountName      = "secret-manager"
 
 	obfuscationTargets = []state.ObfuscationTarget{
@@ -111,7 +111,7 @@ func setupSecretManager(ctx context.Context) error {
 	}
 
 	secretsApi = secrets.NewSecrets(
-		secrets.WithURL("https://localhost:8443/api"), // kubectl -n secret-manager-system port-forward svc/secret-manager 8443:443
+		secrets.WithURL("https://localhost:8443/api"), // kubectl -n controlplane-system port-forward svc/secret-manager 8443:443
 		secrets.WithAccessToken(accesstoken.NewStaticAccessToken(tokenRes.Status.Token)),
 		secrets.WithSkipTLSVerify(),
 	)

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Adds namespace to all resources.
-namespace: approval-system
+namespace: controlplane-system
 
 # Value of this field is prepended to the
 # names of all resources, e.g. a deployment named
@@ -17,6 +17,11 @@ labels:
 - includeSelectors: true
   pairs:
     domain: approval
+  fields:
+    - path: spec/selector/matchLabels
+      create: true
+      kind: ServiceMonitor
+      group: monitoring.coreos.com
 
 resources:
 - ../crd

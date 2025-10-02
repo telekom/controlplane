@@ -7,6 +7,7 @@ package store
 import (
 	"context"
 
+	"github.com/spf13/viper"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
@@ -64,10 +65,17 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 
 func NewOrDie[T store.Object](ctx context.Context, gvr schema.GroupVersionResource, gvk schema.GroupVersionKind) store.ObjectStore[T] {
 	storeOpts := inmemory.StoreOpts{
+		Client:       dynamicClient,
 		GVR:          gvr,
 		GVK:          gvk,
 		AllowedSorts: []string{},
-		Client:       dynamicClient,
+		Database: inmemory.DatabaseOpts{
+			Filepath:     viper.GetString("database.filepath"),
+			ReduceMemory: viper.GetBool("database.reduceMemory"),
+		},
+		Informer: inmemory.InformerOpts{
+			DisableCache: viper.GetBool("informer.disableCache"),
+		},
 	}
 
 	return inmemory.NewSortableOrDie[T](ctx, storeOpts)

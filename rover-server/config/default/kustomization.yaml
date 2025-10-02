@@ -3,13 +3,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Adds namespace to all resources.
-namespace: rover-system
+namespace: controlplane-system
 
 # Labels to add to all resources and selectors.
 labels:
-  - includeSelectors: true
-    pairs:
-      domain: rover
+- includeSelectors: true
+  pairs:
+    domain: rover
+  fields:
+    - path: spec/selector/matchLabels
+      create: true
+      kind: ServiceMonitor
+      group: monitoring.coreos.com
 
 resources:
   - ../rbac
@@ -29,6 +34,7 @@ configMapGenerator:
     literals:
       - SECURITY_TRUSTEDISSUERS=""
       - SECURITY_LMS_BASEPATH=""
+      - DATABASE_FILEPATH=""
 
 patches:
   # [SECRET_MANAGER] The following patch will add the secret manager to the deployment.

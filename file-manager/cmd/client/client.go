@@ -12,14 +12,15 @@ import (
 	"mime"
 	"net/http"
 	"os"
+	fp "path/filepath"
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
-	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
-	"github.com/telekom/controlplane/file-manager/api"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
-	fp "path/filepath"
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
+	"github.com/telekom/controlplane/file-manager/api"
 )
 
 var (
@@ -31,6 +32,7 @@ var (
 	filepath       string
 	outputFile     string
 	ignoreChecksum bool
+	deleteFile     bool
 
 	fileManager api.FileManager
 )
@@ -44,6 +46,7 @@ func init() {
 	flag.StringVar(&filepath, "file", "", "File Path")
 	flag.StringVar(&outputFile, "output", "", "Output File Path (for download)")
 	flag.BoolVar(&ignoreChecksum, "no-checksum", false, "Ignore checksum validation")
+	flag.BoolVar(&deleteFile, "delete", false, "Delete file")
 }
 
 func main() {
@@ -68,6 +71,23 @@ func main() {
 	}
 
 	fileManager = api.New(opts...)
+
+	if deleteFile && fileId != "" {
+		// delete file
+		err := fileManager.DeleteFile(ctx, fileId)
+		if err != nil {
+			// Handle 404 as success with a log message
+			if errors.Is(err, api.ErrNotFound) {
+				log.Info("File not found (already deleted or never existed), treating as success", "fileId", fileId)
+				fmt.Println("File not found (already deleted or never existed):", fileId)
+				return
+			}
+			// All other errors are actual errors
+			panic(err)
+		}
+		fmt.Println("File deleted successfully:", fileId)
+		return
+	}
 
 	if filepath != "" && fileId != "" {
 		// upload file
@@ -111,7 +131,7 @@ func main() {
 		return
 	}
 
-	fmt.Println("No file operation specified. Use --file to upload or --id to download.")
+	fmt.Println("No file operation specified. Use --file to upload, --id to download or --id and --delete to delete.")
 }
 
 func detectContentType(file *os.File) (string, error) {

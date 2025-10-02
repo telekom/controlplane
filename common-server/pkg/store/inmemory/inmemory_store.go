@@ -6,10 +6,14 @@ package inmemory
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/bytedance/sonic"
 	"github.com/dgraph-io/badger/v4"
+	"github.com/dgraph-io/badger/v4/options"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/internal/informer"
@@ -35,6 +39,19 @@ type StoreOpts struct {
 	GVR          schema.GroupVersionResource
 	GVK          schema.GroupVersionKind
 	AllowedSorts []string
+
+	Database DatabaseOpts
+	Informer InformerOpts
+}
+
+type InformerOpts struct {
+	DisableCache bool
+}
+
+type DatabaseOpts struct {
+	// Filepath will store the badger database on disk at the given filepath.
+	Filepath     string
+	ReduceMemory bool
 }
 
 type InmemoryObjectStore[T store.Object] struct {
@@ -43,15 +60,75 @@ type InmemoryObjectStore[T store.Object] struct {
 	gvr            schema.GroupVersionResource
 	gvk            schema.GroupVersionKind
 	k8sClient      dynamic.NamespaceableResourceInterface
-	informer       *informer.Informer
+	informer       informer.Informer
 	db             *badger.DB
 	allowedSorts   []string
 	sortValueCache sync.Map
 }
 
-func newDbOrDie(log logr.Logger) *badger.DB {
-	opts := badger.DefaultOptions("").WithInMemory(true)
-	opts.IndexCacheSize = 100 << 20
+func newBadgerOptsReduceMemoryUsage(filepath string) badger.Options {
+	opts := badger.
+		DefaultOptions(filepath).
+		WithInMemory(filepath == "").
+		WithMetricsEnabled(false).
+		WithIndexCacheSize(0).
+		WithNumMemtables(2).
+		WithMemTableSize(32 << 20).     // 32 MB
+		WithValueLogFileSize(64 << 20). // 64 MB
+		WithBlockCacheSize(32 << 20).   // 32 MB
+		WithBlockSize(4 << 10).         // 4 KB
+		WithValueThreshold(512 << 10).  // 512 KB
+		WithBloomFalsePositive(0.01).
+		WithCompression(options.Snappy)
+
+	return opts
+}
+
+func newBadgerOptsDefault(filepath string) badger.Options {
+	opts := badger.
+		DefaultOptions(filepath).
+		WithInMemory(filepath == "").
+		WithMetricsEnabled(false).
+		WithIndexCacheSize(0).
+		WithNumMemtables(5).
+		WithMemTableSize(64 << 20).      // 64 MB
+		WithValueLogFileSize(512 << 20). // 256 MB
+		WithBlockCacheSize(256 << 20).   // 256 MB
+		WithBlockSize(4 << 10).          // 4 KB
+		WithValueThreshold(1 << 20).     // 1 MB
+		WithBloomFalsePositive(0.01).
+		WithCompression(options.Snappy)
+
+	return opts
+}
+
+func newDbOrDie(storeOpts StoreOpts, log logr.Logger) *badger.DB {
+	useFilesystem := storeOpts.Database.Filepath != ""
+	path := ""
+	if useFilesystem {
+		dbName := fmt.Sprintf("db-%s-%s-%s",
+			strings.ToLower(storeOpts.GVR.Group),
+			strings.ToLower(storeOpts.GVR.Version),
+			strings.ToLower(storeOpts.GVR.Resource),
+		)
+		path = filepath.Join(storeOpts.Database.Filepath, dbName)
+	}
+
+	log.Info("initializing badger DB",
+		"inMemory", !useFilesystem,
+		"path", path,
+		"reduceMemory", storeOpts.Database.ReduceMemory,
+	)
+
+	var opts badger.Options
+	if storeOpts.Database.ReduceMemory {
+		log.V(2).Info("using badger options optimized for reduced memory usage")
+		opts = newBadgerOptsReduceMemoryUsage(path)
+	} else {
+		log.V(2).Info("using default badger options")
+		opts = newBadgerOptsDefault(path)
+	}
+
 	opts.Logger = NewLoggerShim(log)
 	db, err := badger.Open(opts)
 	if err != nil {
@@ -69,8 +146,14 @@ func NewOrDie[T store.Object](ctx context.Context, storeOpts StoreOpts) store.Ob
 		k8sClient: storeOpts.Client.Resource(storeOpts.GVR),
 	}
 	var err error
-	store.db = newDbOrDie(store.log)
-	store.informer = informer.New(ctx, store.gvr, storeOpts.Client, store)
+	store.db = newDbOrDie(storeOpts, store.log)
+
+	if storeOpts.Informer.DisableCache {
+		store.log.Info("disabling informer cache")
+		store.informer = informer.NewNoCache(ctx, store.gvr, storeOpts.Client, store)
+	} else {
+		store.informer = informer.New(ctx, store.gvr, storeOpts.Client, store)
+	}
 
 	if err = store.informer.Start(); err != nil {
 		panic(errors.Wrap(err, "failed to start informer"))
