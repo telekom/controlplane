@@ -90,7 +90,11 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 		}
 
 		// Create credentials
-		creds, _ := buckets.NewCredentials(buckets.AutoDiscoverProvider(cfg.Backend), buckets.WithProperties(cfg.Backend))
+		creds, err := buckets.NewCredentials(buckets.AutoDiscoverProvider(cfg.Backend), buckets.WithProperties(cfg.Backend))
+		if err != nil {
+			log.Error(err, "Failed to initialize credentials")
+			return nil, errors.Wrap(err, "failed to initialize credentials")
+		}
 		options = append(options, buckets.WithCredentials(creds))
 
 		bucketConfig, err := buckets.NewBucketConfig(options...)
