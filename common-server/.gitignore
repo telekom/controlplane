@@ -10,6 +10,8 @@
 *.dylib
 bin/*
 Dockerfile.cross
+data/*
+*.tmp.yaml
 
 # Test binary, built with `go test -c`
 *.test

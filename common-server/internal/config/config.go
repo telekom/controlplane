@@ -13,7 +13,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/telekom/controlplane/common-server/internal/crd"
+	"github.com/telekom/controlplane/common-server/internal/informer"
 	"github.com/telekom/controlplane/common-server/pkg/openapi"
 	"github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/config"
@@ -26,6 +28,9 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+
+	"net/http"
+	_ "net/http/pprof"
 )
 
 type OpenapiConfig struct {
@@ -64,7 +69,22 @@ type ServerConfig struct {
 	Openapi  OpenapiConfig  `json:"openapi"`
 	Security SecurityConfig `json:"security"`
 
-	Tree TreeConfig `json:"tree"`
+	Tree  TreeConfig  `json:"tree"`
+	Pprof PProfConfig `json:"pprof"`
+}
+
+type StoreOpts struct {
+	// DisableInformerCache if true, the informer will not use a local cache and will directly forward events to the event handler.
+	DisableInformerCache bool `json:"disableInformerCache" yaml:"disableInformerCache"`
+	// DatabaseFilepath is the filepath where the badger database will be stored. If empty, the database will be in-memory only.
+	DatabaseFilepath string `json:"databaseFilepath" yaml:"databaseFilepath"`
+	// OptimizeMemoryUsage if true, the database will be optimized for memory usage.
+	OptimizeMemoryUsage bool `json:"optimizeMemoryUsage" yaml:"optimizeMemoryUsage"`
+}
+
+type PProfConfig struct {
+	Enabled bool `json:"enabled"`
+	Port    int  `json:"port"`
 }
 
 type TreeConfig struct {
@@ -90,15 +110,16 @@ func (a Actions) GetAllowedList() []string {
 }
 
 type ResourceConfig struct {
-	Id           string   `json:"id"`
-	Group        string   `json:"group"`
-	Version      string   `json:"version"`
-	Resource     string   `json:"resource"`
-	AllowedSorts []string `yaml:"allowedSorts" json:"allowedSorts"`
-	Owns         []string `json:"owns"`
-	References   []string `json:"references"`
-	Secrets      []string `json:"secrets"`
-	Actions      Actions  `json:"actions"`
+	Id           string    `json:"id"`
+	Group        string    `json:"group"`
+	Version      string    `json:"version"`
+	Resource     string    `json:"resource"`
+	AllowedSorts []string  `yaml:"allowedSorts" json:"allowedSorts"`
+	Owns         []string  `json:"owns"`
+	References   []string  `json:"references"`
+	Secrets      []string  `json:"secrets"`
+	Actions      Actions   `json:"actions"`
+	Store        StoreOpts `json:"store"`
 }
 
 type PredefinedConfig struct {
@@ -166,6 +187,13 @@ func (c *ServerConfig) BuildServer(ctx context.Context, dynamicClient dynamic.In
 				GVR:          crd.GVR,
 				GVK:          crd.GVK,
 				AllowedSorts: resource.AllowedSorts,
+				Database: inmemory.DatabaseOpts{
+					Filepath:     resource.Store.DatabaseFilepath,
+					ReduceMemory: resource.Store.OptimizeMemoryUsage,
+				},
+				Informer: inmemory.InformerOpts{
+					DisableCache: resource.Store.DisableInformerCache,
+				},
 			}
 
 			resourceId := strings.ToLower(crd.GVR.Resource)
@@ -197,6 +225,8 @@ func (c *ServerConfig) BuildServer(ctx context.Context, dynamicClient dynamic.In
 			resurces[resourceId] = resource
 		}
 	}
+
+	informer.Register(prometheus.DefaultRegisterer)
 
 	for id, store := range stores {
 		gvr, _ := store.Info()
@@ -237,7 +267,17 @@ func (c *ServerConfig) BuildServer(ctx context.Context, dynamicClient dynamic.In
 			ctrlOpts := server.ControllerOpts{Prefix: c.BasePath + server.CalculatePrefix(gvr, c.AddGroupToPath), Security: securityOpts}
 			s.RegisterController(ctrl, ctrlOpts)
 		}
+	}
 
+	if c.Pprof.Enabled {
+		go func() {
+			addr := fmt.Sprintf(":%d", c.Pprof.Port)
+			log.Info("Starting pprof server", "address", addr)
+			err := http.ListenAndServe(addr, nil)
+			if err != nil {
+				log.Error(err, "pprof server failed", "address", addr)
+			}
+		}()
 	}
 
 	s.RegisterController(config.NewConfigController(log, storesToStoreInfos(stores)...), server.ControllerOpts{Prefix: c.BasePath})

@@ -26,7 +26,7 @@ func (h *HandlerIdentityProvider) CreateOrUpdate(ctx context.Context, idp *ident
 
 	var idpStatus = MapToIdpStatus(&idp.Spec)
 	SetStatusReady(&idpStatus, idp)
-	var message = fmt.Sprintf("✅ IdentityProvider %s is ready", idp.Name)
+	var message = fmt.Sprintf("IdentityProvider %s is ready", idp.Name)
 	logger.V(1).Info(message, "IdentityProviderStatus", idpStatus)
 
 	return nil

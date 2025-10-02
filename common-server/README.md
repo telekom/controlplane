@@ -18,7 +18,8 @@ SPDX-License-Identifier: Apache-2.0
   <a href="#about">About</a> •
   <a href="#standalone-server">Standalone Server</a> •
   <a href="#library">Library</a> •
-  <a href="#getting-started">Getting Started</a>
+  <a href="#getting-started">Getting Started</a> •
+  <a href="#known-issues">Known Issues</a> •
 </p>
 
 
@@ -227,3 +228,10 @@ listRes, err := inmemoryStore.List(ctx, store.ListOpts{
 ```
 
 The store can also be sorted, see [sortable](./pkg/store/inmemory/sorted_store.go) for more information.
+
+
+## Known Issues
+
+- The server duplicates all resource in memory. This can lead to high memory usage if there are many resources. 
+  (1) it uses a kubernetes informer to watch for changes in the resources and (2) it stores all resources in a badger database.
+  However, it is possible to store the badger database on disk, see [StoreOpts](./pkg/store/inmemory/inmemory_store.go#L47) for more information. In the future, this could be improved by using only the badger database and not the informer or replacing the badger-database with an external database.

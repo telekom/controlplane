@@ -10,9 +10,11 @@ ACTIVE_KUBE_CONTEXT=$(kubectl config current-context)
 REPO_NAME="telekom/controlplane"
 CONTROLPLANE_VERSION="latest"
 
-CERT_MANAGER_VERSION="v1.17.2"
-TRUST_MANAGER_VERSION="v0.17.1"
-PROM_OPERATOR_CRDS_VERSION="v20.0.0"
+CONTROLPLANE_NAMESPACE="controlplane-system"
+
+CERT_MANAGER_VERSION="v1.18.2"
+TRUST_MANAGER_VERSION="v0.19.0"
+PROM_OPERATOR_CRDS_VERSION="v23.0.0"
 
 WITH_CERT_MANAGER=false
 WITH_TRUST_MANAGER=false
@@ -122,7 +124,7 @@ function install_trust_manager() {
         --install \
         --namespace cert-manager \
         --version $version \
-        --set app.trust.namespace=secret-manager-system \
+        --set app.trust.namespace=$CONTROLPLANE_NAMESPACE \
         --wait
 }
 
@@ -173,6 +175,12 @@ function main() {
     ACTIVE_KUBE_CONTEXT=$(request_user_input "Install on which Kubernetes context?" "$ACTIVE_KUBE_CONTEXT")
 
     echo "ℹ️    Using Kubernetes context: $ACTIVE_KUBE_CONTEXT"
+
+    if [ "$WITH_NAMESPACE" = true ]; then
+        echo "Creating namespace $CONTROLPLANE_NAMESPACE..."
+        kubectl --context "$ACTIVE_KUBE_CONTEXT" create namespace "$CONTROLPLANE_NAMESPACE" || true
+    fi
+
 
     # Install Cert-Manager
     if [ "$WITH_CERT_MANAGER" = true ]; then

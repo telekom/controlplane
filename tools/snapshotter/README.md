@@ -37,7 +37,7 @@ go run main.go --from-env
 Or using the automatic setup via flags:
 ```bash
 # If the secret-manager is used, then you need to configure this port-forwarding:
-# kubectl -n secret-manager-system port-forward svc/secret-manager 8443:443
+# kubectl -n controlplane-system port-forward svc/secret-manager 8443:443
 
 go run main.go --env poc --zone dataplane1 --route poc--my-route-v1
 ```

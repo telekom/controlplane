@@ -32,32 +32,30 @@ var (
 	readyCondition          = condition.NewReadyCondition("Ready", "Client is ready")
 )
 
-func MapToClientStatus(realmStatus *identityv1.RealmStatus) identityv1.ClientStatus {
-	return identityv1.ClientStatus{
-		IssuerUrl: realmStatus.IssuerUrl,
+func MapToClientStatus(realmStatus *identityv1.RealmStatus, clientStatus *identityv1.ClientStatus) {
+	if clientStatus == nil {
+		clientStatus = &identityv1.ClientStatus{}
 	}
+
+	clientStatus.IssuerUrl = realmStatus.IssuerUrl
 }
 
-func SetStatusProcessing(currentStatus *identityv1.ClientStatus, client *identityv1.Client) {
-	client.Status = *currentStatus
+func SetStatusProcessing(client *identityv1.Client) {
 	client.SetCondition(processingCondition)
 	client.SetCondition(processingNotReadyCondition)
 }
 
-func SetStatusBlocked(currentStatus *identityv1.ClientStatus, client *identityv1.Client) {
-	client.Status = *currentStatus
+func SetStatusBlocked(client *identityv1.Client) {
 	client.SetCondition(blockedCondition)
 	client.SetCondition(blockedNotReadyCondition)
 }
 
-func SetStatusWaiting(currentStatus *identityv1.ClientStatus, client *identityv1.Client) {
-	client.Status = *currentStatus
+func SetStatusWaiting(client *identityv1.Client) {
 	client.SetCondition(waitingCondition)
 	client.SetCondition(waitingNotReadyCondition)
 }
 
-func SetStatusReady(currentStatus *identityv1.ClientStatus, client *identityv1.Client) {
-	client.Status = *currentStatus
+func SetStatusReady(client *identityv1.Client) {
 	client.SetCondition(doneProcessingCondition)
 	client.SetCondition(readyCondition)
 }
