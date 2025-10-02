@@ -17,6 +17,11 @@ labels:
 - includeSelectors: true
   pairs:
     domain: organization
+  fields:
+    - path: spec/selector/matchLabels
+      create: true
+      kind: ServiceMonitor
+      group: monitoring.coreos.com
 
 resources:
 - ../crd

@@ -13,10 +13,15 @@ namespace: controlplane-system
 namePrefix: gateway-
 
 # Labels to add to all resources and selectors.
-#labels:
-#- includeSelectors: true
-#  pairs:
-#    someName: someValue
+labels:
+- includeSelectors: true
+  pairs:
+    domain: gateway
+  fields:
+    - path: spec/selector/matchLabels
+      create: true
+      kind: ServiceMonitor
+      group: monitoring.coreos.com
 
 resources:
 - ../crd
