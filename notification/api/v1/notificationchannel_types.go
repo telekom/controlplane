@@ -145,3 +145,68 @@ const (
 	NotificationTypeChat     NotificationType = "chat"
 	NotificationTypeCallback NotificationType = "callback"
 )
+
+// EmailConfig defines configuration for Email channel
+type EmailConfig struct {
+
+	// Recipients of this email
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Format=email
+	Recipients []string `json:"recipients"`
+
+	// CC Recipients of this email
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Format=email
+	CCRecipients []string `json:"ccRecipients"`
+
+	// SMTP server host
+	// +kubebuilder:validation:Required
+	SMTPHost string `json:"smtpHost"`
+
+	// SMTP server port
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	SMTPPort int `json:"smtpPort"`
+
+	// From email address
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Format=email
+	From string `json:"from"`
+
+	// Authentication configuration
+	// +optional
+	Authentication *Authentication `json:"authentication,omitempty"`
+}
+
+// MsTeamsConfig defines configuration for Microsoft Teams channel
+type MsTeamsConfig struct {
+	// Webhook URL for the Microsoft Teams channel
+	// +kubebuilder:validation:Required
+	WebhookURL string `json:"webhookUrl"`
+
+	// Authentication configuration
+	// +optional
+	Authentication *Authentication `json:"authentication,omitempty"`
+}
+
+// WebhookConfig defines configuration for generic webhook channel
+type WebhookConfig struct {
+	// URL of the webhook endpoint
+	// +kubebuilder:validation:Required
+	URL string `json:"url"`
+
+	// HTTP method to use
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=POST;PUT
+	// +kubebuilder:default=POST
+	Method string `json:"method"`
+
+	// Headers to include in the request
+	// +optional
+	Headers map[string]string `json:"headers,omitempty"`
+
+	// Authentication configuration
+	// +optional
+	Authentication *Authentication `json:"authentication,omitempty"`
+}
