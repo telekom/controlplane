@@ -6,16 +6,18 @@ package adapter
 
 import (
 	"context"
+	"github.com/go-logr/logr"
 	v1 "github.com/telekom/controlplane/notification/api/v1"
 )
 
-var _ NotificationAdapter[v1.CallbackConfig] = &WebhookAdapter{}
+var _ NotificationAdapter[v1.WebhookConfig] = &WebhookAdapter{}
 
 type WebhookAdapter struct {
 }
 
-func (e WebhookAdapter) Send(ctx context.Context, config v1.CallbackConfig, title string, body string) error {
+func (e WebhookAdapter) Send(ctx context.Context, config *v1.WebhookConfig, title string, body string) error {
+	log := logr.FromContextOrDiscard(ctx)
+	log.Info("Sending via webhook ", title, " ", body)
 
-	//TODO implement me
-	panic("implement me")
+	return nil
 }

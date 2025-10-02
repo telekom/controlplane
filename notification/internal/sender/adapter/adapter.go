@@ -9,5 +9,5 @@ import (
 )
 
 type NotificationAdapter[C any] interface {
-	Send(ctx context.Context, config C, title string, body string) error
+	Send(ctx context.Context, config *C, title string, body string) error
 }

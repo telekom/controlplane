@@ -42,15 +42,15 @@ type Authentication struct {
 type NotificationChannelSpec struct {
 	// Mail configuration, required if Type is Mail
 	// +optional
-	Mail *MailConfig `json:"mail,omitempty"`
+	Email *EmailConfig `json:"email,omitempty"`
 
 	// Chat configuration, required if Type is Chat
 	// +optional
-	Chat *ChatConfig `json:"chat,omitempty"`
+	MsTeams *MsTeamsConfig `json:"msTeams,omitempty"`
 
 	// Callback configuration, required if Type is Callback
 	// +optional
-	Callback *CallbackConfig `json:"callback,omitempty"`
+	Webhook *WebhookConfig `json:"webhook,omitempty"`
 
 	// A set of purposes this channel ignores
 	// +optional
@@ -122,3 +122,26 @@ func (r *NotificationChannelList) GetItems() []types.Object {
 func init() {
 	SchemeBuilder.Register(&NotificationChannel{}, &NotificationChannelList{})
 }
+
+func (r *NotificationChannel) NotificationType() NotificationType {
+	if r.Spec.Email != nil {
+		return NotificationTypeMail
+	}
+	if r.Spec.MsTeams != nil {
+		return NotificationTypeChat
+	}
+	if r.Spec.Webhook != nil {
+		return NotificationTypeCallback
+	}
+
+	// default value - should never happen
+	return ""
+}
+
+type NotificationType string
+
+const (
+	NotificationTypeMail     NotificationType = "mail"
+	NotificationTypeChat     NotificationType = "chat"
+	NotificationTypeCallback NotificationType = "callback"
+)

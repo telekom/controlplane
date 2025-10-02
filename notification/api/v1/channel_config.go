@@ -4,22 +4,20 @@
 
 package v1
 
-// AuthenticationConfig general configuration for authentication
-type AuthenticationConfig interface {
-	GetAuthentication() *Authentication
-}
-
-// MailConfig General configuration of a mailing channel
-type MailConfig interface {
-	GetSMTPHost() string
-	GetSMTPPort() int
-	GetFrom() string
-	GetRecipients() []string
-	GetCCRecipients() []string
-	AuthenticationConfig
-}
-
-var _ MailConfig = &EmailConfig{}
+//// AuthenticationConfig general configuration for authentication
+//type AuthenticationConfig interface {
+//	GetAuthentication() *Authentication
+//}
+//
+//// MailConfig General configuration of a mailing channel
+//type MailConfig interface {
+//	GetSMTPHost() string
+//	GetSMTPPort() int
+//	GetFrom() string
+//	GetRecipients() []string
+//	GetCCRecipients() []string
+//	AuthenticationConfig
+//}
 
 // EmailConfig defines configuration for Email channel
 type EmailConfig struct {
@@ -30,7 +28,7 @@ type EmailConfig struct {
 	Recipients []string `json:"recipients"`
 
 	// CC Recipients of this email
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Format=email
 	CCRecipients []string `json:"ccRecipients"`
 
@@ -54,37 +52,37 @@ type EmailConfig struct {
 	Authentication *Authentication `json:"authentication,omitempty"`
 }
 
-func (ec *EmailConfig) GetSMTPHost() string {
-	return ec.SMTPHost
-}
+//func (ec *EmailConfig) GetSMTPHost() string {
+//	return ec.SMTPHost
+//}
+//
+//func (ec *EmailConfig) GetSMTPPort() int {
+//	return ec.SMTPPort
+//}
+//
+//func (ec *EmailConfig) GetFrom() string {
+//	return ec.From
+//}
+//
+//func (ec *EmailConfig) GetRecipients() []string {
+//	return ec.Recipients
+//}
+//
+//func (ec *EmailConfig) GetCCRecipients() []string {
+//	return ec.CCRecipients
+//}
+//
+//func (ec *EmailConfig) GetAuthentication() *Authentication {
+//	return ec.Authentication
+//}
 
-func (ec *EmailConfig) GetSMTPPort() int {
-	return ec.SMTPPort
-}
-
-func (ec *EmailConfig) GetFrom() string {
-	return ec.From
-}
-
-func (ec *EmailConfig) GetRecipients() []string {
-	return ec.Recipients
-}
-
-func (ec *EmailConfig) GetCCRecipients() []string {
-	return ec.CCRecipients
-}
-
-func (ec *EmailConfig) GetAuthentication() *Authentication {
-	return ec.Authentication
-}
-
-// ChatConfig general configuration for chat clients
-type ChatConfig interface {
-	GetWebhookURL() string
-	AuthenticationConfig
-}
-
-var _ ChatConfig = &MsTeamsConfig{}
+//// ChatConfig general configuration for chat clients
+//type ChatConfig interface {
+//	GetWebhookURL() string
+//	AuthenticationConfig
+//}
+//
+//var _ ChatConfig = &MsTeamsConfig{}
 
 // MsTeamsConfig defines configuration for Microsoft Teams channel
 type MsTeamsConfig struct {
@@ -97,23 +95,23 @@ type MsTeamsConfig struct {
 	Authentication *Authentication `json:"authentication,omitempty"`
 }
 
-func (msc *MsTeamsConfig) GetWebhookURL() string {
-	return msc.WebhookURL
-}
+//func (msc *MsTeamsConfig) GetWebhookURL() string {
+//	return msc.WebhookURL
+//}
+//
+//func (msc *MsTeamsConfig) GetAuthentication() *Authentication {
+//	return msc.Authentication
+//}
 
-func (msc *MsTeamsConfig) GetAuthentication() *Authentication {
-	return msc.Authentication
-}
-
-// CallbackConfig general config for custom callbacks - webhook etc
-type CallbackConfig interface {
-	GetURL() string
-	GetMethod() string
-	GetHeaders() map[string]string
-	AuthenticationConfig
-}
-
-var _ CallbackConfig = &WebhookConfig{}
+//// CallbackConfig general config for custom callbacks - webhook etc
+//type CallbackConfig interface {
+//	GetURL() string
+//	GetMethod() string
+//	GetHeaders() map[string]string
+//	AuthenticationConfig
+//}
+//
+//var _ CallbackConfig = &WebhookConfig{}
 
 // WebhookConfig defines configuration for generic webhook channel
 type WebhookConfig struct {
@@ -136,18 +134,18 @@ type WebhookConfig struct {
 	Authentication *Authentication `json:"authentication,omitempty"`
 }
 
-func (wc *WebhookConfig) GetURL() string {
-	return wc.URL
-}
-
-func (wc *WebhookConfig) GetMethod() string {
-	return wc.Method
-}
-
-func (wc *WebhookConfig) GetHeaders() map[string]string {
-	return wc.Headers
-}
-
-func (wc *WebhookConfig) GetAuthentication() *Authentication {
-	return wc.Authentication
-}
+//func (wc *WebhookConfig) GetURL() string {
+//	return wc.URL
+//}
+//
+//func (wc *WebhookConfig) GetMethod() string {
+//	return wc.Method
+//}
+//
+//func (wc *WebhookConfig) GetHeaders() map[string]string {
+//	return wc.Headers
+//}
+//
+//func (wc *WebhookConfig) GetAuthentication() *Authentication {
+//	return wc.Authentication
+//}

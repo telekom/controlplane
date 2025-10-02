@@ -44,7 +44,7 @@ spec:
             description: spec defines the desired state of NotificationChannel
             properties:
               email:
-                description: Email configuration, required if Type is Email
+                description: Mail configuration, required if Type is Mail
                 properties:
                   authentication:
                     description: Authentication configuration
@@ -75,10 +75,22 @@ spec:
                         - tokenUrl
                         type: object
                     type: object
+                  ccRecipients:
+                    description: CC Recipients of this email
+                    format: email
+                    items:
+                      type: string
+                    type: array
                   from:
                     description: From email address
                     format: email
                     type: string
+                  recipients:
+                    description: Recipients of this email
+                    format: email
+                    items:
+                      type: string
+                    type: array
                   smtpHost:
                     description: SMTP server host
                     type: string
@@ -89,6 +101,7 @@ spec:
                     type: integer
                 required:
                 - from
+                - recipients
                 - smtpHost
                 - smtpPort
                 type: object
@@ -100,7 +113,7 @@ spec:
                 type: array
                 x-kubernetes-list-type: set
               msTeams:
-                description: MsTeams configuration, required if Type is MsTeams
+                description: Chat configuration, required if Type is Chat
                 properties:
                   authentication:
                     description: Authentication configuration
@@ -138,7 +151,7 @@ spec:
                 - webhookUrl
                 type: object
               webhook:
-                description: Webhook configuration, required if Type is Webhook
+                description: Callback configuration, required if Type is Callback
                 properties:
                   authentication:
                     description: Authentication configuration

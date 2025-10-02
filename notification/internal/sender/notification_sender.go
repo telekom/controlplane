@@ -6,12 +6,13 @@ package sender
 
 import (
 	"context"
+	"github.com/pkg/errors"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter"
-	"github.com/telekom/controlplane/notification/internal/sender/data"
 )
 
 type NotificationSender interface {
-	ProcessNotification(ctx context.Context, data data.NotificationData) error
+	ProcessNotification(ctx context.Context, channel *notificationv1.NotificationChannel, subject string, body string) error
 }
 
 var _ NotificationSender = AdapterSender{}
@@ -19,45 +20,28 @@ var _ NotificationSender = AdapterSender{}
 type AdapterSender struct {
 }
 
-func (a AdapterSender) ProcessNotification(ctx context.Context, d data.NotificationData) error {
+func (a AdapterSender) ProcessNotification(ctx context.Context, channel *notificationv1.NotificationChannel, subject string, body string) error {
 
-	switch bla := d.NotificationType(); bla {
-	case data.NotificationTypeMail:
-		// safe to do
-		mnd := d.(data.MailNotificationData)
-
-		// TODO should come from registry
+	var err error
+	switch nType := channel.NotificationType(); nType {
+	case notificationv1.NotificationTypeMail:
 		emailAdapter := adapter.EmailAdapter{}
 
-		err := emailAdapter.Send(ctx, mnd.Config, mnd.NotificationDataBody.Title, mnd.NotificationDataBody.Body)
-		if err != nil {
-			return err
-		}
-	case data.NotificationTypeChat:
-		// safe to do
-		cnd := d.(data.ChatNotificationData)
-
-		// TODO should come from registry
+		err = emailAdapter.Send(ctx, channel.Spec.Email, subject, body)
+	case notificationv1.NotificationTypeChat:
 		chatAdapter := adapter.MsTeamsAdapter{}
 
-		err := chatAdapter.Send(ctx, cnd.Config, cnd.NotificationDataBody.Title, cnd.NotificationDataBody.Body)
-		if err != nil {
-			return err
-		}
+		err = chatAdapter.Send(ctx, channel.Spec.MsTeams, subject, body)
+	case notificationv1.NotificationTypeCallback:
+		webhookAdapter := adapter.WebhookAdapter{}
 
-	case data.NotificationTypeCallback:
-		// safe to do
-		cnd := d.(data.CallbackNotificationData)
-
-		// TODO should come from registry
-		callbackAdapter := adapter.WebhookAdapter{}
-
-		err := callbackAdapter.Send(ctx, cnd.Config, cnd.NotificationDataBody.Title, cnd.NotificationDataBody.Body)
-		if err != nil {
-			return err
-		}
+		err = webhookAdapter.Send(ctx, channel.Spec.Webhook, subject, body)
 	default:
-		panic("unknown notification type")
+		err = errors.New("unknown notification type")
+	}
+
+	if err != nil {
+		return err
 	}
 
 	return nil
