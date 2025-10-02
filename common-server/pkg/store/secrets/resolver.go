@@ -107,7 +107,7 @@ func (s *SecretManagerResolver) ReplaceAllFromBytes(ctx context.Context, b []byt
 			log.V(1).Info("Replacing secrets in array", "jsonPath", paths)
 			b, err = s.ReplaceAllFromBytes(ctx, b, paths)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to replace all from bytes for json path %s", jsonPath)
+				return nil, errors.Wrapf(err, "failed to replace all from bytes for json path %q", jsonPath)
 			}
 			continue
 		}
@@ -124,7 +124,7 @@ func (s *SecretManagerResolver) ReplaceAllFromBytes(ctx context.Context, b []byt
 		log.V(1).Info("Replacing secret", "jsonPath", jsonPath, "secretRef", secretRef)
 		secretValue, err := s.M.Get(ctx, secretRef)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get secret value")
+			return nil, errors.Wrapf(err, "failed to get secret value for reference %q", secretRef)
 		}
 
 		b, err = sjson.SetBytes(b, jsonPath, secretValue)

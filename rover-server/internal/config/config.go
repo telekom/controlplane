@@ -69,6 +69,13 @@ func setDefaults() {
 	// LMS
 	viper.SetDefault("security.lms.basePath", "")
 
-	//FileManager
+	// FileManager
 	viper.SetDefault("fileManager.skipTLS", true)
+
+	// Database
+	viper.SetDefault("database.filepath", "")        // empty string means in-memory only
+	viper.SetDefault("database.reduceMemory", false) // see common-server docs
+
+	// Informer
+	viper.SetDefault("informer.disableCache", true) // see common-server docs
 }
