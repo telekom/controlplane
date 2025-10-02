@@ -104,16 +104,6 @@ backend:
 
 ## Security
 
-### Access Rights
-
-We have implemented a simple access control mechanism that allows you to define which services are allowed to access the FM at different levels.
-
-* `files_read`: Allows GET requests to the FM (download operations).
-* `files_write`: Allows PUT requests to the FM (upload operations).
-* `files_delete`: Allows DELETE requests to the FM (delete operations).
-
-For more details on how to configure, see the [Server](#server) section.
-
 ### Network Policies
 
 Additionally, traffic towards the FM is further protected by [Kubernetes Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/),
