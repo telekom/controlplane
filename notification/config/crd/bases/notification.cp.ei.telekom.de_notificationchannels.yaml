@@ -68,6 +68,7 @@ spec:
                           tokenUrl:
                             description: TokenURL is the URL to obtain the OAuth2
                               token
+                            pattern: ^https?://[^\s/$.?#].[^\s]*$
                             type: string
                         required:
                         - clientId
@@ -139,6 +140,7 @@ spec:
                           tokenUrl:
                             description: TokenURL is the URL to obtain the OAuth2
                               token
+                            pattern: ^https?://[^\s/$.?#].[^\s]*$
                             type: string
                         required:
                         - clientId
@@ -148,6 +150,7 @@ spec:
                     type: object
                   webhookUrl:
                     description: Webhook URL for the Microsoft Teams channel
+                    pattern: ^https?://[^\s/$.?#].[^\s]*$
                     type: string
                 required:
                 - webhookUrl
@@ -177,6 +180,7 @@ spec:
                           tokenUrl:
                             description: TokenURL is the URL to obtain the OAuth2
                               token
+                            pattern: ^https?://[^\s/$.?#].[^\s]*$
                             type: string
                         required:
                         - clientId
@@ -197,6 +201,7 @@ spec:
                     type: string
                   url:
                     description: URL of the webhook endpoint
+                    pattern: ^https?://[^\s/$.?#].[^\s]*$
                     type: string
                 required:
                 - method

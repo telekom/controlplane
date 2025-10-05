@@ -14,13 +14,6 @@ var _ NotificationAdapter[MailConfiguration] = &EmailAdapter{}
 type EmailAdapter struct {
 }
 
-//func (e EmailAdapter) Send(ctx context.Context, config *v1.EmailConfig, title string, body string) error {
-//	log := logr.FromContextOrDiscard(ctx)
-//	log.Info("Sending via email ", title, " ", body)
-//
-//	return nil
-//}
-
 func (e EmailAdapter) Send(ctx context.Context, config MailConfiguration, title string, body string) error {
 	log := logr.FromContextOrDiscard(ctx)
 	log.Info("Sending via email ", title, " ", body)

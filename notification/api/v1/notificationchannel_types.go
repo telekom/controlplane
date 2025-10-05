@@ -16,6 +16,7 @@ type NoneAuth struct{}
 type Oauth2Auth struct {
 	// TokenURL is the URL to obtain the OAuth2 token
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^https?://[^\s/$.?#].[^\s]*$`
 	TokenURL string `json:"tokenUrl"`
 
 	// ClientID is the OAuth2 client ID
@@ -141,9 +142,9 @@ func (r *NotificationChannel) NotificationType() NotificationType {
 type NotificationType string
 
 const (
-	NotificationTypeMail     NotificationType = "mail"
-	NotificationTypeChat     NotificationType = "chat"
-	NotificationTypeCallback NotificationType = "callback"
+	NotificationTypeMail     NotificationType = "Mail"
+	NotificationTypeChat     NotificationType = "Chat"
+	NotificationTypeCallback NotificationType = "Callback"
 )
 
 // EmailString wraps a string and applies email validation
@@ -213,10 +214,14 @@ func (e *EmailConfig) GetFrom() string {
 	return e.From
 }
 
+// IsNotificationConfig - make sure the generic adapter will accept this config
+func (e *EmailConfig) IsNotificationConfig() {}
+
 // MsTeamsConfig defines configuration for Microsoft Teams channel
 type MsTeamsConfig struct {
 	// Webhook URL for the Microsoft Teams channel
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^https?://[^\s/$.?#].[^\s]*$`
 	WebhookURL string `json:"webhookUrl"`
 
 	// Authentication configuration
@@ -228,10 +233,14 @@ func (m *MsTeamsConfig) GetWebhookURL() string {
 	return m.WebhookURL
 }
 
+// IsNotificationConfig - make sure the generic adapter will accept this config
+func (m *MsTeamsConfig) IsNotificationConfig() {}
+
 // WebhookConfig defines configuration for generic webhook channel
 type WebhookConfig struct {
 	// URL of the webhook endpoint
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^https?://[^\s/$.?#].[^\s]*$`
 	URL string `json:"url"`
 
 	// HTTP method to use
@@ -260,3 +269,6 @@ func (w *WebhookConfig) GetMethod() string {
 func (w *WebhookConfig) GetHeaders() map[string]string {
 	return w.Headers
 }
+
+// IsNotificationConfig - make sure the generic adapter will accept this config
+func (w *WebhookConfig) IsNotificationConfig() {}

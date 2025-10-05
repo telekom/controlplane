@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"text/template"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,7 +26,7 @@ func renderMessage(tmplStr string, data runtime.RawExtension) (string, error) {
 	// Step 2: Parse the template string
 	tmpl, err := template.New("message").Parse(tmplStr)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse template: %w", err)
+		return "", errors.Wrapf(err, "failed to parse template")
 	}
 
 	// Step 3: Execute the template with the unmarshaled data

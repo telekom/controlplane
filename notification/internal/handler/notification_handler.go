@@ -7,7 +7,6 @@ package handler
 import (
 	"context"
 	"fmt"
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -130,21 +129,19 @@ func buildTemplateName(channel *notificationv1.NotificationChannel, purpose stri
 }
 
 func getChannelByRef(ctx context.Context, ref types.ObjectRef) (*notificationv1.NotificationChannel, error) {
-	log := logr.FromContextOrDiscard(ctx)
 	scopedClient := client.ClientFromContextOrDie(ctx)
 
 	channel := notificationv1.NotificationChannel{}
 	err := scopedClient.Get(ctx, ref.K8s(), &channel)
 	if err != nil {
-		log.Error(err, "Error getting channel", "ref", ref)
-		return nil, err
+		return nil, errors.Wrapf(err, "Error getting channel %q", ref)
 	}
 
-	if !meta.IsStatusConditionTrue(channel.GetConditions(), condition.ConditionTypeReady) {
-		return nil, errors.New(fmt.Sprintf("Channel %q found but its not ready", ref))
+	if err = condition.EnsureReady(&channel); err != nil {
+		return nil, errors.Wrapf(err, "Channel %q found but its not ready", ref)
 	}
-
 	return &channel, nil
+
 }
 
 func (n *NotificationHandler) Delete(ctx context.Context, notification *notificationv1.Notification) error {
