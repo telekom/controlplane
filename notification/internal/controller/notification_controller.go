@@ -6,6 +6,8 @@ package controller
 
 import (
 	"context"
+	"github.com/telekom/controlplane/notification/internal/sender"
+	"github.com/telekom/controlplane/notification/internal/sender/adapter"
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
@@ -39,7 +41,19 @@ func (r *NotificationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 // SetupWithManager sets up the controller with the Manager.
 func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("notification-controller")
-	r.Controller = cc.NewController(&handler.NotificationHandler{}, r.Client, r.Recorder)
+
+	// initialize the notification sender with all adapters so they can be reused
+	notificationSender := sender.AdapterSender{
+		MailAdapter:     &adapter.EmailAdapter{},
+		ChatAdapter:     &adapter.MsTeamsAdapter{},
+		CallbackAdapter: &adapter.WebhookAdapter{},
+	}
+
+	notificationHandler := &handler.NotificationHandler{
+		NotificationSender: notificationSender,
+	}
+
+	r.Controller = cc.NewController(notificationHandler, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&notificationv1.Notification{}).

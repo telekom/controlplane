@@ -21,11 +21,10 @@ import (
 var _ handler.Handler[*notificationv1.Notification] = &NotificationHandler{}
 
 type NotificationHandler struct {
+	NotificationSender sender.AdapterSender
 }
 
 func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *notificationv1.Notification) error {
-
-	notificationSender := sender.AdapterSender{}
 
 	// lets go channel by channel
 	for _, channelRef := range notification.Spec.Channels {
@@ -61,7 +60,7 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 		}
 
 		// better pass to sender service
-		err = notificationSender.ProcessNotification(ctx, channel, renderedSubject, renderedBody)
+		err = n.NotificationSender.ProcessNotification(ctx, channel, renderedSubject, renderedBody)
 		if err != nil {
 			addResultToStatus(notification, channelToMapKey(channel), false, err.Error())
 			continue

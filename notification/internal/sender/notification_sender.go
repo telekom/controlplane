@@ -18,6 +18,9 @@ type NotificationSender interface {
 var _ NotificationSender = AdapterSender{}
 
 type AdapterSender struct {
+	MailAdapter     adapter.NotificationAdapter[adapter.MailConfiguration]
+	ChatAdapter     adapter.NotificationAdapter[adapter.ChatConfiguration]
+	CallbackAdapter adapter.NotificationAdapter[adapter.CallbackConfiguration]
 }
 
 func (a AdapterSender) ProcessNotification(ctx context.Context, channel *notificationv1.NotificationChannel, subject string, body string) error {
@@ -25,17 +28,11 @@ func (a AdapterSender) ProcessNotification(ctx context.Context, channel *notific
 	var err error
 	switch nType := channel.NotificationType(); nType {
 	case notificationv1.NotificationTypeMail:
-		emailAdapter := adapter.EmailAdapter{}
-
-		err = emailAdapter.Send(ctx, channel.Spec.Email, subject, body)
+		err = a.MailAdapter.Send(ctx, channel.Spec.Email, subject, body)
 	case notificationv1.NotificationTypeChat:
-		chatAdapter := adapter.MsTeamsAdapter{}
-
-		err = chatAdapter.Send(ctx, channel.Spec.MsTeams, subject, body)
+		err = a.ChatAdapter.Send(ctx, channel.Spec.MsTeams, subject, body)
 	case notificationv1.NotificationTypeCallback:
-		webhookAdapter := adapter.WebhookAdapter{}
-
-		err = webhookAdapter.Send(ctx, channel.Spec.Webhook, subject, body)
+		err = a.CallbackAdapter.Send(ctx, channel.Spec.Webhook, subject, body)
 	default:
 		err = errors.New("unknown notification type")
 	}
