@@ -12,6 +12,8 @@ import (
 var _ NotificationAdapter[MailConfiguration] = &EmailAdapter{}
 
 type EmailAdapter struct {
+	SMTPHost string
+	SMTPPort int
 }
 
 func (e EmailAdapter) Send(ctx context.Context, config MailConfiguration, title string, body string) error {

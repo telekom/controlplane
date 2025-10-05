@@ -39,12 +39,15 @@ func (r *NotificationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager, emailConfig *EmailAdapterConfig) error {
 	r.Recorder = mgr.GetEventRecorderFor("notification-controller")
 
 	// initialize the notification sender with all adapters so they can be reused
 	notificationSender := sender.AdapterSender{
-		MailAdapter:     &adapter.EmailAdapter{},
+		MailAdapter: &adapter.EmailAdapter{
+			SMTPHost: emailConfig.SMTPHost,
+			SMTPPort: emailConfig.SMTPPort,
+		},
 		ChatAdapter:     &adapter.MsTeamsAdapter{},
 		CallbackAdapter: &adapter.WebhookAdapter{},
 	}
@@ -63,4 +66,10 @@ func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
+}
+
+// EmailAdapterConfig wrapper for the static config of the mail notification adapter
+type EmailAdapterConfig struct {
+	SMTPHost string
+	SMTPPort int
 }

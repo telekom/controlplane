@@ -163,11 +163,11 @@ type EmailConfig struct {
 	CCRecipients []EmailString `json:"ccRecipients"`
 
 	// SMTP server host
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	SMTPHost string `json:"smtpHost"`
 
 	// SMTP server port
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=65535
 	SMTPPort int `json:"smtpPort"`

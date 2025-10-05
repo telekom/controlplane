@@ -113,7 +113,10 @@ var _ = BeforeSuite(func() {
 	err = (&NotificationReconciler{
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
-	}).SetupWithManager(k8sManager)
+	}).SetupWithManager(k8sManager, &EmailAdapterConfig{
+		SMTPHost: "testSMTPHost",
+		SMTPPort: 1234,
+	})
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
