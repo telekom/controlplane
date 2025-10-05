@@ -146,18 +146,20 @@ const (
 	NotificationTypeCallback NotificationType = "callback"
 )
 
+// EmailString wraps a string and applies email validation
+// +kubebuilder:validation:Format=email
+type EmailString string
+
 // EmailConfig defines configuration for Email channel
 type EmailConfig struct {
 
 	// Recipients of this email
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Format=email
-	Recipients []string `json:"recipients"`
+	Recipients []EmailString `json:"recipients"`
 
 	// CC Recipients of this email
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Format=email
-	CCRecipients []string `json:"ccRecipients"`
+	CCRecipients []EmailString `json:"ccRecipients"`
 
 	// SMTP server host
 	// +kubebuilder:validation:Required
@@ -179,6 +181,38 @@ type EmailConfig struct {
 	Authentication *Authentication `json:"authentication,omitempty"`
 }
 
+// GetRecipients - func that returns the recipients for this email notification
+// The reason it is written like this is that a conversion between EmailString and string needs to be done here
+// The EmailString type is required to have correct validation (otherwise kubebuilder generates CRDs where the whole slice format is email
+// The return type is a slice of strings so there is no dependency between the model and the notification adapters
+func (e *EmailConfig) GetRecipients() []string {
+	result := make([]string, len(e.Recipients))
+	for i, r := range e.Recipients {
+		result[i] = string(r)
+	}
+	return result
+}
+
+func (e *EmailConfig) GetCCRecipients() []string {
+	result := make([]string, len(e.CCRecipients))
+	for i, r := range e.CCRecipients {
+		result[i] = string(r)
+	}
+	return result
+}
+
+func (e *EmailConfig) GetSMTPHost() string {
+	return e.SMTPHost
+}
+
+func (e *EmailConfig) GetSMTPPort() int {
+	return e.SMTPPort
+}
+
+func (e *EmailConfig) GetFrom() string {
+	return e.From
+}
+
 // MsTeamsConfig defines configuration for Microsoft Teams channel
 type MsTeamsConfig struct {
 	// Webhook URL for the Microsoft Teams channel
@@ -190,6 +224,10 @@ type MsTeamsConfig struct {
 	Authentication *Authentication `json:"authentication,omitempty"`
 }
 
+func (m *MsTeamsConfig) GetWebhookURL() string {
+	return m.WebhookURL
+}
+
 // WebhookConfig defines configuration for generic webhook channel
 type WebhookConfig struct {
 	// URL of the webhook endpoint
@@ -198,7 +236,7 @@ type WebhookConfig struct {
 
 	// HTTP method to use
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=POST;PUT
+	// +kubebuilder:validation:Enum=POST
 	// +kubebuilder:default=POST
 	Method string `json:"method"`
 
@@ -209,4 +247,16 @@ type WebhookConfig struct {
 	// Authentication configuration
 	// +optional
 	Authentication *Authentication `json:"authentication,omitempty"`
+}
+
+func (w *WebhookConfig) GetURL() string {
+	return w.URL
+}
+
+func (w *WebhookConfig) GetMethod() string {
+	return w.Method
+}
+
+func (w *WebhookConfig) GetHeaders() map[string]string {
+	return w.Headers
 }

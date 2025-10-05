@@ -46,7 +46,7 @@ var _ = Describe("NotificationChannel Controller", func() {
 					Spec: notificationv1.NotificationChannelSpec{
 
 						Email: &notificationv1.EmailConfig{
-							Recipients:     []string{"test@test.com"},
+							Recipients:     []notificationv1.EmailString{"test@test.com"},
 							CCRecipients:   nil,
 							SMTPHost:       "someSMTPHost",
 							SMTPPort:       1234,

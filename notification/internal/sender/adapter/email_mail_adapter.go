@@ -7,15 +7,21 @@ package adapter
 import (
 	"context"
 	"github.com/go-logr/logr"
-	v1 "github.com/telekom/controlplane/notification/api/v1"
 )
 
-var _ NotificationAdapter[v1.EmailConfig] = &EmailAdapter{}
+var _ NotificationAdapter[MailConfiguration] = &EmailAdapter{}
 
 type EmailAdapter struct {
 }
 
-func (e EmailAdapter) Send(ctx context.Context, config *v1.EmailConfig, title string, body string) error {
+//func (e EmailAdapter) Send(ctx context.Context, config *v1.EmailConfig, title string, body string) error {
+//	log := logr.FromContextOrDiscard(ctx)
+//	log.Info("Sending via email ", title, " ", body)
+//
+//	return nil
+//}
+
+func (e EmailAdapter) Send(ctx context.Context, config MailConfiguration, title string, body string) error {
 	log := logr.FromContextOrDiscard(ctx)
 	log.Info("Sending via email ", title, " ", body)
 

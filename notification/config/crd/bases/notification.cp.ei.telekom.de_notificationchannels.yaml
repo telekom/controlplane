@@ -77,8 +77,9 @@ spec:
                     type: object
                   ccRecipients:
                     description: CC Recipients of this email
-                    format: email
                     items:
+                      description: EmailString wraps a string and applies email validation
+                      format: email
                       type: string
                     type: array
                   from:
@@ -87,8 +88,9 @@ spec:
                     type: string
                   recipients:
                     description: Recipients of this email
-                    format: email
                     items:
+                      description: EmailString wraps a string and applies email validation
+                      format: email
                       type: string
                     type: array
                   smtpHost:
@@ -192,7 +194,6 @@ spec:
                     description: HTTP method to use
                     enum:
                     - POST
-                    - PUT
                     type: string
                   url:
                     description: URL of the webhook endpoint
