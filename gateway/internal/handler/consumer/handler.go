@@ -27,13 +27,17 @@ func (h *ConsumerHandler) CreateOrUpdate(ctx context.Context, consumer *gatewayv
 	if err != nil {
 		return errors.Wrap(err, "failed to create feature builder")
 	}
+	if builder == nil {
+		// Conditions are already set in NewFeatureBuilder
+		return nil
+	}
 
 	if err := builder.BuildForConsumer(ctx); err != nil {
 		return errors.Wrap(err, "failed to build route")
 	}
 
-	consumer.SetCondition(condition.NewDoneProcessingCondition("Consumer is ready"))
-	consumer.SetCondition(condition.NewReadyCondition("ConsumerReady", "Consumer is ready"))
+	consumer.SetCondition(condition.NewDoneProcessingCondition("Consumer is ready", consumer))
+	consumer.SetCondition(condition.NewReadyCondition("ConsumerReady", "Consumer is ready", consumer))
 
 	return nil
 }

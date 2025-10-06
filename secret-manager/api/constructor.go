@@ -45,9 +45,13 @@ func defaultOptions() *Options {
 			SkipTLSVerify: false,
 		}
 	} else {
+		tokenEnv := os.Getenv("SECRET_MANAGER_TOKEN")
+		if tokenEnv == "" {
+			log.Fatal("SECRET_MANAGER_TOKEN environment variable is not set")
+		}
 		return &Options{
 			URL:           localhost,
-			Token:         accesstoken.NewStaticAccessToken(os.Getenv("SECRET_MANAGER_TOKEN")),
+			Token:         accesstoken.NewStaticAccessToken(tokenEnv),
 			SkipTLSVerify: true,
 		}
 	}

@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 
+	"github.com/spf13/viper"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -45,10 +46,12 @@ func (r *ConsumerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 // SetupWithManager sets up the controller with the Manager.
 func (r *ConsumerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("consumer-controller")
-	r.Controller = cc.NewController(&consumer_handler.ConsumerHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&consumer_handler.ConsumerHandler{}, r.Client, r.Recorder,
+		cc.WithStartupWindow(viper.GetDuration("controller-startup-window"), true),
+	)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&gatewayv1.Consumer{}).
+		For(&gatewayv1.Consumer{}, builder.WithPredicates(cc.CustomPredicate{})).
 		Watches(&gatewayv1.Realm{},
 			handler.EnqueueRequestsFromMapFunc(r.mapRealmToConsumer),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).

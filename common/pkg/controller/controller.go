@@ -6,7 +6,9 @@ package controller
 
 import (
 	"context"
+	"time"
 
+	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/handler"
@@ -33,13 +35,19 @@ type Controller[T common_types.Object] interface {
 
 var _ Controller[common_types.Object] = &ControllerImpl[common_types.Object]{}
 
-func NewController[T common_types.Object](handler handler.Handler[T], client client.Client, recorder record.EventRecorder) Controller[T] {
+func NewController[T common_types.Object](handler handler.Handler[T], client client.Client, recorder record.EventRecorder, opts ...ControllerOption) Controller[T] {
+	options := ControllerOptions{}
+	for _, o := range opts {
+		o(&options)
+	}
 	return &ControllerImpl[T]{
 		Client: client,
 		Scheme: client.Scheme(),
 
 		Recorder: recorder,
 		Handler:  handler,
+
+		options: options,
 	}
 }
 
@@ -49,6 +57,8 @@ type ControllerImpl[T common_types.Object] struct {
 
 	Handler  handler.Handler[T]
 	Recorder record.EventRecorder
+
+	options ControllerOptions
 }
 
 func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request, object T) (reconcile.Result, error) {
@@ -109,6 +119,27 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 		return reconcile.Result{}, nil
 	}
 
+	if !c.options.startupDeadline.IsZero() {
+		if time.Now().Before(c.options.startupDeadline) {
+			if c.options.CheckConditions {
+				readyCondition := meta.FindStatusCondition(object.GetConditions(), condition.ConditionTypeReady)
+				if readyCondition != nil && readyCondition.Status == metav1.ConditionTrue {
+					if object.GetGeneration() == readyCondition.ObservedGeneration {
+						log.V(1).Info("Generation has not changed since last successful reconciliation, skipping")
+						return reconcile.Result{
+							RequeueAfter: config.RequeueWithJitter(),
+						}, nil
+					}
+				}
+				log.V(1).Info("Within startup window, but resource is not ready yet, continuing reconciliation")
+			} else {
+				requeueAfter := config.RequeueWithJitter()
+				log.V(1).Info("Within startup window, skipping reconciliation", "requeueAfter", requeueAfter)
+				return reconcile.Result{RequeueAfter: requeueAfter}, nil
+			}
+		}
+	}
+
 	c.Event(ctx, object, "Normal", "Processing", "Processing resource")
 
 	log.V(0).Info("Creating or updating")
@@ -118,7 +149,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 		}
 		return HandleError(ctx, err, object, c.Recorder)
 	}
-	log.V(1).Info("Created or updated", "resource", object)
+	log.V(2).Info("Created or updated", "resource", object)
 	// Enforce that atleast the processing condition is set in the handler. If not, log a warning.
 	if meta.IsStatusConditionPresentAndEqual(object.GetConditions(), condition.ConditionTypeProcessing, metav1.ConditionUnknown) {
 		c.Event(ctx, object, "Warning", "Processing", "Resource has an unknown processing status")
@@ -127,6 +158,11 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	if err = c.Client.Status().Update(ctx, object); err != nil {
 		return HandleError(ctx, err, object, c.Recorder)
 	}
+
+	log.V(1).Info("Reconciled",
+		"ready", meta.IsStatusConditionTrue(object.GetConditions(), condition.ConditionTypeReady),
+		"processing", meta.IsStatusConditionTrue(object.GetConditions(), condition.ConditionTypeProcessing),
+	)
 
 	return reconcile.Result{
 		RequeueAfter: config.RequeueWithJitter(),
@@ -140,11 +176,8 @@ func (c *ControllerImpl[T]) Event(ctx context.Context, object common_types.Objec
 }
 
 func Fetch(ctx context.Context, client client.Client, namespacedName types.NamespacedName, object client.Object) error {
-	log := log.FromContext(ctx)
-	log.V(1).Info("Fetching object")
-
 	if err := client.Get(ctx, namespacedName, object); err != nil {
-		return err
+		return errors.Wrap(err, "failed to fetch object")
 	}
 	return nil
 }

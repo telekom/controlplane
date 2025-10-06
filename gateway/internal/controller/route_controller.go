@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 
+	"github.com/spf13/viper"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -45,10 +46,12 @@ func (r *RouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 // SetupWithManager sets up the controller with the Manager.
 func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("route-controller")
-	r.Controller = cc.NewController(&routehandler.RouteHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&routehandler.RouteHandler{}, r.Client, r.Recorder,
+		cc.WithStartupWindow(viper.GetDuration("controller-startup-window"), true),
+	)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&gatewayv1.Route{}).
+		For(&gatewayv1.Route{}, builder.WithPredicates(cc.CustomPredicate{})).
 		Watches(&gatewayv1.Realm{},
 			handler.EnqueueRequestsFromMapFunc(r.mapRealmToRoute),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).

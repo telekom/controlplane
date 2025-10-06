@@ -34,6 +34,10 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 	if err != nil {
 		return errors.Wrap(err, "failed to create feature builder")
 	}
+	if builder == nil {
+		// Conditions are already set in NewFeatureBuilder
+		return nil
+	}
 
 	routeConsumers := &gatewayv1.ConsumeRouteList{}
 	if !route.Spec.PassThrough {
@@ -92,8 +96,8 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 		}
 	}
 
-	route.SetCondition(condition.NewReadyCondition("RouteProcessed", "Route processed successfully"))
-	route.SetCondition(condition.NewDoneProcessingCondition("Route processed successfully"))
+	route.SetCondition(condition.NewReadyCondition("RouteProcessed", "Route processed successfully", route))
+	route.SetCondition(condition.NewDoneProcessingCondition("Route processed successfully", route))
 
 	return nil
 }

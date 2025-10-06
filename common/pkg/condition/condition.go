@@ -40,18 +40,24 @@ func NewProcessingCondition(reason, message string) metav1.Condition {
 	return condition
 }
 
-func NewDoneProcessingCondition(message string) metav1.Condition {
+func NewDoneProcessingCondition(message string, obj ...metav1.Object) metav1.Condition {
 	condition := ProcessingCondition
 	condition.Status = metav1.ConditionFalse
 	condition.Message = message
 	condition.Reason = "Done"
+	if obj != nil {
+		condition.ObservedGeneration = obj[0].GetGeneration()
+	}
 	return condition
 }
 
-func NewReadyCondition(reason, message string) metav1.Condition {
+func NewReadyCondition(reason, message string, obj ...metav1.Object) metav1.Condition {
 	condition := ReadyCondition
 	condition.Message = message
 	condition.Reason = reason
+	if obj != nil {
+		condition.ObservedGeneration = obj[0].GetGeneration()
+	}
 	return condition
 }
 
