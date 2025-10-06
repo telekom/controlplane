@@ -7,9 +7,14 @@ namespace: controlplane-system
 
 # Labels to add to all resources and selectors.
 labels:
-  - includeSelectors: true
-    pairs:
-      domain: rover
+- includeSelectors: true
+  pairs:
+    domain: rover
+  fields:
+    - path: spec/selector/matchLabels
+      create: true
+      kind: ServiceMonitor
+      group: monitoring.coreos.com
 
 resources:
   - ../rbac
