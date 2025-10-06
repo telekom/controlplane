@@ -19,6 +19,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+
+	emailadapterconfig "github.com/telekom/controlplane/notification/internal/config"
 )
 
 // NotificationReconciler reconciles a Notification object
@@ -39,7 +41,7 @@ func (r *NotificationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager, emailConfig *EmailAdapterConfig) error {
+func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager, emailConfig *emailadapterconfig.EmailAdapterConfig) error {
 	r.Recorder = mgr.GetEventRecorderFor("notification-controller")
 
 	// initialize the notification sender with all adapters so they can be reused
@@ -66,10 +68,4 @@ func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager, emailConfig 
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
-}
-
-// EmailAdapterConfig wrapper for the static config of the mail notification adapter
-type EmailAdapterConfig struct {
-	SMTPHost string
-	SMTPPort int
 }

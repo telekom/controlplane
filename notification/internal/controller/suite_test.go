@@ -25,6 +25,8 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	emailadapterconfig "github.com/telekom/controlplane/notification/internal/config"
+
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	// +kubebuilder:scaffold:imports
 )
@@ -113,7 +115,7 @@ var _ = BeforeSuite(func() {
 	err = (&NotificationReconciler{
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
-	}).SetupWithManager(k8sManager, &EmailAdapterConfig{
+	}).SetupWithManager(k8sManager, &emailadapterconfig.EmailAdapterConfig{
 		SMTPHost: "testSMTPHost",
 		SMTPPort: 1234,
 	})
