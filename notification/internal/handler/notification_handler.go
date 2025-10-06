@@ -16,6 +16,7 @@ import (
 	"github.com/telekom/controlplane/notification/internal/sender"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
 )
 
 var _ handler.Handler[*notificationv1.Notification] = &NotificationHandler{}
@@ -69,13 +70,23 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 		addResultToStatus(notification, channelToMapKey(channel), true, "Successfully sent")
 	}
 
-	if notification.Status.States != nil || len(notification.Status.States) != 0 {
+	if hasFailedSendAttempt(notification.Status.States) {
 		return errors.New("Sending the notification to one or more channels have failed.")
 	}
 
 	notification.SetCondition(condition.NewReadyCondition("Provisioned", "Notification is provisioned"))
 	notification.SetCondition(condition.NewDoneProcessingCondition("Notification is done processing"))
+
 	return nil
+}
+
+func hasFailedSendAttempt(statesMap map[string]notificationv1.SendState) bool {
+	for _, state := range statesMap {
+		if !state.Sent {
+			return true
+		}
+	}
+	return false
 }
 
 func addResultToStatus(notification *notificationv1.Notification, channelId string, success bool, message string) {
@@ -84,7 +95,7 @@ func addResultToStatus(notification *notificationv1.Notification, channelId stri
 	}
 
 	notification.Status.States[channelId] = notificationv1.SendState{
-		Timestamp:    metav1.Time{},
+		Timestamp:    metav1.Now(),
 		Sent:         success,
 		ErrorMessage: message,
 	}
@@ -124,7 +135,7 @@ func channelToMapKey(channel *notificationv1.NotificationChannel) string {
 func buildTemplateName(channel *notificationv1.NotificationChannel, purpose string) string {
 	// channel name - channel--<teamname>--<type> - example: channel--eni--hyperion--mail
 	// template name - template--<purpose>--<type> - example: template--api-subscription-approved--chat
-	return fmt.Sprintf("template--%s--%s", purpose, string(channel.NotificationType()))
+	return fmt.Sprintf("template--%s--%s", purpose, strings.ToLower(string(channel.NotificationType())))
 }
 
 func getChannelByRef(ctx context.Context, ref types.ObjectRef) (*notificationv1.NotificationChannel, error) {
