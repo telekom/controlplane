@@ -42,7 +42,7 @@ var _ = Describe("Notification Controller", func() {
 
 		templateNamespacedName := types.NamespacedName{
 			Name:      templateName,
-			Namespace: "default",
+			Namespace: testEnvironment,
 		}
 		template := &notificationv1.NotificationTemplate{}
 
@@ -59,7 +59,7 @@ var _ = Describe("Notification Controller", func() {
 				resource := &notificationv1.NotificationTemplate{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      templateName,
-						Namespace: "default",
+						Namespace: testEnvironment,
 						Labels: map[string]string{
 							config.EnvironmentLabelKey: testEnvironment,
 						},

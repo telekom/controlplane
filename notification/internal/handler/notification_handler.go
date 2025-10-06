@@ -12,6 +12,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/internal/sender"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -106,12 +107,11 @@ func resolveTemplate(ctx context.Context, channel *notificationv1.NotificationCh
 	// channel name - channel--<teamname>--<type> - example: channel--eni--hyperion--mail
 	// template name - template--<purpose>--<type> - example: template--api-subscription-approved--chat
 
-	namespace := channel.Namespace
 	scopedClient := client.ClientFromContextOrDie(ctx)
 
 	templateRef := types.ObjectRef{
 		Name:      buildTemplateName(channel, purpose),
-		Namespace: namespace,
+		Namespace: contextutil.EnvFromContextOrDie(ctx),
 	}
 
 	template := &notificationv1.NotificationTemplate{}
