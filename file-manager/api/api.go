@@ -18,6 +18,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/common-server/pkg/client"
 	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 	"github.com/telekom/controlplane/common-server/pkg/util"
@@ -46,9 +47,14 @@ type UploadApi interface {
 	UploadFile(ctx context.Context, fileId string, fileContentType string, r io.Reader) (*FileUploadResponse, error)
 }
 
+type DeleteApi interface {
+	DeleteFile(ctx context.Context, fileId string) error
+}
+
 type FileManager interface {
 	UploadApi
 	DownloadApi
+	DeleteApi
 }
 
 var _ FileManager = (*FileManagerAPI)(nil)
@@ -239,5 +245,26 @@ func (f *FileManagerAPI) DownloadFile(ctx context.Context, fileId string, w io.W
 			return nil, errors.Wrap(err, "failed to decode error response")
 		}
 		return nil, errors.Errorf("error %s: %s", err.Type, err.Detail)
+	}
+}
+
+func (f *FileManagerAPI) DeleteFile(ctx context.Context, fileId string) error {
+	response, err := f.Client.DeleteFile(ctx, fileId)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close() //nolint:errcheck
+
+	switch response.StatusCode {
+	case http.StatusNoContent:
+		return nil
+	case http.StatusNotFound:
+		return ErrNotFound
+	default:
+		var errRes gen.ErrorResponse
+		if err := json.NewDecoder(response.Body).Decode(&errRes); err != nil {
+			return errors.Wrap(err, "failed to decode error response")
+		}
+		return errors.Errorf("error %s: %s", errRes.Type, errRes.Detail)
 	}
 }

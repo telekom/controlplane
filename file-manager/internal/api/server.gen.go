@@ -56,6 +56,9 @@ type UploadFileParams struct {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Delete a file
+	// (DELETE /v1/files/{fileId})
+	DeleteFile(c *fiber.Ctx, fileId string) error
 	// Download a file
 	// (GET /v1/files/{fileId})
 	DownloadFile(c *fiber.Ctx, fileId string) error
@@ -70,6 +73,24 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc fiber.Handler
+
+// DeleteFile operation middleware
+func (siw *ServerInterfaceWrapper) DeleteFile(c *fiber.Ctx) error {
+
+	var err error
+
+	// ------------- Path parameter "fileId" -------------
+	var fileId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "fileId", c.Params("fileId"), &fileId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("Invalid format for parameter fileId: %w", err).Error())
+	}
+
+	c.Context().SetUserValue(BearerAuthScopes, []string{})
+
+	return siw.Handler.DeleteFile(c, fileId)
+}
 
 // DownloadFile operation middleware
 func (siw *ServerInterfaceWrapper) DownloadFile(c *fiber.Ctx) error {
@@ -159,6 +180,8 @@ func RegisterHandlersWithOptions(router fiber.Router, si ServerInterface, option
 		router.Use(fiber.Handler(m))
 	}
 
+	router.Delete(options.BaseURL+"/v1/files/:fileId", wrapper.DeleteFile)
+
 	router.Get(options.BaseURL+"/v1/files/:fileId", wrapper.DownloadFile)
 
 	router.Put(options.BaseURL+"/v1/files/:fileId", wrapper.UploadFile)
@@ -188,6 +211,51 @@ type FileUploadResponseJSONResponse struct {
 	}
 
 	Headers FileUploadResponseResponseHeaders
+}
+
+type DeleteFileRequestObject struct {
+	FileId string `json:"fileId"`
+}
+
+type DeleteFileResponseObject interface {
+	VisitDeleteFileResponse(ctx *fiber.Ctx) error
+}
+
+type DeleteFile204Response struct {
+}
+
+func (response DeleteFile204Response) VisitDeleteFileResponse(ctx *fiber.Ctx) error {
+	ctx.Status(204)
+	return nil
+}
+
+type DeleteFile400ApplicationProblemPlusJSONResponse struct {
+	ErrorResponseApplicationProblemPlusJSONResponse
+}
+
+func (response DeleteFile400ApplicationProblemPlusJSONResponse) VisitDeleteFileResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/problem+json")
+	ctx.Status(400)
+
+	return ctx.JSON(&response)
+}
+
+type DeleteFile404ApplicationProblemPlusJSONResponse ApiProblem
+
+func (response DeleteFile404ApplicationProblemPlusJSONResponse) VisitDeleteFileResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/problem+json")
+	ctx.Status(404)
+
+	return ctx.JSON(&response)
+}
+
+type DeleteFile500ApplicationProblemPlusJSONResponse ApiProblem
+
+func (response DeleteFile500ApplicationProblemPlusJSONResponse) VisitDeleteFileResponse(ctx *fiber.Ctx) error {
+	ctx.Response().Header.Set("Content-Type", "application/problem+json")
+	ctx.Status(500)
+
+	return ctx.JSON(&response)
 }
 
 type DownloadFileRequestObject struct {
@@ -281,6 +349,9 @@ func (response UploadFile500ApplicationProblemPlusJSONResponse) VisitUploadFileR
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// Delete a file
+	// (DELETE /v1/files/{fileId})
+	DeleteFile(ctx context.Context, request DeleteFileRequestObject) (DeleteFileResponseObject, error)
 	// Download a file
 	// (GET /v1/files/{fileId})
 	DownloadFile(ctx context.Context, request DownloadFileRequestObject) (DownloadFileResponseObject, error)
@@ -300,6 +371,33 @@ func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareF
 type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
+}
+
+// DeleteFile operation middleware
+func (sh *strictHandler) DeleteFile(ctx *fiber.Ctx, fileId string) error {
+	var request DeleteFileRequestObject
+
+	request.FileId = fileId
+
+	handler := func(ctx *fiber.Ctx, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteFile(ctx.UserContext(), request.(DeleteFileRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteFile")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(DeleteFileResponseObject); ok {
+		if err := validResponse.VisitDeleteFileResponse(ctx); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
 }
 
 // DownloadFile operation middleware
@@ -362,26 +460,26 @@ func (sh *strictHandler) UploadFile(ctx *fiber.Ctx, fileId string, params Upload
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+RXX2/bNhD/KsRtDxsmS+4/rPPT3LUF3IehSDN0QOcHhjxJbCSSI092jEDffSAl2bKt",
-	"JlmDAQMaILDEI+9+9+fHO92CMLU1GjV5WNyCw78b9PTKSIVx4a2q8A9bGS4vOlFYFEYT6vjIra2U4KSM",
-	"zowgpJknh7wOMi9KrHl4yo2rOcECrpTmbgcJ0M4iLMCTU7qANvwl4NBbo31n+Y1zxl30K3dYtc5cVVj/",
-	"9NkbfWz1e4c5LOC77OBj1kl9trTqfXcQommJXjhlg0ZYwEozwT0ykzOudwwDlIRRqTwzV59REFOeOaTG",
-	"aZTQJjFMr81Wd4G6F/OjInUK9kMjBHqfNxWTPYQInOWqQrZVVDIqkXmLQuUKJVMyZR1I6Q/yuLvH61NI",
-	"oEQu0cVc/DkLDs5+K1Fc+yZCPsYwSILhvTLumSfjgkXNaiQuOXFIRt6e+pbsLXU4Zpdxw5m1TsrC8Uda",
-	"bPvkDTV+b+rOy8w6Y9FRTxglpx0LzFIOJSw+hT3rfWK7gronsY09TmvKQgy40j46z71Xhe5S++1krh3E",
-	"0dMRo8/MvuIeJTOalUTWL7Jsu92mLhczlIqMS40rMpeL8P/L8xc/pyXVFSQnmZVIXFUTUBJQ2hPXAieF",
-	"njg1fiRSmrBAF2SkqJo+RX387q6kKN2bGPQlA9aJKkvAo2icot2HELvOtSvkDt2yofLw9na4id59vITT",
-	"0nz38ZK9itsYmWvUjDdUoqaeJUPiguVO2+EiCynoql3p3AxM4yIyDesYYiDupPK/amNTwgqvTZ3K4Jfm",
-	"Uefl8uL16gMk0LiqVxmyKnGDVUjZ6FAGZ7xaMq9qW/WVV3PNC3QsN66nmdIF41rub9PwHrbGW7FSAvsb",
-	"ogeztFyUyJ6m81FG46Wy1718v4IENuh8h2CeztMnkMDNjFs1E5ywMG53cKxNwFjU3CpYwLN0nj4L1cip",
-	"jNnKNk+yiCe7DT8r2YbVAum88C+QnMIN+qEd5M7UXTtAt0E31R5WMmWXJTIlmS9NU0mWm6oy27hNGL0J",
-	"eTY6BCPEOiZ8JWEBQwMMrke8jtdI8SL6dApsJcf0T+60xP5q5vNnAvUmPuBs1i0UzjT2eImQ18crQf3v",
-	"vMZuFULVwSLG8lBOXRRhTC1yDd51+6xPppWn8/mXRo79vmxySmgTeP6Qw8fzUJvAi684NaJ/TMqY+J/W",
-	"wSvf1DWPtTgg7UsnMJgXIZcwIgas2wRsM1F6XUfdFx6Z/6rsOkPfQtElD26nP2BapAkjvKFsx+uqfwzD",
-	"y4+MSk5sq6qKXeHQdbkfd90It5siDoCnGvy/Qzs1ajwSzDDX3MvV4btm92XOjD59svPvnvZrGX8yWv5v",
-	"+d7hPGf7vinCun2IwsjwKfq9NY5VRvCK9Y26DvP1aRMPO0rjafFy/nIOQWMP5FTdmw26HZWhOzsswsCg",
-	"i1hBQ//mcXzed+9j6nk4L9ClZqilNSpQygxDt8btqYJDSO5Vsv8kwxvlaQLM+DJt1+0/AQAA//+Afiad",
-	"kg8AAA==",
+	"H4sIAAAAAAAC/+RYUW/bNhD+KwS3hw2TJbdNsc5Pc5cGcB+GIsnQAZkfGPEksaFIjjzZMQL/94GkJMu2",
+	"mmQJOgxIgCAySd19d/fd+WPuaK5roxUodHR2Ry383YDD95oLCAtnQsIfRmrGz+OWX8y1QlDhkRkjRc5Q",
+	"aJXpHAEnDi2w2u+5vIKa+adC25ohndFroZjd0ITixgCdUYdWqJJu/U9CLTijlYueP1ir7Xm7co9XY/W1",
+	"hPqnL06rfa/fWyjojH6X7WLM4q7L5kZ8ii/S4JqDy60w3iKd0YUiOXNAdEGY2hDwUBKClXBEX3+BHIlw",
+	"xAI2VgGn2ySk6VSvVUzUg5iflalDsBdNnoNzRSMJbyEE4KQQEshaYEWwAuIM5KIQwIngKYkgudvth9Mt",
+	"XpfShFbAONhQiz8nPsDJbxXkN64JkPcxdDvecW+MOeJQW+9RkRqQcYaMJoNoD2NLek8Rx+QyHDjyFneJ",
+	"f/2ZHrdt8TqOP1i6Y5oZqw1YbBtG8PHAfGcJC5zOrvyZZV/YSKgHCtuY/bKmxOeACeVC8Mw5UapY2pdT",
+	"uW23HSIddPSR2/fMASdakQrRuFmWrdfr1Bb5BLhAbVNty8wWuf/95eTtz2mFtaTJQWU5IBNyBEpChXLI",
+	"VA6jmw4ZNm6wJRRCCdbvoUA5/ha2+bufSWG3d9HZSzqsIyxLqIO8sQI3Fz53MbRrYBbsvMFq9+msm0Qf",
+	"P1/SQ2p+/HxJ3odjBPUNKMIarEBh2yVd4bznaG03yHwJItuFKnTXaSwPnQZ1SDFFZrlwvyptUgQJN7pO",
+	"uY9LsWDzcn5+urigCW2sbE36qnJYgfQlG7yU0aO+mhMnaiNb5tVMsRIsKbRt20yokjDF+2nqP/ujYSpK",
+	"kUM7IVowc8PyCsjrdDqoaBgqve35pwVN6Aqsiwim6TR9RRN6O2FGTHKGUGq72QW2Tag2oJgRdEbfpNP0",
+	"jWcjwypUK1u9ygKe7M7/WfBtpKcEHGm507Duuu+Dwuo6fh+AXYEd+35Y8JRcVkAEJ67SjeSk0FLqdTiW",
+	"a7XyhdbKZ8MnO1R8wXtXPvIA17IaMMyhq0NQCz7s/uReP+SvZjp9k4NahQeYTOJCaXVj9pcQWL2/4s3/",
+	"zmqIq9STjs5CKndsikmkw85C28B9w2d5IFZeT0+OMx8oEMsSRMLJdPo1WdIby/ZlT3jr5AlvvX2Cr8Fs",
+	"CCUbToWrpY/ZNXXNAlFjqVtS+eZmpa9zZKHP0XKb0BLwOCvngFbA6j9iZNvCL5OTj6DAqHB9Mle/Oes6",
+	"fXvMu92sDtQzzQj1osjriYf6W9EuOnoJpEserfB+gLRME4Jwi9mG1bJ99Hr6R4IVQ7IWUpJr6IQgc0Mh",
+	"GOBGYbsDPKY5/x3aMfX7TDCd1H6wV7ur9ubrPTO4jWfHV/HtUzv+4Lbzv+33iPO423udRpfbxxgMHT7W",
+	"fmfaEqlzJkmrHWt/5TvUlf5EpR3O3k3fTam32AI5NPdhBXaDlReMFkqvYVUZGNRJShZudL2g3G89R48J",
+	"OlcEFDda+JbS3T1QwfrQwC4lDxrp/0sAt8LhCJjhMN0ut/8EAAD//wI2Ad8lEgAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

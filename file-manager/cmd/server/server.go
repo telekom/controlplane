@@ -13,6 +13,10 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	ctrlr "sigs.k8s.io/controller-runtime"
+
 	cs "github.com/telekom/controlplane/common-server/pkg/server"
 	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
 	"github.com/telekom/controlplane/common-server/pkg/server/serve"
@@ -22,9 +26,6 @@ import (
 	"github.com/telekom/controlplane/file-manager/internal/handler"
 	"github.com/telekom/controlplane/file-manager/pkg/backend/buckets"
 	"github.com/telekom/controlplane/file-manager/pkg/controller"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	ctrlr "sigs.k8s.io/controller-runtime"
 )
 
 var (
@@ -90,6 +91,10 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 
 		// Create credentials
 		creds, err := buckets.NewCredentials(buckets.AutoDiscoverProvider(cfg.Backend), buckets.WithProperties(cfg.Backend))
+		if err != nil {
+			log.Error(err, "Failed to initialize credentials")
+			return nil, errors.Wrap(err, "failed to initialize credentials")
+		}
 		options = append(options, buckets.WithCredentials(creds))
 
 		bucketConfig, err := buckets.NewBucketConfig(options...)
@@ -99,11 +104,12 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 		}
 		log.Info("Bucket configuration initialized successfully")
 
-		// Create file uploader and downloader with the shared config
+		// Create file uploader, downloader and deleter with the shared config
 		fileDownloader := buckets.NewBucketFileDownloader(bucketConfig)
 		fileUploader := buckets.NewBucketFileUploader(bucketConfig)
+		fileDeleter := buckets.NewBucketFileDeleter(bucketConfig)
 
-		c = controller.NewController(fileDownloader, fileUploader)
+		c = controller.NewController(fileDownloader, fileUploader, fileDeleter)
 
 	default:
 		return nil, errors.Errorf("unknown backend type: %s", cfg.Backend.Type)
