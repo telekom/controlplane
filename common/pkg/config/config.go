@@ -21,6 +21,7 @@ const (
 	configKeyJitterFactor        = "jitter-factor"
 	configKeyMaxBackoff          = "max-backoff"
 	configKeyMaxConcurrentRec    = "max-concurrent-reconciles"
+	configKeyCtrlStartupWindow   = "controller-startup-window"
 )
 
 const (
@@ -62,6 +63,7 @@ func registerDefaults() {
 	viper.SetDefault(configKeyJitterFactor, JitterFactor)
 	viper.SetDefault(configKeyMaxBackoff, MaxBackoff)
 	viper.SetDefault(configKeyMaxConcurrentRec, MaxConcurrentReconciles)
+	viper.SetDefault(configKeyCtrlStartupWindow, 0)
 }
 
 func registerEnvs() {
