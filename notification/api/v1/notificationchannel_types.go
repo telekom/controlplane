@@ -168,8 +168,6 @@ type EmailConfig struct {
 
 	// SMTP server port
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=65535
 	SMTPPort int `json:"smtpPort"`
 
 	// From email address

@@ -99,8 +99,6 @@ spec:
                     type: string
                   smtpPort:
                     description: SMTP server port
-                    maximum: 65535
-                    minimum: 1
                     type: integer
                 required:
                 - from

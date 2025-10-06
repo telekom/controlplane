@@ -88,10 +88,10 @@ var _ = Describe("Notification Controller", func() {
 					},
 					Spec: notificationv1.NotificationChannelSpec{
 						Email: &notificationv1.EmailConfig{
-							Recipients:     []notificationv1.EmailString{"john.doe@example.com"},
-							CCRecipients:   nil,
-							SMTPHost:       "testSMTPHost",
-							SMTPPort:       1234,
+							Recipients:   []notificationv1.EmailString{"john.doe@example.com"},
+							CCRecipients: nil,
+							//	SMTPHost:       "testSMTPHost",
+							//	SMTPPort:       1234,
 							From:           "test.from@somewhere.test",
 							Authentication: nil,
 						},
