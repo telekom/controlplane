@@ -59,9 +59,16 @@ func (a *ApiSpecificationController) Delete(ctx context.Context, resourceId stri
 		return err
 	}
 
-	ns := id.Environment + "--" + id.Namespace
+	fileId := id.Environment + "--" + id.ResourceId //<env>--<group>--<team>--<apiSpecName>
+	err = file.GetFileManager().DeleteFile(ctx, fileId)
+	if err != nil {
+		if problems.IsNotFound(err) {
+			return problems.NotFound(resourceId)
+		}
+		return err
+	}
 
-	//todo: filesapi does not support delete at the moment
+	ns := id.Environment + "--" + id.Namespace
 	err = a.Store.Delete(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
