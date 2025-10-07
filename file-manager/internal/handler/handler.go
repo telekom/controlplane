@@ -10,6 +10,7 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/file-manager/api/constants"
 	"github.com/telekom/controlplane/file-manager/internal/api"
 	"github.com/telekom/controlplane/file-manager/pkg/controller"
@@ -67,6 +68,16 @@ func (h *Handler) UploadFile(ctx context.Context, request api.UploadFileRequestO
 	}
 
 	return response, nil
+}
+
+func (h *Handler) DeleteFile(ctx context.Context, request api.DeleteFileRequestObject) (res api.DeleteFileResponseObject, err error) {
+	fileId := request.FileId
+
+	if err := h.ctrl.DeleteFile(ctx, fileId); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("failed to delete file with ID %s", fileId))
+	}
+
+	return api.DeleteFile204Response{}, nil
 }
 
 func (h *Handler) DownloadFile(ctx context.Context, request api.DownloadFileRequestObject) (res api.DownloadFileResponseObject, err error) {

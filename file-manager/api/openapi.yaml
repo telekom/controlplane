@@ -88,6 +88,31 @@ paths:
           $ref: '#/components/responses/ErrorResponse'
         '500':
           $ref: '#/components/responses/ErrorResponse'
+    delete:
+      operationId: deleteFile
+      summary: Delete a file
+      description: >-
+        Deletes a file from the server with the specified Id. The id should follow the convention.
+      tags:
+        - deleting
+      parameters:
+        - name: fileId
+          in: path
+          description: Id of the file, should follow the convention <env>--<group>--<team>--<fileName>
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: File deleted
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
 
 components:
   securitySchemes:
