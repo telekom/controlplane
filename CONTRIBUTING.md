@@ -70,7 +70,7 @@ For local development and code generation, we require a pinned version:
 
 
 For detailed information, please take a look at [Kubebuilder's installation instructions](https://book.kubebuilder.io/quick-start#installation) to get the installation guide for your platform.
-For reference, to valid your Kubebuilder version, type the following command:
+For reference, to validate your Kubebuilder version, type the following command:
 
 ```console
 kubebuilder version
