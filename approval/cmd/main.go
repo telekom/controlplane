@@ -27,6 +27,7 @@ import (
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/approval/internal/controller"
+	webhookv1 "github.com/telekom/controlplane/approval/internal/webhook/v1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -210,13 +211,13 @@ func main() {
 		os.Exit(1)
 	}
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err = (&approvalv1.ApprovalRequest{}).SetupWebhookWithManager(mgr); err != nil {
+		if err = webhookv1.SetupApprovalRequestWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "ApprovalRequest")
 			os.Exit(1)
 		}
 	}
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err = (&approvalv1.Approval{}).SetupWebhookWithManager(mgr); err != nil {
+		if err = webhookv1.SetupApprovalWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Approval")
 			os.Exit(1)
 		}
