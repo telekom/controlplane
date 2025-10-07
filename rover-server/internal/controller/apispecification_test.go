@@ -15,6 +15,7 @@ import (
 	"github.com/gkampitakis/go-snaps/match"
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/mock"
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 
 	fileApi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/api"
@@ -94,12 +95,14 @@ servers:
 
 	Context("Delete ApiSpecification resource", func() {
 		It("should delete the ApiSpecification successfully", func() {
+			mockFileManager.EXPECT().DeleteFile(mock.Anything, mock.Anything).Return(nil)
 			req := httptest.NewRequest(http.MethodDelete, "/apispecifications/eni--hyperion--eni-distr-v1", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatus(responseGroup, err, http.StatusNoContent, "")
 		})
 
 		It("should fail to delete a non-existent ApiSpecification", func() {
+			mockFileManager.EXPECT().DeleteFile(mock.Anything, mock.Anything).Return(problems.NotFound("api specification not found"))
 			req := httptest.NewRequest(http.MethodDelete, "/apispecifications/eni--hyperion--blabla", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
