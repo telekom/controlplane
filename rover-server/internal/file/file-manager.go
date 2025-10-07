@@ -4,7 +4,6 @@
 
 package file
 
-// TODO: Check if this should be moved to the file-manager/api package
 import (
 	"sync"
 
@@ -25,8 +24,6 @@ func AppendOption(option api.Option) {
 }
 
 var GetFileManager = func() api.FileManager {
-	once.Do(func() {
-		fileManager = api.New(options...)
-	})
+	fileManager = api.GetFileManager(options...)
 	return fileManager
 }
