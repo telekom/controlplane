@@ -7,6 +7,7 @@ package v1
 import (
 	"context"
 
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -18,29 +19,36 @@ import (
 // log is for logging in this package.
 var approvalrequestlog = logf.Log.WithName("approvalrequest-resource")
 
-// SetupWebhookWithManager will setup the manager to manage the webhooks
-func (ar *ApprovalRequest) SetupWebhookWithManager(mgr ctrl.Manager) error {
+// SetupApprovalRequestWebhookWithManager will setup the manager to manage the webhooks
+func SetupApprovalRequestWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(ar).
-		WithDefaulter(ar).
-		WithValidator(ar).
+		For(&approvalv1.ApprovalRequest{}).
+		WithDefaulter(&ApprovalRequestCustomDefaulter{}).
+		WithValidator(&ApprovalRequestCustomValidator{}).
 		Complete()
 }
 
 // +kubebuilder:webhook:path=/mutate-approval-cp-ei-telekom-de-v1-approvalrequest,mutating=true,failurePolicy=fail,sideEffects=None,groups=approval.cp.ei.telekom.de,resources=approvalrequests,verbs=create;update,versions=v1,name=mapprovalrequest.kb.io,admissionReviewVersions=v1
 
-var _ webhook.CustomDefaulter = &ApprovalRequest{}
+// ApprovalRequestCustomDefaulter struct is responsible for setting default values on the custom resource of the
+// Kind ApprovalRequest when those are created or updated.
+//
+// NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
+// as it is used only for temporary operations and does not need to be deeply copied.
+type ApprovalRequestCustomDefaulter struct{}
+
+var _ webhook.CustomDefaulter = &ApprovalRequestCustomDefaulter{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (ar *ApprovalRequest) Default(_ context.Context, obj runtime.Object) error {
-	arObj := obj.(*ApprovalRequest)
+func (ar *ApprovalRequestCustomDefaulter) Default(_ context.Context, obj runtime.Object) error {
+	arObj := obj.(*approvalv1.ApprovalRequest)
 	approvalrequestlog.Info("default", "name", arObj.Name)
 
 	if arObj.Spec.Strategy == "" {
-		arObj.Spec.Strategy = ApprovalStrategySimple
+		arObj.Spec.Strategy = approvalv1.ApprovalStrategySimple
 	}
-	if arObj.Spec.Strategy == ApprovalStrategyAuto {
-		arObj.Spec.State = ApprovalStateGranted
+	if arObj.Spec.Strategy == approvalv1.ApprovalStrategyAuto {
+		arObj.Spec.State = approvalv1.ApprovalStateGranted
 	}
 	return nil
 }
@@ -50,29 +58,36 @@ func (ar *ApprovalRequest) Default(_ context.Context, obj runtime.Object) error 
 // Modifying the path for an invalid path can cause API server errors; failing to locate the webhook.
 // +kubebuilder:webhook:path=/validate-approval-cp-ei-telekom-de-v1-approvalrequest,mutating=false,failurePolicy=fail,sideEffects=None,groups=approval.cp.ei.telekom.de,resources=approvalrequests,verbs=create;update,versions=v1,name=vapprovalrequest.kb.io,admissionReviewVersions=v1
 
-var _ webhook.CustomValidator = &ApprovalRequest{}
+// ApprovalRequestCustomValidator struct is responsible for validating the ApprovalRequest resource
+// when it is created, updated, or deleted.
+//
+// NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
+// as this struct is used only for temporary operations and does not need to be deeply copied.
+type ApprovalRequestCustomValidator struct{}
+
+var _ webhook.CustomValidator = &ApprovalRequestCustomValidator{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (ar *ApprovalRequest) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
-	arObj := obj.(*ApprovalRequest)
+func (ar *ApprovalRequestCustomValidator) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+	arObj := obj.(*approvalv1.ApprovalRequest)
 	approvalrequestlog.Info("validate create", "name", arObj.Name)
 
-	if arObj.Spec.Strategy == ApprovalStrategyAuto && arObj.Spec.State != ApprovalStateGranted {
+	if arObj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && arObj.Spec.State != approvalv1.ApprovalStateGranted {
 		warnings = append(warnings, "Request is auto approved and should be granted")
-		arObj.Spec.State = ApprovalStateGranted
+		arObj.Spec.State = approvalv1.ApprovalStateGranted
 	}
 
 	return warnings, err
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (ar *ApprovalRequest) ValidateUpdate(_ context.Context, _ runtime.Object, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	arObj := newObj.(*ApprovalRequest)
+func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, _ runtime.Object, newObj runtime.Object) (warnings admission.Warnings, err error) {
+	arObj := newObj.(*approvalv1.ApprovalRequest)
 	approvalrequestlog.Info("validate update", "name", arObj.Name)
 
-	if arObj.Spec.Strategy == ApprovalStrategyAuto && arObj.Spec.State != ApprovalStateGranted {
+	if arObj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && arObj.Spec.State != approvalv1.ApprovalStateGranted {
 		warnings = append(warnings, "Request is auto approved and should be granted")
-		arObj.Spec.State = ApprovalStateGranted
+		arObj.Spec.State = approvalv1.ApprovalStateGranted
 	}
 
 	if arObj.StateChanged() && arObj.Status.AvailableTransitions != nil {
@@ -85,8 +100,8 @@ func (ar *ApprovalRequest) ValidateUpdate(_ context.Context, _ runtime.Object, n
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (ar *ApprovalRequest) ValidateDelete(_ context.Context, delObj runtime.Object) (admission.Warnings, error) {
-	arObj := delObj.(*ApprovalRequest)
+func (ar *ApprovalRequestCustomValidator) ValidateDelete(_ context.Context, delObj runtime.Object) (admission.Warnings, error) {
+	arObj := delObj.(*approvalv1.ApprovalRequest)
 	approvalrequestlog.Info("validate delete", "name", arObj.Name)
 	return nil, nil
 }
