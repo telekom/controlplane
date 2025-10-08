@@ -62,7 +62,12 @@ type NotificationBuilder interface {
 	// This is an optional field. If not set, the sender will be set to "System".
 	WithSender(senderType notificationv1.SenderType, senderName string) NotificationBuilder
 
-	// WithDefaultChannel will set all available channels for the given namespace
+	// WithNameSuffix appends a name to the resource name.
+	// However, make sure that the name length does not exceed the kubernetes limit yourself!
+	//  Seperator "--" will be applied if not empty: makeName(n.Notification) + "--" + n.NameSuffix
+	WithNameSuffix(nameSuffix string) NotificationBuilder
+
+	// WithDefaultChannels will set all available channels for the given namespace
 	WithDefaultChannels(ctx context.Context, namespace string) NotificationBuilder
 	// WithChannels sets the channels to send the notification to.
 	WithChannels(channels ...types.ObjectRef) NotificationBuilder
@@ -88,6 +93,8 @@ type notificationBuilder struct {
 
 	Owner client.Object
 
+	NameSuffix string
+
 	Errors []error
 }
 
@@ -107,6 +114,11 @@ func New() NotificationBuilder {
 // WithChannels implements NotificationBuilder.
 func (n *notificationBuilder) WithChannels(channels ...types.ObjectRef) NotificationBuilder {
 	n.Notification.Spec.Channels = append(n.Notification.Spec.Channels, channels...)
+	return n
+}
+
+func (n *notificationBuilder) WithNameSuffix(nameSuffix string) NotificationBuilder {
+	n.NameSuffix = nameSuffix
 	return n
 }
 
@@ -183,6 +195,9 @@ func (n *notificationBuilder) Build(ctx context.Context) (*notificationv1.Notifi
 	}
 
 	n.Notification.Name = makeName(n.Notification)
+	if n.NameSuffix != "" {
+		n.Notification.Name += "--" + n.NameSuffix
+	}
 
 	return n.Notification, nil
 }

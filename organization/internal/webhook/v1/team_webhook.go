@@ -26,6 +26,10 @@ import (
 // log is for logging in this package.
 var teamlog = logf.Log.WithName("team-resource")
 
+const (
+	AnnotationMembersChanged = "organization.cp.ei.telekom.de/members-changed"
+)
+
 // SetupTeamWebhookWithManager registers the webhook for Team in the manager.
 func SetupTeamWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).For(&organizationv1.Team{}).
@@ -75,6 +79,7 @@ func (t TeamCustomDefaulter) Default(ctx context.Context, obj runtime.Object) er
 	if err != nil {
 		return err
 	}
+	mutator.SortTeamMembers(teamObj)
 	return nil
 }
 

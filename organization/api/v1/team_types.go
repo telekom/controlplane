@@ -74,9 +74,13 @@ type TeamSpec struct {
 
 // TeamStatus defines the observed state of Team.
 type TeamStatus struct {
-	Namespace          string           `json:"namespace"`
-	IdentityClientRef  *types.ObjectRef `json:"identityClientRef,omitempty"`
-	GatewayConsumerRef *types.ObjectRef `json:"gatewayConsumerRef,omitempty"`
+	Namespace                    string           `json:"namespace"`
+	IdentityClientRef            *types.ObjectRef `json:"identityClientRef,omitempty"`
+	GatewayConsumerRef           *types.ObjectRef `json:"gatewayConsumerRef,omitempty"`
+	NotificationChannelRef       *types.ObjectRef `json:"notificationChannelRef,omitempty"`
+	NotificationOnboardingRef    *types.ObjectRef `json:"notificationOnboardingRef,omitempty"`
+	NotificationTokenRotateRef   *types.ObjectRef `json:"notificationTokenRotateRef,omitempty"`
+	NotificationMemberChangedRef *types.ObjectRef `json:"notificationMemberChangedRef,omitempty"`
 	// TeamToken is ref for the authentication against teamAPIs
 	TeamToken string `json:"teamToken,omitempty"`
 	// +listType=map
