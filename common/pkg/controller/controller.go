@@ -73,10 +73,8 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 		return HandleError(ctx, err, object, c.Recorder)
 	}
 
-	if changed, err := FirstSetup(ctx, c.Client, object); err != nil {
+	if _, err := FirstSetup(ctx, c.Client, object); err != nil {
 		return HandleError(ctx, err, object, c.Recorder)
-	} else if changed {
-		return reconcile.Result{}, nil
 	}
 
 	log.V(1).Info("Fetched object")

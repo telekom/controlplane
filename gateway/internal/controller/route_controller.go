@@ -51,7 +51,7 @@ func (r *RouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&gatewayv1.Route{}, builder.WithPredicates(cc.CustomPredicate{})).
+		For(&gatewayv1.Route{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(&gatewayv1.Realm{},
 			handler.EnqueueRequestsFromMapFunc(r.mapRealmToRoute),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).

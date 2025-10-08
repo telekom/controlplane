@@ -27,8 +27,8 @@ func (h *RealmHandler) CreateOrUpdate(ctx context.Context, realm *gatewayv1.Real
 		}
 	}
 
-	realm.SetCondition(condition.NewReadyCondition("RealmReady", "Realm has been provisioned"))
-	realm.SetCondition(condition.NewDoneProcessingCondition("Realm has been provisioned"))
+	realm.SetCondition(condition.NewReadyCondition("RealmReady", "Realm has been provisioned", realm))
+	realm.SetCondition(condition.NewDoneProcessingCondition("Realm has been provisioned", realm))
 
 	return nil
 }

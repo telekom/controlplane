@@ -39,8 +39,8 @@ func (h *ConsumeRouteHandler) CreateOrUpdate(ctx context.Context, consumeRoute *
 	}
 
 	if slices.Contains(route.Status.Consumers, consumeRoute.Spec.ConsumerName) {
-		consumeRoute.SetCondition(condition.NewDoneProcessingCondition("ConsumeRoute is ready"))
-		consumeRoute.SetCondition(condition.NewReadyCondition("ConsumeRouteReady", "ConsumeRoute is ready"))
+		consumeRoute.SetCondition(condition.NewDoneProcessingCondition("ConsumeRoute is ready", consumeRoute))
+		consumeRoute.SetCondition(condition.NewReadyCondition("ConsumeRouteReady", "ConsumeRoute is ready", consumeRoute))
 		return nil
 	}
 	consumeRoute.SetCondition(condition.NewProcessingCondition("ConsumeRouteProcessing", "Waiting for Route to be processed"))

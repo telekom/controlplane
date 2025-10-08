@@ -47,7 +47,7 @@ func (r *ConsumeRouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&consumeroute_handler.ConsumeRouteHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&gatewayv1.ConsumeRoute{}, builder.WithPredicates(cc.CustomPredicate{})).
+		For(&gatewayv1.ConsumeRoute{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

@@ -51,7 +51,7 @@ func (r *ConsumerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&gatewayv1.Consumer{}, builder.WithPredicates(cc.CustomPredicate{})).
+		For(&gatewayv1.Consumer{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(&gatewayv1.Realm{},
 			handler.EnqueueRequestsFromMapFunc(r.mapRealmToConsumer),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).

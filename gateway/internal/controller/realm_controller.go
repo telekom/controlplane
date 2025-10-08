@@ -47,7 +47,7 @@ func (r *RealmReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&realm_handler.RealmHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&gatewayv1.Realm{}).
+		For(&gatewayv1.Realm{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

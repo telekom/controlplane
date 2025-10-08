@@ -40,6 +40,8 @@ func NewProcessingCondition(reason, message string) metav1.Condition {
 	return condition
 }
 
+// NewDoneProcessingCondition returns a Condition of type Processing with status False and reason "Done".
+// If obj is provided, the ObservedGeneration is set to the generation of the object.
 func NewDoneProcessingCondition(message string, obj ...metav1.Object) metav1.Condition {
 	condition := ProcessingCondition
 	condition.Status = metav1.ConditionFalse
@@ -51,6 +53,8 @@ func NewDoneProcessingCondition(message string, obj ...metav1.Object) metav1.Con
 	return condition
 }
 
+// NewReadyCondition returns a Condition of type Ready with status True and reason "Ready".
+// If obj is provided, the ObservedGeneration is set to the generation of the object.
 func NewReadyCondition(reason, message string, obj ...metav1.Object) metav1.Condition {
 	condition := ReadyCondition
 	condition.Message = message
