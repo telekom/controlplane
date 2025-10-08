@@ -87,9 +87,21 @@ var _ = Describe("Route Controller", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 		realm = NewRealm("test-route")
 		realm.Spec.Gateway = types.ObjectRefFromObject(gateway)
+		Eventually(func(g Gomega) {
+			By("Checking if the Gateway is ready")
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(gateway), gateway)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(meta.IsStatusConditionTrue(gateway.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+		}, timeout, interval).Should(Succeed())
 
 		err = k8sClient.Create(ctx, realm)
 		Expect(err).NotTo(HaveOccurred())
+		Eventually(func(g Gomega) {
+			By("Checking if the Realm is ready")
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(realm), realm)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(meta.IsStatusConditionTrue(realm.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
+		}, timeout, interval).Should(Succeed())
 
 		By("Initializing the Routes")
 		route = NewRoute("test-v1", *types.ObjectRefFromObject(realm))
@@ -103,7 +115,6 @@ var _ = Describe("Route Controller", Ordered, func() {
 
 		err = k8sClient.Delete(ctx, realm)
 		Expect(err).NotTo(HaveOccurred())
-
 	})
 
 	Context("Handling a Route", func() {
@@ -126,41 +137,40 @@ var _ = Describe("Route Controller", Ordered, func() {
 			By("Deleting the Route with load balancing")
 			assertRouteIsDeleted(loadBalancingRoute)
 		})
+	})
 
-		Context("with an externalIDP Route", func() {
-			BeforeEach(func() {
-				By("Initializing the configuration for the Route")
-				route.Spec.Security = &gatewayv1.Security{
-					M2M: &gatewayv1.Machine2MachineAuthentication{
-						ExternalIDP: &gatewayv1.ExternalIdentityProvider{
-							Client: &gatewayv1.OAuth2ClientCredentials{
-								ClientId:     "example-client-id",
-								ClientSecret: "******",
-							},
-							TokenEndpoint: "https://example.com/endpoint",
+	Context("with an externalIDP Route", func() {
+		BeforeEach(func() {
+			By("Initializing the configuration for the Route")
+			route.Spec.Security = &gatewayv1.Security{
+				M2M: &gatewayv1.Machine2MachineAuthentication{
+					ExternalIDP: &gatewayv1.ExternalIdentityProvider{
+						Client: &gatewayv1.OAuth2ClientCredentials{
+							ClientId:     "example-client-id",
+							ClientSecret: "******",
 						},
+						TokenEndpoint: "https://example.com/endpoint",
 					},
-				}
-			})
-			It("should not accept a Route with TokenRequest=\"sky\"", func() {
-				By("Creating the Route with TokenRequest=\"sky\"")
-				route.Spec.Security.M2M.ExternalIDP.TokenRequest = "sky"
-				err := k8sClient.Create(ctx, route)
-				Expect(err).To(HaveOccurred())
-				Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				Expect(err.Error()).To(ContainSubstring("spec.security.m2m.externalIDP.tokenRequest: Unsupported value: \"sky\": supported values: \"body\", \"header\""))
-			})
-
-			It("should not accept a Route with GrantType=\"not_required\"", func() {
-				By("Creating the Route with GrantType=\"not_required\"")
-				route.Spec.Security.M2M.ExternalIDP.GrantType = "not_required"
-				err := k8sClient.Create(ctx, route)
-				Expect(err).To(HaveOccurred())
-				Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				Expect(err.Error()).To(ContainSubstring("spec.security.m2m.externalIDP.grantType: Unsupported value: \"not_required\": supported values: \"client_credentials\", \"authorization_code\", \"password\""))
-			})
+				},
+			}
+		})
+		It("should not accept a Route with TokenRequest=\"sky\"", func() {
+			By("Creating the Route with TokenRequest=\"sky\"")
+			route.Spec.Security.M2M.ExternalIDP.TokenRequest = "sky"
+			err := k8sClient.Create(ctx, route)
+			Expect(err).To(HaveOccurred())
+			Expect(apierrors.IsInvalid(err)).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring("spec.security.m2m.externalIDP.tokenRequest: Unsupported value: \"sky\": supported values: \"body\", \"header\""))
 		})
 
+		It("should not accept a Route with GrantType=\"not_required\"", func() {
+			By("Creating the Route with GrantType=\"not_required\"")
+			route.Spec.Security.M2M.ExternalIDP.GrantType = "not_required"
+			err := k8sClient.Create(ctx, route)
+			Expect(err).To(HaveOccurred())
+			Expect(apierrors.IsInvalid(err)).To(BeTrue())
+			Expect(err.Error()).To(ContainSubstring("spec.security.m2m.externalIDP.grantType: Unsupported value: \"not_required\": supported values: \"client_credentials\", \"authorization_code\", \"password\""))
+		})
 	})
 })
 
