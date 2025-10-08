@@ -214,6 +214,22 @@ func (in *TeamStatus) DeepCopyInto(out *TeamStatus) {
 		in, out := &in.GatewayConsumerRef, &out.GatewayConsumerRef
 		*out = (*in).DeepCopy()
 	}
+	if in.NotificationChannelRef != nil {
+		in, out := &in.NotificationChannelRef, &out.NotificationChannelRef
+		*out = (*in).DeepCopy()
+	}
+	if in.NotificationOnboardingRef != nil {
+		in, out := &in.NotificationOnboardingRef, &out.NotificationOnboardingRef
+		*out = (*in).DeepCopy()
+	}
+	if in.NotificationTokenRotateRef != nil {
+		in, out := &in.NotificationTokenRotateRef, &out.NotificationTokenRotateRef
+		*out = (*in).DeepCopy()
+	}
+	if in.NotificationMemberChangedRef != nil {
+		in, out := &in.NotificationMemberChangedRef, &out.NotificationMemberChangedRef
+		*out = (*in).DeepCopy()
+	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
 		*out = make([]metav1.Condition, len(*in))
