@@ -24,9 +24,9 @@ type CachedBackend[T backend.SecretId, S backend.Secret[T]] struct {
 
 func NewCachedBackend[T backend.SecretId, S backend.Secret[T]](backend backend.Backend[T, S], ttl time.Duration) *CachedBackend[T, S] {
 	cache, err := ristretto.NewCache(&ristretto.Config[string, S]{
-		NumCounters: 1e7,     // number of keys to track frequency of (10M).
-		MaxCost:     1 << 20, // maximum cost of cache (1MB).
-		BufferItems: 64,      // number of keys per Get buffer.
+		NumCounters: 1e7,       // number of keys to track frequency of (10M).
+		MaxCost:     100 << 20, // maximum cost of cache (100MB).
+		BufferItems: 64,        // number of keys per Get buffer.
 	})
 	if err != nil {
 		panic(err)
@@ -58,7 +58,8 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (S, error) {
 	if err != nil {
 		return item, err
 	}
-	added := c.Cache.SetWithTTL(id.String(), item, 1, c.ttl)
+
+	added := c.Cache.SetWithTTL(id.String(), item, int64(len(item.Value())), c.ttl)
 	if !added {
 		log.Info("Failed to add item to cache", "id", id.String())
 	}
@@ -86,7 +87,7 @@ func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.Secre
 	if err != nil {
 		return item, err
 	}
-	added := c.Cache.SetWithTTL(id.String(), item, 1, c.ttl)
+	added := c.Cache.SetWithTTL(id.String(), item, int64(len(item.Value())), c.ttl)
 	if !added {
 		log.Info("Failed to add item to cache", "id", id.String())
 	}
