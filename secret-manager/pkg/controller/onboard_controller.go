@@ -6,6 +6,8 @@ package controller
 
 import (
 	"context"
+	"maps"
+	"slices"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -93,6 +95,8 @@ func (c *onboardController) OnboardTeam(ctx context.Context, envId, teamId strin
 		opt(&options)
 	}
 
+	log.V(1).Info("OnboardTeam called", "envId", envId, "teamId", teamId, "secrets", slices.Collect(maps.Keys(options.SecretValues)))
+
 	o, err := c.Onboarder.OnboardTeam(ctx, envId, teamId, options.AsBackendOptions()...)
 	if err != nil {
 		return res, errors.Wrap(err, "failed to onboard team")
@@ -121,6 +125,8 @@ func (c *onboardController) OnboardApplication(ctx context.Context, envId, teamI
 	for _, opt := range opts {
 		opt(&options)
 	}
+
+	log.V(1).Info("OnboardApplication called", "envId", envId, "teamId", teamId, "appId", appId, "secrets", slices.Collect(maps.Keys(options.SecretValues)))
 
 	o, err := c.Onboarder.OnboardApplication(ctx, envId, teamId, appId, options.AsBackendOptions()...)
 	if err != nil {

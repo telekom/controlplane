@@ -52,7 +52,7 @@ var _ = Describe("Cached Backend", func() {
 			secretId := mocks.NewMockSecretId(GinkgoT())
 			secretId.EXPECT().String().Return("my-secret-id")
 
-			secret := backend.NewDefaultSecret[*mocks.MockSecretId](secretId, "my-value")
+			secret := backend.NewDefaultSecret(secretId, "my-value")
 			mockBackend.EXPECT().Get(ctx, secretId).Return(secret, nil).Once()
 
 			secret, err := cachedBackend.Get(ctx, secretId)
@@ -71,7 +71,7 @@ var _ = Describe("Cached Backend", func() {
 			secretId := mocks.NewMockSecretId(GinkgoT())
 			secretId.EXPECT().String().Return("my-secret-id")
 
-			mockBackend.EXPECT().Set(ctx, secretId, secretValue).Return(backend.NewDefaultSecret[*mocks.MockSecretId](secretId, "my-value"), nil).Once()
+			mockBackend.EXPECT().Set(ctx, secretId, secretValue).Return(backend.NewDefaultSecret(secretId, "my-value"), nil).Once()
 
 			secret, err := cachedBackend.Set(ctx, secretId, secretValue)
 			Expect(err).NotTo(HaveOccurred())
@@ -84,9 +84,9 @@ var _ = Describe("Cached Backend", func() {
 			ctx := context.Background()
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
-			secretId.EXPECT().String().Return("my-secret-id").Times(2)
+			secretId.EXPECT().String().Return("my-secret-id")
 
-			secret := backend.NewDefaultSecret[*mocks.MockSecretId](secretId, "my-value")
+			secret := backend.NewDefaultSecret(secretId, "my-value")
 			cachedItem := cache.NewDefaultCacheItem(secretId, secret, 10)
 			cachedBackend.Cache.Set(secretId.String(), cachedItem)
 
