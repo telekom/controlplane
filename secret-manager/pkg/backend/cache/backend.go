@@ -67,7 +67,7 @@ func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.Secre
 	log := logr.FromContextOrDiscard(ctx)
 	if item, ok := c.Cache.Get(id.String()); ok {
 		if value.EqualString(item.Value().Value()) {
-			if item.Value().Id().String() == id.String() {
+			if item.Value().Id().String() == id.String() { // added this
 				metrics.RecordCacheHit()
 				return item.Value(), nil
 			} else {
