@@ -27,11 +27,12 @@ func wrapCommunicationError(err error, purposeOfCommunication string) error {
 }
 
 func MutateSecret(ctx context.Context, env string, teamObj *organisationv1.Team, zoneObj *adminv1.Zone) error {
-	log := logr.FromContextOrDiscard(ctx).WithName("mutateSecret")
+	log := logr.FromContextOrDiscard(ctx)
 	var availableSecrets map[string]string
 	var clientSecret string
 
 	if !secretsapi.IsRef(teamObj.Spec.Secret) {
+		log.V(1).Info("spec.secret is not a reference, generating new secret")
 		if strings.EqualFold(teamObj.Spec.Secret, secret.KeywordRotate) {
 			// generate new secret
 			clientSecret = string(uuid.NewUUID())
@@ -54,6 +55,8 @@ func MutateSecret(ctx context.Context, env string, teamObj *organisationv1.Team,
 	if err != nil {
 		return wrapCommunicationError(err, "upsert team")
 	}
+
+	log.V(1).Info("upserted team secrets in secret-manager", "availableSecrets", availableSecrets)
 
 	var ok bool
 	secretRef, ok := secret.FindSecretId(availableSecrets, secret.ClientSecret)

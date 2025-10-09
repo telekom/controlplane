@@ -197,6 +197,7 @@ spec:
               namespace:
                 type: string
               teamToken:
+                description: TeamToken is ref for the authentication against teamAPIs
                 type: string
             required:
             - namespace
