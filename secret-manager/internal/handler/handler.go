@@ -81,6 +81,7 @@ func (h *Handler) UpsertEnvironment(ctx context.Context, request api.UpsertEnvir
 }
 
 func (h *Handler) UpsertTeam(ctx context.Context, request api.UpsertTeamRequestObject) (api.UpsertTeamResponseObject, error) {
+	log := logr.FromContextOrDiscard(ctx)
 	res, err := h.ctrl.OnboardTeam(ctx, request.EnvId, request.TeamId, controller.WithSecretValues(parseAdditionalSecrets(request.Body.Secrets)))
 	if err != nil {
 		return nil, err
@@ -91,10 +92,12 @@ func (h *Handler) UpsertTeam(ctx context.Context, request api.UpsertTeamRequestO
 			Items: mapOnboardingResponseItems(res.SecretRefs),
 		},
 	}
+	log.V(1).Info("UpsertTeam", "response", okRes)
 	return okRes, nil
 }
 
 func (h *Handler) UpsertApp(ctx context.Context, request api.UpsertAppRequestObject) (api.UpsertAppResponseObject, error) {
+	log := logr.FromContextOrDiscard(ctx)
 	res, err := h.ctrl.OnboardApplication(ctx, request.EnvId, request.TeamId, request.AppId, controller.WithSecretValues(parseAdditionalSecrets(request.Body.Secrets)))
 	if err != nil {
 		return nil, err
@@ -105,6 +108,7 @@ func (h *Handler) UpsertApp(ctx context.Context, request api.UpsertAppRequestObj
 			Items: mapOnboardingResponseItems(res.SecretRefs),
 		},
 	}
+	log.V(1).Info("UpsertApp", "response", okRes)
 	return okRes, nil
 }
 

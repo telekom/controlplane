@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
@@ -80,6 +81,7 @@ func (c *onboardController) OnboardEnvironment(ctx context.Context, envId string
 }
 
 func (c *onboardController) OnboardTeam(ctx context.Context, envId, teamId string, opts ...OnboardOption) (res OnboardResponse, err error) {
+	log := logr.FromContextOrDiscard(ctx)
 	if envId == "" {
 		return res, errors.New("envId cannot be empty")
 	}
@@ -95,6 +97,7 @@ func (c *onboardController) OnboardTeam(ctx context.Context, envId, teamId strin
 	if err != nil {
 		return res, errors.Wrap(err, "failed to onboard team")
 	}
+	log.V(1).Info("OnboardTeam completed successfully", "secrets", o.SecretRefs())
 
 	res.SecretRefs = make(map[string]string, len(o.SecretRefs()))
 	for name, ref := range o.SecretRefs() {
@@ -104,6 +107,7 @@ func (c *onboardController) OnboardTeam(ctx context.Context, envId, teamId strin
 }
 
 func (c *onboardController) OnboardApplication(ctx context.Context, envId, teamId, appId string, opts ...OnboardOption) (res OnboardResponse, err error) {
+	log := logr.FromContextOrDiscard(ctx)
 	if envId == "" {
 		return res, errors.New("envId cannot be empty")
 	}
@@ -122,6 +126,7 @@ func (c *onboardController) OnboardApplication(ctx context.Context, envId, teamI
 	if err != nil {
 		return res, errors.Wrap(err, "failed to onboard application")
 	}
+	log.V(1).Info("OnboardApplication completed successfully", "secrets", o.SecretRefs())
 
 	res.SecretRefs = make(map[string]string, len(o.SecretRefs()))
 	for name, ref := range o.SecretRefs() {
