@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache/metrics"
 )
@@ -41,52 +42,90 @@ func (c *CachedBackend[T, S]) ParseSecretId(raw string) (T, error) {
 
 func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (res S, err error) {
 	log := logr.FromContextOrDiscard(ctx)
-	if item, ok := c.Cache.Get(id.String()); ok && !item.Expired() {
-		cachedId := item.Value().Id()
-		if cachedId.String() != id.String() {
-			log.Info("Cache id mismatch", "requested", id.String(), "cached", cachedId.String())
+	cacheKey := id.String()
+	if item, ok := c.Cache.Get(cacheKey); ok && !item.Expired() {
+		metrics.RecordCacheHit()
+		log.V(1).Info("✓ Cache hit Get", "key", cacheKey)
+		cachedSecret := item.Value()
+		// Verify the cached secret has the correct ID
+		if cachedSecret.Id().String() != cacheKey {
+			log.Info("Cache corruption detected in Get, invalidating", "key", cacheKey, "cached_id", cachedSecret.Id().String())
+			c.Cache.Delete(cacheKey)
 			metrics.RecordCacheMiss("id_mismatch")
 		} else {
-			metrics.RecordCacheHit()
-			return item.Value(), nil
+			// Always return a NEW Secret with the requested ID to avoid any shared state issues
+			newSecret := backend.NewDefaultSecret(id, cachedSecret.Value())
+			var s S = any(newSecret).(S)
+			return s, nil
 		}
 	}
 
 	metrics.RecordCacheMiss("not_found")
-	log.Info("Cache miss", "id", id.String())
+	log.V(1).Info("Cache miss - fetching from backend", "key", cacheKey)
 	item, err := c.Backend.Get(ctx, id)
 	if err != nil {
 		return res, err
 	}
 
-	c.Cache.Set(id.String(), NewDefaultCacheItem(id, item, c.ttl))
-	return item, nil
+	log.V(1).Info("Caching Get result", "requested_id", id.String())
+	// Create new Secret with the REQUESTED id to ensure cache key matches
+	cachedSecret := backend.NewDefaultSecret(id, item.Value())
+	// Type assert to S to match the generic type
+	var s S = any(cachedSecret).(S)
+	c.Cache.Set(cacheKey, NewDefaultCacheItem(id, s, c.ttl))
+	// Return the cached secret to ensure ID consistency
+	return s, nil
 }
 
 func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.SecretValue) (res S, err error) {
 	log := logr.FromContextOrDiscard(ctx)
-	if item, ok := c.Cache.Get(id.String()); ok {
-		if value.EqualString(item.Value().Value()) {
-			if item.Value().Id().String() == id.String() { // added this
-				metrics.RecordCacheHit()
-				return item.Value(), nil
-			} else {
-				log.V(1).Info("Cache id mismatch on set", "requested", id.String(), "cached", item.Value())
+	cacheKey := id.String()
+
+	if item, ok := c.Cache.Get(cacheKey); ok && !item.Expired() {
+		cachedSecret := item.Value()
+		if value.EqualString(cachedSecret.Value()) {
+			// Verify the cached secret has the correct ID
+			if cachedSecret.Id().String() != cacheKey {
+				log.Info("Cache corruption detected in Set, invalidating", "key", cacheKey, "cached_id", cachedSecret.Id().String())
+				c.Cache.Delete(cacheKey)
 				metrics.RecordCacheMiss("id_mismatch")
+			} else {
+				metrics.RecordCacheHit()
+				log.V(1).Info("✓ Cache hit Set", "key", cacheKey)
+				// Always return a NEW Secret with the requested ID to avoid any shared state issues
+				newSecret := backend.NewDefaultSecret(id, cachedSecret.Value())
+				var s S = any(newSecret).(S)
+				return s, nil
 			}
 		} else {
 			metrics.RecordCacheMiss("value_mismatch")
 		}
 	}
+
+	metrics.RecordCacheMiss("not_found")
+	log.V(1).Info("Calling Backend.Set", "key", cacheKey)
 	item, err := c.Backend.Set(ctx, id, value)
 	if err != nil {
 		return res, err
 	}
 
+	log.V(1).Info("Caching Set result", "requested_id", id.String())
+	// Create new Secret with the REQUESTED id to ensure cache key matches
 	if item.Value() != "" {
-		c.Cache.Set(id.String(), NewDefaultCacheItem(id, item, c.ttl))
+		// Cache if backend returned a value
+		cachedSecret := backend.NewDefaultSecret(id, item.Value())
+		// Type assert to S to match the generic type
+		var s S = any(cachedSecret).(S)
+		c.Cache.Set(cacheKey, NewDefaultCacheItem(id, s, c.ttl))
+		// Return the cached secret to ensure ID consistency
+		return s, nil
 	}
-	return item, nil
+	// If backend returned empty value (after update), invalidate cache
+	c.Cache.Delete(cacheKey)
+	// Return backend's result with corrected ID
+	cachedSecret := backend.NewDefaultSecret(id, "")
+	var s S = any(cachedSecret).(S)
+	return s, nil
 }
 
 func (c *CachedBackend[T, S]) Delete(ctx context.Context, id T) error {
