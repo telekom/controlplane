@@ -67,6 +67,7 @@ type DefaultCacheItem[T backend.SecretId, S backend.Secret[T]] struct {
 
 func NewDefaultCacheItem[T backend.SecretId, S backend.Secret[T]](id T, value S, ttl int64) *DefaultCacheItem[T, S] {
 	return &DefaultCacheItem[T, S]{
+		id:        id,
 		value:     value,
 		expiresAt: time.Now().Unix() + ttl,
 	}
