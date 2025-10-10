@@ -42,8 +42,14 @@ func (c *CachedBackend[T, S]) ParseSecretId(raw string) (T, error) {
 func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (res S, err error) {
 	log := logr.FromContextOrDiscard(ctx)
 	if item, ok := c.Cache.Get(id.String()); ok && !item.Expired() {
-		metrics.RecordCacheHit()
-		return item.Value(), nil
+		cachedId := item.Value().Id()
+		if cachedId.String() != id.String() {
+			log.Info("Cache id mismatch", "requested", id.String(), "cached", cachedId.String())
+			metrics.RecordCacheMiss("id_mismatch")
+		} else {
+			metrics.RecordCacheHit()
+			return item.Value(), nil
+		}
 	}
 
 	metrics.RecordCacheMiss("not_found")
@@ -58,9 +64,18 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (res S, err error) 
 }
 
 func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.SecretValue) (res S, err error) {
+	log := logr.FromContextOrDiscard(ctx)
 	if item, ok := c.Cache.Get(id.String()); ok {
 		if value.EqualString(item.Value().Value()) {
-			return item.Value(), nil
+			if item.Value().Id().String() == id.String() { // added this
+				metrics.RecordCacheHit()
+				return item.Value(), nil
+			} else {
+				log.V(1).Info("Cache id mismatch on set", "requested", id.String(), "cached", item.Value())
+				metrics.RecordCacheMiss("id_mismatch")
+			}
+		} else {
+			metrics.RecordCacheMiss("value_mismatch")
 		}
 	}
 	item, err := c.Backend.Set(ctx, id, value)

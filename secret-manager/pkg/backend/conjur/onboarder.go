@@ -136,6 +136,8 @@ func (c *ConjurOnboarder) OnboardTeam(ctx context.Context, env, teamId string, o
 	}
 	backend.MergeSecretRefs(New, secretRefs, env, teamId, "", options.SecretValues)
 
+	log.V(1).Info("Onboarded team", "env", env, "team", teamId, "secrets", secretRefs)
+
 	return backend.NewDefaultOnboardResponse(secretRefs), nil
 }
 
@@ -260,6 +262,7 @@ func (c *ConjurOnboarder) createSecrets(ctx context.Context, env, teamId, appId 
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to initialize secret %s", secretId.VariableId())
 		}
+		log.V(1).Info("Created secret", "secretId", secret.Id())
 		secretRefMap[secretPath] = secret.Id()
 	}
 

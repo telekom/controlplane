@@ -8,8 +8,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/secret-manager/api/gen"
 )
@@ -162,6 +165,7 @@ func (s *secretManagerAPI) UpsertEnvironment(ctx context.Context, envID string, 
 }
 
 func (s *secretManagerAPI) UpsertTeam(ctx context.Context, envID, teamID string, opts ...OnboardingOption) (availableSecrets map[string]string, err error) {
+	log := logr.FromContextOrDiscard(ctx)
 	options := &OnboardingOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -173,16 +177,17 @@ func (s *secretManagerAPI) UpsertTeam(ctx context.Context, envID, teamID string,
 		return nil, err
 	}
 
+	log.V(1).Info("UpsertTeam request", "envID", envID, "teamID", teamID, "secrets", slices.Collect(maps.Keys(options.SecretValues)))
 	res, err := s.client.UpsertTeamWithResponse(ctx, envID, teamID, reqBody)
 	if err != nil {
 		return nil, err
 	}
 	switch res.StatusCode() {
 	case 200:
+		log.V(1).Info("UpsertTeam response", "items", res.JSON200.Items)
 		return toMap(res.JSON200.Items), nil
-	case 204:
-		return nil, nil
 	case 404:
+		log.V(1).Info("UpsertTeam response: not found")
 		return nil, ErrNotFound
 	default:
 		var err gen.ErrorResponse
@@ -194,6 +199,7 @@ func (s *secretManagerAPI) UpsertTeam(ctx context.Context, envID, teamID string,
 }
 
 func (s *secretManagerAPI) UpsertApplication(ctx context.Context, envID, teamID, appID string, opts ...OnboardingOption) (availableSecrets map[string]string, err error) {
+	log := logr.FromContextOrDiscard(ctx)
 	options := &OnboardingOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -205,16 +211,17 @@ func (s *secretManagerAPI) UpsertApplication(ctx context.Context, envID, teamID,
 		return nil, err
 	}
 
+	log.V(1).Info("UpsertApplication request", "envID", envID, "teamID", teamID, "appID", appID, "secrets", slices.Collect(maps.Keys(options.SecretValues)))
 	res, err := s.client.UpsertAppWithResponse(ctx, envID, teamID, appID, reqBody)
 	if err != nil {
 		return nil, err
 	}
 	switch res.StatusCode() {
 	case 200:
+		log.V(1).Info("UpsertApplication response", "items", res.JSON200.Items)
 		return toMap(res.JSON200.Items), nil
-	case 204:
-		return nil, nil
 	case 404:
+		log.V(1).Info("UpsertApplication response: not found")
 		return nil, ErrNotFound
 	default:
 		var err gen.ErrorResponse

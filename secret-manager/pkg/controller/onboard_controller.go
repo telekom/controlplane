@@ -6,7 +6,10 @@ package controller
 
 import (
 	"context"
+	"maps"
+	"slices"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
@@ -80,6 +83,7 @@ func (c *onboardController) OnboardEnvironment(ctx context.Context, envId string
 }
 
 func (c *onboardController) OnboardTeam(ctx context.Context, envId, teamId string, opts ...OnboardOption) (res OnboardResponse, err error) {
+	log := logr.FromContextOrDiscard(ctx)
 	if envId == "" {
 		return res, errors.New("envId cannot be empty")
 	}
@@ -91,10 +95,13 @@ func (c *onboardController) OnboardTeam(ctx context.Context, envId, teamId strin
 		opt(&options)
 	}
 
+	log.V(1).Info("OnboardTeam called", "envId", envId, "teamId", teamId, "secrets", slices.Collect(maps.Keys(options.SecretValues)))
+
 	o, err := c.Onboarder.OnboardTeam(ctx, envId, teamId, options.AsBackendOptions()...)
 	if err != nil {
 		return res, errors.Wrap(err, "failed to onboard team")
 	}
+	log.V(1).Info("OnboardTeam completed successfully", "secrets", o.SecretRefs())
 
 	res.SecretRefs = make(map[string]string, len(o.SecretRefs()))
 	for name, ref := range o.SecretRefs() {
@@ -104,6 +111,7 @@ func (c *onboardController) OnboardTeam(ctx context.Context, envId, teamId strin
 }
 
 func (c *onboardController) OnboardApplication(ctx context.Context, envId, teamId, appId string, opts ...OnboardOption) (res OnboardResponse, err error) {
+	log := logr.FromContextOrDiscard(ctx)
 	if envId == "" {
 		return res, errors.New("envId cannot be empty")
 	}
@@ -118,10 +126,13 @@ func (c *onboardController) OnboardApplication(ctx context.Context, envId, teamI
 		opt(&options)
 	}
 
+	log.V(1).Info("OnboardApplication called", "envId", envId, "teamId", teamId, "appId", appId, "secrets", slices.Collect(maps.Keys(options.SecretValues)))
+
 	o, err := c.Onboarder.OnboardApplication(ctx, envId, teamId, appId, options.AsBackendOptions()...)
 	if err != nil {
 		return res, errors.Wrap(err, "failed to onboard application")
 	}
+	log.V(1).Info("OnboardApplication completed successfully", "secrets", o.SecretRefs())
 
 	res.SecretRefs = make(map[string]string, len(o.SecretRefs()))
 	for name, ref := range o.SecretRefs() {
