@@ -136,6 +136,8 @@ func (c *ConjurOnboarder) OnboardTeam(ctx context.Context, env, teamId string, o
 	}
 	backend.MergeSecretRefs(New, secretRefs, env, teamId, "", options.SecretValues)
 
+	log.V(1).Info("Onboarded team", "env", env, "team", teamId, "secrets", secretRefs)
+
 	return backend.NewDefaultOnboardResponse(secretRefs), nil
 }
 
