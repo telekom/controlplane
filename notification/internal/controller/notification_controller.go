@@ -8,6 +8,7 @@ import (
 	"context"
 	"github.com/telekom/controlplane/notification/internal/sender"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter"
+	"github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
@@ -20,7 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	emailadapterconfig "github.com/telekom/controlplane/notification/internal/config"
+	adapterconfig "github.com/telekom/controlplane/notification/internal/config"
 )
 
 // NotificationReconciler reconciles a Notification object
@@ -41,14 +42,13 @@ func (r *NotificationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager, emailConfig *emailadapterconfig.EmailAdapterConfig) error {
+func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager, emailConfig *adapterconfig.EmailAdapterConfig) error {
 	r.Recorder = mgr.GetEventRecorderFor("notification-controller")
 
 	// initialize the notification sender with all adapters so they can be reused
 	notificationSender := sender.AdapterSender{
-		MailAdapter: &adapter.EmailAdapter{
-			SMTPHost: emailConfig.SMTPHost,
-			SMTPPort: emailConfig.SMTPPort,
+		MailAdapter: &mail.EmailAdapter{
+			Config: emailConfig,
 		},
 		ChatAdapter:     &adapter.MsTeamsAdapter{},
 		CallbackAdapter: &adapter.WebhookAdapter{},

@@ -121,8 +121,8 @@ var _ = BeforeSuite(func() {
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
 	}).SetupWithManager(k8sManager, &emailadapterconfig.EmailAdapterConfig{
-		SMTPHost: loadedEmailConfig.SMTPHost,
-		SMTPPort: loadedEmailConfig.SMTPPort,
+		SMTPConnection: loadedEmailConfig.SMTPConnection,
+		SMTPSender:     loadedEmailConfig.SMTPSender,
 	})
 	Expect(err).ToNot(HaveOccurred())
 
