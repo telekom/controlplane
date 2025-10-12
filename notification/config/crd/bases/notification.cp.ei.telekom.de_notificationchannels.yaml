@@ -79,7 +79,6 @@ spec:
                   ccRecipients:
                     description: CC Recipients of this email
                     items:
-                      description: EmailString wraps a string and applies email validation
                       format: email
                       type: string
                     type: array
@@ -90,7 +89,6 @@ spec:
                   recipients:
                     description: Recipients of this email
                     items:
-                      description: EmailString wraps a string and applies email validation
                       format: email
                       type: string
                     type: array
@@ -146,7 +144,7 @@ spec:
                     type: object
                   webhookUrl:
                     description: Webhook URL for the Microsoft Teams channel
-                    pattern: ^https?://[^\s/$.?#].[^\s]*$
+                    format: uri
                     type: string
                 required:
                 - webhookUrl

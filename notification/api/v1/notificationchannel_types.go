@@ -147,20 +147,18 @@ const (
 	NotificationTypeCallback NotificationType = "Callback"
 )
 
-// EmailString wraps a string and applies email validation
-// +kubebuilder:validation:Format=email
-type EmailString string
-
 // EmailConfig defines configuration for Email channel
 type EmailConfig struct {
 
 	// Recipients of this email
 	// +kubebuilder:validation:Required
-	Recipients []EmailString `json:"recipients"`
+	// +kubebuilder:validation:items:Format=email
+	Recipients []string `json:"recipients"`
 
 	// CC Recipients of this email
 	// +kubebuilder:validation:Optional
-	CCRecipients []EmailString `json:"ccRecipients"`
+	// +kubebuilder:validation:items:Format=email
+	CCRecipients []string `json:"ccRecipients"`
 
 	// SMTP server host
 	// +kubebuilder:validation:Optional
@@ -180,24 +178,12 @@ type EmailConfig struct {
 	Authentication *Authentication `json:"authentication,omitempty"`
 }
 
-// GetRecipients - func that returns the recipients for this email notification
-// The reason it is written like this is that a conversion between EmailString and string needs to be done here
-// The EmailString type is required to have correct validation (otherwise kubebuilder generates CRDs where the whole slice format is email
-// The return type is a slice of strings so there is no dependency between the model and the notification adapters
 func (e *EmailConfig) GetRecipients() []string {
-	result := make([]string, len(e.Recipients))
-	for i, r := range e.Recipients {
-		result[i] = string(r)
-	}
-	return result
+	return e.Recipients
 }
 
 func (e *EmailConfig) GetCCRecipients() []string {
-	result := make([]string, len(e.CCRecipients))
-	for i, r := range e.CCRecipients {
-		result[i] = string(r)
-	}
-	return result
+	return e.CCRecipients
 }
 
 func (e *EmailConfig) GetSMTPHost() string {
@@ -219,7 +205,7 @@ func (e *EmailConfig) IsNotificationConfig() {}
 type MsTeamsConfig struct {
 	// Webhook URL for the Microsoft Teams channel
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Pattern=`^https?://[^\s/$.?#].[^\s]*$`
+	// +kubebuilder:validation:Format=uri
 	WebhookURL string `json:"webhookUrl"`
 
 	// Authentication configuration
