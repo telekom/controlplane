@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
@@ -163,5 +164,10 @@ func checkApprovalStatus(typeNamespacedName types.NamespacedName, state approval
 		g.Expect(readyCondition.Status).To(Equal(expectedReadyStatus))
 		g.Expect(readyCondition.Message).To(Equal(expectedReadyMessage))
 
+		By("Checking notification was created for granted state")
+		Expect(fetchedUpdatedApproval.Status.NotificationRef).NotTo(BeNil())
+		var notification = &notificationv1.Notification{}
+		Expect(k8sClient.Get(ctx, fetchedUpdatedApproval.Status.NotificationRef.K8s(), notification)).NotTo(HaveOccurred())
+		Expect(notification.Spec.Purpose).To(Equal("approval"))
 	}, timeout, interval).Should(Succeed())
 }

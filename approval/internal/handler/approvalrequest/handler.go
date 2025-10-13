@@ -38,7 +38,10 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 		contextutil.RecorderFromContextOrDie(ctx).Eventf(approvalReq,
 			"Normal", "Notification", "State changed from %s to %s", approvalReq.Status.LastState, approvalReq.Spec.State,
 		)
-		notify(ctx, approvalReq)
+		err := notify(ctx, approvalReq)
+		if err != nil {
+			log.Error(err, "failed to notify approval")
+		}
 	}
 
 	fsm := ApprovalStrategyFSM[approvalReq.Spec.Strategy]
@@ -89,24 +92,26 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 	return nil
 }
 
-func notify(ctx context.Context, req *approvalv1.ApprovalRequest) {
+func notify(ctx context.Context, req *approvalv1.ApprovalRequest) error {
 	notificationBuilder := builder.New().
 		WithOwner(req).
 		WithSender(notificationv1.SenderTypeSystem, "OrganizationService").
 		WithDefaultChannels(ctx, req.GetNamespace()).
-		WithPurpose("approval request").
+		WithPurpose("approval-request").
 		WithProperties(map[string]any{
 			"env":       contextutil.EnvFromContextOrDie(ctx),
 			"kind":      req.Spec.Resource.Kind,
 			"state":     req.Spec.State,
 			"requestor": req.Spec.Requester,
+			"oauth":     req.Spec.Requester.Properties.Raw, //TODO
 		})
 
 	notification, err := notificationBuilder.Send(ctx)
 	if err != nil {
-		return
+		return err
 	}
 	req.Status.NotificationRef = types.ObjectRefFromObject(notification)
+	return nil
 }
 
 func (h *ApprovalRequestHandler) Delete(ctx context.Context, approvalReq *approvalv1.ApprovalRequest) error {

@@ -24,12 +24,15 @@ type ApprovalHandler struct {
 }
 
 func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approvalv1.Approval) error {
-
+	log := log.FromContext(ctx)
 	if approval.Spec.State != approval.Status.LastState {
 		contextutil.RecorderFromContextOrDie(ctx).Eventf(approval,
 			"Normal", "Notification", "State changed from %s to %s", approval.Status.LastState, approval.Spec.State,
 		)
-		notify(ctx, approval)
+		err := notify(ctx, approval)
+		if err != nil {
+			log.Error(err, "failed to notify approval")
+		}
 	}
 
 	fsm := ApprovalStrategyFSM[approval.Spec.Strategy]
@@ -62,7 +65,7 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 	return nil
 }
 
-func notify(ctx context.Context, owner *approvalv1.Approval) {
+func notify(ctx context.Context, owner *approvalv1.Approval) error {
 	notificationBuilder := builder.New().
 		WithOwner(owner).
 		WithSender(notificationv1.SenderTypeSystem, "OrganizationService").
@@ -76,9 +79,10 @@ func notify(ctx context.Context, owner *approvalv1.Approval) {
 
 	notification, err := notificationBuilder.Send(ctx)
 	if err != nil {
-		return
+		return err
 	}
 	owner.Status.NotificationRef = types.ObjectRefFromObject(notification)
+	return nil
 }
 
 func (h *ApprovalHandler) Delete(ctx context.Context, approval *approvalv1.Approval) error {
