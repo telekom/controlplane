@@ -205,13 +205,14 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "NotificationChannel")
 		os.Exit(1)
 	}
-	if err := (&controller.NotificationReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr, emailAdapterConfig); err != nil {
+
+	// setup NotificationReconciler with the parsed config for email adapter
+	notificationReconciler := controller.NewNotificationReconcilerWithSenderConfig(mgr.GetClient(), mgr.GetScheme(), emailAdapterConfig)
+	if err := notificationReconciler.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Notification")
 		os.Exit(1)
 	}
+
 	if err := (&controller.NotificationTemplateReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),

@@ -37,9 +37,5 @@ func (a AdapterSender) ProcessNotification(ctx context.Context, channel *notific
 		err = errors.New("unknown notification type")
 	}
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }

@@ -38,7 +38,6 @@ func NewSMTPSender(config *config.EmailAdapterConfig) *SMTPEmailSender {
 func (s *SMTPEmailSender) Send(ctx context.Context, from string, senderName string, bcc []string, subject, body string) error {
 	log := logr.FromContextOrDiscard(ctx)
 
-	// Timeout für die gesamte Operation setzen
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 

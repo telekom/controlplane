@@ -23,7 +23,7 @@ import (
 var _ handler.Handler[*notificationv1.Notification] = &NotificationHandler{}
 
 type NotificationHandler struct {
-	NotificationSender sender.AdapterSender
+	NotificationSender sender.NotificationSender
 }
 
 func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *notificationv1.Notification) error {
@@ -101,7 +101,6 @@ func addResultToStatus(notification *notificationv1.Notification, channelId stri
 		Sent:         success,
 		ErrorMessage: message,
 	}
-
 }
 
 func resolveTemplate(ctx context.Context, channel *notificationv1.NotificationChannel, purpose string) (*notificationv1.NotificationTemplate, error) {

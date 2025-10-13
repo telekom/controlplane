@@ -121,7 +121,7 @@ var _ = Describe("Notification Controller", func() {
 							Name: "John Snow",
 						},
 						Channels: []commontypes.ObjectRef{
-							commontypes.ObjectRef{
+							{
 								Name:      channelName,
 								Namespace: "default",
 							},
@@ -307,6 +307,7 @@ var _ = Describe("Notification Controller", func() {
 
 		})
 	})
+
 })
 
 func ExpectJSONEqual(actualJSON, expectedJSON []byte) {

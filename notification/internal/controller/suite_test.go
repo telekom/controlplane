@@ -7,12 +7,14 @@ package controller
 import (
 	"context"
 	"fmt"
+	emailadapterconfig "github.com/telekom/controlplane/notification/internal/config"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"path/filepath"
 	"runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"testing"
 	"time"
@@ -26,8 +28,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	emailadapterconfig "github.com/telekom/controlplane/notification/internal/config"
 
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	// +kubebuilder:scaffold:imports
@@ -43,11 +43,12 @@ const (
 )
 
 var (
-	ctx       context.Context
-	cancel    context.CancelFunc
-	testEnv   *envtest.Environment
-	cfg       *rest.Config
-	k8sClient client.Client
+	ctx        context.Context
+	cancel     context.CancelFunc
+	testEnv    *envtest.Environment
+	cfg        *rest.Config
+	k8sClient  client.Client
+	k8sManager manager.Manager
 )
 
 func TestControllers(t *testing.T) {
@@ -94,16 +95,13 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
-	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
+	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme.Scheme,
 		Metrics: server.Options{
 			BindAddress: "0",
 		},
 	})
 	Expect(err).ToNot(HaveOccurred())
-
-	loadedEmailConfig, err := emailadapterconfig.LoadEmailAdapterConfig()
-	Expect(err).NotTo(HaveOccurred())
 
 	err = (&NotificationTemplateReconciler{
 		Client: k8sManager.GetClient(),
@@ -117,13 +115,9 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&NotificationReconciler{
-		Client: k8sManager.GetClient(),
-		Scheme: k8sManager.GetScheme(),
-	}).SetupWithManager(k8sManager, &emailadapterconfig.EmailAdapterConfig{
-		SMTPConnection: loadedEmailConfig.SMTPConnection,
-		SMTPSender:     loadedEmailConfig.SMTPSender,
-	})
+	loadedEmailConfig, err := emailadapterconfig.LoadEmailAdapterConfig()
+	Expect(err).NotTo(HaveOccurred())
+	err = NewNotificationReconcilerWithSenderConfig(k8sManager.GetClient(), k8sManager.GetScheme(), loadedEmailConfig).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	By("Creating the environment namespace")
