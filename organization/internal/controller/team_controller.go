@@ -11,6 +11,7 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	teamhandler "github.com/telekom/controlplane/organization/internal/handler/team"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -61,6 +62,9 @@ func (r *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&identityv1.Client{},
 			handler.EnqueueRequestsFromMapFunc(r.mapClientToTeam),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&notificationv1.NotificationChannel{},
+			handler.EnqueueRequestsFromMapFunc(r.mapNotificationChannelToTeam),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
@@ -91,6 +95,36 @@ func (r *TeamReconciler) mapClientToTeam(ctx context.Context, obj client.Object)
 	requests := make([]reconcile.Request, 0, len(teamList.Items))
 	for _, team := range teamList.Items {
 		if team.Status.Namespace == identityClient.GetNamespace() && strings.HasSuffix(identityClient.GetName(), "--team-user") {
+			requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&team)})
+		}
+	}
+
+	return requests
+}
+
+func (r *TeamReconciler) mapNotificationChannelToTeam(ctx context.Context, obj client.Object) []reconcile.Request {
+	logger := log.FromContext(ctx)
+
+	notificationChannel, ok := obj.(*notificationv1.NotificationChannel)
+	if !ok {
+		return nil
+	}
+
+	listOptsForTeams := []client.ListOption{
+		client.MatchingLabels{
+			cconfig.EnvironmentLabelKey: notificationChannel.Labels[cconfig.EnvironmentLabelKey],
+		},
+	}
+
+	teamList := organizationv1.TeamList{}
+	if err := r.List(ctx, &teamList, listOptsForTeams...); err != nil {
+		logger.Error(err, "failed to list Teams")
+		return nil
+	}
+
+	requests := make([]reconcile.Request, 0, len(teamList.Items))
+	for _, team := range teamList.Items {
+		if team.Status.Namespace == notificationChannel.GetNamespace() {
 			requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&team)})
 		}
 	}
