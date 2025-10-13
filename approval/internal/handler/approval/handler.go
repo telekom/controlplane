@@ -11,7 +11,10 @@ import (
 	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
+	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+	"github.com/telekom/controlplane/notification/api/v1/builder"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -26,6 +29,7 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 		contextutil.RecorderFromContextOrDie(ctx).Eventf(approval,
 			"Normal", "Notification", "State changed from %s to %s", approval.Status.LastState, approval.Spec.State,
 		)
+		notify(ctx, approval)
 	}
 
 	fsm := ApprovalStrategyFSM[approval.Spec.Strategy]
@@ -56,6 +60,25 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 	}
 
 	return nil
+}
+
+func notify(ctx context.Context, owner *approvalv1.Approval) {
+	notificationBuilder := builder.New().
+		WithOwner(owner).
+		WithSender(notificationv1.SenderTypeSystem, "OrganizationService").
+		WithDefaultChannels(ctx, owner.GetNamespace()).
+		WithPurpose("approval").
+		WithProperties(map[string]any{
+			"env":   contextutil.EnvFromContextOrDie(ctx),
+			"file":  owner.Spec.Resource.Name,
+			"state": owner.Spec.State,
+		})
+
+	notification, err := notificationBuilder.Send(ctx)
+	if err != nil {
+		return
+	}
+	owner.Status.NotificationRef = types.ObjectRefFromObject(notification)
 }
 
 func (h *ApprovalHandler) Delete(ctx context.Context, approval *approvalv1.Approval) error {

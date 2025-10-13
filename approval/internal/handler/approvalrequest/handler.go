@@ -10,6 +10,8 @@ import (
 	"github.com/pkg/errors"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+	"github.com/telekom/controlplane/notification/api/v1/builder"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common/pkg/client"
@@ -36,6 +38,7 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 		contextutil.RecorderFromContextOrDie(ctx).Eventf(approvalReq,
 			"Normal", "Notification", "State changed from %s to %s", approvalReq.Status.LastState, approvalReq.Spec.State,
 		)
+		notify(ctx, approvalReq)
 	}
 
 	fsm := ApprovalStrategyFSM[approvalReq.Spec.Strategy]
@@ -84,6 +87,26 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 	}
 
 	return nil
+}
+
+func notify(ctx context.Context, req *approvalv1.ApprovalRequest) {
+	notificationBuilder := builder.New().
+		WithOwner(req).
+		WithSender(notificationv1.SenderTypeSystem, "OrganizationService").
+		WithDefaultChannels(ctx, req.GetNamespace()).
+		WithPurpose("approval request").
+		WithProperties(map[string]any{
+			"env":       contextutil.EnvFromContextOrDie(ctx),
+			"kind":      req.Spec.Resource.Kind,
+			"state":     req.Spec.State,
+			"requestor": req.Spec.Requester,
+		})
+
+	notification, err := notificationBuilder.Send(ctx)
+	if err != nil {
+		return
+	}
+	req.Status.NotificationRef = types.ObjectRefFromObject(notification)
 }
 
 func (h *ApprovalRequestHandler) Delete(ctx context.Context, approvalReq *approvalv1.ApprovalRequest) error {
