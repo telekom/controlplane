@@ -55,7 +55,7 @@ func (n NotificationChannelHandler) CreateOrUpdate(ctx context.Context, owner *o
 // sendNotifications sends notifications based on team annotations
 func (n NotificationChannelHandler) sendNotifications(ctx context.Context, owner *organizationv1.Team) error {
 	notificationBuilder := builder.New().
-		WithOwner(owner).
+		WithNamespace(owner.Status.Namespace).
 		WithSender(notificationv1.SenderTypeSystem, "OrganizationService").
 		WithDefaultChannels(ctx, owner.Status.Namespace).
 		WithProperties(map[string]any{
@@ -87,7 +87,7 @@ func memberChangedNotification(ctx context.Context, owner *organizationv1.Team, 
 	var notification *notificationv1.Notification
 	var err error
 
-	notification, err = notificationBuilder.WithPurpose("team members changed").
+	notification, err = notificationBuilder.WithPurpose("team-members-changed").
 		WithNameSuffix(hash.ComputeHash(owner.Spec.Members, nil)).
 		Build(ctx)
 	if err != nil {
@@ -117,7 +117,7 @@ func rotateTokenNotification(ctx context.Context, owner *organizationv1.Team, no
 	var notification *notificationv1.Notification
 	var err error
 
-	notification, err = notificationBuilder.WithPurpose("token rotated").
+	notification, err = notificationBuilder.WithPurpose("token-rotated").
 		WithNameSuffix(hash.ComputeHash(owner.Status.TeamToken, nil)).
 		Build(ctx)
 	if err != nil {
@@ -129,7 +129,7 @@ func rotateTokenNotification(ctx context.Context, owner *organizationv1.Team, no
 		if err != nil {
 			return err
 		}
-	} else if owner.Status.NotificationTokenRotateRef.Name != notification.Name {
+	} else if owner.Status.NotificationTokenRotateRef.Name != notification.GetName() {
 		notification, err = notificationBuilder.Send(ctx)
 		if err != nil {
 			return err
