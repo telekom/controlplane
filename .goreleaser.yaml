@@ -136,6 +136,15 @@ builds:
       - windows # only for rover-ctl
     goarch:
       - amd64
+  - id: migration
+    dir: migration
+    main: cmd/main.go
+    binary: migration
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64 
 archives:
   - id: rover-ctl
     ids: [rover-ctl]
@@ -412,6 +421,25 @@ kos:
     working_dir: rover-ctl
     repositories:
       - ghcr.io/telekom/controlplane/rover-ctl
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: migration
+    build: migration
+    main: .
+    working_dir: migration
+    repositories:
+      - ghcr.io/telekom/controlplane/migration
     labels:
       org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
       org.opencontainers.image.url: "https://developer.telekom.de/"
