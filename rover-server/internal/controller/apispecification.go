@@ -10,6 +10,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"io"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -62,7 +63,7 @@ func (a *ApiSpecificationController) Delete(ctx context.Context, resourceId stri
 	fileId := generateFileId(id)
 	err = file.GetFileManager().DeleteFile(ctx, fileId)
 	if err != nil {
-		if problems.IsNotFound(err) {
+		if strings.EqualFold(err.Error(), file.ErrorNotFound.Error()) {
 			return problems.NotFound(resourceId)
 		}
 		return err

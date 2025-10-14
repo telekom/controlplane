@@ -27,3 +27,5 @@ var GetFileManager = func() api.FileManager {
 	fileManager = api.GetFileManager(options...)
 	return fileManager
 }
+
+var ErrorNotFound = api.ErrNotFound
