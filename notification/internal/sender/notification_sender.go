@@ -18,9 +18,9 @@ type NotificationSender interface {
 var _ NotificationSender = AdapterSender{}
 
 type AdapterSender struct {
-	MailAdapter     adapter.NotificationAdapter[adapter.MailConfiguration]
-	ChatAdapter     adapter.NotificationAdapter[adapter.ChatConfiguration]
-	CallbackAdapter adapter.NotificationAdapter[adapter.CallbackConfiguration]
+	MailAdapter     adapter.NotificationAdapter[adapter.MailChannelConfiguration]
+	ChatAdapter     adapter.NotificationAdapter[adapter.ChatChannelConfiguration]
+	CallbackAdapter adapter.NotificationAdapter[adapter.CallbackChannelConfiguration]
 }
 
 func (a AdapterSender) ProcessNotification(ctx context.Context, channel *notificationv1.NotificationChannel, subject string, body string) error {

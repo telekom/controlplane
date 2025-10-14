@@ -44,7 +44,7 @@ func NewNotificationReconcilerWithSenderConfig(
 	// initialize the notification sender with all adapters so they can be reused
 	notificationSender := &sender.AdapterSender{
 		MailAdapter: &mail.EmailAdapter{
-			Config: emailConfig,
+			AdapterConfig: emailConfig,
 		},
 		ChatAdapter:     &adapter.MsTeamsAdapter{},
 		CallbackAdapter: &adapter.WebhookAdapter{},

@@ -30,7 +30,8 @@ type SMTPSender struct {
 	InitialBackoff time.Duration `mapstructure:"initialBackoff"`
 	MaxBackoff     time.Duration `mapstructure:"maxBackoff"`
 	BatchLoopDelay time.Duration `mapstructure:"batchLoopDelay"`
-	Default        string        `mapstructure:"default"`
+	DefaultFrom    string        `mapstructure:"defaultFrom"`
+	DefaultName    string        `mapstructure:"defaultName"`
 }
 
 func LoadEmailAdapterConfig() (*EmailAdapterConfig, error) {
@@ -58,5 +59,6 @@ func setDefaults() {
 	viper.SetDefault("smtpSender.maxRetries", 5)
 	viper.SetDefault("smtpSender.initialBackoff", "1s")
 	viper.SetDefault("smtpSender.maxBackoff", "1m")
-	viper.SetDefault("smtpSender.default", "noreply_fmb_tardis_support@telekom.de")
+	viper.SetDefault("smtpSender.defaultFrom", "noreply_fmb_tardis_support@telekom.de")
+	viper.SetDefault("smtpSender.defaultName", "Team Tardis")
 }

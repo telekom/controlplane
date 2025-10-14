@@ -155,23 +155,10 @@ type EmailConfig struct {
 	// +kubebuilder:validation:items:Format=email
 	Recipients []string `json:"recipients"`
 
-	// CC Recipients of this email
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:items:Format=email
-	CCRecipients []string `json:"ccRecipients"`
-
-	// SMTP server host
-	// +kubebuilder:validation:Optional
-	SMTPHost string `json:"smtpHost"`
-
-	// SMTP server port
-	// +kubebuilder:validation:Optional
-	SMTPPort int `json:"smtpPort"`
-
 	// From email address
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Format=email
-	From string `json:"from"`
+	From *string `json:"from"`
 
 	// Authentication configuration
 	// +optional
@@ -182,19 +169,7 @@ func (e *EmailConfig) GetRecipients() []string {
 	return e.Recipients
 }
 
-func (e *EmailConfig) GetCCRecipients() []string {
-	return e.CCRecipients
-}
-
-func (e *EmailConfig) GetSMTPHost() string {
-	return e.SMTPHost
-}
-
-func (e *EmailConfig) GetSMTPPort() int {
-	return e.SMTPPort
-}
-
-func (e *EmailConfig) GetFrom() string {
+func (e *EmailConfig) GetFrom() *string {
 	return e.From
 }
 

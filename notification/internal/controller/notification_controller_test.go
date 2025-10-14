@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"github.com/stretchr/testify/mock"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -18,9 +19,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	mailsender "github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
+	mailsendermock "github.com/telekom/controlplane/notification/internal/sender/adapter/mail/mock"
+
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
 
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+
+	notificationconfig "github.com/telekom/controlplane/notification/internal/config"
 )
 
 var _ = Describe("Notification Controller", func() {
@@ -53,6 +59,15 @@ var _ = Describe("Notification Controller", func() {
 		channel := &notificationv1.NotificationChannel{}
 
 		BeforeEach(func() {
+			By("Mocking the actual email sender")
+			mockMailSender := &mailsendermock.MockEmailSender{}
+			//mockMailSender.EXPECT().Send(ctx, "test.from@somewhere.test", "Team Tardis", []string{"john.doe@example.com"}, "Subject: awesomeSubject", "Body: awesomeBody").Return(nil)
+			mockMailSender.EXPECT().Send(mock.Anything, "test.from@somewhere.test", "Team Tardis", []string{"john.doe@example.com"}, "Subject: awesomeSubject\n", "Body: awesomeBody\n").Return(nil)
+
+			mailsender.NewSMTPSender = func(config *notificationconfig.EmailAdapterConfig) mailsender.EmailSender {
+				return mockMailSender
+			}
+
 			By("creating the custom resource for the Kind Notification Template")
 			err := k8sClient.Get(ctx, templateNamespacedName, template)
 			if err != nil && errors.IsNotFound(err) {
@@ -78,6 +93,7 @@ var _ = Describe("Notification Controller", func() {
 			By("creating the custom resource for the Kind Notification Channel")
 			err = k8sClient.Get(ctx, channelNamespacedName, channel)
 			if err != nil && errors.IsNotFound(err) {
+				fromString := "test.from@somewhere.test"
 				resource := &notificationv1.NotificationChannel{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      channelName,
@@ -88,11 +104,8 @@ var _ = Describe("Notification Controller", func() {
 					},
 					Spec: notificationv1.NotificationChannelSpec{
 						Email: &notificationv1.EmailConfig{
-							Recipients:   []string{"john.doe@example.com"},
-							CCRecipients: nil,
-							//	SMTPHost:       "testSMTPHost",
-							//	SMTPPort:       1234,
-							From:           "test.from@somewhere.test",
+							Recipients:     []string{"john.doe@example.com"},
+							From:           &fromString,
 							Authentication: nil,
 						},
 						MsTeams: nil,
@@ -155,8 +168,8 @@ var _ = Describe("Notification Controller", func() {
 			Expect(k8sClient.Delete(ctx, templateResource)).To(Succeed())
 		})
 
-		It("should successfully reconcile the resource with no channels - nothing to do", func() {
-			By("Reconciling the created resource")
+		It("should successfully reconcile the resource", func() {
+			By("Sending the notification per channel")
 
 			Eventually(func(g Gomega) {
 				notification := &notificationv1.Notification{}
