@@ -18,7 +18,9 @@ type EmailAdapter struct {
 
 func (e EmailAdapter) Send(ctx context.Context, config MailConfiguration, title string, body string) error {
 	log := logr.FromContextOrDiscard(ctx)
-	log.Info("Sending via email ", "title", title, "body", body)
+
+	// either use the default smtp config or it can be overridden in the channel
+	log.Info("Sending via email ", "title", title, "body", body, "smtpHost", e.SMTPHost, "smtpPort", e.SMTPPort)
 
 	return nil
 }

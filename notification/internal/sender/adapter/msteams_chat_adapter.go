@@ -16,7 +16,7 @@ type MsTeamsAdapter struct {
 
 func (e MsTeamsAdapter) Send(ctx context.Context, config ChatConfiguration, title string, body string) error {
 	log := logr.FromContextOrDiscard(ctx)
-	log.Info("Sending via msteams ", title, " ", body)
+	log.Info("Sending via MsTeams ", "title", title, "body", body)
 
 	return nil
 }

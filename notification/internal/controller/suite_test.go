@@ -102,6 +102,9 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
+	loadedEmailConfig, err := emailadapterconfig.LoadEmailAdapterConfig()
+	Expect(err).NotTo(HaveOccurred())
+
 	err = (&NotificationTemplateReconciler{
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
@@ -118,8 +121,8 @@ var _ = BeforeSuite(func() {
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
 	}).SetupWithManager(k8sManager, &emailadapterconfig.EmailAdapterConfig{
-		SMTPHost: "testSMTPHost",
-		SMTPPort: 1234,
+		SMTPHost: loadedEmailConfig.SMTPHost,
+		SMTPPort: loadedEmailConfig.SMTPPort,
 	})
 	Expect(err).ToNot(HaveOccurred())
 
