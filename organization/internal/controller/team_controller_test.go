@@ -277,7 +277,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 
 					By("Checking the notification channel email config")
 					g.Expect(notificationChannel.Spec.Email).NotTo(BeNil())
-					g.Expect(notificationChannel.Spec.Email.Recipients).To(ContainElement(notificationv1.EmailString(testMail)))
+					g.Expect(notificationChannel.Spec.Email.Recipients).To(ContainElement(testMail))
 
 					By("Checking the notification channel labels")
 					g.Expect(notificationChannel.GetLabels()).To(BeEquivalentTo(map[string]string{
