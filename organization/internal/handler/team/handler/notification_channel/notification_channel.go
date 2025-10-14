@@ -59,10 +59,10 @@ func (n NotificationChannelHandler) sendNotifications(ctx context.Context, owner
 		WithSender(notificationv1.SenderTypeSystem, "OrganizationService").
 		WithDefaultChannels(ctx, owner.Status.Namespace).
 		WithProperties(map[string]any{
-			"env":     contextutil.EnvFromContextOrDie(ctx),
-			"team":    owner.Spec.Name,
-			"group":   owner.Spec.Group,
-			"members": owner.Spec.Members,
+			"environment": contextutil.EnvFromContextOrDie(ctx),
+			"team":        owner.Spec.Name,
+			"group":       owner.Spec.Group,
+			"members":     owner.Spec.Members,
 		})
 
 	err := onboardingNotification(ctx, owner, notificationBuilder)
