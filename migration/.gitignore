@@ -17,6 +17,7 @@ testbin/
 # Output of the go coverage tool
 *.out
 cover.out
+gotest.log
 
 # Dependency directories
 vendor/
