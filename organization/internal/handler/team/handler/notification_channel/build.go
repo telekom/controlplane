@@ -21,7 +21,7 @@ func buildNotificationChannelObj(owner *organisationv1.Team) *notificationv1.Not
 
 		Spec: notificationv1.NotificationChannelSpec{
 			Email: &notificationv1.EmailConfig{
-				Recipients:     []notificationv1.EmailString{notificationv1.EmailString(owner.Spec.Email)},
+				Recipients:     []string{owner.Spec.Email},
 				CCRecipients:   nil,
 				SMTPHost:       "example.com",
 				SMTPPort:       443,
