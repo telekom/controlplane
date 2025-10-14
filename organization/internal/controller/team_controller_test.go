@@ -285,15 +285,15 @@ var _ = Describe("Team Controller", Ordered, func() {
 					}))
 
 					By("Checking onboarding notification was created")
-					g.Expect(team.Status.NotificationOnboardingRef).NotTo(BeNil())
+					g.Expect(team.Status.NotificationsRef["onboarded"]).NotTo(BeNil())
 					var onboardingNotification = &notificationv1.Notification{}
-					g.Expect(k8sClient.Get(ctx, team.Status.NotificationOnboardingRef.K8s(), onboardingNotification)).NotTo(HaveOccurred())
+					g.Expect(k8sClient.Get(ctx, team.Status.NotificationsRef["onboarded"].K8s(), onboardingNotification)).NotTo(HaveOccurred())
 					g.Expect(onboardingNotification.Spec.Purpose).To(Equal("onboarded"))
 
 					By("Checking token rotation notification was created")
-					g.Expect(team.Status.NotificationTokenRotateRef).NotTo(BeNil())
+					g.Expect(team.Status.NotificationsRef["token-rotated"]).NotTo(BeNil())
 					var tokenNotification = &notificationv1.Notification{}
-					g.Expect(k8sClient.Get(ctx, team.Status.NotificationTokenRotateRef.K8s(), tokenNotification)).NotTo(HaveOccurred())
+					g.Expect(k8sClient.Get(ctx, team.Status.NotificationsRef["token-rotated"].K8s(), tokenNotification)).NotTo(HaveOccurred())
 					g.Expect(tokenNotification.Spec.Purpose).To(Equal("token-rotated"))
 
 				}, timeout, interval).Should(Succeed())
@@ -302,7 +302,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
 				Expect(err).NotTo(HaveOccurred())
 
-				originalMemberChangeRef := team.Status.NotificationMemberChangedRef
+				originalMemberChangeRef := team.Status.NotificationsRef["team-members-changed"]
 				team.Spec.Members = append(team.Spec.Members, organizationv1.Member{
 					Name:  "new-member",
 					Email: "newmember@example.com",
@@ -316,11 +316,11 @@ var _ = Describe("Team Controller", Ordered, func() {
 					g.Expect(err).NotTo(HaveOccurred())
 
 					By("Checking member change notification was created")
-					g.Expect(team.Status.NotificationMemberChangedRef).NotTo(BeNil())
-					g.Expect(team.Status.NotificationMemberChangedRef).NotTo(Equal(originalMemberChangeRef))
+					g.Expect(team.Status.NotificationsRef["team-members-changed"]).NotTo(BeNil())
+					g.Expect(team.Status.NotificationsRef["team-members-changed"]).NotTo(Equal(originalMemberChangeRef))
 
 					var memberChangeNotification = &notificationv1.Notification{}
-					g.Expect(k8sClient.Get(ctx, team.Status.NotificationMemberChangedRef.K8s(), memberChangeNotification)).NotTo(HaveOccurred())
+					g.Expect(k8sClient.Get(ctx, team.Status.NotificationsRef["team-members-changed"].K8s(), memberChangeNotification)).NotTo(HaveOccurred())
 					g.Expect(memberChangeNotification.Spec.Purpose).To(Equal("team-members-changed"))
 				}, timeout, interval).Should(Succeed())
 			})

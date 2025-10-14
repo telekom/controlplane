@@ -37,8 +37,20 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 		contextutil.RecorderFromContextOrDie(ctx).Eventf(approvalReq,
 			"Normal", "Notification", "State changed from %s to %s", approvalReq.Status.LastState, approvalReq.Spec.State,
 		)
+
+		if approvalReq.Spec.State == approvalv1.ApprovalStateGranted {
+			var err error
+			approvalReq.Status.NotificationRef, err = util.SendNotification(ctx, approvalReq, approvalReq.GetNamespace(), string(approvalReq.Spec.State), &approvalReq.Spec.Resource, &approvalReq.Spec.Requester)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if approvalReq.GetGeneration() == 1 {
 		var err error
-		approvalReq.Status.NotificationRef, err = util.SendNotification(ctx, approvalReq, string(approvalReq.Spec.State), &approvalReq.Spec.Resource, &approvalReq.Spec.Requester)
+		namespace := approvalReq.GetNamespace() // TODO: get owner application team namespace von the approvalReq.Spec.Resource field
+		approvalReq.Status.NotificationRef, err = util.SendNotification(ctx, approvalReq, namespace, string(approvalReq.Spec.State), &approvalReq.Spec.Resource, &approvalReq.Spec.Requester)
 		if err != nil {
 			return err
 		}

@@ -5,9 +5,11 @@
 package mutator
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/telekom/controlplane/organization/internal/index"
@@ -20,10 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 )
 
-const (
-	AnnotationSecretChanged = "organization.cp.ei.telekom.de/secret-changed"
-)
-
 func wrapCommunicationError(err error, purposeOfCommunication string) error {
 	return errors.NewInternalError(fmt.Errorf("failure during communication with secret-manager when doing '%s': '%w'", purposeOfCommunication, err))
 }
@@ -33,12 +31,6 @@ func MutateSecret(ctx context.Context, env string, teamObj *organisationv1.Team,
 
 	switch teamObj.Spec.Secret {
 	case "", secret.KeywordRotate:
-		if teamObj.GetGeneration() > 1 {
-			if teamObj.Annotations == nil {
-				teamObj.Annotations = make(map[string]string)
-			}
-			teamObj.Annotations[AnnotationSecretChanged] = "true"
-		}
 		clientSecretValue, teamToken, err := generateSecretAndToken(env, teamObj, zoneObj)
 		if err != nil {
 			return fmt.Errorf("unable to generate team token: %w", err)
@@ -58,11 +50,6 @@ func MutateSecret(ctx context.Context, env string, teamObj *organisationv1.Team,
 		}
 		teamObj.Spec.Secret = secretRef
 		// Due to status not being able to be set in the webhook, we will set the team-token in the identity-client handler
-	default:
-		if teamObj.Annotations == nil {
-			teamObj.Annotations = make(map[string]string)
-		}
-		teamObj.Annotations[AnnotationSecretChanged] = "false"
 	}
 
 	return nil
@@ -126,6 +113,9 @@ func GetZoneObjWithTeamInfo(ctx context.Context, k8sClient client.Client) (*admi
 
 func SortTeamMembers(teamObj *organisationv1.Team) {
 	sort.Slice(teamObj.Spec.Members, func(i, j int) bool {
-		return teamObj.Spec.Members[i].Email < teamObj.Spec.Members[j].Email
+		if strings.EqualFold(teamObj.Spec.Members[i].Email, teamObj.Spec.Members[j].Email) {
+			cmp.Less(teamObj.Spec.Members[i].Name, teamObj.Spec.Members[j].Name)
+		}
+		return cmp.Less(teamObj.Spec.Members[i].Email, teamObj.Spec.Members[j].Email)
 	})
 }

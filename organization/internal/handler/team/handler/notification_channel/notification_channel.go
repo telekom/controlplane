@@ -44,7 +44,9 @@ func (n NotificationChannelHandler) CreateOrUpdate(ctx context.Context, owner *o
 	}
 
 	owner.Status.NotificationChannelRef = types.ObjectRefFromObject(channelObj)
-
+	if owner.Status.NotificationsRef == nil {
+		owner.Status.NotificationsRef = make(map[string]*types.ObjectRef)
+	}
 	if err := n.sendNotifications(ctx, owner); err != nil {
 		log.Err(err).Msg("failed to send notifications")
 	}
@@ -52,7 +54,7 @@ func (n NotificationChannelHandler) CreateOrUpdate(ctx context.Context, owner *o
 	return nil
 }
 
-// sendNotifications sends notifications based on team annotations
+// sendNotifications sends notifications based on team
 func (n NotificationChannelHandler) sendNotifications(ctx context.Context, owner *organizationv1.Team) error {
 	notificationBuilder := builder.New().
 		WithNamespace(owner.Status.Namespace).
@@ -95,19 +97,12 @@ func memberChangedNotification(ctx context.Context, owner *organizationv1.Team, 
 	}
 
 	if owner.GetGeneration() > 1 {
-		if owner.Status.NotificationMemberChangedRef == nil {
-			notification, err = notificationBuilder.Send(ctx)
-			if err != nil {
-				return err
-			}
-			owner.Status.NotificationMemberChangedRef = types.ObjectRefFromObject(notification)
-		} else if owner.Status.NotificationMemberChangedRef.Name != notification.Name {
-			notification, err = notificationBuilder.Send(ctx)
-			if err != nil {
-				return err
-			}
-			owner.Status.NotificationMemberChangedRef = types.ObjectRefFromObject(notification)
+		notification, err = notificationBuilder.Send(ctx)
+		if err != nil {
+			return err
 		}
+		owner.Status.NotificationsRef["team-members-changed"] = types.ObjectRefFromObject(notification)
+
 	}
 
 	return nil
@@ -124,19 +119,12 @@ func rotateTokenNotification(ctx context.Context, owner *organizationv1.Team, no
 		return err
 	}
 
-	if owner.Status.NotificationTokenRotateRef == nil {
-		notification, err = notificationBuilder.Send(ctx)
-		if err != nil {
-			return err
-		}
-	} else if owner.Status.NotificationTokenRotateRef.Name != notification.GetName() {
-		notification, err = notificationBuilder.Send(ctx)
-		if err != nil {
-			return err
-		}
+	notification, err = notificationBuilder.Send(ctx)
+	if err != nil {
+		return err
 	}
 
-	owner.Status.NotificationTokenRotateRef = types.ObjectRefFromObject(notification)
+	owner.Status.NotificationsRef["token-rotated"] = types.ObjectRefFromObject(notification)
 	return nil
 }
 
@@ -146,7 +134,7 @@ func onboardingNotification(ctx context.Context, owner *organizationv1.Team, not
 		if err != nil {
 			return err
 		}
-		owner.Status.NotificationOnboardingRef = types.ObjectRefFromObject(notification)
+		owner.Status.NotificationsRef["onboarded"] = types.ObjectRefFromObject(notification)
 	}
 	return nil
 }

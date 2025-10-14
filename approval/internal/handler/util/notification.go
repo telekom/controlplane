@@ -14,42 +14,20 @@ import (
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/api/v1/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-func SendNotification(ctx context.Context, owner client.Object, state string, target *types.TypedObjectRef, requester *approvalv1.Requester) (*types.ObjectRef, error) {
-	log := log.FromContext(ctx)
-
+func SendNotification(ctx context.Context, owner client.Object, sendToChannelNamespace, state string, target *types.TypedObjectRef, requester *approvalv1.Requester) (*types.ObjectRef, error) {
 	properties := map[string]any{
 		"environment": contextutil.EnvFromContextOrDie(ctx),
 		"state":       state,
-	}
-
-	switch target.Kind {
-	case "ApiSubscription":
-		approvalProperties, err := requester.GetProperties()
-		if err != nil || approvalProperties == nil {
-			return nil, err
-		}
-		properties["API"] = approvalProperties["basePath"]
-		scopes, ok := approvalProperties["scopes"]
-		if !ok {
-			scopes = "no scopes"
-		} else {
-			scopesStr, _ := scopes.(string)
-			if scopesStr == "" || strings.EqualFold(scopesStr, "null") || strings.EqualFold(scopesStr, "nil") {
-				scopes = "no scopes"
-			}
-		}
-		properties["Oauth-Scopes"] = scopes
-	default:
-		log.V(1).Info("unknown resource kind", "kind", target.Kind)
+		"target":      target.DeepCopy(),
+		"requester":   requester.DeepCopy(),
 	}
 
 	notificationBuilder := builder.New().
 		WithOwner(owner).
 		WithSender(notificationv1.SenderTypeSystem, "ApprovalService").
-		WithDefaultChannels(ctx, owner.GetNamespace()).
+		WithDefaultChannels(ctx, sendToChannelNamespace).
 		WithPurpose(strings.ToLower(owner.GetObjectKind().GroupVersionKind().Kind) + "--" + owner.GetName()).
 		WithProperties(properties)
 

@@ -216,7 +216,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 
 				var previousToken, latestToken organizationv1.TeamToken
 				previousToken = getDecodedToken(team.Status.TeamToken)
-				previousTokenRotateRef := team.Status.NotificationTokenRotateRef
+				previousTokenRotateRef := team.Status.NotificationsRef["token-rotated"]
 				team.Spec.Secret = "rotate"
 
 				By("Updating the Team.Spec to rotate with delay to have a different timestamp")
@@ -248,10 +248,10 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					g.Expect(identityClient.Spec.ClientSecret).To(Equal(team.Spec.Secret))
 
 					By("Checking new token rotation notification was created")
-					g.Expect(team.Status.NotificationTokenRotateRef).NotTo(BeNil())
-					g.Expect(team.Status.NotificationTokenRotateRef.Name).NotTo(Equal(previousTokenRotateRef.Name))
+					g.Expect(team.Status.NotificationsRef["token-rotated"]).NotTo(BeNil())
+					g.Expect(team.Status.NotificationsRef["token-rotated"].Name).NotTo(Equal(previousTokenRotateRef.Name))
 					var tokenNotification = &notificationv1.Notification{}
-					g.Expect(k8sClient.Get(ctx, team.Status.NotificationTokenRotateRef.K8s(), tokenNotification)).NotTo(HaveOccurred())
+					g.Expect(k8sClient.Get(ctx, team.Status.NotificationsRef["token-rotated"].K8s(), tokenNotification)).NotTo(HaveOccurred())
 					g.Expect(tokenNotification.Spec.Purpose).To(Equal("token-rotated"))
 
 				}, timeout, interval).Should(Succeed())

@@ -27,7 +27,7 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 			"Normal", "Notification", "State changed from %s to %s", approval.Status.LastState, approval.Spec.State,
 		)
 		var err error
-		approval.Status.NotificationRef, err = util.SendNotification(ctx, approval, string(approval.Spec.State), &approval.Spec.Resource, &approval.Spec.Requester)
+		approval.Status.NotificationRef, err = util.SendNotification(ctx, approval, approval.GetNamespace(), string(approval.Spec.State), &approval.Spec.Resource, &approval.Spec.Requester)
 		if err != nil {
 			return err
 		}
