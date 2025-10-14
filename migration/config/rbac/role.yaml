@@ -1,0 +1,37 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: migration-operator-role
+rules:
+# ApprovalRequest permissions
+- apiGroups:
+  - approval.cp.ei.telekom.de
+  resources:
+  - approvalrequests
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+- apiGroups:
+  - approval.cp.ei.telekom.de
+  resources:
+  - approvalrequests/status
+  verbs:
+  - get
+  - update
+  - patch
+# Secret permissions (to read remote cluster credentials)
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch

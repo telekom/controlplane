@@ -1,0 +1,30 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Adds namespace to all resources.
+namespace: controlplane-system
+
+# Labels to add to all resources and selectors.
+commonLabels:
+  app.kubernetes.io/name: migration-operator
+  app.kubernetes.io/component: migration
+  app.kubernetes.io/part-of: controlplane
+
+# Value of this field is prepended to the
+# names of all resources
+namePrefix: migration-operator-
+
+resources:
+- ../crd
+- ../rbac
+- ../manager
+
+# Images to use
+images:
+- name: controller
+  newName: ghcr.io/telekom/controlplane-migration-operator
+  newTag: latest
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
