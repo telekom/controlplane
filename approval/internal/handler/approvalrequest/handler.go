@@ -10,8 +10,7 @@ import (
 	"github.com/pkg/errors"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
-	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
-	"github.com/telekom/controlplane/notification/api/v1/builder"
+	"github.com/telekom/controlplane/approval/internal/handler/util"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common/pkg/client"
@@ -38,9 +37,10 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 		contextutil.RecorderFromContextOrDie(ctx).Eventf(approvalReq,
 			"Normal", "Notification", "State changed from %s to %s", approvalReq.Status.LastState, approvalReq.Spec.State,
 		)
-		err := notify(ctx, approvalReq)
+		var err error
+		approvalReq.Status.NotificationRef, err = util.SendNotification(ctx, approvalReq, string(approvalReq.Spec.State), &approvalReq.Spec.Resource, &approvalReq.Spec.Requester)
 		if err != nil {
-			log.Error(err, "failed to notify approval")
+			return err
 		}
 	}
 
@@ -89,28 +89,6 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 		approvalReq.SetCondition(condition.NewNotReadyCondition("Invalid", "Request is in an unknown state"))
 	}
 
-	return nil
-}
-
-func notify(ctx context.Context, req *approvalv1.ApprovalRequest) error {
-	notificationBuilder := builder.New().
-		WithOwner(req).
-		WithSender(notificationv1.SenderTypeSystem, "OrganizationService").
-		WithDefaultChannels(ctx, req.GetNamespace()).
-		WithPurpose("approval-request").
-		WithProperties(map[string]any{
-			"env":       contextutil.EnvFromContextOrDie(ctx),
-			"kind":      req.Spec.Resource.Kind,
-			"state":     req.Spec.State,
-			"requestor": req.Spec.Requester,
-			"oauth":     req.Spec.Requester.Properties.Raw, //TODO
-		})
-
-	notification, err := notificationBuilder.Send(ctx)
-	if err != nil {
-		return err
-	}
-	req.Status.NotificationRef = types.ObjectRefFromObject(notification)
 	return nil
 }
 

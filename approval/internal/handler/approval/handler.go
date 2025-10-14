@@ -9,12 +9,10 @@ import (
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
+	"github.com/telekom/controlplane/approval/internal/handler/util"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
-	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
-	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
-	"github.com/telekom/controlplane/notification/api/v1/builder"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -24,14 +22,14 @@ type ApprovalHandler struct {
 }
 
 func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approvalv1.Approval) error {
-	log := log.FromContext(ctx)
 	if approval.Spec.State != approval.Status.LastState {
 		contextutil.RecorderFromContextOrDie(ctx).Eventf(approval,
 			"Normal", "Notification", "State changed from %s to %s", approval.Status.LastState, approval.Spec.State,
 		)
-		err := notify(ctx, approval)
+		var err error
+		approval.Status.NotificationRef, err = util.SendNotification(ctx, approval, string(approval.Spec.State), &approval.Spec.Resource, &approval.Spec.Requester)
 		if err != nil {
-			log.Error(err, "failed to notify approval")
+			return err
 		}
 	}
 
@@ -62,26 +60,6 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 
 	}
 
-	return nil
-}
-
-func notify(ctx context.Context, owner *approvalv1.Approval) error {
-	notificationBuilder := builder.New().
-		WithOwner(owner).
-		WithSender(notificationv1.SenderTypeSystem, "OrganizationService").
-		WithDefaultChannels(ctx, owner.GetNamespace()).
-		WithPurpose("approval").
-		WithProperties(map[string]any{
-			"env":   contextutil.EnvFromContextOrDie(ctx),
-			"file":  owner.Spec.Resource.Name,
-			"state": owner.Spec.State,
-		})
-
-	notification, err := notificationBuilder.Send(ctx)
-	if err != nil {
-		return err
-	}
-	owner.Status.NotificationRef = types.ObjectRefFromObject(notification)
 	return nil
 }
 

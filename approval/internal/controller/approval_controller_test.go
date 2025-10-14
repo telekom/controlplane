@@ -168,6 +168,6 @@ func checkApprovalStatus(typeNamespacedName types.NamespacedName, state approval
 		Expect(fetchedUpdatedApproval.Status.NotificationRef).NotTo(BeNil())
 		var notification = &notificationv1.Notification{}
 		Expect(k8sClient.Get(ctx, fetchedUpdatedApproval.Status.NotificationRef.K8s(), notification)).NotTo(HaveOccurred())
-		Expect(notification.Spec.Purpose).To(Equal("approval"))
+		Expect(notification.Spec.Purpose).To(ContainSubstring("approval--test-resource"))
 	}, timeout, interval).Should(Succeed())
 }
