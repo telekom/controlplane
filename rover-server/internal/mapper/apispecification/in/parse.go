@@ -54,6 +54,8 @@ func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecifica
 			setSecurityDefinitionsValues(&apiSpecification.Spec, model.Model.SecurityDefinitions.Definitions)
 		}
 
+		apiSpecification.ObjectMeta.Name = roverv1.MakeName(apiSpecification)
+
 		return apiSpecification, nil
 	}
 

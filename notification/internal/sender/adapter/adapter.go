@@ -16,21 +16,18 @@ type NotificationAdapter[C NotificationConfig] interface {
 	Send(ctx context.Context, config C, title string, body string) error
 }
 
-type MailConfiguration interface {
+type MailChannelConfiguration interface {
 	IsNotificationConfig()
 	GetRecipients() []string
-	GetCCRecipients() []string
-	GetSMTPHost() string
-	GetSMTPPort() int
-	GetFrom() string
+	GetFrom() *string
 }
 
-type ChatConfiguration interface {
+type ChatChannelConfiguration interface {
 	IsNotificationConfig()
 	GetWebhookURL() string
 }
 
-type CallbackConfiguration interface {
+type CallbackChannelConfiguration interface {
 	IsNotificationConfig()
 	GetURL() string
 	GetMethod() string

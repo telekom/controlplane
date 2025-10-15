@@ -76,12 +76,6 @@ spec:
                         - tokenUrl
                         type: object
                     type: object
-                  ccRecipients:
-                    description: CC Recipients of this email
-                    items:
-                      format: email
-                      type: string
-                    type: array
                   from:
                     description: From email address
                     format: email
@@ -92,14 +86,7 @@ spec:
                       format: email
                       type: string
                     type: array
-                  smtpHost:
-                    description: SMTP server host
-                    type: string
-                  smtpPort:
-                    description: SMTP server port
-                    type: integer
                 required:
-                - from
                 - recipients
                 type: object
               ignore:

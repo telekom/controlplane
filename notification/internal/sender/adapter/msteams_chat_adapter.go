@@ -9,12 +9,12 @@ import (
 	"github.com/go-logr/logr"
 )
 
-var _ NotificationAdapter[ChatConfiguration] = &MsTeamsAdapter{}
+var _ NotificationAdapter[ChatChannelConfiguration] = &MsTeamsAdapter{}
 
 type MsTeamsAdapter struct {
 }
 
-func (e MsTeamsAdapter) Send(ctx context.Context, config ChatConfiguration, title string, body string) error {
+func (e MsTeamsAdapter) Send(ctx context.Context, config ChatChannelConfiguration, title string, body string) error {
 	log := logr.FromContextOrDiscard(ctx)
 	log.Info("Sending via MsTeams ", "title", title, "body", body)
 

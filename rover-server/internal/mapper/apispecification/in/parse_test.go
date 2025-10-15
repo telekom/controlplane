@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 var _ = Describe("Apispecification Parser", func() {
@@ -117,6 +118,17 @@ servers:
 
 	Context("When parsing a specification", func() {
 
+		It("should correctly calculate them name", func() {
+			expected := "ecc-pi-product-inventory-management-service-tmf-api-productinventory-v4"
+			apiSpecification := &roverv1.ApiSpecification{
+				Spec: roverv1.ApiSpecificationSpec{
+					BasePath: "/ecc-pi/product-inventory-management-service/tmf-api/productInventory/v4",
+				},
+			}
+			name := roverv1.MakeName(apiSpecification)
+			Expect(name).To(Equal(expected))
+		})
+
 		It("should fail due to empty spec", func() {
 			_, err := ParseSpecification(ctx, "")
 			Expect(err).To(HaveOccurred())
@@ -129,6 +141,7 @@ servers:
 			api, err := ParseSpecification(ctx, specV2)
 			Expect(err).NotTo(HaveOccurred())
 
+			Expect(api.Name).To(Equal("eni-foo-v1"))
 			Expect(api.Spec.BasePath).To(Equal("/eni/foo/v1"))
 			Expect(api.Spec.Version).To(Equal("1.0.0"))
 			Expect(api.Spec.Category).To(Equal("test"))
@@ -140,6 +153,7 @@ servers:
 			api, err := ParseSpecification(ctx, specV3_0)
 			Expect(err).NotTo(HaveOccurred())
 
+			Expect(api.Name).To(Equal("eni-foo-v1"))
 			Expect(api.Spec.BasePath).To(Equal("/eni/foo/v1"))
 			Expect(api.Spec.Version).To(Equal("1.0.0"))
 			Expect(api.Spec.Category).To(Equal("test"))

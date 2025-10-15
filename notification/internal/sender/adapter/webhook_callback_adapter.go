@@ -9,12 +9,12 @@ import (
 	"github.com/go-logr/logr"
 )
 
-var _ NotificationAdapter[CallbackConfiguration] = &WebhookAdapter{}
+var _ NotificationAdapter[CallbackChannelConfiguration] = &WebhookAdapter{}
 
 type WebhookAdapter struct {
 }
 
-func (e WebhookAdapter) Send(ctx context.Context, config CallbackConfiguration, title string, body string) error {
+func (e WebhookAdapter) Send(ctx context.Context, config CallbackChannelConfiguration, title string, body string) error {
 	log := logr.FromContextOrDiscard(ctx)
 	log.Info("Sending via webhook ", title, " ", body)
 

@@ -8,6 +8,7 @@ import (
 	"context"
 	"github.com/telekom/controlplane/notification/internal/sender"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter"
+	"github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
@@ -20,7 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	emailadapterconfig "github.com/telekom/controlplane/notification/internal/config"
+	adapterconfig "github.com/telekom/controlplane/notification/internal/config"
 )
 
 // NotificationReconciler reconciles a Notification object
@@ -30,6 +31,30 @@ type NotificationReconciler struct {
 	Recorder record.EventRecorder
 
 	cc.Controller[*notificationv1.Notification]
+
+	NotificationSender sender.NotificationSender
+}
+
+func NewNotificationReconcilerWithSenderConfig(
+	client client.Client,
+	scheme *runtime.Scheme,
+	emailConfig *adapterconfig.EmailAdapterConfig,
+) *NotificationReconciler {
+
+	// initialize the notification sender with all adapters so they can be reused
+	notificationSender := &sender.AdapterSender{
+		MailAdapter: &mail.EmailAdapter{
+			AdapterConfig: emailConfig,
+		},
+		ChatAdapter:     &adapter.MsTeamsAdapter{},
+		CallbackAdapter: &adapter.WebhookAdapter{},
+	}
+
+	return &NotificationReconciler{
+		Client:             client,
+		Scheme:             scheme,
+		NotificationSender: notificationSender,
+	}
 }
 
 // +kubebuilder:rbac:groups=notification.cp.ei.telekom.de,resources=notifications,verbs=get;list;watch;create;update;patch;delete
@@ -41,21 +66,11 @@ func (r *NotificationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager, emailConfig *emailadapterconfig.EmailAdapterConfig) error {
+func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("notification-controller")
 
-	// initialize the notification sender with all adapters so they can be reused
-	notificationSender := sender.AdapterSender{
-		MailAdapter: &adapter.EmailAdapter{
-			SMTPHost: emailConfig.SMTPHost,
-			SMTPPort: emailConfig.SMTPPort,
-		},
-		ChatAdapter:     &adapter.MsTeamsAdapter{},
-		CallbackAdapter: &adapter.WebhookAdapter{},
-	}
-
 	notificationHandler := &handler.NotificationHandler{
-		NotificationSender: notificationSender,
+		NotificationSender: r.NotificationSender,
 	}
 
 	r.Controller = cc.NewController(notificationHandler, r.Client, r.Recorder)

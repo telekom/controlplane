@@ -26,7 +26,7 @@ func Major(v string) string {
 func MakeName(apiSpec *ApiSpecification) string {
 	basePath := strings.Trim(apiSpec.Spec.BasePath, "/")
 	name := strings.ReplaceAll(basePath, "/", "-")
-	return name
+	return strings.ToLower(name)
 }
 
 type ApiSpecificationSpec struct {

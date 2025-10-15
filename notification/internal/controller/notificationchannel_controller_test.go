@@ -47,10 +47,6 @@ var _ = Describe("NotificationChannel Controller", func() {
 
 						Email: &notificationv1.EmailConfig{
 							Recipients:     []string{"test@test.com"},
-							CCRecipients:   nil,
-							SMTPHost:       "someSMTPHost",
-							SMTPPort:       1234,
-							From:           "a@b",
 							Authentication: nil,
 						},
 						Ignore: []string{"thisPurpose", "thatPurpose"},
@@ -77,9 +73,6 @@ var _ = Describe("NotificationChannel Controller", func() {
 				g.Expect(err).To(BeNil())
 
 				g.Expect(channel.Spec.Email).ToNot(BeNil())
-				g.Expect(channel.Spec.Email.From).To(Equal("a@b"))
-				g.Expect(channel.Spec.Email.SMTPHost).To(Equal("someSMTPHost"))
-				g.Expect(channel.Spec.Email.SMTPPort).To(Equal(1234))
 				g.Expect(channel.Spec.Ignore).To(ContainElement("thisPurpose"))
 				g.Expect(channel.Spec.Ignore).To(ContainElement("thatPurpose"))
 
