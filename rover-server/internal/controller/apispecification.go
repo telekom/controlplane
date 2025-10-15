@@ -59,9 +59,16 @@ func (a *ApiSpecificationController) Delete(ctx context.Context, resourceId stri
 		return err
 	}
 
-	ns := id.Environment + "--" + id.Namespace
+	fileId := generateFileId(id)
+	err = file.GetFileManager().DeleteFile(ctx, fileId)
+	if err != nil {
+		if errors.Is(err, file.ErrNotFound) {
+			return problems.NotFound(resourceId)
+		}
+		return err
+	}
 
-	//todo: filesapi does not support delete at the moment
+	ns := id.Environment + "--" + id.Namespace
 	err = a.Store.Delete(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
@@ -226,7 +233,7 @@ func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshal
 		return nil, err
 	}
 
-	fileId := id.Environment + "--" + id.ResourceId //<env>--<group>--<team>--<apiSpecName>
+	fileId := generateFileId(id)
 	fileContentType := "application/yaml"
 
 	resp := &filesapi.FileUploadResponse{
@@ -267,4 +274,9 @@ func (a *ApiSpecificationController) downloadFile(ctx context.Context, fileId st
 		return nil, err
 	}
 	return &b, nil
+}
+
+func generateFileId(id mapper.ResourceIdInfo) string {
+	fileId := id.Environment + "--" + id.ResourceId //<env>--<group>--<team>--<apiSpecName>
+	return fileId
 }

@@ -15,16 +15,14 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	commontypes "github.com/telekom/controlplane/common/pkg/types"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	mailsender "github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
 	mailsendermock "github.com/telekom/controlplane/notification/internal/sender/adapter/mail/mock"
-
-	commontypes "github.com/telekom/controlplane/common/pkg/types"
-
-	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 
 	notificationconfig "github.com/telekom/controlplane/notification/internal/config"
 )
@@ -287,6 +285,7 @@ var _ = Describe("Notification Controller", func() {
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
+			By("not creating the custom resource for the Kind Notification channel")
 
 			By("Updating the status.states with a failed SendState")
 
