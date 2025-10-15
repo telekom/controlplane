@@ -65,22 +65,22 @@ type DefaultCacheItem[T backend.SecretId, S backend.Secret[T]] struct {
 	expiresAt int64
 }
 
-func NewDefaultCacheItem[T backend.SecretId, S backend.Secret[T]](id T, value S, ttl int64) *DefaultCacheItem[T, S] {
-	return &DefaultCacheItem[T, S]{
+func NewDefaultCacheItem[T backend.SecretId, S backend.Secret[T]](id T, value S, ttl int64) DefaultCacheItem[T, S] {
+	return DefaultCacheItem[T, S]{
 		id:        id,
 		value:     value,
 		expiresAt: time.Now().Unix() + ttl,
 	}
 }
 
-func (c *DefaultCacheItem[T, S]) Id() T {
+func (c DefaultCacheItem[T, S]) Id() T {
 	return c.id
 }
 
-func (c *DefaultCacheItem[T, S]) Value() S {
+func (c DefaultCacheItem[T, S]) Value() S {
 	return c.value
 }
 
-func (c *DefaultCacheItem[T, S]) Expired() bool {
+func (c DefaultCacheItem[T, S]) Expired() bool {
 	return time.Now().Unix() > c.expiresAt
 }

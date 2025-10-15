@@ -12,12 +12,15 @@ import (
 	"io"
 	"net/http/httptest"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/cyberark/conjur-api-go/conjurapi"
 	"github.com/gofiber/fiber/v2"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/mock"
+	cs "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/secret-manager/internal/api"
 	"github.com/telekom/controlplane/secret-manager/internal/handler"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache"
@@ -32,7 +35,7 @@ func BenchmarkOnboardTeam(b *testing.B) {
 
 	conjur.RootPolicyPath = "controlplane"
 	backend := conjur.NewBackend(mockWriter, mockReader)
-	// cachedBackend := v2.NewCachedBackend(backend, 5*time.Second)
+	//cachedBackend := v2.NewCachedBackend(backend, 5*time.Second)
 	cachedBackend := cache.NewCachedBackend(backend, 5*time.Second)
 	onboarder := conjur.NewOnboarder(mockWriter, cachedBackend)
 
@@ -40,7 +43,9 @@ func BenchmarkOnboardTeam(b *testing.B) {
 	// -----------------------------
 
 	handler := api.NewStrictHandler(handler.NewHandler(ctrl), nil)
-	app := fiber.New()
+	appCfg := cs.NewAppConfig()
+	appCfg.EnableLogging = false
+	app := cs.NewAppWithConfig(appCfg)
 	api.RegisterHandlersWithOptions(app, handler, api.FiberServerOptions{
 		BaseURL: "/api",
 	})
@@ -61,6 +66,8 @@ func BenchmarkOnboardTeam(b *testing.B) {
 
 	b.ResetTimer()
 
+	b.SetParallelism(20)
+
 	b.RunParallel(func(pb *testing.PB) {
 		goroutineNum := int(time.Now().UnixNano() % int64(maxTeams))
 		teamId := fmt.Sprintf("team%d", goroutineNum)
@@ -71,6 +78,19 @@ func BenchmarkOnboardTeam(b *testing.B) {
 	})
 
 	b.StopTimer()
+
+	metrics, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		b.Fatal(err)
+	}
+	for _, m := range metrics {
+		if strings.Contains(*m.Name, "cache_access_total") {
+			for _, metric := range m.Metric {
+				b.Logf("metric %v: labels=%v value=%v", *m.Name, metric.Label, *metric.Counter.Value)
+			}
+		}
+
+	}
 }
 
 func runBenchmarkOnboardTeam(ctx context.Context, b *testing.B, app *fiber.App, env, teamId string) {

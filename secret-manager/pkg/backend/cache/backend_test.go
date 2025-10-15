@@ -70,6 +70,7 @@ var _ = Describe("Cached Backend", func() {
 			secretValue := backend.String("my-value")
 			secretId := mocks.NewMockSecretId(GinkgoT())
 			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().Copy().Return(secretId).Once()
 
 			mockBackend.EXPECT().Set(ctx, secretId, secretValue).Return(backend.NewDefaultSecret(secretId, "my-value"), nil).Once()
 
@@ -98,10 +99,11 @@ var _ = Describe("Cached Backend", func() {
 
 			num, err := testutil.GatherAndCount(prometheus.DefaultGatherer, "cache_access_total")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(num).To(Equal(2))
+			Expect(num).To(Equal(3))
 		})
 
 		It("should return an error if the backend fails", func() {
+
 			ctx := context.Background()
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
@@ -117,7 +119,7 @@ var _ = Describe("Cached Backend", func() {
 
 			num, err := testutil.GatherAndCount(prometheus.DefaultGatherer, "cache_access_total")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(num).To(Equal(2))
+			Expect(num).To(Equal(3))
 		})
 
 		It("should return the cached item when the value did not change", func() {
@@ -126,9 +128,11 @@ var _ = Describe("Cached Backend", func() {
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
 			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().Copy().Return(secretId).Once()
+
 			secretValue := backend.String(value)
 
-			cachedBackend.Cache.Set(secretId.String(), cache.NewDefaultCacheItem(secretId, backend.NewDefaultSecret[*mocks.MockSecretId](secretId, value), 10))
+			cachedBackend.Cache.Set(secretId.String(), cache.NewDefaultCacheItem(secretId, backend.NewDefaultSecret(secretId, value), 10))
 
 			res, err := cachedBackend.Set(ctx, secretId, secretValue)
 			Expect(err).NotTo(HaveOccurred())
@@ -141,6 +145,7 @@ var _ = Describe("Cached Backend", func() {
 			ctx := context.Background()
 			secretId := mocks.NewMockSecretId(GinkgoT())
 			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().Copy().Return(secretId).Once()
 
 			mockBackend.EXPECT().Set(ctx, secretId, backend.String("my-value")).Return(backend.DefaultSecret[*mocks.MockSecretId]{}, backend.ErrInvalidSecretId("invalid-id")).Once()
 

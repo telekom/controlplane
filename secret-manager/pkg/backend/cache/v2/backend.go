@@ -51,7 +51,7 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (S, error) {
 	cachedItem, ok := c.Cache.Get(id.String())
 	if ok {
 		metrics.RecordCacheHit()
-		return cachedItem, nil
+		return cachedItem.Copy().(S), nil
 	}
 	metrics.RecordCacheMiss("not_found")
 	item, err := c.Backend.Get(ctx, id)
@@ -63,7 +63,7 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (S, error) {
 	if !added {
 		log.Info("Failed to add item to cache", "id", id.String())
 	}
-	return item, nil
+	return item.Copy().(S), nil
 }
 
 // ParseSecretId implements backend.Backend.
@@ -75,19 +75,25 @@ func (c *CachedBackend[T, S]) ParseSecretId(raw string) (T, error) {
 func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.SecretValue) (S, error) {
 	log := logr.FromContextOrDiscard(ctx)
 
-	cachedItem, ok := c.Cache.Get(id.String())
+	cacheId := id.Copy()
+
+	cachedItem, ok := c.Cache.Get(cacheId.String())
 	if ok && value.EqualString(cachedItem.Value()) {
 		metrics.RecordCacheHit()
-		return cachedItem, nil
+		return cachedItem.Copy().(S), nil
 	} else if ok {
 		metrics.RecordCacheMiss("value_mismatch")
+		c.Cache.Del(cacheId.String())
 	}
 
-	item, err := c.Backend.Set(ctx, id, value)
+	metrics.RecordCacheMiss("set")
+	item, err := c.Backend.Set(ctx, cacheId.(T), value)
 	if err != nil {
 		return item, err
 	}
-	added := c.Cache.SetWithTTL(id.String(), item, int64(len(item.Value())), c.ttl)
+	var copy = item.Copy().(S)
+
+	added := c.Cache.SetWithTTL(copy.Id().String(), copy, int64(len(item.Value())), c.ttl)
 	if !added {
 		log.Info("Failed to add item to cache", "id", id.String())
 	}
