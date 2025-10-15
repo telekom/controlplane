@@ -329,7 +329,22 @@ func (s *InmemoryObjectStore[T]) CreateOrReplace(ctx context.Context, in T) erro
 		FieldValidation: "Strict",
 	})
 	if err != nil {
-		return errors.Wrap(mapErrorToProblem(err), "failed to update object")
+		if !apierrors.IsConflict(err) {
+			return errors.Wrap(mapErrorToProblem(err), "failed to update object")
+		}
+
+		// try to resolve conflict by getting the latest version and retrying the update
+		oldObj, err := s.k8sClient.Namespace(obj.GetNamespace()).Get(ctx, obj.GetName(), metav1.GetOptions{})
+		if err != nil {
+			return errors.Wrap(mapErrorToProblem(err), "failed to get object")
+		}
+		obj.SetResourceVersion(oldObj.GetResourceVersion())
+		obj, err = s.k8sClient.Namespace(obj.GetNamespace()).Update(ctx, obj, metav1.UpdateOptions{
+			FieldValidation: "Strict",
+		})
+		if err != nil {
+			return errors.Wrap(mapErrorToProblem(err), "failed to update object")
+		}
 	}
 
 	return s.OnUpdate(ctx, obj)
