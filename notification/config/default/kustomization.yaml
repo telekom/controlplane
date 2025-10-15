@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Adds namespace to all resources.
-namespace: notification-system
+namespace: controlplane-system
 
 # Value of this field is prepended to the
 # names of all resources, e.g. a deployment named
@@ -13,10 +13,15 @@ namespace: notification-system
 namePrefix: notification-
 
 # Labels to add to all resources and selectors.
-#labels:
-#- includeSelectors: true
-#  pairs:
-#    someName: someValue
+labels:
+- includeSelectors: true
+  pairs:
+    domain: notification
+  fields:
+    - path: spec/selector/matchLabels
+      create: true
+      kind: ServiceMonitor
+      group: monitoring.coreos.com
 
 resources:
 - ../crd
