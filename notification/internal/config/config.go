@@ -49,10 +49,10 @@ func LoadEmailAdapterConfig() (*EmailAdapterConfig, error) {
 }
 
 func setDefaults() {
-	viper.SetDefault("smtpConnection.host", "localhost")
-	viper.SetDefault("smtpConnection.port", 25)
-	viper.SetDefault("smtpConnection.user", "hyperion")
-	viper.SetDefault("smtpConnection.password", "anEspressoWouldBeNice")
+	viper.SetDefault("smtpConnection.host", "smtp.dev.dhei.telekom.de")
+	viper.SetDefault("smtpConnection.port", 465)
+	viper.SetDefault("smtpConnection.user", "")
+	viper.SetDefault("smtpConnection.password", "")
 
 	viper.SetDefault("smtpSender.batchSize", 30)
 	viper.SetDefault("smtpSender.batchLoopDelay", "1s")
