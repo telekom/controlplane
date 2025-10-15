@@ -8,6 +8,7 @@ charts
 
 # editor and IDE paraphernalia
 .idea
+.vscode
 
 # ignore test output
 gotest.log
