@@ -31,17 +31,23 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 	// lets go channel by channel
 	for _, channelRef := range notification.Spec.Channels {
 
+		channelKey := channelToMapKey(channelRef)
+		// first lets check if the notification was already successfully sent
+		if alreadySent(channelKey, notification) {
+			continue
+		}
+
 		// get the channel object
 		channel, err := getChannelByRef(ctx, channelRef)
 		if err != nil {
-			addResultToStatus(notification, channelToMapKey(channelRef), false, err.Error())
+			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
 
 		// resolve the template
 		template, err := resolveTemplate(ctx, channel, notification.Spec.Purpose)
 		if err != nil {
-			addResultToStatus(notification, channelToMapKey(channelRef), false, err.Error())
+			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
 
@@ -51,24 +57,24 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 		// render
 		renderedSubject, err := renderMessage(template.Spec.SubjectTemplate, notification.Spec.Properties)
 		if err != nil {
-			addResultToStatus(notification, channelToMapKey(channelRef), false, err.Error())
+			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
 
 		renderedBody, err := renderMessage(template.Spec.Template, notification.Spec.Properties)
 		if err != nil {
-			addResultToStatus(notification, channelToMapKey(channelRef), false, err.Error())
+			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
 
 		// better pass to sender service
 		err = n.NotificationSender.ProcessNotification(ctx, channel, renderedSubject, renderedBody)
 		if err != nil {
-			addResultToStatus(notification, channelToMapKey(channelRef), false, err.Error())
+			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
 
-		addResultToStatus(notification, channelToMapKey(channelRef), true, "Successfully sent")
+		addResultToStatus(notification, channelKey, true, "Successfully sent")
 	}
 
 	if hasFailedSendAttempt(notification.Status.States) {
@@ -80,6 +86,17 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 	}
 
 	return nil
+}
+
+func alreadySent(key string, notification *notificationv1.Notification) bool {
+	if notification.Status.States == nil || len(notification.Status.States) == 0 {
+		return false
+	}
+
+	if state, found := notification.Status.States[key]; found {
+		return state.Sent
+	}
+	return false
 }
 
 func hasFailedSendAttempt(statesMap map[string]notificationv1.SendState) bool {

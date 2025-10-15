@@ -7,20 +7,17 @@ package controller
 import (
 	"context"
 	"encoding/json"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/runtime"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
-
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 var _ = Describe("Notification Controller", func() {
@@ -155,8 +152,8 @@ var _ = Describe("Notification Controller", func() {
 			Expect(k8sClient.Delete(ctx, templateResource)).To(Succeed())
 		})
 
-		It("should successfully reconcile the resource with no channels - nothing to do", func() {
-			By("Reconciling the created resource")
+		It("should successfully reconcile the resource", func() {
+			By("sending the notifications to each channel")
 
 			Eventually(func(g Gomega) {
 				notification := &notificationv1.Notification{}
@@ -274,6 +271,7 @@ var _ = Describe("Notification Controller", func() {
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
+			By("not creating the custom resource for the Kind Notification channel")
 
 			By("Updating the status.states with a failed SendState")
 
@@ -307,6 +305,7 @@ var _ = Describe("Notification Controller", func() {
 
 		})
 	})
+
 })
 
 func ExpectJSONEqual(actualJSON, expectedJSON []byte) {
