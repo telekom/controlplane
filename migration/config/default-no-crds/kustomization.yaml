@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# This is the default configuration for standalone migration operator deployment.
-# For combined installations with the approval operator, use config/default-no-crds instead.
+# This kustomization is for use when the ApprovalRequest CRD is already installed
+# (e.g., when deploying alongside the approval operator)
 
 # Adds namespace to all resources.
 namespace: controlplane-system
@@ -21,20 +21,14 @@ labels:
 
 # Value of this field is prepended to the
 # names of all resources
-namePrefix: migration-
+namePrefix: migration-operator-
 
 resources:
-- ../crd
+# NOTE: CRDs are NOT included here - they should come from the approval module
 - ../rbac
 - ../manager
 # [METRICS] Expose the controller manager metrics service.
 - metrics_service.yaml
-
-# Images to use
-images:
-- name: controller
-  newName: ghcr.io/telekom/controlplane-migration-operator
-  newTag: latest
 
 # Patches to enable metrics endpoint using HTTPS
 patches:
