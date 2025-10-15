@@ -69,7 +69,7 @@ func (id Id) Env() string {
 }
 
 func (id Id) String() string {
-	return fmt.Sprintf("%s:%s:%s:%s:%s", id.env, id.team, id.app, id.path, id.checksum)
+	return strings.Join([]string{id.env, id.team, id.app, id.path, id.checksum}, ":")
 }
 
 func (id Id) Namespace() string {
@@ -109,6 +109,10 @@ func (id Id) CopyWithChecksum(resourceId string) Id {
 	new := Copy(id)
 	new.checksum = resourceId
 	return new
+}
+
+func (id Id) Copy() backend.SecretId {
+	return Copy(id)
 }
 
 func (id Id) SubPath() string {
