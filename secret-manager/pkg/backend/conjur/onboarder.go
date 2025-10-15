@@ -260,7 +260,7 @@ func (c *ConjurOnboarder) createSecrets(ctx context.Context, env, teamId, appId 
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to initialize secret %s", secretId.VariableId())
 		}
-		secretRefMap[secretPath] = secret.Id().Copy()
+		secretRefMap[secretPath] = secret.Id()
 	}
 
 	return secretRefMap, nil
