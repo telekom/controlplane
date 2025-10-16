@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
@@ -51,14 +52,20 @@ func NewApprovalRequestMigrationReconciler(
 
 // Reconcile handles the reconciliation of ApprovalRequest resources
 func (r *ApprovalRequestMigrationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues("approvalrequest", req.NamespacedName)
+	log := log.FromContext(ctx)
+	log.Info("Reconciling ApprovalRequest for migration", "name", req.Name, "namespace", req.Namespace)
 
 	// Fetch the ApprovalRequest
 	approvalRequest := &approvalv1.ApprovalRequest{}
 	if err := r.Get(ctx, req.NamespacedName, approvalRequest); err != nil {
 		// Object not found, might have been deleted
+		log.V(1).Info("ApprovalRequest not found, likely deleted")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+
+	log.Info("Processing ApprovalRequest",
+		"state", approvalRequest.Spec.State,
+		"hasOwnerRef", len(approvalRequest.OwnerReferences) > 0)
 
 	// Process the migration
 	if err := r.Handler.Handle(ctx, approvalRequest); err != nil {
@@ -67,6 +74,7 @@ func (r *ApprovalRequestMigrationReconciler) Reconcile(ctx context.Context, req 
 		return ctrl.Result{RequeueAfter: RequeueAfterDuration}, err
 	}
 
+	log.V(1).Info("Successfully processed ApprovalRequest, requeuing for periodic check")
 	// Requeue periodically to check for state changes
 	return ctrl.Result{RequeueAfter: RequeueAfterDuration}, nil
 }

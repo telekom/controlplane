@@ -13,6 +13,7 @@ import (
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/migration/internal/mapper"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // RemoteClient interface for fetching approvals from the legacy cluster
@@ -46,21 +47,25 @@ func NewMigrationHandler(
 
 // Handle processes an ApprovalRequest and migrates state from legacy cluster
 func (h *MigrationHandler) Handle(ctx context.Context, approvalRequest *approvalv1.ApprovalRequest) error {
-	log := h.Log.WithValues("approvalRequest", approvalRequest.Name, "namespace", approvalRequest.Namespace)
+	log := log.FromContext(ctx)
 
 	// Compute the legacy Approval name from owner references
 	legacyApprovalName, err := h.computeLegacyApprovalName(approvalRequest)
 	if err != nil {
-		log.V(5).Info("Cannot compute legacy approval name, skipping", "error", err.Error())
+		log.Info("Cannot compute legacy approval name, skipping migration", "error", err.Error())
 		return nil
 	}
 
 	if legacyApprovalName == "" {
-		log.V(5).Info("No legacy approval name found, skipping migration")
+		log.Info("No owner reference found, skipping migration",
+			"ownerReferences", len(approvalRequest.OwnerReferences))
 		return nil
 	}
 
+	log.Info("Computed legacy approval name", "legacyApprovalName", legacyApprovalName)
+
 	// Fetch legacy Approval from remote cluster
+	log.Info("Fetching legacy approval from remote cluster")
 	legacyApproval, err := h.RemoteClient.GetApproval(
 		ctx,
 		approvalRequest.Namespace,
@@ -69,18 +74,24 @@ func (h *MigrationHandler) Handle(ctx context.Context, approvalRequest *approval
 	if err != nil {
 		// Check if it's a not found error
 		if strings.Contains(err.Error(), "not found") {
-			log.V(5).Info("No legacy Approval found in remote cluster",
+			log.Info("No legacy Approval found in remote cluster, skipping migration",
 				"legacyApprovalName", legacyApprovalName)
 			return nil
 		}
+		log.Error(err, "Failed to fetch legacy approval from remote cluster",
+			"legacyApprovalName", legacyApprovalName)
 		return errors.Wrap(err, "failed to fetch legacy approval")
 	}
 
 	legacyState := legacyApproval.Spec.State
+	log.Info("Fetched legacy approval successfully",
+		"legacyApprovalName", legacyApprovalName,
+		"legacyState", legacyState)
 
 	// Check if state has changed since last migration
 	if !h.hasStateChanged(approvalRequest, legacyState) {
-		log.V(5).Info("Legacy state unchanged, skipping update",
+		log.Info("Legacy state unchanged, skipping update",
+			"currentState", approvalRequest.Spec.State,
 			"legacyState", legacyState)
 		return nil
 	}
@@ -92,16 +103,19 @@ func (h *MigrationHandler) Handle(ctx context.Context, approvalRequest *approval
 
 	// Map legacy approval to approval request
 	if err := h.Mapper.MapApprovalToRequest(ctx, approvalRequest, legacyApproval); err != nil {
+		log.Error(err, "Failed to map legacy approval to approval request")
 		return errors.Wrap(err, "failed to map approval")
 	}
 
 	// Update the ApprovalRequest
 	if err := h.Client.Update(ctx, approvalRequest); err != nil {
+		log.Error(err, "Failed to update approval request")
 		return errors.Wrap(err, "failed to update approval request")
 	}
 
 	log.Info("Successfully migrated state",
-		"newState", approvalRequest.Spec.State)
+		"newState", approvalRequest.Spec.State,
+		"legacyApprovalName", legacyApprovalName)
 
 	return nil
 }
@@ -125,6 +139,11 @@ func (h *MigrationHandler) computeLegacyApprovalName(approvalRequest *approvalv1
 	// Construct legacy approval name
 	legacyName := kind + "--" + owner.Name
 
+	h.Log.V(1).Info("Computed legacy approval name from owner reference",
+		"ownerKind", owner.Kind,
+		"ownerName", owner.Name,
+		"legacyName", legacyName)
+
 	return legacyName, nil
 }
 
@@ -134,12 +153,21 @@ func (h *MigrationHandler) hasStateChanged(approvalRequest *approvalv1.ApprovalR
 	lastMigratedState, ok := approvalRequest.Annotations["migration.cp.ei.telekom.de/last-migrated-state"]
 	if !ok {
 		// No annotation means this is the first migration
+		h.Log.V(1).Info("No previous migration annotation found, treating as first migration",
+			"legacyState", legacyState)
 		return true
 	}
 
 	// Map the legacy state to handle Suspended -> Rejected
 	mappedState := h.Mapper.MapState(legacyState)
 
+	hasChanged := string(mappedState) != lastMigratedState
+	h.Log.V(1).Info("Checking if state has changed",
+		"lastMigratedState", lastMigratedState,
+		"legacyState", legacyState,
+		"mappedState", mappedState,
+		"hasChanged", hasChanged)
+
 	// Compare the mapped state with the last migrated state
-	return string(mappedState) != lastMigratedState
+	return hasChanged
 }

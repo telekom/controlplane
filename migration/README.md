@@ -58,18 +58,28 @@ kubectl create secret generic remote-cluster-token \
 
 ### 3. Deploy Operator
 
+**Option A: Standalone Installation (includes CRDs)**
+
+Use this if the approval operator is NOT installed:
+
 ```bash
-# Deploy everything including CRDs (recommended)
+# Deploy everything including CRDs
 make deploy
 
 # Or manually with kubectl
 kubectl apply -k config/default
-
-# To install only CRDs
-kubectl apply -k config/crd
 ```
 
-**Note:** The operator requires the `ApprovalRequest` CRD to be installed. The deployment process automatically installs it.
+**Option B: Combined Installation (without CRDs)**
+
+Use this if the approval operator IS already installed:
+
+```bash
+# Deploy without CRDs (CRDs come from approval module)
+kubectl apply -k config/default-no-crds
+```
+
+**Note:** The operator requires the `ApprovalRequest` CRD to be installed. In standalone installations, it's included automatically. In combined installations with the approval operator, the CRD comes from the approval module.
 
 ### 4. Verify Deployment
 
