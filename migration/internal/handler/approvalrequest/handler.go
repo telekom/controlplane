@@ -133,9 +133,9 @@ func (h *MigrationHandler) Handle(ctx context.Context, approvalRequest *approval
 
 // computeLegacyApprovalName determines the legacy Approval name from owner references
 func (h *MigrationHandler) computeLegacyApprovalName(approvalRequest *approvalv1.ApprovalRequest) (string, error) {
-	// The legacy Approval name is typically derived from the owner reference
-	// Format: <resource-kind>--<resource-name>
-	// Example: apisubscription--my-subscription
+	// The legacy Approval name format:
+	// apisubscription--<api-name>--<rover-name>
+	// Example: apisubscription--eni-manual-tests-echo-token-request-test-v1--manual-tests-consumer-token-request
 
 	if len(approvalRequest.OwnerReferences) == 0 {
 		return "", nil
@@ -147,8 +147,28 @@ func (h *MigrationHandler) computeLegacyApprovalName(approvalRequest *approvalv1
 	// Convert kind to lowercase for legacy naming convention
 	kind := strings.ToLower(owner.Kind)
 
-	// Construct legacy approval name
-	legacyName := kind + "--" + owner.Name
+	// The owner name in new cluster might be: rover-name--api-name
+	// But legacy expects: api-name--rover-name
+	// Need to swap if it contains "--"
+	ownerName := owner.Name
+	parts := strings.SplitN(ownerName, "--", 2)
+	
+	var legacyName string
+	if len(parts) == 2 {
+		// Swap: rover-name--api-name becomes api-name--rover-name
+		legacyName = kind + "--" + parts[1] + "--" + parts[0]
+		h.Log.V(1).Info("Swapped owner name components for legacy format",
+			"ownerName", ownerName,
+			"roverName", parts[0],
+			"apiName", parts[1],
+			"legacyName", legacyName)
+	} else {
+		// No "--" in owner name, use as-is
+		legacyName = kind + "--" + ownerName
+		h.Log.V(1).Info("Owner name has no components to swap",
+			"ownerName", ownerName,
+			"legacyName", legacyName)
+	}
 
 	h.Log.V(1).Info("Computed legacy approval name from owner reference",
 		"ownerKind", owner.Kind,
