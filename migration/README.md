@@ -12,9 +12,12 @@ The Migration Operator watches `ApprovalRequest` resources and synchronizes thei
 
 **Key Features:**
 - ✅ Continuous state synchronization from legacy cluster
+- ✅ Automatic namespace transformation (`environment--group--team` → `group--team`)
+- ✅ Smart approval name mapping with component swapping
 - ✅ Only updates existing resources (never creates new ones)
 - ✅ Special `Suspended` → `Rejected` state mapping
 - ✅ Efficient change detection to avoid unnecessary updates
+- ✅ Detailed structured logging for debugging
 - ✅ Production-ready with health checks, metrics, and leader election
 - ✅ Uses native Kubernetes client (not REST API)
 
@@ -133,12 +136,37 @@ The operator maps legacy states to new cluster states:
 ### Reconciliation Flow
 
 1. **Watch** ApprovalRequests in new cluster
-2. **Compute** legacy Approval name from owner references
-3. **Fetch** Approval from legacy cluster via Kubernetes API
-4. **Compare** states using annotations
-5. **Map** state (with Suspended → Rejected transformation)
-6. **Update** ApprovalRequest if state changed
-7. **Requeue** after 30 seconds
+2. **Compute** legacy Approval name from owner references (with component swapping)
+3. **Transform** namespace from new to legacy format
+4. **Fetch** Approval from legacy cluster via Kubernetes API
+5. **Compare** states using annotations
+6. **Map** state (with Suspended → Rejected transformation)
+7. **Update** ApprovalRequest if state changed
+8. **Requeue** after 30 seconds
+
+### Namespace Transformation
+
+The operator automatically transforms namespaces between the two cluster formats:
+
+**New Cluster:** `environment--groupName--teamName`  
+Example: `controlplane--eni--hyperion`
+
+**Legacy Cluster:** `groupName--teamName`  
+Example: `eni--hyperion`
+
+The environment prefix is stripped when querying the legacy cluster.
+
+### Approval Name Transformation
+
+The operator derives the legacy Approval name from the ApprovalRequest's owner reference and applies component swapping:
+
+**Owner Reference Name (new cluster):** `rover-name--api-name`  
+Example: `manual-tests-consumer-token-request--eni-manual-tests-echo-token-request-test-v1`
+
+**Legacy Approval Name:** `apisubscription--api-name--rover-name`  
+Example: `apisubscription--eni-manual-tests-echo-token-request-test-v1--manual-tests-consumer-token-request`
+
+The components are swapped because the legacy naming convention places the API name before the consumer name.
 
 ## Development
 
@@ -222,6 +250,27 @@ stringData:
     -----END CERTIFICATE-----
 ```
 
+## Logging
+
+The operator provides detailed structured logging for debugging:
+
+```bash
+# View logs
+kubectl logs -n controlplane-system -l domain=migration -f
+```
+
+**Example log output:**
+```
+INFO  Reconciling ApprovalRequest for migration  name=test-approval  namespace=controlplane--eni--hyperion
+INFO  Processing ApprovalRequest  state=Pending  hasOwnerRef=true
+INFO  Computed legacy approval name  legacyApprovalName=apisubscription--api--rover
+INFO  Computed legacy namespace  currentNamespace=controlplane--eni--hyperion  legacyNamespace=eni--hyperion
+INFO  Fetching legacy approval from remote cluster  namespace=eni--hyperion  name=apisubscription--api--rover
+INFO  Fetched legacy approval successfully  legacyState=Granted
+INFO  Legacy state changed, migrating  oldState=Pending  newState=Granted
+INFO  Successfully migrated state  newState=Granted
+```
+
 ## Troubleshooting
 
 ### Operator not starting
@@ -231,22 +280,51 @@ Check secret exists:
 kubectl get secret remote-cluster-token -n controlplane-system
 ```
 
-Check logs:
+Check logs for startup errors:
 ```bash
-kubectl logs -n controlplane-system -l app=migration-operator
+kubectl logs -n controlplane-system -l domain=migration
 ```
 
 ### State not syncing
 
-Check if ApprovalRequest has owner references:
+**1. Check if ApprovalRequest has owner references:**
 ```bash
-kubectl get approvalrequest <name> -o yaml | grep -A5 ownerReferences
+kubectl get approvalrequest <name> -n <namespace> -o jsonpath='{.metadata.ownerReferences}' | jq
 ```
 
-Check legacy cluster connectivity:
+If empty, migration will be skipped. The ApprovalRequest must have an owner reference to compute the legacy approval name.
+
+**2. Check namespace format:**
 ```bash
-kubectl exec -it <operator-pod> -n controlplane-system -- /bin/sh
-# Try to access legacy cluster (if tools available)
+kubectl get approvalrequest <name> -o jsonpath='{.metadata.namespace}'
+# Should be: environment--group--team (e.g., controlplane--eni--hyperion)
+```
+
+**3. Watch logs during reconciliation:**
+```bash
+kubectl logs -n controlplane-system -l domain=migration -f
+```
+
+Look for messages like:
+- `"No owner reference found, skipping migration"` - Add owner reference
+- `"No legacy Approval found in remote cluster"` - Check legacy cluster
+- `"Legacy state unchanged, skipping update"` - Already migrated
+- `"Failed to fetch legacy approval"` - Check connectivity/permissions
+
+**4. Check legacy cluster connectivity:**
+```bash
+# Get computed legacy namespace and name from logs, then verify on legacy cluster
+kubectl get approval <legacy-name> -n <legacy-namespace> --context=legacy-cluster
+```
+
+**5. Verify certificate and authentication:**
+```bash
+# Check if the secret has all required fields
+kubectl get secret remote-cluster-token -n controlplane-system -o jsonpath='{.data}' | jq 'keys'
+# Should show: ["ca.crt", "server", "token"]
+
+# Decode and check server URL
+kubectl get secret remote-cluster-token -n controlplane-system -o jsonpath='{.data.server}' | base64 -d
 ```
 
 ### High CPU/Memory usage
@@ -261,6 +339,15 @@ resources:
     cpu: 200m
     memory: 256Mi
 ```
+
+### Common Error Messages
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `failed to verify certificate: x509: certificate is valid for...` | Server URL doesn't match certificate | Use the EKS API endpoint from the certificate |
+| `the server has asked for the client to provide credentials` | Invalid or expired token | Regenerate token on legacy cluster |
+| `No owner reference found, skipping migration` | ApprovalRequest missing owner reference | Ensure ApprovalRequest is created with owner reference |
+| `No legacy Approval found in remote cluster` | Approval doesn't exist on legacy cluster or wrong namespace/name | Check logs for computed namespace and name, verify on legacy cluster |
 
 ## Uninstall
 
