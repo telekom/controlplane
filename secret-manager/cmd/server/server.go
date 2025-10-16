@@ -97,8 +97,8 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 
 	switch cfg.Backend.Type {
 	case "conjur":
-		conjurWriteApi := conjur.NewWriteApiOrDie()
-		conjurReadApi := conjur.NewReadOnlyApiOrDie()
+		conjurWriteApi := conjur.NewConjurApiMetrics(conjur.NewWriteApiOrDie())
+		conjurReadApi := conjur.NewConjurApiMetrics(conjur.NewReadOnlyApiOrDie())
 
 		backend := conjur.NewBackend(conjurWriteApi, conjurReadApi)
 		if shouldCache {

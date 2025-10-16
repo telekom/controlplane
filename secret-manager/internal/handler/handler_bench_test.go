@@ -11,14 +11,16 @@ import (
 	"fmt"
 	"io"
 	"net/http/httptest"
+	"os"
 	"regexp"
-	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/cyberark/conjur-api-go/conjurapi"
 	"github.com/gofiber/fiber/v2"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/mock"
 	cs "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/secret-manager/internal/api"
@@ -29,22 +31,35 @@ import (
 	"github.com/telekom/controlplane/secret-manager/test/mocks"
 )
 
+var (
+	initOnce   sync.Once
+	ctrl       controller.Controller
+	mockWriter *mocks.MockConjurAPI
+	mockReader *mocks.MockConjurAPI
+)
+
 func BenchmarkOnboardTeam(b *testing.B) {
-	mockWriter := mocks.NewMockConjurAPI(b)
-	mockReader := mocks.NewMockConjurAPI(b)
 
 	conjur.RootPolicyPath = "controlplane"
-	backend := conjur.NewBackend(mockWriter, mockReader)
-	//cachedBackend := v2.NewCachedBackend(backend, 5*time.Second)
-	cachedBackend := cache.NewCachedBackend(backend, 5*time.Second)
-	onboarder := conjur.NewOnboarder(mockWriter, cachedBackend)
+	initOnce.Do(func() {
+		mockWriter = mocks.NewMockConjurAPI(b)
+		mockReader = mocks.NewMockConjurAPI(b)
+		writer := conjur.NewConjurApiMetrics(mockWriter)
+		reader := conjur.NewConjurApiMetrics(mockReader)
 
-	ctrl := controller.NewController(cachedBackend, onboarder)
+		backend := conjur.NewBackend(writer, reader)
+		//cachedBackend := v2.NewCachedBackend(backend, 10*time.Second)
+		cachedBackend := cache.NewCachedBackend(backend, 10*time.Second)
+		onboarder := conjur.NewOnboarder(writer, cachedBackend)
+		ctrl = controller.NewController(cachedBackend, onboarder)
+	})
+
 	// -----------------------------
 
 	handler := api.NewStrictHandler(handler.NewHandler(ctrl), nil)
 	appCfg := cs.NewAppConfig()
 	appCfg.EnableLogging = false
+	appCfg.EnableMetrics = false
 	app := cs.NewAppWithConfig(appCfg)
 	api.RegisterHandlersWithOptions(app, handler, api.FiberServerOptions{
 		BaseURL: "/api",
@@ -57,7 +72,7 @@ func BenchmarkOnboardTeam(b *testing.B) {
 	// Set expectations for policy loading
 	mockWriter.EXPECT().LoadPolicy(conjurapi.PolicyModePost, "controlplane/"+env, mock.Anything).Return(nil, nil)
 
-	maxTeams := 20
+	maxTeams := 5
 	for i := range maxTeams {
 		teamId := fmt.Sprintf("team%d", i)
 		mockReader.EXPECT().RetrieveSecret(fmt.Sprintf("controlplane/%s/%s/clientSecret", env, teamId)).Return([]byte("secret"), nil).Maybe()
@@ -83,13 +98,11 @@ func BenchmarkOnboardTeam(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	for _, m := range metrics {
-		if strings.Contains(*m.Name, "cache_access_total") {
-			for _, metric := range m.Metric {
-				b.Logf("metric %v: labels=%v value=%v", *m.Name, metric.Label, *metric.Counter.Value)
-			}
-		}
 
+	for _, metricsVal := range metrics {
+		if metricsVal.GetName() == "cache_access_total" || metricsVal.GetName() == "http_client_request_duration_seconds" {
+			expfmt.MetricFamilyToText(os.Stderr, metricsVal)
+		}
 	}
 }
 

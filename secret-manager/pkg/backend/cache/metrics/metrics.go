@@ -34,8 +34,8 @@ func registerMetrics(reg prometheus.Registerer) {
 }
 
 // RecordCacheHit increments the counter for a successful cache hit
-func RecordCacheHit() {
-	cacheAccess.WithLabelValues("hit", "").Inc()
+func RecordCacheHit(reason string) {
+	cacheAccess.WithLabelValues("hit", reason).Inc()
 }
 
 // RecordCacheMiss increments the counter for a cache miss with the specified reasons like "expired" or "not_found"

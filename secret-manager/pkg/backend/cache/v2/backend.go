@@ -50,7 +50,7 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (S, error) {
 	log := logr.FromContextOrDiscard(ctx)
 	cachedItem, ok := c.Cache.Get(id.String())
 	if ok {
-		metrics.RecordCacheHit()
+		metrics.RecordCacheHit("")
 		return cachedItem.Copy().(S), nil
 	}
 	metrics.RecordCacheMiss("not_found")
@@ -79,7 +79,7 @@ func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.Secre
 
 	cachedItem, ok := c.Cache.Get(cacheId.String())
 	if ok && value.EqualString(cachedItem.Value()) {
-		metrics.RecordCacheHit()
+		metrics.RecordCacheHit("set")
 		return cachedItem.Copy().(S), nil
 	} else if ok {
 		metrics.RecordCacheMiss("value_mismatch")
