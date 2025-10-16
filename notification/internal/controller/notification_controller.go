@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+
 	"github.com/telekom/controlplane/notification/internal/sender"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter"
 
@@ -13,12 +14,13 @@ import (
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 
-	"github.com/telekom/controlplane/notification/internal/handler"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+
+	"github.com/telekom/controlplane/notification/internal/handler"
 
 	emailadapterconfig "github.com/telekom/controlplane/notification/internal/config"
 )
@@ -50,7 +52,7 @@ func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager, emailConfig 
 			SMTPHost: emailConfig.SMTPHost,
 			SMTPPort: emailConfig.SMTPPort,
 		},
-		ChatAdapter:     &adapter.MsTeamsAdapter{},
+		ChatAdapter:     adapter.NewMsTeamsAdapter(),
 		CallbackAdapter: &adapter.WebhookAdapter{},
 	}
 
