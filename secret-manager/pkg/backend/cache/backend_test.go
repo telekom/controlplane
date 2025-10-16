@@ -51,6 +51,7 @@ var _ = Describe("Cached Backend", func() {
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
 			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().Copy().Return(secretId).Once()
 
 			secret := backend.NewDefaultSecret(secretId, "my-value")
 			mockBackend.EXPECT().Get(ctx, secretId).Return(secret, nil).Once()
@@ -86,6 +87,7 @@ var _ = Describe("Cached Backend", func() {
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
 			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().Copy().Return(secretId).Once()
 
 			secret := backend.NewDefaultSecret(secretId, "my-value")
 			cachedItem := cache.NewDefaultCacheItem(secretId, secret, 10)
@@ -108,6 +110,7 @@ var _ = Describe("Cached Backend", func() {
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
 			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().Copy().Return(secretId).Once()
 
 			mockBackend.EXPECT().Get(ctx, secretId).Return(backend.DefaultSecret[*mocks.MockSecretId]{}, backend.ErrSecretNotFound(secretId)).Once()
 

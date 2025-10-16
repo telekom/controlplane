@@ -43,16 +43,22 @@ func (c *CachedBackend[T, S]) ParseSecretId(raw string) (T, error) {
 
 func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (res S, err error) {
 	log := logr.FromContextOrDiscard(ctx)
-	cacheKey := id.String()
+	cacheId := id.Copy().(T)
+	cacheKey := cacheId.String()
+
 	if item, ok := c.Cache.Get(cacheKey); ok && !item.Expired() {
 		metrics.RecordCacheHit("")
 		return item.Value().Copy().(S), nil
 	}
 
 	metrics.RecordCacheMiss("not_found")
-	item, err := c.Backend.Get(ctx, id)
+	item, err := c.Backend.Get(ctx, cacheId)
 	if err != nil {
 		return res, err
+	}
+	if item.Value() == "" {
+		// Do not cache empty secrets
+		return item, nil
 	}
 	copy := item.Copy().(S)
 

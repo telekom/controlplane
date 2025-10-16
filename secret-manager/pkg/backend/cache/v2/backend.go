@@ -58,6 +58,10 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (S, error) {
 	if err != nil {
 		return item, err
 	}
+	if item.Value() == "" {
+		// Do not cache empty secrets
+		return item, nil
+	}
 
 	added := c.Cache.SetWithTTL(id.String(), item, int64(len(item.Value())), c.ttl)
 	if !added {
