@@ -58,8 +58,9 @@ func (c *ConjurApiMetrics) AddSecret(variableID string, value string) error {
 		conjErr, ok := AsError(err)
 		if ok {
 			status = strconv.Itoa(conjErr.Code)
+		} else {
+			status = "error"
 		}
-		status = "error"
 	}
 	histogram.WithLabelValues(name, "AddSecret", status).Observe(time.Since(start).Seconds())
 	return err
@@ -74,8 +75,9 @@ func (c *ConjurApiMetrics) LoadPolicy(mode conjurapi.PolicyMode, path string, re
 		conjErr, ok := AsError(err)
 		if ok {
 			status = strconv.Itoa(conjErr.Code)
+		} else {
+			status = "error"
 		}
-		status = "error"
 	}
 	histogram.WithLabelValues(name, "LoadPolicy", status).Observe(time.Since(start).Seconds())
 	return resp, err
@@ -90,8 +92,9 @@ func (c *ConjurApiMetrics) RetrieveBatchSecrets(variableIDs []string) (map[strin
 		conjErr, ok := AsError(err)
 		if ok {
 			status = strconv.Itoa(conjErr.Code)
+		} else {
+			status = "error"
 		}
-		status = "error"
 	}
 	histogram.WithLabelValues(name, "RetrieveBatchSecrets", status).Observe(time.Since(start).Seconds())
 	return res, err
@@ -106,8 +109,9 @@ func (c *ConjurApiMetrics) RetrieveSecret(variableID string) ([]byte, error) {
 		conjErr, ok := AsError(err)
 		if ok {
 			status = strconv.Itoa(conjErr.Code)
+		} else {
+			status = "error"
 		}
-		status = "error"
 	}
 	histogram.WithLabelValues(name, "RetrieveSecret", status).Observe(time.Since(start).Seconds())
 	return res, err
@@ -122,8 +126,9 @@ func (c *ConjurApiMetrics) RetrieveSecretWithVersion(variableID string, version 
 		conjErr, ok := AsError(err)
 		if ok {
 			status = strconv.Itoa(conjErr.Code)
+		} else {
+			status = "error"
 		}
-		status = "error"
 	}
 	histogram.WithLabelValues(name, "RetrieveSecretWithVersion", status).Observe(time.Since(start).Seconds())
 	return res, err
