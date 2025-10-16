@@ -56,7 +56,7 @@ func (r *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&teamhandler.TeamHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&organizationv1.Team{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		For(&organizationv1.Team{}).
 		Watches(&identityv1.Client{},
 			handler.EnqueueRequestsFromMapFunc(r.mapClientToTeam),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
