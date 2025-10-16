@@ -33,7 +33,7 @@ func MutateSecret(ctx context.Context, env string, teamObj *organisationv1.Team,
 
 	if !secretsapi.IsRef(teamObj.Spec.Secret) {
 		log.V(1).Info("spec.secret is not a reference, generating new secret")
-		if strings.EqualFold(teamObj.Spec.Secret, secret.KeywordRotate) {
+		if strings.EqualFold(teamObj.Spec.Secret, secret.KeywordRotate) || teamObj.Spec.Secret == "" {
 			// generate new secret
 			clientSecret = string(uuid.NewUUID())
 		} else {
