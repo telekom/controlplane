@@ -60,7 +60,7 @@ func (h *TeamHandler) CreateOrUpdate(ctx context.Context, teamObj *organizationv
 	_, err := group.GetGroupByName(ctx, teamObj.Spec.Group)
 	if err != nil {
 		teamObj.SetCondition(condition.NewBlockedCondition("Group not found"))
-		return errors.Wrap(err, fmt.Sprintf("failed to get group of team %s", teamObj.Name))
+		return nil
 	}
 
 	// CreateOrUpdate internal objects

@@ -5,8 +5,6 @@
 package controller
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
@@ -456,10 +454,10 @@ var _ = Describe("Team Controller", Ordered, func() {
 
 					By("Checking the conditions")
 					g.Expect(team.Status.Conditions).To(HaveLen(2))
-					failedCondition := meta.FindStatusCondition(team.Status.Conditions, condition.ConditionTypeReady)
-					g.Expect(failedCondition).NotTo(BeNil())
-					g.Expect(failedCondition.Status).To(Equal(metav1.ConditionFalse))
-					Expect(failedCondition.Message).To(ContainSubstring(fmt.Sprintf("failed to get group '%s' in namespace (env) '%s'", nameOfMissingGroup, testEnvironment)))
+					processingCondition := meta.FindStatusCondition(team.Status.Conditions, condition.ConditionTypeProcessing)
+					g.Expect(processingCondition).NotTo(BeNil())
+					g.Expect(processingCondition.Status).To(Equal(metav1.ConditionFalse))
+					Expect(processingCondition.Message).To(ContainSubstring("Group not found"))
 				}, timeout, interval).Should(Succeed())
 			})
 		})
