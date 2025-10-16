@@ -64,11 +64,22 @@ func (h *MigrationHandler) Handle(ctx context.Context, approvalRequest *approval
 
 	log.Info("Computed legacy approval name", "legacyApprovalName", legacyApprovalName)
 
+	// Compute legacy namespace by stripping environment prefix
+	// New cluster: environment--groupName--teamName (e.g., controlplane--eni--narvi)
+	// Legacy cluster: groupName--teamName (e.g., eni--narvi)
+	legacyNamespace := h.computeLegacyNamespace(approvalRequest.Namespace)
+	
+	log.Info("Computed legacy namespace",
+		"currentNamespace", approvalRequest.Namespace,
+		"legacyNamespace", legacyNamespace)
+
 	// Fetch legacy Approval from remote cluster
-	log.Info("Fetching legacy approval from remote cluster")
+	log.Info("Fetching legacy approval from remote cluster",
+		"namespace", legacyNamespace,
+		"name", legacyApprovalName)
 	legacyApproval, err := h.RemoteClient.GetApproval(
 		ctx,
-		approvalRequest.Namespace,
+		legacyNamespace,
 		legacyApprovalName,
 	)
 	if err != nil {
@@ -145,6 +156,31 @@ func (h *MigrationHandler) computeLegacyApprovalName(approvalRequest *approvalv1
 		"legacyName", legacyName)
 
 	return legacyName, nil
+}
+
+// computeLegacyNamespace strips the environment prefix from the namespace
+func (h *MigrationHandler) computeLegacyNamespace(namespace string) string {
+	// New cluster namespace format: environment--groupName--teamName
+	// Legacy cluster namespace format: groupName--teamName
+	// Strip the first segment (environment)
+	
+	parts := strings.SplitN(namespace, "--", 2)
+	if len(parts) < 2 {
+		// If no "--" separator found, return as-is (already in legacy format)
+		h.Log.V(1).Info("Namespace does not contain '--' separator, using as-is",
+			"namespace", namespace)
+		return namespace
+	}
+	
+	// Return groupName--teamName (everything after first --)
+	legacyNamespace := parts[1]
+	
+	h.Log.V(1).Info("Stripped environment prefix from namespace",
+		"original", namespace,
+		"environment", parts[0],
+		"legacy", legacyNamespace)
+	
+	return legacyNamespace
 }
 
 // hasStateChanged checks if the legacy state differs from the current state
