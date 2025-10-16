@@ -6,6 +6,7 @@ package conjur
 
 import (
 	"io"
+	"strconv"
 	"sync"
 	"time"
 
@@ -54,6 +55,10 @@ func (c *ConjurApiMetrics) AddSecret(variableID string, value string) error {
 	err := c.Client.AddSecret(variableID, value)
 	status := "ok"
 	if err != nil {
+		conjErr, ok := AsError(err)
+		if ok {
+			status = strconv.Itoa(conjErr.Code)
+		}
 		status = "error"
 	}
 	histogram.WithLabelValues(name, "AddSecret", status).Observe(time.Since(start).Seconds())
@@ -66,6 +71,10 @@ func (c *ConjurApiMetrics) LoadPolicy(mode conjurapi.PolicyMode, path string, re
 	resp, err := c.Client.LoadPolicy(mode, path, reader)
 	status := "ok"
 	if err != nil {
+		conjErr, ok := AsError(err)
+		if ok {
+			status = strconv.Itoa(conjErr.Code)
+		}
 		status = "error"
 	}
 	histogram.WithLabelValues(name, "LoadPolicy", status).Observe(time.Since(start).Seconds())
@@ -78,6 +87,10 @@ func (c *ConjurApiMetrics) RetrieveBatchSecrets(variableIDs []string) (map[strin
 	res, err := c.Client.RetrieveBatchSecrets(variableIDs)
 	status := "ok"
 	if err != nil {
+		conjErr, ok := AsError(err)
+		if ok {
+			status = strconv.Itoa(conjErr.Code)
+		}
 		status = "error"
 	}
 	histogram.WithLabelValues(name, "RetrieveBatchSecrets", status).Observe(time.Since(start).Seconds())
@@ -90,6 +103,10 @@ func (c *ConjurApiMetrics) RetrieveSecret(variableID string) ([]byte, error) {
 	res, err := c.Client.RetrieveSecret(variableID)
 	status := "ok"
 	if err != nil {
+		conjErr, ok := AsError(err)
+		if ok {
+			status = strconv.Itoa(conjErr.Code)
+		}
 		status = "error"
 	}
 	histogram.WithLabelValues(name, "RetrieveSecret", status).Observe(time.Since(start).Seconds())
@@ -102,6 +119,10 @@ func (c *ConjurApiMetrics) RetrieveSecretWithVersion(variableID string, version 
 	res, err := c.Client.RetrieveSecretWithVersion(variableID, version)
 	status := "ok"
 	if err != nil {
+		conjErr, ok := AsError(err)
+		if ok {
+			status = strconv.Itoa(conjErr.Code)
+		}
 		status = "error"
 	}
 	histogram.WithLabelValues(name, "RetrieveSecretWithVersion", status).Observe(time.Since(start).Seconds())

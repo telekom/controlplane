@@ -20,6 +20,13 @@ var (
 		},
 		[]string{"result", "reason"},
 	)
+
+	CacheSize = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "cache_size",
+			Help: "Current size of the cache",
+		},
+	)
 )
 
 func init() {
@@ -30,6 +37,7 @@ func init() {
 func registerMetrics(reg prometheus.Registerer) {
 	registerOnce.Do(func() {
 		reg.MustRegister(cacheAccess)
+		reg.MustRegister(CacheSize)
 	})
 }
 
