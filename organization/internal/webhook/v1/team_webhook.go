@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/telekom/controlplane/organization/internal/secret"
 	"github.com/telekom/controlplane/organization/internal/webhook/v1/mutator"
 	"github.com/telekom/controlplane/organization/internal/webhook/v1/validator"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -96,23 +95,6 @@ func (v *TeamCustomValidator) ValidateUpdate(ctx context.Context, _, newObj runt
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Team.
 func (v *TeamCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	teamObj, ok := obj.(*organizationv1.Team)
-	if !ok {
-		return nil, errors.NewInternalError(fmt.Errorf("unable to convert object to team object"))
-	}
-	ctx, log := setupLog(ctx, teamObj)
-	log.Info("deleting team, cleaning up secrets in secret-manager")
-
-	env, err := validator.ValidateAndGetEnv(teamObj)
-	if err != nil {
-		return nil, err
-	}
-
-	err = secret.GetSecretManager().DeleteTeam(ctx, env, teamObj.GetName())
-	if err != nil {
-		return nil, errors.NewInternalError(err)
-	}
-
 	return nil, nil
 }
 

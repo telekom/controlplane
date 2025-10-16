@@ -11,12 +11,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/handler/group"
 	internalHandler "github.com/telekom/controlplane/organization/internal/handler/team/handler"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler/gateway_consumer"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler/identity_client"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler/namespace"
+	"github.com/telekom/controlplane/organization/internal/secret"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -86,13 +88,16 @@ func (h *TeamHandler) Delete(ctx context.Context, teamObj *organizationv1.Team) 
 		logger.V(1).Info("ℹ️ delete sub-resource", "handler", internalObjHandler[i].Identifier())
 		err := internalObjHandler[i].Delete(ctx, teamObj)
 		if err != nil {
-			if k8sErrors.IsNotFound(err) {
-				logger.V(0).Info("ℹ️ deleted sub-resource not found - continue", "handler", internalObjHandler[i].Identifier(), "reason", "resource in ref not found for deletion")
-			} else {
+			if !k8sErrors.IsNotFound(err) {
 				teamObj.SetCondition(condition.NewBlockedCondition(fmt.Sprintf("Failed to delete %s", internalObjHandler[i].Identifier())))
 				return errors.Wrap(err, fmt.Sprintf("failed to delete: %s", internalObjHandler[i].Identifier()))
 			}
 		}
 	}
+
+	if err := secret.GetSecretManager().DeleteTeam(ctx, contextutil.EnvFromContextOrDie(ctx), teamObj.GetName()); err != nil {
+		return errors.Wrap(err, "failed to delete team secrets from secret-manager")
+	}
+
 	return nil
 }

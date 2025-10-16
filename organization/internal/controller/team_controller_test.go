@@ -124,6 +124,8 @@ var _ = Describe("Team Controller", Ordered, func() {
 					"teamToken": string(uuid.NewUUID()),
 				}, nil)
 
+			secretManagerMock.EXPECT().DeleteTeam(mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
 			secret.GetSecretManager = func() api.SecretManager {
 				return secretManagerMock
 			}
