@@ -21,12 +21,14 @@ type SecretId interface {
 	String() string
 	Path() string
 	SubPath() string
+	Copy() SecretId
 }
 
 // Secret contains the value of the secret and its ID.
 type Secret[T SecretId] interface {
 	Id() T
 	Value() string
+	Copy() Secret[T]
 }
 
 // SecretValue is used to set the value of a secret.

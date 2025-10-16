@@ -71,6 +71,7 @@ type AppConfig struct {
 	EnableLogging bool
 	EnableMetrics bool
 	EnableCors    bool
+	Timeout       time.Duration
 }
 
 func NewAppConfig() AppConfig {
@@ -89,6 +90,7 @@ func NewAppConfig() AppConfig {
 		EnableLogging: true,
 		EnableMetrics: true,
 		EnableCors:    false,
+		Timeout:       10 * time.Second,
 	}
 }
 
@@ -113,6 +115,10 @@ func NewAppWithConfig(cfg AppConfig) *fiber.App {
 	if cfg.EnableMetrics {
 		metrics.NewForApp(app, prometheus.DefaultRegisterer, metrics.DefaultSkipper)
 	}
+	if cfg.Timeout > 0 {
+		app.Use(middleware.NewTimeout(cfg.Timeout))
+	}
+
 	return app
 }
 

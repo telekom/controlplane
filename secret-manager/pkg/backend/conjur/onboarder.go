@@ -241,6 +241,10 @@ func (c *ConjurOnboarder) deletePolicy(ctx context.Context, policyPath, policyKe
 	log.Info("Deleting policy", "policyPath", policyPath, "policyKey", policyKey)
 	_, err = c.conjur.LoadPolicy(conjurapi.PolicyModePatch, policyPath, buf)
 	if err != nil {
+		if cErr, ok := AsError(err); ok && cErr.Code == 404 {
+			// Policy not found, nothing to delete
+			return nil
+		}
 		return errors.Wrap(err, "failed to load delete policy")
 	}
 
