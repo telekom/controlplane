@@ -13,6 +13,7 @@ import (
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	teamhandler "github.com/telekom/controlplane/organization/internal/handler/team"
+	"github.com/telekom/controlplane/organization/internal/index"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -59,11 +60,44 @@ func (r *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&identityv1.Client{},
 			handler.EnqueueRequestsFromMapFunc(r.mapClientToTeam),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&organizationv1.Group{},
+			handler.EnqueueRequestsFromMapFunc(r.mapGroupToTeam),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
+}
+
+func (r *TeamReconciler) mapGroupToTeam(ctx context.Context, obj client.Object) []reconcile.Request {
+	logger := log.FromContext(ctx)
+
+	groupObj, ok := obj.(*organizationv1.Group)
+	if !ok {
+		return nil
+	}
+
+	listOptsForTeams := []client.ListOption{
+		client.MatchingFields{
+			index.FieldSpecGroup: groupObj.Name,
+		},
+	}
+
+	teamList := organizationv1.TeamList{}
+	if err := r.List(ctx, &teamList, listOptsForTeams...); err != nil {
+		logger.Error(err, "failed to list Teams")
+		return nil
+	}
+
+	requests := make([]reconcile.Request, 0, len(teamList.Items))
+	for _, team := range teamList.Items {
+		if team.Spec.Group == groupObj.Name {
+			requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&team)})
+		}
+	}
+
+	return requests
 }
 
 func (r *TeamReconciler) mapClientToTeam(ctx context.Context, obj client.Object) []reconcile.Request {
