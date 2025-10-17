@@ -5,12 +5,15 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: migration-operator-rolebinding
+  labels:
+    app.kubernetes.io/name: migration
+    app.kubernetes.io/managed-by: kustomize
+  name: manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: migration-operator-role
+  name: manager-role
 subjects:
 - kind: ServiceAccount
-  name: migration-operator
-  namespace: controlplane-system
+  name: controller-manager
+  namespace: system

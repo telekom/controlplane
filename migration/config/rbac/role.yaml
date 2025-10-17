@@ -5,7 +5,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: migration-operator-role
+  name: manager-role
 rules:
 # ApprovalRequest permissions
 - apiGroups:
