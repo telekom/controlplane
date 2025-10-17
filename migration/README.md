@@ -16,6 +16,7 @@ The Migration Operator watches `ApprovalRequest` resources and synchronizes thei
 - ✅ Smart approval name mapping with component swapping
 - ✅ Only updates existing resources (never creates new ones)
 - ✅ Special `Suspended` → `Rejected` state mapping
+- ✅ **Skips ApprovalRequests with `strategy: Auto`** (no migration needed)
 - ✅ Efficient change detection to avoid unnecessary updates
 - ✅ Detailed structured logging for debugging
 - ✅ Production-ready with health checks, metrics, and leader election
@@ -137,12 +138,13 @@ The operator maps legacy states to new cluster states:
 
 1. **Watch** ApprovalRequests in new cluster
 2. **Compute** legacy Approval name from owner references (with component swapping)
-3. **Transform** namespace from new to legacy format
-4. **Fetch** Approval from legacy cluster via Kubernetes API
-5. **Compare** states using annotations
-6. **Map** state (with Suspended → Rejected transformation)
-7. **Update** ApprovalRequest if state changed
-8. **Requeue** after 30 seconds
+3. **Check** strategy - skip if `Auto` (no migration needed)
+4. **Transform** namespace from new to legacy format
+5. **Fetch** Approval from legacy cluster via Kubernetes API
+6. **Compare** states using annotations
+7. **Map** state (with Suspended → Rejected transformation)
+8. **Update** ApprovalRequest if state changed
+9. **Requeue** after 30 seconds
 
 ### Namespace Transformation
 
@@ -167,6 +169,20 @@ Example: `manual-tests-consumer-token-request--eni-manual-tests-echo-token-reque
 Example: `apisubscription--eni-manual-tests-echo-token-request-test-v1--manual-tests-consumer-token-request`
 
 The components are swapped because the legacy naming convention places the API name before the consumer name.
+
+### Strategy-Based Filtering
+
+The operator **skips migration** for ApprovalRequests with `strategy: Auto`. These approvals are automatically granted without requiring manual intervention, so they don't need state synchronization from the legacy cluster.
+
+**Strategies:**
+- ✅ **`Auto`** - Skipped (no migration)
+- ✅ **`Simple`** - Migrated (requires manual approval)
+- ✅ **`FourEyes`** - Migrated (requires multiple approvers)
+
+**Example log output:**
+```
+INFO  Skipping migration for Auto strategy approval request  strategy=Auto legacyApprovalName=apisubscription--api--rover
+```
 
 ## Development
 
@@ -306,6 +322,7 @@ kubectl logs -n controlplane-system -l domain=migration -f
 ```
 
 Look for messages like:
+- `"Skipping migration for Auto strategy approval request"` - Expected for Auto strategy
 - `"No owner reference found, skipping migration"` - Add owner reference
 - `"No legacy Approval found in remote cluster"` - Check legacy cluster
 - `"Legacy state unchanged, skipping update"` - Already migrated

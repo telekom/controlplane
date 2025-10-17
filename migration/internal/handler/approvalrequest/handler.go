@@ -62,6 +62,14 @@ func (h *MigrationHandler) Handle(ctx context.Context, approvalRequest *approval
 		return nil
 	}
 
+	// Skip migration for Auto strategy
+	if approvalRequest.Spec.Strategy == approvalv1.ApprovalStrategyAuto {
+		log.Info("Skipping migration for Auto strategy approval request",
+			"strategy", approvalRequest.Spec.Strategy,
+			"legacyApprovalName", legacyApprovalName)
+		return nil
+	}
+
 	log.Info("Computed legacy approval name", "legacyApprovalName", legacyApprovalName)
 
 	// Compute legacy namespace by stripping environment prefix
