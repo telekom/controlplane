@@ -2,37 +2,90 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+// Package adapter provides notification adapters for various communication channels.
+//
+// MsTeamsAdapter sends notifications to Microsoft Teams via webhooks.
+// The HTTP client configuration is handled separately in http_client.go.
 package adapter
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/go-resty/resty/v2"
 )
 
-var _ NotificationAdapter[ChatConfiguration] = MsTeamsAdapter{}
+const (
+	// Default User-Agent for MS Teams requests
+	defaultUserAgent = "TARDIS-Notification-Service/1.0"
+)
 
+var _ NotificationAdapter[ChatConfiguration] = &MsTeamsAdapter{}
+
+// MsTeamsAdapter is an adapter for sending notifications to Microsoft Teams via webhooks
 type MsTeamsAdapter struct {
-	httpClient *http.Client
+	client *resty.Client
 }
 
-// NewMsTeamsAdapter creates a new instance of MsTeamsAdapter with default HTTP client
-func NewMsTeamsAdapter() MsTeamsAdapter {
-	return MsTeamsAdapter{
-		httpClient: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+// MsTeamsAdapterConfig holds configuration for the MsTeamsAdapter.
+// It wraps HTTPClientConfig and adds MS Teams specific settings.
+type MsTeamsAdapterConfig struct {
+	HTTPClientConfig
+}
+
+// NewMsTeamsAdapter creates a new instance of MsTeamsAdapter with default configuration
+func NewMsTeamsAdapter() *MsTeamsAdapter {
+	return NewMsTeamsAdapterWithConfig(nil)
+}
+
+// NewMsTeamsAdapterWithConfig creates a new instance of MsTeamsAdapter with custom configuration
+func NewMsTeamsAdapterWithConfig(config *MsTeamsAdapterConfig) *MsTeamsAdapter {
+	// Apply defaults if config is nil
+	if config == nil {
+		config = &MsTeamsAdapterConfig{}
+	}
+
+	// Set default User-Agent if not provided
+	if config.UserAgent == "" {
+		config.UserAgent = defaultUserAgent
+	}
+
+	// Set default retry condition if not provided
+	if config.RetryConditionFunc == nil {
+		config.RetryConditionFunc = DefaultRetryCondition
+	}
+
+	// Create HTTP client using the shared factory
+	client := NewRestyClient(&config.HTTPClientConfig)
+
+	// Set MS Teams specific headers
+	client.SetHeader("Content-Type", "application/json; charset=utf-8").
+		SetHeader("Accept", "application/json")
+
+	return &MsTeamsAdapter{
+		client: client,
 	}
 }
 
-func (e MsTeamsAdapter) Send(ctx context.Context, config ChatConfiguration, title string, body string) error {
+// TeamsErrorResponse represents the error response from MS Teams webhook
+type TeamsErrorResponse struct {
+	Error struct {
+		Code       string `json:"code"`
+		Message    string `json:"message"`
+		InnerError struct {
+			Code      string `json:"code"`
+			Message   string `json:"message"`
+			Date      string `json:"date"`
+			RequestID string `json:"request-id"`
+		} `json:"innerError"`
+	} `json:"error"`
+}
+
+// Send sends a notification to Microsoft Teams with retry logic and proper error handling.
+// The title parameter is ignored as MS Teams determines the title from the card content.
+func (e *MsTeamsAdapter) Send(ctx context.Context, config ChatConfiguration, title string, body string) error {
 	log := logr.FromContextOrDiscard(ctx)
 
 	// Validate required parameters
@@ -45,70 +98,56 @@ func (e MsTeamsAdapter) Send(ctx context.Context, config ChatConfiguration, titl
 		return fmt.Errorf("message body is required")
 	}
 
-	// Try to pretty print the JSON body for debugging
-	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, []byte(body), "", "  "); err == nil {
-		// If it's valid JSON, base64 encode it for clean log output
-		encodedBody := base64.StdEncoding.EncodeToString(prettyJSON.Bytes())
-		log.V(1).Info("Sending to MS Teams",
+	// Log request if verbose logging is enabled
+	if log.V(1).Enabled() {
+		log.V(1).Info("Sending request to MS Teams",
 			"webhook", webhookURL,
-			"body (base64)", encodedBody,
-		)
-	} else {
-		// If it's not valid JSON, base64 encode the original body
-		encodedBody := base64.StdEncoding.EncodeToString([]byte(body))
-		log.V(1).Info("Sending to MS Teams (non-JSON body)",
-			"webhook", webhookURL,
-			"body (base64)", encodedBody,
+			"body_size", len(body),
 		)
 	}
 
-	// Create new request with context
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		webhookURL,
-		bytes.NewBufferString(body),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create HTTP request: %w", err)
-	}
+	// Send request with automatic retry via go-resty
+	resp, err := e.client.R().
+		SetContext(ctx).
+		SetBody(body).
+		Post(webhookURL)
 
-	// Set headers
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send request
-	resp, err := e.getHTTPClient().Do(req)
 	if err != nil {
+		log.Error(err, "HTTP request failed",
+			"webhook", webhookURL,
+		)
 		return fmt.Errorf("HTTP request failed: %w", err)
 	}
 
-	defer resp.Body.Close()
-
-	// Read response body for error details
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
-	}
-
 	// Check for non-success status codes
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(respBody))
+	if resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
+		return parseError(resp.StatusCode(), resp.Body())
 	}
 
 	log.V(1).Info("Successfully sent message to MS Teams",
-		"status_code", resp.StatusCode,
+		"status_code", resp.StatusCode(),
+		"response_size", len(resp.Body()),
+		"duration", resp.Time(),
 	)
 
 	return nil
 }
 
-// getHTTPClient returns the HTTP client, initializing it if necessary
-func (e MsTeamsAdapter) getHTTPClient() *http.Client {
-	if e.httpClient == nil {
-		e.httpClient = &http.Client{
-			Timeout: 10 * time.Second,
-		}
+// parseError attempts to parse structured error response from MS Teams
+func parseError(statusCode int, respBody []byte) error {
+	// Try to parse as structured error
+	var teamsErr TeamsErrorResponse
+	if err := json.Unmarshal(respBody, &teamsErr); err == nil && teamsErr.Error.Code != "" {
+		return fmt.Errorf("MS Teams API error (status %d): code=%s, message=%s, inner_code=%s, inner_message=%s, request_id=%s",
+			statusCode,
+			teamsErr.Error.Code,
+			teamsErr.Error.Message,
+			teamsErr.Error.InnerError.Code,
+			teamsErr.Error.InnerError.Message,
+			teamsErr.Error.InnerError.RequestID,
+		)
 	}
-	return e.httpClient
+
+	// Fallback to raw response
+	return fmt.Errorf("unexpected status code %d: %s", statusCode, string(respBody))
 }
