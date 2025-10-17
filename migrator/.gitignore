@@ -18,6 +18,7 @@ testbin/
 *.out
 cover.out
 coverage.html
+gotest.log
 
 # Dependency directories
 vendor/

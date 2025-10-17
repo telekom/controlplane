@@ -9,7 +9,7 @@ This guide will help you get the Migrator operator up and running in 5 minutes.
 ## Prerequisites
 
 - Kubernetes cluster (1.24+)
-- kubectl configuredz
+- kubectl configured
 - Access to both legacy and new clusters
 - Go 1.23+ (for local development)
 

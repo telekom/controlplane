@@ -33,15 +33,15 @@ vet: ## Run go vet against code.
 
 .PHONY: test
 test: fmt vet ## Run tests.
-	go test ./... -v -coverprofile cover.out
+	go test ./... -v -coverprofile cover.out 2>&1 | tee gotest.log
 
 .PHONY: test-verbose
 test-verbose: fmt vet ## Run tests with detailed Ginkgo output.
-	go test ./... -v -ginkgo.v -ginkgo.progress -coverprofile cover.out
+	go test ./... -v -ginkgo.v -ginkgo.progress -coverprofile cover.out 2>&1 | tee gotest.log
 
 .PHONY: test-focus
 test-focus: ## Run tests matching FOCUS (e.g., make test-focus FOCUS="Reconcile").
-	go test ./... -v -ginkgo.focus="$(FOCUS)"
+	go test ./... -v -ginkgo.focus="$(FOCUS)" 2>&1 | tee gotest.log
 
 ##@ Build
 
