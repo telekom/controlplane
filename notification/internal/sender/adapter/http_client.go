@@ -144,6 +144,11 @@ func DefaultRetryCondition(r *resty.Response, err error) bool {
 		return true
 	}
 
+	// No error and no response - don't retry
+	if r == nil {
+		return false
+	}
+
 	// Retry on specific HTTP status codes
 	statusCode := r.StatusCode()
 	return statusCode >= 500 || // 5xx server errors
