@@ -1,3 +1,7 @@
+// Copyright 2025 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
 # Quick Start Guide
 
 This guide will help you get the Migrator operator up and running in 5 minutes.
@@ -5,7 +9,7 @@ This guide will help you get the Migrator operator up and running in 5 minutes.
 ## Prerequisites
 
 - Kubernetes cluster (1.24+)
-- kubectl configured
+- kubectl configuredz
 - Access to both legacy and new clusters
 - Go 1.23+ (for local development)
 

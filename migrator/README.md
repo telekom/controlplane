@@ -1,3 +1,7 @@
+// Copyright 2025 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
 # Migrator - Plugin-Based Migration Framework
 
 A flexible, plugin-based Kubernetes operator framework for migrating resources from legacy clusters to new clusters.
