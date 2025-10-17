@@ -1,0 +1,53 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: migrator-manager-role
+rules:
+# Permissions for ApprovalRequest resources
+- apiGroups:
+  - approval.cp.ei.telekom.de
+  resources:
+  - approvalrequests
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+- apiGroups:
+  - approval.cp.ei.telekom.de
+  resources:
+  - approvalrequests/status
+  verbs:
+  - get
+  - update
+  - patch
+
+# Add permissions for additional resource types here as you register more migrators
+# Example for Rover:
+# - apiGroups:
+#   - rover.cp.ei.telekom.de
+#   resources:
+#   - rovers
+#   verbs:
+#   - get
+#   - list
+#   - watch
+#   - update
+#   - patch
+
+# Permissions to read the remote cluster secret
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+  resourceNames:
+  - remote-cluster-token
