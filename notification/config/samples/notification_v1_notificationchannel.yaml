@@ -5,9 +5,12 @@
 apiVersion: notification.cp.ei.telekom.de/v1
 kind: NotificationChannel
 metadata:
+  name: msteams-channel-firebirds
   labels:
-    app.kubernetes.io/name: notification
+    app.kubernetes.io/name: msteams-channel-firebirds
     app.kubernetes.io/managed-by: kustomize
-  name: notificationchannel-sample
+    cp.ei.telekom.de/purpose: notifications
 spec:
-  # TODO(user): Add fields here
+  msTeams:
+    # Webhook URL from Microsoft Teams (Incoming Webhook connector)
+    webhookUrl: "https://test.environment.api.powerplatform.com:443/powerautomate/invoke-webhook"
