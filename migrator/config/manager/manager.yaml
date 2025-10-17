@@ -1,0 +1,72 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: controlplane-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: migrator-controller-manager
+  namespace: controlplane-system
+  labels:
+    control-plane: controller-manager
+    app.kubernetes.io/name: migrator
+    app.kubernetes.io/component: controller
+    domain: migration
+spec:
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+      domain: migration
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        control-plane: controller-manager
+        domain: migration
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: manager
+        image: controller:latest
+        command:
+        - /manager
+        args:
+        - --leader-elect
+        - --remote-cluster-secret-name=remote-cluster-token
+        - --remote-cluster-secret-namespace=controlplane-system
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+      serviceAccountName: migrator-controller-manager
+      terminationGracePeriodSeconds: 10
