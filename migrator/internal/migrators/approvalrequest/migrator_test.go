@@ -121,52 +121,9 @@ var _ = Describe("ApprovalRequestMigrator", func() {
 		})
 	})
 
-	Describe("computeLegacyApprovalName", func() {
-		It("should swap components in owner name", func() {
-			approvalRequest.OwnerReferences[0].Name = "rover--api"
-
-			name, err := migrator.computeLegacyApprovalName(approvalRequest)
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(name).To(Equal("apisubscription--api--rover"))
-		})
-
-		It("should handle complex names with multiple dashes", func() {
-			approvalRequest.OwnerReferences[0].Name = "manual-tests-consumer--eni-manual-tests-echo-v1"
-
-			name, err := migrator.computeLegacyApprovalName(approvalRequest)
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(name).To(Equal("apisubscription--eni-manual-tests-echo-v1--manual-tests-consumer"))
-		})
-
-		It("should convert kind to lowercase", func() {
-			approvalRequest.OwnerReferences[0].Kind = "APISubscription"
-			approvalRequest.OwnerReferences[0].Name = "test"
-
-			name, err := migrator.computeLegacyApprovalName(approvalRequest)
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(name).To(Equal("apisubscription--test"))
-		})
-	})
-
-	Describe("computeLegacyNamespace", func() {
-		It("should strip environment prefix", func() {
-			namespace := migrator.computeLegacyNamespace("controlplane--eni--hyperion")
-			Expect(namespace).To(Equal("eni--hyperion"))
-		})
-
-		It("should return as-is if no separator", func() {
-			namespace := migrator.computeLegacyNamespace("default")
-			Expect(namespace).To(Equal("default"))
-		})
-
-		It("should handle different environments", func() {
-			namespace := migrator.computeLegacyNamespace("production--phoenix--firebirds")
-			Expect(namespace).To(Equal("phoenix--firebirds"))
-		})
-	})
+	// Note: Private helper methods (computeLegacyApprovalName, computeLegacyNamespace)
+	// are now in the handler and tested via handler_test.go.
+	// The public interface methods above (ComputeLegacyIdentifier) test the functionality end-to-end.
 
 	Describe("HasChanged", func() {
 		var approval *approvalv1.Approval
