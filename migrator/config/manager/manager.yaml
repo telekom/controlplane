@@ -2,53 +2,50 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: controlplane-system
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: migrator-controller-manager
+  name: migrator-operator
   namespace: controlplane-system
   labels:
+    app: migrator-operator
     control-plane: controller-manager
-    app.kubernetes.io/name: migrator
-    app.kubernetes.io/component: controller
-    domain: migration
 spec:
+  replicas: 1
   selector:
     matchLabels:
+      app: migrator-operator
       control-plane: controller-manager
-      domain: migration
-  replicas: 1
   template:
     metadata:
       labels:
+        app: migrator-operator
         control-plane: controller-manager
-        domain: migration
     spec:
+      serviceAccountName: migrator-operator
       securityContext:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
       containers:
       - name: manager
-        image: controller:latest
-        command:
-        - /manager
+        image: ghcr.io/telekom/controlplane/migrator:stable
+        imagePullPolicy: IfNotPresent
         args:
         - --leader-elect
         - --remote-cluster-secret-name=remote-cluster-token
-        - --remote-cluster-secret-namespace=controlplane-system
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        ports:
+        - containerPort: 8080
+          name: metrics
+          protocol: TCP
+        - containerPort: 8081
+          name: health
+          protocol: TCP
         livenessProbe:
           httpGet:
             path: /healthz
@@ -68,5 +65,12 @@ spec:
           requests:
             cpu: 100m
             memory: 128Mi
-      serviceAccountName: migrator-controller-manager
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65532
       terminationGracePeriodSeconds: 10

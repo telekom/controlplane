@@ -12,5 +12,5 @@ roleRef:
   name: migrator-manager-role
 subjects:
 - kind: ServiceAccount
-  name: migrator-controller-manager
+  name: migrator-operator
   namespace: controlplane-system
