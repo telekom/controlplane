@@ -27,14 +27,14 @@ type RemoteClusterConfig struct {
 // NewRemoteClusterClient creates a new client for accessing the remote cluster
 // This function loads configuration from a Kubernetes secret
 func NewRemoteClusterClient(
-	client ctrlclient.Client,
+	reader ctrlclient.Reader,
 	secretName string,
 	secretNamespace string,
 	scheme *runtime.Scheme,
 ) (ctrlclient.Client, error) {
 	// Fetch the secret containing remote cluster credentials
 	secret := &corev1.Secret{}
-	err := client.Get(context.Background(), types.NamespacedName{
+	err := reader.Get(context.Background(), types.NamespacedName{
 		Name:      secretName,
 		Namespace: secretNamespace,
 	}, secret)

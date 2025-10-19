@@ -71,7 +71,7 @@ func main() {
 		"secretNamespace", secretNamespace)
 
 	remoteClient, err := client.NewRemoteClusterClient(
-		mgr.GetClient(),
+		mgr.GetAPIReader(),
 		secretName,
 		secretNamespace,
 		scheme,
