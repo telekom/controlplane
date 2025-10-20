@@ -47,10 +47,10 @@ func (in *EmailConfig) DeepCopyInto(out *EmailConfig) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.CCRecipients != nil {
-		in, out := &in.CCRecipients, &out.CCRecipients
-		*out = make([]string, len(*in))
-		copy(*out, *in)
+	if in.From != nil {
+		in, out := &in.From, &out.From
+		*out = new(string)
+		**out = **in
 	}
 	if in.Authentication != nil {
 		in, out := &in.Authentication, &out.Authentication

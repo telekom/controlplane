@@ -22,7 +22,7 @@ const (
 	defaultUserAgent = "TARDIS-Notification-Service/1.0"
 )
 
-var _ NotificationAdapter[ChatConfiguration] = &MsTeamsAdapter{}
+var _ NotificationAdapter[ChatChannelConfiguration] = &MsTeamsAdapter{}
 
 // MsTeamsAdapter is an adapter for sending notifications to Microsoft Teams via webhooks
 type MsTeamsAdapter struct {
@@ -35,6 +35,7 @@ type MsTeamsAdapterConfig struct {
 	HTTPClientConfig
 }
 
+func (e MsTeamsAdapter) Send(ctx context.Context, config ChatChannelConfiguration, title string, body string) error {
 // NewMsTeamsAdapter creates a new instance of MsTeamsAdapter with default configuration
 func NewMsTeamsAdapter() *MsTeamsAdapter {
 	return NewMsTeamsAdapterWithConfig(nil)
