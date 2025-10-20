@@ -9,6 +9,7 @@ import (
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -182,7 +183,7 @@ func FirstSetup(ctx context.Context, client client.Client, object common_types.O
 	return false, nil
 }
 
-func HandleError(ctx context.Context, err error, obj client.Object, recorder record.EventRecorder) (reconcile.Result, error) {
+func HandleError(ctx context.Context, err error, obj common_types.Object, recorder record.EventRecorder) (reconcile.Result, error) {
 	log := log.FromContext(ctx)
 	warningEventType := "Warning"
 
@@ -195,15 +196,7 @@ func HandleError(ctx context.Context, err error, obj client.Object, recorder rec
 		return reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}, nil
 	}
 
-	// TODO: add blocked error handling
-
-	if recorder != nil {
-		recorder.Event(obj, warningEventType, "UnknownError", err.Error())
-	}
-
-	log.Error(err, "Unknown error occurred during operation")
-	// unless explicitly stated otherwise, we should try to requeue
-	return reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}, nil
+	return ctrlerrors.HandleError(obj, err, recorder), nil
 }
 
 // EnsureNotReadyOnError sets the Ready condition to false on the object if the error is not nil
