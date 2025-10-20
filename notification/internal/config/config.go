@@ -49,8 +49,8 @@ func LoadEmailAdapterConfig() (*EmailAdapterConfig, error) {
 }
 
 func setDefaults() {
-	viper.SetDefault("smtpConnection.host", "smtp.dev.dhei.telekom.de")
-	viper.SetDefault("smtpConnection.port", 465)
+	viper.SetDefault("smtpConnection.host", "localhost")
+	viper.SetDefault("smtpConnection.port", 25)
 	viper.SetDefault("smtpConnection.user", "")
 	viper.SetDefault("smtpConnection.password", "")
 
@@ -59,6 +59,6 @@ func setDefaults() {
 	viper.SetDefault("smtpSender.maxRetries", 5)
 	viper.SetDefault("smtpSender.initialBackoff", "1s")
 	viper.SetDefault("smtpSender.maxBackoff", "1m")
-	viper.SetDefault("smtpSender.defaultFrom", "noreply_fmb_tardis_support@telekom.de")
+	viper.SetDefault("smtpSender.defaultFrom", "email@telekom.de")
 	viper.SetDefault("smtpSender.defaultName", "Team Tardis")
 }
