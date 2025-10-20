@@ -23,7 +23,6 @@ import (
 
 	"github.com/telekom/controlplane/notification/internal/handler"
 
-	emailadapterconfig "github.com/telekom/controlplane/notification/internal/config"
 	adapterconfig "github.com/telekom/controlplane/notification/internal/config"
 )
 
@@ -49,7 +48,7 @@ func NewNotificationReconcilerWithSenderConfig(
 		MailAdapter: &mail.EmailAdapter{
 			AdapterConfig: emailConfig,
 		},
-		ChatAdapter:     &adapter.MsTeamsAdapter{},
+		ChatAdapter:     adapter.NewMsTeamsAdapter(),
 		CallbackAdapter: &adapter.WebhookAdapter{},
 	}
 

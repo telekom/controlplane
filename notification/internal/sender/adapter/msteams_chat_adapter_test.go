@@ -113,7 +113,7 @@ func TestSend_ValidationErrors(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		config    ChatConfiguration
+		config    ChatChannelConfiguration
 		body      string
 		expectErr string
 	}{
