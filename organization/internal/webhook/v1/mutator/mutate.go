@@ -5,8 +5,11 @@
 package mutator
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/telekom/controlplane/organization/internal/index"
@@ -106,4 +109,13 @@ func GetZoneObjWithTeamInfo(ctx context.Context, k8sClient client.Client) (*admi
 	}
 
 	return teamApiZone, nil
+}
+
+func SortTeamMembers(teamObj *organisationv1.Team) {
+	sort.Slice(teamObj.Spec.Members, func(i, j int) bool {
+		if strings.EqualFold(teamObj.Spec.Members[i].Email, teamObj.Spec.Members[j].Email) {
+			cmp.Less(teamObj.Spec.Members[i].Name, teamObj.Spec.Members[j].Name)
+		}
+		return cmp.Less(teamObj.Spec.Members[i].Email, teamObj.Spec.Members[j].Email)
+	})
 }

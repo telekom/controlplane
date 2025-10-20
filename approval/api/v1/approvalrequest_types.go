@@ -54,6 +54,9 @@ type ApprovalRequestStatus struct {
 	// +kubebuilder:validation:Enum=Pending;Granted;Semigranted;Rejected
 	// +kubebuilder:default=Pending
 	LastState ApprovalState `json:"lastState,omitempty"`
+
+	// NotificationRef is a reference to the notification that was sent for this approval request
+	NotificationRef *types.ObjectRef `json:"notificationRef,omitempty"`
 }
 
 // +kubebuilder:object:root=true

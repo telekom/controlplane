@@ -9,6 +9,7 @@
 package v1
 
 import (
+	"github.com/telekom/controlplane/common/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -212,6 +213,17 @@ func (in *TeamStatus) DeepCopyInto(out *TeamStatus) {
 	}
 	if in.GatewayConsumerRef != nil {
 		in, out := &in.GatewayConsumerRef, &out.GatewayConsumerRef
+		*out = (*in).DeepCopy()
+	}
+	if in.NotificationsRef != nil {
+		in, out := &in.NotificationsRef, &out.NotificationsRef
+		*out = make(map[string]*types.ObjectRef, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val.DeepCopy()
+		}
+	}
+	if in.NotificationChannelRef != nil {
+		in, out := &in.NotificationChannelRef, &out.NotificationChannelRef
 		*out = (*in).DeepCopy()
 	}
 	if in.Conditions != nil {
