@@ -51,6 +51,6 @@ func (s SMTPEmailSender) Send(ctx context.Context, from string, senderName strin
 		return errors.Wrap(err, "Failed to send email")
 	}
 
-	log.Info("Email sent successfully to %v", bcc)
+	log.Info("Email sent successfully", "bcc", bcc)
 	return nil
 }
