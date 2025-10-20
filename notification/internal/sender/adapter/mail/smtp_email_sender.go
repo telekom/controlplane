@@ -36,6 +36,8 @@ func (s SMTPEmailSender) Send(ctx context.Context, from string, senderName strin
 	defer cancel()
 
 	d := gomail.NewDialer(s.config.SMTPConnection.Host, s.config.SMTPConnection.Port, s.config.SMTPConnection.User, s.config.SMTPConnection.Password)
+
+	// we are aware that the InsecureSkipVerify is set to true. communication is within cluster and this is currently acceptable
 	d.TLSConfig = &tls.Config{ServerName: s.config.SMTPConnection.Host, InsecureSkipVerify: true}
 
 	m := gomail.NewMessage()
