@@ -16,7 +16,7 @@ The Migration Operator watches `ApprovalRequest` resources and synchronizes thei
 - ✅ Smart approval name mapping with component swapping
 - ✅ Only updates existing resources (never creates new ones)
 - ✅ Special `Suspended` → `Rejected` state mapping
-- ✅ **Skips ApprovalRequests with `strategy: Auto`** (no migration needed)
+- ✅ **Special handling for `strategy: Auto`**: Sets corresponding **Approval** to `Rejected` if legacy has `Strategy=Auto` AND `State=Suspended`
 - ✅ Efficient change detection to avoid unnecessary updates
 - ✅ Detailed structured logging for debugging
 - ✅ Production-ready with health checks, metrics, and leader election
@@ -138,9 +138,11 @@ The operator maps legacy states to new cluster states:
 
 1. **Watch** ApprovalRequests in new cluster
 2. **Compute** legacy Approval name from owner references (with component swapping)
-3. **Check** strategy - skip if `Auto` (no migration needed)
-4. **Transform** namespace from new to legacy format
-5. **Fetch** Approval from legacy cluster via Kubernetes API
+3. **Transform** namespace from new to legacy format
+4. **Fetch** Approval from legacy cluster via Kubernetes API
+5. **Check** strategy:
+   - If `Auto`: Apply special logic (see Auto Strategy Handling below)
+   - Otherwise: Proceed with normal migration
 6. **Compare** states using annotations
 7. **Map** state (with Suspended → Rejected transformation)
 8. **Update** ApprovalRequest if state changed
@@ -170,18 +172,76 @@ Example: `apisubscription--eni-manual-tests-echo-token-request-test-v1--manual-t
 
 The components are swapped because the legacy naming convention places the API name before the consumer name.
 
-### Strategy-Based Filtering
+### Auto Strategy Handling
 
-The operator **skips migration** for ApprovalRequests with `strategy: Auto`. These approvals are automatically granted without requiring manual intervention, so they don't need state synchronization from the legacy cluster.
+The operator has **special logic** for ApprovalRequests with `strategy: Auto`:
 
-**Strategies:**
-- ✅ **`Auto`** - Skipped (no migration)
-- ✅ **`Simple`** - Migrated (requires manual approval)
-- ✅ **`FourEyes`** - Migrated (requires multiple approvers)
+**Background:**
+- In the new cluster, ApprovalRequests with `Strategy=Auto` are automatically granted
+- The system automatically creates a corresponding **Approval** resource with `State=Granted`
+- The Approval name is **different** from the ApprovalRequest name
+- The Approval name is stored in `ApprovalRequest.Status.Approval.Name`
+- This Approval is what we need to update if the legacy cluster shows a problem
 
-**Example log output:**
+**Rule:** If the legacy Approval has **both** `Strategy=Auto` AND `State=Suspended`, the corresponding **Approval** (not ApprovalRequest) in the new cluster is set to `State=Rejected`.
+
+**Why?** In the legacy cluster, Auto strategy approvals that are suspended indicate a policy violation or security issue. Since Auto approvals in the new cluster are automatically granted, we need to find and reject the auto-created Approval.
+
+**Behavior:**
+- ✅ **Legacy: `Strategy=Auto` + `State=Suspended`** → New: Find the Approval and set to `Rejected`
+- ✅ **Legacy: `Strategy=Auto` + `State=Granted`** → New: No migration (already auto-granted)
+- ✅ **Legacy: `Strategy=Auto` + other states** → New: No migration
+- ✅ **`Simple` or `FourEyes`** → Normal migration (full state sync on ApprovalRequest)
+
+**Example log output for Auto strategy:**
 ```
-INFO  Skipping migration for Auto strategy approval request  strategy=Auto legacyApprovalName=apisubscription--api--rover
+INFO  Handling Auto strategy ApprovalRequest  
+  legacyStrategy=Auto 
+  legacyState=Suspended 
+  approvalRequestState=Granted
+
+INFO  Legacy Approval is Auto+Suspended, looking for corresponding Approval to set to Rejected  
+  approvalName=approval-a1b2c3d4e5  
+  approvalNamespace=controlplane--eni--hyperion
+  legacyApprovalName=apisubscription--api-name--rover-name
+
+INFO  Setting Approval to Rejected  
+  approvalName=approval-a1b2c3d4e5 
+  oldState=Granted 
+  newState=Rejected
+
+INFO  Successfully set Auto strategy Approval to Rejected  
+  approvalName=approval-a1b2c3d4e5
+```
+
+**Example resources:**
+```yaml
+# ApprovalRequest (unchanged)
+apiVersion: approval.cp.ei.telekom.de/v1
+kind: ApprovalRequest
+metadata:
+  name: test-request
+  namespace: controlplane--eni--hyperion
+spec:
+  strategy: Auto
+  state: Granted  # Stays Granted
+status:
+  approval:
+    name: approval-a1b2c3d4e5  # Reference to the Approval
+
+---
+# Approval (updated by migration)
+apiVersion: approval.cp.ei.telekom.de/v1
+kind: Approval
+metadata:
+  name: approval-a1b2c3d4e5  # Different from ApprovalRequest name!
+  namespace: controlplane--eni--hyperion
+  annotations:
+    migration.cp.ei.telekom.de/last-migrated-state: "Rejected"
+    migration.cp.ei.telekom.de/reason: "Auto strategy with Suspended state in legacy"
+    migration.cp.ei.telekom.de/legacy-approval: "apisubscription--api-name--rover-name"
+spec:
+  state: Rejected  # Changed from Granted
 ```
 
 ## Development

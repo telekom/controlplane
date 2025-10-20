@@ -62,21 +62,13 @@ func (h *MigrationHandler) Handle(ctx context.Context, approvalRequest *approval
 		return nil
 	}
 
-	// Skip migration for Auto strategy
-	if approvalRequest.Spec.Strategy == approvalv1.ApprovalStrategyAuto {
-		log.Info("Skipping migration for Auto strategy approval request",
-			"strategy", approvalRequest.Spec.Strategy,
-			"legacyApprovalName", legacyApprovalName)
-		return nil
-	}
-
 	log.Info("Computed legacy approval name", "legacyApprovalName", legacyApprovalName)
 
 	// Compute legacy namespace by stripping environment prefix
 	// New cluster: environment--groupName--teamName (e.g., controlplane--eni--narvi)
 	// Legacy cluster: groupName--teamName (e.g., eni--narvi)
 	legacyNamespace := h.computeLegacyNamespace(approvalRequest.Namespace)
-	
+
 	log.Info("Computed legacy namespace",
 		"currentNamespace", approvalRequest.Namespace,
 		"legacyNamespace", legacyNamespace)
@@ -103,10 +95,18 @@ func (h *MigrationHandler) Handle(ctx context.Context, approvalRequest *approval
 	}
 
 	legacyState := legacyApproval.Spec.State
+	legacyStrategy := legacyApproval.Spec.Strategy
 	log.Info("Fetched legacy approval successfully",
 		"legacyApprovalName", legacyApprovalName,
-		"legacyState", legacyState)
+		"legacyState", legacyState,
+		"legacyStrategy", legacyStrategy)
 
+	// Special handling for Auto strategy ApprovalRequests
+	if approvalRequest.Spec.Strategy == approvalv1.ApprovalStrategyAuto {
+		return h.handleAutoStrategy(ctx, approvalRequest, legacyApproval, legacyApprovalName)
+	}
+
+	// Normal migration for non-Auto strategies
 	// Check if state has changed since last migration
 	if !h.hasStateChanged(approvalRequest, legacyState) {
 		log.Info("Legacy state unchanged, skipping update",
@@ -139,6 +139,105 @@ func (h *MigrationHandler) Handle(ctx context.Context, approvalRequest *approval
 	return nil
 }
 
+// handleAutoStrategy handles migration for ApprovalRequests with Auto strategy
+// If the legacy Approval has Strategy=Auto AND State=Suspended, set the corresponding Approval to State=Rejected
+func (h *MigrationHandler) handleAutoStrategy(
+	ctx context.Context,
+	approvalRequest *approvalv1.ApprovalRequest,
+	legacyApproval *approvalv1.Approval,
+	legacyApprovalName string,
+) error {
+	log := log.FromContext(ctx)
+
+	legacyStrategy := legacyApproval.Spec.Strategy
+	legacyState := legacyApproval.Spec.State
+
+	log.Info("Handling Auto strategy ApprovalRequest",
+		"legacyApprovalName", legacyApprovalName,
+		"legacyStrategy", legacyStrategy,
+		"legacyState", legacyState,
+		"approvalRequestState", approvalRequest.Spec.State)
+
+	// Check if legacy Approval has Strategy=Auto AND State=Suspended
+	if legacyStrategy == approvalv1.ApprovalStrategyAuto && legacyState == approvalv1.ApprovalStateSuspended {
+		// Auto strategy ApprovalRequests automatically create an Approval with State=Granted
+		// We need to find and update that Approval to State=Rejected
+
+		// Get the Approval name from the ApprovalRequest status
+		if approvalRequest.Status.Approval.Name == "" {
+			log.Info("Approval not created yet (no name in status), will retry on next reconciliation")
+			return nil
+		}
+
+		approvalName := approvalRequest.Status.Approval.Name
+		approvalNamespace := approvalRequest.Namespace
+
+		log.Info("Legacy Approval is Auto+Suspended, looking for corresponding Approval to set to Rejected",
+			"approvalName", approvalName,
+			"approvalNamespace", approvalNamespace,
+			"legacyApprovalName", legacyApprovalName)
+
+		// Fetch the Approval
+		approval := &approvalv1.Approval{}
+		if err := h.Client.Get(ctx, ctrlclient.ObjectKey{
+			Name:      approvalName,
+			Namespace: approvalNamespace,
+		}, approval); err != nil {
+			// Approval not found - might not have been created yet
+			if ctrlclient.IgnoreNotFound(err) == nil {
+				log.Info("Approval not found yet, will retry on next reconciliation",
+					"approvalName", approvalName)
+				return nil
+			}
+			log.Error(err, "Failed to get Approval")
+			return errors.Wrap(err, "failed to get approval")
+		}
+
+		targetState := approvalv1.ApprovalStateRejected
+
+		// Check if already in the target state
+		if approval.Spec.State == targetState {
+			log.Info("Approval already in target state, skipping update",
+				"currentState", approval.Spec.State,
+				"targetState", targetState)
+			return nil
+		}
+
+		log.Info("Setting Approval to Rejected",
+			"approvalName", approvalName,
+			"oldState", approval.Spec.State,
+			"newState", targetState)
+
+		// Update the state
+		approval.Spec.State = targetState
+
+		// Set annotation to track migration
+		if approval.Annotations == nil {
+			approval.Annotations = make(map[string]string)
+		}
+		approval.Annotations["migration.cp.ei.telekom.de/last-migrated-state"] = string(targetState)
+		approval.Annotations["migration.cp.ei.telekom.de/reason"] = "Auto strategy with Suspended state in legacy"
+		approval.Annotations["migration.cp.ei.telekom.de/legacy-approval"] = legacyApprovalName
+
+		// Update the Approval
+		if err := h.Client.Update(ctx, approval); err != nil {
+			log.Error(err, "Failed to update Approval to Rejected")
+			return errors.Wrap(err, "failed to update approval")
+		}
+
+		log.Info("Successfully set Auto strategy Approval to Rejected",
+			"approvalName", approvalName)
+		return nil
+	}
+
+	// Legacy Approval is not Auto+Suspended, no migration needed
+	log.Info("Legacy Approval is not Auto+Suspended, skipping migration for Auto strategy ApprovalRequest",
+		"legacyStrategy", legacyStrategy,
+		"legacyState", legacyState)
+
+	return nil
+}
+
 // computeLegacyApprovalName determines the legacy Approval name from owner references
 func (h *MigrationHandler) computeLegacyApprovalName(approvalRequest *approvalv1.ApprovalRequest) (string, error) {
 	// The legacy Approval name format:
@@ -160,7 +259,7 @@ func (h *MigrationHandler) computeLegacyApprovalName(approvalRequest *approvalv1
 	// Need to swap if it contains "--"
 	ownerName := owner.Name
 	parts := strings.SplitN(ownerName, "--", 2)
-	
+
 	var legacyName string
 	if len(parts) == 2 {
 		// Swap: rover-name--api-name becomes api-name--rover-name
@@ -191,7 +290,7 @@ func (h *MigrationHandler) computeLegacyNamespace(namespace string) string {
 	// New cluster namespace format: environment--groupName--teamName
 	// Legacy cluster namespace format: groupName--teamName
 	// Strip the first segment (environment)
-	
+
 	parts := strings.SplitN(namespace, "--", 2)
 	if len(parts) < 2 {
 		// If no "--" separator found, return as-is (already in legacy format)
@@ -199,15 +298,15 @@ func (h *MigrationHandler) computeLegacyNamespace(namespace string) string {
 			"namespace", namespace)
 		return namespace
 	}
-	
+
 	// Return groupName--teamName (everything after first --)
 	legacyNamespace := parts[1]
-	
+
 	h.Log.V(1).Info("Stripped environment prefix from namespace",
 		"original", namespace,
 		"environment", parts[0],
 		"legacy", legacyNamespace)
-	
+
 	return legacyNamespace
 }
 
