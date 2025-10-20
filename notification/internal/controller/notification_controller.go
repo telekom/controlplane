@@ -71,16 +71,6 @@ func (r *NotificationReconciler) Reconcile(ctx context.Context, req ctrl.Request
 func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("notification-controller")
 
-	//// initialize the notification sender with all adapters so they can be reused
-	//notificationSender := sender.AdapterSender{
-	//	MailAdapter: &adapter.EmailAdapter{
-	//		SMTPHost: emailConfig.SMTPHost,
-	//		SMTPPort: emailConfig.SMTPPort,
-	//	},
-	//	ChatAdapter:     adapter.NewMsTeamsAdapter(),
-	//	CallbackAdapter: &adapter.WebhookAdapter{},
-	//}
-
 	notificationHandler := &handler.NotificationHandler{
 		NotificationSender: r.NotificationSender,
 	}
