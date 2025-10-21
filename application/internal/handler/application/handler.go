@@ -38,7 +38,7 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 
 	zone, err := GetZone(ctx, c, app.Spec.Zone)
 	if err != nil {
-		if apierrors.IsNotFound(err) {
+		if apierrors.IsNotFound(errors.Cause(err)) {
 			return ctrlerrors.BlockedErrorf("Zone %s not found", app.Spec.Zone.Name)
 		} else {
 			return ctrlerrors.RetryableErrorf("failed to get Zone when creating application: %s", err.Error())
@@ -49,7 +49,7 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 		for _, zoneRef := range app.Spec.FailoverZones {
 			zone, err := GetZone(ctx, c, zoneRef)
 			if err != nil {
-				if apierrors.IsNotFound(err) {
+				if apierrors.IsNotFound(errors.Cause(err)) {
 					return ctrlerrors.BlockedErrorf("Zone %s not found", app.Spec.Zone.Name)
 				} else {
 					return ctrlerrors.RetryableErrorf("failed to get Zone when creating application: %s", err.Error())
