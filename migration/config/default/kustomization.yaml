@@ -1,0 +1,48 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# This is the default configuration for standalone migration operator deployment.
+# For combined installations with the approval operator, use config/default-no-crds instead.
+
+# Adds namespace to all resources.
+namespace: controlplane-system
+
+# Labels to add to all resources and selectors.
+labels:
+- includeSelectors: true
+  pairs:
+    domain: migration
+  fields:
+    - path: spec/selector/matchLabels
+      create: true
+      kind: ServiceMonitor
+      group: monitoring.coreos.com
+
+# Value of this field is prepended to the
+# names of all resources
+namePrefix: migration-
+
+resources:
+- ../crd
+- ../rbac
+- ../manager
+# [METRICS] Expose the controller manager metrics service.
+- metrics_service.yaml
+
+# Images to use
+images:
+- name: controller
+  newName: ghcr.io/telekom/controlplane-migration-operator
+  newTag: latest
+
+# Patches to enable metrics endpoint using HTTPS
+patches:
+# [METRICS] The following patch will enable the metrics endpoint using HTTPS and the port :8443.
+# More info: https://book.kubebuilder.io/reference/metrics
+- path: manager_metrics_patch.yaml
+  target:
+    kind: Deployment
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
