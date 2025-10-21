@@ -13,14 +13,15 @@ import (
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gateway "github.com/telekom/controlplane/gateway/api/v1"
 	identity "github.com/telekom/controlplane/identity/api/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var _ handler.Handler[*application.Application] = &ApplicationHandler{}
@@ -28,8 +29,6 @@ var _ handler.Handler[*application.Application] = &ApplicationHandler{}
 type ApplicationHandler struct{}
 
 func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *application.Application) error {
-	log := log.FromContext(ctx)
-
 	c := client.ClientFromContextOrDie(ctx)
 	c.AddKnownTypeToState(&identity.Client{})
 	c.AddKnownTypeToState(&gateway.Consumer{})
@@ -39,16 +38,22 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 
 	zone, err := GetZone(ctx, c, app.Spec.Zone)
 	if err != nil {
-		log.Error(err, "❌ Failed to get Zone when creating application")
-		return err
+		if apierrors.IsNotFound(err) {
+			return ctrlerrors.BlockedErrorf("Zone %s not found", app.Spec.Zone.Name)
+		} else {
+			return ctrlerrors.RetryableErrorf("failed to get Zone when creating application: %s", err.Error())
+		}
 	}
 	failoverZones := make([]*admin.Zone, 0, len(app.Spec.FailoverZones))
 	if app.Spec.NeedsClient || app.Spec.NeedsConsumer {
 		for _, zoneRef := range app.Spec.FailoverZones {
 			zone, err := GetZone(ctx, c, zoneRef)
 			if err != nil {
-				log.Error(err, "❌ Failed to get Zone when creating application")
-				return err
+				if apierrors.IsNotFound(err) {
+					return ctrlerrors.BlockedErrorf("Zone %s not found", app.Spec.Zone.Name)
+				} else {
+					return ctrlerrors.RetryableErrorf("failed to get Zone when creating application: %s", err.Error())
+				}
 			}
 			failoverZones = append(failoverZones, zone)
 		}
@@ -58,14 +63,12 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	if app.Spec.NeedsClient {
 		err = CreateIdentityClient(ctx, zone, app)
 		if err != nil {
-			log.Error(err, "❌ Failed to create Identity client when creating application")
-			return err
+			return errors.Wrap(err, "failed to create Identity client when creating application")
 		}
 		for _, failoverZone := range failoverZones {
 			err = CreateIdentityClient(ctx, failoverZone, app, WithFailover())
 			if err != nil {
-				log.Error(err, "❌ Failed to create Identity client for failover zone when creating application")
-				return err
+				return errors.Wrapf(err, "failed to create Identity client for failover zone %s when creating application", failoverZone.Name)
 			}
 		}
 
@@ -76,14 +79,13 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	if app.Spec.NeedsConsumer {
 		err = CreateGatewayConsumer(ctx, zone, app)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to create Gateway consumer when creating application")
 		}
 
 		for _, failoverZone := range failoverZones {
 			err = CreateGatewayConsumer(ctx, failoverZone, app, WithFailover())
 			if err != nil {
-				log.Error(err, "❌ Failed to create Gateway consumer for failover zone when creating application")
-				return err
+				return errors.Wrapf(err, "failed to create Gateway consumer for failover zone %s when creating application", failoverZone.Name)
 			}
 		}
 	}

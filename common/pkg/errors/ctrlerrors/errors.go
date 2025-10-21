@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -32,11 +33,10 @@ type RetryableWithDelayError interface {
 }
 
 func HandleError(obj types.Object, err error, recorder record.EventRecorder) reconcile.Result {
-	if err == nil {
-		return reconcile.Result{}
-	}
+	err = errors.Cause(err)
 
 	if be, ok := err.(BlockedError); ok && be.IsBlocked() {
+		recordError(obj, err, "Blocked", recorder)
 		obj.SetCondition(condition.NewBlockedCondition(err.Error()))
 		return reconcile.Result{
 			// Its blocked but we still want to recheck later
@@ -46,6 +46,7 @@ func HandleError(obj types.Object, err error, recorder record.EventRecorder) rec
 	}
 
 	if re, ok := err.(RetryableWithDelayError); ok {
+		recordError(obj, err, "Retryable", recorder)
 		if re.IsRetryable() {
 			deley := re.RetryDelay()
 			if deley <= 0 {
@@ -58,6 +59,7 @@ func HandleError(obj types.Object, err error, recorder record.EventRecorder) rec
 	}
 
 	if re, ok := err.(RetryableError); ok {
+		recordError(obj, err, "Retryable", recorder)
 		if re.IsRetryable() {
 			return reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
 		} else {
@@ -65,11 +67,14 @@ func HandleError(obj types.Object, err error, recorder record.EventRecorder) rec
 		}
 	}
 
-	if recorder != nil {
-		recorder.Event(obj, "Warning", "UnknownError", err.Error())
-	}
-
+	recordError(obj, err, "Unknown", recorder)
 	return reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
+}
+
+func recordError(obj types.Object, err error, reason string, recorder record.EventRecorder) {
+	if err != nil && recorder != nil {
+		recorder.Event(obj, "Warning", reason, err.Error())
+	}
 }
 
 var _ error = &CtrlError{}

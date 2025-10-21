@@ -11,8 +11,10 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/test"
+	"github.com/telekom/controlplane/common/pkg/test/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -64,6 +66,11 @@ func TestCtrlerrors(t *testing.T) {
 
 var _ = Describe("Test Suite", func() {
 
+	var recorder *mock.EventRecorder
+	BeforeEach(func() {
+		recorder = &mock.EventRecorder{}
+	})
+
 	Context("BlockedError", func() {
 		It("should correctly handle a blocked error", func() {
 			ctrlErr := ctrlerrors.BlockedErrorf("This is a blocked error")
@@ -71,8 +78,8 @@ var _ = Describe("Test Suite", func() {
 			Expect(ctrlErr.Error()).To(Equal("This is a blocked error"))
 
 			obj := test.NewObject("blocked-obj", "default")
-			result := ctrlerrors.HandleError(obj, ctrlErr, nil)
-			Expect(result.RequeueAfter).To(Equal(time.Duration(0)))
+			result := ctrlerrors.HandleError(obj, ctrlErr, recorder)
+			Expect(result.RequeueAfter).To(BeNumerically(">", 30*time.Minute))
 			condition := obj.GetConditions()[0]
 			Expect(condition.Type).To(Equal("Processing"))
 			Expect(condition.Status).To(Equal(metav1.ConditionFalse))
@@ -92,8 +99,8 @@ var _ = Describe("Test Suite", func() {
 			Expect(myErr.Error()).To(Equal("Custom blocked error"))
 
 			obj := test.NewObject("custom-blocked-obj", "default")
-			result := ctrlerrors.HandleError(obj, myErr, nil)
-			Expect(result.RequeueAfter).To(Equal(time.Duration(0)))
+			result := ctrlerrors.HandleError(obj, myErr, recorder)
+			Expect(result.RequeueAfter).To(BeNumerically(">", 30*time.Minute))
 			condition := obj.GetConditions()[0]
 			Expect(condition.Type).To(Equal("Processing"))
 			Expect(condition.Status).To(Equal(metav1.ConditionFalse))
@@ -109,7 +116,7 @@ var _ = Describe("Test Suite", func() {
 			Expect(ctrlErr.Error()).To(Equal("This is a retryable error"))
 
 			obj := test.NewObject("retryable-obj", "default")
-			result := ctrlerrors.HandleError(obj, ctrlErr, nil)
+			result := ctrlerrors.HandleError(obj, ctrlErr, recorder)
 			Expect(result.RequeueAfter).NotTo(Equal(time.Duration(0)))
 		})
 
@@ -119,7 +126,7 @@ var _ = Describe("Test Suite", func() {
 			Expect(myErr.Error()).To(Equal("Custom retryable error"))
 
 			obj := test.NewObject("custom-retryable-obj", "default")
-			result := ctrlerrors.HandleError(obj, myErr, nil)
+			result := ctrlerrors.HandleError(obj, myErr, recorder)
 			Expect(result.RequeueAfter).NotTo(Equal(time.Duration(0)))
 		})
 
@@ -128,7 +135,7 @@ var _ = Describe("Test Suite", func() {
 			standardErr := fmt.Errorf("This is a standard error")
 
 			obj := test.NewObject("non-retryable-obj", "default")
-			result := ctrlerrors.HandleError(obj, standardErr, nil)
+			result := ctrlerrors.HandleError(obj, standardErr, recorder)
 			Expect(result.RequeueAfter).NotTo(Equal(time.Duration(0)))
 		})
 	})
@@ -142,7 +149,7 @@ var _ = Describe("Test Suite", func() {
 			Expect(ctrlErr.RetryDelay()).To(Equal(specificDelay))
 
 			obj := test.NewObject("retryable-delay-obj", "default")
-			result := ctrlerrors.HandleError(obj, ctrlErr, nil)
+			result := ctrlerrors.HandleError(obj, ctrlErr, recorder)
 			Expect(result.RequeueAfter).To(BeNumerically(">", specificDelay))
 		})
 
@@ -157,8 +164,32 @@ var _ = Describe("Test Suite", func() {
 			Expect(myErr.Error()).To(Equal("Custom retryable with delay error"))
 
 			obj := test.NewObject("custom-retryable-delay-obj", "default")
-			result := ctrlerrors.HandleError(obj, myErr, nil)
+			result := ctrlerrors.HandleError(obj, myErr, recorder)
 			Expect(result.RequeueAfter).To(BeNumerically(">", specificDelay))
 		})
+	})
+
+	Context("Cascading errors", func() {
+		It("must select the first known error in the chain", func() {
+			blockedErr := ctrlerrors.BlockedErrorf("This is a blocked error")
+			wrappedErr1 := errors.Wrapf(blockedErr, "Wrapper 1")
+			wrappedErr2 := errors.Wrapf(wrappedErr1, "Wrapper 2")
+
+			obj := test.NewObject("cascading-obj", "default")
+			result := ctrlerrors.HandleError(obj, wrappedErr2, recorder)
+			Expect(result.RequeueAfter).To(BeNumerically(">", 30*time.Minute))
+			condition := obj.GetConditions()[0]
+			Expect(condition.Type).To(Equal("Processing"))
+			Expect(condition.Status).To(Equal(metav1.ConditionFalse))
+			Expect(condition.Reason).To(Equal("Blocked"))
+			Expect(condition.Message).To(Equal("This is a blocked error"))
+
+			events := recorder.GetEvents(obj)
+			Expect(len(events)).To(Equal(1))
+			Expect(events[0].EventType).To(Equal("Warning"))
+			Expect(events[0].Reason).To(Equal("Blocked"))
+			Expect(events[0].Message).To(Equal("This is a blocked error"))
+		})
+
 	})
 })
