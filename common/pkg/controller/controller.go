@@ -61,11 +61,11 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 			log.V(1).Info("Fetched object but it was not found")
 			return reconcile.Result{}, nil
 		}
-		return HandleError(ctx, err, object, c.Recorder)
+		return HandleError(ctx, err, object, c.Recorder), nil
 	}
 
 	if changed, err := FirstSetup(ctx, c.Client, object); err != nil {
-		return HandleError(ctx, err, object, c.Recorder)
+		return HandleError(ctx, err, object, c.Recorder), nil
 	} else if changed {
 		return reconcile.Result{}, nil
 	}
@@ -78,7 +78,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 		c.Event(ctx, object, "Warning", "Processing", "Environment label is missing")
 		if object.SetCondition(condition.NewBlockedCondition("Environment label is missing")) {
 			if err := c.Client.Status().Update(ctx, object); err != nil {
-				return HandleError(ctx, err, object, c.Recorder)
+				return HandleError(ctx, err, object, c.Recorder), nil
 			}
 		}
 		return reconcile.Result{}, nil
@@ -88,21 +88,31 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	ctx = cc.WithClient(ctx, cc.NewJanitorClient(cc.NewScopedClient(c.Client, env)))
 	ctx = contextutil.WithRecorder(ctx, c.Recorder)
 
+	// Handle the deletion
 	if IsBeingDeleted(object) {
 		c.Event(ctx, object, "Normal", "Processing", "Processing resource deletion")
 		if controllerutil.ContainsFinalizer(object, config.FinalizerName) {
 			log.V(0).Info("Deleting")
 
-			if err := c.Handler.Delete(ctx, object); err != nil {
-				if err := EnsureNotReadyOnError(ctx, c.Client, object, err); err != nil {
-					return HandleError(ctx, err, object, c.Recorder)
+			err := c.Handler.Delete(ctx, object)
+			if err != nil {
+				// Failed
+				EnsureNotReadyOnError(ctx, c.Client, object, err)
+				result := HandleError(ctx, err, object, c.Recorder)
+				if err = c.Client.Status().Update(ctx, object); err != nil {
+					return HandleError(ctx, err, object, c.Recorder), nil
 				}
-				return HandleError(ctx, err, object, c.Recorder)
+				return result, nil
 			}
 
-			controllerutil.RemoveFinalizer(object, config.FinalizerName)
-			if err := c.Client.Update(ctx, object); err != nil {
-				return HandleError(ctx, err, object, c.Recorder)
+			// Success
+
+			changed := controllerutil.RemoveFinalizer(object, config.FinalizerName)
+			if changed {
+				err = c.Client.Update(ctx, object)
+				if err != nil {
+					return HandleError(ctx, err, object, c.Recorder), nil
+				}
 			}
 
 			log.V(1).Info("Deleted", "resource", object)
@@ -110,23 +120,35 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 		return reconcile.Result{}, nil
 	}
 
+	// Handle normal reconciliation
 	c.Event(ctx, object, "Normal", "Processing", "Processing resource")
 
-	log.V(0).Info("Creating or updating")
-	if err := c.Handler.CreateOrUpdate(ctx, object); err != nil {
-		if err := EnsureNotReadyOnError(ctx, c.Client, object, err); err != nil {
-			return HandleError(ctx, err, object, c.Recorder)
+	log.V(1).Info("Creating or updating")
+	err = c.Handler.CreateOrUpdate(ctx, object)
+	if err != nil {
+		// Failed
+		EnsureNotReadyOnError(ctx, c.Client, object, err)
+		result := HandleError(ctx, err, object, c.Recorder)
+		// Always update the status after reconciliation to persist any changes made by the handler
+		// and to set any conditions related to the error.
+		if err = c.Client.Status().Update(ctx, object); err != nil {
+			return HandleError(ctx, err, object, c.Recorder), nil
 		}
-		return HandleError(ctx, err, object, c.Recorder)
+		return result, nil
 	}
+
+	// Success
+
 	log.V(1).Info("Created or updated", "resource", object)
 	// Enforce that atleast the processing condition is set in the handler. If not, log a warning.
 	if meta.IsStatusConditionPresentAndEqual(object.GetConditions(), condition.ConditionTypeProcessing, metav1.ConditionUnknown) {
 		c.Event(ctx, object, "Warning", "Processing", "Resource has an unknown processing status")
 	}
 
+	// Always update the status after successful reconciliation to clear any error conditions
+	// and persist any changes made by the handler.
 	if err = c.Client.Status().Update(ctx, object); err != nil {
-		return HandleError(ctx, err, object, c.Recorder)
+		return HandleError(ctx, err, object, c.Recorder), nil
 	}
 
 	return reconcile.Result{
@@ -183,27 +205,27 @@ func FirstSetup(ctx context.Context, client client.Client, object common_types.O
 	return false, nil
 }
 
-func HandleError(ctx context.Context, err error, obj common_types.Object, recorder record.EventRecorder) (reconcile.Result, error) {
+func HandleError(ctx context.Context, err error, obj common_types.Object, recorder record.EventRecorder) reconcile.Result {
 	log := log.FromContext(ctx)
-	warningEventType := "Warning"
 
 	// handle Conflict - resource version can change during reconciliation, it causes conflict, simple requeue should solve it
 	if apierrors.IsConflict(err) {
 		log.V(0).Info("Conflict occurred during operation", "error", err)
 		if recorder != nil {
-			recorder.Event(obj, warningEventType, "Conflict", err.Error())
+			recorder.Event(obj, "Warning", "Conflict", err.Error())
 		}
-		return reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}, nil
+		return reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
 	}
 
-	return ctrlerrors.HandleError(obj, err, recorder), nil
+	_, result := ctrlerrors.HandleError(obj, err, recorder)
+	return result
 }
 
 // EnsureNotReadyOnError sets the Ready condition to false on the object if the error is not nil
 // and the Ready condition is not already set to false.
-func EnsureNotReadyOnError(ctx context.Context, client client.Client, obj common_types.Object, err error) error {
+func EnsureNotReadyOnError(ctx context.Context, client client.Client, obj common_types.Object, err error) bool {
 	if err != nil && !meta.IsStatusConditionFalse(obj.GetConditions(), condition.ConditionTypeReady) {
-		obj.SetCondition(condition.NewNotReadyCondition("ErrorOccurred", err.Error()))
+		return obj.SetCondition(condition.NewNotReadyCondition("ErrorOccurred", err.Error()))
 	}
-	return client.Status().Update(ctx, obj)
+	return false
 }

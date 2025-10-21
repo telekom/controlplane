@@ -32,13 +32,16 @@ type RetryableWithDelayError interface {
 	RetryDelay() time.Duration
 }
 
-func HandleError(obj types.Object, err error, recorder record.EventRecorder) reconcile.Result {
+// HandleError analyzes the given error and updates the object's conditions accordingly.
+// It returns a boolean indicating whether the object's conditions were updated and a reconcile.Result
+// that suggests whether to requeue the reconciliation and after what duration.
+func HandleError(obj types.Object, err error, recorder record.EventRecorder) (bool, reconcile.Result) {
 	err = errors.Cause(err)
 
 	if be, ok := err.(BlockedError); ok && be.IsBlocked() {
 		recordError(obj, err, "Blocked", recorder)
-		obj.SetCondition(condition.NewBlockedCondition(err.Error()))
-		return reconcile.Result{
+		updatd := obj.SetCondition(condition.NewBlockedCondition(err.Error()))
+		return updatd, reconcile.Result{
 			// Its blocked but we still want to recheck later
 			// However, with the longer interval for normal requeues
 			RequeueAfter: config.RequeueWithJitter(),
@@ -52,23 +55,23 @@ func HandleError(obj types.Object, err error, recorder record.EventRecorder) rec
 			if deley <= 0 {
 				deley = config.RetryWithJitterOnError()
 			}
-			return reconcile.Result{RequeueAfter: config.Jitter(deley)}
+			return false, reconcile.Result{RequeueAfter: config.Jitter(deley)}
 		} else {
-			return reconcile.Result{}
+			return false, reconcile.Result{}
 		}
 	}
 
 	if re, ok := err.(RetryableError); ok {
 		recordError(obj, err, "Retryable", recorder)
 		if re.IsRetryable() {
-			return reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
+			return false, reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
 		} else {
-			return reconcile.Result{}
+			return false, reconcile.Result{}
 		}
 	}
 
 	recordError(obj, err, "Unknown", recorder)
-	return reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
+	return false, reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
 }
 
 func recordError(obj types.Object, err error, reason string, recorder record.EventRecorder) {
