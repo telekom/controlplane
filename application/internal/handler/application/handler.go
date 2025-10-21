@@ -50,7 +50,7 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 			zone, err := GetZone(ctx, c, zoneRef)
 			if err != nil {
 				if apierrors.IsNotFound(errors.Cause(err)) {
-					return ctrlerrors.BlockedErrorf("Zone %s not found", app.Spec.Zone.Name)
+					return ctrlerrors.BlockedErrorf("Zone %s not found", zoneRef.Name)
 				} else {
 					return ctrlerrors.RetryableErrorf("failed to get Zone when creating application: %s", err.Error())
 				}
