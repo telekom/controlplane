@@ -25,6 +25,10 @@ func (d DefaultSecret[T]) Id() T {
 	return d.id
 }
 
+func (d DefaultSecret[T]) Copy() Secret[T] {
+	return NewDefaultSecret(d.id, d.value)
+}
+
 var _ OnboardResponse = DefaultOnboardResponse{}
 
 type DefaultOnboardResponse struct {

@@ -16,7 +16,7 @@ var _ = Describe("Cache Metrics", Ordered, func() {
 
 		It("should record cache hits", func() {
 			// Record a cache hit
-			RecordCacheHit()
+			RecordCacheHit("")
 
 			// Verify metric exists with correct labels
 			metrics, err := prometheus.DefaultGatherer.Gather()

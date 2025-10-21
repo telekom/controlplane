@@ -5,6 +5,8 @@
 package server
 
 import (
+	"context"
+
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
@@ -26,6 +28,18 @@ func ReturnWithError(c *fiber.Ctx, err error) error {
 	if errors.As(err, &p) {
 		return c.Status(p.Code()).JSON(p, "application/problem+json")
 	}
+
+	if errors.Is(err, context.DeadlineExceeded) {
+		p = problems.Builder().
+			Status(503).
+			Type("Timeout").
+			Title("Request Timeout").
+			Detail("The server timed out waiting for the request").
+			Instance(c.OriginalURL()).Build()
+
+		return c.Status(p.Code()).JSON(p, "application/problem+json")
+	}
+
 	var fe *fiber.Error
 	if errors.As(err, &fe) {
 		if fe.Code >= 500 {
