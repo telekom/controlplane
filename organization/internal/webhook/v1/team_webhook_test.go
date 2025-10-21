@@ -117,9 +117,6 @@ var _ = Describe("Team Webhook", func() {
 			Expect(warning).To(BeNil())
 			Expect(err).NotTo(HaveOccurred())
 
-			secretManagerMock.EXPECT().
-				DeleteTeam(mock.Anything, mock.Anything, mock.Anything).
-				Return(nil)
 			warning, err = validator.ValidateDelete(ctx, teamObj)
 			Expect(warning).To(BeNil())
 			Expect(err).NotTo(HaveOccurred())
@@ -144,9 +141,6 @@ var _ = Describe("Team Webhook", func() {
 			warning, err := validator.ValidateUpdate(ctx, teamObj, teamObj)
 			Expect(warning).To(BeNil())
 			Expect(err).NotTo(HaveOccurred())
-			secretManagerMock.EXPECT().
-				DeleteTeam(mock.Anything, mock.Anything, mock.Anything).
-				Return(nil)
 			warning, err = validator.ValidateDelete(ctx, teamObj)
 			Expect(warning).To(BeNil())
 			Expect(err).NotTo(HaveOccurred())
@@ -241,9 +235,6 @@ var _ = Describe("Team Webhook", func() {
 		AfterAll(
 			func() {
 				By("Deleting the team")
-				secretManagerMock.EXPECT().
-					DeleteTeam(mock.Anything, mock.Anything, mock.Anything).
-					Return(nil)
 				err := k8sClient.Delete(ctx, teamObj)
 				Expect(err).NotTo(HaveOccurred())
 			})
