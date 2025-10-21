@@ -1663,6 +1663,12 @@ components:
     RoverUpdateRequest:
       allOf:
         - $ref: '#/components/schemas/Rover'
+        - properties:
+            clientSecret:
+              type: string
+              description: >
+                This field is only used for migration purposes and will be
+                ignored otherwise.
     RoverInfoResponse:
       type: object
       readOnly: true
