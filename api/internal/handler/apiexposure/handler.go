@@ -37,7 +37,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	//  get corresponding active api
 	apiList := &apiapi.ApiList{}
 	err := scopedClient.List(ctx, apiList,
-		client.MatchingLabels{apiapi.BasePathLabelKey: labelutil.NormalizeValue(apiExp.Spec.ApiBasePath)},
+		client.MatchingLabels{apiapi.BasePathLabelKey: labelutil.NormalizeLabelValue(apiExp.Spec.ApiBasePath)},
 		client.MatchingFields{"status.active": "true"})
 	if err != nil {
 		return errors.Wrapf(err,

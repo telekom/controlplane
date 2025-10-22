@@ -46,7 +46,7 @@ func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *r
 		}
 
 		api.Labels = map[string]string{
-			apiapi.BasePathLabelKey: labelutil.NormalizeValue(apiSpec.Spec.BasePath),
+			apiapi.BasePathLabelKey: labelutil.NormalizeLabelValue(apiSpec.Spec.BasePath),
 		}
 
 		api.Spec = apiapi.ApiSpec{

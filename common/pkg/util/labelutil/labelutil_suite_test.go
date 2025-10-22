@@ -52,7 +52,7 @@ var _ = Describe("Labelutil", func() {
 			value := "This is a very long value/with some_unwanted\\characters that needs to be normalized and shortened"
 			shortenedValue := NormalizeLabelValue(value)
 			Expect(len(shortenedValue)).To(BeNumerically("<=", MaxLabelLength))
-			Expect(shortenedValue).To(Equal("this-is-a-very-l679cb75c5ed-and-shortened"))
+			Expect(shortenedValue).To(Equal("this-is-a-very-l.679cb75c5.ed-and-shortened"))
 		})
 
 		It("should not shorten labels", func() {

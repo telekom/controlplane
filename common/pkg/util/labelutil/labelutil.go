@@ -33,21 +33,21 @@ func NormalizeValue(value string) string {
 // NormalizeLabelValue normalizes and shortens the given label value to fit within MaxLabelLength.
 func NormalizeLabelValue(value string) string {
 	normalizedValue := NormalizeValue(value)
-	_, normalizedValue = ShortenValue(normalizedValue, MaxLabelLength)
+	_, normalizedValue = ShortenValue(normalizedValue, MaxLabelLength, ".")
 	return normalizedValue
 }
 
 // NormalizeNameValue normalizes and shortens the given name value to fit within MaxNameLength.
 func NormalizeNameValue(value string) string {
 	normalizedValue := NormalizeValue(value)
-	_, normalizedValue = ShortenValue(normalizedValue, MaxNameLength)
+	_, normalizedValue = ShortenValue(normalizedValue, MaxNameLength, "")
 	return normalizedValue
 }
 
 // ShortenValue shortens the given value to fit within maxLen by keeping the first and last parts
 // and replacing the middle part with a hash if necessary.
 // Returns true if the value was shortened, false otherwise.
-func ShortenValue(value string, maxLen int) (bool, string) {
+func ShortenValue(value string, maxLen int, separator string) (bool, string) {
 	if maxLen < StartCharacters+EndCharacters {
 		panic("maxLen is too small to shorten the value")
 	}
@@ -58,6 +58,6 @@ func ShortenValue(value string, maxLen int) (bool, string) {
 	first := value[:StartCharacters]
 	last := value[len(value)-EndCharacters:]
 	middle := hash.ComputeHash(value, nil)
-	allowedMiddleLen := min(maxLen-StartCharacters-EndCharacters, len(middle))
-	return true, first + middle[:allowedMiddleLen] + last
+	allowedMiddleLen := maxLen - len(first) - len(last) - 2*len(separator)
+	return true, first + separator + middle[:min(allowedMiddleLen, len(middle))] + separator + last
 }
