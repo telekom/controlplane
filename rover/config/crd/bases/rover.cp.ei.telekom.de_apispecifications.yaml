@@ -42,8 +42,11 @@ spec:
           spec:
             properties:
               basepath:
-                description: BasePath represents the base path from OpenAPI v2 or
-                  derived from server URL in OpenAPI v3
+                description: |-
+                  BasePath represents the base path from OpenAPI v2 or derived from server URL in OpenAPI v3
+                  It must start with a "/" and have a maximum length of 60 characters (to avoid Kubernetes name length issues)
+                maxLength: 60
+                pattern: ^/.*$
                 type: string
               category:
                 default: other
