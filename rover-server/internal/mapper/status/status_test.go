@@ -5,7 +5,6 @@
 package status
 
 import (
-	"github.com/gkampitakis/go-snaps/match"
 	"github.com/gkampitakis/go-snaps/snaps"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -22,7 +21,7 @@ var _ = Describe("Rover Status Mapper", func() {
 
 			Expect(status).ToNot(BeNil())
 
-			snaps.MatchJSON(GinkgoT(), status, match.Any("time"))
+			snaps.MatchJSON(GinkgoT(), status)
 		})
 
 	})

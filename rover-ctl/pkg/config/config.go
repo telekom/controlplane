@@ -31,6 +31,7 @@ func Initialize() {
 func setDefaults() {
 	// Server defaults
 	viper.SetDefault(ConfigKeyServerURL, "")
+	viper.SetDefault("server.baseUrl", "/rover/api")
 
 	// Logging defaults
 	viper.SetDefault("log.level", "info")
