@@ -46,9 +46,11 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 
 	// if no corresponding active api is found, set conditions and return
 	if len(apiList.Items) == 0 {
-		apiExp.SetCondition(condition.NewNotReadyCondition("NoApiRegistered", "API is not yet registered"))
-		apiExp.SetCondition(condition.NewBlockedCondition(
-			"API is not yet registered. ApiExposure will be automatically processed, if the API will be registered"))
+		apiExp.SetCondition(condition.NewNotReadyCondition("NoApi",
+			fmt.Sprintf("API %q is not registered. Cannot provision ApiExposure", apiExp.Spec.ApiBasePath)),
+		)
+		msg := fmt.Sprintf("API %q is not registered. ApiExposure will be automatically processed, when the API is registered", apiExp.Spec.ApiBasePath)
+		apiExp.SetCondition(condition.NewBlockedCondition(msg))
 		log.Info("❌ API is not yet registered. ApiExposure is blocked")
 
 		routeList := &gatewayapi.RouteList{}
