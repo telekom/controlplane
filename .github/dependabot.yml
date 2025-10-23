@@ -38,6 +38,8 @@ updates:
       - secret-manager
       - tools/route-tester
       - tools/snapshotter
+      - notification
+      - notification/api
     groups:
       minor-patch:
         update-types:
