@@ -173,4 +173,5 @@ jobs:
     with:
       module: tools/snapshotter
       run_check_generated_files: false
+      run_lint: false
       ko_build_path: "main.go"

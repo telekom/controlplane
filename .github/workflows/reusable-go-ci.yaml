@@ -178,7 +178,7 @@ jobs:
         if: ${{ always() }} # Upload even if previous steps fail
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@v4.6.2
         with:
-          name: ${{ inputs.module }}-gotest.log
+          name: ${{ replace(inputs.module, '/', '-') }}-gotest.log
           path: ${{ inputs.module }}/gotest.log
           if-no-files-found: error
 
@@ -187,7 +187,7 @@ jobs:
         if: ${{ always() }} # Upload even if previous steps fail
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@v4.6.2
         with:
-          name: ${{ inputs.module }}-test-report
+          name: ${{ replace(inputs.module, '/', '-') }}-test-report
           path: |
             ${{ inputs.module }}/cover.out
             ${{ inputs.module }}/coverage.html
