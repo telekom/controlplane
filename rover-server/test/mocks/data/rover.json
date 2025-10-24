@@ -4,7 +4,8 @@
   "metadata": {
     "name": "rover-local-sub",
     "namespace": "poc--eni--hyperion",
-    "uid": "549badcc-18b6-48ac-a8ce-b3242523d827"
+    "uid": "549badcc-18b6-48ac-a8ce-b3242523d827",
+    "creationTimestamp": "2025-09-18T08:39:44Z"
   },
   "spec": {
     "zone": "dataplane1",
@@ -60,7 +61,8 @@
         "type": "Processing",
         "status": "False",
         "reason": "Done",
-        "message": "Provisioned all sub-resources"
+        "message": "Provisioned all sub-resources",
+        "lastTransitionTime": "2025-10-08T07:16:40Z"
       }
     ]
   }

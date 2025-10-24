@@ -46,7 +46,7 @@ var _ = Describe("ApiSpecification Controller", func() {
 					Spec: roverv1.ApiSpecificationSpec{
 						Specification: "some-random-id",
 						Category:      "other",
-						BasePath:      "eni/api/v1",
+						BasePath:      "/eni/api/v1",
 						Hash:          "someHash",
 						Oauth2Scopes:  []string{"read", "write"},
 						XVendor:       true,

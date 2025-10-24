@@ -32,7 +32,7 @@
    "cause": "Approval is either rejected or suspended",
    "message": "ApiSubscription 'poc--eni--hyperion/rover-local-sub--eni-distr-v1' is not ready",
    "resource": {
-    "apiVersion": "stargate.cp.ei.telekom.de/v1",
+    "apiVersion": "api.cp.ei.telekom.de/v1",
     "kind": "ApiSubscription",
     "name": "rover-local-sub--eni-distr-v1",
     "namespace": "poc--eni--hyperion"
@@ -87,7 +87,7 @@
    "cause": "Approval is either rejected or suspended",
    "message": "ApiSubscription 'poc--eni--hyperion/rover-local-sub--eni-distr-v1' is not ready",
    "resource": {
-    "apiVersion": "stargate.cp.ei.telekom.de/v1",
+    "apiVersion": "api.cp.ei.telekom.de/v1",
     "kind": "ApiSubscription",
     "name": "rover-local-sub--eni-distr-v1",
     "namespace": "poc--eni--hyperion"

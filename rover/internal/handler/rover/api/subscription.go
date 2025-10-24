@@ -35,7 +35,7 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 
 	apiSubscription := &apiapi.ApiSubscription{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      labelutil.NormalizeNameValue(name),
 			Namespace: owner.Namespace,
 		},
 	}
@@ -65,7 +65,7 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 		}
 
 		apiSubscription.Labels = map[string]string{
-			apiapi.BasePathLabelKey:             labelutil.NormalizeValue(sub.BasePath),
+			apiapi.BasePathLabelKey:             labelutil.NormalizeLabelValue(sub.BasePath),
 			config.BuildLabelKey("zone"):        labelutil.NormalizeValue(zoneRef.Name),
 			config.BuildLabelKey("application"): labelutil.NormalizeValue(owner.Name),
 		}

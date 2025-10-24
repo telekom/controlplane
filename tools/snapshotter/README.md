@@ -8,49 +8,94 @@ SPDX-License-Identifier: Apache-2.0
 
 This tool is intended to create snapshots of the current state of the system. Mainly for the gateway-domain.
 
+## Installation
+
+Build the binary using:
+
+```bash
+make build
+```
+
+This will create a binary in the `bin` directory.
+
 ## Usage
 
+The snapshotter tool is a unified CLI with multiple subcommands:
+
 ```bash
-go build -o bin/snapshotter main.go
-install -m 0755 bin/snapshotter /usr/local/bin/snapshotter
-# or go run main.go --help
-snapshotter --help
+snapshotter [global flags] command [command flags]
 ```
 
-This tool can either be configured via environment variables or flags.
+### Global Flags
 
-Using a `.env` file (see [example](.env.example))
+- `--config string`: Path to the configuration file
+
+### Commands
+
+#### snap
+
+Take snapshots of routes or consumers from configured sources.
+
 ```bash
-GATEWAY_ENV="poc"
-GATEWAY_ZONE="dataplane1"
-GATEWAY_ROUTE="poc--my-route-v1"
-GATEWAY_ADMIN_URL="https://<host>/admin-api>"
-GATEWAY_ADMIN_CLIENT_ID="<client-id>"
-GATEWAY_ADMIN_CLIENT_SECRET="<client-secret>"
-GATEWAY_ADMIN_ISSUER="<issuer-url>"
-```
-Then run the tool with:
-```bash
-go run main.go --from-env
+snapshotter snap [flags]
 ```
 
-Or using the automatic setup via flags:
-```bash
-# If the secret-manager is used, then you need to configure this port-forwarding:
-# kubectl -n controlplane-system port-forward svc/secret-manager 8443:443
+Flags:
+- `--source string`: Source to snapshot from (only required if multiple sources are configured)
+- `--route string`: ID of the route to snapshot
+- `--consumer string`: ID of the consumer to snapshot
+- `--store string`: Path to the snapshot store (default "./snapshots")
 
-go run main.go --env poc --zone dataplane1 --route poc--my-route-v1
+Examples:
+```bash
+# Take a snapshot of a route
+snapshotter --config config.yaml snap --source my-source --route my-route
+
+# Take a snapshot of a consumer
+snapshotter --config config.yaml snap --source my-source --consumer my-consumer
 ```
 
-This will automatically connect to the current active kubernetes context and retrieve all
-necessary information from the custom resources.
+#### cmp
 
-> ℹ️ **Note:** If the secret-manager is used, this will connect to the secret-manager to retrieve the credentials for the admin API.
+Compare two snapshots from the snapshot store.
 
-## Functionality
+```bash
+snapshotter cmp [flags]
+```
 
-1. Per default this tool will output a snapshot in yaml format to `./snapshots/`. You can change the output directory by using the `--output-dir` flag.
+Flags:
+- `--a string`: ID of the first snapshot to compare (required)
+- `--b string`: ID of the second snapshot to compare (required)
+- `--must`: If set, both snapshots must exist
+- `--store string`: Path to the snapshot store (default "./snapshots")
 
-2. If this snapshot-file does not exist, it will be created and nothing further will happen.
+Examples:
+```bash
+# Compare two snapshots
+snapshotter cmp --a id1 --b id2 --store ./snapshots
 
-3. If the snapshot file already exists, it will compare the current state with the snapshot and output the differences to the console.
+# Compare two snapshots, failing if either doesn't exist
+snapshotter cmp --a id1 --b id2 --must
+```
+
+#### serve
+
+Start the HTTP API server for snapshot operations.
+
+```bash
+snapshotter serve [flags]
+```
+
+Flags:
+- `--port int`: Port to listen on (default 8080)
+- `--store string`: Path to the snapshot store (default "./snapshots")
+
+Example:
+```bash
+# Start the API server
+snapshotter --config config.yaml serve --port 9090
+```
+
+## Configuration
+
+The tool uses a YAML configuration file. An example configuration can be found in `config/example.yaml`.

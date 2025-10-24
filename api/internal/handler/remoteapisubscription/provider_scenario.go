@@ -119,7 +119,7 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 			return errors.Wrapf(err, "failed to set owner reference")
 		}
 		apiSubscription.Labels = map[string]string{
-			apiapi.BasePathLabelKey:             labelutil.NormalizeValue(obj.Spec.ApiBasePath),
+			apiapi.BasePathLabelKey:             labelutil.NormalizeLabelValue(obj.Spec.ApiBasePath),
 			config.BuildLabelKey("application"): application.Name,
 		}
 

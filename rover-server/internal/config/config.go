@@ -78,4 +78,7 @@ func setDefaults() {
 
 	// Informer
 	viper.SetDefault("informer.disableCache", true) // see common-server docs
+
+	// Migration
+	viper.SetDefault("migration.active", false)
 }

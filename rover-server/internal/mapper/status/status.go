@@ -6,9 +6,7 @@ package status
 
 import (
 	"context"
-	"time"
 
-	ghErrors "github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	v1 "github.com/telekom/controlplane/rover/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -87,21 +85,10 @@ func MapStatus(conditions []metav1.Condition) api.Status {
 	status := api.Status{
 		ProcessingState: api.ProcessingStateNone,
 		State:           api.None,
-		Time:            time.Now().Format(time.RFC3339),
 	}
 
 	fillStateInfo(conditions, &status)
 	return status
-}
-
-func MapResponse(conditions []metav1.Condition) (api.ResourceStatusResponse, error) {
-	status := MapStatus(conditions)
-
-	return api.ResourceStatusResponse{
-		State:           status.State,
-		ProcessingState: status.ProcessingState,
-		OverallStatus:   CalculateOverallStatus(status.State, status.ProcessingState),
-	}, nil
 }
 
 // MapRoverStatus maps the status of a Rover resource to a Rover API status.
@@ -125,37 +112,6 @@ func MapRoverStatus(ctx context.Context, rover *v1.Rover) api.Status {
 	}
 
 	return status
-}
-
-// MapRoverResponse maps the status of a Rover resource to a ResourceStatusResponse.
-// It retrieves the conditions of the Rover, maps them to a status, and checks for any sub-resource
-// conditions with error states.
-//
-// Parameters:
-// - ctx: The context for the operation.
-// - rover: The Rover resource whose status is being mapped.
-//
-// Returns:
-// - api.ResourceStatusResponse: The mapped status response of the Rover resource.
-// - error: Any error encountered during the mapping process.
-func MapRoverResponse(ctx context.Context, rover *v1.Rover) (api.ResourceStatusResponse, error) {
-	if rover == nil {
-		return api.ResourceStatusResponse{}, ghErrors.New("input rover is nil")
-	}
-	status := MapStatus(rover.GetConditions())
-	var errors = []api.Problem{}
-
-	if status.State != api.Complete {
-		// Load all sub resources and check for conditions with error state
-		errors = append(errors, GetAllProblems(ctx, rover)...)
-	}
-
-	return api.ResourceStatusResponse{
-		State:           status.State,
-		ProcessingState: status.ProcessingState,
-		OverallStatus:   CalculateOverallStatus(status.State, status.ProcessingState),
-		Errors:          errors,
-	}, nil
 }
 
 func GetOverallStatus(conditions []metav1.Condition) api.OverallStatus {

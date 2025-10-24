@@ -17,7 +17,6 @@ func MakeName(ownerName, basePath, organization string) string {
 	if organization != "" {
 		name = organization + "--" + name
 	}
-
 	return name
 }
 

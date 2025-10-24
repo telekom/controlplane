@@ -5,7 +5,6 @@
 package out
 
 import (
-	"github.com/gkampitakis/go-snaps/match"
 	"github.com/gkampitakis/go-snaps/snaps"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -69,7 +68,7 @@ var _ = Describe("Rover Mapper", func() {
 			Expect(err).To(BeNil())
 
 			Expect(output).ToNot(BeNil())
-			snaps.MatchJSON(GinkgoT(), output, match.Any("status.time"))
+			snaps.MatchJSON(GinkgoT(), output)
 		})
 
 		It("must return an error if the input rover is nil", func() {
