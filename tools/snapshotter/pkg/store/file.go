@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/goccy/go-yaml"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 )
 
@@ -159,12 +160,12 @@ func (f *FileStore) List(ctx context.Context) ([]snapshot.Snapshot, error) {
 
 // Set implements SnapshotStore.
 func (f *FileStore) Set(ctx context.Context, snap snapshot.Snapshot) error {
-	versions, err := f.getAvailableVersions(ctx, snap.ID)
+	versions, err := f.getAvailableVersions(ctx, snap.Path())
 	if err != nil {
 		if !errors.Is(err, ErrNotFound) {
 			return err
 		}
-		err = os.Mkdir(filepath.Dir(f.makeFilePath(snap.ID, 0)), 0o755)
+		err = os.MkdirAll(filepath.Dir(f.makeFilePath(snap.Path(), 0)), 0o755)
 		if err != nil {
 			return err
 		}
@@ -177,13 +178,16 @@ func (f *FileStore) Set(ctx context.Context, snap snapshot.Snapshot) error {
 		newVersion = versions[0] + 1
 	}
 
-	path := f.makeFilePath(snap.ID, newVersion)
+	path := f.makeFilePath(snap.Path(), newVersion)
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 
-	data := []byte(snap.String())
+	data, err := yaml.Marshal(snap)
+	if err != nil {
+		return err
+	}
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		return err
 	}

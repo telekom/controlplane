@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/diffmatcher"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/store"
+	"go.uber.org/zap"
 )
 
 // /compare?a={snapshotA}&b={snapshotB}
@@ -26,6 +27,7 @@ func (a *API) CompareSnapshots(ctx *fiber.Ctx) error {
 		if !errors.Is(err, store.ErrNotFound) {
 			return err
 		}
+		zap.L().Info("snapshot not found", zap.String("id", snapshotA))
 	}
 
 	snapshotOther, err := a.store.GetVersion(ctx.Context(), snapshotB, 0) // latest
@@ -33,6 +35,7 @@ func (a *API) CompareSnapshots(ctx *fiber.Ctx) error {
 		if !errors.Is(err, store.ErrNotFound) {
 			return err
 		}
+		zap.L().Info("snapshot not found", zap.String("id", snapshotB))
 	}
 
 	result := diffmatcher.Compare(&snapshot, &snapshotOther)

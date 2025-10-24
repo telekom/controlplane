@@ -35,7 +35,7 @@ func NewKongSource(kongClient kong.ClientWithResponsesInterface) (source *KongSo
 	}
 }
 
-func NewKongSourceFromConfig(cfg config.SourceConfig) (source *KongSource, err error) {
+func NewKongSourceFromConfig(cfg config.SourceConfig, tags []string) (source Source, err error) {
 	kongClient, err := kongutil.NewClientFor(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create kong client from config")
@@ -43,17 +43,12 @@ func NewKongSourceFromConfig(cfg config.SourceConfig) (source *KongSource, err e
 	s := NewKongSource(kongClient)
 	s.environment = cfg.Environment
 	s.zone = cfg.Zone
+	s.tags = tags
 	return s, nil
 }
 
-func (k *KongSource) SetTags(tags []string) {
-	k.mux.Lock()
-	defer k.mux.Unlock()
-	k.tags = tags
-}
-
-func (k *KongSource) TakeRouteSnapShot(ctx context.Context, routeId string) (snap snapshot.Snapshot, err error) {
-	snap = snapshot.Snapshot{
+func (k *KongSource) TakeRouteSnapShot(ctx context.Context, routeId string) (snap *snapshot.Snapshot, err error) {
+	snap = &snapshot.Snapshot{
 		State: &snapshot.State{},
 	}
 	routeRes, err := k.kongClient.GetRouteWithResponse(ctx, routeId)
@@ -97,8 +92,8 @@ func (k *KongSource) TakeRouteSnapShot(ctx context.Context, routeId string) (sna
 	return snap, nil
 }
 
-func (k *KongSource) TakeConsumerSnapShot(ctx context.Context, consumerId string) (snap snapshot.Snapshot, err error) {
-	snap = snapshot.Snapshot{
+func (k *KongSource) TakeConsumerSnapShot(ctx context.Context, consumerId string) (snap *snapshot.Snapshot, err error) {
+	snap = &snapshot.Snapshot{
 		State: &snapshot.State{},
 	}
 
@@ -128,7 +123,7 @@ func (k *KongSource) TakeConsumerSnapShot(ctx context.Context, consumerId string
 }
 
 // TakeSnapshot implements Source.
-func (k *KongSource) TakeSnapshot(ctx context.Context, resourceType, routeId string) (snap snapshot.Snapshot, err error) {
+func (k *KongSource) TakeSnapshot(ctx context.Context, resourceType, routeId string) (snap *snapshot.Snapshot, err error) {
 	if strings.EqualFold(resourceType, "route") {
 		return k.TakeRouteSnapShot(ctx, routeId)
 	} else if strings.EqualFold(resourceType, "consumer") {
@@ -138,7 +133,7 @@ func (k *KongSource) TakeSnapshot(ctx context.Context, resourceType, routeId str
 	}
 }
 
-func (k *KongSource) TakeGlobalSnapshot(ctx context.Context, resourceType string, limit int) (snap map[string]snapshot.Snapshot, err error) {
+func (k *KongSource) TakeGlobalSnapshot(ctx context.Context, resourceType string, limit int) (snap map[string]*snapshot.Snapshot, err error) {
 	var ids []string
 	if strings.EqualFold(resourceType, "route") {
 		ids, err = k.GetRoutes(ctx, limit)
@@ -155,7 +150,7 @@ func (k *KongSource) TakeGlobalSnapshot(ctx context.Context, resourceType string
 	}
 
 	zap.L().Info("taking snapshots for resources", zap.String("resourceType", resourceType), zap.Int("count", len(ids)))
-	snap = make(map[string]snapshot.Snapshot)
+	snap = make(map[string]*snapshot.Snapshot)
 	for _, routeId := range ids {
 		routeSnap, err := k.TakeRouteSnapShot(ctx, routeId)
 		if err != nil {

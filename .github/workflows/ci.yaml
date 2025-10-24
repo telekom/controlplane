@@ -166,3 +166,11 @@ jobs:
       module: rover-ctl
       run_check_generated_files: false
       ko_build_path: "main.go"
+
+  snapshotter:
+    name: Snapshotter
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: tools/snapshotter
+      run_check_generated_files: false
+      ko_build_path: "main.go"
