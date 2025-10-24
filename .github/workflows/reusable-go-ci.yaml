@@ -11,6 +11,11 @@ on:
         description: "The Go module to process"
         required: true
         type: string
+      name:
+        description: "Name of the module for display purposes"
+        required: false
+        type: string
+        default: ${{ inputs.module }}
       run_check_generated_files:
         description: "Set to true to run checks for generated files"
         required: false
@@ -79,7 +84,7 @@ on:
 
 jobs:
   static_checks:
-    name: "Static Checks for ${{ inputs.module }}"
+    name: "Static Checks for ${{ inputs.name }}"
     if: ${{ inputs.run_lint || inputs.run_check_generated_files }}
     runs-on: ubuntu-latest
     steps:
@@ -178,7 +183,7 @@ jobs:
         if: ${{ always() }} # Upload even if previous steps fail
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@v4.6.2
         with:
-          name: ${{ replace(inputs.module, '/', '-') }}-gotest.log
+          name: ${{ inputs.name }}-gotest.log
           path: ${{ inputs.module }}/gotest.log
           if-no-files-found: error
 
@@ -187,7 +192,7 @@ jobs:
         if: ${{ always() }} # Upload even if previous steps fail
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@v4.6.2
         with:
-          name: ${{ replace(inputs.module, '/', '-') }}-test-report
+          name: ${{ inputs.name }}-test-report
           path: |
             ${{ inputs.module }}/cover.out
             ${{ inputs.module }}/coverage.html
@@ -199,7 +204,7 @@ jobs:
         uses: mikepenz/action-junit-report@v5
         with:
           report_paths: "${{ inputs.module }}/junit.xml"
-          check_name: "Test Report (${{ inputs.module }})"
+          check_name: "Test Report (${{ inputs.name }})"
           comment: false
           include_passed: true
 

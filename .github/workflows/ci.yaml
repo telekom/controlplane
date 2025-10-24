@@ -171,6 +171,7 @@ jobs:
     name: Snapshotter
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
+      name: tools-snapshotter
       module: tools/snapshotter
       run_check_generated_files: false
       run_lint: false
