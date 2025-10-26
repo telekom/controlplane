@@ -43,12 +43,13 @@ const (
 )
 
 var (
-	ctx        context.Context
-	cancel     context.CancelFunc
-	testEnv    *envtest.Environment
-	cfg        *rest.Config
-	k8sClient  client.Client
-	k8sManager manager.Manager
+	ctx                    context.Context
+	cancel                 context.CancelFunc
+	testEnv                *envtest.Environment
+	cfg                    *rest.Config
+	k8sClient              client.Client
+	k8sManager             manager.Manager
+	notificationReconciler *NotificationReconciler
 )
 
 func TestControllers(t *testing.T) {
@@ -117,7 +118,9 @@ var _ = BeforeSuite(func() {
 
 	loadedEmailConfig, err := emailadapterconfig.LoadEmailAdapterConfig()
 	Expect(err).NotTo(HaveOccurred())
-	err = NewNotificationReconcilerWithSenderConfig(k8sManager.GetClient(), k8sManager.GetScheme(), loadedEmailConfig).SetupWithManager(k8sManager)
+
+	notificationReconciler = NewNotificationReconcilerWithSenderConfig(k8sManager.GetClient(), k8sManager.GetScheme(), loadedEmailConfig)
+	err = notificationReconciler.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	By("Creating the environment namespace")

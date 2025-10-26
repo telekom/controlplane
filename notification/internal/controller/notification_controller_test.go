@@ -15,14 +15,14 @@ import (
 	"github.com/telekom/controlplane/common/pkg/config"
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+	mailsender "github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
+	mailsendermock "github.com/telekom/controlplane/notification/internal/sender/adapter/mail/mock"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-
-	mailsender "github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
-	mailsendermock "github.com/telekom/controlplane/notification/internal/sender/adapter/mail/mock"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	notificationconfig "github.com/telekom/controlplane/notification/internal/config"
 )
@@ -331,6 +331,213 @@ var _ = Describe("Notification Controller", func() {
 				g.Expect(notification.Status.States["default/channel--eni--hyperion--mail"].ErrorMessage).To(BeEquivalentTo("Error getting channel \"default/channel--eni--hyperion--mail\": failed to get object: NotificationChannel.notification.cp.ei.telekom.de \"channel--eni--hyperion--mail\" not found"))
 			}, timeout, interval).Should(Succeed())
 
+		})
+	})
+
+	Context("Index for template works correctly", func() {
+		const notificationPurpose = "test-purpose"
+
+		const notificationName = "test-notification"
+		// per convention
+		const channelName = "channel--eni--hyperion--mail"
+
+		It("should return only notifications matching the indexed template", func() {
+			// Create notifications
+
+			notifMatch := &notificationv1.Notification{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "notif-match",
+					Namespace: "default",
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: notificationv1.NotificationSpec{
+					Purpose: notificationPurpose,
+					Sender: notificationv1.Sender{
+						Type: notificationv1.SenderTypeUser,
+						Name: "John Snow",
+					},
+					Channels: []commontypes.ObjectRef{
+						{
+							Name:      channelName,
+							Namespace: "default",
+						},
+					},
+					Properties: runtime.RawExtension{
+						Raw: []byte(`{"subjectValue":"awesomeSubject", "bodyValue":"awesomeBody"}`),
+					},
+				},
+			}
+
+			By("Making the other notification have a different purpose")
+			notifOtherPurpose := notificationPurpose + "2"
+			notifOther := &notificationv1.Notification{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "notif-other",
+					Namespace: "default",
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: notificationv1.NotificationSpec{
+					Purpose: notifOtherPurpose,
+					Sender: notificationv1.Sender{
+						Type: notificationv1.SenderTypeUser,
+						Name: "John Snow",
+					},
+					Channels: []commontypes.ObjectRef{
+						{
+							Name:      channelName,
+							Namespace: "default",
+						},
+					},
+					Properties: runtime.RawExtension{
+						Raw: []byte(`{"subjectValue":"awesomeSubject", "bodyValue":"awesomeBody"}`),
+					},
+				},
+			}
+
+			tmpl := &notificationv1.NotificationTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "template--" + notificationPurpose + "--mail",
+					Namespace: testEnvironment,
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: notificationv1.NotificationTemplateSpec{
+					Purpose:         notificationPurpose,
+					ChannelType:     "Email",
+					SubjectTemplate: "Subject: {{.subjectValue}}\n",
+					Template:        "Body: {{.bodyValue}}\n",
+					Schema:          runtime.RawExtension{},
+				},
+			}
+
+			Expect(k8sClient.Create(context.Background(), notifMatch)).To(Succeed())
+			Expect(k8sClient.Create(context.Background(), notifOther)).To(Succeed())
+			Expect(k8sClient.Create(context.Background(), tmpl)).To(Succeed())
+
+			// Eventually to account for cache sync
+			var reqs []ctrl.Request
+			Eventually(func() int {
+				reqs = notificationReconciler.MapTemplateToNotification(context.Background(), tmpl)
+				return len(reqs)
+			}, timeout, interval).Should(Equal(1))
+
+			Expect(reqs[0].NamespacedName.Name).To(Equal("notif-match"))
+
+			// cleanup
+			By("Cleanup the resources created in this context")
+			Expect(k8sClient.Delete(ctx, notifMatch)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, notifOther)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, tmpl)).To(Succeed())
+		})
+	})
+
+	Context("Index for channels works correctly", func() {
+		const notificationPurpose = "test-purpose"
+
+		// per convention
+		const channelName = "channel--eni--hyperion--mail"
+		const otherChannelName = "channel--eni--nothyperion--mail"
+
+		It("should return only notifications matching the indexed template", func() {
+			// Create notifications
+
+			notifMatch := &notificationv1.Notification{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "notif-match",
+					Namespace: "default",
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: notificationv1.NotificationSpec{
+					Purpose: notificationPurpose,
+					Sender: notificationv1.Sender{
+						Type: notificationv1.SenderTypeUser,
+						Name: "John Snow",
+					},
+					Channels: []commontypes.ObjectRef{
+						{
+							Name:      channelName,
+							Namespace: "default",
+						},
+					},
+					Properties: runtime.RawExtension{
+						Raw: []byte(`{"subjectValue":"awesomeSubject", "bodyValue":"awesomeBody"}`),
+					},
+				},
+			}
+
+			By("Making the other notification have a different channel")
+			notifOther := &notificationv1.Notification{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "notif-other",
+					Namespace: "default",
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: notificationv1.NotificationSpec{
+					Purpose: notificationPurpose,
+					Sender: notificationv1.Sender{
+						Type: notificationv1.SenderTypeUser,
+						Name: "John Snow",
+					},
+					Channels: []commontypes.ObjectRef{
+						{
+							Name:      otherChannelName,
+							Namespace: "default",
+						},
+					},
+					Properties: runtime.RawExtension{
+						Raw: []byte(`{"subjectValue":"awesomeSubject", "bodyValue":"awesomeBody"}`),
+					},
+				},
+			}
+
+			var fromString = "a@b"
+			channel := &notificationv1.NotificationChannel{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      channelName,
+					Namespace: "default",
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: notificationv1.NotificationChannelSpec{
+					Email: &notificationv1.EmailConfig{
+						Recipients:     []string{"john.doe@example.com"},
+						From:           &fromString,
+						Authentication: nil,
+					},
+					MsTeams: nil,
+					Webhook: nil,
+					Ignore:  nil,
+				},
+			}
+
+			Expect(k8sClient.Create(context.Background(), notifMatch)).To(Succeed())
+			Expect(k8sClient.Create(context.Background(), notifOther)).To(Succeed())
+			Expect(k8sClient.Create(context.Background(), channel)).To(Succeed())
+
+			// Eventually to account for cache sync
+			var reqs []ctrl.Request
+			Eventually(func() int {
+				reqs = notificationReconciler.MapChannelToNotification(context.Background(), channel)
+				return len(reqs)
+			}, timeout, interval).Should(Equal(1))
+
+			Expect(reqs[0].NamespacedName.Name).To(Equal("notif-match"))
+
+			// cleanup
+			By("Cleanup the resources created in this context")
+			Expect(k8sClient.Delete(ctx, notifMatch)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, notifOther)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, channel)).To(Succeed())
 		})
 	})
 
