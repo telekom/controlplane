@@ -2,11 +2,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package adapter
+package msteams
 
 import (
 	"context"
 	"encoding/json"
+	adapter2 "github.com/telekom/controlplane/notification/internal/sender/adapter"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -113,7 +114,7 @@ func TestSend_ValidationErrors(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		config    ChatChannelConfiguration
+		config    adapter2.ChatChannelConfiguration
 		body      string
 		expectErr string
 	}{

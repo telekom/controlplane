@@ -8,6 +8,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/notification/internal/sender/adapter/msteams"
+	"github.com/telekom/controlplane/notification/internal/sender/adapter/webhook"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -16,7 +18,6 @@ import (
 	"strings"
 
 	"github.com/telekom/controlplane/notification/internal/sender"
-	"github.com/telekom/controlplane/notification/internal/sender/adapter"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
@@ -63,8 +64,8 @@ func NewNotificationReconcilerWithSenderConfig(
 		MailAdapter: &mail.EmailAdapter{
 			AdapterConfig: emailConfig,
 		},
-		ChatAdapter:     adapter.NewMsTeamsAdapter(),
-		CallbackAdapter: &adapter.WebhookAdapter{},
+		ChatAdapter:     msteams.NewMsTeamsAdapter(),
+		CallbackAdapter: &webhook.WebhookAdapter{},
 	}
 
 	return &NotificationReconciler{

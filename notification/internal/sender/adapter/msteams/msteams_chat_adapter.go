@@ -6,12 +6,13 @@
 //
 // MsTeamsAdapter sends notifications to Microsoft Teams via webhooks.
 // The HTTP client configuration is handled separately in http_client.go.
-package adapter
+package msteams
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/telekom/controlplane/notification/internal/sender/adapter"
 
 	"github.com/go-logr/logr"
 	"github.com/go-resty/resty/v2"
@@ -22,7 +23,7 @@ const (
 	defaultUserAgent = "TARDIS-Notification-Service/1.0"
 )
 
-var _ NotificationAdapter[ChatChannelConfiguration] = &MsTeamsAdapter{}
+var _ adapter.NotificationAdapter[adapter.ChatChannelConfiguration] = &MsTeamsAdapter{}
 
 // MsTeamsAdapter is an adapter for sending notifications to Microsoft Teams via webhooks
 type MsTeamsAdapter struct {
@@ -85,7 +86,7 @@ type TeamsErrorResponse struct {
 
 // Send sends a notification to Microsoft Teams with retry logic and proper error handling.
 // The title parameter is ignored as MS Teams determines the title from the card content.
-func (e MsTeamsAdapter) Send(ctx context.Context, config ChatChannelConfiguration, title string, body string) error {
+func (e MsTeamsAdapter) Send(ctx context.Context, config adapter.ChatChannelConfiguration, title string, body string) error {
 	log := logr.FromContextOrDiscard(ctx)
 
 	// Validate required parameters

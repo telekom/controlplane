@@ -27,7 +27,7 @@ import (
 	notificationconfig "github.com/telekom/controlplane/notification/internal/config"
 )
 
-var _ = Describe("Notification Controller", func() {
+var _ = Describe("Notification Controller", Ordered, func() {
 	Context("When reconciling a resource", func() {
 		const notificationPurpose = "test-purpose"
 
