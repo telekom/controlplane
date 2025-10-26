@@ -130,8 +130,8 @@ func addResultToStatus(notification *notificationv1.Notification, channelId stri
 }
 
 func resolveTemplate(ctx context.Context, channel *notificationv1.NotificationChannel, purpose string) (*notificationv1.NotificationTemplate, error) {
-	// channel name - channel--<teamname>--<type> - example: channel--eni--hyperion--mail
-	// template name - template--<purpose>--<type> - example: template--api-subscription-approved--chat
+	// channel name - <teamname>--<type> - example: eni--hyperion--mail
+	// template name - <purpose>--<type> - example: api-subscription-approved--chat
 
 	scopedClient := client.ClientFromContextOrDie(ctx)
 
@@ -159,9 +159,9 @@ func channelToMapKey(channel types.ObjectRef) string {
 }
 
 func buildTemplateName(channel *notificationv1.NotificationChannel, purpose string) string {
-	// channel name - channel--<teamname>--<type> - example: channel--eni--hyperion--mail
-	// template name - template--<purpose>--<type> - example: template--api-subscription-approved--chat
-	return fmt.Sprintf("template--%s--%s", purpose, strings.ToLower(string(channel.NotificationType())))
+	// channel name - <teamname>--<type> - example: eni--hyperion--mail
+	// template name - <purpose>--<type> - example: api-subscription-approved--chat
+	return fmt.Sprintf("%s--%s", purpose, strings.ToLower(string(channel.NotificationType())))
 }
 
 func getChannelByRef(ctx context.Context, ref types.ObjectRef) (*notificationv1.NotificationChannel, error) {

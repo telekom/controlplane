@@ -116,7 +116,7 @@ func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				channelType := parts[len(parts)-1]
 
 				// We'll construct the template name as the key
-				keys = append(keys, fmt.Sprintf("template--%s--%s", n.Spec.Purpose, channelType))
+				keys = append(keys, fmt.Sprintf("%s--%s", n.Spec.Purpose, channelType))
 			}
 			return keys
 		},

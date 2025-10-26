@@ -33,8 +33,8 @@ var _ = Describe("Notification Controller", func() {
 
 		const notificationName = "test-notification"
 		// per convention
-		const templateName = "template--" + notificationPurpose + "--mail"
-		const channelName = "channel--eni--hyperion--mail"
+		const templateName = notificationPurpose + "--mail"
+		const channelName = "eni--hyperion--mail"
 
 		ctx := context.Background()
 
@@ -188,12 +188,12 @@ var _ = Describe("Notification Controller", func() {
 				// notifications are sent
 				g.Expect(notification.Status.States).To(HaveLen(1))
 
-				g.Expect(notification.Status.States).To(HaveKey("default/channel--eni--hyperion--mail"))
+				g.Expect(notification.Status.States).To(HaveKey("default/eni--hyperion--mail"))
 
 				// omit the timestamp as its dynamic
-				g.Expect(notification.Status.States["default/channel--eni--hyperion--mail"]).To(Not(BeNil()))
-				g.Expect(notification.Status.States["default/channel--eni--hyperion--mail"].Sent).To(BeTrue())
-				g.Expect(notification.Status.States["default/channel--eni--hyperion--mail"].ErrorMessage).To(BeEquivalentTo("Successfully sent"))
+				g.Expect(notification.Status.States["default/eni--hyperion--mail"]).To(Not(BeNil()))
+				g.Expect(notification.Status.States["default/eni--hyperion--mail"].Sent).To(BeTrue())
+				g.Expect(notification.Status.States["default/eni--hyperion--mail"].ErrorMessage).To(BeEquivalentTo("Successfully sent"))
 			}, timeout, interval).Should(Succeed())
 
 		})
@@ -204,8 +204,8 @@ var _ = Describe("Notification Controller", func() {
 
 		const notificationName = "test-notification"
 		// per convention
-		const templateName = "template--" + notificationPurpose + "--mail"
-		const channelName = "channel--eni--hyperion--mail"
+		const templateName = notificationPurpose + "--mail"
+		const channelName = "eni--hyperion--mail"
 
 		ctx := context.Background()
 
@@ -323,12 +323,12 @@ var _ = Describe("Notification Controller", func() {
 				// notifications are sent
 				g.Expect(notification.Status.States).To(HaveLen(1))
 
-				g.Expect(notification.Status.States).To(HaveKey("default/channel--eni--hyperion--mail"))
+				g.Expect(notification.Status.States).To(HaveKey("default/eni--hyperion--mail"))
 
 				// omit the timestamp as its dynamic
-				g.Expect(notification.Status.States["default/channel--eni--hyperion--mail"]).To(Not(BeNil()))
-				g.Expect(notification.Status.States["default/channel--eni--hyperion--mail"].Sent).To(BeFalse())
-				g.Expect(notification.Status.States["default/channel--eni--hyperion--mail"].ErrorMessage).To(BeEquivalentTo("Error getting channel \"default/channel--eni--hyperion--mail\": failed to get object: NotificationChannel.notification.cp.ei.telekom.de \"channel--eni--hyperion--mail\" not found"))
+				g.Expect(notification.Status.States["default/eni--hyperion--mail"]).To(Not(BeNil()))
+				g.Expect(notification.Status.States["default/eni--hyperion--mail"].Sent).To(BeFalse())
+				g.Expect(notification.Status.States["default/eni--hyperion--mail"].ErrorMessage).To(BeEquivalentTo("Error getting channel \"default/eni--hyperion--mail\": failed to get object: NotificationChannel.notification.cp.ei.telekom.de \"eni--hyperion--mail\" not found"))
 			}, timeout, interval).Should(Succeed())
 
 		})
@@ -339,7 +339,7 @@ var _ = Describe("Notification Controller", func() {
 
 		const notificationName = "test-notification"
 		// per convention
-		const channelName = "channel--eni--hyperion--mail"
+		const channelName = "eni--hyperion--mail"
 
 		It("should return only notifications matching the indexed template", func() {
 			// Create notifications
@@ -400,7 +400,7 @@ var _ = Describe("Notification Controller", func() {
 
 			tmpl := &notificationv1.NotificationTemplate{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "template--" + notificationPurpose + "--mail",
+					Name:      notificationPurpose + "--mail",
 					Namespace: testEnvironment,
 					Labels: map[string]string{
 						config.EnvironmentLabelKey: testEnvironment,
@@ -440,8 +440,8 @@ var _ = Describe("Notification Controller", func() {
 		const notificationPurpose = "test-purpose"
 
 		// per convention
-		const channelName = "channel--eni--hyperion--mail"
-		const otherChannelName = "channel--eni--nothyperion--mail"
+		const channelName = "eni--hyperion--mail"
+		const otherChannelName = "eni--nothyperion--mail"
 
 		It("should return only notifications matching the indexed template", func() {
 			// Create notifications

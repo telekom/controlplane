@@ -29,7 +29,7 @@ var _ = Describe("Notification Handler", func() {
 		const notificationPurpose = "test-purpose"
 
 		const notificationName = "test-notification"
-		const channel2Name = "channel--eni--hyperion--chat"
+		const channel2Name = "eni--hyperion--chat"
 
 		SendingTime := metav1.NewTime(time.Date(1989, time.May, 7, 0, 0, 0, 0, time.UTC))
 
@@ -101,11 +101,11 @@ var _ = Describe("Notification Handler", func() {
 			Expect(meta.IsStatusConditionTrue(notification.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 
 			By("not modifying the timestamp of the sent notification")
-			Expect(notification.Status.States).To(HaveKey("default/channel--eni--hyperion--chat"))
-			Expect(notification.Status.States["default/channel--eni--hyperion--chat"]).To(Not(BeNil()))
-			Expect(notification.Status.States["default/channel--eni--hyperion--chat"].Sent).To(BeTrue())
-			Expect(notification.Status.States["default/channel--eni--hyperion--chat"].ErrorMessage).To(BeEquivalentTo("Successfully sent"))
-			Expect(notification.Status.States["default/channel--eni--hyperion--chat"].Timestamp.Unix()).To(BeEquivalentTo(SendingTime.Unix()))
+			Expect(notification.Status.States).To(HaveKey("default/eni--hyperion--chat"))
+			Expect(notification.Status.States["default/eni--hyperion--chat"]).To(Not(BeNil()))
+			Expect(notification.Status.States["default/eni--hyperion--chat"].Sent).To(BeTrue())
+			Expect(notification.Status.States["default/eni--hyperion--chat"].ErrorMessage).To(BeEquivalentTo("Successfully sent"))
+			Expect(notification.Status.States["default/eni--hyperion--chat"].Timestamp.Unix()).To(BeEquivalentTo(SendingTime.Unix()))
 		})
 	})
 })

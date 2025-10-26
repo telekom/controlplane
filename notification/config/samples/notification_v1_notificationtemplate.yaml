@@ -5,9 +5,9 @@
 apiVersion: notification.cp.ei.telekom.de/v1
 kind: NotificationTemplate
 metadata:
-  name: template--api-subscription-approval--chat
+  name: api-subscription-approval--chat
   labels:
-    app.kubernetes.io/name: template--api-subscription-approval--chat
+    app.kubernetes.io/name: api-subscription-approval--chat
     app.kubernetes.io/managed-by: kustomize
 spec:
   purpose: "api-subscription-approval"
