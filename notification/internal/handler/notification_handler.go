@@ -28,6 +28,8 @@ type NotificationHandler struct {
 
 func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *notificationv1.Notification) error {
 
+	var shouldBlock = false
+
 	// lets go channel by channel
 	for _, channelRef := range notification.Spec.Channels {
 
@@ -40,6 +42,7 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 		// get the channel object
 		channel, err := getChannelByRef(ctx, channelRef)
 		if err != nil {
+			shouldBlock = true
 			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
@@ -47,6 +50,7 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 		// resolve the template
 		template, err := resolveTemplate(ctx, channel, notification.Spec.Purpose)
 		if err != nil {
+			shouldBlock = true
 			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
@@ -77,12 +81,17 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 		addResultToStatus(notification, channelKey, true, "Successfully sent")
 	}
 
-	if hasFailedSendAttempt(notification.Status.States) {
-		notification.SetCondition(condition.NewBlockedCondition("Notification is not ready"))
+	if shouldBlock {
+		notification.SetCondition(condition.NewBlockedCondition("Channel or template cannot be resolved"))
 		notification.SetCondition(condition.NewNotReadyCondition("NotificationSendingFailed", "Some notifications were not sent"))
 	} else {
-		notification.SetCondition(condition.NewReadyCondition("Provisioned", "Notification is provisioned"))
-		notification.SetCondition(condition.NewDoneProcessingCondition("Notification is done processing"))
+		if hasFailedSendAttempt(notification.Status.States) {
+			notification.SetCondition(condition.NewProcessingCondition("Retrying", "Retrying failed notifications"))
+			notification.SetCondition(condition.NewNotReadyCondition("Retrying", "Some notifications were not sent"))
+		} else {
+			notification.SetCondition(condition.NewReadyCondition("Provisioned", "Notification is provisioned"))
+			notification.SetCondition(condition.NewDoneProcessingCondition("Notification is done processing"))
+		}
 	}
 
 	return nil

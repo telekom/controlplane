@@ -7,18 +7,18 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gstruct"
 	"github.com/stretchr/testify/mock"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/runtime"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
 	mailsender "github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
@@ -304,6 +304,21 @@ var _ = Describe("Notification Controller", func() {
 				g.Expect(notification.Status.Conditions).To(HaveLen(2))
 				g.Expect(meta.IsStatusConditionTrue(notification.Status.Conditions, condition.ConditionTypeProcessing)).To(BeFalse())
 				g.Expect(meta.IsStatusConditionTrue(notification.Status.Conditions, condition.ConditionTypeReady)).To(BeFalse())
+
+				g.Expect(notification.Status.Conditions).To(ConsistOf(
+					gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+						"Type":    Equal("Ready"),
+						"Reason":  Equal("NotificationSendingFailed"),
+						"Message": Equal("Some notifications were not sent"),
+						"Status":  Equal(metav1.ConditionStatus("False")),
+					}),
+					gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+						"Type":    Equal("Processing"),
+						"Reason":  Equal("Blocked"),
+						"Message": Equal("Channel or template cannot be resolved"),
+						"Status":  Equal(metav1.ConditionStatus("False")),
+					}),
+				))
 
 				// notifications are sent
 				g.Expect(notification.Status.States).To(HaveLen(1))
