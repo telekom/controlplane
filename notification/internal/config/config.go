@@ -8,16 +8,33 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"strings"
+	"time"
 )
 
 // EmailAdapterConfig wrapper for the static config of the mail notification adapter
 type EmailAdapterConfig struct {
-	SMTPHost string `json:"smtpHost"`
-	SMTPPort int    `json:"smtpPort"`
+	SMTPConnection SMTPConnection `mapstructure:"smtpConnection"`
+	SMTPSender     SMTPSender     `mapstructure:"smtpSender"`
+}
+
+type SMTPConnection struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+}
+
+type SMTPSender struct {
+	BatchSize      int           `mapstructure:"batchSize"`
+	MaxRetries     int           `mapstructure:"maxRetries"`
+	InitialBackoff time.Duration `mapstructure:"initialBackoff"`
+	MaxBackoff     time.Duration `mapstructure:"maxBackoff"`
+	BatchLoopDelay time.Duration `mapstructure:"batchLoopDelay"`
+	DefaultFrom    string        `mapstructure:"defaultFrom"`
+	DefaultName    string        `mapstructure:"defaultName"`
 }
 
 func LoadEmailAdapterConfig() (*EmailAdapterConfig, error) {
-
 	setDefaults()
 
 	viper.AutomaticEnv()
@@ -32,6 +49,16 @@ func LoadEmailAdapterConfig() (*EmailAdapterConfig, error) {
 }
 
 func setDefaults() {
-	viper.SetDefault("SMTPHost", "localhost")
-	viper.SetDefault("SMTPPort", 25)
+	viper.SetDefault("smtpConnection.host", "localhost")
+	viper.SetDefault("smtpConnection.port", 25)
+	viper.SetDefault("smtpConnection.user", "")
+	viper.SetDefault("smtpConnection.password", "")
+
+	viper.SetDefault("smtpSender.batchSize", 30)
+	viper.SetDefault("smtpSender.batchLoopDelay", "1s")
+	viper.SetDefault("smtpSender.maxRetries", 5)
+	viper.SetDefault("smtpSender.initialBackoff", "1s")
+	viper.SetDefault("smtpSender.maxBackoff", "1m")
+	viper.SetDefault("smtpSender.defaultFrom", "email@telekom.de")
+	viper.SetDefault("smtpSender.defaultName", "Team Tardis")
 }

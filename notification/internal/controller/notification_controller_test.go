@@ -7,30 +7,34 @@ package controller
 import (
 	"context"
 	"encoding/json"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/runtime"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-
+	"github.com/onsi/gomega/gstruct"
+	"github.com/stretchr/testify/mock"
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
-
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+	mailsender "github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
+	mailsendermock "github.com/telekom/controlplane/notification/internal/sender/adapter/mail/mock"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
+
+	notificationconfig "github.com/telekom/controlplane/notification/internal/config"
 )
 
-var _ = Describe("Notification Controller", func() {
+var _ = Describe("Notification Controller", Ordered, func() {
 	Context("When reconciling a resource", func() {
 		const notificationPurpose = "test-purpose"
 
 		const notificationName = "test-notification"
 		// per convention
-		const templateName = "template--" + notificationPurpose + "--mail"
-		const channelName = "channel--eni--hyperion--mail"
+		const templateName = notificationPurpose + "--mail"
+		const channelName = "eni--hyperion--mail"
 
 		ctx := context.Background()
 
@@ -53,6 +57,14 @@ var _ = Describe("Notification Controller", func() {
 		channel := &notificationv1.NotificationChannel{}
 
 		BeforeEach(func() {
+			By("Mocking the actual email sender")
+			mockMailSender := &mailsendermock.MockEmailSender{}
+			mockMailSender.EXPECT().Send(mock.Anything, "test.from@somewhere.test", "Team Tardis", []string{"john.doe@example.com"}, "Subject: awesomeSubject\n", "Body: awesomeBody\n").Return(nil)
+
+			mailsender.NewSMTPSender = func(config *notificationconfig.EmailAdapterConfig) mailsender.EmailSender {
+				return mockMailSender
+			}
+
 			By("creating the custom resource for the Kind Notification Template")
 			err := k8sClient.Get(ctx, templateNamespacedName, template)
 			if err != nil && errors.IsNotFound(err) {
@@ -78,6 +90,7 @@ var _ = Describe("Notification Controller", func() {
 			By("creating the custom resource for the Kind Notification Channel")
 			err = k8sClient.Get(ctx, channelNamespacedName, channel)
 			if err != nil && errors.IsNotFound(err) {
+				fromString := "test.from@somewhere.test"
 				resource := &notificationv1.NotificationChannel{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      channelName,
@@ -88,11 +101,8 @@ var _ = Describe("Notification Controller", func() {
 					},
 					Spec: notificationv1.NotificationChannelSpec{
 						Email: &notificationv1.EmailConfig{
-							Recipients:   []string{"john.doe@example.com"},
-							CCRecipients: nil,
-							//	SMTPHost:       "testSMTPHost",
-							//	SMTPPort:       1234,
-							From:           "test.from@somewhere.test",
+							Recipients:     []string{"john.doe@example.com"},
+							From:           &fromString,
 							Authentication: nil,
 						},
 						MsTeams: nil,
@@ -121,7 +131,7 @@ var _ = Describe("Notification Controller", func() {
 							Name: "John Snow",
 						},
 						Channels: []commontypes.ObjectRef{
-							commontypes.ObjectRef{
+							{
 								Name:      channelName,
 								Namespace: "default",
 							},
@@ -155,8 +165,8 @@ var _ = Describe("Notification Controller", func() {
 			Expect(k8sClient.Delete(ctx, templateResource)).To(Succeed())
 		})
 
-		It("should successfully reconcile the resource with no channels - nothing to do", func() {
-			By("Reconciling the created resource")
+		It("should successfully reconcile the resource", func() {
+			By("Sending the notification per channel")
 
 			Eventually(func(g Gomega) {
 				notification := &notificationv1.Notification{}
@@ -178,12 +188,12 @@ var _ = Describe("Notification Controller", func() {
 				// notifications are sent
 				g.Expect(notification.Status.States).To(HaveLen(1))
 
-				g.Expect(notification.Status.States).To(HaveKey("default/channel--eni--hyperion--mail"))
+				g.Expect(notification.Status.States).To(HaveKey("default/eni--hyperion--mail"))
 
 				// omit the timestamp as its dynamic
-				g.Expect(notification.Status.States["default/channel--eni--hyperion--mail"]).To(Not(BeNil()))
-				g.Expect(notification.Status.States["default/channel--eni--hyperion--mail"].Sent).To(BeTrue())
-				g.Expect(notification.Status.States["default/channel--eni--hyperion--mail"].ErrorMessage).To(BeEquivalentTo("Successfully sent"))
+				g.Expect(notification.Status.States["default/eni--hyperion--mail"]).To(Not(BeNil()))
+				g.Expect(notification.Status.States["default/eni--hyperion--mail"].Sent).To(BeTrue())
+				g.Expect(notification.Status.States["default/eni--hyperion--mail"].ErrorMessage).To(BeEquivalentTo("Successfully sent"))
 			}, timeout, interval).Should(Succeed())
 
 		})
@@ -194,8 +204,8 @@ var _ = Describe("Notification Controller", func() {
 
 		const notificationName = "test-notification"
 		// per convention
-		const templateName = "template--" + notificationPurpose + "--mail"
-		const channelName = "channel--eni--hyperion--mail"
+		const templateName = notificationPurpose + "--mail"
+		const channelName = "eni--hyperion--mail"
 
 		ctx := context.Background()
 
@@ -274,6 +284,7 @@ var _ = Describe("Notification Controller", func() {
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
+			By("not creating the custom resource for the Kind Notification channel")
 
 			By("Updating the status.states with a failed SendState")
 
@@ -294,19 +305,242 @@ var _ = Describe("Notification Controller", func() {
 				g.Expect(meta.IsStatusConditionTrue(notification.Status.Conditions, condition.ConditionTypeProcessing)).To(BeFalse())
 				g.Expect(meta.IsStatusConditionTrue(notification.Status.Conditions, condition.ConditionTypeReady)).To(BeFalse())
 
+				g.Expect(notification.Status.Conditions).To(ConsistOf(
+					gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+						"Type":    Equal("Ready"),
+						"Reason":  Equal("NotificationSendingFailed"),
+						"Message": Equal("Some notifications were not sent"),
+						"Status":  Equal(metav1.ConditionStatus("False")),
+					}),
+					gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+						"Type":    Equal("Processing"),
+						"Reason":  Equal("Blocked"),
+						"Message": Equal("Channel or template cannot be resolved"),
+						"Status":  Equal(metav1.ConditionStatus("False")),
+					}),
+				))
+
 				// notifications are sent
 				g.Expect(notification.Status.States).To(HaveLen(1))
 
-				g.Expect(notification.Status.States).To(HaveKey("default/channel--eni--hyperion--mail"))
+				g.Expect(notification.Status.States).To(HaveKey("default/eni--hyperion--mail"))
 
 				// omit the timestamp as its dynamic
-				g.Expect(notification.Status.States["default/channel--eni--hyperion--mail"]).To(Not(BeNil()))
-				g.Expect(notification.Status.States["default/channel--eni--hyperion--mail"].Sent).To(BeFalse())
-				g.Expect(notification.Status.States["default/channel--eni--hyperion--mail"].ErrorMessage).To(BeEquivalentTo("Error getting channel \"default/channel--eni--hyperion--mail\": failed to get object: NotificationChannel.notification.cp.ei.telekom.de \"channel--eni--hyperion--mail\" not found"))
+				g.Expect(notification.Status.States["default/eni--hyperion--mail"]).To(Not(BeNil()))
+				g.Expect(notification.Status.States["default/eni--hyperion--mail"].Sent).To(BeFalse())
+				g.Expect(notification.Status.States["default/eni--hyperion--mail"].ErrorMessage).To(BeEquivalentTo("Error getting channel \"default/eni--hyperion--mail\": failed to get object: NotificationChannel.notification.cp.ei.telekom.de \"eni--hyperion--mail\" not found"))
 			}, timeout, interval).Should(Succeed())
 
 		})
 	})
+
+	Context("Index for template works correctly", func() {
+		const notificationPurpose = "test-purpose"
+
+		const notificationName = "test-notification"
+		// per convention
+		const channelName = "eni--hyperion--mail"
+
+		It("should return only notifications matching the indexed template", func() {
+			// Create notifications
+
+			notifMatch := &notificationv1.Notification{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "notif-match",
+					Namespace: "default",
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: notificationv1.NotificationSpec{
+					Purpose: notificationPurpose,
+					Sender: notificationv1.Sender{
+						Type: notificationv1.SenderTypeUser,
+						Name: "John Snow",
+					},
+					Channels: []commontypes.ObjectRef{
+						{
+							Name:      channelName,
+							Namespace: "default",
+						},
+					},
+					Properties: runtime.RawExtension{
+						Raw: []byte(`{"subjectValue":"awesomeSubject", "bodyValue":"awesomeBody"}`),
+					},
+				},
+			}
+
+			By("Making the other notification have a different purpose")
+			notifOtherPurpose := notificationPurpose + "2"
+			notifOther := &notificationv1.Notification{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "notif-other",
+					Namespace: "default",
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: notificationv1.NotificationSpec{
+					Purpose: notifOtherPurpose,
+					Sender: notificationv1.Sender{
+						Type: notificationv1.SenderTypeUser,
+						Name: "John Snow",
+					},
+					Channels: []commontypes.ObjectRef{
+						{
+							Name:      channelName,
+							Namespace: "default",
+						},
+					},
+					Properties: runtime.RawExtension{
+						Raw: []byte(`{"subjectValue":"awesomeSubject", "bodyValue":"awesomeBody"}`),
+					},
+				},
+			}
+
+			tmpl := &notificationv1.NotificationTemplate{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      notificationPurpose + "--mail",
+					Namespace: testEnvironment,
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: notificationv1.NotificationTemplateSpec{
+					Purpose:         notificationPurpose,
+					ChannelType:     "Email",
+					SubjectTemplate: "Subject: {{.subjectValue}}\n",
+					Template:        "Body: {{.bodyValue}}\n",
+					Schema:          runtime.RawExtension{},
+				},
+			}
+
+			Expect(k8sClient.Create(context.Background(), notifMatch)).To(Succeed())
+			Expect(k8sClient.Create(context.Background(), notifOther)).To(Succeed())
+			Expect(k8sClient.Create(context.Background(), tmpl)).To(Succeed())
+
+			// Eventually to account for cache sync
+			var reqs []ctrl.Request
+			Eventually(func() int {
+				reqs = notificationReconciler.MapTemplateToNotification(context.Background(), tmpl)
+				return len(reqs)
+			}, timeout, interval).Should(Equal(1))
+
+			Expect(reqs[0].NamespacedName.Name).To(Equal("notif-match"))
+
+			// cleanup
+			By("Cleanup the resources created in this context")
+			Expect(k8sClient.Delete(ctx, notifMatch)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, notifOther)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, tmpl)).To(Succeed())
+		})
+	})
+
+	Context("Index for channels works correctly", func() {
+		const notificationPurpose = "test-purpose"
+
+		// per convention
+		const channelName = "eni--hyperion--mail"
+		const otherChannelName = "eni--nothyperion--mail"
+
+		It("should return only notifications matching the indexed template", func() {
+			// Create notifications
+
+			notifMatch := &notificationv1.Notification{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "notif-match",
+					Namespace: "default",
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: notificationv1.NotificationSpec{
+					Purpose: notificationPurpose,
+					Sender: notificationv1.Sender{
+						Type: notificationv1.SenderTypeUser,
+						Name: "John Snow",
+					},
+					Channels: []commontypes.ObjectRef{
+						{
+							Name:      channelName,
+							Namespace: "default",
+						},
+					},
+					Properties: runtime.RawExtension{
+						Raw: []byte(`{"subjectValue":"awesomeSubject", "bodyValue":"awesomeBody"}`),
+					},
+				},
+			}
+
+			By("Making the other notification have a different channel")
+			notifOther := &notificationv1.Notification{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "notif-other",
+					Namespace: "default",
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: notificationv1.NotificationSpec{
+					Purpose: notificationPurpose,
+					Sender: notificationv1.Sender{
+						Type: notificationv1.SenderTypeUser,
+						Name: "John Snow",
+					},
+					Channels: []commontypes.ObjectRef{
+						{
+							Name:      otherChannelName,
+							Namespace: "default",
+						},
+					},
+					Properties: runtime.RawExtension{
+						Raw: []byte(`{"subjectValue":"awesomeSubject", "bodyValue":"awesomeBody"}`),
+					},
+				},
+			}
+
+			var fromString = "a@b"
+			channel := &notificationv1.NotificationChannel{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      channelName,
+					Namespace: "default",
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					},
+				},
+				Spec: notificationv1.NotificationChannelSpec{
+					Email: &notificationv1.EmailConfig{
+						Recipients:     []string{"john.doe@example.com"},
+						From:           &fromString,
+						Authentication: nil,
+					},
+					MsTeams: nil,
+					Webhook: nil,
+					Ignore:  nil,
+				},
+			}
+
+			Expect(k8sClient.Create(context.Background(), notifMatch)).To(Succeed())
+			Expect(k8sClient.Create(context.Background(), notifOther)).To(Succeed())
+			Expect(k8sClient.Create(context.Background(), channel)).To(Succeed())
+
+			// Eventually to account for cache sync
+			var reqs []ctrl.Request
+			Eventually(func() int {
+				reqs = notificationReconciler.MapChannelToNotification(context.Background(), channel)
+				return len(reqs)
+			}, timeout, interval).Should(Equal(1))
+
+			Expect(reqs[0].NamespacedName.Name).To(Equal("notif-match"))
+
+			// cleanup
+			By("Cleanup the resources created in this context")
+			Expect(k8sClient.Delete(ctx, notifMatch)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, notifOther)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, channel)).To(Succeed())
+		})
+	})
+
 })
 
 func ExpectJSONEqual(actualJSON, expectedJSON []byte) {

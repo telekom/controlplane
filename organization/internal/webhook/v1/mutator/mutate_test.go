@@ -99,6 +99,21 @@ func TestMutateSecret(t *testing.T) {
 				return mockSecretManager
 			},
 			expectedError:     false,
+			expectedNewSecret: true,
+		},
+		{
+			name: "Have a secret reference already set",
+			env:  "env",
+			teamObj: &organizationv1.Team{
+				Spec: organizationv1.TeamSpec{
+					Secret: "$<my-secret-ref>",
+				},
+			},
+			zoneObj: zone,
+			mock: func() api.SecretManager {
+				return nil
+			},
+			expectedError:     false,
 			expectedNewSecret: false,
 		},
 		{
@@ -148,11 +163,14 @@ func TestMutateSecret(t *testing.T) {
 				mockSecretManager := fake.NewMockSecretManager(t)
 				mockSecretManager.EXPECT().
 					UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-					Return(nil, fmt.Errorf("faulty implementation"))
+					Return(map[string]string{
+						"clientSecret": "found",
+						"teamToken":    "found",
+					}, nil)
 				return mockSecretManager
 			},
 			expectedError:     false,
-			expectedNewSecret: false,
+			expectedNewSecret: true,
 		},
 		{
 			name: "Faulty FindSecret: Upsert, but return no availableSecrets",

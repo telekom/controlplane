@@ -23,25 +23,35 @@ import (
 var _ handler.Handler[*notificationv1.Notification] = &NotificationHandler{}
 
 type NotificationHandler struct {
-	NotificationSender sender.AdapterSender
+	NotificationSender sender.NotificationSender
 }
 
 func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *notificationv1.Notification) error {
 
+	var shouldBlock = false
+
 	// lets go channel by channel
 	for _, channelRef := range notification.Spec.Channels {
+
+		channelKey := channelToMapKey(channelRef)
+		// first lets check if the notification was already successfully sent
+		if alreadySent(channelKey, notification) {
+			continue
+		}
 
 		// get the channel object
 		channel, err := getChannelByRef(ctx, channelRef)
 		if err != nil {
-			addResultToStatus(notification, channelToMapKey(channelRef), false, err.Error())
+			shouldBlock = true
+			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
 
 		// resolve the template
 		template, err := resolveTemplate(ctx, channel, notification.Spec.Purpose)
 		if err != nil {
-			addResultToStatus(notification, channelToMapKey(channelRef), false, err.Error())
+			shouldBlock = true
+			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
 
@@ -51,35 +61,51 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 		// render
 		renderedSubject, err := renderMessage(template.Spec.SubjectTemplate, notification.Spec.Properties)
 		if err != nil {
-			addResultToStatus(notification, channelToMapKey(channelRef), false, err.Error())
+			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
 
 		renderedBody, err := renderMessage(template.Spec.Template, notification.Spec.Properties)
 		if err != nil {
-			addResultToStatus(notification, channelToMapKey(channelRef), false, err.Error())
+			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
 
 		// better pass to sender service
 		err = n.NotificationSender.ProcessNotification(ctx, channel, renderedSubject, renderedBody)
 		if err != nil {
-			addResultToStatus(notification, channelToMapKey(channelRef), false, err.Error())
+			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
 
-		addResultToStatus(notification, channelToMapKey(channelRef), true, "Successfully sent")
+		addResultToStatus(notification, channelKey, true, "Successfully sent")
 	}
 
-	if hasFailedSendAttempt(notification.Status.States) {
-		notification.SetCondition(condition.NewBlockedCondition("Notification is not ready"))
+	if shouldBlock {
+		notification.SetCondition(condition.NewBlockedCondition("Channel or template cannot be resolved"))
 		notification.SetCondition(condition.NewNotReadyCondition("NotificationSendingFailed", "Some notifications were not sent"))
 	} else {
-		notification.SetCondition(condition.NewReadyCondition("Provisioned", "Notification is provisioned"))
-		notification.SetCondition(condition.NewDoneProcessingCondition("Notification is done processing"))
+		if hasFailedSendAttempt(notification.Status.States) {
+			notification.SetCondition(condition.NewProcessingCondition("Retrying", "Retrying failed notifications"))
+			notification.SetCondition(condition.NewNotReadyCondition("Retrying", "Some notifications were not sent"))
+		} else {
+			notification.SetCondition(condition.NewReadyCondition("Provisioned", "Notification is provisioned"))
+			notification.SetCondition(condition.NewDoneProcessingCondition("Notification is done processing"))
+		}
 	}
 
 	return nil
+}
+
+func alreadySent(key string, notification *notificationv1.Notification) bool {
+	if notification.Status.States == nil || len(notification.Status.States) == 0 {
+		return false
+	}
+
+	if state, found := notification.Status.States[key]; found {
+		return state.Sent
+	}
+	return false
 }
 
 func hasFailedSendAttempt(statesMap map[string]notificationv1.SendState) bool {
@@ -101,12 +127,11 @@ func addResultToStatus(notification *notificationv1.Notification, channelId stri
 		Sent:         success,
 		ErrorMessage: message,
 	}
-
 }
 
 func resolveTemplate(ctx context.Context, channel *notificationv1.NotificationChannel, purpose string) (*notificationv1.NotificationTemplate, error) {
-	// channel name - channel--<teamname>--<type> - example: channel--eni--hyperion--mail
-	// template name - template--<purpose>--<type> - example: template--api-subscription-approved--chat
+	// channel name - <teamname>--<type> - example: eni--hyperion--mail
+	// template name - <purpose>--<type> - example: api-subscription-approved--chat
 
 	scopedClient := client.ClientFromContextOrDie(ctx)
 
@@ -134,9 +159,9 @@ func channelToMapKey(channel types.ObjectRef) string {
 }
 
 func buildTemplateName(channel *notificationv1.NotificationChannel, purpose string) string {
-	// channel name - channel--<teamname>--<type> - example: channel--eni--hyperion--mail
-	// template name - template--<purpose>--<type> - example: template--api-subscription-approved--chat
-	return fmt.Sprintf("template--%s--%s", purpose, strings.ToLower(string(channel.NotificationType())))
+	// channel name - <teamname>--<type> - example: eni--hyperion--mail
+	// template name - <purpose>--<type> - example: api-subscription-approved--chat
+	return fmt.Sprintf("%s--%s", purpose, strings.ToLower(string(channel.NotificationType())))
 }
 
 func getChannelByRef(ctx context.Context, ref types.ObjectRef) (*notificationv1.NotificationChannel, error) {

@@ -8,7 +8,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/telekom/controlplane/organization/internal/secret"
+	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/organization/internal/webhook/v1/mutator"
 	"github.com/telekom/controlplane/organization/internal/webhook/v1/validator"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -24,7 +24,7 @@ import (
 
 // nolint:unused
 // log is for logging in this package.
-var teamlog = logf.Log.WithName("team-resource")
+var teamLog = logf.Log.WithName("team-resource").WithValues("apiVersion", "organization.cp.ei.telekom.de/v1", "kind", "Team")
 
 const (
 	AnnotationMembersChanged = "organization.cp.ei.telekom.de/members-changed"
@@ -38,38 +38,31 @@ func SetupTeamWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// NOTE: The 'path' attribute must follow a specific pattern and should not be modified directly here.
-// Modifying the path for an invalid path can cause API server errors; failing to locate the webhook.
-// +kubebuilder:webhook:path=/validate-organization-cp-ei-telekom-de-v1-team,mutating=false,failurePolicy=fail,sideEffects=None,groups=organization.cp.ei.telekom.de,resources=teams,verbs=create;update;delete,versions=v1,name=vteam-v1.kb.io,admissionReviewVersions=v1
-
-// TeamCustomValidator struct is responsible for validating the Team resource
-// when it is created, updated, or deleted.
-//
-// NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
-// as this struct is used only for temporary operations and does not need to be deeply copied.
-type TeamCustomValidator struct{}
-
-var _ webhook.CustomValidator = &TeamCustomValidator{}
+func setupLog(ctx context.Context, obj client.Object) (context.Context, logr.Logger) {
+	log := teamLog.WithValues("name", obj.GetName(), "namespace", obj.GetNamespace())
+	return logr.NewContext(ctx, log), log
+}
 
 // +kubebuilder:webhook:path=/mutate-organization-cp-ei-telekom-de-v1-team,mutating=true,failurePolicy=fail,sideEffects=None,groups=organization.cp.ei.telekom.de,resources=teams,verbs=create;update;delete,versions=v1,name=mteam-v1.kb.io,admissionReviewVersions=v1
+
+var _ webhook.CustomDefaulter = &TeamCustomDefaulter{}
 
 type TeamCustomDefaulter struct {
 	client client.Client
 }
 
 func (t TeamCustomDefaulter) Default(ctx context.Context, obj runtime.Object) error {
-	teamlog.V(1).Info("mutating webhook called")
 	teamObj, ok := obj.(*organizationv1.Team)
 	if !ok {
 		return errors.NewInternalError(fmt.Errorf("unable to convert object to team object"))
 	}
+	ctx, log := setupLog(ctx, teamObj)
+	log.Info("defaulting team")
 
 	env, err := validator.ValidateAndGetEnv(teamObj)
 	if err != nil {
 		return err
 	}
-
-	teamlog.V(1).Info("mutating secret")
 
 	zoneObj, err := mutator.GetZoneObjWithTeamInfo(ctx, t.client)
 	if err != nil {
@@ -83,47 +76,40 @@ func (t TeamCustomDefaulter) Default(ctx context.Context, obj runtime.Object) er
 	return nil
 }
 
-var _ webhook.CustomDefaulter = &TeamCustomDefaulter{}
+// +kubebuilder:webhook:path=/validate-organization-cp-ei-telekom-de-v1-team,mutating=false,failurePolicy=fail,sideEffects=None,groups=organization.cp.ei.telekom.de,resources=teams,verbs=create;update;delete,versions=v1,name=vteam-v1.kb.io,admissionReviewVersions=v1
+
+// TeamCustomValidator struct is responsible for validating the Team resource
+// when it is created, updated, or deleted.
+//
+// NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
+// as this struct is used only for temporary operations and does not need to be deeply copied.
+
+var _ webhook.CustomValidator = &TeamCustomValidator{}
+
+type TeamCustomValidator struct{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type Team.
 func (v *TeamCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	teamlog.Info("validate create")
 	return v.validateCreateOrUpdate(ctx, obj)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Team.
 func (v *TeamCustomValidator) ValidateUpdate(ctx context.Context, _, newObj runtime.Object) (admission.Warnings, error) {
-	teamlog.Info("validate update")
 	return v.validateCreateOrUpdate(ctx, newObj)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Team.
 func (v *TeamCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	teamlog.Info("validate delete")
-
-	teamObj, ok := obj.(*organizationv1.Team)
-	if !ok {
-		return nil, errors.NewInternalError(fmt.Errorf("unable to convert object to team object"))
-	}
-
-	env, err := validator.ValidateAndGetEnv(teamObj)
-	if err != nil {
-		return nil, err
-	}
-
-	err = secret.GetSecretManager().DeleteTeam(ctx, env, teamObj.GetName())
-	if err != nil {
-		return nil, errors.NewInternalError(err)
-	}
-
 	return nil, nil
 }
 
-func (v *TeamCustomValidator) validateCreateOrUpdate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *TeamCustomValidator) validateCreateOrUpdate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	teamObj, ok := obj.(*organizationv1.Team)
 	if !ok {
 		return nil, fmt.Errorf("unable to convert object to team object")
 	}
+	ctx, log := setupLog(ctx, teamObj)
+	log.Info("validating team")
 
 	err := validator.ValidateTeamName(teamObj)
 	if err != nil {
