@@ -7,6 +7,8 @@ package problems
 import (
 	"fmt"
 	"net/http"
+	"slices"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -67,6 +69,10 @@ func ValidationErrors(fieldsMap map[string]string, detail ...string) Problem {
 			Detail: detail,
 		})
 	}
+	slices.SortStableFunc(fields, func(a, b Field) int {
+		return strings.Compare(a.Field, b.Field)
+	})
+
 	d := "One or more fields failed validation"
 	if len(detail) > 0 {
 		d = detail[0]

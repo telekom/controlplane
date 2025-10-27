@@ -12,6 +12,7 @@ import (
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/config"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/diffmatcher"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/orchestrator"
+	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/store"
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
@@ -38,7 +39,7 @@ var (
 				return fmt.Errorf("only one of route or consumer ID can be provided")
 			}
 
-			store := store.NewFileStore(snapStorePath)
+			store := store.NewFileStore[*snapshot.Snapshot](snapStorePath)
 
 			instances := orchestrator.NewFromConfig(cfg, store)
 
@@ -66,15 +67,26 @@ var (
 				resId = snapConsumerId
 			}
 
+			isGlobalSnapshotting := resId == ""
+
 			instance.ReportResult = func(result diffmatcher.Result, snapID string) {
 				zap.L().Info("snapshot result", zap.String("snapshotID", snapID), zap.Bool("changed", result.Changed))
-				if result.Changed {
+				if !isGlobalSnapshotting && result.Changed {
 					_, _ = fmt.Fprint(os.Stdout, result.Text)
 				}
 			}
 
-			_, err = instance.Do(rootCtx, resourceType, resId)
-			return err
+			if isGlobalSnapshotting {
+				_, err = instance.Run(rootCtx, orchestrator.RunOptions{
+					ResourceType: resourceType,
+					Limit:        100,
+				})
+				return err
+			} else {
+				_, err = instance.Do(rootCtx, resourceType, resId)
+				return err
+
+			}
 		},
 	}
 )

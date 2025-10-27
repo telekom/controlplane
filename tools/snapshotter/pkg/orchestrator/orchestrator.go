@@ -22,13 +22,13 @@ type Orchestrator struct {
 	Environment        string
 	Zone               string
 	source             source.Source
-	store              store.SnapshotStore
+	store              store.SnapshotStore[*snapshot.Snapshot]
 	obfuscationTargets []obfuscator.ObfuscationTarget
 	decoderTargets     []decoder.DecoderTarget
 	ReportResult       func(result diffmatcher.Result, snapID string)
 }
 
-func NewFromConfig(cfg config.Config, store store.SnapshotStore) map[string]*Orchestrator {
+func NewFromConfig(cfg config.Config, store store.SnapshotStore[*snapshot.Snapshot]) map[string]*Orchestrator {
 	instances := map[string]*Orchestrator{}
 
 	for key, sourceCfg := range cfg.GetSourceConfigs() {
@@ -47,11 +47,13 @@ func NewFromConfig(cfg config.Config, store store.SnapshotStore) map[string]*Orc
 	return instances
 }
 
-func NewOrchestrator(source source.Source, store store.SnapshotStore) *Orchestrator {
+func NewOrchestrator(source source.Source, store store.SnapshotStore[*snapshot.Snapshot]) *Orchestrator {
 	return &Orchestrator{
-		source:       source,
-		store:        store,
-		ReportResult: reportResult,
+		source: source,
+		store:  store,
+		ReportResult: func(result diffmatcher.Result, snapID string) {
+			// noop
+		},
 	}
 }
 
@@ -87,43 +89,54 @@ func (o *Orchestrator) Run(ctx context.Context, opts RunOptions) (snaps []*snaps
 
 	zap.L().Info("taking global snapshot", zap.String("resourceType", opts.ResourceType), zap.Int("limit", opts.Limit))
 
-	snapMap, err := o.source.TakeGlobalSnapshot(ctx, opts.ResourceType, opts.Limit)
+	ch := make(chan *snapshot.Snapshot, 10)
+	err = o.source.TakeGlobalSnapshot(ctx, opts.ResourceType, opts.Limit, ch)
+
+	for {
+		select {
+		case snap, ok := <-ch:
+			if !ok {
+				return snaps, nil
+			}
+			if err := o.handleSnapshot(ctx, snap); err != nil {
+				return snaps, err
+			}
+			snaps = append(snaps, snap)
+		case <-ctx.Done():
+			return snaps, ctx.Err()
+		}
+	}
+}
+
+func (o *Orchestrator) handleSnapshot(ctx context.Context, snap *snapshot.Snapshot) error {
+	snap.Environment = o.Environment
+	snap.Zone = o.Zone
+	zap.L().Info("handling snapshot", zap.String("id", snap.ID()))
+
+	if err := obfuscator.Obfuscate(snap.State, o.obfuscationTargets...); err != nil {
+		return errors.Wrapf(err, "failed to obfuscate %q", snap.ID())
+	}
+
+	if err := decoder.Decode(snap.State, o.decoderTargets); err != nil {
+		return errors.Wrapf(err, "failed to decode %q", snap.ID())
+	}
+
+	oldSnap := &snapshot.Snapshot{}
+	err := o.store.GetVersion(ctx, snap.ID(), 0, oldSnap)
 	if err != nil {
-		return snaps, err
+		if !errors.Is(err, store.ErrNotFound) {
+			return errors.Wrapf(err, "failed to get previous snapshot for %q", snap.ID())
+		}
 	}
 
-	zap.L().Info("taken global snapshot", zap.Int("count", len(snapMap)))
-
-	for _, snap := range snapMap {
-		snap.Environment = o.Environment
-		snap.Zone = o.Zone
-
-		if err := obfuscator.Obfuscate(snap.State, o.obfuscationTargets...); err != nil {
-			return nil, errors.Wrapf(err, "failed to obfuscate %q", snap.ID)
+	diffResult := diffmatcher.Compare(oldSnap, snap)
+	if diffResult.Changed {
+		if err := o.store.Set(ctx, snap); err != nil {
+			return errors.Wrapf(err, "failed to store snapshot %q", snap.ID())
 		}
-
-		if err := decoder.Decode(snap.State, o.decoderTargets); err != nil {
-			return nil, errors.Wrapf(err, "failed to decode %q", snap.ID)
-		}
-
-		oldSnap, err := o.store.GetVersion(ctx, snap.Path(), 0)
-		if err != nil {
-			if !errors.Is(err, store.ErrNotFound) {
-				return nil, errors.Wrapf(err, "failed to get previous snapshot for %q", snap.ID)
-			}
-		}
-
-		diffResult := diffmatcher.Compare(&oldSnap, snap)
-		if diffResult.Changed {
-			if err := o.store.Set(ctx, *snap); err != nil {
-				return nil, errors.Wrapf(err, "failed to store snapshot %q", snap.ID)
-			}
-		}
-		o.ReportResult(diffResult, snap.ID)
-		snaps = append(snaps, snap)
 	}
-
-	return snaps, nil
+	o.ReportResult(diffResult, snap.ID())
+	return nil
 }
 
 func (o *Orchestrator) Do(ctx context.Context, resourceType, resourceId string) (*snapshot.Snapshot, error) {
@@ -131,41 +144,5 @@ func (o *Orchestrator) Do(ctx context.Context, resourceType, resourceId string) 
 	if err != nil {
 		return nil, err
 	}
-	snap.Environment = o.Environment
-	snap.Zone = o.Zone
-
-	if err := obfuscator.Obfuscate(snap.State, o.obfuscationTargets...); err != nil {
-		return nil, errors.Wrapf(err, "failed to obfuscate %q", snap.ID)
-	}
-
-	if err := decoder.Decode(snap.State, o.decoderTargets); err != nil {
-		return nil, errors.Wrapf(err, "failed to decode %q", snap.ID)
-	}
-
-	oldSnap, err := o.store.GetVersion(ctx, snap.Path(), 0)
-	if err != nil {
-		if !errors.Is(err, store.ErrNotFound) {
-			return nil, errors.Wrapf(err, "failed to get previous snapshot for %q", snap.ID)
-		}
-	}
-
-	diffResult := diffmatcher.Compare(&oldSnap, snap)
-	if diffResult.Changed {
-		if err := o.store.Set(ctx, *snap); err != nil {
-			return nil, errors.Wrapf(err, "failed to store snapshot %q", snap.ID)
-		}
-	}
-	o.ReportResult(diffResult, snap.ID)
-
-	return snap, nil
-}
-
-func reportResult(result diffmatcher.Result, snapID string) {
-	if result.Changed {
-		// For now, just print the diff to stdout
-		// In the future, this could be extended to send notifications, create tickets, etc.
-		println("Snapshot changed for ID:", snapID)
-	} else {
-		println("No changes for snapshot ID:", snapID)
-	}
+	return snap, o.handleSnapshot(ctx, snap)
 }

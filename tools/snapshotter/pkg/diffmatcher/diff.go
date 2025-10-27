@@ -5,6 +5,8 @@
 package diffmatcher
 
 import (
+	"slices"
+
 	"github.com/gkampitakis/go-diff/diffmatchpatch"
 )
 
@@ -31,9 +33,8 @@ func Compare(a, b Snapshot) Result {
 	diffs = dmp.DiffCleanupSemantic(diffs)
 
 	result := Result{Text: dmp.DiffPrettyText(diffs), NumberOfChanges: len(diffs)}
-	if len(diffs) <= 1 {
-		return result
-	}
-	result.Changed = true
+	result.Changed = slices.ContainsFunc(diffs, func(diff diffmatchpatch.Diff) bool {
+		return diff.Type != diffmatchpatch.DiffEqual
+	})
 	return result
 }

@@ -7,7 +7,6 @@ package store
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -15,38 +14,45 @@ import (
 	"strings"
 
 	"github.com/goccy/go-yaml"
-	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
+	"go.uber.org/zap"
 )
 
 const (
 	Ext = ".snap.yaml"
 )
 
-var _ SnapshotStore = &FileStore{}
+var _ SnapshotStore[Snapshot] = &FileStore[Snapshot]{}
 
-type FileStore struct {
-	FilePath string
+type FileStore[T Snapshot] struct {
+	FilePath    string
+	MaxVersions int
 }
 
-func NewFileStore(filePath string) *FileStore {
+func NewFileStore[T Snapshot](filePath string) *FileStore[T] {
 	_ = os.MkdirAll(filePath, 0o755)
-	return &FileStore{
-		FilePath: filePath,
+	return &FileStore[T]{
+		FilePath:    filePath,
+		MaxVersions: 1,
 	}
 }
 
-func (f *FileStore) makeFilePath(id string, version int) string {
+func (f *FileStore[T]) makeFilePath(id string, version int) string {
 	return filepath.Join(f.FilePath, id, strconv.Itoa(version)+Ext)
 }
 
 // Delete implements SnapshotStore.
-func (f *FileStore) Delete(ctx context.Context, id string) error {
+func (f *FileStore[T]) Delete(ctx context.Context, id string) error {
 	path := f.makeFilePath(id, 0)
 	dir := filepath.Dir(path)
 	return os.RemoveAll(dir)
 }
 
-func (f *FileStore) getAvailableVersions(ctx context.Context, id string) ([]int, error) {
+func (f *FileStore[T]) DeleteVersion(ctx context.Context, id string, version int) error {
+	path := f.makeFilePath(id, version)
+	return os.Remove(path)
+}
+
+func (f *FileStore[T]) getAvailableVersions(ctx context.Context, id string) ([]int, error) {
 	path := filepath.Join(f.FilePath, id)
 	entries, err := os.ReadDir(path)
 	if err != nil {
@@ -73,104 +79,93 @@ func (f *FileStore) getAvailableVersions(ctx context.Context, id string) ([]int,
 }
 
 // GetAll implements SnapshotStore.
-func (f *FileStore) GetAll(ctx context.Context, id string) ([]snapshot.Snapshot, error) {
+func (f *FileStore[T]) GetAll(ctx context.Context, id string, snaps SnapshotList[T]) error {
 	versions, err := f.getAvailableVersions(ctx, id)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var snaps []snapshot.Snapshot
 	for _, version := range versions {
-		snap, err := f.GetVersion(ctx, id, version)
+		snap := snaps.New()
+		err := f.GetVersion(ctx, id, version, snap)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		snaps = append(snaps, snap)
+		snaps.Add(snap)
 	}
-	return snaps, nil
+	return nil
 }
 
 // GetLatest implements SnapshotStore.
-func (f *FileStore) GetLatest(ctx context.Context, id string) (snapshot.Snapshot, error) {
+func (f *FileStore[T]) GetLatest(ctx context.Context, id string, snap T) error {
 	versions, err := f.getAvailableVersions(ctx, id)
 	if err != nil {
-		return snapshot.Snapshot{}, err
+		return err
 	}
 	if len(versions) == 0 {
-		return snapshot.Snapshot{}, fmt.Errorf("no versions found for id %s", id)
+		return ErrNotFound
 	}
 	latestVersion := versions[0]
-	return f.GetVersion(ctx, id, latestVersion)
+	return f.GetVersion(ctx, id, latestVersion, snap)
 }
 
 // GetVersion implements SnapshotStore.
 // version == 0 --> latest version
 // version == -1 --> version before latest
-func (f *FileStore) GetVersion(ctx context.Context, id string, version int) (snapshot.Snapshot, error) {
+func (f *FileStore[T]) GetVersion(ctx context.Context, id string, version int, snap T) error {
 	if version == -1 {
 		versions, err := f.getAvailableVersions(ctx, id)
 		if err != nil {
-			return snapshot.Snapshot{}, err
+			return err
 		}
 		if len(versions) < 2 {
-			return snapshot.Snapshot{}, ErrNotFound
+			return ErrNotFound
 		}
 		version = versions[1]
 	}
 
 	if version == 0 {
-		return f.GetLatest(ctx, id)
+		return f.GetLatest(ctx, id, snap)
 	}
 
 	path := f.makeFilePath(id, version)
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return snapshot.Snapshot{}, err
+		return err
 	}
 
-	snap, err := snapshot.Unmarshal(data)
+	err = yaml.Unmarshal(data, snap)
 	if err != nil {
-		return snapshot.Snapshot{}, err
+		return err
 	}
 
-	return *snap, nil
-}
-
-// List implements SnapshotStore.
-func (f *FileStore) List(ctx context.Context) ([]snapshot.Snapshot, error) {
-	entries, err := os.ReadDir(f.FilePath)
-	if err != nil {
-		return nil, err
-	}
-
-	var snaps []snapshot.Snapshot
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		id := entry.Name()
-		snapList, err := f.GetAll(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-		snaps = append(snaps, snapList...)
-	}
-	return snaps, nil
+	return nil
 }
 
 // Set implements SnapshotStore.
-func (f *FileStore) Set(ctx context.Context, snap snapshot.Snapshot) error {
-	versions, err := f.getAvailableVersions(ctx, snap.Path())
+func (f *FileStore[T]) Set(ctx context.Context, snap T) error {
+	versions, err := f.getAvailableVersions(ctx, snap.ID())
 	if err != nil {
 		if !errors.Is(err, ErrNotFound) {
 			return err
 		}
-		err = os.MkdirAll(filepath.Dir(f.makeFilePath(snap.Path(), 0)), 0o755)
+		err = os.MkdirAll(filepath.Dir(f.makeFilePath(snap.ID(), 0)), 0o755)
 		if err != nil {
 			return err
 		}
 	}
 
+	if f.MaxVersions > 0 && len(versions) >= f.MaxVersions {
+		// Delete oldest versions
+		toDelete := versions[f.MaxVersions-1:]
+		for _, v := range toDelete {
+			if err := f.DeleteVersion(ctx, snap.ID(), v); err != nil {
+				return err
+			}
+		}
+		zap.L().Info("cleanup versions", zap.Int("before", len(versions)), zap.Int("after", f.MaxVersions-1), zap.String("id", snap.ID()))
+		versions = versions[:f.MaxVersions-1]
+	}
 	var newVersion int
 	if len(versions) == 0 {
 		newVersion = 1
@@ -178,16 +173,17 @@ func (f *FileStore) Set(ctx context.Context, snap snapshot.Snapshot) error {
 		newVersion = versions[0] + 1
 	}
 
-	path := f.makeFilePath(snap.Path(), newVersion)
+	path := f.makeFilePath(snap.ID(), newVersion)
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 
-	data, err := yaml.Marshal(snap)
+	data, err := yaml.MarshalWithOptions(snap, yaml.UseLiteralStyleIfMultiline(true))
 	if err != nil {
 		return err
 	}
+	zap.L().Info("storing snapshot", zap.String("id", snap.ID()), zap.Int("version", newVersion), zap.Int("size", len(data)))
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		return err
 	}
@@ -195,14 +191,14 @@ func (f *FileStore) Set(ctx context.Context, snap snapshot.Snapshot) error {
 	return nil
 }
 
-func (f *FileStore) Clean() error {
+func (f *FileStore[T]) Clean() error {
 	if err := os.RemoveAll(f.FilePath); err != nil {
 		return err
 	}
 	return os.MkdirAll(f.FilePath, 0o755)
 }
 
-func (f *FileStore) isSnapshotFile(file os.DirEntry) bool {
+func (f *FileStore[T]) isSnapshotFile(file os.DirEntry) bool {
 	if file.IsDir() {
 		return false
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/api"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/config"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/orchestrator"
+	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/store"
 	"go.uber.org/zap"
 )
@@ -30,7 +31,7 @@ var (
 				return fmt.Errorf("failed to load config: %w", err)
 			}
 
-			store := store.NewFileStore(serveStorePath)
+			store := store.NewFileStore[*snapshot.Snapshot](serveStorePath)
 			instances := orchestrator.NewFromConfig(cfg, store)
 
 			errHandler := func(c *fiber.Ctx, err error) error {

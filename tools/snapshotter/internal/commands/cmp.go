@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/diffmatcher"
+	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/store"
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
@@ -27,9 +28,10 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rootCtx := signals.SetupSignalHandler()
 
-			s := store.NewFileStore(cmpStorePath)
+			s := store.NewFileStore[*snapshot.Snapshot](cmpStorePath)
 
-			a, err := s.GetLatest(rootCtx, cmpAId)
+			a := &snapshot.Snapshot{}
+			err := s.GetLatest(rootCtx, cmpAId, a)
 			if err != nil {
 				if !errors.Is(err, store.ErrNotFound) {
 					return fmt.Errorf("failed to get snapshot A: %w", err)
@@ -39,7 +41,8 @@ var (
 				}
 			}
 
-			b, err := s.GetLatest(rootCtx, cmpBId)
+			b := &snapshot.Snapshot{}
+			err = s.GetLatest(rootCtx, cmpBId, b)
 			if err != nil {
 				if !errors.Is(err, store.ErrNotFound) {
 					return fmt.Errorf("failed to get snapshot B: %w", err)
@@ -49,7 +52,7 @@ var (
 				}
 			}
 
-			diff := diffmatcher.Compare(&a, &b)
+			diff := diffmatcher.Compare(a, b)
 			if diff.Changed {
 				_, _ = fmt.Fprint(os.Stdout, diff.Text)
 			} else {

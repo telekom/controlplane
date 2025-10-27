@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
@@ -17,21 +18,24 @@ import (
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/util"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 )
 
 var _ Source = &KongSource{}
 
 type KongSource struct {
-	environment string
-	zone        string
-	mux         sync.Mutex
-	kongClient  kong.ClientWithResponsesInterface
-	tags        []string
+	environment     string
+	zone            string
+	mux             sync.Mutex
+	kongClient      kong.ClientWithResponsesInterface
+	tags            []string
+	listRatelimiter *rate.Limiter
 }
 
 func NewKongSource(kongClient kong.ClientWithResponsesInterface) (source *KongSource) {
 	return &KongSource{
-		kongClient: kongClient,
+		kongClient:      kongClient,
+		listRatelimiter: rate.NewLimiter(rate.Every(5*time.Second), 20),
 	}
 }
 
@@ -87,7 +91,7 @@ func (k *KongSource) TakeRouteSnapShot(ctx context.Context, routeId string) (sna
 		snap.State.Targets = *targets.JSON200.Data
 	}
 
-	snap.ID = routeId
+	snap.Id = routeId
 
 	return snap, nil
 }
@@ -118,7 +122,7 @@ func (k *KongSource) TakeConsumerSnapShot(ctx context.Context, consumerId string
 		return snap, errors.Wrap(err, "failed to unmarshal plugins response for consumer")
 	}
 	snap.State.Plugins = append(snap.State.Plugins, pluginsResponse.Data...)
-	snap.ID = consumerId
+	snap.Id = consumerId
 	return snap, nil
 }
 
@@ -133,69 +137,99 @@ func (k *KongSource) TakeSnapshot(ctx context.Context, resourceType, routeId str
 	}
 }
 
-func (k *KongSource) TakeGlobalSnapshot(ctx context.Context, resourceType string, limit int) (snap map[string]*snapshot.Snapshot, err error) {
-	var ids []string
+func (k *KongSource) TakeGlobalSnapshot(ctx context.Context, resourceType string, limit int, ch chan<- *snapshot.Snapshot) (err error) {
+	idsCh := make(chan string, limit)
+
 	if strings.EqualFold(resourceType, "route") {
-		ids, err = k.GetRoutes(ctx, limit)
+		err = k.listRoutes(ctx, limit, nil, idsCh)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get routes")
+			return errors.Wrap(err, "failed to get routes")
 		}
 	} else if strings.EqualFold(resourceType, "consumer") {
-		ids, err = k.GetConsumers(ctx, limit)
+		err = k.listConsumers(ctx, limit, nil, idsCh)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get consumers")
+			return errors.Wrap(err, "failed to get consumers")
 		}
 	} else {
-		return nil, errors.Errorf("unsupported resource type: %s", resourceType)
+		return errors.Errorf("unsupported resource type: %s", resourceType)
 	}
 
-	zap.L().Info("taking snapshots for resources", zap.String("resourceType", resourceType), zap.Int("count", len(ids)))
-	snap = make(map[string]*snapshot.Snapshot)
-	for _, routeId := range ids {
-		routeSnap, err := k.TakeRouteSnapShot(ctx, routeId)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to take snapshot for route %s", routeId)
+	go func() {
+		zap.L().Info("taking snapshots for resources", zap.String("resourceType", resourceType))
+		defer close(ch)
+		for {
+			select {
+			case resourceId, ok := <-idsCh:
+				if !ok {
+					return
+				}
+				routeSnap, err := k.TakeRouteSnapShot(ctx, resourceId)
+				if err != nil {
+					zap.L().Error("failed to take snapshot for resource", zap.String("resourceType", resourceType), zap.String("id", resourceId), zap.Error(err))
+					continue
+				}
+				ch <- routeSnap
+				zap.L().Info("taken snapshot for resource", zap.String("resourceType", resourceType), zap.String("id", resourceId))
+			case <-ctx.Done():
+				zap.L().Info("stopping snapshot taking due to context done")
+				return
+			}
 		}
-		snap[routeId] = routeSnap
-	}
+	}()
 
-	return snap, nil
+	return nil
 }
 
-func (k *KongSource) GetConsumers(ctx context.Context, limit int) ([]string, error) {
-	consumers, err := k.kongClient.ListConsumerWithResponse(ctx, &kong.ListConsumerParams{
-		Offset: nil,
-		Size:   &limit,
-		Tags:   makeTags(k.tags),
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list consumers")
-	}
-	util.MustBe2xx(consumers, "Consumers")
-	consumerNames := make([]string, 0, len(*consumers.JSON200.Data))
-	for _, consumer := range *consumers.JSON200.Data {
-		consumerNames = append(consumerNames, *consumer.Id)
+func (k *KongSource) listRoutes(ctx context.Context, limit int, offset *string, ch chan<- string) error {
+	if err := k.listRatelimiter.Wait(ctx); err != nil {
+		return errors.Wrap(err, "rate limiter wait failed")
 	}
 
-	return consumerNames, nil
-}
-
-func (k *KongSource) GetRoutes(ctx context.Context, limit int) ([]string, error) {
+	pageSize := min(limit, 100)
 	routes, err := k.kongClient.ListRouteWithResponse(ctx, &kong.ListRouteParams{
-		Offset: nil,
-		Size:   &limit,
+		Offset: offset,
+		Size:   &pageSize,
 		Tags:   makeTags(k.tags),
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to list routes")
+		return errors.Wrap(err, "failed to list routes")
 	}
 	util.MustBe2xx(routes, "Routes")
-	routeNames := make([]string, 0, len(*routes.JSON200.Data))
 	for _, route := range *routes.JSON200.Data {
-		routeNames = append(routeNames, *route.Name)
+		ch <- *route.Name
+	}
+	nextLimit := limit - len(*routes.JSON200.Data)
+	if routes.JSON200.Offset == nil || len(*routes.JSON200.Data) < limit || nextLimit <= 0 {
+		close(ch)
+		return nil
+	}
+	zap.L().Debug("continue listing routes", zap.Int("next_limit", nextLimit))
+	return k.listRoutes(ctx, nextLimit, routes.JSON200.Offset, ch)
+}
+
+func (k *KongSource) listConsumers(ctx context.Context, limit int, offset *string, ch chan<- string) error {
+	if err := k.listRatelimiter.Wait(ctx); err != nil {
+		return errors.Wrap(err, "rate limiter wait failed")
 	}
 
-	return routeNames, nil
+	consumers, err := k.kongClient.ListConsumerWithResponse(ctx, &kong.ListConsumerParams{
+		Offset: offset,
+		Size:   &limit,
+		Tags:   makeTags(k.tags),
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to list consumers")
+	}
+	util.MustBe2xx(consumers, "Consumers")
+	for _, consumer := range *consumers.JSON200.Data {
+		ch <- *consumer.Id
+	}
+	if consumers.JSON200.Offset == nil || len(*consumers.JSON200.Data) < limit {
+		close(ch)
+		return nil
+	}
+	zap.L().Debug("continue listing consumers", zap.Int("next_limit", limit-len(*consumers.JSON200.Data)))
+	return k.listConsumers(ctx, limit-len(*consumers.JSON200.Data), consumers.JSON200.Offset, ch)
 }
 
 func makeTags(tags []string) *string {

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/goccy/go-yaml"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
@@ -28,6 +29,9 @@ type State struct {
 }
 
 func (s *State) SortPlugins() {
+	if s.Plugins == nil {
+		return
+	}
 	slices.SortFunc(s.Plugins, func(a, b kong.Plugin) int {
 		return cmp.Compare(*a.Name, *b.Name)
 	})
@@ -36,11 +40,18 @@ func (s *State) SortPlugins() {
 type Snapshot struct {
 	Environment string `yaml:"environment" json:"environment"`
 	Zone        string `yaml:"zone" json:"zone"`
-	ID          string `yaml:"id" json:"id"`
+	Id          string `yaml:"id" json:"id"`
 	State       *State `yaml:"state" json:"state"`
 }
 
+func (s *Snapshot) ID() string {
+	return strings.Join([]string{s.Environment, s.Zone, s.Id}, "-")
+}
+
 func (s *Snapshot) String() string {
+	if s.State == nil {
+		return ""
+	}
 	util.DeepSort(s.State)
 	s.State.SortPlugins()
 	data, err := yaml.Marshal(s.State)
@@ -48,20 +59,6 @@ func (s *Snapshot) String() string {
 		panic(fmt.Sprintf("Failed to marshal route state: %v", err))
 	}
 	return string(data)
-}
-
-func Unmarshal(data []byte) (*Snapshot, error) {
-	var snap Snapshot
-	if err := yaml.Unmarshal(data, &snap); err != nil {
-		return nil, err
-	}
-	util.DeepSort(snap.State)
-	snap.State.SortPlugins()
-	return &snap, nil
-}
-
-func (s *Snapshot) Path() string {
-	return MakePath(s.Environment, s.Zone, s.ID)
 }
 
 func MakePath(env, zone, id string) string {

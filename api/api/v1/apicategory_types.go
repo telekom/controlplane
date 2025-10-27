@@ -158,6 +158,7 @@ func (r *ApiCategoryList) AllowedLabelValues() []string {
 			values = append(values, r.Items[i].Spec.LabelValue)
 		}
 	}
+	slices.Sort(values)
 	return values
 }
 

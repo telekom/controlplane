@@ -12,5 +12,5 @@ import (
 
 type Source interface {
 	TakeSnapshot(ctx context.Context, resourceType, resourceId string) (snap *snapshot.Snapshot, err error)
-	TakeGlobalSnapshot(ctx context.Context, resourceType string, limit int) (snap map[string]*snapshot.Snapshot, err error)
+	TakeGlobalSnapshot(ctx context.Context, resourceType string, limit int, ch chan<- *snapshot.Snapshot) (err error)
 }
