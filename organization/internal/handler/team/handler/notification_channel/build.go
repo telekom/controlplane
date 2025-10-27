@@ -12,12 +12,13 @@ import (
 )
 
 func buildNotificationChannelObj(owner *organisationv1.Team) *notificationv1.NotificationChannel {
-	name := owner.Spec.Group + handler.Separator + owner.Spec.Name
+	name := owner.Spec.Group + handler.Separator + owner.Spec.Name + handler.Separator + "mail" // TODO: At a later stage, teams can configure how to receive notifications. For now, only mail
 
-	memberMails := make([]string, 0)
+	recipientsMails := make([]string, 0)
 	for _, member := range owner.Spec.Members {
-		memberMails = append(memberMails, member.Email)
+		recipientsMails = append(recipientsMails, member.Email)
 	}
+	recipientsMails = append(recipientsMails, owner.Spec.Email)
 
 	return &notificationv1.NotificationChannel{
 		ObjectMeta: metav1.ObjectMeta{
@@ -27,7 +28,7 @@ func buildNotificationChannelObj(owner *organisationv1.Team) *notificationv1.Not
 
 		Spec: notificationv1.NotificationChannelSpec{
 			Email: &notificationv1.EmailConfig{
-				Recipients: []string{owner.Spec.Email},
+				Recipients: recipientsMails,
 			},
 			// TODO: At a later stage, teams can configure how to receive notifications. For now, only mail
 			MsTeams: nil,

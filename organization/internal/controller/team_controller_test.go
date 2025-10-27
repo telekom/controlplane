@@ -269,7 +269,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 
 					By("Checking the notification channel ref")
 					g.Expect(team.Status.NotificationChannelRef).NotTo(BeNil())
-					g.Expect(team.Status.NotificationChannelRef.String()).To(Equal(expectedTeamNamespaceName + "/" + groupName + "--" + teamName))
+					g.Expect(team.Status.NotificationChannelRef.String()).To(Equal(expectedTeamNamespaceName + "/" + groupName + "--" + teamName + "--mail"))
 
 					By("Checking the notification channel object")
 					var notificationChannel = &notificationv1.NotificationChannel{}
