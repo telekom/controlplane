@@ -104,7 +104,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionTrue))
 				g.Expect(readyCondition.Message).To(Equal("Approval has been granted"))
 
-				By("ApprovaRequest simmple:granted")
+				By("ApprovaRequest simple:granted")
 				ar.Spec.Strategy = approvalv1.ApprovalStrategySimple
 
 				err = k8sClient.Update(ctx, ar)
@@ -114,7 +114,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				Expect(ar.Status.NotificationRef).NotTo(BeNil())
 				var notification = &notificationv1.Notification{}
 				Expect(k8sClient.Get(ctx, ar.Status.NotificationRef.K8s(), notification)).NotTo(HaveOccurred())
-				Expect(notification.Spec.Purpose).To(ContainSubstring("approvalrequest--my-test-resource"))
+				Expect(notification.Spec.Purpose).To(ContainSubstring("approvalrequest--testresource"))
 
 				g.Expect(a.ObjectMeta.OwnerReferences).To(HaveLen(1))
 				g.Expect(a.ObjectMeta.OwnerReferences[0].APIVersion).To(Equal("testgroup.cp.ei.telekom.de/v1"))

@@ -11,6 +11,7 @@ import (
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/api/v1/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -24,11 +25,22 @@ func SendNotification(ctx context.Context, owner client.Object, sendToChannelNam
 		"requester":   requester.DeepCopy(),
 	}
 
+	targetName := target.Name
+	if targetName == "" {
+		targetName = "fallback"
+	}
+
+	targetKind := target.Kind
+	if targetKind == "" {
+		targetKind = "fallback"
+	}
+
 	notificationBuilder := builder.New().
 		WithOwner(owner).
 		WithSender(notificationv1.SenderTypeSystem, "ApprovalService").
 		WithDefaultChannels(ctx, sendToChannelNamespace).
-		WithPurpose(strings.ToLower(owner.GetObjectKind().GroupVersionKind().Kind) + "--" + owner.GetName()).
+		WithPurpose(strings.ToLower(owner.GetObjectKind().GroupVersionKind().Kind + "--" + targetKind)). // e.g. approval--apisubscription, approvalrequest--eventsubscription
+		WithName(labelutil.NormalizeValue(target.Kind + "--" + targetName)).                             //e.g. api-subscription--application--basepath-foo-bar-v1
 		WithProperties(properties)
 
 	notification, err := notificationBuilder.Send(ctx)

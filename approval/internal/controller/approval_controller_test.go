@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -39,6 +40,16 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 		Reason: "I need access to this API!!",
 	}
 
+	resource := ctypes.TypedObjectRef{
+		TypeMeta: metav1.TypeMeta{
+			Kind: "Subscription",
+		},
+		ObjectRef: ctypes.ObjectRef{
+			Name:      resourceName,
+			Namespace: "default",
+		},
+	}
+
 	properties := map[string]any{
 		"basePath": "/eni/distr/v1",
 		"scopes":   "read",
@@ -65,6 +76,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 					Strategy:  approvalv1.ApprovalStrategyAuto,
 					State:     approvalv1.ApprovalStatePending,
 					Requester: requester,
+					Resource:  resource,
 				},
 			}
 			Expect(k8sClient.Create(ctx, resource)).To(Succeed())
@@ -168,6 +180,6 @@ func checkApprovalStatus(typeNamespacedName types.NamespacedName, state approval
 		Expect(fetchedUpdatedApproval.Status.NotificationRef).NotTo(BeNil())
 		var notification = &notificationv1.Notification{}
 		Expect(k8sClient.Get(ctx, fetchedUpdatedApproval.Status.NotificationRef.K8s(), notification)).NotTo(HaveOccurred())
-		Expect(notification.Spec.Purpose).To(ContainSubstring("approval--test-resource"))
+		Expect(notification.Spec.Purpose).To(ContainSubstring("approval--subscription"))
 	}, timeout, interval).Should(Succeed())
 }

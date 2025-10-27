@@ -90,7 +90,7 @@ func memberChangedNotification(ctx context.Context, owner *organizationv1.Team, 
 	var err error
 
 	notification, err = notificationBuilder.WithPurpose("team-members-changed").
-		WithNameSuffix(hash.ComputeHash(owner.Spec.Members, nil)).
+		WithName("team-members-changed--" + hash.ComputeHash(owner.Spec.Members, nil)).
 		Build(ctx)
 	if err != nil {
 		return err
@@ -113,7 +113,7 @@ func rotateTokenNotification(ctx context.Context, owner *organizationv1.Team, no
 	var err error
 
 	notification, err = notificationBuilder.WithPurpose("token-rotated").
-		WithNameSuffix(hash.ComputeHash(owner.Status.TeamToken, nil)).
+		WithName("token-rotated--" + hash.ComputeHash(owner.Status.TeamToken, nil)).
 		Build(ctx)
 	if err != nil {
 		return err
@@ -130,7 +130,9 @@ func rotateTokenNotification(ctx context.Context, owner *organizationv1.Team, no
 
 func onboardingNotification(ctx context.Context, owner *organizationv1.Team, notificationBuilder builder.NotificationBuilder) error {
 	if owner.GetGeneration() == 1 {
-		notification, err := notificationBuilder.WithPurpose("onboarded").Send(ctx)
+		notification, err := notificationBuilder.WithPurpose("onboarded").
+			WithName("onboarded").
+			Send(ctx)
 		if err != nil {
 			return err
 		}

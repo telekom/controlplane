@@ -11,9 +11,17 @@ import (
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 )
 
-func makeName(notification *notificationv1.Notification) string {
+func makeName(name string, notification *notificationv1.Notification) string {
 	specHash := hash.ComputeHash(&notification.Spec, nil)
-	return labelutil.NormalizeValue(notification.Spec.Purpose) + "--" + specHash
+
+	var resourceName string
+	if name != "" {
+		resourceName = labelutil.NormalizeValue(name)
+	} else {
+		resourceName = labelutil.NormalizeValue(notification.Spec.Purpose)
+	}
+
+	return resourceName + "--" + specHash
 }
 
 func ensureLabels(notification *notificationv1.Notification) {
