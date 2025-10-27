@@ -27,9 +27,7 @@ func buildNotificationChannelObj(owner *organisationv1.Team) *notificationv1.Not
 
 		Spec: notificationv1.NotificationChannelSpec{
 			Email: &notificationv1.EmailConfig{
-				Recipients:   []string{owner.Spec.Email},
-				CCRecipients: memberMails,
-				From:         "telekom@example.com",
+				Recipients: []string{owner.Spec.Email},
 			},
 			// TODO: At a later stage, teams can configure how to receive notifications. For now, only mail
 			MsTeams: nil,

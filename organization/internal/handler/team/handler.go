@@ -11,12 +11,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/handler/group"
 	internalHandler "github.com/telekom/controlplane/organization/internal/handler/team/handler"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler/gateway_consumer"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler/identity_client"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler/namespace"
+	"github.com/telekom/controlplane/organization/internal/handler/team/handler/notification_channel"
+	"github.com/telekom/controlplane/organization/internal/secret"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -40,11 +43,13 @@ func getInternalObjectHandlersInOrder(order order) []internalHandler.ObjectHandl
 			&namespace.NamespaceHandler{},
 			&identity_client.IdentityClientHandler{},
 			&gateway_consumer.GatewayConsumerHandler{},
+			&notification_channel.NotificationChannelHandler{},
 		}
 	case deletion:
 		return []internalHandler.ObjectHandler{
 			&identity_client.IdentityClientHandler{},
 			&gateway_consumer.GatewayConsumerHandler{},
+			&notification_channel.NotificationChannelHandler{},
 			&namespace.NamespaceHandler{},
 		}
 	default:
