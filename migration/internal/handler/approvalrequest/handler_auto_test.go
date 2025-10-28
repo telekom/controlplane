@@ -21,13 +21,15 @@ import (
 // TestHandleAutoStrategy tests the Auto strategy handling logic
 func TestHandleAutoStrategy(t *testing.T) {
 	tests := []struct {
-		name                string
-		approvalRequest     *approvalv1.ApprovalRequest
-		approval            *approvalv1.Approval // The Approval in new cluster
-		legacyApproval      *approvalv1.Approval
-		expectUpdate        bool
-		expectedState       approvalv1.ApprovalState
-		expectedAnnotations map[string]string
+		name                       string
+		approvalRequest            *approvalv1.ApprovalRequest
+		approval                   *approvalv1.Approval // The Approval in new cluster
+		legacyApproval             *approvalv1.Approval
+		expectUpdate               bool
+		expectedState              approvalv1.ApprovalState
+		expectedAnnotations        map[string]string // Annotations on Approval
+		expectedRequestAnnotations map[string]string // Annotations on ApprovalRequest
+		expectRequestAnnotated     bool              // True if we expect ApprovalRequest to be annotated
 	}{
 		{
 			name: "should set Approval to Rejected when legacy is Auto+Suspended",
@@ -138,8 +140,12 @@ func TestHandleAutoStrategy(t *testing.T) {
 					State:    approvalv1.ApprovalStateGranted,
 				},
 			},
-			expectUpdate:  false,
-			expectedState: approvalv1.ApprovalStateGranted,
+			expectUpdate:           false,
+			expectedState:          approvalv1.ApprovalStateGranted,
+			expectRequestAnnotated: true,
+			expectedRequestAnnotations: map[string]string{
+				"migration.cp.ei.telekom.de/skip-reason": "Auto strategy - legacy state is Granted (not Suspended)",
+			},
 		},
 		{
 			name: "should skip when legacy is not Auto strategy",
@@ -174,8 +180,12 @@ func TestHandleAutoStrategy(t *testing.T) {
 					State:    approvalv1.ApprovalStateSuspended,
 				},
 			},
-			expectUpdate:  false,
-			expectedState: approvalv1.ApprovalStateGranted,
+			expectUpdate:           false,
+			expectedState:          approvalv1.ApprovalStateGranted,
+			expectRequestAnnotated: true,
+			expectedRequestAnnotations: map[string]string{
+				"migration.cp.ei.telekom.de/skip-reason": "Auto strategy - legacy state is Suspended (not Suspended)",
+			},
 		},
 		{
 			name: "should skip when legacy is Auto but not Suspended",
@@ -210,8 +220,12 @@ func TestHandleAutoStrategy(t *testing.T) {
 					State:    approvalv1.ApprovalStatePending,
 				},
 			},
-			expectUpdate:  false,
-			expectedState: approvalv1.ApprovalStateGranted,
+			expectUpdate:           false,
+			expectedState:          approvalv1.ApprovalStateGranted,
+			expectRequestAnnotated: true,
+			expectedRequestAnnotations: map[string]string{
+				"migration.cp.ei.telekom.de/skip-reason": "Auto strategy - legacy state is Pending (not Suspended)",
+			},
 		},
 	}
 
@@ -264,16 +278,50 @@ func TestHandleAutoStrategy(t *testing.T) {
 					t.Errorf("Expected Approval state %v, got %v", tt.expectedState, updatedApproval.Spec.State)
 				}
 
-				// Verify annotations if expected
+				// Verify annotations on Approval if expected
 				if tt.expectedAnnotations != nil {
 					for key, expectedValue := range tt.expectedAnnotations {
 						actualValue, exists := updatedApproval.Annotations[key]
 						if !exists {
-							t.Errorf("Expected annotation %s not found", key)
+							t.Errorf("Expected Approval annotation %s not found", key)
 						} else if actualValue != expectedValue {
-							t.Errorf("Expected annotation %s=%s, got %s", key, expectedValue, actualValue)
+							t.Errorf("Expected Approval annotation %s=%s, got %s", key, expectedValue, actualValue)
 						}
 					}
+				}
+			}
+
+			// Check ApprovalRequest annotations if expected
+			if tt.expectRequestAnnotated {
+				updatedRequest := &approvalv1.ApprovalRequest{}
+				key := client.ObjectKey{
+					Name:      tt.approvalRequest.Name,
+					Namespace: tt.approvalRequest.Namespace,
+				}
+				if err := fakeClient.Get(ctx, key, updatedRequest); err != nil {
+					t.Fatalf("Failed to get updated ApprovalRequest: %v", err)
+				}
+
+				// Verify annotations on ApprovalRequest
+				if tt.expectedRequestAnnotations != nil {
+					for key, expectedValue := range tt.expectedRequestAnnotations {
+						actualValue, exists := updatedRequest.Annotations[key]
+						if !exists {
+							t.Errorf("Expected ApprovalRequest annotation %s not found", key)
+						} else if actualValue != expectedValue {
+							t.Errorf("Expected ApprovalRequest annotation %s=%s, got %s", key, expectedValue, actualValue)
+						}
+					}
+				}
+
+				// Verify last-checked annotation exists (timestamp)
+				if _, exists := updatedRequest.Annotations["migration.cp.ei.telekom.de/last-checked"]; !exists {
+					t.Errorf("Expected ApprovalRequest annotation 'last-checked' not found")
+				}
+
+				// Verify legacy-approval annotation exists
+				if _, exists := updatedRequest.Annotations["migration.cp.ei.telekom.de/legacy-approval"]; !exists {
+					t.Errorf("Expected ApprovalRequest annotation 'legacy-approval' not found")
 				}
 			}
 		})

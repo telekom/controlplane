@@ -6,7 +6,9 @@ package approvalrequest
 
 import (
 	"context"
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -231,9 +233,33 @@ func (h *MigrationHandler) handleAutoStrategy(
 	}
 
 	// Legacy Approval is not Auto+Suspended, no migration needed
+	// Annotate the ApprovalRequest to indicate we checked it
 	log.Info("Legacy Approval is not Auto+Suspended, skipping migration for Auto strategy ApprovalRequest",
 		"legacyStrategy", legacyStrategy,
 		"legacyState", legacyState)
+
+	// Add annotation to track that we evaluated this ApprovalRequest
+	if approvalRequest.Annotations == nil {
+		approvalRequest.Annotations = make(map[string]string)
+	}
+
+	skipReason := fmt.Sprintf("Auto strategy - legacy state is %s (not Suspended)", legacyState)
+	existingReason := approvalRequest.Annotations["migration.cp.ei.telekom.de/skip-reason"]
+
+	// Only update if annotation changed (avoid unnecessary updates)
+	if existingReason != skipReason {
+		approvalRequest.Annotations["migration.cp.ei.telekom.de/skip-reason"] = skipReason
+		approvalRequest.Annotations["migration.cp.ei.telekom.de/last-checked"] = time.Now().Format(time.RFC3339)
+		approvalRequest.Annotations["migration.cp.ei.telekom.de/legacy-approval"] = legacyApprovalName
+
+		if err := h.Client.Update(ctx, approvalRequest); err != nil {
+			log.Error(err, "Failed to annotate skipped ApprovalRequest")
+			return errors.Wrap(err, "failed to annotate approval request")
+		}
+
+		log.Info("Annotated skipped Auto strategy ApprovalRequest",
+			"skipReason", skipReason)
+	}
 
 	return nil
 }

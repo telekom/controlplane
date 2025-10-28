@@ -188,12 +188,12 @@ The operator has **special logic** for ApprovalRequests with `strategy: Auto`:
 **Why?** In the legacy cluster, Auto strategy approvals that are suspended indicate a policy violation or security issue. Since Auto approvals in the new cluster are automatically granted, we need to find and reject the auto-created Approval.
 
 **Behavior:**
-- ✅ **Legacy: `Strategy=Auto` + `State=Suspended`** → New: Find the Approval and set to `Rejected`
-- ✅ **Legacy: `Strategy=Auto` + `State=Granted`** → New: No migration (already auto-granted)
-- ✅ **Legacy: `Strategy=Auto` + other states** → New: No migration
+- ✅ **Legacy: `Strategy=Auto` + `State=Suspended`** → New: Find the Approval and set to `Rejected` + annotate Approval
+- ✅ **Legacy: `Strategy=Auto` + `State=Granted`** → New: No migration, annotate ApprovalRequest with skip reason
+- ✅ **Legacy: `Strategy=Auto` + other states** → New: No migration, annotate ApprovalRequest with skip reason
 - ✅ **`Simple` or `FourEyes`** → Normal migration (full state sync on ApprovalRequest)
 
-**Example log output for Auto strategy:**
+**Example log output for Auto+Suspended (Rejection):**
 ```
 INFO  Handling Auto strategy ApprovalRequest  
   legacyStrategy=Auto 
@@ -214,7 +214,22 @@ INFO  Successfully set Auto strategy Approval to Rejected
   approvalName=approval-a1b2c3d4e5
 ```
 
-**Example resources:**
+**Example log output for Auto+Granted (Skip with annotation):**
+```
+INFO  Handling Auto strategy ApprovalRequest
+  legacyStrategy=Auto
+  legacyState=Granted
+  approvalRequestState=Granted
+
+INFO  Legacy Approval is not Auto+Suspended, skipping migration for Auto strategy ApprovalRequest
+  legacyStrategy=Auto
+  legacyState=Granted
+
+INFO  Annotated skipped Auto strategy ApprovalRequest
+  skipReason="Auto strategy - legacy state is Granted (not Suspended)"
+```
+
+**Example resources for Auto+Suspended (Approval updated):**
 ```yaml
 # ApprovalRequest (unchanged)
 apiVersion: approval.cp.ei.telekom.de/v1
@@ -242,6 +257,36 @@ metadata:
     migration.cp.ei.telekom.de/legacy-approval: "apisubscription--api-name--rover-name"
 spec:
   state: Rejected  # Changed from Granted
+```
+
+**Example resources for Auto+Granted (ApprovalRequest annotated):**
+```yaml
+# ApprovalRequest (annotated to indicate skip)
+apiVersion: approval.cp.ei.telekom.de/v1
+kind: ApprovalRequest
+metadata:
+  name: test-request
+  namespace: controlplane--eni--hyperion
+  annotations:
+    migration.cp.ei.telekom.de/skip-reason: "Auto strategy - legacy state is Granted (not Suspended)"
+    migration.cp.ei.telekom.de/last-checked: "2025-01-20T16:30:00Z"
+    migration.cp.ei.telekom.de/legacy-approval: "apisubscription--api-name--rover-name"
+spec:
+  strategy: Auto
+  state: Granted  # No change
+status:
+  approval:
+    name: approval-a1b2c3d4e5
+
+---
+# Approval (not updated by migration)
+apiVersion: approval.cp.ei.telekom.de/v1
+kind: Approval
+metadata:
+  name: approval-a1b2c3d4e5
+  namespace: controlplane--eni--hyperion
+spec:
+  state: Granted  # Stays Granted
 ```
 
 ## Development
