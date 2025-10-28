@@ -33,6 +33,7 @@ type ApprovalRequestReconciler struct {
 // +kubebuilder:rbac:groups=approval.cp.ei.telekom.de,resources=approvalrequests,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=approval.cp.ei.telekom.de,resources=approvalrequests/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=approval.cp.ei.telekom.de,resources=approvalrequests/finalizers,verbs=update
+// +kubebuilder:rbac:groups=notification.cp.ei.telekom.de,resources=notifications,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ApprovalRequestReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &approvalv1.ApprovalRequest{})
