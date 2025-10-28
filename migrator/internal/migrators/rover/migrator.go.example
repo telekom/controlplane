@@ -1,0 +1,158 @@
+// Copyright 2025 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package rover
+
+import (
+	"context"
+	"strings"
+	"time"
+
+	"github.com/pkg/errors"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	"github.com/telekom/controlplane/migrator/pkg/framework"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+)
+
+var _ framework.ResourceMigrator = &RoverMigrator{}
+
+// RoverMigrator handles migration of Rover resources
+type RoverMigrator struct {
+	// Add any state/dependencies needed
+}
+
+// NewRoverMigrator creates a new Rover migrator
+func NewRoverMigrator() *RoverMigrator {
+	return &RoverMigrator{}
+}
+
+// GetName returns the unique name of this migrator
+func (m *RoverMigrator) GetName() string {
+	return "rover"
+}
+
+// GetNewResourceType returns an empty instance of the new cluster resource
+func (m *RoverMigrator) GetNewResourceType() client.Object {
+	return &roverv1.Rover{}
+}
+
+// GetLegacyAPIGroup returns the legacy API group
+func (m *RoverMigrator) GetLegacyAPIGroup() string {
+	return "tcp.ei.telekom.de" // Update with actual legacy API group
+}
+
+// ComputeLegacyIdentifier computes the legacy namespace and name
+func (m *RoverMigrator) ComputeLegacyIdentifier(
+	ctx context.Context,
+	obj client.Object,
+) (namespace, name string, skip bool, err error) {
+	log := log.FromContext(ctx)
+
+	rover, ok := obj.(*roverv1.Rover)
+	if !ok {
+		return "", "", true, errors.New("object is not a Rover")
+	}
+
+	// Compute legacy namespace (strip environment prefix)
+	legacyNamespace := m.computeLegacyNamespace(rover.Namespace)
+
+	// For Rover, name typically stays the same
+	legacyName := rover.Name
+
+	log.Info("Computed legacy identifier",
+		"currentNamespace", rover.Namespace,
+		"legacyNamespace", legacyNamespace,
+		"legacyName", legacyName)
+
+	return legacyNamespace, legacyName, false, nil
+}
+
+// FetchFromLegacy fetches the legacy Rover resource from remote cluster
+func (m *RoverMigrator) FetchFromLegacy(
+	ctx context.Context,
+	remoteClient client.Client,
+	namespace, name string,
+) (client.Object, error) {
+	// Fetch legacy Rover
+	legacyRover := &roverv1.Rover{} // Use legacy type if different
+	key := client.ObjectKey{Namespace: namespace, Name: name}
+
+	if err := remoteClient.Get(ctx, key, legacyRover); err != nil {
+		return nil, err
+	}
+
+	return legacyRover, nil
+}
+
+// HasChanged checks if the legacy resource state differs from current
+func (m *RoverMigrator) HasChanged(
+	ctx context.Context,
+	current, legacy client.Object,
+) bool {
+	log := log.FromContext(ctx)
+
+	rover := current.(*roverv1.Rover)
+	legacyRover := legacy.(*roverv1.Rover)
+
+	// Example: Check if spec has changed
+	// Implement your comparison logic
+	changed := !roverSpecEqual(rover.Spec, legacyRover.Spec)
+
+	log.V(1).Info("Checking if Rover has changed",
+		"hasChanged", changed)
+
+	return changed
+}
+
+// ApplyMigration applies the legacy state to the current resource
+func (m *RoverMigrator) ApplyMigration(
+	ctx context.Context,
+	current, legacy client.Object,
+) error {
+	log := log.FromContext(ctx)
+
+	rover := current.(*roverv1.Rover)
+	legacyRover := legacy.(*roverv1.Rover)
+
+	// Copy fields from legacy to current
+	// Example:
+	rover.Spec.Zone = legacyRover.Spec.Zone
+	rover.Spec.ClientSecret = legacyRover.Spec.ClientSecret
+	// Copy other fields as needed
+
+	// Add migration annotation
+	if rover.Annotations == nil {
+		rover.Annotations = make(map[string]string)
+	}
+	rover.Annotations["migration.cp.ei.telekom.de/migrated-from"] = "legacy-cluster"
+	rover.Annotations["migration.cp.ei.telekom.de/migrated-at"] = time.Now().Format(time.RFC3339)
+
+	log.Info("Applied migration", "roverName", rover.Name)
+
+	return nil
+}
+
+// GetRequeueAfter returns the duration to wait before next reconciliation
+func (m *RoverMigrator) GetRequeueAfter() time.Duration {
+	return 30 * time.Second
+}
+
+// Helper: computeLegacyNamespace strips environment prefix
+func (m *RoverMigrator) computeLegacyNamespace(namespace string) string {
+	parts := strings.SplitN(namespace, "--", 2)
+	if len(parts) < 2 {
+		return namespace
+	}
+	return parts[1]
+}
+
+// Helper: compare Rover specs
+func roverSpecEqual(a, b roverv1.RoverSpec) bool {
+	// Implement deep comparison
+	// For simplicity, compare key fields
+	return a.Zone == b.Zone &&
+		a.ClientSecret == b.ClientSecret
+	// Add more field comparisons as needed
+}
