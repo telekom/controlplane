@@ -64,7 +64,7 @@ func DefaultNoCacheInformerOptions() NoCacheInformerOptions {
 		BufferSize:   1000,
 		QueueSize:    200,
 		WorkerCount:  runtime.NumCPU(),
-		ResyncPeriod: 5 * time.Minute,
+		ResyncPeriod: 1 * time.Hour,
 	}
 }
 
