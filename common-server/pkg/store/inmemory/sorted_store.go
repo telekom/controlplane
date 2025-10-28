@@ -43,7 +43,7 @@ func Sortable[T store.Object](ios *InmemoryObjectStore[T], storeOpts StoreOpts) 
 }
 
 func NewSortableOrDie[T store.Object](ctx context.Context, storeOpts StoreOpts) store.ObjectStore[T] {
-	return Sortable(NewOrDie[T](ctx, storeOpts).(*InmemoryObjectStore[T]), storeOpts)
+	return Sortable(NewOrDie[T](ctx, storeOpts), storeOpts)
 }
 
 func (s *SortableStore[T]) List(ctx context.Context, listOpts store.ListOpts) (*store.ListResponse[T], error) {
