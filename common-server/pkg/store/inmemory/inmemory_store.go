@@ -325,7 +325,7 @@ func (s *InmemoryObjectStore[T]) CreateOrReplace(ctx context.Context, in T) erro
 	}
 
 	obj.SetResourceVersion(oldObj.GetResourceVersion())
-	obj, err = s.k8sClient.Namespace(obj.GetNamespace()).Update(ctx, obj, metav1.UpdateOptions{
+	newObj, err := s.k8sClient.Namespace(obj.GetNamespace()).Update(ctx, obj, metav1.UpdateOptions{
 		FieldValidation: "Strict",
 	})
 	if err != nil {
@@ -339,7 +339,7 @@ func (s *InmemoryObjectStore[T]) CreateOrReplace(ctx context.Context, in T) erro
 			return errors.Wrap(mapErrorToProblem(err), "failed to get object")
 		}
 		obj.SetResourceVersion(oldObj.GetResourceVersion())
-		obj, err = s.k8sClient.Namespace(obj.GetNamespace()).Update(ctx, obj, metav1.UpdateOptions{
+		newObj, err = s.k8sClient.Namespace(obj.GetNamespace()).Update(ctx, obj, metav1.UpdateOptions{
 			FieldValidation: "Strict",
 		})
 		if err != nil {
@@ -347,7 +347,7 @@ func (s *InmemoryObjectStore[T]) CreateOrReplace(ctx context.Context, in T) erro
 		}
 	}
 
-	return s.OnUpdate(ctx, obj)
+	return s.OnUpdate(ctx, newObj)
 }
 
 func (s *InmemoryObjectStore[T]) Patch(ctx context.Context, namespace, name string, ops ...store.Patch) (obj T, err error) {
