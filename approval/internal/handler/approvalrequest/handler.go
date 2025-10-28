@@ -31,8 +31,6 @@ type ApprovalRequestHandler struct {
 func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq *approvalv1.ApprovalRequest) error {
 	log := log.FromContext(ctx)
 
-	approvalReq.SetCondition(condition.NewProcessingCondition("Processing", "Processing approval request"))
-
 	if approvalReq.Spec.State != approvalReq.Status.LastState {
 		contextutil.RecorderFromContextOrDie(ctx).Eventf(approvalReq,
 			"Normal", "Notification", "State changed from %s to %s", approvalReq.Status.LastState, approvalReq.Spec.State,
