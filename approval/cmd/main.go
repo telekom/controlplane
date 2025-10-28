@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -40,6 +41,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(approvalv1.AddToScheme(scheme))
+	utilruntime.Must(notificationv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
