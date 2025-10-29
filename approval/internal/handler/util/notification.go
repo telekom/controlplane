@@ -76,6 +76,7 @@ func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
 		requesterPropertiesMap["requester-team"] = requesterName[1]
 	} else {
 		requesterPropertiesMap["requester-group"] = requester.Name
+		requesterPropertiesMap["requester-team"] = requester.Name
 	}
 
 	return requesterPropertiesMap, err

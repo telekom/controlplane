@@ -162,11 +162,11 @@ The approval domain automatically sends notifications for approval lifecycle eve
 
 ### Notification Overview
 
-| Resource            | Event             | Trigger                                                      | Purpose                         | Notification Name              | Properties Included                                                                                                   | Recipient                     |
-|---------------------|-------------------|--------------------------------------------------------------|---------------------------------|--------------------------------|-----------------------------------------------------------------------------------------------------------------------|-------------------------------|
-| **ApprovalRequest** | Request Created   | ApprovalRequest creation (generation == 1)                   | `approvalrequest--{targetKind}` | `{targetKind}--{targetName}`   | `environment`, `state`, `target`, `requester` (team, group), `decider` (team, group), `subscriberApp`, `providerApp`  | **Provider** team namespace   |
-| **ApprovalRequest** | Request Rejected  | State changes to Rejected                                    | `approvalrequest--{targetKind}` | `{targetKind}--{targetName}`   | `environment`, `state`, `target`, `requester` (team, group), `decider` (team, group), `subscriberApp`, `providerApp`  | **Requester** team namespace  |
-| **Approval**        | State Change      | Any state transition (Pending → Granted/Rejected/Suspended)  | `approval--{targetKind}`        | `{targetKind}--{targetName}`   | `environment`, `state`, `target`, `requester` (team, group), `decider` (team, group), `subscriberApp`, `providerApp`  | **Requester** team namespace  |
+| Resource            | Event             | Trigger                                                      | Purpose                         | Notification Name              | Recipient                     |
+|---------------------|-------------------|--------------------------------------------------------------|---------------------------------|--------------------------------|-------------------------------|
+| **ApprovalRequest** | Request Created   | ApprovalRequest creation (generation == 1)                   | `approvalrequest--{targetKind}` | `{targetKind}--{targetName}`   | **Provider** team namespace   |
+| **ApprovalRequest** | Request Rejected  | State changes to Rejected                                    | `approvalrequest--{targetKind}` | `{targetKind}--{targetName}`   | **Requester** team namespace  |
+| **Approval**        | State Change      | Any state transition (Pending → Granted/Rejected/Suspended)  | `approval--{targetKind}`        | `{targetKind}--{targetName}`   | **Requester** team namespace  |
 
 > **Note**: The `{targetKind}` and `{targetName}` are derived from the subscription resource being approved (e.g., `apisubscription`, `eventsubscription`). The purpose combines the approval resource kind with the target kind (e.g., `approval--apisubscription`).
 >
@@ -181,6 +181,27 @@ Notifications are sent to all available `NotificationChannel` resources in the t
 - **Requester notifications**: Sent to the namespace of the approval request (requester's team namespace)
 
 The notification system uses the notification builder to automatically discover and send to all configured channels (email, MS Teams, webhooks) in the target namespace.
+
+### Available Properties in Notification Templates
+
+The following properties are automatically included in all approval notifications and can be used in notification templates:
+
+| Property             | Description                                                                                                           | Example                                     |
+|----------------------|-----------------------------------------------------------------------------------------------------------------------|---------------------------------------------|
+| `environment`        | The environment where the approval occurred                                                                           | `prod`, `dev`                               |
+| `state`              | The current state of the approval                                                                                     | `granted`, `rejected`, ...                  |
+| `target-kind`        | The kind of the target resource                                                                                       | `ApiSubscription`, `EventSubscription`, ... |
+| `target-application` | Application name from the target                                                                                      | `my-app`                                    |
+| `target-group`       | Group name from the target namespace                                                                                  | `foo`                                       |
+| `target-team`        | Team name from the target namespace                                                                                   | `bar`                                       |
+| `requester-group`    | Group name of the requester                                                                                           | `onsite-group`                              |
+| `requester-team`     | Team name of the requester                                                                                            | `enemy-team`                                |
+| _dynamic fields_     | No guarantees that the following values are filled, **but they should be there, based on conventions** if applicable. |                                             |
+| `basepath`           | The path of the target resource. It is extracted from the target resource properties map.                             | `foo/bar/myapi/v1`                          |
+| `scopes`             | (optional)  Oauth scopes to limit the access.                                                                         | (_array_)`[admin:read, admin:write]`        |
+
+> [!Note]
+> If `requester-group` and `requester-team` cannot be extracted, the [requester.Name](./api/v1/common_types.go) is used instead
 
 ## Roadmap
 

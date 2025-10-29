@@ -40,13 +40,24 @@ The organization operator automatically sends notifications for team lifecycle e
 
 ### Notification Overview
 
-| Event                | Trigger                                      | Purpose                | Notification Name              | Properties Included                       | Hash Generation           |
-|----------------------|----------------------------------------------|------------------------|--------------------------------|-------------------------------------------|---------------------------|
-| **Team Onboarding**  | Team creation (generation == 1)              | `onboarded`            | `onboarded`                    | `environment`, `team`, `group`, `members` | N/A                       |
-| **Token Rotation**   | Every reconciliation when team token changes | `token-rotated`        | `token-rotated--{hash}`        | `environment`, `team`, `group`, `members` | Hash of `TeamToken` value |
-| **Member Changes**   | Team member list updated (generation > 1)    | `team-members-changed` | `team-members-changed--{hash}` | `environment`, `team`, `group`, `members` | Hash of `Members` list    |
+| Event                | Trigger                                      | Purpose                | Notification Name              | Hash Generation           |
+|----------------------|----------------------------------------------|------------------------|--------------------------------|---------------------------|
+| **Team Onboarding**  | Team creation (generation == 1)              | `onboarded`            | `onboarded`                    | N/A                       |
+| **Token Rotation**   | Every reconciliation when team token changes | `token-rotated`        | `token-rotated--{hash}`        | Hash of `TeamToken` value |
+| **Member Changes**   | Team member list updated (generation > 1)    | `team-members-changed` | `team-members-changed--{hash}` | Hash of `Members` list    |
 
 > **Note**: The hash is computed using a deterministic hashing function to ensure idempotency. The same input (token or member list) always produces the same hash, preventing duplicate notifications.
+
+### Available Properties in Notification Templates
+
+The following properties are automatically included in all organization notifications and can be used in notification templates:
+
+| Property      | Description                                  | Example                         |
+|---------------|----------------------------------------------|---------------------------------|
+| `environment` | The environment where the team was created   | `prod`, `dev`                   |
+| `team`        | The team name                                | `backend`                       |
+| `group`       | The group name                               | `platform`                      |
+| `members`     | Array of team member email addresses         | `["user1@example.com"]` |
 
 ### Notification Channels
 
