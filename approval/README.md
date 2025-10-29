@@ -16,8 +16,9 @@ SPDX-License-Identifier: Apache-2.0
 <p align="center">
   <a href="#about">About</a> •
   <a href="#features">Features</a> •
+  <a href="#notifications">Notifications</a> •
   <a href="#integration">Integration</a> •
-   <a href="#getting-started">Getting Started</a>
+  <a href="#getting-started">Getting Started</a>
 </p>
 
 
@@ -151,11 +152,35 @@ The `Approval` resource can be in one of the following states:
 Take a look at the following diagrams for illustration, taken from [`internal/fsm` (link)](internal/fsm). 
 
 > [!Note]
-> A list of available transitions is in the `Status` resource itself. Also, the diagram for the `ApprovalRequest` slightly differs due to no need for `Suspend` and `Resume` actions. These are directly done on the `Approval` resource.
-
 ![Approval State Machine for Auto Approval](docs/img/approval_fsm_auto.drawio.svg)
 ![Approval State Machine for Simple Approval](docs/img/approval_fsm_simple.drawio.svg)
 ![Approval State Machine for FourEyes Approval](docs/img/approval_fsm_foureyes.drawio.svg)
+
+## Notifications
+
+The approval domain automatically sends notifications for approval lifecycle events. Notifications are sent to the team namespace associated with the approval request.
+
+### Notification Overview
+
+| Resource            | Event             | Trigger                                                      | Purpose                         | Notification Name              | Properties Included                                                                                                   | Recipient                     |
+|---------------------|-------------------|--------------------------------------------------------------|---------------------------------|--------------------------------|-----------------------------------------------------------------------------------------------------------------------|-------------------------------|
+| **ApprovalRequest** | Request Created   | ApprovalRequest creation (generation == 1)                   | `approvalrequest--{targetKind}` | `{targetKind}--{targetName}`   | `environment`, `state`, `target`, `requester` (team, group), `decider` (team, group), `subscriberApp`, `providerApp`  | **Provider** team namespace   |
+| **ApprovalRequest** | Request Rejected  | State changes to Rejected                                    | `approvalrequest--{targetKind}` | `{targetKind}--{targetName}`   | `environment`, `state`, `target`, `requester` (team, group), `decider` (team, group), `subscriberApp`, `providerApp`  | **Requester** team namespace  |
+| **Approval**        | State Change      | Any state transition (Pending → Granted/Rejected/Suspended)  | `approval--{targetKind}`        | `{targetKind}--{targetName}`   | `environment`, `state`, `target`, `requester` (team, group), `decider` (team, group), `subscriberApp`, `providerApp`  | **Requester** team namespace  |
+
+> **Note**: The `{targetKind}` and `{targetName}` are derived from the subscription resource being approved (e.g., `apisubscription`, `eventsubscription`). The purpose combines the approval resource kind with the target kind (e.g., `approval--apisubscription`).
+>
+> **Provider vs Requester**: 
+> - **Provider** = The team that owns the exposed resource (API/Event) being subscribed to
+> - **Requester** = The team that is requesting access (subscriber)
+
+### Notification Channels
+
+Notifications are sent to all available `NotificationChannel` resources in the target namespace:
+- **Owner notifications**: Sent to the namespace of the approval (owner's team namespace)
+- **Requester notifications**: Sent to the namespace of the approval request (requester's team namespace)
+
+The notification system uses the notification builder to automatically discover and send to all configured channels (email, MS Teams, webhooks) in the target namespace.
 
 ## Roadmap
 
