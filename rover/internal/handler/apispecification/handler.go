@@ -25,8 +25,6 @@ type ApiSpecificationHandler struct{}
 
 func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *roverv1.ApiSpecification) error {
 
-	apiSpec.SetCondition(condition.NewProcessingCondition("Provisioning", "Provisioning API"))
-
 	c := client.ClientFromContextOrDie(ctx)
 	name := roverv1.MakeName(apiSpec)
 
