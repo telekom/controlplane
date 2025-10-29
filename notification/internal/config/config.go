@@ -32,6 +32,8 @@ type SMTPSender struct {
 	BatchLoopDelay time.Duration `mapstructure:"batchLoopDelay"`
 	DefaultFrom    string        `mapstructure:"defaultFrom"`
 	DefaultName    string        `mapstructure:"defaultName"`
+	// if true, emails will not be sent, just a log message will appear - should be used only for testing, to avoid spamming
+	DryRun bool `mapstructure:"dryRun"`
 }
 
 func LoadEmailAdapterConfig() (*EmailAdapterConfig, error) {
@@ -61,4 +63,5 @@ func setDefaults() {
 	viper.SetDefault("smtpSender.maxBackoff", "1m")
 	viper.SetDefault("smtpSender.defaultFrom", "email@telekom.de")
 	viper.SetDefault("smtpSender.defaultName", "Team Tardis")
+	viper.SetDefault("smtpSender.dryRun", false)
 }

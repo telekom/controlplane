@@ -6,6 +6,7 @@ package mail
 
 import (
 	"context"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/notification/internal/config"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter"
@@ -18,6 +19,7 @@ type EmailAdapter struct {
 }
 
 func (e EmailAdapter) Send(ctx context.Context, channelConfig adapter.MailChannelConfiguration, title string, body string) error {
+	log := logr.FromContextOrDiscard(ctx)
 	smtpSender := NewSMTPSender(e.AdapterConfig)
 
 	var from string
@@ -27,9 +29,14 @@ func (e EmailAdapter) Send(ctx context.Context, channelConfig adapter.MailChanne
 		from = e.AdapterConfig.SMTPSender.DefaultFrom
 	}
 
-	err := smtpSender.Send(ctx, from, e.AdapterConfig.SMTPSender.DefaultName, channelConfig.GetRecipients(), title, body)
-	if err != nil {
-		return errors.Wrap(err, "Failed to send email via SMTPSender")
+	// handle dry run
+	if e.AdapterConfig.SMTPSender.DryRun {
+		log.V(1).Info("Dry run - would send email", "from", from, "name", e.AdapterConfig.SMTPSender.DefaultName, "recipients", channelConfig.GetRecipients(), "title", title, "body", body)
+	} else {
+		err := smtpSender.Send(ctx, from, e.AdapterConfig.SMTPSender.DefaultName, channelConfig.GetRecipients(), title, body)
+		if err != nil {
+			return errors.Wrap(err, "Failed to send email via SMTPSender")
+		}
 	}
 
 	return nil
