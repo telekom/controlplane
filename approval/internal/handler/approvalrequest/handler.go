@@ -36,7 +36,7 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 			"Normal", "Notification", "State changed from %s to %s", approvalReq.Status.LastState, approvalReq.Spec.State,
 		)
 
-		if approvalReq.Spec.State == approvalv1.ApprovalStateGranted {
+		if approvalReq.Spec.State == approvalv1.ApprovalStateRejected {
 			var err error
 			approvalReq.Status.NotificationRef, err = util.SendNotification(ctx, approvalReq, approvalReq.GetNamespace(), string(approvalReq.Spec.State), &approvalReq.Spec.Resource, &approvalReq.Spec.Requester)
 			if err != nil {
