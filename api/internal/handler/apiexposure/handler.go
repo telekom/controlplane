@@ -127,8 +127,6 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 
 	// TODO: further validations (currently contained in the old code)
 	// - validate if team category allows exposure of api category
-
-	apiExp.SetCondition(condition.NewProcessingCondition("Provisioning", "Provisioning route"))
 	// create real route
 	route, err := util.CreateRealRoute(ctx, apiExp.Spec.Zone, apiExp, contextutil.EnvFromContextOrDie(ctx))
 	if err != nil {

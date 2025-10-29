@@ -147,12 +147,10 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 		return errors.Wrapf(err, "failed to cleanup api subscriptions")
 	}
 
-	obj.SetCondition(condition.NewProcessingCondition("Processing", "Processing RemoteApiSubscription"))
-	obj.SetCondition(condition.NewNotReadyCondition("Processing", "Processing RemoteApiSubscription"))
-
-	// Check if the ApiSubscription is ready
-
-	if res == controllerutil.OperationResultNone {
+	if res != controllerutil.OperationResultNone {
+		obj.SetCondition(condition.NewProcessingCondition("Processing", "Processing RemoteApiSubscription"))
+		obj.SetCondition(condition.NewNotReadyCondition("Processing", "Processing RemoteApiSubscription"))
+	} else {
 		// No update occurred
 
 		if err = fillApprovalRequestInfo(ctx, obj, apiSubscription); err != nil {
