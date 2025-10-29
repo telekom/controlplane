@@ -53,14 +53,15 @@ func SendNotification(ctx context.Context, owner client.Object, sendToChannelNam
 }
 
 func extractTarget(target *types.TypedObjectRef) (map[string]any, string, string) {
-	var targetKind, targetApplication, targetGroup, targetTeam, targetName string
+	var targetKind, targetApplication, targetBasepath, targetGroup, targetTeam, targetName string
 	properties := map[string]any{}
 	if target != nil {
-		targetKind, targetApplication, _, targetGroup, targetTeam = builder.ExtractApplicationInformation(*target)
-		properties["target-kind"] = targetKind
-		properties["target-application"] = targetApplication
-		properties["target-group"] = targetGroup
-		properties["target-team"] = targetTeam
+		targetKind, targetApplication, targetBasepath, targetGroup, targetTeam = builder.ExtractApplicationInformation(*target)
+		properties["target_kind"] = targetKind
+		properties["target_application"] = targetApplication
+		properties["target_group"] = targetGroup
+		properties["target_team"] = targetTeam
+		properties["target_basepath"] = targetBasepath
 		targetName = target.Name
 	}
 	return properties, targetKind, targetName
@@ -77,13 +78,17 @@ func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
 		}
 	}
 
+	if requesterPropertiesMap["scopes"] == nil {
+		requesterPropertiesMap["scopes"] = "undefined"
+	}
+
 	requesterName := strings.Split(requester.Name, "--")
 	if len(requesterName) > 1 {
-		requesterPropertiesMap["requester-group"] = requesterName[0]
-		requesterPropertiesMap["requester-team"] = requesterName[1]
+		requesterPropertiesMap["requester_group"] = requesterName[0]
+		requesterPropertiesMap["requester_team"] = requesterName[1]
 	} else {
-		requesterPropertiesMap["requester-group"] = requester.Name
-		requesterPropertiesMap["requester-team"] = requester.Name
+		requesterPropertiesMap["requester_group"] = requester.Name
+		requesterPropertiesMap["requester_team"] = requester.Name
 	}
 
 	return requesterPropertiesMap, nil
