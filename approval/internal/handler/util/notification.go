@@ -67,8 +67,15 @@ func extractTarget(target *types.TypedObjectRef) (map[string]any, string, string
 }
 
 func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
+
 	requesterPropertiesMap := map[string]any{}
-	err := json.Unmarshal(requester.Properties.Raw, &requesterPropertiesMap)
+
+	if requester.Properties.Size() != 0 {
+		err := json.Unmarshal(requester.Properties.Raw, &requesterPropertiesMap)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	requesterName := strings.Split(requester.Name, "--")
 	if len(requesterName) > 1 {
@@ -79,5 +86,5 @@ func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
 		requesterPropertiesMap["requester-team"] = requester.Name
 	}
 
-	return requesterPropertiesMap, err
+	return requesterPropertiesMap, nil
 }
