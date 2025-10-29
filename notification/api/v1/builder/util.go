@@ -5,7 +5,10 @@
 package builder
 
 import (
+	"strings"
+
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/hash"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
@@ -30,4 +33,26 @@ func ensureLabels(notification *notificationv1.Notification) {
 	}
 	notification.Labels[cconfig.BuildLabelKey("purpose")] = notification.Spec.Purpose
 	notification.Labels[cconfig.BuildLabelKey("sender-type")] = string(notification.Spec.Sender.Type)
+}
+
+// ExtractApplicationInformation extract values from the target structure based on conventions
+func ExtractApplicationInformation(target types.TypedObjectRef) (kind, application, basepath, group, team string) {
+	kind = target.Kind                            // k8s kind
+	splitName := strings.Split(target.Name, "--") //target.Name: application--basepath
+	if len(splitName) >= 2 {
+		application = splitName[0]
+		basepath = splitName[1]
+	} else {
+		application = target.Name
+	}
+
+	splitNamespace := strings.Split(target.Namespace, "--") //target.Namespace: env--group--team
+	if len(splitNamespace) >= 3 {
+		group = splitNamespace[1]
+		team = splitNamespace[2]
+	} else {
+		group = target.Namespace
+		team = target.Namespace
+	}
+	return
 }
