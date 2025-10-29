@@ -47,7 +47,7 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 
 	if approvalReq.GetGeneration() == 1 {
 		var err error
-		namespace := approvalReq.GetNamespace() // TODO: get owner application team namespace von the approvalReq.Spec.Resource field
+		namespace := approvalReq.Spec.Resource.Namespace // namespace of the owner of the to-be-subscribed resource (i.e. target namespace)
 		approvalReq.Status.NotificationRef, err = util.SendNotification(ctx, approvalReq, namespace, string(approvalReq.Spec.State), &approvalReq.Spec.Resource, &approvalReq.Spec.Requester)
 		if err != nil {
 			return err
