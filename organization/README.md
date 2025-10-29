@@ -52,12 +52,19 @@ The organization operator automatically sends notifications for team lifecycle e
 
 The following properties are automatically included in all organization notifications and can be used in notification templates:
 
-| Property      | Description                                  | Example                         |
-|---------------|----------------------------------------------|---------------------------------|
-| `environment` | The environment where the team was created   | `prod`, `dev`                   |
-| `team`        | The team name                                | `backend`                       |
-| `group`       | The group name                               | `platform`                      |
-| `members`     | Array of team member email addresses         | `["user1@example.com"]` |
+| Property      | Description                                                      | Example                                                                                                  |
+|---------------|------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| `environment` | The environment where the team was created                       | `prod`, `dev`                                                                                            |
+| `team`        | The team name                                                    | `backend`                                                                                                |
+| `group`       | The group name                                                   | `platform`                                                                                               |
+| `members`     | Array of team members with name and email                        | `[{"name": "John Doe", "email": "john@example.com"}, {"name": "Jane Doe", "email": "jane@example.com"}]` |
+
+**Note**: The `members` property is an array of objects, each containing `name` and `email` fields. In templates, you can iterate over members and access both fields:
+```
+{{range .members}}
+- {{.name}} ({{.email}})
+{{end}}
+```
 
 ### Notification Channels
 
