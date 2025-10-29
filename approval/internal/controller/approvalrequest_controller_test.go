@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -103,11 +104,17 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionTrue))
 				g.Expect(readyCondition.Message).To(Equal("Approval has been granted"))
 
-				By("ApprovaRequest simmple:granted")
+				By("ApprovaRequest simple:granted")
 				ar.Spec.Strategy = approvalv1.ApprovalStrategySimple
 
 				err = k8sClient.Update(ctx, ar)
 				g.Expect(err).NotTo(HaveOccurred())
+
+				By("Checking notification was created for granted state")
+				Expect(ar.Status.NotificationRef).NotTo(BeNil())
+				var notification = &notificationv1.Notification{}
+				Expect(k8sClient.Get(ctx, ar.Status.NotificationRef.K8s(), notification)).NotTo(HaveOccurred())
+				Expect(notification.Spec.Purpose).To(ContainSubstring("approvalrequest--testresource"))
 
 				g.Expect(a.ObjectMeta.OwnerReferences).To(HaveLen(1))
 				g.Expect(a.ObjectMeta.OwnerReferences[0].APIVersion).To(Equal("testgroup.cp.ei.telekom.de/v1"))

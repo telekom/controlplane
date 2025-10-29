@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
@@ -51,6 +52,7 @@ func init() {
 	utilruntime.Must(identityv1.AddToScheme(scheme))
 	utilruntime.Must(gatewayv1.AddToScheme(scheme))
 	utilruntime.Must(adminv1.AddToScheme(scheme))
+	utilruntime.Must(notificationv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 

@@ -9,6 +9,7 @@ import (
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
+	"github.com/telekom/controlplane/approval/internal/handler/util"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -21,11 +22,15 @@ type ApprovalHandler struct {
 }
 
 func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approvalv1.Approval) error {
-
 	if approval.Spec.State != approval.Status.LastState {
 		contextutil.RecorderFromContextOrDie(ctx).Eventf(approval,
 			"Normal", "Notification", "State changed from %s to %s", approval.Status.LastState, approval.Spec.State,
 		)
+		var err error
+		approval.Status.NotificationRef, err = util.SendNotification(ctx, approval, approval.GetNamespace(), string(approval.Spec.State), &approval.Spec.Resource, &approval.Spec.Requester)
+		if err != nil {
+			return err
+		}
 	}
 
 	fsm := ApprovalStrategyFSM[approval.Spec.Strategy]
