@@ -59,11 +59,15 @@ make build
 
 This will create a binary in the `bin` directory.
 
-### Docker Build
+### Installing
+
+To build and install the binary to your system:
 
 ```bash
-docker build -t e2e-tester:latest .
+make install
 ```
+
+This will build the binary and install it to `/usr/local/bin/e2e-tester`.
 
 ### Quick Start
 
