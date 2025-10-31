@@ -19,6 +19,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+func MakeClientId(owner *organisationv1.Team) string {
+	return owner.Spec.Group + handler.Separator + owner.Spec.Name + handler.Separator + TeamNameSuffix
+}
+
 type IdentityClientHandler struct {
 }
 
@@ -36,7 +40,7 @@ func (i IdentityClientHandler) CreateOrUpdate(ctx context.Context, owner *organi
 	}
 
 	mutate := func() error {
-		identityClient.Spec.ClientId = identityClient.GetName()
+		identityClient.Spec.ClientId = MakeClientId(owner)
 		identityClient.Spec.ClientSecret = owner.Spec.Secret
 		identityClient.Spec.Realm = zoneObj.Status.TeamApiIdentityRealm
 		identityClient.SetLabels(owner.GetLabels())

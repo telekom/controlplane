@@ -36,8 +36,10 @@ func NewCommand() *cobra.Command {
 		BaseCommand: baseCmd,
 	}
 
-	baseCmd.Cmd.Flags().StringVarP(&cmd.Name, "application", "a", "", "Name of the application to reset the secret for")
-	baseCmd.Cmd.MarkFlagRequired("application")
+	cmd.Cmd.Flags().StringVarP(&cmd.Name, "application", "a", "", "Name of the application to reset the secret for")
+	cmd.Cmd.Flags().StringVarP(&cmd.Name, "name", "n", "", "Name of the application to reset the secret for")
+	cmd.Cmd.MarkFlagsMutuallyExclusive("application", "name")
+	cmd.Cmd.MarkFlagsOneRequired("application", "name")
 
 	cmd.Cmd.RunE = cmd.Run
 

@@ -186,3 +186,123 @@
     Status: v1.RoverStatus{},
 }
 ---
+
+[Rover Mapper MapRequest must set the clientSecret if provided - 1]
+&v1.Rover{
+    TypeMeta:   v1.TypeMeta{Kind:"Rover", APIVersion:"rover.cp.ei.telekom.de/v1"},
+    ObjectMeta: v1.ObjectMeta{
+        Name:                       "rover-local-sub",
+        GenerateName:               "",
+        Namespace:                  "poc--poc--eni--hyperion",
+        SelfLink:                   "",
+        UID:                        "",
+        ResourceVersion:            "",
+        Generation:                 0,
+        CreationTimestamp:          time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
+        DeletionTimestamp:          (*v1.Time)(nil),
+        DeletionGracePeriodSeconds: (*int64)(nil),
+        Labels:                     {"cp.ei.telekom.de/environment":"poc"},
+        Annotations:                {},
+        OwnerReferences:            nil,
+        Finalizers:                 nil,
+        ManagedFields:              nil,
+    },
+    Spec: v1.RoverSpec{
+        Zone:           "zone",
+        IpRestrictions: (*v1.IpRestrictions)(nil),
+        ClientSecret:   "",
+        Exposures:      {
+            {
+                Api: &v1.ApiExposure{
+                    BasePath:  "/eni/distr/v1",
+                    Upstreams: {
+                        {URL:"https://httpbin.org/anything", Weight:0},
+                    },
+                    Visibility: "World",
+                    Approval:   v1.Approval{
+                        Strategy:     "Simple",
+                        TrustedTeams: nil,
+                    },
+                    Transformation: (*v1.Transformation)(nil),
+                    Traffic:        &v1.Traffic{},
+                    Security:       (*v1.Security)(nil),
+                },
+                Event: (*v1.EventExposure)(nil),
+            },
+        },
+        Subscriptions: {
+            {
+                Api: &v1.ApiSubscription{
+                    BasePath:       "/eni/distr/v1",
+                    Organization:   "",
+                    Transformation: (*v1.Transformation)(nil),
+                    Traffic:        v1.SubscriberTraffic{},
+                    Security:       (*v1.SubscriberSecurity)(nil),
+                },
+                Event: (*v1.EventSubscription)(nil),
+            },
+        },
+    },
+    Status: v1.RoverStatus{},
+}
+---
+
+[Rover Mapper MapRequest must set the clientSecret if provided - 2]
+&v1.Rover{
+    TypeMeta:   v1.TypeMeta{Kind:"Rover", APIVersion:"rover.cp.ei.telekom.de/v1"},
+    ObjectMeta: v1.ObjectMeta{
+        Name:                       "rover-local-sub",
+        GenerateName:               "",
+        Namespace:                  "poc--poc--eni--hyperion",
+        SelfLink:                   "",
+        UID:                        "",
+        ResourceVersion:            "",
+        Generation:                 0,
+        CreationTimestamp:          time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
+        DeletionTimestamp:          (*v1.Time)(nil),
+        DeletionGracePeriodSeconds: (*int64)(nil),
+        Labels:                     {"cp.ei.telekom.de/environment":"poc"},
+        Annotations:                {},
+        OwnerReferences:            nil,
+        Finalizers:                 nil,
+        ManagedFields:              nil,
+    },
+    Spec: v1.RoverSpec{
+        Zone:           "zone",
+        IpRestrictions: (*v1.IpRestrictions)(nil),
+        ClientSecret:   "supersecret",
+        Exposures:      {
+            {
+                Api: &v1.ApiExposure{
+                    BasePath:  "/eni/distr/v1",
+                    Upstreams: {
+                        {URL:"https://httpbin.org/anything", Weight:0},
+                    },
+                    Visibility: "World",
+                    Approval:   v1.Approval{
+                        Strategy:     "Simple",
+                        TrustedTeams: nil,
+                    },
+                    Transformation: (*v1.Transformation)(nil),
+                    Traffic:        &v1.Traffic{},
+                    Security:       (*v1.Security)(nil),
+                },
+                Event: (*v1.EventExposure)(nil),
+            },
+        },
+        Subscriptions: {
+            {
+                Api: &v1.ApiSubscription{
+                    BasePath:       "/eni/distr/v1",
+                    Organization:   "",
+                    Transformation: (*v1.Transformation)(nil),
+                    Traffic:        v1.SubscriberTraffic{},
+                    Security:       (*v1.SubscriberSecurity)(nil),
+                },
+                Event: (*v1.EventSubscription)(nil),
+            },
+        },
+    },
+    Status: v1.RoverStatus{},
+}
+---

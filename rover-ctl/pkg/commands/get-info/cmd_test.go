@@ -163,9 +163,34 @@ spec:
 
 		Context("when getting info by file", func() {
 			It("should get info for the resource in the file", func() {
-				// Skip this test as the current implementation always uses "Rover" kind and "tcp.ei.telekom.de/v1" API version
-				// rather than getting it from the file, making it hard to mock correctly
-				Skip("This test requires modifying the get-info command to use the kind and apiVersion from the file")
+				// Prepare mock response
+				infoResponse := map[string]any{
+					"name":   "test-rover",
+					"status": "Running",
+					"details": map[string]any{
+						"version":  "1.0.0",
+						"lastSeen": "2023-01-01T12:00:00Z",
+					},
+				}
+
+				mockHandler.EXPECT().Info(mock.AnythingOfType("*context.valueCtx"), "test-rover").Return(infoResponse, nil).Once()
+
+				// Set args for command
+				cmd.SetArgs([]string{"--file", yamlFile})
+
+				// Run the command
+				err := cmd.Execute()
+
+				// Verify no error
+				Expect(err).NotTo(HaveOccurred())
+
+				// Verify output contains expected information
+				Expect(stdout.String()).To(ContainSubstring("test-rover"))
+				Expect(stdout.String()).To(ContainSubstring("Running"))
+				Expect(stdout.String()).To(ContainSubstring("version"))
+
+				// Verify mock expectations
+				mockHandler.AssertExpectations(GinkgoT())
 			})
 		})
 

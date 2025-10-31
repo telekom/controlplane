@@ -182,7 +182,7 @@ spec:
                         x-kubernetes-validations:
                         - message: Only one of basic or client credentials can be
                             provided (XOR relationship)
-                          rule: self == null || has(self.basic) != has(self.client)
+                          rule: self == null || !has(self.basic) || !has(self.client)
                       scopes:
                         description: Scopes defines additional OAuth2 scopes that
                           are added to the LMS token
@@ -316,7 +316,7 @@ spec:
                                 x-kubernetes-validations:
                                 - message: Only one of basic or client credentials
                                     can be provided (XOR relationship)
-                                  rule: self == null || has(self.basic) != has(self.client)
+                                  rule: self == null || !has(self.basic) || !has(self.client)
                               scopes:
                                 description: Scopes defines additional OAuth2 scopes
                                   that are added to the LMS token

@@ -149,9 +149,11 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 	}
 
 	// Creating the Route
+	routeName := MakeRouteName(apiBasePath, realmName)
+
 	proxyRoute := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      MakeRouteName(apiBasePath, realmName),
+			Name:      labelutil.NormalizeNameValue(routeName),
 			Namespace: downstreamRealm.Namespace,
 		},
 	}
@@ -163,7 +165,7 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 
 	mutate := func() error {
 		proxyRoute.Labels = map[string]string{
-			apiapi.BasePathLabelKey:       labelutil.NormalizeValue(apiBasePath),
+			apiapi.BasePathLabelKey:       labelutil.NormalizeLabelValue(apiBasePath),
 			config.BuildLabelKey("zone"):  labelutil.NormalizeValue(downstreamZone.GetName()),
 			config.BuildLabelKey("realm"): labelutil.NormalizeValue(realmName),
 			config.BuildLabelKey("type"):  "proxy",
@@ -340,7 +342,7 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 
 	mutator := func() error {
 		route.Labels = map[string]string{
-			apiapi.BasePathLabelKey:       labelutil.NormalizeValue(apiExposure.Spec.ApiBasePath),
+			apiapi.BasePathLabelKey:       labelutil.NormalizeLabelValue(apiExposure.Spec.ApiBasePath),
 			config.BuildLabelKey("zone"):  labelutil.NormalizeValue(zone.Name),
 			config.BuildLabelKey("realm"): labelutil.NormalizeValue(downstreamRealm.Name),
 			config.BuildLabelKey("type"):  "real",

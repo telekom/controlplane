@@ -25,7 +25,7 @@ spec:
   state: Granted
   strategy: Simple
   target:
-    apiVersion: stargate.cp.ei.telekom.de/v1
+    apiVersion: api.cp.ei.telekom.de/v1
     kind: ApiSubscription
     name: my-app--foo-bar-v1
     namespace: env--group--team

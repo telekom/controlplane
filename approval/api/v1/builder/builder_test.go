@@ -30,13 +30,25 @@ func CreateApproval(name string, arr *ctypes.ObjectRef) *approvalv1.Approval {
 			},
 		},
 		Spec: approvalv1.ApprovalSpec{
-			Strategy:        approvalv1.ApprovalStrategyAuto,
-			State:           approvalv1.ApprovalStateGranted,
+			Strategy:        approvalv1.ApprovalStrategySimple,
+			State:           approvalv1.ApprovalStatePending,
 			ApprovedRequest: arr,
 		},
 	}
 
 	err := k8sClient.Create(ctx, appr)
+	Expect(err).ToNot(HaveOccurred())
+
+	return appr
+}
+
+func ProgressApproval(appr *approvalv1.Approval, newState approvalv1.ApprovalState) *approvalv1.Approval {
+	appr.Spec.State = newState
+	err := k8sClient.Update(ctx, appr)
+	Expect(err).ToNot(HaveOccurred())
+
+	appr.Status.LastState = newState
+	err = k8sClient.Status().Update(ctx, appr)
 	Expect(err).ToNot(HaveOccurred())
 
 	return appr
@@ -58,10 +70,11 @@ var _ = Describe("Approval Builder", Ordered, func() {
 		"scopes":   "read",
 	}
 
-	AfterAll(func() {
+	AfterEach(func() {
+		By("Deleting the ApprovalRequest")
+		_ = k8sClient.DeleteAllOf(ctx, &approvalv1.ApprovalRequest{}, client.InNamespace(testNamespace))
 		By("Deleting the Approval")
-		err := k8sClient.Delete(ctx, approval)
-		Expect(err).ToNot(HaveOccurred())
+		_ = k8sClient.DeleteAllOf(ctx, &approvalv1.Approval{}, client.InNamespace(testNamespace))
 	})
 
 	Context("Approval does not exist", func() {
@@ -89,7 +102,7 @@ var _ = Describe("Approval Builder", Ordered, func() {
 
 			res, err := builder.Build(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(res).To(Equal(ApprovalResultPending))
+			Expect(res).To(Equal(ApprovalResultPending)) // AR was just created, so pending
 
 			Eventually(func(g Gomega) {
 				ar := &approvalv1.ApprovalRequest{}
@@ -175,20 +188,21 @@ var _ = Describe("Approval Builder", Ordered, func() {
 			builder := NewApprovalBuilder(jclient, owner)
 
 			// Set up a requester that matches a trusted team
-			requesterFromTrustedTeam := &approvalv1.Requester{
+			requester := &approvalv1.Requester{
 				Name:   "TrustedTeam",
 				Email:  "trusted.team@telekom.de",
 				Reason: "I need access to this API!!",
 			}
-			err = requesterFromTrustedTeam.SetProperties(properties)
+			err = requester.SetProperties(properties)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Configure the builder with trusted teams
 			trustedTeams := []string{"TrustedTeam", "AnotherTeam"}
 
-			builder.WithHashValue(requesterFromTrustedTeam.Properties)
-			builder.WithRequester(requesterFromTrustedTeam)
+			builder.WithHashValue(requester.Properties)
+			builder.WithRequester(requester)
 			builder.WithTrustedRequesters(trustedTeams)
+
 			// Set to Simple, but expect it to be overridden to Auto
 			builder.WithStrategy(approvalv1.ApprovalStrategySimple)
 
@@ -196,41 +210,47 @@ var _ = Describe("Approval Builder", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).To(Equal(ApprovalResultPending))
 
-			Eventually(func(g Gomega) {
-				ar := &approvalv1.ApprovalRequest{}
-				err := k8sClient.Get(ctx, client.ObjectKey{
-					Name:      builder.GetApprovalRequest().Name,
-					Namespace: testNamespace,
-				}, ar)
-				g.Expect(err).ToNot(HaveOccurred())
+			ar := &approvalv1.ApprovalRequest{}
+			err = k8sClient.Get(ctx, client.ObjectKey{
+				Name:      builder.GetApprovalRequest().Name,
+				Namespace: testNamespace,
+			}, ar)
+			Expect(err).ToNot(HaveOccurred())
 
-				// Verify that the strategy was overridden to Auto
-				g.Expect(ar.Spec.Strategy).To(BeEquivalentTo("Auto"))
-				// And that the state was set to Granted (auto-approved)
-				g.Expect(ar.Spec.State).To(BeEquivalentTo("Granted"))
-			}, timeout, interval).Should(Succeed())
+			// Verify that the strategy was overridden to Auto
+			Expect(ar.Spec.Strategy).To(Equal(approvalv1.ApprovalStrategyAuto))
+			Expect(ar.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
 		})
 	})
 
 	Context("Approval exists", func() {
 
-		It("should successfully set Owner conditions", func() {
+		AfterEach(func() {
+			By("Deleting the Approval")
+			approval := &approvalv1.Approval{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      approvalName,
+					Namespace: testNamespace,
+				},
+			}
+			err := k8sClient.Delete(ctx, approval)
+			Expect(err).ToNot(HaveOccurred())
+		})
 
-			By("creating Approval")
-
-			arr := &ctypes.ObjectRef{
+		It("should handle an already granted Approval", func() {
+			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+			By("creating an approval-request")
+			approvalRequestRef := &ctypes.ObjectRef{
 				Name:      "apisub--5c65994fcc",
 				Namespace: testNamespace,
 			}
 
-			approval = CreateApproval(approvalName, arr)
+			approval = CreateApproval(approvalName, approvalRequestRef)
+			ProgressApproval(approval, approvalv1.ApprovalStateGranted)
 
-			By("Approval Granted")
-
+			By("creating a new approval request without any changes")
 			err := requester.SetProperties(properties)
 			Expect(err).NotTo(HaveOccurred())
-
-			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
 
 			owner := test.NewObject("apisub", testNamespace)
 			owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
@@ -245,88 +265,85 @@ var _ = Describe("Approval Builder", Ordered, func() {
 			builder.WithStrategy(approvalv1.ApprovalStrategyAuto)
 			builder.WithTrustedRequesters([]string{"IOnlyTrustThisRandomTeam"})
 
-			_, err = builder.Build(ctx)
+			res, err := builder.Build(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			// The following check is subject to a race condition.
-			// The mutator hook within the builder is not run at time of this check.
-			// Therefore, the changes within the mutator are not _always_ in the mocked k8s cluster.
-			// About 1 out of 5 runs, the mutator is not able to change the State to Granted due to the ApprovalStrategyAuto.
-			// Waiting for a cache sync with k8sm.GetCache().WaitForCacheSync(ctx)) does not work, since k8sClient.Get is run within the builder.
-			// The return value is already determined at this point.
-			//
-			// This check is also partially redundant, since the object state is checked in the Eventually below.
-			//
-			// Potential solution: Refactor Build so that, it does return the ApprovalObject itself.
-			//
-			// Expect(res).To(Equal(ApprovalResultGranted))
+			Expect(res).To(Equal(ApprovalResultGranted)) // There were no changes and Approval is granted
+		})
 
-			Eventually(func(g Gomega) {
+		It("should handle an already rejected Approval", func() {
+			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+			By("creating an approval-request")
+			approvalRequestRef := &ctypes.ObjectRef{
+				Name:      "apisub--5c65994fdd",
+				Namespace: testNamespace,
+			}
 
-				processingCondition := meta.FindStatusCondition(builder.GetOwner().GetConditions(), condition.ConditionTypeProcessing)
-				readyCondition := meta.FindStatusCondition(builder.GetOwner().GetConditions(), condition.ConditionTypeReady)
-				g.Expect(processingCondition).ToNot(BeNil())
-				g.Expect(readyCondition).ToNot(BeNil())
-				g.Expect(processingCondition.Status).To(Equal(metav1.ConditionTrue))
-				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionTrue))
-				g.Expect(processingCondition.Reason).To(Equal("ApprovalGranted"))
-				g.Expect(readyCondition.Reason).To(Equal("ApprovalGranted"))
+			approval = CreateApproval(approvalName, approvalRequestRef)
+			ProgressApproval(approval, approvalv1.ApprovalStateRejected)
 
-				appr := &approvalv1.Approval{}
-				err = k8sClient.Get(ctx, client.ObjectKey{
-					Name:      builder.GetApproval().Name,
-					Namespace: testNamespace,
-				}, appr)
-				g.Expect(err).ToNot(HaveOccurred())
+			By("creating a new approval request without any changes")
+			err := requester.SetProperties(properties)
+			Expect(err).NotTo(HaveOccurred())
 
-				By("Approval Rejected")
-				appr.Spec.State = approvalv1.ApprovalStateRejected
+			owner := test.NewObject("apisub", testNamespace)
+			owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
+			owner.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
 
-				err = k8sClient.Update(ctx, appr)
-				g.Expect(err).ToNot(HaveOccurred())
+			builder := NewApprovalBuilder(jclient, owner)
 
-				builder := NewApprovalBuilder(jclient, owner)
-				builder.WithHashValue(requester.Properties)
-				builder.WithRequester(requester)
-				builder.WithStrategy(approvalv1.ApprovalStrategyAuto)
+			builder.WithHashValue(requester.Properties)
+			builder.WithRequester(requester)
+			builder.WithStrategy(approvalv1.ApprovalStrategyAuto)
+			builder.WithTrustedRequesters([]string{"IOnlyTrustThisRandomTeam"})
 
-				res, err := builder.Build(ctx)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(res).To(Equal(ApprovalResultDenied))
+			res, err := builder.Build(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).To(Equal(ApprovalResultDenied)) // There were no changes and Approval is granted
 
-				processingCondition = meta.FindStatusCondition(builder.GetOwner().GetConditions(), condition.ConditionTypeProcessing)
-				readyCondition = meta.FindStatusCondition(builder.GetOwner().GetConditions(), condition.ConditionTypeReady)
-				g.Expect(processingCondition).ToNot(BeNil())
-				g.Expect(readyCondition).ToNot(BeNil())
-				g.Expect(processingCondition.Status).To(Equal(metav1.ConditionFalse))
-				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
-				g.Expect(processingCondition.Reason).To(Equal("Blocked"))
-				g.Expect(readyCondition.Message).To(Equal("Approval is either rejected or suspended"))
+		})
 
-				By("Different ApprovalReq. Name")
+		It("should ignore approvals for a different state", func() {
+			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+			By("creating an approval-request")
+			approvalRequestRef := &ctypes.ObjectRef{
+				Name:      "apisub--5c65994fee",
+				Namespace: testNamespace,
+			}
 
-				appr.Spec.ApprovedRequest.Name = "apisub--5c65994fdd"
-				err = k8sClient.Update(ctx, appr)
-				g.Expect(err).ToNot(HaveOccurred())
+			approval = CreateApproval(approvalName, approvalRequestRef)
+			ProgressApproval(approval, approvalv1.ApprovalStateGranted)
 
-				builder = NewApprovalBuilder(jclient, owner)
-				builder.WithHashValue(requester.Properties)
-				builder.WithRequester(requester)
-				builder.WithStrategy(approvalv1.ApprovalStrategyAuto)
+			By("creating a new approval request with different hash (simulating a change)")
+			err := requester.SetProperties(map[string]any{
+				"basePath": "/eni/distr/v2", // changed basePath
+				"scopes":   "read",
+			})
+			Expect(err).NotTo(HaveOccurred())
 
-				res, err = builder.Build(ctx)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(res).To(Equal(ApprovalResultDenied))
+			owner := test.NewObject("apisub", testNamespace)
+			owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
+			owner.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
 
-				processingCondition = meta.FindStatusCondition(builder.GetOwner().GetConditions(), condition.ConditionTypeProcessing)
-				readyCondition = meta.FindStatusCondition(builder.GetOwner().GetConditions(), condition.ConditionTypeReady)
-				g.Expect(processingCondition).ToNot(BeNil())
-				g.Expect(readyCondition).ToNot(BeNil())
-				g.Expect(processingCondition.Status).To(Equal(metav1.ConditionFalse))
-				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
-				g.Expect(processingCondition.Reason).To(Equal("Blocked"))
-				g.Expect(readyCondition.Message).To(Equal("Approval is either rejected or suspended"))
+			builder := NewApprovalBuilder(jclient, owner)
 
-			}, timeout, interval).Should(Succeed())
+			builder.WithHashValue(requester.Properties)
+			builder.WithRequester(requester)
+			builder.WithStrategy(approvalv1.ApprovalStrategyAuto)
+			builder.WithTrustedRequesters([]string{"IOnlyTrustThisRandomTeam"})
+
+			res, err := builder.Build(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).To(Equal(ApprovalResultPending)) // There were changes, so pending
+			processingCondition := meta.FindStatusCondition(builder.GetOwner().GetConditions(), condition.ConditionTypeProcessing)
+			Expect(processingCondition.Reason).To(Equal("Blocked"))
+			Expect(processingCondition.Message).To(Equal("Approval is pending"))
+
+			readyCondition := meta.FindStatusCondition(builder.GetOwner().GetConditions(), condition.ConditionTypeReady)
+			Expect(readyCondition.Reason).To(Equal("ApprovalPending"))
 
 		})
 	})

@@ -21,10 +21,14 @@ import (
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 )
 
-func ErrorHandler(err error) {
+func ErrorHandler(err error, verbose bool) {
 	logger := log.L().WithName("error-handler")
 	if err != nil {
-		logger.Error(err, "An error occurred")
+		if verbose {
+			logger.Error(err, "An error occurred")
+		} else {
+			logger.Error(nil, "An error occurred", "error", err.Error())
+		}
 		os.Exit(1)
 	} else {
 		logger.Info("Command executed successfully")

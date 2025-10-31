@@ -5,11 +5,11 @@
 package status
 
 import (
-	"github.com/gkampitakis/go-snaps/match"
 	"github.com/gkampitakis/go-snaps/snaps"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	v1 "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
@@ -22,7 +22,7 @@ var _ = Describe("Rover Status Mapper", func() {
 
 			Expect(status).ToNot(BeNil())
 
-			snaps.MatchJSON(GinkgoT(), status, match.Any("time"))
+			snaps.MatchJSON(GinkgoT(), status)
 		})
 
 	})
@@ -44,6 +44,26 @@ var _ = Describe("Rover Status Mapper", func() {
 
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(ContainSubstring("input rover is nil"))
+		})
+
+		It("must map rover response correctly when processing condition is missing", func() {
+			roverNoProcessing := &v1.Rover{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "rover.cp.ei.telekom.de/v1",
+					Kind:       "Rover",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rover-not-processed",
+					Namespace: "poc--eni--hyperion",
+				},
+			}
+
+			response, err := MapRoverResponse(ctx, roverNoProcessing)
+
+			Expect(response).ToNot(BeNil())
+			snaps.MatchJSON(GinkgoT(), response)
+
+			Expect(err).To(BeNil())
 		})
 	})
 

@@ -10,14 +10,20 @@ import (
 	"github.com/spf13/viper"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/base"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
+	"github.com/telekom/controlplane/rover-ctl/pkg/parser"
 	"github.com/telekom/controlplane/rover-ctl/pkg/util"
+)
+
+const (
+	// Currently get-info is only supported by Rover resources
+	apiVersion = "tcp.ei.telekom.de/v1"
+	kind       = "Rover"
 )
 
 type Command struct {
 	*base.FileCommand
-	Name     string
-	FilePath string
-	Shallow  bool
+	Name    string
+	Shallow bool
 }
 
 // NewCommand creates a new delete command
@@ -31,10 +37,11 @@ func NewCommand() *cobra.Command {
 		FileCommand: baseCmd,
 	}
 
-	baseCmd.Cmd.Flags().StringVarP(&cmd.Name, "name", "n", "", "Name of the resource to get information about")
-	baseCmd.Cmd.MarkFlagsOneRequired("name", "file")
+	cmd.Cmd.Flags().StringVarP(&cmd.Name, "name", "n", "", "Name of the resource to get information about")
+	cmd.Cmd.MarkFlagsOneRequired("name", "file")
+	cmd.Cmd.MarkFlagsMutuallyExclusive("name", "file")
 
-	baseCmd.Cmd.Flags().BoolVarP(&cmd.Shallow, "shallow", "s", false, "Get only basic information without details")
+	cmd.Cmd.Flags().BoolVarP(&cmd.Shallow, "shallow", "s", false, "Get only basic information without details")
 
 	cmd.Cmd.RunE = cmd.Run
 
@@ -42,7 +49,7 @@ func NewCommand() *cobra.Command {
 }
 
 func (c *Command) Run(cmd *cobra.Command, args []string) error {
-	c.Logger().V(1).Info("Starting get-info command")
+	c.Logger().V(1).Info("Starting get-info command", "name", c.Name, "file", c.FilePath, "shallow", c.Shallow)
 
 	if c.Name != "" {
 		return c.getInfoFor(c.Name)
@@ -55,7 +62,13 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 		if err := c.ParseFiles(); err != nil {
 			return err
 		}
-		for _, obj := range c.Parser.Objects() {
+
+		roverObjects := parser.FilterByKindAndVersion(c.Parser.Objects(), kind, apiVersion)
+		if len(roverObjects) == 0 {
+			return errors.New("no Rover resources found in the provided file(s)")
+		}
+		c.Logger().V(1).Info("Filtered Rover resources from parsed objects", "total", len(c.Parser.Objects()), "roverCount", len(roverObjects))
+		for _, obj := range roverObjects {
 			if err := c.getInfoFor(obj.GetName()); err != nil {
 				return err
 			}
@@ -67,7 +80,7 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 }
 
 func (c *Command) getInfoFor(name string) error {
-	roverHandler, err := handlers.GetHandler("Rover", "tcp.ei.telekom.de/v1")
+	roverHandler, err := handlers.GetHandler(kind, apiVersion)
 	if err != nil {
 		return errors.Wrap(err, "failed to get rover handler")
 	}

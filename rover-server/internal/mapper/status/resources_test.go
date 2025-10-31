@@ -82,6 +82,14 @@ var (
 	}
 
 	apiSubscription = &apiv1.ApiSubscription{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "api.cp.ei.telekom.de/v1",
+			Kind:       "ApiSubscription",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rover-local-sub--my-api-sub",
+			Namespace: "poc--eni--hyperion",
+		},
 		Status: apiv1.ApiSubscriptionStatus{
 			Conditions: []metav1.Condition{
 				{
@@ -97,13 +105,12 @@ var (
 	expectedProblems = []api.Problem{
 		{
 			Cause:   "NoApproval",
-			Context: "Application: rover-local-sub",
 			Details: "Condition: Ready, Status: False, Message: Approval is either rejected or suspended",
 			Message: "Approval is either rejected or suspended",
 			Resource: api.ResourceRef{
-				ApiVersion: "rover.cp.ei.telekom.de/v1",
-				Kind:       "Rover",
-				Name:       "rover-local-sub",
+				ApiVersion: "api.cp.ei.telekom.de/v1",
+				Kind:       "ApiSubscription",
+				Name:       "rover-local-sub--my-api-sub",
 				Namespace:  "poc--eni--hyperion",
 			},
 		},

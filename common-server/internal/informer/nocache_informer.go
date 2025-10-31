@@ -16,6 +16,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -52,10 +53,11 @@ type NoCacheInformer struct {
 
 // NoCacheInformerOptions provides configurable options for the NoCacheInformer
 type NoCacheInformerOptions struct {
-	BufferSize   int64
-	QueueSize    int
-	WorkerCount  int
-	ResyncPeriod time.Duration
+	BufferSize           int64
+	QueueSize            int
+	WorkerCount          int
+	ResyncPeriod         time.Duration
+	PrometheusRegisterer prometheus.Registerer
 }
 
 // DefaultNoCacheInformerOptions returns the default options for a NoCacheInformer
@@ -64,7 +66,7 @@ func DefaultNoCacheInformerOptions() NoCacheInformerOptions {
 		BufferSize:   1000,
 		QueueSize:    200,
 		WorkerCount:  runtime.NumCPU(),
-		ResyncPeriod: 5 * time.Minute,
+		ResyncPeriod: 1 * time.Hour,
 	}
 }
 
@@ -75,16 +77,24 @@ func NewNoCache(ctx context.Context, gvr schema.GroupVersionResource, k8sClient 
 
 // [experimental] NewNoCacheWithOptions creates a new informer that does not use a local cache with custom options.
 func NewNoCacheWithOptions(ctx context.Context, gvr schema.GroupVersionResource, k8sClient dynamic.Interface, eventHandler EventHandler, options NoCacheInformerOptions) *NoCacheInformer {
-	log := logr.FromContextOrDiscard(ctx)
-	ctxWithCancel, cancel := context.WithCancel(ctx)
 	name := fmt.Sprintf("NoCacheInformer:%s/%s", strings.ToLower(gvr.Group), strings.ToLower(gvr.Resource))
+	log := logr.FromContextOrDiscard(ctx).WithName(name)
+	ctxWithCancel, cancel := context.WithCancel(ctx)
+
+	if options.PrometheusRegisterer != nil {
+		Register(options.PrometheusRegisterer)
+	} else {
+		Register(prometheus.DefaultRegisterer)
+	}
+
+	log.Info("Creating new instance")
 	return &NoCacheInformer{
 		ctx:              ctxWithCancel,
 		cancel:           cancel,
 		gvr:              gvr,
 		k8sClient:        k8sClient,
 		eventHandler:     eventHandler,
-		log:              log.WithName(name),
+		log:              log,
 		name:             name,
 		bufferSize:       options.BufferSize,
 		queue:            make(chan event, options.QueueSize),

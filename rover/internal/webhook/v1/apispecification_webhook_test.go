@@ -151,7 +151,7 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			Expect(ok).To(BeTrue(), "Expected a StatusError, got: %T", err)
 			Expect(statusErr.ErrStatus.Details.Causes).To(HaveLen(1))
 			Expect(statusErr.ErrStatus.Details.Causes[0].Field).To(Equal("spec.category"))
-			Expect(statusErr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring(`ApiCategory "not-existing-category" not found. Allowed values are: [some-api-category, other-api-category, not-allowed-api-category]`))
+			Expect(statusErr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring(`ApiCategory "not-existing-category" not found. Allowed values are: [not-allowed-api-category, other-api-category, some-api-category]`))
 		})
 
 		It("should return an error when the group prefix is required but not set", func() {

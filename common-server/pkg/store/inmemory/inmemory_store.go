@@ -42,6 +42,10 @@ type StoreOpts struct {
 
 	Database DatabaseOpts
 	Informer InformerOpts
+
+	// DisableRetryOnConflict disables retrying on conflict errors during updates.
+	// By default, retries are enabled.
+	DisableRetryOnConflict bool
 }
 
 type InformerOpts struct {
@@ -55,15 +59,16 @@ type DatabaseOpts struct {
 }
 
 type InmemoryObjectStore[T store.Object] struct {
-	ctx            context.Context
-	log            logr.Logger
-	gvr            schema.GroupVersionResource
-	gvk            schema.GroupVersionKind
-	k8sClient      dynamic.NamespaceableResourceInterface
-	informer       informer.Informer
-	db             *badger.DB
-	allowedSorts   []string
-	sortValueCache sync.Map
+	ctx             context.Context
+	log             logr.Logger
+	gvr             schema.GroupVersionResource
+	gvk             schema.GroupVersionKind
+	k8sClient       dynamic.NamespaceableResourceInterface
+	informer        informer.Informer
+	db              *badger.DB
+	allowedSorts    []string
+	sortValueCache  sync.Map
+	retryOnConflict bool
 }
 
 func newBadgerOptsReduceMemoryUsage(filepath string) badger.Options {
@@ -137,13 +142,14 @@ func newDbOrDie(storeOpts StoreOpts, log logr.Logger) *badger.DB {
 	return db
 }
 
-func NewOrDie[T store.Object](ctx context.Context, storeOpts StoreOpts) store.ObjectStore[T] {
+func NewOrDie[T store.Object](ctx context.Context, storeOpts StoreOpts) *InmemoryObjectStore[T] {
 	store := &InmemoryObjectStore[T]{
-		ctx:       ctx,
-		log:       logr.FromContextOrDiscard(ctx),
-		gvr:       storeOpts.GVR,
-		gvk:       storeOpts.GVK,
-		k8sClient: storeOpts.Client.Resource(storeOpts.GVR),
+		ctx:             ctx,
+		log:             logr.FromContextOrDiscard(ctx),
+		gvr:             storeOpts.GVR,
+		gvk:             storeOpts.GVK,
+		k8sClient:       storeOpts.Client.Resource(storeOpts.GVR),
+		retryOnConflict: !storeOpts.DisableRetryOnConflict,
 	}
 	var err error
 	store.db = newDbOrDie(storeOpts, store.log)
@@ -292,6 +298,11 @@ func (s *InmemoryObjectStore[T]) Delete(ctx context.Context, namespace, name str
 	return nil
 }
 
+// CreateOrReplace creates or replaces the given object in the store.
+// It will use the Kubernetes API to create or update the object and store
+// the result in this store.
+// It does not update the object in-place
+// To get the latest version of the object, use Get after CreateOrReplace.
 func (s *InmemoryObjectStore[T]) CreateOrReplace(ctx context.Context, in T) error {
 	if in.GetName() == "" {
 		return problems.ValidationError("metadata.name", "name is required")
@@ -305,7 +316,7 @@ func (s *InmemoryObjectStore[T]) CreateOrReplace(ctx context.Context, in T) erro
 		return errors.Wrap(err, "failed to convert object")
 	}
 
-	oldObj, err := s.Get(ctx, obj.GetNamespace(), obj.GetName())
+	currentObj, err := s.Get(ctx, obj.GetNamespace(), obj.GetName())
 	if err != nil && !problems.IsNotFound(err) {
 		return err
 	}
@@ -324,27 +335,34 @@ func (s *InmemoryObjectStore[T]) CreateOrReplace(ctx context.Context, in T) erro
 		return s.OnCreate(ctx, obj)
 	}
 
-	obj.SetResourceVersion(oldObj.GetResourceVersion())
+	obj.SetResourceVersion(currentObj.GetResourceVersion())
+	obj, err = s.k8sClient.Namespace(obj.GetNamespace()).Update(ctx, obj, metav1.UpdateOptions{
+		FieldValidation: "Strict",
+	})
+	if err == nil {
+		return s.OnUpdate(ctx, obj)
+	}
+	// if not retrying on conflict or error is not conflict, return error
+	if !s.retryOnConflict || !apierrors.IsConflict(err) {
+		return errors.Wrap(mapErrorToProblem(err), "failed to update object")
+	}
+
+	obj, err = convertToUnstructured(in)
+	if err != nil {
+		return errors.Wrap(err, "failed to convert object")
+	}
+
+	// try to resolve conflict by getting the latest version and retrying the update
+	currentObjInCluster, err := s.k8sClient.Namespace(obj.GetNamespace()).Get(ctx, obj.GetName(), metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrap(mapErrorToProblem(err), "failed to get object")
+	}
+	obj.SetResourceVersion(currentObjInCluster.GetResourceVersion())
 	obj, err = s.k8sClient.Namespace(obj.GetNamespace()).Update(ctx, obj, metav1.UpdateOptions{
 		FieldValidation: "Strict",
 	})
 	if err != nil {
-		if !apierrors.IsConflict(err) {
-			return errors.Wrap(mapErrorToProblem(err), "failed to update object")
-		}
-
-		// try to resolve conflict by getting the latest version and retrying the update
-		oldObj, err := s.k8sClient.Namespace(obj.GetNamespace()).Get(ctx, obj.GetName(), metav1.GetOptions{})
-		if err != nil {
-			return errors.Wrap(mapErrorToProblem(err), "failed to get object")
-		}
-		obj.SetResourceVersion(oldObj.GetResourceVersion())
-		obj, err = s.k8sClient.Namespace(obj.GetNamespace()).Update(ctx, obj, metav1.UpdateOptions{
-			FieldValidation: "Strict",
-		})
-		if err != nil {
-			return errors.Wrap(mapErrorToProblem(err), "failed to update object")
-		}
+		return errors.Wrap(mapErrorToProblem(err), "failed to update object")
 	}
 
 	return s.OnUpdate(ctx, obj)

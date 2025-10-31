@@ -119,7 +119,7 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 			return errors.Wrapf(err, "failed to set owner reference")
 		}
 		apiSubscription.Labels = map[string]string{
-			apiapi.BasePathLabelKey:             labelutil.NormalizeValue(obj.Spec.ApiBasePath),
+			apiapi.BasePathLabelKey:             labelutil.NormalizeLabelValue(obj.Spec.ApiBasePath),
 			config.BuildLabelKey("application"): application.Name,
 		}
 
@@ -147,12 +147,10 @@ func (h *RemoteApiSubscriptionHandler) handleProviderScenario(ctx context.Contex
 		return errors.Wrapf(err, "failed to cleanup api subscriptions")
 	}
 
-	obj.SetCondition(condition.NewProcessingCondition("Processing", "Processing RemoteApiSubscription"))
-	obj.SetCondition(condition.NewNotReadyCondition("Processing", "Processing RemoteApiSubscription"))
-
-	// Check if the ApiSubscription is ready
-
-	if res == controllerutil.OperationResultNone {
+	if res != controllerutil.OperationResultNone {
+		obj.SetCondition(condition.NewProcessingCondition("Processing", "Processing RemoteApiSubscription"))
+		obj.SetCondition(condition.NewNotReadyCondition("Processing", "Processing RemoteApiSubscription"))
+	} else {
 		// No update occurred
 
 		if err = fillApprovalRequestInfo(ctx, obj, apiSubscription); err != nil {

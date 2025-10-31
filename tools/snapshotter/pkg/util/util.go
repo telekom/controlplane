@@ -7,9 +7,12 @@ package util
 import (
 	"cmp"
 	"fmt"
+	"io"
 	"os"
 	"reflect"
 	"slices"
+
+	"go.uber.org/zap"
 )
 
 type Response interface {
@@ -18,9 +21,17 @@ type Response interface {
 
 func MustBe2xx(res Response, context string) {
 	if !Is2xx(res) {
-		fmt.Fprintf(os.Stderr, "Error: %s returned status code %d\n", context, res.StatusCode())
-		os.Exit(1)
+		zap.L().Fatal("non-2xx response", zap.Int("status_code", res.StatusCode()), zap.String("context", context))
 	}
+}
+
+func PrintErrResponse(body io.Reader, context string) {
+	data, err := io.ReadAll(body)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: failed to read error response body for %s: %v\n", context, err)
+		return
+	}
+	fmt.Fprintf(os.Stderr, "Error response body for %s: %s\n", context, string(data))
 }
 
 func Is2xx(res Response) bool {

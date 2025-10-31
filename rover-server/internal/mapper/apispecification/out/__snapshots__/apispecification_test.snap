@@ -40,8 +40,7 @@
  },
  "status": {
   "processingState": "done",
-  "state": "complete",
-  "time": "<Any value>"
+  "state": "complete"
  },
  "vendorApi": false
 }

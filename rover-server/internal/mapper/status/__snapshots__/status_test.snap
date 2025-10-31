@@ -3,13 +3,12 @@
 {
  "errors": [
   {
-   "cause": "Application: rover-local-sub, Cause: NoApproval",
+   "cause": "NoApproval",
    "message": "Approval is either rejected or suspended"
   }
  ],
  "processingState": "done",
  "state": "blocked",
- "time": "<Any value>",
  "warnings": [
   {
    "message": "Atleast one sub-resource is being processed"
@@ -20,21 +19,22 @@
 
 [Rover Status Mapper MapRoverResponse must map rover response correctly - 1]
 {
+ "createdAt": "2025-09-18T10:39:44+02:00",
  "errors": [
   {
    "cause": "NoApproval",
-   "context": "Application: rover-local-sub",
    "details": "Condition: Ready, Status: False, Message: Approval is either rejected or suspended",
    "message": "Approval is either rejected or suspended",
    "resource": {
-    "apiVersion": "rover.cp.ei.telekom.de/v1",
-    "kind": "Rover",
-    "name": "rover-local-sub",
+    "apiVersion": "api.cp.ei.telekom.de/v1",
+    "kind": "ApiSubscription",
+    "name": "rover-local-sub--eni-distr-v1",
     "namespace": "poc--eni--hyperion"
    }
   }
  ],
  "overallStatus": "blocked",
+ "processedAt": "2025-10-08T09:16:40+02:00",
  "processingState": "done",
  "state": "blocked"
 }
@@ -44,7 +44,6 @@
 {
  "processingState": "none",
  "state": "none",
- "time": "",
  "warnings": [
   {
    "message": "Processing condition not found"
@@ -57,7 +56,6 @@
 {
  "processingState": "none",
  "state": "none",
- "time": "",
  "warnings": [
   {
    "message": "Ready condition not found"
@@ -69,8 +67,7 @@
 [Rover Status Mapper FillStateInfo if processing condition status will be blocked and processing - 1]
 {
  "processingState": "processing",
- "state": "blocked",
- "time": ""
+ "state": "blocked"
 }
 ---
 
@@ -78,7 +75,6 @@
 {
  "processingState": "done",
  "state": "blocked",
- "time": "",
  "warnings": [
   {
    "message": "Blocked due to dependency"
@@ -90,8 +86,7 @@
 [Rover Status Mapper FillStateInfo if processing done and ready true status will be complete - 1]
 {
  "processingState": "done",
- "state": "complete",
- "time": ""
+ "state": "complete"
 }
 ---
 
@@ -99,7 +94,6 @@
 {
  "processingState": "done",
  "state": "blocked",
- "time": "",
  "warnings": [
   {
    "message": "Not ready yet"
@@ -116,7 +110,14 @@
   }
  ],
  "processingState": "failed",
- "state": "",
- "time": ""
+ "state": ""
+}
+---
+
+[Rover Status Mapper MapRoverResponse must map rover response correctly when processing condition is missing - 1]
+{
+ "overallStatus": "none",
+ "processingState": "none",
+ "state": "none"
 }
 ---

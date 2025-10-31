@@ -26,8 +26,6 @@ import (
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 )
 
-var rootCtx = logr.NewContext(context.Background(), log.Log)
-
 func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
@@ -35,6 +33,7 @@ func main() {
 	}
 
 	log.Init()
+	rootCtx := logr.NewContext(context.Background(), log.Log)
 
 	store.InitOrDie(rootCtx, kconfig.GetConfigOrDie())
 

@@ -167,6 +167,9 @@ func ProgressApproval(apiSub *apiapi.ApiSubscription, state approvalapi.Approval
 		return nil
 	})
 
+	approval.Status.LastState = state
+	k8sClient.Status().Update(ctx, approval)
+
 	Expect(err).ToNot(HaveOccurred())
 	return approval
 }
