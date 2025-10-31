@@ -103,11 +103,15 @@ type Lister[T types.Object] interface {
 }
 
 func getAllSubResources[T types.Object](ctx context.Context, owner types.Object, objStore Lister[T]) ([]T, error) {
+	ownerUid := string(owner.GetUID())
+	if ownerUid == "" {
+		return nil, nil
+	}
 	filters := []cstore.Filter{
 		{
 			Path:  "metadata.ownerReferences.#.uid",
 			Op:    cstore.OpEqual,
-			Value: string(owner.GetUID()),
+			Value: ownerUid,
 		},
 	}
 

@@ -113,3 +113,11 @@
  "state": ""
 }
 ---
+
+[Rover Status Mapper MapRoverResponse must map rover response correctly when processing condition is missing - 1]
+{
+ "overallStatus": "none",
+ "processingState": "none",
+ "state": "none"
+}
+---

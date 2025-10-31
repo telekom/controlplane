@@ -6,6 +6,7 @@ package status
 
 import (
 	"context"
+	"time"
 
 	ghErrors "github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -70,10 +71,14 @@ func MapRoverResponse(ctx context.Context, rover *v1.Rover) (api.ResourceStatusR
 	}
 
 	processing := meta.FindStatusCondition(rover.GetConditions(), condition.ConditionTypeProcessing)
+	var processedAtTime time.Time
+	if processing != nil {
+		processedAtTime = processing.LastTransitionTime.Time
+	}
 
 	return api.ResourceStatusResponse{
 		CreatedAt:       rover.GetCreationTimestamp().Time,
-		ProcessedAt:     processing.LastTransitionTime.Time,
+		ProcessedAt:     processedAtTime,
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
 		OverallStatus:   CalculateOverallStatus(status.State, status.ProcessingState),
