@@ -46,6 +46,7 @@ func (s SourceConfig) AdminUrl() string {
 }
 
 type Config struct {
+	StorePath   string                         `mapstructure:"storePath" validate:"required"`
 	Obfuscators []obfuscator.ObfuscationTarget `mapstructure:"obfuscators"`
 	Decoders    []decoder.DecoderTarget        `mapstructure:"decoders"`
 	Sources     map[string]SourceConfig        `mapstructure:"sources"`

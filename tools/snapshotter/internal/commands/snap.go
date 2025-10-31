@@ -6,14 +6,11 @@ package commands
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/config"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/diffmatcher"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/orchestrator"
-	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
-	"github.com/telekom/controlplane/tools/snapshotter/pkg/store"
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
@@ -22,7 +19,6 @@ var (
 	snapSourceKey  string
 	snapRouteId    string
 	snapConsumerId string
-	snapStorePath  string
 	snapCmd        = &cobra.Command{
 		Use:   "snap",
 		Short: "Take snapshots of resources",
@@ -39,9 +35,14 @@ var (
 				return fmt.Errorf("only one of route or consumer ID can be provided")
 			}
 
-			store := store.NewFileStore[*snapshot.Snapshot](snapStorePath)
+			snapshotStore := NewStore(cfg.StorePath, noStore)
+			if cleanStore {
+				if err := snapshotStore.Clean(); err != nil {
+					return fmt.Errorf("failed to clean snapshot store: %w", err)
+				}
+			}
 
-			instances := orchestrator.NewFromConfig(cfg, store)
+			instances := orchestrator.NewFromConfig(cfg, snapshotStore)
 
 			var instance *orchestrator.Orchestrator
 			var exists bool
@@ -71,8 +72,8 @@ var (
 
 			instance.ReportResult = func(result diffmatcher.Result, snapID string) {
 				zap.L().Info("snapshot result", zap.String("snapshotID", snapID), zap.Bool("changed", result.Changed))
-				if !isGlobalSnapshotting && result.Changed {
-					_, _ = fmt.Fprint(os.Stdout, result.Text)
+				if !isGlobalSnapshotting {
+					_ = formatOutput(result)
 				}
 			}
 
@@ -98,5 +99,5 @@ func init() {
 	snapCmd.Flags().StringVar(&snapSourceKey, "source", "", "Source to snapshot from (only required if multiple sources are configured)")
 	snapCmd.Flags().StringVar(&snapRouteId, "route", "", "ID of the route to snapshot")
 	snapCmd.Flags().StringVar(&snapConsumerId, "consumer", "", "ID of the consumer to snapshot")
-	snapCmd.Flags().StringVar(&snapStorePath, "store", "./snapshots", "Path to the snapshot store")
+	snapCmd.Flags().BoolVar(&noStore, "no-store", false, "Do not store snapshots")
 }

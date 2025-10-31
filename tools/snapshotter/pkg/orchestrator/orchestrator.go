@@ -6,6 +6,8 @@ package orchestrator
 
 import (
 	"context"
+	"maps"
+	"slices"
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/config"
@@ -30,8 +32,11 @@ type Orchestrator struct {
 
 func NewFromConfig(cfg config.Config, store store.SnapshotStore[*snapshot.Snapshot]) map[string]*Orchestrator {
 	instances := map[string]*Orchestrator{}
-
-	for key, sourceCfg := range cfg.GetSourceConfigs() {
+	sourceCfgs := cfg.GetSourceConfigs()
+	keys := slices.Collect(maps.Keys(sourceCfgs))
+	slices.Sort(keys)
+	for _, key := range keys {
+		sourceCfg := sourceCfgs[key]
 		zap.L().Info("setting up source", zap.String("key", key))
 		kongSource, err := source.NewKongSourceFromConfig(sourceCfg, sourceCfg.Tags)
 		if err != nil {

@@ -33,7 +33,15 @@ func (s *State) SortPlugins() {
 		return
 	}
 	slices.SortFunc(s.Plugins, func(a, b kong.Plugin) int {
-		return cmp.Compare(*a.Name, *b.Name)
+		// prefer sorting by name
+		c := cmp.Compare(*a.Name, *b.Name)
+		if c != 0 {
+			return c
+		}
+		// If names are equal, sort by tags
+		aTags := strings.Join(*a.Tags, "_")
+		bTags := strings.Join(*b.Tags, "_")
+		return cmp.Compare(aTags, bTags)
 	})
 }
 

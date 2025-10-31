@@ -6,19 +6,17 @@ package commands
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/telekom/controlplane/tools/snapshotter/pkg/config"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/diffmatcher"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/store"
-	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
 var (
-	cmpStorePath   string
 	cmpAId, cmpBId string
 	cmpMustExist   bool
 	cmpCmd         = &cobra.Command{
@@ -26,12 +24,23 @@ var (
 		Short: "Compare snapshots",
 		Long:  `Compare two snapshots from the snapshot store.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+
+			cfg, err := config.LoadConfig(configPath)
+			if err != nil {
+				return fmt.Errorf("failed to load config: %w", err)
+			}
+
 			rootCtx := signals.SetupSignalHandler()
 
-			s := store.NewFileStore[*snapshot.Snapshot](cmpStorePath)
+			snapshotStore := NewStore(cfg.StorePath, noStore)
+			if cleanStore {
+				if err := snapshotStore.Clean(); err != nil {
+					return fmt.Errorf("failed to clean snapshot store: %w", err)
+				}
+			}
 
 			a := &snapshot.Snapshot{}
-			err := s.GetLatest(rootCtx, cmpAId, a)
+			err = snapshotStore.GetLatest(rootCtx, cmpAId, a)
 			if err != nil {
 				if !errors.Is(err, store.ErrNotFound) {
 					return fmt.Errorf("failed to get snapshot A: %w", err)
@@ -42,7 +51,7 @@ var (
 			}
 
 			b := &snapshot.Snapshot{}
-			err = s.GetLatest(rootCtx, cmpBId, b)
+			err = snapshotStore.GetLatest(rootCtx, cmpBId, b)
 			if err != nil {
 				if !errors.Is(err, store.ErrNotFound) {
 					return fmt.Errorf("failed to get snapshot B: %w", err)
@@ -53,13 +62,7 @@ var (
 			}
 
 			diff := diffmatcher.Compare(a, b)
-			if diff.Changed {
-				_, _ = fmt.Fprint(os.Stdout, diff.Text)
-			} else {
-				zap.L().Info("snapshots are identical")
-			}
-
-			return nil
+			return formatOutput(diff)
 		},
 	}
 )
@@ -68,7 +71,6 @@ func init() {
 	rootCmd.AddCommand(cmpCmd)
 
 	// Add local flags
-	cmpCmd.Flags().StringVar(&cmpStorePath, "store", "./snapshots", "Path to the snapshot store")
 	cmpCmd.Flags().StringVar(&cmpAId, "a", "", "ID of the first snapshot to compare")
 	cmpCmd.Flags().StringVar(&cmpBId, "b", "", "ID of the second snapshot to compare")
 	cmpCmd.Flags().BoolVar(&cmpMustExist, "must", false, "If set, both snapshots must exist")

@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+storePath: "/tmp/snapshotter-store"
 decoders:
   - type: base64
     pattern: jumper_config:([A-Za-z0-9=]+)

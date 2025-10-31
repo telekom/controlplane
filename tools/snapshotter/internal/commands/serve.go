@@ -13,15 +13,12 @@ import (
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/api"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/config"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/orchestrator"
-	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
-	"github.com/telekom/controlplane/tools/snapshotter/pkg/store"
 	"go.uber.org/zap"
 )
 
 var (
-	serveStorePath string
-	servePort      int
-	serveCmd       = &cobra.Command{
+	servePort int
+	serveCmd  = &cobra.Command{
 		Use:   "serve",
 		Short: "Start the API server",
 		Long:  `Start the HTTP API server for snapshot operations.`,
@@ -31,8 +28,13 @@ var (
 				return fmt.Errorf("failed to load config: %w", err)
 			}
 
-			store := store.NewFileStore[*snapshot.Snapshot](serveStorePath)
-			instances := orchestrator.NewFromConfig(cfg, store)
+			snapshotStore := NewStore(cfg.StorePath, noStore)
+			if cleanStore {
+				if err := snapshotStore.Clean(); err != nil {
+					return fmt.Errorf("failed to clean snapshot store: %w", err)
+				}
+			}
+			instances := orchestrator.NewFromConfig(cfg, snapshotStore)
 
 			errHandler := func(c *fiber.Ctx, err error) error {
 				code := fiber.StatusInternalServerError
@@ -50,7 +52,7 @@ var (
 				ErrorHandler: errHandler,
 			})
 
-			apiInstance := api.NewAPI(store, instances)
+			apiInstance := api.NewAPI(snapshotStore, instances)
 			apiInstance.RegisterRoutes(app)
 
 			addr := fmt.Sprintf(":%d", servePort)
@@ -67,7 +69,6 @@ var (
 func init() {
 	rootCmd.AddCommand(serveCmd)
 
-	// Add local flags
-	serveCmd.Flags().StringVar(&serveStorePath, "store", "./snapshots", "Path to the snapshot store")
 	serveCmd.Flags().IntVar(&servePort, "port", 8080, "Port to listen on")
+	serveCmd.Flags().BoolVar(&noStore, "no-store", false, "Do not store snapshots")
 }

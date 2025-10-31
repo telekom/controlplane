@@ -28,4 +28,5 @@ type SnapshotStore[T Snapshot] interface {
 	GetVersion(ctx context.Context, id string, version int, snapshot T) error
 	Set(ctx context.Context, snap T) error
 	Delete(ctx context.Context, id string) error
+	Clean() error
 }

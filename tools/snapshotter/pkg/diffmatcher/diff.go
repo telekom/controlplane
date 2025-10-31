@@ -14,9 +14,11 @@ type Snapshot interface {
 	String() string
 }
 type Result struct {
-	Changed         bool   `yaml:"changed" json:"changed"`
-	NumberOfChanges int    `yaml:"number_of_changes" json:"number_of_changes"`
-	Text            string `yaml:"text" json:"text"`
+	A               Snapshot `yaml:"a" json:"a"`
+	B               Snapshot `yaml:"b" json:"b"`
+	Changed         bool     `yaml:"changed" json:"changed"`
+	NumberOfChanges int      `yaml:"number_of_changes" json:"number_of_changes"`
+	Text            string   `yaml:"text" json:"text"`
 }
 
 func Compare(a, b Snapshot) Result {
@@ -32,7 +34,12 @@ func Compare(a, b Snapshot) Result {
 	diffs := dmp.DiffMain(aStr, bStr, false)
 	diffs = dmp.DiffCleanupSemantic(diffs)
 
-	result := Result{Text: dmp.DiffPrettyText(diffs), NumberOfChanges: len(diffs)}
+	result := Result{
+		A:               a,
+		B:               b,
+		Text:            dmp.DiffPrettyText(diffs),
+		NumberOfChanges: len(diffs),
+	}
 	result.Changed = slices.ContainsFunc(diffs, func(diff diffmatchpatch.Diff) bool {
 		return diff.Type != diffmatchpatch.DiffEqual
 	})

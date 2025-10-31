@@ -163,7 +163,7 @@ func (f *FileStore[T]) Set(ctx context.Context, snap T) error {
 				return err
 			}
 		}
-		zap.L().Info("cleanup versions", zap.Int("before", len(versions)), zap.Int("after", f.MaxVersions-1), zap.String("id", snap.ID()))
+		zap.L().Debug("cleanup versions", zap.Int("before", len(versions)), zap.Int("after", f.MaxVersions-1), zap.String("id", snap.ID()))
 		versions = versions[:f.MaxVersions-1]
 	}
 	var newVersion int
@@ -183,7 +183,7 @@ func (f *FileStore[T]) Set(ctx context.Context, snap T) error {
 	if err != nil {
 		return err
 	}
-	zap.L().Info("storing snapshot", zap.String("id", snap.ID()), zap.Int("version", newVersion), zap.Int("size", len(data)))
+	zap.L().Debug("storing snapshot", zap.String("id", snap.ID()), zap.Int("version", newVersion), zap.Int("size", len(data)))
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		return err
 	}
