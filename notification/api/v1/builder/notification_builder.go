@@ -66,7 +66,7 @@ type NotificationBuilder interface {
 	// A hash will be appended at the end by the builder.
 	WithName(nameSuffix string) NotificationBuilder
 
-	// WithDefaultChannels will set all available channels for the given namespace
+	// WithDefaultChannel will set all available channels for the given namespace
 	WithDefaultChannels(ctx context.Context, namespace string) NotificationBuilder
 	// WithChannels sets the channels to send the notification to.
 	WithChannels(channels ...types.ObjectRef) NotificationBuilder
