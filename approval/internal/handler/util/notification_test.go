@@ -47,8 +47,8 @@ var _ = Describe("Notification Utilities", func() {
 				Expect(result).To(HaveKeyWithValue("basePath", "foo/bar/myapi/v1"))
 				Expect(result).To(HaveKeyWithValue("scopes", []any{"admin:read", "admin:write"}))
 				Expect(result).To(HaveKeyWithValue("email", "user@example.com"))
-				Expect(result).To(HaveKeyWithValue("requester-group", "platform"))
-				Expect(result).To(HaveKeyWithValue("requester-team", "backend"))
+				Expect(result).To(HaveKeyWithValue("requester_group", "platform"))
+				Expect(result).To(HaveKeyWithValue("requester_team", "backend"))
 			})
 		})
 
@@ -62,8 +62,8 @@ var _ = Describe("Notification Utilities", func() {
 				result, err := extractRequester(requester)
 
 				Expect(err).NotTo(HaveOccurred())
-				Expect(result).To(HaveKeyWithValue("requester-group", "onsite-group"))
-				Expect(result).To(HaveKeyWithValue("requester-team", "enemy-team"))
+				Expect(result).To(HaveKeyWithValue("requester_group", "onsite-group"))
+				Expect(result).To(HaveKeyWithValue("requester_team", "enemy-team"))
 			})
 		})
 
@@ -77,8 +77,8 @@ var _ = Describe("Notification Utilities", func() {
 				result, err := extractRequester(requester)
 
 				Expect(err).NotTo(HaveOccurred())
-				Expect(result).To(HaveKeyWithValue("requester-group", "single-name"))
-				Expect(result).To(HaveKeyWithValue("requester-team", "single-name"))
+				Expect(result).To(HaveKeyWithValue("requester_group", "single-name"))
+				Expect(result).To(HaveKeyWithValue("requester_team", "single-name"))
 			})
 		})
 
@@ -130,8 +130,8 @@ var _ = Describe("Notification Utilities", func() {
 				result, err := extractRequester(requester)
 
 				Expect(err).NotTo(HaveOccurred())
-				Expect(result).To(HaveKeyWithValue("requester-group", "foo"))
-				Expect(result).To(HaveKeyWithValue("requester-team", "bar"))
+				Expect(result).To(HaveKeyWithValue("requester_group", "foo"))
+				Expect(result).To(HaveKeyWithValue("requester_team", "bar"))
 			})
 		})
 	})
@@ -154,10 +154,10 @@ var _ = Describe("Notification Utilities", func() {
 
 				Expect(kind).To(Equal("ApiSubscription"))
 				Expect(name).To(Equal("my-app--foo-bar-v1"))
-				Expect(result).To(HaveKeyWithValue("target-kind", "ApiSubscription"))
-				Expect(result).To(HaveKeyWithValue("target-application", "my-app"))
-				Expect(result).To(HaveKeyWithValue("target-group", "platform"))
-				Expect(result).To(HaveKeyWithValue("target-team", "backend"))
+				Expect(result).To(HaveKeyWithValue("target_kind", "ApiSubscription"))
+				Expect(result).To(HaveKeyWithValue("target_application", "my-app"))
+				Expect(result).To(HaveKeyWithValue("target_group", "platform"))
+				Expect(result).To(HaveKeyWithValue("target_team", "backend"))
 			})
 		})
 
@@ -187,7 +187,7 @@ var _ = Describe("Notification Utilities", func() {
 
 				Expect(kind).To(Equal("EventSubscription"))
 				Expect(name).To(Equal("simple-name"))
-				Expect(result).To(HaveKeyWithValue("target-application", "simple-name"))
+				Expect(result).To(HaveKeyWithValue("target_application", "simple-name"))
 			})
 		})
 	})
