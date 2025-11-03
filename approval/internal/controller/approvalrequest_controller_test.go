@@ -35,6 +35,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 		Name:  "test-requester",
 		Email: "test@test.com",
 		Properties: runtime.RawExtension{
+
 			Raw: []byte(`{"scopes": ["test"]}`),
 		},
 	}

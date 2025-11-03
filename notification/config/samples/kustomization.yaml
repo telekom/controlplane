@@ -1,0 +1,18 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+namespace: controlplane-system
+
+labels:
+  - includeSelectors: true
+    pairs:
+      cp.ei.telekom.de/environment: controlplane-system
+      app.kubernetes.io/managed-by: kustomize
+
+## Append samples of your project ##
+resources:
+  - notification_v1_notificationchannel.yaml
+  - notification_v1_notification.yaml
+  - notification_v1_notificationtemplate.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples
