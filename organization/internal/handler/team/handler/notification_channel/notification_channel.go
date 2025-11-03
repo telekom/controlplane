@@ -96,7 +96,16 @@ func memberChangedNotification(ctx context.Context, owner *organizationv1.Team, 
 		return err
 	}
 
-	if owner.GetGeneration() > 1 {
+	existingNotificationRef, ok := owner.Status.NotificationsRef["team-members-changed"]
+
+	sendNotification := true
+	if ok {
+		if notification.GetName() == existingNotificationRef.GetName() {
+			sendNotification = false
+		}
+	}
+
+	if owner.GetGeneration() > 1 && sendNotification {
 		notification, err = notificationBuilder.Send(ctx)
 		if err != nil {
 			return err
@@ -112,24 +121,38 @@ func rotateTokenNotification(ctx context.Context, owner *organizationv1.Team, no
 	var notification *notificationv1.Notification
 	var err error
 
+	tokenHash := hash.ComputeHash(owner.Status.TeamToken, nil)
+	notificationName := "token-rotated--" + tokenHash
+
 	notification, err = notificationBuilder.WithPurpose("token-rotated").
-		WithName("token-rotated--" + hash.ComputeHash(owner.Status.TeamToken, nil)).
+		WithName(notificationName).
 		Build(ctx)
 	if err != nil {
 		return err
 	}
 
-	notification, err = notificationBuilder.Send(ctx)
-	if err != nil {
-		return err
+	existingNotificationRef, ok := owner.Status.NotificationsRef["token-rotated"]
+	createNotification := true
+	if ok {
+		if notification.GetName() == existingNotificationRef.GetName() {
+			createNotification = false
+		}
+	}
+
+	if createNotification {
+		notification, err = notificationBuilder.Send(ctx)
+		if err != nil {
+			return err
+		}
 	}
 
 	owner.Status.NotificationsRef["token-rotated"] = types.ObjectRefFromObject(notification)
+
 	return nil
 }
 
 func onboardingNotification(ctx context.Context, owner *organizationv1.Team, notificationBuilder builder.NotificationBuilder) error {
-	if owner.GetGeneration() == 1 {
+	if _, ok := owner.Status.NotificationsRef["onboarded"]; owner.GetGeneration() == 1 && !ok {
 		notification, err := notificationBuilder.WithPurpose("onboarded").
 			WithName("onboarded").
 			Send(ctx)
