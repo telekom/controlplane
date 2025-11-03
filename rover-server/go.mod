@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/rover-server
 
-go 1.24.7
+go 1.24.9
 
 require (
 	github.com/telekom/controlplane/admin/api v0.0.0
