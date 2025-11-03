@@ -122,7 +122,7 @@ var _ = Describe("Rover Controller", func() {
 		})
 
 		It("should fail to delete a non-existent rover", func() {
-			req := httptest.NewRequest(http.MethodDelete, "/apispecifications/eni--hyperion--blabla", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/rovers/eni--hyperion--blabla", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
 		})
