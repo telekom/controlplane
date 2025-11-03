@@ -7,8 +7,4 @@
 
 package tools
 
-import (
-	_ "github.com/golang/mock/mockgen"
-)
-
-//go:generate go run github.com/golang/mock/mockgen -destination=../pkg/client/mocks/janitor_client.go github.com/telekom/controlplane/common/pkg/client JanitorClient
+//go:generate go run github.com/vektra/mockery/v2 --config=mockery.client.yaml
