@@ -1,0 +1,33 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# This rule is not used by the project notification itself.
+# It is provided to allow the cluster admin to help manage permissions for users.
+#
+# Grants read-only access to notification.cp.ei.telekom.de resources.
+# This role is intended for users who need visibility into these resources
+# without permissions to modify them. It is ideal for monitoring purposes and limited-access viewing.
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: notification
+    app.kubernetes.io/managed-by: kustomize
+  name: notificationchannel-viewer-role
+rules:
+- apiGroups:
+  - notification.cp.ei.telekom.de
+  resources:
+  - notificationchannels
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - notification.cp.ei.telekom.de
+  resources:
+  - notificationchannels/status
+  verbs:
+  - get
