@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/rover-ctl
 
-go 1.24.7
+go 1.24.9
 
 require (
 	github.com/go-logr/logr v1.4.3
