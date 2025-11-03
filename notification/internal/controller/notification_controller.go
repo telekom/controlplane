@@ -7,6 +7,8 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter/msteams"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter/webhook"
@@ -15,7 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"strings"
 
 	"github.com/telekom/controlplane/notification/internal/sender"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
@@ -78,6 +79,9 @@ func NewNotificationReconcilerWithSenderConfig(
 // +kubebuilder:rbac:groups=notification.cp.ei.telekom.de,resources=notifications,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=notification.cp.ei.telekom.de,resources=notifications/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=notification.cp.ei.telekom.de,resources=notifications/finalizers,verbs=update
+
+// Notifications are created in team namespaces. The controller needs permission to create events in all namespaces where notifications exist.
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 func (r *NotificationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &notificationv1.Notification{})
