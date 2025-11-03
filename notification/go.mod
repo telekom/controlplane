@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/notification
 
-go 1.24.7
+go 1.24.9
 
 require (
 	github.com/telekom/controlplane/common v0.0.0
@@ -15,12 +15,12 @@ tool github.com/vektra/mockery/v2
 
 require (
 	github.com/go-logr/logr v1.4.3
+	github.com/go-resty/resty/v2 v2.16.5
 	github.com/onsi/ginkgo/v2 v2.25.3
 	github.com/onsi/gomega v1.38.2
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
-	go.uber.org/mock v0.6.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	k8s.io/api v0.34.1
 	k8s.io/apimachinery v0.34.1
@@ -53,7 +53,6 @@ require (
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
-	github.com/go-resty/resty/v2 v2.16.5 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
