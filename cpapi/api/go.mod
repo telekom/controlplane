@@ -9,7 +9,7 @@ go 1.24.9
 require (
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/pkg/errors v0.9.1
-	golang.org/x/oauth2 v0.31.0
+	golang.org/x/oauth2 v0.32.0
 )
 
 require (
