@@ -1,0 +1,261 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: notification.cp.ei.telekom.de/v1
+kind: NotificationTemplate
+metadata:
+  name: api-subscription-approval--chat
+  labels:
+    app.kubernetes.io/name: api-subscription-approval--chat
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  purpose: "api-subscription-approval"
+  channelType: "MsTeams"
+  # Adaptive Card template for MS Teams approval notifications
+  # Structure: Header (logo + title) -> Status banner -> Details (FactSet) -> Message -> Footer
+  template: |
+    {
+      "type": "message",
+      "attachments": [
+        {
+          "contentType": "application/vnd.microsoft.card.adaptive",
+          "contentUrl": null,
+          "content": {
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "ColumnSet",
+                "columns": [
+                  {
+                    "type": "Column",
+                    "width": "auto",
+                    "items": [
+                      {
+                        "type": "Image",
+                        "url": "https://raw.githubusercontent.com/telekom/controlplane/main/docs/pages/static/img/eni-tardis-small.png",
+                        "altText": "TARDIS Logo",
+                        "size": "Medium",
+                        "style": "Default",
+                        "spacing": "Small"
+                      }
+                    ],
+                    "verticalContentAlignment": "Center"
+                  },
+                  {
+                    "type": "Column",
+                    "width": "stretch",
+                    "items": [
+                      {
+                        "type": "TextBlock",
+                        "text": "TARDIS / ROVER",
+                        "size": "Large",
+                        "weight": "Bolder",
+                        "color": "Accent",
+                        "horizontalAlignment": "Center"
+                      }
+                    ],
+                    "style": "emphasis",
+                    "verticalContentAlignment": "Center"
+                  }
+                ]
+              },
+              {
+                "type": "Container",
+                "style": "emphasis",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "[{{.approval.environment}}][Approval] {{.approval.status}} {{.approval.type}} of your API {{.approval.api}} for team {{.approval.team}}({{.approval.group}})",
+                    "size": "Large",
+                    "weight": "Bolder",
+                    "wrap": true,
+                    "color": "{{if eq .approval.status `GRANTED`}}Good{{else if eq .approval.status `DENIED`}}Attention{{else}}Default{{end}}"
+                  }
+                ],
+                "spacing": "Medium",
+                "separator": true
+              },
+              {
+                "type": "Container",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "Approval Details",
+                    "weight": "Bolder",
+                    "size": "Medium"
+                  }
+                ],
+                "spacing": "Large",
+                "separator": true
+              },
+              {
+                "type": "Container",
+                "style": "accent",
+                "spacing": "Small",
+                "items": [
+                  {
+                    "type": "FactSet",
+                    "facts": [
+                      {
+                        "title": "Application:",
+                        "value": "{{.approval.application}}"
+                      },
+                      {
+                        "title": "Team:",
+                        "value": "{{.approval.team}}"
+                      },
+                      {
+                        "title": "Group:",
+                        "value": "{{.approval.group}}"
+                      },
+                      {
+                        "title": "Type:",
+                        "value": "{{.approval.type}}"
+                      },
+                      {
+                        "title": "API:",
+                        "value": "{{.approval.api}}"
+                      },
+                      {
+                        "title": "Environment:",
+                        "value": "{{.approval.environment}}"
+                      },
+                      {
+                        "title": "Submitted:",
+                        "value": "{{.approval.submittedAt}}"
+                      },
+                      {
+                        "title": "Status:",
+                        "value": "**{{.approval.status}}**"
+                      },
+                      {
+                        "title": "Oauth-Scopes:",
+                        "value": "{{.approval.oauthScopes}}"
+                      }
+                    ]
+                  }
+                ],
+                "bleed": true
+              },
+              {
+                "type": "Container",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "Notification Message",
+                    "weight": "Bolder",
+                    "size": "Medium"
+                  }
+                ],
+                "spacing": "Large",
+                "separator": true
+              },
+              {
+                "type": "Container",
+                "style": "default",
+                "spacing": "Small",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "Dear team {{.approval.team}},",
+                    "wrap": true,
+                    "spacing": "None"
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "You granted the **{{.approval.type}}** of your **API {{.approval.api}}** that is exposed by your application **{{.approval.application}}**.",
+                    "wrap": true,
+                    "spacing": "Medium"
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "Application **{{.approval.application}}** of team **{{.approval.team}}** from hub **{{.approval.group}}** is now able to access the **API**. You can manage the **{{.approval.type}}** via the **MissionControl**.",
+                    "wrap": true,
+                    "spacing": "Medium"
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "Best regards,\nTARDIS-Team",
+                    "wrap": true,
+                    "spacing": "Medium",
+                    "isSubtle": true
+                  }
+                ]
+              },
+              {
+                "type": "Container",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "Generated by TARDIS/ROVER Control Plane • {{.approval.processedAt}}",
+                    "size": "Small",
+                    "weight": "Lighter",
+                    "horizontalAlignment": "Center",
+                    "isSubtle": true
+                  }
+                ],
+                "spacing": "Large",
+                "separator": true
+              }
+            ]
+          }
+        }
+      ]
+    }
+  schema: |
+    {
+      "type": "object",
+      "required": ["approval"],
+      "properties": {
+        "approval": {
+          "type": "object",
+          "required": ["status", "application", "team", "group", "type", "api"],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["GRANTED", "DENIED", "PENDING"],
+              "description": "The approval status"
+            },
+            "application": {
+              "type": "string",
+              "description": "Name of the application"
+            },
+            "team": {
+              "type": "string",
+              "description": "Team name"
+            },
+            "group": {
+              "type": "string",
+              "description": "Group or hub name"
+            },
+            "type": {
+              "type": "string",
+              "description": "Type of approval (e.g., subscription, deployment)"
+            },
+            "api": {
+              "type": "string",
+              "description": "API endpoint path"
+            },
+            "environment": {
+              "type": "string",
+              "description": "Environment name (e.g., Test, Production)"
+            },
+            "submittedAt": {
+              "type": "string",
+              "description": "Timestamp when the request was submitted"
+            },
+            "processedAt": {
+              "type": "string",
+              "description": "Timestamp when the request was processed"
+            },
+            "oauthScopes": {
+              "type": "string",
+              "description": "OAuth scopes for the API access (optional)"
+            }
+          }
+        }
+      }
+    }
