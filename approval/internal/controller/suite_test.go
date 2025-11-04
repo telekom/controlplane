@@ -28,6 +28,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	crscheme "sigs.k8s.io/controller-runtime/pkg/scheme"
@@ -38,7 +39,7 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 const (
-	timeout         = 2 * time.Second
+	timeout         = -1
 	interval        = 200 * time.Millisecond
 	testNamespace   = "default"
 	testEnvironment = "test"
@@ -77,6 +78,7 @@ var _ = BeforeSuite(func() {
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "..", "..", "common", "pkg", "test", "testdata", "crds"),
+			filepath.Join("..", "..", "..", "notification", "config", "crd", "bases"),
 			filepath.Join("..", "..", "config", "crd", "bases")},
 		ErrorIfCRDPathMissing: true,
 
@@ -95,6 +97,9 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	err = approvalv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = notificationv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme

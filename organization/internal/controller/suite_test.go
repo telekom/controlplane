@@ -17,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/test/mock"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/organization/internal/index"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -76,6 +77,7 @@ var _ = BeforeSuite(func() {
 				filepath.Join("..", "..", "..", "admin", "config", "crd", "bases"),
 				filepath.Join("..", "..", "..", "gateway", "config", "crd", "bases"),
 				filepath.Join("..", "..", "..", "identity", "config", "crd", "bases"),
+				filepath.Join("..", "..", "..", "notification", "config", "crd", "bases"),
 			},
 			filepath.Join("..", "..", "config", "crd", "bases")),
 		ErrorIfCRDPathMissing: true,
@@ -100,6 +102,9 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = identityv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = notificationv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
