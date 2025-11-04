@@ -8,6 +8,8 @@ import (
 	"context"
 	"encoding/json"
 	"maps"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -122,12 +124,28 @@ func (n *notificationBuilder) WithName(name string) NotificationBuilder {
 }
 
 func (n *notificationBuilder) WithDefaultChannels(ctx context.Context, namespace string) NotificationBuilder {
+	log := log.FromContext(ctx)
 	k8sClient := cclient.ClientFromContextOrDie(ctx)
 	channelList := &notificationv1.NotificationChannelList{}
 	err := k8sClient.List(ctx, channelList, client.InNamespace(namespace))
 	if err != nil {
 		n.Errors = append(n.Errors, errors.Wrap(err, "failed to list notification channels"))
 		return n
+	}
+
+	log.V(1).Info("Found channels in namespace", "namespace", namespace, "count", len(channelList.Items), "channels", channelList.Items)
+
+	// todo - remove this after demo - there might be a bug when channels are not yet ready so the first notification doesnt see them, let add a short wait
+	if len(channelList.Items) == 0 {
+		log.V(1).Info("Waiting for 2 seconds...")
+		time.Sleep(2 * time.Second) // pauses execution for 2 seconds
+		channelList = &notificationv1.NotificationChannelList{}
+		err = k8sClient.List(ctx, channelList, client.InNamespace(namespace))
+		if err != nil {
+			n.Errors = append(n.Errors, errors.Wrap(err, "failed to list notification channels"))
+			return n
+		}
+		log.V(1).Info("AFTER WAITING - Found channels in namespace", "namespace", namespace, "count", len(channelList.Items), "channels", channelList.Items)
 	}
 
 	for _, channel := range channelList.Items {
