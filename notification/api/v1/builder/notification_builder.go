@@ -7,8 +7,8 @@ package builder
 import (
 	"context"
 	"encoding/json"
+	"github.com/go-logr/logr"
 	"maps"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -124,7 +124,7 @@ func (n *notificationBuilder) WithName(name string) NotificationBuilder {
 }
 
 func (n *notificationBuilder) WithDefaultChannels(ctx context.Context, namespace string) NotificationBuilder {
-	log := log.FromContext(ctx)
+	log := logr.FromContextOrDiscard(ctx)
 	k8sClient := cclient.ClientFromContextOrDie(ctx)
 	channelList := &notificationv1.NotificationChannelList{}
 	err := k8sClient.List(ctx, channelList, client.InNamespace(namespace))
