@@ -6,6 +6,7 @@ package notification_channel
 
 import (
 	"context"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
@@ -17,6 +18,8 @@ import (
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler"
 )
+
+const separator = "--"
 
 type NotificationChannelHandler struct {
 }
@@ -131,12 +134,10 @@ func rotateTokenNotification(ctx context.Context, owner *organizationv1.Team, no
 		return err
 	}
 
-	existingNotificationRef, ok := owner.Status.NotificationsRef["token-rotated"]
 	createNotification := true
+	existingNotificationRef, ok := owner.Status.NotificationsRef["token-rotated"]
 	if ok {
-		if notification.GetName() == existingNotificationRef.GetName() {
-			createNotification = false
-		}
+		createNotification = hasTeamTokenChanged(existingNotificationRef.GetName(), notification.GetName())
 	}
 
 	if createNotification {
@@ -166,4 +167,21 @@ func onboardingNotification(ctx context.Context, owner *organizationv1.Team, not
 
 func (n NotificationChannelHandler) Identifier() string {
 	return "notification-channel"
+}
+
+func hasTeamTokenChanged(old string, new string) bool {
+	// notification name is token-rotated--<tokenHash>--<specHash>
+
+	// split by delimiter
+	oldParts := strings.Split(old, separator)
+	if len(oldParts) < 2 {
+		return false
+	}
+
+	newParts := strings.Split(new, separator)
+	if len(newParts) < 2 {
+		return false
+	}
+
+	return oldParts[1] != newParts[1]
 }
