@@ -9,6 +9,7 @@ go 1.24.9
 require (
 	github.com/telekom/controlplane/approval/api v0.0.0
 	github.com/telekom/controlplane/common v0.0.0
+	github.com/telekom/controlplane/notification/api v0.0.0
 )
 
 require (
@@ -25,6 +26,7 @@ require (
 replace (
 	github.com/telekom/controlplane/approval/api => ./api
 	github.com/telekom/controlplane/common => ../common
+	github.com/telekom/controlplane/notification/api => ../notification/api
 )
 
 require (
