@@ -18,6 +18,7 @@ import (
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler/gateway_consumer"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler/identity_client"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler/namespace"
+	"github.com/telekom/controlplane/organization/internal/handler/team/handler/notification_channel"
 	"github.com/telekom/controlplane/organization/internal/secret"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -42,11 +43,13 @@ func getInternalObjectHandlersInOrder(order order) []internalHandler.ObjectHandl
 			&namespace.NamespaceHandler{},
 			&identity_client.IdentityClientHandler{},
 			&gateway_consumer.GatewayConsumerHandler{},
+			&notification_channel.NotificationChannelHandler{},
 		}
 	case deletion:
 		return []internalHandler.ObjectHandler{
 			&identity_client.IdentityClientHandler{},
 			&gateway_consumer.GatewayConsumerHandler{},
+			&notification_channel.NotificationChannelHandler{},
 			&namespace.NamespaceHandler{},
 		}
 	default:
@@ -58,7 +61,7 @@ func (h *TeamHandler) CreateOrUpdate(ctx context.Context, teamObj *organizationv
 	logger := log.FromContext(ctx)
 	internalObjHandler := getInternalObjectHandlersInOrder(creation)
 
-	logger.V(1).Info(fmt.Sprintf("ℹ️ requesting group: %s", teamObj.Spec.Group))
+	logger.V(1).Info(fmt.Sprintf("requesting group: %s", teamObj.Spec.Group))
 	_, err := group.GetGroupByName(ctx, teamObj.Spec.Group)
 	if err != nil {
 		teamObj.SetCondition(condition.NewBlockedCondition("Group not found"))
@@ -67,7 +70,7 @@ func (h *TeamHandler) CreateOrUpdate(ctx context.Context, teamObj *organizationv
 
 	// CreateOrUpdate internal objects
 	for i := range internalObjHandler {
-		logger.V(1).Info("ℹ️ createOrUpdate sub-resource", "handler", internalObjHandler[i].Identifier())
+		logger.V(1).Info("createOrUpdate sub-resource", "handler", internalObjHandler[i].Identifier())
 		err = internalObjHandler[i].CreateOrUpdate(ctx, teamObj)
 		if err != nil {
 			teamObj.SetCondition(condition.NewBlockedCondition(fmt.Sprintf("Failed to handle %s", internalObjHandler[i].Identifier())))
@@ -85,7 +88,7 @@ func (h *TeamHandler) Delete(ctx context.Context, teamObj *organizationv1.Team) 
 	internalObjHandler := getInternalObjectHandlersInOrder(deletion)
 
 	for i := range internalObjHandler {
-		logger.V(1).Info("ℹ️ delete sub-resource", "handler", internalObjHandler[i].Identifier())
+		logger.V(1).Info("delete sub-resource", "handler", internalObjHandler[i].Identifier())
 		err := internalObjHandler[i].Delete(ctx, teamObj)
 		if err != nil {
 			if !k8sErrors.IsNotFound(err) {

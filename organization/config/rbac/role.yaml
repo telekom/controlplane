@@ -59,6 +59,19 @@ rules:
   - update
   - watch
 - apiGroups:
+  - notification.cp.ei.telekom.de
+  resources:
+  - notificationchannels
+  - notifications
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - organization.cp.ei.telekom.de
   resources:
   - groups

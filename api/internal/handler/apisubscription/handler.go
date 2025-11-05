@@ -160,6 +160,9 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			apiSub.Name, apiSub.Namespace)
 	}
 
+	// add the name of the requesting application to the properties - this is later used in notifications
+	properties["application"] = apiSub.Spec.Requestor.Application.Name
+
 	approvalBuilder := builder.NewApprovalBuilder(scopedClient, apiSub)
 	approvalBuilder.WithHashValue(requester.Properties)
 	approvalBuilder.WithRequester(requester)

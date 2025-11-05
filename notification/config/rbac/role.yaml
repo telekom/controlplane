@@ -8,6 +8,13 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
   - notification.cp.ei.telekom.de
   resources:
   - notificationchannels
