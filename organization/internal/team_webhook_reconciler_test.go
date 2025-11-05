@@ -6,6 +6,8 @@ package internal
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -16,6 +18,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/secret"
 	"github.com/telekom/controlplane/secret-manager/api"
@@ -213,6 +216,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 
 				var previousToken, latestToken organizationv1.TeamToken
 				previousToken = getDecodedToken(team.Status.TeamToken)
+				previousTokenRotateRef := team.Status.NotificationsRef["token-rotated"]
 				team.Spec.Secret = "rotate"
 
 				By("Updating the Team.Spec to rotate with delay to have a different timestamp")
@@ -242,6 +246,13 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					identityClient := &identityv1.Client{}
 					g.Expect(k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)).NotTo(HaveOccurred())
 					g.Expect(identityClient.Spec.ClientSecret).To(Equal(team.Spec.Secret))
+
+					By("Checking new token rotation notification was created")
+					g.Expect(team.Status.NotificationsRef["token-rotated"]).NotTo(BeNil())
+					g.Expect(team.Status.NotificationsRef["token-rotated"].Name).NotTo(Equal(previousTokenRotateRef.Name))
+					var tokenNotification = &notificationv1.Notification{}
+					g.Expect(k8sClient.Get(ctx, team.Status.NotificationsRef["token-rotated"].K8s(), tokenNotification)).NotTo(HaveOccurred())
+					g.Expect(tokenNotification.Spec.Purpose).To(Equal("token-rotated"))
 
 				}, timeout, interval).Should(Succeed())
 			})
@@ -295,14 +306,16 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					ExpectObjConditionToBeReady(g, team)
 					g.Expect(team.Status.IdentityClientRef).NotTo(BeNil())
 					By("Checking the team changes have accorded")
-					g.Expect(team.Spec).To(BeEquivalentTo(organizationv1.TeamSpec{
-						Name:     teamName,
-						Group:    groupName,
-						Email:    "mail@example.com",
-						Members:  []organizationv1.Member{{Email: "mail@example.com", Name: "member"}, {Email: "mail@example.com", Name: "member2"}},
-						Category: organizationv1.TeamCategoryCustomer,
-						Secret:   "$<testgroup-alpha--team-alphasecret>",
-					}))
+					g.Expect(team.Spec.Name).To(Equal(teamName))
+					g.Expect(team.Spec.Group).To(Equal(groupName))
+					g.Expect(team.Spec.Email).To(Equal("mail@example.com"))
+					g.Expect(team.Spec.Members).To(ConsistOf(
+						organizationv1.Member{Email: "mail@example.com", Name: "member"},
+						organizationv1.Member{Email: "mail@example.com", Name: "member2"},
+					))
+					g.Expect(team.Spec.Category).To(Equal(organizationv1.TeamCategoryCustomer))
+					g.Expect(team.Spec.Secret).To(HavePrefix("$<testgroup-alpha--team-alphasecret-"))
+					g.Expect(team.Spec.Secret).To(HaveSuffix(">"))
 					By("Checking the team identity client is back to desired state")
 					g.Expect(k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)).ToNot(HaveOccurred())
 					identityClient.Spec.ClientSecret = "<obfuscated>"
@@ -370,12 +383,15 @@ func runAndReturnForUpsertTeam() func(ctx2 context.Context, s string, s2 string,
 		for i := range option {
 			option[i](onboardingOptions)
 		}
-		tokenId := s + s2 + "token"
+
 		tokenValue := fmt.Sprintf("%s", onboardingOptions.SecretValues["teamToken"])
+		tokenHash := sha256.Sum256([]byte(tokenValue))
+		tokenId := s + s2 + "token-" + hex.EncodeToString(tokenHash[:8])
 		memoryTestStorage[tokenId] = tokenValue
 
-		secretId := s + s2 + "secret"
 		secretValue := fmt.Sprintf("%s", onboardingOptions.SecretValues["clientSecret"])
+		secretHash := sha256.Sum256([]byte(secretValue))
+		secretId := s + s2 + "secret-" + hex.EncodeToString(secretHash[:8])
 		memoryTestStorage[secretId] = secretValue
 
 		return map[string]string{

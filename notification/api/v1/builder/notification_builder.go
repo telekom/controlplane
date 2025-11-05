@@ -62,6 +62,10 @@ type NotificationBuilder interface {
 	// This is an optional field. If not set, the sender will be set to "System".
 	WithSender(senderType notificationv1.SenderType, senderName string) NotificationBuilder
 
+	// WithName sets the name of the notification. If omitted empty, the name will be generated based on the purpose.
+	// A hash will be appended at the end by the builder.
+	WithName(nameSuffix string) NotificationBuilder
+
 	// WithDefaultChannel will set all available channels for the given namespace
 	WithDefaultChannels(ctx context.Context, namespace string) NotificationBuilder
 	// WithChannels sets the channels to send the notification to.
@@ -88,6 +92,8 @@ type notificationBuilder struct {
 
 	Owner client.Object
 
+	Name string
+
 	Errors []error
 }
 
@@ -107,6 +113,11 @@ func New() NotificationBuilder {
 // WithChannels implements NotificationBuilder.
 func (n *notificationBuilder) WithChannels(channels ...types.ObjectRef) NotificationBuilder {
 	n.Notification.Spec.Channels = append(n.Notification.Spec.Channels, channels...)
+	return n
+}
+
+func (n *notificationBuilder) WithName(name string) NotificationBuilder {
+	n.Name = name
 	return n
 }
 
@@ -182,7 +193,7 @@ func (n *notificationBuilder) Build(ctx context.Context) (*notificationv1.Notifi
 		n.WithDefaultChannels(ctx, n.Notification.Namespace)
 	}
 
-	n.Notification.Name = makeName(n.Notification)
+	n.Notification.Name = makeName(n.Name, n.Notification)
 
 	return n.Notification, nil
 }
