@@ -190,18 +190,18 @@ The following properties are automatically included in all approval notification
 |----------------------|-----------------------------------------------------------------------------------------------------------------------|---------------------------------------------|
 | `environment`        | The environment where the approval occurred                                                                           | `prod`, `dev`                               |
 | `state`              | The current state of the approval                                                                                     | `granted`, `rejected`, ...                  |
-| `target-kind`        | The kind of the target resource                                                                                       | `ApiSubscription`, `EventSubscription`, ... |
-| `target-application` | Application name from the target                                                                                      | `my-app`                                    |
-| `target-group`       | Group name from the target namespace                                                                                  | `foo`                                       |
-| `target-team`        | Team name from the target namespace                                                                                   | `bar`                                       |
-| `requester-group`    | Group name of the requester                                                                                           | `onsite-group`                              |
-| `requester-team`     | Team name of the requester                                                                                            | `enemy-team`                                |
-| _dynamic fields_     | No guarantees that the following values are filled, **but they should be there, based on conventions** if applicable. |                                             |
-| `basepath`           | The path of the target resource. It is extracted from the target resource properties map.                             | `foo/bar/myapi/v1`                          |
-| `scopes`             | (optional)  Oauth scopes to limit the access.                                                                         | (_array_)`[admin:read, admin:write]`        |
+| `target_kind`        | The kind of the target resource                                                                                       | `ApiSubscription`, `EventSubscription`, ... |
+| `target_application` | Application name from the target                                                                                      | `my-app`                                    |
+| `target_group`       | Group name from the target namespace                                                                                  | `foo`                                       |
+| `target_team`        | Team name from the target namespace                                                                                   | `bar`                                       |
+| `target_basepath`    | Basepath from the target resource                                                                                     | `foo/bar/myapi/v1`                          |
+| `requester_group`    | Group name of the requester                                                                                           | `onsite-group`                              |
+| `requester_team`     | Team name of the requester                                                                                            | `enemy-team`                                |
+| `scopes`             | OAuth scopes from requester properties (defaults to "undefined")                                                      | `["admin:read", "admin:write"]`             |
 
 > [!Note]
-> If `requester-group` and `requester-team` cannot be extracted, the [requester.Name](./api/v1/common_types.go) is used instead
+> - If the requester name doesn't follow the `{group}--{team}` format, the entire name is used for both group and team: [requester.Name](./api/v1/common_types.go))
+> - All properties from the requester's Properties field are included in notifications
 
 ## Roadmap
 
