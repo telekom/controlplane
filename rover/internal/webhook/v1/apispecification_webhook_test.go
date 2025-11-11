@@ -249,6 +249,33 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			Expect(warnings).To(BeNil())
 		})
 
+		It("should ignore the case of the ApiCategory label and succeed", func() {
+			By("creating an ApiSpecification with a valid ApiCategory in different case")
+			apispecification := &roverv1.ApiSpecification{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-api-specification",
+					Namespace: "test--my-group--my-team", // team with group "my-group"
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: "test",
+					},
+				},
+				Spec: roverv1.ApiSpecificationSpec{
+					Version:  "1.0.0",
+					Category: "Some-Api-Category",   // exists but different case
+					BasePath: "/my-group/my-api/v1", // starts with "my-group"
+				},
+			}
+
+			validator := NewApiSpecificationValidatorMock("my-group", "my-team")
+
+			By("validating the ApiSpecification")
+			warnings, err := validator.ValidateCreate(ctx, apispecification)
+
+			By("expecting no error")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(warnings).To(BeNil())
+		})
+
 		It("should allow any ApiCategory when no ApiCategories are defined in the environment", func() {
 			By("creating an ApiSpecification with any ApiCategory when no ApiCategories exist")
 			apispecification := &roverv1.ApiSpecification{
