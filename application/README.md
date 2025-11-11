@@ -14,23 +14,26 @@ SPDX-License-Identifier: CC0-1.0
 
 <p align="center">
   <a href="#about">About</a> •
-  <a href="#workflow">Workflow</a> •
-  <a href="#zone-integration">Zone Integration</a> •
+  <a href="#features">Features</a> •
+  <a href="#zone-integration">Zone Integration</a>
 </p>
 
 ## About
 
 The Application operator provides a Kubernetes-native way to manage applications. 
-An application is an abstraction representing a users Rover file. Once their Rover file is applied, the created Application logically encapsulates all the exposures and subscriptions. The Application can also contain an Identity client, that can be used to access the subscriptions.
+An application is an abstraction representing a users Rover file. 
+Once their Rover file is applied, the created Application logically encapsulates all the exposures and subscriptions. 
+The Application can also contain an Identity client and Gateway Consumers, that can be used to access Controlplane Server endpoints.
 
+## Features
 
-## Workflow
+- **Automatic Resource Provisioning**: Automatically creates Identity clients and Gateway consumers for applications to Access administrative controlplane server endpoints like [rover-server](../rover-server).
+- **Multi-Zone Support**: Primary and failover zone configuration for high availability
+- **Secret Management Integration**: Seamless integration with Secret Manager for credential handling
+- **IP Restriction Support**: Configure IP-based access control for Gateway consumers
 
-The Application operator follows a hierarchical reconciliation pattern for Application resource management:
-
-1. **Application Reconciliation**: The operator watches the Application resource and periodically adjust the cluster's configuration. This includes actions like managing the Identity client and Gateway consumer associated with the Application and rotating the secret. 
-
-The controller implements a declarative approach, continuously reconciling the desired state (defined in the CRs) with the actual state in the cluster. It handles retries and error conditions to ensure eventual consistency.
+The Application operator follows a hierarchical reconciliation pattern for Application resource management.
+The operator watches the Application resource and manages the identity client and gateway consumer associated with the application to configure the access point for controlplane server endpoints.
 
 ## Zone Integration
 
