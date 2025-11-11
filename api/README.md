@@ -31,6 +31,8 @@ The following diagram illustrates the architecture of the Api domain:
 - **Approval Handling**: Require approval when subscribing to APIs using the integration with the [Approval Domain](../approval).
 - **Api Categories**: Classify APIs into categories and customize their behavior based on these categories.
 
+The actual features that are supported by the gateway instance, are listed in [gateway domain](../gateway) as this domain is a abstract layer for the gateway to handle access control.
+
 ### Api Categories
 
 You may create categories to classify your APIs. Each category can have specific properties that define its behavior.
