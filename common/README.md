@@ -64,10 +64,25 @@ This is done to virtualize a Kubernetes cluster and to run multiple controlplane
 
 We use the conditions feature that Kubernetes offers. See [docs](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties) for more information.
 
-The following conditions are used:
+Helper functions can be found in [pkg/condition/condition.go](pkg/condition/condition.go)
 
-- **Ready**: This condition indicates that the CR is ready. It can have any Reason and Message but a common one is `Done`.
-- **Processing**: This condition indicates that the CR is being processed. It can have any Reason and Message but a common one is `Blocked`.
+### Condition Types
+
+The following condition types are supported ([pkg/condition/condition.go](pkg/condition/condition.go)):
+
+- **Ready**: Indicates that the resource is ready and operational
+  - **Status**: `True` = Ready, `False` = Not Ready, `Unknown` = Unknown state
+  - **Reasons**: Custom per domain (e.g., "SubResourceProvisioned", "ConfigurationValid")
+  
+- **Processing**: Indicates that the resource is being processed or reconciled
+  - **Status**:
+    - `True` = Currently processing, 
+    - `False` = Processing complete or blocked
+  - Out-Of-The-Box supported **Reasons**: 
+    - `Blocked` (when processing is blocked), 
+    - `Done` (when processing is complete),
+
+
 
 
 ## Scripts
