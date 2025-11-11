@@ -36,11 +36,11 @@ type RetryableWithDelayError interface {
 // It returns a boolean indicating whether the object's conditions were updated and a reconcile.Result
 // that suggests whether to requeue the reconciliation and after what duration.
 func HandleError(obj types.Object, err error, recorder record.EventRecorder) (bool, reconcile.Result) {
-	err = errors.Cause(err)
+	rootCauseErr := errors.Cause(err)
 
-	if be, ok := err.(BlockedError); ok && be.IsBlocked() {
-		recordError(obj, err, "Blocked", recorder)
-		updatd := obj.SetCondition(condition.NewBlockedCondition(err.Error()))
+	if be, ok := rootCauseErr.(BlockedError); ok && be.IsBlocked() {
+		recordError(obj, rootCauseErr, "Blocked", recorder)
+		updatd := obj.SetCondition(condition.NewBlockedCondition(rootCauseErr.Error()))
 		return updatd, reconcile.Result{
 			// Its blocked but we still want to recheck later
 			// However, with the longer interval for normal requeues
@@ -48,8 +48,8 @@ func HandleError(obj types.Object, err error, recorder record.EventRecorder) (bo
 		}
 	}
 
-	if re, ok := err.(RetryableWithDelayError); ok {
-		recordError(obj, err, "Retryable", recorder)
+	if re, ok := rootCauseErr.(RetryableWithDelayError); ok {
+		recordError(obj, rootCauseErr, "Retryable", recorder)
 		if re.IsRetryable() {
 			deley := re.RetryDelay()
 			if deley <= 0 {
@@ -61,8 +61,8 @@ func HandleError(obj types.Object, err error, recorder record.EventRecorder) (bo
 		}
 	}
 
-	if re, ok := err.(RetryableError); ok {
-		recordError(obj, err, "Retryable", recorder)
+	if re, ok := rootCauseErr.(RetryableError); ok {
+		recordError(obj, rootCauseErr, "Retryable", recorder)
 		if re.IsRetryable() {
 			return false, reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
 		} else {
@@ -70,7 +70,7 @@ func HandleError(obj types.Object, err error, recorder record.EventRecorder) (bo
 		}
 	}
 
-	recordError(obj, err, "Unknown", recorder)
+	recordError(obj, rootCauseErr, "Unknown", recorder)
 	return false, reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
 }
 
