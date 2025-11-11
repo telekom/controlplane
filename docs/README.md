@@ -1,67 +1,104 @@
-# Controlplane Technical Documentation
+# Controlplane Documentation
 
-This repository contains technical documentation and presentations for the Open Telekom Integration Platform's controlplane.
+This directory contains the technical documentation for the Open Telekom Integration Platform's ControlPlane.
 
-## Project Structure
+## Overview
 
-- `docs/` - Comprehensive technical documentation built with Docusaurus
-- `presentation/` - Technical presentation built with Slidev
+The ControlPlane documentation is built using **Docusaurus** for comprehensive technical documentation. The documentation provides a high-level overview of the platform architecture, concepts, and usage patterns.
 
-## Getting Started
+> **Important**: Domain-specific technical details remain in each domain's README.md file. The Docusaurus documentation focuses on general concepts, architecture overview, and cross-domain workflows.
 
-### Requirements
+## Documentation Structure
 
-- Node.js 16+
-- npm 7+
+- **Docusaurus (`pages/`)**: General platform overview, architecture, concepts, and getting started guides
+- **Slidev (`presentation/`)**: Technical presentations for meetings and conferences
+- **Domain READMEs**: Detailed technical documentation for each domain (API, Gateway, Identity, etc.)
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 20+
+- npm 9+
 
 ### Installation
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd controlplane-docs
+# Navigate to the docs directory
+cd docs
 
-# Install dependencies for both projects
+# Install dependencies
 npm install
 ```
 
-## Development
+### Development
 
-### Documentation (Docusaurus)
-
+**Start Docusaurus development server:**
 ```bash
-# Start development server
 npm run docs:dev
-
-# Build for production
-npm run docs:build
-
-# Serve production build locally
-npm run docs:serve
+# Opens at http://localhost:3000
 ```
 
-### Presentation (Slidev)
+### Building for Production
 
+**Build Docusaurus site:**
 ```bash
-# Start development server
-npm run presentation:dev
-
-# Build for production
-npm run presentation:build
-
-# Export to PDF
-npm run presentation:export
+npm run docs:build
+npm run docs:serve  # Preview the build
 ```
+
+**Build Slidev presentation:**
+```bash
+npm run presentation:build
+npm run presentation:export  # Export to PDF
+```
+
+## Content Guidelines
+
+### What Goes in Docusaurus
+
+- **Architecture Overview**: High-level system architecture and component interactions
+- **Concepts**: Core concepts like Rovers, Zones, Environments, Teams
+- **Getting Started**: Installation guides, quick start tutorials
+- **Workflows**: Cross-domain workflows (e.g., API lifecycle from Rover to Gateway)
+- **Best Practices**: Platform-wide best practices and patterns
+
+### What Stays in Domain READMEs
+
+- **CRD Specifications**: Detailed Custom Resource Definition documentation
+- **API References**: Domain-specific API details
+- **Implementation Details**: Internal architecture, handlers, controllers
+- **Code Examples**: Domain-specific code integration examples
+- **Technical Configuration**: Detailed configuration options
 
 ## Technology Stack
 
-This documentation project uses:
+- **[Docusaurus](https://docusaurus.io/)**: Static site generator for documentation
+- **[Slidev](https://sli.dev/)**: Presentation framework for developers
+- **[Mermaid](https://mermaid-js.github.io/)**: Diagram and flowchart generation
+- **[React](https://reactjs.org/)**: UI framework (used by Docusaurus)
 
-- [Docusaurus](https://docusaurus.io/) - For comprehensive documentation
-- [Slidev](https://sli.dev/) - For technical presentations
-- [Mermaid](https://mermaid-js.github.io/) - For diagrams
-- [KaTeX](https://katex.org/) - For mathematical notations
+## Contributing to Documentation
 
-## License
+1. **For general platform documentation**: Edit files in `docs/pages/docs/`
+2. **For domain-specific details**: Edit the respective domain's `README.md`
+3. **For presentations**: Edit `presentation/slides.md`
 
-Apache-2.0
+### Adding New Pages
+
+Create a new Markdown file in `pages/docs/` with frontmatter:
+
+```markdown
+---
+sidebar_position: 1
+title: Your Page Title
+---
+
+# Your Content Here
+```
+
+Update `pages/sidebars.js` if needed for custom navigation.
+
+## Deployment
+
+The documentation is automatically deployed via GitHub Actions on push to the main branch. See `.github/workflows/docs-build.yaml` for details.

@@ -15,7 +15,6 @@ SPDX-License-Identifier: CC0-1.0
 <p align="center">
   <a href="#about">About</a> •
   <a href="#features">Features</a> •
-   <a href="#getting-started">Getting Started</a>
 </p>
 
 ## About
@@ -31,15 +30,16 @@ The following diagram illustrates the architecture of the Identity domain:
     <img width="800" height="700" src="./docs/identity_overview.drawio.svg" />
 </div>
 
-
-
 ## Features
 
 - **Client Management**: Manage clients and their configurations.
 - **IDP Management**: Manage configured IDPs
 - **Realm Management**: Manage separated IDP realms.
 
-## Getting Started
+## Code of Conduct
 
+This project has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) in version 2.1 as our code of conduct. Please see the details in our [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md). All contributors must abide by the code of conduct.
 
-... tbd
+## Licensing
+
+This project follows the [REUSE standard for software licensing](https://reuse.software/). Each file contains copyright and license information, and license texts can be found in the [./LICENSES](../LICENSES) folder. For more information visit https://reuse.software/.

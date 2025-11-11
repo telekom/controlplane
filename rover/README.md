@@ -4,18 +4,38 @@ SPDX-FileCopyrightText: 2025 Deutsche Telekom AG
 SPDX-License-Identifier: CC0-1.0
 -->
 
+<p align="center">
+  <h1 align="center">Rover</h1>
+</p>
 
-# rover
-// TODO(user): Add simple overview of use/purpose
+<p align="center">
+  The Rover domain provides the user-facing API for defining and managing API exposures and subscriptions through declarative Rover files.
+</p>
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+<p align="center">
+  <a href="#about">About</a> •
+  <a href="#features">Features</a> •
+</p>
+
+## About
+
+The Rover domain is the primary entry point for users to interact with the Control Plane. Users define their API exposures and subscriptions in a Rover file, which the operator translates into the appropriate resources across other domains (API, Application, Gateway, Identity).
+
+A Rover resource represents a complete application configuration, including:
+- API exposures with upstream configurations
+- API subscriptions to consume other APIs
+- Traffic management (rate limiting, load balancing)
+- Approval requirements for subscriptions
 
 
 ## Features
 
-* **Load Balancing**: As an API provider you can use the load balancing feature to have requests distributed between a list of upstreams.
-* **Rate Limiting**: Configure rate limits for API traffic at the provider level and for consumers with customizable time windows.
+- **Declarative API Management**: Define API exposures and subscriptions in a single Rover file
+- **Load Balancing**: Distribute requests across multiple upstream services with configurable weights
+- **Rate Limiting**: Configure rate limits at provider and consumer levels with flexible time windows
+- **Approval Workflows**: Integrate with the approval domain for subscription requests
+- **Trusted Teams**: Automatically approve subscriptions from designated trusted teams
+- **Traffic Management**: Configure circuit breakers, timeouts, and retry policies
 
 ### Load Balancing
 
@@ -127,110 +147,12 @@ spec:
                 hour: 20000
 ```
 
-## Getting Started
+## Code of Conduct
 
-### Prerequisites
-- go version v1.21.0+
-- docker version 17.03+.
-- kubectl version v1.11.3+.
-- Access to a Kubernetes v1.11.3+ cluster.
+This project has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) in version 2.1 as our code of conduct. Please see the details in our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). All contributors must abide by the code of conduct.
 
-### To Deploy on the cluster
-**Build and push your image to the location specified by `IMG`:**
+## Licensing
 
-```sh
-make docker-build docker-push IMG=<some-registry>/rover:tag
-```
-
-**NOTE:** This image ought to be published in the personal registry you specified.
-And it is required to have access to pull the image from the working environment.
-Make sure you have the proper permission to the registry if the above commands don’t work.
-
-**Install the CRDs into the cluster:**
-
-```sh
-make install
-```
-
-**Deploy the Manager to the cluster with the image specified by `IMG`:**
-
-```sh
-make deploy IMG=<some-registry>/rover:tag
-```
-
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
-privileges or be logged in as admin.
-
-**Create instances of your solution**
-You can apply the samples (examples) from the config/sample:
-
-```sh
-kubectl apply -k config/samples/
-```
-
->**NOTE**: Ensure that the samples has default values to test it out.
-
-### To Uninstall
-**Delete the instances (CRs) from the cluster:**
-
-```sh
-kubectl delete -k config/samples/
-```
-
-**Delete the APIs(CRDs) from the cluster:**
-
-```sh
-make uninstall
-```
-
-**UnDeploy the controller from the cluster:**
-
-```sh
-make undeploy
-```
-
-## Project Distribution
-
-Following are the steps to build the installer and distribute this project to users.
-
-1. Build the installer for the image built and published in the registry:
-
-```sh
-make build-installer IMG=<some-registry>/rover:tag
-```
-
-NOTE: The makefile target mentioned above generates an 'install.yaml'
-file in the dist directory. This file contains all the resources built
-with Kustomize, which are necessary to install this project without
-its dependencies.
-
-2. Using the installer
-
-Users can just run kubectl apply -f <URL for YAML BUNDLE> to install the project, i.e.:
-
-```sh
-kubectl apply -f https://raw.githubusercontent.com/<org>/rover/<tag or branch>/dist/install.yaml
-```
-
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
-
-**NOTE:** Run `make help` for more information on all potential `make` targets
-
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
-
-## License
-
-Copyright 2024.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+This project follows the [REUSE standard for software licensing](https://reuse.software/).    
+Each file contains copyright and license information, and license texts can be found in the [./LICENSES](./LICENSES) folder. For more information visit https://reuse.software/.    
+You can find a guide for developers at https://telekom.github.io/reuse-template/.

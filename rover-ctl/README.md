@@ -16,8 +16,9 @@ SPDX-License-Identifier: Apache-2.0
 
 <p align="center">
   <a href="#about">About</a> •
-  <a href="#getting-started">Getting Started</a> •
+  <a href="#usage">Usage</a> •
   <a href="#configuration">Configuration</a>
+
 </p>
 
 
@@ -29,54 +30,30 @@ Rover Control CLI (roverctl) is a command-line tool for managing rover resources
     <img height="400" src="docs/img/overview.drawio.svg" />
 </div>
 
-# Getting Started
 
-
-## Installation
-
-
-### From Source
-
-To build and install `roverctl` from source, follow these steps:
-
-1. Clone the repository:
-   ```bash
-   git clone github.com/telekom/controlplane.git
-    cd controlplane/rover-ctl
-    ```
-
-2. Build the binary:
-   ```bash
-   make build
-   ```
-
-3. Install the binary:
-   ```bash
-   make install
-   ```
 
 ## Usage
 
 See [rover-ctl help](./docs/roverctl.md) for a complete list of commands and options.
 
-# Configuration
+## Configuration
 
 Rover-ctl can be configured using environment variables. The tool uses Viper for configuration management with the following options:
 
-## Environment Variables
+### Environment Variables
 
 All environment variables are prefixed with `ROVER_` and use underscores instead of dots for nested keys. For example, `server.url` becomes `ROVER_SERVER_URL`.
 
-| Environment Variable | Description | Default |
-|---------------------|-------------|---------|
-| `ROVER_SERVER_URL` | URL of the Rover server | - |
-| `ROVER_TOKEN_URL` | URL for token authentication | - |
-| `ROVER_TOKEN` | Authentication token | - |
-| `ROVER_LOG_LEVEL` | Log level (debug, info, warn, error) | info |
-| `ROVER_LOG_FORMAT` | Log format (json or console) | console |
-| `ROVER_OUTPUT_FORMAT` | Output format (yaml or json) | yaml |
+| Environment Variable    | Description                          | Default |
+|-------------------------|--------------------------------------|---------|
+| `ROVER_SERVER_URL`      | URL of the Rover server              | -       |
+| `ROVER_TOKEN_URL`       | URL for token authentication         | -       |
+| `ROVER_TOKEN`           | Authentication token                 | -       |
+| `ROVER_LOG_LEVEL`       | Log level (debug, info, warn, error) | info    |
+| `ROVER_LOG_FORMAT`      | Log format (json or console)         | console |
+| `ROVER_OUTPUT_FORMAT`   | Output format (yaml or json)         | yaml    |
 
-## Authentication
+### Authentication
 
 The CLI uses token-based authentication to interact with the Rover server. The token is a base64-encoded JSON object with the following structure:
 
@@ -94,3 +71,13 @@ The CLI uses token-based authentication to interact with the Rover server. The t
 ```
 
 The token can be set using the `ROVER_TOKEN` environment variable or through a configuration file.
+
+## Code of Conduct
+
+This project has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) in version 2.1 as our code of conduct. Please see the details in our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). All contributors must abide by the code of conduct.
+
+## Licensing
+
+This project follows the [REUSE standard for software licensing](https://reuse.software/).    
+Each file contains copyright and license information, and license texts can be found in the [./LICENSES](./LICENSES) folder. For more information visit https://reuse.software/.    
+You can find a guide for developers at https://telekom.github.io/reuse-template/.

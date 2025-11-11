@@ -40,13 +40,17 @@ The organization operator automatically sends notifications for team lifecycle e
 
 ### Notification Overview
 
-| Event                | Trigger                                      | Purpose                | Notification Name              | Hash Generation           |
-|----------------------|----------------------------------------------|------------------------|--------------------------------|---------------------------|
-| **Team Onboarding**  | Team creation (generation == 1)              | `onboarded`            | `onboarded`                    | N/A                       |
-| **Token Rotation**   | Every reconciliation when team token changes | `token-rotated`        | `token-rotated--{hash}`        | Hash of `TeamToken` value |
-| **Member Changes**   | Team member list updated (generation > 1)    | `team-members-changed` | `team-members-changed--{hash}` | Hash of `Members` list    |
+| Event                | Trigger                                      | Map Key                | Purpose                | Notification Name              | Hash Generation               |
+|----------------------|----------------------------------------------|------------------------|------------------------|--------------------------------|-------------------------------|
+| **Team Onboarding**  | Team creation (generation == 1)              | `onboarded`            | `onboarded`            | `onboarded`                    | N/A                           |
+| **Token Rotation**   | Every reconciliation (deduplicated via hash) | `token-rotated`        | `token-rotated`        | `token-rotated--{hash}`        | Hash of `TeamToken` value     |
+| **Member Changes**   | Team member list updated (generation > 1)    | `team-members-changed` | `team-members-changed` | `team-members-changed--{hash}` | Hash of `Members` list        |
 
-> **Note**: The hash is computed using a deterministic hashing function to ensure idempotency. The same input (token or member list) always produces the same hash, preventing duplicate notifications.
+> ![Note]
+> The hash is computed using a deterministic hashing function to ensure idempotency. The same input (token or member list) always produces the same hash, preventing duplicate notifications.
+
+> ![Note]
+> All sent notifications are tracked in the team's status under `NotificationsRef` using the map keys shown above. Take a look at [TeamStatus Structure in ./api/v1/team_types.go](./api/v1/team_types.go) to view the latest references.
 
 ### Available Properties in Notification Templates
 
@@ -74,22 +78,10 @@ The operator automatically creates a `NotificationChannel` resource for each tea
 - **Type**: Email (MS Teams and Webhook support planned for future)
 - **Recipients**: All member emails + team email
 
-### Notification References
+## Code of Conduct
 
-All sent notifications are tracked in the team's status:
-```yaml
-status:
-  notificationChannelRef:
-    name: group--team--mail
-    namespace: env--group--team
-  notificationsRef:
-    onboarded:
-      name: onboarded
-      namespace: env--group--team
-    token-rotated:
-      name: token-rotated--abc123
-      namespace: env--group--team
-    team-members-changed:
-      name: team-members-changed--def456
-      namespace: env--group--team
-```
+This project has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) in version 2.1 as our code of conduct. Please see the details in our [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md). All contributors must abide by the code of conduct.
+
+## Licensing
+
+This project follows the [REUSE standard for software licensing](https://reuse.software/). Each file contains copyright and license information, and license texts can be found in the [./LICENSES](../LICENSES) folder. For more information visit https://reuse.software/.
