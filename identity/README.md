@@ -15,6 +15,7 @@ SPDX-License-Identifier: CC0-1.0
 <p align="center">
   <a href="#about">About</a> •
   <a href="#features">Features</a> •
+  <a href="#keycloak-integration">Keycloak Integration</a>
 </p>
 
 ## About
@@ -35,3 +36,20 @@ The following diagram illustrates the architecture of the Identity domain:
 - **Client Management**: Manage clients and their configurations.
 - **IDP Management**: Manage configured IDPs
 - **Realm Management**: Manage separated IDP realms.
+- **Secret Resolving**: Resolving Secret Manager references before creating clients in Keycloak
+
+> ![IMPORTANT]
+> Clients **block** if their referenced Realm is not ready:
+
+## Keycloak Integration
+
+### Client Type
+All created clients are **service accounts** with these fixed settings:
+- `serviceAccountsEnabled: true`
+- `standardFlowEnabled: false` (no browser login)
+- `fullScopeAllowed: false` (restricted scopes)
+
+### Protocol Mappers
+Automatically adds "Client ID" mapper to include client ID in tokens.
+
+See [pkg/keycloak/mapper/mapper_client.go](pkg/keycloak/mapper/mapper_client.go)for implementation.
