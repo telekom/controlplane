@@ -237,12 +237,3 @@ The store can also be sorted, see [sortable](./pkg/store/inmemory/sorted_store.g
   However, it is possible to store the badger database on disk, see [StoreOpts](./pkg/store/inmemory/inmemory_store.go#L47) for more information. In the future, this could be improved by using only the badger database and not the informer or replacing the badger-database with an external database.
 
 
-## Code of Conduct
-
-This project has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) in version 2.1 as our code of conduct. Please see the details in our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). All contributors must abide by the code of conduct.
-
-## Licensing
-
-This project follows the [REUSE standard for software licensing](https://reuse.software/).    
-Each file contains copyright and license information, and license texts can be found in the [./LICENSES](./LICENSES) folder. For more information visit https://reuse.software/.    
-You can find a guide for developers at https://telekom.github.io/reuse-template/.

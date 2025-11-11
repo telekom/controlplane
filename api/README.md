@@ -36,12 +36,3 @@ The following diagram illustrates the architecture of the Api domain:
 You may create categories to classify your APIs. Each category can have specific properties that define its behavior.
 The check for allowed categories is done at the earliest point in the [Rover Domain](../rover).
 
-## Code of Conduct
-
-This project has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) in version 2.1 as our code of conduct. Please see the details in our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). All contributors must abide by the code of conduct.
-
-## Licensing
-
-This project follows the [REUSE standard for software licensing](https://reuse.software/).    
-Each file contains copyright and license information, and license texts can be found in the [./LICENSES](./LICENSES) folder. For more information visit https://reuse.software/.    
-You can find a guide for developers at https://telekom.github.io/reuse-template/.
