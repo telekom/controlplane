@@ -38,7 +38,7 @@ However, at the moment, the implementation is tightly coupled with the [Kong Gat
 - **Rate Limiting**: Control the rate of requests to your APIs (configured via Rover domain)
 - **Load Balancing**: Distribute incoming requests across multiple upstream instances (configured via Rover domain)
 - **JWT Authentication**: OAuth2/OIDC authentication with Keycloak integration
-- **..**
+- **...**
 
 > [!Note]
 > For a full list of gateway features, see the contents of [./internal/features/feature](./internal/features/feature).
