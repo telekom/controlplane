@@ -9,7 +9,7 @@ SPDX-License-Identifier: CC0-1.0
 </p>
 
 <p align="center">
-  Kubernetes operator for managing Tardis applications.
+  Kubernetes operator for managing applications as an abstract.
 </p>
 
 <p align="center">
