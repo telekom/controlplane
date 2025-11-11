@@ -32,7 +32,6 @@ The documentation includes:
 - [Operators](https://telekom.github.io/controlplane/docs/Overview/operators)
 - [Technology Overview](https://telekom.github.io/controlplane/docs/Technology/technology)
 - [Installation Guide](https://telekom.github.io/controlplane/docs/Installation/installation)
-- [Quickstart Guide](https://telekom.github.io/controlplane/docs/Installation/quickstart)
 
 ## Getting Started
 
@@ -49,7 +48,7 @@ cd controlplane/install/local
 kubectl apply -k .
 ```
 
-For detailed installation instructions and configuration options, refer to the [Installation Guide](https://telekom.github.io/controlplane/docs/Installation/installation) and [Quickstart Guide](https://telekom.github.io/controlplane/docs/Installation/quickstart).
+For detailed installation instructions and configuration options, refer to the [Installation Guide](https://telekom.github.io/controlplane/docs/Installation/installation).
 
 ## Code of Conduct
 
