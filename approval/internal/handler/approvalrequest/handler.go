@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
+	"github.com/telekom/controlplane/approval/internal/handler/util"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common/pkg/client"
@@ -34,6 +35,23 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 		contextutil.RecorderFromContextOrDie(ctx).Eventf(approvalReq,
 			"Normal", "Notification", "State changed from %s to %s", approvalReq.Status.LastState, approvalReq.Spec.State,
 		)
+
+		if approvalReq.Spec.State == approvalv1.ApprovalStateRejected {
+			var err error
+			approvalReq.Status.NotificationRef, err = util.SendNotification(ctx, approvalReq, approvalReq.GetNamespace(), string(approvalReq.Spec.State), &approvalReq.Spec.Resource, &approvalReq.Spec.Requester)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if approvalReq.GetGeneration() == 1 && approvalReq.Status.NotificationRef == nil {
+		var err error
+		namespace := approvalReq.Spec.Resource.Namespace // namespace of the owner of the to-be-subscribed resource (i.e. target namespace)
+		approvalReq.Status.NotificationRef, err = util.SendNotification(ctx, approvalReq, namespace, string(approvalReq.Spec.State), &approvalReq.Spec.Resource, &approvalReq.Spec.Requester)
+		if err != nil {
+			return err
+		}
 	}
 
 	fsm := ApprovalStrategyFSM[approvalReq.Spec.Strategy]

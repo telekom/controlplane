@@ -190,3 +190,11 @@ jobs:
       run_check_generated_files: false
       run_lint: false
       ko_build_path: "main.go"
+
+  notification:
+    name: Notification
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      module: notification
+      run_check_generated_files: true
+      ko_build_path: "cmd/main.go"

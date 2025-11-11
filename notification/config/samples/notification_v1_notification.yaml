@@ -1,0 +1,40 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: notification.cp.ei.telekom.de/v1
+kind: Notification
+metadata:
+  name: api-subscription-approval
+  labels:
+    app.kubernetes.io/name: api-subscription-approval
+    app.kubernetes.io/managed-by: kustomize
+    cp.ei.telekom.de/approval-status: granted
+    cp.ei.telekom.de/component: api
+spec:
+  # Matches the purpose in our NotificationTemplate
+  purpose: "api-subscription-approval"
+  
+  # Sender information
+  sender:
+    type: System
+    name: "TARDIS-Approval-System"
+  
+  # Reference to our MS Teams channel
+  channels:
+    - name: "msteams-channel-firebirds"
+      namespace: "controlplane-system"
+  
+  # Properties that will be used to render the template
+  properties:
+    approval:
+      status: "GRANTED"  # GRANTED, DENIED, or PENDING
+      application: "api-test-123"
+      team: "firebirds"
+      group: "phoenix"
+      type: "subscription"
+      api: "/phoenix/api-test123/v1"
+      environment: "Test"
+      submittedAt: "2024-02-27 14:00:00 UTC"
+      processedAt: "2024-02-27 14:06:50 UTC"
+      oauthScopes: "no scopes"

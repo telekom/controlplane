@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 var _ types.Object = &TestResource{}
@@ -78,4 +79,14 @@ func NewObjectList() *TestResourceList {
 			Kind:       "TestResourceList",
 		},
 	}
+}
+
+func AddToScheme(scheme *runtime.Scheme) error {
+	scheme.AddKnownTypes(
+		schema.GroupVersion{Group: "testgroup.cp.ei.telekom.de", Version: "v1"},
+		&TestResource{},
+		&TestResourceList{},
+	)
+	metav1.AddToGroupVersion(scheme, schema.GroupVersion{Group: "testgroup.cp.ei.telekom.de", Version: "v1"})
+	return nil
 }

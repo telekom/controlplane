@@ -1,141 +1,95 @@
 <!--
 Copyright 2025 Deutsche Telekom IT GmbH
 
-SPDX-License-Identifier: Apache-2.0
+SPDX-License-Identifier: CC0-1.0    
 -->
 
-# organization-operator
-// TODO(user): Add simple overview of use/purpose
+<p align="center">
+  <h1 align="center">Organization</h1>
+</p>
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+<p align="center">
+  The Organization domain is responsible for managing teams and groups within the platform. 
+  It provides an API to manage team memberships, namespaces, and associated resources.
+</p>
 
-## Getting Started
+<p align="center">
+  <a href="#about">About</a> •
+  <a href="#features">Features</a> •
+  <a href="#notifications">Notifications</a> •
+</p>
 
-### Prerequisites
-- go version v1.23.0+
-- docker version 17.03+.
-- kubectl version v1.11.3+.
-- Access to a Kubernetes v1.11.3+ cluster.
 
-### To Deploy on the cluster
-**Build and push your image to the location specified by `IMG`:**
+## About
 
-```sh
-make docker-build docker-push IMG=<some-registry>/organization-operator:tag
+This folder contains the implementation of the Organization domain, which manages teams and groups within the control plane.
+The domain automatically provisions namespaces, identity clients, gateway consumers, and notification channels for each team.
+
+## Features
+
+- **Team Management**: Create and manage teams with members and email configurations.
+- **Group Management**: Organize teams into logical groups.
+- **Namespace Provisioning**: Automatically create and manage Kubernetes namespaces for teams.
+- **Identity Integration**: Provision identity clients for team authentication.
+- **Gateway Integration**: Create gateway consumers for API access control.
+- **Notification System**: Automated notifications for team lifecycle events.
+
+## Notifications
+
+The organization operator automatically sends notifications for team lifecycle events. Notifications are sent via email to all team members and the team's primary email address.
+
+### Notification Overview
+
+| Event                | Trigger                                      | Purpose                | Notification Name              | Hash Generation           |
+|----------------------|----------------------------------------------|------------------------|--------------------------------|---------------------------|
+| **Team Onboarding**  | Team creation (generation == 1)              | `onboarded`            | `onboarded`                    | N/A                       |
+| **Token Rotation**   | Every reconciliation when team token changes | `token-rotated`        | `token-rotated--{hash}`        | Hash of `TeamToken` value |
+| **Member Changes**   | Team member list updated (generation > 1)    | `team-members-changed` | `team-members-changed--{hash}` | Hash of `Members` list    |
+
+> **Note**: The hash is computed using a deterministic hashing function to ensure idempotency. The same input (token or member list) always produces the same hash, preventing duplicate notifications.
+
+### Available Properties in Notification Templates
+
+The following properties are automatically included in all organization notifications and can be used in notification templates:
+
+| Property      | Description                                                      | Example                                                                                                  |
+|---------------|------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| `environment` | The environment where the team was created                       | `prod`, `dev`                                                                                            |
+| `team`        | The team name                                                    | `backend`                                                                                                |
+| `group`       | The group name                                                   | `platform`                                                                                               |
+| `members`     | Array of team members with name and email                        | `[{"name": "John Doe", "email": "john@example.com"}, {"name": "Jane Doe", "email": "jane@example.com"}]` |
+
+**Note**: The `members` property is an array of objects, each containing `name` and `email` fields. In templates, you can iterate over members and access both fields:
+```
+{{range .members}}
+- {{.name}} ({{.email}})
+{{end}}
 ```
 
-**NOTE:** This image ought to be published in the personal registry you specified.
-And it is required to have access to pull the image from the working environment.
-Make sure you have the proper permission to the registry if the above commands don’t work.
+### Notification Channels
 
-**Install the CRDs into the cluster:**
+The operator automatically creates a `NotificationChannel` resource for each team:
+- **Name**: `{group}--{team}--mail`
+- **Namespace**: Team's namespace (`{environment}--{group}--{team}`)
+- **Type**: Email (MS Teams and Webhook support planned for future)
+- **Recipients**: All member emails + team email
 
-```sh
-make install
+### Notification References
+
+All sent notifications are tracked in the team's status:
+```yaml
+status:
+  notificationChannelRef:
+    name: group--team--mail
+    namespace: env--group--team
+  notificationsRef:
+    onboarded:
+      name: onboarded
+      namespace: env--group--team
+    token-rotated:
+      name: token-rotated--abc123
+      namespace: env--group--team
+    team-members-changed:
+      name: team-members-changed--def456
+      namespace: env--group--team
 ```
-
-**Deploy the Manager to the cluster with the image specified by `IMG`:**
-
-```sh
-make deploy IMG=<some-registry>/organization-operator:tag
-```
-
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
-privileges or be logged in as admin.
-
-**Create instances of your solution**
-You can apply the samples (examples) from the config/sample:
-
-```sh
-kubectl apply -k config/samples/
-```
-
->**NOTE**: Ensure that the samples has default values to test it out.
-
-### To Uninstall
-**Delete the instances (CRs) from the cluster:**
-
-```sh
-kubectl delete -k config/samples/
-```
-
-**Delete the APIs(CRDs) from the cluster:**
-
-```sh
-make uninstall
-```
-
-**UnDeploy the controller from the cluster:**
-
-```sh
-make undeploy
-```
-
-## Project Distribution
-
-Following the options to release and provide this solution to the users.
-
-### By providing a bundle with all YAML files
-
-1. Build the installer for the image built and published in the registry:
-
-```sh
-make build-installer IMG=<some-registry>/organization-operator:tag
-```
-
-**NOTE:** The makefile target mentioned above generates an 'install.yaml'
-file in the dist directory. This file contains all the resources built
-with Kustomize, which are necessary to install this project without its
-dependencies.
-
-2. Using the installer
-
-Users can just run 'kubectl apply -f <URL for YAML BUNDLE>' to install
-the project, i.e.:
-
-```sh
-kubectl apply -f https://raw.githubusercontent.com/<org>/organization-operator/<tag or branch>/dist/install.yaml
-```
-
-### By providing a Helm Chart
-
-1. Build the chart using the optional helm plugin
-
-```sh
-kubebuilder edit --plugins=helm/v1-alpha
-```
-
-2. See that a chart was generated under 'dist/chart', and users
-can obtain this solution from there.
-
-**NOTE:** If you change the project, you need to update the Helm Chart
-using the same command above to sync the latest changes. Furthermore,
-if you create webhooks, you need to use the above command with
-the '--force' flag and manually ensure that any custom configuration
-previously added to 'dist/chart/values.yaml' or 'dist/chart/manager/manager.yaml'
-is manually re-applied afterwards.
-
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
-
-**NOTE:** Run `make help` for more information on all potential `make` targets
-
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
-
-## License
-
-Copyright 2025.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
