@@ -33,7 +33,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 
 	apiExposure := &apiapi.ApiExposure{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      labelutil.NormalizeNameValue(name),
 			Namespace: owner.Namespace,
 		},
 	}
@@ -50,7 +50,7 @@ func HandleExposure(ctx context.Context, c client.JanitorClient, owner *rover.Ro
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 		apiExposure.Labels = map[string]string{
-			apiapi.BasePathLabelKey:             labelutil.NormalizeValue(exp.BasePath),
+			apiapi.BasePathLabelKey:             labelutil.NormalizeLabelValue(exp.BasePath),
 			config.BuildLabelKey("zone"):        labelutil.NormalizeValue(zoneRef.Name),
 			config.BuildLabelKey("application"): labelutil.NormalizeValue(owner.Name),
 		}

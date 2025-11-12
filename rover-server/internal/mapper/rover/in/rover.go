@@ -6,6 +6,7 @@ package in
 
 import (
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"github.com/telekom/controlplane/common/pkg/config"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,10 +30,25 @@ func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *rove
 		},
 		Spec: roverv1.RoverSpec{},
 	}
-	if err = MapRover(in, res); err != nil {
-		return res, errors.Wrap(err, "Get All Rovers")
+	if in == nil {
+		return res, errors.New("input rover update request is nil")
 	}
 
+	apiRover := &api.Rover{
+		Authentication: in.Authentication,
+		Exposures:      in.Exposures,
+		Icto:           in.Icto,
+		IpRestrictions: in.IpRestrictions,
+		Subscriptions:  in.Subscriptions,
+		Zone:           in.Zone,
+	}
+	if err = MapRover(apiRover, res); err != nil {
+		return res, errors.Wrap(err, "failed to map rover")
+	}
+
+	if viper.GetBool("migration.active") {
+		res.Spec.ClientSecret = in.ClientSecret
+	}
 	return
 }
 

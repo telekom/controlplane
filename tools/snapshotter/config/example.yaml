@@ -1,0 +1,26 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+storePath: "/tmp/snapshotter-store"
+decoders:
+  - type: base64
+    pattern: jumper_config:([A-Za-z0-9=]+)
+  - type: base64
+    pattern: routing_config:([A-Za-z0-9=]+)
+obfuscators:
+  - pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+    replace: "00000000-0000-0000-0000-000000000000"
+  - pattern: "[0-9]{10}"
+    replace: "0"
+  - pattern: "[0-9]{4}-[0-9]2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z"
+    replace: "0000-00-00T00:00:00Z"
+    
+sources:
+  default-aws:
+    environment: default
+    zone: aws
+    url: https://gateway.com/admin-api
+    tokenUrl: https://idp.com/auth/realms/rover
+    clientId: rover
+    clientSecret: topsecret

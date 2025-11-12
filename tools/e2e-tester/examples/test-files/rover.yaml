@@ -1,0 +1,35 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: test-rover
+spec:
+  zone: dataplane1
+  exposures:
+  - basePath: /eni/e2e-test/v1
+    visibility: ENTERPRISE
+    approval: AUTO
+    upstream: http://test-service:8080
+    security:
+      oauth2:
+        tokenEndpoint: https://auth.example.com/oauth2/token
+        clientId: test-client
+        clientSecret: test-secret
+    rateLimit:
+      provider:
+        second: 50
+        minute: 100
+        hour: 200
+      consumerDefault:
+        second: 5
+        minute: 10
+        hour: 20
+  subscriptions:
+  - basePath: /eni/e2e-test/v1
+    security:
+      oauth2:
+        username: test-user
+        password: test-password

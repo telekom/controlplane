@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -83,6 +84,15 @@ func ParseToken(tokenStr string) (*Token, error) {
 
 	if token.ServerUrl == "" {
 		token.ServerUrl = viper.GetString(ConfigKeyServerURL)
+	} else {
+		url, err := url.Parse(token.ServerUrl)
+		if err != nil {
+			return nil, errors.Wrap(err, "invalid server URL in token")
+		}
+		if url.Path == "" || url.Path == "/" {
+			url.Path = viper.GetString("server.baseUrl")
+		}
+		token.ServerUrl = url.String()
 	}
 	if token.TokenUrl == "" {
 		token.TokenUrl = viper.GetString(ConfigKeyTokenURL)

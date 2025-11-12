@@ -6,6 +6,7 @@ package v1
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -143,7 +144,7 @@ func (r *ApiCategoryList) GetItems() []types.Object {
 
 func (r *ApiCategoryList) FindByLabelValue(labelValue string) (*ApiCategory, bool) {
 	for i := range r.Items {
-		if r.Items[i].Spec.LabelValue == labelValue {
+		if strings.EqualFold(r.Items[i].Spec.LabelValue, labelValue) {
 			return &r.Items[i], true
 		}
 	}
@@ -157,6 +158,7 @@ func (r *ApiCategoryList) AllowedLabelValues() []string {
 			values = append(values, r.Items[i].Spec.LabelValue)
 		}
 	}
+	slices.Sort(values)
 	return values
 }
 

@@ -151,7 +151,7 @@ var _ = Describe("ApiSpecification Webhook", func() {
 			Expect(ok).To(BeTrue(), "Expected a StatusError, got: %T", err)
 			Expect(statusErr.ErrStatus.Details.Causes).To(HaveLen(1))
 			Expect(statusErr.ErrStatus.Details.Causes[0].Field).To(Equal("spec.category"))
-			Expect(statusErr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring(`ApiCategory "not-existing-category" not found. Allowed values are: [some-api-category, other-api-category, not-allowed-api-category]`))
+			Expect(statusErr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring(`ApiCategory "not-existing-category" not found. Allowed values are: [not-allowed-api-category, other-api-category, some-api-category]`))
 		})
 
 		It("should return an error when the group prefix is required but not set", func() {
@@ -235,6 +235,33 @@ var _ = Describe("ApiSpecification Webhook", func() {
 				Spec: roverv1.ApiSpecificationSpec{
 					Version:  "1.0.0",
 					Category: "some-api-category",   // exists and requires group prefix
+					BasePath: "/my-group/my-api/v1", // starts with "my-group"
+				},
+			}
+
+			validator := NewApiSpecificationValidatorMock("my-group", "my-team")
+
+			By("validating the ApiSpecification")
+			warnings, err := validator.ValidateCreate(ctx, apispecification)
+
+			By("expecting no error")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(warnings).To(BeNil())
+		})
+
+		It("should ignore the case of the ApiCategory label and succeed", func() {
+			By("creating an ApiSpecification with a valid ApiCategory in different case")
+			apispecification := &roverv1.ApiSpecification{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-api-specification",
+					Namespace: "test--my-group--my-team", // team with group "my-group"
+					Labels: map[string]string{
+						config.EnvironmentLabelKey: "test",
+					},
+				},
+				Spec: roverv1.ApiSpecificationSpec{
+					Version:  "1.0.0",
+					Category: "Some-Api-Category",   // exists but different case
 					BasePath: "/my-group/my-api/v1", // starts with "my-group"
 				},
 			}
