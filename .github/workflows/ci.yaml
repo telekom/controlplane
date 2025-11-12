@@ -50,6 +50,7 @@ jobs:
     name: Common
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
+      name: common
       module: common
       run_check_generated_files: false
       run_build_image: false
@@ -58,6 +59,7 @@ jobs:
     name: Common Server
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
+      name: common-server
       module: common-server
       run_check_generated_files: false
       ko_build_path: "cmd/server/server.go"
@@ -67,13 +69,14 @@ jobs:
     needs: common-server
     if: startsWith(github.ref, 'refs/tags/v')
     uses: ./.github/workflows/helm-release.yaml
-    with:
+    with: 
       chart_path: 'common-server/helm'
 
   secret-manager:
     name: Secret Manager
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
+      name: secret-manager
       module: secret-manager
       run_check_generated_files: false
       ko_build_path: "cmd/server/server.go"
@@ -82,6 +85,7 @@ jobs:
     name: Approval
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
+      name: approval
       module: approval
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
@@ -90,6 +94,7 @@ jobs:
     name: File Manager
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
+      name: file-manager
       module: file-manager
       run_check_generated_files: false
       ko_build_path: "cmd/server/server.go"
@@ -98,6 +103,7 @@ jobs:
     name: Gateway
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
+      name: gateway
       module: gateway
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
@@ -106,6 +112,7 @@ jobs:
     name: Identity
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
+      name: identity
       module: identity
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
@@ -114,6 +121,7 @@ jobs:
     name: Organization
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
+      name: organization
       module: organization
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
@@ -122,6 +130,7 @@ jobs:
     name: Admin
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
+      name: admin
       module: admin
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
@@ -130,6 +139,7 @@ jobs:
     name: Application
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
+      name: application
       module: application
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
@@ -138,6 +148,7 @@ jobs:
     name: Api
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
+      name: api
       module: api
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
@@ -146,6 +157,7 @@ jobs:
     name: Rover
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
+      name: rover
       module: rover
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
@@ -154,6 +166,7 @@ jobs:
     name: Rover-Server
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
+      name: rover-server
       module: rover-server
       run_check_generated_files: false
       allow_tests_failure: true
@@ -163,14 +176,26 @@ jobs:
     name: Rover-CTL
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
+      name: rover-ctl
       module: rover-ctl
       run_check_generated_files: false
+      ko_build_path: "main.go"
+
+  snapshotter:
+    name: Snapshotter
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      name: tools-snapshotter
+      module: tools/snapshotter
+      run_check_generated_files: false
+      run_lint: false
       ko_build_path: "main.go"
 
   notification:
     name: Notification
     uses: ./.github/workflows/reusable-go-ci.yaml
     with:
+      name: notification
       module: notification
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"

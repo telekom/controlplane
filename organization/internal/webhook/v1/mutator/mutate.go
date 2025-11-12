@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/telekom/controlplane/organization/internal/handler/team/handler/identity_client"
 	"github.com/telekom/controlplane/organization/internal/index"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -82,7 +83,7 @@ func generateNewToken(env string, teamObj *organisationv1.Team, zoneObj *adminv1
 
 	teamToken, err := organisationv1.EncodeTeamToken(
 		organisationv1.TeamToken{
-			ClientId:     teamObj.GetName(),
+			ClientId:     identity_client.MakeClientId(teamObj),
 			ClientSecret: clientSecret,
 			Environment:  env,
 			GeneratedAt:  time.Now().Unix(),

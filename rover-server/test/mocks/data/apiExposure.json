@@ -1,5 +1,5 @@
 {
-  "apiVersion": "stargate.cp.ei.telekom.de/v1",
+  "apiVersion": "api.cp.ei.telekom.de/v1",
   "kind": "ApiExposure",
   "metadata": {
     "name": "rover-local-exp--eni-distr-v1",

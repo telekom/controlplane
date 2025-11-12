@@ -23,18 +23,18 @@ var _ = Describe("Rover Controller", func() {
 			req := httptest.NewRequest(http.MethodGet, "/rovers", nil)
 
 			responseTeam, err := ExecuteRequest(req, teamToken)
-			ExpectStatusOk(responseTeam, err, match.Any("items.0.status.time"))
+			ExpectStatusOk(responseTeam, err)
 			responseGroup, err := ExecuteRequest(req, groupToken)
-			ExpectStatusOk(responseGroup, err, match.Any("items.0.status.time"))
+			ExpectStatusOk(responseGroup, err)
 		})
 
 		It("should return an empty list if no rovers exist", func() {
 			req := httptest.NewRequest(http.MethodGet, "/rovers", nil)
 
 			responseTeam, err := ExecuteRequest(req, teamToken)
-			ExpectStatusWithBody(responseTeam, err, http.StatusOK, "application/json", match.Any("items.0.status.time"))
+			ExpectStatusWithBody(responseTeam, err, http.StatusOK, "application/json")
 			responseGroup, err := ExecuteRequest(req, groupToken)
-			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json", match.Any("items.0.status.time"))
+			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
 		})
 	})
 
@@ -42,7 +42,7 @@ var _ = Describe("Rover Controller", func() {
 		It("should get a rover successfully", func() {
 			req := httptest.NewRequest(http.MethodGet, "/rovers/eni--hyperion--rover-local-sub", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
-			ExpectStatusOk(responseGroup, err, match.Any("status.time"))
+			ExpectStatusOk(responseGroup, err)
 		})
 
 		It("should fail to get a non-existent rover", func() {
@@ -166,7 +166,7 @@ var _ = Describe("Rover Controller", func() {
 			jsonBody, _ := json.Marshal(body)
 			req := httptest.NewRequest(http.MethodPut, "/rovers/eni--hyperion--rover-local-sub", bytes.NewReader(jsonBody))
 			responseGroup, err := ExecuteRequest(req, groupToken)
-			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json", match.Any("status.time"))
+			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
 		})
 
 		It("should fail to update a rover with invalid input", func() {
