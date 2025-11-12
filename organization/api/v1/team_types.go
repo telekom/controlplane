@@ -64,6 +64,10 @@ type TeamSpec struct {
 	// +kubebuilder:validation:Optional
 	Secret string `json:"secret,omitempty"`
 
+	// TeamToken is ref for the authentication against teamAPIs
+	// It is automatically generated and rotated.
+	TeamToken string `json:"teamToken,omitempty"`
+
 	// Category is the category of the team
 	// The category is used to determine specific access rights.
 	// +kubebuilder:validation:Required
@@ -80,6 +84,8 @@ type TeamStatus struct {
 	NotificationsRef       map[string]*types.ObjectRef `json:"notificationsRef,omitempty"`
 	NotificationChannelRef *types.ObjectRef            `json:"notificationChannelRef,omitempty"`
 	// TeamToken is ref for the authentication against teamAPIs
+	// This field has been moved to Spec and is kept here for backward compatibility.
+	// +kubebuilder:validation:Optional
 	TeamToken string `json:"teamToken,omitempty"`
 	// +listType=map
 	// +listMapKey=type
@@ -99,6 +105,13 @@ func (t *Team) GetConditions() []metav1.Condition {
 func (t *Team) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&t.Status.Conditions, condition)
 
+}
+
+func (t *Team) GetTeamToken() string {
+	if t.Spec.TeamToken != "" {
+		return t.Spec.TeamToken
+	}
+	return t.Status.TeamToken
 }
 
 // +kubebuilder:object:root=true
