@@ -47,11 +47,11 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (res S, err error) 
 	cacheKey := cacheId.String()
 
 	if item, ok := c.Cache.Get(cacheKey); ok && !item.Expired() {
-		metrics.RecordCacheHit("")
+		metrics.RecordCacheHit("get", "")
 		return item.Value().Copy().(S), nil
 	}
 
-	metrics.RecordCacheMiss("not_found")
+	metrics.RecordCacheMiss("get", "not_found")
 	item, err := c.Backend.Get(ctx, cacheId)
 	if err != nil {
 		return res, err
@@ -74,15 +74,15 @@ func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.Secre
 	if item, ok := c.Cache.Get(cacheId.String()); ok && !item.Expired() {
 		cachedSecret := item.Value()
 		if value.EqualString(cachedSecret.Value()) {
-			metrics.RecordCacheHit("set")
+			metrics.RecordCacheHit("set", "")
 			return cachedSecret.Copy().(S), nil
 		} else {
-			metrics.RecordCacheMiss("value_mismatch")
+			metrics.RecordCacheMiss("set", "value_mismatch")
 			c.Cache.Delete(cacheId.String())
 		}
 	}
 
-	metrics.RecordCacheMiss("set")
+	metrics.RecordCacheMiss("set", "not_found")
 	item, err := c.Backend.Set(ctx, cacheId.(T), value)
 	if err != nil {
 		return res, err

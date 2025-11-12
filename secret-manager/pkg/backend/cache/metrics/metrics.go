@@ -18,7 +18,7 @@ var (
 			Name: "cache_access_total",
 			Help: "Total number of cache access attempts",
 		},
-		[]string{"result", "reason"},
+		[]string{"method", "result", "reason"},
 	)
 
 	CacheSize = prometheus.NewGauge(
@@ -42,11 +42,11 @@ func registerMetrics(reg prometheus.Registerer) {
 }
 
 // RecordCacheHit increments the counter for a successful cache hit
-func RecordCacheHit(reason string) {
-	cacheAccess.WithLabelValues("hit", reason).Inc()
+func RecordCacheHit(method, reason string) {
+	cacheAccess.WithLabelValues(method, "hit", reason).Inc()
 }
 
 // RecordCacheMiss increments the counter for a cache miss with the specified reasons like "expired" or "not_found"
-func RecordCacheMiss(reason string) {
-	cacheAccess.WithLabelValues("miss", reason).Inc()
+func RecordCacheMiss(method, reason string) {
+	cacheAccess.WithLabelValues(method, "miss", reason).Inc()
 }

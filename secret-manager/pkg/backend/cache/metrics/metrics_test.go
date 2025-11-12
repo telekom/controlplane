@@ -16,7 +16,7 @@ var _ = Describe("Cache Metrics", Ordered, func() {
 
 		It("should record cache hits", func() {
 			// Record a cache hit
-			RecordCacheHit("")
+			RecordCacheHit("get", "")
 
 			// Verify metric exists with correct labels
 			metrics, err := prometheus.DefaultGatherer.Gather()
@@ -35,6 +35,9 @@ var _ = Describe("Cache Metrics", Ordered, func() {
 							if label.GetName() == "reason" && label.GetValue() == "" {
 								emptyReason = true
 							}
+							if label.GetName() == "method" && label.GetValue() != "get" {
+								isHit = false
+							}
 						}
 
 						if isHit && emptyReason {
@@ -49,8 +52,8 @@ var _ = Describe("Cache Metrics", Ordered, func() {
 
 		It("should record cache misses with reason", func() {
 			// Record cache misses with different reasons
-			RecordCacheMiss("expired")
-			RecordCacheMiss("not_found")
+			RecordCacheMiss("set", "expired")
+			RecordCacheMiss("set", "not_found")
 
 			// Verify metrics exist with correct labels
 			metrics, err := prometheus.DefaultGatherer.Gather()
@@ -71,6 +74,9 @@ var _ = Describe("Cache Metrics", Ordered, func() {
 							}
 							if label.GetName() == "reason" {
 								reason = label.GetValue()
+							}
+							if label.GetName() == "method" && label.GetValue() != "set" {
+								isMiss = false
 							}
 						}
 
