@@ -121,7 +121,7 @@ func rotateTokenNotification(ctx context.Context, owner *organizationv1.Team, no
 	var notification *notificationv1.Notification
 	var err error
 
-	tokenHash := hash.ComputeHash(owner.Status.TeamToken, nil)
+	tokenHash := hash.ComputeHash(owner.GetTeamToken(), nil)
 	notificationName := "token-rotated--" + tokenHash
 
 	notification, err = notificationBuilder.WithPurpose("token-rotated").

@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
@@ -64,8 +65,7 @@ func (h *TeamHandler) CreateOrUpdate(ctx context.Context, teamObj *organizationv
 	logger.V(1).Info(fmt.Sprintf("requesting group: %s", teamObj.Spec.Group))
 	_, err := group.GetGroupByName(ctx, teamObj.Spec.Group)
 	if err != nil {
-		teamObj.SetCondition(condition.NewBlockedCondition("Group not found"))
-		return nil
+		return ctrlerrors.BlockedErrorf("group %q does not exist", teamObj.Spec.Group)
 	}
 
 	// CreateOrUpdate internal objects
