@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/common-server/pkg/client"
 	"github.com/telekom/controlplane/secret-manager/api/gen"
 )
 
@@ -153,11 +154,7 @@ func (s *secretManagerAPI) UpsertEnvironment(ctx context.Context, envID string, 
 	case 404:
 		return nil, ErrNotFound
 	default:
-		var err gen.ErrorResponse
-		if err := json.Unmarshal(res.Body, &err); err != nil {
-			return nil, err
-		}
-		return nil, fmt.Errorf("error %s: %s", err.Type, err.Detail)
+		return nil, client.HandleError(res.StatusCode(), string(res.Body))
 	}
 }
 
@@ -185,11 +182,7 @@ func (s *secretManagerAPI) UpsertTeam(ctx context.Context, envID, teamID string,
 	case 404:
 		return nil, ErrNotFound
 	default:
-		var err gen.ErrorResponse
-		if err := json.Unmarshal(res.Body, &err); err != nil {
-			return nil, err
-		}
-		return nil, fmt.Errorf("error %s: %s", err.Type, err.Detail)
+		return nil, client.HandleError(res.StatusCode(), string(res.Body))
 	}
 }
 
@@ -217,11 +210,7 @@ func (s *secretManagerAPI) UpsertApplication(ctx context.Context, envID, teamID,
 	case 404:
 		return nil, ErrNotFound
 	default:
-		var err gen.ErrorResponse
-		if err := json.Unmarshal(res.Body, &err); err != nil {
-			return nil, err
-		}
-		return nil, fmt.Errorf("error %s: %s", err.Type, err.Detail)
+		return nil, client.HandleError(res.StatusCode(), string(res.Body))
 	}
 }
 
@@ -238,11 +227,7 @@ func (s *secretManagerAPI) DeleteEnvironment(ctx context.Context, envID string) 
 	case 404:
 		return nil
 	default:
-		var err gen.ErrorResponse
-		if err := json.Unmarshal(res.Body, &err); err != nil {
-			return err
-		}
-		return fmt.Errorf("error %s: %s", err.Type, err.Detail)
+		return client.HandleError(res.StatusCode(), string(res.Body))
 	}
 }
 
@@ -259,11 +244,7 @@ func (s *secretManagerAPI) DeleteTeam(ctx context.Context, envID, teamID string)
 	case 404:
 		return nil
 	default:
-		var err gen.ErrorResponse
-		if err := json.Unmarshal(res.Body, &err); err != nil {
-			return err
-		}
-		return fmt.Errorf("error %s: %s", err.Type, err.Detail)
+		return client.HandleError(res.StatusCode(), string(res.Body))
 	}
 }
 
@@ -280,11 +261,7 @@ func (s *secretManagerAPI) DeleteApplication(ctx context.Context, envID, teamID,
 	case 404:
 		return nil
 	default:
-		var err gen.ErrorResponse
-		if err := json.Unmarshal(res.Body, &err); err != nil {
-			return err
-		}
-		return fmt.Errorf("error %s: %s", err.Type, err.Detail)
+		return client.HandleError(res.StatusCode(), string(res.Body))
 	}
 }
 

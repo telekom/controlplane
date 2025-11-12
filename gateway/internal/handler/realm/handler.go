@@ -20,8 +20,6 @@ type RealmHandler struct{}
 
 func (h *RealmHandler) CreateOrUpdate(ctx context.Context, realm *gatewayv1.Realm) error {
 
-	realm.SetCondition(condition.NewProcessingCondition("RealmProcessing", "Realm is being provisioned"))
-
 	realm.Status.Virtual = realm.Spec.Gateway == nil
 
 	if !realm.Status.Virtual {
