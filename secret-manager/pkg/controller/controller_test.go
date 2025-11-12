@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/controller"
 	"github.com/telekom/controlplane/secret-manager/test/mocks"
@@ -177,6 +178,19 @@ var _ = Describe("Controller", func() {
 			res, err := ctrl.OnboardApplication(ctx, "env-id", "team-id", "app-id", opts...)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).ToNot(BeNil())
+		})
+
+		It("must not onboard with invalid options", func() {
+			ctx := context.Background()
+			ctrl := controller.NewOnboardController(mockedOnboarder)
+
+			opts := []controller.OnboardOption{
+				controller.WithSecretValues(map[string]string{"key1": "", "key2": ""}), // invalid, empty values
+			}
+
+			_, err := ctrl.OnboardApplication(ctx, "env-id", "team-id", "app-id", opts...)
+			Expect(err).To(HaveOccurred())
+			Expect(problems.IsValidationError(err)).To(BeTrue())
 		})
 	})
 })

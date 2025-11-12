@@ -5,7 +5,6 @@
 package conjur
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -32,8 +31,8 @@ type ConjurSecretId struct {
 	checksum string
 }
 
-func Copy(id ConjurSecretId) ConjurSecretId {
-	return id
+func Copy(c ConjurSecretId) ConjurSecretId {
+	return c
 }
 
 func New(env, team, app, path string, checksum string) ConjurSecretId {
@@ -78,7 +77,7 @@ func (c ConjurSecretId) Env() string {
 }
 
 func (c ConjurSecretId) String() string {
-	return fmt.Sprintf("%s:%s:%s:%s:%s", c.env, c.team, c.app, c.path, c.checksum)
+	return c.Raw
 }
 
 func (c ConjurSecretId) VariableId() string {
@@ -86,10 +85,10 @@ func (c ConjurSecretId) VariableId() string {
 	// The other parts are the subpath
 	path := strings.SplitN(c.path, "/", 2)[0]
 	if c.team == "" {
-		str := fmt.Sprintf("%s/%s/%s", RootPolicyPath, c.env, path)
+		str := strings.Join([]string{RootPolicyPath, c.env, path}, "/")
 		return clean(str)
 	}
-	str := fmt.Sprintf("%s/%s/%s/%s/%s", RootPolicyPath, c.env, c.team, c.app, path)
+	str := strings.Join([]string{RootPolicyPath, c.env, c.team, c.app, path}, "/")
 	return clean(str)
 }
 
@@ -104,7 +103,12 @@ func (c ConjurSecretId) Path() string {
 func (c ConjurSecretId) CopyWithChecksum(checksum string) ConjurSecretId {
 	new := Copy(c)
 	new.checksum = checksum
+	new.Raw = strings.Join([]string{new.env, new.team, new.app, new.path, new.checksum}, backend.Separator)
 	return new
+}
+
+func (c ConjurSecretId) Copy() backend.SecretId {
+	return Copy(c)
 }
 
 func clean(id string) string {

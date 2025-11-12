@@ -6,9 +6,11 @@ package cache
 
 import (
 	"context"
+	"runtime"
 	"time"
 
 	"github.com/go-logr/logr"
+
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache/metrics"
 )
@@ -30,7 +32,7 @@ type CachedBackend[T backend.SecretId, S backend.Secret[T]] struct {
 func NewCachedBackend[T backend.SecretId, S backend.Secret[T]](backend backend.Backend[T, S], ttl time.Duration) *CachedBackend[T, S] {
 	return &CachedBackend[T, S]{
 		Backend: backend,
-		Cache:   NewShardedCache[T, S](16),
+		Cache:   NewShardedCache[T, S](uint8(runtime.NumCPU())),
 		ttl:     int64(ttl.Seconds()),
 	}
 }
@@ -41,36 +43,55 @@ func (c *CachedBackend[T, S]) ParseSecretId(raw string) (T, error) {
 
 func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (res S, err error) {
 	log := logr.FromContextOrDiscard(ctx)
-	if item, ok := c.Cache.Get(id.String()); ok && !item.Expired() {
-		metrics.RecordCacheHit()
-		return item.Value(), nil
+	cacheId := id.Copy().(T)
+	cacheKey := cacheId.String()
+
+	if item, ok := c.Cache.Get(cacheKey); ok && !item.Expired() {
+		metrics.RecordCacheHit("get", "")
+		return item.Value().Copy().(S), nil
 	}
 
-	metrics.RecordCacheMiss("not_found")
-	log.Info("Cache miss", "id", id.String())
-	item, err := c.Backend.Get(ctx, id)
+	metrics.RecordCacheMiss("get", "not_found")
+	item, err := c.Backend.Get(ctx, cacheId)
 	if err != nil {
 		return res, err
 	}
+	if item.Value() == "" {
+		// Do not cache empty secrets
+		return item, nil
+	}
+	copy := item.Copy().(S)
 
-	c.Cache.Set(id.String(), NewDefaultCacheItem(id, item, c.ttl))
+	log.V(1).Info("Caching Get result", "id", copy.Id().String())
+	c.Cache.Set(cacheKey, NewDefaultCacheItem(copy.Id(), copy, c.ttl))
+
 	return item, nil
 }
 
 func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.SecretValue) (res S, err error) {
-	if item, ok := c.Cache.Get(id.String()); ok {
-		if value.EqualString(item.Value().Value()) {
-			return item.Value(), nil
+	cacheId := id.Copy()
+
+	if item, ok := c.Cache.Get(cacheId.String()); ok && !item.Expired() {
+		cachedSecret := item.Value()
+		if value.EqualString(cachedSecret.Value()) {
+			metrics.RecordCacheHit("set", "")
+			return cachedSecret.Copy().(S), nil
+		} else {
+			metrics.RecordCacheMiss("set", "value_mismatch")
+			c.Cache.Delete(cacheId.String())
 		}
 	}
-	item, err := c.Backend.Set(ctx, id, value)
+
+	metrics.RecordCacheMiss("set", "not_found")
+	item, err := c.Backend.Set(ctx, cacheId.(T), value)
 	if err != nil {
 		return res, err
 	}
 
-	if item.Value() != "" {
-		c.Cache.Set(id.String(), NewDefaultCacheItem(id, item, c.ttl))
-	}
+	copy := item.Copy().(S)
+
+	c.Cache.Set(copy.Id().String(), NewDefaultCacheItem(copy.Id(), copy, c.ttl))
+
 	return item, nil
 }
 

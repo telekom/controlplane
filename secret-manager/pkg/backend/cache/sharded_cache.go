@@ -9,6 +9,7 @@ import (
 	"hash/fnv"
 
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache/metrics"
 )
 
 var _ Cache[backend.SecretId, backend.Secret[backend.SecretId]] = (*ShardedCache[backend.SecretId, backend.Secret[backend.SecretId]])(nil)
@@ -45,8 +46,10 @@ func (sc *ShardedCache[T, S]) Get(id string) (CacheItem[T, S], bool) {
 
 func (sc *ShardedCache[T, S]) Set(id string, item CacheItem[T, S]) {
 	sc.getShard(id).Set(id, item)
+	metrics.CacheSize.Inc()
 }
 
 func (sc *ShardedCache[T, S]) Delete(id string) {
 	sc.getShard(id).Delete(id)
+	metrics.CacheSize.Dec()
 }
