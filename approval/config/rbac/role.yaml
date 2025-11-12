@@ -43,3 +43,23 @@ rules:
   verbs:
   - create
   - patch
+- apiGroups:
+  - notification.cp.ei.telekom.de
+  resources:
+  - notificationchannels
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - notification.cp.ei.telekom.de
+  resources:
+  - notifications
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch

@@ -8,6 +8,7 @@ import (
 	"github.com/gkampitakis/go-snaps/snaps"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/spf13/viper"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
@@ -75,7 +76,28 @@ var _ = Describe("Rover Mapper", func() {
 			snaps.MatchSnapshot(GinkgoT(), output)
 
 			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(ContainSubstring("input rover is nil"))
+			Expect(err.Error()).To(ContainSubstring("input rover update request is nil"))
+		})
+
+		It("must set the clientSecret if provided", func() {
+			input := roverUpdateRequest
+			input.ClientSecret = "supersecret"
+
+			output, err := MapRequest(input, resourceIdInfo)
+
+			Expect(err).To(BeNil())
+
+			Expect(output).ToNot(BeNil())
+			snaps.MatchSnapshot(GinkgoT(), output)
+
+			viper.Set("migration.active", true)
+
+			output, err = MapRequest(input, resourceIdInfo)
+
+			Expect(err).To(BeNil())
+
+			Expect(output).ToNot(BeNil())
+			snaps.MatchSnapshot(GinkgoT(), output)
 		})
 
 	})

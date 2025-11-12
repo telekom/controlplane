@@ -40,7 +40,10 @@ type ApiSpecificationSpec struct {
 	Category string `json:"category"`
 
 	// BasePath represents the base path from OpenAPI v2 or derived from server URL in OpenAPI v3
+	// It must start with a "/" and have a maximum length of 200 characters (to avoid Kubernetes name length issues)
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^/.*$`
+	// +kubebuilder:validation:MaxLength:=200
 	BasePath string `json:"basepath"`
 
 	// Hash is the SHA-256 hash of the specification content for integrity verification

@@ -5,8 +5,6 @@
 package controller
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
@@ -15,6 +13,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/organization/internal/secret"
 	"github.com/telekom/controlplane/secret-manager/api"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
@@ -126,6 +125,8 @@ var _ = Describe("Team Controller", Ordered, func() {
 					"teamToken": string(uuid.NewUUID()),
 				}, nil)
 
+			secretManagerMock.EXPECT().DeleteTeam(mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
 			secret.GetSecretManager = func() api.SecretManager {
 				return secretManagerMock
 			}
@@ -179,6 +180,10 @@ var _ = Describe("Team Controller", Ordered, func() {
 
 					By("Checking identity client deletion")
 					err = k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), &identityv1.Client{})
+					g.Expect(errors.IsNotFound(err)).To(BeTrue())
+
+					By("Checking notification channel deletion")
+					err = k8sClient.Get(ctx, team.Status.NotificationChannelRef.K8s(), &notificationv1.NotificationChannel{})
 					g.Expect(errors.IsNotFound(err)).To(BeTrue())
 				}, timeout, interval).Should(Succeed())
 			})
@@ -262,6 +267,61 @@ var _ = Describe("Team Controller", Ordered, func() {
 						config.EnvironmentLabelKey: testEnvironment,
 					}))
 
+					By("Checking the notification channel ref")
+					g.Expect(team.Status.NotificationChannelRef).NotTo(BeNil())
+					g.Expect(team.Status.NotificationChannelRef.String()).To(Equal(expectedTeamNamespaceName + "/" + groupName + "--" + teamName + "--mail"))
+
+					By("Checking the notification channel object")
+					var notificationChannel = &notificationv1.NotificationChannel{}
+					g.Expect(k8sClient.Get(ctx, team.Status.NotificationChannelRef.K8s(), notificationChannel)).NotTo(HaveOccurred())
+
+					By("Checking the notification channel email config")
+					g.Expect(notificationChannel.Spec.Email).NotTo(BeNil())
+					g.Expect(notificationChannel.Spec.Email.Recipients).To(ContainElement(testMail))
+
+					By("Checking the notification channel labels")
+					g.Expect(notificationChannel.GetLabels()).To(BeEquivalentTo(map[string]string{
+						config.EnvironmentLabelKey: testEnvironment,
+					}))
+
+					By("Checking onboarding notification was created")
+					g.Expect(team.Status.NotificationsRef["onboarded"]).NotTo(BeNil())
+					var onboardingNotification = &notificationv1.Notification{}
+					g.Expect(k8sClient.Get(ctx, team.Status.NotificationsRef["onboarded"].K8s(), onboardingNotification)).NotTo(HaveOccurred())
+					g.Expect(onboardingNotification.Spec.Purpose).To(Equal("onboarded"))
+
+					By("Checking token rotation notification was created")
+					g.Expect(team.Status.NotificationsRef["token-rotated"]).NotTo(BeNil())
+					var tokenNotification = &notificationv1.Notification{}
+					g.Expect(k8sClient.Get(ctx, team.Status.NotificationsRef["token-rotated"].K8s(), tokenNotification)).NotTo(HaveOccurred())
+					g.Expect(tokenNotification.Spec.Purpose).To(Equal("token-rotated"))
+
+				}, timeout, interval).Should(Succeed())
+
+				By("Updating team members to trigger member change notification")
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
+				Expect(err).NotTo(HaveOccurred())
+
+				originalMemberChangeRef := team.Status.NotificationsRef["team-members-changed"]
+				team.Spec.Members = append(team.Spec.Members, organizationv1.Member{
+					Name:  "new-member",
+					Email: "newmember@example.com",
+				})
+				err = k8sClient.Update(ctx, team)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(func(g Gomega) {
+					By("Getting the updated team")
+					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
+					g.Expect(err).NotTo(HaveOccurred())
+
+					By("Checking member change notification was created")
+					g.Expect(team.Status.NotificationsRef["team-members-changed"]).NotTo(BeNil())
+					g.Expect(team.Status.NotificationsRef["team-members-changed"]).NotTo(Equal(originalMemberChangeRef))
+
+					var memberChangeNotification = &notificationv1.Notification{}
+					g.Expect(k8sClient.Get(ctx, team.Status.NotificationsRef["team-members-changed"].K8s(), memberChangeNotification)).NotTo(HaveOccurred())
+					g.Expect(memberChangeNotification.Spec.Purpose).To(Equal("team-members-changed"))
 				}, timeout, interval).Should(Succeed())
 			})
 		})
@@ -456,10 +516,10 @@ var _ = Describe("Team Controller", Ordered, func() {
 
 					By("Checking the conditions")
 					g.Expect(team.Status.Conditions).To(HaveLen(2))
-					failedCondition := meta.FindStatusCondition(team.Status.Conditions, condition.ConditionTypeReady)
-					g.Expect(failedCondition).NotTo(BeNil())
-					g.Expect(failedCondition.Status).To(Equal(metav1.ConditionFalse))
-					Expect(failedCondition.Message).To(ContainSubstring(fmt.Sprintf("failed to get group '%s' in namespace (env) '%s'", nameOfMissingGroup, testEnvironment)))
+					processingCondition := meta.FindStatusCondition(team.Status.Conditions, condition.ConditionTypeProcessing)
+					g.Expect(processingCondition).NotTo(BeNil())
+					g.Expect(processingCondition.Status).To(Equal(metav1.ConditionFalse))
+					Expect(processingCondition.Message).To(ContainSubstring("Group not found"))
 				}, timeout, interval).Should(Succeed())
 			})
 		})

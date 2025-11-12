@@ -11,6 +11,10 @@ on:
         description: "The Go module to process"
         required: true
         type: string
+      name:
+        description: "Name of the module for display purposes"
+        required: true
+        type: string
       run_check_generated_files:
         description: "Set to true to run checks for generated files"
         required: false
@@ -79,7 +83,7 @@ on:
 
 jobs:
   static_checks:
-    name: "Static Checks for ${{ inputs.module }}"
+    name: "Static Checks for ${{ inputs.name }}"
     if: ${{ inputs.run_lint || inputs.run_check_generated_files }}
     runs-on: ubuntu-latest
     steps:
@@ -176,18 +180,18 @@ jobs:
 
       - name: Upload go test log
         if: ${{ always() }} # Upload even if previous steps fail
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # pin@v5.0.0
         with:
-          name: ${{ inputs.module }}-gotest.log
+          name: ${{ inputs.name }}-gotest.log
           path: ${{ inputs.module }}/gotest.log
           if-no-files-found: error
 
       - name: Upload test reports artifact
         id: upload_test_reports_artifact_step
         if: ${{ always() }} # Upload even if previous steps fail
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pin@v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # pin@v5.0.0
         with:
-          name: ${{ inputs.module }}-test-report
+          name: ${{ inputs.name }}-test-report
           path: |
             ${{ inputs.module }}/cover.out
             ${{ inputs.module }}/coverage.html
@@ -199,12 +203,12 @@ jobs:
         uses: mikepenz/action-junit-report@v5
         with:
           report_paths: "${{ inputs.module }}/junit.xml"
-          check_name: "Test Report (${{ inputs.module }})"
+          check_name: "Test Report (${{ inputs.name }})"
           comment: false
           include_passed: true
 
   source_scan:
-    name: "Source Vulnerability Scan for ${{ inputs.module }}"
+    name: "Source Vulnerability Scan for ${{ inputs.name }}"
     if: ${{ inputs.run_vulnerability_check }}
     runs-on: ubuntu-latest
     steps:
@@ -236,7 +240,7 @@ jobs:
           work-dir: ${{ inputs.module }}
 
   codeql:
-    name: "CodeQL Analysis for ${{ inputs.module }}"
+    name: "CodeQL Analysis for ${{ inputs.name }}"
     if: ${{ inputs.run_code_analysis }}
     runs-on: ubuntu-latest
     steps:
@@ -271,7 +275,7 @@ jobs:
         shell: bash
         working-directory: ${{ inputs.module }}
         run: |
-          echo "Attempting to build ${{ inputs.module }} for CodeQL analysis..."
+          echo "Attempting to build ${{ inputs.name }} for CodeQL analysis..."
           if [ -f go.mod ]; then
             echo "Found go.mod. Running go build ./..."
             go build ./...
@@ -279,16 +283,16 @@ jobs:
             echo "Found Makefile with build target. Running make build..."
             make build
           else
-            echo "WARNING: No Makefile with a 'build' target or go.mod found in ${{ inputs.module }}. CodeQL may not analyze effectively."
+            echo "WARNING: No Makefile with a 'build' target or go.mod found in ${{ inputs.name }}. CodeQL may not analyze effectively."
           fi
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # pinv3.30.5
         with:
-          category: "/language:go/${{ inputs.module }}"
+          category: "/language:go/${{ inputs.name }}"
 
   build:
-    name: "Build Image for ${{ inputs.module }}"
+    name: "Build Image for ${{ inputs.name }}"
     if: ${{ inputs.run_build_image && (needs.static_checks.result != 'failure') && (needs.tests.result != 'failure') }}
     needs: [tests]
     runs-on: ubuntu-latest
@@ -327,7 +331,7 @@ jobs:
         shell: bash
         working-directory: ${{ inputs.module }}
         env:
-          KO_DOCKER_REPO: ${{ inputs.container_registry }}/${{ inputs.github_repository }}/${{ inputs.module }}
+          KO_DOCKER_REPO: ${{ inputs.container_registry }}/${{ inputs.github_repository }}/${{ inputs.name }}
           KO_CONFIG_PATH: ${{ github.workspace }}/.ko.yaml
         run: |
           if [ -z "${{ inputs.github_repository }}" ] || [ -z "${{ inputs.github_ref }}" ]; then
@@ -352,7 +356,7 @@ jobs:
           echo "digest=$digest" >> $GITHUB_OUTPUT
 
   image_scan:
-    name: "Image Vulnerability Scan for ${{ inputs.module }}"
+    name: "Image Vulnerability Scan for ${{ inputs.name }}"
     if: ${{ inputs.run_build_image && needs.build.result == 'success' }}
     needs: [build]
     runs-on: ubuntu-latest
@@ -361,7 +365,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.33.1
         with:
-          image-ref: ${{ inputs.container_registry }}/${{ inputs.github_repository }}/${{ inputs.module }}@${{ needs.build.outputs.image_digest }}
+          image-ref: ${{ inputs.container_registry }}/${{ inputs.github_repository }}/${{ inputs.name }}@${{ needs.build.outputs.image_digest }}
           exit-code: "1"
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"

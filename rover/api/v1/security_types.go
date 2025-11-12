@@ -56,7 +56,7 @@ type SubscriberMachine2MachineAuthentication struct {
 }
 
 // ExternalIdentityProvider defines configuration for using an external identity provider
-// +kubebuilder:validation:XValidation:rule="self == null || (!has(self.basic) && has(self.client)) || (has(self.basic) &&  !has(self.client))", message="Only one of basic or client credentials can be provided (XOR relationship)"
+// +kubebuilder:validation:XValidation:rule="self == null || !has(self.basic) || !has(self.client)", message="Only one of basic or client credentials can be provided (XOR relationship)"
 type ExternalIdentityProvider struct {
 	// TokenEndpoint is the URL for the OAuth2 token endpoint
 	// +kubebuilder:validation:Required

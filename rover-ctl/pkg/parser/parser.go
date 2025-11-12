@@ -232,3 +232,13 @@ func removeUnknownObjects(objects []types.Object) []types.Object {
 	}
 	return filtered
 }
+
+func FilterByKindAndVersion(objects []types.Object, kind, apiVersion string) []types.Object {
+	var filtered []types.Object
+	for _, obj := range objects {
+		if strings.EqualFold(obj.GetKind(), kind) && strings.EqualFold(obj.GetApiVersion(), apiVersion) {
+			filtered = append(filtered, obj)
+		}
+	}
+	return filtered
+}

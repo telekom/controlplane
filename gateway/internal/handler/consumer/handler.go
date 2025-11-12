@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
@@ -68,9 +69,7 @@ func NewFeatureBuilder(ctx context.Context, consumer *gatewayv1.Consumer) (featu
 		return nil, err
 	}
 	if !ready {
-		consumer.SetCondition(condition.NewBlockedCondition("Realm is not ready"))
-		consumer.SetCondition(condition.NewNotReadyCondition("RealmNotReady", "Realm is not ready"))
-		return nil, nil
+		return nil, ctrlerrors.BlockedErrorf("realm %s is not ready", consumer.Spec.Realm.Name)
 	}
 
 	ready, gateway, err := gateway.GetGatewayByRef(ctx, *realm.Spec.Gateway, true)
@@ -78,9 +77,7 @@ func NewFeatureBuilder(ctx context.Context, consumer *gatewayv1.Consumer) (featu
 		return nil, err
 	}
 	if !ready {
-		consumer.SetCondition(condition.NewBlockedCondition("Gateway is not ready"))
-		consumer.SetCondition(condition.NewNotReadyCondition("GatewayNotReady", "Gateway is not ready"))
-		return nil, nil
+		return nil, ctrlerrors.BlockedErrorf("gateway %s is not ready", realm.Spec.Gateway.Name)
 	}
 
 	kc, err := kongutil.GetClientFor(gateway)

@@ -10,14 +10,17 @@ import (
 	"math/rand/v2"
 	"net/http"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic/fake"
+	"k8s.io/client-go/testing"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,12 +55,14 @@ func NewUnstructured(name string) *unstructured.Unstructured {
 		Version: "v1",
 		Kind:    "TestObject",
 	})
+	u.SetResourceVersion("476170914")
 	return u
 }
 
 var _ = Describe("Inmemory ObjectStore", func() {
 
 	ctx := context.Background()
+	ctx = logr.NewContext(ctx, GinkgoLogr)
 	scheme := runtime.NewScheme()
 
 	gvr := schema.GroupVersionResource{
@@ -181,7 +186,7 @@ var _ = Describe("Inmemory ObjectStore", func() {
 
 		BeforeAll(func() {
 			for _, u := range GenerateUnstructured(500) {
-				Expect(objStore.(*InmemoryObjectStore[*unstructured.Unstructured]).OnCreate(ctx, u)).To(Succeed())
+				Expect(objStore.OnCreate(ctx, u)).To(Succeed())
 			}
 		})
 
@@ -265,7 +270,7 @@ var _ = Describe("Inmemory ObjectStore", func() {
 		})
 
 		It("should handle create event", func() {
-			Expect(objStore.(*InmemoryObjectStore[*unstructured.Unstructured]).OnCreate(ctx, NewUnstructured("foo"))).To(Succeed())
+			Expect(objStore.OnCreate(ctx, NewUnstructured("foo"))).To(Succeed())
 
 			obj, err := objStore.Get(ctx, "default", "foo")
 			Expect(err).ToNot(HaveOccurred())
@@ -273,7 +278,7 @@ var _ = Describe("Inmemory ObjectStore", func() {
 		})
 
 		It("should handle delete event", func() {
-			Expect(objStore.(*InmemoryObjectStore[*unstructured.Unstructured]).OnDelete(ctx, NewUnstructured("foo"))).To(Succeed())
+			Expect(objStore.OnDelete(ctx, NewUnstructured("foo"))).To(Succeed())
 
 			obj, err := objStore.Get(ctx, "default", "foo")
 			Expect(err).To(HaveOccurred())
@@ -325,6 +330,84 @@ var _ = Describe("Inmemory ObjectStore", func() {
 			err := apierrors.NewForbidden(schema.GroupResource{}, "foo", fmt.Errorf("bar"))
 			problem := mapErrorToProblem(err)
 			Expect(problem.Code()).To(Equal(http.StatusInternalServerError))
+		})
+	})
+
+	Context("CreateOrReplace conflict handling", func() {
+		fakeClient := fake.NewSimpleDynamicClient(scheme, NewUnstructured("foo"))
+		objStore := NewOrDie[*unstructured.Unstructured](ctx, StoreOpts{
+			Client:                 fakeClient,
+			GVR:                    gvr,
+			GVK:                    gvk,
+			AllowedSorts:           nil,
+			DisableRetryOnConflict: true,
+		})
+
+		BeforeEach(func() {
+			fakeClient.ClearActions()
+		})
+
+		It("should handle conflict on create (no retry)", func() {
+			// fakeclient returns conflict on create if the object already exists
+			fakeClient.PrependReactor("update", "testobjects", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+				return true, nil, apierrors.NewConflict(schema.GroupResource{
+					Group:    "test",
+					Resource: "testobjects",
+				}, "foo", fmt.Errorf("simulated conflict"))
+			})
+
+			obj := NewUnstructured("foo")
+			err := objStore.CreateOrReplace(ctx, obj)
+			Expect(err).To(HaveOccurred())
+			probErr, ok := errors.Cause(err).(problems.Problem)
+			Expect(ok).To(BeTrue())
+			Expect(probErr.Code()).To(Equal(http.StatusConflict))
+
+			actions := fakeClient.Actions()
+			Expect(actions[0].GetVerb()).To(Equal("update"))
+		})
+
+		It("should handle conflict on create (with retry)", func() {
+			objStore.retryOnConflict = true
+
+			// fakeclient returns conflict on create if the object already exists
+			conflictOccured := false
+			fakeClient.PrependReactor("update", "testobjects", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+				updateAction, ok := action.(testing.UpdateAction)
+				if !ok {
+					panic("expected UpdateAction")
+				}
+				if !conflictOccured {
+					conflictOccured = true
+					return true, nil, apierrors.NewConflict(schema.GroupResource{
+						Group:    "test",
+						Resource: "testobjects",
+					}, "foo", fmt.Errorf("simulated conflict"))
+				}
+
+				// Second update: return success with updated resource version
+				obj := updateAction.GetObject().(*unstructured.Unstructured)
+				updatedObj := obj.DeepCopy()
+				updatedObj.SetResourceVersion("476170999") // New resource version
+				return true, updatedObj, nil
+			})
+
+			obj := NewUnstructured("foo")
+			obj.SetResourceVersion("476170955") // Outdated resource version to trigger conflict
+			err := objStore.CreateOrReplace(ctx, obj)
+			Expect(err).ToNot(HaveOccurred())
+
+			actions := fakeClient.Actions()
+			Expect(actions[0].GetVerb()).To(Equal("update"))
+			Expect(actions[1].GetVerb()).To(Equal("get"))
+			Expect(actions[2].GetVerb()).To(Equal("update"))
+			Expect(actions).To(HaveLen(3))
+			Expect(obj.GetResourceVersion()).To(Equal("476170914")) // returns resource version of the original object
+
+			// Verify that the object in the store has the updated resource version
+			result, err := objStore.Get(ctx, obj.GetNamespace(), obj.GetName())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(result.GetResourceVersion()).To(Equal("476170999")) // updated resource version
 		})
 	})
 })

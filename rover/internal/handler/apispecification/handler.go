@@ -14,24 +14,23 @@ import (
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-	rover "github.com/telekom/controlplane/rover/api/v1"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-var _ handler.Handler[*rover.ApiSpecification] = (*ApiSpecificationHandler)(nil)
+var _ handler.Handler[*roverv1.ApiSpecification] = (*ApiSpecificationHandler)(nil)
 
 type ApiSpecificationHandler struct{}
 
-func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *rover.ApiSpecification) error {
-
-	apiSpec.SetCondition(condition.NewProcessingCondition("Provisioning", "Provisioning API"))
+func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *roverv1.ApiSpecification) error {
 
 	c := client.ClientFromContextOrDie(ctx)
+	name := roverv1.MakeName(apiSpec)
 
 	api := &apiapi.Api{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      rover.MakeName(apiSpec),
+			Name:      labelutil.NormalizeNameValue(name),
 			Namespace: apiSpec.Namespace,
 		},
 	}
@@ -45,7 +44,7 @@ func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *r
 		}
 
 		api.Labels = map[string]string{
-			apiapi.BasePathLabelKey: labelutil.NormalizeValue(apiSpec.Spec.BasePath),
+			apiapi.BasePathLabelKey: labelutil.NormalizeLabelValue(apiSpec.Spec.BasePath),
 		}
 
 		api.Spec = apiapi.ApiSpec{
@@ -76,6 +75,6 @@ func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *r
 	return nil
 }
 
-func (h *ApiSpecificationHandler) Delete(ctx context.Context, obj *rover.ApiSpecification) error {
+func (h *ApiSpecificationHandler) Delete(ctx context.Context, obj *roverv1.ApiSpecification) error {
 	return nil
 }

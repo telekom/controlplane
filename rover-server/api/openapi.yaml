@@ -1591,6 +1591,14 @@ components:
         - overallStatus
       types: object
       properties:
+        createdAt:
+          type: string
+          format: date-time
+          description: Time when the resource was created
+        processedAt:
+          type: string
+          format: date-time
+          description: Time when the resource was last processed
         state:
           $ref: '#/components/schemas/State'
         processingState:
@@ -1663,6 +1671,12 @@ components:
     RoverUpdateRequest:
       allOf:
         - $ref: '#/components/schemas/Rover'
+        - properties:
+            clientSecret:
+              type: string
+              description: >
+                This field is only used for migration purposes and will be
+                ignored otherwise.
     RoverInfoResponse:
       type: object
       readOnly: true
@@ -1774,8 +1788,6 @@ components:
           $ref: '#/components/schemas/ProcessingState'
         state:
           $ref: '#/components/schemas/State'
-        time:
-          type: string
         errors:
           type: array
           items:

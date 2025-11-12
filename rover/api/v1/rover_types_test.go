@@ -120,17 +120,14 @@ var _ = Describe("Rover V1 Test Suite", func() {
 			Expect(ok).To(BeTrue())
 
 			Expect(statusErr.Status().Reason).To(Equal(metav1.StatusReasonInvalid))
-			Expect(len(statusErr.Status().Details.Causes)).To(Equal(2))
+
 			Expect(statusErr.Status().Details.Causes).To(ContainElement(metav1.StatusCause{
 				Type:    metav1.CauseTypeFieldValueInvalid,
 				Message: "Invalid value: \"\": spec.zone in body should be at least 1 chars long",
 				Field:   "spec.zone",
 			}))
-			Expect(statusErr.Status().Details.Causes).To(ContainElement(metav1.StatusCause{
-				Type:    metav1.CauseTypeFieldValueInvalid,
-				Message: "Invalid value: \"\": spec.clientSecret in body should be at least 1 chars long",
-				Field:   "spec.clientSecret",
-			}))
+
+			Expect(len(statusErr.Status().Details.Causes)).To(Equal(1))
 
 		})
 
@@ -378,7 +375,6 @@ var _ = Describe("Rover V1 Test Suite", func() {
 			Expect(ok).To(BeTrue())
 
 			Expect(statusErr.Status().Reason).To(Equal(metav1.StatusReasonInvalid))
-			Expect(len(statusErr.Status().Details.Causes)).To(Equal(3))
 			Expect(statusErr.Status().Details.Causes).To(ContainElement(metav1.StatusCause{
 				Type:    metav1.CauseTypeTypeInvalid,
 				Message: "Invalid value: \"123\": spec.exposures[0].api.upstreams[0].url in body must be of type uri: \"123\"",
@@ -390,6 +386,8 @@ var _ = Describe("Rover V1 Test Suite", func() {
 				Message: "Invalid value: \"null\": some validation rules were not checked because the object was invalid; correct the existing errors to complete validation",
 				Field:   "<nil>",
 			}))
+
+			Expect(len(statusErr.Status().Details.Causes)).To(Equal(2))
 		})
 	})
 })
