@@ -153,3 +153,4 @@ notification, err := builder.NewNotificationBuilder().
 - **Property Management**: Simple way to add template properties
 - **Delivery Options**: Support for asynchronous sending
 - **Self-Contained**: No dependencies on external domains
+

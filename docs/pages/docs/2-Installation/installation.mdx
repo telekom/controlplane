@@ -19,10 +19,6 @@ import NoAutoTitle from '@site/src/components/NoAutoTitle';
 
 This guide provides detailed instructions for setting up the Open Telekom Integration Platform Control Plane in a local Kubernetes environment.
 
-<InfoSection type="tip" title="Quick installation">
-  For a condensed version, see our <a href="../2-Installation/quickstart">Quickstart Guide</a>.
-</InfoSection>
-
 ## Prerequisites
 
 Before beginning the installation, ensure you have the following tools installed:
@@ -296,6 +292,37 @@ kubectl apply -k .
     ```
 5. **Success!** Your controllers are now running as separate processes connected to the kind-cluster
 
+## Verification & Troubleshooting
+
+### Expected Results
+
+After successful installation, you should see:
+
+<FeatureGrid columns={3} features={[
+    {
+        title: "✅ Controller Pods",
+        description: "Running in the controlplane namespace"
+    },
+    {
+        title: "✅ Custom Resources",
+        description: "All resources in Ready state"
+    },
+    {
+        title: "✅ Team Namespace",
+        description: "Created for the sample team (controlplane--phoenix--firebirds)"
+    }
+]} />
+
+### Checking Resource Status
+
+```bash
+# Check all controlplane resources
+kubectl get zones,teams,rovers -A
+
+# Check that rover workloads are deployed
+kubectl get pods -n controlplane--phoenix--firebirds
+```
+
 ## Troubleshooting
 
 <InfoSection type="note" title="Common issues">
@@ -326,6 +353,14 @@ kubectl apply -k .
       <code>kubectl get zones,teams,rovers -A</code>
     </>}
   />
+
+    <FeatureCard
+        title="Namespace Check"
+        description={<>
+            <p>Ensure the correct namespace is created for your resources:</p>
+            <code>kubectl get ns | grep controlplane</code>
+        </>}
+    />
 </CardGrid>
 
 ## Next Steps

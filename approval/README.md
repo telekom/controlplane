@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 <p align="center">
   <h1 align="center">Approval</h1>
 </p>
-
 <p align="center">
   The Approval domain provides an approval workflow for any subscription requests, such as `APISubscription` in `API` domain.
    It enables the creation, tracking and management of access requests.
@@ -17,8 +16,7 @@ SPDX-License-Identifier: Apache-2.0
   <a href="#about">About</a> •
   <a href="#features">Features</a> •
   <a href="#notifications">Notifications</a> •
-  <a href="#integration">Integration</a> •
-  <a href="#getting-started">Getting Started</a>
+  <a href="#integration">Integration</a>
 </p>
 
 
@@ -246,68 +244,11 @@ Nevertheless, here is a short summary of key integration steps:
 
 3. Within your `SubscriptionHandler`, build the `Approval` and `ApprovalRequest`. We recommend using the [`ApprovalBuilder (link)`](./api/v1/builder/builder.go). 
    For a simple example, see the code snippet from the `ApiSubscriptions` within the API domain.
-
-4. Afterwards, check the status of the `Approval`resources by checking the response of the builder.
    If the result states that the subscription should not be further processed (i.e. `builder.ApprovalResultDenied` and `builder.ApprovalResultPending`), append the status to the status of the `Subscription` resource and return the reconciler.
    If the result is `builder.ApprovalResultGranted`, you can proceed with the subscription process (i.e. continue with the reconciler loop).
 
-## Getting Started
-### To Run the Test
+## Dependencies
 
-It will install the required dependencies if not already installed and run the tests.
-
-```sh
-make test
-```
-
-### To Deploy on the cluster
-**NOTE:**This image needs to be built beforehand.
-This image ought to be published in the personal registry you specified.
-And it is required to have access to pull the image from the working environment.
-Make sure you have the proper permission to the registry if the above commands don’t work.
-
-**Install the CRDs into the cluster:**
-
-```sh
-make install
-```
-
-**Deploy the Manager to the cluster with the image specified by `IMG`:**
-
-```sh
-make deploy IMG=<some-registry>/approval:tag
-```
-
-> [!Note]
-> If you encounter RBAC errors, you may need to grant yourself cluster-admin privileges or be logged in as admin.
-
-**Create instances of your solution**
-You can apply the samples (examples) from the config/sample:
-
-```sh
-kubectl apply -k config/samples/
-```
-
-> [!Note]
-> Ensure that the samples have default values to test them out.
-
-### To Uninstall
-**Delete the instances (CRs) from the cluster:**
-
-```sh
-kubectl delete -k config/samples/
-```
-
-**Delete the APIs(CRDs) from the cluster:**
-
-```sh
-make uninstall
-```
-
-**UnDeploy the controller from the cluster:**
-
-```sh
-make undeploy
-```
-
- on the cluster
+- [Common](../common/) - ControlPlane common library
+- [API](../api/) - For API subscription integration
+- [Notification](../notification/) - For approval notifications

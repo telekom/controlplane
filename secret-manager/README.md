@@ -14,9 +14,11 @@ SPDX-License-Identifier: Apache-2.0
 
 <p align="center">
   <a href="#about">About</a> •
+  <a href="#architecture">Architecture</a> •
   <a href="#backends">Backends</a> •
-  <a href="#security">Security</a> •
-  <a href="#getting-started">Getting Started</a>
+  <a href="#security">Security</a>
+  <a href="#code-integration">Code Integration</a>
+  <a href="#deployment-integration">Deployment Integration</a>
 </p>
 
 ## About
@@ -50,7 +52,6 @@ The following problems are solved:
 The following diagram provides a high-level overview of how the SM is integrated into the Controlplane.
 
 ![Architecture Diagram](docs/overview.drawio.svg)
-
 
 ## Backends
 
@@ -94,60 +95,7 @@ Additionally, traffic towards the SM is further protected by [Kubernetes Network
 so that only the services that are registered in advance can access the SM.
 See the [Deployment Integration](#deployment-integration) section for more information on how to integrate the SM into your custom operator deployment.
 
-## Getting Started
-
-### Server
-
-The following section describes how to set up the SM server.
-
-#### Configuration
-An example configuration can be found in the following directory [./config/default](./config/default).
-
-```yaml
-backend:
-  type: conjur
-
-security:
-  enabled: true  # enables the security features of the SM
-  access_config:  # defines a list of services that are allowed to access the SM
-  - service_account_name: default
-    deployment_name: secret-client-shell
-    namespace: secret-manager-client
-    allowed_access: 
-    - secrets_read
-    - secrets_write
-    - onboarding_write
-```
-
-#### Starting
-To start the server, you need to provide the configuration file as a command-line argument.
-
-> [!NOTE]
-> The backend flag `-backend` will override the backend type defined in the configuration file if the flag is used.
-
-Example for Kubernetes:
-
-```bash
-go run ./cmd/server/server.go -backend kubernetes -configfile ./config/default/config.yaml
-```
-
-Example for Conjur:
-
-```bash
-go run ./cmd/server/server.go -backend conjur -configfile ./config/default/config.yaml
-```
-
-For loading the Conjur configuration [github.com/cyberark/conjur-api-go](https://github.com/cyberark/conjur-api-go) is used. 
-Configuration is done using environment variables. Please refer to their documentation for more information on how to set up the Conjur backend.
-
-Furthermore, you need to setup https://github.com/cyberark/conjur-authn-k8s-client as a sidecar and mount the access token.
-
-### Client Configuration
-
-For developing and integration purposes, we have included a client that can be used to test the SM in the cluster.
-You can find the client in the [cmd/client](./cmd/client) directory.
-
-### Code Integration
+## Code Integration
 We've included an [OpenAPI spec](./api/openapi.yaml) that can be used to generate client code for the SM.
 
 However, we also provide a basic Go implementation that can be used to **easily** integrate the SM into your code.
@@ -182,7 +130,8 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 If you want to use the onboarding functionality, take a look at the code base from [Organization Domain](../organization/README.md) and the [Admin Domain](../admin/README.md) for examples on how to use it.
 Additionally, the [Organization Domain](../organization/README.md) also uses the rotation functionality.
 
-### Deployment Integration
+## Deployment Integration
+
 To integrate the following [Deployment and Namespaces Patches](./config/patches) into your custom operator deployment, so that the new operator can communicate with the SM.
-Otherwise, the communication to the SM will be blocked on a [network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) level in k8s. 
+Otherwise, the communication to the SM will be blocked on a [network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) level in k8s.
 
