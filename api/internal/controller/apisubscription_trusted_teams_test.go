@@ -12,7 +12,10 @@ import (
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -45,6 +48,8 @@ func verifyApprovalStrategy(subscription *apiapi.ApiSubscription, expectedStrate
 		// Get the latest subscription status
 		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(subscription), subscription)
 		g.Expect(err).ToNot(HaveOccurred())
+		testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(subscription.GetConditions(), condition.ConditionTypeReady), "ApprovalPending")
+
 		g.Expect(subscription.Status.ApprovalRequest).ToNot(BeNil())
 
 		// Get the approval request
@@ -54,7 +59,7 @@ func verifyApprovalStrategy(subscription *apiapi.ApiSubscription, expectedStrate
 
 		// Verify the approval strategy
 		g.Expect(approvalReq.Spec.Strategy).To(Equal(expectedStrategy))
-	}, timeout*3, interval).Should(Succeed())
+	}, timeout, interval).Should(Succeed())
 }
 
 var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func() {
@@ -71,9 +76,7 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 		zone = CreateZone(zoneName)
 
 		By("Creating the Gateway")
-		realm := NewRealm(testEnvironment, zone.Name)
-		err := k8sClient.Create(ctx, realm)
-		Expect(err).ToNot(HaveOccurred())
+		CreateRealm(testEnvironment, zone.Name)
 
 		By("Creating Teams")
 		team1 = createTeam("team1", "group1", testEnvironment)
@@ -82,7 +85,7 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 
 		By("Initializing the API")
 		api = NewApi(apiBasePath)
-		err = k8sClient.Create(ctx, api)
+		err := k8sClient.Create(ctx, api)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

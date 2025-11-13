@@ -45,7 +45,7 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 
 	case approvalv1.ApprovalStatePending:
 		approval.SetCondition(approval_condition.NewPendingCondition())
-		approval.SetCondition(condition.NewProcessingCondition("ApprovalPending", "Approval is pending"))
+		approval.SetCondition(condition.NewBlockedCondition("Approval is pending"))
 		approval.SetCondition(condition.NewNotReadyCondition("Pending", "Approval is pending"))
 
 	case approvalv1.ApprovalStateRejected:

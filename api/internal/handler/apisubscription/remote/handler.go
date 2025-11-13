@@ -13,6 +13,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
@@ -154,8 +155,6 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 	var routeRef *types.ObjectRef
 	if !remoteOrg.Spec.Zone.Equals(subscriptionZone) {
 		log.Info("RemoteApiSubscription is in a different zone")
-		// We need to create a proxy-route
-		owner.SetCondition(condition.NewProcessingCondition("CreatingProxyRoute", "Creating proxy route"))
 
 		route, err := util.CreateProxyRoute(ctx, owner.Spec.Zone, remoteOrg.Spec.Zone, owner.Spec.ApiBasePath, remoteOrg.Spec.Id)
 		if err != nil {
@@ -168,6 +167,10 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 		// Set route as RealRoute
 		routeRef = req.Status.Route
 	}
+	if routeRef == nil {
+		return ctrlerrors.BlockedErrorf("route %q cannot be nil", req.Status.Route)
+	}
+
 	owner.Status.Route = routeRef
 
 	// Create a RouteConsumer to consume the route
@@ -201,6 +204,6 @@ func HandleRemoteApiSubscription(ctx context.Context, owner *apiapi.ApiSubscript
 
 	owner.Status.ConsumeRoute = types.ObjectRefFromObject(routeConsumer)
 	owner.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
-	owner.SetCondition(condition.NewReadyCondition("Ready", "ApiSubscription is ready"))
+	owner.SetCondition(condition.NewReadyCondition("Provisioned", "ApiSubscription is ready"))
 	return nil
 }

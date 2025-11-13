@@ -5,6 +5,7 @@
 package ctrlerrors
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -35,11 +37,11 @@ type RetryableWithDelayError interface {
 // HandleError analyzes the given error and updates the object's conditions accordingly.
 // It returns a boolean indicating whether the object's conditions were updated and a reconcile.Result
 // that suggests whether to requeue the reconciliation and after what duration.
-func HandleError(obj types.Object, err error, recorder record.EventRecorder) (bool, reconcile.Result) {
+func HandleError(ctx context.Context, obj types.Object, err error, recorder record.EventRecorder) (bool, reconcile.Result) {
 	rootCauseErr := errors.Cause(err)
 
 	if be, ok := rootCauseErr.(BlockedError); ok && be.IsBlocked() {
-		recordError(obj, rootCauseErr, "Blocked", recorder)
+		recordError(ctx, obj, rootCauseErr, "Blocked", recorder)
 		updatd := obj.SetCondition(condition.NewBlockedCondition(rootCauseErr.Error()))
 		return updatd, reconcile.Result{
 			// Its blocked but we still want to recheck later
@@ -49,7 +51,7 @@ func HandleError(obj types.Object, err error, recorder record.EventRecorder) (bo
 	}
 
 	if re, ok := rootCauseErr.(RetryableWithDelayError); ok {
-		recordError(obj, rootCauseErr, "Retryable", recorder)
+		recordError(ctx, obj, rootCauseErr, "Retryable", recorder)
 		if re.IsRetryable() {
 			deley := re.RetryDelay()
 			if deley <= 0 {
@@ -62,7 +64,7 @@ func HandleError(obj types.Object, err error, recorder record.EventRecorder) (bo
 	}
 
 	if re, ok := rootCauseErr.(RetryableError); ok {
-		recordError(obj, rootCauseErr, "Retryable", recorder)
+		recordError(ctx, obj, rootCauseErr, "Retryable", recorder)
 		if re.IsRetryable() {
 			return false, reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
 		} else {
@@ -70,11 +72,18 @@ func HandleError(obj types.Object, err error, recorder record.EventRecorder) (bo
 		}
 	}
 
-	recordError(obj, rootCauseErr, "Unknown", recorder)
+	recordError(ctx, obj, rootCauseErr, "Unknown", recorder)
 	return false, reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
 }
 
-func recordError(obj types.Object, err error, reason string, recorder record.EventRecorder) {
+func recordError(ctx context.Context, obj types.Object, err error, reason string, recorder record.EventRecorder) {
+	log := log.FromContext(ctx).WithName("controller.error-handler")
+	if reason == "Unknown" {
+		log.Error(err, "Handling error", "reason", reason)
+	} else {
+		log.V(0).Info("Handling error", "reason", reason, "error", err.Error())
+	}
+
 	if err != nil && recorder != nil {
 		recorder.Event(obj, "Warning", reason, err.Error())
 	}

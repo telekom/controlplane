@@ -13,9 +13,9 @@ import (
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
-	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test"
+	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -117,14 +117,7 @@ var _ = Describe("Approval Builder", Ordered, func() {
 				g.Expect(ar.Spec.Strategy).To(BeEquivalentTo("Auto"))
 				g.Expect(ar.Spec.State).To(BeEquivalentTo("Granted"))
 
-				processingCondition := meta.FindStatusCondition(builder.GetOwner().GetConditions(), condition.ConditionTypeProcessing)
-				readyCondition := meta.FindStatusCondition(builder.GetOwner().GetConditions(), condition.ConditionTypeReady)
-				g.Expect(processingCondition).ToNot(BeNil())
-				g.Expect(readyCondition).ToNot(BeNil())
-				g.Expect(processingCondition.Status).To(Equal(metav1.ConditionTrue))
-				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
-				g.Expect(processingCondition.Reason).To(Equal("ApprovalPending"))
-				g.Expect(readyCondition.Reason).To(Equal("ApprovalPending"))
+				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(builder.GetOwner().GetConditions(), ConditionTypeApprovalGranted), "Pending")
 
 				appr := &approvalv1.Approval{}
 				err = k8sClient.Get(ctx, client.ObjectKey{
@@ -338,13 +331,7 @@ var _ = Describe("Approval Builder", Ordered, func() {
 			res, err := builder.Build(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).To(Equal(ApprovalResultPending)) // There were changes, so pending
-			processingCondition := meta.FindStatusCondition(builder.GetOwner().GetConditions(), condition.ConditionTypeProcessing)
-			Expect(processingCondition.Reason).To(Equal("Blocked"))
-			Expect(processingCondition.Message).To(Equal("Approval is pending"))
-
-			readyCondition := meta.FindStatusCondition(builder.GetOwner().GetConditions(), condition.ConditionTypeReady)
-			Expect(readyCondition.Reason).To(Equal("ApprovalPending"))
-
+			testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), meta.FindStatusCondition(builder.GetOwner().GetConditions(), ConditionTypeApprovalGranted), "Pending")
 		})
 	})
 

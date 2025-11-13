@@ -20,7 +20,6 @@ import (
 
 	v1 "github.com/telekom/controlplane/approval/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
-	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/types"
 )
 
@@ -33,6 +32,8 @@ var (
 	ApprovalResultGranted ApprovalResult = "Granted"
 	// ApprovalResultDenied is returned when the approval is denied
 	ApprovalResultDenied ApprovalResult = "Denied"
+	// ApprovalRequestDenied is returned when the approval request is denied
+	ApprovalResultRequestDenied ApprovalResult = "RequestDenied"
 	// ApprovalResultPending is returned when the approval request is waiting for approval
 	ApprovalResultPending ApprovalResult = "Pending"
 	// ApprovalResultNone is returned when the builder has already been run and nothing happened
@@ -133,7 +134,13 @@ func (b *approvalBuilder) WithAction(action string) ApprovalBuilder {
 	return b
 }
 
-func (b *approvalBuilder) Build(ctx context.Context) (ApprovalResult, error) {
+// Build will trigger the approval process and return the result
+// Prioritization of results:
+// 1. If the Approval is rejected or suspended --> Denied (must delete all child resources)
+// 2. If the ApprovalRequest is rejected --> RequestDenied (child resources must remain untouched)
+// 3. If the ApprovalRequest is pending --> Pending (must not provision child resources)
+// 4. If the Approval is granted --> Granted (can provision child resources)
+func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult, err error) {
 	if b.ran.Load() {
 		return ApprovalResultNone, errors.New("builder has already been run")
 	}
@@ -171,9 +178,9 @@ func (b *approvalBuilder) Build(ctx context.Context) (ApprovalResult, error) {
 	}
 	b.Request = approvalReq
 
-	if res == controllerutil.OperationResultUpdated || res == controllerutil.OperationResultCreated {
-		b.Owner.SetCondition(condition.NewProcessingCondition("ApprovalPending", "Approval is pending"))
-		b.Owner.SetCondition(condition.NewNotReadyCondition("ApprovalPending", "Approval is pending"))
+	if res != controllerutil.OperationResultNone {
+		log.V(2).Info("ApprovalRequest reconciled", "operation", res)
+		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStatePending, "ApprovalRequest has been created or updated"))
 	}
 
 	_, err = b.Client.Cleanup(ctx, &v1.ApprovalRequestList{}, cclient.OwnedBy(b.Owner))
@@ -181,42 +188,52 @@ func (b *approvalBuilder) Build(ctx context.Context) (ApprovalResult, error) {
 		return ApprovalResultPending, errors.Wrap(err, "failed to cleanup approval-requests")
 	}
 
+	// Priority 1: Check Approval state FIRST (highest priority - overrides everything)
 	err = b.Client.Get(ctx, client.ObjectKeyFromObject(b.Approval), b.Approval)
-	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return ApprovalResultPending, errors.Wrap(err, "failed to get approval")
-		}
+	if err != nil && !apierrors.IsNotFound(err) {
+		return ApprovalResultNone, errors.Wrap(err, "failed to get approval")
+	}
+	approvalExists := err == nil
 
-		log.V(2).Info("Approval does not exist")
-		return ApprovalResultPending, nil
-
-	} else { // Approval was found
+	// Approval was found
+	if approvalExists {
 		log.V(2).Info("Approval exists")
+		isDenied := b.Approval.Spec.State == v1.ApprovalStateRejected || b.Approval.Spec.State == v1.ApprovalStateSuspended
 
-		// Approval is not granted --> Deny
-		if b.Approval.Status.LastState != v1.ApprovalStateGranted {
-			log.V(2).Info("Approval is not granted and must not be provisioned")
-			b.Owner.SetCondition(condition.NewNotReadyCondition("NoApproval", "Approval is either rejected or suspended"))
-			b.Owner.SetCondition(condition.NewBlockedCondition("Approval is either rejected or suspended"))
-
+		if isDenied {
+			log.V(1).Info("Approval is rejected or suspended and must not be provisioned")
+			b.Owner.SetCondition(newApprovalGrantedCondition(b.Approval.Spec.State, "Approval has been rejected or suspended"))
 			return ApprovalResultDenied, nil
 		}
-
-		// Approval is for a different state of the resource --> Pending
-		if b.Approval.Spec.ApprovedRequest != nil && !b.Approval.Spec.ApprovedRequest.Equals(approvalReq) {
-			log.V(2).Info("Approval is not for this ApiSub. Returning early")
-			b.Owner.SetCondition(condition.NewNotReadyCondition("ApprovalPending", "Approval is pending"))
-			b.Owner.SetCondition(condition.NewBlockedCondition("Approval is pending"))
-			return ApprovalResultPending, nil
-		}
 	}
 
-	// Approval is granted
-	if b.Approval.Status.LastState == v1.ApprovalStateGranted {
+	// Priority 2: Check if ApprovalRequest is rejected (only if Approval didn't deny)
+	if approvalReq.Spec.State == v1.ApprovalStateRejected {
+		log.V(1).Info("ApprovalRequest is rejected")
+		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStateRejected, "ApprovalRequest has been rejected"))
+		return ApprovalResultRequestDenied, nil
+	}
+
+	// Priority 3: If Approval doesn't exist --> Pending
+	if !approvalExists {
+		log.Info("Approval does not exist")
+		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStatePending, "Approval does not exist yet"))
+		return ApprovalResultPending, nil
+	}
+
+	// Check if the Approval is for the current ApprovalRequest
+	if b.Approval.Spec.ApprovedRequest != nil && !b.Approval.Spec.ApprovedRequest.Equals(approvalReq) {
+		log.V(1).Info("Approval is not for this request. Returning early")
+		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStatePending, "Approval is not for the current ApprovalRequest"))
+		return ApprovalResultPending, nil
+	}
+
+	// Priority 4: Approval is granted
+	if b.Approval.Spec.State == v1.ApprovalStateGranted {
 		log.V(2).Info("Approval is granted")
+		b.Owner.SetCondition(newApprovalGrantedCondition(v1.ApprovalStateGranted, "Approval has been granted"))
 		return ApprovalResultGranted, nil
 	}
-
 	// Fallback, but should not be reached
 	return ApprovalResultNone, nil
 }

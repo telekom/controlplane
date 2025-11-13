@@ -15,6 +15,7 @@ import (
 	"github.com/telekom/controlplane/api/internal/handler/util"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -23,8 +24,6 @@ import (
 
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/approval/api/v1/builder"
-
-	"k8s.io/apimachinery/pkg/api/meta"
 )
 
 var _ handler.Handler[*apiapi.ApiSubscription] = (*ApiSubscriptionHandler)(nil)
@@ -36,89 +35,71 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 
+	// Remote ApiSubscription handling
 	if remote.IsRemoteApiSubscription(apiSub) {
 		log.Info("ApiSubscription is remote")
 		return remote.HandleRemoteApiSubscription(ctx, apiSub)
 	}
 
-	//  get corresponding active api
-	exists, api, err := ApiMustExist(ctx, apiSub)
+	// Local ApiSubscription handling
+
+	// For an ApiSubscription to be valid, several conditions need to be met:
+	// 1. There must be a corresponding active Api.
+	// 2. There must be a corresponding active ApiExposure.
+	// 3. The ApiExposure visibility must be valid for the ApiSubscription zone.
+	// 4. The Application must exist and be ready.
+	// 5. Approval must be granted.
+
+	// 1. Check if corresponding active Api exists
+	api, err := ApiMustExist(ctx, apiSub)
 	if err != nil {
 		return err
 	}
-	if !exists {
-
-		log.Info("🧹 In this case we would also try to delete the child route")
-		err = util.CleanupProxyRoute(ctx, apiSub.Status.Route)
-		if err != nil {
-			return errors.Wrapf(err, "failed to delete route")
-		}
-
+	apiSub.SetCondition(NewApiCondition(apiSub, api != nil))
+	if api == nil {
+		// Api does not exist or is not active, conditions are already set in the function
 		return nil
 	}
 
-	//  get corresponding active apiExposure
-	exists, apiExposure, err := ApiExposureMustExist(ctx, apiSub)
+	// 2. Check if corresponding active ApiExposure exists
+	apiExposure, err := ApiExposureMustExist(ctx, apiSub)
 	if err != nil {
 		return err
 	}
-	if !exists {
-
-		log.Info("🧹 In this case we would also try to delete the child route")
-		err = util.CleanupProxyRoute(ctx, apiSub.Status.Route)
-		if err != nil {
-			return errors.Wrapf(err, "failed to delete route")
-		}
-
+	apiSub.SetCondition(NewApiExposureCondition(apiSub, apiExposure != nil))
+	if apiExposure == nil {
+		// ApiExposure does not exist or is not active, conditions are already set in the function
 		return nil
 	}
 
 	// validate if basepathes of the api and apiexposure are really equal
 	if api.Spec.BasePath != apiSub.Spec.ApiBasePath {
+		// This should never happen as both Api and ApiExposure are looked up by the same basepath
 		return errors.Wrapf(err, "Subscriptions basePath: %s does not match the APIs basepath: %s",
 			apiSub.Spec.ApiBasePath, api.Spec.BasePath)
 	}
 
-	// - validate visibility of apiExposure (WORLD, ENTERPRISE, ZONE) depending on subscription zone
+	// 3. Validate ApiExposure visibility for ApiSubscription zone
 	valid, err := ApiVisibilityMustBeValid(ctx, apiExposure, apiSub)
 	if err != nil {
 		return err
 	}
+	apiSub.SetCondition(NewVisibilityAllowedCondition(apiSub, string(apiExposure.Spec.Visibility), valid))
 	if !valid {
 		apiSub.SetCondition(condition.NewNotReadyCondition("VisibilityConstraintViolation", "ApiExposure and ApiSubscription visibility combination is not allowed"))
-		apiSub.SetCondition(condition.NewBlockedCondition(
-			fmt.Sprintf("ApiSubscription is blocked. Subscriptions from zone '%s' are not allowed due to exposure visiblity constraints", apiSub.Spec.Zone.GetName())))
-		return nil
+		return ctrlerrors.BlockedErrorf("ApiSubscription is blocked. Subscriptions from zone %q are not allowed due to exposure visiblity constraints", apiSub.Spec.Zone.GetName())
+	}
+
+	// 4. Check if Application exists and is ready
+	application, err := util.GetApplication(ctx, apiSub.Spec.Requestor.Application)
+	if err != nil {
+		return err
 	}
 
 	// TODO: further validations (currently contained in the old code)
 	// - validate if team category allows subscription of api category
 
-	// get application from cluster and get clientId from status
-	application, err := util.GetApplication(ctx, apiSub.Spec.Requestor.Application)
-
-	if err != nil {
-		return errors.Wrapf(err,
-			"unable to get application %s for Apisubscription", apiSub.Spec.Requestor.Application.String())
-	}
-
-	if meta.IsStatusConditionFalse(application.GetConditions(), condition.ConditionTypeReady) {
-		apiSub.SetCondition(condition.NewNotReadyCondition("ApplicationNotReady", "Application was not yet processed"))
-		apiSub.SetCondition(condition.NewBlockedCondition(
-			"Application was not yet processed. ApiSubscription will be automatically processed, if the Application is ready"))
-
-		log.Info("🧹 In this case we would also try to delete the child route")
-		err = util.CleanupProxyRoute(ctx, apiSub.Status.Route)
-		if err != nil {
-			return errors.Wrapf(err, "failed to delete route")
-		}
-
-		log.Info("❌ Application is not yet processed. ApiSubscription is blocked")
-
-		return nil
-	}
-
-	// Approval
+	// 5. Manage Approval process
 
 	requester := &approvalapi.Requester{
 		Name:   application.Spec.Team,
@@ -133,8 +114,8 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	// check if scopes exist and scopes are subset from api
 	if apiSub.HasM2M() {
 		if apiSub.Spec.Security.M2M.Scopes != nil {
-
 			if len(api.Spec.Oauth2Scopes) == 0 {
+				apiSub.SetCondition(NewScopesAllowedCondition(apiSub, nil, false))
 				apiSub.SetCondition(condition.NewNotReadyCondition("ScopesNotDefined", "Api does not define any Oauth2 scopes"))
 				apiSub.SetCondition(condition.NewBlockedCondition("Api does not define any Oauth2 scopes. ApiSubscription will be automatically processed, if the API will be updated with scopes"))
 				return nil
@@ -145,13 +126,16 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 						strings.Join(api.Spec.Oauth2Scopes, ", "),
 						strings.Join(invalidScopes, ", "),
 					)
+					apiSub.SetCondition(NewScopesAllowedCondition(apiSub, invalidScopes, false))
 					apiSub.SetCondition(condition.NewNotReadyCondition("InvalidScopes", "One or more scopes which are defined in ApiSubscription are not defined in the ApiSpecification"))
 					apiSub.SetCondition(condition.NewBlockedCondition(message))
 					return nil
 				}
 			}
-
 		}
+
+		log.V(1).Info("✅ Scopes are valid and exist")
+		apiSub.SetCondition(NewScopesAllowedCondition(apiSub, apiSub.Spec.Security.M2M.Scopes, true))
 		properties["scopes"] = apiSub.Spec.Security.M2M.Scopes
 	}
 	err = requester.SetProperties(properties)
@@ -164,6 +148,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	properties["application"] = apiSub.Spec.Requestor.Application.Name
 
 	approvalBuilder := builder.NewApprovalBuilder(scopedClient, apiSub)
+	approvalBuilder.WithAction("subscribe")
 	approvalBuilder.WithHashValue(requester.Properties)
 	approvalBuilder.WithRequester(requester)
 	approvalBuilder.WithStrategy(approvalapi.ApprovalStrategy(apiExposure.Spec.Approval.Strategy))
@@ -176,31 +161,42 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	if err != nil {
 		return err
 	}
-
 	apiSub.Status.ApprovalRequest = types.ObjectRefFromObject(approvalBuilder.GetApprovalRequest())
 	apiSub.Status.Approval = types.ObjectRefFromObject(approvalBuilder.GetApproval())
 
-	if res == builder.ApprovalResultDenied {
-		log.Info("🧹 In this case we would delete the child resources")
-		_, err := scopedClient.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(apiSub))
+	switch res {
+	case builder.ApprovalResultRequestDenied:
+		log.Info("🛑 ApprovalRequest was denied. In this case we will not touch child resources")
+		apiSub.SetCondition(condition.NewNotReadyCondition("ApprovalRequestDenied", "ApprovalRequest has been denied"))
+		apiSub.SetCondition(condition.NewDoneProcessingCondition("ApprovalRequest has been denied"))
+		return nil
+	case builder.ApprovalResultPending:
+		log.Info("🫷 Approval is pending and we will wait for it")
+		apiSub.SetCondition(condition.NewNotReadyCondition("ApprovalPending", "Approval has not been approved"))
+		apiSub.SetCondition(condition.NewBlockedCondition("Approval has not been approved"))
+		return nil
+	case builder.ApprovalResultDenied:
+		apiSub.SetCondition(condition.NewNotReadyCondition("ApprovalDenied", "Approval has been denied"))
+		apiSub.SetCondition(condition.NewDoneProcessingCondition("Approval has been denied"))
+
+		deleted, err := scopedClient.Cleanup(ctx, &gatewayapi.ConsumeRouteList{}, cclient.OwnedBy(apiSub))
 		if err != nil {
-			return errors.Wrapf(err, "Unable to cleanup consume routes for Apisubscription:  %s in namespace: %s",
+			return errors.Wrapf(err, "Unable to cleanup consume routes for ApiSubscription:  %q in namespace: %q",
 				apiSub.Name, apiSub.Namespace)
 		}
+		log.Info("🧹 Approval was denied. Cleaning up Consumer of ApiSubscription", "deleted", deleted)
 
 		err = util.CleanupProxyRoute(ctx, apiSub.Status.Route)
 		if err != nil {
 			return errors.Wrapf(err, "failed to delete route")
 		}
+		log.Info("🧹 Approval was denied. Cleaning up ProxyRoute of ApiSubscription")
 		return nil
+	case builder.ApprovalResultGranted:
+		log.Info("👌 Approval is granted and will continue with processing")
+	default:
+		return errors.Errorf("unknown approval-builder result %q", res)
 	}
-
-	if res == builder.ApprovalResultPending {
-		log.Info("🫷 Approval is pending and we will wait for it")
-		return nil
-	}
-
-	log.Info("👌 Approval is granted and will continue with process")
 
 	// ProxyRoute is only needed if subscriptionZone is different from exposureZone
 	sameZoneAsExposure := apiSub.Spec.Zone.Equals(&apiExposure.Spec.Zone)
@@ -210,10 +206,10 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	options := []util.CreateRouteOption{}
 
 	if sameZoneAsExposure || failoverProxyRouteExists {
-		log.Info("Skipping creation of proxy route for ApiSubscription", "zone", apiSub.Spec.Zone)
+		log.V(1).Info("Skipping creation of proxy route for ApiSubscription", "zone", apiSub.Spec.Zone)
 		options = append(options, util.ReturnReferenceOnly())
 	} else {
-		log.Info("Creating proxy route for ApiSubscription", "zone", apiSub.Spec.Zone)
+		log.V(1).Info("Creating proxy route for ApiSubscription", "zone", apiSub.Spec.Zone)
 	}
 
 	if apiExposure.HasFailover() {
@@ -303,6 +299,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	apiSub.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
 	apiSub.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
 
+	log.Info("✅ Successfully processed ApiSubscription")
 	return nil
 }
 

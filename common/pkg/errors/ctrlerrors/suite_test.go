@@ -5,6 +5,7 @@
 package ctrlerrors_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -67,8 +68,10 @@ func TestCtrlerrors(t *testing.T) {
 var _ = Describe("Test Suite", func() {
 
 	var recorder *mock.EventRecorder
+	var ctx context.Context
 	BeforeEach(func() {
 		recorder = &mock.EventRecorder{}
+		ctx = context.Background()
 	})
 
 	Context("BlockedError", func() {
@@ -78,7 +81,7 @@ var _ = Describe("Test Suite", func() {
 			Expect(ctrlErr.Error()).To(Equal("This is a blocked error"))
 
 			obj := test.NewObject("blocked-obj", "default")
-			updated, result := ctrlerrors.HandleError(obj, ctrlErr, recorder)
+			updated, result := ctrlerrors.HandleError(ctx, obj, ctrlErr, recorder)
 			Expect(updated).To(BeTrue())
 			Expect(result.RequeueAfter).To(BeNumerically(">", 30*time.Minute))
 			condition := obj.GetConditions()[0]
@@ -100,7 +103,7 @@ var _ = Describe("Test Suite", func() {
 			Expect(myErr.Error()).To(Equal("Custom blocked error"))
 
 			obj := test.NewObject("custom-blocked-obj", "default")
-			_, result := ctrlerrors.HandleError(obj, myErr, recorder)
+			_, result := ctrlerrors.HandleError(ctx, obj, myErr, recorder)
 			Expect(result.RequeueAfter).To(BeNumerically(">", 30*time.Minute))
 			condition := obj.GetConditions()[0]
 			Expect(condition.Type).To(Equal("Processing"))
@@ -117,7 +120,7 @@ var _ = Describe("Test Suite", func() {
 			Expect(ctrlErr.Error()).To(Equal("This is a retryable error"))
 
 			obj := test.NewObject("retryable-obj", "default")
-			_, result := ctrlerrors.HandleError(obj, ctrlErr, recorder)
+			_, result := ctrlerrors.HandleError(ctx, obj, ctrlErr, recorder)
 			Expect(result.RequeueAfter).NotTo(Equal(time.Duration(0)))
 		})
 
@@ -127,7 +130,7 @@ var _ = Describe("Test Suite", func() {
 			Expect(myErr.Error()).To(Equal("Custom retryable error"))
 
 			obj := test.NewObject("custom-retryable-obj", "default")
-			_, result := ctrlerrors.HandleError(obj, myErr, recorder)
+			_, result := ctrlerrors.HandleError(ctx, obj, myErr, recorder)
 			Expect(result.RequeueAfter).NotTo(Equal(time.Duration(0)))
 		})
 
@@ -136,7 +139,7 @@ var _ = Describe("Test Suite", func() {
 			standardErr := fmt.Errorf("This is a standard error")
 
 			obj := test.NewObject("non-retryable-obj", "default")
-			_, result := ctrlerrors.HandleError(obj, standardErr, recorder)
+			_, result := ctrlerrors.HandleError(ctx, obj, standardErr, recorder)
 			Expect(result.RequeueAfter).NotTo(Equal(time.Duration(0)))
 		})
 	})
@@ -150,7 +153,7 @@ var _ = Describe("Test Suite", func() {
 			Expect(ctrlErr.RetryDelay()).To(Equal(specificDelay))
 
 			obj := test.NewObject("retryable-delay-obj", "default")
-			_, result := ctrlerrors.HandleError(obj, ctrlErr, recorder)
+			_, result := ctrlerrors.HandleError(ctx, obj, ctrlErr, recorder)
 			Expect(result.RequeueAfter).To(BeNumerically(">", specificDelay))
 		})
 
@@ -165,7 +168,7 @@ var _ = Describe("Test Suite", func() {
 			Expect(myErr.Error()).To(Equal("Custom retryable with delay error"))
 
 			obj := test.NewObject("custom-retryable-delay-obj", "default")
-			_, result := ctrlerrors.HandleError(obj, myErr, recorder)
+			_, result := ctrlerrors.HandleError(ctx, obj, myErr, recorder)
 			Expect(result.RequeueAfter).To(BeNumerically(">", specificDelay))
 		})
 	})
@@ -177,7 +180,7 @@ var _ = Describe("Test Suite", func() {
 			wrappedErr2 := errors.Wrapf(wrappedErr1, "Wrapper 2")
 
 			obj := test.NewObject("cascading-obj", "default")
-			_, result := ctrlerrors.HandleError(obj, wrappedErr2, recorder)
+			_, result := ctrlerrors.HandleError(ctx, obj, wrappedErr2, recorder)
 			Expect(result.RequeueAfter).To(BeNumerically(">", 30*time.Minute))
 			condition := obj.GetConditions()[0]
 			Expect(condition.Type).To(Equal("Processing"))

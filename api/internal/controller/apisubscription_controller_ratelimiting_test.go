@@ -11,10 +11,13 @@ import (
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -131,6 +134,8 @@ func createAndApproveSubscription(apiBasePath, zoneName, appName string, zoneRef
 	Eventually(func(g Gomega) {
 		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(subscription), subscription)
 		g.Expect(err).ToNot(HaveOccurred())
+		testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(subscription.GetConditions(), condition.ConditionTypeReady), "ApprovalPending")
+
 		g.Expect(subscription.Status.ApprovalRequest).ToNot(BeNil())
 	}, timeout, interval).Should(Succeed())
 
@@ -229,18 +234,14 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 		CreateGatewayClient(secondZone)
 
 		By("Creating the Realms")
-		realm := NewRealm(testEnvironment, zone.Name)
-		err := k8sClient.Create(ctx, realm)
-		Expect(err).ToNot(HaveOccurred())
-		secondRealm := NewRealm(testEnvironment, secondZone.Name)
-		err = k8sClient.Create(ctx, secondRealm)
-		Expect(err).ToNot(HaveOccurred())
+		CreateRealm(testEnvironment, zone.Name)
+		CreateRealm(testEnvironment, secondZone.Name)
 
 		By("Creating the Applications")
 		application = CreateApplication(appName)
 		defaultApplication = CreateApplication(defaultAppName)
 		defaultApplication.Status.ClientId = "default-test-client-id"
-		err = k8sClient.Status().Update(ctx, defaultApplication)
+		err := k8sClient.Status().Update(ctx, defaultApplication)
 		Expect(err).ToNot(HaveOccurred())
 
 		By("Initializing the API")
@@ -256,6 +257,7 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 		Eventually(func(g Gomega) {
 			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
 			g.Expect(err).ToNot(HaveOccurred())
+			testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), "Provisioned")
 			g.Expect(apiExposure.Status.Active).To(BeTrue())
 		}, timeout, interval).Should(Succeed())
 	})

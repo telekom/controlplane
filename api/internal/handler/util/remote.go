@@ -6,20 +6,31 @@ package util
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
-func GetRemoteOrganization(ctx context.Context, orgRef types.ObjectRef) (*adminapi.RemoteOrganization, error) {
+func GetRemoteOrganization(ctx context.Context, ref types.ObjectRef) (*adminapi.RemoteOrganization, error) {
 	c := client.ClientFromContextOrDie(ctx)
 	remoteOrg := &adminapi.RemoteOrganization{}
-	err := c.Get(ctx, orgRef.K8s(), remoteOrg)
+	err := c.Get(ctx, ref.K8s(), remoteOrg)
 	if err != nil {
-		// TODO: error-handling
-		return nil, errors.Wrapf(err, "failed to get remote organization %s", orgRef.Name)
+		if !apierrors.IsNotFound(err) {
+			return nil, errors.Wrap(err, fmt.Sprintf("failed to find remoteorganization %q", ref.String()))
+		}
+		return nil, ctrlerrors.BlockedErrorf("remoteorganization %q not found", ref.String())
 	}
+
+	if err := condition.EnsureReady(remoteOrg); err != nil {
+		return nil, ctrlerrors.BlockedErrorf("remoteorganization %q is not ready", ref.String())
+	}
+
 	return remoteOrg, nil
 }

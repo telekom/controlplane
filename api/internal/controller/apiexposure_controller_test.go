@@ -10,11 +10,14 @@ import (
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -45,6 +48,8 @@ func CreateZone(name string) *adminapi.Zone {
 		Issuer:    fmt.Sprintf("http://issuer.%s.de:8080/auth/realms/test", name),
 		LmsIssuer: fmt.Sprintf("http://lms-issuer.%s.de:8080/auth/realms/test", name),
 	}
+	zone.SetCondition(condition.NewReadyCondition("Ready", "testing"))
+
 	err = k8sClient.Status().Update(ctx, zone)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -52,8 +57,20 @@ func CreateZone(name string) *adminapi.Zone {
 	return zone
 }
 
+func CreateRealm(name, zoneName string) *gatewayapi.Realm {
+	realm := NewRealm(name, zoneName)
+	err := k8sClient.Create(ctx, realm)
+	Expect(err).ToNot(HaveOccurred())
+
+	realm.SetCondition(condition.NewReadyCondition("Ready", "testing"))
+	err = k8sClient.Status().Update(ctx, realm)
+	Expect(err).ToNot(HaveOccurred())
+
+	return realm
+}
+
 func NewRealm(name, zoneName string) *gatewayapi.Realm {
-	return &gatewayapi.Realm{
+	realm := &gatewayapi.Realm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: testEnvironment + "--" + zoneName,
@@ -66,7 +83,11 @@ func NewRealm(name, zoneName string) *gatewayapi.Realm {
 			Url:       fmt.Sprintf("http://my-gateway.%s:8080", zoneName),
 			IssuerUrl: fmt.Sprintf("http://my-issuer.%s:8080/auth/realms/%s", zoneName, testEnvironment),
 		},
+		Status: gatewayapi.RealmStatus{},
 	}
+
+	realm.SetCondition(condition.NewReadyCondition("Ready", "testing"))
+	return realm
 }
 
 func NewApiExposure(apiBasePath, zoneName string) *apiv1.ApiExposure {
@@ -76,7 +97,7 @@ func NewApiExposure(apiBasePath, zoneName string) *apiv1.ApiExposure {
 			Namespace: testNamespace,
 			Labels: map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
-				apiv1.BasePathLabelKey:     labelutil.NormalizeValue(apiBasePath),
+				apiv1.BasePathLabelKey:     labelutil.NormalizeLabelValue(apiBasePath),
 			},
 		},
 		Spec: apiv1.ApiExposureSpec{
@@ -150,6 +171,7 @@ func NewApiExposure(apiBasePath, zoneName string) *apiv1.ApiExposure {
 				Namespace: testEnvironment,
 			},
 		},
+		Status: apiv1.ApiExposureStatus{},
 	}
 }
 
@@ -170,9 +192,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 		zone = CreateZone(zoneName)
 
 		By("Creating the Gateway")
-		realm := NewRealm(testEnvironment, zone.Name)
-		err := k8sClient.Create(ctx, realm)
-		Expect(err).ToNot(HaveOccurred())
+		CreateRealm(testEnvironment, zone.Name)
 	})
 
 	AfterAll(func() {
@@ -392,6 +412,36 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 
 	})
 
+	Context("Validating the basePath", Ordered, func() {
+
+		var apiBasePath = "/ApiExpctrl/Test/v1"
+
+		var secondApiExposure *apiv1.ApiExposure
+
+		BeforeAll(func() {
+			secondApiExposure = NewApiExposure(apiBasePath, zoneName)
+			secondApiExposure.Name = "case-conflict-api"
+		})
+
+		It("should reject basePath with different case", func() {
+			By("Creating the second APIExposure resource")
+			err := k8sClient.Create(ctx, secondApiExposure)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Checking if the resource has the expected state")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(secondApiExposure), secondApiExposure)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(secondApiExposure.Status.Active).To(BeFalse())
+				readyCond := meta.FindStatusCondition(secondApiExposure.GetConditions(), condition.ConditionTypeReady)
+				testutil.ExpectConditionToBeFalse(g, readyCond, "ApiCaseConflict")
+				Expect(readyCond.Message).To(ContainSubstring(`API is registered but the case does not match (got="/ApiExpctrl/Test/v1", found="/apiexpctrl/test/v1").`))
+
+			}, timeout, interval).Should(Succeed())
+		})
+
+	})
+
 })
 
 var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func() {
@@ -411,9 +461,7 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 		failoverZone = CreateZone(failoverZoneName)
 
 		By("Creating the Gateway")
-		realm := NewRealm(testEnvironment, providerZone.Name)
-		err := k8sClient.Create(ctx, realm)
-		Expect(err).ToNot(HaveOccurred())
+		CreateRealm(testEnvironment, providerZone.Name)
 
 		By("Creating the Gateway Client")
 		// We need this gateway client because the failover-route is also a proxy routes (in non-failover scenarios)
@@ -421,15 +469,12 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 		CreateGatewayClient(providerZone)
 
 		By("Creating the Failover Gateway")
-		failoverRealm := NewRealm(testEnvironment, failoverZone.Name)
-		err = k8sClient.Create(ctx, failoverRealm)
-		Expect(err).ToNot(HaveOccurred())
+		CreateRealm(testEnvironment, failoverZone.Name)
 
 		By("Initializing the API and APIExposure")
 		api = NewApi(apiBasePath)
-		err = k8sClient.Create(ctx, api)
+		err := k8sClient.Create(ctx, api)
 		Expect(err).ToNot(HaveOccurred())
-
 	})
 
 	AfterEach(func() {
@@ -480,8 +525,9 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(apiExposure.Status.Active).To(BeTrue())
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), "Provisioned")
 
+				g.Expect(apiExposure.Status.Active).To(BeTrue())
 				g.Expect(apiExposure.Status.Route).ToNot(BeNil())
 				g.Expect(apiExposure.Status.FailoverRoute).ToNot(BeNil())
 

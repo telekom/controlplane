@@ -15,6 +15,7 @@ import (
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/util"
 	"github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -34,11 +35,13 @@ func CreateZone(name string) *adminapi.Zone {
 		Spec: adminapi.ZoneSpec{
 			Visibility: adminapi.ZoneVisibilityWorld,
 		},
+		Status: adminapi.ZoneStatus{},
 	}
 
 	err := k8sClient.Create(ctx, zone)
 	Expect(err).ToNot(HaveOccurred())
 
+	zone.SetCondition(condition.NewReadyCondition("Ready", "testing"))
 	zone.Status.Namespace = testEnvironment + "--" + name
 	zone.Status.Links = adminapi.Links{
 		Url:       fmt.Sprintf("http://test.%s.de", name),
@@ -53,7 +56,7 @@ func CreateZone(name string) *adminapi.Zone {
 }
 
 func CreateRealm(name, zoneName string) *gatewayapi.Realm {
-	gw := &gatewayapi.Realm{
+	realm := &gatewayapi.Realm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: testEnvironment + "--" + zoneName,
@@ -66,11 +69,17 @@ func CreateRealm(name, zoneName string) *gatewayapi.Realm {
 			Url:       fmt.Sprintf("http://%s.%s.de:8080", name, zoneName),
 			IssuerUrl: fmt.Sprintf("http://issuer.%s.de:8080/auth/realms/test", zoneName),
 		},
+		Status: gatewayapi.RealmStatus{},
 	}
 
-	err := k8sClient.Create(ctx, gw)
+	err := k8sClient.Create(ctx, realm)
 	Expect(err).ToNot(HaveOccurred())
-	return gw
+
+	realm.SetCondition(condition.NewReadyCondition("Ready", "testing"))
+	err = k8sClient.Status().Update(ctx, realm)
+	Expect(err).ToNot(HaveOccurred())
+
+	return realm
 }
 
 func CreateGatewayClient(zone *adminapi.Zone) *identityapi.Client {

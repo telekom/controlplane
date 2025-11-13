@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
@@ -67,10 +68,10 @@ func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&apisubscription.ApiSubscriptionHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&apiapi.ApiSubscription{}).
+		For(&apiapi.ApiSubscription{}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Owns(&approvalapi.ApprovalRequest{}).
 		Owns(&approvalapi.Approval{}).
-		Owns(&gatewayapi.ConsumeRoute{}).
+		Owns(&gatewayapi.ConsumeRoute{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&apiapi.RemoteApiSubscription{}).
 		Watches(&apiapi.Api{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiToApiSubscription),
@@ -91,6 +92,10 @@ func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&gatewayv1.ConsumeRoute{},
 			handler.EnqueueRequestsFromMapFunc(r.MapConsumeRouteToApiSubscription),
 			builder.WithPredicates(DeleteOnlyPredicate{}),
+		).
+		Watches(&adminv1.Zone{},
+			handler.EnqueueRequestsFromMapFunc(r.MapZoneToApiSubscription),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
@@ -186,12 +191,14 @@ func (r *ApiSubscriptionReconciler) MapApplicationToApiSubscription(ctx context.
 }
 
 func (r *ApiSubscriptionReconciler) MapRouteToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
-
 	return nil
 }
 
 func (r *ApiSubscriptionReconciler) MapConsumeRouteToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
+	return nil
+}
 
+func (r *ApiSubscriptionReconciler) MapZoneToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
 	return nil
 }
 
