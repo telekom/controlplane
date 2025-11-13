@@ -12,7 +12,9 @@ import (
 	api "github.com/telekom/controlplane/api/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
+	"github.com/telekom/controlplane/common/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -39,8 +41,8 @@ func (h *ApiHandler) CreateOrUpdate(ctx context.Context, obj *api.Api) error {
 	}
 
 	if len(apiList.Items) == 0 {
-		// there is no other api with the same BasePathLabelKey
-		return errors.New("no api found")
+		// this should never happen as we are processing an existing api
+		return ctrlerrors.BlockedErrorf("FATAL: no APIs found with basePath %q", obj.Labels[api.BasePathLabelKey])
 	}
 
 	// sort the list by creation timestamp and get the oldest one
@@ -49,8 +51,7 @@ func (h *ApiHandler) CreateOrUpdate(ctx context.Context, obj *api.Api) error {
 	})
 
 	api := apiList.Items[0]
-
-	if api.Name == obj.Name && api.Namespace == obj.Namespace {
+	if types.Equals(&api, obj) {
 		// the oldest api is the same as the one we are trying to create
 		obj.Status.Active = true
 		obj.SetCondition(condition.NewReadyCondition("ApiActive", "Api is active"))
@@ -61,12 +62,27 @@ func (h *ApiHandler) CreateOrUpdate(ctx context.Context, obj *api.Api) error {
 		// there is already a different api active with the same BasePathLabelKey
 		// the new api will be blocked until the other is deleted
 		obj.Status.Active = false
-		obj.SetCondition(condition.NewNotReadyCondition("ApiNotActive", "Api is not active"))
-		obj.SetCondition(condition.NewBlockedCondition(
-			"Api is blocked, another Api with the same BasePath is active. " +
-				"It will be automatically processed, if the other Api will be deleted.",
-		))
-		log.Info("❌ Api is blocked, another Api with the same BasePath is already active.")
+		// TODO: add special error
+
+		if obj.Spec.BasePath == api.Spec.BasePath {
+			// The exact same API (case matches)
+			obj.SetCondition(condition.NewNotReadyCondition("ApiNotActive", "Api is not active"))
+			obj.SetCondition(condition.NewBlockedCondition(
+				"Api is blocked, another Api with the same BasePath is active. " +
+					"It will be automatically processed, if the other Api will be deleted.",
+			))
+			log.Info("❌ Api is blocked, another Api with the same BasePath is already active.")
+
+		} else {
+			// The same API is exposed but it has a different case (e.g. /MyApi vs /myapi)
+			obj.SetCondition(condition.NewNotReadyCondition("ApiNotActiveCaseConflict", "Api is not active due to case conflict"))
+			obj.SetCondition(condition.NewBlockedCondition(
+				"Api is blocked, another Api with the same BasePath but different case is active. " +
+					"Please resolve the conflict by changing the BasePath of one of the Apis.",
+			))
+			log.Info("❌ Api is blocked, another Api with the same BasePath but different case is already active.")
+		}
+
 	}
 
 	return nil
