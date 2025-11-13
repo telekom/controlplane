@@ -1,3 +1,9 @@
+<!--
+Copyright 2025 Deutsche Telekom IT GmbH
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # GitHub Actions Workflows
 
 This document provides an overview of the GitHub Actions workflows used in this repository.
