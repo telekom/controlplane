@@ -31,8 +31,6 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 		return fmt.Errorf("realm is nil")
 	}
 
-	SetStatusProcessing(&realm.Status, realm)
-
 	identityProvider, err := identityprovider.GetIdentityProviderByName(ctx, realm.Spec.IdentityProvider)
 	if err != nil {
 		if apierrors.IsNotFound(err) {

@@ -101,6 +101,7 @@ func New(opts ...Option) SecretManager {
 	),
 		gen.WithRequestEditorFn(options.accessTokenReqEditor),
 	)
+
 	if err != nil {
 		log.Fatalf("Failed to create HTTP client: %v", err)
 	}

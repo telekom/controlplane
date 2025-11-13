@@ -5,7 +5,12 @@
 package metrics
 
 import (
+	"context"
+	"crypto/tls"
+	"errors"
+	"net"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -111,6 +116,54 @@ func (c *clientWrapper) currentTime() time.Time {
 	return time.Now()
 }
 
+func categorizeError(err error) string {
+	if err == nil {
+		return "error:no_response"
+	}
+
+	// timeout
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, os.ErrDeadlineExceeded) {
+		return "error:timeout"
+	}
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return "error:timeout"
+	}
+
+	// canceled requests
+	if errors.Is(err, context.Canceled) {
+		return "error:canceled"
+	}
+
+	// tls
+	var tlsErr tls.RecordHeaderError
+	if errors.As(err, &tlsErr) {
+		return "error:tls"
+	}
+	if strings.Contains(err.Error(), "tls") || strings.Contains(err.Error(), "certificate") {
+		return "error:tls"
+	}
+
+	// misc connection refused
+	var opErr *net.OpError
+	if errors.As(err, &opErr) {
+		if opErr.Op == "dial" {
+			return "error:connection_refused"
+		}
+	}
+	if strings.Contains(err.Error(), "connection refused") {
+		return "error:connection_refused"
+	}
+
+	// dns
+	var dnsErr *net.DNSError
+	if errors.As(err, &dnsErr) {
+		return "error:dns"
+	}
+
+	return "error"
+}
+
 func (c *clientWrapper) Do(req *http.Request) (*http.Response, error) {
 	startTime := c.currentTime()
 
@@ -129,7 +182,7 @@ func (c *clientWrapper) Do(req *http.Request) (*http.Response, error) {
 	if res != nil {
 		status = strconv.Itoa(res.StatusCode)
 	} else {
-		status = "error"
+		status = categorizeError(err)
 	}
 	histogram.WithLabelValues(c.clientName, method, path, status).Observe(elapsed)
 
