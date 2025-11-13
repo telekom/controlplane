@@ -21,22 +21,7 @@ The main CI workflow orchestrates the entire build and test process for the mono
 
 **Sequence:**
 1. **Prepare** - Detects changed modules using `monutil` to optimize subsequent jobs (currently not used for CI)
-2. **Module CI Jobs** - Runs reusable Go CI workflow for each module in parallel:
-   - common
-   - common-server
-   - secret-manager
-   - approval
-   - file-manager
-   - gateway
-   - identity
-   - organization
-   - admin
-   - application
-   - api
-   - rover
-   - rover-server
-   - rover-ctl
-   - notification
+2. **Module CI Jobs** - Runs reusable Go CI workflow for each module in parallel
 3. **Helm Release** - Publishes Helm charts for modules on version tags (e.g., common-server-helm)
 
 **Permissions:** Contents (read), pull-requests (write), checks (write), security-events (write), packages (write), actions (read)
