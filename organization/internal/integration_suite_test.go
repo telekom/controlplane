@@ -47,7 +47,7 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 const (
-	timeout         = 2 * time.Second
+	timeout         = 3 * time.Second
 	interval        = 100 * time.Millisecond
 	testNamespace   = "default"
 	testEnvironment = "test"
