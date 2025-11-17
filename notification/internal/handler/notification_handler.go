@@ -26,6 +26,7 @@ var _ handler.Handler[*notificationv1.Notification] = &NotificationHandler{}
 
 type NotificationHandler struct {
 	NotificationSender sender.NotificationSender
+	TemplateRenderer   *Renderer
 }
 
 func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *notificationv1.Notification) error {
@@ -68,13 +69,13 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 		// todo later
 
 		// render
-		renderedSubject, err := renderMessage(template.Spec.SubjectTemplate, notification.Spec.Properties)
+		renderedSubject, err := n.TemplateRenderer.renderMessage(template.Spec.SubjectTemplate, notification.Spec.Properties)
 		if err != nil {
 			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
 
-		renderedBody, err := renderMessage(template.Spec.Template, notification.Spec.Properties)
+		renderedBody, err := n.TemplateRenderer.renderMessage(template.Spec.Template, notification.Spec.Properties)
 		if err != nil {
 			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
