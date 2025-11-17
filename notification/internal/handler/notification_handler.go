@@ -7,6 +7,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -17,6 +18,7 @@ import (
 	"github.com/telekom/controlplane/notification/internal/sender"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 )
 
@@ -30,8 +32,15 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 
 	var shouldBlock = false
 
+	var channels = notification.Spec.Channels
+	// if there are no channels in the notification, we will use all channels form the notifications namespace
+	// this handles the case when a team is onboarded and channels are not yet cached, thus not listed by the client
+	if channels == nil || len(channels) == 0 {
+		channels = findChannelsForNotification(ctx, notification)
+	}
+
 	// lets go channel by channel
-	for _, channelRef := range notification.Spec.Channels {
+	for _, channelRef := range channels {
 
 		channelKey := channelToMapKey(channelRef)
 		// first lets check if the notification was already successfully sent
@@ -95,6 +104,27 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 	}
 
 	return nil
+}
+
+func findChannelsForNotification(ctx context.Context, notification *notificationv1.Notification) []types.ObjectRef {
+	log := logr.FromContextOrDiscard(ctx)
+	cclient, _ := client.ClientFromContext(ctx)
+
+	var notificationChannels = &notificationv1.NotificationChannelList{}
+	var channelRefs []types.ObjectRef
+
+	err := cclient.List(ctx, notificationChannels, k8sclient.InNamespace(notification.Namespace))
+	if err != nil {
+		log.Error(err, "Failed to list channels in namespace", "namespace", notification.Namespace)
+		return nil
+	}
+
+	for _, channel := range notificationChannels.Items {
+		channelRefs = append(channelRefs, *types.ObjectRefFromObject(&channel))
+	}
+
+	log.V(1).Info("Found channels in namespace. Returning refs", "namespace", notification.Namespace, "channels", channelRefs)
+	return channelRefs
 }
 
 func alreadySent(key string, notification *notificationv1.Notification) bool {
