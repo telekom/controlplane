@@ -16,6 +16,7 @@ import (
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
@@ -166,11 +167,12 @@ func ProgressApproval(apiSub *apiapi.ApiSubscription, state approvalapi.Approval
 		}
 		return nil
 	})
+	Expect(err).ToNot(HaveOccurred())
 
 	approval.Status.LastState = state
-	k8sClient.Status().Update(ctx, approval)
-
+	err = k8sClient.Status().Update(ctx, approval)
 	Expect(err).ToNot(HaveOccurred())
+
 	return approval
 }
 
@@ -206,9 +208,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 		CreateGatewayClient(zone)
 
 		By("Creating the Realm")
-		realm := NewRealm(testEnvironment, zone.Name)
-		err := k8sClient.Create(ctx, realm)
-		Expect(err).ToNot(HaveOccurred())
+		CreateRealm(testEnvironment, zone.Name)
 
 		By("Creating the Application")
 		application = CreateApplication(appName)
@@ -254,13 +254,15 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 
 			By("Checking if the resource has the expected state")
 			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
 				g.Expect(err).ToNot(HaveOccurred())
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), "Provisioned")
+
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
+				g.Expect(err).ToNot(HaveOccurred())
+
 				By("Checking the conditions")
-				processingCondition := meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeProcessing)
-				g.Expect(processingCondition).ToNot(BeNil())
-				g.Expect(processingCondition.Status).To(Equal(metav1.ConditionFalse))
-				g.Expect(processingCondition.Reason).To(Equal("Blocked"))
+				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeProcessing), "Blocked")
 
 			}, timeout, interval).Should(Succeed())
 
@@ -271,6 +273,8 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
+				testutil.ExpectConditionToMatch(g, meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeReady), "ApprovalPending", false)
+
 				g.Expect(apiSubscription.Status.ApprovalRequest).ToNot(BeNil())
 				approvalRequestRef := apiSubscription.Status.ApprovalRequest
 				approvalRequest := &approvalapi.ApprovalRequest{}
@@ -345,10 +349,8 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 			By("Creating the Zone")
 			otherZone = CreateZone(otherZoneName)
 
-			By("Creating the Gateway")
-			otherRealm := NewRealm(testEnvironment, otherZone.Name)
-			err := k8sClient.Create(ctx, otherRealm)
-			Expect(err).ToNot(HaveOccurred())
+			By("Creating the Realm")
+			CreateRealm(testEnvironment, otherZone.Name)
 		})
 
 		It("should create a proxy-route if on a different zone as the API-Exposure", func() {
@@ -371,22 +373,28 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 
 			By("Progressing the Approval resources")
 			approvalReq := ProgressApprovalRequest(apiSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
-			ProgressApproval(apiSubscription, approvalapi.ApprovalStateGranted, approvalReq)
+			approval := ProgressApproval(apiSubscription, approvalapi.ApprovalStateGranted, approvalReq)
+			Expect(approval).ToNot(BeNil())
 		})
 
 		It("should create a proxy-route", func() {
 
 			By("Checking if the resource has the expected state")
 			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
+				By("Getting the ApiExposure route")
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(apiSubscription.Status.Route).ToNot(BeNil())
-				apiSubRoute := apiSubscription.Status.Route
-
-				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
-				g.Expect(err).ToNot(HaveOccurred())
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), "Provisioned")
 				g.Expect(apiExposure.Status.Route).ToNot(BeNil())
 				apiExpRoute := apiExposure.Status.Route
+
+				By("Checking the ApiSubscription")
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
+				g.Expect(err).ToNot(HaveOccurred())
+				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeProcessing), "Done")
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeReady), "Provisioned")
+				g.Expect(apiSubscription.Status.Route).ToNot(BeNil())
+				apiSubRoute := apiSubscription.Status.Route
 
 				By("Checking if the route is the proxy-route")
 				g.Expect(apiSubRoute).ToNot(Equal(apiExpRoute))
@@ -493,11 +501,8 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 				Eventually(func(g Gomega) {
 					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
 					g.Expect(err).ToNot(HaveOccurred())
-					By("Checking the conditions")
-					processingCondition := meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeProcessing)
-					g.Expect(processingCondition).ToNot(BeNil())
-					g.Expect(processingCondition.Status).To(Equal(metav1.ConditionTrue))
-					g.Expect(processingCondition.Reason).To(Equal("ApprovalPending"))
+					By("checking that the resource is in the BLOCKED state")
+					testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(apiSubscription.Status.Conditions, condition.ConditionTypeProcessing), "Blocked")
 				}, timeout, interval).Should(Succeed())
 
 				By("Progressing the Approval resources")
@@ -554,22 +559,14 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 			remoteOrganisation = CreateRemoteOrganisation(remoteOrgId, remoteZoneName)
 			By("Creating the remote zone and its realms")
 			zone := CreateZone(remoteZoneName)
-			realm := NewRealm(testEnvironment, zone.Name)
-			err := k8sClient.Create(ctx, realm)
-			Expect(err).ToNot(HaveOccurred())
+			CreateRealm(testEnvironment, zone.Name)
 			CreateGatewayClient(zone)
-			realm = NewRealm(remoteOrgId, zone.Name)
-			err = k8sClient.Create(ctx, realm)
-			Expect(err).ToNot(HaveOccurred())
+			CreateRealm(remoteOrgId, zone.Name)
 
 			By("Creating the consumer zone and its realms")
 			zone = CreateZone(consumerZoneName)
-			realm = NewRealm(testEnvironment, zone.Name)
-			err = k8sClient.Create(ctx, realm)
-			Expect(err).ToNot(HaveOccurred())
-			realm = NewRealm(remoteOrgId, zone.Name)
-			err = k8sClient.Create(ctx, realm)
-			Expect(err).ToNot(HaveOccurred())
+			CreateRealm(testEnvironment, zone.Name)
+			CreateRealm(remoteOrgId, zone.Name)
 
 			By("Creating the Application")
 			CreateApplication(appName)
@@ -630,6 +627,7 @@ var _ = Describe("Remote Organisation Flow", Ordered, func() {
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiSubscription), apiSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(apiSubscription.GetConditions(), condition.ConditionTypeReady), "Provisioned")
 
 				g.Expect(apiSubscription.Status.Route).ToNot(BeNil())
 				g.Expect(apiSubscription.Status.Route.Name).To(Equal("esp--apisubctrl-remotetest-v1")) // TODO: make this useable by multiple subs for same remote-api
@@ -734,21 +732,17 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 		CreateGatewayClient(failoverZone)
 
 		By("Creating the provider Realm")
-		providerRealm := NewRealm(testEnvironment, providerZone.Name)
-		err := k8sClient.Create(ctx, providerRealm)
-		Expect(err).ToNot(HaveOccurred())
+		CreateRealm(testEnvironment, providerZone.Name)
 
 		By("Creating the failover Realm")
-		failoverRealm := NewRealm(testEnvironment, failoverZone.Name)
-		err = k8sClient.Create(ctx, failoverRealm)
-		Expect(err).ToNot(HaveOccurred())
+		CreateRealm(testEnvironment, failoverZone.Name)
 
 		By("Creating the Application")
 		application = CreateApplication(appName)
 
 		By("Initializing the API")
 		api = NewApi(apiBasePath)
-		err = k8sClient.Create(ctx, api)
+		err := k8sClient.Create(ctx, api)
 		Expect(err).ToNot(HaveOccurred())
 
 		By("Creating APIExposure with failover configuration")
@@ -770,6 +764,8 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 		Eventually(func(g Gomega) {
 			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
 			g.Expect(err).ToNot(HaveOccurred())
+			testutil.ExpectConditionToMatch(g, meta.FindStatusCondition(apiExposure.GetConditions(), condition.ConditionTypeReady), "Provisioned", true)
+
 			g.Expect(apiExposure.Status.Active).To(BeTrue())
 			g.Expect(apiExposure.Status.Route).ToNot(BeNil())
 			g.Expect(apiExposure.Status.FailoverRoute).ToNot(BeNil())
@@ -859,9 +855,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			CreateGatewayClient(differentZone)
 
 			By("Creating the Realm for different zone")
-			differentRealm := NewRealm(testEnvironment, differentZone.Name)
-			err := k8sClient.Create(ctx, differentRealm)
-			Expect(err).ToNot(HaveOccurred())
+			CreateRealm(testEnvironment, differentZone.Name)
 
 			By("Creating ApiSubscription in a different zone")
 			differentZoneSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
@@ -870,7 +864,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				Name:      differentZoneName,
 				Namespace: testEnvironment,
 			}
-			err = k8sClient.Create(ctx, differentZoneSubscription)
+			err := k8sClient.Create(ctx, differentZoneSubscription)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -884,16 +878,19 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 
 			By("Approving the subscription")
 			approvalReq := ProgressApprovalRequest(differentZoneSubscription.Status.ApprovalRequest, approvalapi.ApprovalStateGranted)
-			ProgressApproval(differentZoneSubscription, approvalapi.ApprovalStateGranted, approvalReq)
+			approval := ProgressApproval(differentZoneSubscription, approvalapi.ApprovalStateGranted, approvalReq)
+			Expect(approval).ToNot(BeNil())
 		})
 
 		It("should create a proxy route with failover that points to the Api-Provider failover zone", func() {
-			By("Checking route configuration")
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(differentZoneSubscription), differentZoneSubscription)
 				g.Expect(err).ToNot(HaveOccurred())
+				By("Checking the conditions")
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(differentZoneSubscription.GetConditions(), condition.ConditionTypeReady), "Provisioned")
 				g.Expect(differentZoneSubscription.Status.Route).ToNot(BeNil())
 
+				By("Verifying route configuration")
 				route := &gatewayapi.Route{}
 				err = k8sClient.Get(ctx, differentZoneSubscription.Status.Route.K8s(), route)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -947,12 +944,8 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			CreateGatewayClient(multiFailoverZone2)
 
 			By("Creating the Realms for failover zones")
-			realm1 := NewRealm(testEnvironment, multiFailoverZone1.Name)
-			realm2 := NewRealm(testEnvironment, multiFailoverZone2.Name)
-			err := k8sClient.Create(ctx, realm1)
-			Expect(err).ToNot(HaveOccurred())
-			err = k8sClient.Create(ctx, realm2)
-			Expect(err).ToNot(HaveOccurred())
+			CreateRealm(testEnvironment, multiFailoverZone1.Name)
+			CreateRealm(testEnvironment, multiFailoverZone2.Name)
 
 			By("Creating ApiSubscription with multiple failover zones")
 			multiFailoverSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
@@ -976,7 +969,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 					},
 				},
 			}
-			err = k8sClient.Create(ctx, multiFailoverSubscription)
+			err := k8sClient.Create(ctx, multiFailoverSubscription)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -1091,9 +1084,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			application = CreateApplication(appName)
 
 			By("Creating the Realm for different zone")
-			realm := NewRealm(testEnvironment, differentZone.Name)
-			err := k8sClient.Create(ctx, realm)
-			Expect(err).ToNot(HaveOccurred())
+			CreateRealm(testEnvironment, differentZone.Name)
 
 			By("Creating ApiSubscription in different zone with provider zone as failover")
 			subscription = NewApiSubscription(apiBasePath, differentZoneName, appName)
@@ -1105,7 +1096,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 					},
 				},
 			}
-			err = k8sClient.Create(ctx, subscription)
+			err := k8sClient.Create(ctx, subscription)
 			Expect(err).ToNot(HaveOccurred())
 		})
 

@@ -5,7 +5,9 @@
 package route
 
 import (
+	"cmp"
 	"context"
+	"slices"
 
 	"github.com/pkg/errors"
 	cc "github.com/telekom/controlplane/common/pkg/client"
@@ -84,7 +86,13 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 
 	// Reset the consumers list to only contain the current consumer names
 	route.Status.Consumers = []string{}
-	for _, consumer := range builder.GetAllowedConsumers() {
+	allowedConsumers := builder.GetAllowedConsumers()
+	cmpFunc := func(a, b *gatewayv1.ConsumeRoute) int {
+		return cmp.Compare(a.Name, b.Name)
+	}
+	slices.SortStableFunc(allowedConsumers, cmpFunc)
+
+	for _, consumer := range allowedConsumers {
 		// We needed all consumers for real-routes to construct the JumperConfig,
 		// but we only want to add the consumers that are actually consuming this route
 		// to the route status.

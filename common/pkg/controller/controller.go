@@ -206,10 +206,9 @@ func FirstSetup(ctx context.Context, client client.Client, object common_types.O
 }
 
 func HandleError(ctx context.Context, err error, obj common_types.Object, recorder record.EventRecorder) reconcile.Result {
-	log := log.FromContext(ctx)
-
 	// handle Conflict - resource version can change during reconciliation, it causes conflict, simple requeue should solve it
 	if apierrors.IsConflict(err) {
+		log := log.FromContext(ctx).WithName("controller.error-handler")
 		log.V(0).Info("Conflict occurred during operation", "error", err)
 		if recorder != nil {
 			recorder.Event(obj, "Warning", "Conflict", err.Error())
@@ -217,7 +216,7 @@ func HandleError(ctx context.Context, err error, obj common_types.Object, record
 		return reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
 	}
 
-	_, result := ctrlerrors.HandleError(obj, err, recorder)
+	_, result := ctrlerrors.HandleError(ctx, obj, err, recorder)
 	return result
 }
 

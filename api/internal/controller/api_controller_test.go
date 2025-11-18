@@ -4,9 +4,14 @@
 package controller
 
 import (
+	"time"
+
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -21,7 +26,7 @@ func NewApi(apiBasePath string) *apiv1.Api {
 			Namespace: testNamespace,
 			Labels: map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
-				apiv1.BasePathLabelKey:     labelutil.NormalizeValue(apiBasePath),
+				apiv1.BasePathLabelKey:     labelutil.NormalizeLabelValue(apiBasePath),
 			},
 		},
 		Spec: apiv1.ApiSpec{
@@ -31,10 +36,11 @@ func NewApi(apiBasePath string) *apiv1.Api {
 			Oauth2Scopes: []string{"scope1", "scope2", "team:scope", "api:scope"},
 			XVendor:      false,
 		},
+		Status: apiv1.ApiStatus{},
 	}
 }
 
-var _ = Describe("Api Controller", func() {
+var _ = Describe("Api Controller", Ordered, func() {
 
 	Context("Creating, Updating and ActiveSwitch", Ordered, func() {
 
@@ -64,11 +70,15 @@ var _ = Describe("Api Controller", func() {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(firstApi), firstApi)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(firstApi.Status.Active).To(BeTrue())
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(firstApi.GetConditions(), condition.ConditionTypeReady), "ApiActive")
 
 			}, timeout, interval).Should(Succeed())
 		})
 
 		It("should successfully provision the API resource and set it to inactive", func() {
+			By("Sleeping a bit before creating the second API to ensure different creation timestamps")
+			time.Sleep(1 * time.Second)
+
 			By("Creating the second API resource")
 			err := k8sClient.Create(ctx, secondApi)
 			Expect(err).ToNot(HaveOccurred())
@@ -77,6 +87,7 @@ var _ = Describe("Api Controller", func() {
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(secondApi), secondApi)
 				g.Expect(err).ToNot(HaveOccurred())
+				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(secondApi.GetConditions(), condition.ConditionTypeReady), "ApiNotActive")
 				g.Expect(secondApi.Status.Active).To(BeFalse())
 
 			}, timeout, interval).Should(Succeed())
@@ -92,6 +103,63 @@ var _ = Describe("Api Controller", func() {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(secondApi), secondApi)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(secondApi.Status.Active).To(BeTrue())
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(secondApi.GetConditions(), condition.ConditionTypeReady), "ApiActive")
+
+			}, timeout, interval).Should(Succeed())
+		})
+
+	})
+
+	Context("Validating the basePath", Ordered, func() {
+
+		var apiBasePath = "/apictrl/test1/v1"
+		var firstApi *apiv1.Api
+		var secondApi *apiv1.Api
+
+		BeforeAll(func() {
+			firstApi = NewApi(apiBasePath)
+			secondApi = NewApi(apiBasePath)
+			secondApi.Name = "another-test-api1"
+			secondApi.Spec.BasePath = "/APICtrl/Test1/v1" // different case
+		})
+
+		AfterAll(func() {
+			By("Cleaning up and deleting all resources")
+			err := k8sClient.Delete(ctx, firstApi)
+			Expect(err).ToNot(HaveOccurred())
+			err = k8sClient.Delete(ctx, secondApi)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should successfully provision the first API resource", func() {
+			By("Creating the first API resource")
+			err := k8sClient.Create(ctx, firstApi)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Checking if the resource has the expected state")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(firstApi), firstApi)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(firstApi.Status.Active).To(BeTrue())
+				testutil.ExpectConditionToBeTrue(g, meta.FindStatusCondition(firstApi.GetConditions(), condition.ConditionTypeReady), "ApiActive")
+
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should block the second API resource due to basePath conflict", func() {
+			By("Sleeping a bit before creating the second API to ensure different creation timestamps")
+			time.Sleep(1 * time.Second)
+
+			By("Creating the second API resource")
+			err := k8sClient.Create(ctx, secondApi)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Checking if the resource has the expected state")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(secondApi), secondApi)
+				g.Expect(err).ToNot(HaveOccurred())
+				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(secondApi.GetConditions(), condition.ConditionTypeReady), "ApiNotActiveCaseConflict")
+				g.Expect(secondApi.Status.Active).To(BeFalse())
 
 			}, timeout, interval).Should(Succeed())
 		})
