@@ -51,8 +51,9 @@ var _ = Describe("Cached Backend", func() {
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
 			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().Copy().Return(secretId).Once()
 
-			secret := backend.NewDefaultSecret[*mocks.MockSecretId](secretId, "my-value")
+			secret := backend.NewDefaultSecret(secretId, "my-value")
 			mockBackend.EXPECT().Get(ctx, secretId).Return(secret, nil).Once()
 
 			secret, err := cachedBackend.Get(ctx, secretId)
@@ -70,8 +71,9 @@ var _ = Describe("Cached Backend", func() {
 			secretValue := backend.String("my-value")
 			secretId := mocks.NewMockSecretId(GinkgoT())
 			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().Copy().Return(secretId).Once()
 
-			mockBackend.EXPECT().Set(ctx, secretId, secretValue).Return(backend.NewDefaultSecret[*mocks.MockSecretId](secretId, "my-value"), nil).Once()
+			mockBackend.EXPECT().Set(ctx, secretId, secretValue).Return(backend.NewDefaultSecret(secretId, "my-value"), nil).Once()
 
 			secret, err := cachedBackend.Set(ctx, secretId, secretValue)
 			Expect(err).NotTo(HaveOccurred())
@@ -84,9 +86,10 @@ var _ = Describe("Cached Backend", func() {
 			ctx := context.Background()
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
-			secretId.EXPECT().String().Return("my-secret-id").Times(2)
+			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().Copy().Return(secretId).Once()
 
-			secret := backend.NewDefaultSecret[*mocks.MockSecretId](secretId, "my-value")
+			secret := backend.NewDefaultSecret(secretId, "my-value")
 			cachedItem := cache.NewDefaultCacheItem(secretId, secret, 10)
 			cachedBackend.Cache.Set(secretId.String(), cachedItem)
 
@@ -98,14 +101,16 @@ var _ = Describe("Cached Backend", func() {
 
 			num, err := testutil.GatherAndCount(prometheus.DefaultGatherer, "cache_access_total")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(num).To(Equal(2))
+			Expect(num).To(Equal(3))
 		})
 
 		It("should return an error if the backend fails", func() {
+
 			ctx := context.Background()
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
 			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().Copy().Return(secretId).Once()
 
 			mockBackend.EXPECT().Get(ctx, secretId).Return(backend.DefaultSecret[*mocks.MockSecretId]{}, backend.ErrSecretNotFound(secretId)).Once()
 
@@ -117,7 +122,7 @@ var _ = Describe("Cached Backend", func() {
 
 			num, err := testutil.GatherAndCount(prometheus.DefaultGatherer, "cache_access_total")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(num).To(Equal(2))
+			Expect(num).To(Equal(3))
 		})
 
 		It("should return the cached item when the value did not change", func() {
@@ -126,9 +131,11 @@ var _ = Describe("Cached Backend", func() {
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
 			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().Copy().Return(secretId).Once()
+
 			secretValue := backend.String(value)
 
-			cachedBackend.Cache.Set(secretId.String(), cache.NewDefaultCacheItem(secretId, backend.NewDefaultSecret[*mocks.MockSecretId](secretId, value), 10))
+			cachedBackend.Cache.Set(secretId.String(), cache.NewDefaultCacheItem(secretId, backend.NewDefaultSecret(secretId, value), 10))
 
 			res, err := cachedBackend.Set(ctx, secretId, secretValue)
 			Expect(err).NotTo(HaveOccurred())
@@ -141,6 +148,7 @@ var _ = Describe("Cached Backend", func() {
 			ctx := context.Background()
 			secretId := mocks.NewMockSecretId(GinkgoT())
 			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().Copy().Return(secretId).Once()
 
 			mockBackend.EXPECT().Set(ctx, secretId, backend.String("my-value")).Return(backend.DefaultSecret[*mocks.MockSecretId]{}, backend.ErrInvalidSecretId("invalid-id")).Once()
 
