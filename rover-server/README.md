@@ -15,6 +15,7 @@ SPDX-License-Identifier: Apache-2.0
 
 <p align="center">
   <a href="#about">About</a> •
+  <a href="#features">Features</a> •
   <a href="#configuration">Configuration</a> •
   <a href="#installation">Installation</a>
 </p>
@@ -27,6 +28,13 @@ The Rover Server serves as the primary entrypoint for all customer configuration
 - Provides a simple REST API interface for configuration management. See [OpenAPI Specification](./api/openapi.yaml) for details.
 - Handles initial validation and processing of configurations
 - Passes validated configurations to the [Rover Domain](../rover/README.md) for reconciliation
+
+## Features
+
+- **REST API**: Provides a REST API for creating and updating Rover resources
+- **File Management**: Uploads APISpecification via [File Manager](../file-manager). Extract information for runtime configurations such as allowed scopes.
+- **Secret Manager**: Obfuscates secrets via [Secret Manager](../secret-manager) and injects key-values for later reference.
+- **Rover-CTL**: Integrated Support for [rover-ctl](../rover-ctl) CI/CD-friendly access.
 
 ## Configuration
 

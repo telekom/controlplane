@@ -16,6 +16,7 @@ SPDX-License-Identifier: Apache-2.0
 
 <p align="center">
   <a href="#about">About</a> •
+  <a href="#features"> Features</a> •
   <a href="#usage">Usage</a> •
   <a href="#configuration">Configuration</a>
 
@@ -30,7 +31,10 @@ Rover Control CLI (roverctl) is a command-line tool for managing rover resources
     <img height="400" src="docs/img/overview.drawio.svg" />
 </div>
 
+## Features
 
+- **Version Translation**: Provides support to translate resources `v0` to `v1` 
+- **REST Client**: Integrated REST Client to interact with [Rover Server](../rover-server)
 
 ## Usage
 
