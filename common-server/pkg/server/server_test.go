@@ -146,4 +146,30 @@ var _ = Describe("Server", func() {
 		})
 
 	})
+
+	Context("Timeout", func() {
+		It("should timeout a long request", func() {
+
+			cfg := server.NewAppConfig()
+			cfg.ReadTimeout = 1 * time.Second
+			cfg.WriteTimeout = 1 * time.Second
+			cfg.Timeout = 2 * time.Second
+			app := server.NewAppWithConfig(cfg)
+
+			app.Get("/long", func(c *fiber.Ctx) error {
+				time.Sleep(3 * time.Second)
+				if c.UserContext().Err() != nil {
+					return c.UserContext().Err()
+				}
+				return c.SendString("done")
+			})
+
+			req := httptest.NewRequest("GET", "/long", nil)
+			res, err := app.Test(req, -1)
+			Expect(err).ToNot(HaveOccurred())
+			b, _ := io.ReadAll(res.Body)
+			Expect(string(b)).To(Equal(`{"type":"Timeout","status":503,"title":"Request Timeout","detail":"The server timed out waiting for the request","instance":"/long"}`))
+			Expect(res.StatusCode).To(Equal(503))
+		})
+	})
 })

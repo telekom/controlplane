@@ -23,6 +23,7 @@ import (
 	"github.com/telekom/controlplane/secret-manager/internal/api"
 	"github.com/telekom/controlplane/secret-manager/internal/handler"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache"
+	v2 "github.com/telekom/controlplane/secret-manager/pkg/backend/cache/v2"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/kubernetes"
@@ -92,14 +93,21 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 		log.V(1).Info("cache is disabled")
 	}
 
+	cacheV2 := cfg.Backend.GetDefault("use_cache_v2", "false") == trueStr
+
 	switch cfg.Backend.Type {
 	case "conjur":
-		conjurWriteApi := conjur.NewWriteApiOrDie()
-		conjurReadApi := conjur.NewReadOnlyApiOrDie()
+		conjurWriteApi := conjur.NewConjurApiMetrics(conjur.NewWriteApiOrDie())
+		conjurReadApi := conjur.NewConjurApiMetrics(conjur.NewReadOnlyApiOrDie())
 
 		backend := conjur.NewBackend(conjurWriteApi, conjurReadApi)
 		if shouldCache {
-			backend = cache.NewCachedBackend(backend, cacheDuration)
+			if cacheV2 {
+				log.V(1).Info("using v2 cache implementation")
+				backend = v2.NewCachedBackend(backend, cacheDuration)
+			} else {
+				backend = cache.NewCachedBackend(backend, cacheDuration)
+			}
 		}
 		onboarder := conjur.NewOnboarder(conjurWriteApi, backend)
 		onboarder.WithBouncer(bouncer.NewDefaultLocker())
