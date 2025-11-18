@@ -73,6 +73,15 @@ spec:
   version: 1.0.0
   xVendor: false
 ```
+
+- There can be multiple API CRs in different namespaces with the same basePath, but only one of them can be `active` at a time.
+- The API is considered a singleton based on its [normalized](../common/pkg/util/labelutil/labelutil.go#34) basePath.
+  - This means that there can only be one `active` API CR per basePath in the (virtual) environment, regardless of the namespace and case sensitivity.
+  - E. g. `/group/team/api/v1` and `/Group/Team/API/v1` would be considered the same basePath.
+- The name of the API CR SHOULD be constructed by using the basePath, e.g. `group-team-api-v1` for basePath `/group/team/api/v1`.
+- The API CR MUST be created in the namespace of the team that registered the API.
+- The API CR MUST have a label `cp.ei.telekom.de/basepath` with the value of the [normalized](../common/pkg/util/labelutil/labelutil.go#34) basePath.
+
 </details>
 <br />
 
@@ -107,6 +116,14 @@ spec:
     namespace: env
 ```
 
+- There can be multiple ApiExposure CRs in different namespaces and applications for the same API basePath, but only one of them can be `active` at a time.
+- The ApiExposure CR is considered a singleton based on its [normalized](../common/pkg/util/labelutil/labelutil.go#34) apiBasePath.
+  - This means that there can only be one `active` ApiExposure CR per apiBasePath in the (virtual) environment, regardless of the namespace and case sensitivity.
+  - E. g. `/group/team/api/v1` and `/Group/Team/API/v1` would be considered the same apiBasePath.
+- The name of the ApiExposure CR SHOULD be constructed by using the application name and the apiBasePath, e.g. `application-name--group-team-api-v1`.
+- The ApiExposure CR MUST be created in the namespace of the application that exposes the API.
+- The ApiExposure CR MUST have a label `cp.ei.telekom.de/basepath` with the value of the [normalized](../common/pkg/util/labelutil/labelutil.go#34) apiBasePath.
+
 </details>
 <br />
 
@@ -139,6 +156,12 @@ spec:
     name: zoneName
     namespace: env
 ```
+
+- There can be multiple ApiSubscription CRs in different namespaces and applications for the same API basePath. All of them can be `active` at the same time.
+- The name of the ApiSubscription CR SHOULD be constructed by using the application name and the apiBasePath, e.g. `application-name--group-team-api-v1`.
+- The ApiSubscription CR MUST be created in the namespace of the application that subscribes to the API.
+- The ApiSubscription CR MUST have a label `cp.ei.telekom.de/basepath` with the value of the [normalized](../common/pkg/util/labelutil/labelutil.go#34) apiBasePath.
+
 </details>
 <br />
 

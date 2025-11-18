@@ -7,7 +7,8 @@ package controller
 import (
 	"context"
 
-	apiapi "github.com/telekom/controlplane/api/api/v1"
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/api/internal/handler/apiexposure"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
@@ -30,7 +31,7 @@ type ApiExposureReconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
-	cc.Controller[*apiapi.ApiExposure]
+	cc.Controller[*apiv1.ApiExposure]
 }
 
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
@@ -45,7 +46,7 @@ type ApiExposureReconciler struct {
 // +kubebuilder:rbac:groups=gateway.cp.ei.telekom.de,resources=routes,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ApiExposureReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	return r.Controller.Reconcile(ctx, req, &apiapi.ApiExposure{})
+	return r.Controller.Reconcile(ctx, req, &apiv1.ApiExposure{})
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -54,18 +55,22 @@ func (r *ApiExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&apiexposure.ApiExposureHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&apiapi.ApiExposure{}).
-		Watches(&apiapi.Api{},
+		For(&apiv1.ApiExposure{}).
+		Watches(&apiv1.Api{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiToApiExposure),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
-		Watches(&apiapi.ApiExposure{},
+		Watches(&apiv1.ApiExposure{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiExposureToApiExposure),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToApiExposure),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+		).
+		Watches(&adminv1.Zone{},
+			handler.EnqueueRequestsFromMapFunc(r.MapZoneToApiExposure),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
@@ -75,16 +80,16 @@ func (r *ApiExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *ApiExposureReconciler) MapApiToApiExposure(ctx context.Context, obj client.Object) []reconcile.Request {
 	log := log.FromContext(ctx)
-	api, ok := obj.(*apiapi.Api)
+	api, ok := obj.(*apiv1.Api)
 	if !ok {
 		log.Info("object is not an API")
 		return nil
 	}
 
-	list := &apiapi.ApiExposureList{}
+	list := &apiv1.ApiExposureList{}
 	err := r.Client.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey: api.Labels[cconfig.EnvironmentLabelKey],
-		apiapi.BasePathLabelKey:     api.Labels[apiapi.BasePathLabelKey],
+		apiv1.BasePathLabelKey:      api.Labels[apiv1.BasePathLabelKey],
 	})
 	if err != nil {
 		log.Error(err, "failed to list API-Exposures")
@@ -104,16 +109,16 @@ func (r *ApiExposureReconciler) MapApiToApiExposure(ctx context.Context, obj cli
 
 func (r *ApiExposureReconciler) MapApiExposureToApiExposure(ctx context.Context, obj client.Object) []reconcile.Request {
 	log := log.FromContext(ctx)
-	apiExposure, ok := obj.(*apiapi.ApiExposure)
+	apiExposure, ok := obj.(*apiv1.ApiExposure)
 	if !ok {
 		log.Info("object is not an ApiExposure")
 		return nil
 	}
 
-	list := &apiapi.ApiExposureList{}
+	list := &apiv1.ApiExposureList{}
 	err := r.Client.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey: apiExposure.Labels[cconfig.EnvironmentLabelKey],
-		apiapi.BasePathLabelKey:     apiExposure.Labels[apiapi.BasePathLabelKey],
+		apiv1.BasePathLabelKey:      apiExposure.Labels[apiv1.BasePathLabelKey],
 	})
 	if err != nil {
 		log.Error(err, "failed to list API-Exposures")
@@ -132,5 +137,9 @@ func (r *ApiExposureReconciler) MapApiExposureToApiExposure(ctx context.Context,
 }
 
 func (r *ApiExposureReconciler) MapRouteToApiExposure(ctx context.Context, obj client.Object) []reconcile.Request {
+	return nil
+}
+
+func (r *ApiExposureReconciler) MapZoneToApiExposure(ctx context.Context, obj client.Object) []reconcile.Request {
 	return nil
 }

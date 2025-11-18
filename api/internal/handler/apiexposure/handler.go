@@ -29,17 +29,34 @@ type ApiExposureHandler struct{}
 func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.ApiExposure) error {
 	log := log.FromContext(ctx)
 
-	//  get corresponding active api
+	// For an ApiExposure to be valid, two conditions need to be met:
+	// 1. There must be a corresponding active Api.
+	// 2. There must be no other active ApiExposure with the same base path.
+
+	// 1. Check if corresponding active Api exists
 	api, err := ApiMustExist(ctx, apiExp)
+	if err != nil {
+		return errors.Wrapf(err, "failed to validate existence of Api for ApiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
+	}
+	apiExp.SetCondition(NewApiCondition(apiExp, api != nil))
+
+	if api == nil {
+		// Api does not exist or is not active, conditions are already set in the function
+		return nil
+	}
 
 	// check if there is already a different active apiExposure with same basepath
 	if err := ApiExposureMustNotAlreadyExist(ctx, apiExp); err != nil {
 		return errors.Wrapf(err, "failed to validate uniqueness of ApiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
 	}
+
+	apiExp.SetCondition(NewApiExposureActiveCondition(apiExp, apiExp.Status.Active))
 	if !apiExp.Status.Active {
 		// its already exposed by another apiExposure, conditions are already set in the function
 		return nil
 	}
+
+	// Core Validations are done, can continue
 
 	// Scopes
 	// check if scopes exist and scopes are subset from api
