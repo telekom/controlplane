@@ -39,10 +39,9 @@ func mapProblemsToStateInfos(problems []api.Problem) []api.StateInfo {
 	}
 
 	for _, problem := range problems {
-		cause := problem.Context + ", Cause: " + problem.Cause
 		stateInfos = append(stateInfos, api.StateInfo{
 			Message: problem.Message,
-			Cause:   cause,
+			Cause:   problem.Cause,
 		})
 	}
 	return stateInfos

@@ -11,6 +11,7 @@ import (
 	cc "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/controller"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -129,9 +130,7 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 		return nil, err
 	}
 	if !ready {
-		route.SetCondition(condition.NewBlockedCondition("Realm is not ready"))
-		route.SetCondition(condition.NewNotReadyCondition("RealmNotReady", "Realm is not ready"))
-		return nil, nil
+		return nil, ctrlerrors.BlockedErrorf("realm %q is not ready", route.Spec.Realm.Name)
 	}
 
 	ready, gateway, err := gateway.GetGatewayByRef(ctx, *realm.Spec.Gateway, true)
@@ -139,9 +138,7 @@ func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.Fe
 		return nil, err
 	}
 	if !ready {
-		route.SetCondition(condition.NewBlockedCondition("Gateway is not ready"))
-		route.SetCondition(condition.NewNotReadyCondition("GatewayNotReady", "Gateway is not ready"))
-		return nil, nil
+		return nil, ctrlerrors.BlockedErrorf("gateway %q is not ready", realm.Spec.Gateway.Name)
 	}
 
 	kc, err := kongutil.GetClientFor(gateway)

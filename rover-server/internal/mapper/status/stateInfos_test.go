@@ -51,8 +51,8 @@ var _ = Describe("MapProblemsToStateInfos", func() {
 				{Message: "Problem 2", Context: "Context 2", Cause: "Cause 2"},
 			}
 			expectedStateInfos := []api.StateInfo{
-				{Message: "Problem 1", Cause: "Context 1, Cause: Cause 1"},
-				{Message: "Problem 2", Cause: "Context 2, Cause: Cause 2"},
+				{Message: "Problem 1", Cause: "Cause 1"},
+				{Message: "Problem 2", Cause: "Cause 2"},
 			}
 
 			stateInfos := mapProblemsToStateInfos(problems)

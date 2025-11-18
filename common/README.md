@@ -36,6 +36,7 @@ In addition to these components, the module also provides some common utilities 
 - **Types**: This package provides some common types that are used by the controllers and handlers. These include the `Object` interface, which is an extension to the kubebuilder `Object` interface
 - **Util**: This package provides some common utilities including context and labels
 - **Config**: This package provides a set of default configurations that can be used by the controllers. See [Configuration](#configuration) for more information.
+- **Errors**: This package provides specialized error types for controller operations. The `ctrlerrors` subpackage defines interfaces for handling different error scenarios in reconciliation loops, including `BlockedError`, `RetryableError`, and `RetryableWithDelayError`. These help controllers make intelligent decisions about whether to requeue, block processing, or apply specific retry delays when errors occur.
 
 ## Controller and Handler Flow
 
@@ -84,6 +85,17 @@ The following condition types are supported ([pkg/condition/condition.go](pkg/co
 
 
 
+## Error Handling
+
+The common module includes a robust error handling system through the `ctrlerrors` package, which provides specialized error types for different reconciliation scenarios:
+
+- **BlockedError**: Indicates that a resource is blocked from further processing until some external condition is resolved. When a controller encounters a `BlockedError`, it updates the resource's status with a "Blocked" condition and doesn't requeue the resource for reconciliation.
+
+- **RetryableError**: Signals a temporary issue that should be retried. When encountered, the controller will requeue the resource with a jittered backoff delay.
+
+- **RetryableWithDelayError**: Extends `RetryableError` with a specific retry delay. This allows fine-grained control over how long to wait before the next reconciliation attempt.
+
+All these error types can be created using helper functions (`BlockedErrorf`, `RetryableErrorf`, `RetryableWithDelayErrorf`) or by implementing the respective interfaces in your custom error types. The error handling system integrates with the controller flow to provide consistent behavior across all operators.
 
 ## Scripts
 

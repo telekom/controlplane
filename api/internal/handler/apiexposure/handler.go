@@ -7,7 +7,6 @@ package apiexposure
 import (
 	"context"
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -18,10 +17,8 @@ import (
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -32,68 +29,15 @@ type ApiExposureHandler struct{}
 func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.ApiExposure) error {
 	log := log.FromContext(ctx)
 
-	scopedClient := cclient.ClientFromContextOrDie(ctx)
-
 	//  get corresponding active api
-	apiList := &apiapi.ApiList{}
-	err := scopedClient.List(ctx, apiList,
-		client.MatchingLabels{apiapi.BasePathLabelKey: labelutil.NormalizeValue(apiExp.Spec.ApiBasePath)},
-		client.MatchingFields{"status.active": "true"})
-	if err != nil {
-		return errors.Wrapf(err,
-			"failed to list corresponding APIs for ApiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
-	}
-
-	// if no corresponding active api is found, set conditions and return
-	if len(apiList.Items) == 0 {
-		apiExp.SetCondition(condition.NewNotReadyCondition("NoApiRegistered", "API is not yet registered"))
-		apiExp.SetCondition(condition.NewBlockedCondition(
-			"API is not yet registered. ApiExposure will be automatically processed, if the API will be registered"))
-		log.Info("❌ API is not yet registered. ApiExposure is blocked")
-
-		routeList := &gatewayapi.RouteList{}
-		// Using ownedByLabel to cleanup all routes that are owned by the ApiExposure
-		_, err := scopedClient.Cleanup(ctx, routeList, cclient.OwnedByLabel(apiExp))
-		if err != nil {
-			return errors.Wrapf(err,
-				"failed to cleanup owned routes for ApiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
-		}
-		return nil
-	}
-	api := apiList.Items[0]
-
-	// validate if basepathes of the api and apiexposure are really equal
-	if api.Spec.BasePath != apiExp.Spec.ApiBasePath {
-		return errors.Wrapf(err,
-			"Exposures basePath: %s does not match the APIs basepath: %s", apiExp.Spec.ApiBasePath, api.Spec.BasePath)
-	}
+	api, err := ApiMustExist(ctx, apiExp)
 
 	// check if there is already a different active apiExposure with same basepath
-	apiExposureList := &apiapi.ApiExposureList{}
-	err = scopedClient.List(ctx, apiExposureList,
-		client.MatchingLabels{apiapi.BasePathLabelKey: apiExp.Labels[apiapi.BasePathLabelKey]})
-	if err != nil {
-		return errors.Wrap(err, "failed to list ApiExposures")
+	if err := ApiExposureMustNotAlreadyExist(ctx, apiExp); err != nil {
+		return errors.Wrapf(err, "failed to validate uniqueness of ApiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
 	}
-
-	// sort the list by creation timestamp and get the oldest one
-	sort.Slice(apiExposureList.Items, func(i, j int) bool {
-		return apiExposureList.Items[i].CreationTimestamp.Before(&apiExposureList.Items[j].CreationTimestamp)
-	})
-	apiExposure := apiExposureList.Items[0]
-
-	if apiExposure.Name == apiExp.Name && apiExposure.Namespace == apiExp.Namespace {
-		// the oldest apiExposure is the same as the one we are trying to handle
-		apiExp.Status.Active = true
-	} else {
-		// there is already a different apiExposure active with the same BasePathLabelKey
-		// the new one will be blocked until the other is deleted
-		apiExp.Status.Active = false
-		apiExp.SetCondition(condition.NewNotReadyCondition("ApiExposureNotActive", "ApiExposure is not active"))
-		apiExp.SetCondition(condition.
-			NewBlockedCondition("ApiExposure is blocked, another ApiExposure with the same BasePath is active."))
-		log.Info("❌ ApiExposure is blocked, another ApiExposure with the same BasePath is already active.")
-
+	if !apiExp.Status.Active {
+		// its already exposed by another apiExposure, conditions are already set in the function
 		return nil
 	}
 
@@ -125,8 +69,6 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 
 	// TODO: further validations (currently contained in the old code)
 	// - validate if team category allows exposure of api category
-
-	apiExp.SetCondition(condition.NewProcessingCondition("Provisioning", "Provisioning route"))
 	// create real route
 	route, err := util.CreateRealRoute(ctx, apiExp.Spec.Zone, apiExp, contextutil.EnvFromContextOrDie(ctx))
 	if err != nil {
@@ -137,8 +79,8 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		failoverZone := apiExp.Spec.Traffic.Failover.Zones[0] // currently only one failover zone is supported
 		route, err := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
 			contextutil.EnvFromContextOrDie(ctx),
-			util.WithFailoverUpstreams(apiExposure.Spec.Upstreams...),
-			util.WithFailoverSecurity(apiExposure.Spec.Security),
+			util.WithFailoverUpstreams(apiExp.Spec.Upstreams...),
+			util.WithFailoverSecurity(apiExp.Spec.Security),
 		)
 		if err != nil {
 			return errors.Wrapf(err, "unable to create real route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)

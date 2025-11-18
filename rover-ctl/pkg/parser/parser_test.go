@@ -250,4 +250,22 @@ var _ = Describe("Parser", func() {
 			Expect(count).To(Equal(len(objectParser.Objects())))
 		})
 	})
+
+	Context("FilterByKindAndVersion", func() {
+		It("should filter objects by kind and apiVersion", func() {
+			// Parse a file with multiple documents
+			err := objectParser.Parse(filepath.Join(testdataDir, "multi-document.yaml"))
+			Expect(err).NotTo(HaveOccurred())
+
+			// Filter objects by kind and apiVersion
+			filtered := parser.FilterByKindAndVersion(objectParser.Objects(), "Rover", "tcp.ei.telekom.de/v1")
+
+			// Verify that the filtered list contains only the matching objects
+			Expect(filtered).To(HaveLen(2))
+			for _, obj := range filtered {
+				Expect(obj.GetKind()).To(Equal("Rover"))
+				Expect(obj.GetApiVersion()).To(Equal("tcp.ei.telekom.de/v1"))
+			}
+		})
+	})
 })

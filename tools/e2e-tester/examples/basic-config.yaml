@@ -1,0 +1,127 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Example E2E Test Configuration
+
+# Snapshotter configuration
+snapshotter:
+  # url: "http://localhost:8080"
+  # or
+  binary: snapshotter
+
+# RoverCtl configuration
+roverctl:
+  binary: "roverctl"
+  run_as: "test-user"
+
+# Test environments
+environments:
+  - name: "team-a"
+    token: "env:TEAM_A_TOKEN"
+  - name: "team-b"
+    token: "env:TEAM_B_TOKEN"
+
+# Test suites
+suites:
+  - name: "basic-suite"
+    environments:
+      - "team-a"
+    cases:
+      - name: "version-check"
+        type: "roverctl"  # Type is optional, defaults to "roverctl"
+        must_pass: true
+        command: "--version"
+        compare: true
+
+      - name: "apply-config"
+        must_pass: true
+        command: "apply -f ./examples/test-files"
+        compare: true
+        wait_after: 2s
+
+      - name: "get-info"
+        must_pass: true
+        command: "get-info -f ./examples/test-files/rover.yaml"
+        compare: true
+
+      - name: "system-state-snapshot"
+        type: "snapshot" 
+        must_pass: false
+        command: "snap --no-store --format yaml --source poc-dataplane1 --route poc--eni-e2e-test-v1"
+        compare: true
+        selector: "$.b" # snapshotter has new snapshot in $.b and old in $.a
+        wait_before: 30s
+
+      - name: "delete"
+        must_pass: false
+        command: "delete -f ./examples/test-files"
+        compare: true
+
+  - name: "multi-env-suite"
+    environments:
+      - "team-a"
+      - "team-b"
+    cases:
+      - name: "version-check"
+        must_pass: true
+        command: "--version"
+        compare: true
+
+  - name: "super-long-test-files"
+    description: |
+      This suite contains tests with very long configuration files to ensure
+      that the system can handle large inputs without performance degradation
+      or errors.
+    cases:
+      - name: "apply-config"
+        environment: team-a
+        must_pass: false
+        command: "apply -f ./examples/super-long-test-files"
+        compare: true
+
+      - name: "get-info"
+        environment: team-a
+        must_pass: false
+        command: "get-info --name test-rover"
+        compare: true
+
+      - name: "apply-config"
+        environment: team-b
+        description: |
+          Applying this will result in a blocked API as the same API path 
+          is already exposed by team-a
+        must_pass: false
+        command: "apply -f ./examples/super-long-test-files"
+        compare: true
+
+      - name: "get-info"
+        environment: team-b
+        description: |
+          This must include an error message indicating the API is blocked
+        must_pass: false
+        command: "get-info --name test-rover"
+        compare: true
+
+      - name: "delete"
+        environment: team-a
+        description: |
+          Remove the exposure from team-a so that team-b becomes active
+        must_pass: false
+        command: "delete -f ./examples/super-long-test-files"
+        compare: true
+        wait_after: 1s
+
+      - name: "get-info"
+        environment: team-b
+        description: |
+          This must now succeed as team-b is active
+        must_pass: false
+        command: "get-info --name test-rover"
+        compare: true
+
+      - name: "delete"
+        environment: team-b
+        must_pass: false
+        command: "delete -f ./examples/super-long-test-files"
+        compare: true

@@ -69,8 +69,7 @@
  "name": "rover-local-sub",
  "status": {
   "processingState": "done",
-  "state": "complete",
-  "time": "<Any value>"
+  "state": "complete"
  },
  "subscriptions": [
   {

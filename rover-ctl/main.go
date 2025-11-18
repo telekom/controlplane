@@ -32,6 +32,6 @@ func main() {
 	rootCmd.SetErr(os.Stderr)
 
 	if err := rootCmd.Execute(); err != nil {
-		cmd.ErrorHandler(err)
+		cmd.ErrorHandler(err, viper.GetBool("debug"))
 	}
 }

@@ -7,6 +7,7 @@ package builder
 import (
 	"context"
 	"reflect"
+	"slices"
 	"strings"
 	"sync/atomic"
 
@@ -137,13 +138,12 @@ func (b *approvalBuilder) Build(ctx context.Context) (ApprovalResult, error) {
 		return ApprovalResultNone, errors.New("builder has already been run")
 	}
 	b.ran.Store(true)
+	log := log.FromContext(ctx).WithValues("approval.name", b.Approval.Name, "approval.namespace", b.Approval.Namespace)
 
 	b.setWithHash()
 	if err := b.requireRequester(); err != nil {
 		return ApprovalResultNone, err
 	}
-
-	log := log.FromContext(ctx)
 
 	approvalReq := b.Request.DeepCopy()
 	mutate := func() error {
@@ -155,8 +155,6 @@ func (b *approvalBuilder) Build(ctx context.Context) (ApprovalResult, error) {
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
-		approvalReq.Spec = b.Request.Spec
-
 		if b.isRequesterFromTrustedRequesters() {
 			approvalReq.Spec.Strategy = v1.ApprovalStrategyAuto
 		}
@@ -167,13 +165,16 @@ func (b *approvalBuilder) Build(ctx context.Context) (ApprovalResult, error) {
 		return nil
 	}
 
-	_, err := b.Client.CreateOrUpdate(ctx, approvalReq, mutate)
+	res, err := b.Client.CreateOrUpdate(ctx, approvalReq, mutate)
 	if err != nil {
 		return ApprovalResultNone, errors.Wrap(err, "failed to create approval-request")
 	}
 	b.Request = approvalReq
-	b.Owner.SetCondition(condition.NewProcessingCondition("ApprovalPending", "Approval is pending"))
-	b.Owner.SetCondition(condition.NewNotReadyCondition("ApprovalPending", "Approval is pending"))
+
+	if res == controllerutil.OperationResultUpdated || res == controllerutil.OperationResultCreated {
+		b.Owner.SetCondition(condition.NewProcessingCondition("ApprovalPending", "Approval is pending"))
+		b.Owner.SetCondition(condition.NewNotReadyCondition("ApprovalPending", "Approval is pending"))
+	}
 
 	_, err = b.Client.Cleanup(ctx, &v1.ApprovalRequestList{}, cclient.OwnedBy(b.Owner))
 	if err != nil {
@@ -186,36 +187,38 @@ func (b *approvalBuilder) Build(ctx context.Context) (ApprovalResult, error) {
 			return ApprovalResultPending, errors.Wrap(err, "failed to get approval")
 		}
 
-		log.V(5).Info("Approval does not exist")
+		log.V(2).Info("Approval does not exist")
 		return ApprovalResultPending, nil
 
-	} else {
-		log.V(5).Info("Approval exists")
+	} else { // Approval was found
+		log.V(2).Info("Approval exists")
 
-		if b.Approval.Spec.State != v1.ApprovalStateGranted {
-			log.V(5).Info("Approval is not granted and must not be provisioned")
+		// Approval is not granted --> Deny
+		if b.Approval.Status.LastState != v1.ApprovalStateGranted {
+			log.V(2).Info("Approval is not granted and must not be provisioned")
 			b.Owner.SetCondition(condition.NewNotReadyCondition("NoApproval", "Approval is either rejected or suspended"))
 			b.Owner.SetCondition(condition.NewBlockedCondition("Approval is either rejected or suspended"))
 
-			// cleanup
 			return ApprovalResultDenied, nil
 		}
 
-		if b.Approval.Spec.ApprovedRequest != nil && b.Approval.Spec.ApprovedRequest.Name != approvalReq.Name {
-			log.V(5).Info("Approval is not for this ApiSub. Returning early")
+		// Approval is for a different state of the resource --> Pending
+		if b.Approval.Spec.ApprovedRequest != nil && !b.Approval.Spec.ApprovedRequest.Equals(approvalReq) {
+			log.V(2).Info("Approval is not for this ApiSub. Returning early")
 			b.Owner.SetCondition(condition.NewNotReadyCondition("ApprovalPending", "Approval is pending"))
 			b.Owner.SetCondition(condition.NewBlockedCondition("Approval is pending"))
 			return ApprovalResultPending, nil
 		}
 	}
 
-	if b.Approval.Spec.State == v1.ApprovalStateGranted {
-		b.Owner.SetCondition(condition.NewReadyCondition("ApprovalGranted", "Approval is granted"))
-		b.Owner.SetCondition(condition.NewProcessingCondition("ApprovalGranted", "Approval is granted"))
+	// Approval is granted
+	if b.Approval.Status.LastState == v1.ApprovalStateGranted {
+		log.V(2).Info("Approval is granted")
 		return ApprovalResultGranted, nil
 	}
 
-	return ApprovalResultDenied, nil
+	// Fallback, but should not be reached
+	return ApprovalResultNone, nil
 }
 
 func (b *approvalBuilder) GetApprovalRequest() *v1.ApprovalRequest {
@@ -232,11 +235,7 @@ func (b *approvalBuilder) GetOwner() types.Object {
 
 func (b *approvalBuilder) isRequesterFromTrustedRequesters() bool {
 	requesterTeamName := b.Request.Spec.Requester.Name
-
-	for i := range b.TrustedRequesters {
-		if strings.EqualFold(b.TrustedRequesters[i], requesterTeamName) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(b.TrustedRequesters, func(name string) bool {
+		return strings.EqualFold(name, requesterTeamName)
+	})
 }

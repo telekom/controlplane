@@ -5,6 +5,7 @@
 dist/
 **/bin/
 charts
+snapshotter-config.yaml
 
 # editor and IDE paraphernalia
 .idea
@@ -13,6 +14,9 @@ charts
 # ignore test output
 gotest.log
 snapshots
+allure-report
+allure-results
+debug-results
 
 # ignore Claude AI files
 CLAUDE.md

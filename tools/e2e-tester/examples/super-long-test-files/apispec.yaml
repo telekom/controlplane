@@ -1,0 +1,12 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+openapi: 3.0.0
+info:
+  title: Test API 
+  version: 1.0.0
+  x-api-category: OTHER
+servers:
+  - url: http://localhost:8080/eni/e2e-test/this-is-a-superlong-path-to-test-the-handling-of-long-urls-in-the-system/it-actually-keeps-going-and-going-and-going/v1
+    description: Local server for testing
