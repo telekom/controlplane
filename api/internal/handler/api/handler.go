@@ -5,8 +5,9 @@
 package api
 
 import (
+	"cmp"
 	"context"
-	"sort"
+	"slices"
 
 	"github.com/pkg/errors"
 	api "github.com/telekom/controlplane/api/api/v1"
@@ -46,11 +47,19 @@ func (h *ApiHandler) CreateOrUpdate(ctx context.Context, obj *api.Api) error {
 	}
 
 	// sort the list by creation timestamp and get the oldest one
-	sort.Slice(apiList.Items, func(i, j int) bool {
-		return apiList.Items[i].CreationTimestamp.Before(&apiList.Items[j].CreationTimestamp)
-	})
+	sortByCreationTime := func(a, b api.Api) int {
+		c := a.CreationTimestamp.Compare(b.CreationTimestamp.Time)
+		if c == 0 {
+			// if creation timestamps are equal, sort by namespace to have a deterministic order
+			// we cannot use names here as they are derived from the basePath and thus are identical
+			return cmp.Compare(a.GetNamespace(), b.GetNamespace())
+		}
+		return c
+	}
 
+	slices.SortStableFunc(apiList.Items, sortByCreationTime)
 	api := apiList.Items[0]
+
 	if types.Equals(&api, obj) {
 		// the oldest api is the same as the one we are trying to create
 		obj.Status.Active = true
@@ -62,7 +71,6 @@ func (h *ApiHandler) CreateOrUpdate(ctx context.Context, obj *api.Api) error {
 		// there is already a different api active with the same BasePathLabelKey
 		// the new api will be blocked until the other is deleted
 		obj.Status.Active = false
-		// TODO: add special error
 
 		if obj.Spec.BasePath == api.Spec.BasePath {
 			// The exact same API (case matches)

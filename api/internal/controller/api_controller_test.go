@@ -4,6 +4,8 @@
 package controller
 
 import (
+	"time"
+
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -38,7 +40,7 @@ func NewApi(apiBasePath string) *apiv1.Api {
 	}
 }
 
-var _ = Describe("Api Controller", func() {
+var _ = Describe("Api Controller", Ordered, func() {
 
 	Context("Creating, Updating and ActiveSwitch", Ordered, func() {
 
@@ -74,6 +76,9 @@ var _ = Describe("Api Controller", func() {
 		})
 
 		It("should successfully provision the API resource and set it to inactive", func() {
+			By("Sleeping a bit before creating the second API to ensure different creation timestamps")
+			time.Sleep(1 * time.Second)
+
 			By("Creating the second API resource")
 			err := k8sClient.Create(ctx, secondApi)
 			Expect(err).ToNot(HaveOccurred())
@@ -82,8 +87,8 @@ var _ = Describe("Api Controller", func() {
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(secondApi), secondApi)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(secondApi.Status.Active).To(BeFalse())
 				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(secondApi.GetConditions(), condition.ConditionTypeReady), "ApiNotActive")
+				g.Expect(secondApi.Status.Active).To(BeFalse())
 
 			}, timeout, interval).Should(Succeed())
 		})
@@ -114,7 +119,7 @@ var _ = Describe("Api Controller", func() {
 		BeforeAll(func() {
 			firstApi = NewApi(apiBasePath)
 			secondApi = NewApi(apiBasePath)
-			secondApi.Name = "another-test-api"
+			secondApi.Name = "another-test-api1"
 			secondApi.Spec.BasePath = "/APICtrl/Test1/v1" // different case
 		})
 
@@ -142,6 +147,9 @@ var _ = Describe("Api Controller", func() {
 		})
 
 		It("should block the second API resource due to basePath conflict", func() {
+			By("Sleeping a bit before creating the second API to ensure different creation timestamps")
+			time.Sleep(1 * time.Second)
+
 			By("Creating the second API resource")
 			err := k8sClient.Create(ctx, secondApi)
 			Expect(err).ToNot(HaveOccurred())
@@ -150,8 +158,8 @@ var _ = Describe("Api Controller", func() {
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(secondApi), secondApi)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(secondApi.Status.Active).To(BeFalse())
 				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(secondApi.GetConditions(), condition.ConditionTypeReady), "ApiNotActiveCaseConflict")
+				g.Expect(secondApi.Status.Active).To(BeFalse())
 
 			}, timeout, interval).Should(Succeed())
 		})
