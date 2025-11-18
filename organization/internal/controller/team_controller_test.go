@@ -14,18 +14,17 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
-	"github.com/telekom/controlplane/organization/internal/secret"
 	"github.com/telekom/controlplane/secret-manager/api"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
+	"github.com/telekom/controlplane/organization/internal/secret"
 )
 
 func NewGroupForTeam(teamObj *organizationv1.Team) *organizationv1.Group {
@@ -120,11 +119,6 @@ var _ = Describe("Team Controller", Ordered, func() {
 
 			By("Mocking Secret Manager")
 			secretManagerMock = fake.NewMockSecretManager(GinkgoT())
-			secretManagerMock.EXPECT().UpsertTeam(mock.Anything, mock.Anything, mock.Anything).Return(
-				map[string]string{
-					"teamToken": string(uuid.NewUUID()),
-				}, nil)
-
 			secretManagerMock.EXPECT().DeleteTeam(mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 			secret.GetSecretManager = func() api.SecretManager {
@@ -220,8 +214,6 @@ var _ = Describe("Team Controller", Ordered, func() {
 
 					By("Checking the team identity client ref")
 					g.Expect(team.Status.IdentityClientRef.String()).To(Equal(expectedTeamNamespaceName + "/" + groupName + "--" + teamName + "--team-user"))
-					By("Checking the team token")
-					g.Expect(team.Status.TeamToken).ToNot(BeEmpty()) //should have value from mock
 
 					By("Checking the team identity client object")
 					var identityClient = &identityv1.Client{}
@@ -356,7 +348,6 @@ var _ = Describe("Team Controller", Ordered, func() {
 					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
 					g.Expect(err).NotTo(HaveOccurred())
 					ExpectObjConditionToBeReady(g, team)
-					g.Expect(team.Status.TeamToken).NotTo(BeEmpty())
 				}, timeout, interval).Should(Succeed())
 
 				By("housekeeping the referred idp-c object in advance to keep env clean")
@@ -519,7 +510,7 @@ var _ = Describe("Team Controller", Ordered, func() {
 					processingCondition := meta.FindStatusCondition(team.Status.Conditions, condition.ConditionTypeProcessing)
 					g.Expect(processingCondition).NotTo(BeNil())
 					g.Expect(processingCondition.Status).To(Equal(metav1.ConditionFalse))
-					Expect(processingCondition.Message).To(ContainSubstring("Group not found"))
+					Expect(processingCondition.Message).To(ContainSubstring("group \"group-beta-missing\" does not exist"))
 				}, timeout, interval).Should(Succeed())
 			})
 		})

@@ -62,12 +62,17 @@ func MutateSecret(ctx context.Context, env string, teamObj *organisationv1.Team,
 	log.V(1).Info("upserted team secrets in secret-manager", "availableSecrets", availableSecrets)
 
 	var ok bool
-	secretRef, ok := secret.FindSecretId(availableSecrets, secret.ClientSecret)
+	clientSecretRef, ok := secret.FindSecretId(availableSecrets, secret.ClientSecret)
 	if !ok {
 		return wrapCommunicationError(fmt.Errorf("client secret ref not found in available secrets from secret-manager"), "searching for client secret ref")
 	}
-	teamObj.Spec.Secret = secretRef
-	// Due to status not being able to be set in the webhook, we will set the team-token in the identity-client handler
+	teamTokenRef, ok := secret.FindSecretId(availableSecrets, secret.TeamToken)
+	if !ok {
+		return wrapCommunicationError(fmt.Errorf("team token ref not found in available secrets from secret-manager"), "searching for team token ref")
+	}
+
+	teamObj.Spec.Secret = clientSecretRef
+	teamObj.Spec.TeamToken = teamTokenRef
 
 	return nil
 }

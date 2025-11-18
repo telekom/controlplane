@@ -215,7 +215,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 				Expect(err).NotTo(HaveOccurred())
 
 				var previousToken, latestToken organizationv1.TeamToken
-				previousToken = getDecodedToken(team.Status.TeamToken)
+				previousToken = getDecodedToken(team.Spec.TeamToken)
 				previousTokenRotateRef := team.Status.NotificationsRef["token-rotated"]
 				team.Spec.Secret = "rotate"
 
@@ -228,14 +228,13 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 				Expect(k8sClient.Update(ctx, team)).NotTo(HaveOccurred())
 
 				Eventually(func(g Gomega) {
-					time.Sleep(1 * time.Second)
 					By("Getting the latest version of team object")
 					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
 					Expect(err).NotTo(HaveOccurred())
 					ExpectObjConditionToBeReady(g, team)
 
 					By("Checking the Webhook & Reconciler changes on the secret")
-					latestToken = getDecodedToken(team.Status.TeamToken)
+					latestToken = getDecodedToken(team.Spec.TeamToken)
 					g.Expect(team.Spec.Secret).NotTo(BeEmpty())
 					g.Expect(previousToken.ClientSecret).NotTo(Equal(latestToken.ClientSecret))
 					g.Expect(previousToken.ClientId).To(Equal(latestToken.ClientId))
@@ -259,7 +258,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 			It("should watch identity clients and update team token with reconciler", func() {
 				By("Getting the latest version of team and identity client")
 				Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)).ToNot(HaveOccurred())
-				previousTokenReference := team.Status.TeamToken
+				previousTokenReference := team.Spec.TeamToken
 				identityClient := &identityv1.Client{}
 				Expect(k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)).ToNot(HaveOccurred())
 				By("Waiting 1 seconds to have an actual difference in the generation time stamps")
@@ -276,7 +275,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					ExpectObjConditionToBeReady(g, team)
 
 					By("Comparing that the team token has not changed")
-					latestTokenReference := team.Status.TeamToken
+					latestTokenReference := team.Spec.TeamToken
 					compareToken(latestTokenReference, previousTokenReference, "==", "==")
 				}, timeout, interval).Should(Succeed())
 
@@ -284,7 +283,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 			It("should be updated and return sub-resources to desired state", func() {
 				Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)).ToNot(HaveOccurred())
 
-				previousTokenReference := team.Status.TeamToken
+				previousTokenReference := team.Spec.TeamToken
 				By("Making undesired changes to id-c")
 				var identityClient = &identityv1.Client{}
 				Expect(k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)).ToNot(HaveOccurred())
@@ -330,7 +329,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					}))
 
 					By("Comparing that the team token has not changed")
-					latestTokenReference := team.Status.TeamToken
+					latestTokenReference := team.Spec.TeamToken
 					compareToken(latestTokenReference, previousTokenReference, "==", "==")
 				}, timeout, interval).Should(Succeed())
 

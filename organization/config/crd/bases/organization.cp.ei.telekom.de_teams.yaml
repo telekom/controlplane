@@ -87,6 +87,11 @@ spec:
                 description: Secret for the teamToken and passed towards the identity
                   client.
                 type: string
+              teamToken:
+                description: |-
+                  TeamToken is ref for the authentication against teamAPIs
+                  It is automatically generated and rotated.
+                type: string
             required:
             - category
             - email
@@ -237,7 +242,9 @@ spec:
                   type: object
                 type: object
               teamToken:
-                description: TeamToken is ref for the authentication against teamAPIs
+                description: |-
+                  TeamToken is ref for the authentication against teamAPIs
+                  This field has been moved to Spec and is kept here for backward compatibility.
                 type: string
             required:
             - namespace
