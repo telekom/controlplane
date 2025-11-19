@@ -17,6 +17,7 @@ SPDX-License-Identifier: CC0-1.0
   <a href="#about">About</a> •
   <a href="#features">Features</a> •
   <a href="#notifications">Notifications</a> •
+  <a href="#crds">CRDs</a>
 </p>
 
 
@@ -77,3 +78,46 @@ The operator automatically creates a `NotificationChannel` resource for each tea
 - **Namespace**: Team's namespace (`{environment}--{group}--{team}`)
 - **Type**: Email (MS Teams and Webhook support planned for future)
 - **Recipients**: All member emails + team email
+
+## CRDs
+All CRDs can be found here: [CRDs](./config/crd/bases/).
+
+<p>The Organization domain defines the following Custom Resources (CRDs):</p>
+
+<details>
+<summary>
+<strong>Group</strong>
+This CRD represents a logical grouping of teams within the organization.
+</summary>  
+
+- The Group CR MUST be created in the environment namespace (e.g., `dev`, `prod`).
+- The Group CR name MUST follow the pattern `^[a-z0-9]+(-?[a-z0-9]+)*$` (lowercase alphanumeric with optional hyphens).
+- The Group CR contains a display name and description for human-readable identification.
+- Groups are used to organize teams and provide a hierarchical structure to the organization.
+- Groups are referenced by Team CRs to establish the organizational hierarchy.
+
+</details>
+<br />
+
+<details>
+<summary>
+<strong>Team</strong>
+This CRD represents a team within the organization with its members and configuration.
+</summary>  
+
+- The Team CR MUST be created in the environment namespace (e.g., `dev`, `prod`).
+- The Team CR name MUST follow the pattern `{group}--{team}` where both group and team match `^[a-z0-9]+(-?[a-z0-9]+)*$`.
+- The Team CR MUST reference an existing Group.
+- The Team CR MUST have at least one member with name and email.
+- The Team CR MUST specify a team email address.
+- The Team CR can be categorized as either `Customer` or `Infrastructure` which affects access rights.
+- When a Team CR is created, the following resources are automatically provisioned:
+  - A dedicated namespace with pattern `{environment}--{group}--{team}`
+  - An Identity Client for authentication
+  - A Gateway Consumer for API access
+  - A Notification Channel for team communications
+- The Team status tracks references to all provisioned resources.
+- The Team CR includes a TeamToken that is automatically generated and rotated for authentication with team APIs.
+
+</details>
+<br />

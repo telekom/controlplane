@@ -15,7 +15,8 @@ SPDX-License-Identifier: CC0-1.0
 <p align="center">
   <a href="#about">About</a> •
   <a href="#features">Features</a> •
-  <a href="#zone-integration">Zone Integration</a>
+  <a href="#zone-integration">Zone Integration</a> •
+  <a href="#crds">CRDs</a>
 </p>
 
 ## About
@@ -43,3 +44,25 @@ Applications support **primary + failover zones** for high availability:
 - Primary zone is always required
 - Failover zones are optional for HA scenarios
 - Each zone gets its own Identity Client and Gateway Consumer
+
+## CRDs
+All CRDs can be found here: [CRDs](./config/crd/bases/).
+
+<p>The Application domain defines the following Custom Resource (CRD):</p>
+
+<details>
+<summary>
+<strong>Application</strong>
+This CRD represents an application abstraction that encapsulates API exposures and subscriptions.
+</summary>  
+
+- The Application CR MUST be created in the namespace of the team that owns the application.
+- The Application name SHOULD follow the team's naming convention for applications.
+- The Application creates and manages:
+  - Identity Client: Created when `needsClient: true` (default) for authentication with Control Plane services
+  - Gateway Consumer: Created when `needsConsumer: true` (default) for accessing gateway endpoints
+- The client ID `status.clientId` is constructed as `{team}--{application-name}`.
+- References to created resources are stored in `status.clients` and `status.consumers`.
+
+</details>
+<br />

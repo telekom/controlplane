@@ -16,7 +16,8 @@ SPDX-License-Identifier: Apache-2.0
   <a href="#about">About</a> •
   <a href="#features">Features</a> •
   <a href="#notifications">Notifications</a> •
-  <a href="#integration">Integration</a>
+  <a href="#integration">Integration</a> •
+  <a href="#crds">CRDs</a>
 </p>
 
 
@@ -153,6 +154,38 @@ Take a look at the following diagrams for illustration, taken from [`internal/fs
 ![Approval State Machine for Auto Approval](docs/img/approval_fsm_auto.drawio.svg)
 ![Approval State Machine for Simple Approval](docs/img/approval_fsm_simple.drawio.svg)
 ![Approval State Machine for FourEyes Approval](docs/img/approval_fsm_foureyes.drawio.svg)
+
+## CRDs
+All CRDs can be found here: [CRDs](./config/crd/bases/).
+
+<p>The Approval domain defines the following Custom Resources (CRDs):</p>
+
+<details>
+<summary>
+<strong>Approval</strong>
+This CRD represents an approval process for access requests to resources.
+</summary>  
+
+- The Approval CR is created in the same namespace as the resource that is being requested.
+- The Approval name is constructed as `{lowercase-resource-kind}--{resource-name}`.
+- The Approval tracks the state of the approval process
+- The Approval status tracks available state transitions and notification references.
+
+</details>
+<br />
+
+<details>
+<summary>
+<strong>ApprovalRequest</strong>
+This CRD represents a specific request for approval made by a requester.
+</summary>  
+
+- The ApprovalRequest CR is created in the same namespace as the requesting resource.
+- The ApprovalRequest name is constructed as `{owner-name}--{hash-of-spec}` to ensure uniqueness.
+- The ApprovalRequest status contains a reference to the associated Approval.
+- The ApprovalRequest is typically created by the owner of a subscription-like resource.
+</details>
+<br />
 
 ## Notifications
 

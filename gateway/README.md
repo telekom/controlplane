@@ -16,7 +16,8 @@ SPDX-License-Identifier: CC0-1.0
 <p align="center">
   <a href="#about">About</a> •
   <a href="#features">Features</a> •
-  <a href="#Architecture">Architecture</a>
+  <a href="#Architecture">Architecture</a> •
+  <a href="#crds">CRDs</a>
 </p>
 
 
@@ -116,4 +117,76 @@ configuration. This make handling plugins much more easier, and developers do no
 > If you implement new Plugins, the need to be registered in the FeatureBuilder to be able to work with as well.
 
 
+## CRDs
+All CRDs can be found here: [CRDs](./config/crd/bases/).
 
+<p>The Gateway domain defines the following Custom Resources (CRDs):</p>
+
+<details>
+<summary>
+<strong>Gateway</strong>
+This CRD represents a gateway instance that serves as the entry point for API traffic.
+</summary>  
+
+- The Gateway CR defines the connection details to the underlying API Gateway technology (currently Kong).
+- The Gateway CR contains Redis configuration for distributed caching and rate limiting.
+- The Gateway CR includes admin credentials for gateway management.
+- Supports feature flags to enable/disable specific gateway capabilities.
+
+</details>
+<br />
+
+<details>
+<summary>
+<strong>Realm</strong>
+This CRD represents a virtual environment within a gateway for multi-tenancy.
+</summary>  
+
+- The Realm status tracks URLs for issuer, certs, and discovery endpoints based on the Gateway CR.
+
+</details>
+<br />
+
+<details>
+<summary>
+<strong>Route</strong>
+This CRD represents an API route exposed on the gateway.
+</summary>  
+
+- The Route CR MUST reference a Realm where it will be exposed.
+- The Route CR defines upstream and downstream configurations.
+- Routes support failover configuration for high availability.
+- Routes can be configured with traffic management.
+- Security options include pass-through mode, M2M authentication, and external IDP integration.
+- Transformation options allow request/response modifications.
+
+</details>
+<br />
+
+<details>
+<summary>
+<strong>Consumer</strong>
+This CRD represents a client that can access routes on the gateway.
+</summary>  
+
+- The Consumer CR MUST reference a Realm where it will be used.
+- The Consumer CR contains a unique name within the realm.
+- Consumers can have IP restrictions for additional security.
+- The Consumer status tracks the underlying gateway consumer ID.
+
+</details>
+<br />
+
+<details>
+<summary>
+<strong>ConsumeRoute</strong>
+This CRD represents the relationship between a Consumer and a Route.
+</summary>  
+
+- The ConsumeRoute CR links a Consumer to a Route, granting access permissions.
+- The ConsumeRoute CR can override security settings for a specific consumer-route pair.
+- The ConsumeRoute CR can specify consumer-specific rate limits.
+- Supports M2M authentication with client credentials or basic auth.
+
+</details>
+<br />
