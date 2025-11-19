@@ -1,0 +1,708 @@
+---
+sidebar_position: 7
+title: "Conventions"
+---
+
+import PageHeader from '@site/src/components/PageHeader';
+import TableOfContents from '@site/src/components/TableOfContents';
+import InfoSection from '@site/src/components/InfoSection';
+import NoAutoTitle from '@site/src/components/NoAutoTitle';
+
+
+<NoAutoTitle />
+
+<PageHeader 
+  title="Control Plane Conventions"
+  description="Comprehensive guide to conventions, patterns, and standards used throughout the Control Plane codebase"
+/>
+
+<InfoSection type="info" title="Development Standards">
+  This document outlines the conventions, patterns, and standards used throughout the Control Plane codebase to ensure consistency, maintainability, and code quality across all modules.
+</InfoSection>
+
+## Table of Contents
+
+<TableOfContents
+  items={[
+    {
+      title: "Foundation",
+      icon: "📋",
+      links: [
+        { text: "Licensing & Copyright", url: "#licensing--copyright" },
+        { text: "Project Structure", url: "#project-structure" },
+        { text: "API & Domain Naming", url: "#api--domain-naming" }
+      ]
+    },
+    {
+      title: "Naming Patterns",
+      icon: "🏷️",
+      links: [
+        { text: "Resource Naming Patterns", url: "#resource-naming-patterns" },
+        { text: "Namespace Patterns", url: "#namespace-patterns" },
+        { text: "Resource Name Patterns", url: "#resource-name-patterns" }
+      ]
+    },
+    {
+      title: "Development",
+      icon: "⚙️",
+      links: [
+        { text: "Code Generation & Tooling", url: "#code-generation--tooling" },
+        { text: "Controller Pattern", url: "#controller-pattern" },
+        { text: "Testing Conventions", url: "#testing-conventions" }
+      ]
+    },
+    {
+      title: "Operations",
+      icon: "🚀",
+      links: [
+        { text: "Configuration & Environment", url: "#configuration--environment" },
+        { text: "Build & Development", url: "#build--development" },
+        { text: "Code Quality", url: "#code-quality" }
+      ]
+    }
+  ]}
+/>
+
+---
+
+## Licensing & Copyright
+
+### SPDX License Headers
+Every file must include SPDX license identifiers:
+
+**Go files:**
+```go
+// Copyright 2025 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+```
+
+**YAML/Markdown files:**
+```yaml
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+```
+
+or for documentation:
+```yaml
+<!--
+Copyright 2025 Deutsche Telekom IT GmbH
+
+SPDX-License-Identifier: CC0-1.0    
+-->
+```
+
+### Compliance
+
+<InfoSection type="warning" title="REUSE Standard">
+  The project follows the [REUSE standard for software licensing](https://reuse.software/). All generated files must have separate `.license` files, and all licenses are stored in the `LICENSES/` directory.
+</InfoSection>
+
+---
+
+## Project Structure
+
+### Module Organization
+Each domain is a separate Go module with the following structure:
+
+```
+<domain>/
+├── api/v1/              # API definitions and types
+│   ├── groupversion_info.go
+│   ├── *_types.go
+│   └── zz_generated.deepcopy.go
+├── cmd/
+│   └── main.go         # Entry point
+├── internal/
+│   ├── controller/     # Controller reconciliation logic
+│   └── handler/        # Business logic handlers
+├── config/             # Kubernetes manifests
+│   ├── crd/           # Custom Resource Definitions
+│   ├── rbac/          # Role-Based Access Control
+│   ├── default/       # Default kustomization
+│   ├── manager/       # Deployment configuration
+│   └── samples/       # Example resources
+├── pkg/               # Exported packages (optional)
+├── test/              # Test files
+│   └── e2e/          # End-to-end tests
+├── Makefile
+├── PROJECT            # Kubebuilder project file
+├── README.md
+├── go.mod
+└── go.sum
+```
+
+### Shared Modules
+- **`common/`** - Shared controller framework and utilities, [commom](https://github.com/telekom/controlplane/blob/main/common/README.md)
+- **`common-server/`** - Shared server components for APIs, [common-server](https://github.com/telekom/controlplane/blob/main/common-server/README.md)
+
+---
+
+## API & Domain Naming
+
+### Domain Convention
+- **Base Domain**: `cp.ei.telekom.de` (control plane enterprise integration)
+- **API Group Pattern**: `<domain>.cp.ei.telekom.de`
+
+### Examples
+
+| Domain | API Group |
+|--------|-----------|
+| admin | `admin.cp.ei.telekom.de` |
+| api | `api.cp.ei.telekom.de` |
+| gateway | `gateway.cp.ei.telekom.de` |
+| identity | `identity.cp.ei.telekom.de` |
+| organization | `organization.cp.ei.telekom.de` |
+| rover | `rover.cp.ei.telekom.de` |
+| approval | `approval.cp.ei.telekom.de` |
+| application | `application.cp.ei.telekom.de` |
+
+### Version Convention
+- All APIs currently use **`v1`**
+- Version is part of the import path: `github.com/telekom/controlplane/<domain>/api/v1`
+
+### Leader Election ID
+- Pattern: Uses truncated hash + domain format
+- Example: `58816de6.cp.ei.telekom.de`
+
+---
+
+## Resource Naming Patterns
+
+<InfoSection type="success" title="Core Separator Convention">
+  **Double Dash (`--`)** is the standard separator for composite names throughout the codebase.
+</InfoSection>
+
+### Namespace Patterns
+
+#### Team Namespace
+```go
+// Pattern: env--group--team
+func buildNamespaceName(env string, team *Team) string {
+    return env + "--" + team.Spec.Group + "--" + team.Spec.Name
+}
+```
+**Example**: `environment--group1--team1`
+
+#### Zone Namespace
+```go
+// Pattern: env--zone
+func zoneNamespace(env string, zone string) string {
+    return strings.ToLower(fmt.Sprintf("%s--%s", env, zone))
+}
+```
+**Example**: `environment--zone1`
+
+### Resource Name Patterns
+
+#### Approval Name
+```go
+// Pattern: lowercase(OwnerKind)--name
+func ApprovalName(ownerKind, ownerName string) string {
+    return strings.ToLower(ownerKind) + "--" + ownerName
+}
+```
+**Example**: `apisubscription--my-subscription`
+
+#### Application Client Name
+```go
+// Pattern: team--applicationName
+func MakeClientName(app *Application) string {
+    return app.Spec.Team + "--" + app.Name
+}
+```
+**Example**: `group1--team1--group2--payment-service-v1`
+
+
+#### Identity Realm Names
+
+**Default Realm**:
+```go
+func ForDefaultIdentityRealm(environment *Environment) string {
+    return environment.GetName()
+}
+```
+
+**Team Realm**:
+```go
+// Pattern: team-{environment}
+func ForTeamApiIdentityRealm(environment *Environment) string {
+    return "team-" + environment.GetName()
+}
+```
+**Example**: `team-default`
+
+#### Gateway Resource Names
+
+**Static Names**:
+```go
+const (
+    gatewayClientName    = "gateway"
+    gatewayAdminClientId = "rover"
+    gateway              = "gateway"
+    gatewayConsumer      = "gateway"
+)
+```
+
+#### Team Token Prefix
+```go
+// Pattern: env--group--team.{base64_token}
+func EncodeTeamToken(token TeamToken, group, team string) string {
+    tokenPrefix := fmt.Sprintf("%s--%s--%s", token.Environment, group, team)
+    return tokenPrefix + "." + base64.StdEncoding.EncodeToString(tokenJson)
+}
+```
+**Example**: `default--group1--team1.eyJjbGll...`
+
+#### API Subscription Name
+```go
+// Pattern: zone--application--basepath (normalized)
+func subscriptionName(zoneName, appName, apiBasePath string) string {
+    return labelutil.NormalizeValue(fmt.Sprintf("%s--%s--%s", 
+        zoneName, appName, apiBasePath))
+}
+```
+**Example**: `zone1--application1--api-basepath`
+
+#### Resource Reference Pattern
+```go
+// Pattern: clientId--zone
+func makeResourceName(clientId, zoneName string) string {
+    return clientId + "--" + zoneName
+}
+```
+
+### Label Naming
+
+#### Label Key Convention
+```go
+// Pattern: {key}.cp.ei.telekom.de
+func BuildLabelKey(key string) string {
+    return key + ".cp.ei.telekom.de"
+}
+```
+
+**Common Labels**:
+- `cp.ei.telekom.de/environment` - Environment label (required)
+- `cp.ei.telekom.de7application` - Application reference
+- `cp.ei.telekom.de/team` - Team reference
+
+---
+
+## Code Generation & Tooling
+
+### Kubebuilder
+- **Required Version**: 4.9.0 (pinned)
+- **Release**: https://github.com/kubernetes-sigs/kubebuilder/releases/tag/v4.9.0
+
+### Controller Markers
+Use `+kubebuilder:` markers for code generation:
+
+```go
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Zone",type="string",JSONPath=".spec.zone"
+// +kubebuilder:validation:Required
+// +kubebuilder:validation:Pattern=^[a-z0-9]+(-?[a-z0-9]+)*$
+```
+
+### Generated Files
+- Must include comment: `// Code generated by tool. DO NOT EDIT.`
+- Generated files: `zz_generated.deepcopy.go`, server stubs, mocks
+
+### Boilerplate Templates
+Standard header templates in `hack/boilerplate.*.txt`:
+- `boilerplate.go.txt` - Go files
+- `boilerplate.yaml.txt` - YAML files
+
+---
+
+## Controller Pattern
+
+### Common Controller Framework
+All controllers extend the common controller framework from `common/pkg/controller`.
+
+### Controller Structure
+```go
+type ResourceReconciler struct {
+    client.Client
+    Scheme   *runtime.Scheme
+    Recorder record.EventRecorder
+    
+    cc.Controller[*v1.Resource]
+}
+```
+
+### Reconciler Setup Pattern
+```go
+func (r *ResourceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+    r.Recorder = mgr.GetEventRecorderFor("resource-controller")
+    r.Controller = cc.NewController(&handler.ResourceHandler{}, r.Client, r.Recorder)
+    
+    return ctrl.NewControllerManagedBy(mgr).
+        For(&v1.Resource{}).
+        WithOptions(controller.Options{
+            MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+            RateLimiter:             cc.NewRateLimiter(),
+        }).
+        Complete(r)
+}
+```
+
+### Reconcile Method Pattern
+```go
+func (r *ResourceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+    return r.Controller.Reconcile(ctx, req, &v1.Resource{})
+}
+```
+
+### Handler Separation
+Business logic is implemented in separate handlers at `internal/handler/<resource>/handler.go`:
+
+```go
+type ResourceHandler struct{}
+
+func (h *ResourceHandler) CreateOrUpdate(ctx context.Context, obj *v1.Resource) error {
+    // Business logic here
+}
+
+func (h *ResourceHandler) Delete(ctx context.Context, obj *v1.Resource) error {
+    // Cleanup logic here
+}
+```
+
+### Naming Convention
+- **Reconciler**: `<Resource>Reconciler`
+- **Handler**: `<Resource>Handler`
+---
+
+## Testing Conventions
+
+### Testing Framework
+- **BDD Framework**: Ginkgo/Gomega
+- **Test Files**: `*_test.go` suffix
+- **Suite Tests**: `suite_test.go` for test setup
+
+### Test Suite Structure
+```go
+func TestControllers(t *testing.T) {
+    RegisterFailHandler(Fail)
+    RunSpecs(t, "Controller Suite")
+}
+
+var _ = BeforeSuite(func() {
+    // Setup test environment
+})
+
+var _ = AfterSuite(func() {
+    // Cleanup
+})
+```
+
+### Test Environment
+- Uses **envtest** from controller-runtime
+- Test namespace: `"default"` or `"test"`
+- CRD paths configured in `suite_test.go`
+
+### Test Constants
+```go
+const (
+    timeout       = 2 * time.Second
+    interval      = 200 * time.Millisecond
+    testNamespace = "default"
+    testEnvironment = "test"
+)
+```
+
+---
+
+## Configuration & Environment
+
+### Virtual Environments
+- Each resource belongs to an environment (label-based)
+- Label key: `cp.ei.telekom.de/environment`
+- Controller extracts environment from labels
+- Missing environment → resource blocked
+
+### Configuration System
+Uses **Viper** for configuration management.
+
+#### Environment Variables
+Uppercase, underscore-separated:
+```bash
+REQUEUE_AFTER_ON_ERROR=1m
+REQUEUE_AFTER=30m
+JITTER_FACTOR=0.9
+MAX_BACKOFF=3m
+MAX_CONCURRENT_RECONCILES=3
+```
+
+#### Configuration Files
+- Format: `.cnf` files with `KEY=value` pairs
+- Location: `config/*.cnf`
+- Mounted via ConfigMap
+
+#### Kustomize Configuration
+```yaml
+configMapGenerator:
+  - name: admin-env-config
+    namespace: admin-system
+    behavior: create
+    options:
+      disableNameSuffixHash: true
+    envs:
+      - config/admin.cnf
+```
+
+---
+
+## Kubernetes Resource Conventions
+
+### Status Conditions
+Standard Kubernetes condition pattern with typed conditions:
+
+```go
+type ResourceStatus struct {
+    // +listType=map
+    // +listMapKey=type
+    // +patchStrategy=merge
+    // +patchMergeKey=type
+    // +optional
+    Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+```
+
+#### Standard Condition Types
+- **`Ready`**: Resource is ready (Reason: `Done`)
+- **`Processing`**: Resource is being processed (Reason: `Blocked`)
+
+### Object Interface
+All custom resources must implement `types.Object`:
+
+```go
+var _ types.Object = &MyResource{}
+
+func (r *MyResource) GetConditions() []metav1.Condition {
+    return r.Status.Conditions
+}
+
+func (r *MyResource) SetCondition(condition metav1.Condition) bool {
+    return meta.SetStatusCondition(&r.Status.Conditions, condition)
+}
+```
+
+### List Types
+Every resource has a corresponding list type:
+
+```go
+type MyResourceList struct {
+    metav1.TypeMeta `json:",inline"`
+    metav1.ListMeta `json:"metadata,omitempty"`
+    Items           []MyResource `json:"items"`
+}
+
+var _ types.ObjectList = &MyResourceList{}
+```
+
+### Registration Pattern
+```go
+func init() {
+    SchemeBuilder.Register(&MyResource{}, &MyResourceList{})
+}
+```
+
+---
+
+## Build & Development
+
+### Makefile Targets
+Standard targets across all modules:
+
+#### Development
+- `make build` - Build manager binary
+- `make run` - Run controller locally
+- `make generate` - Generate code (DeepCopy, DeepCopyInto, DeepCopyObject)
+- `make manifests` - Generate CRDs, RBAC, Webhooks
+
+#### Testing
+- `make test` - Run unit tests
+- `make test-e2e` - Run end-to-end tests
+
+#### Code Quality
+- `make fmt` - Run go fmt
+- `make vet` - Run go vet
+- `make lint` - Run golangci-lint
+- `make lint-fix` - Run golangci-lint with auto-fix
+
+#### Deployment
+- `make install` - Install CRDs
+- `make uninstall` - Uninstall CRDs
+- `make deploy` - Deploy controller
+- `make undeploy` - Remove controller
+
+### Tool Versions (pinned in Makefile)
+```makefile
+KUSTOMIZE_VERSION ?= v5.4.3
+CONTROLLER_TOOLS_VERSION ?= v0.16.1
+ENVTEST_VERSION ?= release-0.19
+GOLANGCI_LINT_VERSION ?= v1.59.1
+```
+
+### Local Binary Directory
+```makefile
+LOCALBIN ?= $(shell pwd)/bin
+```
+
+### Image Variable
+```makefile
+IMG ?= controller:latest
+```
+
+---
+
+## Code Quality
+
+### Linting
+Uses **golangci-lint** with specific enabled linters (`.golangci.yml`):
+
+```yaml
+linters:
+  enable:
+    - copyloopvar
+    - dupl
+    - errcheck
+    - ginkgolinter
+    - gocyclo
+    - govet
+    - ineffassign
+    - misspell
+    - prealloc
+    - revive
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+```
+
+### Formatters
+```yaml
+formatters:
+  enable:
+    - gofmt
+    - goimports
+```
+
+### Pre-commit Hooks
+Configured in `.pre-commit-config.yaml`:
+
+1. **Conventional Commits** - Enforce commit message format
+2. **REUSE Lint** - Check license compliance
+3. **Gitleaks** - Prevent secret leaks
+
+
+### Exclusions
+Generated code and third-party code are excluded from linting:
+```yaml
+exclusions:
+  paths:
+    - third_party$
+    - builtin$
+    - examples$
+```
+
+---
+
+
+## Dependency Management
+
+### Go Modules
+- Each domain has independent `go.mod`
+- Common functionality in `common` module
+- Cross-domain API imports allowed
+
+### Module Paths
+```
+github.com/telekom/controlplane/<domain>
+```
+
+### Shared Dependencies
+- `sigs.k8s.io/controller-runtime` - Controller framework
+- `k8s.io/api` - Kubernetes API types
+- `k8s.io/apimachinery` - Kubernetes machinery
+- `github.com/onsi/ginkgo/v2` - Testing framework
+- `github.com/onsi/gomega` - Assertions
+
+---
+
+## RBAC Markers
+
+### Standard Pattern
+RBAC rules defined with `+kubebuilder:rbac:` markers:
+
+```go
+// +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups=core,resources=namespaces,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=environments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=environments/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=environments/finalizers,verbs=update
+```
+
+### Required Permissions
+All controllers need:
+- **Events**: `create`, `patch` on `core/events`
+- **Resource**: Full CRUD on main resource
+- **Status**: `get`, `update`, `patch` on status subresource
+- **Finalizers**: `update` on finalizers subresource
+
+### Principle of Least Privilege
+Only request minimum necessary permissions.
+
+---
+
+## Validation Patterns
+
+### Validation Markers
+```go
+// +kubebuilder:validation:Required
+// +kubebuilder:validation:MinLength=1
+// +kubebuilder:validation:MaxLength=253
+// +kubebuilder:validation:Pattern=^[a-z0-9]+(-?[a-z0-9]+)*$
+// +kubebuilder:validation:Format=email
+// +kubebuilder:validation:Enum=Customer;Infrastructure
+// +kubebuilder:validation:MinItems=1
+// +kubebuilder:default=Customer
+```
+
+### Common Patterns
+
+#### Kubernetes Resource Name
+```go
+// +kubebuilder:validation:Pattern=^[a-z0-9]+(-?[a-z0-9]+)*$
+```
+
+#### Email
+```go
+// +kubebuilder:validation:Format=email
+```
+
+#### Enum
+```go
+// +kubebuilder:validation:Enum=Value1;Value2;Value3
+```
+
+---
+
+## Additional Patterns
+
+
+**Standard Client Names**:
+- `"gateway"` - Gateway service
+- `"identity"` - Identity service
+- `"file-manager"` - File manager service
+- `"secret-manager"` - Secret manager service
+
+### Resource ID Patterns
+For Kubernetes secret IDs in multi-tenant scenarios:
+- Team scope: `env--team`
+- Environment scope: `env`
