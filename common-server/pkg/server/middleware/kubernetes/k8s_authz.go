@@ -5,6 +5,7 @@
 package k8s
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -59,7 +60,7 @@ type KubernetesAuthzOptions struct {
 	AccessConfig   []ServiceAccessConfig
 }
 
-func (o *KubernetesAuthzOptions) ServiceAccessConfig() map[string]ServiceAccessConfig {
+func (o *KubernetesAuthzOptions) LoadServiceAccessConfig() map[string]ServiceAccessConfig {
 	cfg := make(map[string]ServiceAccessConfig)
 	for _, config := range o.AccessConfig {
 		key := config.ServiceAccountName + config.Namespace
@@ -156,7 +157,7 @@ func NewKubernetesAuthz(opts ...KubernetesAuthOption) fiber.Handler {
 	return jwtware.New(jwtware.Config{
 		ContextKey:     "user",
 		KeyFunc:        jwks.Keyfunc,
-		SuccessHandler: newSuccessHandler(options),
+		SuccessHandler: NewSuccessHandler(options),
 		Claims:         &ServiceAccountTokenClaims{},
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			var pErr problems.Problem
@@ -178,40 +179,55 @@ func defaultOpts() *KubernetesAuthzOptions {
 	}
 }
 
-func isReadOnly(c *fiber.Ctx) bool {
-	if c.Method() == fiber.MethodGet || c.Method() == fiber.MethodHead || c.Method() == fiber.MethodOptions {
+// IsReadOnly checks if the HTTP method is read-only.
+func IsReadOnly(method string) bool {
+	if method == fiber.MethodGet || method == fiber.MethodHead || method == fiber.MethodOptions {
 		return true
 	}
 	return false
 }
 
-func isAccessAllowed(c *fiber.Ctx, accessTypesSet AccessTypeSet) bool {
+type IsAccessAllowedCtx interface {
+	UserContext() context.Context
+	Method(...string) string
+}
+
+// IsAccessAllowed checks if the access types set allows the requested access.
+func IsAccessAllowed(c IsAccessAllowedCtx, accessTypesSet AccessTypeSet) bool {
 	if accessTypesSet == nil {
 		logr.FromContextOrDiscard(c.UserContext()).Error(nil, "No access types defined")
 		return false
 	}
 
-	if isReadOnly(c) {
+	if IsReadOnly(c.Method()) {
 		return accessTypesSet.Has(AccessTypeRead)
 	} else {
 		return accessTypesSet.Has(AccessTypeWrite)
 	}
 }
 
-func newSuccessHandler(options *KubernetesAuthzOptions) fiber.Handler {
-	cfg := options.ServiceAccessConfig()
+// NewSuccessHandler creates a JWT success handler that performs authorization based on ServiceAccountTokenClaims.
+func NewSuccessHandler(options *KubernetesAuthzOptions) fiber.Handler {
+	cfg := options.LoadServiceAccessConfig()
 	return func(c *fiber.Ctx) error {
-		user := c.Locals("user").(*jwt.Token)
-		claims := user.Claims.(*ServiceAccountTokenClaims)
+		log := logr.FromContextOrDiscard(c.UserContext())
+		user := c.Locals("user")
+		if user == nil {
+			return problems.Unauthorized("Failed to authenticate", "Invalid user")
+		}
+		jwt, ok := user.(*jwt.Token)
+		if !ok {
+			return problems.Unauthorized("Failed to authenticate", "Invalid user")
+		}
+		claims := jwt.Claims.(*ServiceAccountTokenClaims)
 
 		if claims == nil {
 			return problems.Unauthorized("Failed to authenticate", "Invalid token structure")
 		}
 
-		log := logr.FromContextOrDiscard(c.UserContext())
 		log = log.WithValues("san", claims.Kubernetes.ServiceAccount.Name, "ns", claims.Kubernetes.Namespace)
 
-		if slices.Contains(claims.Audience, options.Audience) {
+		if options.Audience != "" && !slices.Contains(claims.Audience, options.Audience) {
 			return problems.Forbidden("Access denied", "Invalid audience")
 		}
 
@@ -227,12 +243,12 @@ func newSuccessHandler(options *KubernetesAuthzOptions) fiber.Handler {
 				return problems.Forbidden("Access denied", "Invalid source")
 			}
 
-			if !strings.HasPrefix(podName, config.DeploymentName) { // TODO: improve this with an pod-informer!?
+			if !strings.HasPrefix(podName, config.DeploymentName) { // TODO: improve this with a pod-informer!?
 				log.Info("Forbidden", "pod_name", podName, "deployment_name", config.DeploymentName)
 				return problems.Forbidden("Access denied", "Invalid source")
 			}
 
-			if !isAccessAllowed(c, config.allowedAccessSet) {
+			if !IsAccessAllowed(c, config.allowedAccessSet) {
 				log.Info("Forbidden", "allowed_access", config.AllowedAccess)
 				return problems.Forbidden("Access denied", "Invalid access")
 			}
