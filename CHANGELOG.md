@@ -1,3 +1,26 @@
+# [0.15.0](https://github.com/telekom/controlplane/compare/v0.14.0...v0.15.0) (2025-11-18)
+
+
+### Bug Fixes
+
+* **ci:** correctly escape semantic-release notes ([066fb80](https://github.com/telekom/controlplane/commit/066fb8041584c05dba21c4d23b1ca1bcb6591c5f))
+* **ci:** correctly escape semantic-release notes using heredoc ([87ff030](https://github.com/telekom/controlplane/commit/87ff0302bdfe0162da2a5f6662ca5380042b5adf))
+* correctly set api-spec-name in swagger; api-spec-name must be all-lower-case ([#196](https://github.com/telekom/controlplane/issues/196)) ([32eca4c](https://github.com/telekom/controlplane/commit/32eca4cea47514ee9dd2ef71f23f580325fafb0f))
+* identity remove `SetStatusProcessing(...)`; common-server: enhance client-metric if no response from server ([#218](https://github.com/telekom/controlplane/issues/218)) ([4d72987](https://github.com/telekom/controlplane/commit/4d72987b46c2cb1feeae8907e136d14107f4a55f))
+* **install:** correctly add labels to label-selector in servicemonitor ([#189](https://github.com/telekom/controlplane/issues/189)) ([ca41088](https://github.com/telekom/controlplane/commit/ca410880edfda5ad98200dc89f8589c00ab54b6c))
+* **organization:** support setting of team-secret value ([#200](https://github.com/telekom/controlplane/issues/200)) ([8b1db7e](https://github.com/telekom/controlplane/commit/8b1db7ea463d7fa667e11ac338ee3d3d799da7a5))
+* **secret-manager:** fix race condition when using backend-cache ([#201](https://github.com/telekom/controlplane/issues/201)) ([93aaa09](https://github.com/telekom/controlplane/commit/93aaa099af1c40944fafec36c829abd088dc7a1f))
+
+
+### Features
+
+* add notification for organization and approval ([#194](https://github.com/telekom/controlplane/issues/194)) ([785def5](https://github.com/telekom/controlplane/commit/785def5aeacde8fb3e1c971111ede6febc1abcdb))
+* **errors:** implement specialized error types and handling for controllers ([#204](https://github.com/telekom/controlplane/issues/204)) ([179feae](https://github.com/telekom/controlplane/commit/179feaeb05a84cf9c0f0ba2cac76b4fd2f2339cf))
+* **file-manager:** Add DELETE operation for files ([#182](https://github.com/telekom/controlplane/issues/182)) ([de1afe6](https://github.com/telekom/controlplane/commit/de1afe6eb76622a83353923004f21c6b3099e148))
+* improved approval-builder; improved conditions; refactored validation in all api-handlers ([#223](https://github.com/telekom/controlplane/issues/223)) ([8162b88](https://github.com/telekom/controlplane/commit/8162b888a3c5fb0a70b68d4d366d3b358ed0b8d9))
+* major improvements in regards to migration; added e2e-tester tool; improved snapshotter-tool ([#205](https://github.com/telekom/controlplane/issues/205)) ([461a0a6](https://github.com/telekom/controlplane/commit/461a0a6a817d1591ef144401c6c77c2a10fa16d3))
+* **rover-server:** integrate delete API from file-manager ([#191](https://github.com/telekom/controlplane/issues/191)) ([2fd9c63](https://github.com/telekom/controlplane/commit/2fd9c634f959d49e6cc06dd686ba1333e7c7727d))
+
 # [0.14.0](https://github.com/telekom/controlplane/compare/v0.13.0...v0.14.0) (2025-10-01)
 
 
