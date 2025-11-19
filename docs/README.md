@@ -142,7 +142,7 @@ Before you begin, ensure you have the following installed:
 1. Navigate to the docs directory:
 
 ```bash
-cd docs
+cd docs/pages
 ```
 
 2. Install dependencies:
@@ -154,7 +154,7 @@ npm install
 3. Start the development server:
 
 ```bash
-npm run pages:dev
+npm run dev
 ```
 
 ## Usage Guide
