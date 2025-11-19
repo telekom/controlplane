@@ -134,6 +134,12 @@ func WithAccessConfig(configs ...ServiceAccessConfig) KubernetesAuthOption {
 	}
 }
 
+func WithAudience(audience string) KubernetesAuthOption {
+	return func(o *KubernetesAuthzOptions) {
+		o.Audience = audience
+	}
+}
+
 type KubernetesAuthOption func(*KubernetesAuthzOptions)
 
 func NewKubernetesAuthz(opts ...KubernetesAuthOption) fiber.Handler {
@@ -174,7 +180,7 @@ func defaultOpts() *KubernetesAuthzOptions {
 	return &KubernetesAuthzOptions{
 		JWKSOpts:       make(map[string]keyfunc.Options),
 		TrustedIssuers: []string{},
-		Audience:       "secret-manager",
+		Audience:       "",
 		AccessConfig:   []ServiceAccessConfig{},
 	}
 }
