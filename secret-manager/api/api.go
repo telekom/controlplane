@@ -95,11 +95,7 @@ func (s *secretManagerAPI) Get(ctx context.Context, secretID string) (value stri
 	case 404:
 		return "", ErrNotFound
 	default:
-		var err gen.ErrorResponse
-		if err := json.Unmarshal(res.Body, &err); err != nil {
-			return "", err
-		}
-		return "", fmt.Errorf("error %s: %s", err.Type, err.Detail)
+		return "", client.HandleError(res.StatusCode(), string(res.Body))
 	}
 }
 func (s *secretManagerAPI) Set(ctx context.Context, secretID string, secretValue string) (newID string, err error) {
@@ -118,11 +114,7 @@ func (s *secretManagerAPI) Set(ctx context.Context, secretID string, secretValue
 	case 404:
 		return "", ErrNotFound
 	default:
-		var err gen.ErrorResponse
-		if err := json.Unmarshal(res.Body, &err); err != nil {
-			return "", err
-		}
-		return "", fmt.Errorf("error %s: %s", err.Type, err.Detail)
+		return "", client.HandleError(res.StatusCode(), string(res.Body))
 	}
 }
 
