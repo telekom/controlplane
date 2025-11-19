@@ -11,7 +11,11 @@ import (
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 )
 
-var _ = Describe("Token", func() {
+var _ = Describe("Token", Ordered, func() {
+
+	BeforeAll(func() {
+		config.Initialize()
+	})
 
 	It("should parse a valid token string", func() {
 		tokenStr := "test--my-group--my-team.ewogICJlbnZpcm9ubWVudCIgOiAidGVzdCIsCiAgImdlbmVyYXRlZF9hdCIgOiAxNzE2NDc0Mjk0LAogICJjbGllbnRfc2VjcmV0IiA6ICJ0b3BzZWNyZXQiLAogICJjbGllbnRfaWQiIDogInRlc3QtZ3JvdXAtLXRlc3QtdGVhbS0tdGVhbS11c2VyIiwKICAidG9rZW5fdXJsIjogImh0dHBzOi8vZXhhbXBsZS5jb20vdG9rZW4iLAogICJzZXJ2ZXJfdXJsIjogImh0dHA6Ly9sb2NhbGhvc3Q6ODA4MCIKfQ=="
@@ -27,7 +31,7 @@ var _ = Describe("Token", func() {
 		Expect(token.ClientId).To(Equal("test-group--test-team--team-user"))
 		Expect(token.ClientSecret).To(Equal("topsecret"))
 		Expect(token.TokenUrl).To(Equal("https://example.com/token"))
-		Expect(token.ServerUrl).To(Equal("http://localhost:8080"))
+		Expect(token.ServerUrl).To(Equal("http://localhost:8080/rover/api")) // It must have the base path appended
 		Expect(token.GeneratedAt).To(BeNumerically(">", 0))
 		timeSince := token.TimeSinceGenerated()
 		Expect(timeSince).To(MatchRegexp(`\d+ year\(s\) ago`))
@@ -54,7 +58,7 @@ var _ = Describe("Token", func() {
 		Expect(token.Team).To(Equal("my-team"))
 
 		// Verify that URLs from the token are used, not from viper
-		Expect(token.ServerUrl).To(Equal("http://localhost:8080"))
+		Expect(token.ServerUrl).To(Equal("http://localhost:8080/rover/api")) // It must have the base path appended
 		Expect(token.TokenUrl).To(Equal("https://example.com/token"))
 	})
 
@@ -101,7 +105,7 @@ var _ = Describe("Token", func() {
 		tokenStr := "test--my-group--my-team.ewogICJlbnZpcm9ubWVudCIgOiAidGVzdCIsCiAgImdlbmVyYXRlZF9hdCIgOiAxNzE2NDc0Mjk0OTk3LAogICJjbGllbnRfc2VjcmV0IiA6ICJ0b3BzZWNyZXQiLAogICJjbGllbnRfaWQiIDogInRlc3QtZ3JvdXAtLXRlc3QtdGVhbS0tdGVhbS11c2VyIgp9"
 
 		// Set URLs in viper
-		viper.Set(config.ConfigKeyServerURL, "http://viper-server:9090")
+		viper.Set(config.ConfigKeyServerURL, "http://viper-server:9090/prefix")
 		viper.Set(config.ConfigKeyTokenURL, "https://viper-auth.example.com/token")
 
 		// Parse the token
@@ -112,7 +116,7 @@ var _ = Describe("Token", func() {
 		Expect(token).ToNot(BeNil())
 
 		// Verify that URLs are populated from viper
-		Expect(token.ServerUrl).To(Equal("http://viper-server:9090"))
+		Expect(token.ServerUrl).To(Equal("http://viper-server:9090/prefix/rover/api")) // It must have the base path appended
 		Expect(token.TokenUrl).To(Equal("https://viper-auth.example.com/token"))
 	})
 

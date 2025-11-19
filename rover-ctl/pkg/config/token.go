@@ -56,6 +56,10 @@ func GetToken() (*Token, error) {
 	return token, nil
 }
 
+// ParseToken decodes and parses the token string into a Token struct.
+// It will apply the server and token URLs from the token itself if present,
+// otherwise it falls back to the configuration values in viper.
+// It ensures that the server URL has the correct base path appended.
 func ParseToken(tokenStr string) (*Token, error) {
 	var prefix, b64Value string
 	if strings.Contains(tokenStr, ".") {
@@ -82,18 +86,21 @@ func ParseToken(tokenStr string) (*Token, error) {
 	token.Prefix = prefix
 	token.fillPrefixInfo()
 
+	var serverURL *url.URL
 	if token.ServerUrl == "" {
-		token.ServerUrl = viper.GetString(ConfigKeyServerURL)
-	} else {
-		url, err := url.Parse(token.ServerUrl)
+		serverURL, err = url.Parse(viper.GetString(ConfigKeyServerURL))
 		if err != nil {
-			return nil, errors.Wrap(err, "invalid server URL in token")
+			return nil, errors.Wrap(ErrTokenValidation, "cannot find server-URL")
 		}
-		if url.Path == "" || url.Path == "/" {
-			url.Path = viper.GetString("server.baseUrl")
+	} else {
+		serverURL, err = url.Parse(token.ServerUrl)
+		if err != nil {
+			return nil, errors.Wrap(ErrTokenValidation, "invalid server URL in token")
 		}
-		token.ServerUrl = url.String()
 	}
+	ensureCorrectBasePath(serverURL, viper.GetString("server.baseUrl"))
+	token.ServerUrl = serverURL.String()
+
 	if token.TokenUrl == "" {
 		token.TokenUrl = viper.GetString(ConfigKeyTokenURL)
 	}
@@ -221,4 +228,22 @@ func FromContextOrDie(ctx context.Context) *Token {
 		panic("token not found in context")
 	}
 	return token
+}
+
+// ensureCorrectBasePath checks and sets the URL path to the expected base path if not already set.
+// It modifies the provided url.URL in place.
+func ensureCorrectBasePath(url *url.URL, expectedPath string) {
+	if expectedPath == "" {
+		return
+	}
+	// If the path is empty or just "/", set it to the expected base path
+	if url.Path == "" || url.Path == "/" {
+		// set the expected base path
+		url.Path = expectedPath
+	}
+	// check if the path already ends with the expected base path
+	if !strings.HasSuffix(url.Path, expectedPath) {
+		// append the expected base path
+		url.Path = strings.TrimRight(url.Path, "/") + expectedPath
+	}
 }
