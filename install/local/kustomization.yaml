@@ -18,6 +18,7 @@ resources:
   - ../../api/config/default
   - ../../admin/config/default
   - ../../rover-server/config/default
+  - ../../notification/config/default
 
 configMapGenerator:
   - name: secret-manager-config
