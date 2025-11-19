@@ -97,3 +97,6 @@ images:
   - name: ghcr.io/telekom/controlplane/rover-server
     newName: ghcr.io/telekom/controlplane/rover-server
     newTag: latest
+  - name: ghcr.io/telekom/controlplane/notification
+    newName: ghcr.io/telekom/controlplane/notification
+    newTag: latest
