@@ -104,7 +104,7 @@ spec:
             - serviceAccountToken:
                 path: token
                 expirationSeconds: 600
-                audience: secretmgr
+                audience: secret-manager
         {{- end }}
         {{- if and .Values.secretmanager.enabled .Values.secretmanager.trustmanager.enabled }}
         - name: trust-bundle
