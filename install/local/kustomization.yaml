@@ -18,6 +18,7 @@ resources:
   - ../../api/config/default
   - ../../admin/config/default
   - ../../rover-server/config/default
+  - ../../notification/config/default
 
 configMapGenerator:
   - name: secret-manager-config
@@ -95,4 +96,7 @@ images:
     newTag: latest
   - name: ghcr.io/telekom/controlplane/rover-server
     newName: ghcr.io/telekom/controlplane/rover-server
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/notification
+    newName: ghcr.io/telekom/controlplane/notification
     newTag: latest
