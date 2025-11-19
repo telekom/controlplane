@@ -87,7 +87,10 @@ func HandleError(httpStatus int, msg string, okStatusCodes ...int) error {
 	case 429, 503:
 		httpErr = RetryableWithDelayErrorf(RetryDelay, "rate limit error (%d): %s", httpStatus, msg)
 	default:
-		return fmt.Errorf("unknown error (%d): %s", httpStatus, msg)
+		httpErr = &HttpError{
+			retryable: true, // per-default allow retries if unsure
+			msg:       fmt.Sprintf("unexpected http error (%d): %s", httpStatus, msg),
+		}
 	}
 	return httpErr.WithStatusCode(httpStatus)
 }
