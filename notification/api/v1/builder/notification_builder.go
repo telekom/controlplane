@@ -7,10 +7,10 @@ package builder
 import (
 	"context"
 	"encoding/json"
-	"maps"
-
+	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"maps"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -122,6 +122,7 @@ func (n *notificationBuilder) WithName(name string) NotificationBuilder {
 }
 
 func (n *notificationBuilder) WithDefaultChannels(ctx context.Context, namespace string) NotificationBuilder {
+	log := logr.FromContextOrDiscard(ctx)
 	k8sClient := cclient.ClientFromContextOrDie(ctx)
 	channelList := &notificationv1.NotificationChannelList{}
 	err := k8sClient.List(ctx, channelList, client.InNamespace(namespace))
@@ -129,6 +130,8 @@ func (n *notificationBuilder) WithDefaultChannels(ctx context.Context, namespace
 		n.Errors = append(n.Errors, errors.Wrap(err, "failed to list notification channels"))
 		return n
 	}
+
+	log.V(1).Info("Found channels in namespace", "namespace", namespace, "count", len(channelList.Items), "channels", channelList.Items)
 
 	for _, channel := range channelList.Items {
 		n.Notification.Spec.Channels = append(n.Notification.Spec.Channels, *types.ObjectRefFromObject(&channel))

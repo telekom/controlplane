@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"strings"
+	"text/template"
 
 	"github.com/telekom/controlplane/notification/internal/sender"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
@@ -132,6 +133,7 @@ func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	notificationHandler := &notificationhandler.NotificationHandler{
 		NotificationSender: r.NotificationSender,
+		TemplateRenderer:   notificationhandler.NewRenderer(getCustomTemplateFunctions()),
 	}
 
 	r.Controller = cc.NewController(notificationHandler, r.Client, r.Recorder)
@@ -201,4 +203,10 @@ func (r *NotificationReconciler) MapTemplateToNotification(ctx context.Context, 
 	}
 
 	return requests
+}
+
+// place custom functions here
+// see template_renderer_test for a simple example
+func getCustomTemplateFunctions() template.FuncMap {
+	return template.FuncMap{}
 }
