@@ -17,6 +17,7 @@ import (
 type ApiCategorySpec struct {
 	// LabelValue is the name of the API category in the specification.
 	// It must be unique within the cluster.
+	// This is the expected value in the info.x-api-category field of the OpenAPI spec
 	// +kubebuilder:validation:MaxLength=20
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
@@ -55,6 +56,7 @@ type AllowTeamsConfig struct {
 	// +listType=set
 	Categories []string `json:"categories,omitempty"`
 	// Names defines the list of team names that are allowed to use this API category.
+	// The name of the team allowed to register an API with this category. Use '*' to allow all teams.
 	// +optional
 	// +listType=set
 	Names []string `json:"names,omitempty"`

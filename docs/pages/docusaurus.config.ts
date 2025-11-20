@@ -114,10 +114,6 @@ const config: Config = {
               label: 'Installation',
               to: '/docs/Installation/installation',
             },
-            {
-              label: 'Quickstart',
-              to: '/docs/Installation/quickstart',
-            },
           ],
         },
         {

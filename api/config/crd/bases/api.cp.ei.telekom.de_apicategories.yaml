@@ -58,8 +58,9 @@ spec:
                     type: array
                     x-kubernetes-list-type: set
                   names:
-                    description: Names defines the list of team names that are allowed
-                      to use this API category.
+                    description: |-
+                      Names defines the list of team names that are allowed to use this API category.
+                      The name of the team allowed to register an API with this category. Use '*' to allow all teams.
                     items:
                       type: string
                     type: array
@@ -74,6 +75,7 @@ spec:
                 description: |-
                   LabelValue is the name of the API category in the specification.
                   It must be unique within the cluster.
+                  This is the expected value in the info.x-api-category field of the OpenAPI spec
                 maxLength: 20
                 minLength: 1
                 type: string

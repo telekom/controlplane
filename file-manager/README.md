@@ -14,9 +14,11 @@ SPDX-License-Identifier: Apache-2.0
 
 <p align="center">
   <a href="#about">About</a> •
+  <a href="#architecture">Architecture</a> •
   <a href="#backends">Backends</a> •
   <a href="#security">Security</a> •
-  <a href="#getting-started">Getting Started</a>
+  <a href="#code-integration">Code Integration</a>
+  <a href="#deployment-integration">Deployment Integration</a>
 </p>
 
 ## About
@@ -101,7 +103,6 @@ backend:
   secret_key: mySecret
 ```
 
-
 ## Security
 
 ### Network Policies
@@ -110,55 +111,14 @@ Additionally, traffic towards the FM is further protected by [Kubernetes Network
 so that only the services that are registered in advance can access the FM.
 See the [Deployment Integration](#deployment-integration) section for more information on how to integrate the FM into your custom operator deployment.
 
-## Getting Started
-
-### Server
-
-The following section describes how to set up the FM server.
-
-#### Configuration
-An example configuration can be found in the following directory [./config/default](./config/default).
-
-```yaml
-backend:
-  type: buckets # amazon S3
-  endpoint: "s3.amazonaws.com" 
-  sts_endpoint: "https://sts.amazonaws.com"
-  bucket_name: "my-s3-bucket" # Replace with your actual S3 bucket name
-  role_arn: "arn:aws:iam::123456789012:role/my-sample-role" # Replace with your actual IAM role ARN
-  token_path: "/var/run/secrets/file-manager/file-manager-token"
-
-security:
-  enabled: true  # enables the security features of the FM
-  access_config:  # defines a list of services that are allowed to access the FM
-  - service_account_name: default
-    deployment_name: file-client-shell
-    namespace: file-manager-client
-    allowed_access: 
-    - files_read
-    - files_write
-```
-
-#### Starting
-To start the server, you need to provide the configuration file as a command-line argument.
-
-> [!NOTE]
-> The backend flag `-backend` will override the backend type defined in the configuration file if the flag is used.
-
-Example for Kubernetes:
-
-```bash
-go run ./cmd/server/server.go -backend buckets -configfile ./config/default/config.yaml
-```
-
-### Code Integration
+## Code Integration
 We've included an [OpenAPI spec](./api/openapi.yaml) that can be used to generate client code for the FM.
 
 However, we also provide a basic Go implementation that can be used to **easily** integrate the FM into your code.
 Please take a look at that [api/README.md](./api/README.md) for more information on how to use it.
 
+## Deployment Integration
 
-### Deployment Integration
 To integrate the following [Deployment and Namespaces Patches](./config/patches) into your custom operator deployment, so that the new operator can communicate with the FM.
-Otherwise, the communication to the FM will be blocked on a [network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) level in k8s. 
+Otherwise, the communication to the FM will be blocked on a [network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) level in k8s.
 
