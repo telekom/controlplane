@@ -20,26 +20,6 @@ import NoAutoTitle from '@site/src/components/NoAutoTitle';
   This document outlines the conventions, patterns, and standards used throughout the Control Plane codebase to ensure consistency, maintainability, and code quality across all modules.
 </InfoSection>
 
-## Mono-repo Architecture Overview
-
-The Control Plane is implemented as a **Go mono-repo** that contains multiple **interdependent modules**, each representing a domain operator or service. Every domain has its own `go.mod`, Kubebuilder setup, and follows the same layout (`api/`, `cmd/`, `internal/`, `config/`, etc.), while sharing common libraries.
-
-Conceptually, this repo is the “control plane” for APIs and applications, where:
-- Admin defines the playground (environments, zones).
-- Organization / Application define who (teams, apps).
-- API / Gateway / Identity / Secret-manager define what & how is exposed and secured.
-- Approval / Rover / CLIs define governance, higher-level API orchestration and developer-facing tooling. 
-
-The mono‑repo setup plus common / common-server ensures:
-- Strong consistency in patterns and quality.
-- Clear separation by domain, but easy cross‑module reuse.
-
-Modules interact primarily via:
-
-- **Kubernetes CRDs** (e.g., `ApiSubscription` referring to `Api`, `ApiExposure`, applications, teams)
-- **Shared naming conventions** (double-dash `--` schemes for namespaces, client IDs, approvals, tokens)
-- **Shared libraries** (`common`, `common-server`) that standardize controller behavior, status handling, logging, metrics, and HTTP APIs.
-
 ## Table of Contents
 
 <TableOfContents
@@ -122,6 +102,26 @@ SPDX-License-Identifier: CC0-1.0
 ---
 
 ## Project Structure
+
+### Mono-repo Architecture
+
+The Control Plane is implemented as a **Go mono-repo** that contains multiple **interdependent modules**, each representing a domain operator or service. Every domain has its own `go.mod`, Kubebuilder setup, and follows the same layout (`api/`, `cmd/`, `internal/`, `config/`, etc.), while sharing common libraries.
+
+Conceptually, this repo is the “control plane” for APIs and applications, where:
+- Admin defines the playground (environments, zones).
+- Organization / Application define who (teams, apps).
+- API / Gateway / Identity / Secret-manager define what & how is exposed and secured.
+- Approval / Rover / CLIs define govern1ance, higher-level API orchestration and developer-facing tooling. 
+
+The mono‑repo setup plus common / common-server ensures:
+- Strong consistency in patterns and quality.
+- Clear separation by domain, but easy cross‑module reuse.
+
+Modules interact primarily via:
+
+- **Kubernetes CRDs** (e.g., `ApiSubscription` referring to `Api`, `ApiExposure`, applications, teams)
+- **Shared naming conventions** (double-dash `--` schemes for namespaces, client IDs, approvals, tokens)
+- **Shared libraries** (`common`, `common-server`) that standardize controller behavior, status handling, logging, metrics, and HTTP APIs.
 
 ### Module Organization
 Each domain is a separate Go module with the following structure:
