@@ -179,76 +179,54 @@ var _ = Describe("IpRestrictionFeature", func() {
 			ctx = context.Background()
 		})
 
-		It("should apply IP restriction feature for a consumer with allow list", func() {
-			mockKc := mock.NewMockKongClient(mockCtrl)
+		DescribeTable("should apply IP restriction feature for a consumer",
+			func(configType string, ipList []string) {
+				mockKc := mock.NewMockKongClient(mockCtrl)
 
-			consumer := NewConsumer()
-			consumer.Spec.Security = &gatewayv1.ConsumerSecurity{
-				IpRestrictions: &gatewayv1.IpRestrictions{
-					Allow: []string{"192.168.1.1", "10.0.0.0/24"},
-				},
-			}
+				consumer := NewConsumer()
+				consumer.Spec.Security = &gatewayv1.ConsumerSecurity{
+					IpRestrictions: &gatewayv1.IpRestrictions{},
+				}
 
-			// Mock CreateOrReplaceConsumer which will be called by the builder
-			mockKc.EXPECT().CreateOrReplaceConsumer(ctx, gomock.Any()).Return(&kong.Consumer{Id: stringPtr("test-consumer-id")}, nil).Times(1)
+				// Set the appropriate IP list based on config type
+				if configType == "allow" {
+					consumer.Spec.Security.IpRestrictions.Allow = ipList
+				} else {
+					consumer.Spec.Security.IpRestrictions.Deny = ipList
+				}
 
-			// Mock CreateOrReplacePlugin for the IP restriction plugin
-			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).DoAndReturn(
-				func(ctx context.Context, customPlugin client.CustomPlugin) (*kong.Plugin, error) {
-					ipPlugin, ok := customPlugin.(*plugin.IpRestrictionPlugin)
-					Expect(ok).To(BeTrue())
-					config := ipPlugin.GetConfig()
-					allowSet, ok := config["allow"].(*hashset.Set)
-					Expect(ok).To(BeTrue())
-					Expect(allowSet.Contains("192.168.1.1")).To(BeTrue())
-					Expect(allowSet.Contains("10.0.0.0/24")).To(BeTrue())
-					return &kong.Plugin{Id: stringPtr("test-plugin-id")}, nil
-				}).Times(1)
+				// Mock CreateOrReplaceConsumer which will be called by the builder
+				mockKc.EXPECT().CreateOrReplaceConsumer(ctx, gomock.Any()).Return(&kong.Consumer{Id: stringPtr("test-consumer-id")}, nil).Times(1)
 
-			// Mock CleanupPlugins which will be called by the builder
-			mockKc.EXPECT().CleanupPlugins(ctx, nil, gomock.Any(), gomock.Any()).Return(nil).Times(1)
+				// Mock CreateOrReplacePlugin for the IP restriction plugin
+				mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).DoAndReturn(
+					func(ctx context.Context, customPlugin client.CustomPlugin) (*kong.Plugin, error) {
+						ipPlugin, ok := customPlugin.(*plugin.IpRestrictionPlugin)
+						Expect(ok).To(BeTrue())
+						config := ipPlugin.GetConfig()
 
-			builder := features.NewFeatureBuilder(mockKc, nil, consumer, nil, nil)
-			builder.EnableFeature(feature.InstanceIpRestrictionFeature)
+						ipSet, ok := config[configType].(*hashset.Set)
+						Expect(ok).To(BeTrue())
 
-			err := builder.BuildForConsumer(ctx)
-			Expect(err).ToNot(HaveOccurred())
-		})
+						// Verify all expected IPs are in the set
+						for _, ip := range ipList {
+							Expect(ipSet.Contains(ip)).To(BeTrue())
+						}
 
-		It("should apply IP restriction feature for a consumer with deny list", func() {
-			mockKc := mock.NewMockKongClient(mockCtrl)
+						return &kong.Plugin{Id: stringPtr("test-plugin-id")}, nil
+					}).Times(1)
 
-			consumer := NewConsumer()
-			consumer.Spec.Security = &gatewayv1.ConsumerSecurity{
-				IpRestrictions: &gatewayv1.IpRestrictions{
-					Deny: []string{"192.168.1.2", "10.0.1.0/24"},
-				},
-			}
+				// Mock CleanupPlugins which will be called by the builder
+				mockKc.EXPECT().CleanupPlugins(ctx, nil, gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
-			// Mock CreateOrReplaceConsumer which will be called by the builder
-			mockKc.EXPECT().CreateOrReplaceConsumer(ctx, gomock.Any()).Return(&kong.Consumer{Id: stringPtr("test-consumer-id")}, nil).Times(1)
+				builder := features.NewFeatureBuilder(mockKc, nil, consumer, nil, nil)
+				builder.EnableFeature(feature.InstanceIpRestrictionFeature)
 
-			// Mock CreateOrReplacePlugin for the IP restriction plugin
-			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).DoAndReturn(
-				func(ctx context.Context, customPlugin client.CustomPlugin) (*kong.Plugin, error) {
-					ipPlugin, ok := customPlugin.(*plugin.IpRestrictionPlugin)
-					Expect(ok).To(BeTrue())
-					config := ipPlugin.GetConfig()
-					denySet, ok := config["deny"].(*hashset.Set)
-					Expect(ok).To(BeTrue())
-					Expect(denySet.Contains("192.168.1.2")).To(BeTrue())
-					Expect(denySet.Contains("10.0.1.0/24")).To(BeTrue())
-					return &kong.Plugin{Id: stringPtr("test-plugin-id")}, nil
-				}).Times(1)
-
-			// Mock CleanupPlugins which will be called by the builder
-			mockKc.EXPECT().CleanupPlugins(ctx, nil, gomock.Any(), gomock.Any()).Return(nil).Times(1)
-
-			builder := features.NewFeatureBuilder(mockKc, nil, consumer, nil, nil)
-			builder.EnableFeature(feature.InstanceIpRestrictionFeature)
-
-			err := builder.BuildForConsumer(ctx)
-			Expect(err).ToNot(HaveOccurred())
-		})
+				err := builder.BuildForConsumer(ctx)
+				Expect(err).ToNot(HaveOccurred())
+			},
+			Entry("with allow list", "allow", []string{"192.168.1.1", "10.0.0.0/24"}),
+			Entry("with deny list", "deny", []string{"192.168.1.2", "10.0.1.0/24"}),
+		)
 	})
 })

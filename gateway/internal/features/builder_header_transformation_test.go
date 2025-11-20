@@ -58,7 +58,7 @@ var _ = Describe("FeatureBuilder HeaderTransformation", Ordered, func() {
 			Expect(ok).To(BeTrue())
 
 			By("checking the request-transformer plugin config")
-			Expect(rtPlugin.Config.Remove.Headers.Contains("X-Remove-Header"))
+			Expect(rtPlugin.Config.Remove.Headers.Contains("X-Remove-Header")).To(BeTrue())
 
 		})
 

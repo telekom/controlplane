@@ -189,7 +189,7 @@ var _ = Describe("BasicAuthFeature", func() {
 
 				// Verify
 				Expect(err).ToNot(HaveOccurred())
-				defaultCreds := jumperConfig.BasicAuth[plugin.ConsumerId(feature.DefaultProviderKey)]
+				defaultCreds := jumperConfig.BasicAuth[feature.DefaultProviderKey]
 				Expect(defaultCreds.Username).To(Equal("testuser"))
 				Expect(defaultCreds.Password).To(Equal("testpass"))
 			})
@@ -224,7 +224,7 @@ var _ = Describe("BasicAuthFeature", func() {
 
 				// Verify
 				Expect(err).ToNot(HaveOccurred())
-				defaultCreds := jumperConfig.BasicAuth[plugin.ConsumerId(feature.DefaultProviderKey)]
+				defaultCreds := jumperConfig.BasicAuth[feature.DefaultProviderKey]
 				Expect(defaultCreds.Username).To(Equal("failoveruser"))
 				Expect(defaultCreds.Password).To(Equal("failoverpass"))
 			})
@@ -282,7 +282,7 @@ var _ = Describe("BasicAuthFeature", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// Check default provider creds
-				defaultCreds := jumperConfig.BasicAuth[plugin.ConsumerId(feature.DefaultProviderKey)]
+				defaultCreds := jumperConfig.BasicAuth[feature.DefaultProviderKey]
 				Expect(defaultCreds.Username).To(Equal("routeuser"))
 				Expect(defaultCreds.Password).To(Equal("routepass"))
 
@@ -336,7 +336,7 @@ var _ = Describe("BasicAuthFeature", func() {
 				Expect(consumerCreds.Password).To(Equal("consumerpass"))
 
 				// Default provider should not have creds
-				_, hasDefaultCreds := jumperConfig.BasicAuth[plugin.ConsumerId(feature.DefaultProviderKey)]
+				_, hasDefaultCreds := jumperConfig.BasicAuth[feature.DefaultProviderKey]
 				Expect(hasDefaultCreds).To(BeFalse())
 			})
 
@@ -375,7 +375,7 @@ var _ = Describe("BasicAuthFeature", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// Check default provider creds
-				defaultCreds := jumperConfig.BasicAuth[plugin.ConsumerId(feature.DefaultProviderKey)]
+				defaultCreds := jumperConfig.BasicAuth[feature.DefaultProviderKey]
 				Expect(defaultCreds.Username).To(Equal("routeuser"))
 				Expect(defaultCreds.Password).To(Equal("routepass"))
 

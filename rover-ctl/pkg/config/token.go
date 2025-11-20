@@ -29,6 +29,11 @@ var (
 // Global validator instance
 var validate = validator.New()
 
+// tokenContextKey is a custom type for context keys to avoid collisions
+type tokenContextKey string
+
+const tokenKey tokenContextKey = "token"
+
 type Token struct {
 	Prefix      string `json:"-"`
 	Environment string `json:"environment" validate:"required"`
@@ -207,11 +212,11 @@ func NewContext(ctx context.Context, token *Token) context.Context {
 		return ctx
 	}
 
-	return context.WithValue(ctx, "token", token)
+	return context.WithValue(ctx, tokenKey, token)
 }
 
 func FromContext(ctx context.Context) (*Token, bool) {
-	token, ok := ctx.Value("token").(*Token)
+	token, ok := ctx.Value(tokenKey).(*Token)
 	return token, ok
 }
 
