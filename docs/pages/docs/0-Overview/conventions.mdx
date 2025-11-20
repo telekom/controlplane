@@ -20,6 +20,26 @@ import NoAutoTitle from '@site/src/components/NoAutoTitle';
   This document outlines the conventions, patterns, and standards used throughout the Control Plane codebase to ensure consistency, maintainability, and code quality across all modules.
 </InfoSection>
 
+## Mono-repo Architecture Overview
+
+The Control Plane is implemented as a **Go mono-repo** that contains multiple **interdependent modules**, each representing a domain operator or service. Every domain has its own `go.mod`, Kubebuilder setup, and follows the same layout (`api/`, `cmd/`, `internal/`, `config/`, etc.), while sharing common libraries.
+
+Conceptually, this repo is the “control plane” for APIs and applications, where:
+- Admin defines the playground (environments, zones).
+- Organization / Application define who (teams, apps).
+- API / Gateway / Identity / Secret-manager define what & how is exposed and secured.
+- Approval / Rover / CLIs define governance, higher-level API orchestration and developer-facing tooling. 
+
+The mono‑repo setup plus common / common-server ensures:
+- Strong consistency in patterns and quality.
+- Clear separation by domain, but easy cross‑module reuse.
+
+Modules interact primarily via:
+
+- **Kubernetes CRDs** (e.g., `ApiSubscription` referring to `Api`, `ApiExposure`, applications, teams)
+- **Shared naming conventions** (double-dash `--` schemes for namespaces, client IDs, approvals, tokens)
+- **Shared libraries** (`common`, `common-server`) that standardize controller behavior, status handling, logging, metrics, and HTTP APIs.
+
 ## Table of Contents
 
 <TableOfContents
@@ -216,6 +236,11 @@ func MakeClientName(app *Application) string {
 
 #### Identity Realm Names
 
+There are two main identity realm types per environment:
+
+- **Default realm** – environment-wide realm
+- **Team realm** – dedicated realm for team clients in that environment
+
 **Default Realm**:
 ```go
 func ForDefaultIdentityRealm(environment *Environment) string {
@@ -230,7 +255,21 @@ func ForTeamApiIdentityRealm(environment *Environment) string {
     return "team-" + environment.GetName()
 }
 ```
-**Example**: `team-default`
+**Example**: `team-production`
+
+> Identity *realms* are **environment-based**, while identity provider *names* are **zone-based**. This means the same realm can be used across multiple zones in an environment.
+
+**Identity Provider Name (zone-based)**:
+```go
+func ForIdentityProvider(zone *Zone) string {
+    return zone.Name
+}
+```
+In other words:
+
+- Realm name pattern: `env` / `team-env`  (e.g., `prod`, `team-prod`)
+- Identity provider name pattern: `zone`   (e.g., `zone1`, `zone2`)
+
 
 #### Gateway Resource Names
 
@@ -562,8 +601,8 @@ Configured in `.pre-commit-config.yaml` and used to compile with coding standard
 ## Dependency Management
 
 ### Go Modules
-- Each domain and it's `api` folder are independent `go.mod`
-- Common functionality in `common` module
+- Each domain and its `api` folder has an independent `go.mod`
+- Common functionality are in `common` module
 - Cross-domain API imports allowed
 
 ### Module Paths
