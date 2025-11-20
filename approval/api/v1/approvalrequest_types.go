@@ -17,14 +17,17 @@ type ApprovalRequestSpec struct {
 	// +kubebuilder:default=unknown
 	Action string `json:"action"`
 
-	// Resource contains the reference to the object that is being requested access to
-	Resource types.TypedObjectRef `json:"target"`
+	// Target contains the reference to the object that wants to access another object
+	Target types.TypedObjectRef `json:"target"`
 
 	// Requester contains the information about the entity that is requesting access
 	Requester Requester `json:"requester"`
 
 	// Decider contains the information about the entity that owns the requested object
 	Decider Decider `json:"decider,omitempty"`
+
+	// Decisions contains information about people who changed this approval
+	Decisions []Decision `json:"decisions,omitempty"`
 
 	// Strategy defines the strategy that was used to approve the request
 	// +kubebuilder:validation:Enum=Auto;Simple;FourEyes

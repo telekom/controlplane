@@ -6,6 +6,7 @@ package v1
 
 import (
 	"encoding/json"
+	"github.com/telekom/controlplane/common/pkg/types"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -64,9 +65,18 @@ type AvailableTransition struct {
 }
 
 type Requester struct {
-	Name   string `json:"name"`
-	Email  string `json:"email"`
+
+	// TeamName is the name of the team requesting access
+	TeamName string `json:"teamName"`
+
+	// TeamEmail is the email address of the team requesting access
+	TeamEmail string `json:"teamEmail"`
+
+	// Reason is the reason for requesting access
 	Reason string `json:"reason"`
+
+	// ApplicationRef is a reference to the application that is requesting access
+	ApplicationRef types.TypedObjectRef `json:"applicationRef,omitempty"`
 
 	// Properties contains detailed information about the access that was requested
 	Properties runtime.RawExtension `json:"properties,omitempty"`
@@ -93,7 +103,24 @@ func (r *Requester) GetProperties() (map[string]any, error) {
 }
 
 type Decider struct {
-	Name    string `json:"name,omitempty"`
-	Email   string `json:"email,omitempty"`
+
+	// TeamName is the name of the team that decides on the approval request
+	TeamName string `json:"teamName,omitempty"`
+
+	// TeamEmail is the email address of the team that decides on the approval request
+	TeamEmail string `json:"teamEmail,omitempty"`
+
+	// ApplicationRef is a reference to the application that decides on the approval request
+	ApplicationRef types.TypedObjectRef `json:"applicationRef,omitempty"`
+}
+
+type Decision struct {
+	// Name of the person making the decision
+	Name string `json:"name"`
+
+	// Email of the person making the decision
+	Email string `json:"email,omitempty"`
+
+	// Comment provided by the person making the decision
 	Comment string `json:"comment,omitempty"`
 }

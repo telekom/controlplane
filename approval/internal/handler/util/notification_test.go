@@ -35,8 +35,8 @@ var _ = Describe("Notification Utilities", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				requester := &approvalv1.Requester{
-					Name:       "platform--backend",
-					Email:      "team@example.com",
+					TeamName:   "platform--backend",
+					TeamEmail:  "team@example.com",
 					Reason:     "Need access",
 					Properties: runtime.RawExtension{Raw: propertiesJSON},
 				}
@@ -55,8 +55,8 @@ var _ = Describe("Notification Utilities", func() {
 		Context("when requester name contains group and team", func() {
 			It("should extract group and team from name", func() {
 				requester := &approvalv1.Requester{
-					Name:  "onsite-group--enemy-team",
-					Email: "team@example.com",
+					TeamName:  "onsite-group--enemy-team",
+					TeamEmail: "team@example.com",
 				}
 
 				result, err := extractRequester(requester)
@@ -70,8 +70,8 @@ var _ = Describe("Notification Utilities", func() {
 		Context("when requester name does not contain separator", func() {
 			It("should use name for both group and team", func() {
 				requester := &approvalv1.Requester{
-					Name:  "single-name",
-					Email: "team@example.com",
+					TeamName:  "single-name",
+					TeamEmail: "team@example.com",
 				}
 
 				result, err := extractRequester(requester)
@@ -101,7 +101,7 @@ var _ = Describe("Notification Utilities", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				requester := &approvalv1.Requester{
-					Name:       "platform--frontend",
+					TeamName:   "platform--frontend",
 					Properties: runtime.RawExtension{Raw: propertiesJSON},
 				}
 
@@ -123,7 +123,7 @@ var _ = Describe("Notification Utilities", func() {
 		Context("when requester has empty properties", func() {
 			It("should still extract group and team", func() {
 				requester := &approvalv1.Requester{
-					Name:       "foo--bar",
+					TeamName:   "foo--bar",
 					Properties: runtime.RawExtension{Raw: []byte("{}")},
 				}
 

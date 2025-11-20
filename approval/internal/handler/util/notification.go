@@ -82,13 +82,13 @@ func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
 		requesterPropertiesMap["scopes"] = "undefined"
 	}
 
-	requesterName := strings.Split(requester.Name, "--")
+	requesterName := strings.Split(requester.TeamName, "--")
 	if len(requesterName) > 1 {
 		requesterPropertiesMap["requester_group"] = requesterName[0]
 		requesterPropertiesMap["requester_team"] = requesterName[1]
 	} else {
-		requesterPropertiesMap["requester_group"] = requester.Name
-		requesterPropertiesMap["requester_team"] = requester.Name
+		requesterPropertiesMap["requester_group"] = requester.TeamName
+		requesterPropertiesMap["requester_team"] = requester.TeamName
 	}
 
 	return requesterPropertiesMap, nil

@@ -38,7 +38,7 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 
 		if approvalReq.Spec.State == approvalv1.ApprovalStateRejected {
 			var err error
-			approvalReq.Status.NotificationRef, err = util.SendNotification(ctx, approvalReq, approvalReq.GetNamespace(), string(approvalReq.Spec.State), &approvalReq.Spec.Resource, &approvalReq.Spec.Requester)
+			approvalReq.Status.NotificationRef, err = util.SendNotification(ctx, approvalReq, approvalReq.GetNamespace(), string(approvalReq.Spec.State), &approvalReq.Spec.Target, &approvalReq.Spec.Requester)
 			if err != nil {
 				return err
 			}
@@ -47,8 +47,8 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 
 	if approvalReq.GetGeneration() == 1 && approvalReq.Status.NotificationRef == nil {
 		var err error
-		namespace := approvalReq.Spec.Resource.Namespace // namespace of the owner of the to-be-subscribed resource (i.e. target namespace)
-		approvalReq.Status.NotificationRef, err = util.SendNotification(ctx, approvalReq, namespace, string(approvalReq.Spec.State), &approvalReq.Spec.Resource, &approvalReq.Spec.Requester)
+		namespace := approvalReq.Spec.Target.Namespace // namespace of the owner of the to-be-subscribed resource (i.e. target namespace)
+		approvalReq.Status.NotificationRef, err = util.SendNotification(ctx, approvalReq, namespace, string(approvalReq.Spec.State), &approvalReq.Spec.Target, &approvalReq.Spec.Requester)
 		if err != nil {
 			return err
 		}
@@ -118,7 +118,7 @@ func handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest)
 			return nil
 		}
 
-		setControllerReferenceForRef(approvalObj, approvalReq.Spec.Resource)
+		setControllerReferenceForRef(approvalObj, approvalReq.Spec.Target)
 
 		approvalObj.Spec = approvalv1.ApprovalSpec{
 			Strategy: approvalReq.Spec.Strategy,
@@ -126,7 +126,7 @@ func handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest)
 
 			Requester: approvalReq.Spec.Requester,
 			Decider:   approvalReq.Spec.Decider,
-			Resource:  approvalReq.Spec.Resource,
+			Target:    approvalReq.Spec.Target,
 			Action:    approvalReq.Spec.Action,
 
 			ApprovedRequest: types.ObjectRefFromObject(approvalReq),
@@ -167,7 +167,7 @@ func setControllerReferenceForRef(obj types.Object, objRef types.TypedObjectRef)
 func newApprovalFromApprovalRequest(approvalReq *approvalv1.ApprovalRequest) *approvalv1.Approval {
 	return &approvalv1.Approval{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      approvalv1.ApprovalName(approvalReq.Spec.Resource.Kind, approvalReq.Spec.Resource.Name),
+			Name:      approvalv1.ApprovalName(approvalReq.Spec.Target.Kind, approvalReq.Spec.Target.Name),
 			Namespace: approvalReq.Namespace,
 		},
 		Spec: approvalv1.ApprovalSpec{},

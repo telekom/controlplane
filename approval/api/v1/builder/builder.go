@@ -99,7 +99,7 @@ func (b *approvalBuilder) WithHashValue(hashValue any) ApprovalBuilder {
 func (b *approvalBuilder) setWithHash() {
 	b.Request.Name = v1.ApprovalRequestName(b.Owner, b.hashValue)
 	b.Request.Namespace = b.Owner.GetNamespace()
-	b.Request.Spec.Resource = *types.TypedObjectRefFromObject(b.Owner, b.Client.Scheme())
+	b.Request.Spec.Target = *types.TypedObjectRefFromObject(b.Owner, b.Client.Scheme())
 }
 
 func (b *approvalBuilder) WithTrustedRequesters(trustedRequesters []string) ApprovalBuilder {
@@ -113,7 +113,7 @@ func (b *approvalBuilder) WithRequester(requester *v1.Requester) ApprovalBuilder
 }
 
 func (b *approvalBuilder) requireRequester() error {
-	if b.Request.Spec.Requester.Name == "" {
+	if b.Request.Spec.Requester.TeamName == "" {
 		return errors.New("missing required value: Requester")
 	}
 	return nil
@@ -251,7 +251,7 @@ func (b *approvalBuilder) GetOwner() types.Object {
 }
 
 func (b *approvalBuilder) isRequesterFromTrustedRequesters() bool {
-	requesterTeamName := b.Request.Spec.Requester.Name
+	requesterTeamName := b.Request.Spec.Requester.TeamName
 	return slices.ContainsFunc(b.TrustedRequesters, func(name string) bool {
 		return strings.EqualFold(name, requesterTeamName)
 	})

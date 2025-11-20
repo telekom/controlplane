@@ -78,32 +78,122 @@ spec:
                 description: Decider contains the information about the entity that
                   owns the requested object
                 properties:
-                  comment:
+                  applicationRef:
+                    description: ApplicationRef is a reference to the application
+                      that decides on the approval request
+                    properties:
+                      apiVersion:
+                        description: |-
+                          APIVersion defines the versioned schema of this representation of an object.
+                          Servers should convert recognized schemas to the latest internal value, and
+                          may reject unrecognized values.
+                          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+                        type: string
+                      kind:
+                        description: |-
+                          Kind is a string value representing the REST resource this object represents.
+                          Servers may infer this from the endpoint the client submits requests to.
+                          Cannot be updated.
+                          In CamelCase.
+                          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                        type: string
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
+                  teamEmail:
+                    description: TeamEmail is the email address of the team that decides
+                      on the approval request
                     type: string
-                  email:
-                    type: string
-                  name:
+                  teamName:
+                    description: TeamName is the name of the team that decides on
+                      the approval request
                     type: string
                 type: object
+              decisions:
+                description: Decisions contains information about people who changed
+                  this approval
+                items:
+                  properties:
+                    comment:
+                      description: Comment provided by the person making the decision
+                      type: string
+                    email:
+                      description: Email of the person making the decision
+                      type: string
+                    name:
+                      description: Name of the person making the decision
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
               requester:
                 description: Requester contains the information about the entity that
                   is requesting access
                 properties:
-                  email:
-                    type: string
-                  name:
-                    type: string
+                  applicationRef:
+                    description: ApplicationRef is a reference to the application
+                      that is requesting access
+                    properties:
+                      apiVersion:
+                        description: |-
+                          APIVersion defines the versioned schema of this representation of an object.
+                          Servers should convert recognized schemas to the latest internal value, and
+                          may reject unrecognized values.
+                          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+                        type: string
+                      kind:
+                        description: |-
+                          Kind is a string value representing the REST resource this object represents.
+                          Servers may infer this from the endpoint the client submits requests to.
+                          Cannot be updated.
+                          In CamelCase.
+                          More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                        type: string
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      uid:
+                        description: |-
+                          UID is a type that holds unique ID values, including UUIDs.  Because we
+                          don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                          intent and helps make sure that UIDs and names do not get conflated.
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
                   properties:
                     description: Properties contains detailed information about the
                       access that was requested
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
                   reason:
+                    description: Reason is the reason for requesting access
+                    type: string
+                  teamEmail:
+                    description: TeamEmail is the email address of the team requesting
+                      access
+                    type: string
+                  teamName:
+                    description: TeamName is the name of the team requesting access
                     type: string
                 required:
-                - email
-                - name
                 - reason
+                - teamEmail
+                - teamName
                 type: object
               state:
                 default: Pending
@@ -124,7 +214,7 @@ spec:
                 - FourEyes
                 type: string
               target:
-                description: Resource contains the reference to the object that wants
+                description: Target contains the reference to the object that wants
                   to access another object
                 properties:
                   apiVersion:

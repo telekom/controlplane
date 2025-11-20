@@ -33,8 +33,8 @@ var _ = Describe("ApprovalRequest Controller", func() {
 	})
 
 	resquester := approvalv1.Requester{
-		Name:  "test-requester",
-		Email: "test@test.com",
+		TeamName:  "test-requester",
+		TeamEmail: "test@test.com",
 		Properties: runtime.RawExtension{
 
 			Raw: []byte(`{"scopes": ["test"]}`),
@@ -59,7 +59,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			ar := arTempl.DeepCopy()
 
 			ar.Spec = approvalv1.ApprovalRequestSpec{
-				Resource:  *types.TypedObjectRefFromObject(sourceResource, k8sClient.Scheme()),
+				Target:    *types.TypedObjectRefFromObject(sourceResource, k8sClient.Scheme()),
 				Requester: resquester,
 				Strategy:  approvalv1.ApprovalStrategyAuto,
 				State:     approvalv1.ApprovalStateGranted,
@@ -90,8 +90,8 @@ var _ = Describe("ApprovalRequest Controller", func() {
 
 				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
 				g.Expect(a.Spec.Requester.Properties.Raw).NotTo(BeNil())
-				g.Expect(a.Spec.Requester.Name).To(Equal("test-requester"))
-				g.Expect(a.Spec.Requester.Email).To(Equal("test@test.com"))
+				g.Expect(a.Spec.Requester.TeamName).To(Equal("test-requester"))
+				g.Expect(a.Spec.Requester.TeamEmail).To(Equal("test@test.com"))
 
 				processingCondition := meta.FindStatusCondition(a.Status.Conditions, condition.ConditionTypeProcessing)
 				readyCondition := meta.FindStatusCondition(a.Status.Conditions, condition.ConditionTypeReady)

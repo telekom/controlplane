@@ -35,9 +35,9 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 	approval := &approvalv1.Approval{}
 
 	requester := approvalv1.Requester{
-		Name:   "Max",
-		Email:  "max.mustermann@telekom.de",
-		Reason: "I need access to this API!!",
+		TeamName:  "Max",
+		TeamEmail: "max.mustermann@telekom.de",
+		Reason:    "I need access to this API!!",
 	}
 
 	resource := ctypes.TypedObjectRef{
@@ -76,7 +76,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 					Strategy:  approvalv1.ApprovalStrategyAuto,
 					State:     approvalv1.ApprovalStatePending,
 					Requester: requester,
-					Resource:  resource,
+					Target:    resource,
 				},
 			}
 			Expect(k8sClient.Create(ctx, resource)).To(Succeed())
@@ -110,7 +110,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(approval.Spec.State).To(BeEquivalentTo("Pending"))
 			g.Expect(approval.Spec.Strategy).To(BeEquivalentTo("Auto"))
-			g.Expect(approval.Spec.Requester.Name).To(BeEquivalentTo("Max"))
+			g.Expect(approval.Spec.Requester.TeamName).To(BeEquivalentTo("Max"))
 
 		}, timeout, interval).Should(Succeed())
 
