@@ -91,7 +91,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	}
 
 	// 4. Check if Application exists and is ready
-	application, err := util.GetApplication(ctx, apiSub.Spec.Requestor.Application)
+	apiSubApplication, err := util.GetApplication(ctx, apiSub.Spec.Requestor.Application)
 	if err != nil {
 		return err
 	}
@@ -102,9 +102,10 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	// 5. Manage Approval process
 
 	requester := &approvalapi.Requester{
-		Name:   application.Spec.Team,
-		Email:  application.Spec.TeamEmail,
-		Reason: fmt.Sprintf("Team %s requested access to your API %s from zone %s", application.Spec.Team, api.Name, apiSub.Spec.Zone.Name),
+		TeamName:       apiSubApplication.Spec.Team,
+		TeamEmail:      apiSubApplication.Spec.TeamEmail,
+		ApplicationRef: *types.TypedObjectRefFromObject(apiSubApplication, scopedClient.Scheme()),
+		Reason:         fmt.Sprintf("Team %s requested access to your API %s from zone %s", apiSubApplication.Spec.Team, api.Name, apiSub.Spec.Zone.Name),
 	}
 	properties := map[string]any{
 		"basePath": apiSub.Spec.ApiBasePath,
@@ -140,17 +141,26 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 	}
 	err = requester.SetProperties(properties)
 	if err != nil {
-		return errors.Wrapf(err, "unable to approvalRequest properties for apiSubscription: %s in namespace: %s",
+		return errors.Wrapf(err, "unable to set approvalRequest properties for apiSubscription: %q in namespace: %q",
 			apiSub.Name, apiSub.Namespace)
 	}
 
-	// add the name of the requesting application to the properties - this is later used in notifications
-	properties["application"] = apiSub.Spec.Requestor.Application.Name
+	// create the approval decider - entity that owns the requested object
+	apiExpApplication, err := util.GetApplicationFromLabel(ctx, apiExposure)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get application from apiExposure label: %q while handling apiSubscription %q", apiExposure.Name, apiSub.Name)
+	}
+	decider := &approvalapi.Decider{
+		TeamName:       apiExpApplication.Spec.Team,
+		TeamEmail:      apiExpApplication.Spec.TeamEmail,
+		ApplicationRef: *types.TypedObjectRefFromObject(apiExpApplication, scopedClient.Scheme()),
+	}
 
 	approvalBuilder := builder.NewApprovalBuilder(scopedClient, apiSub)
 	approvalBuilder.WithAction("subscribe")
 	approvalBuilder.WithHashValue(requester.Properties)
 	approvalBuilder.WithRequester(requester)
+	approvalBuilder.WithDecider(decider)
 	approvalBuilder.WithStrategy(approvalapi.ApprovalStrategy(apiExposure.Spec.Approval.Strategy))
 
 	if len(apiExposure.Spec.Approval.TrustedTeams) > 0 {
@@ -221,7 +231,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		options = append(options, util.WithServiceRateLimit(apiExposure.Spec.Traffic.RateLimit.Provider))
 	}
 
-	if limits, ok := apiExposure.GetOverriddenSubscriberRateLimit(application.Status.ClientId); ok {
+	if limits, ok := apiExposure.GetOverriddenSubscriberRateLimit(apiSubApplication.Status.ClientId); ok {
 		options = append(options, util.WithConsumerRateLimit(&limits))
 	} else if apiExposure.HasDefaultSubscriberRateLimit() {
 		options = append(options, util.WithConsumerRateLimit(&apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Default.Limits))
@@ -238,13 +248,13 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 
 	consumeRouteOptions := []util.CreateConsumeRouteOption{}
 
-	if limits, ok := apiExposure.GetOverriddenSubscriberRateLimit(application.Status.ClientId); ok {
+	if limits, ok := apiExposure.GetOverriddenSubscriberRateLimit(apiSubApplication.Status.ClientId); ok {
 		consumeRouteOptions = append(consumeRouteOptions, util.WithConsumerRouteRateLimit(limits))
 	} else if apiExposure.HasDefaultSubscriberRateLimit() {
 		consumeRouteOptions = append(consumeRouteOptions, util.WithConsumerRouteRateLimit(apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Default.Limits))
 	}
 
-	consumeRoute, err := util.CreateConsumeRoute(ctx, apiSub, apiSub.Spec.Zone, *types.ObjectRefFromObject(proxyRoute), application.Status.ClientId, consumeRouteOptions...)
+	consumeRoute, err := util.CreateConsumeRoute(ctx, apiSub, apiSub.Spec.Zone, *types.ObjectRefFromObject(proxyRoute), apiSubApplication.Status.ClientId, consumeRouteOptions...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create normal ConsumeRoute")
 	}
@@ -287,7 +297,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 			apiSub.Status.FailoverRoutes = append(apiSub.Status.FailoverRoutes, *types.ObjectRefFromObject(failoverProxyRoute))
 
 			log.Info("Creating failover ConsumeRoute for zone", "zone", subFailoverZone)
-			consumeRoute, err = util.CreateConsumeRoute(ctx, apiSub, subFailoverZone, *types.ObjectRefFromObject(failoverProxyRoute), application.Status.ClientId)
+			consumeRoute, err = util.CreateConsumeRoute(ctx, apiSub, subFailoverZone, *types.ObjectRefFromObject(failoverProxyRoute), apiSubApplication.Status.ClientId)
 			if err != nil {
 				return errors.Wrapf(err, "failed to create failover ConsumeRoute for zone %s", subFailoverZone)
 			}

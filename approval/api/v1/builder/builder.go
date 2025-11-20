@@ -44,7 +44,7 @@ type ApprovalBuilder interface {
 	WithHashValue(hashValue any) ApprovalBuilder
 	WithRequester(requester *v1.Requester) ApprovalBuilder
 	WithStrategy(strategy v1.ApprovalStrategy) ApprovalBuilder
-	WithDecider(decider v1.Decider) ApprovalBuilder
+	WithDecider(decider *v1.Decider) ApprovalBuilder
 	WithAction(action string) ApprovalBuilder
 	WithTrustedRequesters(trustedRequesters []string) ApprovalBuilder
 	Build(ctx context.Context) (ApprovalResult, error)
@@ -124,8 +124,8 @@ func (b *approvalBuilder) WithStrategy(strategy v1.ApprovalStrategy) ApprovalBui
 	return b
 }
 
-func (b *approvalBuilder) WithDecider(Decider v1.Decider) ApprovalBuilder {
-	b.Request.Spec.Decider = Decider
+func (b *approvalBuilder) WithDecider(decider *v1.Decider) ApprovalBuilder {
+	b.Request.Spec.Decider = *decider
 	return b
 }
 
