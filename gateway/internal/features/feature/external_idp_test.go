@@ -58,7 +58,7 @@ var _ = Describe("ExternalIDPFeature", func() {
 								Host:      "example.com",
 								Port:      0,
 								Path:      "/api",
-								IssuerUrl: "example.com/issuer", //has IssuerUrl == Proxy Route
+								IssuerUrl: "example.com/issuer", // has IssuerUrl == Proxy Route
 							},
 						},
 					},

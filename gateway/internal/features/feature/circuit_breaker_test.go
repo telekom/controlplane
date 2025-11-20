@@ -6,12 +6,13 @@ package feature_test
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/gateway/internal/features/feature/config"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"net/http"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

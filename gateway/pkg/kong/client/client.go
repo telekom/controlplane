@@ -71,7 +71,7 @@ type KongAdminApi interface {
 var _ KongClient = &kongClient{}
 
 type kongClient struct {
-	//client     kong.ClientWithResponsesInterface
+	// client     kong.ClientWithResponsesInterface
 	client     KongAdminApi
 	commonTags []string
 }

@@ -189,7 +189,7 @@ var _ = Describe("FeatureBuilder RateLimiting", Ordered, func() {
 	})
 })
 
-func buildRateLimitFeature(ctx context.Context, route *gatewayv1.Route, isProxyRoute bool, consumeRoutes []*gatewayv1.ConsumeRoute, gateway *gatewayv1.Gateway, realm *gatewayv1.Realm) *features.Builder {
+func buildRateLimitFeature(ctx context.Context, route *gatewayv1.Route, _ bool, consumeRoutes []*gatewayv1.ConsumeRoute, gateway *gatewayv1.Gateway, realm *gatewayv1.Realm) *features.Builder {
 
 	builder := features.NewFeatureBuilder(mockKc, route, nil, realm, gateway)
 

@@ -157,7 +157,7 @@ var _ = Describe("BaseHandler", func() {
 				Expect(err).To(HaveOccurred())
 				apiErr, ok := common.AsApiError(err)
 				Expect(ok).To(BeTrue())
-				Expect(apiErr).NotTo(BeNil())
+				Expect(apiErr).To(HaveOccurred())
 				// The error message comes from the mock response we defined above
 				Expect(apiErr.Title).To(Equal("Validation failed"))
 			})
@@ -256,12 +256,13 @@ var _ = Describe("BaseHandler", func() {
 				Expect(err).To(HaveOccurred())
 				apiErr, ok := common.AsApiError(err)
 				Expect(ok).To(BeTrue())
-				Expect(apiErr).NotTo(BeNil())
+				Expect(apiErr).To(HaveOccurred())
 				Expect(apiErr.Title).To(Equal("Delete failed"))
 			})
 		})
 	})
 
+	//nolint:dupl // Test patterns are intentionally similar for Get and Status methods
 	Describe("Get", func() {
 		Context("when sending a valid request", func() {
 			It("should send a Get request to the correct URL", func() {
@@ -349,6 +350,7 @@ var _ = Describe("BaseHandler", func() {
 		})
 	})
 
+	//nolint:dupl // Test patterns are intentionally similar for Get and Status methods
 	Describe("Status", func() {
 		Context("when sending a valid request", func() {
 			It("should send a Status request to the correct URL", func() {

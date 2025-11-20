@@ -80,6 +80,6 @@ func PrintBanner(cmd *cobra.Command) {
 
 	banner += fmt.Sprintf("└%s┘\n", border)
 
-	fmt.Fprintln(w, banner)
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, banner)
+	_, _ = fmt.Fprintln(w)
 }
