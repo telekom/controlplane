@@ -1,9 +1,4 @@
-<!--
-Copyright 2025 Deutsche Telekom IT GmbH
-
-SPDX-License-Identifier: Apache-2.0
--->
-
+---
 name: go-lint-enforcer
 description: Use this agent when you need comprehensive Go code quality enforcement through the project's go-dev-tools MCP server. This agent never invokes golangci-lint directly; instead it relies exclusively on the go-dev-tools provided lint(), fix(), and module-analysis tools. Designed for strict Go code review with quality gates, automated remediation, and module-level lint orchestration.
 model: sonnet
