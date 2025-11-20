@@ -59,7 +59,7 @@ var _ = Describe("ValidationError", func() {
 		It("should initialize with empty errors and warnings", func() {
 			Expect(valErr.HasErrors()).To(BeFalse())
 			Expect(valErr.BuildWarnings()).To(BeNil())
-			Expect(valErr.BuildError()).To(BeNil())
+			Expect(valErr.BuildError()).To(Succeed())
 
 			// Verify internal state
 			Expect(valErr.Errors).To(BeEmpty())
@@ -100,7 +100,7 @@ var _ = Describe("ValidationError", func() {
 
 	Context("BuildError", func() {
 		It("should return nil when there are no errors", func() {
-			Expect(valErr.BuildError()).To(BeNil())
+			Expect(valErr.BuildError()).To(Succeed())
 		})
 
 		It("should build a properly formatted StatusError when there are errors", func() {
@@ -110,7 +110,7 @@ var _ = Describe("ValidationError", func() {
 
 			// Build the error
 			statusErr := valErr.BuildError().(*apierrors.StatusError)
-			Expect(statusErr).NotTo(BeNil())
+			Expect(statusErr).To(HaveOccurred())
 
 			// Verify error details
 			Expect(statusErr.ErrStatus.Status).To(Equal(metav1.StatusFailure))
@@ -141,7 +141,7 @@ var _ = Describe("ValidationError", func() {
 
 			// Build the error
 			statusErr := valErr.BuildError().(*apierrors.StatusError)
-			Expect(statusErr).NotTo(BeNil())
+			Expect(statusErr).To(HaveOccurred())
 
 			// Verify types are preserved
 			Expect(statusErr.ErrStatus.Details.Causes).To(HaveLen(2))
@@ -213,7 +213,7 @@ var _ = Describe("ValidationError", func() {
 
 			// Build error and verify
 			statusErr := valErr.BuildError().(*apierrors.StatusError)
-			Expect(statusErr).NotTo(BeNil())
+			Expect(statusErr).To(HaveOccurred())
 
 			Expect(statusErr.ErrStatus.Details.Name).To(Equal("test-object"))
 			Expect(statusErr.ErrStatus.Details.Kind).To(Equal("TestResource"))
