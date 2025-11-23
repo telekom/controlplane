@@ -39,6 +39,23 @@ func (n NotificationChannelHandler) CreateOrUpdate(ctx context.Context, owner *o
 
 	mutate := func() error {
 		channelObj.SetLabels(owner.GetLabels())
+
+		recipientsMails := make([]string, 0)
+		for _, member := range owner.Spec.Members {
+			recipientsMails = append(recipientsMails, member.Email)
+		}
+		recipientsMails = append(recipientsMails, owner.Spec.Email)
+
+		channelObj.Spec = notificationv1.NotificationChannelSpec{
+			Email: &notificationv1.EmailConfig{
+				Recipients: recipientsMails,
+			},
+			// TODO: At a later stage, teams can configure how to receive notifications. For now, only mail
+			MsTeams: nil,
+			Webhook: nil,
+			Ignore:  nil,
+		}
+
 		return nil
 	}
 
