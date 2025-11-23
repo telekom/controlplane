@@ -7,7 +7,6 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/pkg/errors"
 	"text/template"
 
@@ -36,7 +35,7 @@ func (r Renderer) renderMessage(tmplStr string, data runtime.RawExtension) (stri
 	// Step 1: Unmarshal RawExtension.Raw (JSON bytes) into a map[string]interface{}
 	var values map[string]interface{}
 	if err := json.Unmarshal(data.Raw, &values); err != nil {
-		return "", fmt.Errorf("failed to unmarshal RawExtension: %w", err)
+		return "", errors.Wrapf(err, "failed to unmarshal RawExtension: %q", data.Raw)
 	}
 
 	// Step 2: Parse the template string
@@ -48,7 +47,7 @@ func (r Renderer) renderMessage(tmplStr string, data runtime.RawExtension) (stri
 	// Step 3: Execute the template with the unmarshaled data
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, values); err != nil {
-		return "", fmt.Errorf("failed to execute template: %w", err)
+		return "", errors.Wrapf(err, "failed to execute template %q", tmplStr)
 	}
 
 	return buf.String(), nil

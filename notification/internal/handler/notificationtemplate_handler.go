@@ -7,7 +7,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"github.com/pkg/errors"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
@@ -37,7 +37,7 @@ func (n *NotificationTemplateHandler) validateTemplate(template *notificationv1.
 	case "MsTeams":
 		// MS Teams templates must be valid JSON (Adaptive Cards or MessageCard format)
 		if !json.Valid([]byte(template.Spec.Template)) {
-			return fmt.Errorf("invalid JSON template for MsTeams channel: template must be valid JSON")
+			return errors.New("invalid JSON template for MsTeams channel: template must be valid JSON")
 		}
 	case "Email":
 		// Email templates can be plain text or HTML, no strict validation needed
@@ -49,7 +49,7 @@ func (n *NotificationTemplateHandler) validateTemplate(template *notificationv1.
 	// Validate schema if provided
 	if len(template.Spec.Schema.Raw) > 0 {
 		if !json.Valid(template.Spec.Schema.Raw) {
-			return fmt.Errorf("invalid JSON schema: schema must be valid JSON")
+			return errors.New("invalid JSON schema: schema must be valid JSON")
 		}
 	}
 
