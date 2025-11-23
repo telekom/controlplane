@@ -9,6 +9,7 @@
 package v1
 
 import (
+	"github.com/telekom/controlplane/common/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -170,9 +171,12 @@ func (in *ApprovalRequestStatus) DeepCopyInto(out *ApprovalRequestStatus) {
 		*out = make(AvailableTransitions, len(*in))
 		copy(*out, *in)
 	}
-	if in.NotificationRef != nil {
-		in, out := &in.NotificationRef, &out.NotificationRef
-		*out = (*in).DeepCopy()
+	if in.NotificationRefs != nil {
+		in, out := &in.NotificationRefs, &out.NotificationRefs
+		*out = make([]types.ObjectRef, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
 	}
 }
 
@@ -228,9 +232,12 @@ func (in *ApprovalStatus) DeepCopyInto(out *ApprovalStatus) {
 		*out = make(AvailableTransitions, len(*in))
 		copy(*out, *in)
 	}
-	if in.NotificationRef != nil {
-		in, out := &in.NotificationRef, &out.NotificationRef
-		*out = (*in).DeepCopy()
+	if in.NotificationRefs != nil {
+		in, out := &in.NotificationRefs, &out.NotificationRefs
+		*out = make([]types.ObjectRef, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
 	}
 }
 

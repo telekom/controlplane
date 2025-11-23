@@ -6,13 +6,14 @@ package approval
 
 import (
 	"context"
+	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/approval/internal/handler/util"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
-	"github.com/telekom/controlplane/approval/internal/handler/util"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -22,15 +23,12 @@ type ApprovalHandler struct {
 }
 
 func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approvalv1.Approval) error {
-	if approval.Spec.State != approval.Status.LastState {
-		contextutil.RecorderFromContextOrDie(ctx).Eventf(approval,
-			"Normal", "Notification", "State changed from %s to %s", approval.Status.LastState, approval.Spec.State,
-		)
-		var err error
-		approval.Status.NotificationRef, err = util.SendNotification(ctx, approval, approval.GetNamespace(), string(approval.Spec.State), &approval.Spec.Target, &approval.Spec.Requester)
-		if err != nil {
-			return err
-		}
+
+	// handle the notifications first
+	err := handleNotifications(ctx, approval)
+	if err != nil {
+		// todo - decide if we want to fail here, or a failed notification is acceptable
+		return errors.Wrapf(err, "Failed to send notification about approval %+v", approval)
 	}
 
 	fsm := ApprovalStrategyFSM[approval.Spec.Strategy]
@@ -58,6 +56,57 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 		approval.SetCondition(condition.NewProcessingCondition("Suspended", "Approval is suspended"))
 		approval.SetCondition(condition.NewReadyCondition("Suspended", "Approval is suspended"))
 
+	}
+
+	return nil
+}
+
+func handleNotifications(ctx context.Context, approval *approvalv1.Approval) error {
+
+	// initial notification (approvalRequest granted) is handled by the approval request handler
+
+	if (approval.Spec.State != approval.Status.LastState) && approval.Status.LastState != "" {
+		contextutil.RecorderFromContextOrDie(ctx).Eventf(approval,
+			"Normal", "Notification", "State changed from %s to %s", approval.Status.LastState, approval.Spec.State,
+		)
+
+		scenario := util.NotificationScenarioUpdated
+
+		// notify the decider
+		notificationRef, err := util.SendNotification(ctx, &util.NotificationData{
+			Owner:                  approval,
+			SendToChannelNamespace: approval.Spec.Decider.ApplicationRef.Namespace,
+			StateNew:               string(approval.Spec.State),
+			StateOld:               string(approval.Status.LastState),
+			Target:                 &approval.Spec.Target,
+			Requester:              &approval.Spec.Requester,
+			Decider:                &approval.Spec.Decider,
+			Scenario:               scenario,
+			Actor:                  util.ActorDecider,
+		})
+
+		if err != nil {
+			return errors.Wrapf(err, "Failed to send notification to decider %q while handling approval %+v", approval.Spec.Decider.TeamName, approval)
+		}
+		approval.Status.NotificationRefs = append(approval.Status.NotificationRefs, *notificationRef)
+
+		// notify the requester
+		notificationRef, err = util.SendNotification(ctx, &util.NotificationData{
+			Owner:                  approval,
+			SendToChannelNamespace: approval.Spec.Requester.ApplicationRef.Namespace,
+			StateNew:               string(approval.Spec.State),
+			StateOld:               string(approval.Status.LastState),
+			Target:                 &approval.Spec.Target,
+			Requester:              &approval.Spec.Requester,
+			Decider:                &approval.Spec.Decider,
+			Scenario:               scenario,
+			Actor:                  util.ActorRequester,
+		})
+
+		if err != nil {
+			return errors.Wrapf(err, "Failed to send notification to requester %q while handling approval %+v", approval.Spec.Requester.TeamName, approval)
+		}
+		approval.Status.NotificationRefs = append(approval.Status.NotificationRefs, *notificationRef)
 	}
 
 	return nil

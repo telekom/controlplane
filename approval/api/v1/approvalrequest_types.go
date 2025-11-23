@@ -58,8 +58,8 @@ type ApprovalRequestStatus struct {
 	// +kubebuilder:default=Pending
 	LastState ApprovalState `json:"lastState,omitempty"`
 
-	// NotificationRef is a reference to the notification that was sent for this approval request
-	NotificationRef *types.ObjectRef `json:"notificationRef,omitempty"`
+	// NotificationRefs is a reference to the notifications that were sent for this approval request
+	NotificationRefs []types.ObjectRef `json:"notificationRefs,omitempty"`
 }
 
 // +kubebuilder:object:root=true

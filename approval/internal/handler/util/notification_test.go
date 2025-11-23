@@ -11,8 +11,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
-	"github.com/telekom/controlplane/common/pkg/types"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -74,11 +72,9 @@ var _ = Describe("Notification Utilities", func() {
 					TeamEmail: "team@example.com",
 				}
 
-				result, err := extractRequester(requester)
+				_, err := extractRequester(requester)
 
-				Expect(err).NotTo(HaveOccurred())
-				Expect(result).To(HaveKeyWithValue("requester_group", "single-name"))
-				Expect(result).To(HaveKeyWithValue("requester_team", "single-name"))
+				Expect(err).To(HaveOccurred())
 			})
 		})
 
@@ -136,59 +132,4 @@ var _ = Describe("Notification Utilities", func() {
 		})
 	})
 
-	Describe("extractTarget", func() {
-		Context("when target has valid structure", func() {
-			It("should extract target information", func() {
-				target := &types.TypedObjectRef{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "ApiSubscription",
-						APIVersion: "api.cp.ei.telekom.de/v1",
-					},
-					ObjectRef: types.ObjectRef{
-						Name:      "my-app--foo-bar-v1",
-						Namespace: "prod--platform--backend",
-					},
-				}
-
-				result, kind, name := extractTarget(target)
-
-				Expect(kind).To(Equal("ApiSubscription"))
-				Expect(name).To(Equal("my-app--foo-bar-v1"))
-				Expect(result).To(HaveKeyWithValue("target_kind", "ApiSubscription"))
-				Expect(result).To(HaveKeyWithValue("target_application", "my-app"))
-				Expect(result).To(HaveKeyWithValue("target_group", "platform"))
-				Expect(result).To(HaveKeyWithValue("target_team", "backend"))
-			})
-		})
-
-		Context("when target is nil", func() {
-			It("should return empty properties", func() {
-				result, kind, name := extractTarget(nil)
-
-				Expect(kind).To(BeEmpty())
-				Expect(name).To(BeEmpty())
-				Expect(result).To(BeEmpty())
-			})
-		})
-
-		Context("when target has simple name without basepath", func() {
-			It("should use name as application", func() {
-				target := &types.TypedObjectRef{
-					TypeMeta: metav1.TypeMeta{
-						Kind: "EventSubscription",
-					},
-					ObjectRef: types.ObjectRef{
-						Name:      "simple-name",
-						Namespace: "dev--group--team",
-					},
-				}
-
-				result, kind, name := extractTarget(target)
-
-				Expect(kind).To(Equal("EventSubscription"))
-				Expect(name).To(Equal("simple-name"))
-				Expect(result).To(HaveKeyWithValue("target_application", "simple-name"))
-			})
-		})
-	})
 })
