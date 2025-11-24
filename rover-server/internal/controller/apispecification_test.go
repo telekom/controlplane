@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 	fileApi "github.com/telekom/controlplane/file-manager/api"
@@ -222,5 +223,51 @@ servers:
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
+	})
+
+	Context("ApiSpecification ID validation", func() {
+		DescribeTable("should reject invalid API specification IDs",
+			func(apiSpecId string, expectedStatus int) {
+				req := httptest.NewRequest(http.MethodGet, "/apispecifications/"+apiSpecId, nil)
+				res, err := ExecuteRequest(req, groupToken)
+				ExpectStatus(res, err, expectedStatus, "application/problem+json")
+			},
+			Entry("API spec ID with consecutive hyphens in segment", "group1--team1--spec--invalid", http.StatusBadRequest),
+			Entry("API spec ID with uppercase letters", "Group1--Team1--Spec1", http.StatusBadRequest),
+			Entry("API spec ID with special characters", "group1--team@1--spec1", http.StatusBadRequest),
+			Entry("API spec ID with underscores", "group1--team_1--spec1", http.StatusBadRequest),
+			Entry("API spec ID with dots", "group1--team.1--spec1", http.StatusBadRequest),
+			Entry("API spec ID starting with hyphen", "-group1--team1--spec1", http.StatusBadRequest),
+			Entry("API spec ID ending with hyphen", "group1--team1--spec1-", http.StatusBadRequest),
+			Entry("API spec ID with segment starting with hyphen", "group1---team1--spec1", http.StatusBadRequest),
+			Entry("API spec ID with segment ending with hyphen", "group1--team1-—spec1", http.StatusBadRequest),
+			Entry("API spec ID too long", "this-is-a-very-long-group-name--this-is-a-very-long-team-name--this-is-a-very-long-spec-name-that-exceeds-sixtythree-characters", http.StatusBadRequest),
+			Entry("API spec ID with too many segments", "group1--team1--spec1--extra", http.StatusBadRequest),
+			Entry("API spec ID with too few segments", "group1--team1", http.StatusBadRequest),
+			Entry("API spec ID with empty segments", "group1----spec1", http.StatusBadRequest),
+			Entry("API spec ID with empty group", "--team1--spec1", http.StatusBadRequest),
+			Entry("API spec ID with empty team", "group1----spec1", http.StatusBadRequest),
+			Entry("API spec ID with empty spec name", "group1--team1--", http.StatusBadRequest),
+			Entry("completely empty API spec ID", "", http.StatusBadRequest), // Should fail because empty string
+			Entry("API spec ID with only hyphens", "---", http.StatusBadRequest),
+			Entry("API spec ID with numbers only", "123--456--789", http.StatusBadRequest), // Should fail because doesn't start with letter
+		)
+
+		DescribeTable("should accept valid API specification IDs",
+			func(apiSpecId string) {
+				req := httptest.NewRequest(http.MethodGet, "/apispecifications/"+apiSpecId, nil)
+				res, err := ExecuteRequest(req, groupToken)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res.StatusCode).ToNot(Equal(http.StatusBadRequest))
+			},
+			Entry("standard valid format", "group1--team1--spec1"),
+			Entry("valid with numbers", "group1--team2--spec123"),
+			Entry("valid with hyphens in segments", "my-group--my-team--my-api-spec"),
+			Entry("valid single characters", "a--b--c"),
+			Entry("valid starting with letters ending with numbers", "group1--team2--spec3"),
+			Entry("valid all lowercase with hyphens", "long-group-name--long-team-name--long-spec-name"),
+			Entry("valid exactly 63 characters", "a23456789012345678901--b23456789012345678901--c234567890123456"),
+			Entry("valid API spec naming convention", "eni--hyperion--user-management-v1"),
+		)
 	})
 })

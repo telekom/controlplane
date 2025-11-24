@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
 
+	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
 
@@ -222,6 +223,51 @@ var _ = Describe("Rover Controller", func() {
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
+	})
+
+	Context("Rover ID validation", func() {
+		DescribeTable("should reject invalid rover IDs",
+			func(roverId string, expectedStatus int) {
+				req := httptest.NewRequest(http.MethodGet, "/rovers/"+roverId, nil)
+				res, err := ExecuteRequest(req, groupToken)
+				ExpectStatus(res, err, expectedStatus, "application/problem+json")
+			},
+			Entry("rover ID with consecutive hyphens in segment", "group1--team1--resource--invalid", http.StatusBadRequest),
+			Entry("rover ID with uppercase letters", "Group1--Team1--Resource1", http.StatusBadRequest),
+			Entry("rover ID with special characters", "group1--team@1--resource1", http.StatusBadRequest),
+			Entry("rover ID with underscores", "group1--team_1--resource1", http.StatusBadRequest),
+			Entry("rover ID with dots", "group1--team.1--resource1", http.StatusBadRequest),
+			Entry("rover ID starting with hyphen", "-group1--team1--resource1", http.StatusBadRequest),
+			Entry("rover ID ending with hyphen", "group1--team1--resource1-", http.StatusBadRequest),
+			Entry("rover ID with segment starting with hyphen", "group1---team1--resource1", http.StatusBadRequest),
+			Entry("rover ID with segment ending with hyphen", "group1--team1-—resource1", http.StatusBadRequest),
+			Entry("rover ID too long", "this-is-a-very-long-group-name--this-is-a-very-long-team-name--this-is-a-very-long-resource-name-that-exceeds-sixtythree-characters", http.StatusBadRequest),
+			Entry("rover ID with too many segments", "group1--team1--resource1--extra", http.StatusBadRequest),
+			Entry("rover ID with too few segments", "group1--team1", http.StatusBadRequest),
+			Entry("rover ID with empty segments", "group1----resource1", http.StatusBadRequest),
+			Entry("rover ID with empty group", "--team1--resource1", http.StatusBadRequest),
+			Entry("rover ID with empty team", "group1----resource1", http.StatusBadRequest),
+			Entry("rover ID with empty resource", "group1--team1--", http.StatusBadRequest),
+			Entry("completely empty rover ID", "", http.StatusBadRequest), // Should fail because empty string
+			Entry("rover ID with only hyphens", "---", http.StatusBadRequest),
+			Entry("rover ID with numbers only", "123--456--789", http.StatusBadRequest), // Should fail because doesn't start with letter
+		)
+
+		DescribeTable("should accept valid rover IDs",
+			func(roverId string) {
+				req := httptest.NewRequest(http.MethodGet, "/rovers/"+roverId, nil)
+				res, err := ExecuteRequest(req, groupToken)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res.StatusCode).ToNot(Equal(http.StatusBadRequest))
+			},
+			Entry("standard valid format", "group1--team1--resource1"),
+			Entry("valid with numbers", "group1--team2--resource123"),
+			Entry("valid with hyphens in segments", "my-group--my-team--my-resource"),
+			Entry("valid single characters", "a--b--c"),
+			Entry("valid starting with letters ending with numbers", "group1--team2--resource3"),
+			Entry("valid all lowercase with hyphens", "long-group-name--long-team-name--long-resource-name"),
+			Entry("valid exactly 63 characters", "a23456789012345678901--b23456789012345678901--c234567890123456"),
+		)
 	})
 
 })
