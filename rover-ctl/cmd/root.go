@@ -26,8 +26,10 @@ func ErrorHandler(err error, verbose bool) {
 	if err != nil {
 		errCause := errors.Cause(err)
 		if verbose {
-			logger.Error(errCause, "An error occurred")
+			// log entire stack trace
+			logger.Error(err, "An error occurred")
 		} else {
+			// only log the error message of the root cause
 			logger.Error(nil, "An error occurred", "error", errCause.Error())
 		}
 		os.Exit(1)
