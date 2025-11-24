@@ -41,11 +41,11 @@ The organization operator automatically sends notifications for team lifecycle e
 
 ### Notification Overview
 
-| Event                | Trigger                                      | Map Key                | Purpose                | Notification Name              | Hash Generation               |
-|----------------------|----------------------------------------------|------------------------|------------------------|--------------------------------|-------------------------------|
-| **Team Onboarding**  | Team creation (generation == 1)              | `onboarded`            | `onboarded`            | `onboarded`                    | N/A                           |
-| **Token Rotation**   | Every reconciliation (deduplicated via hash) | `token-rotated`        | `token-rotated`        | `token-rotated--{hash}`        | Hash of `TeamToken` value     |
-| **Member Changes**   | Team member list updated (generation > 1)    | `team-members-changed` | `team-members-changed` | `team-members-changed--{hash}` | Hash of `Members` list        |
+| Event                | Trigger                                      | Map Key                | Notification Name              | Hash Generation               |
+|----------------------|----------------------------------------------|------------------------|--------------------------------|-------------------------------|
+| **Team Onboarding**  | Team creation (generation == 1)              | `onboarded`            | `onboarded`                    | N/A                           |
+| **Token Rotation**   | Every reconciliation (deduplicated via hash) | `token-rotated`        | `token-rotated--{hash}`        | Hash of `TeamToken` value     |
+| **Member Changes**   | Team member list updated (generation > 1)    | `team-members-changed` | `team-members-changed--{hash}` | Hash of `Members` list        |
 
 > [!NOTE]
 > The hash is computed using a deterministic hashing function to ensure idempotency. The same input (token or member list) always produces the same hash, preventing duplicate notifications.
