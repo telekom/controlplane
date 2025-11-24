@@ -47,10 +47,10 @@ The organization operator automatically sends notifications for team lifecycle e
 | **Token Rotation**   | Every reconciliation (deduplicated via hash) | `token-rotated`        | `token-rotated`        | `token-rotated--{hash}`        | Hash of `TeamToken` value     |
 | **Member Changes**   | Team member list updated (generation > 1)    | `team-members-changed` | `team-members-changed` | `team-members-changed--{hash}` | Hash of `Members` list        |
 
-> ![Note]
+> [!NOTE]
 > The hash is computed using a deterministic hashing function to ensure idempotency. The same input (token or member list) always produces the same hash, preventing duplicate notifications.
 
-> ![Note]
+> [!NOTE]
 > All sent notifications are tracked in the team's status under `NotificationsRef` using the map keys shown above. Take a look at [TeamStatus Structure in ./api/v1/team_types.go](./api/v1/team_types.go) to view the latest references.
 
 ### Available Properties in Notification Templates
