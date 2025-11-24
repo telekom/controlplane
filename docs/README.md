@@ -93,39 +93,9 @@ Generally speaking, the domain READMEs is for developers on an isolated domain l
 ## Documentation Structure
 
 - **Docusaurus (`pages/`)**: General platform overview, architecture, concepts, and getting started guides
-- **Slidev (`presentation/`)**: Technical presentations for meetings and conferences
 - **Domain READMEs**: Detailed technical documentation for each domain (API, Gateway, Identity, etc.)
 
-### Project Structure
-
-```
-docs/
-├── README.md              # This comprehensive documentation
-├── package.json           # Root dependencies and scripts
-├── presentation/          # Slidev presentation
-│   ├── package.json       # Presentation dependencies
-│   ├── slides.md          # Presentation content
-│   ├── style.css          # Custom styling
-│   └── public/
-│       └── images/        # Presentation images
-└── pages/                 # Docusaurus documentation
-    ├── package.json       # Documentation dependencies
-    ├── docusaurus.config.js # Docusaurus configuration
-    ├── sidebars.js        # Navigation structure
-    ├── docs/              # Documentation content
-    │   ├── intro.md       # Introduction page
-    │   ├── core-tech/     # Core technologies
-    │   ├── web-frameworks/ # Web frameworks
-    │   ├── storage/       # Storage implementation
-    │   ├── testing/       # Testing frameworks
-    │   ├── auth/          # Authentication
-    │   ├── infrastructure/ # Deployment infrastructure
-    │   └── monitoring/    # Logging and metrics
-    ├── src/
-    │   └── css/           # Custom CSS
-    └── static/
-        └── img/           # Documentation images
-```
+Also, in the near future we plan to provide  **Slidev (`presentation/`)** as Technical presentations for meetings and conferences.
 
 ## Installation
 
