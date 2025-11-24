@@ -24,10 +24,11 @@ import (
 func ErrorHandler(err error, verbose bool) {
 	logger := log.L().WithName("error-handler")
 	if err != nil {
+		errCause := errors.Cause(err)
 		if verbose {
-			logger.Error(err, "An error occurred")
+			logger.Error(errCause, "An error occurred")
 		} else {
-			logger.Error(nil, "An error occurred", "error", err.Error())
+			logger.Error(nil, "An error occurred", "error", errCause.Error())
 		}
 		os.Exit(1)
 	} else {

@@ -118,6 +118,10 @@ func (h *BaseHandler) Apply(ctx context.Context, obj types.Object) error {
 	if obj == nil {
 		return errors.New("object cannot be nil")
 	}
+	if err := ValidateObjectName(obj); err != nil {
+		return errors.Wrap(err, "object name validation failed")
+	}
+
 	token := h.Setup(ctx)
 	url := h.GetRequestUrl(token.Group, token.Team, h.getResourceName(obj))
 

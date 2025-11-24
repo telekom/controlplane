@@ -6,6 +6,10 @@ package cmderrors
 
 import "fmt"
 
+// Error is a critical error happening during command execution
+// It should only be used for errors that need to be reported to the user
+// and fail further execution.
+// See pkg/handlers/common/error.go for more general error handling.
 type Error struct {
 	Message    string `json:"message"`
 	Reason     string `json:"reason,omitempty"`

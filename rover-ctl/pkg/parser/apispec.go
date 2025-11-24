@@ -63,6 +63,9 @@ func GetNameFromOpenapiSpec(document libopenapi.Document) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "failed to make name from url")
 	}
+	if path == "" {
+		return "", errors.New("'servers[0].url' must contain a valid path")
+	}
 	return SanitizeName(path), nil
 }
 
@@ -70,6 +73,9 @@ func GetNameFromSwaggerSpec(document libopenapi.Document) (string, error) {
 	model, err := document.BuildV2Model()
 	if err != nil {
 		return "", errors.Wrap(err, "failed to build Swagger v2 model")
+	}
+	if model.Model.BasePath == "" {
+		return "", errors.New("'.basePath' must contain a valid path")
 	}
 	return SanitizeName(model.Model.BasePath), nil
 }

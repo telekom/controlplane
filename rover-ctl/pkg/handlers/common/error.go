@@ -10,6 +10,7 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
 
 type FieldError struct {
@@ -97,4 +98,20 @@ func PrintJsonTo(err error, w io.Writer) {
 	data, _ := json.MarshalIndent(apiErr, "", "  ")
 	w.Write(data)
 	fmt.Fprintln(w)
+}
+
+func ValidationError(obj types.Object, fields ...FieldError) *ApiError {
+	detail := fmt.Sprintf("%s failed validation", obj.GetKind())
+	filename := obj.GetProperty("filename")
+	if filenameStr, ok := filename.(string); ok && filenameStr != "" {
+		detail = fmt.Sprintf("%s defined in file %q failed validation", obj.GetKind(), filenameStr)
+	}
+
+	return &ApiError{
+		Type:   "ValidationError",
+		Status: 400,
+		Title:  fmt.Sprintf("Failed to validate object %q", obj.GetName()),
+		Detail: detail,
+		Fields: fields,
+	}
 }
