@@ -23,7 +23,7 @@ SPDX-License-Identifier: CC0-1.0
 
 This directory contains the technical documentation for the Open Telekom Integration Platform's ControlPlane documentation platform.
 
-> ![IMPORTANT]
+> [!IMPORTANT]
 > Visit [https://telekom.github.io/controlplane/](https://telekom.github.io/controlplane/) to view the actual content, as this documentation is for maintainers and contributors.
 
 ## Project Overview
