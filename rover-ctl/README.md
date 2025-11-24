@@ -48,14 +48,17 @@ Rover-ctl can be configured using environment variables. The tool uses Viper for
 
 All environment variables are prefixed with `ROVER_` and use underscores instead of dots for nested keys. For example, `server.url` becomes `ROVER_SERVER_URL`.
 
-| Environment Variable    | Description                          | Default |
-|-------------------------|--------------------------------------|---------|
-| `ROVER_SERVER_URL`      | URL of the Rover server              | -       |
-| `ROVER_TOKEN_URL`       | URL for token authentication         | -       |
-| `ROVER_TOKEN`           | Authentication token                 | -       |
-| `ROVER_LOG_LEVEL`       | Log level (debug, info, warn, error) | info    |
-| `ROVER_LOG_FORMAT`      | Log format (json or console)         | console |
-| `ROVER_OUTPUT_FORMAT`   | Output format (yaml or json)         | yaml    |
+| Environment Variable    | Description                          | Default        |
+|-------------------------|--------------------------------------|----------------|
+| `ROVER_SERVER_URL`      | URL of the Rover server              | -              |
+| `ROVER_SERVER_BASEURL`  | Base path for API endpoints          | /rover/api     |
+| `ROVER_TOKEN_URL`       | URL for token authentication         | -              |
+| `ROVER_TOKEN`           | Authentication token                 | -              |
+| `ROVER_DEBUG`           | Enable debug mode                    | false          |
+| `ROVER_LOG_LEVEL`       | Log level (debug, info, warn, error) | info           |
+| `ROVER_LOG_FORMAT`      | Log format (json or console)         | console        |
+| `ROVER_OUTPUT_FORMAT`   | Output format (yaml or json)         | yaml           |
+| `ROVER_OUTPUT_FILE`     | Output file path                     | stdout         |
 
 ### Authentication
 
