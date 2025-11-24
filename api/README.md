@@ -51,6 +51,7 @@ Here is a list of notable conversions within this domain:
 <strong>Api</strong>
 This CRD represents a registered API, uniquely identified by its basePath.
 </summary>  
+
 - There can be multiple API CRs in different namespaces with the same basePath, but only one of them can be `active` at a time.
 - The API is considered a singleton based on its [normalized](../common/pkg/util/labelutil/labelutil.go#34) basePath.
   - This means that there can only be one `active` API CR per basePath in the (virtual) environment, regardless of the namespace and case sensitivity.
