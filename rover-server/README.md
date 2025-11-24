@@ -45,6 +45,10 @@ The server can be configured using environment variables or configuration files:
 - `SECURITY_DEFAULTSCOPE`: Default scope if token does not contain one
 - `DATABASE_FILEPATH`: This enables the database to store data also in the filesystem. If empty, the database will be in-memory only.
 
+
+For a full list, please take a look at [./internal/config/config.go](./internal/config/config.go). Mind, this uses Viper.
+Please review the official viper documentation for more details: https://github.com/spf13/viper
+
 ## Installation
 
 See [kustomize](./config/default/kustomization.yaml) for the default installation configuration. And [installation](../install/kustomization.yaml) for more details on how to deploy it with the entire Controlplane.
