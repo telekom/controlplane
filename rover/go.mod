@@ -11,7 +11,7 @@ require (
 	github.com/telekom/controlplane/api/api v0.0.0
 	github.com/telekom/controlplane/application/api v0.0.0
 	github.com/telekom/controlplane/common v0.0.0
-	github.com/telekom/controlplane/common-server v0.0.0 // indirect
+	github.com/telekom/controlplane/common-server v0.0.0
 	github.com/telekom/controlplane/organization/api v0.0.0
 	github.com/telekom/controlplane/rover/api v0.0.0
 	github.com/telekom/controlplane/secret-manager v0.0.0
