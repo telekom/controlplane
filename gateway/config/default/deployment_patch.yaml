@@ -12,7 +12,7 @@
       - serviceAccountToken:
           path: token
           expirationSeconds: 600
-          audience: secretmgr
+          audience: secret-manager
 - op: add
   path: /spec/template/spec/containers/0/volumeMounts/-
   value:

@@ -160,6 +160,7 @@ func main() {
 
 	if cfg.Security.Enabled {
 		opts := []k8s.KubernetesAuthOption{
+			k8s.WithAudience("secret-manager"),
 			k8s.WithTrustedIssuers(cfg.Security.TrustedIssuers...),
 			k8s.WithJWKSetURLs(cfg.Security.JWKSetURLs...),
 			k8s.WithAccessConfig(cfg.Security.AccessConfig...),
