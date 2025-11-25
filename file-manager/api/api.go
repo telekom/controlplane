@@ -208,7 +208,7 @@ func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 		if err := json.NewDecoder(response.Body).Decode(&err); err != nil {
 			return nil, errors.Wrap(err, "failed to decode error response")
 		}
-		return nil, client.HandleError(err.Status, fmt.Sprintf("error %s: %s", err.Type, err.Detail))
+		return nil, client.HandleError(response.StatusCode, fmt.Sprintf("file-manager: %s: %s", err.Type, err.Detail))
 	}
 }
 
@@ -244,7 +244,7 @@ func (f *FileManagerAPI) DownloadFile(ctx context.Context, fileId string, w io.W
 		if err := json.NewDecoder(response.Body).Decode(&err); err != nil {
 			return nil, errors.Wrap(err, "failed to decode error response")
 		}
-		return nil, client.HandleError(err.Status, fmt.Sprintf("error %s: %s", err.Type, err.Detail))
+		return nil, client.HandleError(response.StatusCode, fmt.Sprintf("file-manager: %s: %s", err.Type, err.Detail))
 	}
 }
 
