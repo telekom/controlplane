@@ -13,10 +13,20 @@ import (
 // HttpError implement the common/pkg/errors/ctrlerrors.Error interface
 // However, we do not want to introduce a dependency from common-server/pkg/client to common/pkg/errors
 type HttpError struct {
+	statusCode int
 	msg        string
 	retryable  bool
 	retryDelay time.Duration
 	blocked    bool
+}
+
+func (e *HttpError) WithStatusCode(code int) *HttpError {
+	e.statusCode = code
+	return e
+}
+
+func (e *HttpError) StatusCode() int {
+	return e.statusCode
 }
 
 func (e *HttpError) Error() string {
@@ -58,7 +68,7 @@ func RetryableWithDelayErrorf(delay time.Duration, format string, a ...any) *Htt
 }
 
 var (
-	RetryDelay = 5 * time.Second
+	RetryDelay = 3 * time.Second
 )
 
 func HandleError(httpStatus int, msg string, okStatusCodes ...int) error {
@@ -68,14 +78,19 @@ func HandleError(httpStatus int, msg string, okStatusCodes ...int) error {
 	if slices.Contains(okStatusCodes, httpStatus) {
 		return nil
 	}
+	var httpErr *HttpError
 	switch httpStatus {
 	case 400:
-		return BlockedErrorf("bad request error (%d): %s", httpStatus, msg)
+		httpErr = BlockedErrorf("bad request error (%d): %s", httpStatus, msg)
 	case 409, 500, 502, 504:
-		return RetryableErrorf("server error (%d): %s", httpStatus, msg)
+		httpErr = RetryableErrorf("server error (%d): %s", httpStatus, msg)
 	case 429, 503:
-		return RetryableWithDelayErrorf(RetryDelay, "rate limit error (%d): %s", httpStatus, msg)
+		httpErr = RetryableWithDelayErrorf(RetryDelay, "rate limit error (%d): %s", httpStatus, msg)
 	default:
-		return fmt.Errorf("unknown error (%d): %s", httpStatus, msg)
+		httpErr = &HttpError{
+			retryable: true, // per-default allow retries if unsure
+			msg:       fmt.Sprintf("unexpected http error (%d): %s", httpStatus, msg),
+		}
 	}
+	return httpErr.WithStatusCode(httpStatus)
 }
