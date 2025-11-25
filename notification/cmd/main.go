@@ -26,7 +26,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	emailadapterconfig "github.com/telekom/controlplane/notification/internal/config"
+	notificationsconfig "github.com/telekom/controlplane/notification/internal/config"
 
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/internal/controller"
@@ -80,10 +80,17 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	emailAdapterConfig, err := emailadapterconfig.LoadEmailAdapterConfig()
+	// configuration loading
+	emailAdapterConfig, err := notificationsconfig.LoadEmailAdapterConfig()
 	if err != nil {
-		panic(errors.Wrap(err, "failed to load configuration"))
+		panic(errors.Wrap(err, "failed to load configuration for email adapter"))
 	}
+
+	housekeepingConfig, err := notificationsconfig.LoadHousekeepingConfig()
+	if err != nil {
+		panic(errors.Wrap(err, "failed to load configuration for housekeeping"))
+	}
+	setupLog.Info("Loaded housekeeping config ", "config", housekeepingConfig)
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will
@@ -207,7 +214,7 @@ func main() {
 	}
 
 	// setup NotificationReconciler with the parsed config for email adapter
-	notificationReconciler := controller.NewNotificationReconcilerWithSenderConfig(mgr.GetClient(), mgr.GetScheme(), emailAdapterConfig)
+	notificationReconciler := controller.NewNotificationReconcilerWithConfig(mgr.GetClient(), mgr.GetScheme(), emailAdapterConfig, housekeepingConfig)
 	if err := notificationReconciler.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Notification")
 		os.Exit(1)

@@ -15,11 +15,14 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+	"github.com/telekom/controlplane/notification/internal/config"
 	"github.com/telekom/controlplane/notification/internal/sender"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"strings"
+	"time"
 )
 
 var _ handler.Handler[*notificationv1.Notification] = &NotificationHandler{}
@@ -27,9 +30,12 @@ var _ handler.Handler[*notificationv1.Notification] = &NotificationHandler{}
 type NotificationHandler struct {
 	NotificationSender sender.NotificationSender
 	TemplateRenderer   *Renderer
+
+	HousekeepingConfig config.NotificationHousekeepingConfig
 }
 
 func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *notificationv1.Notification) error {
+	log := log.FromContext(ctx)
 
 	var shouldBlock = false
 
@@ -38,6 +44,17 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 	// this handles the case when a team is onboarded and channels are not yet cached, thus not listed by the client
 	if channels == nil || len(channels) == 0 {
 		channels = findChannelsForNotification(ctx, notification)
+	}
+
+	// let's check if the notification is eligible for housekeeping
+	if eligibleForHousekeeping(ctx, notification, n.HousekeepingConfig.TTLMonthsAfterFinished) {
+		cclient, _ := client.ClientFromContext(ctx)
+		err := cclient.Delete(ctx, notification)
+		if err != nil {
+			return errors.Wrap(err, "failed to delete notification while housekeeping")
+		}
+		log.V(0).Info("Deleted expired notification")
+		return nil
 	}
 
 	// lets go channel by channel
@@ -105,6 +122,39 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 	}
 
 	return nil
+}
+
+func eligibleForHousekeeping(ctx context.Context, notification *notificationv1.Notification, ttlMonthsAfterFinished int32) bool {
+	log := log.FromContext(ctx)
+
+	// check if it's ready
+	ready := meta.IsStatusConditionTrue(notification.GetConditions(), condition.ConditionTypeReady)
+	if !ready {
+		return false
+	}
+
+	// check if it's complete (all channels successfully sent)
+	if !isNotificationComplete(notification) {
+		return false
+	}
+
+	// get timestamp when the notification became ready
+	var readyTimestamp time.Time
+	for _, c := range notification.GetConditions() {
+		if c.Type == condition.ConditionTypeReady {
+			readyTimestamp = c.LastTransitionTime.Time
+			break
+		}
+	}
+
+	ttl := time.Duration(ttlMonthsAfterFinished) * time.Hour * 24 * 7 * 4
+	expiry := readyTimestamp.Add(ttl)
+	if time.Now().After(expiry) {
+		log.V(1).Info("Notification is expired and eligible for housekeeping")
+		return true
+	} else {
+		return false
+	}
 }
 
 func findChannelsForNotification(ctx context.Context, notification *notificationv1.Notification) []types.ObjectRef {
@@ -213,4 +263,23 @@ func getChannelByRef(ctx context.Context, ref types.ObjectRef) (*notificationv1.
 
 func (n *NotificationHandler) Delete(ctx context.Context, notification *notificationv1.Notification) error {
 	return nil
+}
+
+func isNotificationComplete(n *notificationv1.Notification) bool {
+	if n.Status.States == nil {
+		return false
+	}
+
+	for _, ch := range n.Spec.Channels {
+		st, ok := n.Status.States[channelToMapKey(ch)]
+		if !ok {
+			return false // channel not processed yet
+		}
+
+		if !st.Sent {
+			return false // still pending
+		}
+	}
+
+	return true
 }

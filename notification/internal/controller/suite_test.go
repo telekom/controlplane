@@ -7,7 +7,7 @@ package controller
 import (
 	"context"
 	"fmt"
-	emailadapterconfig "github.com/telekom/controlplane/notification/internal/config"
+	notificationsconfig "github.com/telekom/controlplane/notification/internal/config"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
@@ -116,10 +116,13 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	loadedEmailConfig, err := emailadapterconfig.LoadEmailAdapterConfig()
+	loadedEmailConfig, err := notificationsconfig.LoadEmailAdapterConfig()
 	Expect(err).NotTo(HaveOccurred())
 
-	notificationReconciler = NewNotificationReconcilerWithSenderConfig(k8sManager.GetClient(), k8sManager.GetScheme(), loadedEmailConfig)
+	loadedHousekeepingConfig, err := notificationsconfig.LoadHousekeepingConfig()
+	Expect(err).NotTo(HaveOccurred())
+
+	notificationReconciler = NewNotificationReconcilerWithConfig(k8sManager.GetClient(), k8sManager.GetScheme(), loadedEmailConfig, loadedHousekeepingConfig)
 	err = notificationReconciler.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

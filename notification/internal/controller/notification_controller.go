@@ -8,6 +8,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/notification/internal/sender"
+	"github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter/msteams"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter/webhook"
 	"k8s.io/apimachinery/pkg/types"
@@ -17,9 +19,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"strings"
 	"text/template"
-
-	"github.com/telekom/controlplane/notification/internal/sender"
-	"github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
@@ -35,7 +34,7 @@ import (
 
 	notificationhandler "github.com/telekom/controlplane/notification/internal/handler"
 
-	adapterconfig "github.com/telekom/controlplane/notification/internal/config"
+	notificationsconfig "github.com/telekom/controlplane/notification/internal/config"
 )
 
 const (
@@ -52,12 +51,15 @@ type NotificationReconciler struct {
 	cc.Controller[*notificationv1.Notification]
 
 	NotificationSender sender.NotificationSender
+
+	HousekeepingConfig notificationsconfig.NotificationHousekeepingConfig
 }
 
-func NewNotificationReconcilerWithSenderConfig(
+func NewNotificationReconcilerWithConfig(
 	client client.Client,
 	scheme *runtime.Scheme,
-	emailConfig *adapterconfig.EmailAdapterConfig,
+	emailConfig *notificationsconfig.EmailAdapterConfig,
+	housekeepingConfig *notificationsconfig.NotificationHousekeepingConfig,
 ) *NotificationReconciler {
 
 	// initialize the notification sender with all adapters so they can be reused
@@ -73,6 +75,7 @@ func NewNotificationReconcilerWithSenderConfig(
 		Client:             client,
 		Scheme:             scheme,
 		NotificationSender: notificationSender,
+		HousekeepingConfig: *housekeepingConfig,
 	}
 }
 
@@ -134,6 +137,7 @@ func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	notificationHandler := &notificationhandler.NotificationHandler{
 		NotificationSender: r.NotificationSender,
 		TemplateRenderer:   notificationhandler.NewRenderer(getCustomTemplateFunctions()),
+		HousekeepingConfig: r.HousekeepingConfig,
 	}
 
 	r.Controller = cc.NewController(notificationHandler, r.Client, r.Recorder)
