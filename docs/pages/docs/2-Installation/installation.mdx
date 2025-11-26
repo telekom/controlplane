@@ -320,7 +320,7 @@ After successful installation, you should see:
 kubectl get zones,teams,rovers -A
 
 # Check that rover workloads are deployed
-kubectl get pods -n controlplane--phoenix--firebirds
+kubectl get pods -n k get pods -n controlplane-system
 ```
 
 ## Troubleshooting
@@ -334,7 +334,7 @@ kubectl get pods -n controlplane--phoenix--firebirds
     title="Controller Logs"
     description={<>
       <p>Check controller logs for errors:</p>
-      <code>kubectl logs -n controlplane deploy/controlplane-controller-manager -c manager</code>
+      <code>kubectl logs -n controlplane-system deploy/gateway-controller-manager -c manager</code>
     </>}
   />
   
@@ -342,7 +342,7 @@ kubectl get pods -n controlplane--phoenix--firebirds
     title="CRD Verification"
     description={<>
       <p>Verify custom resource definitions:</p>
-      <code>kubectl get crds | grep controlplane</code>
+      <code>kubectl get crds | grep cp.ei.telekom.de</code>
     </>}
   />
   
@@ -353,14 +353,6 @@ kubectl get pods -n controlplane--phoenix--firebirds
       <code>kubectl get zones,teams,rovers -A</code>
     </>}
   />
-
-    <FeatureCard
-        title="Namespace Check"
-        description={<>
-            <p>Ensure the correct namespace is created for your resources:</p>
-            <code>kubectl get ns | grep controlplane</code>
-        </>}
-    />
 </CardGrid>
 
 ## Next Steps
