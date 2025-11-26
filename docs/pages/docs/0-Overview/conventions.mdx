@@ -124,7 +124,8 @@ Modules interact primarily via:
 - **Shared libraries** (`common`, `common-server`) that standardize controller behavior, status handling, logging, metrics, and HTTP APIs.
 
 ### Module Organization
-Each domain is a separate Go module with the following structure:
+Each domain is a separate Go module with the following structure.
+For more general guidance, take a look at [https://github.com/golang-standards/project-layout](https://github.com/golang-standards/project-layout)
 
 ```
 <domain>/
@@ -193,138 +194,23 @@ Each domain is a separate Go module with the following structure:
   **Double Dash (`--`)** is the standard separator for composite names throughout the codebase.
 </InfoSection>
 
-### Namespace Patterns
+### Resource and Namespace Naming Patterns
 
-#### Team Namespace
-```go
-// Pattern: env--group--team
-func buildNamespaceName(env string, team *Team) string {
-    return env + "--" + team.Spec.Group + "--" + team.Spec.Name
-}
-```
-**Example**: `environment--group1--team1`
-
-#### Zone Namespace
-```go
-// Pattern: env--zone
-func zoneNamespace(env string, zone string) string {
-    return strings.ToLower(fmt.Sprintf("%s--%s", env, zone))
-}
-```
-**Example**: `environment--zone1`
-
-### Resource Name Patterns
-
-#### Approval Name
-```go
-// Pattern: lowercase(OwnerKind)--name
-func ApprovalName(ownerKind, ownerName string) string {
-    return strings.ToLower(ownerKind) + "--" + ownerName
-}
-```
-**Example**: `apisubscription--my-subscription`
-
-#### Application Client Name
-```go
-// Pattern: team--applicationName
-func MakeClientName(app *Application) string {
-    return app.Spec.Team + "--" + app.Name
-}
-```
-**Example**: `group1--team1--group2--payment-service-v1`
-
-
-#### Identity Realm Names
-
-There are two main identity realm types per environment:
-
-- **Default realm** – environment-wide realm
-- **Team realm** – dedicated realm for team clients in that environment
-
-**Default Realm**:
-```go
-func ForDefaultIdentityRealm(environment *Environment) string {
-    return environment.GetName()
-}
-```
-
-**Team Realm**:
-```go
-// Pattern: team-{environment}
-func ForTeamApiIdentityRealm(environment *Environment) string {
-    return "team-" + environment.GetName()
-}
-```
-**Example**: `team-production`
+| name                     | pattern                    | example                                   |
+|--------------------------|----------------------------|-------------------------------------------|
+| Team Namespace           | env--group--team           | environment--group1--team1                |
+| Zone Namespace           | env--zone                  | environment--zone1                        |
+| Approval Name            | lowercase(OwnerKind)--name | apisubscription--my-subscription          |
+| Application Client Name  | team--applicationName      | group1--team1--group2--payment-service-v1 |
+| Identity Realm (default) | env                        | prod                                      |
+| Identity Realm (team)    | team-env                   | team-production                           |
+| Identity Provider Name   | zone                       | zone1                                     |
 
 > Identity *realms* are **environment-based**, while identity provider *names* are **zone-based**. This means the same realm can be used across multiple zones in an environment.
 
-**Identity Provider Name (zone-based)**:
-```go
-func ForIdentityProvider(zone *Zone) string {
-    return zone.Name
-}
-```
 In other words:
-
 - Realm name pattern: `env` / `team-env`  (e.g., `prod`, `team-prod`)
 - Identity provider name pattern: `zone`   (e.g., `zone1`, `zone2`)
-
-
-#### Gateway Resource Names
-
-**Static Names**:
-```go
-const (
-    gatewayClientName    = "gateway"
-    gatewayAdminClientId = "rover"
-    gateway              = "gateway"
-    gatewayConsumer      = "gateway"
-)
-```
-
-#### Team Token Prefix
-```go
-// Pattern: env--group--team.{base64_token}
-func EncodeTeamToken(token TeamToken, group, team string) string {
-    tokenPrefix := fmt.Sprintf("%s--%s--%s", token.Environment, group, team)
-    return tokenPrefix + "." + base64.StdEncoding.EncodeToString(tokenJson)
-}
-```
-**Example**: `default--group1--team1.eyJjbGll...`
-
-#### API Subscription Name
-```go
-// Pattern: zone--application--basepath (normalized)
-func subscriptionName(zoneName, appName, apiBasePath string) string {
-    return labelutil.NormalizeValue(fmt.Sprintf("%s--%s--%s", 
-        zoneName, appName, apiBasePath))
-}
-```
-**Example**: `zone1--application1--api-basepath`
-
-#### Resource Reference Pattern
-```go
-// Pattern: clientId--zone
-func makeResourceName(clientId, zoneName string) string {
-    return clientId + "--" + zoneName
-}
-```
-
-### Label Naming
-
-#### Label Key Convention
-```go
-// Pattern: {key}.cp.ei.telekom.de
-func BuildLabelKey(key string) string {
-    return key + ".cp.ei.telekom.de"
-}
-```
-
-**Common Labels**:
-- `cp.ei.telekom.de/environment` - Environment label (required)
-- `cp.ei.telekom.de/application` - Application reference
-- `cp.ei.telekom.de/team` - Team reference
 
 ---
 
@@ -334,15 +220,8 @@ func BuildLabelKey(key string) string {
 - **CONTRIBUTING.md**: https://github.com/telekom/controlplane/blob/main/CONTRIBUTING.md#kubebuilder
 
 ### Controller Markers
-Use `+kubebuilder:` markers for code and manifest generation:
+Use `+kubebuilder:` markers for code and manifest generation: [https://book.kubebuilder.io/reference/markers/crd-validation](https://book.kubebuilder.io/reference/markers/crd-validation)
 
-```go
-// +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Zone",type="string",JSONPath=".spec.zone"
-// +kubebuilder:validation:Required
-// +kubebuilder:validation:Pattern=^[a-z0-9]+(-?[a-z0-9]+)*$
-```
 
 ### Generated Files
 - Must include comment: `// Code generated by tool. DO NOT EDIT.`
@@ -367,7 +246,7 @@ type ResourceReconciler struct {
     Scheme   *runtime.Scheme
     Recorder record.EventRecorder
     
-    cc.Controller[*v1.Resource]
+    cc.Controller[*domainv1.Resource]
 }
 ```
 
