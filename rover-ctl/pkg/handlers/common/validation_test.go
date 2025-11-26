@@ -61,14 +61,14 @@ var _ = Describe("ValidateObjectName", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should accept single character names", func() {
-			obj := createTestObject("a")
+		It("should accept short names (exactly minLength)", func() {
+			obj := createTestObject(strings.Repeat("a", common.MinLength))
 			err := common.ValidateObjectName(obj)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should accept names with exactly 63 characters", func() {
-			validName := strings.Repeat("a", 63)
+		It("should accept names with exactly maxLength characters", func() {
+			validName := strings.Repeat("a", common.MaxLength)
 			obj := createTestObject(validName)
 			err := common.ValidateObjectName(obj)
 			Expect(err).NotTo(HaveOccurred())
@@ -82,8 +82,8 @@ var _ = Describe("ValidateObjectName", func() {
 	})
 
 	Context("with invalid names", func() {
-		It("should reject names longer than 63 characters", func() {
-			longName := strings.Repeat("a", 64)
+		It("should reject names longer than maxLength characters", func() {
+			longName := strings.Repeat("a", common.MaxLength+1)
 			obj := createTestObject(longName)
 			err := common.ValidateObjectName(obj)
 
@@ -93,10 +93,26 @@ var _ = Describe("ValidateObjectName", func() {
 			Expect(ok).To(BeTrue())
 			Expect(apiErr.Type).To(Equal("ValidationError"))
 			Expect(apiErr.Status).To(Equal(400))
-			Expect(apiErr.Title).To(ContainSubstring("Failed to validate object"))
+			Expect(apiErr.Title).To(ContainSubstring("Failed to validate Test"))
 			Expect(apiErr.Fields).To(HaveLen(1))
 			Expect(apiErr.Fields[0].Field).To(Equal("name"))
-			Expect(apiErr.Fields[0].Detail).To(Equal("name must be no more than 63 characters"))
+			Expect(apiErr.Fields[0].Detail).To(Equal("name must be between 2 and 90 characters"))
+		})
+
+		It("should reject names shorter than minLength characters", func() {
+			obj := createTestObject("a")
+			err := common.ValidateObjectName(obj)
+
+			Expect(err).To(HaveOccurred())
+
+			apiErr, ok := common.AsApiError(err)
+			Expect(ok).To(BeTrue())
+			Expect(apiErr.Type).To(Equal("ValidationError"))
+			Expect(apiErr.Status).To(Equal(400))
+			Expect(apiErr.Title).To(ContainSubstring("Failed to validate Test"))
+			Expect(apiErr.Fields).To(HaveLen(1))
+			Expect(apiErr.Fields[0].Field).To(Equal("name"))
+			Expect(apiErr.Fields[0].Detail).To(Equal("name must be between 2 and 90 characters"))
 		})
 
 		It("should reject names with uppercase letters", func() {
@@ -198,16 +214,22 @@ var _ = Describe("ValidateObjectName", func() {
 
 			apiErr, ok := common.AsApiError(err)
 			Expect(ok).To(BeTrue())
-			Expect(apiErr.Fields).To(HaveLen(1))
-			Expect(apiErr.Fields[0].Field).To(Equal("name"))
-			Expect(apiErr.Fields[0].Detail).To(Equal("name must consist of lower case alphanumeric characters or '-', start and end with an alphanumeric character"))
+
+			fieldDetails := make([]string, len(apiErr.Fields))
+			for i, field := range apiErr.Fields {
+				fieldDetails[i] = field.Detail
+			}
+			Expect(fieldDetails).To(ConsistOf(
+				"name must be between 2 and 90 characters",
+				"name must consist of lower case alphanumeric characters or '-', start and end with an alphanumeric character",
+			))
 		})
 	})
 
 	Context("with multiple validation errors", func() {
 		It("should return all validation errors for a name that violates multiple rules", func() {
 			// Name that is too long AND has consecutive hyphens
-			longNameWithConsecutiveHyphens := strings.Repeat("a", 50) + "--" + strings.Repeat("b", 15)
+			longNameWithConsecutiveHyphens := strings.Repeat("a", 50) + "--" + strings.Repeat("b", 50) // total length = 90 + 2 = 86
 			obj := createTestObject(longNameWithConsecutiveHyphens)
 			err := common.ValidateObjectName(obj)
 
@@ -223,7 +245,7 @@ var _ = Describe("ValidateObjectName", func() {
 				fieldDetails[i] = field.Detail
 			}
 			Expect(fieldDetails).To(ConsistOf(
-				"name must be no more than 63 characters",
+				"name must be between 2 and 90 characters",
 				"name must not contain consecutive '-' characters",
 			))
 		})
@@ -282,7 +304,7 @@ var _ = Describe("ValidateObjectName", func() {
 
 			apiErr, ok := common.AsApiError(err)
 			Expect(ok).To(BeTrue())
-			Expect(apiErr.Title).To(Equal("Failed to validate object \"Invalid-Name\""))
+			Expect(apiErr.Title).To(Equal("Failed to validate Test \"Invalid-Name\""))
 		})
 
 		It("should set correct error type and status", func() {

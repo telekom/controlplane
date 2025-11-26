@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -52,7 +53,7 @@ var _ = Describe("BaseHandler", func() {
 		testCtx = config.NewContext(context.Background(), token)
 
 		// Create a handler for testing
-		handler = common.NewBaseHandler("v1", "Test", "resources", 100)
+		handler = common.NewBaseHandler("v1", "Test", "resources", 100).WithValidation(common.ValidateObjectName)
 		handler.Setup(testCtx)
 	})
 
@@ -183,13 +184,13 @@ var _ = Describe("BaseHandler", func() {
 
 				// Verify validation error
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("object name validation failed"))
+				Expect(err.Error()).To(ContainSubstring("Test failed validation"))
 
 				apiErr, ok := common.AsApiError(err)
 				Expect(ok).To(BeTrue())
 				Expect(apiErr.Type).To(Equal("ValidationError"))
 				Expect(apiErr.Status).To(Equal(400))
-				Expect(apiErr.Title).To(ContainSubstring("Failed to validate object \"invalid--name\""))
+				Expect(apiErr.Title).To(ContainSubstring("Failed to validate Test \"invalid--name\""))
 				Expect(apiErr.Fields).To(HaveLen(1))
 				Expect(apiErr.Fields[0].Field).To(Equal("name"))
 				Expect(apiErr.Fields[0].Detail).To(Equal("name must not contain consecutive '-' characters"))
@@ -199,8 +200,8 @@ var _ = Describe("BaseHandler", func() {
 			})
 
 			It("should return validation error for names that are too long", func() {
-				// Create a name that's longer than 63 characters
-				longName := "this-is-a-very-long-name-that-exceeds-the-kubernetes-limit-of-sixtythree-characters"
+				// Create a name that's longer than MaxLength characters
+				longName := strings.Repeat("a", common.MaxLength+1)
 				testObj := map[string]any{
 					"apiVersion": "v1",
 					"kind":       "Test",
@@ -219,7 +220,7 @@ var _ = Describe("BaseHandler", func() {
 				Expect(apiErr.Type).To(Equal("ValidationError"))
 				Expect(apiErr.Fields).To(HaveLen(1))
 				Expect(apiErr.Fields[0].Field).To(Equal("name"))
-				Expect(apiErr.Fields[0].Detail).To(Equal("name must be no more than 63 characters"))
+				Expect(apiErr.Fields[0].Detail).To(Equal("name must be between 2 and 90 characters"))
 
 				// Verify no HTTP requests were made
 				mockClient.AssertNotCalled(GinkgoT(), "Do", mock.Anything)
@@ -275,7 +276,7 @@ var _ = Describe("BaseHandler", func() {
 
 			It("should return validation error with multiple field errors for names violating multiple rules", func() {
 				// Name that is too long AND has consecutive hyphens
-				longNameWithConsecutiveHyphens := "this-is-a-very-long-name--that-exceeds-the-kubernetes-limit-of-sixtythree-characters"
+				longNameWithConsecutiveHyphens := strings.Repeat("a", 50) + "--" + strings.Repeat("b", 50) // total length = 90 + 2 = 86
 				testObj := map[string]any{
 					"apiVersion": "v1",
 					"kind":       "Test",
@@ -299,7 +300,7 @@ var _ = Describe("BaseHandler", func() {
 					fieldDetails[i] = field.Detail
 				}
 				Expect(fieldDetails).To(ConsistOf(
-					"name must be no more than 63 characters",
+					"name must be between 2 and 90 characters",
 					"name must not contain consecutive '-' characters",
 				))
 

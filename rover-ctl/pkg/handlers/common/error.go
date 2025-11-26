@@ -101,16 +101,20 @@ func PrintJsonTo(err error, w io.Writer) {
 }
 
 func ValidationError(obj types.Object, fields ...FieldError) *ApiError {
-	detail := fmt.Sprintf("%s failed validation", obj.GetKind())
+	kind := obj.GetKind()
+	if kind == "" {
+		kind = "Object"
+	}
+	detail := fmt.Sprintf("%s failed validation", kind)
 	filename := obj.GetProperty("filename")
 	if filenameStr, ok := filename.(string); ok && filenameStr != "" {
-		detail = fmt.Sprintf("%s defined in file %q failed validation", obj.GetKind(), filenameStr)
+		detail = fmt.Sprintf("%s defined in file %q failed validation", kind, filenameStr)
 	}
 
 	return &ApiError{
 		Type:   "ValidationError",
 		Status: 400,
-		Title:  fmt.Sprintf("Failed to validate object %q", obj.GetName()),
+		Title:  fmt.Sprintf("Failed to validate %s %q", kind, obj.GetName()),
 		Detail: detail,
 		Fields: fields,
 	}

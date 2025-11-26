@@ -1029,8 +1029,6 @@ components:
       required: true
       schema:
         type: string
-        maxLength: 63
-        pattern: '^[a-z]([a-z0-9]|(-[a-z0-9]))*--[a-z]([a-z0-9]|(-[a-z0-9]))*--[a-z]([a-z0-9]|(-[a-z0-9]))*$'
     ApiSpecificationId:
       name: apiSpecificationId
       description: The unique id of this resource following the pattern group--team--resourceName
@@ -1038,8 +1036,6 @@ components:
       required: true
       schema:
         type: string
-        maxLength: 63
-        pattern: '^[a-z]([a-z0-9]|(-[a-z0-9]))*--[a-z]([a-z0-9]|(-[a-z0-9]))*--[a-z]([a-z0-9]|(-[a-z0-9]))*$'
     Cursor:
       name: cursor
       in: query
