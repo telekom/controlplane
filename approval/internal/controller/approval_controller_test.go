@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
@@ -36,12 +37,28 @@ var _ = Describe("Approval Controller", Ordered, func() {
 	decider := approvalv1.Decider{
 		TeamName:  "test--decider",
 		TeamEmail: "test@decider.com",
+		ApplicationRef: &ctypes.TypedObjectRef{
+			TypeMeta: metav1.TypeMeta{},
+			ObjectRef: ctypes.ObjectRef{
+				Name:      "decider-app-name",
+				Namespace: "default",
+				UID:       "",
+			},
+		},
 	}
 
 	requester := approvalv1.Requester{
 		TeamName:  "test--requester",
 		TeamEmail: "max.mustermann@telekom.de",
 		Reason:    "I need access to this API!!",
+		ApplicationRef: &ctypes.TypedObjectRef{
+			TypeMeta: metav1.TypeMeta{},
+			ObjectRef: ctypes.ObjectRef{
+				Name:      "requester-app-name",
+				Namespace: "default",
+				UID:       "",
+			},
+		},
 	}
 
 	resource := ctypes.TypedObjectRef{
@@ -138,7 +155,7 @@ var _ = Describe("Approval Controller", Ordered, func() {
 
 		By("Validating the decider notification")
 		deciderNotificationRef := types.NamespacedName{
-			Name:      "approval--subscription--updated--decider--test-resource--67b7b7f9b6",
+			Name:      "approval--subscription--updated--decider--test-resource--559f5f87c",
 			Namespace: "default",
 		}
 
@@ -150,7 +167,7 @@ var _ = Describe("Approval Controller", Ordered, func() {
 
 		By("Validating the requester notification")
 		requesterNotificationRef := types.NamespacedName{
-			Name:      "approval--subscription--updated--requester--test-resource--8465d56678",
+			Name:      "approval--subscription--updated--requester--test-resource--7f57689449",
 			Namespace: "default",
 		}
 
@@ -159,8 +176,7 @@ var _ = Describe("Approval Controller", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(requesterNotification.Spec.Purpose).To(Equal("approval--subscription--updated--requester"))
 		Expect(requesterNotification.Spec.Properties).NotTo(BeNil())
-
-		// todo - should validate properties
+		ExpectJSONEqual(requesterNotification.Spec.Properties.Raw, []byte(`{ "requester_team": "requester", "scopes": "read", "state_new": "Granted", "decider_application": "decider-app-name", "decider_group": "test", "environment": "test", "requester_application": "requester-app-name", "requester_group": "test", "state_old": "Pending", "basepath": "/eni/distr/v1", "decider_team": "decider" }`))
 	})
 
 	It("should successfully reconcile the rejected approval", func() {
@@ -218,15 +234,9 @@ func checkApprovalStatus(typeNamespacedName types.NamespacedName, state approval
 	}, timeout, interval).Should(Succeed())
 }
 
-func checkNotification(namespacedName types.NamespacedName, expectedCount int) {
-	var approval = &approvalv1.Approval{}
-	err := k8sClient.Get(ctx, namespacedName, approval)
-	Expect(err).NotTo(HaveOccurred())
-
-	Expect(approval.Status.NotificationRefs).NotTo(BeNil())
-	Expect(approval.Status.NotificationRefs).To(HaveLen(expectedCount))
-	//var notification = &notificationv1.Notification{}
-	//Expect(k8sClient.Get(ctx, approval.Status.NotificationRefs[0].K8s(), notification)).NotTo(HaveOccurred())
-	//Expect(notification.Spec.Purpose).To(ContainSubstring("approval--subscription"))
-
+func ExpectJSONEqual(actualJSON, expectedJSON []byte) {
+	var actual, expected map[string]interface{}
+	Expect(json.Unmarshal(actualJSON, &actual)).To(Succeed())
+	Expect(json.Unmarshal(expectedJSON, &expected)).To(Succeed())
+	Expect(actual).To(Equal(expected))
 }

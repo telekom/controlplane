@@ -20,7 +20,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test"
-	"github.com/telekom/controlplane/common/pkg/types"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 )
 
 var _ = Describe("ApprovalRequest Controller", func() {
@@ -38,11 +38,25 @@ var _ = Describe("ApprovalRequest Controller", func() {
 		Properties: runtime.RawExtension{
 			Raw: []byte(`{"scopes": ["test"]}`),
 		},
+		ApplicationRef: &ctypes.TypedObjectRef{
+			TypeMeta: metav1.TypeMeta{},
+			ObjectRef: ctypes.ObjectRef{
+				Name:      "requester-app-name",
+				Namespace: "default",
+			},
+		},
 	}
 
 	decider := approvalv1.Decider{
 		TeamName:  "test--decider",
 		TeamEmail: "test@decider.com",
+		ApplicationRef: &ctypes.TypedObjectRef{
+			TypeMeta: metav1.TypeMeta{},
+			ObjectRef: ctypes.ObjectRef{
+				Name:      "decider-app-name",
+				Namespace: "default",
+			},
+		},
 	}
 
 	arTempl := approvalv1.NewApprovalRequest(sourceResource, sourceResource.Spec)
@@ -63,7 +77,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			ar := arTempl.DeepCopy()
 
 			ar.Spec = approvalv1.ApprovalRequestSpec{
-				Target:    *types.TypedObjectRefFromObject(sourceResource, k8sClient.Scheme()),
+				Target:    *ctypes.TypedObjectRefFromObject(sourceResource, k8sClient.Scheme()),
 				Requester: requester,
 				Decider:   decider,
 				Strategy:  approvalv1.ApprovalStrategyAuto,

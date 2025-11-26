@@ -26,7 +26,7 @@ type ApprovalRequestSpec struct {
 	// Decider contains the information about the entity that owns the requested object
 	Decider Decider `json:"decider,omitempty"`
 
-	// Decisions contains information about people who changed this approval
+	// Decisions contains information about who or what changed this approval
 	Decisions []Decision `json:"decisions,omitempty"`
 
 	// Strategy defines the strategy that was used to approve the request

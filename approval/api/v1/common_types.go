@@ -6,7 +6,7 @@ package v1
 
 import (
 	"encoding/json"
-	"github.com/telekom/controlplane/common/pkg/types"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -76,7 +76,7 @@ type Requester struct {
 	Reason string `json:"reason"`
 
 	// ApplicationRef is a reference to the application that is requesting access
-	ApplicationRef types.TypedObjectRef `json:"applicationRef,omitempty"`
+	ApplicationRef *ctypes.TypedObjectRef `json:"applicationRef,omitempty"`
 
 	// Properties contains detailed information about the access that was requested
 	Properties runtime.RawExtension `json:"properties,omitempty"`
@@ -111,7 +111,7 @@ type Decider struct {
 	TeamEmail string `json:"teamEmail,omitempty"`
 
 	// ApplicationRef is a reference to the application that decides on the approval request
-	ApplicationRef types.TypedObjectRef `json:"applicationRef,omitempty"`
+	ApplicationRef *ctypes.TypedObjectRef `json:"applicationRef,omitempty"`
 }
 
 type Decision struct {

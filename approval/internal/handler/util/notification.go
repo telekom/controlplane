@@ -22,30 +22,30 @@ import (
 
 type NotificationScenario string
 
-var (
+const (
 	NotificationScenarioCreated NotificationScenario = "created"
 	NotificationScenarioUpdated NotificationScenario = "updated"
 )
 
-var (
-	PlaceholderDeciderTeam        = "decider_team"
-	PlaceholderDeciderGroup       = "decider_group"
-	PlaceholderDeciderApplication = "decider_application"
+const (
+	TemplatePlaceholderDeciderTeam        = "decider_team"
+	TemplatePlaceholderDeciderGroup       = "decider_group"
+	TemplatePlaceholderDeciderApplication = "decider_application"
 
-	PlaceholderRequesterTeam        = "requester_team"
-	PlaceholderRequesterGroup       = "requester_group"
-	PlaceholderRequesterApplication = "requester_application"
+	TemplatePlaceholderRequesterTeam        = "requester_team"
+	TemplatePlaceholderRequesterGroup       = "requester_group"
+	TemplatePlaceholderRequesterApplication = "requester_application"
 
-	PlaceholderEnvironment = "environment"
-	PlaceholderBasepath    = "basepath"
-	PlaceholderStateOld    = "state_old"
-	PlaceholderStateNew    = "state_new"
-	PlaceholderScopes      = "scopes"
+	TemplatePlaceholderEnvironment = "environment"
+	TemplatePlaceholderBasepath    = "basepath"
+	TemplatePlaceholderStateOld    = "state_old"
+	TemplatePlaceholderStateNew    = "state_new"
+	TemplatePlaceholderScopes      = "scopes"
 )
 
 type Actor string
 
-var (
+const (
 	ActorDecider   Actor = "decider"
 	ActorRequester Actor = "requester"
 )
@@ -70,9 +70,9 @@ func extractDecider(decider *approvalv1.Decider) (map[string]any, error) {
 		return nil, errors.New(fmt.Sprintf("Failed to parse decider teamName %+v", decider))
 	}
 
-	deciderPropertiesMap[PlaceholderDeciderTeam] = teamName
-	deciderPropertiesMap[PlaceholderDeciderGroup] = groupName
-	deciderPropertiesMap[PlaceholderDeciderApplication] = decider.ApplicationRef.Name
+	deciderPropertiesMap[TemplatePlaceholderDeciderTeam] = teamName
+	deciderPropertiesMap[TemplatePlaceholderDeciderGroup] = groupName
+	deciderPropertiesMap[TemplatePlaceholderDeciderApplication] = decider.ApplicationRef.Name
 
 	return deciderPropertiesMap, nil
 }
@@ -92,8 +92,8 @@ func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
 	// the property is already present from the original requester properties
 
 	// scopes
-	if requesterPropertiesMap[PlaceholderScopes] == nil {
-		requesterPropertiesMap[PlaceholderScopes] = "undefined"
+	if requesterPropertiesMap[TemplatePlaceholderScopes] == nil {
+		requesterPropertiesMap[TemplatePlaceholderScopes] = "undefined"
 	}
 
 	// team and group
@@ -101,11 +101,11 @@ func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Failed to parse requester teamName %+v", requester))
 	}
-	requesterPropertiesMap[PlaceholderRequesterGroup] = groupName
-	requesterPropertiesMap[PlaceholderRequesterTeam] = teamName
+	requesterPropertiesMap[TemplatePlaceholderRequesterGroup] = groupName
+	requesterPropertiesMap[TemplatePlaceholderRequesterTeam] = teamName
 
 	// application
-	requesterPropertiesMap[PlaceholderRequesterApplication] = requester.ApplicationRef.Name
+	requesterPropertiesMap[TemplatePlaceholderRequesterApplication] = requester.ApplicationRef.Name
 
 	return requesterPropertiesMap, nil
 }
@@ -113,9 +113,9 @@ func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
 func SendNotification(ctx context.Context, data *NotificationData) (*types.ObjectRef, error) {
 	properties := initializeProperties()
 
-	properties[PlaceholderEnvironment] = contextutil.EnvFromContextOrDie(ctx)
-	properties[PlaceholderStateNew] = data.StateNew
-	properties[PlaceholderStateOld] = data.StateOld
+	properties[TemplatePlaceholderEnvironment] = contextutil.EnvFromContextOrDie(ctx)
+	properties[TemplatePlaceholderStateNew] = data.StateNew
+	properties[TemplatePlaceholderStateOld] = data.StateOld
 
 	requesterMap, err := extractRequester(data.Requester)
 	if err != nil {
@@ -175,28 +175,28 @@ func SendNotification(ctx context.Context, data *NotificationData) (*types.Objec
 	return types.ObjectRefFromObject(notification), nil
 }
 
-// initializeProperties - useful for detecting unresolved placeholder values
+// initializeProperties - useful for detecting unresolved TemplatePlaceholder values
 func initializeProperties() map[string]any {
 	properties := map[string]any{}
 
 	defaultValue := "UNDEFINED"
 
-	// decider placeholders
-	properties[PlaceholderDeciderTeam] = defaultValue
-	properties[PlaceholderDeciderGroup] = defaultValue
-	properties[PlaceholderDeciderApplication] = defaultValue
+	// decider TemplatePlaceholders
+	properties[TemplatePlaceholderDeciderTeam] = defaultValue
+	properties[TemplatePlaceholderDeciderGroup] = defaultValue
+	properties[TemplatePlaceholderDeciderApplication] = defaultValue
 
-	// requester placeholders
-	properties[PlaceholderRequesterTeam] = defaultValue
-	properties[PlaceholderRequesterGroup] = defaultValue
-	properties[PlaceholderRequesterApplication] = defaultValue
+	// requester TemplatePlaceholders
+	properties[TemplatePlaceholderRequesterTeam] = defaultValue
+	properties[TemplatePlaceholderRequesterGroup] = defaultValue
+	properties[TemplatePlaceholderRequesterApplication] = defaultValue
 
 	// other
-	properties[PlaceholderEnvironment] = defaultValue
-	properties[PlaceholderBasepath] = defaultValue
-	properties[PlaceholderStateOld] = defaultValue
-	properties[PlaceholderStateNew] = defaultValue
-	properties[PlaceholderScopes] = defaultValue
+	properties[TemplatePlaceholderEnvironment] = defaultValue
+	properties[TemplatePlaceholderBasepath] = defaultValue
+	properties[TemplatePlaceholderStateOld] = defaultValue
+	properties[TemplatePlaceholderStateNew] = defaultValue
+	properties[TemplatePlaceholderScopes] = defaultValue
 
 	return properties
 }

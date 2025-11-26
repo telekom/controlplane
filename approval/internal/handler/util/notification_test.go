@@ -6,6 +6,8 @@ package util
 
 import (
 	"encoding/json"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -37,6 +39,16 @@ var _ = Describe("Notification Utilities", func() {
 					TeamEmail:  "team@example.com",
 					Reason:     "Need access",
 					Properties: runtime.RawExtension{Raw: propertiesJSON},
+					ApplicationRef: &ctypes.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "application.cp.ei.telekom.de/v1",
+							APIVersion: "Application",
+						},
+						ObjectRef: ctypes.ObjectRef{
+							Name:      "requester-app-name",
+							Namespace: "default",
+						},
+					},
 				}
 
 				result, err := extractRequester(requester)
@@ -55,6 +67,16 @@ var _ = Describe("Notification Utilities", func() {
 				requester := &approvalv1.Requester{
 					TeamName:  "onsite-group--enemy-team",
 					TeamEmail: "team@example.com",
+					ApplicationRef: &ctypes.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "application.cp.ei.telekom.de/v1",
+							APIVersion: "Application",
+						},
+						ObjectRef: ctypes.ObjectRef{
+							Name:      "requester-app-name",
+							Namespace: "default",
+						},
+					},
 				}
 
 				result, err := extractRequester(requester)
@@ -70,6 +92,16 @@ var _ = Describe("Notification Utilities", func() {
 				requester := &approvalv1.Requester{
 					TeamName:  "single-name",
 					TeamEmail: "team@example.com",
+					ApplicationRef: &ctypes.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "application.cp.ei.telekom.de/v1",
+							APIVersion: "Application",
+						},
+						ObjectRef: ctypes.ObjectRef{
+							Name:      "requester-app-name",
+							Namespace: "default",
+						},
+					},
 				}
 
 				_, err := extractRequester(requester)
@@ -99,6 +131,16 @@ var _ = Describe("Notification Utilities", func() {
 				requester := &approvalv1.Requester{
 					TeamName:   "platform--frontend",
 					Properties: runtime.RawExtension{Raw: propertiesJSON},
+					ApplicationRef: &ctypes.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "application.cp.ei.telekom.de/v1",
+							APIVersion: "Application",
+						},
+						ObjectRef: ctypes.ObjectRef{
+							Name:      "requester-app-name",
+							Namespace: "default",
+						},
+					},
 				}
 
 				result, err := extractRequester(requester)
@@ -121,6 +163,16 @@ var _ = Describe("Notification Utilities", func() {
 				requester := &approvalv1.Requester{
 					TeamName:   "foo--bar",
 					Properties: runtime.RawExtension{Raw: []byte("{}")},
+					ApplicationRef: &ctypes.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "application.cp.ei.telekom.de/v1",
+							APIVersion: "Application",
+						},
+						ObjectRef: ctypes.ObjectRef{
+							Name:      "requester-app-name",
+							Namespace: "default",
+						},
+					},
 				}
 
 				result, err := extractRequester(requester)

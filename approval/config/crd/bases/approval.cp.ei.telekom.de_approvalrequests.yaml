@@ -103,7 +103,7 @@ spec:
                     type: string
                 type: object
               decisions:
-                description: Decisions contains information about people who changed
+                description: Decisions contains information about who or what changed
                   this approval
                 items:
                   properties:
