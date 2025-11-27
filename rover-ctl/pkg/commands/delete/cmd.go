@@ -29,7 +29,7 @@ func NewCommand() *cobra.Command {
 		),
 	}
 
-	cmd.Cmd.MarkFlagRequired("file")
+	_ = cmd.Cmd.MarkFlagRequired("file")
 
 	// Set the run function
 	cmd.Cmd.RunE = cmd.Run

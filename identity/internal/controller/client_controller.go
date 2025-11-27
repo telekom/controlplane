@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package controller
+package controller // nolint: dupl
 
 import (
 	"context"
@@ -71,7 +71,7 @@ func (r *ClientReconciler) mapRealmObjToIdentityClient(ctx context.Context, obj 
 	}
 
 	list := &identityv1.ClientList{}
-	err := r.Client.List(ctx, list, client.MatchingLabels{
+	err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey: realm.Labels[cconfig.EnvironmentLabelKey],
 	})
 	if err != nil {

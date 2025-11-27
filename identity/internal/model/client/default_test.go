@@ -44,9 +44,9 @@ func TestNewClientIsCreatedCorrectly(t *testing.T) {
 	client := NewClient(name, namespace, environment, realmName)
 
 	assert.NotNil(t, client)
-	assert.Equal(t, name, client.ObjectMeta.Name)
-	assert.Equal(t, namespace, client.ObjectMeta.Namespace)
-	assert.Equal(t, environment, client.ObjectMeta.Labels[config.EnvironmentLabelKey])
+	assert.Equal(t, name, client.Name)
+	assert.Equal(t, namespace, client.Namespace)
+	assert.Equal(t, environment, client.Labels[config.EnvironmentLabelKey])
 	assert.Equal(t, realmName, client.Spec.Realm.Name)
 	assert.Equal(t, namespace, client.Spec.Realm.Namespace)
 	assert.Equal(t, clientId, client.Spec.ClientId)

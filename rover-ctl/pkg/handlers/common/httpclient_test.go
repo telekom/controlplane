@@ -83,7 +83,7 @@ var _ = Describe("HttpClient", func() {
 		// This test actually hits a test server to verify the client works
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
+			_, _ = w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
 		}))
 		defer server.Close()
 

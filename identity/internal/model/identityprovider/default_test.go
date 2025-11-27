@@ -40,9 +40,9 @@ func TestIdentityProviderIsCreatedCorrectly(t *testing.T) {
 	provider := NewIdentityProvider(name, namespace, environment)
 
 	assert.NotNil(t, provider)
-	assert.Equal(t, name, provider.ObjectMeta.Name)
-	assert.Equal(t, namespace, provider.ObjectMeta.Namespace)
-	assert.Equal(t, environment, provider.ObjectMeta.Labels[config.EnvironmentLabelKey])
+	assert.Equal(t, name, provider.Name)
+	assert.Equal(t, namespace, provider.Namespace)
+	assert.Equal(t, environment, provider.Labels[config.EnvironmentLabelKey])
 	assert.Equal(t, "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/admin/realms/", provider.Spec.AdminUrl)
 	assert.Equal(t, "admin-cli", provider.Spec.AdminClientId)
 	assert.Equal(t, "admin", provider.Spec.AdminUserName)

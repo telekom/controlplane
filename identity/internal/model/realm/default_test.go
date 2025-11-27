@@ -43,9 +43,9 @@ func TestRealmIsCreatedCorrectly(t *testing.T) {
 	realm := NewRealm(name, namespace, environment, identityProviderName)
 
 	assert.NotNil(t, realm)
-	assert.Equal(t, name, realm.ObjectMeta.Name)
-	assert.Equal(t, namespace, realm.ObjectMeta.Namespace)
-	assert.Equal(t, environment, realm.ObjectMeta.Labels[config.EnvironmentLabelKey])
+	assert.Equal(t, name, realm.Name)
+	assert.Equal(t, namespace, realm.Namespace)
+	assert.Equal(t, environment, realm.Labels[config.EnvironmentLabelKey])
 	assert.Equal(t, identityProviderName, realm.Spec.IdentityProvider.Name)
 	assert.Equal(t, namespace, realm.Spec.IdentityProvider.Namespace)
 }

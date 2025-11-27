@@ -67,20 +67,20 @@ func PrintTextTo(err error, w io.Writer) {
 		}
 	}
 
-	fmt.Fprintf(w, "❌ Error\n--------\n")
-	fmt.Fprintf(w, "Type: %s\nStatus: %d\nTitle: %s\nDetail: %s\n",
+	_, _ = fmt.Fprintf(w, "❌ Error\n--------\n")
+	_, _ = fmt.Fprintf(w, "Type: %s\nStatus: %d\nTitle: %s\nDetail: %s\n",
 		apiErr.Type, apiErr.Status, apiErr.Title, apiErr.Detail)
 	if apiErr.Instance != "" {
-		fmt.Fprintf(w, "Instance: %s\n", apiErr.Instance)
+		_, _ = fmt.Fprintf(w, "Instance: %s\n", apiErr.Instance)
 	}
 
 	if len(apiErr.Fields) > 0 {
-		fmt.Fprintln(w, "Fields:")
+		_, _ = fmt.Fprintln(w, "Fields:")
 		for _, field := range apiErr.Fields {
-			fmt.Fprintf(w, "  Field: %s\n    Detail: %s\n", field.Field, field.Detail)
+			_, _ = fmt.Fprintf(w, "  Field: %s\n    Detail: %s\n", field.Field, field.Detail)
 		}
 	}
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w)
 }
 
 func PrintJsonTo(err error, w io.Writer) {
@@ -95,6 +95,6 @@ func PrintJsonTo(err error, w io.Writer) {
 	}
 
 	data, _ := json.MarshalIndent(apiErr, "", "  ")
-	w.Write(data)
-	fmt.Fprintln(w)
+	_, _ = w.Write(data)
+	_, _ = fmt.Fprintln(w)
 }

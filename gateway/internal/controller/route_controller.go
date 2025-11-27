@@ -9,7 +9,6 @@ import (
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -79,33 +78,5 @@ func (r *RouteReconciler) mapConsumeRouteToRoute(ctx context.Context, obj client
 }
 
 func (r *RouteReconciler) mapRealmToRoute(ctx context.Context, obj client.Object) []reconcile.Request {
-	// ensure its actually a Realm
-	realm, ok := obj.(*gatewayv1.Realm)
-	if !ok {
-		return nil
-	}
-	if realm.Labels == nil {
-		return nil
-	}
-
-	listOpts := []client.ListOption{
-		client.MatchingFields{
-			IndexFieldSpecRealm: types.ObjectRefFromObject(realm).String(),
-		},
-		client.MatchingLabels{
-			cconfig.EnvironmentLabelKey: realm.Labels[cconfig.EnvironmentLabelKey],
-		},
-	}
-
-	list := gatewayv1.RouteList{}
-	if err := r.List(ctx, &list, listOpts...); err != nil {
-		return nil
-	}
-
-	requests := make([]reconcile.Request, len(list.Items))
-	for i, item := range list.Items {
-		requests[i] = reconcile.Request{NamespacedName: client.ObjectKey{Name: item.Name, Namespace: item.Namespace}}
-	}
-
-	return requests
+	return mapRealmToObjects(ctx, r.Client, obj, &gatewayv1.RouteList{})
 }
