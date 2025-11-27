@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/notification/internal/templatecache"
 	"os"
 	"path/filepath"
 
@@ -213,8 +214,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	// create the notifications cache - shared between the notifications template controller/handler and the notifications controller/handler
+	cache := templatecache.New()
+
 	// setup NotificationReconciler with the parsed config for email adapter
-	notificationReconciler := controller.NewNotificationReconcilerWithConfig(mgr.GetClient(), mgr.GetScheme(), emailAdapterConfig, housekeepingConfig)
+	notificationReconciler := controller.NewNotificationReconcilerWithConfig(
+		mgr.GetClient(),
+		mgr.GetScheme(),
+		emailAdapterConfig,
+		housekeepingConfig,
+		cache)
 	if err := notificationReconciler.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Notification")
 		os.Exit(1)
@@ -223,7 +232,7 @@ func main() {
 	if err := (&controller.NotificationTemplateReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(mgr, cache); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "NotificationTemplate")
 		os.Exit(1)
 	}

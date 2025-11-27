@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	notificationsconfig "github.com/telekom/controlplane/notification/internal/config"
+	"github.com/telekom/controlplane/notification/internal/templatecache"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
@@ -104,10 +105,12 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
+	cache := templatecache.New()
+
 	err = (&NotificationTemplateReconciler{
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
-	}).SetupWithManager(k8sManager)
+	}).SetupWithManager(k8sManager, cache)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&NotificationChannelReconciler{
@@ -122,7 +125,7 @@ var _ = BeforeSuite(func() {
 	loadedHousekeepingConfig, err := notificationsconfig.LoadHousekeepingConfig()
 	Expect(err).NotTo(HaveOccurred())
 
-	notificationReconciler = NewNotificationReconcilerWithConfig(k8sManager.GetClient(), k8sManager.GetScheme(), loadedEmailConfig, loadedHousekeepingConfig)
+	notificationReconciler = NewNotificationReconcilerWithConfig(k8sManager.GetClient(), k8sManager.GetScheme(), loadedEmailConfig, loadedHousekeepingConfig, cache)
 	err = notificationReconciler.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

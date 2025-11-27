@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/runtime"
 	"testing"
+	texttemplate "text/template"
 )
 
 func TestRenderer_CustomFunc(t *testing.T) {
@@ -17,14 +18,12 @@ func TestRenderer_CustomFunc(t *testing.T) {
 	funcs := sprig.FuncMap()
 	funcs["greeter"] = func(name string) string { return "Hello " + name }
 
-	// create new renderer with a custom function
-	r := NewRenderer(funcs)
-
 	// template to render
 	tpl := `This is a test template with a custom function {{ greeter .Name }}.`
+	template, _ := texttemplate.New("test").Funcs(funcs).Parse(tpl)
 
 	// do the rendering
-	message, err := r.renderMessage(tpl, runtime.RawExtension{
+	message, err := renderMessage(template, runtime.RawExtension{
 		Raw: []byte(`{"Name":"John"}`)})
 
 	// validate

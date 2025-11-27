@@ -8,21 +8,20 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/internal/sender"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter/msteams"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter/webhook"
+	"github.com/telekom/controlplane/notification/internal/templatecache"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"strings"
-	"text/template"
-
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
-	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -53,6 +52,8 @@ type NotificationReconciler struct {
 	NotificationSender sender.NotificationSender
 
 	HousekeepingConfig notificationsconfig.NotificationHousekeepingConfig
+
+	TemplateCache *templatecache.TemplateCache
 }
 
 func NewNotificationReconcilerWithConfig(
@@ -60,6 +61,7 @@ func NewNotificationReconcilerWithConfig(
 	scheme *runtime.Scheme,
 	emailConfig *notificationsconfig.EmailAdapterConfig,
 	housekeepingConfig *notificationsconfig.NotificationHousekeepingConfig,
+	TemplateCache *templatecache.TemplateCache,
 ) *NotificationReconciler {
 
 	// initialize the notification sender with all adapters so they can be reused
@@ -76,6 +78,7 @@ func NewNotificationReconcilerWithConfig(
 		Scheme:             scheme,
 		NotificationSender: notificationSender,
 		HousekeepingConfig: *housekeepingConfig,
+		TemplateCache:      TemplateCache,
 	}
 }
 
@@ -136,8 +139,8 @@ func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	notificationHandler := &notificationhandler.NotificationHandler{
 		NotificationSender: r.NotificationSender,
-		TemplateRenderer:   notificationhandler.NewRenderer(getCustomTemplateFunctions()),
 		HousekeepingConfig: r.HousekeepingConfig,
+		TemplateCache:      r.TemplateCache,
 	}
 
 	r.Controller = cc.NewController(notificationHandler, r.Client, r.Recorder)
@@ -207,10 +210,4 @@ func (r *NotificationReconciler) MapTemplateToNotification(ctx context.Context, 
 	}
 
 	return requests
-}
-
-// place custom functions here
-// see template_renderer_test for a simple example
-func getCustomTemplateFunctions() template.FuncMap {
-	return template.FuncMap{}
 }

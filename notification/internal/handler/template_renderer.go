@@ -11,43 +11,22 @@ import (
 	"text/template"
 
 	"k8s.io/apimachinery/pkg/runtime"
-
-	sprig "github.com/go-task/slim-sprig/v3"
 )
 
-type Renderer struct {
-	customFunctions template.FuncMap
-}
-
-func NewRenderer(customFunctions template.FuncMap) *Renderer {
-	// merge sprig + custom funcs
-	funcs := sprig.FuncMap()
-	for k, v := range customFunctions {
-		funcs[k] = v
-	}
-
-	return &Renderer{customFunctions: funcs}
-}
-
-// RenderMessage renders a text/template with the given template string and data in runtime.RawExtension.
+// RenderMessage renders a text/template with the given template and data in runtime.RawExtension.
 // Returns the rendered string or an error.
-func (r Renderer) renderMessage(tmplStr string, data runtime.RawExtension) (string, error) {
+func renderMessage(template *template.Template, data runtime.RawExtension) (string, error) {
+
 	// Step 1: Unmarshal RawExtension.Raw (JSON bytes) into a map[string]interface{}
 	var values map[string]interface{}
 	if err := json.Unmarshal(data.Raw, &values); err != nil {
 		return "", errors.Wrapf(err, "failed to unmarshal RawExtension: %q", data.Raw)
 	}
 
-	// Step 2: Parse the template string
-	tmpl, err := template.New("message").Funcs(r.customFunctions).Parse(tmplStr)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse template")
-	}
-
-	// Step 3: Execute the template with the unmarshaled data
+	// Step 1: Execute the template with the unmarshaled data
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, values); err != nil {
-		return "", errors.Wrapf(err, "failed to execute template %q", tmplStr)
+	if err := template.Execute(&buf, values); err != nil {
+		return "", errors.Wrapf(err, "failed to execute template")
 	}
 
 	return buf.String(), nil

@@ -6,6 +6,8 @@ package controller
 
 import (
 	"context"
+	"github.com/telekom/controlplane/notification/internal/templatecache"
+	texttemplate "text/template"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -26,6 +28,9 @@ type NotificationTemplateReconciler struct {
 	Recorder record.EventRecorder
 
 	cc.Controller[*notificationv1.NotificationTemplate]
+
+	Cache           *templatecache.TemplateCache
+	CustomFunctions texttemplate.FuncMap
 }
 
 // +kubebuilder:rbac:groups=notification.cp.ei.telekom.de,resources=notificationtemplates,verbs=get;list;watch;create;update;patch;delete
@@ -37,9 +42,12 @@ func (r *NotificationTemplateReconciler) Reconcile(ctx context.Context, req ctrl
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *NotificationTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *NotificationTemplateReconciler) SetupWithManager(mgr ctrl.Manager, cache *templatecache.TemplateCache) error {
 	r.Recorder = mgr.GetEventRecorderFor("notificationtemplate-controller")
-	r.Controller = cc.NewController(&handler.NotificationTemplateHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&handler.NotificationTemplateHandler{
+		Cache:           cache,
+		CustomFunctions: getCustomTemplateFunctions(),
+	}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&notificationv1.NotificationTemplate{}).
@@ -49,4 +57,10 @@ func (r *NotificationTemplateReconciler) SetupWithManager(mgr ctrl.Manager) erro
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
+}
+
+// place custom functions here
+// see template_renderer_test for a simple example
+func getCustomTemplateFunctions() texttemplate.FuncMap {
+	return texttemplate.FuncMap{}
 }

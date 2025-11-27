@@ -13,10 +13,10 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/internal/config"
 	"github.com/telekom/controlplane/notification/internal/sender"
+	"github.com/telekom/controlplane/notification/internal/templatecache"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,9 +29,10 @@ var _ handler.Handler[*notificationv1.Notification] = &NotificationHandler{}
 
 type NotificationHandler struct {
 	NotificationSender sender.NotificationSender
-	TemplateRenderer   *Renderer
 
 	HousekeepingConfig config.NotificationHousekeepingConfig
+
+	TemplateCache *templatecache.TemplateCache
 }
 
 func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *notificationv1.Notification) error {
@@ -75,7 +76,7 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 		}
 
 		// resolve the template
-		template, err := resolveTemplate(ctx, channel, notification.Spec.Purpose)
+		templateWrapper, err := n.resolveTemplate(ctx, channel, notification.Spec.Purpose)
 		if err != nil {
 			shouldBlock = true
 			addResultToStatus(notification, channelKey, false, err.Error())
@@ -86,13 +87,13 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 		// todo later
 
 		// render
-		renderedSubject, err := n.TemplateRenderer.renderMessage(template.Spec.SubjectTemplate, notification.Spec.Properties)
+		renderedSubject, err := renderMessage(templateWrapper.SubjectTemplate, notification.Spec.Properties)
 		if err != nil {
 			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
 
-		renderedBody, err := n.TemplateRenderer.renderMessage(template.Spec.Template, notification.Spec.Properties)
+		renderedBody, err := renderMessage(templateWrapper.BodyTemplate, notification.Spec.Properties)
 		if err != nil {
 			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
@@ -210,29 +211,44 @@ func addResultToStatus(notification *notificationv1.Notification, channelId stri
 	}
 }
 
-func resolveTemplate(ctx context.Context, channel *notificationv1.NotificationChannel, purpose string) (*notificationv1.NotificationTemplate, error) {
+func (n *NotificationHandler) resolveTemplate(ctx context.Context, channel *notificationv1.NotificationChannel, purpose string) (*templatecache.TemplateWrapper, error) {
 	// channel name - <teamname>--<type> - example: eni--hyperion--mail
 	// template name - <purpose>--<type> - example: api-subscription-approved--chat
 
-	scopedClient := client.ClientFromContextOrDie(ctx)
+	log := log.FromContext(ctx)
 
-	templateRef := types.ObjectRef{
-		Name:      buildTemplateName(channel, purpose),
-		Namespace: contextutil.EnvFromContextOrDie(ctx),
+	// build the template name first
+	templateName := buildTemplateName(channel, purpose)
+
+	// look for a cached value
+	parsedTemplateWrapper, ok := n.TemplateCache.Get(templateName)
+	if !ok {
+		log.V(1).Info("No template found in cache for channel and purpose", "channel", channel, "purpose", purpose)
+		return nil, errors.New(fmt.Sprintf("No template found in cache for channel %q and purpose %q", purpose, channel.Name))
 	}
 
-	template := &notificationv1.NotificationTemplate{}
+	log.V(1).Info("Resolved template found in cache", "channel", channel, "purpose", purpose)
+	return parsedTemplateWrapper, nil
 
-	err := scopedClient.Get(ctx, templateRef.K8s(), template)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get template %q", templateRef)
-	}
-
-	if !meta.IsStatusConditionTrue(template.GetConditions(), condition.ConditionTypeReady) {
-		return nil, errors.New(fmt.Sprintf("Template %q found but its not ready", types.ObjectRefFromObject(template)))
-	}
-
-	return template, nil
+	//scopedClient := client.ClientFromContextOrDie(ctx)
+	//
+	//templateRef := types.ObjectRef{
+	//	Name:      buildTemplateName(channel, purpose),
+	//	Namespace: contextutil.EnvFromContextOrDie(ctx),
+	//}
+	//
+	//template := &notificationv1.NotificationTemplate{}
+	//
+	//err := scopedClient.Get(ctx, templateRef.K8s(), template)
+	//if err != nil {
+	//	return nil, errors.Wrapf(err, "Failed to get template %q", templateRef)
+	//}
+	//
+	//if !meta.IsStatusConditionTrue(template.GetConditions(), condition.ConditionTypeReady) {
+	//	return nil, errors.New(fmt.Sprintf("Template %q found but its not ready", types.ObjectRefFromObject(template)))
+	//}
+	//
+	//return template, nil
 }
 
 func channelToMapKey(channel types.ObjectRef) string {
