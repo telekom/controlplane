@@ -49,6 +49,7 @@ type BaseHandler struct {
 	httpClient HttpDoer
 
 	MakeResourceName func(obj types.Object) string
+	ValidateObject   func(obj types.Object) error
 
 	// Hooks allow to register functions that are called before or after requests
 	Hooks map[HandlerHookStage][]func(ctx context.Context, obj types.Object) error
@@ -72,6 +73,12 @@ func NewBaseHandler(apiVersion, kind, resource string, priority int) *BaseHandle
 	}, 30*time.Second, 1*time.Second)
 
 	return handler
+}
+
+// WithValidation sets the validation function for the handler and returns the handler for chaining
+func (h *BaseHandler) WithValidation(validateFunc func(obj types.Object) error) *BaseHandler {
+	h.ValidateObject = validateFunc
+	return h
 }
 
 func (h *BaseHandler) Setup(ctx context.Context) *config.Token {
@@ -118,6 +125,13 @@ func (h *BaseHandler) Apply(ctx context.Context, obj types.Object) error {
 	if obj == nil {
 		return errors.New("object cannot be nil")
 	}
+
+	if h.ValidateObject != nil {
+		if err := h.ValidateObject(obj); err != nil {
+			return errors.Wrap(err, "object validation failed")
+		}
+	}
+
 	token := h.Setup(ctx)
 	url := h.GetRequestUrl(token.Group, token.Team, h.getResourceName(obj))
 
