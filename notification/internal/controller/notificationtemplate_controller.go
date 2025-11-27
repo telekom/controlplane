@@ -45,8 +45,7 @@ func (r *NotificationTemplateReconciler) Reconcile(ctx context.Context, req ctrl
 func (r *NotificationTemplateReconciler) SetupWithManager(mgr ctrl.Manager, cache *templatecache.TemplateCache) error {
 	r.Recorder = mgr.GetEventRecorderFor("notificationtemplate-controller")
 	r.Controller = cc.NewController(&handler.NotificationTemplateHandler{
-		Cache:           cache,
-		CustomFunctions: getCustomTemplateFunctions(),
+		Cache: cache,
 	}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
@@ -57,10 +56,4 @@ func (r *NotificationTemplateReconciler) SetupWithManager(mgr ctrl.Manager, cach
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
-}
-
-// place custom functions here
-// see template_renderer_test for a simple example
-func getCustomTemplateFunctions() texttemplate.FuncMap {
-	return texttemplate.FuncMap{}
 }

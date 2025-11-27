@@ -7,23 +7,21 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	sprig "github.com/go-task/slim-sprig/v3"
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	"github.com/telekom/controlplane/notification/internal/rendering"
 	"github.com/telekom/controlplane/notification/internal/templatecache"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
-
-	texttemplate "text/template"
 )
 
 var _ handler.Handler[*notificationv1.NotificationTemplate] = &NotificationTemplateHandler{}
 
 type NotificationTemplateHandler struct {
-	Cache           *templatecache.TemplateCache
-	CustomFunctions texttemplate.FuncMap
+	Cache *templatecache.TemplateCache
 }
 
 func (n *NotificationTemplateHandler) CreateOrUpdate(ctx context.Context, template *notificationv1.NotificationTemplate) error {
@@ -34,9 +32,9 @@ func (n *NotificationTemplateHandler) CreateOrUpdate(ctx context.Context, templa
 	}
 
 	// parse them in advance - save repeated operation for each notification
-	parsedTemplates, err := parseTemplate(template, n.CustomFunctions)
+	parsedTemplates, err := rendering.ParseTemplate(template)
 	if err != nil {
-		template.SetCondition(condition.NewReadyCondition("ParsingFailed", err.Error()))
+		return ctrlerrors.BlockedErrorf("Parsing of template failed with error %v", err.Error())
 	}
 
 	// cache the parsed templates
@@ -45,31 +43,6 @@ func (n *NotificationTemplateHandler) CreateOrUpdate(ctx context.Context, templa
 	template.SetCondition(condition.NewReadyCondition("Provisioned", "Notification template is provisioned"))
 	template.SetCondition(condition.NewDoneProcessingCondition("Notification template is done processing"))
 	return nil
-}
-
-// parseTemplate parses both the subject and body templates, returns an error if the attempt fails
-func parseTemplate(template *notificationv1.NotificationTemplate, customFunctions texttemplate.FuncMap) (*templatecache.TemplateWrapper, error) {
-
-	// merge sprig + custom funcs
-	funcs := sprig.FuncMap()
-	for k, v := range customFunctions {
-		funcs[k] = v
-	}
-
-	parsedSubjectTemplate, err := texttemplate.New(template.Name + "--subject").Funcs(funcs).Parse(template.Spec.SubjectTemplate)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse subject template")
-	}
-
-	parsedBodyTemplate, err := texttemplate.New(template.Name + "--body").Funcs(funcs).Parse(template.Spec.Template)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse body template")
-	}
-
-	return &templatecache.TemplateWrapper{
-		BodyTemplate:    parsedBodyTemplate,
-		SubjectTemplate: parsedSubjectTemplate,
-	}, nil
 }
 
 // validateTemplate validates the template content based on channel type

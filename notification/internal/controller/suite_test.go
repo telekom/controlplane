@@ -105,6 +105,9 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
+	By("Registering all required indices")
+	RegisterIndecesOrDie(ctx, k8sManager)
+
 	cache := templatecache.New()
 
 	err = (&NotificationTemplateReconciler{

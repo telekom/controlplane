@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package handler
+package rendering
 
 import (
 	sprig "github.com/go-task/slim-sprig/v3"
@@ -23,7 +23,7 @@ func TestRenderer_CustomFunc(t *testing.T) {
 	template, _ := texttemplate.New("test").Funcs(funcs).Parse(tpl)
 
 	// do the rendering
-	message, err := renderMessage(template, runtime.RawExtension{
+	message, err := RenderMessage(template, runtime.RawExtension{
 		Raw: []byte(`{"Name":"John"}`)})
 
 	// validate

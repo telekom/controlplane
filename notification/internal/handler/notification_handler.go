@@ -13,8 +13,10 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/internal/config"
+	"github.com/telekom/controlplane/notification/internal/rendering"
 	"github.com/telekom/controlplane/notification/internal/sender"
 	"github.com/telekom/controlplane/notification/internal/templatecache"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -87,13 +89,13 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 		// todo later
 
 		// render
-		renderedSubject, err := renderMessage(templateWrapper.SubjectTemplate, notification.Spec.Properties)
+		renderedSubject, err := rendering.RenderMessage(templateWrapper.SubjectTemplate, notification.Spec.Properties)
 		if err != nil {
 			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
 
-		renderedBody, err := renderMessage(templateWrapper.BodyTemplate, notification.Spec.Properties)
+		renderedBody, err := rendering.RenderMessage(templateWrapper.BodyTemplate, notification.Spec.Properties)
 		if err != nil {
 			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
@@ -225,30 +227,42 @@ func (n *NotificationHandler) resolveTemplate(ctx context.Context, channel *noti
 	if !ok {
 		log.V(1).Info("No template found in cache for channel and purpose", "channel", channel, "purpose", purpose)
 		return nil, errors.New(fmt.Sprintf("No template found in cache for channel %q and purpose %q", purpose, channel.Name))
+	} else {
+
+		// there is a chance that when the operator starts, the templates will not be ready before the
+		// notifications are processed, therefore the cache will not yet be populated and it could result in
+		// a notification being blocked until the next reconciliation loop
+		// this logic should address this corner-case situation by trying to find the template, even if it's
+		// not yet cached
+
+		scopedClient := client.ClientFromContextOrDie(ctx)
+
+		templateRef := types.ObjectRef{
+			Name:      buildTemplateName(channel, purpose),
+			Namespace: contextutil.EnvFromContextOrDie(ctx),
+		}
+
+		template := &notificationv1.NotificationTemplate{}
+
+		err := scopedClient.Get(ctx, templateRef.K8s(), template)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to get template %q", templateRef)
+		}
+
+		if !meta.IsStatusConditionTrue(template.GetConditions(), condition.ConditionTypeReady) {
+			return nil, errors.New(fmt.Sprintf("Template %q found but its not ready", types.ObjectRefFromObject(template)))
+		}
+
+		parsedTemplate, err := rendering.ParseTemplate(template)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to parse template %q", templateRef)
+		}
+
+		n.TemplateCache.Set(templateName, parsedTemplate)
 	}
 
 	log.V(1).Info("Resolved template found in cache", "channel", channel, "purpose", purpose)
 	return parsedTemplateWrapper, nil
-
-	//scopedClient := client.ClientFromContextOrDie(ctx)
-	//
-	//templateRef := types.ObjectRef{
-	//	Name:      buildTemplateName(channel, purpose),
-	//	Namespace: contextutil.EnvFromContextOrDie(ctx),
-	//}
-	//
-	//template := &notificationv1.NotificationTemplate{}
-	//
-	//err := scopedClient.Get(ctx, templateRef.K8s(), template)
-	//if err != nil {
-	//	return nil, errors.Wrapf(err, "Failed to get template %q", templateRef)
-	//}
-	//
-	//if !meta.IsStatusConditionTrue(template.GetConditions(), condition.ConditionTypeReady) {
-	//	return nil, errors.New(fmt.Sprintf("Template %q found but its not ready", types.ObjectRefFromObject(template)))
-	//}
-	//
-	//return template, nil
 }
 
 func channelToMapKey(channel types.ObjectRef) string {
