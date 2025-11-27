@@ -6,6 +6,7 @@ package notification_channel
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/rs/zerolog/log"
@@ -40,11 +41,15 @@ func (n NotificationChannelHandler) CreateOrUpdate(ctx context.Context, owner *o
 	mutate := func() error {
 		channelObj.SetLabels(owner.GetLabels())
 
-		recipientsMails := make([]string, 0)
+		recipientsMails := make([]string, len(owner.Spec.Members)+1) // +1 because we add all members + the team email
 		for _, member := range owner.Spec.Members {
 			recipientsMails = append(recipientsMails, member.Email)
 		}
 		recipientsMails = append(recipientsMails, owner.Spec.Email)
+
+		slices.SortStableFunc(recipientsMails, func(a, b string) int {
+			return strings.Compare(a, b)
+		})
 
 		channelObj.Spec = notificationv1.NotificationChannelSpec{
 			Email: &notificationv1.EmailConfig{
