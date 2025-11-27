@@ -57,3 +57,9 @@ path = "**/mocks/data/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "Copyright 2025 Deutsche Telekom IT GmbH"
 SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ".mcp.json"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright 2025 Deutsche Telekom IT GmbH"
+SPDX-License-Identifier = "CC0-1.0"
