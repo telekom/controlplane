@@ -1,3 +1,20 @@
+# [0.16.0](https://github.com/telekom/controlplane/compare/v0.15.0...v0.16.0) (2025-11-27)
+
+
+### Bug Fixes
+
+* **install:** add missing notification in local install ([#226](https://github.com/telekom/controlplane/issues/226)) ([3f5cc2d](https://github.com/telekom/controlplane/commit/3f5cc2dbe96b0f2e8ecdc08fa7523ca5dc678f3d))
+* k8s-authz-mdw checks aud-claim correctly; updated default aud-claim; added unit-tests ([9b43a9c](https://github.com/telekom/controlplane/commit/9b43a9c88ce0c33d66d763be68416ce5042c5508))
+* **k8s-authz:** updated file-manager audience; added option to set audience ([09fa2db](https://github.com/telekom/controlplane/commit/09fa2db59e593ceedc256de6a6438801c165abd9))
+* **rover-ctl:** correctly append the expected base-path if not provided in the server-url ([#231](https://github.com/telekom/controlplane/issues/231)) ([2b30a29](https://github.com/telekom/controlplane/commit/2b30a295b61464e88c18230c1d6a3539eb3b58d2))
+* **rover:** improve error-handling for application-secret deletion ([#237](https://github.com/telekom/controlplane/issues/237)) ([a2fa10e](https://github.com/telekom/controlplane/commit/a2fa10e8b031bdb530291b642fc1fc8733578842))
+* **secret-manager:** improved api error-handling for get and set ([#228](https://github.com/telekom/controlplane/issues/228)) ([430c9d2](https://github.com/telekom/controlplane/commit/430c9d270e88aee3a0aa20daba70a606363425f3))
+
+
+### Features
+
+* **rover:** added stricter validation for naming of objects ([#236](https://github.com/telekom/controlplane/issues/236)) ([9010ad4](https://github.com/telekom/controlplane/commit/9010ad4d6d836b4f3653989a8459b53db9d765bb))
+
 # [0.15.0](https://github.com/telekom/controlplane/compare/v0.14.0...v0.15.0) (2025-11-18)
 
 
