@@ -71,6 +71,9 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 	var zone *adminapi.Zone
 	var team1, team2, team3 types.ObjectRef
 
+	var apiExpAppName = "api-exposure-app"
+	var apiExpApplication *applicationv1.Application
+
 	BeforeAll(func() {
 		By("Creating the Zone")
 		zone = CreateZone(zoneName)
@@ -83,6 +86,9 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 		team2 = createTeam("team2", "group2", testEnvironment)
 		team3 = createTeam("team3", "group3", testEnvironment)
 
+		By("Creating the Application for ApiExposure")
+		apiExpApplication = CreateApplication(apiExpAppName)
+
 		By("Initializing the API")
 		api = NewApi(apiBasePath)
 		err := k8sClient.Create(ctx, api)
@@ -90,6 +96,10 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 	})
 
 	AfterAll(func() {
+		By("Deleting the Application for ApiExposure")
+		err := k8sClient.Delete(ctx, apiExpApplication)
+		Expect(err).ToNot(HaveOccurred())
+
 		By("Cleaning up and deleting all resources")
 		Expect(k8sClient.Delete(ctx, api)).To(Succeed())
 	})
@@ -97,7 +107,7 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 	Context("ApiExposure with Trusted Teams Configuration", Ordered, func() {
 		It("should create ApiExposure with trusted teams correctly", func() {
 			By("Creating an ApiExposure with trusted teams")
-			apiExposure = NewApiExposure(apiBasePath, zoneName)
+			apiExposure = NewApiExposure(apiBasePath, zoneName, apiExpAppName)
 			apiExposure.Spec.Approval = apiv1.Approval{
 				Strategy: apiapi.ApprovalStrategyFourEyes,
 				TrustedTeams: []string{

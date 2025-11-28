@@ -7,7 +7,11 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	"github.com/telekom/controlplane/notification/internal/rendering"
+	"github.com/telekom/controlplane/notification/internal/templatecache"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
@@ -17,6 +21,7 @@ import (
 var _ handler.Handler[*notificationv1.NotificationTemplate] = &NotificationTemplateHandler{}
 
 type NotificationTemplateHandler struct {
+	Cache *templatecache.TemplateCache
 }
 
 func (n *NotificationTemplateHandler) CreateOrUpdate(ctx context.Context, template *notificationv1.NotificationTemplate) error {
@@ -25,6 +30,15 @@ func (n *NotificationTemplateHandler) CreateOrUpdate(ctx context.Context, templa
 		template.SetCondition(condition.NewReadyCondition("ValidationFailed", err.Error()))
 		return err
 	}
+
+	// parse them in advance - save repeated operation for each notification
+	parsedTemplates, err := rendering.ParseTemplate(template)
+	if err != nil {
+		return ctrlerrors.BlockedErrorf("Parsing of template failed with error %v", err.Error())
+	}
+
+	// cache the parsed templates
+	n.Cache.Set(template.Name, parsedTemplates)
 
 	template.SetCondition(condition.NewReadyCondition("Provisioned", "Notification template is provisioned"))
 	template.SetCondition(condition.NewDoneProcessingCondition("Notification template is done processing"))
@@ -37,7 +51,7 @@ func (n *NotificationTemplateHandler) validateTemplate(template *notificationv1.
 	case "MsTeams":
 		// MS Teams templates must be valid JSON (Adaptive Cards or MessageCard format)
 		if !json.Valid([]byte(template.Spec.Template)) {
-			return fmt.Errorf("invalid JSON template for MsTeams channel: template must be valid JSON")
+			return errors.New("invalid JSON template for MsTeams channel: template must be valid JSON")
 		}
 	case "Email":
 		// Email templates can be plain text or HTML, no strict validation needed
@@ -49,7 +63,7 @@ func (n *NotificationTemplateHandler) validateTemplate(template *notificationv1.
 	// Validate schema if provided
 	if len(template.Spec.Schema.Raw) > 0 {
 		if !json.Valid(template.Spec.Schema.Raw) {
-			return fmt.Errorf("invalid JSON schema: schema must be valid JSON")
+			return errors.New("invalid JSON schema: schema must be valid JSON")
 		}
 	}
 
@@ -57,5 +71,9 @@ func (n *NotificationTemplateHandler) validateTemplate(template *notificationv1.
 }
 
 func (n *NotificationTemplateHandler) Delete(ctx context.Context, template *notificationv1.NotificationTemplate) error {
+	log := log.FromContext(ctx)
+	log.V(1).Info("Deleting template from cache", "name", template.Name)
+
+	n.Cache.Delete(template.Name)
 	return nil
 }

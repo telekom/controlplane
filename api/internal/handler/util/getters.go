@@ -7,6 +7,7 @@ package util
 import (
 	"context"
 	"fmt"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -24,6 +25,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+var (
+	ApplicationLabelKey = config.BuildLabelKey("application")
+)
+
 // GetZone retrieves a Zone object based on the provided ObjectRef for a zone.
 func GetZone(ctx context.Context, client cclient.ScopedClient, ref client.ObjectKey) (*adminapi.Zone, error) {
 	zone := &adminapi.Zone{}
@@ -39,6 +44,20 @@ func GetZone(ctx context.Context, client cclient.ScopedClient, ref client.Object
 	}
 
 	return zone, nil
+}
+
+func GetApplicationFromLabel(ctx context.Context, apiExposure *apiv1.ApiExposure) (*applicationapi.Application, error) {
+	applicationLabel, ok := apiExposure.GetObjectMeta().GetLabels()[ApplicationLabelKey]
+	if !ok {
+		return nil, errors.New("Application label not found in API Exposure")
+	}
+
+	ref := types.ObjectRef{
+		Name:      applicationLabel,
+		Namespace: apiExposure.Namespace,
+	}
+
+	return GetApplication(ctx, ref)
 }
 
 func GetApplication(ctx context.Context, ref types.ObjectRef) (*applicationapi.Application, error) {

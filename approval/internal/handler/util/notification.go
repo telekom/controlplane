@@ -7,6 +7,8 @@ package util
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/pkg/errors"
 	"strings"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
@@ -18,53 +20,61 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func SendNotification(ctx context.Context, owner client.Object, sendToChannelNamespace, state string, target *types.TypedObjectRef, requester *approvalv1.Requester) (*types.ObjectRef, error) {
-	properties := map[string]any{
-		"environment": contextutil.EnvFromContextOrDie(ctx),
-		"state":       state,
-	}
+type NotificationScenario string
 
-	requesterMap, err := extractRequester(requester)
-	if err != nil {
-		return nil, err
-	}
-	for k, v := range requesterMap {
-		properties[strings.ToLower(k)] = v
-	}
+const (
+	NotificationScenarioCreated NotificationScenario = "created"
+	NotificationScenarioUpdated NotificationScenario = "updated"
+)
 
-	targetMap, targetKind, targetName := extractTarget(target)
-	for k, v := range targetMap {
-		properties[strings.ToLower(k)] = v
-	}
+const (
+	TemplatePlaceholderDeciderTeam        = "decider_team"
+	TemplatePlaceholderDeciderGroup       = "decider_group"
+	TemplatePlaceholderDeciderApplication = "decider_application"
 
-	notificationBuilder := builder.New().
-		WithOwner(owner).
-		WithSender(notificationv1.SenderTypeSystem, "ApprovalService").
-		WithDefaultChannels(ctx, sendToChannelNamespace).
-		WithPurpose(strings.ToLower(owner.GetObjectKind().GroupVersionKind().Kind + "--" + targetKind)). // e.g. approval--apisubscription, approvalrequest--eventsubscription
-		WithName(labelutil.NormalizeValue(targetKind + "--" + targetName)).                              //e.g. api-subscription--application--basepath-foo-bar-v1
-		WithProperties(properties)
+	TemplatePlaceholderRequesterTeam        = "requester_team"
+	TemplatePlaceholderRequesterGroup       = "requester_group"
+	TemplatePlaceholderRequesterApplication = "requester_application"
 
-	notification, err := notificationBuilder.Send(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return types.ObjectRefFromObject(notification), nil
+	TemplatePlaceholderEnvironment = "environment"
+	TemplatePlaceholderBasepath    = "basepath"
+	TemplatePlaceholderStateOld    = "state_old"
+	TemplatePlaceholderStateNew    = "state_new"
+	TemplatePlaceholderScopes      = "scopes"
+)
+
+type Actor string
+
+const (
+	ActorDecider   Actor = "decider"
+	ActorRequester Actor = "requester"
+)
+
+type NotificationData struct {
+	Owner                  client.Object
+	SendToChannelNamespace string
+	StateNew               string
+	StateOld               string
+	Target                 *types.TypedObjectRef
+	Requester              *approvalv1.Requester
+	Decider                *approvalv1.Decider
+	Scenario               NotificationScenario
+	Actor                  Actor
 }
 
-func extractTarget(target *types.TypedObjectRef) (map[string]any, string, string) {
-	var targetKind, targetApplication, targetBasepath, targetGroup, targetTeam, targetName string
-	properties := map[string]any{}
-	if target != nil {
-		targetKind, targetApplication, targetBasepath, targetGroup, targetTeam = builder.ExtractApplicationInformation(*target)
-		properties["target_kind"] = targetKind
-		properties["target_application"] = targetApplication
-		properties["target_group"] = targetGroup
-		properties["target_team"] = targetTeam
-		properties["target_basepath"] = targetBasepath
-		targetName = target.Name
+func extractDecider(decider *approvalv1.Decider) (map[string]any, error) {
+	deciderPropertiesMap := map[string]any{}
+
+	groupName, teamName, err := splitTeamName(decider.TeamName)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Failed to parse decider teamName %+v", decider))
 	}
-	return properties, targetKind, targetName
+
+	deciderPropertiesMap[TemplatePlaceholderDeciderTeam] = teamName
+	deciderPropertiesMap[TemplatePlaceholderDeciderGroup] = groupName
+	deciderPropertiesMap[TemplatePlaceholderDeciderApplication] = decider.ApplicationRef.Name
+
+	return deciderPropertiesMap, nil
 }
 
 func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
@@ -74,22 +84,119 @@ func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
 	if requester.Properties.Size() != 0 {
 		err := json.Unmarshal(requester.Properties.Raw, &requesterPropertiesMap)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "Failed to extract requester properties from %q", requester.Properties.Raw)
 		}
 	}
 
-	if requesterPropertiesMap["scopes"] == nil {
-		requesterPropertiesMap["scopes"] = "undefined"
+	// basepath
+	// the property is already present from the original requester properties
+
+	// scopes
+	if requesterPropertiesMap[TemplatePlaceholderScopes] == nil {
+		requesterPropertiesMap[TemplatePlaceholderScopes] = "undefined"
 	}
 
-	requesterName := strings.Split(requester.Name, "--")
-	if len(requesterName) > 1 {
-		requesterPropertiesMap["requester_group"] = requesterName[0]
-		requesterPropertiesMap["requester_team"] = requesterName[1]
-	} else {
-		requesterPropertiesMap["requester_group"] = requester.Name
-		requesterPropertiesMap["requester_team"] = requester.Name
+	// team and group
+	groupName, teamName, err := splitTeamName(requester.TeamName)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Failed to parse requester teamName %+v", requester))
 	}
+	requesterPropertiesMap[TemplatePlaceholderRequesterGroup] = groupName
+	requesterPropertiesMap[TemplatePlaceholderRequesterTeam] = teamName
+
+	// application
+	requesterPropertiesMap[TemplatePlaceholderRequesterApplication] = requester.ApplicationRef.Name
 
 	return requesterPropertiesMap, nil
+}
+
+func SendNotification(ctx context.Context, data *NotificationData) (*types.ObjectRef, error) {
+	properties := initializeProperties()
+
+	properties[TemplatePlaceholderEnvironment] = contextutil.EnvFromContextOrDie(ctx)
+	properties[TemplatePlaceholderStateNew] = data.StateNew
+	properties[TemplatePlaceholderStateOld] = data.StateOld
+
+	requesterMap, err := extractRequester(data.Requester)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to extract requester data")
+	}
+	for k, v := range requesterMap {
+		properties[strings.ToLower(k)] = v
+	}
+
+	deciderMap, err := extractDecider(data.Decider)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to extract decider data")
+	}
+	for k, v := range deciderMap {
+		properties[strings.ToLower(k)] = v
+	}
+
+	// let's build the purpose <ownerKind>--<targetKind>--<scenario>--<actor>
+	// example: approvalrequest--apisubscription--created--decider
+	purposeStringBuilder := strings.Builder{}
+	// owner kind
+	purposeStringBuilder.WriteString(data.Owner.GetObjectKind().GroupVersionKind().Kind)
+	purposeStringBuilder.WriteString(DELIMITER)
+
+	// target kind
+	purposeStringBuilder.WriteString(data.Target.GetKind())
+	purposeStringBuilder.WriteString(DELIMITER)
+
+	// scenario
+	purposeStringBuilder.WriteString(string(data.Scenario))
+	purposeStringBuilder.WriteString(DELIMITER)
+
+	// actor (decider / requester)
+	purposeStringBuilder.WriteString(string(data.Actor))
+	purpose := purposeStringBuilder.String()
+
+	// let's build the notifications name - <purpose>--<targetName>
+	// example: ...
+	nameStringBuilder := strings.Builder{}
+	nameStringBuilder.WriteString(purpose)
+	nameStringBuilder.WriteString(DELIMITER)
+	nameStringBuilder.WriteString(data.Target.GetName())
+	name := nameStringBuilder.String()
+
+	notificationBuilder := builder.New().
+		WithOwner(data.Owner).
+		WithSender(notificationv1.SenderTypeSystem, "ApprovalService").
+		WithDefaultChannels(ctx, data.SendToChannelNamespace).
+		WithPurpose(strings.ToLower(purpose)).
+		WithName(labelutil.NormalizeNameValue(name)).
+		WithProperties(properties)
+
+	notification, err := notificationBuilder.Send(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return types.ObjectRefFromObject(notification), nil
+}
+
+// initializeProperties - useful for detecting unresolved TemplatePlaceholder values
+func initializeProperties() map[string]any {
+	properties := map[string]any{}
+
+	defaultValue := "UNDEFINED"
+
+	// decider TemplatePlaceholders
+	properties[TemplatePlaceholderDeciderTeam] = defaultValue
+	properties[TemplatePlaceholderDeciderGroup] = defaultValue
+	properties[TemplatePlaceholderDeciderApplication] = defaultValue
+
+	// requester TemplatePlaceholders
+	properties[TemplatePlaceholderRequesterTeam] = defaultValue
+	properties[TemplatePlaceholderRequesterGroup] = defaultValue
+	properties[TemplatePlaceholderRequesterApplication] = defaultValue
+
+	// other
+	properties[TemplatePlaceholderEnvironment] = defaultValue
+	properties[TemplatePlaceholderBasepath] = defaultValue
+	properties[TemplatePlaceholderStateOld] = defaultValue
+	properties[TemplatePlaceholderStateNew] = defaultValue
+	properties[TemplatePlaceholderScopes] = defaultValue
+
+	return properties
 }

@@ -42,7 +42,7 @@ func fillApprovalInfo(ctx context.Context, obj *apiapi.RemoteApiSubscription, ap
 	}
 	obj.Status.Approval = &apiapi.ApprovalInfo{
 		ApprovalState: approval.Spec.State.String(),
-		Message:       approval.Spec.Decider.Comment,
+		Message:       "", // todo - resolve later, should be taken from decisions
 	}
 	return
 }
@@ -64,7 +64,7 @@ func fillApprovalRequestInfo(ctx context.Context, obj *apiapi.RemoteApiSubscript
 	}
 	obj.Status.ApprovalRequest = &apiapi.ApprovalInfo{
 		ApprovalState: approvalRequest.Spec.State.String(),
-		Message:       approvalRequest.Spec.Decider.Comment,
+		Message:       "", // todo - resolve later, should be taken from decisions
 	}
 	return
 }
