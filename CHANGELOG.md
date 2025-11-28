@@ -1,3 +1,10 @@
+# [0.17.0](https://github.com/telekom/controlplane/compare/v0.16.0...v0.17.0) (2025-11-28)
+
+
+### Features
+
+* **notification:** improve notifications and minor features like housekeeping, custom funcs etc ([ad58f6c](https://github.com/telekom/controlplane/commit/ad58f6c9d27983cda5b9bc3f81262756328f22f0))
+
 # [0.16.0](https://github.com/telekom/controlplane/compare/v0.15.0...v0.16.0) (2025-11-27)
 
 
