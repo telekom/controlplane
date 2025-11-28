@@ -14,15 +14,15 @@ roverctl resource list [flags]
 
 ```
       --api-version string   API version (default "tcp.ei.telekom.de/v1")
+      --fail-fast            Stop processing on the first error encountered (default true)
   -h, --help                 help for list
-      --kind string          Resource kind
+      --kind string          Resource kind (required)
 ```
 
 ### Options inherited from parent commands
 
 ```
   -d, --debug               Enable debug mode
-      --fail-fast           Stop processing on the first error encountered (default true)
       --format string       Output format (yaml|json)
       --log-format string   Log format (json or console)
       --log-level string    Log level (debug, info, warn, error)

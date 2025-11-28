@@ -13,17 +13,17 @@ roverctl resource get [flags]
 ### Options
 
 ```
-      --api-version string   API version
+      --api-version string   API version (required)
+      --fail-fast            Stop processing on the first error encountered (default true)
   -h, --help                 help for get
-      --kind string          Resource kind
-      --name string          Name of the resource to get
+      --kind string          Resource kind (required)
+      --name string          Name of the resource to get (required)
 ```
 
 ### Options inherited from parent commands
 
 ```
   -d, --debug               Enable debug mode
-      --fail-fast           Stop processing on the first error encountered (default true)
       --format string       Output format (yaml|json)
       --log-format string   Log format (json or console)
       --log-level string    Log level (debug, info, warn, error)

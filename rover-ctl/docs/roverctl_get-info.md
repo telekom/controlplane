@@ -13,12 +13,14 @@ roverctl get-info [flags]
 ### Options
 
 ```
-      --fail-fast     Stop processing on the first error encountered (default true)
-  -f, --file string   Path to the file or directory containing resource definitions
+      --fail-fast        Stop processing on the first error encountered (default true)
+  -f, --file string   Path to the file or directory containing resource definitions (mutually exclusive with --name)
   -h, --help          help for get-info
-  -n, --name string   Name of the resource to get information about
+  -n, --name string   Name of the resource to get information about (mutually exclusive with --file)
   -s, --shallow       Get only basic information without details
 ```
+
+*Note: Either --name or --file is required. These options are mutually exclusive.*
 
 ### Options inherited from parent commands
 

@@ -16,8 +16,8 @@ SPDX-License-Identifier: CC0-1.0
 <p align="center">
   <a href="#about">About</a> •
   <a href="#features">Features</a> •
-  <a href="#crds">CRDs</a> •
-   <a href="#getting-started">Getting Started</a>
+  <a href="#Architecture">Architecture</a> •
+  <a href="#crds">CRDs</a>
 </p>
 
 
@@ -27,177 +27,24 @@ This repository contains the implementation of the Gateway domain, which is resp
 The API is designed to be independent of the underlying API Gateway technology, allowing for flexibility in choosing the best solution for your needs.
 However, at the moment, the implementation is tightly coupled with the [Kong Gateway](https://docs.konghq.com/gateway/latest/).
 
-The following diagram illustrates the architecture of the Gateway domain:
-
 <div align="center">
     <img src="docs/overview.drawio.svg" />
 </div>
 
 ## Features
 
-- **Route Management**: Manage routes and their configurations.
-- **Consumer Management**: Manage consumers and their access to routes.
-- **Realm Management**: Support for virtual environments to allow for virtualization of the API Gateway deployments.
+- **Route Management**: Manage routes and their configurations
+- **Consumer Management**: Manage consumers and their access to routes
+- **Realm Management**: Support for virtual environments to allow for virtualization of the API Gateway deployments
+- **Rate Limiting**: Control the rate of requests to your APIs (configured via Rover domain)
+- **Load Balancing**: Distribute incoming requests across multiple upstream instances (configured via Rover domain)
+- **JWT Authentication**: OAuth2/OIDC authentication with Keycloak integration
+- **...**
 
-Other - more advanced - features are planned for the future, such as:
+> [!Note]
+> For a full list of gateway features, see the contents of [./internal/features/feature](./internal/features/feature).
 
-- **Rate Limiting**: Control the rate of requests to your APIs.
-- **Load Balancing**: Distribute incoming requests across multiple instances of your API.
-- **External IDP Integration**: Integrate with external Identity Providers for authentication and authorization.
-- **Scopes**: Define scopes for consumers to control access to specific resources.
-- **Basic Authentication**: Support for basic authentication for consumers.
-- ... and many more features to come!
-
-## CRDs
-
-The Gateway domain defines the following Custom Resource Definitions (CRDs) as an API:
-
-<details>
-<summary>
-<strong>Gateway</strong>
-This CRD represents a phyical API Gateway instance, which can be a Kong Gateway or any other API Gateway technology.
-It acts as a container for the credentials and global configuration of the API Gateway.
-</summary>  
-
-```yaml
-apiVersion: gateway.cp.ei.telekom.de/v1
-kind: Gateway
-metadata:
-  labels:
-    cp.ei.telekom.de/environment: default
-  name: example-gateway
-  namespace: zone-namespace
-spec:
-  admin:
-    clientId: example-client-id
-    clientSecret: example-client-secret
-    issuerUrl: https://issuser.example.com # this is the issuer configured in Kong
-    url: https://api.kong.example.com/admin # this is the admin-api of Kong
-```
-
-</details>
-<br />
-
-<details>
-<summary>
-<strong>Realm</strong>
-This CRD represents a virtual instance of an API Gateway, allowing for the virtualization of the API Gateway deployments.
-Each API Gateway must atleast have one Realm, which <strong>must match the virtual environment</strong>. Each `Route`, `Consumer` and `ConsumeRoute` must be assigned to a Realm.
-</summary>  
-
-```yaml
-apiVersion: gateway.cp.ei.telekom.de/v1
-kind: Realm
-metadata:
-  labels:
-    cp.ei.telekom.de/environment: default
-  name: default
-  namespace: zone-namespace
-spec:
-  gateway:
-    name: example-gateway
-    namespace: zone-namespace
-  url: https://default.api.example.com
-  issuerUrl: https://issuer.example.com/auth/realms/default
-```
-
-</details>
-<br />
-
-
-<details>
-<summary>
-<strong>Route</strong>
-This CRD is the primary resource of the Gateway domain, representing an API route that can be accessed by consumers.
-The access is configured by the `Consumer` and `ConsumeRoute` CRDs.
-
-</summary>  
-
-```yaml
-# Expose a Route on the defined Realm that points to the upstream API provider.
-apiVersion: gateway.cp.ei.telekom.de/v1
-kind: Route
-metadata:
-  labels:
-    cp.ei.telekom.de/environment: default
-  name: default--api
-  namespace: zone-namespace
-spec:
-  realm:
-    name: default
-    namespace: zone-namespace
-  upstreams: 
-  - scheme: https
-    host: provider.example.com
-    port: 443
-    path: /api/v1
-  downstreams:
-  - host: default.api.example.com
-    port: 443
-    path: /api
-    issuerUrl: https://issuer.example.com/auth/realms/default
-```
-
-</details>
-<br />
-
-
-<details>
-<summary>
-<strong>Consumer</strong>
-This CRD represents a `Consumer` of the API, which is in most cases an application.
-By default a `Consumer` has no access to any route. The `Consumer` is granted access to routes by configuring the `ConsumeRoute` CRD for each `Route´.
-
-</summary>  
-
-```yaml
-apiVersion: gateway.cp.ei.telekom.de/v1
-kind: Consumer
-metadata:
-  labels:
-    cp.ei.telekom.de/environment: default
-  name: default
-  namespace: zone-namespace
-spec:
-  realm:
-    name: default
-    namespace: zone-namespace
-  name: example-consumer
-
-```
-
-</details>
-<br />
-
-
-<details>
-<summary>
-<strong>ConsumeRoute</strong>
-This CRD represents the access of a `Consumer` to a `Route`.
-It can be used to configure consumer specific settings for a route, such as rate limiting, authentication, and other features.
-</summary>  
-
-```yaml
-# Grant access to defined Route for the Consumer
-apiVersion: gateway.cp.ei.telekom.de/v1
-kind: ConsumeRoute
-metadata:
-  labels:
-    cp.ei.telekom.de/environment: default
-  name: default
-  namespace: zone-namespace
-spec:
-  route:
-    name: default--api
-    namespace: zone-namespace
-  consumerName: example-consumer
-
-```
-
-</details>
-<br />
-
-## Internal Architecture
+## Architecture
 
 ### Features
 
@@ -266,12 +113,80 @@ Hence, the operator expects, that the plugins are available in the Kong Gateway 
 The implementation of the plugins is done in the [pkg/kong/client/plugin](pkg/kong/client/plugin) package.
 Since the Kong Client works on JSON objects, the plugins should use the `CustomPlugin` [types.go](pkg/kong/client/types.go) interface to define their 
 configuration. This make handling plugins much more easier, and developers do not have to consider mutating JSON objects directly.
-
 >[!NOTE]
 > If you implement new Plugins, the need to be registered in the FeatureBuilder to be able to work with as well.
 
 
-## Getting Started
+## CRDs
+All CRDs can be found here: [CRDs](./config/crd/bases/).
 
+<p>The Gateway domain defines the following Custom Resources (CRDs):</p>
 
-... tbd
+<details>
+<summary>
+<strong>Gateway</strong>
+This CRD represents a gateway instance that serves as the entry point for API traffic.
+</summary>  
+
+- The Gateway CR defines the connection details to the underlying API Gateway technology (currently Kong).
+- The Gateway CR contains Redis configuration for distributed caching and rate limiting.
+- The Gateway CR includes admin credentials for gateway management.
+- Supports feature flags to enable/disable specific gateway capabilities.
+
+</details>
+<br />
+
+<details>
+<summary>
+<strong>Realm</strong>
+This CRD represents a virtual environment within a gateway for multi-tenancy.
+</summary>  
+
+- The Realm status tracks URLs for issuer, certs, and discovery endpoints based on the Gateway CR.
+
+</details>
+<br />
+
+<details>
+<summary>
+<strong>Route</strong>
+This CRD represents an API route exposed on the gateway.
+</summary>  
+
+- The Route CR MUST reference a Realm where it will be exposed.
+- The Route CR defines upstream and downstream configurations.
+- Routes support failover configuration for high availability.
+- Routes can be configured with traffic management.
+- Security options include pass-through mode, M2M authentication, and external IDP integration.
+- Transformation options allow request/response modifications.
+
+</details>
+<br />
+
+<details>
+<summary>
+<strong>Consumer</strong>
+This CRD represents a client that can access routes on the gateway.
+</summary>  
+
+- The Consumer CR MUST reference a Realm where it will be used.
+- The Consumer CR contains a unique name within the realm.
+- Consumers can have IP restrictions for additional security.
+- The Consumer status tracks the underlying gateway consumer ID.
+
+</details>
+<br />
+
+<details>
+<summary>
+<strong>ConsumeRoute</strong>
+This CRD represents the relationship between a Consumer and a Route.
+</summary>  
+
+- The ConsumeRoute CR links a Consumer to a Route, granting access permissions.
+- The ConsumeRoute CR can override security settings for a specific consumer-route pair.
+- The ConsumeRoute CR can specify consumer-specific rate limits.
+- Supports M2M authentication with client credentials or basic auth.
+
+</details>
+<br />

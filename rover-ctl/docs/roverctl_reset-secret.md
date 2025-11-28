@@ -13,10 +13,13 @@ roverctl reset-secret [flags]
 ### Options
 
 ```
-  -a, --application string   Name of the application to reset the secret for
       --fail-fast            Stop processing on the first error encountered (default true)
+  -a, --application string   Name of the application to reset the secret for (mutually exclusive with --name)
   -h, --help                 help for reset-secret
+  -n, --name string          Name of the application to reset the secret for (mutually exclusive with --application)
 ```
+
+*Either --application or --name is required. These options are mutually exclusive.*
 
 ### Options inherited from parent commands
 

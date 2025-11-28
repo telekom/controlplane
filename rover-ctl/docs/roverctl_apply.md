@@ -13,8 +13,8 @@ roverctl apply [flags]
 ### Options
 
 ```
-      --fail-fast     Stop processing on the first error encountered (default true)
-  -f, --file string   Path to the file or directory containing resource definitions
+      --fail-fast        Stop processing on the first error encountered (default true)
+  -f, --file string   Path to the file or directory containing resource definitions (required)
   -h, --help          help for apply
 ```
 

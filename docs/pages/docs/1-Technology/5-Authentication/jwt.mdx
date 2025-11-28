@@ -25,7 +25,7 @@ JSON Web Tokens (JWT) are used throughout the Control Plane for authentication a
 
 ## Overview
 
-JWT is an open standard (RFC 7519) for securely transmitting information between parties as a JSON object. The Control Plane uses JWTs for:
+JWT is an open standard ([RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519)) for securely transmitting information between parties as a JSON object. The Control Plane uses JWTs for:
 
 <div align="center">
   <img src="/controlplane/img/logos/jwt-logo.svg" alt="JWT Logo" style={{width: '250px', marginBottom: '2rem'}} />
@@ -118,87 +118,6 @@ func setupAuth(app *fiber.App) {
 <InfoSection type="note" title="Selective protection">
   Routes can be selectively protected by applying middleware at different levels or to specific route groups.
 </InfoSection>
-
-## JWT Structure
-
-<InfoSection type="note" title="Token structure">
-  Understanding the JWT structure is key to properly implementing and troubleshooting authentication in the Control Plane.
-</InfoSection>
-
-JWTs used in the Control Plane follow a standard three-part structure:
-
-```mermaid
-graph LR
-    A[Header] -->|Base64Url Encoded| D[JWT]
-    B[Payload] -->|Base64Url Encoded| D
-    C[Signature] --> D
-    
-    classDef header fill:#E20074,color:#ffffff,stroke:#E20074
-    classDef payload fill:#00ADD8,color:#ffffff,stroke:#00ADD8
-    classDef signature fill:#2C3E50,color:#ffffff,stroke:#2C3E50
-    classDef jwt fill:#f9f9f9,color:#333,stroke:#ccc
-    
-    class A header
-    class B payload
-    class C signature
-    class D jwt
-```
-
-### Example JWT
-
-```
-{
-  "header": {
-    "alg": "RS256",
-    "typ": "JWT",
-    "kid": "2022-key-1"
-  },
-  "payload": {
-    "sub": "user-123",
-    "name": "John Doe",
-    "roles": ["admin", "editor"],
-    "groups": ["group-123", "group-456"],
-    "exp": 1640995200,
-    "iat": 1640908800,
-    "iss": "https://auth.telekom.de"
-  },
-  "signature": "signature-data"
-}
-```
-
-### Standard Claims
-
-<CardGrid columns={3}>
-  <FeatureCard
-    title="sub (Subject)"
-    description="Unique identifier for the user or service. In the Control Plane, this is typically a user ID or service name."
-  />
-  
-  <FeatureCard
-    title="exp (Expiration)"
-    description="Unix timestamp indicating when the token expires. The Control Plane validates this claim to ensure tokens are not used after expiration."
-  />
-  
-  <FeatureCard
-    title="iat (Issued At)"
-    description="Unix timestamp indicating when the token was issued. Used for token tracking and audit purposes."
-  />
-  
-  <FeatureCard
-    title="iss (Issuer)"
-    description="Entity that issued the token. The Control Plane validates this to ensure tokens come from trusted sources."
-  />
-  
-  <FeatureCard
-    title="aud (Audience)"
-    description="Intended recipient of the token. Used to ensure tokens are used only with intended services."
-  />
-  
-  <FeatureCard
-    title="jti (JWT ID)"
-    description="Unique identifier for the token. Used for token revocation and tracking."
-  />
-</CardGrid>
 
 ### Custom Claims
 
