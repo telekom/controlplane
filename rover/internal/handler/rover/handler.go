@@ -102,6 +102,8 @@ func (h *RoverHandler) Delete(ctx context.Context, rover *roverv1.Rover) error {
 	appId := rover.GetName()
 	err := secretsapi.API().DeleteApplication(ctx, envId, teamId, appId)
 	if err != nil {
+		// If this fails, we have an internal problem
+		rover.SetCondition(condition.NewNotReadyCondition("DeletionFailed", "Failed to delete application from secret manager"))
 		return errors.Wrap(err, "failed to delete application from secret manager")
 	}
 

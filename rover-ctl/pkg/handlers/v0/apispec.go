@@ -18,7 +18,7 @@ type ApiSpecHandler struct {
 
 func NewApiSpecHandlerInstance() *ApiSpecHandler {
 	handler := &ApiSpecHandler{
-		BaseHandler: common.NewBaseHandler("tcp.ei.telekom.de/v1", "ApiSpecification", "apispecifications", 10),
+		BaseHandler: common.NewBaseHandler("tcp.ei.telekom.de/v1", "ApiSpecification", "apispecifications", 10).WithValidation(common.ValidateObjectName),
 	}
 
 	handler.AddHook(common.PreRequestHook, PatchApiSpecificationRequest)

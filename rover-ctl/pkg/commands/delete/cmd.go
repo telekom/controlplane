@@ -58,9 +58,6 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 		count++
 	}
 
-	// Print summary
-	c.Logger().V(0).Info("Successfully deleted resources", "count", count)
-	cmd.Printf("Successfully deleted %d resource(s)\n", count)
 	return nil
 }
 
