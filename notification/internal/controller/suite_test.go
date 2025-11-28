@@ -116,19 +116,20 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager, cache)
 	Expect(err).ToNot(HaveOccurred())
 
+	loadedHousekeepingConfig, err := notificationsconfig.LoadHousekeepingConfig()
+	Expect(err).NotTo(HaveOccurred())
+
 	err = (&NotificationChannelReconciler{
-		Client: k8sManager.GetClient(),
-		Scheme: k8sManager.GetScheme(),
+		Client:             k8sManager.GetClient(),
+		Scheme:             k8sManager.GetScheme(),
+		HousekeepingConfig: loadedHousekeepingConfig,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	loadedEmailConfig, err := notificationsconfig.LoadEmailAdapterConfig()
 	Expect(err).NotTo(HaveOccurred())
 
-	loadedHousekeepingConfig, err := notificationsconfig.LoadHousekeepingConfig()
-	Expect(err).NotTo(HaveOccurred())
-
-	notificationReconciler = NewNotificationReconcilerWithConfig(k8sManager.GetClient(), k8sManager.GetScheme(), loadedEmailConfig, loadedHousekeepingConfig, cache)
+	notificationReconciler = NewNotificationReconcilerWithConfig(k8sManager.GetClient(), k8sManager.GetScheme(), loadedEmailConfig, cache)
 	err = notificationReconciler.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

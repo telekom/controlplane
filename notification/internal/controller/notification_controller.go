@@ -39,8 +39,6 @@ type NotificationReconciler struct {
 
 	NotificationSender sender.NotificationSender
 
-	HousekeepingConfig notificationsconfig.NotificationHousekeepingConfig
-
 	TemplateCache *templatecache.TemplateCache
 }
 
@@ -48,7 +46,6 @@ func NewNotificationReconcilerWithConfig(
 	client client.Client,
 	scheme *runtime.Scheme,
 	emailConfig *notificationsconfig.EmailAdapterConfig,
-	housekeepingConfig *notificationsconfig.NotificationHousekeepingConfig,
 	TemplateCache *templatecache.TemplateCache,
 ) *NotificationReconciler {
 
@@ -65,7 +62,6 @@ func NewNotificationReconcilerWithConfig(
 		Client:             client,
 		Scheme:             scheme,
 		NotificationSender: notificationSender,
-		HousekeepingConfig: *housekeepingConfig,
 		TemplateCache:      TemplateCache,
 	}
 }
@@ -87,7 +83,6 @@ func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	notificationHandler := &notificationhandler.NotificationHandler{
 		NotificationSender: r.NotificationSender,
-		HousekeepingConfig: r.HousekeepingConfig,
 		TemplateCache:      r.TemplateCache,
 	}
 

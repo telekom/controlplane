@@ -15,7 +15,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/test"
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
-	notificationsconfig "github.com/telekom/controlplane/notification/internal/config"
 	handlers "github.com/telekom/controlplane/notification/internal/handler"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -107,70 +106,6 @@ var _ = Describe("Notification Handler", func() {
 			Expect(notification.Status.States["default/eni--hyperion--chat"].Sent).To(BeTrue())
 			Expect(notification.Status.States["default/eni--hyperion--chat"].ErrorMessage).To(BeEquivalentTo("Successfully sent"))
 			Expect(notification.Status.States["default/eni--hyperion--chat"].Timestamp.Unix()).To(BeEquivalentTo(SendingTime.Unix()))
-		})
-
-		It("should delete notifications eligible for housekeeping", func() {
-			By("creating the housekeeping configuration with 0 ttl - immediate removal")
-			housekeepingConfig := notificationsconfig.NotificationHousekeepingConfig{
-				TTLMonthsAfterFinished: 0,
-			}
-
-			By("creating a notification handler with housekeeping configuration")
-			notificationHandler := &handlers.NotificationHandler{
-				HousekeepingConfig: housekeepingConfig,
-			}
-
-			By("creating a new notification with successfully sent notifications and ready state")
-			rdyCondition := condition.NewReadyCondition("Ready", "All channels sent")
-			rdyCondition.LastTransitionTime = metav1.NewTime(SendingTime.Add(1 * time.Second))
-
-			notification := &notificationv1.Notification{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      notificationName + "2",
-					Namespace: "default",
-					Labels: map[string]string{
-						config.EnvironmentLabelKey: testEnvironment,
-					},
-				},
-				Spec: notificationv1.NotificationSpec{
-					Purpose: notificationPurpose,
-					Sender: notificationv1.Sender{
-						Type: notificationv1.SenderTypeUser,
-						Name: "John Snow",
-					},
-					Channels: []commontypes.ObjectRef{
-						{
-							Name:      channel2Name,
-							Namespace: "default",
-						},
-					},
-					Properties: runtime.RawExtension{
-						Raw: []byte(`{"subjectValue":"awesomeSubject", "bodyValue":"awesomeBody"}`),
-					},
-				},
-				Status: notificationv1.NotificationStatus{
-					Conditions: []metav1.Condition{
-						rdyCondition,
-					},
-					States: map[string]notificationv1.SendState{
-						"default/" + channel2Name: {
-							Timestamp:    SendingTime,
-							Sent:         true,
-							ErrorMessage: "Successfully sent",
-						},
-					},
-				},
-			}
-
-			By("expecting the client will be called to delete the notification")
-			fakeClient.EXPECT().Delete(ctx, notification).Return(nil)
-
-			By("calling the handlers createOrUpdate func with the notification")
-			err := notificationHandler.CreateOrUpdate(ctx, notification)
-
-			By("expecting the createOrUpdate func runs without error")
-			Expect(err).ToNot(HaveOccurred())
-
 		})
 	})
 })

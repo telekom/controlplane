@@ -210,8 +210,9 @@ func main() {
 	controller.RegisterIndecesOrDie(rootCtx, mgr)
 
 	if err := (&controller.NotificationChannelReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:             mgr.GetClient(),
+		Scheme:             mgr.GetScheme(),
+		HousekeepingConfig: housekeepingConfig,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "NotificationChannel")
 		os.Exit(1)
@@ -225,7 +226,6 @@ func main() {
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		emailAdapterConfig,
-		housekeepingConfig,
 		cache)
 	if err := notificationReconciler.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Notification")
