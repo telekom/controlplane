@@ -42,10 +42,10 @@ func (n NotificationChannelHandler) CreateOrUpdate(ctx context.Context, owner *o
 		channelObj.SetLabels(owner.GetLabels())
 
 		recipientsMails := make([]string, len(owner.Spec.Members)+1) // +1 because we add all members + the team email
-		for _, member := range owner.Spec.Members {
-			recipientsMails = append(recipientsMails, member.Email)
+		for i, member := range owner.Spec.Members {
+			recipientsMails[i] = member.Email
 		}
-		recipientsMails = append(recipientsMails, owner.Spec.Email)
+		recipientsMails[len(recipientsMails)-1] = owner.Spec.Email
 
 		slices.SortStableFunc(recipientsMails, func(a, b string) int {
 			return strings.Compare(a, b)
