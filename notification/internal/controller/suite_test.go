@@ -7,7 +7,8 @@ package controller
 import (
 	"context"
 	"fmt"
-	emailadapterconfig "github.com/telekom/controlplane/notification/internal/config"
+	notificationsconfig "github.com/telekom/controlplane/notification/internal/config"
+	"github.com/telekom/controlplane/notification/internal/templatecache"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
@@ -104,22 +105,31 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
+	By("Registering all required indices")
+	RegisterIndecesOrDie(ctx, k8sManager)
+
+	cache := templatecache.New()
+
 	err = (&NotificationTemplateReconciler{
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
-	}).SetupWithManager(k8sManager)
+	}).SetupWithManager(k8sManager, cache)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&NotificationChannelReconciler{
-		Client: k8sManager.GetClient(),
-		Scheme: k8sManager.GetScheme(),
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	loadedEmailConfig, err := emailadapterconfig.LoadEmailAdapterConfig()
+	loadedHousekeepingConfig, err := notificationsconfig.LoadHousekeepingConfig()
 	Expect(err).NotTo(HaveOccurred())
 
-	notificationReconciler = NewNotificationReconcilerWithSenderConfig(k8sManager.GetClient(), k8sManager.GetScheme(), loadedEmailConfig)
+	err = (&NotificationChannelReconciler{
+		Client:             k8sManager.GetClient(),
+		Scheme:             k8sManager.GetScheme(),
+		HousekeepingConfig: loadedHousekeepingConfig,
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	loadedEmailConfig, err := notificationsconfig.LoadEmailAdapterConfig()
+	Expect(err).NotTo(HaveOccurred())
+
+	notificationReconciler = NewNotificationReconcilerWithConfig(k8sManager.GetClient(), k8sManager.GetScheme(), loadedEmailConfig, cache)
 	err = notificationReconciler.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

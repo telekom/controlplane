@@ -121,10 +121,16 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 
 	var remoteApiSubscription *apiapi.RemoteApiSubscription
 
+	var apiExpAppName = "api-exposure-app"
+	var apiExpApplication *applicationapi.Application
+
 	BeforeAll(func() {
+		By("Creating the Application for ApiExposure")
+		apiExpApplication = CreateApplication(apiExpAppName)
+
 		By("Initializing the API, APIExposure and RemoteApiSubscription")
 		api = NewApi(apiBasePath)
-		apiExposure = NewApiExposure(apiBasePath, zoneName)
+		apiExposure = NewApiExposure(apiBasePath, zoneName, apiExpAppName)
 		remoteApiSubscription = NewRemoteApiSubscription(apiBasePath, appName)
 
 		By("Creating the normal Zone")
@@ -147,8 +153,12 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 	})
 
 	AfterAll(func() {
+		By("Deleting the Application for ApiExposure")
+		err := k8sClient.Delete(ctx, apiExpApplication)
+		Expect(err).ToNot(HaveOccurred())
+
 		By("Deleting the RemoteOrganization")
-		err := k8sClient.Delete(ctx, remoteOrg)
+		err = k8sClient.Delete(ctx, remoteOrg)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

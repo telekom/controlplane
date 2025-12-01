@@ -79,6 +79,7 @@ func (o *UnstructuredObject) GetProperty(name string) any {
 	}
 	return nil
 }
+
 func (o *UnstructuredObject) SetProperty(name string, value any) {
 	if o.Properties == nil {
 		o.Properties = make(map[string]any)
