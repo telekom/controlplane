@@ -6,7 +6,6 @@ package approvalrequest
 
 import (
 	"context"
-
 	"github.com/pkg/errors"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
@@ -31,27 +30,11 @@ type ApprovalRequestHandler struct {
 func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq *approvalv1.ApprovalRequest) error {
 	log := log.FromContext(ctx)
 
-	if approvalReq.Spec.State != approvalReq.Status.LastState {
-		contextutil.RecorderFromContextOrDie(ctx).Eventf(approvalReq,
-			"Normal", "Notification", "State changed from %s to %s", approvalReq.Status.LastState, approvalReq.Spec.State,
-		)
-
-		if approvalReq.Spec.State == approvalv1.ApprovalStateRejected {
-			var err error
-			approvalReq.Status.NotificationRef, err = util.SendNotification(ctx, approvalReq, approvalReq.GetNamespace(), string(approvalReq.Spec.State), &approvalReq.Spec.Resource, &approvalReq.Spec.Requester)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	if approvalReq.GetGeneration() == 1 && approvalReq.Status.NotificationRef == nil {
-		var err error
-		namespace := approvalReq.Spec.Resource.Namespace // namespace of the owner of the to-be-subscribed resource (i.e. target namespace)
-		approvalReq.Status.NotificationRef, err = util.SendNotification(ctx, approvalReq, namespace, string(approvalReq.Spec.State), &approvalReq.Spec.Resource, &approvalReq.Spec.Requester)
-		if err != nil {
-			return err
-		}
+	// handle the notifications first
+	err := handleNotifications(ctx, approvalReq)
+	if err != nil {
+		// todo - decide if we want to fail here, or a failed notification is acceptable
+		return errors.Wrapf(err, "Failed to send notification about approval request %+v", approvalReq)
 	}
 
 	fsm := ApprovalStrategyFSM[approvalReq.Spec.Strategy]
@@ -106,6 +89,70 @@ func (h *ApprovalRequestHandler) Delete(ctx context.Context, approvalReq *approv
 	return nil
 }
 
+func shouldNotifyRequester(approvalRequest *approvalv1.ApprovalRequest) bool {
+	// currently only the decider is notified about this
+	if approvalRequest.Spec.State == approvalv1.ApprovalStatePending {
+		return false
+	}
+
+	return true
+}
+
+func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRequest) error {
+	// no change in status - nothing to notify about
+	if approvalReq.Spec.State == approvalReq.Status.LastState {
+		return nil
+	}
+
+	contextutil.RecorderFromContextOrDie(ctx).Eventf(approvalReq,
+		"Normal", "Notification", "State changed from %s to %s", approvalReq.Status.LastState, approvalReq.Spec.State,
+	)
+
+	var scenario util.NotificationScenario
+	if approvalReq.ObjectMeta.GetGeneration() == 1 {
+		scenario = util.NotificationScenarioCreated
+	} else {
+		scenario = util.NotificationScenarioUpdated
+	}
+
+	// always notify the Decider
+	notificationRef, err := util.SendNotification(ctx, &util.NotificationData{
+		Owner:                  approvalReq,
+		SendToChannelNamespace: approvalReq.Spec.Decider.ApplicationRef.Namespace,
+		StateNew:               string(approvalReq.Spec.State),
+		Target:                 &approvalReq.Spec.Target,
+		Requester:              &approvalReq.Spec.Requester,
+		Decider:                &approvalReq.Spec.Decider,
+		Scenario:               scenario,
+		Actor:                  util.ActorDecider,
+	})
+
+	if err != nil {
+		return errors.Wrapf(err, "Failed to send notification to decider %q while handling approval request %+v", approvalReq.Spec.Decider.TeamName, approvalReq)
+	}
+	approvalReq.Status.NotificationRefs = append(approvalReq.Status.NotificationRefs, *notificationRef)
+
+	// if relevant notify the requester
+	if shouldNotifyRequester(approvalReq) {
+		notificationRef, err := util.SendNotification(ctx, &util.NotificationData{
+			Owner:                  approvalReq,
+			SendToChannelNamespace: approvalReq.Spec.Requester.ApplicationRef.Namespace,
+			StateNew:               string(approvalReq.Spec.State),
+			Target:                 &approvalReq.Spec.Target,
+			Requester:              &approvalReq.Spec.Requester,
+			Decider:                &approvalReq.Spec.Decider,
+			Scenario:               scenario,
+			Actor:                  util.ActorRequester,
+		})
+		if err != nil {
+			return errors.Wrapf(err, "Failed to send notification to requester %q while handling approval request %+v", approvalReq.Spec.Requester.TeamName, approvalReq)
+		}
+		approvalReq.Status.NotificationRefs = append(approvalReq.Status.NotificationRefs, *notificationRef)
+	}
+
+	return nil
+}
+
 func handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest) error {
 	log := log.FromContext(ctx)
 	c := client.ClientFromContextOrDie(ctx)
@@ -118,7 +165,7 @@ func handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest)
 			return nil
 		}
 
-		setControllerReferenceForRef(approvalObj, approvalReq.Spec.Resource)
+		setControllerReferenceForRef(approvalObj, approvalReq.Spec.Target)
 
 		approvalObj.Spec = approvalv1.ApprovalSpec{
 			Strategy: approvalReq.Spec.Strategy,
@@ -126,8 +173,9 @@ func handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest)
 
 			Requester: approvalReq.Spec.Requester,
 			Decider:   approvalReq.Spec.Decider,
-			Resource:  approvalReq.Spec.Resource,
+			Target:    approvalReq.Spec.Target,
 			Action:    approvalReq.Spec.Action,
+			Decisions: approvalReq.Spec.Decisions,
 
 			ApprovedRequest: types.ObjectRefFromObject(approvalReq),
 		}
@@ -167,7 +215,7 @@ func setControllerReferenceForRef(obj types.Object, objRef types.TypedObjectRef)
 func newApprovalFromApprovalRequest(approvalReq *approvalv1.ApprovalRequest) *approvalv1.Approval {
 	return &approvalv1.Approval{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      approvalv1.ApprovalName(approvalReq.Spec.Resource.Kind, approvalReq.Spec.Resource.Name),
+			Name:      approvalv1.ApprovalName(approvalReq.Spec.Target.Kind, approvalReq.Spec.Target.Name),
 			Namespace: approvalReq.Namespace,
 		},
 		Spec: approvalv1.ApprovalSpec{},

@@ -103,12 +103,15 @@ func (s *Server) RegisterRoutes(router fiber.Router) {
 	NoopAuthenticator := func(ctx context.Context, ai *openapi3filter.AuthenticationInput) error {
 		return nil
 	}
-	router.Use(requestValidator.OapiRequestValidatorWithOptions(swagger, &requestValidator.Options{
+
+	openapiValidator := requestValidator.OapiRequestValidatorWithOptions(swagger, &requestValidator.Options{
 		Options: openapi3filter.Options{
 			SkipSettingDefaults: false,
 			AuthenticationFunc:  NoopAuthenticator,
 		},
-	}))
+	})
+
+	router.Use(openapiValidator)
 
 	s.Log.Info("Registering apispecifications routes")
 

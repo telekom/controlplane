@@ -130,9 +130,8 @@ func ProgressApprovalRequest(ref *types.ObjectRef, state approvalapi.ApprovalSta
 
 	approvalReq.Spec.State = state
 	approvalReq.Spec.Decider = approvalapi.Decider{
-		Name:    "test-decider",
-		Email:   "decider@test.com",
-		Comment: "Test-Comment",
+		TeamName:  "test-decider",
+		TeamEmail: "decider@test.com",
 	}
 
 	err = k8sClient.Update(ctx, approvalReq)
@@ -158,7 +157,7 @@ func ProgressApproval(apiSub *apiapi.ApiSubscription, state approvalapi.Approval
 
 		approval.Spec = approvalapi.ApprovalSpec{
 			State:           state,
-			Resource:        approvalReq.Spec.Resource,
+			Target:          approvalReq.Spec.Target,
 			Action:          approvalReq.Spec.Action,
 			Requester:       approvalReq.Spec.Requester,
 			Decider:         approvalReq.Spec.Decider,
@@ -193,15 +192,17 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 	var otherZone *adminapi.Zone
 
 	// Consumer side
-	var appName = "my-test-app"
-	var application *applicationapi.Application
+	var apiSubAppName = "my-test-app-sub"
+	var apiExpAppName = "my-test-app-exp"
+	var apiSubApplication *applicationapi.Application
+	var apiExpApplication *applicationapi.Application
 	var apiSubscription *apiapi.ApiSubscription
 
 	BeforeAll(func() {
 		By("Initializing the API, APIExposure and ApiSubscription")
 		api = NewApi(apiBasePath)
-		apiExposure = NewApiExposure(apiBasePath, zoneName)
-		apiSubscription = NewApiSubscription(apiBasePath, zoneName, appName)
+		apiExposure = NewApiExposure(apiBasePath, zoneName, apiExpAppName)
+		apiSubscription = NewApiSubscription(apiBasePath, zoneName, apiSubAppName)
 
 		By("Creating the Zone")
 		zone = CreateZone(zoneName)
@@ -210,13 +211,20 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 		By("Creating the Realm")
 		CreateRealm(testEnvironment, zone.Name)
 
-		By("Creating the Application")
-		application = CreateApplication(appName)
+		By("Creating the Application for subscription")
+		apiSubApplication = CreateApplication(apiSubAppName)
+
+		By("Creating the Application for exposure")
+		apiExpApplication = CreateApplication(apiExpAppName)
 	})
 
 	AfterAll(func() {
-		By("Deleting the Application")
-		err := k8sClient.Delete(ctx, application)
+		By("Deleting the Application for subscription")
+		err := k8sClient.Delete(ctx, apiSubApplication)
+		Expect(err).ToNot(HaveOccurred())
+
+		By("Deleting the Application for exposure")
+		err = k8sClient.Delete(ctx, apiExpApplication)
 		Expect(err).ToNot(HaveOccurred())
 
 		By("Cleaning up and deleting all resources")
@@ -344,7 +352,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 
 		BeforeAll(func() {
 			By("Initializing the ApiSubscription")
-			apiSubscription = NewApiSubscription(apiBasePath, otherZoneName, appName)
+			apiSubscription = NewApiSubscription(apiBasePath, otherZoneName, apiSubAppName)
 
 			By("Creating the Zone")
 			otherZone = CreateZone(otherZoneName)
@@ -412,14 +420,14 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 
 	Context("Prevent deletion of underlying Routes if multiple Api-Subscriptions exist", func() {
 
-		appName := "my-second-app"
+		apiSubAppName := "my-second-app"
 		var secondApiSubscription *apiapi.ApiSubscription
 
 		BeforeAll(func() {
 			By("Initializing the second ApiSubscription")
-			secondApiSubscription = NewApiSubscription(apiBasePath, otherZoneName, appName)
+			secondApiSubscription = NewApiSubscription(apiBasePath, otherZoneName, apiSubAppName)
 			By("Creating the Application")
-			CreateApplication(appName)
+			CreateApplication(apiSubAppName)
 
 			By("Setting up a second ApiSubscription")
 			err := k8sClient.Create(ctx, secondApiSubscription)
@@ -476,7 +484,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 			var apiSubscription *apiapi.ApiSubscription
 
 			BeforeEach(func() {
-				apiSubscription = NewApiSubscription(apiBasePath, otherZoneName, appName)
+				apiSubscription = NewApiSubscription(apiBasePath, otherZoneName, apiSubAppName)
 				apiSubscription.ObjectMeta.Name = apiSubscription.Name + "-security"
 			})
 
@@ -746,7 +754,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 		Expect(err).ToNot(HaveOccurred())
 
 		By("Creating APIExposure with failover configuration")
-		apiExposure = NewApiExposure(apiBasePath, providerZoneName)
+		apiExposure = NewApiExposure(apiBasePath, providerZoneName, appName)
 		apiExposure.Spec.Traffic = apiapi.Traffic{
 			Failover: &apiapi.Failover{
 				Zones: []types.ObjectRef{

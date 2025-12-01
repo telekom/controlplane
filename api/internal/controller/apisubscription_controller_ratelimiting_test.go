@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
+	"github.com/telekom/controlplane/api/internal/handler/util"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -25,7 +26,7 @@ import (
 // Helper functions for creating test resources with rate limits
 
 // NewApiExposureWithRateLimit creates an ApiExposure with both provider and consumer rate limits
-func NewApiExposureWithRateLimit(apiBasePath, zoneName, consumerClientId string) *apiapi.ApiExposure {
+func NewApiExposureWithRateLimit(apiBasePath, zoneName, consumerClientId string, appName string) *apiapi.ApiExposure {
 	return &apiapi.ApiExposure{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      labelutil.NormalizeValue(apiBasePath),
@@ -33,6 +34,7 @@ func NewApiExposureWithRateLimit(apiBasePath, zoneName, consumerClientId string)
 			Labels: map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
 				apiapi.BasePathLabelKey:    labelutil.NormalizeValue(apiBasePath),
+				util.ApplicationLabelKey:   labelutil.NormalizeValue(appName),
 			},
 		},
 		Spec: apiapi.ApiExposureSpec{
@@ -104,15 +106,15 @@ func NewApiExposureWithRateLimit(apiBasePath, zoneName, consumerClientId string)
 }
 
 // NewApiExposureWithConsumerOnlyRateLimit creates an ApiExposure with only consumer rate limits (no provider rate limits)
-func NewApiExposureWithConsumerOnlyRateLimit(apiBasePath, zoneName, consumerClientId string) *apiapi.ApiExposure {
-	apiExposure := NewApiExposureWithRateLimit(apiBasePath, zoneName, consumerClientId)
+func NewApiExposureWithConsumerOnlyRateLimit(apiBasePath, zoneName, consumerClientId string, appName string) *apiapi.ApiExposure {
+	apiExposure := NewApiExposureWithRateLimit(apiBasePath, zoneName, consumerClientId, appName)
 	apiExposure.Spec.Traffic.RateLimit.Provider = nil
 	return apiExposure
 }
 
 // NewApiExposureWithProviderOnlyRateLimit creates an ApiExposure with only provider rate limits (no consumer rate limits)
-func NewApiExposureWithProviderOnlyRateLimit(apiBasePath, zoneName string) *apiapi.ApiExposure {
-	apiExposure := NewApiExposureWithRateLimit(apiBasePath, zoneName, "")
+func NewApiExposureWithProviderOnlyRateLimit(apiBasePath, zoneName string, appName string) *apiapi.ApiExposure {
+	apiExposure := NewApiExposureWithRateLimit(apiBasePath, zoneName, "", appName)
 	apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit = nil
 	return apiExposure
 }
@@ -226,6 +228,9 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 	var defaultApplication *applicationapi.Application
 	var defaultApiSubscription *apiapi.ApiSubscription
 
+	var apiExpAppName = "api-exposure-app"
+	var apiExpApplication *applicationapi.Application
+
 	BeforeAll(func() {
 		By("Creating the Zones")
 		zone = CreateZone(zoneName)
@@ -236,6 +241,9 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 		By("Creating the Realms")
 		CreateRealm(testEnvironment, zone.Name)
 		CreateRealm(testEnvironment, secondZone.Name)
+
+		By("Creating the Application for ApiExposure")
+		apiExpApplication = CreateApplication(apiExpAppName)
 
 		By("Creating the Applications")
 		application = CreateApplication(appName)
@@ -250,7 +258,7 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		By("Creating the APIExposure with rate limits")
-		apiExposure = NewApiExposureWithRateLimit(apiBasePath, zoneName, application.Status.ClientId)
+		apiExposure = NewApiExposureWithRateLimit(apiBasePath, zoneName, application.Status.ClientId, apiExpAppName)
 		err = k8sClient.Create(ctx, apiExposure)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -265,6 +273,10 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 	AfterAll(func() {
 		By("Cleaning up and deleting all resources")
 		err := k8sClient.Delete(ctx, apiExposure)
+		Expect(err).ToNot(HaveOccurred())
+
+		By("Deleting the Application for ApiExposure")
+		err = k8sClient.Delete(ctx, apiExpApplication)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = k8sClient.Delete(ctx, api)
@@ -357,7 +369,7 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Creating the APIExposure with only consumer rate limits")
-			consumerOnlyApiExposure := NewApiExposureWithConsumerOnlyRateLimit(consumerOnlyApiBasePath, zoneName, application.Status.ClientId)
+			consumerOnlyApiExposure := NewApiExposureWithConsumerOnlyRateLimit(consumerOnlyApiBasePath, zoneName, application.Status.ClientId, apiExpAppName)
 			err = k8sClient.Create(ctx, consumerOnlyApiExposure)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -409,7 +421,7 @@ var _ = Describe("ApiSubscription Rate Limiting", Ordered, func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Creating the APIExposure with only provider rate limits")
-			providerOnlyApiExposure := NewApiExposureWithProviderOnlyRateLimit(providerOnlyApiBasePath, zoneName)
+			providerOnlyApiExposure := NewApiExposureWithProviderOnlyRateLimit(providerOnlyApiBasePath, zoneName, apiExpAppName)
 			err = k8sClient.Create(ctx, providerOnlyApiExposure)
 			Expect(err).ToNot(HaveOccurred())
 
