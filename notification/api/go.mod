@@ -9,6 +9,7 @@ go 1.24.9
 require github.com/telekom/controlplane/common v0.0.0
 
 require (
+	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.27.2
 	github.com/onsi/gomega v1.38.2
 	github.com/pkg/errors v0.9.1
@@ -26,7 +27,6 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
-	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
