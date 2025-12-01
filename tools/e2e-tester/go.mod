@@ -8,12 +8,12 @@ go 1.24.9
 
 require (
 	github.com/fatih/color v1.18.0
-	github.com/goccy/go-yaml v1.18.0
+	github.com/goccy/go-yaml v1.19.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.21.0
 	github.com/telekom/controlplane/tools/snapshotter v0.0.0-00010101000000-000000000000
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 )
 
 require (
@@ -36,8 +36,8 @@ require (
 	github.com/tidwall/sjson v1.2.5 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/sys v0.36.0 // indirect
-	golang.org/x/text v0.30.0 // indirect
+	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/text v0.31.0 // indirect
 )
 
 replace github.com/telekom/controlplane => ../../
