@@ -119,7 +119,7 @@ jobs:
 
       - name: Run golangci-lint
         if: ${{ inputs.run_lint }}
-        uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9 #pin@8.0.0
+        uses: golangci/golangci-lint-action@e7fa5ac41e1cf5b7d48e45e42232ce7ada589601 #pin@9.1.0
         with:
           version: v2.1
           working-directory: ${{ inputs.module }}
