@@ -200,7 +200,7 @@ jobs:
 
       - name: Publish test report as Check
         if: ${{ always() && (github.event_name == 'pull_request') }}
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         with:
           report_paths: "${{ inputs.module }}/junit.xml"
           check_name: "Test Report (${{ inputs.name }})"
