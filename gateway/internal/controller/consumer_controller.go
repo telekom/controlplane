@@ -19,7 +19,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	consumer_handler "github.com/telekom/controlplane/gateway/internal/handler/consumer"
 )
@@ -60,33 +59,5 @@ func (r *ConsumerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *ConsumerReconciler) mapRealmToConsumer(ctx context.Context, obj client.Object) []reconcile.Request {
-	// ensure its actually a Realm
-	realm, ok := obj.(*gatewayv1.Realm)
-	if !ok {
-		return nil
-	}
-	if realm.Labels == nil {
-		return nil
-	}
-
-	listOpts := []client.ListOption{
-		client.MatchingFields{
-			IndexFieldSpecRealm: types.ObjectRefFromObject(realm).String(),
-		},
-		client.MatchingLabels{
-			cconfig.EnvironmentLabelKey: realm.Labels[cconfig.EnvironmentLabelKey],
-		},
-	}
-
-	list := gatewayv1.ConsumerList{}
-	if err := r.List(ctx, &list, listOpts...); err != nil {
-		return nil
-	}
-
-	requests := make([]reconcile.Request, len(list.Items))
-	for i, item := range list.Items {
-		requests[i] = reconcile.Request{NamespacedName: client.ObjectKey{Name: item.Name, Namespace: item.Namespace}}
-	}
-
-	return requests
+	return mapRealmToObjects(ctx, r.Client, obj, &gatewayv1.ConsumerList{})
 }
