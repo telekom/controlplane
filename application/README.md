@@ -9,89 +9,60 @@ SPDX-License-Identifier: CC0-1.0
 </p>
 
 <p align="center">
-  Kubernetes operator for managing Tardis applications.
+  Kubernetes operator for managing applications as an abstract.
 </p>
 
 <p align="center">
-  <a href="#reconciliation-Flow"> Reconciliation Flow</a> •
-  <a href="#dependencies">Dependencies</a> •
-  <a href="#model">Model</a> •
-  <a href="#code-of-conduct">Code of conduct</a> • 
-  <a href="#licensing">Licensing</a> 
+  <a href="#about">About</a> •
+  <a href="#features">Features</a> •
+  <a href="#zone-integration">Zone Integration</a> •
+  <a href="#crds">CRDs</a>
 </p>
 
 ## About
 
-The Application operator provides a Kubernetes-native way to manage Tardis applications. A Tardis application is an abstraction representing a users Rover file. Once this Rover file is applied, the created Application logically encapsulates all the exposures and subscriptions. The Application can also contain an Identity client, that can be used to access the subscriptions. The operator extends Kubernetes with custom resources to create and manage Applications in a declarative way.
+The Application operator provides a Kubernetes-native way to manage applications. 
+An application is an abstraction representing a users Rover file. 
+Once their Rover file is applied, the created Application logically encapsulates all the exposures and subscriptions. 
+The Application can also contain an Identity client and Gateway Consumers, that can be used to access Controlplane Server endpoints.
 
-This operator is part of the Deutsche Telekom Control Plane (CP) platform.
+## Features
 
+- **Automatic Resource Provisioning**: Automatically creates Identity clients and Gateway consumers for applications to Access administrative controlplane server endpoints like [rover-server](../rover-server).
+- **Multi-Zone Support**: Primary and failover zone configuration for high availability
+- **Secret Management Integration**: Seamless integration with Secret Manager for credential handling
+- **IP Restriction Support**: Configure IP-based access control for Gateway consumers
 
-## Reconciliation Flow
-The diagram below shows the general Reconciliation flow.
-# ![Flow](./docs/identity_overview.drawio.svg)
+The Application operator follows a hierarchical reconciliation pattern for Application resource management.
+The operator watches the Application resource and manages the identity client and gateway consumer associated with the application to configure the access point for controlplane server endpoints.
 
+## Zone Integration
 
-### Workflow
-The Application operator follows a hierarchical reconciliation pattern for Application resource management:
+Applications support **primary + failover zones** for high availability:
 
-1. **Application Reconciliation**: The operator watches the Application resource and periodically adjust the cluster's configuration. This includes actions like managing the Identity client and Gateway consumer associated with the Application and rotating the secret. 
+**Key Points**:
+- Primary zone is always required
+- Failover zones are optional for HA scenarios
+- Each zone gets its own Identity Client and Gateway Consumer
 
-The controller implements a declarative approach, continuously reconciling the desired state (defined in the CRs) with the actual state in the cluster. It handles retries and error conditions to ensure eventual consistency.
+## CRDs
+All CRDs can be found here: [CRDs](./config/crd/bases/).
 
-## Dependencies
-- [Controller-Runtime](https://github.com/kubernetes-sigs/controller-runtime) - Library for building Kubernetes operators
-- [Common](../common/) - Deutsche Telekom Control Plane common library
-
-## Model
-The Application operator provides a single Custom Resource Definition (CRD) that represent the Tardis Application. 
-
-Structure: 
-- **needsClient**: boolean value that tells Tardis if an Identity client is required for this Application; true if a subscription is present, otherwise false
-- **needsConsumer**: boolean value that tells Tardis if a Gateway consumer is required for this Application; true if a subscription is present, otherwise false
-- **secret**: holds the secret that is used to get an access token to access the subscriptions; can be a direct value (not recommended) or a secret manager reference
-- **team**: identifies the team that this Application belongs to
-- **teamEmail**: contact information of the team that this Application belongs to
-- **zone**: a reference to the Zone where this Application resides; it is the same Zone that the Rover file specified
-
-Each resource includes status conditions that reflect the state of reconciliation.
-
-You can find the custom resource definitions in the [config/crd directory](./config/crd/).
-
-A simple example Application would look like this:
+<p>The Application domain defines the following Custom Resource (CRD):</p>
 
 <details>
-  <summary>Example Application</summary>
+<summary>
+<strong>Application</strong>
+This CRD represents an application abstraction that encapsulates API exposures and subscriptions.
+</summary>  
 
-  ```yaml
-    apiVersion: application.cp.ei.telekom.de/v1
-    kind: Application
-    metadata:
-      labels:
-        cp.ei.telekom.de/application: sample-application
-        cp.ei.telekom.de/environment: sample-env
-        cp.ei.telekom.de/zone: sample-zone
-      name: sample-application
-      namespace: sample-env--sample-team--sample-application
-    spec:
-      needsClient: true
-      needsConsumer: true
-      secret: sample-secret
-      team: sample-group--sample-team
-      teamEmail: sample-team@example.com
-      zone:
-        name: sample-zone
-        namespace: sample-env
-  ```
-</details><br />
+- The Application CR MUST be created in the namespace of the team that owns the application.
+- The Application name SHOULD follow the team's naming convention for applications.
+- The Application creates and manages:
+  - Identity Client: Created when `needsClient: true` (default) for authentication with Control Plane services
+  - Gateway Consumer: Created when `needsConsumer: true` (default) for accessing gateway endpoints
+- The client ID `status.clientId` is constructed as `{team}--{application-name}`.
+- References to created resources are stored in `status.clients` and `status.consumers`.
 
-## Code of Conduct
-
-This project has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) in version 2.1 as our code of conduct. Please see the details in our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). All contributors must abide by the code of conduct.
-
-By participating in this project, you agree to abide by its [Code of Conduct](./CODE_OF_CONDUCT.md) at all times.
-
-## Licensing
-
-This project follows the [REUSE standard for software licensing](https://reuse.software/). You can find a guide for developers at https://telekom.github.io/reuse-template/.   
-Each file contains copyright and license information, and license texts can be found in the [./LICENSES](./LICENSES) folder. For more information visit https://reuse.software/.
+</details>
+<br />

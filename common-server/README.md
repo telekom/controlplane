@@ -235,3 +235,5 @@ The store can also be sorted, see [sortable](./pkg/store/inmemory/sorted_store.g
 - The server duplicates all resource in memory. This can lead to high memory usage if there are many resources. 
   (1) it uses a kubernetes informer to watch for changes in the resources and (2) it stores all resources in a badger database.
   However, it is possible to store the badger database on disk, see [StoreOpts](./pkg/store/inmemory/inmemory_store.go#L47) for more information. In the future, this could be improved by using only the badger database and not the informer or replacing the badger-database with an external database.
+
+

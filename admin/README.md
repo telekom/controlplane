@@ -4,117 +4,85 @@ Copyright 2025 Deutsche Telekom IT GmbH
 SPDX-License-Identifier: CC0-1.0    
 -->
 
-# admin
-// TODO(user): Add simple overview of use/purpose
+<p align="center">
+  <h1 align="center">Admin</h1>
+</p>
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+<p align="center">
+  The Admin domain manages platform-level resources including environments, zones, and remote organizations.
+</p>
 
-## Getting Started
+<p align="center">
+  <a href="#about">About</a> •
+  <a href="#features">Features</a> •
+  <a href="#crds">CRDs</a>
+</p>
 
-### Prerequisites
-- go version v1.22.0+
-- docker version 17.03+.
-- kubectl version v1.11.3+.
-- Access to a Kubernetes v1.11.3+ cluster.
+## About
 
-### To Deploy on the cluster
-**Build and push your image to the location specified by `IMG`:**
+The Admin domain is responsible for managing the foundational infrastructure resources of the Control Plane. It provides the administrative layer that defines where and how applications can be deployed and accessed.
 
-```sh
-make docker-build docker-push IMG=<some-registry>/admin:tag
-```
+This domain is typically managed by platform administrators and provides the configuration for:
+- **Environments**: Logical separation of workloads (e.g., dev, staging, production)
+- **Zones**: Physical or logical deployment targets with their gateway and identity provider configurations
+- **Remote Organizations**: External Control Plane instances for cross-platform integration
 
-**NOTE:** This image ought to be published in the personal registry you specified.
-And it is required to have access to pull the image from the working environment.
-Make sure you have the proper permission to the registry if the above commands don’t work.
+## Features
 
-**Install the CRDs into the cluster:**
+- **Environment Management**: Define and manage logical environments for API/Application/... separation
+- **Zone Configuration**: Configure deployment zones with gateway, redis and identity provider settings
+- **Remote Organization Integration**: Connect to external Control Plane instances for federated operations
+- **Infrastructure Abstraction**: Provide a unified interface for underlying infrastructure components
 
-```sh
-make install
-```
+## CRDs
+All CRDs can be found here: [CRDs](./config/crd/bases/).
 
-**Deploy the Manager to the cluster with the image specified by `IMG`:**
+<p>The Admin domain defines the following Custom Resources (CRDs):</p>
 
-```sh
-make deploy IMG=<some-registry>/admin:tag
-```
+<details>
+<summary>
+<strong>Environment</strong>
+This CRD represents a logical environment for workload separation (e.g., dev, staging, production).
+</summary>  
 
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
-privileges or be logged in as admin.
+- The Environment CR MUST be created in a namespace that matches its name (e.g., environment `dev` in namespace `dev`).
+- The Environment CR MUST have a label `cp.ei.telekom.de/environment` with the value of the environment name.
+- Environments are used to logically separate workloads and are referenced by other resources like Zones.
+- The environment name is used as a label selector for related resources across the platform.
 
-**Create instances of your solution**
-You can apply the samples (examples) from the config/sample:
+</details>
+<br />
 
-```sh
-kubectl apply -k config/samples/
-```
+<details>
+<summary>
+<strong>Zone</strong>
+This CRD represents a physical or logical deployment target with gateway and identity provider configurations.
+</summary>  
 
->**NOTE**: Ensure that the samples has default values to test it out.
+- The Zone CR MUST be created in a namespace and have a label `cp.ei.telekom.de/environment` indicating which environment it belongs to.
+- The Zone name MUST match the pattern `^[a-z0-9]+(-?[a-z0-9]+)*$` (lowercase alphanumeric with hyphens).
+- Each Zone creates its own dedicated namespace (stored in `status.namespace`) for managing related resources.
+- Zones define gateway configuration, identity provider settings, and Redis connection details.
+- The `visibility` field controls subscription behavior and can be either `World` or `Enterprise`.
+- Zones can optionally define Team APIs through the `teamApis` field, which creates routes on the gateway.
+- The Zone controller creates and manages related resources in its handlers.
+- All managed resources are labeled with both `cp.ei.telekom.de/environment` and `cp.ei.telekom.de/zone` labels.
 
-### To Uninstall
-**Delete the instances (CRs) from the cluster:**
+</details>
+<br />
 
-```sh
-kubectl delete -k config/samples/
-```
+<details>
+<summary>
+<strong>RemoteOrganization</strong>
+This CRD represents an external Control Plane instance for cross-platform integration.
+</summary>  
 
-**Delete the APIs(CRDs) from the cluster:**
+- The RemoteOrganization CR MUST be created in a namespace and have a label `cp.ei.telekom.de/environment` indicating which environment it belongs to.
+- Each RemoteOrganization creates its own dedicated namespace (stored in `status.namespace`) for managing related resources.
+- The `spec.id` field uniquely identifies the remote organization.
+- The `spec.zone` field references the Zone through which this remote organization is accessed.
+- Contains OAuth2 client credentials (`clientId`, `clientSecret`) and issuer URL for authentication with the remote Control Plane.
+- Used for federated operations and cross-platform API exposure/subscription.
 
-```sh
-make uninstall
-```
-
-**UnDeploy the controller from the cluster:**
-
-```sh
-make undeploy
-```
-
-## Project Distribution
-
-Following are the steps to build the installer and distribute this project to users.
-
-1. Build the installer for the image built and published in the registry:
-
-```sh
-make build-installer IMG=<some-registry>/admin:tag
-```
-
-NOTE: The makefile target mentioned above generates an 'install.yaml'
-file in the dist directory. This file contains all the resources built
-with Kustomize, which are necessary to install this project without
-its dependencies.
-
-2. Using the installer
-
-Users can just run kubectl apply -f <URL for YAML BUNDLE> to install the project, i.e.:
-
-```sh
-kubectl apply -f https://raw.githubusercontent.com/<org>/admin/<tag or branch>/dist/install.yaml
-```
-
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
-
-**NOTE:** Run `make help` for more information on all potential `make` targets
-
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
-
-## License
-
-Copyright 2024.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
+</details>
+<br />
