@@ -80,8 +80,8 @@ func HandleError(httpStatus int, msg string, okStatusCodes ...int) error {
 	}
 	var httpErr *HttpError
 	switch httpStatus {
-	case 400:
-		httpErr = BlockedErrorf("bad request error (%d): %s", httpStatus, msg)
+	case 400, 403:
+		return BlockedErrorf("bad request error (%d): %s", httpStatus, msg)
 	case 409, 500, 502, 504:
 		httpErr = RetryableErrorf("server error (%d): %s", httpStatus, msg)
 	case 429, 503:

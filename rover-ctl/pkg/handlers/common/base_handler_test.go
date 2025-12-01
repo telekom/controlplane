@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -52,7 +53,7 @@ var _ = Describe("BaseHandler", func() {
 		testCtx = config.NewContext(context.Background(), token)
 
 		// Create a handler for testing
-		handler = common.NewBaseHandler("v1", "Test", "resources", 100)
+		handler = common.NewBaseHandler("v1", "Test", "resources", 100).WithValidation(common.ValidateObjectName)
 		handler.Setup(testCtx)
 	})
 
@@ -160,6 +161,193 @@ var _ = Describe("BaseHandler", func() {
 				Expect(apiErr).NotTo(BeNil())
 				// The error message comes from the mock response we defined above
 				Expect(apiErr.Title).To(Equal("Validation failed"))
+			})
+		})
+
+		Context("when object name validation fails", func() {
+			It("should return validation error for invalid object names", func() {
+				// Prepare a test object with invalid name (contains consecutive hyphens)
+				testObj := map[string]any{
+					"apiVersion": "v1",
+					"kind":       "Test",
+					"metadata": map[string]any{
+						"name": "invalid--name",
+					},
+					"spec": map[string]any{
+						"foo": "bar",
+					},
+				}
+
+				// No HTTP call should be made since validation fails first
+				obj := &types.UnstructuredObject{Content: testObj}
+				err := handler.Apply(testCtx, obj)
+
+				// Verify validation error
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Test failed validation"))
+
+				apiErr, ok := common.AsApiError(err)
+				Expect(ok).To(BeTrue())
+				Expect(apiErr.Type).To(Equal("ValidationError"))
+				Expect(apiErr.Status).To(Equal(400))
+				Expect(apiErr.Title).To(ContainSubstring("Failed to validate Test \"invalid--name\""))
+				Expect(apiErr.Fields).To(HaveLen(1))
+				Expect(apiErr.Fields[0].Field).To(Equal("name"))
+				Expect(apiErr.Fields[0].Detail).To(Equal("name must not contain consecutive '-' characters"))
+
+				// Verify no HTTP requests were made
+				mockClient.AssertNotCalled(GinkgoT(), "Do", mock.Anything)
+			})
+
+			It("should return validation error for names that are too long", func() {
+				// Create a name that's longer than MaxLength characters
+				longName := strings.Repeat("a", common.MaxLength+1)
+				testObj := map[string]any{
+					"apiVersion": "v1",
+					"kind":       "Test",
+					"metadata": map[string]any{
+						"name": longName,
+					},
+				}
+
+				obj := &types.UnstructuredObject{Content: testObj}
+				err := handler.Apply(testCtx, obj)
+
+				// Verify validation error
+				Expect(err).To(HaveOccurred())
+				apiErr, ok := common.AsApiError(err)
+				Expect(ok).To(BeTrue())
+				Expect(apiErr.Type).To(Equal("ValidationError"))
+				Expect(apiErr.Fields).To(HaveLen(1))
+				Expect(apiErr.Fields[0].Field).To(Equal("name"))
+				Expect(apiErr.Fields[0].Detail).To(Equal("name must be between 2 and 90 characters"))
+
+				// Verify no HTTP requests were made
+				mockClient.AssertNotCalled(GinkgoT(), "Do", mock.Anything)
+			})
+
+			It("should return validation error for names with uppercase letters", func() {
+				testObj := map[string]any{
+					"apiVersion": "v1",
+					"kind":       "Test",
+					"metadata": map[string]any{
+						"name": "InvalidName",
+					},
+				}
+
+				obj := &types.UnstructuredObject{Content: testObj}
+				err := handler.Apply(testCtx, obj)
+
+				// Verify validation error
+				Expect(err).To(HaveOccurred())
+				apiErr, ok := common.AsApiError(err)
+				Expect(ok).To(BeTrue())
+				Expect(apiErr.Type).To(Equal("ValidationError"))
+				Expect(apiErr.Fields).To(HaveLen(1))
+				Expect(apiErr.Fields[0].Field).To(Equal("name"))
+				Expect(apiErr.Fields[0].Detail).To(Equal("name must consist of lower case alphanumeric characters or '-', start and end with an alphanumeric character"))
+
+				// Verify no HTTP requests were made
+				mockClient.AssertNotCalled(GinkgoT(), "Do", mock.Anything)
+			})
+
+			It("should return validation error with filename when object has filename property", func() {
+				testObj := map[string]any{
+					"apiVersion": "v1",
+					"kind":       "Test",
+					"metadata": map[string]any{
+						"name": "Invalid_Name",
+					},
+				}
+
+				obj := &types.UnstructuredObject{Content: testObj}
+				obj.SetProperty("filename", "test-resource.yaml")
+				err := handler.Apply(testCtx, obj)
+
+				// Verify validation error includes filename
+				Expect(err).To(HaveOccurred())
+				apiErr, ok := common.AsApiError(err)
+				Expect(ok).To(BeTrue())
+				Expect(apiErr.Detail).To(ContainSubstring("defined in file \"test-resource.yaml\""))
+
+				// Verify no HTTP requests were made
+				mockClient.AssertNotCalled(GinkgoT(), "Do", mock.Anything)
+			})
+
+			It("should return validation error with multiple field errors for names violating multiple rules", func() {
+				// Name that is too long AND has consecutive hyphens
+				longNameWithConsecutiveHyphens := strings.Repeat("a", 50) + "--" + strings.Repeat("b", 50) // total length = 90 + 2 = 86
+				testObj := map[string]any{
+					"apiVersion": "v1",
+					"kind":       "Test",
+					"metadata": map[string]any{
+						"name": longNameWithConsecutiveHyphens,
+					},
+				}
+
+				obj := &types.UnstructuredObject{Content: testObj}
+				err := handler.Apply(testCtx, obj)
+
+				// Verify validation error has multiple field errors
+				Expect(err).To(HaveOccurred())
+				apiErr, ok := common.AsApiError(err)
+				Expect(ok).To(BeTrue())
+				Expect(apiErr.Type).To(Equal("ValidationError"))
+				Expect(apiErr.Fields).To(HaveLen(2))
+
+				fieldDetails := make([]string, len(apiErr.Fields))
+				for i, field := range apiErr.Fields {
+					fieldDetails[i] = field.Detail
+				}
+				Expect(fieldDetails).To(ConsistOf(
+					"name must be between 2 and 90 characters",
+					"name must not contain consecutive '-' characters",
+				))
+
+				// Verify no HTTP requests were made
+				mockClient.AssertNotCalled(GinkgoT(), "Do", mock.Anything)
+			})
+
+			It("should proceed with HTTP request when object name is valid", func() {
+				// Prepare a test object with valid name
+				testObj := map[string]any{
+					"apiVersion": "v1",
+					"kind":       "Test",
+					"metadata": map[string]any{
+						"name": "valid-name-123",
+					},
+					"spec": map[string]any{
+						"foo": "bar",
+					},
+				}
+
+				// Configure the mock to return a success response
+				mockClient.EXPECT().Do(mock.AnythingOfType("*http.Request")).RunAndReturn(func(req *http.Request) (*http.Response, error) {
+					// Verify the request was made (validation passed)
+					Expect(req.Method).To(Equal(http.MethodPut))
+					Expect(req.URL.String()).To(Equal("https://api.example.com/resources/my-group--my-team--valid-name-123"))
+
+					return &http.Response{
+						StatusCode: http.StatusAccepted,
+						Body: io.NopCloser(bytes.NewBufferString(`{
+							"apiVersion": "v1",
+							"kind": "Test",
+							"metadata": {"name": "valid-name-123"},
+							"status": {"state": "processing"}
+						}`)),
+						Header: make(http.Header),
+					}, nil
+				})
+
+				// Call Apply with valid object
+				obj := &types.UnstructuredObject{Content: testObj}
+				err := handler.Apply(testCtx, obj)
+
+				// Verify no error occurred (validation passed and HTTP request succeeded)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Verify that HTTP request was made
+				mockClient.AssertExpectations(GinkgoT())
 			})
 		})
 	})

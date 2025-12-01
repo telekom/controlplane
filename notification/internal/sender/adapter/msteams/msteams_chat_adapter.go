@@ -12,6 +12,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter"
 
 	"github.com/go-logr/logr"
@@ -92,11 +93,11 @@ func (e MsTeamsAdapter) Send(ctx context.Context, config adapter.ChatChannelConf
 	// Validate required parameters
 	webhookURL := config.GetWebhookURL()
 	if webhookURL == "" {
-		return fmt.Errorf("webhook URL is required")
+		return errors.New("webhook URL is required")
 	}
 
 	if body == "" {
-		return fmt.Errorf("message body is required")
+		return errors.New("message body is required")
 	}
 
 	// Log request if verbose logging is enabled
@@ -117,7 +118,7 @@ func (e MsTeamsAdapter) Send(ctx context.Context, config adapter.ChatChannelConf
 		log.Error(err, "HTTP request failed",
 			"webhook", webhookURL,
 		)
-		return fmt.Errorf("HTTP request failed: %w", err)
+		return errors.New(fmt.Sprintf("HTTP request failed: %q", err))
 	}
 
 	// Check for non-success status codes
@@ -139,16 +140,15 @@ func parseError(statusCode int, respBody []byte) error {
 	// Try to parse as structured error
 	var teamsErr TeamsErrorResponse
 	if err := json.Unmarshal(respBody, &teamsErr); err == nil && teamsErr.Error.Code != "" {
-		return fmt.Errorf("MS Teams API error (status %d): code=%s, message=%s, inner_code=%s, inner_message=%s, request_id=%s",
+		return errors.New(fmt.Sprintf("MS Teams API error (status %d): code=%s, message=%s, inner_code=%s, inner_message=%s, request_id=%s",
 			statusCode,
 			teamsErr.Error.Code,
 			teamsErr.Error.Message,
 			teamsErr.Error.InnerError.Code,
 			teamsErr.Error.InnerError.Message,
-			teamsErr.Error.InnerError.RequestID,
-		)
+			teamsErr.Error.InnerError.RequestID))
 	}
 
 	// Fallback to raw response
-	return fmt.Errorf("unexpected status code %d: %s", statusCode, string(respBody))
+	return errors.New(fmt.Sprintf("unexpected status code %d: %s", statusCode, string(respBody)))
 }

@@ -22,7 +22,7 @@ type RoverHandler struct {
 
 func NewRoverHandlerInstance() *RoverHandler {
 	handler := &RoverHandler{
-		BaseHandler: common.NewBaseHandler("tcp.ei.telekom.de/v1", "Rover", "rovers", 100),
+		BaseHandler: common.NewBaseHandler("tcp.ei.telekom.de/v1", "Rover", "rovers", 100).WithValidation(common.ValidateObjectName),
 	}
 	handler.BaseHandler.SupportsInfo = true
 

@@ -15,6 +15,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	MaxNameLength = 90
+	MinNameLength = 2
+)
+
 // <env>--<group>--<team>
 var nsRE = regexp.MustCompile(`^([a-z0-9-]+)--([a-z0-9-]+)--([a-z0-9-]+)$`)
 
@@ -71,5 +76,19 @@ func ParseResourceId(ctx context.Context, resourceId string) (i ResourceIdInfo, 
 		Namespace:   parts[1],
 		Name:        parts[2],
 	}
-	return
+	return i, ValidateResourceIdInfo(i)
+}
+
+func ValidateResourceIdInfo(info ResourceIdInfo) error {
+	detail := "ResourceId must be in format <teamId>--<resourceName>"
+	fields := map[string]string{}
+
+	if len(info.Name) < MinNameLength || len(info.Name) > MaxNameLength {
+		fields["name"] = "must be between 2 and 90 characters"
+	}
+
+	if len(fields) > 0 {
+		return problems.ValidationErrors(fields, detail)
+	}
+	return nil
 }

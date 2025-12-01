@@ -20,7 +20,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test"
-	"github.com/telekom/controlplane/common/pkg/types"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 )
 
 var _ = Describe("ApprovalRequest Controller", func() {
@@ -32,12 +32,30 @@ var _ = Describe("ApprovalRequest Controller", func() {
 		config.EnvironmentLabelKey: testEnvironment,
 	})
 
-	resquester := approvalv1.Requester{
-		Name:  "test-requester",
-		Email: "test@test.com",
+	requester := approvalv1.Requester{
+		TeamName:  "test--requester",
+		TeamEmail: "test@requester.com",
 		Properties: runtime.RawExtension{
-
 			Raw: []byte(`{"scopes": ["test"]}`),
+		},
+		ApplicationRef: &ctypes.TypedObjectRef{
+			TypeMeta: metav1.TypeMeta{},
+			ObjectRef: ctypes.ObjectRef{
+				Name:      "requester-app-name",
+				Namespace: "default",
+			},
+		},
+	}
+
+	decider := approvalv1.Decider{
+		TeamName:  "test--decider",
+		TeamEmail: "test@decider.com",
+		ApplicationRef: &ctypes.TypedObjectRef{
+			TypeMeta: metav1.TypeMeta{},
+			ObjectRef: ctypes.ObjectRef{
+				Name:      "decider-app-name",
+				Namespace: "default",
+			},
 		},
 	}
 
@@ -55,12 +73,13 @@ var _ = Describe("ApprovalRequest Controller", func() {
 
 		It("should automatically accept auto-approved approval-requests", func() {
 
-			By("definitng the ApprovalRequest with auto strategy and granted state")
+			By("defining the ApprovalRequest with auto strategy and granted state")
 			ar := arTempl.DeepCopy()
 
 			ar.Spec = approvalv1.ApprovalRequestSpec{
-				Resource:  *types.TypedObjectRefFromObject(sourceResource, k8sClient.Scheme()),
-				Requester: resquester,
+				Target:    *ctypes.TypedObjectRefFromObject(sourceResource, k8sClient.Scheme()),
+				Requester: requester,
+				Decider:   decider,
 				Strategy:  approvalv1.ApprovalStrategyAuto,
 				State:     approvalv1.ApprovalStateGranted,
 			}
@@ -90,8 +109,11 @@ var _ = Describe("ApprovalRequest Controller", func() {
 
 				g.Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
 				g.Expect(a.Spec.Requester.Properties.Raw).NotTo(BeNil())
-				g.Expect(a.Spec.Requester.Name).To(Equal("test-requester"))
-				g.Expect(a.Spec.Requester.Email).To(Equal("test@test.com"))
+				g.Expect(a.Spec.Requester.TeamName).To(Equal("test--requester"))
+				g.Expect(a.Spec.Requester.TeamEmail).To(Equal("test@requester.com"))
+
+				g.Expect(a.Spec.Decider.TeamName).To(Equal("test--decider"))
+				g.Expect(a.Spec.Decider.TeamEmail).To(Equal("test@decider.com"))
 
 				processingCondition := meta.FindStatusCondition(a.Status.Conditions, condition.ConditionTypeProcessing)
 				readyCondition := meta.FindStatusCondition(a.Status.Conditions, condition.ConditionTypeReady)
@@ -111,10 +133,11 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				g.Expect(err).NotTo(HaveOccurred())
 
 				By("Checking notification was created for granted state")
-				Expect(ar.Status.NotificationRef).NotTo(BeNil())
+				Expect(ar.Status.NotificationRefs).NotTo(BeNil())
+				Expect(ar.Status.NotificationRefs).NotTo(BeEmpty())
 				var notification = &notificationv1.Notification{}
-				Expect(k8sClient.Get(ctx, ar.Status.NotificationRef.K8s(), notification)).NotTo(HaveOccurred())
-				Expect(notification.Spec.Purpose).To(ContainSubstring("approvalrequest--testresource"))
+				Expect(k8sClient.Get(ctx, ar.Status.NotificationRefs[0].K8s(), notification)).NotTo(HaveOccurred())
+				Expect(notification.Spec.Purpose).To(ContainSubstring("approvalrequest--testresource--created--decider"))
 
 				g.Expect(a.ObjectMeta.OwnerReferences).To(HaveLen(1))
 				g.Expect(a.ObjectMeta.OwnerReferences[0].APIVersion).To(Equal("testgroup.cp.ei.telekom.de/v1"))

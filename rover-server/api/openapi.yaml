@@ -205,12 +205,7 @@ paths:
       description: Find an existing Rover
       operationId: getRover
       parameters:
-        - name: roverId
-          description: The unique id of this resource
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/RoverId'
       responses:
         '200':
           description: OK
@@ -264,12 +259,7 @@ paths:
         appropriate resource.
       operationId: updateRover
       parameters:
-        - name: roverId
-          description: The unique id of this resource
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/RoverId'
       requestBody:
         content:
           application/json:
@@ -312,12 +302,7 @@ paths:
         Delete Rover - will remove your API / Subscriptions / Exposures
       operationId: deleteRover
       parameters:
-        - name: roverId
-          description: The unique id of this resource
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/RoverId'
       responses:
         '204':
           description: DELETED
@@ -347,12 +332,7 @@ paths:
       description: Read info of a specific application
       operationId: getApplicationInfo
       parameters:
-        - name: roverId
-          description: The unique id of this resource
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/RoverId'
         - $ref: '#/components/parameters/ShallowInfo'
       responses:
         '200':
@@ -396,12 +376,7 @@ paths:
       description: Generate new clientSecret for an Application
       operationId: resetRoverSecret
       parameters:
-        - name: roverId
-          description: The unique id of this resource
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/RoverId'
       responses:
         '200':
           description: OK
@@ -435,12 +410,7 @@ paths:
       description: Find an existing Rover and return its status
       operationId: getRoverStatus
       parameters:
-        - name: roverId
-          description: The unique id of this resource
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/RoverId'
       responses:
         '200':
           description: OK
@@ -582,12 +552,7 @@ paths:
       description: Find an existing ApiSpecification and return its status
       operationId: getApiSpecificationStatus
       parameters:
-        - name: apiSpecificationId
-          description: The unique id of this resource
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/ApiSpecificationId'
       responses:
         '200':
           description: OK
@@ -626,12 +591,7 @@ paths:
       description: Find an existing ApiSpecification
       operationId: getApiSpecifications
       parameters:
-        - name: apiSpecificationId
-          description: The unique id of this resource
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/ApiSpecificationId'
       responses:
         '200':
           description: OK
@@ -685,12 +645,7 @@ paths:
         appropriate resource.
       operationId: updateApiSpecification
       parameters:
-        - name: apiSpecificationId
-          description: The unique id of this resource
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/ApiSpecificationId'
       requestBody:
         content:
           application/json:
@@ -733,12 +688,7 @@ paths:
         Delete an ApiSpecification
       operationId: deleteApiSpecification
       parameters:
-        - name: apiSpecificationId
-          description: The unique id of this resource
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/ApiSpecificationId'
       responses:
         '204':
           description: DELETED
@@ -1072,6 +1022,20 @@ components:
             tardis:user:read: (deprecated) Read access to all resources of a team
             tardis:user:obfuscated: (deprecated) Obfuscated access to all resources of a team
   parameters:
+    RoverId:
+      name: roverId
+      description: The unique id of this resource following the pattern group--team--resourceName
+      in: path
+      required: true
+      schema:
+        type: string
+    ApiSpecificationId:
+      name: apiSpecificationId
+      description: The unique id of this resource following the pattern group--team--resourceName
+      in: path
+      required: true
+      schema:
+        type: string
     Cursor:
       name: cursor
       in: query

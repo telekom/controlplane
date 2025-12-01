@@ -6,6 +6,8 @@ package controller
 
 import (
 	"fmt"
+	"github.com/telekom/controlplane/api/internal/handler/util"
+	applicationapi "github.com/telekom/controlplane/application/api/v1"
 
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
@@ -90,7 +92,7 @@ func NewRealm(name, zoneName string) *gatewayapi.Realm {
 	return realm
 }
 
-func NewApiExposure(apiBasePath, zoneName string) *apiv1.ApiExposure {
+func NewApiExposure(apiBasePath, zoneName string, appName string) *apiv1.ApiExposure {
 	return &apiv1.ApiExposure{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      labelutil.NormalizeValue(apiBasePath),
@@ -98,6 +100,7 @@ func NewApiExposure(apiBasePath, zoneName string) *apiv1.ApiExposure {
 			Labels: map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
 				apiv1.BasePathLabelKey:     labelutil.NormalizeLabelValue(apiBasePath),
+				util.ApplicationLabelKey:   labelutil.NormalizeLabelValue(appName),
 			},
 		},
 		Spec: apiv1.ApiExposureSpec{
@@ -183,10 +186,16 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 	var api *apiv1.Api
 	var zone *adminapi.Zone
 
+	var appName = "api-exposure-app-2"
+	var apiExpApplication *applicationapi.Application
+
 	BeforeAll(func() {
+		By("Creating the Application for ApiExposure")
+		apiExpApplication = CreateApplication(appName)
+
 		By("Initializing the API and APIExposure")
 		api = NewApi(apiBasePath)
-		apiExposure = NewApiExposure(apiBasePath, zoneName)
+		apiExposure = NewApiExposure(apiBasePath, zoneName, appName)
 
 		By("Creating the Zone")
 		zone = CreateZone(zoneName)
@@ -196,8 +205,12 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 	})
 
 	AfterAll(func() {
+		By("Deleting the Application for ApiExposure")
+		err := k8sClient.Delete(ctx, apiExpApplication)
+		Expect(err).ToNot(HaveOccurred())
+
 		By("Cleaning up and deleting all resources")
-		err := k8sClient.Delete(ctx, api)
+		err = k8sClient.Delete(ctx, api)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -282,12 +295,22 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 	Context("Deleting and Switching the Active ApiExposure", Ordered, func() {
 
 		var secondApiExposure *apiv1.ApiExposure
+		var appName = "api-exposure-app-3"
+		var apiExpApplication *applicationapi.Application
 
 		BeforeAll(func() {
-			By("Creating the second APIExposure")
-			secondApiExposure = NewApiExposure(apiBasePath, zoneName)
-			secondApiExposure.Name = "second-api"
+			By("Creating the Application for ApiExposure")
+			apiExpApplication = CreateApplication(appName)
 
+			By("Creating the second APIExposure")
+			secondApiExposure = NewApiExposure(apiBasePath, zoneName, appName)
+			secondApiExposure.Name = "second-api"
+		})
+
+		AfterAll(func() {
+			By("Deleting the Application for ApiExposure")
+			err := k8sClient.Delete(ctx, apiExpApplication)
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should successfully provision the resource and set it to inactive", func() {
@@ -336,10 +359,15 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 	Context("ApiExposure with ExternalIDPConfig Configured", Ordered, func() {
 
 		var thirdApiExposure *apiv1.ApiExposure
+		var appName = "api-exposure-app-4"
+		var apiExpApplication *applicationapi.Application
 
 		BeforeAll(func() {
+			By("Creating the Application for ApiExposure")
+			apiExpApplication = CreateApplication(appName)
+
 			By("Creating the second APIExposure")
-			thirdApiExposure = NewApiExposure(apiBasePath, zoneName)
+			thirdApiExposure = NewApiExposure(apiBasePath, zoneName, appName)
 			thirdApiExposure.Name = "third-api"
 			thirdApiExposure.Spec.Security = &apiv1.Security{
 				M2M: &apiv1.Machine2MachineAuthentication{
@@ -352,6 +380,12 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 					},
 				},
 			}
+		})
+
+		AfterAll(func() {
+			By("Deleting the Application for ApiExposure")
+			err := k8sClient.Delete(ctx, apiExpApplication)
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should reject invalid config", func() {
@@ -415,12 +449,23 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 	Context("Validating the basePath", Ordered, func() {
 
 		var apiBasePath = "/ApiExpctrl/Test/v1"
+		var appName = "api-exposure-app-5"
+		var apiExpApplication *applicationapi.Application
 
 		var secondApiExposure *apiv1.ApiExposure
 
 		BeforeAll(func() {
-			secondApiExposure = NewApiExposure(apiBasePath, zoneName)
+			By("Creating the Application for ApiExposure")
+			apiExpApplication = CreateApplication(appName)
+
+			secondApiExposure = NewApiExposure(apiBasePath, zoneName, appName)
 			secondApiExposure.Name = "case-conflict-api"
+		})
+
+		AfterAll(func() {
+			By("Deleting the Application for ApiExposure")
+			err := k8sClient.Delete(ctx, apiExpApplication)
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should reject basePath with different case", func() {
@@ -505,9 +550,23 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 
 	Context("Creating and Updating ApiExposures", Ordered, func() {
 
+		var appName = "api-exposure-app-6"
+		var apiExpApplication *applicationapi.Application
+
+		BeforeAll(func() {
+			By("Creating the Application for ApiExposure")
+			apiExpApplication = CreateApplication(appName)
+		})
+
+		AfterEach(func() {
+			By("Deleting the Application for ApiExposure")
+			err := k8sClient.Delete(ctx, apiExpApplication)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		It("should create the real- and failover-route", func() {
 			By("Creating the resource")
-			apiExposure = NewApiExposure(apiBasePath, zoneName)
+			apiExposure = NewApiExposure(apiBasePath, zoneName, appName)
 			apiExposure.Spec.Traffic = apiv1.Traffic{
 				Failover: &apiv1.Failover{
 					Zones: []types.ObjectRef{
@@ -569,9 +628,23 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 
 	Context("Creating and Updating ApiExposures with Security", Ordered, func() {
 
+		var secondAppName = "api-exposure-app-7"
+		var secondApiExpApplication *applicationapi.Application
+
+		BeforeAll(func() {
+			By("Creating the Application for ApiExposure")
+			secondApiExpApplication = CreateApplication(secondAppName)
+		})
+
+		AfterEach(func() {
+			By("Deleting the Application for ApiExposure")
+			err := k8sClient.Delete(ctx, secondApiExpApplication)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		It("should create the real- and failover-route", func() {
 			By("Creating the resource")
-			apiExposure = NewApiExposure(apiBasePath, zoneName)
+			apiExposure = NewApiExposure(apiBasePath, zoneName, secondAppName)
 			apiExposure.Spec.Traffic = apiv1.Traffic{
 				Failover: &apiv1.Failover{
 					Zones: []types.ObjectRef{

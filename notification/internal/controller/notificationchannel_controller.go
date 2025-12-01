@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"github.com/telekom/controlplane/notification/internal/config"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -26,6 +27,8 @@ type NotificationChannelReconciler struct {
 	Recorder record.EventRecorder
 
 	cc.Controller[*notificationv1.NotificationChannel]
+
+	HousekeepingConfig *config.NotificationHousekeepingConfig
 }
 
 // +kubebuilder:rbac:groups=notification.cp.ei.telekom.de,resources=notificationchannels,verbs=get;list;watch;create;update;patch;delete
@@ -39,7 +42,9 @@ func (r *NotificationChannelReconciler) Reconcile(ctx context.Context, req ctrl.
 // SetupWithManager sets up the controller with the Manager.
 func (r *NotificationChannelReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("notificationchannel-controller")
-	r.Controller = cc.NewController(&handler.NotificationChannelHandler{}, r.Client, r.Recorder)
+	r.Controller = cc.NewController(&handler.NotificationChannelHandler{
+		HousekeepingConfig: r.HousekeepingConfig,
+	}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&notificationv1.NotificationChannel{}).

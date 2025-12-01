@@ -6,6 +6,8 @@ package notification_channel
 
 import (
 	"context"
+	"slices"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
@@ -17,6 +19,8 @@ import (
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler"
 )
+
+const separator = "--"
 
 type NotificationChannelHandler struct {
 }
@@ -36,6 +40,27 @@ func (n NotificationChannelHandler) CreateOrUpdate(ctx context.Context, owner *o
 
 	mutate := func() error {
 		channelObj.SetLabels(owner.GetLabels())
+
+		recipientsMails := make([]string, len(owner.Spec.Members)+1) // +1 because we add all members + the team email
+		for i, member := range owner.Spec.Members {
+			recipientsMails[i] = member.Email
+		}
+		recipientsMails[len(recipientsMails)-1] = owner.Spec.Email
+
+		slices.SortStableFunc(recipientsMails, func(a, b string) int {
+			return strings.Compare(a, b)
+		})
+
+		channelObj.Spec = notificationv1.NotificationChannelSpec{
+			Email: &notificationv1.EmailConfig{
+				Recipients: recipientsMails,
+			},
+			// TODO: At a later stage, teams can configure how to receive notifications. For now, only mail
+			MsTeams: nil,
+			Webhook: nil,
+			Ignore:  nil,
+		}
+
 		return nil
 	}
 
@@ -131,12 +156,10 @@ func rotateTokenNotification(ctx context.Context, owner *organizationv1.Team, no
 		return err
 	}
 
-	existingNotificationRef, ok := owner.Status.NotificationsRef["token-rotated"]
 	createNotification := true
+	existingNotificationRef, ok := owner.Status.NotificationsRef["token-rotated"]
 	if ok {
-		if notification.GetName() == existingNotificationRef.GetName() {
-			createNotification = false
-		}
+		createNotification = hasTeamTokenChanged(existingNotificationRef.GetName(), notification.GetName())
 	}
 
 	if createNotification {
@@ -166,4 +189,21 @@ func onboardingNotification(ctx context.Context, owner *organizationv1.Team, not
 
 func (n NotificationChannelHandler) Identifier() string {
 	return "notification-channel"
+}
+
+func hasTeamTokenChanged(old string, new string) bool {
+	// notification name is token-rotated--<tokenHash>--<specHash>
+
+	// split by delimiter
+	oldParts := strings.Split(old, separator)
+	if len(oldParts) < 2 {
+		return false
+	}
+
+	newParts := strings.Split(new, separator)
+	if len(newParts) < 2 {
+		return false
+	}
+
+	return oldParts[1] != newParts[1]
 }

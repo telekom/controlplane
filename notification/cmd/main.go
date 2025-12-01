@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/notification/internal/templatecache"
 	"os"
 	"path/filepath"
 
@@ -26,7 +27,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	emailadapterconfig "github.com/telekom/controlplane/notification/internal/config"
+	notificationsconfig "github.com/telekom/controlplane/notification/internal/config"
 
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/internal/controller"
@@ -80,10 +81,17 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	emailAdapterConfig, err := emailadapterconfig.LoadEmailAdapterConfig()
+	// configuration loading
+	emailAdapterConfig, err := notificationsconfig.LoadEmailAdapterConfig()
 	if err != nil {
-		panic(errors.Wrap(err, "failed to load configuration"))
+		panic(errors.Wrap(err, "failed to load configuration for email adapter"))
 	}
+
+	housekeepingConfig, err := notificationsconfig.LoadHousekeepingConfig()
+	if err != nil {
+		panic(errors.Wrap(err, "failed to load configuration for housekeeping"))
+	}
+	setupLog.Info("Loaded housekeeping config ", "config", housekeepingConfig)
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will
@@ -198,16 +206,27 @@ func main() {
 		os.Exit(1)
 	}
 
+	rootCtx := ctrl.SetupSignalHandler()
+	controller.RegisterIndecesOrDie(rootCtx, mgr)
+
 	if err := (&controller.NotificationChannelReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:             mgr.GetClient(),
+		Scheme:             mgr.GetScheme(),
+		HousekeepingConfig: housekeepingConfig,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "NotificationChannel")
 		os.Exit(1)
 	}
 
+	// create the notifications cache - shared between the notifications template controller/handler and the notifications controller/handler
+	cache := templatecache.New()
+
 	// setup NotificationReconciler with the parsed config for email adapter
-	notificationReconciler := controller.NewNotificationReconcilerWithSenderConfig(mgr.GetClient(), mgr.GetScheme(), emailAdapterConfig)
+	notificationReconciler := controller.NewNotificationReconcilerWithConfig(
+		mgr.GetClient(),
+		mgr.GetScheme(),
+		emailAdapterConfig,
+		cache)
 	if err := notificationReconciler.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Notification")
 		os.Exit(1)
@@ -216,7 +235,7 @@ func main() {
 	if err := (&controller.NotificationTemplateReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(mgr, cache); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "NotificationTemplate")
 		os.Exit(1)
 	}
@@ -248,7 +267,7 @@ func main() {
 	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(rootCtx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}

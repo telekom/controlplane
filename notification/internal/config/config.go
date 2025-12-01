@@ -11,6 +11,12 @@ import (
 	"time"
 )
 
+type NotificationHousekeepingConfig struct {
+
+	// TTLMonthsAfterFinished specifies how many months should the notification be kept in the system if it was successfully handled (all channels sent without error)
+	TTLMonthsAfterFinished int32 `json:"ttlMonthsAfterFinished,omitempty"`
+}
+
 // EmailAdapterConfig wrapper for the static config of the mail notification adapter
 type EmailAdapterConfig struct {
 	SMTPConnection SMTPConnection `mapstructure:"smtpConnection"`
@@ -36,21 +42,32 @@ type SMTPSender struct {
 	DryRun bool `mapstructure:"dryRun"`
 }
 
+func LoadHousekeepingConfig() (*NotificationHousekeepingConfig, error) {
+	setHousekeepingConfigDefaults()
+
+	var config NotificationHousekeepingConfig
+	if err := viper.Unmarshal(&config); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal notifications housekeeping config")
+	}
+
+	return &config, nil
+}
+
 func LoadEmailAdapterConfig() (*EmailAdapterConfig, error) {
-	setDefaults()
+	setEmailAdapterConfigDefaults()
 
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	var config EmailAdapterConfig
 	if err := viper.Unmarshal(&config); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal config")
+		return nil, errors.Wrap(err, "failed to unmarshal email adapter config")
 	}
 
 	return &config, nil
 }
 
-func setDefaults() {
+func setEmailAdapterConfigDefaults() {
 	viper.SetDefault("smtpConnection.host", "localhost")
 	viper.SetDefault("smtpConnection.port", 25)
 	viper.SetDefault("smtpConnection.user", "")
@@ -64,4 +81,8 @@ func setDefaults() {
 	viper.SetDefault("smtpSender.defaultFrom", "email@telekom.de")
 	viper.SetDefault("smtpSender.defaultName", "Team Tardis")
 	viper.SetDefault("smtpSender.dryRun", false)
+}
+
+func setHousekeepingConfigDefaults() {
+	viper.SetDefault("ttlMonthsAfterFinished", 2)
 }
