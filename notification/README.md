@@ -17,7 +17,8 @@ SPDX-License-Identifier: CC0-1.0
   <a href="#about">About</a> •
   <a href="#features">Features</a> •
   <a href="#architecture">Architecture</a> •
-  <a href="#notification-builder">Notification Builder</a>
+  <a href="#notification-builder">Notification Builder</a> •
+  <a href="#crds">CRDs</a>
 </p>
 
 
@@ -153,3 +154,62 @@ notification, err := builder.NewNotificationBuilder().
 - **Property Management**: Simple way to add template properties
 - **Delivery Options**: Support for asynchronous sending
 - **Self-Contained**: No dependencies on external domains
+
+## CRDs
+All CRDs can be found here: [CRDs](./config/crd/bases/).
+
+<p>The Notification domain defines the following Custom Resources (CRDs):</p>
+
+<details>
+<summary>
+<strong>Notification</strong>
+This CRD represents a notification to be sent through one or more channels.
+</summary>  
+
+- The Notification CR is created by other domains when an event occurs that requires notification.
+- The Notification CR SHOULD be created in the same namespace as the resource that triggered the notification.
+- The Notification CR specifies a purpose that determines which template to use.
+- The Notification CR must include a sender (either System or User type).
+- The Notification CR references one or more NotificationChannel CRs to deliver the message.
+- The Notification CR can include custom properties used to render the template.
+- The Notification status tracks delivery state per channel, including timestamps and error messages.
+
+</details>
+<br />
+
+<details>
+<summary>
+<strong>NotificationChannel</strong>
+This CRD represents a communication channel for delivering notifications.
+</summary>  
+
+- The NotificationChannel CR specifies exactly one channel type: Email, MsTeams, or Webhook.
+- The NotificationChannel CR is typically created automatically when a Team is created.
+- The NotificationChannel CR SHOULD be created in the namespace that corresponds to the team it belongs to.
+- The NotificationChannel CR name SHOULD match the team name or follow a pattern that clearly identifies the team.
+- For Email channels, recipients and optional sender address are specified.
+- For MsTeams channels, a webhook URL is required.
+- For Webhook channels, a URL, method, and optional headers are specified.
+- The NotificationChannel CR can include authentication configuration (None or OAuth2).
+- The NotificationChannel CR can specify purposes to ignore, allowing filtering of notifications.
+
+</details>
+<br />
+
+<details>
+<summary>
+<strong>NotificationTemplate</strong>
+This CRD represents templates for formatting notifications for different channels.
+</summary>  
+
+- The NotificationTemplate CR is created by administrators and used by the system.
+- The NotificationTemplate CR SHOULD be created in a centralized namespace accessible to all components.
+- The NotificationTemplate CR name SHOULD follow the pattern `{purpose}--{channel-type}` for easy identification.
+- The NotificationTemplate CR specifies a purpose and channel type.
+- The NotificationTemplate CR contains the template content with placeholders for variables.
+- For Email templates, a subject template can be specified.
+- The NotificationTemplate CR includes a schema defining the expected properties for rendering.
+- Templates are selected based on the purpose specified in the Notification CR.
+
+</details>
+<br />
