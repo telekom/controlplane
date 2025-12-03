@@ -261,10 +261,10 @@ func (f *FileManagerAPI) DeleteFile(ctx context.Context, fileId string) error {
 	case http.StatusNotFound:
 		return ErrNotFound
 	default:
-		var errRes gen.ErrorResponse
-		if err := json.NewDecoder(response.Body).Decode(&errRes); err != nil {
+		var err gen.ErrorResponse
+		if err := json.NewDecoder(response.Body).Decode(&err); err != nil {
 			return errors.Wrap(err, "failed to decode error response")
 		}
-		return client.HandleError(errRes.Status, fmt.Sprintf("error %s: %s", errRes.Type, errRes.Detail))
+		return client.HandleError(response.StatusCode, fmt.Sprintf("file-manager: %s: %s", err.Type, err.Detail))
 	}
 }
