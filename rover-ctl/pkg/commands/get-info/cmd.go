@@ -31,14 +31,14 @@ func NewCommand() *cobra.Command {
 	baseCmd := base.NewFileCommand(
 		"get-info",
 		"Get information about a resource",
-		"Get detailed information about a resource using its metadata",
+		`Get detailed information about a specific resource by name or multiple resources from the server.
+If no name or file is provided, information about all resources of the specified type will be retrieved.`,
 	)
 	cmd := &Command{
 		FileCommand: baseCmd,
 	}
 
 	cmd.Cmd.Flags().StringVarP(&cmd.Name, "name", "n", "", "Name of the resource to get information about")
-	cmd.Cmd.MarkFlagsOneRequired("name", "file")
 	cmd.Cmd.MarkFlagsMutuallyExclusive("name", "file")
 
 	cmd.Cmd.Flags().BoolVarP(&cmd.Shallow, "shallow", "s", false, "Get only basic information without details")
@@ -75,7 +75,39 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	if c.Name == "" && c.FilePath == "" {
+		return c.getInfoMany()
+	}
+
 	c.Logger().V(1).Info("Completed get-info command")
+	return nil
+}
+
+func (c *Command) getInfoMany() error {
+	roverHandler, err := handlers.GetHandler(kind, apiVersion)
+	if err != nil {
+		return errors.Wrap(err, "failed to get rover handler")
+	}
+
+	c.Logger().V(1).Info("Getting info for multiple resources")
+
+	infoList, err := roverHandler.InfoMany(c.Cmd.Context(), nil)
+	if err != nil {
+		return c.HandleError(err, "get info for Rovers")
+	}
+
+	prettyString, err := util.FormatOutput(infoList, viper.GetString("output.format"))
+	if err != nil {
+		return errors.Wrap(err, "failed to format output")
+	}
+
+	_, err = c.Cmd.OutOrStdout().Write([]byte(prettyString))
+	if err != nil {
+		return errors.Wrap(err, "failed to write output")
+	}
+
+	c.Logger().V(1).Info("Successfully retrieved info for multiple resources")
+
 	return nil
 }
 
