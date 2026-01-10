@@ -49,7 +49,7 @@ spec:
 
 	AfterEach(func() {
 		// Clean up test files
-		os.RemoveAll(tempDir)
+		_ = os.RemoveAll(tempDir)
 	})
 
 	Describe("NewFileCommand", func() {

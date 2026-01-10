@@ -189,7 +189,7 @@ var _ = Describe("Test Suite", func() {
 			Expect(condition.Message).To(Equal("This is a blocked error"))
 
 			events := recorder.GetEvents(obj)
-			Expect(len(events)).To(Equal(1))
+			Expect(events).To(HaveLen(1))
 			Expect(events[0].EventType).To(Equal("Warning"))
 			Expect(events[0].Reason).To(Equal("Blocked"))
 			Expect(events[0].Message).To(Equal("This is a blocked error"))

@@ -60,7 +60,7 @@ func (f *CustomScopesFeature) Apply(ctx context.Context, builder features.Featur
 	if route.Spec.Security != nil && route.Spec.Security.M2M != nil {
 		if len(route.Spec.Security.M2M.Scopes) > 0 {
 			// Join scopes with a space, as Kong expects a single string with space-separated scopes
-			jumperConfig.OAuth[plugin.ConsumerId(DefaultProviderKey)] = plugin.OauthCredentials{
+			jumperConfig.OAuth[DefaultProviderKey] = plugin.OauthCredentials{
 				Scopes: strings.Join(route.Spec.Security.M2M.Scopes, " "),
 			}
 		}

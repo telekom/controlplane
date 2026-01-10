@@ -1,0 +1,25 @@
+{
+    "mcpServers": {
+        "trivy": {
+            "type": "stdio",
+            "command": "trivy",
+            "args": [
+                "mcp"
+            ],
+            "env": {}
+        },
+        "go-dev-tools": {
+          "type": "stdio",
+          "command": "uv",
+          "args": [
+            "run",
+            "--with",
+            "fastmcp",
+            "fastmcp",
+            "run",
+            ".mcp/go_dev_tools.py"
+          ],
+          "env": {}
+        }
+    }
+}

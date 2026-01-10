@@ -140,7 +140,7 @@ func (h *BaseHandler) Apply(ctx context.Context, obj types.Object) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Check response
 	err = CheckResponseCode(resp, http.StatusOK, http.StatusAccepted)
@@ -164,7 +164,7 @@ func (h *BaseHandler) Delete(ctx context.Context, obj types.Object) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Check response
 	err = CheckResponseCode(resp, http.StatusOK, http.StatusNoContent, http.StatusNotFound)
@@ -185,7 +185,7 @@ func (h *BaseHandler) Get(ctx context.Context, name string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Check response
 	err = CheckResponseCode(resp, http.StatusOK)
@@ -238,7 +238,7 @@ func (h *BaseHandler) ListWithCursor(ctx context.Context, cursor string) (*ListR
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Check response
 	err = CheckResponseCode(resp, http.StatusOK)
@@ -264,7 +264,7 @@ func (h *BaseHandler) Status(ctx context.Context, name string) (types.ObjectStat
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Check response
 	err = CheckResponseCode(resp, http.StatusOK, http.StatusNotFound)
@@ -301,7 +301,7 @@ func (h *BaseHandler) Info(ctx context.Context, name string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Check response
 	err = CheckResponseCode(resp, http.StatusOK)

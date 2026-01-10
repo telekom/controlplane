@@ -97,7 +97,7 @@ spec:
 
 	AfterEach(func() {
 		// Clean up
-		os.RemoveAll(tempDir)
+		_ = os.RemoveAll(tempDir)
 
 		// Reset viper config
 		viper.Reset()

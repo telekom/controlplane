@@ -73,7 +73,7 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 				Hour:   route.Spec.Traffic.RateLimit.Limits.Hour,
 			},
 		}
-		rateLimitPlugin = setOptions(rateLimitPlugin, &route.Spec.Traffic.RateLimit.Options)
+		setOptions(rateLimitPlugin, &route.Spec.Traffic.RateLimit.Options)
 	}
 
 	for _, allowedConsumer := range builder.GetAllowedConsumers() {
@@ -105,11 +105,11 @@ func (f *RateLimitFeature) Apply(ctx context.Context, builder features.FeaturesB
 					Hour:   route.Spec.Traffic.RateLimit.Limits.Hour,
 				}
 
-				rateLimitPlugin = setOptions(rateLimitPlugin,
+				setOptions(rateLimitPlugin,
 					&route.Spec.Traffic.RateLimit.Options,
 				)
 			} else if route.HasRateLimit() {
-				rateLimitPlugin = setOptions(rateLimitPlugin, &route.Spec.Traffic.RateLimit.Options)
+				setOptions(rateLimitPlugin, &route.Spec.Traffic.RateLimit.Options)
 			}
 		}
 	}
@@ -135,7 +135,7 @@ func setCommonConfigs(ctx context.Context, rateLimitPlugin *plugin.RateLimitPlug
 
 // setOptions applies additional options to the rate limit plugin configuration.
 // Options should be in order of precedence, with the last one having the highest priority.
-func setOptions(rateLimitPlugin *plugin.RateLimitPlugin, options ...*gatewayv1.RateLimitOptions) *plugin.RateLimitPlugin {
+func setOptions(rateLimitPlugin *plugin.RateLimitPlugin, options ...*gatewayv1.RateLimitOptions) {
 	for _, option := range options {
 		if option == nil {
 			continue
@@ -143,5 +143,4 @@ func setOptions(rateLimitPlugin *plugin.RateLimitPlugin, options ...*gatewayv1.R
 		rateLimitPlugin.Config.HideClientHeaders = option.HideClientHeaders
 		rateLimitPlugin.Config.FaultTolerant = option.FaultTolerant
 	}
-	return rateLimitPlugin
 }
