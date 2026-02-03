@@ -52,6 +52,19 @@ var (
 			Pattern: `irisClientSecret: .*`,
 			Replace: "irisClientSecret: OBFUSCATED",
 		},
+		{
+			Pattern: `trd_.+`,
+			Replace: "trd_OBFUSCATED",
+		},
+
+		{
+			Pattern: "uid.*",
+			Replace: "uid_OBFUSCATED",
+		},
+		{
+			Pattern: "traceId.*",
+			Replace: "traceId_OBFUSCATED",
+		},
 	}
 )
 

@@ -14,10 +14,15 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	envPrefix = "env://"
+)
+
 type EnvironmentManager interface {
 	GetEnvironment(name string) (*config.Environments, error)
 	GetAllEnvironments() []config.Environments
 	ResolveTokenFromEnv() error
+	ResolveVariablesFromEnv() error
 	SetupTestEnvironment(environment string) (*config.Environments, error)
 	GetExecutor(envName string) (*command.Executor, error)
 	ValidateEnvironments(envNames []string) error
@@ -57,12 +62,31 @@ func (m *Manager) GetAllEnvironments() []config.Environments {
 	return m.environments
 }
 
+// ResolveVariablesFromEnv resolves variable values that reference environment variables
+func (m *Manager) ResolveVariablesFromEnv() error {
+	for i := range m.environments {
+		env := &m.environments[i]
+		for j := range env.Variables {
+			variable := &env.Variables[j]
+			if strings.HasPrefix(variable.Value, envPrefix) {
+				envVarName := strings.TrimPrefix(variable.Value, envPrefix)
+				envValue := os.Getenv(envVarName)
+				if envValue == "" {
+					return fmt.Errorf("environment variable not set: %s", envVarName)
+				}
+				variable.Value = envValue
+			}
+		}
+	}
+	return nil
+}
+
 // ResolveTokenFromEnv resolves token values that reference environment variables
 func (m *Manager) ResolveTokenFromEnv() error {
 	for i := range m.environments {
 		env := &m.environments[i]
-		if strings.HasPrefix(env.Token, "env:") {
-			envVarName := strings.TrimPrefix(env.Token, "env:")
+		if strings.HasPrefix(env.Token, envPrefix) {
+			envVarName := strings.TrimPrefix(env.Token, envPrefix)
 			envValue := os.Getenv(envVarName)
 			if envValue == "" {
 				return fmt.Errorf("environment variable not set: %s", envVarName)
@@ -82,8 +106,8 @@ func (m *Manager) SetupTestEnvironment(environment string) (*config.Environments
 	}
 
 	// Ensure token is resolved
-	if strings.HasPrefix(env.Token, "env:") {
-		envVarName := strings.TrimPrefix(env.Token, "env:")
+	if strings.HasPrefix(env.Token, envPrefix) {
+		envVarName := strings.TrimPrefix(env.Token, envPrefix)
 		envValue := os.Getenv(envVarName)
 		if envValue == "" {
 			return nil, fmt.Errorf("environment variable not set: %s", envVarName)

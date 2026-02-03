@@ -6,6 +6,7 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -17,6 +18,7 @@ import (
 	"github.com/telekom/controlplane/tools/e2e-tester/pkg/environment"
 	"github.com/telekom/controlplane/tools/e2e-tester/pkg/report"
 	"github.com/telekom/controlplane/tools/e2e-tester/pkg/snapshot"
+	"github.com/telekom/controlplane/tools/snapshotter/pkg/store"
 	"go.uber.org/zap"
 )
 
@@ -32,6 +34,7 @@ type SuiteRunner struct {
 	config         *config.Config // Full configuration
 	roverCtlConfig config.RoverCtlConfig
 	executors      map[string]command.CommandExecutor
+	hasFailure     bool // Tracks if any test has failed in this suite
 }
 
 // NewSuiteRunner creates a new suite runner
@@ -228,23 +231,6 @@ func (r *SuiteRunner) getCommandExecutor(envName string, commandType command.Com
 	return executor, nil
 }
 
-// getExecutor returns a cached rover-ctl executor for the specified environment
-// This is kept for backward compatibility
-func (r *SuiteRunner) getExecutor(envName string) (*command.RoverCtlExecutor, error) {
-	executor, err := r.getCommandExecutor(envName, command.RoverCtlCommandType)
-	if err != nil {
-		return nil, err
-	}
-
-	// Type assertion to get the concrete type
-	roverExecutor, ok := executor.(*command.RoverCtlExecutor)
-	if !ok {
-		return nil, fmt.Errorf("failed to convert executor to rover-ctl executor")
-	}
-
-	return roverExecutor, nil
-}
-
 // Run executes all cases in the suite
 func (r *SuiteRunner) Run(ctx context.Context) *report.SuiteResult {
 	startTime := time.Now()
@@ -268,17 +254,47 @@ func (r *SuiteRunner) Run(ctx context.Context) *report.SuiteResult {
 
 	// Execute each test case in order
 	for i, testCase := range r.suite.Cases {
+		policy := testCase.GetRunPolicy()
+
+		// Determine if this test should be skipped based on run_policy
+		if r.hasFailure && policy == config.RunPolicyNormal {
+			// Skip normal tests when suite has prior failures
+			caseResult := &report.TestCaseResult{
+				Name:        testCase.Name,
+				Description: testCase.Description,
+				Command:     testCase.Command,
+				Environment: testCase.Environment,
+				RunPolicy:   string(policy),
+				Status:      report.StatusSkipped,
+				SkipReason:  "Skipped due to prior test failure (run_policy: normal)",
+			}
+			suiteResult.Cases = append(suiteResult.Cases, caseResult)
+			r.reporter.ReportTestCase(caseResult)
+
+			zap.L().Info("Skipping test case due to prior failure",
+				zap.String("case", testCase.Name),
+				zap.String("run_policy", string(policy)),
+			)
+			continue
+		}
+
 		// Execute the test case
 		caseResult := r.runCase(ctx, *testCase, i)
 		suiteResult.Cases = append(suiteResult.Cases, caseResult)
 
 		r.reporter.ReportTestCase(caseResult)
 
-		// Check if we should continue after a failure
-		if !r.continueOnFail && testCase.MustPass && caseResult.Status == report.StatusError {
+		// Track failure state for subsequent normal-policy tests
+		if caseResult.Status == report.StatusError || caseResult.Status == report.StatusFailed {
+			r.hasFailure = true
+		}
+
+		// Check if we should abort suite (critical policy + ERROR status)
+		if !r.continueOnFail && policy == config.RunPolicyCritical && caseResult.Status == report.StatusError {
 			zap.L().Warn("Aborting suite execution due to critical test failure",
 				zap.String("case", testCase.Name),
 				zap.String("suite", r.suite.Name),
+				zap.String("run_policy", string(policy)),
 			)
 			break
 		}
@@ -304,7 +320,7 @@ func (r *SuiteRunner) runCase(ctx context.Context, c config.Case, caseIndex int)
 		Description: c.Description,
 		Command:     c.Command,
 		Environment: c.Environment,
-		MustPass:    c.MustPass,
+		RunPolicy:   string(c.GetRunPolicy()),
 	}
 
 	// Determine the command type - default to "roverctl" if not specified
@@ -389,8 +405,16 @@ func (r *SuiteRunner) runCase(ctx context.Context, c config.Case, caseIndex int)
 	}
 
 	// If we're not in update mode, compare with the expected snapshot
-	expectedSnapshot, err := r.snapshotMgr.GetLatestSnapshot(ctx, snapshot.Id)
+	expectedSnapshot, err := r.snapshotMgr.GetLatestSnapshot(ctx, snapshot.ID())
 	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			zap.L().Info("no existing snapshot found, will create initial snapshot",
+				zap.String("id", snapshot.ID()))
+		} else {
+			result.Status = report.StatusError
+			result.Error = fmt.Errorf("failed to retrieve expected snapshot: %w", err)
+			return result
+		}
 		// If the snapshot doesn't exist, it means this is the first run
 		// and it must be created
 		if err := r.snapshotMgr.StoreSnapshot(ctx, snapshot); err != nil {

@@ -1,0 +1,14 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+description: "External test suite"
+environments:
+  - "test-env"
+cases:
+  - name: "external-case-1"
+    command: "--version"
+    compare: true
+  - name: "external-case-2"
+    command: "--help"
+    compare: true

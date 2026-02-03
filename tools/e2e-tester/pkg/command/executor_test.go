@@ -99,7 +99,7 @@ func TestExecutor_CreateSnapshot(t *testing.T) {
 	suiteName := "test-suite"
 	caseIndex := "0"
 	caseName := "test-case"
-	snapshot := executor.CreateSnapshot(cmdStr, execResult, "", suiteName, caseIndex, caseName)
+	snapshot := executor.CreateSnapshot(cmdStr, execResult, environment.Name, suiteName, caseIndex, caseName)
 
 	// Verify snapshot
 	if snapshot.Id == "" {
