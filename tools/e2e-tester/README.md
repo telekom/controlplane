@@ -79,7 +79,7 @@ roverctl:
 
 environments:
   - name: "test-env"
-    token: "env:TEST_TOKEN"  # Use environment variable TEST_TOKEN
+    token: "env://TEST_TOKEN"  # Use environment variable TEST_TOKEN
 
 suites:
   - name: "basic-suite"
@@ -87,7 +87,7 @@ suites:
       - "test-env"
     cases:
       - name: "version-check"
-        must_pass: true
+        run_policy: critical
         command: "--version"
         compare: true
 ```
@@ -108,6 +108,8 @@ export TEST_TOKEN="your-token-value"
 
 The E2E-Tester is configured through a YAML file that specifies all testing parameters, environments, and test cases.
 
+> **Tip:** JSON schemas are available in `schemas/` for editor autocompletion and validation. Add `# yaml-language-server: $schema=./schemas/config.schema.json` at the top of your config file.
+
 ### Configuration Structure
 
 ```yaml
@@ -126,9 +128,9 @@ roverctl:
 # Test environments
 environments:
   - name: "team-a"    # Unique name for the environment
-    token: "env:TEAM_A_TOKEN"  # Token for authentication, can use env variable with "env:" prefix
+    token: "env://TEAM_A_TOKEN"  # Token for authentication, can use env variable with "env:" prefix
   - name: "team-b"
-    token: "env:TEAM_B_TOKEN"
+    token: "env://TEAM_B_TOKEN"
 
 # Test suites
 suites:
@@ -147,7 +149,7 @@ Each environment represents a separate context with its own authentication:
 ```yaml
 environments:
   - name: "production"    # Environment identifier
-    token: "env:PROD_TOKEN"  # Reference to environment variable
+    token: "env://PROD_TOKEN"  # Reference to environment variable
   - name: "staging"
     token: "direct-token-value"  # Direct token value (not recommended for security)
 ```
@@ -176,6 +178,40 @@ cases:
     command: "dangerous-operation"
 ```
 
+### External Suite Files
+
+For larger configurations, suites can be defined in separate files to keep the root config slim:
+
+```yaml
+# Root config
+suites:
+  - name: "api-validation"
+    filepath: "./suites/api-validation.yaml"  # Relative to config file
+  
+  - name: "inline-suite"
+    environments: ["team-a"]
+    cases:
+      - name: "version-check"
+        command: "--version"
+```
+
+The external file contains the suite content (cases, environments, description):
+
+```yaml
+# suites/api-validation.yaml
+environments:
+  - "team-a"
+cases:
+  - name: "apply-config"
+    command: "apply -f ./examples/test-files"
+    compare: true
+  - name: "cleanup"
+    run_policy: always
+    command: "delete -f ./examples/test-files"
+```
+
+> **Note:** `filepath` and `cases` are mutually exclusive. Paths are resolved relative to the root config file.
+
 ### Test Case Configuration
 
 Each test case defines a specific command to run and how to validate its output:
@@ -185,13 +221,51 @@ cases:
   - name: "version-check"     # Name of the test case
     description: "Verify rover-ctl version"  # Optional description
     type: "roverctl"          # Type of command (default: "roverctl")
-    must_pass: true           # Whether this test must pass for suite to succeed
+    run_policy: critical      # Execution policy: "normal", "critical", or "always"
     command: "--version"      # Command to execute
     compare: true             # Whether to compare with snapshot
     wait_before: 5s           # Optional: Wait before executing
     wait_after: 2s            # Optional: Wait after executing
     timeout: 30s              # Optional: Command timeout
     selector: "$.version"     # Optional: JSON path selector for partial output comparison
+```
+
+### Run Policy
+
+The `run_policy` field controls test execution behavior relative to prior test failures:
+
+| Policy | Runs after prior failure? | On ERROR status |
+|--------|---------------------------|-----------------|
+| `normal` | ❌ **Skipped** | Suite continues |
+| `critical` | ✅ Runs | **Aborts suite** |
+| `always` | ✅ Runs | Suite continues |
+
+**When to use each policy:**
+- `normal` (default): Regular tests that should be skipped if something already broke
+- `critical`: Important tests that must run AND whose failure should stop everything
+- `always`: Cleanup/teardown that must execute no matter what happened before
+
+**Examples:**
+
+```yaml
+cases:
+  # Critical test - suite aborts if this fails with an error
+  - name: "version-check"
+    run_policy: critical
+    command: "--version"
+    compare: true
+
+  # Normal test - skipped if prior tests failed (default when omitted)
+  - name: "get-info"
+    # run_policy: normal (default)
+    command: "get-info --name test-rover"
+    compare: true
+
+  # Cleanup test - always runs to clean up resources
+  - name: "delete-resources"
+    run_policy: always
+    command: "delete -f ./examples/test-files"
+    compare: true
 ```
 
 Special test case types:
@@ -272,12 +346,12 @@ Test cases are the building blocks of the E2E-Tester. They define individual com
 Each test case must have:
 1. A unique name within its suite
 2. A command to execute
-3. Whether the command must pass for the test to succeed
+3. A run policy defining execution behavior (optional, defaults to `normal`)
 4. Whether to compare output with a snapshot
 
 ```yaml
 - name: "version-check"
-  must_pass: true
+  run_policy: critical
   command: "--version"
   compare: true
 ```
@@ -306,7 +380,7 @@ You can enhance test cases with additional parameters:
 ```yaml
 - name: "complex-test"
   description: "Tests complex API functionality"
-  must_pass: true
+  run_policy: critical
   command: "apply -f ./config/complex-api.yaml"
   compare: true
   wait_before: 5s     # Wait before execution
@@ -321,7 +395,7 @@ You can enhance test cases with additional parameters:
 #### Basic Version Check
 ```yaml
 - name: "version-check"
-  must_pass: true
+  run_policy: critical
   command: "--version"
   compare: true
 ```
@@ -329,13 +403,13 @@ You can enhance test cases with additional parameters:
 #### Resource Creation and Verification
 ```yaml
 - name: "create-resource"
-  must_pass: true
+  run_policy: critical
   command: "apply -f ./examples/test-files/resource.yaml"
   compare: true
   wait_after: 2s
 
 - name: "verify-resource"
-  must_pass: true
+  run_policy: critical
   command: "get-info --name test-resource"
   compare: true
 ```
@@ -344,17 +418,17 @@ You can enhance test cases with additional parameters:
 ```yaml
 - name: "system-state-snapshot"
   type: "snapshot"
-  must_pass: false
+  # run_policy: normal (default - skipped if prior tests failed)
   command: "snap --source dataplane1 --route api-route-v1"
   compare: true
   selector: "$.b"
   wait_before: 5s
 ```
 
-#### Cleanup
+#### Cleanup (Always Runs)
 ```yaml
 - name: "delete-resources"
-  must_pass: false  # Marking as non-critical for test success
+  run_policy: always  # Always runs to ensure cleanup happens
   command: "delete -f ./examples/test-files"
   compare: true
 ```
@@ -363,7 +437,7 @@ You can enhance test cases with additional parameters:
 ```yaml
 - name: "production-only-test"
   environment: "production"
-  must_pass: true
+  run_policy: critical
   command: "special-command --production-flag"
   compare: true
 ```
@@ -406,7 +480,7 @@ To create a snapshot test case, use the `snapshot` type:
 ```yaml
 - name: "api-route-snapshot"
   type: "snapshot"  # Indicates this is a snapshotter operation
-  must_pass: true
+  run_policy: critical
   command: "snap --source production-gateway --route api-route-v1"
   compare: true
   selector: "$.b"  # Snapshotter puts the new snapshot in $.b
@@ -464,23 +538,23 @@ suites:
       - "team-a"
     cases:
       - name: "version-check"
-        must_pass: true
+        run_policy: critical
         command: "--version"
         compare: true
 
       - name: "apply-config"
-        must_pass: true
+        run_policy: critical
         command: "apply -f ./examples/test-files"
         compare: true
         wait_after: 2s
 
       - name: "get-info"
-        must_pass: true
+        run_policy: critical
         command: "get-info --name test-rover"
         compare: true
 
       - name: "delete"
-        must_pass: true
+        run_policy: always  # Cleanup always runs
         command: "delete -f ./examples/test-files"
         compare: true
 ```
@@ -492,9 +566,9 @@ This workflow tests the same operations across multiple environments:
 ```yaml
 environments:
   - name: "development"
-    token: "env:DEV_TOKEN"
+    token: "env://DEV_TOKEN"
   - name: "staging"
-    token: "env:STAGING_TOKEN"
+    token: "env://STAGING_TOKEN"
 
 suites:
   - name: "cross-environment-validation"
@@ -503,18 +577,18 @@ suites:
       - "staging"
     cases:
       - name: "apply-config"
-        must_pass: true
+        run_policy: critical
         command: "apply -f ./examples/test-files"
         compare: true
         wait_after: 2s
 
       - name: "get-info"
-        must_pass: true
+        run_policy: critical
         command: "get-info --name test-rover"
         compare: true
 
       - name: "delete"
-        must_pass: true
+        run_policy: always  # Cleanup always runs
         command: "delete -f ./examples/test-files"
         compare: true
 ```
@@ -530,32 +604,32 @@ suites:
       - "production"
     cases:
       - name: "apply-route"
-        must_pass: true
+        run_policy: critical
         command: "apply -f ./examples/gateway/route.yaml"
         compare: true
         wait_after: 5s
 
       - name: "snapshot-route-state"
         type: "snapshot"
-        must_pass: true
+        run_policy: critical
         command: "snap --source prod-gateway --route my-api-route"
         compare: true
         selector: "$.b"
         wait_before: 2s
 
       - name: "verify-route-exists"
-        must_pass: true
+        run_policy: critical
         command: "get-info --name my-api-route"
         compare: true
 
       - name: "delete-route"
-        must_pass: true
+        run_policy: always  # Cleanup always runs
         command: "delete -f ./examples/gateway/route.yaml"
         compare: true
 
       - name: "verify-route-deleted"
         type: "snapshot"
-        must_pass: true
+        run_policy: always  # Verification after cleanup
         command: "snap --source prod-gateway --route my-api-route"
         compare: true
         selector: "$.b"

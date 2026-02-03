@@ -1,0 +1,37 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# yaml-language-server: $schema=../schemas/suitecontent.schema.json
+environments:
+  - "team-a"
+cases:
+  - name: "version-check"
+    type: "roverctl"  # Type is optional, defaults to "roverctl"
+    run_policy: critical
+    command: "--version"
+    compare: true
+
+  - name: "apply-config"
+    run_policy: critical
+    command: "apply -f ./examples/test-files"
+    compare: true
+    wait_after: 2s
+
+  - name: "get-info"
+    run_policy: critical
+    command: "get-info -f ./examples/test-files/rover.yaml"
+    compare: true
+
+  - name: "system-state-snapshot"
+    type: "snapshot"
+    # run_policy: normal (default - skipped if prior tests failed)
+    command: "snap --no-store --format yaml --source poc-dataplane1 --route poc--eni-e2e-test-v1"
+    compare: true
+    selector: "$.b" # snapshotter has new snapshot in $.b and old in $.a
+    wait_before: 30s
+
+  - name: "delete"
+    run_policy: always  # Cleanup always runs regardless of prior failures
+    command: "delete -f ./examples/test-files"
+    compare: true

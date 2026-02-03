@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/telekom/controlplane/refs/heads/main/tools/e2e-tester/schemas/config.schema.json",
+  "properties": {
+    "snapshotter": {
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "binary": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "roverctl": {
+      "properties": {
+        "download_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "binary": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "binary"
+      ]
+    },
+    "environments": {
+      "items": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "variables": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "type": "object",
+              "required": [
+                "name",
+                "value"
+              ]
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "token"
+        ]
+      },
+      "type": "array"
+    },
+    "suites": {
+      "items": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "filepath": {
+            "type": "string",
+            "description": "The path to the file where the suite is defined. Mutually exclusive with all other fields"
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional description of the test suite purpose"
+          },
+          "cases": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Optional description of the test case purpose"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "roverctl",
+                    "snapshot"
+                  ],
+                  "description": "Command type: \"roverctl\" (default) or \"snapshot\""
+                },
+                "run_policy": {
+                  "type": "string",
+                  "enum": [
+                    "normal",
+                    "critical",
+                    "always"
+                  ],
+                  "description": "Execution policy: \"normal\" (default), \"critical\", \"always\""
+                },
+                "command": {
+                  "type": "string"
+                },
+                "compare": {
+                  "type": "boolean"
+                },
+                "environment": {
+                  "type": "string",
+                  "description": "Optional environment to run this case in"
+                },
+                "params": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "description": "Optional type-specific parameters for future extensibility"
+                },
+                "wait_before": {
+                  "type": "string",
+                  "format": "duration",
+                  "description": "Optional wait time before executing the case"
+                },
+                "wait_after": {
+                  "type": "string",
+                  "format": "duration",
+                  "description": "Optional wait time after executing the case"
+                },
+                "selector": {
+                  "type": "string",
+                  "description": "YAML path selector for output processing"
+                }
+              },
+              "type": "object",
+              "required": [
+                "name",
+                "command"
+              ]
+            },
+            "type": "array",
+            "description": "Test cases in this suite"
+          },
+          "environments": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "description": "Required list of environments to run this suite in"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ]
+      },
+      "type": "array"
+    },
+    "verbose": {
+      "type": "boolean"
+    }
+  },
+  "type": "object",
+  "required": [
+    "roverctl",
+    "environments",
+    "suites"
+  ],
+  "title": "Config",
+  "description": "+schema:inline"
+}
