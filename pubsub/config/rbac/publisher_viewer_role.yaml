@@ -1,0 +1,33 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# This rule is not used by the project pubsub itself.
+# It is provided to allow the cluster admin to help manage permissions for users.
+#
+# Grants read-only access to pubsub.cp.ei.telekom.de resources.
+# This role is intended for users who need visibility into these resources
+# without permissions to modify them. It is ideal for monitoring purposes and limited-access viewing.
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: pubsub
+    app.kubernetes.io/managed-by: kustomize
+  name: publisher-viewer-role
+rules:
+- apiGroups:
+  - pubsub.cp.ei.telekom.de
+  resources:
+  - publishers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - pubsub.cp.ei.telekom.de
+  resources:
+  - publishers/status
+  verbs:
+  - get

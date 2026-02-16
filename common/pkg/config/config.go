@@ -27,6 +27,27 @@ const (
 	FinalizerSuffix = "finalizer"
 )
 
+type Feature string
+
+func (f Feature) String() string {
+	return string(f)
+}
+
+func (f Feature) IsEnabled() bool {
+	return Features[f]
+}
+
+func (f Feature) Path() string {
+	return "feature-" + f.String() + "-enabled"
+}
+
+var (
+	Features             map[Feature]bool
+	FeaturePubSub        Feature = "pubsub"
+	FeatureSecretManager Feature = "secret_manager"
+	FeatureFileManager   Feature = "file_manager"
+)
+
 // exposed configuration variables
 var (
 	// RequeueAfterOnError is the time to wait before retrying a failed operation.
@@ -62,6 +83,8 @@ func registerDefaults() {
 	viper.SetDefault(configKeyJitterFactor, JitterFactor)
 	viper.SetDefault(configKeyMaxBackoff, MaxBackoff)
 	viper.SetDefault(configKeyMaxConcurrentRec, MaxConcurrentReconciles)
+	viper.SetDefault(FeatureSecretManager.Path(), true) // Secret Manager feature enabled by default
+	viper.SetDefault(FeatureFileManager.Path(), true)   // File Manager feature enabled by default
 }
 
 func registerEnvs() {
@@ -81,4 +104,8 @@ func Parse() {
 	LabelKeyPrefix = viper.GetString(configKeyLabelKeyPrefix)
 
 	FinalizerName = LabelKeyPrefix + "/" + FinalizerSuffix
+	Features = map[Feature]bool{
+		FeaturePubSub:        viper.GetBool(FeaturePubSub.Path()),        // FEATURE_PUBSUB_ENABLED
+		FeatureSecretManager: viper.GetBool(FeatureSecretManager.Path()), // FEATURE_SECRET_MANAGER_ENABLED
+	}
 }

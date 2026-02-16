@@ -6,11 +6,15 @@ package applicationinfo
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 
@@ -80,8 +84,7 @@ func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api
 		return errors.Wrap(err, "failed to get application")
 	}
 
-	zoneStore := store.ZoneStore
-	zone, err := zoneStore.Get(ctx, rover.Labels[config.EnvironmentLabelKey], rover.Spec.Zone)
+	zone, err := store.ZoneStore.Get(ctx, rover.Labels[config.EnvironmentLabelKey], rover.Spec.Zone)
 	if err != nil {
 		if zone != nil {
 			WriteStatus(zone, appInfo, err)
@@ -96,7 +99,6 @@ func FillApplicationInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api
 
 	appInfo.StargateIssuerUrl = zone.Status.Links.LmsIssuer
 	appInfo.StargateUrl = zone.Status.Links.Url
-	appInfo.StargatePublishEventUrl = zone.Status.Links.Url + HorizonPublishEventPathSuffix
 
 	appInfo.Status = status.GetOverallStatus(rover.Status.Conditions)
 	return nil
@@ -111,9 +113,13 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 	}
 
 	apiSubStore := store.ApiSubscriptionStore
+	eventSubStore := store.EventSubscriptionStore
 
-	appInfo.Subscriptions = make([]api.SubscriptionInfo, len(rover.Status.ApiSubscriptions))
-	for i, sub := range rover.Status.ApiSubscriptions {
+	totalSubs := len(rover.Status.ApiSubscriptions) + len(rover.Status.EventSubscriptions)
+	appInfo.Subscriptions = make([]api.SubscriptionInfo, 0, totalSubs)
+
+	// Map API subscriptions
+	for _, sub := range rover.Status.ApiSubscriptions {
 		apiSub, err := apiSubStore.Get(ctx, sub.Namespace, sub.Name)
 		if err != nil {
 			WriteStatus(apiSub, appInfo, err)
@@ -132,7 +138,28 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 			return errors.Wrap(err, "failed to convert api subscription info")
 		}
 
-		appInfo.Subscriptions[i] = subInfo
+		appInfo.Subscriptions = append(appInfo.Subscriptions, subInfo)
+	}
+
+	// Map event subscriptions
+	for _, sub := range rover.Status.EventSubscriptions {
+		eventSub, err := eventSubStore.Get(ctx, sub.Namespace, sub.Name)
+		if err != nil {
+			WriteStatus(eventSub, appInfo, err)
+			continue
+		}
+
+		if err := condition.EnsureReady(eventSub); err != nil {
+			WriteStatus(eventSub, appInfo, err)
+		}
+
+		subInfo := api.SubscriptionInfo{}
+		eventSubInfo := mapEventSubscriptionInfo(eventSub)
+		if err := subInfo.FromEventSubscriptionInfo(eventSubInfo); err != nil {
+			return errors.Wrap(err, "failed to convert event subscription info")
+		}
+
+		appInfo.Subscriptions = append(appInfo.Subscriptions, subInfo)
 	}
 
 	return nil
@@ -147,9 +174,13 @@ func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 	}
 
 	apiExpStore := store.ApiExposureStore
+	eventExpStore := store.EventExposureStore
 
-	appInfo.Exposures = make([]api.ExposureInfo, len(rover.Status.ApiExposures))
-	for i, exp := range rover.Status.ApiExposures {
+	totalExps := len(rover.Status.ApiExposures) + len(rover.Status.EventExposures)
+	appInfo.Exposures = make([]api.ExposureInfo, 0, totalExps)
+
+	// Map API exposures
+	for _, exp := range rover.Status.ApiExposures {
 		apiExp, err := apiExpStore.Get(ctx, exp.Namespace, exp.Name)
 		if err != nil {
 			WriteStatus(apiExp, appInfo, err)
@@ -171,8 +202,180 @@ func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 			return errors.Wrap(err, "failed to convert api exposure info")
 		}
 
-		appInfo.Exposures[i] = expInfo
+		appInfo.Exposures = append(appInfo.Exposures, expInfo)
+	}
+
+	// Map event exposures
+	for _, exp := range rover.Status.EventExposures {
+		eventExp, err := eventExpStore.Get(ctx, exp.Namespace, exp.Name)
+		if err != nil {
+			WriteStatus(eventExp, appInfo, err)
+			continue
+		}
+
+		if err := condition.EnsureReady(eventExp); err != nil {
+			WriteStatus(eventExp, appInfo, err)
+		}
+
+		expInfo := api.ExposureInfo{}
+		eventExpInfo := mapEventExposureInfo(eventExp)
+		if err := expInfo.FromEventExposureInfo(eventExpInfo); err != nil {
+			return errors.Wrap(err, "failed to convert event exposure info")
+		}
+
+		appInfo.Exposures = append(appInfo.Exposures, expInfo)
+	}
+
+	// Fill the Publish Event URL if there are event exposures
+	bCtx, ok := security.FromContext(ctx)
+	if len(rover.Status.EventExposures) > 0 && ok {
+		zone, err := store.ZoneStore.Get(ctx, bCtx.Environment, rover.Spec.Zone)
+		if err != nil {
+			return errors.Wrap(err, "failed to get zone")
+		}
+
+		if appInfo.StargatePublishEventUrl == "" {
+			eventCfg, err := store.EventConfigStore.Get(ctx, zone.Status.Namespace, bCtx.Environment)
+			if err != nil {
+				return errors.Wrap(err, "failed to get event config")
+			}
+			appInfo.StargatePublishEventUrl = eventCfg.Status.PublishURL
+		}
 	}
 
 	return nil
+}
+
+// mapEventSubscriptionInfo maps an event domain EventSubscription to the API's EventSubscriptionInfo.
+func mapEventSubscriptionInfo(in *eventv1.EventSubscription) api.EventSubscriptionInfo {
+	out := api.EventSubscriptionInfo{
+		EventType:    in.Spec.EventType,
+		DeliveryType: string(in.Spec.Delivery.Type),
+		PayloadType:  string(in.Spec.Delivery.Payload),
+		Type:         "event",
+	}
+
+	// Map delivery fields
+	if in.Spec.Delivery.Callback != "" {
+		out.Callback = in.Spec.Delivery.Callback
+	}
+	if in.Spec.Delivery.EventRetentionTime != "" {
+		out.EventRetentionTime = in.Spec.Delivery.EventRetentionTime
+	}
+	if in.Spec.Delivery.CircuitBreakerOptOut {
+		out.CircuitBreakerOptOut = in.Spec.Delivery.CircuitBreakerOptOut
+	}
+	if in.Spec.Delivery.RetryableStatusCodes != nil {
+		out.RetryableStatusCodes = in.Spec.Delivery.RetryableStatusCodes
+	}
+	if in.Spec.Delivery.RedeliveriesPerSecond != nil {
+		out.RedeliveriesPerSecond = *in.Spec.Delivery.RedeliveriesPerSecond
+	}
+	if in.Spec.Delivery.EnforceGetHttpRequestMethodForHealthCheck {
+		out.EnforceGetHttpRequestMethodForHealthCheck = in.Spec.Delivery.EnforceGetHttpRequestMethodForHealthCheck
+	}
+
+	// Map trigger
+	if in.Spec.Trigger != nil {
+		out.Trigger = mapEventDomainTrigger(in.Spec.Trigger)
+	}
+
+	// Map scopes
+	if in.Spec.Scopes != nil {
+		out.Scopes = in.Spec.Scopes
+	}
+
+	return out
+}
+
+// mapEventExposureInfo maps an event domain EventExposure to the API's EventExposureInfo.
+func mapEventExposureInfo(in *eventv1.EventExposure) api.EventExposureInfo {
+	out := api.EventExposureInfo{
+		EventType:  in.Spec.EventType,
+		Visibility: toApiVisibilityFromEvent(in.Spec.Visibility),
+		Approval:   toApiApprovalStrategyFromEvent(in.Spec.Approval.Strategy),
+		Type:       "event",
+	}
+
+	// Map trusted teams (event domain stores them as flat strings)
+	if in.Spec.Approval.TrustedTeams != nil {
+		out.TrustedTeams = make([]api.TrustedTeam, len(in.Spec.Approval.TrustedTeams))
+		for i, team := range in.Spec.Approval.TrustedTeams {
+			out.TrustedTeams[i] = api.TrustedTeam{
+				Team: team,
+			}
+		}
+	}
+
+	// Map scopes
+	if in.Spec.Scopes != nil {
+		out.Scopes = make([]api.EventScope, len(in.Spec.Scopes))
+		for i, scope := range in.Spec.Scopes {
+			out.Scopes[i] = api.EventScope{
+				Name: scope.Name,
+			}
+			if scope.Trigger != nil {
+				out.Scopes[i].Trigger = mapEventDomainTrigger(scope.Trigger)
+			}
+		}
+	}
+
+	// Map additional publisher IDs
+	if in.Spec.AdditionalPublisherIds != nil {
+		out.AdditionalPublisherIds = in.Spec.AdditionalPublisherIds
+	}
+
+	return out
+}
+
+// mapEventDomainTrigger maps an event domain EventTrigger to the API's EventTrigger.
+func mapEventDomainTrigger(in *eventv1.EventTrigger) api.EventTrigger {
+	out := api.EventTrigger{}
+
+	if in.ResponseFilter != nil {
+		out.ResponseFilter = in.ResponseFilter.Paths
+		out.ResponseFilterMode = api.EventTriggerResponseFilterMode(in.ResponseFilter.Mode)
+	}
+
+	if in.SelectionFilter != nil {
+		if in.SelectionFilter.Attributes != nil {
+			out.SelectionFilter = in.SelectionFilter.Attributes
+		}
+		if in.SelectionFilter.Expression != nil && in.SelectionFilter.Expression.Raw != nil {
+			var advFilter map[string]map[string]interface{}
+			if err := json.Unmarshal(in.SelectionFilter.Expression.Raw, &advFilter); err == nil {
+				out.AdvancedSelectionFilter = advFilter
+			}
+		}
+	}
+
+	return out
+}
+
+// toApiVisibilityFromEvent converts event domain Visibility to API Visibility.
+func toApiVisibilityFromEvent(visibility eventv1.Visibility) api.Visibility {
+	switch visibility {
+	case eventv1.VisibilityWorld:
+		return api.WORLD
+	case eventv1.VisibilityZone:
+		return api.ZONE
+	case eventv1.VisibilityEnterprise:
+		return api.ENTERPRISE
+	default:
+		return api.Visibility(strings.ToUpper(string(visibility)))
+	}
+}
+
+// toApiApprovalStrategyFromEvent converts event domain ApprovalStrategy to API ApprovalStrategy.
+func toApiApprovalStrategyFromEvent(strategy eventv1.ApprovalStrategy) api.ApprovalStrategy {
+	switch strategy {
+	case eventv1.ApprovalStrategyAuto:
+		return api.AUTO
+	case eventv1.ApprovalStrategySimple:
+		return api.SIMPLE
+	case eventv1.ApprovalStrategyFourEyes:
+		return api.FOUREYES
+	default:
+		return api.ApprovalStrategy(strings.ToUpper(string(strategy)))
+	}
 }

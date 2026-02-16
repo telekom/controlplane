@@ -47,6 +47,23 @@ func MapApiSpecificationResponse(ctx context.Context, apiSpec *v1.ApiSpecificati
 	}, nil
 }
 
+// MapEventSpecificationResponse maps the status of an EventSpecification resource to a ResourceStatusResponse.
+func MapEventSpecificationResponse(ctx context.Context, eventSpec *v1.EventSpecification) (api.ResourceStatusResponse, error) {
+	if eventSpec == nil {
+		return api.ResourceStatusResponse{}, ghErrors.New("input eventSpec is nil")
+	}
+	status := MapStatus(eventSpec.GetConditions())
+	processing := meta.FindStatusCondition(eventSpec.GetConditions(), condition.ConditionTypeProcessing)
+
+	return api.ResourceStatusResponse{
+		CreatedAt:       eventSpec.GetCreationTimestamp().Time,
+		ProcessedAt:     processing.LastTransitionTime.Time,
+		State:           status.State,
+		ProcessingState: status.ProcessingState,
+		OverallStatus:   CalculateOverallStatus(status.State, status.ProcessingState),
+	}, nil
+}
+
 // MapRoverResponse maps the status of a Rover resource to a ResourceStatusResponse.
 // It retrieves the conditions of the Rover, maps them to a status, and checks for any sub-resource
 // conditions with error states.

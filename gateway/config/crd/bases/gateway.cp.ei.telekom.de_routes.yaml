@@ -86,6 +86,13 @@ spec:
               security:
                 description: Security is the security configuration for the route
                 properties:
+                  defaultConsumers:
+                    description: DefaultConsumers defines a list of default consumers
+                      that are allowed to access this route without being explicitly
+                      added as a consumer
+                    items:
+                      type: string
+                    type: array
                   disableAccessControl:
                     default: false
                     description: DisableAccessControl disable the ACL mechanism for
@@ -213,10 +220,29 @@ spec:
                           feature should be used
                         type: boolean
                     type: object
+                  dynamicUpstream:
+                    description: |-
+                      DynamicUpstream configures runtime upstream URL resolution.
+                      When set, the gateway resolves the actual upstream target from a
+                      request query parameter instead of using the static upstream.
+                    properties:
+                      queryParameter:
+                        description: |-
+                          QueryParameter is the name of the query parameter containing the target URL.
+                          The parameter will be removed from the forwarded request.
+                        type: string
+                    type: object
                   failover:
                     properties:
                       security:
                         properties:
+                          defaultConsumers:
+                            description: DefaultConsumers defines a list of default
+                              consumers that are allowed to access this route without
+                              being explicitly added as a consumer
+                            items:
+                              type: string
+                            type: array
                           disableAccessControl:
                             default: false
                             description: DisableAccessControl disable the ACL mechanism

@@ -30,3 +30,26 @@ var NewAuthorizedHttpClient = func(ctx context.Context, tokenUrl, clientId, clie
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, baseClient)
 	return tokenCfg.Client(ctx)
 }
+
+var _ HttpDoer = (*staticHeaderHttpDoer)(nil)
+
+type staticHeaderHttpDoer struct {
+	headers     http.Header
+	innerClient HttpDoer
+}
+
+func (s *staticHeaderHttpDoer) Do(req *http.Request) (*http.Response, error) {
+	for key, values := range s.headers {
+		for _, value := range values {
+			req.Header.Add(key, value)
+		}
+	}
+	return s.innerClient.Do(req)
+}
+
+func WithStaticHeaders(client HttpDoer, headers http.Header) HttpDoer {
+	return &staticHeaderHttpDoer{
+		headers:     headers,
+		innerClient: client,
+	}
+}

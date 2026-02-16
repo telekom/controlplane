@@ -83,12 +83,33 @@ func (h *BaseHandler) WithValidation(validateFunc func(obj types.Object) error) 
 
 func (h *BaseHandler) Setup(ctx context.Context) *config.Token {
 	token := config.FromContextOrDie(ctx)
+
 	if h.httpClient == nil {
-		h.httpClient = NewAuthorizedHttpClient(ctx, token.TokenUrl, token.ClientId, token.ClientSecret)
+		version := viper.GetString("version.semver")
+		userAgentValue := fmt.Sprintf("rover-ctl/%s", version)
+
+		// Check for local access token (only used for testing)
+		localAccessToken := viper.GetString("access.token")
+		if localAccessToken != "" {
+			h.logger.V(1).Info("Using local access token for testing", "token", localAccessToken)
+			h.httpClient = WithStaticHeaders(http.DefaultClient, http.Header{
+				"Authorization": []string{"Bearer " + localAccessToken},
+			})
+
+		} else {
+			h.httpClient = NewAuthorizedHttpClient(ctx, token.TokenUrl, token.ClientId, token.ClientSecret)
+		}
+
+		staticHeaders := http.Header{
+			"User-Agent": []string{userAgentValue},
+		}
+		h.httpClient = WithStaticHeaders(h.httpClient, staticHeaders)
 	}
+
 	if h.serverURL == "" {
 		h.serverURL = token.ServerUrl
 	}
+
 	return token
 }
 

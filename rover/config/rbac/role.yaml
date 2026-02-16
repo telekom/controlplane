@@ -57,6 +57,20 @@ rules:
   - create
   - patch
 - apiGroups:
+  - event.cp.ei.telekom.de
+  resources:
+  - eventexposures
+  - eventsubscriptions
+  - eventtypes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - organization.cp.ei.telekom.de
   resources:
   - teams
@@ -68,6 +82,7 @@ rules:
   - rover.cp.ei.telekom.de
   resources:
   - apispecifications
+  - eventspecifications
   - rovers
   verbs:
   - create
@@ -81,6 +96,7 @@ rules:
   - rover.cp.ei.telekom.de
   resources:
   - apispecifications/finalizers
+  - eventspecifications/finalizers
   - rovers/finalizers
   verbs:
   - update
@@ -88,6 +104,7 @@ rules:
   - rover.cp.ei.telekom.de
   resources:
   - apispecifications/status
+  - eventspecifications/status
   - rovers/status
   verbs:
   - get

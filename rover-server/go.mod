@@ -12,6 +12,7 @@ require (
 	github.com/telekom/controlplane/application/api v0.0.0
 	github.com/telekom/controlplane/common v0.0.0
 	github.com/telekom/controlplane/common-server v0.0.0
+	github.com/telekom/controlplane/event/api v0.0.0
 	github.com/telekom/controlplane/file-manager v0.0.0
 	github.com/telekom/controlplane/rover/api v0.0.0
 	github.com/telekom/controlplane/secret-manager v0.0.0
@@ -23,6 +24,7 @@ replace (
 	github.com/telekom/controlplane/application/api => ../application/api
 	github.com/telekom/controlplane/common => ../common
 	github.com/telekom/controlplane/common-server => ../common-server
+	github.com/telekom/controlplane/event/api => ../event/api
 	github.com/telekom/controlplane/file-manager => ../file-manager
 	github.com/telekom/controlplane/rover/api => ../rover/api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
@@ -47,6 +49,7 @@ require (
 	go.yaml.in/yaml/v4 v4.0.0-rc.3
 	golang.org/x/text v0.31.0
 	gopkg.in/yaml.v3 v3.0.1
+	k8s.io/apiextensions-apiserver v0.34.2
 	k8s.io/apimachinery v0.34.2
 	k8s.io/client-go v0.34.2
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397

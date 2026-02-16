@@ -460,13 +460,130 @@ spec:
                     event:
                       description: Event defines an Event-based service exposure configuration
                       properties:
+                        additionalPublisherIds:
+                          description: AdditionalPublisherIds allows multiple application
+                            IDs to publish to the same event type
+                          items:
+                            type: string
+                          type: array
+                        approval:
+                          description: Approval defines the approval workflow required
+                            for subscriptions to this event
+                          properties:
+                            strategy:
+                              default: Simple
+                              description: Strategy defines the approval process required
+                                for this API
+                              enum:
+                              - Auto
+                              - Simple
+                              - FourEyes
+                              type: string
+                            trustedTeams:
+                              description: |-
+                                TrustedTeams identifies teams that are trusted for approving this API
+                                Per default your own team is trusted
+                              items:
+                                description: TrustedTeam identifies a team that is
+                                  trusted for approvals
+                                properties:
+                                  group:
+                                    description: Group identifies the organizational
+                                      group for this trusted team
+                                    minLength: 1
+                                    type: string
+                                  team:
+                                    description: Team identifies the specific team
+                                      within the group
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - group
+                                - team
+                                type: object
+                              maxItems: 10
+                              minItems: 0
+                              type: array
+                          required:
+                          - strategy
+                          type: object
                         eventType:
                           description: EventType identifies the type of event that
-                            is published
+                            is published (e.g. "de.telekom.eni.quickstart.v1")
                           minLength: 1
                           type: string
+                        scopes:
+                          description: Scopes defines named scopes with optional publisher-side
+                            trigger filtering
+                          items:
+                            description: |-
+                              EventScope defines a named scope with optional trigger-based filtering for event exposure.
+                              Scopes allow publishers to partition their events and apply publisher-side filters.
+                            properties:
+                              name:
+                                description: Name is the unique identifier for this
+                                  scope.
+                                minLength: 1
+                                type: string
+                              trigger:
+                                description: Trigger defines publisher-side filtering
+                                  criteria for this scope.
+                                properties:
+                                  responseFilter:
+                                    description: ResponseFilter controls payload shaping
+                                      (which fields to return).
+                                    properties:
+                                      mode:
+                                        default: Include
+                                        description: Mode controls whether the listed
+                                          paths are included or excluded.
+                                        enum:
+                                        - Include
+                                        - Exclude
+                                        type: string
+                                      paths:
+                                        description: Paths lists the JSON paths to
+                                          include or exclude from the event payload.
+                                        items:
+                                          type: string
+                                        type: array
+                                    type: object
+                                  selectionFilter:
+                                    description: SelectionFilter controls event matching
+                                      (which events to deliver).
+                                    properties:
+                                      attributes:
+                                        additionalProperties:
+                                          type: string
+                                        description: |-
+                                          Attributes defines simple key-value equality matches on CloudEvents attributes.
+                                          All entries are AND-ed together.
+                                        type: object
+                                      expression:
+                                        description: |-
+                                          Expression contains an arbitrary JSON filter expression tree
+                                          using logical operators (and, or) and comparisons (eq, ge, gt, le, lt, ne)
+                                          that is passed through to the configuration backend without structural validation.
+                                        x-kubernetes-preserve-unknown-fields: true
+                                    type: object
+                                type: object
+                            required:
+                            - name
+                            type: object
+                          type: array
+                        visibility:
+                          default: Enterprise
+                          description: Visibility defines who can see and subscribe
+                            to this event
+                          enum:
+                          - World
+                          - Zone
+                          - Enterprise
+                          type: string
                       required:
+                      - approval
                       - eventType
+                      - visibility
                       type: object
                   type: object
                   x-kubernetes-validations:
@@ -645,12 +762,118 @@ spec:
                       description: Event defines an Event-based service subscription
                         configuration
                       properties:
+                        delivery:
+                          description: Delivery configures how events are delivered
+                            to the subscriber
+                          properties:
+                            callback:
+                              description: |-
+                                Callback is the URL where events are delivered.
+                                Required when type is "callback", must not be set for "ServerSentEvent".
+                              format: uri
+                              type: string
+                            circuitBreakerOptOut:
+                              description: CircuitBreakerOptOut disables the circuit
+                                breaker for this subscription.
+                              type: boolean
+                            enforceGetHttpRequestMethodForHealthCheck:
+                              description: EnforceGetHttpRequestMethodForHealthCheck
+                                forces GET for health check probes instead of HEAD.
+                              type: boolean
+                            eventRetentionTime:
+                              description: EventRetentionTime defines how long events
+                                are retained for this subscriber.
+                              format: duration
+                              type: string
+                            payload:
+                              default: Data
+                              description: Payload defines the event payload format.
+                              enum:
+                              - Data
+                              - DataRef
+                              type: string
+                            redeliveriesPerSecond:
+                              description: RedeliveriesPerSecond limits the rate of
+                                event redeliveries.
+                              type: integer
+                            retryableStatusCodes:
+                              description: RetryableStatusCodes defines HTTP status
+                                codes that should trigger a retry.
+                              items:
+                                type: integer
+                              type: array
+                            type:
+                              default: Callback
+                              description: Type defines the delivery mechanism.
+                              enum:
+                              - Callback
+                              - ServerSentEvent
+                              type: string
+                          required:
+                          - payload
+                          - type
+                          type: object
+                          x-kubernetes-validations:
+                          - message: callback is required for deliveryType 'Callback'
+                              and must not be set for 'ServerSentEvent'
+                            rule: 'self.type == ''Callback'' ? self.callback != ""
+                              : !has(self.callback)'
                         eventType:
                           description: EventType identifies the type of event to subscribe
-                            to
+                            to (e.g. "de.telekom.eni.quickstart.v1")
                           minLength: 1
                           type: string
+                        scopes:
+                          description: |-
+                            Scopes selects which publisher-defined scopes to subscribe to
+                            Must match scope names defined on the corresponding EventExposure
+                          items:
+                            type: string
+                          type: array
+                        trigger:
+                          description: Trigger defines subscriber-side filtering criteria
+                            for event delivery
+                          properties:
+                            responseFilter:
+                              description: ResponseFilter controls payload shaping
+                                (which fields to return).
+                              properties:
+                                mode:
+                                  default: Include
+                                  description: Mode controls whether the listed paths
+                                    are included or excluded.
+                                  enum:
+                                  - Include
+                                  - Exclude
+                                  type: string
+                                paths:
+                                  description: Paths lists the JSON paths to include
+                                    or exclude from the event payload.
+                                  items:
+                                    type: string
+                                  type: array
+                              type: object
+                            selectionFilter:
+                              description: SelectionFilter controls event matching
+                                (which events to deliver).
+                              properties:
+                                attributes:
+                                  additionalProperties:
+                                    type: string
+                                  description: |-
+                                    Attributes defines simple key-value equality matches on CloudEvents attributes.
+                                    All entries are AND-ed together.
+                                  type: object
+                                expression:
+                                  description: |-
+                                    Expression contains an arbitrary JSON filter expression tree
+                                    using logical operators (and, or) and comparisons (eq, ge, gt, le, lt, ne)
+                                    that is passed through to the configuration backend without structural validation.
+                                  x-kubernetes-preserve-unknown-fields: true
+                              type: object
+                          type: object
                       required:
+                      - delivery
                       - eventType
                       type: object
                   type: object
@@ -796,6 +1019,52 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              eventExposures:
+                description: EventExposures are references to EventExposure resources
+                  created by this Rover
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
+              eventSubscriptions:
+                description: EventSubscriptions are references to EventSubscription
+                  resources created by this Rover
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
             type: object
         required:
         - spec

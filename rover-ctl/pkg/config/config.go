@@ -41,4 +41,5 @@ func setDefaults() {
 	// Authentication defaults
 	viper.SetDefault("token", "") // ROVER_TOKEN
 	viper.SetDefault(ConfigKeyTokenURL, "")
+	viper.SetDefault("access.token", "") // ROVER_ACCESS_LOCAL (only used for testing)
 }

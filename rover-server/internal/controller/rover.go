@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
@@ -128,6 +129,10 @@ func (r *RoverController) Update(ctx context.Context, resourceId string, req api
 	}
 	EnsureLabelsOrDie(ctx, obj)
 	obj.Labels[config.BuildLabelKey("application")] = id.Name
+
+	if err := r.guardPubSubFeature(ctx, req, config.FeaturePubSub.IsEnabled()); err != nil {
+		return res, err
+	}
 
 	err = r.Store.CreateOrReplace(ctx, obj)
 	if err != nil {
@@ -262,4 +267,45 @@ func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId strin
 		Secret: newClientSecret,
 	}, nil
 
+}
+
+func (r *RoverController) guardPubSubFeature(ctx context.Context, res api.RoverUpdateRequest, isEnabled bool) problems.Problem {
+	if isEnabled {
+		return nil
+	}
+
+	fields := []problems.Field{}
+
+	for i, e := range res.Exposures {
+		d, err := e.Discriminator()
+		if err != nil {
+			continue
+		}
+		if d == "event" {
+			fields = append(fields, problems.Field{
+				Field:  fmt.Sprintf("exposures[%d]", i),
+				Detail: "Pub/Sub features are not enabled, but the request contains an event exposure",
+			})
+		}
+	}
+
+	for i, s := range res.Subscriptions {
+		d, err := s.Discriminator()
+		if err != nil {
+			continue
+		}
+		if d == "event" {
+			fields = append(fields, problems.Field{
+				Field:  fmt.Sprintf("exposures[%d]", i),
+				Detail: "Pub/Sub features are not enabled, but the request contains an event exposure",
+			})
+		}
+	}
+
+	if len(fields) > 0 {
+		msg := "The request contains Pub/Sub features, but this feature is not enabled on the server."
+		return problems.Builder().Detail(msg).Title("Feature has not been enabled").Status(400).Fields(fields...).Build()
+	}
+
+	return nil
 }

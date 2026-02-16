@@ -117,6 +117,10 @@ func (route *Route) HasM2MExternalIdpBasic() bool {
 	return route.Spec.Security.M2M.ExternalIDP.Basic != nil
 }
 
+func (g *Route) HasDynamicUpstream() bool {
+	return g.Spec.Traffic.DynamicUpstream != nil
+}
+
 // RouteStatus defines the observed state of Route
 type RouteStatus struct {
 	// +listType=map

@@ -5,6 +5,7 @@
 package out
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -63,9 +64,64 @@ func mapApiExposure(in *roverv1.ApiExposure) api.ApiExposure {
 }
 
 func mapEventExposure(in *roverv1.EventExposure) api.EventExposure {
-	return api.EventExposure{
-		EventType: in.EventType,
+	out := api.EventExposure{
+		EventType:  in.EventType,
+		Visibility: toApiVisibility(in.Visibility),
+		Approval:   toApiApprovalStrategy(in.Approval.Strategy),
 	}
+
+	// Map trusted teams
+	if in.Approval.TrustedTeams != nil {
+		out.TrustedTeams = make([]api.TrustedTeam, len(in.Approval.TrustedTeams))
+		for i, team := range in.Approval.TrustedTeams {
+			out.TrustedTeams[i] = api.TrustedTeam{
+				Team: team.Group + "--" + team.Team,
+			}
+		}
+	}
+
+	// Map scopes
+	if in.Scopes != nil {
+		out.Scopes = make([]api.EventScope, len(in.Scopes))
+		for i, scope := range in.Scopes {
+			out.Scopes[i] = api.EventScope{
+				Name: scope.Name,
+			}
+			if scope.Trigger != nil {
+				out.Scopes[i].Trigger = mapEventTriggerOut(scope.Trigger)
+			}
+		}
+	}
+
+	// Map additional publisher IDs
+	if in.AdditionalPublisherIds != nil {
+		out.AdditionalPublisherIds = in.AdditionalPublisherIds
+	}
+
+	return out
+}
+
+func mapEventTriggerOut(in *roverv1.EventTrigger) api.EventTrigger {
+	out := api.EventTrigger{}
+
+	if in.ResponseFilter != nil {
+		out.ResponseFilter = in.ResponseFilter.Paths
+		out.ResponseFilterMode = api.EventTriggerResponseFilterMode(in.ResponseFilter.Mode)
+	}
+
+	if in.SelectionFilter != nil {
+		if in.SelectionFilter.Attributes != nil {
+			out.SelectionFilter = in.SelectionFilter.Attributes
+		}
+		if in.SelectionFilter.Expression != nil && in.SelectionFilter.Expression.Raw != nil {
+			var advFilter map[string]map[string]interface{}
+			if err := json.Unmarshal(in.SelectionFilter.Expression.Raw, &advFilter); err == nil {
+				out.AdvancedSelectionFilter = advFilter
+			}
+		}
+	}
+
+	return out
 }
 
 func toApiVisibility(visibility roverv1.Visibility) api.Visibility {

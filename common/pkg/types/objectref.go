@@ -50,6 +50,7 @@ func (o *ObjectRef) DeepCopy() *ObjectRef {
 	return &ObjectRef{
 		Name:      o.Name,
 		Namespace: o.Namespace,
+		UID:       o.UID,
 	}
 }
 

@@ -5,12 +5,14 @@
 package in
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/pkg/errors"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
@@ -35,9 +37,7 @@ func mapExposure(in *api.Exposure, out *roverv1.Exposure) error {
 			return errors.Wrap(err, "failed to convert to EventExposure")
 		}
 
-		out.Event = &roverv1.EventExposure{
-			EventType: eventExp.EventType,
-		}
+		out.Event = mapEventExposure(eventExp)
 
 	default:
 		return errors.Errorf("unknown exposure type: %s", expType)
@@ -194,4 +194,75 @@ func mapTrustedTeams(in api.ApiExposure, out *roverv1.ApiExposure) {
 			Team:  parts[1],
 		}
 	}
+}
+
+func mapEventExposure(in api.EventExposure) *roverv1.EventExposure {
+	out := &roverv1.EventExposure{
+		EventType:  in.EventType,
+		Visibility: toRoverVisibility(in.Visibility),
+		Approval: roverv1.Approval{
+			Strategy: toRoverApprovalStrategy(in.Approval),
+		},
+	}
+
+	// Map trusted teams
+	if in.TrustedTeams != nil {
+		out.Approval.TrustedTeams = make([]roverv1.TrustedTeam, len(in.TrustedTeams))
+		for i, team := range in.TrustedTeams {
+			parts := strings.Split(team.Team, "--")
+			if len(parts) != 2 {
+				continue
+			}
+			out.Approval.TrustedTeams[i] = roverv1.TrustedTeam{
+				Group: parts[0],
+				Team:  parts[1],
+			}
+		}
+	}
+
+	// Map scopes
+	if in.Scopes != nil {
+		out.Scopes = make([]roverv1.EventScope, len(in.Scopes))
+		for i, scope := range in.Scopes {
+			out.Scopes[i] = roverv1.EventScope{
+				Name: scope.Name,
+			}
+			if scope.Trigger.ResponseFilter != nil || scope.Trigger.SelectionFilter != nil || scope.Trigger.AdvancedSelectionFilter != nil {
+				out.Scopes[i].Trigger = mapEventTrigger(scope.Trigger)
+			}
+		}
+	}
+
+	// Map additional publisher IDs
+	if in.AdditionalPublisherIds != nil {
+		out.AdditionalPublisherIds = in.AdditionalPublisherIds
+	}
+
+	return out
+}
+
+func mapEventTrigger(in api.EventTrigger) *roverv1.EventTrigger {
+	out := &roverv1.EventTrigger{}
+
+	if in.ResponseFilter != nil {
+		out.ResponseFilter = &roverv1.EventResponseFilter{
+			Paths: in.ResponseFilter,
+			Mode:  roverv1.EventResponseFilterMode(in.ResponseFilterMode),
+		}
+	}
+
+	if in.SelectionFilter != nil || in.AdvancedSelectionFilter != nil {
+		out.SelectionFilter = &roverv1.EventSelectionFilter{}
+		if in.SelectionFilter != nil {
+			out.SelectionFilter.Attributes = in.SelectionFilter
+		}
+		if in.AdvancedSelectionFilter != nil {
+			jsonBytes, err := json.Marshal(in.AdvancedSelectionFilter)
+			if err == nil {
+				out.SelectionFilter.Expression = &apiextensionsv1.JSON{Raw: jsonBytes}
+			}
+		}
+	}
+
+	return out
 }

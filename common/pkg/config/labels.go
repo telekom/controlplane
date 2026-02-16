@@ -7,6 +7,7 @@ package config
 var (
 	EnvironmentLabelKey = BuildLabelKey("environment")
 	OwnerUidLabelKey    = BuildLabelKey("owner.uid")
+	DomainLabelKey      = BuildLabelKey("domain")
 )
 
 func BuildLabelKey(key string) string {
