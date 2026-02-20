@@ -68,8 +68,8 @@ func TestBuildSubscriptionResource_BasicFields(t *testing.T) {
 	assert.Equal(t, "my-consumer-app", payload.SubscriberId)
 	assert.Equal(t, "order-service", payload.PublisherId)
 	assert.Equal(t, "de.telekom.order.created.v1", payload.Type)
-	assert.Equal(t, "Callback", payload.DeliveryType)
-	assert.Equal(t, "Data", payload.PayloadType)
+	assert.Equal(t, "callback", payload.DeliveryType)
+	assert.Equal(t, "data", payload.PayloadType)
 	assert.Equal(t, "https://my-app.example.com/events", payload.Callback)
 	assert.Equal(t, "P7D", payload.EventRetentionTime)
 	assert.Equal(t, []int{502, 503}, payload.RetryableStatusCodes)
@@ -213,7 +213,7 @@ func TestBuildSubscriptionResource_WithTrigger(t *testing.T) {
 	payload := resource.Spec.Subscription
 
 	require.NotNil(t, payload.Trigger)
-	assert.Equal(t, "Include", payload.Trigger.ResponseFilterMode)
+	assert.Equal(t, "INCLUDE", payload.Trigger.ResponseFilterMode)
 	assert.Equal(t, []string{"$.data.orderId", "$.data.status"}, payload.Trigger.ResponseFilter)
 	assert.Equal(t, map[string]string{"source": "order-service"}, payload.Trigger.SelectionFilter)
 	require.NotNil(t, payload.Trigger.AdvancedSelectionFilter)
