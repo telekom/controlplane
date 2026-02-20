@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	pkgerrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
@@ -48,6 +49,7 @@ func isBlockedError(err error) bool {
 // buildScheme creates a runtime.Scheme with all types needed by the handler.
 func buildScheme() *runtime.Scheme {
 	s := runtime.NewScheme()
+	_ = adminv1.AddToScheme(s)
 	_ = eventv1.AddToScheme(s)
 	_ = applicationv1.AddToScheme(s)
 	_ = approvalv1.AddToScheme(s)
@@ -182,6 +184,24 @@ func makeReadyApplication(name, team, teamEmail, clientId string) *applicationv1
 	return app
 }
 
+func makeReadyZone(name, namespace string, visibility adminv1.ZoneVisibility) *adminv1.Zone {
+	zone := &adminv1.Zone{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: adminv1.ZoneSpec{
+			Visibility: visibility,
+		},
+	}
+	meta.SetStatusCondition(&zone.Status.Conditions, metav1.Condition{
+		Type:   condition.ConditionTypeReady,
+		Status: metav1.ConditionTrue,
+		Reason: "Ready",
+	})
+	return zone
+}
+
 var (
 	testEventType   = "de.telekom.eni.quickstart.v1"
 	requestorAppKey = k8stypes.NamespacedName{Name: "requestor-app", Namespace: "default"}
@@ -269,6 +289,15 @@ var _ = Describe("EventSubscriptionHandler", func() {
 		fakeClient.EXPECT().
 			Get(ctx, key, mock.AnythingOfType("*v1.Application")).
 			Return(err).Once()
+	}
+
+	mockGetZone := func(key k8stypes.NamespacedName, zone *adminv1.Zone) {
+		fakeClient.EXPECT().
+			Get(ctx, key, mock.AnythingOfType("*v1.Zone")).
+			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
+				*out.(*adminv1.Zone) = *zone
+			}).
+			Return(nil).Once()
 	}
 
 	mockScheme := func() {
@@ -359,6 +388,9 @@ var _ = Describe("EventSubscriptionHandler", func() {
 	mockCreateOrUpdateSubscriber := func(result controllerutil.OperationResult, err error) {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
+			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
 			Return(result, err).Once()
 	}
 
@@ -376,6 +408,8 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 		mockListEventTypes([]eventv1.EventType{et})
 		mockListEventExposures([]eventv1.EventExposure{exposure})
+		// Visibility validation requires Zone lookup for the subscription's zone
+		mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 		mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 2) // exposure zone + subscription zone (same zone)
 
 		requestorApp := makeReadyApplication("requestor-app", "requester-team", "req@example.com", "req-client-id")
@@ -495,6 +529,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 			mockListEventConfigsError(fmt.Errorf("config list failed"))
 
 			err := h.CreateOrUpdate(ctx, obj)
@@ -513,6 +548,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			expoConfig := makeReadyEventConfig("expo-zone", false, nil)
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 			mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 1)
 
 			err := h.CreateOrUpdate(ctx, obj)
@@ -540,6 +576,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 
 			// First EventConfigList call (exposure zone) succeeds
 			fakeClient.EXPECT().
@@ -572,6 +609,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 
 			fakeClient.EXPECT().
 				List(ctx, mock.AnythingOfType("*v1.EventConfigList"), mock.Anything).
@@ -608,6 +646,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 
 			fakeClient.EXPECT().
 				List(ctx, mock.AnythingOfType("*v1.EventConfigList"), mock.Anything).
@@ -654,6 +693,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 
 			fakeClient.EXPECT().
 				List(ctx, mock.AnythingOfType("*v1.EventConfigList"), mock.Anything).
@@ -694,6 +734,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 			mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 2) // exposure zone + subscription zone (same)
 
 			err := h.CreateOrUpdate(ctx, obj)
@@ -718,6 +759,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 			mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 2)
 			mockGetApplicationError(requestorAppKey, fmt.Errorf("not found"))
 
@@ -736,6 +778,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 			mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 2)
 			mockGetApplication(requestorAppKey, requestorApp)
 			mockGetApplicationError(providerAppKey, fmt.Errorf("provider not found"))
@@ -930,7 +973,15 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			}
 			obj.Spec.Scopes = []string{"scope-a", "scope-b"}
 
-			setupFullHappyPath()
+			// Build exposure with scopes that match the subscription's requested scopes
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
+			exposure.Spec.Scopes = []eventv1.EventScope{
+				{Name: "scope-a", Trigger: eventv1.EventTrigger{}},
+				{Name: "scope-b", Trigger: eventv1.EventTrigger{}},
+			}
+			setupUpToApproval(exposure)
+			mockApprovalBuilderGranted()
+			mockCreateOrUpdateSubscriber(controllerutil.OperationResultCreated, nil)
 			fakeClient.EXPECT().AllReady().Return(true).Once()
 
 			err := h.CreateOrUpdate(ctx, obj)

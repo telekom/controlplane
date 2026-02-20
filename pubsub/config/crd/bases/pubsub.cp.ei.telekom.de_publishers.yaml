@@ -77,6 +77,11 @@ spec:
                   (e.g. "de.telekom.eni.quickstart.v1").
                 minLength: 1
                 type: string
+              jsonSchema:
+                description: |-
+                  JsonSchema is an optional JSON schema defining the structure of events published by this publisher.
+                  It can be used for validation and documentation purposes.
+                type: string
               publisherId:
                 description: |-
                   PublisherId is the unique identifier for this publisher in the configuration backend.

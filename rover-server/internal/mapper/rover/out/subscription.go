@@ -84,7 +84,7 @@ func mapEventTriggerOutForSubscription(in *roverv1.EventTrigger) api.EventTrigge
 			out.SelectionFilter = in.SelectionFilter.Attributes
 		}
 		if in.SelectionFilter.Expression != nil && in.SelectionFilter.Expression.Raw != nil {
-			var advFilter map[string]map[string]interface{}
+			var advFilter map[string]any
 			if err := json.Unmarshal(in.SelectionFilter.Expression.Raw, &advFilter); err == nil {
 				out.AdvancedSelectionFilter = advFilter
 			}

@@ -23,6 +23,11 @@ type PublisherSpec struct {
 	// +kubebuilder:validation:MinLength=1
 	EventType string `json:"eventType"`
 
+	// JsonSchema is an optional JSON schema defining the structure of events published by this publisher.
+	// It can be used for validation and documentation purposes.
+	// +optional
+	JsonSchema string `json:"jsonSchema,omitempty"`
+
 	// PublisherId is the unique identifier for this publisher in the configuration backend.
 	// Typically derived from the providing application's identifier.
 	// +kubebuilder:validation:Required

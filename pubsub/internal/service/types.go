@@ -141,4 +141,9 @@ type SubscriptionPayload struct {
 	// EnforceGetHttpRequestMethodForHealthCheck forces GET for health check probes instead of HEAD.
 	// +optional
 	EnforceGetHttpRequestMethodForHealthCheck *bool `json:"enforceGetHttpRequestMethodForHealthCheck,omitempty"`
+
+	// JsonSchema is the JSON schema defining the structure of events published by the associated publisher.
+	// This is included here for convenience so the configuration backend has all necessary information in one place.
+	// +optional
+	JsonSchema string `json:"jsonSchema,omitempty"`
 }

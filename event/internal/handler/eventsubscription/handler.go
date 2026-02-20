@@ -78,8 +78,26 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 	}
 
 	// TODO: Validate category — check if the subscriber's team category allows subscription of this event category
-	// TODO: Validate visibility — check if subscription zone is compatible with exposure visibility
-	// TODO: Validate scopes — check if requested scopes are a subset of exposure scopes
+
+	// Validate visibility — check if subscription zone is compatible with exposure visibility
+	valid, err := EventVisibilityMustBeValid(ctx, exposure, obj)
+	if err != nil {
+		return errors.Wrap(err, "failed to validate event visibility for EventSubscription")
+	}
+	if !valid {
+		obj.SetCondition(condition.NewNotReadyCondition("VisibilityConstraintViolation", "EventExposure and EventSubscription visibility combination is not allowed"))
+		return ctrlerrors.BlockedErrorf("EventSubscription is blocked. Subscriptions from zone %q are not allowed due to exposure visibility constraints", obj.Spec.Zone.GetName())
+	}
+
+	// Validate scopes — check if requested scopes are a subset of exposure scopes
+	valid, err = EventScopesMustBeValid(ctx, exposure, obj)
+	if err != nil {
+		return errors.Wrap(err, "failed to validate event scopes for EventSubscription")
+	}
+	if !valid {
+		obj.SetCondition(condition.NewNotReadyCondition("ScopeConstraintViolation", "Requested scopes are not allowed by the EventExposure"))
+		return ctrlerrors.BlockedErrorf("EventSubscription is blocked. Requested scopes %q are not allowed by the EventExposure", obj.Spec.Scopes)
+	}
 
 	exposureEventConfig, err := util.GetEventConfigForZone(ctx, exposure.Spec.Zone.Name)
 	if err != nil {
@@ -102,18 +120,8 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 		return errors.Wrapf(err, "failed to get EventConfig for subscription zone %q", obj.Spec.Zone.Name)
 	}
 
-	// We need to update the callbackURL if this is a proxy scenario (cross-zone subscription), because the callbackURL must point to the provider zone's callback route.
-	isProxy := !exposure.Spec.Zone.Equals(&obj.Spec.Zone)
-	isCallback := obj.Spec.Delivery.Type == eventv1.DeliveryTypeCallback
-	if isCallback && isProxy {
-		rawProxyCallbackUrl, ok := subscriberEventConfig.Status.ProxyCallbackURLs[exposure.Spec.Zone.Name]
-		if !ok {
-			return ctrlerrors.BlockedErrorf("no proxy callback URL found in subscription zone's EventConfig for exposure zone %q", exposure.Spec.Zone.Name)
-		}
-		// Use proxyCallbackUrl as new callback URL and add actual callback URL as query parameter so that provider can use it for callbacks.
-		obj.Spec.Delivery.Callback = rawProxyCallbackUrl + "?" + util.CallbackUrlQUeryParam + "=" + obj.Spec.Delivery.Callback
-
-		logger.V(1).Info("Updated callback URL for proxy scenario", "callback", obj.Spec.Delivery.Callback)
+	if err := updateCallbackURL(ctx, exposure, obj, subscriberEventConfig); err != nil {
+		return errors.Wrap(err, "failed to update callback URL for EventSubscription")
 	}
 
 	if obj.Spec.Requestor.Kind != "Application" {
@@ -278,12 +286,11 @@ func (h *EventSubscriptionHandler) createSubscriber(
 		}
 
 		subscriber.Spec = pubsubv1.SubscriberSpec{
-			Publisher:    *exposure.Status.Publisher,
-			SubscriberId: application.Status.ClientId,
-			Delivery:     mapDelivery(obj.Spec.Delivery),
-			Trigger:      mapTrigger(obj.Spec.Trigger),
-			// TODO: Populate PublisherTrigger from matching scope on EventExposure
-			PublisherTrigger: nil,
+			Publisher:        *exposure.Status.Publisher,
+			SubscriberId:     application.Status.ClientId,
+			Delivery:         mapDelivery(obj.Spec.Delivery),
+			Trigger:          mapTrigger(obj.Spec.Trigger),
+			PublisherTrigger: mapTrigger(createPublisherTrigger(exposure, obj.Spec.Scopes)),
 			AppliedScopes:    obj.Spec.Scopes,
 		}
 		return nil
@@ -311,27 +318,60 @@ func mapDelivery(d eventv1.Delivery) pubsubv1.SubscriptionDelivery {
 	}
 }
 
-// mapTrigger maps event domain EventTrigger to pubsub domain SubscriptionTrigger.
-func mapTrigger(t *eventv1.EventTrigger) *pubsubv1.SubscriptionTrigger {
+// mapTrigger maps event domain EventTrigger to pubsub domain Trigger.
+func mapTrigger(t *eventv1.EventTrigger) *pubsubv1.Trigger {
 	if t == nil {
 		return nil
 	}
 
-	result := &pubsubv1.SubscriptionTrigger{}
+	result := &pubsubv1.Trigger{}
 
 	if t.ResponseFilter != nil {
-		result.ResponseFilter = &pubsubv1.SubscriptionResponseFilter{
+		result.ResponseFilter = &pubsubv1.ResponseFilter{
 			Paths: t.ResponseFilter.Paths,
 			Mode:  pubsubv1.ResponseFilterMode(t.ResponseFilter.Mode),
 		}
 	}
 
 	if t.SelectionFilter != nil {
-		result.SelectionFilter = &pubsubv1.SubscriptionSelectionFilter{
+		result.SelectionFilter = &pubsubv1.SelectionFilter{
 			Attributes: t.SelectionFilter.Attributes,
 			Expression: t.SelectionFilter.Expression,
 		}
 	}
 
 	return result
+}
+
+// updateCallbackURL updates the callback URL in the EventSubscription spec.
+// The callback request needs to be sent via the Gateway, so we always set the Gateway as direct upstream
+// In the Gateway will use the Feature "DynamicUpstream" to then dynamically set the actual callback URL as upstream.
+func updateCallbackURL(ctx context.Context, exposure *eventv1.EventExposure, sub *eventv1.EventSubscription, subEventCfg *eventv1.EventConfig) error {
+	logger := log.FromContext(ctx)
+	isCallback := sub.Spec.Delivery.Type == eventv1.DeliveryTypeCallback
+	if !isCallback {
+		// we only do this for callback subscriptions, so if it's not a callback subscription, we can skip this
+		return nil
+	}
+	isProxy := !exposure.Spec.Zone.Equals(&sub.Spec.Zone)
+	var rawCallbackUrl string
+
+	if isProxy {
+		// If this is a proxy subscription, we set the callbackURL to the sub-zone callback in the provider-zone.
+		// E. g. aws --> aws-gcp-callback --> gcp-callback --> provider-callback (determined using DynamicUpstream)
+		var ok bool
+		rawCallbackUrl, ok = subEventCfg.Status.ProxyCallbackURLs[exposure.Spec.Zone.Name]
+		if !ok {
+			return ctrlerrors.BlockedErrorf("no proxy callback URL found in subscription zone's EventConfig for exposure zone %q", exposure.Spec.Zone.Name)
+		}
+	} else {
+		// If this is not a proxy subscription, we directly use the provider-zone callback URL as callback URL.
+		rawCallbackUrl = subEventCfg.Status.CallbackURL
+	}
+
+	// Use rawCallbackUrl as new callback URL and add actual callback URL as query parameter so that provider can use it for callbacks.
+	sub.Spec.Delivery.Callback = rawCallbackUrl + "?" + util.CallbackUrlQUeryParam + "=" + sub.Spec.Delivery.Callback
+	logger.V(1).Info("Updated callback URL for proxy scenario", "callback", sub.Spec.Delivery.Callback)
+
+	return nil
 }

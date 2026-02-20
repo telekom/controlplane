@@ -87,8 +87,8 @@ func mapEventExposure(in *roverv1.EventExposure) api.EventExposure {
 			out.Scopes[i] = api.EventScope{
 				Name: scope.Name,
 			}
-			if scope.Trigger != nil {
-				out.Scopes[i].Trigger = mapEventTriggerOut(scope.Trigger)
+			if scope.Trigger.ResponseFilter != nil || scope.Trigger.SelectionFilter != nil {
+				out.Scopes[i].Trigger = mapEventTriggerOut(&scope.Trigger)
 			}
 		}
 	}
@@ -114,7 +114,7 @@ func mapEventTriggerOut(in *roverv1.EventTrigger) api.EventTrigger {
 			out.SelectionFilter = in.SelectionFilter.Attributes
 		}
 		if in.SelectionFilter.Expression != nil && in.SelectionFilter.Expression.Raw != nil {
-			var advFilter map[string]map[string]interface{}
+			var advFilter map[string]any
 			if err := json.Unmarshal(in.SelectionFilter.Expression.Raw, &advFilter); err == nil {
 				out.AdvancedSelectionFilter = advFilter
 			}

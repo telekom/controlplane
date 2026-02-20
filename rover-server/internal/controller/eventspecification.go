@@ -7,6 +7,7 @@ package controller
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,10 +15,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/store"
-	"github.com/telekom/controlplane/common/pkg/config"
+	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	"gopkg.in/yaml.v3"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
@@ -26,6 +26,8 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
 	"github.com/telekom/controlplane/rover-server/internal/server"
 	s "github.com/telekom/controlplane/rover-server/pkg/store"
+
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 )
 
 var _ server.EventSpecificationController = &EventSpecificationController{}
@@ -55,7 +57,7 @@ func (e *EventSpecificationController) Delete(ctx context.Context, resourceId st
 		return err
 	}
 
-	if config.FeatureFileManager.IsEnabled() {
+	if cconfig.FeatureFileManager.IsEnabled() {
 		// Delete the optional specification file from file-manager
 		fileId := generateFileId(id)
 		err = file.GetFileManager().DeleteFile(ctx, fileId)
@@ -146,22 +148,17 @@ func (e *EventSpecificationController) Update(ctx context.Context, resourceId st
 	// Handle the optional specification payload
 	var specOrFileId string
 	if req.Specification != nil && len(req.Specification) > 0 {
-		specMarshaled, marshalErr := yaml.Marshal(req.Specification)
+		specMarshaled, marshalErr := json.Marshal(req.Specification)
 		if marshalErr != nil {
 			return res, problems.BadRequest(marshalErr.Error())
 		}
 
-		if config.FeatureFileManager.IsEnabled() {
-			fileId := generateFileId(id)
-			fileContentType := "application/yaml"
-			fileAPIResp, err := file.GetFileManager().UploadFile(ctx, fileId, fileContentType, bytes.NewReader(specMarshaled))
-			if err != nil {
-				return res, err
-			}
-			specOrFileId = fileAPIResp.FileId
-
-		} else {
-			specOrFileId = string(specMarshaled)
+		uploadRes, err := e.uploadFile(ctx, specMarshaled, id)
+		if err != nil {
+			return res, err
+		}
+		if uploadRes != nil {
+			specOrFileId = uploadRes.FileId
 		}
 	}
 
@@ -195,13 +192,23 @@ func (e *EventSpecificationController) GetStatus(ctx context.Context, resourceId
 		return res, err
 	}
 
-	return status.MapEventSpecificationResponse(ctx, eventSpec)
+	return status.MapResponse(ctx, eventSpec)
+}
+
+func (e *EventSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (res *filesapi.FileUploadResponse, err error) {
+	if !cconfig.FeatureFileManager.IsEnabled() {
+		return nil, nil
+	}
+
+	fileId := generateFileId(id)
+	fileContentType := "application/json"
+	return file.GetFileManager().UploadFile(ctx, fileId, fileContentType, bytes.NewReader(specMarshaled))
 }
 
 // downloadSpecification retrieves the optional specification file content.
 // Returns nil if no specification is stored (fileId is empty).
 func (e *EventSpecificationController) downloadSpecification(ctx context.Context, fileId string) (map[string]any, error) {
-	if !config.FeatureFileManager.IsEnabled() {
+	if !cconfig.FeatureFileManager.IsEnabled() {
 		return nil, nil
 	}
 
@@ -225,7 +232,7 @@ func (e *EventSpecificationController) downloadSpecification(ctx context.Context
 	}
 
 	m := make(map[string]any)
-	err = yaml.Unmarshal(data, &m)
+	err = json.Unmarshal(data, &m)
 	if err != nil {
 		return nil, err
 	}

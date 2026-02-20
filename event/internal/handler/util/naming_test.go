@@ -20,7 +20,7 @@ func TestNamingConstants(t *testing.T) {
 		{
 			name:     "MeshClientName",
 			got:      MeshClientName,
-			expected: "gateway-mesh--pubsub-client",
+			expected: "eventstore",
 		},
 		{
 			name:     "AdminClientName",

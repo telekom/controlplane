@@ -30,7 +30,7 @@ type EventExposureHandler struct{}
 func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.EventExposure) error {
 	logger := log.FromContext(ctx)
 
-	found, _, err := util.FindActiveEventType(ctx, obj.Spec.EventType)
+	found, eventType, err := util.FindActiveEventType(ctx, obj.Spec.EventType)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,6 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 	obj.Status.Active = true
 
 	// TODO: Validate category — check if the provider's team category allows exposure of this event category
-	// TODO: Validate visibility — check if exposure visibility is compatible with zone visibility
 
 	zone, err := util.GetZone(ctx, obj.Spec.Zone.K8s())
 	if err != nil {
@@ -91,7 +90,7 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 		return errors.Wrap(err, "failed to get application")
 	}
 
-	publisher, err := h.createPublisher(ctx, obj, eventStore, application)
+	publisher, err := h.createPublisher(ctx, obj, eventType, eventStore, application)
 	if err != nil {
 		return errors.Wrap(err, "failed to create Publisher")
 	}
@@ -210,7 +209,7 @@ func (h *EventExposureHandler) Delete(ctx context.Context, obj *eventv1.EventExp
 }
 
 // createPublisher creates a pubsub.Publisher child resource for this EventExposure.
-func (h *EventExposureHandler) createPublisher(ctx context.Context, obj *eventv1.EventExposure, eventStore *pubsubv1.EventStore, application *applicationv1.Application) (*pubsubv1.Publisher, error) {
+func (h *EventExposureHandler) createPublisher(ctx context.Context, obj *eventv1.EventExposure, eventType *eventv1.EventType, eventStore *pubsubv1.EventStore, application *applicationv1.Application) (*pubsubv1.Publisher, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	publisher := &pubsubv1.Publisher{
@@ -233,6 +232,7 @@ func (h *EventExposureHandler) createPublisher(ctx context.Context, obj *eventv1
 			EventType:              obj.Spec.EventType,
 			PublisherId:            publisherId,
 			AdditionalPublisherIds: obj.Spec.AdditionalPublisherIds,
+			JsonSchema:             eventType.Spec.Specification,
 		}
 		return nil
 	}

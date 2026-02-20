@@ -165,7 +165,7 @@ var _ = Describe("CreateSSERoute", func() {
 		Expect(route.Labels).To(HaveKeyWithValue(config.DomainLabelKey, "event"))
 		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("zone"), "zone-a"))
 		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("realm"), "gw-realm-a"))
-		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("type"), "real"))
+		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("type"), "sse"))
 		Expect(route.Labels).To(HaveKey(eventv1.EventTypeLabelKey))
 
 		// Verify upstream: from ServerSendEventUrl
@@ -187,6 +187,10 @@ var _ = Describe("CreateSSERoute", func() {
 		Expect(route.Spec.Security).ToNot(BeNil())
 		Expect(route.Spec.Security.DisableAccessControl).To(BeTrue())
 		Expect(route.Spec.Security.DefaultConsumers).To(BeEmpty())
+
+		// Verify Buffering: response buffering must be disabled for SSE streaming
+		Expect(route.Spec.Buffering.DisableResponseBuffering).To(BeTrue())
+		Expect(route.Spec.Buffering.DisableRequestBuffering).To(BeFalse())
 
 		// Verify realm ref
 		Expect(route.Spec.Realm.Name).To(Equal("gw-realm-a"))
@@ -214,7 +218,7 @@ var _ = Describe("CreateSSERoute", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(route).ToNot(BeNil())
 		Expect(route.Spec.Security).ToNot(BeNil())
-		Expect(route.Spec.Security.DefaultConsumers).To(ContainElement("gateway-mesh--pubsub-client"))
+		Expect(route.Spec.Security.DefaultConsumers).To(ContainElement(util.MeshClientName))
 	})
 
 	It("should NOT add MeshClientName to DefaultConsumers when isTargetOfProxy is false", func() {
@@ -573,7 +577,7 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 		Expect(route.Labels).To(HaveKeyWithValue(config.DomainLabelKey, "event"))
 		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("zone"), "zone-sub"))
 		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("realm"), "gw-realm-sub"))
-		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("type"), "proxy"))
+		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("type"), "sse-proxy"))
 		Expect(route.Labels).To(HaveKey(eventv1.EventTypeLabelKey))
 
 		// Verify upstream: from provider realm with mesh client credentials
@@ -596,6 +600,10 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 		// Verify Security
 		Expect(route.Spec.Security).ToNot(BeNil())
 		Expect(route.Spec.Security.DisableAccessControl).To(BeTrue())
+
+		// Verify Buffering: response buffering must be disabled for SSE streaming
+		Expect(route.Spec.Buffering.DisableResponseBuffering).To(BeTrue())
+		Expect(route.Spec.Buffering.DisableRequestBuffering).To(BeFalse())
 
 		// Verify realm ref points to subscriber realm
 		Expect(route.Spec.Realm.Name).To(Equal("gw-realm-sub"))

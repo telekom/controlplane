@@ -107,5 +107,6 @@ func Parse() {
 	Features = map[Feature]bool{
 		FeaturePubSub:        viper.GetBool(FeaturePubSub.Path()),        // FEATURE_PUBSUB_ENABLED
 		FeatureSecretManager: viper.GetBool(FeatureSecretManager.Path()), // FEATURE_SECRET_MANAGER_ENABLED
+		FeatureFileManager:   viper.GetBool(FeatureFileManager.Path()),   // FEATURE_FILE_MANAGER_ENABLED
 	}
 }

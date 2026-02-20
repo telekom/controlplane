@@ -132,16 +132,18 @@ spec:
                   trigger filtering.
                 items:
                   description: |-
-                    EventScope defines a named scope with optional trigger-based filtering for event exposure.
+                    EventScope defines a named scope with required trigger-based filtering for event exposure.
                     Scopes allow publishers to partition their events and apply publisher-side filters.
+                    Each scope must define a trigger that specifies which events belong to it.
                   properties:
                     name:
                       description: Name is the unique identifier for this scope.
                       minLength: 1
                       type: string
                     trigger:
-                      description: Trigger defines publisher-side filtering criteria
-                        for this scope.
+                      description: |-
+                        Trigger defines publisher-side filtering criteria for this scope.
+                        Every scope must define a trigger.
                       properties:
                         responseFilter:
                           description: ResponseFilter controls payload shaping (which
@@ -183,6 +185,7 @@ spec:
                       type: object
                   required:
                   - name
+                  - trigger
                   type: object
                 type: array
               visibility:

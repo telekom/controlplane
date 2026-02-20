@@ -96,8 +96,8 @@ func ApiVisibilityMustBeValid(ctx context.Context, apiExposure *apiapi.ApiExposu
 
 	// only same zone
 	if exposureVisibility == apiapi.VisibilityZone {
-		if apiExposure.Spec.Zone.GetName() != subZone.GetName() {
-			log.Info(fmt.Sprintf("Exposure visibility is ZONE and it doesnt match the subscription zone '%s'", subZone.GetName()))
+		if apiExposure.Spec.Zone.Equals(subZone) {
+			log.Info(fmt.Sprintf("Exposure visibility is ZONE and it does not match the subscription zone '%s'", subZone.GetName()))
 			return false, nil
 		}
 	}

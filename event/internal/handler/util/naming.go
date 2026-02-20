@@ -13,7 +13,7 @@ import (
 const (
 	// MeshClientName is the name of the client used for mesh communication.
 	// It is used for both SSE and Callback proxy-routes to access the real-route.
-	MeshClientName = "gateway-mesh--pubsub-client"
+	MeshClientName = "eventstore"
 	// AdminClientName is the name of the client used for administrative operations.
 	// This client must be configured in the configuration backend.
 	AdminClientName = "admin--controlplane-client"
@@ -45,4 +45,15 @@ func makeCallbackRouteName(zoneName string) string {
 
 func makeCallbackRoutePath(zoneName string) string {
 	return fmt.Sprintf("/%s/callback/v1", zoneName)
+}
+
+func makeVoyagerRouteName(zoneName string) string {
+	return "voyager--" + zoneName
+}
+
+func makeVoyagerRoutePath(zoneName string) string {
+	if zoneName == "" {
+		return "/voyager/v1"
+	}
+	return fmt.Sprintf("/%s/voyager/v1", zoneName)
 }

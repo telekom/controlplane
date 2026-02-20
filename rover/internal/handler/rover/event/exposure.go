@@ -138,19 +138,42 @@ func mapEventScopes(roverScopes []rover.EventScope) []eventv1.EventScope {
 	for i, s := range roverScopes {
 		scopes[i] = eventv1.EventScope{
 			Name:    s.Name,
-			Trigger: mapEventTrigger(s.Trigger),
+			Trigger: mapEventTriggerValue(s.Trigger),
 		}
 	}
 	return scopes
 }
 
-// mapEventTrigger converts a rover EventTrigger to an event-domain EventTrigger.
+// mapEventTrigger converts a rover EventTrigger pointer to an event-domain EventTrigger pointer.
+// Used for subscriber-side triggers where the trigger is optional.
 func mapEventTrigger(roverTrigger *rover.EventTrigger) *eventv1.EventTrigger {
 	if roverTrigger == nil {
 		return nil
 	}
 
 	trigger := &eventv1.EventTrigger{}
+
+	if roverTrigger.ResponseFilter != nil {
+		trigger.ResponseFilter = &eventv1.ResponseFilter{
+			Paths: roverTrigger.ResponseFilter.Paths,
+			Mode:  eventv1.ResponseFilterMode(roverTrigger.ResponseFilter.Mode),
+		}
+	}
+
+	if roverTrigger.SelectionFilter != nil {
+		trigger.SelectionFilter = &eventv1.SelectionFilter{
+			Attributes: roverTrigger.SelectionFilter.Attributes,
+			Expression: roverTrigger.SelectionFilter.Expression,
+		}
+	}
+
+	return trigger
+}
+
+// mapEventTriggerValue converts a rover EventTrigger value to an event-domain EventTrigger value.
+// Used for scope triggers where the trigger is required.
+func mapEventTriggerValue(roverTrigger rover.EventTrigger) eventv1.EventTrigger {
+	trigger := eventv1.EventTrigger{}
 
 	if roverTrigger.ResponseFilter != nil {
 		trigger.ResponseFilter = &eventv1.ResponseFilter{

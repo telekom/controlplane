@@ -184,7 +184,7 @@ var _ = Describe("CreateCallbackRoute", func() {
 		Expect(route.Spec.Realm.Namespace).To(Equal("default"))
 	})
 
-	It("should add MeshClientName to DefaultConsumers when IsProxyTarget", func() {
+	It("should add util.MeshClientName to DefaultConsumers when IsProxyTarget", func() {
 		readyRealm := makeReadyGatewayRealm("gw-realm-a", "default")
 
 		fakeClient.EXPECT().
@@ -205,7 +205,7 @@ var _ = Describe("CreateCallbackRoute", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(route).ToNot(BeNil())
 		Expect(route.Spec.Security).ToNot(BeNil())
-		Expect(route.Spec.Security.DefaultConsumers).To(ContainElement("gateway-mesh--pubsub-client"))
+		Expect(route.Spec.Security.DefaultConsumers).To(ContainElement("eventstore"))
 	})
 
 	It("should return error when CreateOrUpdate fails", func() {
@@ -248,7 +248,7 @@ var _ = Describe("CreateProxyCallbackRoute", func() {
 		sourceZone = makeZone("zone-a", "default", "zone-a-ns", "gw-realm-a", "default")
 		targetZone = makeZone("zone-b", "default", "zone-b-ns", "gw-realm-b", "default")
 		meshClient = &identityv1.Client{
-			ObjectMeta: metav1.ObjectMeta{Name: "gateway-mesh--pubsub-client", Namespace: "zone-b-ns"},
+			ObjectMeta: metav1.ObjectMeta{Name: util.MeshClientName, Namespace: "zone-b-ns"},
 			Spec: identityv1.ClientSpec{
 				ClientId:     "mesh-client-id",
 				ClientSecret: "mesh-client-secret",
@@ -387,7 +387,7 @@ var _ = Describe("CreateProxyCallbackRoute", func() {
 		Expect(route.Labels).To(HaveKeyWithValue(config.DomainLabelKey, "event"))
 		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("zone"), "zone-a"))
 		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("realm"), "gw-realm-a"))
-		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("type"), "callback"))
+		Expect(route.Labels).To(HaveKeyWithValue(config.BuildLabelKey("type"), "callback-proxy"))
 
 		// Verify upstream: from target realm with mesh client credentials
 		Expect(route.Spec.Upstreams).To(HaveLen(1))
@@ -482,7 +482,7 @@ var _ = Describe("CreateCallbackProxyRoutes", func() {
 		targetZones := []*adminv1.Zone{sourceZone, targetZoneB}
 
 		meshClientObj := &identityv1.Client{
-			ObjectMeta: metav1.ObjectMeta{Name: "gateway-mesh--pubsub-client", Namespace: "zone-b-ns"},
+			ObjectMeta: metav1.ObjectMeta{Name: util.MeshClientName, Namespace: "zone-b-ns"},
 			Spec: identityv1.ClientSpec{
 				ClientId:     "mesh-client-id",
 				ClientSecret: "mesh-client-secret",
@@ -494,7 +494,7 @@ var _ = Describe("CreateCallbackProxyRoutes", func() {
 
 		// Get mesh client for zone-b
 		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gateway-mesh--pubsub-client", Namespace: "zone-b-ns"}, mock.AnythingOfType("*v1.Client")).
+			Get(ctx, k8stypes.NamespacedName{Name: util.MeshClientName, Namespace: "zone-b-ns"}, mock.AnythingOfType("*v1.Client")).
 			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
 				*out.(*identityv1.Client) = *meshClientObj
 			}).
@@ -521,6 +521,9 @@ var _ = Describe("CreateCallbackProxyRoutes", func() {
 		// CreateOrUpdate for proxy route
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
 		routes, err := util.CreateCallbackProxyRoutes(ctx, meshConfig, sourceZone, targetZones)
@@ -535,7 +538,7 @@ var _ = Describe("CreateCallbackProxyRoutes", func() {
 		targetZones := []*adminv1.Zone{targetZoneB}
 
 		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gateway-mesh--pubsub-client", Namespace: "zone-b-ns"}, mock.AnythingOfType("*v1.Client")).
+			Get(ctx, k8stypes.NamespacedName{Name: util.MeshClientName, Namespace: "zone-b-ns"}, mock.AnythingOfType("*v1.Client")).
 			Return(fmt.Errorf("client not found"))
 
 		routes, err := util.CreateCallbackProxyRoutes(ctx, meshConfig, sourceZone, targetZones)
@@ -552,7 +555,7 @@ var _ = Describe("CreateCallbackProxyRoutes", func() {
 		targetZones := []*adminv1.Zone{targetZoneB, targetZoneC}
 
 		meshClientB := &identityv1.Client{
-			ObjectMeta: metav1.ObjectMeta{Name: "gateway-mesh--pubsub-client", Namespace: "zone-b-ns"},
+			ObjectMeta: metav1.ObjectMeta{Name: util.MeshClientName, Namespace: "zone-b-ns"},
 			Spec: identityv1.ClientSpec{
 				ClientId:     "mesh-client-b-id",
 				ClientSecret: "mesh-client-b-secret",
@@ -562,7 +565,7 @@ var _ = Describe("CreateCallbackProxyRoutes", func() {
 			},
 		}
 		meshClientC := &identityv1.Client{
-			ObjectMeta: metav1.ObjectMeta{Name: "gateway-mesh--pubsub-client", Namespace: "zone-c-ns"},
+			ObjectMeta: metav1.ObjectMeta{Name: util.MeshClientName, Namespace: "zone-c-ns"},
 			Spec: identityv1.ClientSpec{
 				ClientId:     "mesh-client-c-id",
 				ClientSecret: "mesh-client-c-secret",
@@ -574,7 +577,7 @@ var _ = Describe("CreateCallbackProxyRoutes", func() {
 
 		// Get mesh client for zone-b
 		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gateway-mesh--pubsub-client", Namespace: "zone-b-ns"}, mock.AnythingOfType("*v1.Client")).
+			Get(ctx, k8stypes.NamespacedName{Name: util.MeshClientName, Namespace: "zone-b-ns"}, mock.AnythingOfType("*v1.Client")).
 			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
 				*out.(*identityv1.Client) = *meshClientB
 			}).
@@ -601,11 +604,14 @@ var _ = Describe("CreateCallbackProxyRoutes", func() {
 		// CreateOrUpdate for zone-b proxy route
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
 		// Get mesh client for zone-c
 		fakeClient.EXPECT().
-			Get(ctx, k8stypes.NamespacedName{Name: "gateway-mesh--pubsub-client", Namespace: "zone-c-ns"}, mock.AnythingOfType("*v1.Client")).
+			Get(ctx, k8stypes.NamespacedName{Name: util.MeshClientName, Namespace: "zone-c-ns"}, mock.AnythingOfType("*v1.Client")).
 			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
 				*out.(*identityv1.Client) = *meshClientC
 			}).
@@ -623,6 +629,9 @@ var _ = Describe("CreateCallbackProxyRoutes", func() {
 		// CreateOrUpdate for zone-c proxy route
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
 			Return(controllerutil.OperationResultCreated, nil).Once()
 
 		routes, err := util.CreateCallbackProxyRoutes(ctx, meshConfig, sourceZone, targetZones)

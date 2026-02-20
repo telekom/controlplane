@@ -19,13 +19,14 @@ import (
 )
 
 const (
-	ApiSpecificationFileName = "apiSpecification.json"
-	OpenApiFileName          = "openapi.yaml"
-	apiSubscriptionFileName  = "apiSubscription.json"
-	apiExposureFileName      = "apiExposure.json"
-	applicationFileName      = "application.json"
-	RoverFileName            = "rover.json"
-	zoneFileName             = "zone.json"
+	ApiSpecificationFileName   = "apiSpecification.json"
+	EventSpecificationFileName = "eventSpecification.json"
+	OpenApiFileName            = "openapi.yaml"
+	apiSubscriptionFileName    = "apiSubscription.json"
+	apiExposureFileName        = "apiExposure.json"
+	applicationFileName        = "application.json"
+	RoverFileName              = "rover.json"
+	zoneFileName               = "zone.json"
 )
 
 func GetRover(testing ginkgo.FullGinkgoTInterface, filePath string) *roverv1.Rover {
@@ -80,6 +81,15 @@ func GetApiSpecification(testing ginkgo.FullGinkgoTInterface, filePath string) *
 	require.NoError(testing, err)
 
 	return &apiSpecification
+}
+
+func GetEventSpecification(testing ginkgo.FullGinkgoTInterface, filePath string) *roverv1.EventSpecification {
+	file := data.ReadFile(testing, filePath)
+	var eventSpecification roverv1.EventSpecification
+	err := json.Unmarshal(file, &eventSpecification)
+	require.NoError(testing, err)
+
+	return &eventSpecification
 }
 
 func GetOpenApi(testing ginkgo.FullGinkgoTInterface, filePath string) *map[string]any {

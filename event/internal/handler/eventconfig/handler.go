@@ -83,6 +83,13 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 	}
 	logger.V(1).Info("Callback Routes created/updated", "count", len(obj.Status.ProxyCallbackRoutes))
 
+	if obj.Spec.VoyagerApiUrl != "" {
+		if err := h.createVoyagerRoutes(ctx, obj); err != nil {
+			return errors.Wrap(err, "failed to create voyager Routes")
+		}
+		logger.V(1).Info("Voyager Routes created/updated", "count", len(obj.Status.ProxyVoyagerRoutes))
+	}
+
 	if err := h.createPublishRoute(ctx, obj); err != nil {
 		return errors.Wrap(err, "failed to create publish Route")
 	}
@@ -235,6 +242,59 @@ func (h *EventConfigHandler) createPublishRoute(ctx context.Context, obj *eventv
 	}
 	obj.Status.PublishRoute = types.ObjectRefFromObject(route)
 	obj.Status.PublishURL = route.Spec.Downstreams[0].Url()
+
+	return nil
+}
+
+func (h *EventConfigHandler) createVoyagerRoutes(ctx context.Context, obj *eventv1.EventConfig) error {
+	c := cclient.ClientFromContextOrDie(ctx)
+	logger := log.FromContext(ctx)
+
+	myZone, err := util.GetZone(ctx, obj.Spec.Zone.K8s())
+	if err != nil {
+		return errors.Wrapf(err, "failed to get zone for EventConfig's zone reference %q", obj.Spec.Zone.String())
+	}
+
+	otherEventConfigs := &eventv1.EventConfigList{}
+	err = c.List(ctx, otherEventConfigs)
+	if err != nil {
+		return errors.Wrap(err, "failed to list other EventConfigs")
+	}
+	logger.V(1).Info("Fetched other EventConfigs for voyager Routes", "count", len(otherEventConfigs.Items))
+	otherZones := make([]*adminv1.Zone, 0, len(otherEventConfigs.Items))
+
+	for _, other := range otherEventConfigs.Items {
+		if types.Equals(&other, obj) {
+			continue
+		}
+		zone, err := util.GetZone(ctx, other.Spec.Zone.K8s())
+		if err != nil {
+			return errors.Wrapf(err, "failed to get zone for other EventConfig %q", other.Name)
+		}
+		otherZones = append(otherZones, zone)
+	}
+
+	logger.V(1).Info("Creating proxy voyager Routes for other zones", "count", len(otherZones))
+	routes, err := util.CreateVoyagerProxyRoutes(ctx, obj.Spec.Mesh, myZone, otherZones, util.WithOwner(obj))
+	if err != nil {
+		return errors.Wrap(err, "failed to create voyager proxy Routes")
+	}
+	logger.V(1).Info("Created proxy voyager Routes", "count", len(routes))
+	obj.Status.ProxyVoyagerRoutes = make([]types.ObjectRef, 0, len(routes))
+	obj.Status.ProxyVoyagerURLs = make(map[string]string, len(routes))
+
+	for zoneName, route := range routes {
+		obj.Status.ProxyVoyagerRoutes = append(obj.Status.ProxyVoyagerRoutes, *types.ObjectRefFromObject(route))
+		obj.Status.ProxyVoyagerURLs[zoneName] = route.Spec.Downstreams[0].Url()
+	}
+
+	isProxyTarget := len(obj.Status.ProxyVoyagerRoutes) > 0
+	myVoyagerRoute, err := util.CreateVoyagerRoute(ctx, myZone, obj, util.WithOwner(obj), util.WithProxyTarget(isProxyTarget))
+	if err != nil {
+		return errors.Wrap(err, "failed to create voyager Route for own zone")
+	}
+	obj.Status.VoyagerRoute = types.ObjectRefFromObject(myVoyagerRoute)
+	obj.Status.VoyagerURL = myVoyagerRoute.Spec.Downstreams[0].Url()
 
 	return nil
 }

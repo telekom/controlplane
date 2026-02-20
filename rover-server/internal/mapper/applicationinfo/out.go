@@ -6,7 +6,6 @@ package applicationinfo
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -247,109 +246,25 @@ func FillExposureInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.Ap
 }
 
 // mapEventSubscriptionInfo maps an event domain EventSubscription to the API's EventSubscriptionInfo.
+// Only core identifying fields are mapped, matching the pattern of the API subscription info mapper.
 func mapEventSubscriptionInfo(in *eventv1.EventSubscription) api.EventSubscriptionInfo {
-	out := api.EventSubscriptionInfo{
+	return api.EventSubscriptionInfo{
 		EventType:    in.Spec.EventType,
 		DeliveryType: string(in.Spec.Delivery.Type),
 		PayloadType:  string(in.Spec.Delivery.Payload),
 		Type:         "event",
 	}
-
-	// Map delivery fields
-	if in.Spec.Delivery.Callback != "" {
-		out.Callback = in.Spec.Delivery.Callback
-	}
-	if in.Spec.Delivery.EventRetentionTime != "" {
-		out.EventRetentionTime = in.Spec.Delivery.EventRetentionTime
-	}
-	if in.Spec.Delivery.CircuitBreakerOptOut {
-		out.CircuitBreakerOptOut = in.Spec.Delivery.CircuitBreakerOptOut
-	}
-	if in.Spec.Delivery.RetryableStatusCodes != nil {
-		out.RetryableStatusCodes = in.Spec.Delivery.RetryableStatusCodes
-	}
-	if in.Spec.Delivery.RedeliveriesPerSecond != nil {
-		out.RedeliveriesPerSecond = *in.Spec.Delivery.RedeliveriesPerSecond
-	}
-	if in.Spec.Delivery.EnforceGetHttpRequestMethodForHealthCheck {
-		out.EnforceGetHttpRequestMethodForHealthCheck = in.Spec.Delivery.EnforceGetHttpRequestMethodForHealthCheck
-	}
-
-	// Map trigger
-	if in.Spec.Trigger != nil {
-		out.Trigger = mapEventDomainTrigger(in.Spec.Trigger)
-	}
-
-	// Map scopes
-	if in.Spec.Scopes != nil {
-		out.Scopes = in.Spec.Scopes
-	}
-
-	return out
 }
 
 // mapEventExposureInfo maps an event domain EventExposure to the API's EventExposureInfo.
+// Only core identifying fields are mapped, matching the pattern of the API exposure info mapper.
 func mapEventExposureInfo(in *eventv1.EventExposure) api.EventExposureInfo {
-	out := api.EventExposureInfo{
+	return api.EventExposureInfo{
 		EventType:  in.Spec.EventType,
 		Visibility: toApiVisibilityFromEvent(in.Spec.Visibility),
 		Approval:   toApiApprovalStrategyFromEvent(in.Spec.Approval.Strategy),
 		Type:       "event",
 	}
-
-	// Map trusted teams (event domain stores them as flat strings)
-	if in.Spec.Approval.TrustedTeams != nil {
-		out.TrustedTeams = make([]api.TrustedTeam, len(in.Spec.Approval.TrustedTeams))
-		for i, team := range in.Spec.Approval.TrustedTeams {
-			out.TrustedTeams[i] = api.TrustedTeam{
-				Team: team,
-			}
-		}
-	}
-
-	// Map scopes
-	if in.Spec.Scopes != nil {
-		out.Scopes = make([]api.EventScope, len(in.Spec.Scopes))
-		for i, scope := range in.Spec.Scopes {
-			out.Scopes[i] = api.EventScope{
-				Name: scope.Name,
-			}
-			if scope.Trigger != nil {
-				out.Scopes[i].Trigger = mapEventDomainTrigger(scope.Trigger)
-			}
-		}
-	}
-
-	// Map additional publisher IDs
-	if in.Spec.AdditionalPublisherIds != nil {
-		out.AdditionalPublisherIds = in.Spec.AdditionalPublisherIds
-	}
-
-	return out
-}
-
-// mapEventDomainTrigger maps an event domain EventTrigger to the API's EventTrigger.
-func mapEventDomainTrigger(in *eventv1.EventTrigger) api.EventTrigger {
-	out := api.EventTrigger{}
-
-	if in.ResponseFilter != nil {
-		out.ResponseFilter = in.ResponseFilter.Paths
-		out.ResponseFilterMode = api.EventTriggerResponseFilterMode(in.ResponseFilter.Mode)
-	}
-
-	if in.SelectionFilter != nil {
-		if in.SelectionFilter.Attributes != nil {
-			out.SelectionFilter = in.SelectionFilter.Attributes
-		}
-		if in.SelectionFilter.Expression != nil && in.SelectionFilter.Expression.Raw != nil {
-			var advFilter map[string]map[string]interface{}
-			if err := json.Unmarshal(in.SelectionFilter.Expression.Raw, &advFilter); err == nil {
-				out.AdvancedSelectionFilter = advFilter
-			}
-		}
-	}
-
-	return out
 }
 
 // toApiVisibilityFromEvent converts event domain Visibility to API Visibility.

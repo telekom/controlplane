@@ -55,6 +55,12 @@ type EventConfigSpec struct {
 	// +kubebuilder:validation:Format=uri
 	PublishEventUrl string `json:"publishEventUrl"`
 
+	// VoyagerApiUrl is the internal URL of the Voyager backend service.
+	// Used as the upstream for the Voyager gateway Route which exposes
+	// event listing and redelivery APIs.
+	// +kubebuilder:validation:Format=uri
+	VoyagerApiUrl string `json:"voyagerApiUrl,omitempty"`
+
 	// Mesh configures the mesh topology for event distribution.
 	Mesh MeshConfig `json:"mesh"`
 }
@@ -104,6 +110,23 @@ type EventConfigStatus struct {
 	// Used to send events to event consumers in other zones.
 	// +optional
 	ProxyCallbackURLs map[string]string `json:"proxyCallbackUrls,omitempty"`
+
+	// VoyagerRoute references the primary Route CR created for the Voyager gateway.
+	// +optional
+	VoyagerRoute *ctypes.ObjectRef `json:"voyagerRoute,omitempty"`
+
+	// VoyagerURL is the external gateway URL for the Voyager API,
+	// used for event listing and redelivery.
+	// +optional
+	VoyagerURL string `json:"voyagerUrl,omitempty"`
+
+	// ProxyVoyagerRoutes references the proxy Route CRs created for cross-zone Voyager access.
+	// +optional
+	ProxyVoyagerRoutes []ctypes.ObjectRef `json:"proxyVoyagerRoutes,omitempty"`
+
+	// ProxyVoyagerURLs maps zone names to the external URLs of the proxy Voyager gateway Routes for those zones.
+	// +optional
+	ProxyVoyagerURLs map[string]string `json:"proxyVoyagerUrls,omitempty"`
 }
 
 type ObservedObjectRef struct {

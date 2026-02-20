@@ -18,6 +18,7 @@ snapshots
 allure-report
 allure-results
 debug-results
+tmp
 
 # ignore AI files
 CLAUDE.md

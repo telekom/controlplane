@@ -321,6 +321,9 @@ var _ = Describe("EventExposureHandler", func() {
 	mockCreateOrUpdatePublisher := func(result controllerutil.OperationResult, err error) {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Publisher"), mock.Anything).
+			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
 			Return(result, err).Once()
 	}
 
@@ -360,6 +363,9 @@ var _ = Describe("EventExposureHandler", func() {
 	mockCreateOrUpdateRoute := func(result controllerutil.OperationResult, err error) {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
 			Return(result, err).Once()
 	}
 

@@ -113,6 +113,13 @@ spec:
                   Used as the upstream for the SSE gateway Route.
                 format: uri
                 type: string
+              voyagerApiUrl:
+                description: |-
+                  VoyagerApiUrl is the internal URL of the Voyager backend service.
+                  Used as the upstream for the Voyager gateway Route which exposes
+                  event listing and redelivery APIs.
+                format: uri
+                type: string
               zone:
                 description: Zone references the Zone for which this EventConfig applies.
                 properties:
@@ -317,6 +324,35 @@ spec:
                   ProxyCallbackURLs maps zone names to the external URLs of the proxy callback gateway Routes for those zones.
                   Used to send events to event consumers in other zones.
                 type: object
+              proxyVoyagerRoutes:
+                description: ProxyVoyagerRoutes references the proxy Route CRs created
+                  for cross-zone Voyager access.
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
+              proxyVoyagerUrls:
+                additionalProperties:
+                  type: string
+                description: ProxyVoyagerURLs maps zone names to the external URLs
+                  of the proxy Voyager gateway Routes for those zones.
+                type: object
               publishRoute:
                 description: PublishRoute references the Route CR created for the
                   publish gateway.
@@ -338,6 +374,29 @@ spec:
               publishUrl:
                 description: PublishURL is the external URL of the publish gateway,
                   used by event producers to publish events.
+                type: string
+              voyagerRoute:
+                description: VoyagerRoute references the primary Route CR created
+                  for the Voyager gateway.
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              voyagerUrl:
+                description: |-
+                  VoyagerURL is the external gateway URL for the Voyager API,
+                  used for event listing and redelivery.
                 type: string
             type: object
         type: object

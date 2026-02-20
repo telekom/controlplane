@@ -77,8 +77,6 @@ type EventExposureSpec struct {
 	// Todo: rethink this approach and consider a decoupling
 	// +optional
 	AdditionalPublisherIds []string `json:"additionalPublisherIds,omitempty"`
-
-	// TODO: Add Security field — currently derived from Zone/Gateway config in the handler
 }
 
 // EventExposureStatus defines the observed state of EventExposure.
@@ -142,6 +140,15 @@ func (r *EventExposure) SetCondition(condition metav1.Condition) bool {
 func (r *EventExposure) FindSseUrlForZone(zoneName string) (string, bool) {
 	url, found := r.Status.SseURLs[zoneName]
 	return url, found
+}
+
+func (r *EventExposure) FindTriggerForScope(scopeName string) (EventTrigger, bool) {
+	for _, scope := range r.Spec.Scopes {
+		if scope.Name == scopeName {
+			return scope.Trigger, true
+		}
+	}
+	return EventTrigger{}, false
 }
 
 // +kubebuilder:object:root=true

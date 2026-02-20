@@ -49,9 +49,8 @@ spec:
               It is created by the EventSubscription handler in the event domain.
             properties:
               appliedScopes:
-                description: |-
-                  AppliedScopes lists the scope names that this subscriber is subscribed to.
-                  These must match scope names defined on the corresponding EventExposure/Publisher.
+                description: AppliedScopes lists the scope names that are applied
+                  to this subscription.
                 items:
                   type: string
                 type: array
@@ -127,9 +126,8 @@ spec:
                 - namespace
                 type: object
               publisherTrigger:
-                description: |-
-                  PublisherTrigger defines publisher-side filtering criteria applied to this subscriber.
-                  Derived from the matching scope on the EventExposure.
+                description: PublisherTrigger defines publisher-side filtering criteria
+                  for event delivery.
                 properties:
                   responseFilter:
                     description: ResponseFilter controls payload shaping (which fields

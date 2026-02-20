@@ -1893,8 +1893,6 @@ components:
             type: string
         advancedSelectionFilter:
           type: object
-          additionalProperties:
-            type: object
     TrustedTeam:
       description: >-
         A trusted team is a team that is allowed to access the resource without

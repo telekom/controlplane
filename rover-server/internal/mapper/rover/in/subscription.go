@@ -119,8 +119,8 @@ func mapEventSubscription(in api.EventSubscription) *roverv1.EventSubscription {
 
 	// Map delivery configuration
 	out.Delivery = roverv1.EventDelivery{
-		Type:    roverv1.EventDeliveryType(in.DeliveryType),
-		Payload: roverv1.EventPayloadType(in.PayloadType),
+		Type:    FuzzyMatchEventDeliveryType(in.DeliveryType),
+		Payload: FuzzyMatchEventPayloadType(in.PayloadType),
 	}
 	if in.Callback != "" {
 		out.Delivery.Callback = in.Callback

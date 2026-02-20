@@ -111,8 +111,9 @@ type EventTrigger struct {
 	SelectionFilter *EventSelectionFilter `json:"selectionFilter,omitempty"`
 }
 
-// EventScope defines a named scope with optional trigger-based filtering for event exposure.
+// EventScope defines a named scope with required trigger-based filtering for event exposure.
 // Scopes allow publishers to partition their events and apply publisher-side filters.
+// Each scope must define a trigger that specifies which events belong to it.
 type EventScope struct {
 	// Name is the unique identifier for this scope.
 	// +kubebuilder:validation:Required
@@ -120,6 +121,7 @@ type EventScope struct {
 	Name string `json:"name"`
 
 	// Trigger defines publisher-side filtering criteria for this scope.
-	// +kubebuilder:validation:Optional
-	Trigger *EventTrigger `json:"trigger,omitempty"`
+	// Every scope must define a trigger.
+	// +kubebuilder:validation:Required
+	Trigger EventTrigger `json:"trigger"`
 }

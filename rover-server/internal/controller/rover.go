@@ -158,7 +158,7 @@ func (r *RoverController) GetStatus(ctx context.Context, resourceId string) (res
 		return res, err
 	}
 
-	return status.MapRoverResponse(ctx, rover)
+	return status.MapResponse(ctx, rover)
 }
 
 // GetApplicationInfo implements server.RoverController.

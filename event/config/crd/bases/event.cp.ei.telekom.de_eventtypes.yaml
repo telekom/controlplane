@@ -87,8 +87,8 @@ spec:
             - version
             type: object
             x-kubernetes-validations:
-            - message: major version in 'version' must match the version suffix (e.g.
-                'vN') in 'type'
+            - message: major version in "version" must match the version suffix (e.g.
+                "vN") in "type"
               rule: self.type.endsWith('.v' + self.version.split('.')[0])
           status:
             description: EventTypeStatus defines the observed state of EventType.

@@ -47,8 +47,8 @@ func (r ResponseFilterMode) String() string {
 	return string(r)
 }
 
-// SubscriptionResponseFilter controls which fields are included or excluded from the event payload.
-type SubscriptionResponseFilter struct {
+// ResponseFilter controls which fields are included or excluded from the event payload.
+type ResponseFilter struct {
 	// Paths lists the JSON paths to include or exclude from the event payload.
 	// +optional
 	Paths []string `json:"paths,omitempty"`
@@ -59,8 +59,8 @@ type SubscriptionResponseFilter struct {
 	Mode ResponseFilterMode `json:"mode,omitempty"`
 }
 
-// SubscriptionSelectionFilter defines criteria for selecting which events are delivered.
-type SubscriptionSelectionFilter struct {
+// SelectionFilter defines criteria for selecting which events are delivered.
+type SelectionFilter struct {
 	// Attributes defines simple key-value equality matches on CloudEvents attributes.
 	// All entries are AND-ed together.
 	// +optional
@@ -73,15 +73,15 @@ type SubscriptionSelectionFilter struct {
 	Expression *apiextensionsv1.JSON `json:"expression,omitempty"`
 }
 
-// SubscriptionTrigger defines filtering criteria for event delivery in the pubsub domain.
-type SubscriptionTrigger struct {
+// Trigger defines filtering criteria for event delivery in the pubsub domain.
+type Trigger struct {
 	// ResponseFilter controls payload shaping (which fields to return).
 	// +optional
-	ResponseFilter *SubscriptionResponseFilter `json:"responseFilter,omitempty"`
+	ResponseFilter *ResponseFilter `json:"responseFilter,omitempty"`
 
 	// SelectionFilter controls event matching (which events to deliver).
 	// +optional
-	SelectionFilter *SubscriptionSelectionFilter `json:"selectionFilter,omitempty"`
+	SelectionFilter *SelectionFilter `json:"selectionFilter,omitempty"`
 }
 
 // SubscriptionDelivery configures how events are delivered to the subscriber in the pubsub domain.

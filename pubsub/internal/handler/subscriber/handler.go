@@ -5,13 +5,17 @@
 package subscriber
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/pkg/errors"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	file_api "github.com/telekom/controlplane/file-manager/api"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	"github.com/telekom/controlplane/pubsub/internal/handler/util"
 	"github.com/telekom/controlplane/pubsub/internal/service"
@@ -35,6 +39,19 @@ func (h *SubscriberHandler) CreateOrUpdate(ctx context.Context, obj *pubsubv1.Su
 	eventStore, err := util.GetEventStore(ctx, publisher.Spec.EventStore)
 	if err != nil {
 		return errors.Wrapf(err, "failed to resolve EventStore %q from Publisher %q", publisher.Spec.EventStore.String(), obj.Spec.Publisher.String())
+	}
+
+	if cconfig.FeatureFileManager.IsEnabled() {
+		buf := bytes.NewBuffer(nil)
+		res, err := file_api.GetFileManager().DownloadFile(ctx, publisher.Spec.JsonSchema, buf)
+		if err != nil {
+			return errors.Wrapf(err, "failed to download JSON schema from Publisher %q", obj.Spec.Publisher.String())
+		}
+		if res.ContentType != "application/json" {
+			return ctrlerrors.BlockedErrorf("Expected content type application/json for JSON schema, got %q", res.ContentType)
+		}
+		// Set the downloaded JSON schema in the payload so it's included in the subscription resource sent to the configuration backend.
+		publisher.Spec.JsonSchema = buf.String()
 	}
 
 	subscriptionID := getOrGenerateSubscriptionID(obj, environment, publisher.Spec.EventType)

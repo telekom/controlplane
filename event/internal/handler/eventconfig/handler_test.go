@@ -25,6 +25,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -65,6 +66,7 @@ func newEventConfig() *eventv1.EventConfig {
 			},
 			ServerSendEventUrl: "https://sse.example.com",
 			PublishEventUrl:    "http://publish.internal:8080/publish",
+			VoyagerApiUrl:      "http://voyager.internal:8080/voyager",
 			Mesh: eventv1.MeshConfig{
 				FullMesh: false,
 			},
@@ -132,12 +134,21 @@ func makeReadyGatewayRealm() *gatewayv1.Realm {
 	return r
 }
 
+// buildScheme creates a runtime.Scheme with all types needed by the handler.
+func buildScheme() *runtime.Scheme {
+	s := runtime.NewScheme()
+	_ = eventv1.AddToScheme(s)
+	_ = gatewayv1.AddToScheme(s)
+	return s
+}
+
 var _ = Describe("EventConfigHandler", func() {
 	var (
 		ctx        context.Context
 		fakeClient *fakeclient.MockJanitorClient
 		h          *eventconfig.EventConfigHandler
 		obj        *eventv1.EventConfig
+		testScheme *runtime.Scheme
 	)
 
 	BeforeEach(func() {
@@ -146,6 +157,7 @@ var _ = Describe("EventConfigHandler", func() {
 		ctx = cclient.WithClient(ctx, fakeClient)
 		h = &eventconfig.EventConfigHandler{}
 		obj = newEventConfig()
+		testScheme = buildScheme()
 	})
 
 	// mockGetRealm sets up a mock for c.Get on the identity realm key.
@@ -169,6 +181,9 @@ var _ = Describe("EventConfigHandler", func() {
 	mockCreateOrUpdateClient := func(result controllerutil.OperationResult, err error, times int) {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Client"), mock.Anything).
+			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
 			Return(result, err).Times(times)
 	}
 
@@ -176,6 +191,9 @@ var _ = Describe("EventConfigHandler", func() {
 	mockCreateOrUpdateEventStore := func(result controllerutil.OperationResult, err error) {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.EventStore"), mock.Anything).
+			Run(func(_ context.Context, _ client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
 			Return(result, err).Once()
 	}
 
@@ -197,7 +215,7 @@ var _ = Describe("EventConfigHandler", func() {
 	}
 
 	// mockListEventConfigs sets up a mock for c.List on EventConfigList.
-	mockListEventConfigs := func(items []eventv1.EventConfig) {
+	mockListEventConfigs := func(items []eventv1.EventConfig, times int) {
 		fakeClient.EXPECT().
 			List(ctx, mock.AnythingOfType("*v1.EventConfigList")).
 			Run(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) {
@@ -205,7 +223,7 @@ var _ = Describe("EventConfigHandler", func() {
 					Items: items,
 				}
 			}).
-			Return(nil).Once()
+			Return(nil).Times(times)
 	}
 
 	// mockListEventConfigsError sets up a mock for c.List that returns an error.
@@ -225,25 +243,40 @@ var _ = Describe("EventConfigHandler", func() {
 			Return(nil).Times(times)
 	}
 
+	// mockScheme sets up a mock for c.Scheme() used by SetControllerReference in route mutators.
+	mockScheme := func() {
+		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
+	}
+
 	// mockCreateOrUpdateCallbackRoute sets up a mock for the callback Route CreateOrUpdate.
 	// It populates Spec.Downstreams so the handler can read the URL.
-	mockCreateOrUpdateCallbackRoute := func() {
+	mockCreateOrUpdateCallbackRoute := func(result controllerutil.OperationResult, err error) {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
-			Run(func(_ context.Context, obj client.Object, _ controllerutil.MutateFn) {
-				route := obj.(*gatewayv1.Route)
-				route.Spec.Downstreams = []gatewayv1.Downstream{
-					{Host: "gateway.example.com", Port: 443, Path: "/test-zone/callback/v1"},
-				}
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
 			}).
-			Return(controllerutil.OperationResultCreated, nil).Once()
+			Return(result, err).Once()
+	}
+
+	// mockCreateOrUpdateVoyagerRoute sets up a mock for the voyager Route CreateOrUpdate.
+	mockCreateOrUpdateVoyagerRoute := func(result controllerutil.OperationResult, err error) {
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
+			Return(result, err).Once()
 	}
 
 	// mockCreateOrUpdatePublishRoute sets up a mock for the publish Route CreateOrUpdate.
-	mockCreateOrUpdatePublishRoute := func() {
+	mockCreateOrUpdatePublishRoute := func(result controllerutil.OperationResult, err error) {
 		fakeClient.EXPECT().
 			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Route"), mock.Anything).
-			Return(controllerutil.OperationResultCreated, nil).Once()
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
+			Return(result, err).Once()
 	}
 
 	// setupFullHappyPath sets up all mocks needed for a full successful CreateOrUpdate run
@@ -253,14 +286,16 @@ var _ = Describe("EventConfigHandler", func() {
 		zone := makeReadyZone()
 		gwRealm := makeReadyGatewayRealm()
 
+		mockScheme()
 		mockGetRealm(realm)
 		mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 		mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
-		mockGetZone(zone, 2)
-		mockListEventConfigs([]eventv1.EventConfig{})
-		mockGetGatewayRealm(gwRealm, 2)
-		mockCreateOrUpdateCallbackRoute()
-		mockCreateOrUpdatePublishRoute()
+		mockGetZone(zone, 3)                             // callback + voyager + publish
+		mockListEventConfigs([]eventv1.EventConfig{}, 2) // callback + voyager
+		mockGetGatewayRealm(gwRealm, 3)                  // callback + voyager + publish
+		mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
+		mockCreateOrUpdateVoyagerRoute(controllerutil.OperationResultCreated, nil)
+		mockCreateOrUpdatePublishRoute(controllerutil.OperationResultCreated, nil)
 	}
 
 	Describe("CreateOrUpdate", func() {
@@ -326,6 +361,7 @@ var _ = Describe("EventConfigHandler", func() {
 		It("should return error when EventStore creation fails", func() {
 			realm := makeReadyRealm()
 			mockGetRealm(realm)
+			mockScheme()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultNone, fmt.Errorf("eventstore error"))
 
@@ -338,6 +374,7 @@ var _ = Describe("EventConfigHandler", func() {
 		It("should return error when GetZone fails in createCallbackRoutes", func() {
 			realm := makeReadyRealm()
 			mockGetRealm(realm)
+			mockScheme()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 			mockGetZoneError(fmt.Errorf("zone fetch failed"))
@@ -354,6 +391,7 @@ var _ = Describe("EventConfigHandler", func() {
 			zone.Status.Namespace = "wrong-ns"
 
 			mockGetRealm(realm)
+			mockScheme()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 			mockGetZone(zone, 1)
@@ -365,11 +403,12 @@ var _ = Describe("EventConfigHandler", func() {
 			Expect(isBlockedError(err)).To(BeTrue())
 		})
 
-		It("should return error when List EventConfigs fails", func() {
+		It("should return error when List EventConfigs fails in createCallbackRoutes", func() {
 			realm := makeReadyRealm()
 			zone := makeReadyZone()
 
 			mockGetRealm(realm)
+			mockScheme()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 			mockGetZone(zone, 1)
@@ -379,6 +418,56 @@ var _ = Describe("EventConfigHandler", func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to create callback Routes"))
+		})
+
+		It("should return error when createVoyagerRoutes GetZone fails", func() {
+			realm := makeReadyRealm()
+			zone := makeReadyZone()
+			gwRealm := makeReadyGatewayRealm()
+
+			mockGetRealm(realm)
+			mockScheme()
+			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
+			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
+
+			// Callback routes succeed: GetZone(1) + List(1) + GetGatewayRealm(1) + CreateOrUpdate Route(1)
+			mockGetZone(zone, 1)
+			mockListEventConfigs([]eventv1.EventConfig{}, 1)
+			mockGetGatewayRealm(gwRealm, 1)
+			mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
+
+			// Voyager routes: GetZone fails
+			mockGetZoneError(fmt.Errorf("voyager zone fetch failed"))
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("failed to create voyager Routes"))
+		})
+
+		It("should return error when List EventConfigs fails in createVoyagerRoutes", func() {
+			realm := makeReadyRealm()
+			zone := makeReadyZone()
+			gwRealm := makeReadyGatewayRealm()
+
+			mockGetRealm(realm)
+			mockScheme()
+			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
+			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
+
+			// Callback routes succeed: GetZone(1) + List(1) + GetGatewayRealm(1) + CreateOrUpdate Route(1)
+			mockGetZone(zone, 2) // callback + voyager
+			mockListEventConfigs([]eventv1.EventConfig{}, 1)
+			mockGetGatewayRealm(gwRealm, 1)
+			mockCreateOrUpdateCallbackRoute(controllerutil.OperationResultCreated, nil)
+
+			// Voyager routes: List fails
+			mockListEventConfigsError(fmt.Errorf("voyager list failed"))
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("failed to create voyager Routes"))
 		})
 
 		It("should set NotReady condition when not all children are ready", func() {

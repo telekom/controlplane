@@ -228,7 +228,9 @@ func mapEventExposure(in api.EventExposure) *roverv1.EventExposure {
 				Name: scope.Name,
 			}
 			if scope.Trigger.ResponseFilter != nil || scope.Trigger.SelectionFilter != nil || scope.Trigger.AdvancedSelectionFilter != nil {
-				out.Scopes[i].Trigger = mapEventTrigger(scope.Trigger)
+				if t := mapEventTrigger(scope.Trigger); t != nil {
+					out.Scopes[i].Trigger = *t
+				}
 			}
 		}
 	}

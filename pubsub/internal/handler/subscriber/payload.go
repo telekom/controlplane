@@ -24,14 +24,15 @@ func BuildSubscriptionResource(subscriber *pubsubv1.Subscriber, publisher *pubsu
 		SubscriberId:           spec.SubscriberId,
 		PublisherId:            publisher.Spec.PublisherId,
 		Type:                   publisher.Spec.EventType,
-		DeliveryType:           delivery.Type.String(),
-		PayloadType:            delivery.Payload.String(),
+		DeliveryType:           convertDeliveryType(delivery.Type),
+		PayloadType:            convertPayloadType(delivery.Payload),
 		Callback:               delivery.Callback,
 		AdditionalPublisherIds: publisher.Spec.AdditionalPublisherIds,
 		AppliedScopes:          spec.AppliedScopes,
 		EventRetentionTime:     delivery.EventRetentionTime,
 		RetryableStatusCodes:   delivery.RetryableStatusCodes,
 		RedeliveriesPerSecond:  delivery.RedeliveriesPerSecond,
+		JsonSchema:             publisher.Spec.JsonSchema,
 	}
 
 	if delivery.CircuitBreakerOptOut {
@@ -60,7 +61,7 @@ func BuildSubscriptionResource(subscriber *pubsubv1.Subscriber, publisher *pubsu
 
 // convertTrigger maps a K8s SubscriptionTrigger to a client SubscriptionTriggerPayload.
 // Returns nil if the input is nil.
-func convertTrigger(trigger *pubsubv1.SubscriptionTrigger) *service.SubscriptionTriggerPayload {
+func convertTrigger(trigger *pubsubv1.Trigger) *service.SubscriptionTriggerPayload {
 	if trigger == nil {
 		return nil
 	}
@@ -68,7 +69,7 @@ func convertTrigger(trigger *pubsubv1.SubscriptionTrigger) *service.Subscription
 	result := &service.SubscriptionTriggerPayload{}
 
 	if trigger.ResponseFilter != nil {
-		result.ResponseFilterMode = trigger.ResponseFilter.Mode.String()
+		result.ResponseFilterMode = convertResponseFilterMode(trigger.ResponseFilter.Mode)
 		result.ResponseFilter = trigger.ResponseFilter.Paths
 	}
 
@@ -84,4 +85,37 @@ func convertTrigger(trigger *pubsubv1.SubscriptionTrigger) *service.Subscription
 	}
 
 	return result
+}
+
+func convertDeliveryType(deliveryType pubsubv1.DeliveryType) string {
+	switch deliveryType {
+	case pubsubv1.DeliveryTypeCallback:
+		return "callback"
+	case pubsubv1.DeliveryTypeServerSentEvent:
+		return "server_sent_event"
+	default:
+		panic("unknown delivery type")
+	}
+}
+
+func convertPayloadType(payloadType pubsubv1.PayloadType) string {
+	switch payloadType {
+	case pubsubv1.PayloadTypeData:
+		return "data"
+	case pubsubv1.PayloadTypeDataRef:
+		return "data_ref"
+	default:
+		panic("unknown payload type")
+	}
+}
+
+func convertResponseFilterMode(mode pubsubv1.ResponseFilterMode) string {
+	switch mode {
+	case pubsubv1.ResponseFilterModeInclude:
+		return "INCLUDE"
+	case pubsubv1.ResponseFilterModeExclude:
+		return "EXCLUDE"
+	default:
+		panic("unknown response filter mode")
+	}
 }

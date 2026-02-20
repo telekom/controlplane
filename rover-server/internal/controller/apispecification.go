@@ -220,7 +220,7 @@ func (a *ApiSpecificationController) GetStatus(ctx context.Context, resourceId s
 		return res, err
 	}
 
-	return status.MapApiSpecificationResponse(ctx, apiSpec)
+	return status.MapResponse(ctx, apiSpec)
 }
 
 func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {

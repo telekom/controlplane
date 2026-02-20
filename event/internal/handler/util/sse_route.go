@@ -88,7 +88,7 @@ func CreateSSERoute(
 			eventv1.EventTypeLabelKey:     labelutil.NormalizeLabelValue(eventType),
 			config.BuildLabelKey("zone"):  zone.Name,
 			config.BuildLabelKey("realm"): realm.Name,
-			config.BuildLabelKey("type"):  "real",
+			config.BuildLabelKey("type"):  "sse",
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
@@ -101,6 +101,9 @@ func CreateSSERoute(
 			},
 			Security: &gatewayapi.Security{
 				DisableAccessControl: true,
+			},
+			Buffering: gatewayapi.Buffering{
+				DisableResponseBuffering: true,
 			},
 		}
 		// If this Route is used as target of a proxy Route,
@@ -219,7 +222,7 @@ func CreateSSEProxyRoute(
 			eventv1.EventTypeLabelKey:     labelutil.NormalizeLabelValue(eventType),
 			config.BuildLabelKey("zone"):  subscriberZone.Name,
 			config.BuildLabelKey("realm"): subscriberRealm.Name,
-			config.BuildLabelKey("type"):  "proxy",
+			config.BuildLabelKey("type"):  "sse-proxy",
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
@@ -232,6 +235,9 @@ func CreateSSEProxyRoute(
 			},
 			Security: &gatewayapi.Security{
 				DisableAccessControl: true,
+			},
+			Buffering: gatewayapi.Buffering{
+				DisableResponseBuffering: true,
 			},
 		}
 		return nil

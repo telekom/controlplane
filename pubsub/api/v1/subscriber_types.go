@@ -31,15 +31,13 @@ type SubscriberSpec struct {
 
 	// Trigger defines subscriber-side filtering criteria for event delivery.
 	// +optional
-	Trigger *SubscriptionTrigger `json:"trigger,omitempty"`
+	Trigger *Trigger `json:"trigger,omitempty"`
 
-	// PublisherTrigger defines publisher-side filtering criteria applied to this subscriber.
-	// Derived from the matching scope on the EventExposure.
+	// PublisherTrigger defines publisher-side filtering criteria for event delivery.
 	// +optional
-	PublisherTrigger *SubscriptionTrigger `json:"publisherTrigger,omitempty"`
+	PublisherTrigger *Trigger `json:"publisherTrigger,omitempty"`
 
-	// AppliedScopes lists the scope names that this subscriber is subscribed to.
-	// These must match scope names defined on the corresponding EventExposure/Publisher.
+	// AppliedScopes lists the scope names that are applied to this subscription.
 	// +optional
 	AppliedScopes []string `json:"appliedScopes,omitempty"`
 }

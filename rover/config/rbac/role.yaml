@@ -10,6 +10,7 @@ rules:
 - apiGroups:
   - admin.cp.ei.telekom.de
   resources:
+  - eventconfigs
   - zones
   verbs:
   - get

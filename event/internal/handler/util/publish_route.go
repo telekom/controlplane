@@ -68,7 +68,7 @@ func CreatePublishRoute(
 
 	downstream, err := gatewayRealm.AsDownstream(makePublishRoutePath(zone.Name))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create downstream for callback Route")
+		return nil, errors.Wrap(err, "failed to create downstream for publish Route")
 	}
 	mutator := func() error {
 		if err := controllerutil.SetControllerReference(eventConfig, route, c.Scheme()); err != nil {

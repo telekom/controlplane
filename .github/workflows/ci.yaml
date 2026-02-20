@@ -199,3 +199,21 @@ jobs:
       module: notification
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
+
+  event:
+    name: Event
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      name: event
+      module: event
+      run_check_generated_files: true
+      ko_build_path: "cmd/main.go"
+
+  pubsub:
+    name: PubSub
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      name: pubsub
+      module: pubsub
+      run_check_generated_files: true
+      ko_build_path: "cmd/main.go"

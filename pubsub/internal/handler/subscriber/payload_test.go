@@ -170,8 +170,7 @@ func TestBuildSubscriptionResource_NilTriggers(t *testing.T) {
 				Type:    pubsubv1.DeliveryTypeServerSentEvent,
 				Payload: pubsubv1.PayloadTypeDataRef,
 			},
-			Trigger:          nil,
-			PublisherTrigger: nil,
+			Trigger: nil,
 		},
 	}
 	publisher := &pubsubv1.Publisher{
@@ -192,12 +191,12 @@ func TestBuildSubscriptionResource_WithTrigger(t *testing.T) {
 				Type:    pubsubv1.DeliveryTypeCallback,
 				Payload: pubsubv1.PayloadTypeData,
 			},
-			Trigger: &pubsubv1.SubscriptionTrigger{
-				ResponseFilter: &pubsubv1.SubscriptionResponseFilter{
+			Trigger: &pubsubv1.Trigger{
+				ResponseFilter: &pubsubv1.ResponseFilter{
 					Mode:  pubsubv1.ResponseFilterModeInclude,
 					Paths: []string{"$.data.orderId", "$.data.status"},
 				},
-				SelectionFilter: &pubsubv1.SubscriptionSelectionFilter{
+				SelectionFilter: &pubsubv1.SelectionFilter{
 					Attributes: map[string]string{"source": "order-service"},
 					Expression: &apiextensionsv1.JSON{
 						Raw: []byte(`{"op":"eq","field":"type","value":"created"}`),
@@ -229,7 +228,7 @@ func TestConvertTrigger_Nil(t *testing.T) {
 }
 
 func TestConvertTrigger_EmptyTrigger(t *testing.T) {
-	trigger := &pubsubv1.SubscriptionTrigger{}
+	trigger := &pubsubv1.Trigger{}
 	result := convertTrigger(trigger)
 	require.NotNil(t, result)
 	assert.Empty(t, result.ResponseFilterMode)
@@ -239,8 +238,8 @@ func TestConvertTrigger_EmptyTrigger(t *testing.T) {
 }
 
 func TestConvertTrigger_InvalidExpressionJSON(t *testing.T) {
-	trigger := &pubsubv1.SubscriptionTrigger{
-		SelectionFilter: &pubsubv1.SubscriptionSelectionFilter{
+	trigger := &pubsubv1.Trigger{
+		SelectionFilter: &pubsubv1.SelectionFilter{
 			Expression: &apiextensionsv1.JSON{
 				Raw: []byte(`invalid json`),
 			},

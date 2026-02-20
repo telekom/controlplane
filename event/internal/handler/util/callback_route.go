@@ -93,7 +93,7 @@ func CreateProxyCallbackRoute(
 			config.DomainLabelKey:         "event",
 			config.BuildLabelKey("zone"):  sourceZone.Name,
 			config.BuildLabelKey("realm"): downstreamRealm.Name,
-			config.BuildLabelKey("type"):  "callback",
+			config.BuildLabelKey("type"):  "callback-proxy",
 		}
 		route.Spec = gatewayapi.RouteSpec{
 			Realm: *ctypes.ObjectRefFromObject(downstreamRealm),
@@ -159,7 +159,6 @@ func CreateCallbackRoute(
 		Host:   "localhost",
 		Path:   "/proxy",
 		Port:   8080,
-		// urlParameter: "url"
 	}
 
 	downstream, err := gatewayRealm.AsDownstream(makeCallbackRoutePath(zone.Name))

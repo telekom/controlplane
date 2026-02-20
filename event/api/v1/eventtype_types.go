@@ -22,7 +22,7 @@ func MakeEventTypeName(eventType string) string {
 }
 
 // EventTypeSpec defines the desired state of EventType.
-// +kubebuilder:validation:XValidation:rule="self.type.endsWith('.v' + self.version.split('.')[0])",message="major version in 'version' must match the version suffix (e.g. 'vN') in 'type'"
+// +kubebuilder:validation:XValidation:rule="self.type.endsWith('.v' + self.version.split('.')[0])",message="major version in \"version\" must match the version suffix (e.g. \"vN\") in \"type\""
 type EventTypeSpec struct {
 	// Type is the dot-separated event type identifier (e.g. "de.telekom.eni.quickstart.v1").
 	// The last segment must be a version prefix matching the major version.
