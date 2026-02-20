@@ -43,7 +43,7 @@ func (h *SubscriberHandler) CreateOrUpdate(ctx context.Context, obj *pubsubv1.Su
 
 	if cconfig.FeatureFileManager.IsEnabled() {
 		buf := bytes.NewBuffer(nil)
-		res, err := file_api.GetFileManager().DownloadFile(ctx, publisher.Spec.JsonSchema, buf)
+		res, err := getFileManager().DownloadFile(ctx, publisher.Spec.JsonSchema, buf)
 		if err != nil {
 			return errors.Wrapf(err, "failed to download JSON schema from Publisher %q", obj.Spec.Publisher.String())
 		}
@@ -122,6 +122,10 @@ func (h *SubscriberHandler) Delete(ctx context.Context, obj *pubsubv1.Subscriber
 		"subscriberId", obj.Spec.SubscriberId)
 
 	return nil
+}
+
+var getFileManager = func() file_api.FileManager {
+	return file_api.GetFileManager()
 }
 
 var getConfigService = func(eventStore *pubsubv1.EventStore) service.ConfigService {

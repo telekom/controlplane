@@ -176,7 +176,7 @@ var _ = Describe("CreateCallbackRoute", func() {
 
 		// Verify Security
 		Expect(route.Spec.Security).ToNot(BeNil())
-		Expect(route.Spec.Security.DisableAccessControl).To(BeTrue())
+		Expect(route.Spec.Security.DisableAccessControl).To(BeFalse())
 		Expect(route.Spec.Security.DefaultConsumers).To(BeEmpty())
 
 		// Verify realm ref
@@ -408,7 +408,7 @@ var _ = Describe("CreateProxyCallbackRoute", func() {
 
 		// Verify Security
 		Expect(route.Spec.Security).ToNot(BeNil())
-		Expect(route.Spec.Security.DisableAccessControl).To(BeTrue())
+		Expect(route.Spec.Security.DisableAccessControl).To(BeFalse())
 
 		// Verify realm ref points to downstream (source) realm
 		Expect(route.Spec.Realm.Name).To(Equal("gw-realm-a"))

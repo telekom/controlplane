@@ -7,6 +7,7 @@ package subscriber
 import (
 	"context"
 	"fmt"
+	"io"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -16,6 +17,8 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	file_api "github.com/telekom/controlplane/file-manager/api"
+	filefake "github.com/telekom/controlplane/file-manager/api/fake"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	"github.com/telekom/controlplane/pubsub/internal/service"
 	"github.com/telekom/controlplane/pubsub/test/mocks"
@@ -63,6 +66,7 @@ func newTestPublisher() *pubsubv1.Publisher {
 			},
 			EventType:   "de.telekom.test.event.v1",
 			PublisherId: "test-app",
+			JsonSchema:  "schema-file-id-123",
 		},
 	}
 	meta.SetStatusCondition(&pub.Status.Conditions, metav1.Condition{
@@ -96,11 +100,13 @@ func newTestEventStore() *pubsubv1.EventStore {
 
 var _ = Describe("SubscriberHandler", func() {
 	var (
-		ctx           context.Context
-		fakeClient    *fakeclient.MockJanitorClient
-		configSvcMock *mocks.MockConfigService
-		handler       *SubscriberHandler
-		origGetCfgSvc func(*pubsubv1.EventStore) service.ConfigService
+		ctx             context.Context
+		fakeClient      *fakeclient.MockJanitorClient
+		configSvcMock   *mocks.MockConfigService
+		fileManagerMock *filefake.MockFileManager
+		handler         *SubscriberHandler
+		origGetCfgSvc   func(*pubsubv1.EventStore) service.ConfigService
+		origGetFileMgr  func() file_api.FileManager
 	)
 
 	BeforeEach(func() {
@@ -111,6 +117,7 @@ var _ = Describe("SubscriberHandler", func() {
 		ctx = cclient.WithClient(ctx, fakeClient)
 
 		configSvcMock = mocks.NewMockConfigService(GinkgoT())
+		fileManagerMock = filefake.NewMockFileManager(GinkgoT())
 
 		handler = &SubscriberHandler{}
 
@@ -119,10 +126,17 @@ var _ = Describe("SubscriberHandler", func() {
 		getConfigService = func(_ *pubsubv1.EventStore) service.ConfigService {
 			return configSvcMock
 		}
+
+		// Override getFileManager to return our mock
+		origGetFileMgr = getFileManager
+		getFileManager = func() file_api.FileManager {
+			return fileManagerMock
+		}
 	})
 
 	AfterEach(func() {
 		getConfigService = origGetCfgSvc
+		getFileManager = origGetFileMgr
 	})
 
 	Describe("CreateOrUpdate", func() {
@@ -146,6 +160,14 @@ var _ = Describe("SubscriberHandler", func() {
 					*out.(*pubsubv1.EventStore) = *eventStore
 				}).
 				Return(nil)
+
+			By("Setting up mock expectation for DownloadFile")
+			fileManagerMock.EXPECT().
+				DownloadFile(mock.Anything, publisher.Spec.JsonSchema, mock.Anything).
+				Run(func(_ context.Context, _ string, w io.Writer) {
+					_, _ = w.Write([]byte(`{"type":"object"}`))
+				}).
+				Return(&file_api.FileDownloadResponse{ContentType: "application/json"}, nil)
 
 			By("Setting up mock expectation for PutSubscription")
 			configSvcMock.EXPECT().
@@ -188,6 +210,13 @@ var _ = Describe("SubscriberHandler", func() {
 					*out.(*pubsubv1.EventStore) = *eventStore
 				}).
 				Return(nil)
+
+			fileManagerMock.EXPECT().
+				DownloadFile(mock.Anything, publisher.Spec.JsonSchema, mock.Anything).
+				Run(func(_ context.Context, _ string, w io.Writer) {
+					_, _ = w.Write([]byte(`{"type":"object"}`))
+				}).
+				Return(&file_api.FileDownloadResponse{ContentType: "application/json"}, nil)
 
 			configSvcMock.EXPECT().
 				PutSubscription(ctx, "existing-subscription-id", mock.AnythingOfType("service.SubscriptionResource")).
@@ -251,6 +280,13 @@ var _ = Describe("SubscriberHandler", func() {
 					*out.(*pubsubv1.EventStore) = *eventStore
 				}).
 				Return(nil)
+
+			fileManagerMock.EXPECT().
+				DownloadFile(mock.Anything, publisher.Spec.JsonSchema, mock.Anything).
+				Run(func(_ context.Context, _ string, w io.Writer) {
+					_, _ = w.Write([]byte(`{"type":"object"}`))
+				}).
+				Return(&file_api.FileDownloadResponse{ContentType: "application/json"}, nil)
 
 			configSvcMock.EXPECT().
 				PutSubscription(ctx, mock.AnythingOfType("string"), mock.AnythingOfType("service.SubscriptionResource")).

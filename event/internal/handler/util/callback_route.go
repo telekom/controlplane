@@ -104,7 +104,8 @@ func CreateProxyCallbackRoute(
 				downstream,
 			},
 			Security: &gatewayapi.Security{
-				DisableAccessControl: true,
+				// The mesh-client is used to access this Route
+				DisableAccessControl: false,
 			},
 		}
 		return nil
@@ -187,7 +188,8 @@ func CreateCallbackRoute(
 				downstream,
 			},
 			Security: &gatewayapi.Security{
-				DisableAccessControl: true,
+				// The mesh-client is used to access this Route
+				DisableAccessControl: false,
 			},
 			Traffic: gatewayapi.Traffic{
 				DynamicUpstream: &gatewayapi.DynamicUpstream{
