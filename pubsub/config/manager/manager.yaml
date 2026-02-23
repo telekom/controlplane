@@ -53,9 +53,7 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-      - command:
-        - /manager
-        args:
+      - args:
           - --leader-elect
           - --health-probe-bind-address=:8081
         image: ghcr.io/telekom/controlplane/event:stable
