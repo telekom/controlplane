@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Adds namespace to all resources.
-namespace: event-system
+namespace: controlplane-system
 
 # Value of this field is prepended to the
 # names of all resources, e.g. a deployment named
@@ -13,11 +13,15 @@ namespace: event-system
 namePrefix: event-
 
 # Labels to add to all resources and selectors.
-#labels:
-#- includeSelectors: true
-#  pairs:
-#    someName: someValue
-
+labels:
+- includeSelectors: true
+  pairs:
+    domain: event
+  fields:
+    - path: spec/selector/matchLabels
+      create: true
+      kind: ServiceMonitor
+      group: monitoring.coreos.com
 resources:
 - ../crd
 - ../rbac
@@ -28,7 +32,7 @@ resources:
 # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
 #- ../certmanager
 # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
-#- ../prometheus
+- ../prometheus
 # [METRICS] Expose the controller manager metrics service.
 - metrics_service.yaml
 # [NETWORK POLICY] Protect the /metrics endpoint and Webhook Server with NetworkPolicy.
