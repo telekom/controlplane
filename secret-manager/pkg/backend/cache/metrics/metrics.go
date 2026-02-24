@@ -38,6 +38,9 @@ func SetCacheSizeFunc(cacheSizeFunc CacheSizeFunc) {
 
 // RegisterMetrics registers all cache-related metrics with Prometheus
 func RegisterMetrics(reg prometheus.Registerer, f CacheSizeFunc) {
+	if f == nil {
+		f = func() float64 { return -1 }
+	}
 	SetCacheSizeFunc(f)
 	registerOnce.Do(func() {
 		reg.MustRegister(cacheAccess)

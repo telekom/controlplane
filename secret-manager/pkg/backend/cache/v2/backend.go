@@ -69,7 +69,8 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (S, error) {
 		return item, nil
 	}
 
-	added := c.Cache.SetWithTTL(id.String(), item, int64(len(item.Value())), c.ttl)
+	cost := int64(len(item.Value())) + int64(len(id.String()))
+	added := c.Cache.SetWithTTL(id.String(), item, cost, c.ttl)
 	if !added {
 		log.Info("Failed to add item to cache", "id", id.String())
 	}

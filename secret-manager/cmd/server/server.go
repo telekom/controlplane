@@ -106,7 +106,9 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 		if shouldCache {
 			if cacheV2 {
 				log.V(1).Info("using v2 cache implementation")
-				backend = v2.NewCachedBackend(backend, cacheDuration)
+				cacheBackend := v2.NewCachedBackend(backend, cacheDuration)
+				metrics.RegisterMetrics(prometheus.DefaultRegisterer, nil)
+				backend = cacheBackend
 			} else {
 				cacheBackend := cache.NewCachedBackend(backend, cacheDuration)
 				metrics.RegisterMetrics(prometheus.DefaultRegisterer, cacheBackend.Cache.Stats)
@@ -123,9 +125,6 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 			return nil, errors.Wrap(err, "failed to create kubernetes client")
 		}
 		backend := kubernetes.NewBackend(k8sClient)
-		if shouldCache {
-			backend = cache.NewCachedBackend(backend, cacheDuration)
-		}
 		onboarder := kubernetes.NewOnboarder(k8sClient)
 		c = controller.NewController(backend, onboarder)
 
