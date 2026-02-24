@@ -74,7 +74,7 @@ func (r *RoverDefaulter) Default(ctx context.Context, obj runtime.Object) error 
 
 // +kubebuilder:webhook:path=/validate-rover-cp-ei-telekom-de-v1-rover,mutating=false,failurePolicy=fail,sideEffects=None,groups=rover.cp.ei.telekom.de,resources=rovers,verbs=create;update,versions=v1,name=vrover.kb.io,admissionReviewVersions=v1
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
-// +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=eventconfigs,verbs=get;list;watch
+// +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventconfigs,verbs=get;list;watch
 
 type RoverValidator struct {
 	client client.Client

@@ -10,7 +10,6 @@ rules:
 - apiGroups:
   - admin.cp.ei.telekom.de
   resources:
-  - eventconfigs
   - zones
   verbs:
   - get
@@ -57,6 +56,14 @@ rules:
   verbs:
   - create
   - patch
+- apiGroups:
+  - event.cp.ei.telekom.de
+  resources:
+  - eventconfigs
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - event.cp.ei.telekom.de
   resources:
