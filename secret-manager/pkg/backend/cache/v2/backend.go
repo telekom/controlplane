@@ -6,6 +6,7 @@ package v2
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/dgraph-io/ristretto/v2"
@@ -80,6 +81,14 @@ func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.Secre
 	log := logr.FromContextOrDiscard(ctx)
 
 	cacheId := id.Copy()
+
+	var res S
+	if value.IsEmpty() {
+		// Do not cache empty secrets, but ensure they are deleted from the cache
+		metrics.RecordCacheMiss("set", "empty_value")
+		c.Cache.Del(cacheId.String())
+		return res, errors.New("cannot set empty secret value")
+	}
 
 	cachedItem, ok := c.Cache.Get(cacheId.String())
 	if ok && value.EqualString(cachedItem.Value()) {

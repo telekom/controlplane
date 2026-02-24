@@ -6,6 +6,7 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"runtime"
 	"time"
 
@@ -75,7 +76,7 @@ func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.Secre
 		// Do not cache empty secrets, but ensure they are deleted from the cache
 		metrics.RecordCacheMiss("set", "empty_value")
 		c.Cache.Delete(cacheId.String())
-		return res, nil
+		return res, errors.New("cannot set empty secret value")
 	}
 
 	if item, ok := c.Cache.Get(cacheId.String()); ok && !item.Expired() {
