@@ -51,6 +51,7 @@ func GetZone(ctx context.Context, ref client.ObjectKey) (*adminv1.Zone, error) {
 // Returns BlockedError if no EventConfig is found or if it is not ready.
 func GetEventConfigForZone(ctx context.Context, zoneName string) (*eventv1.EventConfig, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
+	logger := log.FromContext(ctx)
 
 	eventConfigList := &eventv1.EventConfigList{}
 	err := c.List(ctx, eventConfigList,
@@ -68,9 +69,10 @@ func GetEventConfigForZone(ctx context.Context, zoneName string) (*eventv1.Event
 		slices.SortStableFunc(eventConfigList.Items, func(a, b eventv1.EventConfig) int {
 			return a.CreationTimestamp.Compare(b.CreationTimestamp.Time)
 		})
-		log.FromContext(ctx).Info("multiple EventConfigs found for zone, using first", "zone", zoneName, "count", len(eventConfigList.Items))
+		logger.Info("multiple EventConfigs found for zone, using first", "zone", zoneName, "count", len(eventConfigList.Items))
 	}
 	eventConfig := &eventConfigList.Items[0]
+	logger.V(1).Info("Found EventConfig for zone", "zone", zoneName, "eventConfig", eventConfig.Name)
 
 	if err := condition.EnsureReady(eventConfig); err != nil {
 		return nil, ctrlerrors.BlockedErrorf("EventConfig %q for zone %q is not ready", eventConfig.Name, zoneName)

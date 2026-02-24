@@ -79,16 +79,19 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 		return err
 	}
 	obj.Status.CallbackURL = eventConfig.Status.CallbackURL
+	logger.V(1).Info("Found EventConfig for zone", "zone", obj.Spec.Zone.Name, "eventConfig", eventConfig.Name)
 
 	eventStore, err := util.GetEventStoreForZone(ctx, obj.Spec.Zone.Name)
 	if err != nil {
 		return err
 	}
+	logger.V(1).Info("Found EventStore for zone", "zone", obj.Spec.Zone.Name, "eventStore", eventStore.Name)
 
 	application, err := util.GetApplication(ctx, obj.Spec.Provider.ObjectRef)
 	if err != nil {
 		return errors.Wrap(err, "failed to get application")
 	}
+	logger.V(1).Info("Found provider application", "application", application.Name)
 
 	publisher, err := h.createPublisher(ctx, obj, eventType, eventStore, application)
 	if err != nil {
