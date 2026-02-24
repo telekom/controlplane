@@ -5,6 +5,7 @@
 package controller
 
 import (
+	"github.com/telekom/controlplane/common/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -16,6 +17,9 @@ var LabelPredicate = predicate.NewPredicateFuncs(func(object client.Object) bool
 	if labels == nil {
 		return false
 	}
-	_, ok := labels["event"]
-	return ok
+	domainValue, ok := labels[config.DomainLabelKey]
+	if !ok {
+		return false
+	}
+	return domainValue == "event"
 })

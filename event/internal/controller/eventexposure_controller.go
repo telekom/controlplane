@@ -222,11 +222,12 @@ func (r *EventExposureReconciler) MapEventConfigToEventExposure(ctx context.Cont
 		return nil
 	}
 
-	// TODO: full environment list --> investigate if we can optimize it
 	list := &eventv1.EventExposureList{}
-	if err := r.Client.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey: eventConfig.Labels[cconfig.EnvironmentLabelKey],
-	}); err != nil {
+	err := r.Client.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey:   eventConfig.Labels[cconfig.EnvironmentLabelKey],
+		cconfig.BuildLabelKey("zone"): eventConfig.Spec.Zone.Name,
+	})
+	if err != nil {
 		return nil
 	}
 
