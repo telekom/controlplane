@@ -84,9 +84,10 @@ func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.Secre
 	log := logr.FromContextOrDiscard(ctx)
 
 	cacheId := id.Copy()
+	cacheValue := value.Copy()
 
 	var res S
-	if value.IsEmpty() {
+	if cacheValue.IsEmpty() {
 		// Do not cache empty secrets, but ensure they are deleted from the cache
 		metrics.RecordCacheMiss("set", "empty_value")
 		c.Cache.Del(cacheId.String())
@@ -94,7 +95,7 @@ func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.Secre
 	}
 
 	cachedItem, ok := c.Cache.Get(cacheId.String())
-	if ok && value.EqualString(cachedItem.Value()) {
+	if ok && cacheValue.EqualString(cachedItem.Value()) {
 		metrics.RecordCacheHit("set", "")
 		return cachedItem.Copy().(S), nil
 	} else if ok {
@@ -103,7 +104,7 @@ func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.Secre
 	}
 
 	metrics.RecordCacheMiss("set", "not_found")
-	item, err := c.Backend.Set(ctx, cacheId.(T), value)
+	item, err := c.Backend.Set(ctx, cacheId.(T), cacheValue)
 	if err != nil {
 		return item, err
 	}

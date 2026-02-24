@@ -41,6 +41,8 @@ type SecretValue interface {
 	AllowChange() bool
 	// if this value is empty
 	IsEmpty() bool
+	// Copy the value to a new instance
+	Copy() SecretValue
 }
 
 // Reader is used to read a secret from the backend.
