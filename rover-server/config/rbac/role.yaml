@@ -26,6 +26,17 @@ rules:
   - list
   - watch
 - apiGroups:
+  - event.cp.ei.telekom.de
+  resources:
+  - eventconfigs
+  - eventtypes
+  - eventsubscriptions
+  - eventexposures
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - application.cp.ei.telekom.de
   resources:
   - applications
@@ -44,8 +55,7 @@ rules:
 - apiGroups:
   - rover.cp.ei.telekom.de
   resources:
-  - apispecifications
-  - rovers
+  - "*"
   verbs:
   - create
   - delete
