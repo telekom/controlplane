@@ -77,6 +77,10 @@ func (h *TeamHandler) CreateOrUpdate(ctx context.Context, teamObj *organizationv
 			return errors.Wrap(err, fmt.Sprintf("failed to handle: %s", internalObjHandler[i].Identifier()))
 		}
 	}
+	if teamObj.Spec.TeamToken != "" {
+		teamObj.Status.TeamToken = ""
+	}
+
 	teamObj.SetCondition(condition.NewDoneProcessingCondition("Created Team"))
 	teamObj.SetCondition(condition.NewReadyCondition("Ready", "Team is ready"))
 	return nil

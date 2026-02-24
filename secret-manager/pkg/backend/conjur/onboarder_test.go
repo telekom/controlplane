@@ -45,7 +45,6 @@ var _ = Describe("Conjur Onboarder", func() {
 			const env = "test-env"
 
 			writeAPI.EXPECT().LoadPolicy(conjurapi.PolicyModePost, "controlplane", mock.Anything).Return(nil, nil)
-			writerBackend.EXPECT().Set(ctx, mock.Anything, mock.Anything).Return(backend.DefaultSecret[conjur.ConjurSecretId]{}, nil)
 
 			res, err := conjurOnboarder.OnboardEnvironment(ctx, env)
 			Expect(err).ToNot(HaveOccurred())

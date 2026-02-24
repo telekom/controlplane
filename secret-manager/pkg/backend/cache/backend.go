@@ -71,6 +71,13 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (res S, err error) 
 func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.SecretValue) (res S, err error) {
 	cacheId := id.Copy()
 
+	if value.IsEmpty() {
+		// Do not cache empty secrets, but ensure they are deleted from the cache
+		metrics.RecordCacheMiss("set", "empty_value")
+		c.Cache.Delete(cacheId.String())
+		return res, nil
+	}
+
 	if item, ok := c.Cache.Get(cacheId.String()); ok && !item.Expired() {
 		cachedSecret := item.Value()
 		if value.EqualString(cachedSecret.Value()) {
