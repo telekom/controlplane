@@ -35,7 +35,6 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 		return err
 	}
 	if !found {
-		obj.Status.Active = false
 		obj.SetCondition(condition.NewNotReadyCondition("EventTypeNotFound",
 			"No active EventType found for type "+obj.Spec.EventType))
 		obj.SetCondition(condition.NewBlockedCondition(
@@ -76,12 +75,14 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 
 	eventConfig, err := util.GetEventConfigForZone(ctx, obj.Spec.Zone.Name)
 	if err != nil {
+		obj.SetCondition(condition.NewNotReadyCondition("EventConfigNotReady", "Event Feature has not been fully provisioned for this zone yet"))
 		return err
 	}
 	obj.Status.CallbackURL = eventConfig.Status.CallbackURL
 	logger.V(1).Info("Found EventConfig for zone", "zone", obj.Spec.Zone.Name, "eventConfig", eventConfig.Name)
 
 	eventStore, err := util.GetEventStoreForZone(ctx, obj.Spec.Zone.Name)
+	obj.SetCondition(condition.NewNotReadyCondition("EventStoreNotReady", "Event Feature has not been fully provisioned for this zone yet"))
 	if err != nil {
 		return err
 	}
@@ -102,13 +103,15 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 
 	// --- SSE Route management ---
 
+	obj.Status.Route = nil
+	obj.Status.ProxyRoutes = nil
+	obj.Status.SseURLs = make(map[string]string)
+
 	crossZones, err := util.FindCrossZoneSSESubscriptionZones(ctx, obj.Spec.EventType, obj.Spec.Zone.Name)
 	if err != nil {
 		return errors.Wrap(err, "failed to find cross-zone SSE subscriptions")
 	}
 
-	obj.Status.ProxyRoutes = nil
-	obj.Status.SseURLs = make(map[string]string)
 	for _, subscriberZoneRef := range crossZones {
 		subscriberZone, err := util.GetZone(ctx, subscriberZoneRef.K8s())
 		if err != nil {

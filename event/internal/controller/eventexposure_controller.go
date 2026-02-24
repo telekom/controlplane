@@ -65,7 +65,7 @@ func (r *EventExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&pubsubv1.Publisher{}).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToEventExposure),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{}, LabelPredicate),
+			builder.WithPredicates(LabelPredicate),
 		).
 		Watches(&eventv1.EventType{},
 			handler.EnqueueRequestsFromMapFunc(r.MapEventTypeToEventExposure),

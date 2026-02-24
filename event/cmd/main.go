@@ -145,7 +145,7 @@ func main() {
 	}
 
 	selector := labels.NewSelector()
-	requirement, err := labels.NewRequirement(config.DomainLabelKey, selection.Equals, []string{"event"})
+	requirement, err := labels.NewRequirement(config.DomainLabelKey, selection.In, []string{"event"})
 	if err != nil {
 		setupLog.Error(err, "unable to create label requirement")
 		os.Exit(1)
