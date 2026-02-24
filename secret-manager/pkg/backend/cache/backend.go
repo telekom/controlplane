@@ -20,6 +20,7 @@ type Cache[T backend.SecretId, S backend.Secret[T]] interface {
 	Get(id string) (CacheItem[T, S], bool)
 	Set(id string, item CacheItem[T, S])
 	Delete(id string)
+	Stats() (size int)
 }
 
 var _ backend.Backend[backend.SecretId, backend.Secret[backend.SecretId]] = (*CachedBackend[backend.SecretId, backend.Secret[backend.SecretId]])(nil)
@@ -48,14 +49,15 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (res S, err error) 
 	cacheKey := cacheId.String()
 
 	if item, ok := c.Cache.Get(cacheKey); ok && !item.Expired() {
-		metrics.RecordCacheHit("get", "success")
-		if len(item.Value().Value()) == 0 {
-			metrics.RecordCacheMiss("get", "empty_value")
+		if len(item.Value().Value()) > 0 {
+			metrics.RecordCacheHit("get", "success")
+			return item.Value().Copy().(S), nil
 		}
-		return item.Value().Copy().(S), nil
+		metrics.RecordCacheMiss("get", "empty_value")
+	} else {
+		metrics.RecordCacheMiss("get", "not_found")
 	}
 
-	metrics.RecordCacheMiss("get", "not_found")
 	item, err := c.Backend.Get(ctx, cacheId)
 	if err != nil {
 		return res, err

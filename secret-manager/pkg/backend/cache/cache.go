@@ -53,6 +53,13 @@ func (c *SimpleCache[T, S]) Set(id string, item CacheItem[T, S]) {
 	c.lock.Unlock()
 }
 
+func (c *SimpleCache[T, S]) Stats() (size int) {
+	c.lock.RLock()
+	size = len(c.m)
+	c.lock.RUnlock()
+	return size
+}
+
 type CacheItem[T backend.SecretId, S backend.Secret[T]] interface {
 	Id() T
 	Value() S

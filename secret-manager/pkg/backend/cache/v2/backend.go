@@ -51,13 +51,15 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (S, error) {
 	log := logr.FromContextOrDiscard(ctx)
 	cachedItem, ok := c.Cache.Get(id.String())
 	if ok {
-		metrics.RecordCacheHit("get", "")
-		if len(cachedItem.Value()) == 0 {
-			metrics.RecordCacheMiss("get", "empty_value")
+		if len(cachedItem.Value()) > 0 {
+			metrics.RecordCacheHit("get", "success")
+			return cachedItem.Copy().(S), nil
 		}
-		return cachedItem.Copy().(S), nil
+		metrics.RecordCacheMiss("get", "empty_value")
+	} else {
+		metrics.RecordCacheMiss("get", "not_found")
 	}
-	metrics.RecordCacheMiss("get", "not_found")
+
 	item, err := c.Backend.Get(ctx, id)
 	if err != nil {
 		return item, err

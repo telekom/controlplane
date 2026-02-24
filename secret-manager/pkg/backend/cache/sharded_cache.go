@@ -53,3 +53,10 @@ func (sc *ShardedCache[T, S]) Delete(id string) {
 	sc.getShard(id).Delete(id)
 	metrics.CacheSize.Dec()
 }
+
+func (sc *ShardedCache[T, S]) Stats() (size int) {
+	for _, shard := range sc.shards {
+		size += shard.Stats()
+	}
+	return size
+}
