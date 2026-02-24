@@ -40,7 +40,7 @@ type EventConfigReconciler struct {
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventconfigs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventconfigs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventconfigs/finalizers,verbs=update
-// +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=realms,verbs=get
+// +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=realms,verbs=get;list;watch
 // +kubebuilder:rbac:groups=identity.cp.ei.telekom.de,resources=clients,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=pubsub.cp.ei.telekom.de,resources=eventstores,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
