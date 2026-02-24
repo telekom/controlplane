@@ -49,6 +49,14 @@ patches:
   target:
     kind: Deployment
 
+# [SECRET_MANAGER] The following patch will add the secret manager to the deployment.
+- path: deployment_patch.yaml
+  target:
+    kind: Deployment
+- path: namespace_patch.yaml
+  target:
+    kind: Namespace
+
 # Uncomment the patches line if you enable Metrics and CertManager
 # [METRICS-WITH-CERTS] To enable metrics protected with certManager, uncomment the following line.
 # This patch will protect the metrics with certManager self-signed certs.

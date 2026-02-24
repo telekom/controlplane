@@ -58,7 +58,7 @@ func (r *EventConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&eventconfig.EventConfigHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&eventv1.EventConfig{}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+		For(&eventv1.EventConfig{}).
 		Owns(&pubsubv1.EventStore{}).
 		Owns(&gatewayv1.Route{}, builder.WithPredicates(LabelPredicate)).
 		Owns(&identityv1.Client{}, builder.WithPredicates(LabelPredicate)).
