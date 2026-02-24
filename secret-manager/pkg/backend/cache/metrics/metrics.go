@@ -10,6 +10,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+type CacheSizeFunc func() float64
+
 var (
 	registerOnce = sync.Once{}
 	// Cache metrics
@@ -21,20 +23,22 @@ var (
 		[]string{"method", "result", "reason"},
 	)
 
-	CacheSize = prometheus.NewGauge(
+	CacheSize prometheus.GaugeFunc
+)
+
+func SetCacheSizeFunc(cacheSizeFunc CacheSizeFunc) {
+	CacheSize = prometheus.NewGaugeFunc(
 		prometheus.GaugeOpts{
 			Name: "cache_size",
 			Help: "Current size of the cache",
 		},
+		cacheSizeFunc,
 	)
-)
-
-func init() {
-	registerMetrics(prometheus.DefaultRegisterer)
 }
 
 // RegisterMetrics registers all cache-related metrics with Prometheus
-func registerMetrics(reg prometheus.Registerer) {
+func RegisterMetrics(reg prometheus.Registerer, f CacheSizeFunc) {
+	SetCacheSizeFunc(f)
 	registerOnce.Do(func() {
 		reg.MustRegister(cacheAccess)
 		reg.MustRegister(CacheSize)

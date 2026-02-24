@@ -53,9 +53,9 @@ func (c *SimpleCache[T, S]) Set(id string, item CacheItem[T, S]) {
 	c.lock.Unlock()
 }
 
-func (c *SimpleCache[T, S]) Stats() (size int) {
+func (c *SimpleCache[T, S]) Stats() (size float64) {
 	c.lock.RLock()
-	size = len(c.m)
+	size = float64(len(c.m))
 	c.lock.RUnlock()
 	return size
 }

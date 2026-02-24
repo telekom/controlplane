@@ -11,6 +11,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
 	"github.com/telekom/controlplane/common-server/pkg/util"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/telekom/controlplane/secret-manager/internal/api"
 	"github.com/telekom/controlplane/secret-manager/internal/handler"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache/metrics"
 	v2 "github.com/telekom/controlplane/secret-manager/pkg/backend/cache/v2"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
@@ -106,7 +108,9 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 				log.V(1).Info("using v2 cache implementation")
 				backend = v2.NewCachedBackend(backend, cacheDuration)
 			} else {
-				backend = cache.NewCachedBackend(backend, cacheDuration)
+				cacheBackend := cache.NewCachedBackend(backend, cacheDuration)
+				metrics.RegisterMetrics(prometheus.DefaultRegisterer, cacheBackend.Cache.Stats)
+				backend = cacheBackend
 			}
 		}
 		onboarder := conjur.NewOnboarder(conjurWriteApi, backend)

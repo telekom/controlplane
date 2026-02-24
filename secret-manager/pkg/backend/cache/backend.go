@@ -20,7 +20,7 @@ type Cache[T backend.SecretId, S backend.Secret[T]] interface {
 	Get(id string) (CacheItem[T, S], bool)
 	Set(id string, item CacheItem[T, S])
 	Delete(id string)
-	Stats() (size int)
+	Stats() (size float64)
 }
 
 var _ backend.Backend[backend.SecretId, backend.Secret[backend.SecretId]] = (*CachedBackend[backend.SecretId, backend.Secret[backend.SecretId]])(nil)
