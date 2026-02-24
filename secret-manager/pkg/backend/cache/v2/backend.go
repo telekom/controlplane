@@ -52,6 +52,9 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (S, error) {
 	cachedItem, ok := c.Cache.Get(id.String())
 	if ok {
 		metrics.RecordCacheHit("get", "")
+		if len(cachedItem.Value()) == 0 {
+			metrics.RecordCacheMiss("get", "empty_value")
+		}
 		return cachedItem.Copy().(S), nil
 	}
 	metrics.RecordCacheMiss("get", "not_found")
@@ -59,7 +62,7 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (S, error) {
 	if err != nil {
 		return item, err
 	}
-	if item.Value() == "" {
+	if len(item.Value()) == 0 {
 		// Do not cache empty secrets
 		return item, nil
 	}

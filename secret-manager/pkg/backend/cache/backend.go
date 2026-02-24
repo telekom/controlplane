@@ -48,7 +48,10 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (res S, err error) 
 	cacheKey := cacheId.String()
 
 	if item, ok := c.Cache.Get(cacheKey); ok && !item.Expired() {
-		metrics.RecordCacheHit("get", "")
+		metrics.RecordCacheHit("get", "success")
+		if len(item.Value().Value()) == 0 {
+			metrics.RecordCacheMiss("get", "empty_value")
+		}
 		return item.Value().Copy().(S), nil
 	}
 
@@ -57,7 +60,7 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (res S, err error) 
 	if err != nil {
 		return res, err
 	}
-	if item.Value() == "" {
+	if len(item.Value()) == 0 {
 		// Do not cache empty secrets
 		return item, nil
 	}
