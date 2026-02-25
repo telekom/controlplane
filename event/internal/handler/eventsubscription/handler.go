@@ -82,7 +82,10 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 		obj.SetCondition(condition.NewNotReadyCondition("EventExposureNotReady",
 			fmt.Sprintf("EventExposure %q is not ready", exposure.Name)))
 
-		return err
+		obj.SetCondition(condition.NewBlockedCondition(
+			fmt.Sprintf("EventExposure %q is not ready. EventSubscription will be automatically processed when the EventExposure is ready", exposure.Name)))
+
+		return nil
 	}
 
 	// TODO: Validate category — check if the subscriber's team category allows subscription of this event category
