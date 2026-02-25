@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
@@ -49,6 +50,7 @@ type EventSubscriptionReconciler struct {
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventconfigs,verbs=get;list;watch
 // +kubebuilder:rbac:groups=pubsub.cp.ei.telekom.de,resources=subscribers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventexposures,verbs=get;list;watch
+// +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 
 func (r *EventSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &eventv1.EventSubscription{})
@@ -75,6 +77,10 @@ func (r *EventSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&applicationv1.Application{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApplicationToEventSubscription),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
+		Watches(&adminv1.Zone{},
+			handler.EnqueueRequestsFromMapFunc(r.MapZoneToEventSubscription),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
@@ -166,4 +172,31 @@ func (r *EventSubscriptionReconciler) MapApplicationToEventSubscription(ctx cont
 	}
 	return reqs
 
+}
+
+func (r *EventSubscriptionReconciler) MapZoneToEventSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
+	zone, ok := obj.(*adminv1.Zone)
+	if !ok {
+		return nil
+	}
+
+	list := &eventv1.EventSubscriptionList{}
+	if err := r.Client.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey:   zone.Labels[cconfig.EnvironmentLabelKey],
+		cconfig.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
+	}); err != nil {
+		return nil
+	}
+
+	var reqs []reconcile.Request
+	for _, item := range list.Items {
+		if !item.Spec.Zone.Equals(zone) {
+			continue
+		}
+
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(&item),
+		})
+	}
+	return reqs
 }
