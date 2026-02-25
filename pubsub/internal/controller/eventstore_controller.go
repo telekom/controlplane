@@ -14,10 +14,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 // EventStoreReconciler reconciles a EventStore object
@@ -44,7 +42,7 @@ func (r *EventStoreReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&eventstore.EventStoreHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&pubsubv1.EventStore{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		For(&pubsubv1.EventStore{}).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),

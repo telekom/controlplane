@@ -22,6 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/telekom/controlplane/pubsub/internal/controller"
+	"github.com/telekom/controlplane/pubsub/internal/index"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -160,6 +161,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	rootCtx := ctrl.SetupSignalHandler()
+	index.RegisterIndicesOrDie(rootCtx, mgr)
+
 	if err := (&controller.EventStoreReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
@@ -193,7 +197,7 @@ func main() {
 	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(rootCtx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}

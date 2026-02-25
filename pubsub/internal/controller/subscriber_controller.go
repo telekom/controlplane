@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -34,8 +34,8 @@ type SubscriberReconciler struct {
 // +kubebuilder:rbac:groups=pubsub.cp.ei.telekom.de,resources=subscribers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=pubsub.cp.ei.telekom.de,resources=subscribers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=pubsub.cp.ei.telekom.de,resources=subscribers/finalizers,verbs=update
-// +kubebuilder:rbac:groups=pubsub.cp.ei.telekom.de,resources=publishers,verbs=get
-// +kubebuilder:rbac:groups=pubsub.cp.ei.telekom.de,resources=eventstores,verbs=get
+// +kubebuilder:rbac:groups=pubsub.cp.ei.telekom.de,resources=eventstores,verbs=get;list;watch
+// +kubebuilder:rbac:groups=pubsub.cp.ei.telekom.de,resources=publishers,verbs=get;list;watch
 
 func (r *SubscriberReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &pubsubv1.Subscriber{})
@@ -47,7 +47,11 @@ func (r *SubscriberReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Controller = cc.NewController(&subscriber.SubscriberHandler{}, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&pubsubv1.Subscriber{}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+		For(&pubsubv1.Subscriber{}).
+		Watches(&pubsubv1.Publisher{},
+			handler.EnqueueRequestsFromMapFunc(r.MapPublisherToSubscriber),
+			builder.WithPredicates(),
+		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
