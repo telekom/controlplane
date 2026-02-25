@@ -7,11 +7,11 @@ module github.com/telekom/controlplane/event
 go 1.24.9
 
 require (
-	github.com/telekom/controlplane/common v0.0.0
-	github.com/telekom/controlplane/event/api v0.0.0
 	github.com/telekom/controlplane/admin/api v0.0.0
 	github.com/telekom/controlplane/application/api v0.0.0
 	github.com/telekom/controlplane/approval/api v0.0.0
+	github.com/telekom/controlplane/common v0.0.0
+	github.com/telekom/controlplane/event/api v0.0.0
 	github.com/telekom/controlplane/gateway/api v0.0.0
 	github.com/telekom/controlplane/identity/api v0.0.0
 	github.com/telekom/controlplane/pubsub/api v0.0.0
@@ -23,6 +23,7 @@ require (
 	github.com/onsi/gomega v1.38.2
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
+	k8s.io/apiextensions-apiserver v0.34.2
 	k8s.io/apimachinery v0.34.2
 	k8s.io/client-go v0.34.2
 	sigs.k8s.io/controller-runtime v0.22.4
@@ -124,7 +125,6 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.34.2 // indirect
-	k8s.io/apiextensions-apiserver v0.34.2 // indirect
 	k8s.io/apiserver v0.34.2 // indirect
 	k8s.io/component-base v0.34.2 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
