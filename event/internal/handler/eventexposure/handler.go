@@ -82,8 +82,8 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 	logger.V(1).Info("Found EventConfig for zone", "zone", obj.Spec.Zone.Name, "eventConfig", eventConfig.Name)
 
 	eventStore, err := util.GetEventStoreForZone(ctx, obj.Spec.Zone.Name)
-	obj.SetCondition(condition.NewNotReadyCondition("EventStoreNotReady", "Event Feature has not been fully provisioned for this zone yet"))
 	if err != nil {
+		obj.SetCondition(condition.NewNotReadyCondition("EventStoreNotReady", "Event Feature has not been fully provisioned for this zone yet"))
 		return err
 	}
 	logger.V(1).Info("Found EventStore for zone", "zone", obj.Spec.Zone.Name, "eventStore", eventStore.Name)
