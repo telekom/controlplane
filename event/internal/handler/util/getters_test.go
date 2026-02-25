@@ -991,20 +991,18 @@ var _ = Describe("FindActiveEventExposure", func() {
 		Expect(result.Name).To(Equal("exp-old"))
 	})
 
-	It("should return BlockedError when active exposure is not ready", func() {
-		exp := eventv1.EventExposure{
+	It("should return active exposure when found and NOT ready", func() {
+		exp := &eventv1.EventExposure{
 			ObjectMeta: metav1.ObjectMeta{Name: "exp-active", CreationTimestamp: metav1.Now()},
 			Status:     eventv1.EventExposureStatus{Active: true},
 		}
+		exp.SetCondition(condition.NewNotReadyCondition("Test", "This Exposure not active but not ready"))
 		// Not ready — no condition set
 
-		found, result, err := util.FindActiveEventExposure([]eventv1.EventExposure{exp})
-		Expect(err).To(HaveOccurred())
-		Expect(found).To(BeFalse())
+		found, result, err := util.FindActiveEventExposure([]eventv1.EventExposure{*exp})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(found).To(BeTrue())
 		Expect(result).ToNot(BeNil())
-		rootCause := unwrapAll(err)
-		Expect(rootCause).To(Satisfy(isBlockedError))
-		Expect(err.Error()).To(ContainSubstring("not ready"))
 	})
 })
 

@@ -77,6 +77,14 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 		return nil
 	}
 
+	// Ensure the EventExposure is ready before proceeding with subscription provisioning
+	if err := condition.EnsureReady(exposure); err != nil {
+		obj.SetCondition(condition.NewNotReadyCondition("EventExposureNotReady",
+			fmt.Sprintf("EventExposure %q is not ready", exposure.Name)))
+
+		return err
+	}
+
 	// TODO: Validate category — check if the subscriber's team category allows subscription of this event category
 
 	// Validate visibility — check if subscription zone is compatible with exposure visibility

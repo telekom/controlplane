@@ -254,6 +254,7 @@ func FindEventExposures(ctx context.Context, eventType string) ([]eventv1.EventE
 
 // FindActiveEventExposure finds the active EventExposure for a given event type.
 // It should be used in combination with FindEventExposures to avoid multiple list calls.
+// This function does not check if the exposure is ready! It only checks the Status.Active field.
 func FindActiveEventExposure(exposures []eventv1.EventExposure) (bool, *eventv1.EventExposure, error) {
 	if len(exposures) == 0 {
 		return false, nil, nil
@@ -275,10 +276,6 @@ func FindActiveEventExposure(exposures []eventv1.EventExposure) (bool, *eventv1.
 	})
 
 	activeExp := &candidates[0]
-	if err := condition.EnsureReady(activeExp); err != nil {
-		return false, activeExp, ctrlerrors.BlockedErrorf("EventExposure %q is not ready", activeExp.Name)
-	}
-
 	return true, activeExp, nil
 }
 
