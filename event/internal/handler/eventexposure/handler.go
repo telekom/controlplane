@@ -6,6 +6,7 @@ package eventexposure
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
@@ -55,11 +56,9 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 	if existingFound && existingExposure.UID != obj.UID {
 		// Another exposure already owns this event type
 		obj.Status.Active = false
-		obj.SetCondition(condition.NewNotReadyCondition("EventExposureAlreadyExists",
-			"Event type "+obj.Spec.EventType+" is already exposed by "+existingExposure.Name))
-		obj.SetCondition(condition.NewBlockedCondition(
-			"Event already exposed by " + existingExposure.Name + ". " +
-				"Only one active EventExposure per event type is allowed"))
+		msg := fmt.Sprintf("Event-Type %q is already exposed by team %q.", obj.Spec.EventType, existingExposure.Spec.Provider.Namespace)
+		obj.SetCondition(condition.NewNotReadyCondition("EventExposureAlreadyExists", msg))
+		obj.SetCondition(condition.NewBlockedCondition(msg + " EventExposure will be automatically processed when the existing EventExposure is deleted"))
 		return nil
 	}
 
