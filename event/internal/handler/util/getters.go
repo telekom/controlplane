@@ -195,7 +195,7 @@ func FindCrossZoneSSESubscriptionZones(ctx context.Context, eventType string, ex
 
 		approvalCond := meta.FindStatusCondition(sub.GetConditions(), "ApprovalGranted")
 		if approvalCond == nil || approvalCond.Status != metav1.ConditionTrue {
-			logger.Info("Skipping subscription with missing approval", "subscription", sub.Name, "zone", sub.Spec.Zone.Name, "reason", approvalCond.Reason)
+			logger.Info("Skipping subscription with missing approval", "subscription", sub.Name, "zone", sub.Spec.Zone.Name)
 			continue
 		}
 
