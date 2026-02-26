@@ -182,8 +182,8 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		return nil
 	case builder.ApprovalResultPending:
 		log.Info("🫷 Approval is pending and we will wait for it")
-		apiSub.SetCondition(condition.NewNotReadyCondition("ApprovalPending", "Approval has not been approved"))
-		apiSub.SetCondition(condition.NewBlockedCondition("Approval has not been approved"))
+		apiSub.SetCondition(condition.NewNotReadyCondition("ApprovalPending", "Waiting for approval decision"))
+		apiSub.SetCondition(condition.NewBlockedCondition("Waiting for approval decision"))
 		return nil
 	case builder.ApprovalResultDenied:
 		apiSub.SetCondition(condition.NewNotReadyCondition("ApprovalDenied", "Approval has been denied"))

@@ -621,8 +621,8 @@ var _ = Describe("EventExposureHandler", func() {
 
 			processingCond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
 			Expect(processingCond).ToNot(BeNil())
-			Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(processingCond.Reason).To(Equal("Done"))
+			Expect(processingCond.Status).To(Equal(metav1.ConditionTrue))
+			Expect(processingCond.Reason).To(Equal("ChildResourcesNotReady"))
 		})
 
 		It("should set Ready condition when all children ready", func() {

@@ -147,7 +147,7 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 	if !c.AllReady() {
 		obj.SetCondition(condition.NewNotReadyCondition("ChildResourcesNotReady",
 			"One or more child resources are not yet ready"))
-		obj.SetCondition(condition.NewDoneProcessingCondition("Waiting for child resources"))
+		obj.SetCondition(condition.NewProcessingCondition("ChildResourcesNotReady", "Waiting for child resources"))
 		return nil
 	}
 

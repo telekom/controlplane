@@ -203,8 +203,8 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 
 	case builder.ApprovalResultPending:
 		logger.Info("Approval is pending — waiting for approval")
-		obj.SetCondition(condition.NewNotReadyCondition("ApprovalPending", "Approval has not been approved"))
-		obj.SetCondition(condition.NewBlockedCondition("Approval has not been approved"))
+		obj.SetCondition(condition.NewNotReadyCondition("ApprovalPending", "Waiting for approval decision"))
+		obj.SetCondition(condition.NewBlockedCondition("Waiting for approval decision"))
 		return nil
 
 	case builder.ApprovalResultDenied:
@@ -251,7 +251,7 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 	if !c.AllReady() {
 		obj.SetCondition(condition.NewNotReadyCondition("ChildResourcesNotReady",
 			"One or more child resources are not yet ready"))
-		obj.SetCondition(condition.NewDoneProcessingCondition("Waiting for child resources"))
+		obj.SetCondition(condition.NewProcessingCondition("ChildResourcesNotReady", "Waiting for child resources"))
 		return nil
 	}
 
