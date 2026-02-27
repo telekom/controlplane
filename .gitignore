@@ -6,7 +6,6 @@ dist/
 **/bin/
 charts
 snapshotter-config.yaml
-testdata*
 
 # editor and IDE paraphernalia
 .idea
