@@ -20,5 +20,5 @@ spec:
   - SERVICE_NAME.SERVICE_NAMESPACE.svc.cluster.local
   issuerRef:
     kind: Issuer
-    name: selfsigned-issuer
+    name: controlplane-issuer
   secretName: metrics-server-cert
