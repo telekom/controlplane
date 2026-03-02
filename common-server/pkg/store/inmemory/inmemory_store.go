@@ -10,8 +10,11 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
+	"unsafe"
 
 	"github.com/bytedance/sonic"
+	"github.com/cespare/xxhash/v2"
 	"github.com/dgraph-io/badger/v4"
 	"github.com/dgraph-io/badger/v4/options"
 	"github.com/go-logr/logr"
@@ -67,44 +70,9 @@ type InmemoryObjectStore[T store.Object] struct {
 	informer        informer.Informer
 	db              *badger.DB
 	allowedSorts    []string
-	sortValueCache  sync.Map
+	sortValueCache  sync.Map // map[string]*sync.Map, where key is the sort path and value is a map of object key to sort value
+	hashCache       sync.Map // map[string]uint64, map of object key to hash of the object, used for change detection in watches
 	retryOnConflict bool
-}
-
-func newBadgerOptsReduceMemoryUsage(filepath string) badger.Options {
-	opts := badger.
-		DefaultOptions(filepath).
-		WithInMemory(filepath == "").
-		WithMetricsEnabled(false).
-		WithIndexCacheSize(0).
-		WithNumMemtables(2).
-		WithMemTableSize(32 << 20).     // 32 MB
-		WithValueLogFileSize(64 << 20). // 64 MB
-		WithBlockCacheSize(32 << 20).   // 32 MB
-		WithBlockSize(4 << 10).         // 4 KB
-		WithValueThreshold(512 << 10).  // 512 KB
-		WithBloomFalsePositive(0.01).
-		WithCompression(options.Snappy)
-
-	return opts
-}
-
-func newBadgerOptsDefault(filepath string) badger.Options {
-	opts := badger.
-		DefaultOptions(filepath).
-		WithInMemory(filepath == "").
-		WithMetricsEnabled(false).
-		WithIndexCacheSize(0).
-		WithNumMemtables(5).
-		WithMemTableSize(64 << 20).      // 64 MB
-		WithValueLogFileSize(512 << 20). // 256 MB
-		WithBlockCacheSize(256 << 20).   // 256 MB
-		WithBlockSize(4 << 10).          // 4 KB
-		WithValueThreshold(1 << 20).     // 1 MB
-		WithBloomFalsePositive(0.01).
-		WithCompression(options.Snappy)
-
-	return opts
 }
 
 func newDbOrDie(storeOpts StoreOpts, log logr.Logger) *badger.DB {
@@ -125,14 +93,28 @@ func newDbOrDie(storeOpts StoreOpts, log logr.Logger) *badger.DB {
 		"reduceMemory", storeOpts.Database.ReduceMemory,
 	)
 
-	var opts badger.Options
-	if storeOpts.Database.ReduceMemory {
-		log.V(2).Info("using badger options optimized for reduced memory usage")
-		opts = newBadgerOptsReduceMemoryUsage(path)
-	} else {
-		log.V(2).Info("using default badger options")
-		opts = newBadgerOptsDefault(path)
-	}
+	opts := badger.DefaultOptions(path).
+		WithInMemory(path == "").
+		WithMetricsEnabled(false).
+
+		// ===== Memtables (write pressure) =====
+		WithNumMemtables(4).
+		WithMemTableSize(16 << 20). // 16 MB (64 MB total)
+
+		// ===== Caches =====
+		WithIndexCacheSize(0).        // mmap handles index
+		WithBlockCacheSize(64 << 20). // HOT blocks for watches
+
+		// ===== LSM layout =====
+		WithBlockSize(8 << 10). // 8 KB blocks (matches value locality)
+		WithBloomFalsePositive(0.01).
+
+		// ===== Value log =====
+		WithValueThreshold(4 << 10).     // 4 KB
+		WithValueLogFileSize(256 << 20). // Larger files = better GC efficiency
+
+		// ===== Compression =====
+		WithCompression(options.Snappy)
 
 	opts.Logger = NewLoggerShim(log)
 	db, err := badger.Open(opts)
@@ -164,6 +146,9 @@ func NewOrDie[T store.Object](ctx context.Context, storeOpts StoreOpts) *Inmemor
 	if err = store.informer.Start(); err != nil {
 		panic(errors.Wrap(err, "failed to start informer"))
 	}
+
+	store.log.Info("starting value log GC routine to reduce memory usage")
+	go store.startVLGC()
 
 	return store
 }
@@ -428,8 +413,7 @@ func (s *InmemoryObjectStore[T]) OnCreate(ctx context.Context, obj *unstructured
 	return s.OnUpdate(ctx, obj)
 }
 
-func (s *InmemoryObjectStore[T]) OnUpdate(ctx context.Context, obj *unstructured.Unstructured) error {
-	obj = obj.DeepCopy()
+func (s *InmemoryObjectStore[T]) OnUpdate(_ context.Context, obj *unstructured.Unstructured) error {
 	key := calculateKey(obj)
 	informer.SanitizeObject(obj)
 
@@ -437,8 +421,20 @@ func (s *InmemoryObjectStore[T]) OnUpdate(ctx context.Context, obj *unstructured
 	if err != nil {
 		return errors.Wrap(err, "invalid object")
 	}
+
+	hash := xxhash.Sum64(data)
+	if prev, ok := s.hashCache.Load(key); ok && prev.(uint64) == hash {
+		return nil
+	}
+	s.hashCache.Store(key, hash)
+
 	err = s.db.Update(func(txn *badger.Txn) error {
-		return txn.Set([]byte(key), data)
+		e := badger.NewEntry(
+			unsafeStringToBytes(key),
+			data,
+		)
+
+		return txn.SetEntry(e)
 	})
 	if err != nil {
 		return err
@@ -447,15 +443,20 @@ func (s *InmemoryObjectStore[T]) OnUpdate(ctx context.Context, obj *unstructured
 	s.sortValueCache.Range(func(k, v any) bool {
 		sp := k.(string)
 		m := v.(*sync.Map)
+
 		value := gjson.GetBytes(data, sp)
-		m.Store(key, value.Value())
-		s.log.V(1).Info("cached sort value", "key", key, "sortPath", sp, "value", value.Value())
+		if value.Exists() {
+			if s.log.V(1).Enabled() {
+				s.log.V(1).Info("cached sort value", "key", key, "sortPath", sp, "value", value.Value())
+			}
+			m.Store(key, value.Value())
+		}
 		return true
 	})
 	return nil
 }
 
-func (s *InmemoryObjectStore[T]) OnDelete(ctx context.Context, obj *unstructured.Unstructured) error {
+func (s *InmemoryObjectStore[T]) OnDelete(_ context.Context, obj *unstructured.Unstructured) error {
 	key := calculateKey(obj)
 
 	err := s.db.Update(func(txn *badger.Txn) error {
@@ -467,7 +468,9 @@ func (s *InmemoryObjectStore[T]) OnDelete(ctx context.Context, obj *unstructured
 	s.sortValueCache.Range(func(k, v any) bool {
 		m := v.(*sync.Map)
 		m.Delete(key)
-		s.log.V(1).Info("deleted cached sort value", "key", key, "sortPath", k)
+		if s.log.V(1).Enabled() {
+			s.log.V(1).Info("deleted cached sort value", "key", key, "sortPath", k)
+		}
 		return true
 	})
 	return nil
@@ -527,4 +530,25 @@ func convertToUnstructured(obj any) (*unstructured.Unstructured, error) {
 		return nil, err
 	}
 	return &unstructured.Unstructured{Object: u}, nil
+}
+
+func (s *InmemoryObjectStore[T]) startVLGC() {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			err := s.db.RunValueLogGC(0.6)
+			if err != nil && err != badger.ErrNoRewrite {
+				s.log.Error(err, "failed to run value log GC")
+			}
+		case <-s.ctx.Done():
+			return
+		}
+	}
+}
+
+func unsafeStringToBytes(s string) []byte {
+	return unsafe.Slice(unsafe.StringData(s), len(s))
 }

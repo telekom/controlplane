@@ -40,17 +40,19 @@ var _ = Describe("Storeutil", func() {
 
 		It("should add a store", func() {
 
+			lookupStores := &tree.Stores{}
+
 			fooStore := NewMockStore("Foo")
-			tree.LookupStores.AddStore(fooStore)
+			lookupStores.AddStore(fooStore)
 
 			barStore := NewMockStore("Bar")
-			tree.LookupStores.AddStore(barStore)
+			lookupStores.AddStore(barStore)
 
-			actualFooStore, ok := tree.LookupStores.GetStore("testgroup/v1", "Foo")
+			actualFooStore, ok := lookupStores.GetStore("testgroup/v1", "Foo")
 			Expect(ok).To(BeTrue())
 			Expect(actualFooStore).To(Equal(fooStore))
 
-			actualBarStore, ok := tree.LookupStores.GetStore("testgroup/v1", "Bar")
+			actualBarStore, ok := lookupStores.GetStore("testgroup/v1", "Bar")
 			Expect(ok).To(BeTrue())
 			Expect(actualBarStore).To(Equal(barStore))
 		})

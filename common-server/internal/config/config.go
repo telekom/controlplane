@@ -88,7 +88,8 @@ type PProfConfig struct {
 }
 
 type TreeConfig struct {
-	Enabled bool `json:"enabled"`
+	Enabled   bool                          `json:"enabled"`
+	Hierarchy *tree.StaticResourceHierarchy `json:"hierarchy"`
 }
 
 // The Allowed Http-Methods for this resource. If empty, all methods are allowed.
@@ -259,11 +260,14 @@ func (c *ServerConfig) BuildServer(ctx context.Context, dynamicClient dynamic.In
 		log.Info("Registered predefined controller", "prefix", opts.Prefix, "resource", predefined.Ref, "filters", len(predefined.Filters), "patches", len(predefined.Patches))
 	}
 
+	treeStores := &tree.Stores{}
 	if c.Tree.Enabled {
 		for _, objectStore := range stores {
 			gvr, _ := objectStore.Info()
-			tree.LookupStores.AddStore(objectStore)
-			ctrl := tree.NewResourceTreeController(objectStore, log)
+			ctrl := tree.NewResourceTreeController(c.Tree.Hierarchy, objectStore, log)
+			ctrl.TreeFactory.LookupStores = treeStores
+			treeStores.AddStore(objectStore)
+
 			ctrlOpts := server.ControllerOpts{Prefix: c.BasePath + server.CalculatePrefix(gvr, c.AddGroupToPath), Security: securityOpts}
 			s.RegisterController(ctrl, ctrlOpts)
 		}

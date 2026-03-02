@@ -25,20 +25,23 @@ var _ = Describe("Tree", Ordered, func() {
 	var barStore *mocks.MockObjectStore[*unstructured.Unstructured]
 	var bazStore *mocks.MockObjectStore[*unstructured.Unstructured]
 
+	var treeFactory *tree.TreeFactory
+
 	BeforeEach(func() {
 		fooStore = NewMockStore("Foo")
 		barStore = NewMockStore("Bar")
 		bazStore = NewMockStore("Baz")
-		tree.LookupStores.AddStore(fooStore)
-		tree.LookupStores.AddStore(barStore)
-		tree.LookupStores.AddStore(bazStore)
+		treeFactory = tree.NewFactory(nil)
+		treeFactory.LookupStores.AddStore(fooStore)
+		treeFactory.LookupStores.AddStore(barStore)
+		treeFactory.LookupStores.AddStore(bazStore)
 	})
 
 	Context("GetTree", func() {
 		It("should return a tree with just the root object", func() {
 			fooStore.EXPECT().Get(ctx, "default", "foo").Return(&unstructured.Unstructured{}, nil)
 
-			rt, err := tree.GetTree(ctx, fooStore, "default", "foo", 1)
+			rt, err := treeFactory.GetTree(ctx, fooStore, "default", "foo", 1)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(rt).NotTo(BeNil())
 			Expect(rt.Root).NotTo(BeNil())
@@ -56,7 +59,7 @@ var _ = Describe("Tree", Ordered, func() {
 				APIVersion: "testgroup/v1",
 				Kind:       "Bar",
 			}
-			tree.LookupResourceHierarchy.AddChild(fooObject, childOfFoo)
+			treeFactory.LookupResourceHierarchy.AddChild(fooObject, childOfFoo)
 
 			fooStore.EXPECT().Get(ctx, "default", "foo0").Return(fooObject, nil)
 
@@ -86,7 +89,7 @@ var _ = Describe("Tree", Ordered, func() {
 
 			// When
 
-			rt, err := tree.GetTree(ctx, fooStore, "default", "foo0", 2)
+			rt, err := treeFactory.GetTree(ctx, fooStore, "default", "foo0", 2)
 
 			// Then
 
@@ -111,7 +114,7 @@ var _ = Describe("Tree", Ordered, func() {
 				APIVersion: "testgroup/v1",
 				Kind:       "Bar",
 			}
-			tree.LookupResourceHierarchy.AddChild(fooObject, childOfFoo)
+			treeFactory.LookupResourceHierarchy.AddChild(fooObject, childOfFoo)
 
 			fooStore.EXPECT().Get(ctx, "default", "foo0").Return(fooObject, nil)
 
@@ -133,7 +136,7 @@ var _ = Describe("Tree", Ordered, func() {
 				APIVersion: "testgroup/v1",
 				Kind:       "Baz",
 			}
-			tree.LookupResourceHierarchy.AddChild(barObject, childOfBar)
+			treeFactory.LookupResourceHierarchy.AddChild(barObject, childOfBar)
 
 			expectedBarListOpts := store.ListOpts{
 				Limit: 100,
@@ -176,7 +179,7 @@ var _ = Describe("Tree", Ordered, func() {
 
 			// When
 
-			rt, err := tree.GetTree(ctx, barStore, "default", "bar0", 3)
+			rt, err := treeFactory.GetTree(ctx, barStore, "default", "bar0", 3)
 
 			// Then
 

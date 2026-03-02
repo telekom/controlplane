@@ -9,10 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-var LookupStores = &Stores{
-	stores: make(map[string]store.ObjectStore[*unstructured.Unstructured]),
-}
-
 type Stores struct {
 	stores map[string]store.ObjectStore[*unstructured.Unstructured]
 }
@@ -23,10 +19,13 @@ func (s *Stores) GetStore(groupVersion, kind string) (store.ObjectStore[*unstruc
 	return store, ok
 }
 
-func (s *Stores) AddStore(store store.ObjectStore[*unstructured.Unstructured]) {
-	_, gvk := store.Info()
+func (s *Stores) AddStore(objStore store.ObjectStore[*unstructured.Unstructured]) {
+	if s.stores == nil {
+		s.stores = make(map[string]store.ObjectStore[*unstructured.Unstructured])
+	}
+	_, gvk := objStore.Info()
 	storeId := gvk.Group + "/" + gvk.Version + "." + gvk.Kind
-	s.stores[storeId] = store
+	s.stores[storeId] = objStore
 }
 
 func GetControllerOf(obj *unstructured.Unstructured) (ref OwnerReference, ok bool) {
