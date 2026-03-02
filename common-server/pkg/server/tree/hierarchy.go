@@ -5,33 +5,65 @@
 package tree
 
 import (
+	"strings"
 	"sync"
 )
 
-type Set map[TreeResourceInfo]bool
-
-type ResourceHierarchy struct {
-	lock       sync.RWMutex
-	Owned      map[string]Set
-	Referenced map[string]Set
+type ResourceHierarchy interface {
+	AddChild(parent GVK, child TreeResourceInfo)
+	GetChildren(parent GVK) []TreeResourceInfo
+	GetOwner(child GVK) (TreeResourceInfo, bool)
 }
 
-func (h *ResourceHierarchy) AddChild(parent GVK, child TreeResourceInfo) {
+// DynamicResourceHierachy determines the hierarchy at runtime
+// with minimal manual configuration
+type DynamicResourceHierachy struct {
+}
+
+type StaticResourceHierarchy struct {
+	lock       sync.RWMutex
+	Owned      map[string]Set `json:"owned" yaml:"owned"`
+	Referenced map[string]Set `json:"referenced" yaml:"referenced"`
+}
+
+func NewStaticResourceHierarchy() *StaticResourceHierarchy {
+	return &StaticResourceHierarchy{
+		Owned:      map[string]Set{},
+		Referenced: map[string]Set{},
+	}
+}
+
+func (h *StaticResourceHierarchy) makeId(gvk GVK) string {
+	return gvk.GetAPIVersion() + "." + gvk.GetKind()
+}
+
+func (h *StaticResourceHierarchy) parseId(id string) TreeResourceInfo {
+	// Find first "." after "/" to split apiVersion from Kind
+	slashIdx := strings.LastIndex(id, "/")
+	dotIdx := strings.Index(id[slashIdx+1:], ".") + slashIdx + 1
+
+	return TreeResourceInfo{
+		APIVersion: id[:dotIdx],
+		Kind:       id[dotIdx+1:],
+	}
+}
+
+func (h *StaticResourceHierarchy) AddChild(parent GVK, child TreeResourceInfo) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
-	id := parent.GetAPIVersion() + "." + parent.GetKind()
+	id := h.makeId(parent)
 	if _, ok := h.Owned[id]; !ok {
 		h.Owned[id] = map[TreeResourceInfo]bool{}
 	}
 	h.Owned[id][child] = true
 }
 
-func (h *ResourceHierarchy) GetChildren(parent GVK) []TreeResourceInfo {
+func (h *StaticResourceHierarchy) GetChildren(parent GVK) []TreeResourceInfo {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 
-	id := parent.GetAPIVersion() + "." + parent.GetKind()
+	id := h.makeId(parent)
 	children := []TreeResourceInfo{}
 	for child := range h.Owned[id] {
 		children = append(children, child)
@@ -39,14 +71,19 @@ func (h *ResourceHierarchy) GetChildren(parent GVK) []TreeResourceInfo {
 	return children
 }
 
-var LookupResourceHierarchy = &ResourceHierarchy{
-	Owned:      map[string]Set{},
-	Referenced: map[string]Set{},
-}
+func (h *StaticResourceHierarchy) GetOwner(child GVK) (ownerInfo TreeResourceInfo, found bool) {
+	h.lock.RLock()
+	defer h.lock.RUnlock()
 
-func init() {
-	roverRef := TreeResourceInfo{APIVersion: "rover.cp.ei.telekom.de/v1", Kind: "Rover"}
+	childId := h.makeId(child)
 
-	LookupResourceHierarchy.AddChild(roverRef, TreeResourceInfo{APIVersion: "api.cp.ei.telekom.de/v1", Kind: "ApiExposure"})
-	LookupResourceHierarchy.AddChild(roverRef, TreeResourceInfo{APIVersion: "api.cp.ei.telekom.de/v1", Kind: "ApiSubscription"})
+	for parentId, children := range h.Owned {
+		for childInfo := range children {
+			if h.makeId(childInfo) == childId {
+				return h.parseId(parentId), true
+			}
+		}
+	}
+
+	return
 }

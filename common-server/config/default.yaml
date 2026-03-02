@@ -4,7 +4,7 @@
 
 address: ":8080"
 basepath: "/api"
-addGroupToPath: false
+addGroupToPath: true
 resources:
   - group: (.*).cp.ei.telekom.de
     version: v1
@@ -36,3 +36,47 @@ security:
   enabled: false
   defaultScope: "tardis:admin:obfuscated"
   scopePrefix: "tardis:"
+
+tree:
+  enabled: true
+  hierarchy:
+    owned:
+      api.cp.ei.telekom.de/v1.ApiExposure:
+        - apiVersion: gateway.cp.ei.telekom.de/v1
+          kind: Route
+          matchVia:
+            labels:
+              - parent: cp.ei.telekom.de/basepath
+                child: cp.ei.telekom.de/basepath
+
+      api.cp.ei.telekom.de/v1.ApiSubscription:
+        - apiVersion: approval.cp.ei.telekom.de/v1
+          kind: ApprovalRequest
+        - apiVersion: approval.cp.ei.telekom.de/v1
+          kind: Approval
+        - apiVersion: gateway.cp.ei.telekom.de/v1
+          kind: ConsumeRoute
+        - apiVersion: gateway.cp.ei.telekom.de/v1
+          kind: Route
+          matchVia:
+            labels:
+              - parent: cp.ei.telekom.de/basepath
+                child: cp.ei.telekom.de/basepath
+
+      application.cp.ei.telekom.de/v1.Application:
+        - apiVersion: gateway.cp.ei.telekom.de/v1
+          kind: Consumer
+        - apiVersion: identity.cp.ei.telekom.de/v1
+          kind: Client
+
+      rover.cp.ei.telekom.de/v1.Rover:
+        - apiVersion: api.cp.ei.telekom.de/v1
+          kind: ApiSubscription
+        - apiVersion: api.cp.ei.telekom.de/v1
+          kind: ApiExposure
+        - apiVersion: application.cp.ei.telekom.de/v1
+          kind: Application
+
+      rover.cp.ei.telekom.de/v1.ApiSpecification:
+        - apiVersion: api.cp.ei.telekom.de/v1
+          kind: Api

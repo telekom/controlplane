@@ -16,14 +16,16 @@ import (
 var _ server.Controller = &ResourceTreeController{}
 
 type ResourceTreeController struct {
-	log   logr.Logger
-	Store store.ObjectStore[*unstructured.Unstructured]
+	log         logr.Logger
+	Store       store.ObjectStore[*unstructured.Unstructured]
+	TreeFactory *TreeFactory
 }
 
-func NewResourceTreeController(store store.ObjectStore[*unstructured.Unstructured], log logr.Logger) *ResourceTreeController {
+func NewResourceTreeController(hierarchy ResourceHierarchy, store store.ObjectStore[*unstructured.Unstructured], log logr.Logger) *ResourceTreeController {
 	return &ResourceTreeController{
-		log:   log,
-		Store: store,
+		log:         log,
+		Store:       store,
+		TreeFactory: NewFactory(hierarchy),
 	}
 }
 
@@ -37,7 +39,7 @@ func (r *ResourceTreeController) GetTree(c *fiber.Ctx) error {
 	namespace := c.Params("namespace")
 	name := c.Params("name")
 
-	tree, err := GetTree(c.UserContext(), r.Store, namespace, name, 10)
+	tree, err := r.TreeFactory.GetTree(c.UserContext(), r.Store, namespace, name, 10)
 	if err != nil {
 		return err
 	}
