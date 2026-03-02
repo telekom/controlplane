@@ -446,10 +446,10 @@ func (r *RoverValidator) ValidateApiExposure(ctx context.Context, valErr *cerror
 		return nil
 	}
 
-	for _, upstream := range exposure.Api.Upstreams {
+	for i, upstream := range exposure.Api.Upstreams {
 		if upstream.URL == "" {
 			valErr.AddRequiredError(
-				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams").Index(0).Child("url"),
+				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams").Index(i).Child("url"),
 				"upstream URL must not be empty",
 			)
 			// Skip further URL validation if it's empty
@@ -457,13 +457,13 @@ func (r *RoverValidator) ValidateApiExposure(ctx context.Context, valErr *cerror
 		}
 		if !strings.HasPrefix(upstream.URL, "http://") && !strings.HasPrefix(upstream.URL, "https://") {
 			valErr.AddInvalidError(
-				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams").Index(0).Child("url"),
+				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams").Index(i).Child("url"),
 				upstream.URL, "upstream URL must start with http:// or https://",
 			)
 		}
 		if strings.Contains(upstream.URL, "localhost") {
 			valErr.AddInvalidError(
-				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams").Index(0).Child("url"),
+				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams").Index(i).Child("url"),
 				upstream.URL, "upstream URL must not contain 'localhost'",
 			)
 		}
