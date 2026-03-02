@@ -13,6 +13,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache/metrics"
+	"golang.org/x/sync/singleflight"
 )
 
 var _ backend.Backend[backend.SecretId, backend.Secret[backend.SecretId]] = (*CachedBackend[backend.SecretId, backend.Secret[backend.SecretId]])(nil)
@@ -21,6 +22,7 @@ type CachedBackend[T backend.SecretId, S backend.Secret[T]] struct {
 	Backend backend.Backend[T, S]
 	Cache   *ristretto.Cache[string, S]
 	ttl     time.Duration
+	group   singleflight.Group
 }
 
 func NewCachedBackend[T backend.SecretId, S backend.Secret[T]](backend backend.Backend[T, S], ttl time.Duration) *CachedBackend[T, S] {
@@ -42,6 +44,7 @@ func NewCachedBackend[T backend.SecretId, S backend.Secret[T]](backend backend.B
 
 // Delete implements backend.Backend.
 func (c *CachedBackend[T, S]) Delete(ctx context.Context, id T) error {
+	c.group.Forget(id.String())
 	c.Cache.Del(id.String())
 	return c.Backend.Delete(ctx, id)
 }
@@ -49,7 +52,9 @@ func (c *CachedBackend[T, S]) Delete(ctx context.Context, id T) error {
 // Get implements backend.Backend.
 func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (S, error) {
 	log := logr.FromContextOrDiscard(ctx)
-	cachedItem, ok := c.Cache.Get(id.String())
+	cacheKey := id.String()
+
+	cachedItem, ok := c.Cache.Get(cacheKey)
 	if ok {
 		if len(cachedItem.Value()) > 0 {
 			metrics.RecordCacheHit("get", "success")
@@ -60,20 +65,31 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (S, error) {
 		metrics.RecordCacheMiss("get", "not_found")
 	}
 
-	item, err := c.Backend.Get(ctx, id)
+	// Deduplicate concurrent backend reads for the same key
+	result, err, shared := c.group.Do(cacheKey, func() (interface{}, error) {
+		return c.Backend.Get(ctx, id)
+	})
 	if err != nil {
-		return item, err
+		var zero S
+		return zero, err
 	}
+	item := result.(S)
+
+	if shared {
+		metrics.RecordSingleflightDedup("get")
+	}
+
 	if len(item.Value()) == 0 {
 		// Do not cache empty secrets
 		return item, nil
 	}
 
-	cost := int64(len(item.Value())) + int64(len(id.String()))
-	added := c.Cache.SetWithTTL(id.String(), item, cost, c.ttl)
+	cost := int64(len(item.Value())) + int64(len(cacheKey))
+	added := c.Cache.SetWithTTL(cacheKey, item, cost, c.ttl)
 	if !added {
-		log.Info("Failed to add item to cache", "id", id.String())
+		log.Info("Failed to add item to cache", "id", cacheKey)
 	}
+	// Always return a copy since singleflight shares the result across callers
 	return item.Copy().(S), nil
 }
 
@@ -117,5 +133,6 @@ func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.Secre
 	if !added {
 		log.Info("Failed to add item to cache", "id", id.String())
 	}
+	c.group.Forget(cacheId.String())
 	return item, nil
 }

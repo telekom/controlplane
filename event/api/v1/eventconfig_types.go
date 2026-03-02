@@ -20,9 +20,22 @@ type AdminConfig struct {
 	// +kubebuilder:validation:Format=uri
 	Url string `json:"url"`
 
+	// Client configures the identity client used for admin access to the configuration backend.
+	Client ClientConfig `json:",inline"`
+}
+
+type ClientConfig struct {
+	// ClientId is the OAuth2 client ID for authentication
+	// If empty, a default client ID will be used.
+	ClientId string `json:"clientId,omitempty"`
+
+	// ClientSecret is the OAuth2 client secret for authentication
+	// If empty, a new secret will be generated and a reference to it will be stored in the EventConfig status.
+	ClientSecret string `json:"clientSecret,omitempty"`
+
 	// Realm references the identity Realm CR used for OAuth2 authentication
-	// with the configuration backend.
-	Realm ctypes.ObjectRef `json:"realm"`
+	// If empty, it is assumed that the default realm should be used.
+	Realm ctypes.ObjectRef `json:"realm,omitempty"`
 }
 
 // MeshConfig configures the mesh topology for event distribution.
@@ -35,6 +48,9 @@ type MeshConfig struct {
 	// Must be set if FullMesh is false.
 	// +optional
 	ZoneNames []string `json:"zoneNames,omitempty"`
+
+	// Client configures the identity client used for mesh communication between zones.
+	Client ClientConfig `json:",inline"`
 }
 
 // EventConfigSpec defines the desired state of EventConfig.

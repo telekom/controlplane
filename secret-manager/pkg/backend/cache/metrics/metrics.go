@@ -23,6 +23,14 @@ var (
 		[]string{"method", "result", "reason"},
 	)
 
+	singleflightDedup = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "cache_singleflight_dedup_total",
+			Help: "Total number of deduplicated requests via singleflight",
+		},
+		[]string{"method"},
+	)
+
 	CacheSize prometheus.GaugeFunc
 )
 
@@ -44,6 +52,7 @@ func RegisterMetrics(reg prometheus.Registerer, f CacheSizeFunc) {
 	SetCacheSizeFunc(f)
 	registerOnce.Do(func() {
 		reg.MustRegister(cacheAccess)
+		reg.MustRegister(singleflightDedup)
 		reg.MustRegister(CacheSize)
 	})
 }
@@ -56,4 +65,9 @@ func RecordCacheHit(method, reason string) {
 // RecordCacheMiss increments the counter for a cache miss with the specified reasons like "expired" or "not_found"
 func RecordCacheMiss(method, reason string) {
 	cacheAccess.WithLabelValues(method, "miss", reason).Inc()
+}
+
+// RecordSingleflightDedup increments the counter when a request was deduplicated via singleflight
+func RecordSingleflightDedup(method string) {
+	singleflightDedup.WithLabelValues(method).Inc()
 }

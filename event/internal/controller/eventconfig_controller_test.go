@@ -46,12 +46,19 @@ var _ = Describe("EventConfig Controller", func() {
 					Spec: eventv1.EventConfigSpec{
 						Zone: ctypes.ObjectRef{Name: "test-zone", Namespace: "default"},
 						Admin: eventv1.AdminConfig{
-							Url:   "https://admin.example.com",
-							Realm: ctypes.ObjectRef{Name: "test-realm", Namespace: "default"},
+							Url: "https://admin.example.com",
+							Client: eventv1.ClientConfig{
+								Realm: ctypes.ObjectRef{Name: "test-realm", Namespace: "default"},
+							},
 						},
 						ServerSendEventUrl: "https://sse.example.com",
 						PublishEventUrl:    "https://publish.example.com",
-						Mesh:               eventv1.MeshConfig{FullMesh: true},
+						Mesh: eventv1.MeshConfig{
+							FullMesh: true,
+							Client: eventv1.ClientConfig{
+								Realm: ctypes.ObjectRef{Name: "test-realm", Namespace: "default"},
+							},
+						},
 					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())

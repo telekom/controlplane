@@ -16,6 +16,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/config"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
@@ -30,6 +31,7 @@ import (
 
 	"github.com/telekom/controlplane/event/internal/controller"
 	"github.com/telekom/controlplane/event/internal/index"
+	webhookv1 "github.com/telekom/controlplane/event/internal/webhook/v1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -205,6 +207,13 @@ func main() {
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "EventSubscription")
 		os.Exit(1)
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1.SetupEventConfigWebhookWithManager(mgr, secretsapi.API()); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "EventConfig")
+			os.Exit(1)
+		}
 	}
 	// +kubebuilder:scaffold:builder
 

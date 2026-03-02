@@ -7,7 +7,6 @@ package eventconfig
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/client"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
@@ -28,6 +27,8 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 )
 
+const tokenUrlSuffix = "/protocol/openid-connect/token"
+
 var _ handler.Handler[*eventv1.EventConfig] = &EventConfigHandler{}
 
 type EventConfigHandler struct{}
@@ -36,31 +37,43 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	// --- Identity Client ---
+	// --- Admin Identity Client ---
 
-	realm := &identityv1.Realm{}
-	err := c.Get(ctx, obj.Spec.Admin.Realm.K8s(), realm)
+	adminRealm := &identityv1.Realm{}
+	err := c.Get(ctx, obj.Spec.Admin.Client.Realm.K8s(), adminRealm)
 	if err != nil {
 		if apierrors.IsNotFound(errors.Cause(err)) {
-			return ctrlerrors.BlockedErrorf("referenced identity Realm %q not found", obj.Spec.Admin.Realm.String())
+			return ctrlerrors.BlockedErrorf("referenced identity Realm %q not found", obj.Spec.Admin.Client.Realm.String())
 		}
-		return errors.Wrapf(err, "failed to get identity Realm %q", obj.Spec.Admin.Realm.String())
+		return errors.Wrapf(err, "failed to get identity Realm %q", obj.Spec.Admin.Client.Realm.String())
 	}
 
 	// Derive the token URL from the realm's issuer URL
-	tokenUrl := realm.Status.IssuerUrl + "/protocol/openid-connect/token"
-	if tokenUrl == "" {
-		return ctrlerrors.BlockedErrorf("identity Realm %s has no issuerUrl yet", realm.Name)
+	// This is used to configure the EventStore with the correct token endpoint for obtaining access tokens.
+	adminClientTokenUrl := adminRealm.Status.IssuerUrl + tokenUrlSuffix
+	if adminClientTokenUrl == "" {
+		return ctrlerrors.BlockedErrorf("identity Realm %s has no issuerUrl yet", adminRealm.Name)
 	}
 
-	adminClient, err := h.createIdentityClient(ctx, obj, realm, util.AdminClientName)
+	adminClient, err := h.createIdentityClient(ctx, obj, obj.Spec.Admin.Client)
 	if err != nil {
 		return errors.Wrap(err, "failed to create identity Client")
 	}
 	obj.Status.AdminClient = eventv1.NewObservedObjectRef(adminClient)
 	logger.V(1).Info("identity AdminClient created/updated", "client", adminClient.Name)
 
-	meshClient, err := h.createIdentityClient(ctx, obj, realm, util.MeshClientName)
+	// --- Mesh Identity Client ---
+
+	meshRealm := &identityv1.Realm{}
+	err = c.Get(ctx, obj.Spec.Mesh.Client.Realm.K8s(), meshRealm)
+	if err != nil {
+		if apierrors.IsNotFound(errors.Cause(err)) {
+			return ctrlerrors.BlockedErrorf("referenced identity Realm %q not found", obj.Spec.Mesh.Client.Realm.String())
+		}
+		return errors.Wrapf(err, "failed to get identity Realm %q", obj.Spec.Mesh.Client.Realm.String())
+	}
+
+	meshClient, err := h.createIdentityClient(ctx, obj, obj.Spec.Mesh.Client)
 	if err != nil {
 		return errors.Wrap(err, "failed to create identity Client")
 	}
@@ -69,7 +82,7 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 
 	// --- EventStore ---
 
-	eventStore, err := h.createEventStore(ctx, obj, adminClient, tokenUrl)
+	eventStore, err := h.createEventStore(ctx, obj, adminClient, adminClientTokenUrl)
 	if err != nil {
 		return errors.Wrap(err, "failed to create EventStore")
 	}
@@ -129,12 +142,12 @@ func (h *EventConfigHandler) Delete(ctx context.Context, obj *eventv1.EventConfi
 }
 
 // createIdentityClient creates an identity.Client for the event operator to authenticate with configuration backend.
-func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *eventv1.EventConfig, realm *identityv1.Realm, clientName string) (*identityv1.Client, error) {
+func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *eventv1.EventConfig, clientCfg eventv1.ClientConfig) (*identityv1.Client, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	identityClient := &identityv1.Client{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      clientName,
+			Name:      clientCfg.ClientId,
 			Namespace: obj.Namespace,
 		},
 	}
@@ -148,25 +161,17 @@ func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *even
 			config.DomainLabelKey: "event",
 		}
 
-		// Preserve existing client secret to avoid rotation on every reconciliation
-		var clientSecret string
-		if identityClient.Spec.ClientSecret != "" {
-			clientSecret = identityClient.Spec.ClientSecret
-		} else {
-			clientSecret = uuid.NewString() // todo: this needs to be set using secret-manager
-		}
-
 		identityClient.Spec = identityv1.ClientSpec{
-			Realm:        types.ObjectRefFromObject(realm),
-			ClientId:     clientName,
-			ClientSecret: clientSecret,
+			Realm:        &clientCfg.Realm,
+			ClientId:     clientCfg.ClientId,
+			ClientSecret: clientCfg.ClientSecret,
 		}
 		return nil
 	}
 
 	_, err := c.CreateOrUpdate(ctx, identityClient, mutator)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create or update identity Client %s", clientName)
+		return nil, errors.Wrapf(err, "failed to create or update identity Client %s", clientCfg.ClientId)
 	}
 
 	return identityClient, nil

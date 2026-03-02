@@ -59,9 +59,11 @@ func newEventConfig() *eventv1.EventConfig {
 			},
 			Admin: eventv1.AdminConfig{
 				Url: "https://admin.example.com",
-				Realm: ctypes.ObjectRef{
-					Name:      "test-realm",
-					Namespace: "default",
+				Client: eventv1.ClientConfig{
+					Realm: ctypes.ObjectRef{
+						Name:      "test-realm",
+						Namespace: "default",
+					},
 				},
 			},
 			ServerSendEventUrl: "https://sse.example.com",
@@ -69,6 +71,12 @@ func newEventConfig() *eventv1.EventConfig {
 			VoyagerApiUrl:      "http://voyager.internal:8080/voyager",
 			Mesh: eventv1.MeshConfig{
 				FullMesh: false,
+				Client: eventv1.ClientConfig{
+					Realm: ctypes.ObjectRef{
+						Name:      "test-realm",
+						Namespace: "default",
+					},
+				},
 			},
 		},
 	}
@@ -161,13 +169,13 @@ var _ = Describe("EventConfigHandler", func() {
 	})
 
 	// mockGetRealm sets up a mock for c.Get on the identity realm key.
-	mockGetRealm := func(realm *identityv1.Realm) {
+	mockGetRealm := func(realm *identityv1.Realm, times int) {
 		fakeClient.EXPECT().
 			Get(ctx, realmKey, mock.AnythingOfType("*v1.Realm")).
 			Run(func(_ context.Context, _ k8stypes.NamespacedName, out client.Object, _ ...client.GetOption) {
 				*out.(*identityv1.Realm) = *realm
 			}).
-			Return(nil).Once()
+			Return(nil).Times(times)
 	}
 
 	// mockGetRealmError sets up a mock for c.Get on the identity realm key that returns an error.
@@ -287,7 +295,7 @@ var _ = Describe("EventConfigHandler", func() {
 		gwRealm := makeReadyGatewayRealm()
 
 		mockScheme()
-		mockGetRealm(realm)
+		mockGetRealm(realm, 2) // admin + mesh
 		mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 		mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
 		mockGetZone(zone, 3)                             // callback + voyager + publish
@@ -326,7 +334,7 @@ var _ = Describe("EventConfigHandler", func() {
 
 		It("should return error when admin identity Client creation fails", func() {
 			realm := makeReadyRealm()
-			mockGetRealm(realm)
+			mockGetRealm(realm, 1)
 
 			fakeClient.EXPECT().
 				CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Client"), mock.Anything).
@@ -340,7 +348,7 @@ var _ = Describe("EventConfigHandler", func() {
 
 		It("should return error when mesh identity Client creation fails", func() {
 			realm := makeReadyRealm()
-			mockGetRealm(realm)
+			mockGetRealm(realm, 2)
 
 			// First call (admin client) succeeds
 			fakeClient.EXPECT().
@@ -360,7 +368,7 @@ var _ = Describe("EventConfigHandler", func() {
 
 		It("should return error when EventStore creation fails", func() {
 			realm := makeReadyRealm()
-			mockGetRealm(realm)
+			mockGetRealm(realm, 2)
 			mockScheme()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultNone, fmt.Errorf("eventstore error"))
@@ -373,7 +381,7 @@ var _ = Describe("EventConfigHandler", func() {
 
 		It("should return error when GetZone fails in createCallbackRoutes", func() {
 			realm := makeReadyRealm()
-			mockGetRealm(realm)
+			mockGetRealm(realm, 2)
 			mockScheme()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
@@ -390,7 +398,7 @@ var _ = Describe("EventConfigHandler", func() {
 			zone := makeReadyZone()
 			zone.Status.Namespace = "wrong-ns"
 
-			mockGetRealm(realm)
+			mockGetRealm(realm, 2)
 			mockScheme()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
@@ -407,7 +415,7 @@ var _ = Describe("EventConfigHandler", func() {
 			realm := makeReadyRealm()
 			zone := makeReadyZone()
 
-			mockGetRealm(realm)
+			mockGetRealm(realm, 2)
 			mockScheme()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
@@ -425,7 +433,7 @@ var _ = Describe("EventConfigHandler", func() {
 			zone := makeReadyZone()
 			gwRealm := makeReadyGatewayRealm()
 
-			mockGetRealm(realm)
+			mockGetRealm(realm, 2)
 			mockScheme()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)
@@ -450,7 +458,7 @@ var _ = Describe("EventConfigHandler", func() {
 			zone := makeReadyZone()
 			gwRealm := makeReadyGatewayRealm()
 
-			mockGetRealm(realm)
+			mockGetRealm(realm, 2)
 			mockScheme()
 			mockCreateOrUpdateClient(controllerutil.OperationResultCreated, nil, 2)
 			mockCreateOrUpdateEventStore(controllerutil.OperationResultCreated, nil)

@@ -95,7 +95,7 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 		log.V(1).Info("cache is disabled")
 	}
 
-	cacheV2 := cfg.Backend.GetDefault("use_cache_v2", "false") == trueStr
+	useLegacyCache := cfg.Backend.GetDefault("use_legacy_cache", "false") == trueStr
 
 	switch cfg.Backend.Type {
 	case "conjur":
@@ -104,14 +104,14 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 
 		backend := conjur.NewBackend(conjurWriteApi, conjurReadApi)
 		if shouldCache {
-			if cacheV2 {
-				log.V(1).Info("using v2 cache implementation")
-				cacheBackend := v2.NewCachedBackend(backend, cacheDuration)
-				metrics.RegisterMetrics(prometheus.DefaultRegisterer, nil)
-				backend = cacheBackend
-			} else {
+			if useLegacyCache {
+				log.V(1).Info("using legacy cache implementation")
 				cacheBackend := cache.NewCachedBackend(backend, cacheDuration)
 				metrics.RegisterMetrics(prometheus.DefaultRegisterer, cacheBackend.Cache.Stats)
+				backend = cacheBackend
+			} else {
+				cacheBackend := v2.NewCachedBackend(backend, cacheDuration)
+				metrics.RegisterMetrics(prometheus.DefaultRegisterer, nil)
 				backend = cacheBackend
 			}
 		}
