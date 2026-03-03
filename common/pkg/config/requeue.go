@@ -10,7 +10,7 @@ import (
 )
 
 func RetryNWithJitterOnError(attempt int) time.Duration {
-	return ExponentialBackoffWithJitter(RequeueAfterOnError, attempt)
+	return ExponentialBackoffWithJitter(GetCommonConfig().Reconciler.RequeueAfterOnError, attempt)
 }
 
 // RetryWithJitterOnError returns a duration used in result.RequeueAfter.
@@ -27,13 +27,13 @@ func RetryWithJitterOnError() time.Duration {
 //
 // ! in case of success
 func RequeueWithJitter() time.Duration {
-	return Jitter(RequeueAfter)
+	return Jitter(GetCommonConfig().Reconciler.RequeueAfter)
 }
 
 func ExponentialBackoffWithJitter(base time.Duration, attempt int) time.Duration {
 	backoff := base * (1 << attempt)
-	if backoff > MaxBackoff {
-		backoff = MaxBackoff
+	if backoff > GetCommonConfig().Reconciler.MaxBackoff {
+		backoff = GetCommonConfig().Reconciler.MaxBackoff
 	}
 	return Jitter(backoff)
 }
@@ -42,5 +42,5 @@ func ExponentialBackoffWithJitter(base time.Duration, attempt int) time.Duration
 // This is used to prevent the thundering herd problem. See https://en.wikipedia.org/wiki/Thundering_herd_problem
 func Jitter(d time.Duration) time.Duration {
 	// #nosec G404 -- This is not a cryptographic use case
-	return time.Duration(float64(d) * (1 + JitterFactor*rand.Float64()))
+	return time.Duration(float64(d) * (1 + GetCommonConfig().Reconciler.JitterFactor*rand.Float64()))
 }

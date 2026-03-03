@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package controllerconfig
+package config
 
 import (
 	"os"
@@ -33,15 +33,20 @@ func parseConfigPathFromFlags() (string, error) {
 	return v.GetString(configKey), nil
 }
 
-func Load[T any]() (*AppConfig[T], error) {
+func Load[T any]() (*Config[T], error) {
 	configPath, err := parseConfigPathFromFlags()
 	if err != nil {
 		return nil, err
 	}
-	return loadConfigFromFile[T](configPath)
+	cfg, err := loadConfigFromFile[T](configPath)
+	if err != nil {
+		return nil, err
+	}
+	setCommonConfig(cfg)
+	return cfg, nil
 }
 
-func LoadOrDie[T any]() *AppConfig[T] {
+func LoadOrDie[T any]() *Config[T] {
 	cfg, err := Load[T]()
 	if err != nil {
 		panic(err)

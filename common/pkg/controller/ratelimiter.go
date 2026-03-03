@@ -11,5 +11,5 @@ import (
 )
 
 func NewRateLimiter[T reconcile.Request]() workqueue.TypedRateLimiter[T] {
-	return workqueue.NewTypedItemExponentialFailureRateLimiter[T](config.RequeueAfterOnError, config.MaxBackoff)
+	return workqueue.NewTypedItemExponentialFailureRateLimiter[T](config.GetCommonConfig().Reconciler.RequeueAfterOnError, config.GetCommonConfig().Reconciler.MaxBackoff)
 }

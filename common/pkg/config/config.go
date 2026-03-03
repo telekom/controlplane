@@ -1,84 +1,158 @@
-// Copyright 2025 Deutsche Telekom IT GmbH
+// Copyright 2026 Deutsche Telekom IT GmbH
 //
 // SPDX-License-Identifier: Apache-2.0
 
 package config
 
 import (
-	"strings"
+	"fmt"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
-)
-
-// Configuration key constants
-const (
-	configKeyRequeueAfterOnError = "requeue-after-on-error"
-	configKeyRequeueAfter        = "requeue-after"
-	configKeyDefaultNamespace    = "default-namespace"
-	configKeyDefaultEnvironment  = "default-environment"
-	configKeyLabelKeyPrefix      = "label-key-prefix"
-	configKeyJitterFactor        = "jitter-factor"
-	configKeyMaxBackoff          = "max-backoff"
-	configKeyMaxConcurrentRec    = "max-concurrent-reconciles"
 )
 
 const (
 	FinalizerSuffix = "finalizer"
 )
 
-// exposed configuration variables
-var (
+// Config is the top-level controller configuration file structure.
+//
+// The YAML is split into:
+// - common: shared controller-runtime/manager settings used by all controllers.
+// - spec: component-specific configuration, defined by the importing controller.
+
+type CommonConfig interface {
+	CommonConfig() ControllerConfig
+}
+type Config[T any] struct {
+	Common ControllerConfig `yaml:"common" validate:"required"`
+	Spec   T                `yaml:"spec"`
+}
+
+func (config *Config[T]) CommonConfig() ControllerConfig {
+	return config.Common
+}
+
+// ComputeValues apply common computed values
+func (config *Config[T]) ComputeValues() {
+	config.Common.Reconciler.FinalizerName =
+		config.Common.Reconciler.LabelKeyPrefix + "/" + FinalizerSuffix
+}
+
+// MetricsConfig configures the controller manager metrics endpoint.
+type MetricsConfig struct {
+	BindAddress   string `yaml:"bindAddress" validate:"required"`
+	SecureServing bool   `yaml:"secureServing"`
+}
+
+// LeaderElectionConfig configures leader election for the controller manager.
+//
+// If Enabled is true, ID must be set by the component config to a unique value
+// so multiple controllers do not fight over the same Lease.
+type LeaderElectionConfig struct {
+	Enabled bool   `yaml:"enabled"`
+	ID      string `yaml:"id" validate:"required_if=Enabled true"`
+}
+
+// ProbeConfig configures the health/readiness probe bind address.
+type ProbeConfig struct {
+	BindAddress string `yaml:"bindAddress" validate:"required"`
+}
+
+// LogConfig configures controller logging behavior.
+type LogConfig struct {
+	Development bool `yaml:"development"`
+}
+
+// ControllerConfig contains shared controller-runtime manager settings.
+//
+// This struct maps to the YAML under the top-level "common" key.
+type ControllerConfig struct {
+	Metrics        MetricsConfig        `mapstructure:"metrics" validate:"required"`
+	Probe          ProbeConfig          `mapstructure:"probe" validate:"required"`
+	LeaderElection LeaderElectionConfig `mapstructure:"leaderElection" validate:"required"`
+	Reconciler     ReconcilerConfig     `mapstructure:"reconciler" validate:"required"`
+	EnableHTTP2    bool                 `mapstructure:"enableHTTP2"`
+	Log            LogConfig            `mapstructure:"log"`
+}
+
+type ReconcilerConfig struct {
 	// RequeueAfterOnError is the time to wait before retrying a failed operation.
 	// This applies for all controller errors.
-	RequeueAfterOnError = 1 * time.Second
+	RequeueAfterOnError time.Duration `mapstructure:"requeue-after-on-error" validate:"required"`
 	// RequeueAfter is the time to wait before retrying a successful operation.
-	RequeueAfter = 30 * time.Minute
+	RequeueAfter time.Duration `mapstructure:"requeue-after" validate:"required"`
 	// JitterFactor is the factor to apply to the backoff duration.
-	JitterFactor = 0.7
+	JitterFactor float64 `mapstructure:"jitter-factor" validate:"required"`
 	// MaxBackoff is the maximum backoff duration.
-	MaxBackoff = 5 * time.Minute
+	MaxBackoff time.Duration `mapstructure:"max-backoff" validate:"required"`
 	// MaxConcurrentReconciles is the maximum number of concurrent reconciles.
-	MaxConcurrentReconciles = 10
+	MaxConcurrentReconciles int `mapstructure:"max-concurrent-reconciles" validate:"required"`
 
-	DefaultNamespace   = "default"
-	DefaultEnvironment = "default"
-	LabelKeyPrefix     = "cp.ei.telekom.de"
-	FinalizerName      = LabelKeyPrefix + "/" + FinalizerSuffix
-)
-
-func init() {
-	registerDefaults()
-	registerEnvs()
-	Parse()
+	DefaultNamespace   string `mapstructure:"default-namespace" validate:"required"`
+	DefaultEnvironment string `mapstructure:"default-environment" validate:"required"`
+	LabelKeyPrefix     string `mapstructure:"label-key-prefix" validate:"required"`
+	FinalizerName      string `yaml:"-" mapstructure:"-"`
 }
 
-func registerDefaults() {
-	viper.SetDefault(configKeyRequeueAfterOnError, RequeueAfterOnError)
-	viper.SetDefault(configKeyRequeueAfter, RequeueAfter)
-	viper.SetDefault(configKeyDefaultNamespace, DefaultNamespace)
-	viper.SetDefault(configKeyDefaultEnvironment, DefaultEnvironment)
-	viper.SetDefault(configKeyLabelKeyPrefix, LabelKeyPrefix)
-	viper.SetDefault(configKeyJitterFactor, JitterFactor)
-	viper.SetDefault(configKeyMaxBackoff, MaxBackoff)
-	viper.SetDefault(configKeyMaxConcurrentRec, MaxConcurrentReconciles)
+func defaultControllerConfig() ControllerConfig {
+	controllerConfig := ControllerConfig{
+		Metrics: MetricsConfig{
+			BindAddress:   "0",
+			SecureServing: true,
+		},
+		Probe: ProbeConfig{
+			BindAddress: ":8081",
+		},
+		LeaderElection: LeaderElectionConfig{
+			Enabled: false,
+			ID:      "",
+		},
+		EnableHTTP2: false,
+		Reconciler: ReconcilerConfig{
+			RequeueAfterOnError:     1 * time.Second,
+			RequeueAfter:            30 * time.Minute,
+			JitterFactor:            0.7,
+			MaxBackoff:              5 * time.Minute,
+			MaxConcurrentReconciles: 10,
+
+			DefaultNamespace:   "default",
+			DefaultEnvironment: "default",
+			LabelKeyPrefix:     "cp.ei.telekom.de",
+		},
+		Log: LogConfig{
+			Development: true,
+		},
+	}
+	return controllerConfig
 }
 
-func registerEnvs() {
-	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+func defaultAppConfig[T any]() Config[T] {
+	return Config[T]{
+		Common: defaultControllerConfig(),
+	}
 }
 
-func Parse() {
-	RequeueAfterOnError = viper.GetDuration(configKeyRequeueAfterOnError)
-	RequeueAfter = viper.GetDuration(configKeyRequeueAfter)
-	DefaultNamespace = viper.GetString(configKeyDefaultNamespace)
-	DefaultEnvironment = viper.GetString(configKeyDefaultEnvironment)
+func loadConfigFromFile[T any](path string) (*Config[T], error) {
+	cfg := defaultAppConfig[T]()
 
-	JitterFactor = viper.GetFloat64(configKeyJitterFactor)
-	MaxBackoff = viper.GetDuration(configKeyMaxBackoff)
-	MaxConcurrentReconciles = viper.GetInt(configKeyMaxConcurrentRec)
-	LabelKeyPrefix = viper.GetString(configKeyLabelKeyPrefix)
+	v := viper.New()
+	v.SetConfigFile(path)
+	if err := v.ReadInConfig(); err != nil {
+		return nil, err
+	}
 
-	FinalizerName = LabelKeyPrefix + "/" + FinalizerSuffix
+	if err := v.UnmarshalExact(&cfg); err != nil {
+		return nil, err
+	}
+
+	val := validator.New(validator.WithRequiredStructEnabled())
+	if err := val.Struct(cfg); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
+	}
+
+	cfg.ComputeValues()
+
+	return &cfg, nil
 }
