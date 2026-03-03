@@ -1,0 +1,18 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+common:
+  metrics:
+    bindAddress: ":8443"
+    secureServing: true
+  probe:
+    bindAddress: ":8081"
+  leaderElection:
+    enabled: true
+    id: "58816de6.cp.ei.telekom.de"
+  enableHTTP2: false
+  log:
+    development: true
+
+spec: {}
