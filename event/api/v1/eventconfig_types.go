@@ -21,7 +21,7 @@ type AdminConfig struct {
 	Url string `json:"url"`
 
 	// Client configures the identity client used for admin access to the configuration backend.
-	Client ClientConfig `json:",inline"`
+	Client ClientConfig `json:"client"`
 }
 
 type ClientConfig struct {
@@ -50,7 +50,7 @@ type MeshConfig struct {
 	ZoneNames []string `json:"zoneNames,omitempty"`
 
 	// Client configures the identity client used for mesh communication between zones.
-	Client ClientConfig `json:",inline"`
+	Client ClientConfig `json:"client"`
 }
 
 // EventConfigSpec defines the desired state of EventConfig.

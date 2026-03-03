@@ -78,6 +78,7 @@ func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCf
 		if err != nil {
 			return errors.Wrap(err, "failed to onboard secrets for EventConfig")
 		}
+		log.Info("Successfully onboarded secrets for EventConfig", "environment", envName, "secrets", len(availableSecrets))
 
 		if needsAdminSecret {
 			ref, found := secretsapi.FindSecretId(availableSecrets, adminSecretId)
@@ -85,6 +86,7 @@ func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCf
 				return fmt.Errorf("admin client secret reference not found in onboarding response")
 			}
 			eventCfg.Spec.Admin.Client.ClientSecret = ref
+			log.Info("Onboarded admin client secret for EventConfig", "secretId", adminSecretId)
 		}
 
 		if needsMeshSecret {
@@ -93,6 +95,7 @@ func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCf
 				return fmt.Errorf("mesh client secret reference not found in onboarding response")
 			}
 			eventCfg.Spec.Mesh.Client.ClientSecret = ref
+			log.Info("Onboarded mesh client secret for EventConfig", "secretId", meshSecretId)
 		}
 	}
 
@@ -181,12 +184,12 @@ func (v *EventConfigCustomValidator) ValidateCreateOrUpdate(ctx context.Context,
 
 	adminClient := eventCfg.Spec.Admin.Client
 	if adminClient.Realm.IsEmpty() {
-		valErr.AddInvalidError(field.NewPath("spec").Child("admin").Child("realm"), nil, "realm must be specified for admin client")
+		valErr.AddInvalidError(field.NewPath("spec").Child("admin").Child("realm"), adminClient.Realm, "realm must be specified for admin client")
 	}
 
 	meshClient := eventCfg.Spec.Mesh.Client
 	if meshClient.Realm.IsEmpty() {
-		valErr.AddInvalidError(field.NewPath("spec").Child("mesh").Child("realm"), nil, "realm must be specified for mesh client")
+		valErr.AddInvalidError(field.NewPath("spec").Child("mesh").Child("realm"), meshClient.Realm, "realm must be specified for mesh client")
 	}
 
 	return valErr.BuildWarnings(), valErr.BuildError()
