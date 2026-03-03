@@ -250,7 +250,11 @@ spec:
                         description: |-
                           QueryParameter is the name of the query parameter containing the target URL.
                           The parameter will be removed from the forwarded request.
+                        minLength: 1
+                        pattern: ^[a-zA-Z0-9_-]+$
                         type: string
+                    required:
+                    - queryParameter
                     type: object
                   failover:
                     properties:

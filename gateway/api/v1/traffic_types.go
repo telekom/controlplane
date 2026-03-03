@@ -74,5 +74,8 @@ type RateLimitOptions struct {
 type DynamicUpstream struct {
 	// QueryParameter is the name of the query parameter containing the target URL.
 	// The parameter will be removed from the forwarded request.
-	QueryParameter string `json:"queryParameter,omitempty"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Pattern=`^[a-zA-Z0-9_-]+$`
+	QueryParameter string `json:"queryParameter"`
 }
