@@ -363,7 +363,7 @@ var _ = Describe("EventConfig Webhook", func() {
 			meshSecretId := "zones/test-zone/event/mesh/clientSecret"
 
 			secretManagerMock.EXPECT().
-				UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything).
+				UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything, mock.Anything).
 				Return(map[string]string{
 					adminSecretId: "admin-secret-uuid",
 					meshSecretId:  "mesh-secret-uuid",
@@ -395,7 +395,7 @@ var _ = Describe("EventConfig Webhook", func() {
 			meshSecretId := "zones/test-zone/event/mesh/clientSecret"
 
 			secretManagerMock.EXPECT().
-				UpsertEnvironment(mock.Anything, "test-env", mock.Anything).
+				UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything).
 				Return(map[string]string{
 					meshSecretId: "new-mesh-secret-uuid",
 				}, nil)
