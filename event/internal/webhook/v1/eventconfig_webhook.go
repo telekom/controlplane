@@ -108,6 +108,11 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, obj runtime.Ob
 	if !ok {
 		return fmt.Errorf("expected an EventConfig object but got %T", obj)
 	}
+
+	if controller.IsBeingDeleted(eventCfg) {
+		return nil
+	}
+
 	log.Info("Defaulting for EventConfig", "name", eventCfg.GetName())
 
 	adminClient := &eventCfg.Spec.Admin.Client
@@ -180,16 +185,21 @@ func (v *EventConfigCustomValidator) ValidateCreateOrUpdate(ctx context.Context,
 	if !ok {
 		return nil, fmt.Errorf("expected a EventConfig object for the newObj but got %T", obj)
 	}
+
+	if controller.IsBeingDeleted(eventCfg) {
+		return nil, nil
+	}
+
 	valErr := cerrors.NewValidationError(eventv1.GroupVersion.WithKind("EventConfig").GroupKind(), eventCfg)
 
 	adminClient := eventCfg.Spec.Admin.Client
 	if adminClient.Realm.IsEmpty() {
-		valErr.AddInvalidError(field.NewPath("spec").Child("admin").Child("realm"), adminClient.Realm, "realm must be specified for admin client")
+		valErr.AddInvalidError(field.NewPath("spec").Child("admin").Child("admin").Child("realm"), adminClient.Realm, "realm must be specified for admin client")
 	}
 
 	meshClient := eventCfg.Spec.Mesh.Client
 	if meshClient.Realm.IsEmpty() {
-		valErr.AddInvalidError(field.NewPath("spec").Child("mesh").Child("realm"), meshClient.Realm, "realm must be specified for mesh client")
+		valErr.AddInvalidError(field.NewPath("spec").Child("mesh").Child("mesh").Child("realm"), meshClient.Realm, "realm must be specified for mesh client")
 	}
 
 	return valErr.BuildWarnings(), valErr.BuildError()
