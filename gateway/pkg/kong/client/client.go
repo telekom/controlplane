@@ -468,8 +468,8 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 		Service: &kong.CreateRouteRequestService{
 			Id: service.Id,
 		},
-		RequestBuffering:        true,
-		ResponseBuffering:       true,
+		RequestBuffering:        route.GetRequestBuffering(),
+		ResponseBuffering:       route.GetResponseBuffering(),
 		HttpsRedirectStatusCode: 426,
 
 		Tags: &[]string{
