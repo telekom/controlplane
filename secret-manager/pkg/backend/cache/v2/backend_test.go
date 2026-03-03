@@ -52,7 +52,8 @@ var _ = Describe("Cached Backend V2", func() {
 			ctx := context.Background()
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
-			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().CacheKey().Return("my-secret-id")
+			secretId.EXPECT().String().Return("my-secret-id").Maybe()
 
 			secret := backend.NewDefaultSecret(secretId, "my-value")
 			mockBackend.EXPECT().Get(ctx, secretId).Return(secret, nil).Once()
@@ -67,7 +68,8 @@ var _ = Describe("Cached Backend V2", func() {
 			ctx := context.Background()
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
-			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().CacheKey().Return("my-secret-id")
+			secretId.EXPECT().String().Return("my-secret-id").Maybe()
 
 			mockBackend.EXPECT().Get(ctx, secretId).Return(backend.DefaultSecret[*mocks.MockSecretId]{}, backend.ErrSecretNotFound(secretId)).Once()
 
@@ -82,8 +84,10 @@ var _ = Describe("Cached Backend V2", func() {
 
 			secretValue := backend.String("my-value")
 			secretId := mocks.NewMockSecretId(GinkgoT())
-			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().CacheKey().Return("my-secret-id")
+			secretId.EXPECT().String().Return("my-secret-id").Maybe()
 			secretId.EXPECT().Copy().Return(secretId).Once()
+			secretId.EXPECT().SubPath().Return("")
 
 			mockBackend.EXPECT().Set(ctx, secretId, secretValue).Return(backend.NewDefaultSecret(secretId, "my-value"), nil).Once()
 
@@ -97,7 +101,9 @@ var _ = Describe("Cached Backend V2", func() {
 		It("should delete the secret from cache and backend", func() {
 			ctx := context.Background()
 			secretId := mocks.NewMockSecretId(GinkgoT())
-			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().CacheKey().Return("my-secret-id")
+			secretId.EXPECT().String().Return("my-secret-id").Maybe()
+			secretId.EXPECT().SubPath().Return("")
 
 			mockBackend.EXPECT().Delete(ctx, secretId).Return(nil).Once()
 
@@ -113,7 +119,8 @@ var _ = Describe("Cached Backend V2", func() {
 			const numGoroutines = 10
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
-			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().CacheKey().Return("my-secret-id")
+			secretId.EXPECT().String().Return("my-secret-id").Maybe()
 
 			mockBackend := &mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]{}
 			mockBackend.Test(GinkgoT())
@@ -166,7 +173,8 @@ var _ = Describe("Cached Backend V2", func() {
 			const numGoroutines = 5
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
-			secretId.EXPECT().String().Return("err-secret-id")
+			secretId.EXPECT().CacheKey().Return("err-secret-id")
+			secretId.EXPECT().String().Return("err-secret-id").Maybe()
 
 			mockBackend := &mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]{}
 			mockBackend.Test(GinkgoT())
@@ -213,7 +221,9 @@ var _ = Describe("Cached Backend V2", func() {
 			ctx := context.Background()
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
-			secretId.EXPECT().String().Return("forget-secret-id")
+			secretId.EXPECT().CacheKey().Return("forget-secret-id")
+			secretId.EXPECT().String().Return("forget-secret-id").Maybe()
+			secretId.EXPECT().SubPath().Return("").Maybe()
 			secretId.EXPECT().Copy().Return(secretId).Maybe()
 
 			mockBackend := &mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]{}
@@ -244,6 +254,135 @@ var _ = Describe("Cached Backend V2", func() {
 			result, err = cachedBackend.Get(ctx, secretId)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result.Value()).To(Equal("value-2"))
+		})
+	})
+
+	Context("Sub-secret cache invalidation", func() {
+
+		It("should invalidate parent cache entry when setting a sub-secret", func() {
+			ctx := context.Background()
+
+			// Create the parent secret ID
+			parentSecretId := mocks.NewMockSecretId(GinkgoT())
+			parentSecretId.EXPECT().CacheKey().Return("env:team:app:externalSecrets")
+			parentSecretId.EXPECT().String().Return("env:team:app:externalSecrets:").Maybe()
+
+			// Create the sub-secret ID
+			subSecretId := mocks.NewMockSecretId(GinkgoT())
+			subSecretId.EXPECT().CacheKey().Return("env:team:app:externalSecrets/key1")
+			subSecretId.EXPECT().String().Return("env:team:app:externalSecrets/key1:abc123").Maybe()
+			subSecretId.EXPECT().Copy().Return(subSecretId).Once()
+			subSecretId.EXPECT().SubPath().Return("key1")
+			subSecretId.EXPECT().ParentId().Return(parentSecretId)
+
+			mockBackend := &mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]{}
+			mockBackend.Test(GinkgoT())
+			GinkgoT().Cleanup(func() { mockBackend.AssertExpectations(GinkgoT()) })
+
+			cachedBackend := v2.NewCachedBackend(mockBackend, 10*time.Second)
+
+			// Pre-populate the parent's cache entry
+			parentSecret := backend.NewDefaultSecret(parentSecretId, `{"key1":"old-value","key2":"value2"}`)
+			cachedBackend.Cache.SetWithTTL("env:team:app:externalSecrets", parentSecret, 100, 10*time.Second)
+			cachedBackend.Cache.Wait()
+
+			// Verify parent is in cache
+			_, found := cachedBackend.Cache.Get("env:team:app:externalSecrets")
+			Expect(found).To(BeTrue(), "parent should be in cache before sub-secret Set")
+
+			// Set the sub-secret value
+			subSecretValue := backend.String("new-value")
+			mockBackend.EXPECT().Set(ctx, subSecretId, subSecretValue).
+				Return(backend.NewDefaultSecret(subSecretId, "new-value"), nil).Once()
+
+			_, err := cachedBackend.Set(ctx, subSecretId, subSecretValue)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Ristretto is eventually consistent
+			cachedBackend.Cache.Wait()
+
+			// Parent cache entry should have been invalidated
+			_, found = cachedBackend.Cache.Get("env:team:app:externalSecrets")
+			Expect(found).To(BeFalse(), "parent cache entry should be invalidated after sub-secret Set")
+		})
+
+		It("should invalidate parent cache entry when deleting a sub-secret", func() {
+			ctx := context.Background()
+
+			// Create the parent secret ID
+			parentSecretId := mocks.NewMockSecretId(GinkgoT())
+			parentSecretId.EXPECT().CacheKey().Return("env:team:app:externalSecrets")
+			parentSecretId.EXPECT().String().Return("env:team:app:externalSecrets:").Maybe()
+
+			// Create the sub-secret ID
+			subSecretId := mocks.NewMockSecretId(GinkgoT())
+			subSecretId.EXPECT().CacheKey().Return("env:team:app:externalSecrets/key1")
+			subSecretId.EXPECT().String().Return("env:team:app:externalSecrets/key1:abc123").Maybe()
+			subSecretId.EXPECT().SubPath().Return("key1")
+			subSecretId.EXPECT().ParentId().Return(parentSecretId)
+
+			mockBackend := &mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]{}
+			mockBackend.Test(GinkgoT())
+			GinkgoT().Cleanup(func() { mockBackend.AssertExpectations(GinkgoT()) })
+
+			cachedBackend := v2.NewCachedBackend(mockBackend, 10*time.Second)
+
+			// Pre-populate the parent's cache entry
+			parentSecret := backend.NewDefaultSecret(parentSecretId, `{"key1":"value1","key2":"value2"}`)
+			cachedBackend.Cache.SetWithTTL("env:team:app:externalSecrets", parentSecret, 100, 10*time.Second)
+			cachedBackend.Cache.Wait()
+
+			// Verify parent is in cache
+			_, found := cachedBackend.Cache.Get("env:team:app:externalSecrets")
+			Expect(found).To(BeTrue(), "parent should be in cache before sub-secret Delete")
+
+			// Delete the sub-secret
+			mockBackend.EXPECT().Delete(ctx, subSecretId).Return(nil).Once()
+
+			err := cachedBackend.Delete(ctx, subSecretId)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Ristretto is eventually consistent
+			cachedBackend.Cache.Wait()
+
+			// Parent cache entry should have been invalidated
+			_, found = cachedBackend.Cache.Get("env:team:app:externalSecrets")
+			Expect(found).To(BeFalse(), "parent cache entry should be invalidated after sub-secret Delete")
+		})
+
+		It("should use stable cache key regardless of checksum", func() {
+			ctx := context.Background()
+
+			// Two secret IDs with different checksums but same logical identity
+			secretId1 := mocks.NewMockSecretId(GinkgoT())
+			secretId1.EXPECT().CacheKey().Return("env:team:app:path")
+			secretId1.EXPECT().String().Return("env:team:app:path:checksum1").Maybe()
+
+			secretId2 := mocks.NewMockSecretId(GinkgoT())
+			secretId2.EXPECT().CacheKey().Return("env:team:app:path")
+			secretId2.EXPECT().String().Return("env:team:app:path:checksum2").Maybe()
+
+			mockBackend := &mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]{}
+			mockBackend.Test(GinkgoT())
+			GinkgoT().Cleanup(func() { mockBackend.AssertExpectations(GinkgoT()) })
+
+			cachedBackend := v2.NewCachedBackend(mockBackend, 10*time.Second)
+
+			// First Get with secretId1 populates the cache
+			mockBackend.On("Get", mock.Anything, secretId1).
+				Return(backend.NewDefaultSecret(secretId1, "my-value"), nil).Once()
+
+			result1, err := cachedBackend.Get(ctx, secretId1)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result1.Value()).To(Equal("my-value"))
+
+			// Ristretto is eventually consistent
+			cachedBackend.Cache.Wait()
+
+			// Second Get with secretId2 (different checksum, same CacheKey) should hit cache
+			result2, err := cachedBackend.Get(ctx, secretId2)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result2.Value()).To(Equal("my-value"))
 		})
 	})
 })

@@ -192,5 +192,62 @@ var _ = Describe("Controller", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(problems.IsValidationError(err)).To(BeTrue())
 		})
+
+		It("should pass strategy to backend options", func() {
+			ctx := context.Background()
+			ctrl := controller.NewOnboardController(mockedOnboarder)
+
+			opts := []controller.OnboardOption{
+				controller.WithStrategy(backend.StrategyReplace),
+				controller.WithSecretValues(map[string]string{"key1": "value1"}),
+			}
+
+			mockedOnboarder.EXPECT().OnboardTeam(ctx, "env-id", "team-id",
+				mock.AnythingOfType("backend.OnboardOption"), mock.AnythingOfType("backend.OnboardOption"),
+			).RunAndReturn(func(ctx context.Context, envId, teamId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
+
+				Expect(opts).To(HaveLen(2))
+				options := &backend.OnboardOptions{}
+				for _, opt := range opts {
+					opt(options)
+				}
+				Expect(options.Strategy).To(Equal(backend.StrategyReplace))
+				Expect(options.SecretValues["key1"].Value()).To(Equal("value1"))
+
+				return backend.NewDefaultOnboardResponse(nil), nil
+			})
+
+			res, err := ctrl.OnboardTeam(ctx, "env-id", "team-id", opts...)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).ToNot(BeNil())
+		})
+
+		It("should not pass strategy when not set", func() {
+			ctx := context.Background()
+			ctrl := controller.NewOnboardController(mockedOnboarder)
+
+			opts := []controller.OnboardOption{
+				controller.WithSecretValues(map[string]string{"key1": "value1"}),
+			}
+
+			mockedOnboarder.EXPECT().OnboardEnvironment(ctx, "env-id",
+				mock.AnythingOfType("backend.OnboardOption"),
+			).RunAndReturn(func(ctx context.Context, envId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
+
+				Expect(opts).To(HaveLen(1))
+				options := &backend.OnboardOptions{}
+				for _, opt := range opts {
+					opt(options)
+				}
+				Expect(options.Strategy).To(BeEmpty())
+				Expect(options.SecretValues["key1"].Value()).To(Equal("value1"))
+
+				return backend.NewDefaultOnboardResponse(nil), nil
+			})
+
+			res, err := ctrl.OnboardEnvironment(ctx, "env-id", opts...)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).ToNot(BeNil())
+		})
 	})
 })

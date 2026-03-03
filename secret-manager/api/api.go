@@ -35,6 +35,7 @@ var (
 
 type OnboardingOptions struct {
 	SecretValues map[string]any
+	Strategy     *gen.WriteStrategy
 }
 
 type OnboardingOption func(*OnboardingOptions)
@@ -52,6 +53,25 @@ func WithSecretValue(name string, value any) OnboardingOption {
 		}
 		o.SecretValues[name] = value
 	}
+}
+
+// WithStrategy sets the write strategy for the onboarding process.
+// "merge" preserves existing secrets not in the request.
+// "replace" (default) drops existing secrets not in the request.
+func WithStrategy(strategy gen.WriteStrategy) OnboardingOption {
+	return func(o *OnboardingOptions) {
+		o.Strategy = &strategy
+	}
+}
+
+// WithMergeStrategy sets the onboarding strategy to "merge", which preserves existing secrets not in the request.
+func WithMergeStrategy() OnboardingOption {
+	return WithStrategy(gen.Merge)
+}
+
+// WithReplaceStrategy sets the onboarding strategy to "replace", which drops existing secrets not in the request.
+func WithReplaceStrategy() OnboardingOption {
+	return WithStrategy(gen.Replace)
 }
 
 type SecretsApi interface {
@@ -79,6 +99,12 @@ var _ SecretManager = (*secretManagerAPI)(nil)
 
 type secretManagerAPI struct {
 	client gen.ClientWithResponsesInterface
+}
+
+// NewSecretManagerFromClient creates a SecretManager from an existing generated client.
+// This is primarily useful for testing with mock clients.
+func NewSecretManagerFromClient(client gen.ClientWithResponsesInterface) SecretManager {
+	return &secretManagerAPI{client: client}
 }
 
 func (s *secretManagerAPI) Get(ctx context.Context, secretID string) (value string, err error) {
@@ -133,6 +159,7 @@ func (s *secretManagerAPI) UpsertEnvironment(ctx context.Context, envID string, 
 	if err != nil {
 		return nil, err
 	}
+	reqBody.Strategy = options.Strategy
 
 	res, err := s.client.UpsertEnvironmentWithResponse(ctx, envID, reqBody)
 	if err != nil {
@@ -161,6 +188,7 @@ func (s *secretManagerAPI) UpsertTeam(ctx context.Context, envID, teamID string,
 	if err != nil {
 		return nil, err
 	}
+	reqBody.Strategy = options.Strategy
 
 	res, err := s.client.UpsertTeamWithResponse(ctx, envID, teamID, reqBody)
 	if err != nil {
@@ -189,6 +217,7 @@ func (s *secretManagerAPI) UpsertApplication(ctx context.Context, envID, teamID,
 	if err != nil {
 		return nil, err
 	}
+	reqBody.Strategy = options.Strategy
 
 	res, err := s.client.UpsertAppWithResponse(ctx, envID, teamID, appID, reqBody)
 	if err != nil {

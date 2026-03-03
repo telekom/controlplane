@@ -14,6 +14,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/telekom/controlplane/secret-manager/api"
+	"github.com/telekom/controlplane/secret-manager/api/gen"
 	"go.uber.org/zap"
 )
 
@@ -30,6 +31,8 @@ var (
 	teamId string
 	appId  string
 	delete bool
+
+	strategy string
 
 	secretsApi    api.SecretsApi
 	onboardingApi api.OnboardingApi
@@ -48,6 +51,7 @@ func init() {
 	flag.StringVar(&teamId, "team", "", "Team ID")
 	flag.StringVar(&appId, "app", "", "Application ID")
 	flag.BoolVar(&delete, "delete", false, "Delete Secret")
+	flag.StringVar(&strategy, "strategy", "", "Write strategy: merge or replace (default)")
 }
 
 func main() {
@@ -118,7 +122,7 @@ func onboardOrDeleteEnv(ctx context.Context, onboardingApi api.OnboardingApi, en
 		}
 		fmt.Println("Deleted Environment ID:", envId)
 	} else {
-		res, err := onboardingApi.UpsertEnvironment(ctx, envId)
+		res, err := onboardingApi.UpsertEnvironment(ctx, envId, strategyOpts()...)
 		if err != nil {
 			panic(err)
 		}
@@ -135,7 +139,7 @@ func onboardOrDeleteTeam(ctx context.Context, onboardingApi api.OnboardingApi, e
 		}
 		fmt.Println("Deleted Team ID:", teamId)
 	} else {
-		res, err := onboardingApi.UpsertTeam(ctx, envId, teamId)
+		res, err := onboardingApi.UpsertTeam(ctx, envId, teamId, strategyOpts()...)
 		if err != nil {
 			panic(err)
 		}
@@ -152,13 +156,20 @@ func onboardOrDeleteApp(ctx context.Context, onboardingApi api.OnboardingApi, en
 		}
 		fmt.Println("Deleted Application ID:", appId)
 	} else {
-		res, err := onboardingApi.UpsertApplication(ctx, envId, teamId, appId)
+		res, err := onboardingApi.UpsertApplication(ctx, envId, teamId, appId, strategyOpts()...)
 		if err != nil {
 			panic(err)
 		}
 		fmt.Println("Upserted Application ID:", res)
 		listAvailableSecrets(ctx, res)
 	}
+}
+
+func strategyOpts() []api.OnboardingOption {
+	if strategy != "" {
+		return []api.OnboardingOption{api.WithStrategy(gen.WriteStrategy(strategy))}
+	}
+	return nil
 }
 
 func listAvailableSecrets(ctx context.Context, availableSecrets map[string]string) {

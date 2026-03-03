@@ -48,8 +48,9 @@ var _ = Describe("Cached Backend", func() {
 			ctx := context.Background()
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
-			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().CacheKey().Return("my-secret-id")
 			secretId.EXPECT().Copy().Return(secretId).Once()
+			secretId.EXPECT().String().Return("my-secret-id").Maybe()
 
 			secret := backend.NewDefaultSecret(secretId, "my-value")
 			mockBackend.EXPECT().Get(ctx, secretId).Return(secret, nil).Once()
@@ -64,8 +65,10 @@ var _ = Describe("Cached Backend", func() {
 
 			secretValue := backend.String("my-value")
 			secretId := mocks.NewMockSecretId(GinkgoT())
-			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().CacheKey().Return("my-secret-id")
 			secretId.EXPECT().Copy().Return(secretId).Once()
+			secretId.EXPECT().SubPath().Return("")
+			secretId.EXPECT().String().Return("my-secret-id").Maybe()
 
 			mockBackend.EXPECT().Set(ctx, secretId, secretValue).Return(backend.NewDefaultSecret(secretId, "my-value"), nil).Once()
 
@@ -80,12 +83,12 @@ var _ = Describe("Cached Backend", func() {
 			ctx := context.Background()
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
-			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().CacheKey().Return("my-secret-id")
 			secretId.EXPECT().Copy().Return(secretId).Once()
 
 			secret := backend.NewDefaultSecret(secretId, "my-value")
 			cachedItem := cache.NewDefaultCacheItem(secretId, secret, 10)
-			cachedBackend.Cache.Set(secretId.String(), cachedItem)
+			cachedBackend.Cache.Set("my-secret-id", cachedItem)
 
 			secret, err := cachedBackend.Get(ctx, secretId)
 			Expect(err).NotTo(HaveOccurred())
@@ -99,6 +102,7 @@ var _ = Describe("Cached Backend", func() {
 			ctx := context.Background()
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
+			secretId.EXPECT().CacheKey().Return("my-secret-id")
 			secretId.EXPECT().String().Return("my-secret-id")
 			secretId.EXPECT().Copy().Return(secretId).Once()
 
@@ -116,12 +120,12 @@ var _ = Describe("Cached Backend", func() {
 			value := "my-value"
 
 			secretId := mocks.NewMockSecretId(GinkgoT())
-			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().CacheKey().Return("my-secret-id")
 			secretId.EXPECT().Copy().Return(secretId).Once()
 
 			secretValue := backend.String(value)
 
-			cachedBackend.Cache.Set(secretId.String(), cache.NewDefaultCacheItem(secretId, backend.NewDefaultSecret(secretId, value), 10))
+			cachedBackend.Cache.Set("my-secret-id", cache.NewDefaultCacheItem(secretId, backend.NewDefaultSecret(secretId, value), 10))
 
 			res, err := cachedBackend.Set(ctx, secretId, secretValue)
 			Expect(err).NotTo(HaveOccurred())
@@ -133,8 +137,9 @@ var _ = Describe("Cached Backend", func() {
 		It("should return an error if the backend fails to set the secret", func() {
 			ctx := context.Background()
 			secretId := mocks.NewMockSecretId(GinkgoT())
-			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().CacheKey().Return("my-secret-id")
 			secretId.EXPECT().Copy().Return(secretId).Once()
+			secretId.EXPECT().String().Return("my-secret-id").Maybe()
 
 			mockBackend.EXPECT().Set(ctx, secretId, backend.String("my-value")).Return(backend.DefaultSecret[*mocks.MockSecretId]{}, backend.ErrInvalidSecretId("invalid-id")).Once()
 
@@ -148,14 +153,16 @@ var _ = Describe("Cached Backend", func() {
 		It("should delete the secret from the cache and backend", func() {
 			ctx := context.Background()
 			secretId := mocks.NewMockSecretId(GinkgoT())
-			secretId.EXPECT().String().Return("my-secret-id")
+			secretId.EXPECT().CacheKey().Return("my-secret-id")
+			secretId.EXPECT().SubPath().Return("")
+			secretId.EXPECT().String().Return("my-secret-id").Maybe()
 
 			mockBackend.EXPECT().Delete(ctx, secretId).Return(nil).Once()
 
 			err := cachedBackend.Delete(ctx, secretId)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(cachedBackend.Cache.Get(secretId.String())).To(BeNil())
-
+			_, ok := cachedBackend.Cache.Get("my-secret-id")
+			Expect(ok).To(BeFalse())
 		})
 	})
 })

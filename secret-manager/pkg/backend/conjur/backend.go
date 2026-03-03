@@ -6,6 +6,8 @@ package conjur
 
 import (
 	"context"
+	"encoding/json"
+	"maps"
 
 	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
@@ -71,9 +73,15 @@ func (c *ConjurBackend) Get(ctx context.Context, id ConjurSecretId) (res backend
 	return res, nil
 }
 
-func (c *ConjurBackend) Set(ctx context.Context, id ConjurSecretId, secretValue backend.SecretValue) (res backend.DefaultSecret[ConjurSecretId], err error) {
+func (c *ConjurBackend) Set(ctx context.Context, id ConjurSecretId, secretValue backend.SecretValue, opts ...backend.WriteOption) (res backend.DefaultSecret[ConjurSecretId], err error) {
 	log := logr.FromContextOrDiscard(ctx)
 	log.Info("Setting secret", "id", id.VariableId())
+
+	options := backend.WriteOptions{}
+	for _, opt := range opts {
+		opt(&options)
+	}
+
 	data, err := c.readAPI.RetrieveSecret(id.VariableId())
 	if err != nil {
 		cErr, ok := AsError(err)
@@ -99,12 +107,22 @@ func (c *ConjurBackend) Set(ctx context.Context, id ConjurSecretId, secretValue 
 		return backend.NewDefaultSecret(id.CopyWithChecksum(backend.MakeChecksum(currentValue)), currentValue), nil
 	}
 
-	if secretValue.EqualString(currentValue) {
+	// For merge strategy, shallow-merge JSON objects with the existing value
+	effectiveValue := secretValue.Value()
+	if options.Strategy == backend.StrategyMerge && currentValue != "" {
+		merged, wasMerged := shallowMergeJSON(currentValue, effectiveValue)
+		if wasMerged {
+			log.Info("Merge strategy: shallow-merged JSON values", "id", id.String())
+			effectiveValue = merged
+		}
+	}
+
+	if effectiveValue == currentValue {
 		log.Info("Secret already exists and is up to date", "id", id.String())
 		return backend.NewDefaultSecret(id, currentValue), nil
 	}
 
-	nextValue := secretValue.Value()
+	nextValue := effectiveValue
 	if subPath != "" {
 		log.Info("Subpath found. Using subpath to set secret", "subPath", subPath)
 		newData, err := sjson.SetBytes(data, subPath, nextValue)
@@ -119,7 +137,7 @@ func (c *ConjurBackend) Set(ctx context.Context, id ConjurSecretId, secretValue 
 	if err != nil {
 		return res, handleError(err, id)
 	}
-	newId := id.CopyWithChecksum(backend.MakeChecksum(secretValue.Value()))
+	newId := id.CopyWithChecksum(backend.MakeChecksum(effectiveValue))
 	return backend.NewDefaultSecret(newId, ""), nil
 }
 
@@ -178,4 +196,29 @@ func (c *ConjurBackend) initialCreation(ctx context.Context, id ConjurSecretId, 
 	}
 
 	return res, err
+}
+
+// shallowMergeJSON attempts to shallow-merge two JSON object strings.
+// If both current and incoming are valid JSON objects, it merges incoming keys
+// into current (incoming keys overwrite, existing keys not in incoming are preserved).
+// Returns the merged JSON string and true if merging was performed,
+// or the incoming value and false if either value is not a JSON object.
+func shallowMergeJSON(current, incoming string) (string, bool) {
+	var currentMap map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(current), &currentMap); err != nil {
+		return incoming, false
+	}
+	var incomingMap map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(incoming), &incomingMap); err != nil {
+		return incoming, false
+	}
+
+	// Shallow merge: incoming keys overwrite, existing keys are preserved
+	maps.Copy(currentMap, incomingMap)
+
+	merged, err := json.Marshal(currentMap)
+	if err != nil {
+		return incoming, false
+	}
+	return string(merged), true
 }

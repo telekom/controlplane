@@ -61,7 +61,9 @@ func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCf
 	adminSecretId := fmt.Sprintf("zones/%s/event/admin/clientSecret", zoneName)
 	meshSecretId := fmt.Sprintf("zones/%s/event/mesh/clientSecret", zoneName)
 
-	options := []secretsapi.OnboardingOption{}
+	options := []secretsapi.OnboardingOption{
+		secretsapi.WithMergeStrategy(), // Preserve existing secrets not in the request
+	}
 
 	needsAdminSecret := !secretsapi.IsRef(eventCfg.Spec.Admin.Client.ClientSecret)
 	if needsAdminSecret {
@@ -73,7 +75,7 @@ func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCf
 		options = append(options, secretsapi.WithSecretValue(meshSecretId, secretsapi.GenerateSecret()))
 	}
 
-	if len(options) > 0 {
+	if len(options) > 1 {
 		availableSecrets, err := d.secretManager.UpsertEnvironment(ctx, envName, options...)
 		if err != nil {
 			return errors.Wrap(err, "failed to onboard secrets for EventConfig")
