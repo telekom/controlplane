@@ -91,7 +91,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	// Handle the deletion
 	if IsBeingDeleted(object) {
 		c.Event(ctx, object, "Normal", "Processing", "Processing resource deletion")
-		if controllerutil.ContainsFinalizer(object, config.GetCommonConfig().Reconciler.FinalizerName) {
+		if controllerutil.ContainsFinalizer(object, config.FinalizerName) {
 			log.V(0).Info("Deleting")
 
 			err := c.Handler.Delete(ctx, object)
@@ -107,7 +107,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 
 			// Success
 
-			changed := controllerutil.RemoveFinalizer(object, config.GetCommonConfig().Reconciler.FinalizerName)
+			changed := controllerutil.RemoveFinalizer(object, config.FinalizerName)
 			if changed {
 				err = c.Client.Update(ctx, object)
 				if err != nil {
@@ -186,8 +186,8 @@ func GetEnvironment(object metav1.Object) (string, bool) {
 }
 
 func FirstSetup(ctx context.Context, client client.Client, object common_types.Object) (bool, error) {
-	if !controllerutil.ContainsFinalizer(object, config.GetCommonConfig().Reconciler.FinalizerName) {
-		controllerutil.AddFinalizer(object, config.GetCommonConfig().Reconciler.FinalizerName)
+	if !controllerutil.ContainsFinalizer(object, config.FinalizerName) {
+		controllerutil.AddFinalizer(object, config.FinalizerName)
 		if err := client.Update(ctx, object); err != nil {
 			return false, err
 		}

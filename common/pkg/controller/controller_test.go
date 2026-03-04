@@ -86,7 +86,7 @@ var _ = Describe("Controller", func() {
 			Expect(res).To(Equal(reconcile.Result{}))
 
 			Expect(k8sClient.Get(ctx, req.NamespacedName, obj)).To(Succeed())
-			Expect(controllerutil.ContainsFinalizer(obj, config.GetCommonConfig().Reconciler.FinalizerName)).To(BeTrue())
+			Expect(controllerutil.ContainsFinalizer(obj, config.FinalizerName)).To(BeTrue())
 		})
 
 		It("should set the correct conditions when there is no error", func() {
@@ -149,7 +149,7 @@ var _ = Describe("Controller", func() {
 				}, obj)
 
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(obj.GetFinalizers()).To(ContainElement(config.GetCommonConfig().Reconciler.FinalizerName))
+				g.Expect(obj.GetFinalizers()).To(ContainElement(config.FinalizerName))
 
 			}, timeout, interval).Should(Succeed())
 

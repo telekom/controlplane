@@ -13,9 +13,7 @@ import (
 )
 
 // ConfigSource defines the interface for loading configuration data.
-// Implementations can load from files, ConfigMaps, or other sources.
 type ConfigSource interface {
-	// Load returns the raw configuration bytes.
 	Load(ctx context.Context) ([]byte, error)
 }
 
@@ -25,7 +23,7 @@ type FileSource struct {
 }
 
 // Load reads the configuration file and returns its contents.
-func (fs *FileSource) Load(ctx context.Context) ([]byte, error) {
+func (fs *FileSource) Load(_ context.Context) ([]byte, error) {
 	v := viper.New()
 	v.SetConfigFile(fs.Path)
 	if err := v.ReadInConfig(); err != nil {
@@ -52,8 +50,8 @@ func NewLoader[T any](source ConfigSource) *Loader[T] {
 }
 
 // Load loads configuration from the source, applies defaults, validates, and computes derived values.
-func (l *Loader[T]) Load(ctx context.Context) (*Config[T], error) {
-	cfg := DefaultAppConfig[T]()
+func (l *Loader[T]) Load(ctx context.Context, defaulter func() T) (*Config[T], error) {
+	cfg := defaultConfig[T](defaulter)
 
 	// Load from source
 	if err := l.loadFromSource(ctx, &cfg); err != nil {
@@ -64,9 +62,6 @@ func (l *Loader[T]) Load(ctx context.Context) (*Config[T], error) {
 	if err := l.validate(&cfg); err != nil {
 		return nil, err
 	}
-
-	// Compute derived values
-	cfg.ComputeValues()
 
 	return &cfg, nil
 }
@@ -102,8 +97,8 @@ func (l *Loader[T]) validate(cfg *Config[T]) error {
 }
 
 // LoadFromFile is a convenience function that loads configuration from a file path.
-func LoadFromFile[T any](path string) (*Config[T], error) {
+func LoadFromFile[T any](ctx context.Context, path string, defaulter func() T) (*Config[T], error) {
 	source := &FileSource{Path: path}
 	loader := NewLoader[T](source)
-	return loader.Load(context.Background())
+	return loader.Load(ctx, defaulter)
 }

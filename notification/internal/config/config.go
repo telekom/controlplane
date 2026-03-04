@@ -5,11 +5,39 @@
 package config
 
 import (
-	"github.com/pkg/errors"
-	"github.com/spf13/viper"
-	"strings"
 	"time"
 )
+
+type NotificationConfig struct {
+	HouseKeeping NotificationHousekeepingConfig `mapstructure:"notification"`
+	EmailAdapter EmailAdapterConfig             `mapstructure:"email"`
+}
+
+func DefaultNotificationConfig() NotificationConfig {
+	return NotificationConfig{
+		HouseKeeping: NotificationHousekeepingConfig{
+			TTLMonthsAfterFinished: 2,
+		},
+		EmailAdapter: EmailAdapterConfig{
+			SMTPConnection: SMTPConnection{
+				Host:     "localhost",
+				Port:     25,
+				User:     "",
+				Password: "",
+			},
+			SMTPSender: SMTPSender{
+				BatchSize:      30,
+				MaxRetries:     5,
+				InitialBackoff: 1 * time.Second,
+				MaxBackoff:     1 * time.Minute,
+				BatchLoopDelay: 1 * time.Second,
+				DefaultFrom:    "email@telekom.de",
+				DefaultName:    "Team Controlplane",
+				DryRun:         false,
+			},
+		},
+	}
+}
 
 type NotificationHousekeepingConfig struct {
 
@@ -40,49 +68,4 @@ type SMTPSender struct {
 	DefaultName    string        `mapstructure:"defaultName"`
 	// if true, emails will not be sent, just a log message will appear - should be used only for testing, to avoid spamming
 	DryRun bool `mapstructure:"dryRun"`
-}
-
-func LoadHousekeepingConfig() (*NotificationHousekeepingConfig, error) {
-	setHousekeepingConfigDefaults()
-
-	var config NotificationHousekeepingConfig
-	if err := viper.Unmarshal(&config); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal notifications housekeeping config")
-	}
-
-	return &config, nil
-}
-
-func LoadEmailAdapterConfig() (*EmailAdapterConfig, error) {
-	setEmailAdapterConfigDefaults()
-
-	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-
-	var config EmailAdapterConfig
-	if err := viper.Unmarshal(&config); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal email adapter config")
-	}
-
-	return &config, nil
-}
-
-func setEmailAdapterConfigDefaults() {
-	viper.SetDefault("smtpConnection.host", "localhost")
-	viper.SetDefault("smtpConnection.port", 25)
-	viper.SetDefault("smtpConnection.user", "")
-	viper.SetDefault("smtpConnection.password", "")
-
-	viper.SetDefault("smtpSender.batchSize", 30)
-	viper.SetDefault("smtpSender.batchLoopDelay", "1s")
-	viper.SetDefault("smtpSender.maxRetries", 5)
-	viper.SetDefault("smtpSender.initialBackoff", "1s")
-	viper.SetDefault("smtpSender.maxBackoff", "1m")
-	viper.SetDefault("smtpSender.defaultFrom", "email@telekom.de")
-	viper.SetDefault("smtpSender.defaultName", "Team Tardis")
-	viper.SetDefault("smtpSender.dryRun", false)
-}
-
-func setHousekeepingConfigDefaults() {
-	viper.SetDefault("ttlMonthsAfterFinished", 2)
 }

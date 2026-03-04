@@ -7,6 +7,3 @@ common:
     bindAddress: ":9090"
   probe:
     bindAddress: ":7071"
-  leaderElection:
-    enabled: true
-    id: "abcdef-default-controller"

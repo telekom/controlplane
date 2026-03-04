@@ -6,20 +6,28 @@ package config
 
 import "time"
 
-// DefaultControllerConfig returns the default controller configuration.
+// defaultControllerConfig returns the default controller configuration.
 // These values are used as fallbacks when configuration files do not specify them.
-func DefaultControllerConfig() ControllerConfig {
+func defaultControllerConfig() ControllerConfig {
 	return ControllerConfig{
 		Metrics: MetricsConfig{
 			BindAddress:   "0",
 			SecureServing: true,
+			Cert: CertConfig{
+				Path: "",
+				Name: "tls.crt",
+				Key:  "tls.key",
+			},
+		},
+		Webhook: WebhookConfig{
+			Cert: CertConfig{
+				Path: "",
+				Name: "tls.crt",
+				Key:  "tls.key",
+			},
 		},
 		Probe: ProbeConfig{
 			BindAddress: ":8081",
-		},
-		LeaderElection: LeaderElectionConfig{
-			Enabled: false,
-			ID:      "",
 		},
 		EnableHTTP2: false,
 		Reconciler: ReconcilerConfig{
@@ -28,10 +36,6 @@ func DefaultControllerConfig() ControllerConfig {
 			JitterFactor:            0.7,
 			MaxBackoff:              5 * time.Minute,
 			MaxConcurrentReconciles: 10,
-
-			DefaultNamespace:   "default",
-			DefaultEnvironment: "default",
-			LabelKeyPrefix:     "cp.ei.telekom.de",
 		},
 		Log: LogConfig{
 			Development: true,
@@ -39,9 +43,11 @@ func DefaultControllerConfig() ControllerConfig {
 	}
 }
 
-// DefaultAppConfig returns a Config[T] with default values.
-func DefaultAppConfig[T any]() Config[T] {
+// defaultConfig returns a Config[T] with default values.
+// factory should return a zero-initialized instance of T with any defaults applied.
+func defaultConfig[T any](defaulter func() T) Config[T] {
 	return Config[T]{
-		Common: DefaultControllerConfig(),
+		Common: defaultControllerConfig(),
+		Spec:   defaulter(),
 	}
 }
