@@ -73,8 +73,7 @@ func setDefaults() {
 	viper.SetDefault("fileManager.skipTLS", true)
 
 	// Database
-	viper.SetDefault("database.filepath", "")        // empty string means in-memory only
-	viper.SetDefault("database.reduceMemory", false) // see common-server docs
+	viper.SetDefault("database.filepath", "") // empty string means in-memory only
 
 	// Informer
 	viper.SetDefault("informer.disableCache", true) // see common-server docs
