@@ -31,11 +31,35 @@ type BackendError struct {
 	Type string
 	// Err is the underlying error
 	Err error
+
+	StatusCode int
 }
 
 // Error implements the error interface
 func (e *BackendError) Error() string {
 	return e.Type + ": " + e.Err.Error()
+}
+
+func (e *BackendError) Code() int {
+	switch e.Type {
+	case TypeErrNotFound:
+		return 404
+	case TypeErrInvalidFileId, TypeErrInvalidChecksum, TypeErrInvalidContentType:
+		return 400
+	case TypeErrFileExists:
+		return 409
+	case TypeErrTooManyRequests:
+		return 429
+	case TypeErrClientInitialization, TypeErrUploadFailed, TypeErrDownloadFailed:
+		return 500
+	default:
+		return e.StatusCode
+	}
+}
+
+func (e *BackendError) WithStatusCode(code int) *BackendError {
+	e.StatusCode = code
+	return e
 }
 
 // NewBackendError creates a new BackendError with the given file ID, error, and type

@@ -5,6 +5,7 @@
 package metrics
 
 import (
+	"context"
 	"errors"
 	"strconv"
 	"sync"
@@ -51,6 +52,7 @@ func NewMiddleware(reg prometheus.Registerer, skipper Skipper) fiber.Handler {
 		if path == "/" {
 			path = utils.CopyString(c.Path())
 		}
+
 		status, ok := getStatusCodeOnErr(err)
 		if !ok {
 			status = strconv.Itoa(c.Response().StatusCode())
@@ -83,6 +85,12 @@ func NewForApp(app *fiber.App, reg prometheus.Registerer, skipper Skipper) {
 
 }
 
+// StatusCoder is an interface that allows us to extract a status code from an error.
+type StatusCoder interface {
+	Code() int
+}
+
+// getStatusCodeOnErr attempts to extract a status code from the given error using various methods.
 func getStatusCodeOnErr(err error) (string, bool) {
 	if err == nil {
 		return "", false
@@ -95,5 +103,13 @@ func getStatusCodeOnErr(err error) (string, bool) {
 	if errors.As(err, &fe) {
 		return strconv.Itoa(fe.Code), true
 	}
+	var sc StatusCoder
+	if errors.As(err, &sc) {
+		return strconv.Itoa(sc.Code()), true
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return "503", true
+	}
+
 	return "500", true
 }

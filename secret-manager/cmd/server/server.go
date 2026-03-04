@@ -148,7 +148,7 @@ func main() {
 	}
 
 	appCfg := cs.NewAppConfig()
-	appCfg.CtxLog = &log
+	appCfg.CtxLog = log
 	appCfg.ErrorHandler = handler.ErrorHandler
 	app := cs.NewAppWithConfig(appCfg)
 

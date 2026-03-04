@@ -20,13 +20,34 @@ const (
 var _ error = &BackendError{}
 
 type BackendError struct {
-	Id   SecretId
-	Type string
-	Err  error
+	Id         SecretId
+	Type       string
+	Err        error
+	StatusCode int
 }
 
 func (e *BackendError) Error() string {
 	return e.Type + ": " + e.Err.Error()
+}
+
+func (e *BackendError) Code() int {
+	switch e.Type {
+	case TypeErrForbidden:
+		return 403
+	case TypeErrNotFound:
+		return 404
+	case TypeErrBadChecksum, TypeErrInvalidSecretId:
+		return 400
+	case TypeErrTooManyRequests:
+		return 429
+	default:
+		return e.StatusCode
+	}
+}
+
+func (e *BackendError) WithStatusCode(code int) *BackendError {
+	e.StatusCode = code
+	return e
 }
 
 func NewBackendError(id SecretId, err error, typ string) *BackendError {
@@ -81,17 +102,6 @@ func ErrInvalidSecretId(rawId string) *BackendError {
 
 func ErrIncorrectState(id SecretId, err error) *BackendError {
 	return NewBackendError(id, err, "IncorrectState")
-}
-
-func IsIncorrectStateErr(err error) bool {
-	if err == nil {
-		return false
-	}
-	var backendErr *BackendError
-	if errors.As(err, &backendErr) {
-		return backendErr.Type == "IncorrectState"
-	}
-	return false
 }
 
 func Forbidden(id SecretId, err error) *BackendError {
