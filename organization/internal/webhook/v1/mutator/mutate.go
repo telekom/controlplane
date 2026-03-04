@@ -15,7 +15,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler/identity_client"
 	"github.com/telekom/controlplane/organization/internal/index"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
@@ -38,7 +37,7 @@ func MutateSecret(ctx context.Context, env string, teamObj *organisationv1.Team,
 		log.V(1).Info("spec.secret is not a reference, generating new secret")
 		if strings.EqualFold(teamObj.Spec.Secret, secret.KeywordRotate) || teamObj.Spec.Secret == "" {
 			// generate new secret
-			clientSecret = string(uuid.NewUUID())
+			clientSecret = secretsapi.GenerateSecret()
 		} else {
 			// use provided secret
 			clientSecret = teamObj.Spec.Secret

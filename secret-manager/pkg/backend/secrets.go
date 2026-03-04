@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"maps"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/secret-manager/api"
 )
 
 var (
@@ -25,8 +25,8 @@ var (
 	NewTeamSecrets = func() *Secrets {
 		return &Secrets{
 			secrets: map[string]SecretValue{
-				"clientSecret": InitialString(uuid.NewString()),
-				"teamToken":    InitialString(uuid.NewString()),
+				"clientSecret": InitialString(api.GenerateSecret()),
+				"teamToken":    InitialString(api.GenerateSecret()),
 			},
 		}
 	}
@@ -34,7 +34,7 @@ var (
 	NewApplicationSecrets = func() *Secrets {
 		return &Secrets{
 			secrets: map[string]SecretValue{
-				"clientSecret":    InitialString(uuid.NewString()),
+				"clientSecret":    InitialString(api.GenerateSecret()),
 				"externalSecrets": InitialString("{}"),
 			},
 		}

@@ -10,7 +10,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
@@ -25,6 +24,8 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
 	"github.com/telekom/controlplane/rover-server/internal/server"
 	s "github.com/telekom/controlplane/rover-server/pkg/store"
+
+	secrets "github.com/telekom/controlplane/secret-manager/api"
 )
 
 var _ server.RoverController = &RoverController{}
@@ -248,7 +249,7 @@ func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId strin
 		return res, err
 	}
 
-	newClientSecret := uuid.NewString()
+	newClientSecret := secrets.GenerateSecret()
 	rover.Spec.ClientSecret = newClientSecret
 	if err := r.Store.CreateOrReplace(ctx, rover); err != nil {
 		return res, err
