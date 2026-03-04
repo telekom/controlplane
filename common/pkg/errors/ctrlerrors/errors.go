@@ -64,7 +64,7 @@ func HandleError(ctx context.Context, obj types.Object, err error, recorder reco
 	}
 
 	if re, ok := rootCauseErr.(RetryableError); ok {
-		recordError(ctx, obj, err, "Retryable", recorder)
+		recordError(ctx, obj, rootCauseErr, "Retryable", recorder)
 		if re.IsRetryable() {
 			return false, reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
 		} else {
