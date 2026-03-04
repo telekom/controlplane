@@ -5,6 +5,9 @@
 package config
 
 import (
+	// slog is used intentionally here instead of zap/zapr because this code runs
+	// during init(), before any structured logger (e.g. zap) is initialized.
+	// Using the stdlib slog avoids introducing a dependency on logger initialization order.
 	"log/slog"
 
 	"github.com/spf13/viper"

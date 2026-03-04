@@ -53,7 +53,10 @@ func (e *BackendError) Code() int {
 	case TypeErrClientInitialization, TypeErrUploadFailed, TypeErrDownloadFailed:
 		return 500
 	default:
-		return e.StatusCode
+		if e.StatusCode != 0 {
+			return e.StatusCode
+		}
+		return 500
 	}
 }
 
