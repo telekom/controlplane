@@ -1,0 +1,12 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+common:
+  metrics:
+    bindAddress: ":9090"
+  probe:
+    bindAddress: ":7071"
+  leaderElection:
+    enabled: true
+    id: "abcdef-default-controller"

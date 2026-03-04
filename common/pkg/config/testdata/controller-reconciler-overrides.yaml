@@ -1,0 +1,21 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+common:
+  metrics:
+    bindAddress: ":1111"
+  probe:
+    bindAddress: ":2222"
+  leaderElection:
+    enabled: true
+    id: "override-controller"
+  reconciler:
+    requeue-after-on-error: 5s
+    requeue-after: 1m
+    jitter-factor: 0.4
+    max-backoff: 2m
+    max-concurrent-reconciles: 3
+    default-namespace: custom-ns
+    default-environment: prod
+    label-key-prefix: custom.prefix

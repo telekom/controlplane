@@ -67,7 +67,7 @@ func (r *ZoneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		).
 		Owns(&corev1.Namespace{}).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			MaxConcurrentReconciles: cconfig.GetCommonConfig().Reconciler.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)

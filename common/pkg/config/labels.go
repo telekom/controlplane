@@ -10,5 +10,5 @@ var (
 )
 
 func BuildLabelKey(key string) string {
-	return LabelKeyPrefix + "/" + key
+	return GetCommonConfig().Reconciler.LabelKeyPrefix + "/" + key
 }
