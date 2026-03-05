@@ -6,7 +6,6 @@ package v2
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/dgraph-io/ristretto/v2"
@@ -78,9 +77,11 @@ func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (S, error) {
 		metrics.RecordCacheMiss("get", "not_found")
 	}
 
-	// Deduplicate concurrent backend reads for the same key
-	result, err, shared := c.group.Do(cacheKey, func() (interface{}, error) {
-		return c.Backend.Get(ctx, id)
+	// Deduplicate concurrent backend reads for the same key.
+	// Use context.WithoutCancel so that if the first caller's context is
+	// cancelled, other callers sharing this singleflight call are not affected.
+	result, err, shared := c.group.Do(cacheKey, func() (any, error) {
+		return c.Backend.Get(context.WithoutCancel(ctx), id)
 	})
 	if err != nil {
 		var zero S
@@ -124,7 +125,7 @@ func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.Secre
 		// Do not cache empty secrets, but ensure they are deleted from the cache
 		metrics.RecordCacheMiss("set", "empty_value")
 		c.Cache.Del(cacheKey)
-		return res, errors.New("cannot set empty secret value")
+		return res, backend.ErrEmptySecretValue(cacheId.(T))
 	}
 
 	cachedItem, ok := c.Cache.Get(cacheKey)

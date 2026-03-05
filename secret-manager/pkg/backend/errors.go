@@ -107,3 +107,8 @@ func ErrIncorrectState(id SecretId, err error) *BackendError {
 func Forbidden(id SecretId, err error) *BackendError {
 	return NewBackendError(id, err, TypeErrForbidden)
 }
+
+func ErrEmptySecretValue(id SecretId) *BackendError {
+	err := fmt.Errorf("cannot set empty secret value for %s", id.String())
+	return NewBackendError(id, err, TypeErrInvalidSecretId)
+}

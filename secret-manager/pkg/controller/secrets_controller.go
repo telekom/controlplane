@@ -52,7 +52,11 @@ func (c *secretsController[T, S]) SetSecret(ctx context.Context, rawId, value st
 
 	secretValue := backend.String(value)
 	if value == api.KeywordRotate {
-		secretValue = backend.String(api.GenerateSecret())
+		newSecret, err := api.GenerateSecret()
+		if err != nil {
+			return res, err
+		}
+		secretValue = backend.String(newSecret)
 	}
 
 	secret, err := c.Backend.Set(ctx, id, secretValue)

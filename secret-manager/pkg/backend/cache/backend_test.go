@@ -6,6 +6,7 @@ package cache_test
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -163,6 +164,24 @@ var _ = Describe("Cached Backend", func() {
 			Expect(err).NotTo(HaveOccurred())
 			_, ok := cachedBackend.Cache.Get("my-secret-id")
 			Expect(ok).To(BeFalse())
+		})
+
+		It("should return a BackendError when setting an empty secret value", func() {
+			ctx := context.Background()
+			secretId := mocks.NewMockSecretId(GinkgoT())
+			secretId.EXPECT().CacheKey().Return("empty-value-id")
+			secretId.EXPECT().Copy().Return(secretId).Once()
+			secretId.EXPECT().String().Return("empty-value-id").Maybe()
+
+			emptyValue := backend.String("")
+
+			_, err := cachedBackend.Set(ctx, secretId, emptyValue)
+			Expect(err).To(HaveOccurred())
+			Expect(backend.IsBackendError(err)).To(BeTrue(), "error should be a BackendError")
+
+			var backendErr *backend.BackendError
+			Expect(errors.As(err, &backendErr)).To(BeTrue())
+			Expect(backendErr.Code()).To(Equal(400))
 		})
 	})
 })

@@ -25,8 +25,8 @@ var (
 	NewTeamSecrets = func() *Secrets {
 		return &Secrets{
 			secrets: map[string]SecretValue{
-				"clientSecret": InitialString(api.GenerateSecret()),
-				"teamToken":    InitialString(api.GenerateSecret()),
+				"clientSecret": InitialString(api.GenerateSecretOrDie()),
+				"teamToken":    InitialString(api.GenerateSecretOrDie()),
 			},
 		}
 	}
@@ -34,7 +34,7 @@ var (
 	NewApplicationSecrets = func() *Secrets {
 		return &Secrets{
 			secrets: map[string]SecretValue{
-				"clientSecret":    InitialString(api.GenerateSecret()),
+				"clientSecret":    InitialString(api.GenerateSecretOrDie()),
 				"externalSecrets": InitialString("{}"),
 			},
 		}

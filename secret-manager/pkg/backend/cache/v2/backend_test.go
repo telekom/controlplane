@@ -6,6 +6,7 @@ package v2_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -56,7 +57,7 @@ var _ = Describe("Cached Backend V2", func() {
 			secretId.EXPECT().String().Return("my-secret-id").Maybe()
 
 			secret := backend.NewDefaultSecret(secretId, "my-value")
-			mockBackend.EXPECT().Get(ctx, secretId).Return(secret, nil).Once()
+			mockBackend.On("Get", mock.Anything, secretId).Return(secret, nil).Once()
 
 			result, err := cachedBackend.Get(ctx, secretId)
 			Expect(err).NotTo(HaveOccurred())
@@ -71,7 +72,7 @@ var _ = Describe("Cached Backend V2", func() {
 			secretId.EXPECT().CacheKey().Return("my-secret-id")
 			secretId.EXPECT().String().Return("my-secret-id").Maybe()
 
-			mockBackend.EXPECT().Get(ctx, secretId).Return(backend.DefaultSecret[*mocks.MockSecretId]{}, backend.ErrSecretNotFound(secretId)).Once()
+			mockBackend.On("Get", mock.Anything, secretId).Return(backend.DefaultSecret[*mocks.MockSecretId]{}, backend.ErrSecretNotFound(secretId)).Once()
 
 			res, err := cachedBackend.Get(ctx, secretId)
 			Expect(err).To(HaveOccurred())
@@ -109,6 +110,24 @@ var _ = Describe("Cached Backend V2", func() {
 
 			err := cachedBackend.Delete(ctx, secretId)
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should return a BackendError when setting an empty secret value", func() {
+			ctx := context.Background()
+			secretId := mocks.NewMockSecretId(GinkgoT())
+			secretId.EXPECT().CacheKey().Return("empty-value-id")
+			secretId.EXPECT().String().Return("empty-value-id").Maybe()
+			secretId.EXPECT().Copy().Return(secretId).Once()
+
+			emptyValue := backend.String("")
+
+			_, err := cachedBackend.Set(ctx, secretId, emptyValue)
+			Expect(err).To(HaveOccurred())
+			Expect(backend.IsBackendError(err)).To(BeTrue(), "error should be a BackendError")
+
+			var backendErr *backend.BackendError
+			Expect(errors.As(err, &backendErr)).To(BeTrue())
+			Expect(backendErr.Code()).To(Equal(400))
 		})
 	})
 
@@ -254,6 +273,80 @@ var _ = Describe("Cached Backend V2", func() {
 			result, err = cachedBackend.Get(ctx, secretId)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result.Value()).To(Equal("value-2"))
+		})
+
+		It("should not fail other callers when first caller's context is cancelled", func() {
+			const numWaiters = 5
+
+			secretId := mocks.NewMockSecretId(GinkgoT())
+			secretId.EXPECT().CacheKey().Return("ctx-cancel-id")
+			secretId.EXPECT().String().Return("ctx-cancel-id").Maybe()
+
+			mockBackend := &mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]{}
+			mockBackend.Test(GinkgoT())
+
+			cachedBackend := v2.NewCachedBackend(mockBackend, 10*time.Second)
+
+			// Block the backend call until we release it
+			block := make(chan struct{})
+			var callCount atomic.Int32
+
+			mockBackend.On("Get", mock.Anything, mock.Anything).
+				Return(func(_ context.Context, _ *mocks.MockSecretId) backend.DefaultSecret[*mocks.MockSecretId] {
+					callCount.Add(1)
+					<-block
+					return backend.NewDefaultSecret(secretId, "the-value")
+				}, func(_ context.Context, _ *mocks.MockSecretId) error {
+					return nil
+				})
+
+			// First caller: use a cancellable context and cancel it
+			cancelCtx, cancel := context.WithCancel(context.Background())
+
+			var wg sync.WaitGroup
+			results := make([]backend.DefaultSecret[*mocks.MockSecretId], numWaiters+1)
+			errs := make([]error, numWaiters+1)
+
+			// Launch the first caller (will be cancelled)
+			wg.Add(1)
+			go func() {
+				defer GinkgoRecover()
+				defer wg.Done()
+				results[0], errs[0] = cachedBackend.Get(cancelCtx, secretId)
+			}()
+
+			// Launch additional waiters with non-cancellable contexts
+			for i := 1; i <= numWaiters; i++ {
+				wg.Add(1)
+				go func(idx int) {
+					defer GinkgoRecover()
+					defer wg.Done()
+					results[idx], errs[idx] = cachedBackend.Get(context.Background(), secretId)
+				}(i)
+			}
+
+			// Give goroutines time to enter singleflight
+			time.Sleep(50 * time.Millisecond)
+
+			// Cancel the first caller's context before releasing the backend
+			cancel()
+			time.Sleep(10 * time.Millisecond)
+
+			// Release the backend call
+			close(block)
+			wg.Wait()
+
+			// The backend should have been called exactly once (singleflight dedup)
+			Expect(callCount.Load()).To(Equal(int32(1)))
+
+			// All callers (including the cancelled one) should succeed because
+			// context.WithoutCancel is used inside singleflight
+			for i := 0; i <= numWaiters; i++ {
+				Expect(errs[i]).NotTo(HaveOccurred(),
+					fmt.Sprintf("caller %d should not have failed", i))
+				Expect(results[i].Value()).To(Equal("the-value"),
+					fmt.Sprintf("caller %d should have received the value", i))
+			}
 		})
 	})
 
