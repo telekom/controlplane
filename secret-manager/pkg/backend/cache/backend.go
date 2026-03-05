@@ -24,11 +24,54 @@ type CachedBackend[T backend.SecretId, S backend.Secret[T]] struct {
 	group   singleflight.Group
 }
 
-func NewCachedBackend[T backend.SecretId, S backend.Secret[T]](backend backend.Backend[T, S], ttl time.Duration) *CachedBackend[T, S] {
+type CacheOptions struct {
+	TTL           time.Duration
+	MaxCost       int64
+	ExpectedItems int64
+}
+
+type CacheOption func(*CacheOptions)
+
+// WithTTL sets the time-to-live for cache entries.
+// After the TTL expires, the cache entry will be evicted and subsequent reads will fetch fresh data from the backend.
+func WithTTL(ttl time.Duration) CacheOption {
+	return func(opts *CacheOptions) {
+		opts.TTL = ttl
+	}
+}
+
+// WithMaxCost sets the maximum cost of the cache in bytes.
+// The cost of each item is calculated as the size of the secret value plus the size of the cache key.
+func WithMaxCost(maxCost int64) CacheOption {
+	return func(opts *CacheOptions) {
+		opts.MaxCost = maxCost
+	}
+}
+
+// WithExpectedItems sets the expected number of items in the cache, which is used to calculate the number of counters for the Ristretto cache.
+func WithExpectedItems(expectedItems int64) CacheOption {
+	return func(opts *CacheOptions) {
+		opts.ExpectedItems = expectedItems
+	}
+}
+
+func NewCachedBackend[T backend.SecretId, S backend.Secret[T]](backend backend.Backend[T, S], opts ...CacheOption) *CachedBackend[T, S] {
+	options := &CacheOptions{
+		TTL:           2 * time.Hour, // default TTL of 2 hours
+		MaxCost:       100 << 20,     // 100MB
+		ExpectedItems: 50_000,        // expect around 50k secrets, adjust as needed based on typical secret size and total cache size
+	}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	// Calculate NumCounters as 10x the expected number of items to allow for good hit rates without excessive memory usage.
+	numCounters := options.ExpectedItems * 10
+
 	cache, err := ristretto.NewCache(&ristretto.Config[string, S]{
-		NumCounters: 500000,    // number of keys to track frequency of (10x max items).
-		MaxCost:     100 << 20, // maximum cost of cache (100MB).
-		BufferItems: 64,        // number of keys per Get buffer.
+		NumCounters: numCounters,     // number of keys to track frequency of.
+		MaxCost:     options.MaxCost, // maximum cost of cache (in bytes).
+		BufferItems: 64,              // number of keys per Get buffer.
 	})
 	if err != nil {
 		panic(err)
@@ -37,7 +80,7 @@ func NewCachedBackend[T backend.SecretId, S backend.Secret[T]](backend backend.B
 	return &CachedBackend[T, S]{
 		Backend: backend,
 		Cache:   cache,
-		ttl:     ttl,
+		ttl:     options.TTL,
 	}
 }
 

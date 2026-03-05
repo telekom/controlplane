@@ -48,7 +48,7 @@ func BenchmarkOnboardTeam(b *testing.B) {
 		reader := conjur.NewConjurApiMetrics(mockReader)
 
 		backend := conjur.NewBackend(writer, reader)
-		cachedBackend := cache.NewCachedBackend(backend, 10*time.Second)
+		cachedBackend := cache.NewCachedBackend(backend, cache.WithTTL(10*time.Second))
 		onboarder := conjur.NewOnboarder(writer, cachedBackend)
 		ctrl = controller.NewController(cachedBackend, onboarder)
 	})

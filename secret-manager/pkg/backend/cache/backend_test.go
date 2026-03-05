@@ -16,27 +16,27 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
-	v2 "github.com/telekom/controlplane/secret-manager/pkg/backend/cache"
+	cache "github.com/telekom/controlplane/secret-manager/pkg/backend/cache"
 	"github.com/telekom/controlplane/secret-manager/test/mocks"
 )
 
-var _ = Describe("Cached Backend V2", func() {
+var _ = Describe("Cached Backend cache", func() {
 
-	Context("Cached Backend V2 Implementation", func() {
+	Context("Cached Backend cache Implementation", func() {
 
 		var mockBackend *mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]
-		var cachedBackend *v2.CachedBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]
+		var cachedBackend *cache.CachedBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]
 
 		BeforeEach(func() {
 			t := GinkgoT()
 			mockBackend = &mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]{}
 			mockBackend.Test(t)
 			t.Cleanup(func() { mockBackend.AssertExpectations(t) })
-			cachedBackend = v2.NewCachedBackend(mockBackend, 10*time.Second)
+			cachedBackend = cache.NewCachedBackend(mockBackend, cache.WithTTL(10*time.Second))
 		})
 
 		It("should create a new cached backend", func() {
-			b := v2.NewCachedBackend(mockBackend, 10*time.Second)
+			b := cache.NewCachedBackend(mockBackend, cache.WithTTL(10*time.Second))
 			Expect(b).ToNot(BeNil())
 		})
 
@@ -144,7 +144,7 @@ var _ = Describe("Cached Backend V2", func() {
 			mockBackend := &mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]{}
 			mockBackend.Test(GinkgoT())
 
-			cachedBackend := v2.NewCachedBackend(mockBackend, 10*time.Second)
+			cachedBackend := cache.NewCachedBackend(mockBackend, cache.WithTTL(10*time.Second))
 
 			// Use a channel to block the backend call until all goroutines are waiting
 			block := make(chan struct{})
@@ -198,7 +198,7 @@ var _ = Describe("Cached Backend V2", func() {
 			mockBackend := &mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]{}
 			mockBackend.Test(GinkgoT())
 
-			cachedBackend := v2.NewCachedBackend(mockBackend, 10*time.Second)
+			cachedBackend := cache.NewCachedBackend(mockBackend, cache.WithTTL(10*time.Second))
 
 			block := make(chan struct{})
 			var callCount atomic.Int32
@@ -248,7 +248,7 @@ var _ = Describe("Cached Backend V2", func() {
 			mockBackend := &mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]{}
 			mockBackend.Test(GinkgoT())
 
-			cachedBackend := v2.NewCachedBackend(mockBackend, 10*time.Second)
+			cachedBackend := cache.NewCachedBackend(mockBackend, cache.WithTTL(10*time.Second))
 
 			// First Get populates via backend
 			mockBackend.On("Get", mock.Anything, mock.Anything).
@@ -285,7 +285,7 @@ var _ = Describe("Cached Backend V2", func() {
 			mockBackend := &mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]{}
 			mockBackend.Test(GinkgoT())
 
-			cachedBackend := v2.NewCachedBackend(mockBackend, 10*time.Second)
+			cachedBackend := cache.NewCachedBackend(mockBackend, cache.WithTTL(10*time.Second))
 
 			// Block the backend call until we release it
 			block := make(chan struct{})
@@ -372,7 +372,7 @@ var _ = Describe("Cached Backend V2", func() {
 			mockBackend.Test(GinkgoT())
 			GinkgoT().Cleanup(func() { mockBackend.AssertExpectations(GinkgoT()) })
 
-			cachedBackend := v2.NewCachedBackend(mockBackend, 10*time.Second)
+			cachedBackend := cache.NewCachedBackend(mockBackend, cache.WithTTL(10*time.Second))
 
 			// Pre-populate the parent's cache entry
 			parentSecret := backend.NewDefaultSecret(parentSecretId, `{"key1":"old-value","key2":"value2"}`)
@@ -418,7 +418,7 @@ var _ = Describe("Cached Backend V2", func() {
 			mockBackend.Test(GinkgoT())
 			GinkgoT().Cleanup(func() { mockBackend.AssertExpectations(GinkgoT()) })
 
-			cachedBackend := v2.NewCachedBackend(mockBackend, 10*time.Second)
+			cachedBackend := cache.NewCachedBackend(mockBackend, cache.WithTTL(10*time.Second))
 
 			// Pre-populate the parent's cache entry
 			parentSecret := backend.NewDefaultSecret(parentSecretId, `{"key1":"value1","key2":"value2"}`)
@@ -459,7 +459,7 @@ var _ = Describe("Cached Backend V2", func() {
 			mockBackend.Test(GinkgoT())
 			GinkgoT().Cleanup(func() { mockBackend.AssertExpectations(GinkgoT()) })
 
-			cachedBackend := v2.NewCachedBackend(mockBackend, 10*time.Second)
+			cachedBackend := cache.NewCachedBackend(mockBackend, cache.WithTTL(10*time.Second))
 
 			// First Get with secretId1 populates the cache
 			mockBackend.On("Get", mock.Anything, secretId1).

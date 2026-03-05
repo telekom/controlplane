@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -82,15 +83,9 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 	if cfg.Backend.Type == "" {
 		cfg.Backend.Type = "kubernetes"
 	}
-	cacheDuration, err := time.ParseDuration(cfg.Backend.GetDefault("cache_duration", "10s"))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse cache duration")
-	}
 
 	shouldCache := cfg.Backend.GetDefault("disable_cache", "false") != trueStr
-	if shouldCache {
-		log.V(1).Info("enabling cache", "duration", cacheDuration.String())
-	} else {
+	if !shouldCache {
 		log.V(1).Info("cache is disabled")
 	}
 
@@ -101,7 +96,23 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 
 		backend := conjur.NewBackend(conjurWriteApi, conjurReadApi)
 		if shouldCache {
-			cacheBackend := cache.NewCachedBackend(backend, cacheDuration)
+			cacheDuration, err := time.ParseDuration(cfg.Backend.GetDefault("cache_duration", "10s"))
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse cache duration")
+			}
+			cacheMaxCostStr := cfg.Backend.GetDefault("cache_max_cost_mb", "100")
+			cacheMaxCostMb, err := strconv.ParseInt(cacheMaxCostStr, 10, 0)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse cache max cost")
+			}
+			cacheMaxCostBytes := cacheMaxCostMb << 20 // convert MB to bytes
+			log.V(1).Info("cache is enabled", "duration", cacheDuration.String(), "max_cost_mb", cacheMaxCostMb)
+
+			opts := []cache.CacheOption{
+				cache.WithTTL(cacheDuration),
+				cache.WithMaxCost(cacheMaxCostBytes),
+			}
+			cacheBackend := cache.NewCachedBackend(backend, opts...)
 			metrics.RegisterMetrics(prometheus.DefaultRegisterer, nil)
 			backend = cacheBackend
 		}
