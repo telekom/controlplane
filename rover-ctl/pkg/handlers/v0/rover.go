@@ -109,9 +109,9 @@ func PatchSubscriptions(subscriptions []any) []map[string]any {
 	for i, subscription := range subscriptionsMaps {
 		if _, exist := subscription["basePath"]; exist {
 			subscriptionsMaps[i]["type"] = "api"
-		} else if _, exist := subscription["port"]; exist {
-			subscriptionsMaps[i]["type"] = "port"
-		}
+		} else if _, exist := subscription["eventType"]; exist {
+			subscriptionsMaps[i]["type"] = "event"
+		} // TODO: add more types as needed
 		security, exist := subscription["security"]
 		if exist {
 			PatchSecurity(security)

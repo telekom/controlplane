@@ -20,7 +20,7 @@ type StatusHandler interface {
 type StatusEvalFunc func(ctx context.Context, status types.ObjectStatus) (continuePolling bool, err error)
 
 var defaultStatusEvalFunc StatusEvalFunc = func(_ context.Context, status types.ObjectStatus) (continuePolling bool, err error) {
-	if status.GetProcessingState() == "done" {
+	if status.GetProcessingState() == "done" || status.GetProcessingState() == "failed" {
 		return false, nil
 	}
 	return true, nil
