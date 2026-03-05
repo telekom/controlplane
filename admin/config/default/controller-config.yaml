@@ -8,9 +8,6 @@ common:
     secureServing: true
   probe:
     bindAddress: ":8081"
-  leaderElection:
-    enabled: true
-    id: "58816de6.cp.ei.telekom.de"
   enableHTTP2: false
   log:
     development: true
