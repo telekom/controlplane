@@ -6,122 +6,151 @@ package cache
 
 import (
 	"context"
-	"runtime"
 	"time"
 
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/go-logr/logr"
-
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache/metrics"
+	"golang.org/x/sync/singleflight"
 )
-
-type Cache[T backend.SecretId, S backend.Secret[T]] interface {
-	Get(id string) (CacheItem[T, S], bool)
-	Set(id string, item CacheItem[T, S])
-	Delete(id string)
-	Stats() (size float64)
-}
 
 var _ backend.Backend[backend.SecretId, backend.Secret[backend.SecretId]] = (*CachedBackend[backend.SecretId, backend.Secret[backend.SecretId]])(nil)
 
 type CachedBackend[T backend.SecretId, S backend.Secret[T]] struct {
 	Backend backend.Backend[T, S]
-	Cache   Cache[T, S]
-	ttl     int64
+	Cache   *ristretto.Cache[string, S]
+	ttl     time.Duration
+	group   singleflight.Group
 }
 
 func NewCachedBackend[T backend.SecretId, S backend.Secret[T]](backend backend.Backend[T, S], ttl time.Duration) *CachedBackend[T, S] {
+	cache, err := ristretto.NewCache(&ristretto.Config[string, S]{
+		NumCounters: 500000,    // number of keys to track frequency of (10x max items).
+		MaxCost:     100 << 20, // maximum cost of cache (100MB).
+		BufferItems: 64,        // number of keys per Get buffer.
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	return &CachedBackend[T, S]{
 		Backend: backend,
-		Cache:   NewShardedCache[T, S](uint8(runtime.NumCPU())),
-		ttl:     int64(ttl.Seconds()),
+		Cache:   cache,
+		ttl:     ttl,
 	}
 }
 
-func (c *CachedBackend[T, S]) ParseSecretId(raw string) (T, error) {
-	return c.Backend.ParseSecretId(raw)
+// invalidateParent removes the parent secret's cache and singleflight entries
+// when a sub-secret is modified. This prevents stale reads of the parent document
+// after a sub-secret write changes the underlying stored value.
+func (c *CachedBackend[T, S]) invalidateParent(id T) {
+	if id.SubPath() != "" {
+		parentKey := id.ParentId().CacheKey()
+		c.group.Forget(parentKey)
+		c.Cache.Del(parentKey)
+	}
 }
 
-func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (res S, err error) {
-	log := logr.FromContextOrDiscard(ctx)
-	cacheId := id.Copy().(T)
-	cacheKey := cacheId.CacheKey()
+// Delete implements backend.Backend.
+func (c *CachedBackend[T, S]) Delete(ctx context.Context, id T) error {
+	cacheKey := id.CacheKey()
+	c.group.Forget(cacheKey)
+	c.Cache.Del(cacheKey)
+	c.invalidateParent(id)
+	return c.Backend.Delete(ctx, id)
+}
 
-	if item, ok := c.Cache.Get(cacheKey); ok && !item.Expired() {
-		if len(item.Value().Value()) > 0 {
+// Get implements backend.Backend.
+func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (S, error) {
+	log := logr.FromContextOrDiscard(ctx)
+	cacheKey := id.CacheKey()
+
+	cachedItem, ok := c.Cache.Get(cacheKey)
+	if ok {
+		if len(cachedItem.Value()) > 0 {
 			metrics.RecordCacheHit("get", "success")
-			return item.Value().Copy().(S), nil
+			return cachedItem.Copy().(S), nil
 		}
 		metrics.RecordCacheMiss("get", "empty_value")
 	} else {
 		metrics.RecordCacheMiss("get", "not_found")
 	}
 
-	item, err := c.Backend.Get(ctx, cacheId)
+	// Deduplicate concurrent backend reads for the same key.
+	// Use context.WithoutCancel so that if the first caller's context is
+	// cancelled, other callers sharing this singleflight call are not affected.
+	result, err, shared := c.group.Do(cacheKey, func() (any, error) {
+		return c.Backend.Get(context.WithoutCancel(ctx), id)
+	})
 	if err != nil {
-		return res, err
+		var zero S
+		return zero, err
 	}
+	item := result.(S)
+
+	if shared {
+		metrics.RecordSingleflightDedup("get")
+	}
+
 	if len(item.Value()) == 0 {
 		// Do not cache empty secrets
 		return item, nil
 	}
-	copy := item.Copy().(S)
 
-	log.V(1).Info("Caching Get result", "id", cacheKey)
-	c.Cache.Set(cacheKey, NewDefaultCacheItem(copy.Id(), copy, c.ttl))
-
-	return item, nil
+	cost := int64(len(item.Value())) + int64(len(cacheKey))
+	added := c.Cache.SetWithTTL(cacheKey, item, cost, c.ttl)
+	if !added {
+		log.Info("Failed to add item to cache", "id", cacheKey)
+	}
+	// Always return a copy since singleflight shares the result across callers
+	return item.Copy().(S), nil
 }
 
-func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.SecretValue, opts ...backend.WriteOption) (res S, err error) {
+// ParseSecretId implements backend.Backend.
+func (c *CachedBackend[T, S]) ParseSecretId(raw string) (T, error) {
+	return c.Backend.ParseSecretId(raw)
+}
+
+// Set implements backend.Backend.
+func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.SecretValue, opts ...backend.WriteOption) (S, error) {
+	log := logr.FromContextOrDiscard(ctx)
+
 	cacheId := id.Copy()
 	cacheValue := value.Copy()
 	cacheKey := cacheId.CacheKey()
 
+	var res S
 	if cacheValue.IsEmpty() {
 		// Do not cache empty secrets, but ensure they are deleted from the cache
 		metrics.RecordCacheMiss("set", "empty_value")
-		c.Cache.Delete(cacheKey)
+		c.Cache.Del(cacheKey)
 		return res, backend.ErrEmptySecretValue(cacheId.(T))
 	}
 
-	if item, ok := c.Cache.Get(cacheKey); ok && !item.Expired() {
-		cachedSecret := item.Value()
-		if cacheValue.EqualString(cachedSecret.Value()) {
-			metrics.RecordCacheHit("set", "")
-			return cachedSecret.Copy().(S), nil
-		} else {
-			metrics.RecordCacheMiss("set", "value_mismatch")
-			c.Cache.Delete(cacheKey)
-		}
+	cachedItem, ok := c.Cache.Get(cacheKey)
+	if ok && cacheValue.EqualString(cachedItem.Value()) {
+		metrics.RecordCacheHit("set", "")
+		return cachedItem.Copy().(S), nil
+	} else if ok {
+		metrics.RecordCacheMiss("set", "value_mismatch")
+		c.Cache.Del(cacheKey)
 	}
 
 	metrics.RecordCacheMiss("set", "not_found")
 	item, err := c.Backend.Set(ctx, cacheId.(T), cacheValue, opts...)
 	if err != nil {
-		return res, err
+		return item, err
 	}
+	var copy = item.Copy().(S)
 
-	copy := item.Copy().(S)
-
-	c.Cache.Set(copy.Id().CacheKey(), NewDefaultCacheItem(copy.Id(), copy, c.ttl))
+	cost := int64(len(value.Value())) + int64(len(cacheKey))
+	added := c.Cache.SetWithTTL(copy.Id().CacheKey(), copy, cost, c.ttl)
+	if !added {
+		log.Info("Failed to add item to cache", "id", cacheKey)
+	}
+	c.group.Forget(cacheKey)
 	c.invalidateParent(id)
 
 	return item, nil
-}
-
-// invalidateParent removes the parent secret's cache entry
-// when a sub-secret is modified. This prevents stale reads of the parent document
-// after a sub-secret write changes the underlying stored value.
-func (c *CachedBackend[T, S]) invalidateParent(id T) {
-	if id.SubPath() != "" {
-		parentKey := id.ParentId().CacheKey()
-		c.Cache.Delete(parentKey)
-	}
-}
-
-func (c *CachedBackend[T, S]) Delete(ctx context.Context, id T) error {
-	c.Cache.Delete(id.CacheKey())
-	c.invalidateParent(id)
-	return c.Backend.Delete(ctx, id)
 }

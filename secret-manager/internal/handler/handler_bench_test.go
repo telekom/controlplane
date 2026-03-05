@@ -25,7 +25,7 @@ import (
 	cs "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/secret-manager/internal/api"
 	"github.com/telekom/controlplane/secret-manager/internal/handler"
-	v2 "github.com/telekom/controlplane/secret-manager/pkg/backend/cache/v2"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur"
 	"github.com/telekom/controlplane/secret-manager/pkg/controller"
 	"github.com/telekom/controlplane/secret-manager/test/mocks"
@@ -48,7 +48,7 @@ func BenchmarkOnboardTeam(b *testing.B) {
 		reader := conjur.NewConjurApiMetrics(mockReader)
 
 		backend := conjur.NewBackend(writer, reader)
-		cachedBackend := v2.NewCachedBackend(backend, 10*time.Second)
+		cachedBackend := cache.NewCachedBackend(backend, 10*time.Second)
 		onboarder := conjur.NewOnboarder(writer, cachedBackend)
 		ctrl = controller.NewController(cachedBackend, onboarder)
 	})

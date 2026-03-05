@@ -25,7 +25,6 @@ import (
 	"github.com/telekom/controlplane/secret-manager/internal/handler"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache/metrics"
-	v2 "github.com/telekom/controlplane/secret-manager/pkg/backend/cache/v2"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/kubernetes"
@@ -95,8 +94,6 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 		log.V(1).Info("cache is disabled")
 	}
 
-	useLegacyCache := cfg.Backend.GetDefault("use_legacy_cache", "false") == trueStr
-
 	switch cfg.Backend.Type {
 	case "conjur":
 		conjurWriteApi := conjur.NewConjurApiMetrics(conjur.NewWriteApiOrDie())
@@ -104,16 +101,9 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 
 		backend := conjur.NewBackend(conjurWriteApi, conjurReadApi)
 		if shouldCache {
-			if useLegacyCache {
-				log.V(1).Info("using legacy cache implementation")
-				cacheBackend := cache.NewCachedBackend(backend, cacheDuration)
-				metrics.RegisterMetrics(prometheus.DefaultRegisterer, cacheBackend.Cache.Stats)
-				backend = cacheBackend
-			} else {
-				cacheBackend := v2.NewCachedBackend(backend, cacheDuration)
-				metrics.RegisterMetrics(prometheus.DefaultRegisterer, nil)
-				backend = cacheBackend
-			}
+			cacheBackend := cache.NewCachedBackend(backend, cacheDuration)
+			metrics.RegisterMetrics(prometheus.DefaultRegisterer, nil)
+			backend = cacheBackend
 		}
 		onboarder := conjur.NewOnboarder(conjurWriteApi, backend)
 		onboarder.WithBouncer(bouncer.NewDefaultLocker())
