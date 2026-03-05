@@ -144,7 +144,8 @@ func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.Secre
 	}
 	var copy = item.Copy().(S)
 
-	added := c.Cache.SetWithTTL(copy.Id().CacheKey(), copy, int64(len(item.Value())), c.ttl)
+	cost := int64(len(value.Value())) + int64(len(cacheKey))
+	added := c.Cache.SetWithTTL(copy.Id().CacheKey(), copy, cost, c.ttl)
 	if !added {
 		log.Info("Failed to add item to cache", "id", cacheKey)
 	}

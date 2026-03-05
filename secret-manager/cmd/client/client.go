@@ -32,6 +32,8 @@ var (
 	appId  string
 	delete bool
 
+	generateSecret bool
+
 	strategy string
 
 	secretsApi    api.SecretsApi
@@ -52,6 +54,7 @@ func init() {
 	flag.StringVar(&appId, "app", "", "Application ID")
 	flag.BoolVar(&delete, "delete", false, "Delete Secret")
 	flag.StringVar(&strategy, "strategy", "", "Write strategy: merge or replace (default)")
+	flag.BoolVar(&generateSecret, "generate-secret", false, "Generate a random secret value")
 }
 
 func main() {
@@ -59,6 +62,15 @@ func main() {
 
 	log := zapr.NewLogger(zap.Must(zap.NewDevelopment()))
 	ctx := logr.NewContext(context.Background(), log)
+
+	if generateSecret {
+		secret, err := api.GenerateSecret()
+		if err != nil {
+			panic(fmt.Sprintf("failed to generate secret: %v", err))
+		}
+		fmt.Println("Generated Secret:", secret)
+		return
+	}
 
 	opts := []api.Option{}
 	if url != "" {

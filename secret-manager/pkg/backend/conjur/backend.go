@@ -206,10 +206,12 @@ func (c *ConjurBackend) initialCreation(ctx context.Context, id ConjurSecretId, 
 func shallowMergeJSON(current, incoming string) (string, bool) {
 	var currentMap map[string]json.RawMessage
 	if err := json.Unmarshal([]byte(current), &currentMap); err != nil {
+		// If current is not a JSON object, we cannot merge, so return incoming as is
 		return incoming, false
 	}
 	var incomingMap map[string]json.RawMessage
 	if err := json.Unmarshal([]byte(incoming), &incomingMap); err != nil {
+		// If incoming is not a JSON object, we cannot merge, so return incoming as is
 		return incoming, false
 	}
 
@@ -218,6 +220,8 @@ func shallowMergeJSON(current, incoming string) (string, bool) {
 
 	merged, err := json.Marshal(currentMap)
 	if err != nil {
+		// At this point, both current and incoming were valid JSON objects,
+		// so we should not return an error.
 		return incoming, false
 	}
 	return string(merged), true

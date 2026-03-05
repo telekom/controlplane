@@ -11,14 +11,15 @@ import (
 )
 
 const (
-	SecretLength = 32
-	SecretPrefix = "trd_"
+	SecretLength = 36
+	SecretPrefix = "trd_" // 36 - len("trd_") = 32 chars
 
 	upperLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	lowerLetters = "abcdefghijklmnopqrstuvwxyz"
 	digits       = "0123456789"
-	specialChars = "!@#%^&*()-_=+[]{}|;:,.?"
-	allChars     = upperLetters + lowerLetters + digits + specialChars
+	// Special chars might have conflicts with certain backends, so we omit them for maximum compatibility.
+	// specialChars = "!@#%^&*()-_=+[]{}|;:,.?"
+	allChars = upperLetters + lowerLetters + digits
 )
 
 // GenerateSecret generates a random secret of the default length with the default prefix.
@@ -49,7 +50,7 @@ func GenerateSecretWithOptions(prefix string, length int) (string, error) {
 
 	// Ensure at least one character from each category
 	secret := make([]byte, secretLen)
-	required := []string{upperLetters, lowerLetters, digits, specialChars}
+	required := []string{upperLetters, lowerLetters, digits}
 	for i, charset := range required {
 		if i >= secretLen {
 			break
