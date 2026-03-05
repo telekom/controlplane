@@ -1,0 +1,85 @@
+// Copyright 2026 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package controller
+
+import (
+	"context"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	"github.com/telekom/controlplane/event/internal/handler/eventexposure"
+)
+
+var _ = Describe("EventExposure Controller", func() {
+	Context("When reconciling a resource", func() {
+		const resourceName = "test-resource"
+
+		ctx := context.Background()
+
+		typeNamespacedName := types.NamespacedName{
+			Name:      resourceName,
+			Namespace: "default",
+		}
+		eventexposureObj := &eventv1.EventExposure{}
+
+		BeforeEach(func() {
+			By("creating the custom resource for the Kind EventExposure")
+			err := k8sClient.Get(ctx, typeNamespacedName, eventexposureObj)
+			if err != nil && errors.IsNotFound(err) {
+				resource := &eventv1.EventExposure{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      resourceName,
+						Namespace: "default",
+					},
+					Spec: eventv1.EventExposureSpec{
+						EventType:  "de.telekom.test.v1",
+						Visibility: eventv1.VisibilityEnterprise,
+						Approval:   eventv1.Approval{Strategy: eventv1.ApprovalStrategyAuto},
+						Zone:       ctypes.ObjectRef{Name: "test-zone", Namespace: "default"},
+						Provider: ctypes.TypedObjectRef{
+							TypeMeta:  metav1.TypeMeta{Kind: "Application", APIVersion: "application.cp.ei.telekom.de/v1"},
+							ObjectRef: ctypes.ObjectRef{Name: "test-app", Namespace: "default"},
+						},
+					},
+				}
+				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+			}
+		})
+
+		AfterEach(func() {
+			resource := &eventv1.EventExposure{}
+			err := k8sClient.Get(ctx, typeNamespacedName, resource)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Cleanup the specific resource instance EventExposure")
+			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+		})
+		It("should successfully reconcile the resource", func() {
+			By("Reconciling the created resource")
+			recorder := record.NewFakeRecorder(10)
+			controllerReconciler := &EventExposureReconciler{
+				Client:   k8sClient,
+				Scheme:   k8sClient.Scheme(),
+				Recorder: recorder,
+			}
+			controllerReconciler.Controller = cc.NewController(&eventexposure.EventExposureHandler{}, k8sClient, recorder)
+
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: typeNamespacedName,
+			})
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+})

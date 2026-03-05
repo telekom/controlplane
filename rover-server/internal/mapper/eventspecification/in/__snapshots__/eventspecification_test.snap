@@ -1,0 +1,25 @@
+
+[EventSpecification Mapper MapRequest must map an EventSpecification to a CRD correctly - 1]
+&v1.EventSpecification{
+    TypeMeta:   v1.TypeMeta{Kind:"EventSpecification", APIVersion:"rover.cp.ei.telekom.de/v1"},
+    ObjectMeta: v1.ObjectMeta{
+        Name:                       "tardis-horizon-demo-cetus-v1",
+        GenerateName:               "",
+        Namespace:                  "poc--eni--hyperion",
+        SelfLink:                   "",
+        UID:                        "",
+        ResourceVersion:            "",
+        Generation:                 0,
+        CreationTimestamp:          time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
+        DeletionTimestamp:          (*v1.Time)(nil),
+        DeletionGracePeriodSeconds: (*int64)(nil),
+        Labels:                     {"cp.ei.telekom.de/environment":"poc"},
+        Annotations:                {},
+        OwnerReferences:            nil,
+        Finalizers:                 nil,
+        ManagedFields:              nil,
+    },
+    Spec:   v1.EventSpecificationSpec{Type:"tardis.horizon.demo.cetus.v1", Version:"1.0.0", Description:"Horizon demo provider", Specification:"test-file-id"},
+    Status: v1.EventSpecificationStatus{},
+}
+---

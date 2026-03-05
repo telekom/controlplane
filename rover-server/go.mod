@@ -12,6 +12,7 @@ require (
 	github.com/telekom/controlplane/application/api v0.0.0
 	github.com/telekom/controlplane/common v0.0.0
 	github.com/telekom/controlplane/common-server v0.0.0
+	github.com/telekom/controlplane/event/api v0.0.0
 	github.com/telekom/controlplane/file-manager v0.0.0
 	github.com/telekom/controlplane/rover/api v0.0.0
 	github.com/telekom/controlplane/secret-manager v0.0.0
@@ -23,6 +24,7 @@ replace (
 	github.com/telekom/controlplane/application/api => ../application/api
 	github.com/telekom/controlplane/common => ../common
 	github.com/telekom/controlplane/common-server => ../common-server
+	github.com/telekom/controlplane/event/api => ../event/api
 	github.com/telekom/controlplane/file-manager => ../file-manager
 	github.com/telekom/controlplane/rover/api => ../rover/api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
@@ -34,7 +36,6 @@ require (
 	github.com/go-logr/logr v1.4.3
 	github.com/go-logr/zapr v1.3.0
 	github.com/gofiber/fiber/v2 v2.52.10
-	github.com/google/uuid v1.6.0
 	github.com/oapi-codegen/fiber-middleware v1.0.2
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/onsi/ginkgo/v2 v2.27.2
@@ -47,6 +48,7 @@ require (
 	go.yaml.in/yaml/v4 v4.0.0-rc.3
 	golang.org/x/text v0.31.0
 	gopkg.in/yaml.v3 v3.0.1
+	k8s.io/apiextensions-apiserver v0.34.2
 	k8s.io/apimachinery v0.34.2
 	k8s.io/client-go v0.34.2
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
@@ -95,6 +97,7 @@ require (
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/pprof v0.0.0-20250403155104-27863c87afa6 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect

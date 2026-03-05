@@ -6,10 +6,10 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
@@ -24,6 +24,8 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
 	"github.com/telekom/controlplane/rover-server/internal/server"
 	s "github.com/telekom/controlplane/rover-server/pkg/store"
+
+	secrets "github.com/telekom/controlplane/secret-manager/api"
 )
 
 var _ server.RoverController = &RoverController{}
@@ -129,6 +131,10 @@ func (r *RoverController) Update(ctx context.Context, resourceId string, req api
 	EnsureLabelsOrDie(ctx, obj)
 	obj.Labels[config.BuildLabelKey("application")] = id.Name
 
+	if err := r.guardPubSubFeature(ctx, req, config.FeaturePubSub.IsEnabled()); err != nil {
+		return res, err
+	}
+
 	err = r.Store.CreateOrReplace(ctx, obj)
 	if err != nil {
 		return res, err
@@ -153,7 +159,7 @@ func (r *RoverController) GetStatus(ctx context.Context, resourceId string) (res
 		return res, err
 	}
 
-	return status.MapRoverResponse(ctx, rover)
+	return status.MapResponse(ctx, rover)
 }
 
 // GetApplicationInfo implements server.RoverController.
@@ -243,7 +249,10 @@ func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId strin
 		return res, err
 	}
 
-	newClientSecret := uuid.NewString()
+	newClientSecret, err := secrets.GenerateSecret()
+	if err != nil {
+		return res, problems.InternalServerError("Failed to generate new client secret", err.Error())
+	}
 	rover.Spec.ClientSecret = newClientSecret
 	if err := r.Store.CreateOrReplace(ctx, rover); err != nil {
 		return res, err
@@ -262,4 +271,45 @@ func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId strin
 		Secret: newClientSecret,
 	}, nil
 
+}
+
+func (r *RoverController) guardPubSubFeature(ctx context.Context, res api.RoverUpdateRequest, isEnabled bool) problems.Problem {
+	if isEnabled {
+		return nil
+	}
+
+	fields := []problems.Field{}
+
+	for i, e := range res.Exposures {
+		d, err := e.Discriminator()
+		if err != nil {
+			continue
+		}
+		if d == "event" {
+			fields = append(fields, problems.Field{
+				Field:  fmt.Sprintf("exposures[%d]", i),
+				Detail: "Pub/Sub features are not enabled, but the request contains an event exposure",
+			})
+		}
+	}
+
+	for i, s := range res.Subscriptions {
+		d, err := s.Discriminator()
+		if err != nil {
+			continue
+		}
+		if d == "event" {
+			fields = append(fields, problems.Field{
+				Field:  fmt.Sprintf("exposures[%d]", i),
+				Detail: "Pub/Sub features are not enabled, but the request contains an event exposure",
+			})
+		}
+	}
+
+	if len(fields) > 0 {
+		msg := "The request contains Pub/Sub features, but this feature is not enabled on the server."
+		return problems.Builder().Detail(msg).Title("Feature has not been enabled").Status(400).Fields(fields...).Build()
+	}
+
+	return nil
 }

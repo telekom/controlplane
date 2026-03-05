@@ -10,7 +10,9 @@ import (
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller/index"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 )
@@ -37,6 +39,24 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	if err != nil {
 		ctrl.Log.Error(err, "unable to create ownerIndex for Application")
 		os.Exit(1)
+	}
+
+	if cconfig.FeaturePubSub.IsEnabled() {
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &eventv1.EventExposure{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for EventExposure")
+			os.Exit(1)
+		}
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &eventv1.EventSubscription{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for EventSubscription")
+			os.Exit(1)
+		}
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &eventv1.EventType{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for EventType")
+			os.Exit(1)
+		}
 	}
 
 }

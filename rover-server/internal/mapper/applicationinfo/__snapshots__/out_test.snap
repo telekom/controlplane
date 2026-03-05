@@ -70,7 +70,6 @@
  "irisTokenEndpointUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token",
  "name": "",
  "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
- "stargatePublishEventUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1",
  "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
  "status": "blocked",
  "subscriptions": null,
@@ -110,7 +109,6 @@
  "irisTokenEndpointUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token",
  "name": "rover-local-sub",
  "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
- "stargatePublishEventUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1",
  "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
  "status": "blocked",
  "subscriptions": [

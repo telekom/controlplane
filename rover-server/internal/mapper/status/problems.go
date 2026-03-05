@@ -32,6 +32,12 @@ func GetAllProblems(ctx context.Context, rover *v1.Rover) []api.Problem {
 	messages, _ = getAllProblemsInApplications(ctx, rover)
 	problems = append(problems, messages...)
 
+	messages, _ = getAllProblemsInEventExposures(ctx, rover)
+	problems = append(problems, messages...)
+
+	messages, _ = getAllProblemsInEventSubscriptions(ctx, rover)
+	problems = append(problems, messages...)
+
 	return problems
 }
 
@@ -72,4 +78,30 @@ func getAllProblemsInApiExposures(ctx context.Context, rover *v1.Rover) ([]api.P
 // - error: Any error encountered during the retrieval process.
 func getAllProblemsInApplications(ctx context.Context, rover *v1.Rover) ([]api.Problem, error) {
 	return GetAllProblemsInSubResource(ctx, rover, roverStore.ApplicationStore)
+}
+
+// getAllProblemsInEventExposures retrieves all problems in event exposures for a given Rover resource.
+//
+// Parameters:
+// - ctx: The context for the operation.
+// - rover: The Rover resource whose event exposure problems are being retrieved.
+//
+// Returns:
+// - []api.Problem: A slice of problems.
+// - error: Any error encountered during the retrieval process.
+func getAllProblemsInEventExposures(ctx context.Context, rover *v1.Rover) ([]api.Problem, error) {
+	return GetAllProblemsInSubResource(ctx, rover, roverStore.EventExposureStore)
+}
+
+// getAllProblemsInEventSubscriptions retrieves all problems in event subscriptions for a given Rover resource.
+//
+// Parameters:
+// - ctx: The context for the operation.
+// - rover: The Rover resource whose event subscription problems are being retrieved.
+//
+// Returns:
+// - []api.Problem: A slice of problems.
+// - error: Any error encountered during the retrieval process.
+func getAllProblemsInEventSubscriptions(ctx context.Context, rover *v1.Rover) ([]api.Problem, error) {
+	return GetAllProblemsInSubResource(ctx, rover, roverStore.EventSubscriptionStore)
 }
