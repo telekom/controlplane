@@ -11,6 +11,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+// OwnedBy filters for resources owned by the given owner based on controller references.
+// It requires that the index ".metadata.controller" is registered
 func OwnedBy(owner client.Object) []client.ListOption {
 
 	ownerUID := string(owner.GetUID())
