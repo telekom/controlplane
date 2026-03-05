@@ -6,8 +6,9 @@ package controller
 
 import (
 	"context"
-	"github.com/telekom/controlplane/notification/internal/templatecache"
 	texttemplate "text/template"
+
+	"github.com/telekom/controlplane/notification/internal/templatecache"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -52,7 +53,7 @@ func (r *NotificationTemplateReconciler) SetupWithManager(mgr ctrl.Manager, cach
 		For(&notificationv1.NotificationTemplate{}).
 		Named("notificationtemplate").
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			MaxConcurrentReconciles: cconfig.GetCommonConfig().Reconciler.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
