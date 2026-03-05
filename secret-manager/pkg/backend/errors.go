@@ -41,10 +41,7 @@ func (e *BackendError) Code() int {
 	case TypeErrTooManyRequests:
 		return 429
 	default:
-		if e.StatusCode != 0 {
-			return e.StatusCode
-		}
-		return 500
+		return e.StatusCode
 	}
 }
 

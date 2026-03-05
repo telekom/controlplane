@@ -6,6 +6,7 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"runtime"
 	"time"
 
@@ -19,6 +20,7 @@ type Cache[T backend.SecretId, S backend.Secret[T]] interface {
 	Get(id string) (CacheItem[T, S], bool)
 	Set(id string, item CacheItem[T, S])
 	Delete(id string)
+	Stats() (size float64)
 }
 
 var _ backend.Backend[backend.SecretId, backend.Secret[backend.SecretId]] = (*CachedBackend[backend.SecretId, backend.Secret[backend.SecretId]])(nil)
@@ -44,58 +46,83 @@ func (c *CachedBackend[T, S]) ParseSecretId(raw string) (T, error) {
 func (c *CachedBackend[T, S]) Get(ctx context.Context, id T) (res S, err error) {
 	log := logr.FromContextOrDiscard(ctx)
 	cacheId := id.Copy().(T)
-	cacheKey := cacheId.String()
+	cacheKey := cacheId.CacheKey()
 
 	if item, ok := c.Cache.Get(cacheKey); ok && !item.Expired() {
-		metrics.RecordCacheHit("get", "")
-		return item.Value().Copy().(S), nil
+		if len(item.Value().Value()) > 0 {
+			metrics.RecordCacheHit("get", "success")
+			return item.Value().Copy().(S), nil
+		}
+		metrics.RecordCacheMiss("get", "empty_value")
+	} else {
+		metrics.RecordCacheMiss("get", "not_found")
 	}
 
-	metrics.RecordCacheMiss("get", "not_found")
 	item, err := c.Backend.Get(ctx, cacheId)
 	if err != nil {
 		return res, err
 	}
-	if item.Value() == "" {
+	if len(item.Value()) == 0 {
 		// Do not cache empty secrets
 		return item, nil
 	}
 	copy := item.Copy().(S)
 
-	log.V(1).Info("Caching Get result", "id", copy.Id().String())
+	log.V(1).Info("Caching Get result", "id", cacheKey)
 	c.Cache.Set(cacheKey, NewDefaultCacheItem(copy.Id(), copy, c.ttl))
 
 	return item, nil
 }
 
-func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.SecretValue) (res S, err error) {
+func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.SecretValue, opts ...backend.WriteOption) (res S, err error) {
 	cacheId := id.Copy()
+	cacheValue := value.Copy()
+	cacheKey := cacheId.CacheKey()
 
-	if item, ok := c.Cache.Get(cacheId.String()); ok && !item.Expired() {
+	if cacheValue.IsEmpty() {
+		// Do not cache empty secrets, but ensure they are deleted from the cache
+		metrics.RecordCacheMiss("set", "empty_value")
+		c.Cache.Delete(cacheKey)
+		return res, errors.New("cannot set empty secret value")
+	}
+
+	if item, ok := c.Cache.Get(cacheKey); ok && !item.Expired() {
 		cachedSecret := item.Value()
-		if value.EqualString(cachedSecret.Value()) {
+		if cacheValue.EqualString(cachedSecret.Value()) {
 			metrics.RecordCacheHit("set", "")
 			return cachedSecret.Copy().(S), nil
 		} else {
 			metrics.RecordCacheMiss("set", "value_mismatch")
-			c.Cache.Delete(cacheId.String())
+			c.Cache.Delete(cacheKey)
 		}
 	}
 
 	metrics.RecordCacheMiss("set", "not_found")
-	item, err := c.Backend.Set(ctx, cacheId.(T), value)
+	item, err := c.Backend.Set(ctx, cacheId.(T), cacheValue, opts...)
 	if err != nil {
 		return res, err
 	}
 
 	copy := item.Copy().(S)
 
-	c.Cache.Set(copy.Id().String(), NewDefaultCacheItem(copy.Id(), copy, c.ttl))
+	c.Cache.Set(copy.Id().CacheKey(), NewDefaultCacheItem(copy.Id(), copy, c.ttl))
+	c.invalidateParent(id)
 
 	return item, nil
 }
 
+// invalidateParent removes the parent secret's cache entry
+// when a sub-secret is modified. This prevents stale reads of the parent document
+// after a sub-secret write changes the underlying stored value.
+func (c *CachedBackend[T, S]) invalidateParent(id T) {
+	if id.SubPath() != "" {
+		parentKey := id.ParentId().CacheKey()
+		c.Cache.Delete(parentKey)
+	}
+}
+
 func (c *CachedBackend[T, S]) Delete(ctx context.Context, id T) error {
-	c.Cache.Delete(id.String())
+	c.Cache.Delete(id.CacheKey())
+	c.invalidateParent(id)
 	return c.Backend.Delete(ctx, id)
 }

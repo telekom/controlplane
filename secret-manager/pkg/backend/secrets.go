@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"maps"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/secret-manager/api"
 )
 
 var (
@@ -25,8 +25,8 @@ var (
 	NewTeamSecrets = func() *Secrets {
 		return &Secrets{
 			secrets: map[string]SecretValue{
-				"clientSecret": InitialString(uuid.NewString()),
-				"teamToken":    InitialString(uuid.NewString()),
+				"clientSecret": InitialString(api.GenerateSecret()),
+				"teamToken":    InitialString(api.GenerateSecret()),
 			},
 		}
 	}
@@ -34,7 +34,7 @@ var (
 	NewApplicationSecrets = func() *Secrets {
 		return &Secrets{
 			secrets: map[string]SecretValue{
-				"clientSecret":    InitialString(uuid.NewString()),
+				"clientSecret":    InitialString(api.GenerateSecret()),
 				"externalSecrets": InitialString("{}"),
 			},
 		}
@@ -65,6 +65,16 @@ func (a *Secrets) GetSecrets() (map[string]SecretValue, error) {
 			}
 		}
 	}
+
+	// final validation that all empty secrets are removed and all secrets have valid values
+	keys := maps.Keys(secrets)
+	for key := range keys {
+		value := secrets[key]
+		if value.IsEmpty() {
+			delete(secrets, key)
+			continue
+		}
+	}
 	return secrets, nil
 }
 
@@ -72,6 +82,7 @@ func (a *Secrets) TrySetSecret(secretPath string, value SecretValue) bool {
 	if a.secrets == nil {
 		return false
 	}
+
 	path := GetPath(secretPath)
 	if _, ok := a.secrets[path]; !ok {
 		return false
@@ -98,6 +109,9 @@ type SecretIdConstructor[T SecretId] func(env, team, app, path string, checksum 
 // TryAddSecrets adds the provided secrets to the allowed secrets using the provided new-function to create SecretId instances.
 func TryAddSecrets[T SecretId](newFunc SecretIdConstructor[T], allowedSecrets *Secrets, env, teamId, appId string, secrets map[string]SecretValue) error {
 	for key, value := range secrets {
+		if value.IsEmpty() {
+			return fmt.Errorf("secret value for key %q cannot be empty", key)
+		}
 		secretId := newFunc(env, teamId, appId, key, "")
 		ok := allowedSecrets.TrySetSecret(key, value)
 		if !ok {

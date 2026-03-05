@@ -71,7 +71,7 @@ func (k *KubernetesBackend) Get(ctx context.Context, secretId Id) (res backend.D
 	return backend.NewDefaultSecret(secretId, string(data)), nil
 }
 
-func (k *KubernetesBackend) Set(ctx context.Context, secretId Id, secretValue backend.SecretValue) (res backend.DefaultSecret[Id], err error) {
+func (k *KubernetesBackend) Set(ctx context.Context, secretId Id, secretValue backend.SecretValue, _ ...backend.WriteOption) (res backend.DefaultSecret[Id], err error) {
 	log := logr.FromContextOrDiscard(ctx)
 	secret, err := k.Get(ctx, secretId)
 	if err != nil {

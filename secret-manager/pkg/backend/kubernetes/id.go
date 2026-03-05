@@ -115,6 +115,24 @@ func (id Id) Copy() backend.SecretId {
 	return Copy(id)
 }
 
+// CacheKey returns a stable cache key without the checksum.
+// This ensures the same logical secret always maps to the same cache entry
+// regardless of value changes.
+func (id Id) CacheKey() string {
+	return strings.Join([]string{id.env, id.team, id.app, id.path}, backend.Separator)
+}
+
+func (id Id) ParentId() backend.SecretId {
+	parentPath := id.Path()
+	if parentPath == "" {
+		return id
+	}
+	parentId := Copy(id)
+	parentId.path = parentPath
+	parentId.Raw = strings.Join([]string{parentId.env, parentId.team, parentId.app, parentId.path, ""}, backend.Separator)
+	return parentId
+}
+
 func (id Id) SubPath() string {
 	return backend.GetSubPath(id.path)
 }

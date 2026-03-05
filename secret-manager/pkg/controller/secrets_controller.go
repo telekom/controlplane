@@ -7,7 +7,6 @@ package controller
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/telekom/controlplane/secret-manager/api"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 )
@@ -53,7 +52,7 @@ func (c *secretsController[T, S]) SetSecret(ctx context.Context, rawId, value st
 
 	secretValue := backend.String(value)
 	if value == api.KeywordRotate {
-		secretValue = backend.String(uuid.NewString())
+		secretValue = backend.String(api.GenerateSecret())
 	}
 
 	secret, err := c.Backend.Set(ctx, id, secretValue)

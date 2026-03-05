@@ -11,6 +11,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
 	"github.com/telekom/controlplane/common-server/pkg/util"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/telekom/controlplane/secret-manager/internal/api"
 	"github.com/telekom/controlplane/secret-manager/internal/handler"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache/metrics"
 	v2 "github.com/telekom/controlplane/secret-manager/pkg/backend/cache/v2"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
@@ -93,7 +95,7 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 		log.V(1).Info("cache is disabled")
 	}
 
-	cacheV2 := cfg.Backend.GetDefault("use_cache_v2", "false") == trueStr
+	useLegacyCache := cfg.Backend.GetDefault("use_legacy_cache", "false") == trueStr
 
 	switch cfg.Backend.Type {
 	case "conjur":
@@ -102,11 +104,15 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 
 		backend := conjur.NewBackend(conjurWriteApi, conjurReadApi)
 		if shouldCache {
-			if cacheV2 {
-				log.V(1).Info("using v2 cache implementation")
-				backend = v2.NewCachedBackend(backend, cacheDuration)
+			if useLegacyCache {
+				log.V(1).Info("using legacy cache implementation")
+				cacheBackend := cache.NewCachedBackend(backend, cacheDuration)
+				metrics.RegisterMetrics(prometheus.DefaultRegisterer, cacheBackend.Cache.Stats)
+				backend = cacheBackend
 			} else {
-				backend = cache.NewCachedBackend(backend, cacheDuration)
+				cacheBackend := v2.NewCachedBackend(backend, cacheDuration)
+				metrics.RegisterMetrics(prometheus.DefaultRegisterer, nil)
+				backend = cacheBackend
 			}
 		}
 		onboarder := conjur.NewOnboarder(conjurWriteApi, backend)
@@ -119,9 +125,6 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 			return nil, errors.Wrap(err, "failed to create kubernetes client")
 		}
 		backend := kubernetes.NewBackend(k8sClient)
-		if shouldCache {
-			backend = cache.NewCachedBackend(backend, cacheDuration)
-		}
 		onboarder := kubernetes.NewOnboarder(k8sClient)
 		c = controller.NewController(backend, onboarder)
 

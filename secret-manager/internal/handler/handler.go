@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/secret-manager/internal/api"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/controller"
 )
 
@@ -67,7 +68,8 @@ func (h *Handler) PutSecret(ctx context.Context, req api.PutSecretRequestObject)
 }
 
 func (h *Handler) UpsertEnvironment(ctx context.Context, request api.UpsertEnvironmentRequestObject) (api.UpsertEnvironmentResponseObject, error) {
-	res, err := h.ctrl.OnboardEnvironment(ctx, request.EnvId, controller.WithSecretValues(parseAdditionalSecrets(request.Body.Secrets)))
+	opts := onboardOpts(request.Body.Strategy, request.Body.Secrets)
+	res, err := h.ctrl.OnboardEnvironment(ctx, request.EnvId, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +83,8 @@ func (h *Handler) UpsertEnvironment(ctx context.Context, request api.UpsertEnvir
 }
 
 func (h *Handler) UpsertTeam(ctx context.Context, request api.UpsertTeamRequestObject) (api.UpsertTeamResponseObject, error) {
-	res, err := h.ctrl.OnboardTeam(ctx, request.EnvId, request.TeamId, controller.WithSecretValues(parseAdditionalSecrets(request.Body.Secrets)))
+	opts := onboardOpts(request.Body.Strategy, request.Body.Secrets)
+	res, err := h.ctrl.OnboardTeam(ctx, request.EnvId, request.TeamId, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +98,8 @@ func (h *Handler) UpsertTeam(ctx context.Context, request api.UpsertTeamRequestO
 }
 
 func (h *Handler) UpsertApp(ctx context.Context, request api.UpsertAppRequestObject) (api.UpsertAppResponseObject, error) {
-	res, err := h.ctrl.OnboardApplication(ctx, request.EnvId, request.TeamId, request.AppId, controller.WithSecretValues(parseAdditionalSecrets(request.Body.Secrets)))
+	opts := onboardOpts(request.Body.Strategy, request.Body.Secrets)
+	res, err := h.ctrl.OnboardApplication(ctx, request.EnvId, request.TeamId, request.AppId, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -156,4 +160,15 @@ func parseAdditionalSecrets(secrets []api.NamedSecret) map[string]string {
 		}
 	}
 	return additionalSecrets
+}
+
+// onboardOpts builds controller options from the API request strategy and secrets.
+func onboardOpts(strategy *api.WriteStrategy, secrets []api.NamedSecret) []controller.OnboardOption {
+	opts := []controller.OnboardOption{
+		controller.WithSecretValues(parseAdditionalSecrets(secrets)),
+	}
+	if strategy != nil {
+		opts = append(opts, controller.WithStrategy(backend.WriteStrategy(*strategy)))
+	}
+	return opts
 }
