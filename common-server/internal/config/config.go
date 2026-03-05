@@ -78,8 +78,6 @@ type StoreOpts struct {
 	DisableInformerCache bool `json:"disableInformerCache" yaml:"disableInformerCache"`
 	// DatabaseFilepath is the filepath where the badger database will be stored. If empty, the database will be in-memory only.
 	DatabaseFilepath string `json:"databaseFilepath" yaml:"databaseFilepath"`
-	// OptimizeMemoryUsage if true, the database will be optimized for memory usage.
-	OptimizeMemoryUsage bool `json:"optimizeMemoryUsage" yaml:"optimizeMemoryUsage"`
 }
 
 type PProfConfig struct {
@@ -188,8 +186,7 @@ func (c *ServerConfig) BuildServer(ctx context.Context, dynamicClient dynamic.In
 				GVK:          crd.GVK,
 				AllowedSorts: resource.AllowedSorts,
 				Database: inmemory.DatabaseOpts{
-					Filepath:     resource.Store.DatabaseFilepath,
-					ReduceMemory: resource.Store.OptimizeMemoryUsage,
+					Filepath: resource.Store.DatabaseFilepath,
 				},
 				Informer: inmemory.InformerOpts{
 					DisableCache: resource.Store.DisableInformerCache,
