@@ -91,8 +91,9 @@ func (h *BaseHandler) Setup(ctx context.Context) *config.Token {
 		// Check for local access token (only used for testing)
 		localAccessToken := viper.GetString("access.token")
 		if localAccessToken != "" {
-			h.logger.V(1).Info("Using local access token for testing", "token", localAccessToken)
-			h.httpClient = WithStaticHeaders(http.DefaultClient, http.Header{
+			h.logger.V(1).Info("Using local access token for testing")
+			localClient := newHttpClient()
+			h.httpClient = WithStaticHeaders(localClient, http.Header{
 				"Authorization": []string{"Bearer " + localAccessToken},
 			})
 

@@ -18,13 +18,17 @@ var placeholderRegex = regexp.MustCompile(`\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}`)
 // their corresponding environment variable values.
 // Returns an error listing all unresolved variables if any are not set.
 func SubstitutePlaceholders(content []byte) ([]byte, error) {
+	seen := make(map[string]bool)
 	var unresolved []string
 
 	result := placeholderRegex.ReplaceAllFunc(content, func(match []byte) []byte {
 		varName := string(placeholderRegex.FindSubmatch(match)[1])
 		value, exists := os.LookupEnv(varName)
 		if !exists {
-			unresolved = append(unresolved, varName)
+			if !seen[varName] {
+				seen[varName] = true
+				unresolved = append(unresolved, varName)
+			}
 			return match
 		}
 		return []byte(value)

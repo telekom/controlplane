@@ -68,7 +68,7 @@ func PatchRoverRequest(ctx context.Context, obj types.Object) error {
 }
 
 func PatchExposures(exposures []any) []map[string]any {
-	if exposures == nil || len(exposures) == 0 {
+	if len(exposures) == 0 {
 		return nil
 	}
 	exposuresMaps := make([]map[string]any, len(exposures))
@@ -95,7 +95,7 @@ func PatchExposures(exposures []any) []map[string]any {
 }
 
 func PatchSubscriptions(subscriptions []any) []map[string]any {
-	if subscriptions == nil || len(subscriptions) == 0 {
+	if len(subscriptions) == 0 {
 		return nil
 	}
 	subscriptionsMaps := make([]map[string]any, len(subscriptions))
