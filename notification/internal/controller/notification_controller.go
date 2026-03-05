@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
@@ -100,7 +101,7 @@ func (r *NotificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		).
 		Named("notification").
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			MaxConcurrentReconciles: cconfig.GetCommonConfig().Reconciler.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)

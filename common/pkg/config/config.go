@@ -1,84 +1,83 @@
-// Copyright 2025 Deutsche Telekom IT GmbH
+// Copyright 2026 Deutsche Telekom IT GmbH
 //
 // SPDX-License-Identifier: Apache-2.0
 
 package config
 
 import (
-	"strings"
 	"time"
-
-	"github.com/spf13/viper"
 )
 
-// Configuration key constants
-const (
-	configKeyRequeueAfterOnError = "requeue-after-on-error"
-	configKeyRequeueAfter        = "requeue-after"
-	configKeyDefaultNamespace    = "default-namespace"
-	configKeyDefaultEnvironment  = "default-environment"
-	configKeyLabelKeyPrefix      = "label-key-prefix"
-	configKeyJitterFactor        = "jitter-factor"
-	configKeyMaxBackoff          = "max-backoff"
-	configKeyMaxConcurrentRec    = "max-concurrent-reconciles"
-)
+type CommonConfig interface {
+	GetCommon() ControllerConfig
+}
 
-const (
-	FinalizerSuffix = "finalizer"
-)
+type Config[T any] struct {
+	Common ControllerConfig `mapstructure:"common" validate:"required"`
+	Spec   T                `mapstructure:"spec"`
+}
 
-// exposed configuration variables
-var (
+func (cfg *Config[T]) GetCommon() ControllerConfig {
+	return cfg.Common
+}
+
+// MetricsConfig configures the controller manager metrics endpoint.
+type MetricsConfig struct {
+	// BindAddress: The address the metrics endpoint binds to. Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.
+	BindAddress string `mapstructure:"bindAddress" validate:"required"`
+	// SecureServing: If set, the metrics endpoint is served securely via HTTPS.
+	SecureServing bool       `mapstructure:"secureServing"`
+	Cert          CertConfig `mapstructure:"cert" validate:"required_if=secureServing true"`
+}
+
+type CertConfig struct {
+	// The directory that contains the server certificate file
+	Path string `mapstructure:"path"`
+	// The name of the server certificate file
+	Name string `mapstructure:"name"`
+	// The name of the server key file
+	Key string `mapstructure:"key"`
+}
+
+type WebhookConfig struct {
+	Cert CertConfig `mapstructure:"cert"`
+}
+
+// ProbeConfig configures the health/readiness probe bind address.
+type ProbeConfig struct {
+	// BindAddress: The address the health/readiness probe endpoint binds to.
+	BindAddress string `mapstructure:"bindAddress" validate:"required"`
+}
+
+// LogConfig configures controller logging behavior.
+type LogConfig struct {
+	// Development: If set, the controller manager will run in development mode.
+	Development bool `mapstructure:"development"`
+}
+
+// ControllerConfig contains shared controller-runtime manager settings.
+//
+// This struct maps to the YAML under the top-level "common" key.
+type ControllerConfig struct {
+	Metrics    MetricsConfig    `mapstructure:"metrics" validate:"required"`
+	Webhook    WebhookConfig    `mapstructure:"webhook" validate:"required"`
+	Probe      ProbeConfig      `mapstructure:"probe" validate:"required"`
+	Reconciler ReconcilerConfig `mapstructure:"reconciler" validate:"required"`
+	// EnableHTTP2: If set, HTTP/2 will be enabled for the metrics and webhook servers
+	EnableHTTP2 bool      `mapstructure:"enableHTTP2"`
+	Log         LogConfig `mapstructure:"log"`
+}
+
+type ReconcilerConfig struct {
 	// RequeueAfterOnError is the time to wait before retrying a failed operation.
 	// This applies for all controller errors.
-	RequeueAfterOnError = 1 * time.Second
+	RequeueAfterOnError time.Duration `mapstructure:"requeue-after-on-error" validate:"required"`
 	// RequeueAfter is the time to wait before retrying a successful operation.
-	RequeueAfter = 30 * time.Minute
+	RequeueAfter time.Duration `mapstructure:"requeue-after" validate:"required"`
 	// JitterFactor is the factor to apply to the backoff duration.
-	JitterFactor = 0.7
+	JitterFactor float64 `mapstructure:"jitter-factor" validate:"required"`
 	// MaxBackoff is the maximum backoff duration.
-	MaxBackoff = 5 * time.Minute
+	MaxBackoff time.Duration `mapstructure:"max-backoff" validate:"required"`
 	// MaxConcurrentReconciles is the maximum number of concurrent reconciles.
-	MaxConcurrentReconciles = 10
-
-	DefaultNamespace   = "default"
-	DefaultEnvironment = "default"
-	LabelKeyPrefix     = "cp.ei.telekom.de"
-	FinalizerName      = LabelKeyPrefix + "/" + FinalizerSuffix
-)
-
-func init() {
-	registerDefaults()
-	registerEnvs()
-	Parse()
-}
-
-func registerDefaults() {
-	viper.SetDefault(configKeyRequeueAfterOnError, RequeueAfterOnError)
-	viper.SetDefault(configKeyRequeueAfter, RequeueAfter)
-	viper.SetDefault(configKeyDefaultNamespace, DefaultNamespace)
-	viper.SetDefault(configKeyDefaultEnvironment, DefaultEnvironment)
-	viper.SetDefault(configKeyLabelKeyPrefix, LabelKeyPrefix)
-	viper.SetDefault(configKeyJitterFactor, JitterFactor)
-	viper.SetDefault(configKeyMaxBackoff, MaxBackoff)
-	viper.SetDefault(configKeyMaxConcurrentRec, MaxConcurrentReconciles)
-}
-
-func registerEnvs() {
-	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-}
-
-func Parse() {
-	RequeueAfterOnError = viper.GetDuration(configKeyRequeueAfterOnError)
-	RequeueAfter = viper.GetDuration(configKeyRequeueAfter)
-	DefaultNamespace = viper.GetString(configKeyDefaultNamespace)
-	DefaultEnvironment = viper.GetString(configKeyDefaultEnvironment)
-
-	JitterFactor = viper.GetFloat64(configKeyJitterFactor)
-	MaxBackoff = viper.GetDuration(configKeyMaxBackoff)
-	MaxConcurrentReconciles = viper.GetInt(configKeyMaxConcurrentRec)
-	LabelKeyPrefix = viper.GetString(configKeyLabelKeyPrefix)
-
-	FinalizerName = LabelKeyPrefix + "/" + FinalizerSuffix
+	MaxConcurrentReconciles int `mapstructure:"max-concurrent-reconciles" validate:"required"`
 }

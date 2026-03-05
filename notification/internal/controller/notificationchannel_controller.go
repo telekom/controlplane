@@ -6,6 +6,7 @@ package controller
 
 import (
 	"context"
+
 	"github.com/telekom/controlplane/notification/internal/config"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -50,7 +51,7 @@ func (r *NotificationChannelReconciler) SetupWithManager(mgr ctrl.Manager) error
 		For(&notificationv1.NotificationChannel{}).
 		Named("notificationchannel").
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			MaxConcurrentReconciles: cconfig.GetCommonConfig().Reconciler.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)
