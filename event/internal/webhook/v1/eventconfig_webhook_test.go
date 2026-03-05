@@ -5,6 +5,8 @@
 package v1
 
 import (
+	"context"
+	"encoding/json"
 	"os"
 	"strings"
 
@@ -18,8 +20,11 @@ import (
 	"github.com/telekom/controlplane/event/internal/handler/util"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
+	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // disableSecretManager disables the FeatureSecretManager feature flag
@@ -89,6 +94,21 @@ func newValidEventConfig() *eventv1.EventConfig {
 			PublishEventUrl:    "https://publish.example.com",
 		},
 	}
+}
+
+// updateContextWithOldObject returns a context that simulates an UPDATE admission request
+// with the given old EventConfig as the previous version of the resource.
+func updateContextWithOldObject(parent context.Context, oldObj *eventv1.EventConfig) context.Context {
+	raw, err := json.Marshal(oldObj)
+	Expect(err).NotTo(HaveOccurred())
+
+	req := admission.Request{
+		AdmissionRequest: admissionv1.AdmissionRequest{
+			Operation: admissionv1.Update,
+			OldObject: runtime.RawExtension{Raw: raw},
+		},
+	}
+	return admission.NewContextWithRequest(parent, req)
 }
 
 var _ = Describe("EventConfig Webhook", func() {
@@ -272,57 +292,113 @@ var _ = Describe("EventConfig Webhook", func() {
 			Expect(obj.Spec.Mesh.Client.ClientId).To(Equal("custom-mesh-client"))
 		})
 
-		It("should generate admin ClientSecret when empty", func() {
-			obj := newValidEventConfig()
-			obj.Spec.Admin.Client.ClientSecret = ""
-			obj.Spec.Mesh.Client.ClientSecret = "existing-secret"
+		Context("on CREATE", func() {
+			It("should generate admin ClientSecret when empty", func() {
+				obj := newValidEventConfig()
+				obj.Spec.Admin.Client.ClientSecret = ""
+				obj.Spec.Mesh.Client.ClientSecret = "existing-secret"
 
-			err := defaulter.Default(ctx, obj)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Spec.Admin.Client.ClientSecret).NotTo(BeEmpty())
+				err := defaulter.Default(ctx, obj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(obj.Spec.Admin.Client.ClientSecret).NotTo(BeEmpty())
+			})
+
+			It("should generate mesh ClientSecret when empty", func() {
+				obj := newValidEventConfig()
+				obj.Spec.Admin.Client.ClientSecret = "existing-secret"
+				obj.Spec.Mesh.Client.ClientSecret = ""
+
+				err := defaulter.Default(ctx, obj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(obj.Spec.Mesh.Client.ClientSecret).NotTo(BeEmpty())
+			})
+
+			It("should rotate admin ClientSecret when set to 'rotate'", func() {
+				obj := newValidEventConfig()
+				obj.Spec.Admin.Client.ClientSecret = secretsapi.KeywordRotate
+				obj.Spec.Mesh.Client.ClientSecret = "existing-secret"
+
+				err := defaulter.Default(ctx, obj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(obj.Spec.Admin.Client.ClientSecret).NotTo(Equal(secretsapi.KeywordRotate))
+				Expect(obj.Spec.Admin.Client.ClientSecret).NotTo(BeEmpty())
+			})
+
+			It("should rotate mesh ClientSecret when set to 'rotate'", func() {
+				obj := newValidEventConfig()
+				obj.Spec.Admin.Client.ClientSecret = "existing-secret"
+				obj.Spec.Mesh.Client.ClientSecret = secretsapi.KeywordRotate
+
+				err := defaulter.Default(ctx, obj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(obj.Spec.Mesh.Client.ClientSecret).NotTo(Equal(secretsapi.KeywordRotate))
+				Expect(obj.Spec.Mesh.Client.ClientSecret).NotTo(BeEmpty())
+			})
+
+			It("should preserve existing non-empty ClientSecrets", func() {
+				obj := newValidEventConfig()
+				obj.Spec.Admin.Client.ClientSecret = "admin-secret-123"
+				obj.Spec.Mesh.Client.ClientSecret = "mesh-secret-456"
+
+				err := defaulter.Default(ctx, obj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(obj.Spec.Admin.Client.ClientSecret).To(Equal("admin-secret-123"))
+				Expect(obj.Spec.Mesh.Client.ClientSecret).To(Equal("mesh-secret-456"))
+			})
 		})
 
-		It("should generate mesh ClientSecret when empty", func() {
-			obj := newValidEventConfig()
-			obj.Spec.Admin.Client.ClientSecret = "existing-secret"
-			obj.Spec.Mesh.Client.ClientSecret = ""
+		Context("on UPDATE", func() {
+			It("should preserve existing secret when new value is empty", func() {
+				oldObj := newValidEventConfig()
+				oldObj.Spec.Admin.Client.ClientSecret = "old-admin-secret"
+				oldObj.Spec.Mesh.Client.ClientSecret = "old-mesh-secret"
 
-			err := defaulter.Default(ctx, obj)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Spec.Mesh.Client.ClientSecret).NotTo(BeEmpty())
-		})
+				newObj := newValidEventConfig()
+				newObj.Spec.Admin.Client.ClientSecret = ""
+				newObj.Spec.Mesh.Client.ClientSecret = ""
 
-		It("should rotate admin ClientSecret when set to 'rotate'", func() {
-			obj := newValidEventConfig()
-			obj.Spec.Admin.Client.ClientSecret = secretsapi.KeywordRotate
-			obj.Spec.Mesh.Client.ClientSecret = "existing-secret"
+				updateCtx := updateContextWithOldObject(ctx, oldObj)
+				err := defaulter.Default(updateCtx, newObj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(newObj.Spec.Admin.Client.ClientSecret).To(Equal("old-admin-secret"))
+				Expect(newObj.Spec.Mesh.Client.ClientSecret).To(Equal("old-mesh-secret"))
+			})
 
-			err := defaulter.Default(ctx, obj)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Spec.Admin.Client.ClientSecret).NotTo(Equal(secretsapi.KeywordRotate))
-			Expect(obj.Spec.Admin.Client.ClientSecret).NotTo(BeEmpty())
-		})
+			It("should rotate secret when set to 'rotate' even on update", func() {
+				oldObj := newValidEventConfig()
+				oldObj.Spec.Admin.Client.ClientSecret = "old-admin-secret"
+				oldObj.Spec.Mesh.Client.ClientSecret = "old-mesh-secret"
 
-		It("should rotate mesh ClientSecret when set to 'rotate'", func() {
-			obj := newValidEventConfig()
-			obj.Spec.Admin.Client.ClientSecret = "existing-secret"
-			obj.Spec.Mesh.Client.ClientSecret = secretsapi.KeywordRotate
+				newObj := newValidEventConfig()
+				newObj.Spec.Admin.Client.ClientSecret = secretsapi.KeywordRotate
+				newObj.Spec.Mesh.Client.ClientSecret = secretsapi.KeywordRotate
 
-			err := defaulter.Default(ctx, obj)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Spec.Mesh.Client.ClientSecret).NotTo(Equal(secretsapi.KeywordRotate))
-			Expect(obj.Spec.Mesh.Client.ClientSecret).NotTo(BeEmpty())
-		})
+				updateCtx := updateContextWithOldObject(ctx, oldObj)
+				err := defaulter.Default(updateCtx, newObj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(newObj.Spec.Admin.Client.ClientSecret).NotTo(Equal(secretsapi.KeywordRotate))
+				Expect(newObj.Spec.Admin.Client.ClientSecret).NotTo(Equal("old-admin-secret"))
+				Expect(newObj.Spec.Admin.Client.ClientSecret).NotTo(BeEmpty())
+				Expect(newObj.Spec.Mesh.Client.ClientSecret).NotTo(Equal(secretsapi.KeywordRotate))
+				Expect(newObj.Spec.Mesh.Client.ClientSecret).NotTo(Equal("old-mesh-secret"))
+				Expect(newObj.Spec.Mesh.Client.ClientSecret).NotTo(BeEmpty())
+			})
 
-		It("should preserve existing non-empty ClientSecrets", func() {
-			obj := newValidEventConfig()
-			obj.Spec.Admin.Client.ClientSecret = "admin-secret-123"
-			obj.Spec.Mesh.Client.ClientSecret = "mesh-secret-456"
+			It("should preserve user-provided non-empty secret on update", func() {
+				oldObj := newValidEventConfig()
+				oldObj.Spec.Admin.Client.ClientSecret = "old-admin-secret"
+				oldObj.Spec.Mesh.Client.ClientSecret = "old-mesh-secret"
 
-			err := defaulter.Default(ctx, obj)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Spec.Admin.Client.ClientSecret).To(Equal("admin-secret-123"))
-			Expect(obj.Spec.Mesh.Client.ClientSecret).To(Equal("mesh-secret-456"))
+				newObj := newValidEventConfig()
+				newObj.Spec.Admin.Client.ClientSecret = "new-admin-secret"
+				newObj.Spec.Mesh.Client.ClientSecret = "new-mesh-secret"
+
+				updateCtx := updateContextWithOldObject(ctx, oldObj)
+				err := defaulter.Default(updateCtx, newObj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(newObj.Spec.Admin.Client.ClientSecret).To(Equal("new-admin-secret"))
+				Expect(newObj.Spec.Mesh.Client.ClientSecret).To(Equal("new-mesh-secret"))
+			})
 		})
 
 		It("should return an error when object is not EventConfig", func() {
@@ -354,25 +430,145 @@ var _ = Describe("EventConfig Webhook", func() {
 			cleanup()
 		})
 
-		It("should onboard secrets and set secret refs for both clients", func() {
-			obj := newValidEventConfig()
-			obj.Spec.Admin.Client.ClientSecret = ""
-			obj.Spec.Mesh.Client.ClientSecret = ""
+		Context("on CREATE", func() {
+			It("should onboard secrets and set secret refs for both clients when empty", func() {
+				obj := newValidEventConfig()
+				obj.Spec.Admin.Client.ClientSecret = ""
+				obj.Spec.Mesh.Client.ClientSecret = ""
 
-			adminSecretId := "zones/test-zone/event/admin/clientSecret"
-			meshSecretId := "zones/test-zone/event/mesh/clientSecret"
+				adminSecretId := "zones/test-zone/event/admin/clientSecret"
+				meshSecretId := "zones/test-zone/event/mesh/clientSecret"
 
-			secretManagerMock.EXPECT().
-				UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything, mock.Anything).
-				Return(map[string]string{
-					adminSecretId: "admin-secret-uuid",
-					meshSecretId:  "mesh-secret-uuid",
-				}, nil)
+				secretManagerMock.EXPECT().
+					UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything, mock.Anything).
+					Return(map[string]string{
+						adminSecretId: "admin-secret-uuid",
+						meshSecretId:  "mesh-secret-uuid",
+					}, nil)
 
-			err := defaulter.Default(ctx, obj)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(obj.Spec.Admin.Client.ClientSecret).To(Equal("$<admin-secret-uuid>"))
-			Expect(obj.Spec.Mesh.Client.ClientSecret).To(Equal("$<mesh-secret-uuid>"))
+				err := defaulter.Default(ctx, obj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(obj.Spec.Admin.Client.ClientSecret).To(Equal("$<admin-secret-uuid>"))
+				Expect(obj.Spec.Mesh.Client.ClientSecret).To(Equal("$<mesh-secret-uuid>"))
+			})
+
+			It("should upload user-provided plain secret to secret manager", func() {
+				obj := newValidEventConfig()
+				obj.Spec.Admin.Client.ClientSecret = "my-custom-admin-secret"
+				obj.Spec.Mesh.Client.ClientSecret = "my-custom-mesh-secret"
+
+				adminSecretId := "zones/test-zone/event/admin/clientSecret"
+				meshSecretId := "zones/test-zone/event/mesh/clientSecret"
+
+				secretManagerMock.EXPECT().
+					UpsertEnvironment(mock.Anything, "test-env",
+						mock.Anything, // WithMergeStrategy
+						mock.MatchedBy(func(opt secretsapi.OnboardingOption) bool { return true }), // admin secret
+						mock.MatchedBy(func(opt secretsapi.OnboardingOption) bool { return true }), // mesh secret
+					).
+					Return(map[string]string{
+						adminSecretId: "admin-custom-uuid",
+						meshSecretId:  "mesh-custom-uuid",
+					}, nil)
+
+				err := defaulter.Default(ctx, obj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(obj.Spec.Admin.Client.ClientSecret).To(Equal("$<admin-custom-uuid>"))
+				Expect(obj.Spec.Mesh.Client.ClientSecret).To(Equal("$<mesh-custom-uuid>"))
+			})
+
+			It("should generate new secret when set to 'rotate'", func() {
+				obj := newValidEventConfig()
+				obj.Spec.Admin.Client.ClientSecret = secretsapi.KeywordRotate
+				obj.Spec.Mesh.Client.ClientSecret = secretsapi.KeywordRotate
+
+				adminSecretId := "zones/test-zone/event/admin/clientSecret"
+				meshSecretId := "zones/test-zone/event/mesh/clientSecret"
+
+				secretManagerMock.EXPECT().
+					UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything, mock.Anything).
+					Return(map[string]string{
+						adminSecretId: "admin-rotated-uuid",
+						meshSecretId:  "mesh-rotated-uuid",
+					}, nil)
+
+				err := defaulter.Default(ctx, obj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(obj.Spec.Admin.Client.ClientSecret).To(Equal("$<admin-rotated-uuid>"))
+				Expect(obj.Spec.Mesh.Client.ClientSecret).To(Equal("$<mesh-rotated-uuid>"))
+			})
+		})
+
+		Context("on UPDATE", func() {
+			It("should preserve existing secret ref when new value is empty", func() {
+				oldObj := newValidEventConfig()
+				oldObj.Spec.Admin.Client.ClientSecret = "$<existing-admin-ref>"
+				oldObj.Spec.Mesh.Client.ClientSecret = "$<existing-mesh-ref>"
+
+				newObj := newValidEventConfig()
+				newObj.Spec.Admin.Client.ClientSecret = ""
+				newObj.Spec.Mesh.Client.ClientSecret = ""
+
+				// After resolving, both secrets become the old refs.
+				// Since both are already refs, no UpsertEnvironment call is expected.
+				updateCtx := updateContextWithOldObject(ctx, oldObj)
+				err := defaulter.Default(updateCtx, newObj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(newObj.Spec.Admin.Client.ClientSecret).To(Equal("$<existing-admin-ref>"))
+				Expect(newObj.Spec.Mesh.Client.ClientSecret).To(Equal("$<existing-mesh-ref>"))
+			})
+
+			It("should rotate secret when set to 'rotate' even on update", func() {
+				oldObj := newValidEventConfig()
+				oldObj.Spec.Admin.Client.ClientSecret = "$<existing-admin-ref>"
+				oldObj.Spec.Mesh.Client.ClientSecret = "$<existing-mesh-ref>"
+
+				newObj := newValidEventConfig()
+				newObj.Spec.Admin.Client.ClientSecret = secretsapi.KeywordRotate
+				newObj.Spec.Mesh.Client.ClientSecret = secretsapi.KeywordRotate
+
+				adminSecretId := "zones/test-zone/event/admin/clientSecret"
+				meshSecretId := "zones/test-zone/event/mesh/clientSecret"
+
+				secretManagerMock.EXPECT().
+					UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything, mock.Anything).
+					Return(map[string]string{
+						adminSecretId: "admin-rotated-uuid",
+						meshSecretId:  "mesh-rotated-uuid",
+					}, nil)
+
+				updateCtx := updateContextWithOldObject(ctx, oldObj)
+				err := defaulter.Default(updateCtx, newObj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(newObj.Spec.Admin.Client.ClientSecret).To(Equal("$<admin-rotated-uuid>"))
+				Expect(newObj.Spec.Mesh.Client.ClientSecret).To(Equal("$<mesh-rotated-uuid>"))
+			})
+
+			It("should upload user-provided plain secret on update", func() {
+				oldObj := newValidEventConfig()
+				oldObj.Spec.Admin.Client.ClientSecret = "$<existing-admin-ref>"
+				oldObj.Spec.Mesh.Client.ClientSecret = "$<existing-mesh-ref>"
+
+				newObj := newValidEventConfig()
+				newObj.Spec.Admin.Client.ClientSecret = "new-custom-secret"
+				newObj.Spec.Mesh.Client.ClientSecret = "new-custom-mesh-secret"
+
+				adminSecretId := "zones/test-zone/event/admin/clientSecret"
+				meshSecretId := "zones/test-zone/event/mesh/clientSecret"
+
+				secretManagerMock.EXPECT().
+					UpsertEnvironment(mock.Anything, "test-env", mock.Anything, mock.Anything, mock.Anything).
+					Return(map[string]string{
+						adminSecretId: "admin-new-uuid",
+						meshSecretId:  "mesh-new-uuid",
+					}, nil)
+
+				updateCtx := updateContextWithOldObject(ctx, oldObj)
+				err := defaulter.Default(updateCtx, newObj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(newObj.Spec.Admin.Client.ClientSecret).To(Equal("$<admin-new-uuid>"))
+				Expect(newObj.Spec.Mesh.Client.ClientSecret).To(Equal("$<mesh-new-uuid>"))
+			})
 		})
 
 		It("should skip onboarding when secrets are already refs", func() {

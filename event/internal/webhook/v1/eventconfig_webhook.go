@@ -6,8 +6,10 @@ package v1
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
+	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -50,6 +52,41 @@ type EventConfigCustomDefaulter struct {
 
 var _ webhook.CustomDefaulter = &EventConfigCustomDefaulter{}
 
+// getOldEventConfig extracts the old EventConfig from the admission request context.
+// Returns the old object and true if this is an UPDATE operation with a valid old object.
+// Returns nil and false for CREATE operations or if the context does not contain an admission request
+// (e.g. in unit tests without injected context).
+func getOldEventConfig(ctx context.Context) (*eventv1.EventConfig, bool) {
+	req, err := admission.RequestFromContext(ctx)
+	if err != nil || req.Operation != admissionv1.Update {
+		return nil, false
+	}
+	oldObj := &eventv1.EventConfig{}
+	if err := json.Unmarshal(req.OldObject.Raw, oldObj); err != nil {
+		log.Error(err, "failed to unmarshal old EventConfig from admission request")
+		return nil, false
+	}
+	return oldObj, true
+}
+
+// resolveSecretForUpdate returns the old secret value if the new value is empty and
+// this is an update with an existing secret. Otherwise returns the new value unchanged.
+func resolveSecretForUpdate(newSecret, oldSecret string) string {
+	if newSecret == "" && oldSecret != "" {
+		return oldSecret
+	}
+	return newSecret
+}
+
+// secretValueOrGenerate returns a generated secret if the value is empty or the rotate keyword.
+// Otherwise it returns the user-provided value as-is (for upload to secret manager).
+func secretValueOrGenerate(value string) string {
+	if value == "" || value == secretsapi.KeywordRotate {
+		return secretsapi.GenerateSecret()
+	}
+	return value
+}
+
 func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCfg *eventv1.EventConfig) (err error) {
 	envName, ok := controller.GetEnvironment(eventCfg)
 	if !ok {
@@ -58,8 +95,8 @@ func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCf
 
 	zoneName := eventCfg.Spec.Zone.Name
 
-	adminSecretId := fmt.Sprintf("zones/%s/event/admin/clientSecret", zoneName)
-	meshSecretId := fmt.Sprintf("zones/%s/event/mesh/clientSecret", zoneName)
+	adminSecretPath := fmt.Sprintf("zones/%s/event/admin/clientSecret", zoneName)
+	meshSecretPath := fmt.Sprintf("zones/%s/event/mesh/clientSecret", zoneName)
 
 	options := []secretsapi.OnboardingOption{
 		secretsapi.WithMergeStrategy(), // Preserve existing secrets not in the request
@@ -67,12 +104,12 @@ func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCf
 
 	needsAdminSecret := !secretsapi.IsRef(eventCfg.Spec.Admin.Client.ClientSecret)
 	if needsAdminSecret {
-		options = append(options, secretsapi.WithSecretValue(adminSecretId, secretsapi.GenerateSecret()))
+		options = append(options, secretsapi.WithSecretValue(adminSecretPath, secretValueOrGenerate(eventCfg.Spec.Admin.Client.ClientSecret)))
 	}
 
 	needsMeshSecret := !secretsapi.IsRef(eventCfg.Spec.Mesh.Client.ClientSecret)
 	if needsMeshSecret {
-		options = append(options, secretsapi.WithSecretValue(meshSecretId, secretsapi.GenerateSecret()))
+		options = append(options, secretsapi.WithSecretValue(meshSecretPath, secretValueOrGenerate(eventCfg.Spec.Mesh.Client.ClientSecret)))
 	}
 
 	if len(options) > 1 {
@@ -83,21 +120,21 @@ func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCf
 		log.Info("Successfully onboarded secrets for EventConfig", "environment", envName, "secrets", len(availableSecrets))
 
 		if needsAdminSecret {
-			ref, found := secretsapi.FindSecretId(availableSecrets, adminSecretId)
+			ref, found := secretsapi.FindSecretId(availableSecrets, adminSecretPath)
 			if !found {
 				return fmt.Errorf("admin client secret reference not found in onboarding response")
 			}
 			eventCfg.Spec.Admin.Client.ClientSecret = ref
-			log.Info("Onboarded admin client secret for EventConfig", "secretId", adminSecretId)
+			log.Info("Onboarded admin client secret for EventConfig", "secretId", adminSecretPath)
 		}
 
 		if needsMeshSecret {
-			ref, found := secretsapi.FindSecretId(availableSecrets, meshSecretId)
+			ref, found := secretsapi.FindSecretId(availableSecrets, meshSecretPath)
 			if !found {
 				return fmt.Errorf("mesh client secret reference not found in onboarding response")
 			}
 			eventCfg.Spec.Mesh.Client.ClientSecret = ref
-			log.Info("Onboarded mesh client secret for EventConfig", "secretId", meshSecretId)
+			log.Info("Onboarded mesh client secret for EventConfig", "secretId", meshSecretPath)
 		}
 	}
 
@@ -125,6 +162,13 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, obj runtime.Ob
 	meshClient := &eventCfg.Spec.Mesh.Client
 	if meshClient.ClientId == "" {
 		meshClient.ClientId = util.MeshClientName
+	}
+
+	// On UPDATE, preserve existing secrets when the new value is empty.
+	// This prevents accidental secret regeneration when users omit the field.
+	if oldCfg, isUpdate := getOldEventConfig(ctx); isUpdate {
+		adminClient.ClientSecret = resolveSecretForUpdate(adminClient.ClientSecret, oldCfg.Spec.Admin.Client.ClientSecret)
+		meshClient.ClientSecret = resolveSecretForUpdate(meshClient.ClientSecret, oldCfg.Spec.Mesh.Client.ClientSecret)
 	}
 
 	if config.FeatureSecretManager.IsEnabled() {
