@@ -51,6 +51,7 @@ patches:
     kind: Deployment
 
 # [SECRET_MANAGER] The following patch will add the secret manager to the deployment.
+# [FILE_MANAGER] The following patch will add the file manager to the deployment.
 - path: deployment_patch.yaml
   target:
     kind: Deployment

@@ -340,7 +340,7 @@ var _ = Describe("SubscriberHandler", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should skip cleanup when EventStore is already deleted", func() {
+		It("should fail cleanup when EventStore is already deleted", func() {
 			obj := newTestSubscriber()
 			publisher := newTestPublisher()
 
@@ -357,7 +357,8 @@ var _ = Describe("SubscriberHandler", func() {
 
 			err := handler.Delete(ctx, obj)
 
-			Expect(err).ToNot(HaveOccurred())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("failed to resolve EventStore"))
 		})
 
 		It("should return error when Publisher Get fails with unexpected error", func() {

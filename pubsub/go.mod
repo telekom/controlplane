@@ -10,6 +10,7 @@ require (
 	github.com/telekom/controlplane/common v0.0.0
 	github.com/telekom/controlplane/common-server v0.0.0
 	github.com/telekom/controlplane/file-manager v0.0.0
+	github.com/telekom/controlplane/secret-manager v0.0.0
 	github.com/telekom/controlplane/pubsub/api v0.0.0
 )
 
@@ -30,6 +31,7 @@ replace (
 	github.com/telekom/controlplane/common-server => ../common-server
 	github.com/telekom/controlplane/file-manager => ../file-manager
 	github.com/telekom/controlplane/pubsub/api => ./api
+	github.com/telekom/controlplane/secret-manager => ../secret-manager
 )
 
 require (

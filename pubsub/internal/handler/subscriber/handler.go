@@ -95,16 +95,9 @@ func (h *SubscriberHandler) Delete(ctx context.Context, obj *pubsubv1.Subscriber
 		return errors.Wrapf(err, "failed to resolve Publisher %q during delete", obj.Spec.Publisher.String())
 	}
 
-	eventStore := &pubsubv1.EventStore{}
-	err = c.Get(ctx, publisher.Spec.EventStore.K8s(), eventStore)
+	eventStore, err := util.GetEventStore(ctx, publisher.Spec.EventStore)
 	if err != nil {
-		if apierrors.IsNotFound(err) {
-			logger.Info("EventStore already deleted, skipping cleanup",
-				"eventStore", publisher.Spec.EventStore.String(),
-				"subscriberId", obj.Spec.SubscriberId)
-			return nil
-		}
-		return errors.Wrapf(err, "failed to resolve EventStore %q during delete", publisher.Spec.EventStore.String())
+		return errors.Wrapf(err, "failed to resolve EventStore %q from Publisher %q", publisher.Spec.EventStore.String(), obj.Spec.Publisher.String())
 	}
 
 	subscriptionID := getOrGenerateSubscriptionID(obj, environment, publisher.Spec.EventType)
