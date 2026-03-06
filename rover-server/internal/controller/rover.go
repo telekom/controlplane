@@ -93,6 +93,7 @@ func (r *RoverController) Get(ctx context.Context, resourceId string) (res api.R
 func (r *RoverController) GetAll(ctx context.Context, params api.GetAllRoversParams) (*api.RoverListResponse, error) {
 	listOpts := store.NewListOpts()
 	listOpts.Cursor = params.Cursor
+	store.EnforcePrefix(security.PrefixFromContext(ctx), &listOpts)
 
 	objList, err := r.SecretStore.List(ctx, listOpts)
 	if err != nil {
@@ -208,7 +209,7 @@ func (r *RoverController) GetApplicationsInfo(ctx context.Context, params api.Ge
 	}
 
 	listOpts := store.NewListOpts()
-	store.EnforcePrefix(bCtx.Environment+"--"+bCtx.Group+"--"+bCtx.Team, &listOpts)
+	store.EnforcePrefix(security.PrefixFromContext(ctx), &listOpts)
 	objList, err := r.Store.List(ctx, listOpts)
 	if err != nil {
 		return res, err
