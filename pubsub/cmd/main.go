@@ -17,12 +17,16 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/telekom/controlplane/pubsub/internal/controller"
 	"github.com/telekom/controlplane/pubsub/internal/index"
+
+	filemetrics "github.com/telekom/controlplane/file-manager/api/metrics"
+	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -69,6 +73,9 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	secretmetrics.RegisterPrometheusMetrics(metrics.Registry)
+	filemetrics.RegisterPrometheusMetrics(metrics.Registry)
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will
