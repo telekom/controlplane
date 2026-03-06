@@ -394,6 +394,17 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			Return(result, err).Once()
 	}
 
+	mockCreateOrUpdateSubscriberWithSubscriptionId := func(subscriptionId string, result controllerutil.OperationResult, err error) {
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.Subscriber"), mock.Anything).
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+				subscriber := obj.(*pubsubv1.Subscriber)
+				subscriber.Status.SubscriptionId = subscriptionId
+			}).
+			Return(result, err).Once()
+	}
+
 	// mockCleanupSubscribers stubs the Cleanup call for SubscriberList.
 	mockCleanupSubscribers := func(deleted int, err error) {
 		fakeClient.EXPECT().
@@ -926,6 +937,29 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			Expect(obj.Status.Subscriber).ToNot(BeNil())
 			Expect(obj.Status.ApprovalRequest).ToNot(BeNil())
 			Expect(obj.Status.Approval).ToNot(BeNil())
+		})
+
+		It("should copy SubscriptionId from Subscriber status to EventSubscription status", func() {
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
+			setupUpToApproval(exposure)
+			mockApprovalBuilderGranted()
+			mockCreateOrUpdateSubscriberWithSubscriptionId("sub-123", controllerutil.OperationResultCreated, nil)
+			fakeClient.EXPECT().AllReady().Return(true).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(obj.Status.SubscriptionId).To(Equal("sub-123"))
+		})
+
+		It("should not set SubscriptionId when Subscriber has empty SubscriptionId", func() {
+			setupFullHappyPath()
+			fakeClient.EXPECT().AllReady().Return(true).Once()
+
+			err := h.CreateOrUpdate(ctx, obj)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(obj.Status.SubscriptionId).To(BeEmpty())
 		})
 
 		It("should return error when approval cleanup of subscribers fails on denial", func() {

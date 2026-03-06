@@ -312,6 +312,10 @@ func (h *EventSubscriptionHandler) createSubscriber(
 		return nil, errors.Wrapf(err, "failed to create or update Subscriber %s", obj.Name)
 	}
 
+	if len(subscriber.Status.SubscriptionId) > 0 {
+		obj.Status.SubscriptionId = subscriber.Status.SubscriptionId
+	}
+
 	return subscriber, nil
 }
 

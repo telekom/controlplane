@@ -67,10 +67,7 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 			&cstore.ListResponse[*eventv1.EventExposure]{Items: []*eventv1.EventExposure{}}, nil).Maybe()
 		store.EventExposureStore = eventExposureMock
 
-		eventSubscriptionMock := mocks.NewMockObjectStore[*eventv1.EventSubscription](GinkgoT())
-		eventSubscriptionMock.EXPECT().List(mock.Anything, mock.Anything).Return(
-			&cstore.ListResponse[*eventv1.EventSubscription]{Items: []*eventv1.EventSubscription{}}, nil).Maybe()
-		store.EventSubscriptionStore = eventSubscriptionMock
+		store.EventSubscriptionStore = mocks.NewEventSubscriptionStoreMock(GinkgoT())
 
 		eventConfigMock := mocks.NewMockObjectStore[*eventv1.EventConfig](GinkgoT())
 		eventConfigMock.EXPECT().List(mock.Anything, mock.Anything).Return(

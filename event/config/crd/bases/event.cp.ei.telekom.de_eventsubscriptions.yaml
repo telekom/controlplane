@@ -333,6 +333,10 @@ spec:
                 - name
                 - namespace
                 type: object
+              subscriptionID:
+                description: SubscriptionId is the unique identifier of the subscriber,
+                  set when Delivery.Type is ServerSentEvent.
+                type: string
               url:
                 description: URL is the SSE endpoint URL for this subscription, set
                   when Delivery.Type is ServerSentEvent.

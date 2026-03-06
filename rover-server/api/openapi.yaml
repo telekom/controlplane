@@ -1863,6 +1863,10 @@ components:
               type: string
               enum:
                 - event
+            horizonSubscriptionId:
+              type: string
+            horizonSubscriptionUrl:
+              type: string
     SubscriptionInfo:
       readOnly: true
       discriminator:

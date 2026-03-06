@@ -73,8 +73,6 @@ type EventSubscriptionSpec struct {
 	// Must match scope names defined on the corresponding EventExposure.
 	// +optional
 	Scopes []string `json:"scopes,omitempty"`
-
-	// TODO: Add Security field — currently derived from Zone/Gateway config in the handler
 }
 
 // EventSubscriptionStatus defines the observed state of EventSubscription.
@@ -102,6 +100,10 @@ type EventSubscriptionStatus struct {
 	// +kubebuilder:validation:Format=uri
 	// +optional
 	URL string `json:"url,omitempty"`
+
+	// SubscriptionId is the unique identifier of the subscriber, set when Delivery.Type is ServerSentEvent.
+	// +optional
+	SubscriptionId string `json:"subscriptionID,omitempty"`
 }
 
 // +kubebuilder:object:root=true

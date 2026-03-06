@@ -49,8 +49,16 @@
  "status": "blocked",
  "subscriptions": [
   {
-   "basePath": "",
+   "basePath": "/eni/distr/v1",
    "type": "api"
+  },
+  {
+   "deliveryType": "ServerSentEvent",
+   "eventType": "de.telekom.eni.quickstart.v1",
+   "horizonSubscriptionId": "horizon-sub-456",
+   "horizonSubscriptionUrl": "https://sse.example.com/events/horizon-sub-456",
+   "payloadType": "Data",
+   "type": "event"
   }
  ],
  "variables": null,
@@ -113,8 +121,16 @@
  "status": "blocked",
  "subscriptions": [
   {
-   "basePath": "",
+   "basePath": "/eni/distr/v1",
    "type": "api"
+  },
+  {
+   "deliveryType": "ServerSentEvent",
+   "eventType": "de.telekom.eni.quickstart.v1",
+   "horizonSubscriptionId": "horizon-sub-456",
+   "horizonSubscriptionUrl": "https://sse.example.com/events/horizon-sub-456",
+   "payloadType": "Data",
+   "type": "event"
   }
  ],
  "variables": null,
