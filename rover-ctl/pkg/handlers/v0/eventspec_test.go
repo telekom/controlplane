@@ -37,17 +37,16 @@ var _ = Describe("EventSpec Handler", func() {
 				err := v0.PatchEventSpecificationRequest(context.Background(), obj)
 				Expect(err).NotTo(HaveOccurred())
 
-				spec := obj.GetContent()["spec"].(map[string]any)
+				spec := obj.GetContent()
 				specification := spec["specification"]
 				Expect(specification).To(BeAssignableToTypeOf(map[string]any{}))
 
 				specMap := specification.(map[string]any)
 				Expect(specMap["type"]).To(Equal("object"))
 
-				// Verify the outer content is preserved (apiVersion, kind, metadata)
-				Expect(obj.GetContent()["apiVersion"]).To(Equal("tcp.ei.telekom.de/v1"))
-				Expect(obj.GetContent()["kind"]).To(Equal("EventSpecification"))
-				Expect(obj.GetContent()["metadata"]).NotTo(BeNil())
+				Expect(obj.GetContent()["apiVersion"]).To(BeNil())
+				Expect(obj.GetContent()["kind"]).To(BeNil())
+				Expect(obj.GetContent()["metadata"]).To(BeNil())
 			})
 		})
 
@@ -74,7 +73,7 @@ var _ = Describe("EventSpec Handler", func() {
 				err := v0.PatchEventSpecificationRequest(context.Background(), obj)
 				Expect(err).NotTo(HaveOccurred())
 
-				spec := obj.GetContent()["spec"].(map[string]any)
+				spec := obj.GetContent()
 				specMap := spec["specification"].(map[string]any)
 				Expect(specMap["type"]).To(Equal("object"))
 			})
@@ -165,7 +164,7 @@ var _ = Describe("EventSpec Handler", func() {
 				err := v0.PatchEventSpecificationRequest(context.Background(), obj)
 				Expect(err).NotTo(HaveOccurred())
 
-				spec := obj.GetContent()["spec"].(map[string]any)
+				spec := obj.GetContent()
 				Expect(spec["eventType"]).To(Equal("test.event"))
 			})
 		})
@@ -201,7 +200,7 @@ var _ = Describe("EventSpec Handler", func() {
 				err = v0.PatchEventSpecificationRequest(context.Background(), obj)
 				Expect(err).NotTo(HaveOccurred())
 
-				spec := obj.GetContent()["spec"].(map[string]any)
+				spec := obj.GetContent()
 				specMap := spec["specification"].(map[string]any)
 				Expect(specMap["type"]).To(Equal("object"))
 			})
@@ -237,7 +236,7 @@ var _ = Describe("EventSpec Handler", func() {
 				err = v0.PatchEventSpecificationRequest(context.Background(), obj)
 				Expect(err).NotTo(HaveOccurred())
 
-				spec := obj.GetContent()["spec"].(map[string]any)
+				spec := obj.GetContent()
 				specMap := spec["specification"].(map[string]any)
 				Expect(specMap["type"]).To(Equal("string"))
 			})
@@ -280,7 +279,7 @@ var _ = Describe("EventSpec Handler", func() {
 				err = v0.PatchEventSpecificationRequest(context.Background(), obj)
 				Expect(err).NotTo(HaveOccurred())
 
-				spec := obj.GetContent()["spec"].(map[string]any)
+				spec := obj.GetContent()
 				specMap := spec["specification"].(map[string]any)
 				Expect(specMap["type"]).To(Equal("number"))
 			})

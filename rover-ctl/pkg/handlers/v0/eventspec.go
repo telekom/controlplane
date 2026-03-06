@@ -71,9 +71,8 @@ func PatchEventSpecificationRequest(ctx context.Context, obj types.Object) error
 		}
 	}
 
-	// No need to call obj.SetContent() here — specMap is a reference to the map
-	// inside the content, so modifications to specMap["specification"] are already
-	// reflected in the object's content.
+	// We only care about the spec part when sending it to the API, so we can replace the content with the spec map directly
+	obj.SetContent(specMap)
 	return nil
 }
 
