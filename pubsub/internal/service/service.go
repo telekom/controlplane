@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/telekom/controlplane/common-server/pkg/client"
+	"github.com/telekom/controlplane/common-server/pkg/client/metrics"
 )
 
 const (
@@ -38,13 +39,18 @@ var _ ConfigService = &configService{}
 
 type configService struct {
 	BasePath   string
-	httpClient *http.Client
+	httpClient metrics.HttpRequestDoer
 }
 
 func NewConfigService(config ConfigServiceConfig) ConfigService {
 	httpClient := NewAuthorizedHttpClient(context.Background(), config.TokenURL, config.ClientID, config.ClientSecret)
 
-	return &configService{BasePath: config.BaseURL, httpClient: httpClient}
+	metricsClient := metrics.WithMetrics(httpClient,
+		metrics.WithClientName("pubsub"),
+		metrics.WithReplacePatterns(`[0-9a-f]{40}`),
+	)
+
+	return &configService{BasePath: config.BaseURL, httpClient: metricsClient}
 }
 
 func (q *configService) buildURL(subscriptionID string) (*url.URL, error) {
