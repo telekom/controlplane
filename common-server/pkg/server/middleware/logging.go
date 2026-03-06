@@ -7,6 +7,7 @@ package middleware
 import (
 	"io"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -48,6 +49,10 @@ var logCorrelationId = func(output logger.Buffer, c *fiber.Ctx, _ *logger.Data, 
 	return output.WriteString(cid.(string))
 }
 
+func requestLatency(output logger.Buffer, _ *fiber.Ctx, data *logger.Data, _ string) (int, error) {
+	return output.WriteString(strconv.FormatInt(data.Stop.Sub(data.Start).Milliseconds(), 10) + "ms")
+}
+
 func NewLogger(opts ...LoggerOption) fiber.Handler {
 	o := &LoggerOpts{
 		Output: os.Stderr,
@@ -60,7 +65,8 @@ func NewLogger(opts ...LoggerOption) fiber.Handler {
 	return logger.New(logger.Config{
 		Output: o.Output,
 		CustomTags: map[string]logger.LogFunc{
-			"cid": logCorrelationId,
+			"cid":     logCorrelationId,
+			"latency": requestLatency,
 		},
 		Format:       formats[o.Format],
 		TimeFormat:   time.RFC3339,
