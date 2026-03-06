@@ -5,6 +5,8 @@
 package mocks
 
 import (
+	"strings"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/mock"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
@@ -36,12 +38,25 @@ func configureEventSpecification(testing ginkgo.FullGinkgoTInterface, mockedStor
 		}),
 	).Return(eventSpecification, nil).Maybe()
 
+	// List with a prefix that matches our test data (eni/hyperion)
 	mockedStore.EXPECT().List(
 		mock.AnythingOfType("*context.valueCtx"),
-		mock.Anything,
+		mock.MatchedBy(func(opts store.ListOpts) bool {
+			return opts.Prefix != "" && strings.HasPrefix("poc--eni--hyperion/", opts.Prefix)
+		}),
 	).Return(
 		&store.ListResponse[*roverv1.EventSpecification]{
 			Items: []*roverv1.EventSpecification{eventSpecification}}, nil).Maybe()
+
+	// List with a prefix that does NOT match our test data (e.g., different team)
+	mockedStore.EXPECT().List(
+		mock.AnythingOfType("*context.valueCtx"),
+		mock.MatchedBy(func(opts store.ListOpts) bool {
+			return opts.Prefix != "" && !strings.HasPrefix("poc--eni--hyperion/", opts.Prefix)
+		}),
+	).Return(
+		&store.ListResponse[*roverv1.EventSpecification]{
+			Items: []*roverv1.EventSpecification{}}, nil).Maybe()
 
 	mockedStore.EXPECT().Delete(
 		mock.AnythingOfType("*context.valueCtx"),
