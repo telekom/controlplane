@@ -88,7 +88,7 @@ func (a *Secrets) TrySetSecret(secretPath string, value SecretValue) bool {
 		return false
 	}
 	subPath := GetSubPath(secretPath)
-	if subPath == "" {
+	if subPath == NoSubPath {
 		a.secrets[path] = value
 		return true
 	}
@@ -112,7 +112,7 @@ func TryAddSecrets[T SecretId](newFunc SecretIdConstructor[T], allowedSecrets *S
 		if value.IsEmpty() {
 			return fmt.Errorf("secret value for key %q cannot be empty", key)
 		}
-		secretId := newFunc(env, teamId, appId, key, "")
+		secretId := newFunc(env, teamId, appId, key, NoChecksum)
 		ok := allowedSecrets.TrySetSecret(key, value)
 		if !ok {
 			return Forbidden(secretId, errors.Errorf("secret %s is not allowed for onboarding", key))

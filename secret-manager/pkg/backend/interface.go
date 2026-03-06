@@ -8,6 +8,24 @@ import (
 	"context"
 )
 
+const (
+	// NoValue indicates that a secret value is intentionally absent and does not need to be set.
+	// Similar to http.NoBody, this is a semantic constant that improves readability over a bare "".
+	NoValue = ""
+
+	// NoTeam indicates that no team scope is set — the secret is at environment level.
+	NoTeam = ""
+
+	// NoApp indicates that no application scope is set — the secret is at team or environment level.
+	NoApp = ""
+
+	// NoChecksum indicates that no checksum was provided for the secret.
+	NoChecksum = ""
+
+	// NoSubPath indicates that the secret path has no sub-path component.
+	NoSubPath = ""
+)
+
 // IdParser is responsible for parsing a secret ID from a string
 // and returning the corresponding SecretId type of the backend implementation.
 type IdParser[T SecretId] interface {

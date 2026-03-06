@@ -91,10 +91,14 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 
 	switch cfg.Backend.Type {
 	case "conjur":
+		bouncer.RegisterMetrics(prometheus.DefaultRegisterer)
+
 		conjurWriteApi := conjur.NewConjurApiMetrics(conjur.NewWriteApiOrDie())
 		conjurReadApi := conjur.NewConjurApiMetrics(conjur.NewReadOnlyApiOrDie())
 
-		backend := conjur.NewBackend(conjurWriteApi, conjurReadApi)
+		conjurBackend := conjur.NewBackend(conjurWriteApi, conjurReadApi)
+		conjurBackend.WithBouncer(bouncer.NewLocker("secret-write"))
+
 		if shouldCache {
 			cacheDuration, err := time.ParseDuration(cfg.Backend.GetDefault("cache_duration", "10s"))
 			if err != nil {
@@ -108,17 +112,19 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 			cacheMaxCostBytes := cacheMaxCostMb << 20 // convert MB to bytes
 			log.V(1).Info("cache is enabled", "duration", cacheDuration.String(), "max_cost_mb", cacheMaxCostMb)
 
-			opts := []cache.CacheOption{
+			cachedBackend := cache.NewCachedBackend(conjurBackend,
 				cache.WithTTL(cacheDuration),
 				cache.WithMaxCost(cacheMaxCostBytes),
-			}
-			cacheBackend := cache.NewCachedBackend(backend, opts...)
+			)
 			metrics.RegisterMetrics(prometheus.DefaultRegisterer, nil)
-			backend = cacheBackend
+			onboarder := conjur.NewOnboarder(conjurWriteApi, cachedBackend)
+			onboarder.WithBouncer(bouncer.NewLocker("secret-onboard"))
+			c = controller.NewController(cachedBackend, onboarder)
+		} else {
+			onboarder := conjur.NewOnboarder(conjurWriteApi, conjurBackend)
+			onboarder.WithBouncer(bouncer.NewLocker("secret-onboard"))
+			c = controller.NewController(conjurBackend, onboarder)
 		}
-		onboarder := conjur.NewOnboarder(conjurWriteApi, backend)
-		onboarder.WithBouncer(bouncer.NewDefaultLocker())
-		c = controller.NewController(backend, onboarder)
 
 	case "kubernetes":
 		k8sClient, err := kubernetes.NewCachedClient(ctx, ctrlr.GetConfigOrDie())
