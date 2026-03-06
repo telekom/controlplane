@@ -179,8 +179,7 @@ var _ = Describe("CreateSSERoute", func() {
 		Expect(route.Spec.Downstreams).To(HaveLen(1))
 		Expect(route.Spec.Downstreams[0].Host).To(Equal("gateway.example.com"))
 		Expect(route.Spec.Downstreams[0].Port).To(Equal(443))
-		// makeSSERoutePath("de.telekom.test.v1") = "/sse/v1/de-telekom-test-v1"
-		Expect(route.Spec.Downstreams[0].Path).To(Equal("/sse/v1/de-telekom-test-v1"))
+		Expect(route.Spec.Downstreams[0].Path).To(Equal("/sse/v1/de.telekom.test.v1"))
 		Expect(route.Spec.Downstreams[0].IssuerUrl).To(Equal("https://issuer.example.com"))
 
 		// Verify Security
@@ -585,7 +584,7 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 		Expect(route.Spec.Upstreams[0].Scheme).To(Equal("https"))
 		Expect(route.Spec.Upstreams[0].Host).To(Equal("gateway.example.com"))
 		Expect(route.Spec.Upstreams[0].Port).To(Equal(443))
-		Expect(route.Spec.Upstreams[0].Path).To(Equal("/sse/v1/de-telekom-test-v1"))
+		Expect(route.Spec.Upstreams[0].Path).To(Equal("/sse/v1/de.telekom.test.v1"))
 		Expect(route.Spec.Upstreams[0].ClientId).To(Equal("mesh-id"))
 		Expect(route.Spec.Upstreams[0].ClientSecret).To(Equal("mesh-secret"))
 		Expect(route.Spec.Upstreams[0].IssuerUrl).To(Equal("https://issuer.provider.example.com"))
@@ -594,7 +593,7 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 		Expect(route.Spec.Downstreams).To(HaveLen(1))
 		Expect(route.Spec.Downstreams[0].Host).To(Equal("gateway.example.com"))
 		Expect(route.Spec.Downstreams[0].Port).To(Equal(443))
-		Expect(route.Spec.Downstreams[0].Path).To(Equal("/sse/v1/de-telekom-test-v1"))
+		Expect(route.Spec.Downstreams[0].Path).To(Equal("/sse/v1/de.telekom.test.v1"))
 		Expect(route.Spec.Downstreams[0].IssuerUrl).To(Equal("https://issuer.example.com"))
 
 		// Verify Security

@@ -153,7 +153,7 @@ func TestNamingMakeSSERoutePath(t *testing.T) {
 		{
 			name:      "dotted event type",
 			eventType: "de.telekom.test.v1",
-			expected:  "/sse/v1/de-telekom-test-v1",
+			expected:  "/sse/v1/de.telekom.test.v1",
 		},
 		{
 			name:      "already hyphenated",
@@ -163,7 +163,7 @@ func TestNamingMakeSSERoutePath(t *testing.T) {
 		{
 			name:      "uppercase letters get lowered",
 			eventType: "DE.Telekom.Test.V1",
-			expected:  "/sse/v1/de-telekom-test-v1",
+			expected:  "/sse/v1/de.telekom.test.v1",
 		},
 	}
 

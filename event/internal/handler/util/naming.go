@@ -6,6 +6,7 @@ package util
 
 import (
 	"fmt"
+	"strings"
 
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 )
@@ -36,7 +37,7 @@ func makeSSERouteName(eventType string) string {
 }
 
 func makeSSERoutePath(eventType string) string {
-	return fmt.Sprintf("/sse/v1/%s", eventv1.MakeEventTypeName(eventType))
+	return fmt.Sprintf("/sse/v1/%s", strings.ToLower(eventType)) // e.g. "/sse/v1/de.telekom.eni.quickstart.v1"
 }
 
 func makeCallbackRouteName(zoneName string) string {
