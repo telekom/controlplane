@@ -37,7 +37,9 @@ func main() {
 
 	store.InitOrDie(rootCtx, kconfig.GetConfigOrDie())
 
-	app := cserver.NewApp()
+	appCfg := cserver.NewAppConfig()
+	appCfg.CtxLog = log.Log
+	app := cserver.NewAppWithConfig(appCfg)
 
 	probesCtrl := cserver.NewProbesController()
 	probesCtrl.Register(app, cserver.ControllerOpts{})

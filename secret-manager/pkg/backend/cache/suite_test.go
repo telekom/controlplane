@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestCache(t *testing.T) {
+func TestCacheV2(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Cache Suite")
+	RunSpecs(t, "Cache V2 Suite")
 }

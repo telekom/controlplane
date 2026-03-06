@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
@@ -130,6 +131,12 @@ func SetExternalSecrets(ctx context.Context, rover *roverv1.Rover, availableSecr
 
 func OnboardApplication(ctx context.Context, rover *roverv1.Rover, secretManager secretsapi.SecretManager) error {
 	log := logr.FromContextOrDiscard(ctx)
+
+	if !config.FeatureSecretManager.IsEnabled() {
+		log.Info("Secret Manager integration is disabled, skipping onboarding")
+		return nil
+	}
+
 	if secretManager == nil {
 		return nil
 	}

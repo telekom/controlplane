@@ -136,6 +136,24 @@ builds:
       - windows # only for rover-ctl
     goarch:
       - amd64
+  - id: event
+    dir: event
+    main: cmd/main.go
+    binary: event
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+  - id: pubsub
+    dir: pubsub
+    main: cmd/main.go
+    binary: pubsub
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
 archives:
   - id: rover-ctl
     ids: [rover-ctl]

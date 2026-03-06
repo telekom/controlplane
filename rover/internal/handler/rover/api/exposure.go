@@ -115,7 +115,7 @@ func mapTrustedTeamsToApiTrustedTeams(ctx context.Context, c client.JanitorClien
 		namespace := contextutil.EnvFromContextOrDie(ctx) + "--" + team.Group + "--" + team.Team
 		t, err := organizationv1.FindTeamForNamespace(ctx, namespace)
 		if err != nil && apierrors.IsNotFound(err) {
-			log.Info(fmt.Sprintf("Trusted team %s/%s not found", team.Group, team.Team), "error", err)
+			log.Info(fmt.Sprintf("Trusted team %s/%s not found", team.Group, team.Team))
 
 		} else if err != nil {
 			return nil, err

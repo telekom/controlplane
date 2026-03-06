@@ -7,6 +7,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -47,7 +48,13 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 		return err
 	}
 
-	needsClient := len(owner.Spec.Subscriptions) > 0
+	// If the Application publishes any events, we need to create a client for it, even if it doesn't have any subscriptions.
+	// This is because the client is needed to access the publish-route
+	hasAnyEventExposures := slices.ContainsFunc(owner.Spec.Exposures, func(ex roverv1.Exposure) bool {
+		return ex.Type() == roverv1.TypeEvent
+	})
+
+	needsClient := len(owner.Spec.Subscriptions) > 0 || hasAnyEventExposures
 	var subscriberFailoverZones []types.ObjectRef
 	if needsClient {
 		for _, subscription := range owner.Spec.Subscriptions {
