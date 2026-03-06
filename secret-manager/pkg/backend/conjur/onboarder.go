@@ -65,30 +65,35 @@ func (c *ConjurOnboarder) OnboardEnvironment(ctx context.Context, env string, op
 		return nil, errors.Wrap(err, "failed to execute template")
 	}
 
+	var secretRefs map[string]backend.SecretRef
 	mutator := func(ctx context.Context) error {
 		log.V(1).Info("Loading policy", "policyPath", policyPath, "env", env)
 		_, err = c.conjur.LoadPolicy(conjurapi.PolicyModePost, policyPath, buf)
-		return err
+		if err != nil {
+			return err
+		}
+
+		allowedSecrets := backend.NewEnvironmentSecrets()
+		if err = backend.TryAddSecrets(New, allowedSecrets, env, backend.NoTeam, backend.NoApp, options.SecretValues); err != nil {
+			return err
+		}
+		secrets, err := allowedSecrets.GetSecrets()
+		if err != nil {
+			return errors.Wrap(err, "failed to get allowed secrets")
+		}
+
+		secretRefs, err = c.createSecrets(ctx, env, backend.NoTeam, backend.NoApp, secrets, backend.WithWriteStrategy(options.Strategy))
+		if err != nil {
+			return errors.Wrapf(err, "failed to create secrets for env %s", env)
+		}
+		return nil
 	}
 
 	err = c.MaybeRunWithBouncer(ctx, policyPath, mutator)
 	if err != nil {
 		return nil, err
 	}
-
-	allowedSecrets := backend.NewEnvironmentSecrets()
-	if err = backend.TryAddSecrets(New, allowedSecrets, env, "", "", options.SecretValues); err != nil {
-		return nil, err
-	}
-	secrets, err := allowedSecrets.GetSecrets()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get allowed secrets")
-	}
-	secretRefs, err := c.createSecrets(ctx, env, "", "", secrets)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create secrets for env %s", env)
-	}
-	backend.MergeSecretRefs(New, secretRefs, env, "", "", options.SecretValues)
+	backend.MergeSecretRefs(New, secretRefs, env, backend.NoTeam, backend.NoApp, options.SecretValues)
 
 	return backend.NewDefaultOnboardResponse(secretRefs), nil
 }
@@ -111,30 +116,35 @@ func (c *ConjurOnboarder) OnboardTeam(ctx context.Context, env, teamId string, o
 		return nil, errors.Wrap(err, "failed to execute template")
 	}
 
+	var secretRefs map[string]backend.SecretRef
 	mutator := func(ctx context.Context) error {
 		log.V(1).Info("Loading policy", "policyPath", policyPath, "env", env, "teamId", teamId)
 		_, err = c.conjur.LoadPolicy(conjurapi.PolicyModePost, policyPath, buf)
-		return err
+		if err != nil {
+			return err
+		}
+
+		allowedSecrets := backend.NewTeamSecrets()
+		if err = backend.TryAddSecrets(New, allowedSecrets, env, teamId, backend.NoApp, options.SecretValues); err != nil {
+			return err
+		}
+		secrets, err := allowedSecrets.GetSecrets()
+		if err != nil {
+			return errors.Wrap(err, "failed to get allowed secrets")
+		}
+
+		secretRefs, err = c.createSecrets(ctx, env, teamId, backend.NoApp, secrets, backend.WithWriteStrategy(options.Strategy))
+		if err != nil {
+			return errors.Wrapf(err, "failed to create secrets for team %s", teamId)
+		}
+		return nil
 	}
 
 	err = c.MaybeRunWithBouncer(ctx, policyPath, mutator)
 	if err != nil {
 		return nil, err
 	}
-
-	allowedSecrets := backend.NewTeamSecrets()
-	if err = backend.TryAddSecrets(New, allowedSecrets, env, teamId, "", options.SecretValues); err != nil {
-		return nil, err
-	}
-	secrets, err := allowedSecrets.GetSecrets()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get allowed secrets")
-	}
-	secretRefs, err := c.createSecrets(ctx, env, teamId, "", secrets)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create secrets for team %s", teamId)
-	}
-	backend.MergeSecretRefs(New, secretRefs, env, teamId, "", options.SecretValues)
+	backend.MergeSecretRefs(New, secretRefs, env, teamId, backend.NoApp, options.SecretValues)
 
 	return backend.NewDefaultOnboardResponse(secretRefs), nil
 }
@@ -157,28 +167,33 @@ func (c *ConjurOnboarder) OnboardApplication(ctx context.Context, env, teamId, a
 		return nil, errors.Wrap(err, "failed to execute template")
 	}
 
+	var secretRefs map[string]backend.SecretRef
 	mutator := func(ctx context.Context) error {
 		log.V(1).Info("Loading policy", "policyPath", policyPath, "env", env, "teamId", teamId, "appId", appId)
 		_, err = c.conjur.LoadPolicy(conjurapi.PolicyModePost, policyPath, buf)
-		return err
+		if err != nil {
+			return err
+		}
+
+		allowedSecrets := backend.NewApplicationSecrets()
+		if err = backend.TryAddSecrets(New, allowedSecrets, env, teamId, appId, options.SecretValues); err != nil {
+			return err
+		}
+		secrets, err := allowedSecrets.GetSecrets()
+		if err != nil {
+			return errors.Wrap(err, "failed to get allowed secrets")
+		}
+
+		secretRefs, err = c.createSecrets(ctx, env, teamId, appId, secrets, backend.WithWriteStrategy(options.Strategy))
+		if err != nil {
+			return errors.Wrapf(err, "failed to create secrets for application %s", appId)
+		}
+		return nil
 	}
 
 	err = c.MaybeRunWithBouncer(ctx, policyPath, mutator)
 	if err != nil {
 		return nil, err
-	}
-
-	allowedSecrets := backend.NewApplicationSecrets()
-	if err = backend.TryAddSecrets(New, allowedSecrets, env, teamId, appId, options.SecretValues); err != nil {
-		return nil, err
-	}
-	secrets, err := allowedSecrets.GetSecrets()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get allowed secrets")
-	}
-	secretRefs, err := c.createSecrets(ctx, env, teamId, appId, secrets)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create secrets for application %s", appId)
 	}
 	backend.MergeSecretRefs(New, secretRefs, env, teamId, appId, options.SecretValues)
 
@@ -251,7 +266,7 @@ func (c *ConjurOnboarder) deletePolicy(ctx context.Context, policyPath, policyKe
 	return nil
 }
 
-func (c *ConjurOnboarder) createSecrets(ctx context.Context, env, teamId, appId string, secrets map[string]backend.SecretValue) (map[string]backend.SecretRef, error) {
+func (c *ConjurOnboarder) createSecrets(ctx context.Context, env, teamId, appId string, secrets map[string]backend.SecretValue, opts ...backend.WriteOption) (map[string]backend.SecretRef, error) {
 	log := logr.FromContextOrDiscard(ctx)
 	secretRefMap := make(map[string]backend.SecretRef)
 	if c.secretWriter == nil {
@@ -260,7 +275,7 @@ func (c *ConjurOnboarder) createSecrets(ctx context.Context, env, teamId, appId 
 	for secretPath, secretValue := range secrets {
 		secretId := New(env, teamId, appId, secretPath, backend.MakeChecksum(secretValue.Value()))
 		log.Info("Creating secret", "secretId", secretId.String())
-		secret, err := c.secretWriter.Set(ctx, secretId, secretValue)
+		secret, err := c.secretWriter.Set(ctx, secretId, secretValue, opts...)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to initialize secret %s", secretId.VariableId())
 		}

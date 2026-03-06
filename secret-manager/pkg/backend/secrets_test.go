@@ -19,13 +19,15 @@ var _ = Describe("Secret", func() {
 		It("should create new environment secrets", func() {
 			secrets := backend.NewEnvironmentSecrets()
 			Expect(secrets).ToNot(BeNil())
+			hasBeenSet := secrets.TrySetSecret("zones/foo", backend.InitialString("bar"))
+			Expect(hasBeenSet).To(BeTrue())
 
 			secretMap, err := secrets.GetSecrets()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(secretMap).To(HaveLen(1))
 			Expect(secretMap).To(HaveKey("zones"))
-			Expect(secretMap["zones"].Value()).To(Equal("{}"))
-			Expect(secretMap["zones"].AllowChange()).To(BeFalse())
+			Expect(secretMap["zones"].Value()).To(Equal("{\"foo\":\"bar\"}"))
+			Expect(secretMap["zones"].AllowChange()).To(BeTrue())
 		})
 
 		It("should create new team secrets", func() {
@@ -49,13 +51,10 @@ var _ = Describe("Secret", func() {
 
 			secretMap, err := secrets.GetSecrets()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(secretMap).To(HaveLen(2))
+			Expect(secretMap).To(HaveLen(1))
 			Expect(secretMap).To(HaveKey("clientSecret"))
-			Expect(secretMap).To(HaveKey("externalSecrets"))
 			Expect(secretMap["clientSecret"].Value()).ToNot(BeEmpty())
-			Expect(secretMap["externalSecrets"].Value()).To(Equal("{}"))
 			Expect(secretMap["clientSecret"].AllowChange()).To(BeFalse())
-			Expect(secretMap["externalSecrets"].AllowChange()).To(BeFalse())
 		})
 	})
 
