@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/notification
 
-go 1.25.0
+go 1.25.8
 
 require (
 	github.com/telekom/controlplane/common v0.0.0
