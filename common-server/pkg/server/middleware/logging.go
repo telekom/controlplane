@@ -35,7 +35,7 @@ func WithOutput(w io.Writer) LoggerOption {
 	}
 }
 
-const jsonFormat = `{"time":"${time}","ip":"${ip}","host":"${host}","method":"${method}","path":"${path}","status":${status},"latency":"${latency}","ua":"${ua}","queryParams":"${queryParams}","cid":"${cid}"}` + "\n"
+const jsonFormat = `{"time":"${time}","ip":"${ip}","host":"${host}","method":"${method}","path":"${path}","status":${status},"latency":"${latency}ms","ua":"${ua}","queryParams":"${queryParams}","cid":"${cid}"}` + "\n"
 
 var formats = map[LogFormat]string{
 	LogFormatJSON: jsonFormat,
@@ -49,8 +49,8 @@ var logCorrelationId = func(output logger.Buffer, c *fiber.Ctx, _ *logger.Data, 
 	return output.WriteString(cid.(string))
 }
 
-func requestLatency(output logger.Buffer, _ *fiber.Ctx, data *logger.Data, _ string) (int, error) {
-	return output.WriteString(strconv.FormatInt(data.Stop.Sub(data.Start).Milliseconds(), 10) + "ms")
+func requestLatencyMS(output logger.Buffer, _ *fiber.Ctx, data *logger.Data, _ string) (int, error) {
+	return output.WriteString(strconv.FormatInt(data.Stop.Sub(data.Start).Milliseconds(), 10))
 }
 
 func NewLogger(opts ...LoggerOption) fiber.Handler {
@@ -65,8 +65,9 @@ func NewLogger(opts ...LoggerOption) fiber.Handler {
 	return logger.New(logger.Config{
 		Output: o.Output,
 		CustomTags: map[string]logger.LogFunc{
-			"cid":     logCorrelationId,
-			"latency": requestLatency,
+			"cid": logCorrelationId,
+			// change of function requires update jsonFormat (hardcoded unit)
+			"latency": requestLatencyMS,
 		},
 		Format:       formats[o.Format],
 		TimeFormat:   time.RFC3339,
