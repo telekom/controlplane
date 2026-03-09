@@ -31,6 +31,8 @@ const (
 	inCluster                = "https://file-manager.controlplane-system.svc.cluster.local/api"
 	TokenFilePath            = "/var/run/secrets/filemgr/token"
 	uploadRequestContentType = "application/octet-stream"
+
+	CaFilePath = "/var/run/secrets/trust-bundle/trust-bundle.pem"
 )
 
 var (
@@ -138,7 +140,7 @@ func New(opts ...Option) FileManager {
 			client.WithClientName("file-manager"),
 			client.WithReplacePattern(`^\/api\/v1\/files\/(?P<redacted>.*)$`),
 			client.WithSkipTlsVerify(skipTlsVerify),
-			client.WithCaFilepath(""),
+			client.WithCaFilepath(CaFilePath),
 		)),
 		gen.WithRequestEditorFn(options.accessTokenReqEditor))
 

@@ -77,6 +77,19 @@ var _ = Describe("ObjectRef", func() {
 			Expect(ref.Equals(obj)).To(BeFalse())
 		})
 
+		It("should successfully return false if empty", func() {
+			ptrRef := &ObjectRef{}
+			Expect(ptrRef.IsEmpty()).To(BeTrue())
+
+			valueRef := ObjectRef{}
+			Expect(valueRef.IsEmpty()).To(BeTrue())
+
+			valueRef.Name = "test"
+			Expect(valueRef.IsEmpty()).To(BeFalse())
+			Expect(ptrRef.IsEmpty()).To(BeTrue())
+
+		})
+
 	})
 
 	Context("TypedObjectRef", func() {
