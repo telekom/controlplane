@@ -19,12 +19,10 @@ import (
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
@@ -35,8 +33,7 @@ var roverlog = logf.Log.WithName("rover-webhook")
 
 // SetupWebhookWithManager will setup the manager to manage the webhooks
 func SetupWebhookWithManager(mgr ctrl.Manager, secretManager secretsapi.SecretManager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&roverv1.Rover{}).
+	return ctrl.NewWebhookManagedBy(mgr, &roverv1.Rover{}).
 		WithDefaulter(&RoverDefaulter{mgr.GetClient(), secretManager}).
 		WithValidator(&RoverValidator{mgr.GetClient()}).
 		Complete()
@@ -49,14 +46,10 @@ type RoverDefaulter struct {
 	secretManager secretsapi.SecretManager
 }
 
-var _ webhook.CustomDefaulter = &RoverDefaulter{}
+var _ admission.Defaulter[*roverv1.Rover] = &RoverDefaulter{}
 
-func (r *RoverDefaulter) Default(ctx context.Context, obj runtime.Object) error {
+func (r *RoverDefaulter) Default(ctx context.Context, rover *roverv1.Rover) error {
 	roverlog.Info("default")
-	rover, ok := obj.(*roverv1.Rover)
-	if !ok {
-		return apierrors.NewBadRequest("not a rover")
-	}
 	// No need to default if the object is being deleted
 	if controller.IsBeingDeleted(rover) {
 		return nil
@@ -77,31 +70,27 @@ type RoverValidator struct {
 	client client.Client
 }
 
-var _ webhook.CustomValidator = &RoverValidator{}
+var _ admission.Validator[*roverv1.Rover] = &RoverValidator{}
 
-func (r *RoverValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (r *RoverValidator) ValidateCreate(ctx context.Context, rover *roverv1.Rover) (admission.Warnings, error) {
 	roverlog.Info("validate create")
 
-	return r.ValidateCreateOrUpdate(ctx, obj)
+	return r.ValidateCreateOrUpdate(ctx, rover)
 }
 
-func (r *RoverValidator) ValidateUpdate(ctx context.Context, oldObj, obj runtime.Object) (admission.Warnings, error) {
+func (r *RoverValidator) ValidateUpdate(ctx context.Context, _ *roverv1.Rover, rover *roverv1.Rover) (admission.Warnings, error) {
 	roverlog.Info("validate update")
 
-	return r.ValidateCreateOrUpdate(ctx, obj)
+	return r.ValidateCreateOrUpdate(ctx, rover)
 }
 
-func (r *RoverValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (r *RoverValidator) ValidateDelete(ctx context.Context, rover *roverv1.Rover) (admission.Warnings, error) {
 	roverlog.Info("validate delete")
 
 	return nil, nil // No validation needed on delete
 }
 
-func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	rover, ok := obj.(*roverv1.Rover)
-	if !ok {
-		return nil, apierrors.NewBadRequest("not a rover")
-	}
+func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *roverv1.Rover) (admission.Warnings, error) {
 
 	log := roverlog.WithValues("name", rover.GetName(), "namespace", rover.GetNamespace())
 	ctx = logr.NewContext(ctx, log)
