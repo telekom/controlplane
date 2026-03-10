@@ -9,10 +9,8 @@ import (
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -21,8 +19,7 @@ var approvalrequestlog = logf.Log.WithName("approvalrequest-resource")
 
 // SetupApprovalRequestWebhookWithManager will setup the manager to manage the webhooks
 func SetupApprovalRequestWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&approvalv1.ApprovalRequest{}).
+	return ctrl.NewWebhookManagedBy(mgr, &approvalv1.ApprovalRequest{}).
 		WithDefaulter(&ApprovalRequestCustomDefaulter{}).
 		WithValidator(&ApprovalRequestCustomValidator{}).
 		Complete()
@@ -37,18 +34,17 @@ func SetupApprovalRequestWebhookWithManager(mgr ctrl.Manager) error {
 // as it is used only for temporary operations and does not need to be deeply copied.
 type ApprovalRequestCustomDefaulter struct{}
 
-var _ webhook.CustomDefaulter = &ApprovalRequestCustomDefaulter{}
+var _ admission.Defaulter[*approvalv1.ApprovalRequest] = &ApprovalRequestCustomDefaulter{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (ar *ApprovalRequestCustomDefaulter) Default(_ context.Context, obj runtime.Object) error {
-	arObj := obj.(*approvalv1.ApprovalRequest)
-	approvalrequestlog.Info("default", "name", arObj.Name)
+func (ar *ApprovalRequestCustomDefaulter) Default(_ context.Context, obj *approvalv1.ApprovalRequest) error {
+	approvalrequestlog.Info("default", "name", obj.Name)
 
-	if arObj.Spec.Strategy == "" {
-		arObj.Spec.Strategy = approvalv1.ApprovalStrategySimple
+	if obj.Spec.Strategy == "" {
+		obj.Spec.Strategy = approvalv1.ApprovalStrategySimple
 	}
-	if arObj.Spec.Strategy == approvalv1.ApprovalStrategyAuto {
-		arObj.Spec.State = approvalv1.ApprovalStateGranted
+	if obj.Spec.Strategy == approvalv1.ApprovalStrategyAuto {
+		obj.Spec.State = approvalv1.ApprovalStateGranted
 	}
 	return nil
 }
@@ -65,33 +61,31 @@ func (ar *ApprovalRequestCustomDefaulter) Default(_ context.Context, obj runtime
 // as this struct is used only for temporary operations and does not need to be deeply copied.
 type ApprovalRequestCustomValidator struct{}
 
-var _ webhook.CustomValidator = &ApprovalRequestCustomValidator{}
+var _ admission.Validator[*approvalv1.ApprovalRequest] = &ApprovalRequestCustomValidator{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (ar *ApprovalRequestCustomValidator) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
-	arObj := obj.(*approvalv1.ApprovalRequest)
-	approvalrequestlog.Info("validate create", "name", arObj.Name)
+func (ar *ApprovalRequestCustomValidator) ValidateCreate(_ context.Context, obj *approvalv1.ApprovalRequest) (warnings admission.Warnings, err error) {
+	approvalrequestlog.Info("validate create", "name", obj.Name)
 
-	if arObj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && arObj.Spec.State != approvalv1.ApprovalStateGranted {
+	if obj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && obj.Spec.State != approvalv1.ApprovalStateGranted {
 		warnings = append(warnings, "Request is auto approved and should be granted")
-		arObj.Spec.State = approvalv1.ApprovalStateGranted
+		obj.Spec.State = approvalv1.ApprovalStateGranted
 	}
 
 	return warnings, err
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, _ runtime.Object, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	arObj := newObj.(*approvalv1.ApprovalRequest)
-	approvalrequestlog.Info("validate update", "name", arObj.Name)
+func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, _ *approvalv1.ApprovalRequest, newObj *approvalv1.ApprovalRequest) (warnings admission.Warnings, err error) {
+	approvalrequestlog.Info("validate update", "name", newObj.Name)
 
-	if arObj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && arObj.Spec.State != approvalv1.ApprovalStateGranted {
+	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && newObj.Spec.State != approvalv1.ApprovalStateGranted {
 		warnings = append(warnings, "Request is auto approved and should be granted")
-		arObj.Spec.State = approvalv1.ApprovalStateGranted
+		newObj.Spec.State = approvalv1.ApprovalStateGranted
 	}
 
-	if arObj.StateChanged() && arObj.Status.AvailableTransitions != nil {
-		if !arObj.Status.AvailableTransitions.HasState(arObj.Spec.State) {
+	if newObj.StateChanged() && newObj.Status.AvailableTransitions != nil {
+		if !newObj.Status.AvailableTransitions.HasState(newObj.Spec.State) {
 			err = apierrors.NewBadRequest("Invalid state transition")
 		}
 	}
@@ -100,8 +94,7 @@ func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, _ ru
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (ar *ApprovalRequestCustomValidator) ValidateDelete(_ context.Context, delObj runtime.Object) (admission.Warnings, error) {
-	arObj := delObj.(*approvalv1.ApprovalRequest)
-	approvalrequestlog.Info("validate delete", "name", arObj.Name)
+func (ar *ApprovalRequestCustomValidator) ValidateDelete(_ context.Context, obj *approvalv1.ApprovalRequest) (admission.Warnings, error) {
+	approvalrequestlog.Info("validate delete", "name", obj.Name)
 	return nil, nil
 }

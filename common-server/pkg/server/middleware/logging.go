@@ -34,7 +34,7 @@ func WithOutput(w io.Writer) LoggerOption {
 	}
 }
 
-const jsonFormat = `{"time":"${time}","ip":"${ip}","host":"${host}","method":"${method}","path":"${path}","status":${status},"latency":"${latency}","queryParams":"${queryParams}", "cid": "${cid}"}` + "\n"
+const jsonFormat = `{"time":"${time}","ip":"${ip}","host":"${host}","method":"${method}","path":"${path}","status":${status},"latency":"${latency}","ua":"${ua}","queryParams":"${queryParams}","cid":"${cid}"}` + "\n"
 
 var formats = map[LogFormat]string{
 	LogFormatJSON: jsonFormat,
@@ -72,7 +72,7 @@ func NewLogger(opts ...LoggerOption) fiber.Handler {
 	})
 }
 
-func NewContextLogger(log *logr.Logger) fiber.Handler {
+func NewContextLogger(log logr.Logger) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx := c.UserContext()
 		cid := uuid.NewString()
