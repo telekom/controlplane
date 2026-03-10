@@ -39,7 +39,7 @@ jobs:
             ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - uses: sigstore/cosign-installer@v4.0.0
-      - uses: anchore/sbom-action/download-syft@v0.20.10
+      - uses: anchore/sbom-action/download-syft@v0.21.0
       - name: Install GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
