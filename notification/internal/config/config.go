@@ -42,7 +42,7 @@ func DefaultNotificationConfig() NotificationConfig {
 type NotificationHousekeepingConfig struct {
 
 	// TTLMonthsAfterFinished specifies how many months should the notification be kept in the system if it was successfully handled (all channels sent without error)
-	TTLMonthsAfterFinished int32 `json:"ttlMonthsAfterFinished,omitempty"`
+	TTLMonthsAfterFinished int32 `json:"ttlMonthsAfterFinished,omitempty" mapstructure:"ttlMonthsAfterFinished"`
 }
 
 // EmailAdapterConfig wrapper for the static config of the mail notification adapter
