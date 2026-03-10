@@ -45,7 +45,7 @@ resources:
 generatorOptions:
   disableNameSuffixHash: false
 
-configMapGenerator:
+secretGenerator:
 - name: controller-config
   files:
   - config.yaml=controller-config.yaml
