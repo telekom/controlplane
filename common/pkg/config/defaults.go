@@ -40,6 +40,20 @@ func defaultControllerConfig() ControllerConfig {
 		Log: LogConfig{
 			Development: true,
 		},
+		Features: []FeatureConfig{
+			{
+				"pubsub",
+				false,
+			},
+			{
+				"secret_manager",
+				true,
+			},
+			{
+				"file_manager",
+				true,
+			},
+		},
 	}
 }
 

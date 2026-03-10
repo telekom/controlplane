@@ -23,22 +23,27 @@ var _ = Describe("Defaults", func() {
 	})
 
 	Describe("defaultConfig", func() {
-		It("creates config with defaults and applies custom spec types", func() {
+		It("creates config with EmptySpec", func() {
 			// Test with EmptySpec
 			cfg := defaultConfig[EmptySpec](EmptySpecDefault)
 			Expect(cfg).NotTo(BeNil())
 			Expect(cfg.Common).NotTo(BeNil())
+			AssertAllDefaultsSet(&cfg.Common)
 			Expect(cfg.Spec).To(Equal(EmptySpec{}))
+		})
+
+		It("creates config with custom spec types", func() {
 
 			// Test with custom spec
 			type customSpec struct {
 				Value string
 			}
-			customCfg := defaultConfig[customSpec](func() customSpec {
+			cfg := defaultConfig[customSpec](func() customSpec {
 				return customSpec{Value: "test-value"}
 			})
-			Expect(customCfg.Spec.Value).To(Equal("test-value"))
-			Expect(customCfg.Common.Metrics.BindAddress).To(Equal("0"))
+			Expect(cfg.Spec.Value).To(Equal("test-value"))
+			Expect(cfg.Common.Metrics.BindAddress).To(Equal("0"))
+			AssertAllDefaultsSet(&cfg.Common)
 
 			// Test with different spec types
 			type spec1 struct {
@@ -48,9 +53,13 @@ var _ = Describe("Defaults", func() {
 				Field2 int
 			}
 			cfg1 := defaultConfig[spec1](func() spec1 { return spec1{Field1: "value1"} })
-			cfg2 := defaultConfig[spec2](func() spec2 { return spec2{Field2: 42} })
 			Expect(cfg1.Spec.Field1).To(Equal("value1"))
+			AssertAllDefaultsSet(&cfg1.Common)
+
+			cfg2 := defaultConfig[spec2](func() spec2 { return spec2{Field2: 42} })
 			Expect(cfg2.Spec.Field2).To(Equal(42))
+			AssertAllDefaultsSet(&cfg2.Common)
+
 		})
 	})
 })
@@ -123,6 +132,7 @@ func AssertAllDefaultsSet(cfg *ControllerConfig) {
 	AssertDefaultReconciler(cfg.Reconciler)
 	AssertDefaultLog(cfg.Log)
 	AssertDefaultWebhook(cfg.Webhook)
+	AssertDefaultFeatures(cfg.Features)
 	Expect(cfg.EnableHTTP2).To(BeFalse())
 }
 
@@ -130,4 +140,15 @@ func AssertAllDefaultsSet(cfg *ControllerConfig) {
 func AssertBindAddressesSet(metrics MetricsConfig, probe ProbeConfig) {
 	Expect(metrics.BindAddress).NotTo(BeEmpty())
 	Expect(probe.BindAddress).NotTo(BeEmpty())
+}
+
+// AssertDefaultFeatures validates the default feature flags.
+func AssertDefaultFeatures(features []FeatureConfig) {
+	Expect(features).To(HaveLen(3))
+	Expect(features[0].Name).To(Equal("pubsub"))
+	Expect(features[0].Enabled).To(BeFalse())
+	Expect(features[1].Name).To(Equal("secret_manager"))
+	Expect(features[1].Enabled).To(BeTrue())
+	Expect(features[2].Name).To(Equal("file_manager"))
+	Expect(features[2].Enabled).To(BeTrue())
 }

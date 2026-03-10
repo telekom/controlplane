@@ -5,6 +5,7 @@
 package config
 
 import (
+	_ "github.com/go-playground/validator/v10"
 	"time"
 )
 
@@ -64,8 +65,9 @@ type ControllerConfig struct {
 	Probe      ProbeConfig      `mapstructure:"probe" validate:"required"`
 	Reconciler ReconcilerConfig `mapstructure:"reconciler" validate:"required"`
 	// EnableHTTP2: If set, HTTP/2 will be enabled for the metrics and webhook servers
-	EnableHTTP2 bool      `mapstructure:"enableHTTP2"`
-	Log         LogConfig `mapstructure:"log"`
+	EnableHTTP2 bool            `mapstructure:"enableHTTP2"`
+	Log         LogConfig       `mapstructure:"log"`
+	Features    []FeatureConfig `mapstructure:"features"`
 }
 
 type ReconcilerConfig struct {
@@ -80,4 +82,9 @@ type ReconcilerConfig struct {
 	MaxBackoff time.Duration `mapstructure:"max-backoff" validate:"required"`
 	// MaxConcurrentReconciles is the maximum number of concurrent reconciles.
 	MaxConcurrentReconciles int `mapstructure:"max-concurrent-reconciles" validate:"required"`
+}
+
+type FeatureConfig struct {
+	Name    string `mapstructure:"name" validate:"required"`
+	Enabled bool   `mapstructure:"enabled"`
 }

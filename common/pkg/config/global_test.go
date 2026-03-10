@@ -130,6 +130,50 @@ common:
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cfg.Spec).To(Equal(EmptySpec{}))
 		})
+
+		It("overwrites default feature values when read from config map data", func() {
+			tmpDir := GinkgoT().TempDir()
+			configFile := filepath.Join(tmpDir, "config.yaml")
+			err := os.WriteFile(configFile, []byte(`
+common:
+  metrics:
+    bindAddress: ":9090"
+    secureServing: true
+    cert:
+      name: tls.crt
+      key: tls.key
+  probe:
+    bindAddress: ":8081"
+  log:
+    development: true
+  enableHTTP2: false
+  reconciler:
+    requeue-after-on-error: 1s
+    requeue-after: 30m
+    jitter-factor: 0.7
+    max-backoff: 5m
+    max-concurrent-reconciles: 10
+  webhook:
+    cert:
+      name: tls.crt
+      key: tls.key
+  features:
+    - name: pubsub
+      enabled: true
+    - name: secret_manager
+      enabled: false
+    - name: file_manager
+      enabled: false
+`), 0644)
+			Expect(err).ToNot(HaveOccurred())
+
+			cfg, err := LoadFromFile[EmptySpec](context.Background(), configFile, EmptySpecDefault)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(cfg.Common.Features).To(ContainElement(FeatureConfig{"pubsub", true}))
+			Expect(cfg.Common.Features).To(ContainElement(FeatureConfig{"secret_manager", false}))
+			Expect(cfg.Common.Features).To(ContainElement(FeatureConfig{"file_manager", false}))
+		})
 	})
 
 	Describe("Load", func() {
