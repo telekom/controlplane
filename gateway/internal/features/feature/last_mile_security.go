@@ -9,12 +9,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
 
 	"github.com/telekom/controlplane/gateway/internal/features"
+
+	secrets "github.com/telekom/controlplane/secret-manager/api"
 )
 
 var _ features.Feature = &LastMileSecurityFeature{}
@@ -45,10 +48,12 @@ func (f *LastMileSecurityFeature) IsUsed(ctx context.Context, builder features.F
 }
 
 func (f *LastMileSecurityFeature) Apply(ctx context.Context, builder features.FeaturesBuilder) (err error) {
+	log := logr.FromContextOrDiscard(ctx)
 	route, ok := builder.GetRoute()
 	if !ok {
 		return features.ErrNoRoute
 	}
+
 	realm := builder.GetRealm()
 	envName := contextutil.EnvFromContextOrDie(ctx)
 
@@ -58,12 +63,20 @@ func (f *LastMileSecurityFeature) Apply(ctx context.Context, builder features.Fe
 
 	if route.IsProxy() {
 		// Proxy Route
-
 		upstream := route.Spec.Upstreams[0]
+		clientSecret := upstream.ClientSecret
+		if secrets.IsRef(clientSecret) {
+			log.V(1).Info("Resolving client secret from secret manager", "secretRef", clientSecret)
+			clientSecret, err = secrets.Get(ctx, clientSecret)
+			if err != nil {
+				return err
+			}
+		}
+
 		rtpPlugin.Config.Append.
 			AddHeader("issuer", upstream.IssuerUrl).
 			AddHeader("client_id", upstream.ClientId).
-			AddHeader("client_secret", upstream.ClientSecret).
+			AddHeader("client_secret", clientSecret).
 			AddHeader("remote_api_url", CreateRemoteApiUrl(route))
 
 	} else {

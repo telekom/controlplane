@@ -35,6 +35,11 @@ func (o *ObjectRef) GetNamespace() string {
 	return o.Namespace
 }
 
+// IsEmpty returns true if both Name and Namespace are empty
+func (o *ObjectRef) IsEmpty() bool {
+	return o.Name == "" && o.Namespace == ""
+}
+
 func (o *ObjectRef) K8s() client.ObjectKey {
 	return client.ObjectKey{
 		Name:      o.Name,
@@ -50,6 +55,7 @@ func (o *ObjectRef) DeepCopy() *ObjectRef {
 	return &ObjectRef{
 		Name:      o.Name,
 		Namespace: o.Namespace,
+		UID:       o.UID,
 	}
 }
 

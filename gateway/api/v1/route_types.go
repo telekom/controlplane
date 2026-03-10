@@ -68,8 +68,10 @@ type RouteSpec struct {
 	Realm types.ObjectRef `json:"realm"`
 	// PassThrough is a flag to pass through the request to the upstream without authentication
 	// +kubebuilder:default=false
-	PassThrough bool         `json:"passThrough"`
-	Upstreams   []Upstream   `json:"upstreams"`
+	PassThrough bool `json:"passThrough"`
+	// +kubebuilder:validation:MinItems=1
+	Upstreams []Upstream `json:"upstreams"`
+	// +kubebuilder:validation:MinItems=1
 	Downstreams []Downstream `json:"downstreams"`
 
 	Traffic Traffic `json:"traffic"`
@@ -81,6 +83,9 @@ type RouteSpec struct {
 	// Security is the security configuration for the route
 	// +kubebuilder:validation:Optional
 	Security *Security `json:"security,omitempty"`
+
+	// Buffering configures Kong request/response body buffering for this route
+	Buffering Buffering `json:"buffering,omitempty"`
 }
 
 func (route *Route) HasM2M() bool {
@@ -115,6 +120,10 @@ func (route *Route) HasM2MExternalIdpBasic() bool {
 		return false
 	}
 	return route.Spec.Security.M2M.ExternalIDP.Basic != nil
+}
+
+func (g *Route) HasDynamicUpstream() bool {
+	return g.Spec.Traffic.DynamicUpstream != nil
 }
 
 // RouteStatus defines the observed state of Route
@@ -161,6 +170,14 @@ func (g *Route) GetHost() string {
 
 func (g *Route) GetPath() string {
 	return g.Spec.Downstreams[0].Path
+}
+
+func (g *Route) GetRequestBuffering() bool {
+	return !g.Spec.Buffering.DisableRequestBuffering
+}
+
+func (g *Route) GetResponseBuffering() bool {
+	return !g.Spec.Buffering.DisableResponseBuffering
 }
 
 func (g *Route) SetRouteId(id string) {

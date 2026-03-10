@@ -9,6 +9,8 @@ type Traffic struct {
 	RateLimit *RateLimit `json:"rateLimit,omitempty"`
 
 	CircuitBreaker *CircuitBreaker `json:"circuitBreaker,omitempty"`
+
+	DynamicUpstream *DynamicUpstream `json:"dynamicUpstream,omitempty"`
 }
 
 type ConsumeRouteTraffic struct {
@@ -64,4 +66,16 @@ type RateLimitOptions struct {
 	// FaultTolerant defines if the rate limit plugin should be fault tolerant, if gateway is not able to access the config store
 	// +kubebuilder:default=true
 	FaultTolerant bool `json:"faultTolerant,omitempty"`
+}
+
+// DynamicUpstream configures runtime upstream URL resolution.
+// When set, the gateway resolves the actual upstream target from a
+// request query parameter instead of using the static upstream.
+type DynamicUpstream struct {
+	// QueryParameter is the name of the query parameter containing the target URL.
+	// The parameter will be removed from the forwarded request.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Pattern=`^[a-zA-Z0-9_-]+$`
+	QueryParameter string `json:"queryParameter"`
 }
