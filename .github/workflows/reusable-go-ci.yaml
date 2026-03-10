@@ -99,7 +99,7 @@ jobs:
           cache: false # Using a separate cache step
 
       - name: Restore Go Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/go-build
@@ -144,7 +144,7 @@ jobs:
           cache: false # Using a separate cache step
 
       - name: Restore Go Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/go-build
@@ -224,7 +224,7 @@ jobs:
           cache: false
 
       - name: Restore Go Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/go-build
@@ -256,7 +256,7 @@ jobs:
           cache: false
 
       - name: Restore Go Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/go-build
@@ -311,7 +311,7 @@ jobs:
           cache: false
 
       - name: Restore Go Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/go-build
