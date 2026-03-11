@@ -430,6 +430,7 @@ func (s *InmemoryObjectStore[T]) OnCreate(ctx context.Context, obj *unstructured
 
 func (s *InmemoryObjectStore[T]) OnUpdate(ctx context.Context, obj *unstructured.Unstructured) error {
 	key := calculateKey(obj)
+	obj = obj.DeepCopy()
 	informer.SanitizeObject(obj)
 
 	data, err := sonic.Marshal(obj.Object)
