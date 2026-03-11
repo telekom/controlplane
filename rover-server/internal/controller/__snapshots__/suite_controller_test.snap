@@ -890,30 +890,7 @@
   "next": "",
   "self": "http://example.com/apispecifications?cursor="
  },
- "items": [
-  {
-   "category": "other",
-   "id": "eni--hyperion--eni-distr-v1",
-   "name": "eni-distr-v1",
-   "specification": {
-    "info": {
-     "title": "Rover API",
-     "version": "1.0.0"
-    },
-    "openapi": "3.0.0",
-    "servers": [
-     {
-      "url": "http://rover-api.com/eni/distr/v1"
-     }
-    ]
-   },
-   "status": {
-    "processingState": "done",
-    "state": "complete"
-   },
-   "vendorApi": false
-  }
- ]
+ "items": []
 }
 ---
 

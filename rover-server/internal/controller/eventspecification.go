@@ -14,6 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
+	security "github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
@@ -109,6 +110,7 @@ func (e *EventSpecificationController) Get(ctx context.Context, resourceId strin
 func (e *EventSpecificationController) GetAll(ctx context.Context, params api.GetAllEventSpecificationsParams) (*api.EventSpecificationListResponse, error) {
 	listOpts := store.NewListOpts()
 	listOpts.Cursor = params.Cursor
+	store.EnforcePrefix(security.PrefixFromContext(ctx), &listOpts)
 
 	objList, err := e.Store.List(ctx, listOpts)
 	if err != nil {
@@ -147,7 +149,7 @@ func (e *EventSpecificationController) Update(ctx context.Context, resourceId st
 
 	// Handle the optional specification payload
 	var specOrFileId string
-	if req.Specification != nil && len(req.Specification) > 0 {
+	if len(req.Specification) > 0 {
 		specMarshaled, marshalErr := json.Marshal(req.Specification)
 		if marshalErr != nil {
 			return res, problems.BadRequest(marshalErr.Error())
