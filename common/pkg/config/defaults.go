@@ -11,7 +11,7 @@ import "time"
 func defaultControllerConfig() ControllerConfig {
 	return ControllerConfig{
 		Metrics: MetricsConfig{
-			BindAddress:   "0",
+			BindAddress:   ":8443",
 			SecureServing: true,
 			Cert: CertConfig{
 				Path: "",
