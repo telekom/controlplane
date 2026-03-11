@@ -20,7 +20,7 @@ func (s secretValue) Value() string {
 // IsEmpty checks if the secret value is empty.
 // An empty value is defined as an empty string or an empty JSON object "{}".
 func (s secretValue) IsEmpty() bool {
-	return s.value == "" || s.value == "{}"
+	return s.value == NoValue || s.value == "{}"
 }
 
 func (s secretValue) EqualString(value string) bool {
@@ -29,6 +29,13 @@ func (s secretValue) EqualString(value string) bool {
 
 func (s secretValue) AllowChange() bool {
 	return s.allowChange
+}
+
+func (s secretValue) Copy() SecretValue {
+	return secretValue{
+		value:       s.value,
+		allowChange: s.allowChange,
+	}
 }
 
 // Empty returns a SecretValue that is empty and not allowed to be changed

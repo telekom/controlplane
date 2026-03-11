@@ -57,7 +57,7 @@ func FromString(raw string) (id Id, err error) {
 	if id.env == "" {
 		return id, backend.ErrInvalidSecretId(raw)
 	}
-	if id.app != "" && id.team == "" {
+	if id.app != backend.NoApp && id.team == backend.NoTeam {
 		return id, backend.ErrInvalidSecretId(raw)
 	}
 
@@ -73,7 +73,7 @@ func (id Id) String() string {
 }
 
 func (id Id) Namespace() string {
-	if id.app == "" {
+	if id.app == backend.NoApp {
 		// if app is empty, this must be an env or team secrets
 		// These are located in the env namespace
 		return id.env
@@ -86,13 +86,13 @@ func (id Id) ObjectKey() client.ObjectKey {
 	// namespace == env
 	name := "secrets"
 
-	if id.app != "" {
+	if id.app != backend.NoApp {
 		// app secrets
 		// name == app-name
 		// namespace == env--team
 		name = id.app
 
-	} else if id.team != "" {
+	} else if id.team != backend.NoTeam {
 		// team secrets
 		// name == team-name
 		// namespace == env
@@ -113,6 +113,24 @@ func (id Id) CopyWithChecksum(resourceId string) Id {
 
 func (id Id) Copy() backend.SecretId {
 	return Copy(id)
+}
+
+// CacheKey returns a stable cache key without the checksum.
+// This ensures the same logical secret always maps to the same cache entry
+// regardless of value changes.
+func (id Id) CacheKey() string {
+	return strings.Join([]string{id.env, id.team, id.app, id.path}, backend.Separator)
+}
+
+func (id Id) ParentId() backend.SecretId {
+	parentPath := id.Path()
+	if parentPath == "" {
+		return id
+	}
+	parentId := Copy(id)
+	parentId.path = parentPath
+	parentId.Raw = strings.Join([]string{parentId.env, parentId.team, parentId.app, parentId.path, backend.NoChecksum}, backend.Separator)
+	return parentId
 }
 
 func (id Id) SubPath() string {
