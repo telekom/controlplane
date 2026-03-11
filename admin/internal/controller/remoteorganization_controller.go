@@ -47,7 +47,7 @@ func (r *RemoteOrganizationReconciler) SetupWithManager(mgr ctrl.Manager) error 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&adminv1.RemoteOrganization{}).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			MaxConcurrentReconciles: cconfig.GetCommonConfig().Reconciler.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)

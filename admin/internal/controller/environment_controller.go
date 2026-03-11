@@ -47,7 +47,7 @@ func (r *EnvironmentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&adminv1.Environment{}).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+			MaxConcurrentReconciles: cconfig.GetCommonConfig().Reconciler.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
 		}).
 		Complete(r)

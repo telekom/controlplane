@@ -55,7 +55,7 @@ var _ = Describe("Notification Controller", Ordered, func() {
 
 			By("Mocking the actual email sender")
 			mockMailSender := &mailsendermock.MockEmailSender{}
-			mockMailSender.EXPECT().Send(mock.Anything, "test.from@somewhere.test", "Team Tardis", []string{"john.doe@example.com"}, "Subject: awesomeSubject\n", "Body: awesomeBody\n").Return(nil)
+			mockMailSender.EXPECT().Send(mock.Anything, "test.from@somewhere.test", "Team Controlplane", []string{"john.doe@example.com"}, "Subject: awesomeSubject\n", "Body: awesomeBody\n").Return(nil)
 
 			mailsender.NewSMTPSender = func(config *notificationconfig.EmailAdapterConfig) mailsender.EmailSender {
 				return mockMailSender
