@@ -132,7 +132,7 @@ func (p *ObjectParser) parseFile(filePath string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to read file "+filePath)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	switch ext {
 	case ".yaml", ".yml":
