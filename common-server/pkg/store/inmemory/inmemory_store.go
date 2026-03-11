@@ -429,6 +429,7 @@ func (s *InmemoryObjectStore[T]) OnCreate(ctx context.Context, obj *unstructured
 }
 
 func (s *InmemoryObjectStore[T]) OnUpdate(ctx context.Context, obj *unstructured.Unstructured) error {
+	obj = obj.DeepCopy()
 	key := calculateKey(obj)
 	informer.SanitizeObject(obj)
 
