@@ -35,7 +35,12 @@ type ResourceHandler interface {
 	// List retrieves all resources of this type from the server
 	List(ctx context.Context) ([]any, error)
 
+	// Info retrieves detailed information about a resource by name from the server
 	Info(ctx context.Context, name string) (any, error)
+
+	// InfoMany retrieves detailed information about multiple resources by their names from the server
+	// If names is empty, all resources of this type should be returned
+	InfoMany(ctx context.Context, names []string) (any, error)
 }
 
 type Waiter interface {

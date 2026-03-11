@@ -32,6 +32,10 @@ func NewRoverHandlerInstance() *RoverHandler {
 }
 
 func PatchRoverRequest(ctx context.Context, obj types.Object) error {
+	if obj == nil {
+		return nil
+	}
+
 	content := obj.GetContent()
 	spec, ok := content["spec"].(map[string]any)
 	if !ok {
