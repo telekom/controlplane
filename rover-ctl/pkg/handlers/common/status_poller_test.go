@@ -157,6 +157,36 @@ var _ = Describe("StatusPoller", func() {
 				// Verify the mock was called as expected
 				handler.AssertExpectations(GinkgoT())
 			})
+
+			It("should return an error when processing state is failed", func() {
+				// Create a poller with nil eval function (will use default)
+				defaultPoller := common.NewStatusPoller(handler, nil, timeout, interval)
+
+				// Status transitions: processing -> failed
+				inProgressStatus := &common.ObjectStatusResponse{
+					ProcessingState: "processing",
+					OverallStatus:   "pending",
+				}
+				failedStatus := &common.ObjectStatusResponse{
+					ProcessingState: "failed",
+					OverallStatus:   "error",
+				}
+
+				// Configure the mock to return statuses
+				handler.EXPECT().Status(mock.Anything, "test-resource").Return(inProgressStatus, nil).Once()
+				handler.EXPECT().Status(mock.Anything, "test-resource").Return(failedStatus, nil).Once()
+
+				// Start polling
+				result, err := defaultPoller.Start(testCtx, "test-resource")
+
+				// Verify that an error is returned for failed state
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("resource processing failed"))
+				Expect(result).To(BeNil())
+
+				// Verify the mock was called as expected
+				handler.AssertExpectations(GinkgoT())
+			})
 		})
 	})
 })
