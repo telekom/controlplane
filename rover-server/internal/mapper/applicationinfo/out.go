@@ -6,7 +6,6 @@ package applicationinfo
 
 import (
 	"context"
-	"net/url"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -156,10 +155,7 @@ func FillSubscriptionInfo(ctx context.Context, rover *roverv1.Rover, appInfo *ap
 		subInfo := api.SubscriptionInfo{}
 		eventSubInfo := mapEventSubscriptionInfo(eventSub)
 		eventSubInfo.HorizonSubscriptionId = eventSub.Status.SubscriptionId
-		eventSubInfo.HorizonSubscriptionUrl, err = url.JoinPath(eventSub.Status.URL, eventSub.Status.SubscriptionId)
-		if err != nil {
-			return errors.Wrap(err, "failed to construct horizon subscription URL")
-		}
+		eventSubInfo.HorizonSubscriptionUrl = eventSub.Status.URL
 		if err := subInfo.FromEventSubscriptionInfo(eventSubInfo); err != nil {
 			return errors.Wrap(err, "failed to convert event subscription info")
 		}

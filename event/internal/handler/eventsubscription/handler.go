@@ -7,6 +7,7 @@ package eventsubscription
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/pkg/errors"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
@@ -18,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/util"
@@ -243,7 +245,25 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 	obj.Status.Subscriber = types.ObjectRefFromObject(subscriber)
 
 	if obj.Spec.Delivery.Type == eventv1.DeliveryTypeServerSentEvent {
-		obj.Status.URL = exposure.Status.SseURLs[obj.Spec.Zone.Name]
+		baseUrl, ok := exposure.Status.SseURLs[obj.Spec.Zone.Name]
+		if !ok {
+			return ctrlerrors.BlockedErrorf("no SSE URL found in EventExposure status for zone %q", obj.Spec.Zone.Name)
+		}
+		hasSubId := len(subscriber.Status.SubscriptionId) > 0
+		if !hasSubId {
+			contextutil.RecorderFromContextOrDie(ctx).Event(obj, "Warning", "WaitingForSubscriptionId",
+				fmt.Sprintf("Waiting for subscription ID to be available in Subscriber status for zone %q", obj.Spec.Zone.Name))
+		}
+
+		if ok && hasSubId {
+			obj.Status.URL, err = url.JoinPath(baseUrl, subscriber.Status.SubscriptionId)
+			if err != nil {
+				return errors.Wrap(err, "failed to construct subscription URL for EventSubscription with SSE delivery")
+			}
+		} else {
+			return ctrlerrors.BlockedErrorf("Waiting for SSE URL for zone %q to be available", obj.Spec.Zone.Name)
+		}
+
 	}
 
 	logger.V(1).Info("Subscriber created/updated", "subscriber", subscriber.Name)

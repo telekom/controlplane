@@ -695,6 +695,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 		It("should not modify callback URL for SSE delivery in cross-zone scenario", func() {
 			et := makeReadyEventType(testEventType)
 			exposure := makeReadyEventExposure(testEventType, "expo-zone")
+			exposure.Status.SseURLs = map[string]string{"sub-zone": "https://sse.example.com/sub-zone"}
 			obj.Spec.Zone.Name = "sub-zone"
 			obj.Spec.Delivery.Type = eventv1.DeliveryTypeServerSentEvent
 			obj.Spec.Delivery.Callback = "" // SSE has no callback
@@ -727,7 +728,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			mockScheme()
 
 			mockApprovalBuilderGranted()
-			mockCreateOrUpdateSubscriber(controllerutil.OperationResultCreated, nil)
+			mockCreateOrUpdateSubscriberWithSubscriptionId("sub-123", controllerutil.OperationResultCreated, nil)
 			fakeClient.EXPECT().AllReady().Return(true).Once()
 
 			err := h.CreateOrUpdate(ctx, obj)
@@ -1009,13 +1010,14 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			// Build exposure with scopes that match the subscription's requested scopes
 			exposure := makeReadyEventExposure(testEventType, "expo-zone")
+			exposure.Status.SseURLs = map[string]string{"expo-zone": "https://sse.example.com/expo-zone"}
 			exposure.Spec.Scopes = []eventv1.EventScope{
 				{Name: "scope-a", Trigger: eventv1.EventTrigger{}},
 				{Name: "scope-b", Trigger: eventv1.EventTrigger{}},
 			}
 			setupUpToApproval(exposure)
 			mockApprovalBuilderGranted()
-			mockCreateOrUpdateSubscriber(controllerutil.OperationResultCreated, nil)
+			mockCreateOrUpdateSubscriberWithSubscriptionId("sub-456", controllerutil.OperationResultCreated, nil)
 			fakeClient.EXPECT().AllReady().Return(true).Once()
 
 			err := h.CreateOrUpdate(ctx, obj)
