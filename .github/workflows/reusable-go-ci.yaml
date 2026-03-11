@@ -88,7 +88,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # pin@v2.7.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -99,7 +99,7 @@ jobs:
           cache: false # Using a separate cache step
 
       - name: Restore Go Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/go-build
@@ -119,9 +119,9 @@ jobs:
 
       - name: Run golangci-lint
         if: ${{ inputs.run_lint }}
-        uses: golangci/golangci-lint-action@e7fa5ac41e1cf5b7d48e45e42232ce7ada589601 #pin@9.1.0
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 #pin@9.2.0
         with:
-          version: v2.1
+          version: v2.11
           working-directory: ${{ inputs.module }}
           args: --timeout 5m --issues-exit-code=0 --config ../.golangci.yml 
 
@@ -133,7 +133,7 @@ jobs:
       test_reports_artifact_id: ${{ steps.upload_test_reports_artifact_step.outputs.artifact-id }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # pin@v2.7.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -144,7 +144,7 @@ jobs:
           cache: false # Using a separate cache step
 
       - name: Restore Go Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/go-build
@@ -180,7 +180,7 @@ jobs:
 
       - name: Upload go test log
         if: ${{ always() }} # Upload even if previous steps fail
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # pin@v5.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # pin@v7.0.0
         with:
           name: ${{ inputs.name }}-gotest.log
           path: ${{ inputs.module }}/gotest.log
@@ -189,7 +189,7 @@ jobs:
       - name: Upload test reports artifact
         id: upload_test_reports_artifact_step
         if: ${{ always() }} # Upload even if previous steps fail
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # pin@v5.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # pin@v7.0.0
         with:
           name: ${{ inputs.name }}-test-report
           path: |
@@ -213,9 +213,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # pin@v2.7.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
+          persist-credentials: false
 
       - name: Setup Go
         uses: actions/setup-go@c0137caad775660c0844396c52da96e560aba63d # pin@5.5.0
@@ -224,7 +225,7 @@ jobs:
           cache: false
 
       - name: Restore Go Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/go-build
@@ -245,7 +246,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # pin@v2.7.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v2.7.0
         with:
           fetch-depth: 0 # CodeQL requires full history
 
@@ -256,7 +257,7 @@ jobs:
           cache: false
 
       - name: Restore Go Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/go-build
@@ -300,7 +301,7 @@ jobs:
       image_digest: ${{ steps.build_image_ko_step.outputs.digest }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # pin@v2.7.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v2.7.0
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
@@ -311,7 +312,7 @@ jobs:
           cache: false
 
       - name: Restore Go Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/go-build
@@ -363,7 +364,7 @@ jobs:
     steps:
       # No checkout or Go setup needed if only running Trivy on a remote image
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.2
         with:
           image-ref: ${{ inputs.container_registry }}/${{ inputs.github_repository }}/${{ inputs.name }}@${{ needs.build.outputs.image_digest }}
           exit-code: "1"
