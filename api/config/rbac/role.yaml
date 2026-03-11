@@ -8,6 +8,13 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
   - admin.cp.ei.telekom.de
   resources:
   - remoteorganizations
@@ -92,13 +99,6 @@ rules:
   - get
   - list
   - watch
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - create
-  - patch
 - apiGroups:
   - gateway.cp.ei.telekom.de
   resources:
