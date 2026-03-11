@@ -40,6 +40,9 @@ var toDatastorePrefix = func(rpf ResourcePathFunc, templates map[ClientType]Comp
 			return "", err
 		}
 		if bCtx.ClientType == ClientTypeTeam && !strings.HasSuffix(rp, "/") {
+			// The template might look like this "{{ .B.Environment }}--{{ .B.Group }}--{{ .B.Team }}--"
+			// To avoid a malformed prefix like foo--bar--baz--/ we cut the suffix and instead add the DB-separator directly
+			rp, _ = strings.CutSuffix(rp, "--")
 			rp += "/"
 		}
 		return rp, nil
@@ -306,6 +309,17 @@ func shouldAllow(template ComparisonTemplates, compareCtxInfo CompareCtxInfo) (b
 		return false, fmt.Errorf("unknown MatchType: %v", template.MatchType)
 	}
 	return allow, err
+}
+
+// PrefixFromContext returns the prefix that was set by the check_access middleware.
+// It returns an empty string if no prefix is set.
+func PrefixFromContext(ctx context.Context) string {
+	if v := ctx.Value(prefixKey); v != nil {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
 }
 
 func isClientTypeSupported(clientType ClientType, templates map[ClientType]ComparisonTemplates) bool {
