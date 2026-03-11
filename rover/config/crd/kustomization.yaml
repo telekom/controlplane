@@ -8,6 +8,7 @@
 resources:
 - bases/rover.cp.ei.telekom.de_rovers.yaml
 - bases/rover.cp.ei.telekom.de_apispecifications.yaml
+- bases/rover.cp.ei.telekom.de_eventspecifications.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patches:

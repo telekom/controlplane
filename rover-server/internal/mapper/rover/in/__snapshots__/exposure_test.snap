@@ -52,7 +52,16 @@
 [Exposure Mapper mapExposure must map an EventExposure correctly - 1]
 &v1.Exposure{
     Api:   (*v1.ApiExposure)(nil),
-    Event: &v1.EventExposure{EventType:"tardis.horizon.demo.cetus.v1"},
+    Event: &v1.EventExposure{
+        EventType:  "tardis.horizon.demo.cetus.v1",
+        Visibility: "World",
+        Approval:   v1.Approval{
+            Strategy:     "Simple",
+            TrustedTeams: nil,
+        },
+        Scopes:                 nil,
+        AdditionalPublisherIds: nil,
+    },
 }
 ---
 

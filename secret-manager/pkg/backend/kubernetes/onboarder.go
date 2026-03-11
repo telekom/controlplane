@@ -6,6 +6,7 @@ package kubernetes
 
 import (
 	"context"
+	"maps"
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
@@ -49,7 +50,7 @@ func (k *KubernetesOnboarder) OnboardEnvironment(ctx context.Context, env string
 
 	mutate := func() error {
 		controllerutil.AddFinalizer(obj, FinalizerName)
-		obj.Data = mergeDataFormat(obj.Data, secrets)
+		obj.Data = applySecrets(options.Strategy, obj.Data, secrets)
 		return nil
 	}
 	_, err = controllerutil.CreateOrUpdate(ctx, k.client, obj, mutate)
@@ -85,7 +86,7 @@ func (k *KubernetesOnboarder) OnboardTeam(ctx context.Context, env string, teamI
 
 	mutate := func() error {
 		controllerutil.AddFinalizer(obj, FinalizerName)
-		obj.Data = mergeDataFormat(obj.Data, secrets)
+		obj.Data = applySecrets(options.Strategy, obj.Data, secrets)
 		return nil
 	}
 
@@ -121,7 +122,7 @@ func (k *KubernetesOnboarder) OnboardApplication(ctx context.Context, env string
 
 	mutate := func() error {
 		controllerutil.AddFinalizer(obj, FinalizerName)
-		obj.Data = mergeDataFormat(obj.Data, secrets)
+		obj.Data = applySecrets(options.Strategy, obj.Data, secrets)
 		return nil
 	}
 
@@ -230,11 +231,24 @@ func RemoveFinalizer(ctx context.Context, c client.Client, obj client.Object) er
 	return nil
 }
 
-func mergeDataFormat(existing map[string][]byte, newData map[string]backend.SecretValue) map[string][]byte {
+// applySecrets applies newData to the existing secret data based on the given strategy.
+// With "merge", existing keys not present in newData are preserved in the result.
+// With "replace" (or any other value, including empty string), only keys from newData
+// are included in the result.
+// In both modes, keys where AllowChange() is false and already exist in the existing
+// data will retain their existing value (immutable initial values).
+func applySecrets(strategy backend.WriteStrategy, existing map[string][]byte, newData map[string]backend.SecretValue) map[string][]byte {
 	result := make(map[string][]byte)
+
+	// For merge strategy, start by copying all existing keys
+	if strategy == backend.StrategyMerge {
+		maps.Copy(result, existing)
+	}
+
+	// Apply new data on top
 	for k, v := range newData {
-		_, keyExists := existing[k]
-		if keyExists && !v.AllowChange() {
+		if _, keyExists := existing[k]; keyExists && !v.AllowChange() {
+			// Preserve existing value for immutable (InitialString) secrets
 			result[k] = existing[k]
 			continue
 		}

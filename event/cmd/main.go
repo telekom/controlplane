@@ -1,0 +1,238 @@
+// Copyright 2026 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package main
+
+import (
+	"crypto/tls"
+	"flag"
+	"os"
+
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
+	"github.com/telekom/controlplane/common/pkg/config"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	secretsapi "github.com/telekom/controlplane/secret-manager/api"
+	secretmetrics "github.com/telekom/controlplane/secret-manager/api/metrics"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/selection"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	"github.com/telekom/controlplane/event/internal/controller"
+	"github.com/telekom/controlplane/event/internal/index"
+	webhookv1 "github.com/telekom/controlplane/event/internal/webhook/v1"
+	// +kubebuilder:scaffold:imports
+)
+
+var (
+	scheme   = runtime.NewScheme()
+	setupLog = ctrl.Log.WithName("setup")
+)
+
+func init() {
+	controller.RegisterSchemesOrDie(scheme)
+}
+
+// nolint:gocyclo
+func main() {
+	var metricsAddr string
+	var metricsCertPath, metricsCertName, metricsCertKey string
+	var webhookCertPath, webhookCertName, webhookCertKey string
+	var enableLeaderElection bool
+	var probeAddr string
+	var secureMetrics bool
+	var enableHTTP2 bool
+	var tlsOpts []func(*tls.Config)
+	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
+		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
+	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
+		"Enable leader election for controller manager. "+
+			"Enabling this will ensure there is only one active controller manager.")
+	flag.BoolVar(&secureMetrics, "metrics-secure", true,
+		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
+	flag.StringVar(&webhookCertPath, "webhook-cert-path", "", "The directory that contains the webhook certificate.")
+	flag.StringVar(&webhookCertName, "webhook-cert-name", "tls.crt", "The name of the webhook certificate file.")
+	flag.StringVar(&webhookCertKey, "webhook-cert-key", "tls.key", "The name of the webhook key file.")
+	flag.StringVar(&metricsCertPath, "metrics-cert-path", "",
+		"The directory that contains the metrics server certificate.")
+	flag.StringVar(&metricsCertName, "metrics-cert-name", "tls.crt", "The name of the metrics server certificate file.")
+	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
+	flag.BoolVar(&enableHTTP2, "enable-http2", false,
+		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	opts := zap.Options{
+		Development: true,
+	}
+	opts.BindFlags(flag.CommandLine)
+	flag.Parse()
+
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	secretmetrics.RegisterPrometheusMetrics(metrics.Registry)
+
+	// if the enable-http2 flag is false (the default), http/2 should be disabled
+	// due to its vulnerabilities. More specifically, disabling http/2 will
+	// prevent from being vulnerable to the HTTP/2 Stream Cancellation and
+	// Rapid Reset CVEs. For more information see:
+	// - https://github.com/advisories/GHSA-qppj-fm5r-hxr3
+	// - https://github.com/advisories/GHSA-4374-p667-p6c8
+	disableHTTP2 := func(c *tls.Config) {
+		setupLog.Info("disabling http/2")
+		c.NextProtos = []string{"http/1.1"}
+	}
+
+	if !enableHTTP2 {
+		tlsOpts = append(tlsOpts, disableHTTP2)
+	}
+
+	// Initial webhook TLS options
+	webhookTLSOpts := tlsOpts
+	webhookServerOptions := webhook.Options{
+		TLSOpts: webhookTLSOpts,
+	}
+
+	if len(webhookCertPath) > 0 {
+		setupLog.Info("Initializing webhook certificate watcher using provided certificates",
+			"webhook-cert-path", webhookCertPath, "webhook-cert-name", webhookCertName, "webhook-cert-key", webhookCertKey)
+
+		webhookServerOptions.CertDir = webhookCertPath
+		webhookServerOptions.CertName = webhookCertName
+		webhookServerOptions.KeyName = webhookCertKey
+	}
+
+	webhookServer := webhook.NewServer(webhookServerOptions)
+
+	// Metrics endpoint is enabled in 'config/default/kustomization.yaml'. The Metrics options configure the server.
+	// More info:
+	// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.22.4/pkg/metrics/server
+	// - https://book.kubebuilder.io/reference/metrics.html
+	metricsServerOptions := metricsserver.Options{
+		BindAddress:   metricsAddr,
+		SecureServing: secureMetrics,
+		TLSOpts:       tlsOpts,
+	}
+
+	if secureMetrics {
+		// FilterProvider is used to protect the metrics endpoint with authn/authz.
+		// These configurations ensure that only authorized users and service accounts
+		// can access the metrics endpoint. The RBAC are configured in 'config/rbac/kustomization.yaml'. More info:
+		// https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.22.4/pkg/metrics/filters#WithAuthenticationAndAuthorization
+		metricsServerOptions.FilterProvider = filters.WithAuthenticationAndAuthorization
+	}
+
+	// If the certificate is not specified, controller-runtime will automatically
+	// generate self-signed certificates for the metrics server. While convenient for development and testing,
+	// this setup is not recommended for production.
+	//
+	// TODO(user): If you enable certManager, uncomment the following lines:
+	// - [METRICS-WITH-CERTS] at config/default/kustomization.yaml to generate and use certificates
+	// managed by cert-manager for the metrics server.
+	// - [PROMETHEUS-WITH-CERTS] at config/prometheus/kustomization.yaml for TLS certification.
+	if len(metricsCertPath) > 0 {
+		setupLog.Info("Initializing metrics certificate watcher using provided certificates",
+			"metrics-cert-path", metricsCertPath, "metrics-cert-name", metricsCertName, "metrics-cert-key", metricsCertKey)
+
+		metricsServerOptions.CertDir = metricsCertPath
+		metricsServerOptions.CertName = metricsCertName
+		metricsServerOptions.KeyName = metricsCertKey
+	}
+
+	selector := labels.NewSelector()
+	requirement, err := labels.NewRequirement(config.DomainLabelKey, selection.In, []string{"event"})
+	if err != nil {
+		setupLog.Error(err, "unable to create label requirement")
+		os.Exit(1)
+	}
+	selector = selector.Add(*requirement)
+
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+		Scheme:                 scheme,
+		Metrics:                metricsServerOptions,
+		WebhookServer:          webhookServer,
+		HealthProbeBindAddress: probeAddr,
+		LeaderElection:         enableLeaderElection,
+		LeaderElectionID:       "5a9bf056.cp.ei.telekom.de",
+		Cache: cache.Options{
+			ByObject: map[client.Object]cache.ByObject{
+				&gatewayv1.Route{}: {
+					Label: selector,
+				},
+				&identityv1.Client{}: {
+					Label: selector,
+				},
+			},
+		},
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
+
+	rootCtx := ctrl.SetupSignalHandler()
+	index.RegisterIndicesOrDie(rootCtx, mgr)
+
+	if err := (&controller.EventConfigReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "EventConfig")
+		os.Exit(1)
+	}
+	if err := (&controller.EventTypeReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "EventType")
+		os.Exit(1)
+	}
+	if err := (&controller.EventExposureReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "EventExposure")
+		os.Exit(1)
+	}
+	if err := (&controller.EventSubscriptionReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "EventSubscription")
+		os.Exit(1)
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1.SetupEventConfigWebhookWithManager(mgr, secretsapi.API()); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "EventConfig")
+			os.Exit(1)
+		}
+	}
+	// +kubebuilder:scaffold:builder
+
+	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up health check")
+		os.Exit(1)
+	}
+	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up ready check")
+		os.Exit(1)
+	}
+
+	setupLog.Info("starting manager")
+	if err := mgr.Start(rootCtx); err != nil {
+		setupLog.Error(err, "problem running manager")
+		os.Exit(1)
+	}
+}

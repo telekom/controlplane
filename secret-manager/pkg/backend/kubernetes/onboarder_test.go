@@ -122,6 +122,150 @@ var _ = Describe("Kubernetes Onboarder", func() {
 			Expect(secret.Data).To(HaveKey("teamToken"))
 			Expect(string(secret.Data["teamToken"])).To(Equal("myteamtokenvalue"))
 		})
+
+		It("should preserve existing secrets with explicit merge strategy", func() {
+			onboarder := kubernetes.NewOnboarder(mockK8sClient)
+
+			// First onboard with a defined teamToken
+			_, err := onboarder.OnboardTeam(ctx, env, teamId,
+				backend.WithSecretValue("teamToken", backend.String("original-token")),
+			)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Verify initial state
+			secret := &corev1.Secret{}
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: teamId, Namespace: env}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Data).To(HaveLen(2))
+			Expect(string(secret.Data["teamToken"])).To(Equal("original-token"))
+			originalClientSecret := string(secret.Data["clientSecret"])
+
+			// Re-onboard with explicit merge strategy and provide a new teamToken value
+			_, err = onboarder.OnboardTeam(ctx, env, teamId,
+				backend.WithStrategy(backend.StrategyMerge),
+				backend.WithSecretValue("teamToken", backend.String("updated-token")),
+			)
+			Expect(err).ToNot(HaveOccurred())
+
+			// With merge:
+			// - teamToken should be updated to the new user-provided value
+			// - clientSecret should be preserved from existing (InitialString, AllowChange=false)
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: teamId, Namespace: env}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Data).To(HaveLen(2))
+			Expect(secret.Data).To(HaveKey("clientSecret"))
+			Expect(string(secret.Data["clientSecret"])).To(Equal(originalClientSecret))
+			Expect(secret.Data).To(HaveKey("teamToken"))
+			Expect(string(secret.Data["teamToken"])).To(Equal("updated-token"))
+		})
+
+		It("should replace all secrets with replace strategy", func() {
+			onboarder := kubernetes.NewOnboarder(mockK8sClient)
+
+			// First onboard to create the secret with initial data
+			_, err := onboarder.OnboardTeam(ctx, env, teamId,
+				backend.WithSecretValue("teamToken", backend.String("original-token")),
+			)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Verify initial state
+			secret := &corev1.Secret{}
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: teamId, Namespace: env}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Data).To(HaveLen(2))
+			originalClientSecret := string(secret.Data["clientSecret"])
+
+			// Manually add an extra key to the existing K8s secret to simulate
+			// a key that only exists in existing data (not in the template)
+			secret.Data["extraKey"] = []byte("extra-value")
+			err = mockK8sClient.Update(ctx, secret)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Verify extraKey exists
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: teamId, Namespace: env}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Data).To(HaveLen(3))
+			Expect(secret.Data).To(HaveKey("extraKey"))
+
+			// Re-onboard with replace strategy
+			_, err = onboarder.OnboardTeam(ctx, env, teamId,
+				backend.WithStrategy(backend.StrategyReplace),
+				backend.WithSecretValue("teamToken", backend.String("new-token")),
+			)
+			Expect(err).ToNot(HaveOccurred())
+
+			// With replace: only template keys survive, extraKey is dropped.
+			// clientSecret is InitialString (AllowChange=false), so its existing value is preserved.
+			// teamToken is String (AllowChange=true, user-provided), so it gets the new value.
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: teamId, Namespace: env}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Data).To(HaveLen(2))
+			Expect(secret.Data).To(HaveKey("clientSecret"))
+			Expect(string(secret.Data["clientSecret"])).To(Equal(originalClientSecret))
+			Expect(secret.Data).To(HaveKey("teamToken"))
+			Expect(string(secret.Data["teamToken"])).To(Equal("new-token"))
+			// extraKey should be gone with replace strategy
+			Expect(secret.Data).ToNot(HaveKey("extraKey"))
+		})
+
+		It("should preserve extra keys with explicit merge strategy", func() {
+			onboarder := kubernetes.NewOnboarder(mockK8sClient)
+
+			// First onboard to create the secret
+			_, err := onboarder.OnboardTeam(ctx, env, teamId)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Manually add an extra key to the existing K8s secret
+			secret := &corev1.Secret{}
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: teamId, Namespace: env}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			secret.Data["extraKey"] = []byte("extra-value")
+			err = mockK8sClient.Update(ctx, secret)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Re-onboard with explicit merge strategy
+			_, err = onboarder.OnboardTeam(ctx, env, teamId,
+				backend.WithStrategy(backend.StrategyMerge),
+			)
+			Expect(err).ToNot(HaveOccurred())
+
+			// With merge: extraKey should be preserved
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: teamId, Namespace: env}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Data).To(HaveLen(3))
+			Expect(secret.Data).To(HaveKey("clientSecret"))
+			Expect(secret.Data).To(HaveKey("teamToken"))
+			Expect(secret.Data).To(HaveKey("extraKey"))
+			Expect(string(secret.Data["extraKey"])).To(Equal("extra-value"))
+		})
+
+		It("should drop extra keys with default strategy (replace)", func() {
+			onboarder := kubernetes.NewOnboarder(mockK8sClient)
+
+			// First onboard to create the secret
+			_, err := onboarder.OnboardTeam(ctx, env, teamId)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Manually add an extra key to the existing K8s secret
+			secret := &corev1.Secret{}
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: teamId, Namespace: env}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			secret.Data["extraKey"] = []byte("extra-value")
+			err = mockK8sClient.Update(ctx, secret)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Re-onboard with no strategy (default is replace)
+			_, err = onboarder.OnboardTeam(ctx, env, teamId)
+			Expect(err).ToNot(HaveOccurred())
+
+			// With replace (default): extraKey should be dropped
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: teamId, Namespace: env}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Data).To(HaveLen(2))
+			Expect(secret.Data).To(HaveKey("clientSecret"))
+			Expect(secret.Data).To(HaveKey("teamToken"))
+			Expect(secret.Data).ToNot(HaveKey("extraKey"))
+		})
 	})
 
 	Context("Onboard Application", func() {

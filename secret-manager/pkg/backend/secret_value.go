@@ -31,6 +31,13 @@ func (s secretValue) AllowChange() bool {
 	return s.allowChange
 }
 
+func (s secretValue) Copy() SecretValue {
+	return secretValue{
+		value:       s.value,
+		allowChange: s.allowChange,
+	}
+}
+
 // Empty returns a SecretValue that is empty and not allowed to be changed
 func Empty() SecretValue {
 	return secretValue{}
