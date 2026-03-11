@@ -7,6 +7,7 @@ package middleware
 import (
 	"io"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -34,7 +35,7 @@ func WithOutput(w io.Writer) LoggerOption {
 	}
 }
 
-const jsonFormat = `{"time":"${time}","ip":"${ip}","host":"${host}","method":"${method}","path":"${path}","status":${status},"latency":"${latency}","ua":"${ua}","queryParams":"${queryParams}","cid":"${cid}"}` + "\n"
+const jsonFormat = `{"time":"${time}","ip":"${ip}","host":"${host}","method":"${method}","path":"${path}","status":${status},"latency":"${latency}ms","ua":"${ua}","queryParams":"${queryParams}","cid":"${cid}"}` + "\n"
 
 var formats = map[LogFormat]string{
 	LogFormatJSON: jsonFormat,
@@ -46,6 +47,10 @@ var logCorrelationId = func(output logger.Buffer, c *fiber.Ctx, _ *logger.Data, 
 		return 0, nil
 	}
 	return output.WriteString(cid.(string))
+}
+
+func requestLatencyMS(output logger.Buffer, _ *fiber.Ctx, data *logger.Data, _ string) (int, error) {
+	return output.WriteString(strconv.FormatInt(data.Stop.Sub(data.Start).Milliseconds(), 10))
 }
 
 func NewLogger(opts ...LoggerOption) fiber.Handler {
@@ -61,6 +66,8 @@ func NewLogger(opts ...LoggerOption) fiber.Handler {
 		Output: o.Output,
 		CustomTags: map[string]logger.LogFunc{
 			"cid": logCorrelationId,
+			// change of function requires update jsonFormat (hardcoded unit)
+			"latency": requestLatencyMS,
 		},
 		Format:       formats[o.Format],
 		TimeFormat:   time.RFC3339,
