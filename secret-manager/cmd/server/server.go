@@ -116,7 +116,7 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 				cache.WithTTL(cacheDuration),
 				cache.WithMaxCost(cacheMaxCostBytes),
 			)
-			metrics.RegisterMetrics(prometheus.DefaultRegisterer, nil)
+			metrics.RegisterMetrics(prometheus.DefaultRegisterer, cachedBackend.CacheSizeBytes)
 			onboarder := conjur.NewOnboarder(conjurWriteApi, cachedBackend)
 			onboarder.WithBouncer(bouncer.NewLocker("secret-onboard"))
 			c = controller.NewController(cachedBackend, onboarder)
