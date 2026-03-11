@@ -40,7 +40,7 @@ var toDatastorePrefix = func(rpf ResourcePathFunc, templates map[ClientType]Comp
 			return "", err
 		}
 		if bCtx.ClientType == ClientTypeTeam && !strings.HasSuffix(rp, "/") {
-			// The template might looks like this "{{ .B.Environment }}--{{ .B.Group }}--{{ .B.Team }}--"
+			// The template might look like this "{{ .B.Environment }}--{{ .B.Group }}--{{ .B.Team }}--"
 			// To avoid a malformed prefix like foo--bar--baz--/ we cut the suffix and instead add the DB-separator directly
 			rp, _ = strings.CutSuffix(rp, "--")
 			rp += "/"
