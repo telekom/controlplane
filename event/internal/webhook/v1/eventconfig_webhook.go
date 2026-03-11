@@ -10,11 +10,9 @@ import (
 	"fmt"
 
 	admissionv1 "k8s.io/api/admission/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/pkg/errors"
@@ -33,7 +31,7 @@ var log = logf.Log.WithName("eventconfig-resource")
 
 // SetupEventConfigWebhookWithManager registers the webhook for EventConfig in the manager.
 func SetupEventConfigWebhookWithManager(mgr ctrl.Manager, secretManager secretsapi.SecretManager) error {
-	return ctrl.NewWebhookManagedBy(mgr).For(&eventv1.EventConfig{}).
+	return ctrl.NewWebhookManagedBy(mgr, &eventv1.EventConfig{}).
 		WithValidator(&EventConfigCustomValidator{}).
 		WithDefaulter(&EventConfigCustomDefaulter{secretManager}).
 		Complete()
@@ -50,7 +48,7 @@ type EventConfigCustomDefaulter struct {
 	secretManager secretsapi.SecretManager
 }
 
-var _ webhook.CustomDefaulter = &EventConfigCustomDefaulter{}
+var _ admission.Defaulter[*eventv1.EventConfig] = &EventConfigCustomDefaulter{}
 
 // getOldEventConfig extracts the old EventConfig from the admission request context.
 // Returns the old object and true if this is an UPDATE operation with a valid old object.
@@ -150,12 +148,7 @@ func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCf
 }
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the Kind EventConfig.
-func (d *EventConfigCustomDefaulter) Default(ctx context.Context, obj runtime.Object) (err error) {
-	eventCfg, ok := obj.(*eventv1.EventConfig)
-	if !ok {
-		return fmt.Errorf("expected an EventConfig object but got %T", obj)
-	}
-
+func (d *EventConfigCustomDefaulter) Default(ctx context.Context, eventCfg *eventv1.EventConfig) (err error) {
 	if controller.IsBeingDeleted(eventCfg) {
 		return nil
 	}
@@ -221,31 +214,26 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, obj runtime.Ob
 type EventConfigCustomValidator struct {
 }
 
-var _ webhook.CustomValidator = &EventConfigCustomValidator{}
+var _ admission.Validator[*eventv1.EventConfig] = &EventConfigCustomValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type EventConfig.
-func (v *EventConfigCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *EventConfigCustomValidator) ValidateCreate(ctx context.Context, obj *eventv1.EventConfig) (admission.Warnings, error) {
 	return v.ValidateCreateOrUpdate(ctx, obj)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type EventConfig.
-func (v *EventConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (v *EventConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj *eventv1.EventConfig) (admission.Warnings, error) {
 	return v.ValidateCreateOrUpdate(ctx, newObj)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type EventConfig.
-func (v *EventConfigCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *EventConfigCustomValidator) ValidateDelete(ctx context.Context, obj *eventv1.EventConfig) (admission.Warnings, error) {
 
 	// Could check if there are any Events configured to use this EventConfig and prevent deletion if there are any, but for now we allow deletion without checks.
 	return nil, nil
 }
 
-func (v *EventConfigCustomValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	eventCfg, ok := obj.(*eventv1.EventConfig)
-	if !ok {
-		return nil, fmt.Errorf("expected a EventConfig object for the newObj but got %T", obj)
-	}
-
+func (v *EventConfigCustomValidator) ValidateCreateOrUpdate(ctx context.Context, eventCfg *eventv1.EventConfig) (admission.Warnings, error) {
 	if controller.IsBeingDeleted(eventCfg) {
 		return nil, nil
 	}

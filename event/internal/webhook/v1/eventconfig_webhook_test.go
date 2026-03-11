@@ -226,15 +226,6 @@ var _ = Describe("EventConfig Webhook", func() {
 				Expect(warnings).To(BeNil())
 			})
 		})
-
-		Context("wrong object type", func() {
-			It("should return an error when object is not EventConfig", func() {
-				wrongObj := &eventv1.EventConfigList{}
-				_, err := validator.ValidateCreate(ctx, wrongObj)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("expected a EventConfig object"))
-			})
-		})
 	})
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -399,13 +390,6 @@ var _ = Describe("EventConfig Webhook", func() {
 				Expect(newObj.Spec.Admin.Client.ClientSecret).To(Equal("new-admin-secret"))
 				Expect(newObj.Spec.Mesh.Client.ClientSecret).To(Equal("new-mesh-secret"))
 			})
-		})
-
-		It("should return an error when object is not EventConfig", func() {
-			wrongObj := &eventv1.EventConfigList{}
-			err := defaulter.Default(ctx, wrongObj)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("expected an EventConfig object"))
 		})
 	})
 
