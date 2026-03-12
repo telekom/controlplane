@@ -8,8 +8,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -37,10 +38,26 @@ const (
 	TemplatePlaceholderRequesterApplication = "requester_application"
 
 	TemplatePlaceholderEnvironment = "environment"
-	TemplatePlaceholderBasepath    = "basepath"
-	TemplatePlaceholderStateOld    = "state_old"
-	TemplatePlaceholderStateNew    = "state_new"
-	TemplatePlaceholderScopes      = "scopes"
+
+	// TemplatePlaceholderResourceName represents the resource, if the resourceType is api, then resourceName is the basepath
+	TemplatePlaceholderResourceName = "resource_name"
+
+	// TemplatePlaceholderResourceType can be api/event
+	TemplatePlaceholderResourceType = "resource_type"
+
+	TemplatePlaceholderStateOld = "state_old"
+	TemplatePlaceholderStateNew = "state_new"
+	TemplatePlaceholderScopes   = "scopes"
+)
+
+const (
+	NotificationPropertiesBasePath  = "basePath"
+	NotificationPropertiesEventType = "eventType"
+)
+
+const (
+	NotificationResourceTypeApi   = "API"
+	NotificationResourceTypeEvent = "event"
 )
 
 type Actor string
@@ -88,8 +105,18 @@ func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
 		}
 	}
 
-	// basepath
-	// the property is already present from the original requester properties
+	// handle the resource type and resource name
+	// api - basepath (set in api subscription handler)
+	if requesterPropertiesMap[NotificationPropertiesBasePath] != nil {
+		requesterPropertiesMap[TemplatePlaceholderResourceType] = NotificationResourceTypeApi
+		requesterPropertiesMap[TemplatePlaceholderResourceName] = requesterPropertiesMap[NotificationPropertiesBasePath]
+	}
+
+	// event - event type (set in event subscription handler)
+	if requesterPropertiesMap[NotificationPropertiesEventType] != nil {
+		requesterPropertiesMap[TemplatePlaceholderResourceType] = NotificationResourceTypeEvent
+		requesterPropertiesMap[TemplatePlaceholderResourceName] = requesterPropertiesMap[NotificationPropertiesEventType]
+	}
 
 	// scopes
 	if requesterPropertiesMap[TemplatePlaceholderScopes] == nil {
@@ -108,6 +135,22 @@ func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
 	requesterPropertiesMap[TemplatePlaceholderRequesterApplication] = requester.ApplicationRef.Name
 
 	return requesterPropertiesMap, nil
+}
+
+/*
+To make notifications more generic, we treat both api subscription and event subscription the same.
+If it's neither, the original value is retruned.
+*/
+func extractTargetKind(kind string) string {
+	if strings.EqualFold("apisubscription", kind) {
+		return "subscription"
+	}
+
+	if strings.EqualFold("eventsubscription", kind) {
+		return "subscription"
+	}
+
+	return kind
 }
 
 func SendNotification(ctx context.Context, data *NotificationData) (*types.ObjectRef, error) {
@@ -141,7 +184,7 @@ func SendNotification(ctx context.Context, data *NotificationData) (*types.Objec
 	purposeStringBuilder.WriteString(DELIMITER)
 
 	// target kind
-	purposeStringBuilder.WriteString(data.Target.GetKind())
+	purposeStringBuilder.WriteString(extractTargetKind(data.Target.GetKind()))
 	purposeStringBuilder.WriteString(DELIMITER)
 
 	// scenario
@@ -193,7 +236,8 @@ func initializeProperties() map[string]any {
 
 	// other
 	properties[TemplatePlaceholderEnvironment] = defaultValue
-	properties[TemplatePlaceholderBasepath] = defaultValue
+	properties[TemplatePlaceholderResourceName] = defaultValue
+	properties[TemplatePlaceholderResourceType] = defaultValue
 	properties[TemplatePlaceholderStateOld] = defaultValue
 	properties[TemplatePlaceholderStateNew] = defaultValue
 	properties[TemplatePlaceholderScopes] = defaultValue
