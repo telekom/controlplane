@@ -45,7 +45,7 @@ func main() {
 		log.Error(err, "failed to create ent client")
 		os.Exit(1)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	client.Intercept(interceptor.TeamFilterInterceptor())
 

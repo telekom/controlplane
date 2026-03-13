@@ -36,7 +36,7 @@ func NewEntClient(ctx context.Context, databaseURL string) (*ent.Client, error) 
 	if err := client.Schema.Create(ctx,
 		migrate.WithGlobalUniqueID(true),
 	); err != nil {
-		client.Close()
+		_ = client.Close()
 		return nil, fmt.Errorf("running schema migration: %w", err)
 	}
 
