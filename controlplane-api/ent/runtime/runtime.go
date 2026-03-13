@@ -177,6 +177,8 @@ func init() {
 	_ = approvalMixinFields1
 	approvalMixinFields2 := approvalMixin[2].Fields()
 	_ = approvalMixinFields2
+	approvalMixinFields3 := approvalMixin[3].Fields()
+	_ = approvalMixinFields3
 	approvalFields := schema.Approval{}.Fields()
 	_ = approvalFields
 	// approvalDescCreatedAt is the schema descriptor for created_at field.
@@ -194,15 +196,15 @@ func init() {
 	// approval.DefaultStatus holds the default value on creation for the status field.
 	approval.DefaultStatus = approvalDescStatus.Default.(model.ResourceStatus)
 	// approvalDescAction is the schema descriptor for action field.
-	approvalDescAction := approvalFields[0].Descriptor()
+	approvalDescAction := approvalMixinFields3[0].Descriptor()
 	// approval.ActionValidator is a validator for the "action" field. It is called by the builders before save.
 	approval.ActionValidator = approvalDescAction.Validators[0].(func(string) error)
 	// approvalDescDecisions is the schema descriptor for decisions field.
-	approvalDescDecisions := approvalFields[5].Descriptor()
+	approvalDescDecisions := approvalMixinFields3[5].Descriptor()
 	// approval.DefaultDecisions holds the default value on creation for the decisions field.
 	approval.DefaultDecisions = approvalDescDecisions.Default.([]model.Decision)
 	// approvalDescAvailableTransitions is the schema descriptor for available_transitions field.
-	approvalDescAvailableTransitions := approvalFields[6].Descriptor()
+	approvalDescAvailableTransitions := approvalMixinFields3[6].Descriptor()
 	// approval.DefaultAvailableTransitions holds the default value on creation for the available_transitions field.
 	approval.DefaultAvailableTransitions = approvalDescAvailableTransitions.Default.([]model.AvailableTransition)
 	approvalrequestMixin := schema.ApprovalRequest{}.Mixin()
@@ -219,6 +221,8 @@ func init() {
 	_ = approvalrequestMixinFields1
 	approvalrequestMixinFields2 := approvalrequestMixin[2].Fields()
 	_ = approvalrequestMixinFields2
+	approvalrequestMixinFields3 := approvalrequestMixin[3].Fields()
+	_ = approvalrequestMixinFields3
 	approvalrequestFields := schema.ApprovalRequest{}.Fields()
 	_ = approvalrequestFields
 	// approvalrequestDescCreatedAt is the schema descriptor for created_at field.
@@ -236,15 +240,15 @@ func init() {
 	// approvalrequest.DefaultStatus holds the default value on creation for the status field.
 	approvalrequest.DefaultStatus = approvalrequestDescStatus.Default.(model.ResourceStatus)
 	// approvalrequestDescAction is the schema descriptor for action field.
-	approvalrequestDescAction := approvalrequestFields[0].Descriptor()
+	approvalrequestDescAction := approvalrequestMixinFields3[0].Descriptor()
 	// approvalrequest.ActionValidator is a validator for the "action" field. It is called by the builders before save.
 	approvalrequest.ActionValidator = approvalrequestDescAction.Validators[0].(func(string) error)
 	// approvalrequestDescDecisions is the schema descriptor for decisions field.
-	approvalrequestDescDecisions := approvalrequestFields[5].Descriptor()
+	approvalrequestDescDecisions := approvalrequestMixinFields3[5].Descriptor()
 	// approvalrequest.DefaultDecisions holds the default value on creation for the decisions field.
 	approvalrequest.DefaultDecisions = approvalrequestDescDecisions.Default.([]model.Decision)
 	// approvalrequestDescAvailableTransitions is the schema descriptor for available_transitions field.
-	approvalrequestDescAvailableTransitions := approvalrequestFields[6].Descriptor()
+	approvalrequestDescAvailableTransitions := approvalrequestMixinFields3[6].Descriptor()
 	// approvalrequest.DefaultAvailableTransitions holds the default value on creation for the available_transitions field.
 	approvalrequest.DefaultAvailableTransitions = approvalrequestDescAvailableTransitions.Default.([]model.AvailableTransition)
 	environmentMixin := schema.Environment{}.Mixin()
