@@ -35,8 +35,8 @@ fmt:
 vet:
 	go vet ./...
 
-lint: vet
-	@echo "Lint passed"
+lint:
+	golangci-lint run
 
 clean:
 	rm -rf bin/
