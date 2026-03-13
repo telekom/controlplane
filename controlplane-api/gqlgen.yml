@@ -1,0 +1,76 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+schema: "*.graphql"
+
+exec:
+  layout: follow-schema
+  package: resolvers
+  filename_template: "{name}.generated.go"
+  dir: internal/resolvers
+
+resolver:
+  layout: follow-schema
+  package: resolvers
+  filename_template: "{name}.resolvers.go"
+  dir: internal/resolvers
+
+model:
+  filename: internal/resolvers/model/models.generated.go
+  package: model
+
+autobind:
+  - github.com/99designs/gqlgen/graphql/introspection
+  - github.com/telekom/controlplane/controlplane-api/ent
+  - github.com/telekom/controlplane/controlplane-api/ent/team
+  - github.com/telekom/controlplane/controlplane-api/ent/application
+  - github.com/telekom/controlplane/controlplane-api/ent/apiexposure
+  - github.com/telekom/controlplane/controlplane-api/ent/apisubscription
+
+models:
+  ID:
+    model:
+      - github.com/99designs/gqlgen/graphql.IntID
+  Node:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/ent.Noder
+  TeamInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.TeamInfo
+  RoverStatus:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RoverStatus
+  Member:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.Member
+  Upstream:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.Upstream
+  ApiInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApiInfo
+  ApprovalConfig:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApprovalConfig
+  RequesterInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RequesterInfo
+  DeciderInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DeciderInfo
+  Decision:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.Decision
+  AvailableTransition:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.AvailableTransition
+  ResourceStatus:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ResourceStatus
+  ResourceStatusPhase:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ResourceStatusPhase
+  TeamEnvironmentStatus:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.TeamEnvironmentStatus
