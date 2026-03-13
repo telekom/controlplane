@@ -1,0 +1,112 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Hand-written types that ent/entgql cannot auto-generate.
+# The ent-generated schema is in ent.graphql.
+
+# Reduced team information for cross-tenant contexts.
+type TeamInfo {
+  id: ID!
+  name: String!
+  "Group name for display"
+  groupName: String!
+  email: String
+}
+
+# Aggregated status from the Rover perspective.
+type RoverStatus {
+  "Overall phase: READY if all exposures/subscriptions are healthy"
+  phase: ResourceStatusPhase!
+  totalExposures: Int!
+  totalSubscriptions: Int!
+  activeExposures: Int!
+  activeSubscriptions: Int!
+}
+
+type Member {
+  name: String!
+  email: String!
+}
+
+type Upstream {
+  url: String!
+  weight: Int!
+}
+
+type ApiInfo {
+  basePath: String!
+  version: String!
+  category: String!
+  active: Boolean!
+}
+
+type ApprovalConfig {
+  strategy: ApprovalStrategy!
+  trustedTeams: [String!]!
+}
+
+type RequesterInfo {
+  teamName: String!
+  teamEmail: String!
+  reason: String
+  applicationName: String
+}
+
+type DeciderInfo {
+  teamName: String!
+  teamEmail: String
+}
+
+type Decision {
+  name: String!
+  email: String
+  comment: String
+  timestamp: String
+  resultingState: ApprovalState
+}
+
+type AvailableTransition {
+  action: ApprovalAction!
+  toState: ApprovalState!
+}
+
+type ResourceStatus {
+  phase: ResourceStatusPhase!
+  message: String
+}
+
+enum ResourceStatusPhase {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+
+enum ApprovalAction {
+  ALLOW
+  DENY
+  SUSPEND
+  RESUME
+}
+
+enum TeamSyncState {
+  SYNCHRONIZED
+  PROCESSING
+  NOT_SYNCHRONIZED
+  NOT_APPLIED
+}
+
+type TeamEnvironmentStatus {
+  environmentName: String!
+  state: TeamSyncState!
+  roverTokenRef: String
+}
+
+extend type Application {
+  "Owning team (reduced view for cross-tenant safety)"
+  ownerTeam: TeamInfo!
+  "Aggregated Rover status overview"
+  roverStatus: RoverStatus
+}
+
