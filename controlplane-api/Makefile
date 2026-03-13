@@ -27,7 +27,7 @@ build: generate
 	go build -o bin/controlplane-api ./cmd/main.go
 
 test:
-	go test ./... -v
+	go test ./... -coverprofile cover.out -json 2>&1 | tee gotest.log | gotestfmt
 
 fmt:
 	go fmt ./...
