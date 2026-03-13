@@ -1,0 +1,44 @@
+// Copyright 2025 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package schema
+
+import (
+	"entgo.io/contrib/entgql"
+	"entgo.io/ent"
+	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/edge"
+
+	schemamixin "github.com/telekom/controlplane/controlplane-api/ent/schema/mixin"
+)
+
+// ApprovalRequest holds the schema definition for the ApprovalRequest entity.
+type ApprovalRequest struct {
+	ent.Schema
+}
+
+func (ApprovalRequest) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		schemamixin.PrivacyMixin{},
+		schemamixin.TimestampsMixin{},
+		schemamixin.StatusMixin{},
+		schemamixin.ApprovalFieldsMixin{},
+	}
+}
+
+func (ApprovalRequest) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.From("api_subscription", ApiSubscription.Type).
+			Ref("approval_request").
+			Unique(),
+	}
+}
+
+func (ApprovalRequest) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entgql.QueryField(),
+		entgql.MultiOrder(),
+		entgql.RelayConnection(),
+	}
+}
