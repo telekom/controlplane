@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025 Deutsche Telekom IT GmbH
+//
+// SPDX-License-Identifier: Apache-2.0
 package resolvers
 
 // This file will be automatically regenerated based on the schema, any resolver
