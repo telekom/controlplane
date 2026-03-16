@@ -41,9 +41,6 @@ models:
   RoverStatus:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RoverStatus
-  Member:
-    model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.Member
   Upstream:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.Upstream

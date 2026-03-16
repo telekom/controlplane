@@ -3909,14 +3909,156 @@ func (ec *executionContext) fieldContext_Group_teams(_ context.Context, field gr
 				return ec.fieldContext_Team_email(ctx, field)
 			case "category":
 				return ec.fieldContext_Team_category(ctx, field)
-			case "members":
-				return ec.fieldContext_Team_members(ctx, field)
-			case "environments":
-				return ec.fieldContext_Team_environments(ctx, field)
 			case "roverTokenRef":
 				return ec.fieldContext_Team_roverTokenRef(ctx, field)
 			case "group":
 				return ec.fieldContext_Team_group(ctx, field)
+			case "members":
+				return ec.fieldContext_Team_members(ctx, field)
+			case "environments":
+				return ec.fieldContext_Team_environments(ctx, field)
+			case "applications":
+				return ec.fieldContext_Team_applications(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Team", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Member_id(ctx context.Context, field graphql.CollectedField, obj *ent.Member) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Member_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Member_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Member",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Member_name(ctx context.Context, field graphql.CollectedField, obj *ent.Member) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Member_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Member_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Member",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Member_email(ctx context.Context, field graphql.CollectedField, obj *ent.Member) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Member_email,
+		func(ctx context.Context) (any, error) {
+			return obj.Email, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Member_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Member",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Member_team(ctx context.Context, field graphql.CollectedField, obj *ent.Member) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Member_team,
+		func(ctx context.Context) (any, error) {
+			return obj.Team(ctx)
+		},
+		nil,
+		ec.marshalOTeam2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeam,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Member_team(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Member",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Team_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Team_createdAt(ctx, field)
+			case "lastModifiedAt":
+				return ec.fieldContext_Team_lastModifiedAt(ctx, field)
+			case "status":
+				return ec.fieldContext_Team_status(ctx, field)
+			case "name":
+				return ec.fieldContext_Team_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Team_email(ctx, field)
+			case "category":
+				return ec.fieldContext_Team_category(ctx, field)
+			case "roverTokenRef":
+				return ec.fieldContext_Team_roverTokenRef(ctx, field)
+			case "group":
+				return ec.fieldContext_Team_group(ctx, field)
+			case "members":
+				return ec.fieldContext_Team_members(ctx, field)
+			case "environments":
+				return ec.fieldContext_Team_environments(ctx, field)
 			case "applications":
 				return ec.fieldContext_Team_applications(ctx, field)
 			}
@@ -4776,70 +4918,6 @@ func (ec *executionContext) fieldContext_Team_category(_ context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _Team_members(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Team_members,
-		func(ctx context.Context) (any, error) {
-			return obj.Members, nil
-		},
-		nil,
-		ec.marshalNMember2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐMemberᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Team_members(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Team",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "name":
-				return ec.fieldContext_Member_name(ctx, field)
-			case "email":
-				return ec.fieldContext_Member_email(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Member", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Team_environments(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Team_environments,
-		func(ctx context.Context) (any, error) {
-			return obj.Environments, nil
-		},
-		nil,
-		ec.marshalNString2ᚕstringᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Team_environments(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Team",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Team_roverTokenRef(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4905,6 +4983,80 @@ func (ec *executionContext) fieldContext_Team_group(_ context.Context, field gra
 				return ec.fieldContext_Group_teams(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Team_members(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Team_members,
+		func(ctx context.Context) (any, error) {
+			return obj.Members(ctx)
+		},
+		nil,
+		ec.marshalOMember2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐMemberᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Team_members(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Member_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Member_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Member_email(ctx, field)
+			case "team":
+				return ec.fieldContext_Member_team(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Member", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Team_environments(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Team_environments,
+		func(ctx context.Context) (any, error) {
+			return obj.Environments(ctx)
+		},
+		nil,
+		ec.marshalOEnvironment2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironmentᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Team_environments(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Environment_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Environment_name(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Environment", field.Name)
 		},
 	}
 	return fc, nil
@@ -5100,14 +5252,14 @@ func (ec *executionContext) fieldContext_TeamEdge_node(_ context.Context, field 
 				return ec.fieldContext_Team_email(ctx, field)
 			case "category":
 				return ec.fieldContext_Team_category(ctx, field)
-			case "members":
-				return ec.fieldContext_Team_members(ctx, field)
-			case "environments":
-				return ec.fieldContext_Team_environments(ctx, field)
 			case "roverTokenRef":
 				return ec.fieldContext_Team_roverTokenRef(ctx, field)
 			case "group":
 				return ec.fieldContext_Team_group(ctx, field)
+			case "members":
+				return ec.fieldContext_Team_members(ctx, field)
+			case "environments":
+				return ec.fieldContext_Team_environments(ctx, field)
 			case "applications":
 				return ec.fieldContext_Team_applications(ctx, field)
 			}
@@ -8340,6 +8492,302 @@ func (ec *executionContext) unmarshalInputGroupWhereInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputMemberWhereInput(ctx context.Context, obj any) (ent.MemberWhereInput, error) {
+	var it ent.MemberWhereInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "hasTeam", "hasTeamWith"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "not":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			data, err := ec.unmarshalOMemberWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐMemberWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Not = data
+		case "and":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			data, err := ec.unmarshalOMemberWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐMemberWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.And = data
+		case "or":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			data, err := ec.unmarshalOMemberWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐMemberWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Or = data
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "idNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDNEQ = data
+		case "idIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
+			data, err := ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDIn = data
+		case "idNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
+			data, err := ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDNotIn = data
+		case "idGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDGT = data
+		case "idGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDGTE = data
+		case "idLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDLT = data
+		case "idLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDLTE = data
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "nameNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameNEQ = data
+		case "nameIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameIn = data
+		case "nameNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameNotIn = data
+		case "nameGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameGT = data
+		case "nameGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameGTE = data
+		case "nameLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameLT = data
+		case "nameLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameLTE = data
+		case "nameContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameContains = data
+		case "nameHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameHasPrefix = data
+		case "nameHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameHasSuffix = data
+		case "nameEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameEqualFold = data
+		case "nameContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NameContainsFold = data
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		case "emailNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("emailNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmailNEQ = data
+		case "emailIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("emailIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmailIn = data
+		case "emailNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("emailNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmailNotIn = data
+		case "emailGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("emailGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmailGT = data
+		case "emailGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("emailGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmailGTE = data
+		case "emailLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("emailLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmailLT = data
+		case "emailLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("emailLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmailLTE = data
+		case "emailContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("emailContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmailContains = data
+		case "emailHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("emailHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmailHasPrefix = data
+		case "emailHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("emailHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmailHasSuffix = data
+		case "emailEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("emailEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmailEqualFold = data
+		case "emailContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("emailContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmailContainsFold = data
+		case "hasTeam":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTeam"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasTeam = data
+		case "hasTeamWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTeamWith"))
+			data, err := ec.unmarshalOTeamWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasTeamWith = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputTeamOrder(ctx context.Context, obj any) (ent.TeamOrder, error) {
 	var it ent.TeamOrder
 	if obj == nil {
@@ -8392,7 +8840,7 @@ func (ec *executionContext) unmarshalInputTeamWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "roverTokenRef", "roverTokenRefNEQ", "roverTokenRefIn", "roverTokenRefNotIn", "roverTokenRefGT", "roverTokenRefGTE", "roverTokenRefLT", "roverTokenRefLTE", "roverTokenRefContains", "roverTokenRefHasPrefix", "roverTokenRefHasSuffix", "roverTokenRefIsNil", "roverTokenRefNotNil", "roverTokenRefEqualFold", "roverTokenRefContainsFold", "hasGroup", "hasGroupWith", "hasApplications", "hasApplicationsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "roverTokenRef", "roverTokenRefNEQ", "roverTokenRefIn", "roverTokenRefNotIn", "roverTokenRefGT", "roverTokenRefGTE", "roverTokenRefLT", "roverTokenRefLTE", "roverTokenRefContains", "roverTokenRefHasPrefix", "roverTokenRefHasSuffix", "roverTokenRefIsNil", "roverTokenRefNotNil", "roverTokenRefEqualFold", "roverTokenRefContainsFold", "hasGroup", "hasGroupWith", "hasMembers", "hasMembersWith", "hasEnvironments", "hasEnvironmentsWith", "hasApplications", "hasApplicationsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8917,6 +9365,34 @@ func (ec *executionContext) unmarshalInputTeamWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.HasGroupWith = data
+		case "hasMembers":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasMembers"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasMembers = data
+		case "hasMembersWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasMembersWith"))
+			data, err := ec.unmarshalOMemberWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐMemberWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasMembersWith = data
+		case "hasEnvironments":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasEnvironments"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasEnvironments = data
+		case "hasEnvironmentsWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasEnvironmentsWith"))
+			data, err := ec.unmarshalOEnvironmentWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironmentWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasEnvironmentsWith = data
 		case "hasApplications":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasApplications"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -9292,6 +9768,11 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 			return graphql.Null
 		}
 		return ec._Team(ctx, sel, obj)
+	case *ent.Member:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Member(ctx, sel, obj)
 	case *ent.Group:
 		if obj == nil {
 			return graphql.Null
@@ -10808,6 +11289,88 @@ func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, ob
 	return out
 }
 
+var memberImplementors = []string{"Member", "Node"}
+
+func (ec *executionContext) _Member(ctx context.Context, sel ast.SelectionSet, obj *ent.Member) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, memberImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Member")
+		case "id":
+			out.Values[i] = ec._Member_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._Member_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "email":
+			out.Values[i] = ec._Member_email(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "team":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Member_team(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var pageInfoImplementors = []string{"PageInfo"}
 
 func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet, obj *entgql.PageInfo[int]) graphql.Marshaler {
@@ -11147,16 +11710,6 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "members":
-			out.Values[i] = ec._Team_members(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "environments":
-			out.Values[i] = ec._Team_environments(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "roverTokenRef":
 			out.Values[i] = ec._Team_roverTokenRef(ctx, field, obj)
 		case "group":
@@ -11169,6 +11722,72 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Team_group(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "members":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Team_members(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "environments":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Team_environments(ctx, field, obj)
 				return res
 			}
 
@@ -11716,6 +12335,16 @@ func (ec *executionContext) marshalNCursor2entgoᚗioᚋcontribᚋentgqlᚐCurso
 	return v
 }
 
+func (ec *executionContext) marshalNEnvironment2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironment(ctx context.Context, sel ast.SelectionSet, v *ent.Environment) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Environment(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNEnvironmentWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironmentWhereInput(ctx context.Context, v any) (*ent.EnvironmentWhereInput, error) {
 	res, err := ec.unmarshalInputEnvironmentWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -11723,6 +12352,21 @@ func (ec *executionContext) unmarshalNEnvironmentWhereInput2ᚖgithubᚗcomᚋte
 
 func (ec *executionContext) unmarshalNGroupWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐGroupWhereInput(ctx context.Context, v any) (*ent.GroupWhereInput, error) {
 	res, err := ec.unmarshalInputGroupWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNMember2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐMember(ctx context.Context, sel ast.SelectionSet, v *ent.Member) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Member(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNMemberWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐMemberWhereInput(ctx context.Context, v any) (*ent.MemberWhereInput, error) {
+	res, err := ec.unmarshalInputMemberWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -12608,6 +13252,25 @@ func (ec *executionContext) marshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCu
 	return v
 }
 
+func (ec *executionContext) marshalOEnvironment2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironmentᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.Environment) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNEnvironment2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironment(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalOEnvironmentWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironmentWhereInputᚄ(ctx context.Context, v any) ([]*ent.EnvironmentWhereInput, error) {
 	if v == nil {
 		return nil, nil
@@ -12664,6 +13327,51 @@ func (ec *executionContext) unmarshalOGroupWhereInput2ᚖgithubᚗcomᚋtelekom�
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputGroupWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMember2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐMemberᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.Member) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNMember2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐMember(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOMemberWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐMemberWhereInputᚄ(ctx context.Context, v any) ([]*ent.MemberWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*ent.MemberWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNMemberWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐMemberWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOMemberWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐMemberWhereInput(ctx context.Context, v any) (*ent.MemberWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputMemberWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

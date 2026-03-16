@@ -30,6 +30,9 @@ type Environment func(*sql.Selector)
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
 
+// Member is the predicate function for member builders.
+type Member func(*sql.Selector)
+
 // Team is the predicate function for team builders.
 type Team func(*sql.Selector)
 

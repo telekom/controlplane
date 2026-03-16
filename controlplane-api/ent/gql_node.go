@@ -24,6 +24,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/environment"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"golang.org/x/sync/semaphore"
@@ -68,6 +69,11 @@ var groupImplementors = []string{"Group", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*Group) IsNode() {}
+
+var memberImplementors = []string{"Member", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*Member) IsNode() {}
 
 var teamImplementors = []string{"Team", "Node"}
 
@@ -196,6 +202,15 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			Where(group.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, groupImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case member.Table:
+		query := c.Member.Query().
+			Where(member.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, memberImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -391,6 +406,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		query := c.Group.Query().
 			Where(group.IDIn(ids...))
 		query, err := query.CollectFields(ctx, groupImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case member.Table:
+		query := c.Member.Query().
+			Where(member.IDIn(ids...))
+		query, err := query.CollectFields(ctx, memberImplementors...)
 		if err != nil {
 			return nil, err
 		}

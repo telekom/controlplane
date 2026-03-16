@@ -4,12 +4,6 @@
 
 package model
 
-// Member represents a team member.
-type Member struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
 // Upstream represents an upstream service endpoint.
 type Upstream struct {
 	URL    string `json:"url"`

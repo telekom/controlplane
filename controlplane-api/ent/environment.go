@@ -20,8 +20,9 @@ type Environment struct {
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
-	Name         string `json:"name,omitempty"`
-	selectValues sql.SelectValues
+	Name              string `json:"name,omitempty"`
+	team_environments *int
+	selectValues      sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -33,6 +34,8 @@ func (*Environment) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case environment.FieldName:
 			values[i] = new(sql.NullString)
+		case environment.ForeignKeys[0]: // team_environments
+			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -59,6 +62,13 @@ func (_m *Environment) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				_m.Name = value.String
+			}
+		case environment.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field team_environments", value)
+			} else if value.Valid {
+				_m.team_environments = new(int)
+				*_m.team_environments = int(value.Int64)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

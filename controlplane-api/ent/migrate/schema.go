@@ -191,12 +191,21 @@ var (
 	EnvironmentsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 2147483647},
+		{Name: "team_environments", Type: field.TypeInt, Nullable: true},
 	}
 	// EnvironmentsTable holds the schema information for the "environments" table.
 	EnvironmentsTable = &schema.Table{
 		Name:       "environments",
 		Columns:    EnvironmentsColumns,
 		PrimaryKey: []*schema.Column{EnvironmentsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "environments_teams_environments",
+				Columns:    []*schema.Column{EnvironmentsColumns[2]},
+				RefColumns: []*schema.Column{TeamsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
@@ -211,6 +220,27 @@ var (
 		Columns:    GroupsColumns,
 		PrimaryKey: []*schema.Column{GroupsColumns[0]},
 	}
+	// MembersColumns holds the columns for the "members" table.
+	MembersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString, Size: 2147483647},
+		{Name: "email", Type: field.TypeString, Size: 2147483647},
+		{Name: "team_members", Type: field.TypeInt, Nullable: true},
+	}
+	// MembersTable holds the schema information for the "members" table.
+	MembersTable = &schema.Table{
+		Name:       "members",
+		Columns:    MembersColumns,
+		PrimaryKey: []*schema.Column{MembersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "members_teams_members",
+				Columns:    []*schema.Column{MembersColumns[3]},
+				RefColumns: []*schema.Column{TeamsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// TeamsColumns holds the columns for the "teams" table.
 	TeamsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -220,8 +250,6 @@ var (
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 2147483647},
 		{Name: "email", Type: field.TypeString, Size: 2147483647},
 		{Name: "category", Type: field.TypeEnum, Enums: []string{"CUSTOMER", "INFRASTRUCTURE"}, Default: "CUSTOMER"},
-		{Name: "members", Type: field.TypeJSON},
-		{Name: "environments", Type: field.TypeJSON},
 		{Name: "rover_token_ref", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "group_teams", Type: field.TypeInt, Nullable: true},
 	}
@@ -233,7 +261,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "teams_groups_teams",
-				Columns:    []*schema.Column{TeamsColumns[10]},
+				Columns:    []*schema.Column{TeamsColumns[8]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -270,6 +298,7 @@ var (
 		ApprovalRequestsTable,
 		EnvironmentsTable,
 		GroupsTable,
+		MembersTable,
 		TeamsTable,
 		ZonesTable,
 	}
@@ -283,6 +312,8 @@ func init() {
 	ApplicationsTable.ForeignKeys[1].RefTable = ZonesTable
 	ApprovalsTable.ForeignKeys[0].RefTable = APISubscriptionsTable
 	ApprovalRequestsTable.ForeignKeys[0].RefTable = APISubscriptionsTable
+	EnvironmentsTable.ForeignKeys[0].RefTable = TeamsTable
+	MembersTable.ForeignKeys[0].RefTable = TeamsTable
 	TeamsTable.ForeignKeys[0].RefTable = GroupsTable
 	ZonesTable.ForeignKeys[0].RefTable = APISubscriptionsTable
 }

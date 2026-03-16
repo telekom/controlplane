@@ -34,14 +34,14 @@ const (
 	FieldEmail = "email"
 	// FieldCategory holds the string denoting the category field in the database.
 	FieldCategory = "category"
-	// FieldMembers holds the string denoting the members field in the database.
-	FieldMembers = "members"
-	// FieldEnvironments holds the string denoting the environments field in the database.
-	FieldEnvironments = "environments"
 	// FieldRoverTokenRef holds the string denoting the rover_token_ref field in the database.
 	FieldRoverTokenRef = "rover_token_ref"
 	// EdgeGroup holds the string denoting the group edge name in mutations.
 	EdgeGroup = "group"
+	// EdgeMembers holds the string denoting the members edge name in mutations.
+	EdgeMembers = "members"
+	// EdgeEnvironments holds the string denoting the environments edge name in mutations.
+	EdgeEnvironments = "environments"
 	// EdgeApplications holds the string denoting the applications edge name in mutations.
 	EdgeApplications = "applications"
 	// Table holds the table name of the team in the database.
@@ -53,6 +53,20 @@ const (
 	GroupInverseTable = "groups"
 	// GroupColumn is the table column denoting the group relation/edge.
 	GroupColumn = "group_teams"
+	// MembersTable is the table that holds the members relation/edge.
+	MembersTable = "members"
+	// MembersInverseTable is the table name for the Member entity.
+	// It exists in this package in order to avoid circular dependency with the "member" package.
+	MembersInverseTable = "members"
+	// MembersColumn is the table column denoting the members relation/edge.
+	MembersColumn = "team_members"
+	// EnvironmentsTable is the table that holds the environments relation/edge.
+	EnvironmentsTable = "environments"
+	// EnvironmentsInverseTable is the table name for the Environment entity.
+	// It exists in this package in order to avoid circular dependency with the "environment" package.
+	EnvironmentsInverseTable = "environments"
+	// EnvironmentsColumn is the table column denoting the environments relation/edge.
+	EnvironmentsColumn = "team_environments"
 	// ApplicationsTable is the table that holds the applications relation/edge.
 	ApplicationsTable = "applications"
 	// ApplicationsInverseTable is the table name for the Application entity.
@@ -71,8 +85,6 @@ var Columns = []string{
 	FieldName,
 	FieldEmail,
 	FieldCategory,
-	FieldMembers,
-	FieldEnvironments,
 	FieldRoverTokenRef,
 }
 
@@ -117,10 +129,6 @@ var (
 	NameValidator func(string) error
 	// EmailValidator is a validator for the "email" field. It is called by the builders before save.
 	EmailValidator func(string) error
-	// DefaultMembers holds the default value on creation for the "members" field.
-	DefaultMembers []model.Member
-	// DefaultEnvironments holds the default value on creation for the "environments" field.
-	DefaultEnvironments []string
 )
 
 // Category defines the type for the "category" enum field.
@@ -194,6 +202,34 @@ func ByGroupField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
+// ByMembersCount orders the results by members count.
+func ByMembersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMembersStep(), opts...)
+	}
+}
+
+// ByMembers orders the results by members terms.
+func ByMembers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMembersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByEnvironmentsCount orders the results by environments count.
+func ByEnvironmentsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEnvironmentsStep(), opts...)
+	}
+}
+
+// ByEnvironments orders the results by environments terms.
+func ByEnvironments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEnvironmentsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByApplicationsCount orders the results by applications count.
 func ByApplicationsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -212,6 +248,20 @@ func newGroupStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(GroupInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, GroupTable, GroupColumn),
+	)
+}
+func newMembersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MembersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, MembersTable, MembersColumn),
+	)
+}
+func newEnvironmentsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EnvironmentsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, EnvironmentsTable, EnvironmentsColumn),
 	)
 }
 func newApplicationsStep() *sqlgraph.Step {
