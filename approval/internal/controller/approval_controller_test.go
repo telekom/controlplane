@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
@@ -155,7 +156,7 @@ var _ = Describe("Approval Controller", Ordered, func() {
 
 		By("Validating the decider notification")
 		deciderNotificationRef := types.NamespacedName{
-			Name:      "approval--subscription--updated--decider--test-resource--559f5f87c",
+			Name:      "approval--subscription--updated--decider--test-resource--774dd8f84b",
 			Namespace: "default",
 		}
 
@@ -167,7 +168,7 @@ var _ = Describe("Approval Controller", Ordered, func() {
 
 		By("Validating the requester notification")
 		requesterNotificationRef := types.NamespacedName{
-			Name:      "approval--subscription--updated--requester--test-resource--7f57689449",
+			Name:      "approval--subscription--updated--requester--test-resource--585979b858",
 			Namespace: "default",
 		}
 
@@ -176,7 +177,7 @@ var _ = Describe("Approval Controller", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(requesterNotification.Spec.Purpose).To(Equal("approval--subscription--updated--requester"))
 		Expect(requesterNotification.Spec.Properties).NotTo(BeNil())
-		ExpectJSONEqual(requesterNotification.Spec.Properties.Raw, []byte(`{ "requester_team": "requester", "scopes": "read", "state_new": "Granted", "decider_application": "decider-app-name", "decider_group": "test", "environment": "test", "requester_application": "requester-app-name", "requester_group": "test", "state_old": "Pending", "basepath": "/eni/distr/v1", "decider_team": "decider" }`))
+		ExpectJSONEqual(requesterNotification.Spec.Properties.Raw, []byte(`{ "requester_team": "requester", "scopes": "read", "state_new": "Granted", "decider_application": "decider-app-name", "decider_group": "test", "environment": "test", "requester_application": "requester-app-name", "requester_group": "test", "state_old": "Pending", "basepath": "/eni/distr/v1", "decider_team": "decider", "resource_name": "/eni/distr/v1", "resource_type": "API"}`))
 	})
 
 	It("should successfully reconcile the rejected approval", func() {
