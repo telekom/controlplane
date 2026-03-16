@@ -1338,7 +1338,8 @@ type Team implements Node {
   email: String!
   category: TeamCategory!
   members: [Member!]!
-  environmentStatuses: [TeamEnvironmentStatus!]!
+  environments: [String!]!
+  roverTokenRef: String
   group: Group
   applications(
     """
@@ -1510,6 +1511,24 @@ input TeamWhereInput {
   categoryNEQ: TeamCategory
   categoryIn: [TeamCategory!]
   categoryNotIn: [TeamCategory!]
+  """
+  rover_token_ref field predicates
+  """
+  roverTokenRef: String
+  roverTokenRefNEQ: String
+  roverTokenRefIn: [String!]
+  roverTokenRefNotIn: [String!]
+  roverTokenRefGT: String
+  roverTokenRefGTE: String
+  roverTokenRefLT: String
+  roverTokenRefLTE: String
+  roverTokenRefContains: String
+  roverTokenRefHasPrefix: String
+  roverTokenRefHasSuffix: String
+  roverTokenRefIsNil: Boolean
+  roverTokenRefNotNil: Boolean
+  roverTokenRefEqualFold: String
+  roverTokenRefContainsFold: String
   """
   group edge predicates
   """

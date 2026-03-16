@@ -100,9 +100,23 @@ func (_c *TeamCreate) SetMembers(v []model.Member) *TeamCreate {
 	return _c
 }
 
-// SetEnvironmentStatuses sets the "environment_statuses" field.
-func (_c *TeamCreate) SetEnvironmentStatuses(v []model.TeamEnvironmentStatus) *TeamCreate {
-	_c.mutation.SetEnvironmentStatuses(v)
+// SetEnvironments sets the "environments" field.
+func (_c *TeamCreate) SetEnvironments(v []string) *TeamCreate {
+	_c.mutation.SetEnvironments(v)
+	return _c
+}
+
+// SetRoverTokenRef sets the "rover_token_ref" field.
+func (_c *TeamCreate) SetRoverTokenRef(v string) *TeamCreate {
+	_c.mutation.SetRoverTokenRef(v)
+	return _c
+}
+
+// SetNillableRoverTokenRef sets the "rover_token_ref" field if the given value is not nil.
+func (_c *TeamCreate) SetNillableRoverTokenRef(v *string) *TeamCreate {
+	if v != nil {
+		_c.SetRoverTokenRef(*v)
+	}
 	return _c
 }
 
@@ -203,9 +217,9 @@ func (_c *TeamCreate) defaults() error {
 		v := team.DefaultMembers
 		_c.mutation.SetMembers(v)
 	}
-	if _, ok := _c.mutation.EnvironmentStatuses(); !ok {
-		v := team.DefaultEnvironmentStatuses
-		_c.mutation.SetEnvironmentStatuses(v)
+	if _, ok := _c.mutation.Environments(); !ok {
+		v := team.DefaultEnvironments
+		_c.mutation.SetEnvironments(v)
 	}
 	return nil
 }
@@ -248,8 +262,8 @@ func (_c *TeamCreate) check() error {
 	if _, ok := _c.mutation.Members(); !ok {
 		return &ValidationError{Name: "members", err: errors.New(`ent: missing required field "Team.members"`)}
 	}
-	if _, ok := _c.mutation.EnvironmentStatuses(); !ok {
-		return &ValidationError{Name: "environment_statuses", err: errors.New(`ent: missing required field "Team.environment_statuses"`)}
+	if _, ok := _c.mutation.Environments(); !ok {
+		return &ValidationError{Name: "environments", err: errors.New(`ent: missing required field "Team.environments"`)}
 	}
 	return nil
 }
@@ -305,9 +319,13 @@ func (_c *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 		_spec.SetField(team.FieldMembers, field.TypeJSON, value)
 		_node.Members = value
 	}
-	if value, ok := _c.mutation.EnvironmentStatuses(); ok {
-		_spec.SetField(team.FieldEnvironmentStatuses, field.TypeJSON, value)
-		_node.EnvironmentStatuses = value
+	if value, ok := _c.mutation.Environments(); ok {
+		_spec.SetField(team.FieldEnvironments, field.TypeJSON, value)
+		_node.Environments = value
+	}
+	if value, ok := _c.mutation.RoverTokenRef(); ok {
+		_spec.SetField(team.FieldRoverTokenRef, field.TypeString, value)
+		_node.RoverTokenRef = &value
 	}
 	if nodes := _c.mutation.GroupIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

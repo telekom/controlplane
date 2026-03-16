@@ -134,11 +134,6 @@ func (r *decisionResolver) ResultingState(ctx context.Context, obj *model.Decisi
 	return &s, nil
 }
 
-// State is the resolver for the state field.
-func (r *teamEnvironmentStatusResolver) State(ctx context.Context, obj *model.TeamEnvironmentStatus) (model.TeamSyncState, error) {
-	return model.TeamSyncState(obj.State), nil
-}
-
 // ApprovalConfig returns ApprovalConfigResolver implementation.
 func (r *Resolver) ApprovalConfig() ApprovalConfigResolver { return &approvalConfigResolver{r} }
 
@@ -150,12 +145,6 @@ func (r *Resolver) AvailableTransition() AvailableTransitionResolver {
 // Decision returns DecisionResolver implementation.
 func (r *Resolver) Decision() DecisionResolver { return &decisionResolver{r} }
 
-// TeamEnvironmentStatus returns TeamEnvironmentStatusResolver implementation.
-func (r *Resolver) TeamEnvironmentStatus() TeamEnvironmentStatusResolver {
-	return &teamEnvironmentStatusResolver{r}
-}
-
 type approvalConfigResolver struct{ *Resolver }
 type availableTransitionResolver struct{ *Resolver }
 type decisionResolver struct{ *Resolver }
-type teamEnvironmentStatusResolver struct{ *Resolver }

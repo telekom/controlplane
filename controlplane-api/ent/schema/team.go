@@ -44,9 +44,12 @@ func (Team) Fields() []ent.Field {
 			Default("CUSTOMER"),
 		field.JSON("members", []model.Member{}).
 			Default([]model.Member{}),
-		field.JSON("environment_statuses", []model.TeamEnvironmentStatus{}).
-			Default([]model.TeamEnvironmentStatus{}).
+		field.Strings("environments").
+			Default([]string{}).
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
+		field.Text("rover_token_ref").
+			Optional().
+			Nillable(),
 	}
 }
 

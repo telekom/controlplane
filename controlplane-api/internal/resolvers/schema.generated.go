@@ -29,9 +29,6 @@ type AvailableTransitionResolver interface {
 type DecisionResolver interface {
 	ResultingState(ctx context.Context, obj *model.Decision) (*approval.State, error)
 }
-type TeamEnvironmentStatusResolver interface {
-	State(ctx context.Context, obj *model.TeamEnvironmentStatus) (model.TeamSyncState, error)
-}
 
 // endregion ************************** generated!.gotpl **************************
 
@@ -857,93 +854,6 @@ func (ec *executionContext) fieldContext_RoverStatus_activeSubscriptions(_ conte
 	return fc, nil
 }
 
-func (ec *executionContext) _TeamEnvironmentStatus_environmentName(ctx context.Context, field graphql.CollectedField, obj *model.TeamEnvironmentStatus) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TeamEnvironmentStatus_environmentName,
-		func(ctx context.Context) (any, error) {
-			return obj.EnvironmentName, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_TeamEnvironmentStatus_environmentName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TeamEnvironmentStatus",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TeamEnvironmentStatus_state(ctx context.Context, field graphql.CollectedField, obj *model.TeamEnvironmentStatus) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TeamEnvironmentStatus_state,
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.TeamEnvironmentStatus().State(ctx, obj)
-		},
-		nil,
-		ec.marshalNTeamSyncState2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTeamSyncState,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_TeamEnvironmentStatus_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TeamEnvironmentStatus",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type TeamSyncState does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TeamEnvironmentStatus_roverTokenRef(ctx context.Context, field graphql.CollectedField, obj *model.TeamEnvironmentStatus) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TeamEnvironmentStatus_roverTokenRef,
-		func(ctx context.Context) (any, error) {
-			return obj.RoverTokenRef, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_TeamEnvironmentStatus_roverTokenRef(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TeamEnvironmentStatus",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _TeamInfo_id(ctx context.Context, field graphql.CollectedField, obj *model.TeamInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1676,83 +1586,6 @@ func (ec *executionContext) _RoverStatus(ctx context.Context, sel ast.SelectionS
 	return out
 }
 
-var teamEnvironmentStatusImplementors = []string{"TeamEnvironmentStatus"}
-
-func (ec *executionContext) _TeamEnvironmentStatus(ctx context.Context, sel ast.SelectionSet, obj *model.TeamEnvironmentStatus) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, teamEnvironmentStatusImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("TeamEnvironmentStatus")
-		case "environmentName":
-			out.Values[i] = ec._TeamEnvironmentStatus_environmentName(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "state":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._TeamEnvironmentStatus_state(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "roverTokenRef":
-			out.Values[i] = ec._TeamEnvironmentStatus_roverTokenRef(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var teamInfoImplementors = []string{"TeamInfo"}
 
 func (ec *executionContext) _TeamInfo(ctx context.Context, sel ast.SelectionSet, obj *model.TeamInfo) graphql.Marshaler {
@@ -1955,26 +1788,6 @@ func (ec *executionContext) marshalNResourceStatusPhase2githubᚗcomᚋtelekom�
 	return res
 }
 
-func (ec *executionContext) marshalNTeamEnvironmentStatus2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTeamEnvironmentStatus(ctx context.Context, sel ast.SelectionSet, v model.TeamEnvironmentStatus) graphql.Marshaler {
-	return ec._TeamEnvironmentStatus(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNTeamEnvironmentStatus2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTeamEnvironmentStatusᚄ(ctx context.Context, sel ast.SelectionSet, v []model.TeamEnvironmentStatus) graphql.Marshaler {
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalNTeamEnvironmentStatus2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTeamEnvironmentStatus(ctx, sel, v[i])
-	})
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
 func (ec *executionContext) marshalNTeamInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTeamInfo(ctx context.Context, sel ast.SelectionSet, v model.TeamInfo) graphql.Marshaler {
 	return ec._TeamInfo(ctx, sel, &v)
 }
@@ -1987,16 +1800,6 @@ func (ec *executionContext) marshalNTeamInfo2ᚖgithubᚗcomᚋtelekomᚋcontrol
 		return graphql.Null
 	}
 	return ec._TeamInfo(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNTeamSyncState2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTeamSyncState(ctx context.Context, v any) (model.TeamSyncState, error) {
-	var res model.TeamSyncState
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNTeamSyncState2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTeamSyncState(ctx context.Context, sel ast.SelectionSet, v model.TeamSyncState) graphql.Marshaler {
-	return v
 }
 
 func (ec *executionContext) marshalNUpstream2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐUpstream(ctx context.Context, sel ast.SelectionSet, v model.Upstream) graphql.Marshaler {

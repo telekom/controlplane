@@ -74,10 +74,3 @@ const (
 	ResourceStatusPhaseError   ResourceStatusPhase = "ERROR"
 	ResourceStatusPhaseUnknown ResourceStatusPhase = "UNKNOWN"
 )
-
-// TeamEnvironmentStatus represents a team's state within a specific environment.
-type TeamEnvironmentStatus struct {
-	EnvironmentName string  `json:"environmentName"`
-	State           string  `json:"state"`
-	RoverTokenRef   *string `json:"roverTokenRef,omitempty"`
-}

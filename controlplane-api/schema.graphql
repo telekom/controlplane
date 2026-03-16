@@ -90,19 +90,6 @@ enum ApprovalAction {
   RESUME
 }
 
-enum TeamSyncState {
-  SYNCHRONIZED
-  PROCESSING
-  NOT_SYNCHRONIZED
-  NOT_APPLIED
-}
-
-type TeamEnvironmentStatus {
-  environmentName: String!
-  state: TeamSyncState!
-  roverTokenRef: String
-}
-
 extend type Application {
   "Owning team (reduced view for cross-tenant safety)"
   ownerTeam: TeamInfo!

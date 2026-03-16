@@ -2431,6 +2431,23 @@ type TeamWhereInput struct {
 	CategoryIn    []team.Category `json:"categoryIn,omitempty"`
 	CategoryNotIn []team.Category `json:"categoryNotIn,omitempty"`
 
+	// "rover_token_ref" field predicates.
+	RoverTokenRef             *string  `json:"roverTokenRef,omitempty"`
+	RoverTokenRefNEQ          *string  `json:"roverTokenRefNEQ,omitempty"`
+	RoverTokenRefIn           []string `json:"roverTokenRefIn,omitempty"`
+	RoverTokenRefNotIn        []string `json:"roverTokenRefNotIn,omitempty"`
+	RoverTokenRefGT           *string  `json:"roverTokenRefGT,omitempty"`
+	RoverTokenRefGTE          *string  `json:"roverTokenRefGTE,omitempty"`
+	RoverTokenRefLT           *string  `json:"roverTokenRefLT,omitempty"`
+	RoverTokenRefLTE          *string  `json:"roverTokenRefLTE,omitempty"`
+	RoverTokenRefContains     *string  `json:"roverTokenRefContains,omitempty"`
+	RoverTokenRefHasPrefix    *string  `json:"roverTokenRefHasPrefix,omitempty"`
+	RoverTokenRefHasSuffix    *string  `json:"roverTokenRefHasSuffix,omitempty"`
+	RoverTokenRefIsNil        bool     `json:"roverTokenRefIsNil,omitempty"`
+	RoverTokenRefNotNil       bool     `json:"roverTokenRefNotNil,omitempty"`
+	RoverTokenRefEqualFold    *string  `json:"roverTokenRefEqualFold,omitempty"`
+	RoverTokenRefContainsFold *string  `json:"roverTokenRefContainsFold,omitempty"`
+
 	// "group" edge predicates.
 	HasGroup     *bool              `json:"hasGroup,omitempty"`
 	HasGroupWith []*GroupWhereInput `json:"hasGroupWith,omitempty"`
@@ -2672,6 +2689,51 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 	}
 	if len(i.CategoryNotIn) > 0 {
 		predicates = append(predicates, team.CategoryNotIn(i.CategoryNotIn...))
+	}
+	if i.RoverTokenRef != nil {
+		predicates = append(predicates, team.RoverTokenRefEQ(*i.RoverTokenRef))
+	}
+	if i.RoverTokenRefNEQ != nil {
+		predicates = append(predicates, team.RoverTokenRefNEQ(*i.RoverTokenRefNEQ))
+	}
+	if len(i.RoverTokenRefIn) > 0 {
+		predicates = append(predicates, team.RoverTokenRefIn(i.RoverTokenRefIn...))
+	}
+	if len(i.RoverTokenRefNotIn) > 0 {
+		predicates = append(predicates, team.RoverTokenRefNotIn(i.RoverTokenRefNotIn...))
+	}
+	if i.RoverTokenRefGT != nil {
+		predicates = append(predicates, team.RoverTokenRefGT(*i.RoverTokenRefGT))
+	}
+	if i.RoverTokenRefGTE != nil {
+		predicates = append(predicates, team.RoverTokenRefGTE(*i.RoverTokenRefGTE))
+	}
+	if i.RoverTokenRefLT != nil {
+		predicates = append(predicates, team.RoverTokenRefLT(*i.RoverTokenRefLT))
+	}
+	if i.RoverTokenRefLTE != nil {
+		predicates = append(predicates, team.RoverTokenRefLTE(*i.RoverTokenRefLTE))
+	}
+	if i.RoverTokenRefContains != nil {
+		predicates = append(predicates, team.RoverTokenRefContains(*i.RoverTokenRefContains))
+	}
+	if i.RoverTokenRefHasPrefix != nil {
+		predicates = append(predicates, team.RoverTokenRefHasPrefix(*i.RoverTokenRefHasPrefix))
+	}
+	if i.RoverTokenRefHasSuffix != nil {
+		predicates = append(predicates, team.RoverTokenRefHasSuffix(*i.RoverTokenRefHasSuffix))
+	}
+	if i.RoverTokenRefIsNil {
+		predicates = append(predicates, team.RoverTokenRefIsNil())
+	}
+	if i.RoverTokenRefNotNil {
+		predicates = append(predicates, team.RoverTokenRefNotNil())
+	}
+	if i.RoverTokenRefEqualFold != nil {
+		predicates = append(predicates, team.RoverTokenRefEqualFold(*i.RoverTokenRefEqualFold))
+	}
+	if i.RoverTokenRefContainsFold != nil {
+		predicates = append(predicates, team.RoverTokenRefContainsFold(*i.RoverTokenRefContainsFold))
 	}
 
 	if i.HasGroup != nil {

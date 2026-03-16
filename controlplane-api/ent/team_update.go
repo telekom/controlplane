@@ -109,15 +109,35 @@ func (_u *TeamUpdate) AppendMembers(v []model.Member) *TeamUpdate {
 	return _u
 }
 
-// SetEnvironmentStatuses sets the "environment_statuses" field.
-func (_u *TeamUpdate) SetEnvironmentStatuses(v []model.TeamEnvironmentStatus) *TeamUpdate {
-	_u.mutation.SetEnvironmentStatuses(v)
+// SetEnvironments sets the "environments" field.
+func (_u *TeamUpdate) SetEnvironments(v []string) *TeamUpdate {
+	_u.mutation.SetEnvironments(v)
 	return _u
 }
 
-// AppendEnvironmentStatuses appends value to the "environment_statuses" field.
-func (_u *TeamUpdate) AppendEnvironmentStatuses(v []model.TeamEnvironmentStatus) *TeamUpdate {
-	_u.mutation.AppendEnvironmentStatuses(v)
+// AppendEnvironments appends value to the "environments" field.
+func (_u *TeamUpdate) AppendEnvironments(v []string) *TeamUpdate {
+	_u.mutation.AppendEnvironments(v)
+	return _u
+}
+
+// SetRoverTokenRef sets the "rover_token_ref" field.
+func (_u *TeamUpdate) SetRoverTokenRef(v string) *TeamUpdate {
+	_u.mutation.SetRoverTokenRef(v)
+	return _u
+}
+
+// SetNillableRoverTokenRef sets the "rover_token_ref" field if the given value is not nil.
+func (_u *TeamUpdate) SetNillableRoverTokenRef(v *string) *TeamUpdate {
+	if v != nil {
+		_u.SetRoverTokenRef(*v)
+	}
+	return _u
+}
+
+// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
+func (_u *TeamUpdate) ClearRoverTokenRef() *TeamUpdate {
+	_u.mutation.ClearRoverTokenRef()
 	return _u
 }
 
@@ -284,13 +304,19 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			sqljson.Append(u, team.FieldMembers, value)
 		})
 	}
-	if value, ok := _u.mutation.EnvironmentStatuses(); ok {
-		_spec.SetField(team.FieldEnvironmentStatuses, field.TypeJSON, value)
+	if value, ok := _u.mutation.Environments(); ok {
+		_spec.SetField(team.FieldEnvironments, field.TypeJSON, value)
 	}
-	if value, ok := _u.mutation.AppendedEnvironmentStatuses(); ok {
+	if value, ok := _u.mutation.AppendedEnvironments(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, team.FieldEnvironmentStatuses, value)
+			sqljson.Append(u, team.FieldEnvironments, value)
 		})
+	}
+	if value, ok := _u.mutation.RoverTokenRef(); ok {
+		_spec.SetField(team.FieldRoverTokenRef, field.TypeString, value)
+	}
+	if _u.mutation.RoverTokenRefCleared() {
+		_spec.ClearField(team.FieldRoverTokenRef, field.TypeString)
 	}
 	if _u.mutation.GroupCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -460,15 +486,35 @@ func (_u *TeamUpdateOne) AppendMembers(v []model.Member) *TeamUpdateOne {
 	return _u
 }
 
-// SetEnvironmentStatuses sets the "environment_statuses" field.
-func (_u *TeamUpdateOne) SetEnvironmentStatuses(v []model.TeamEnvironmentStatus) *TeamUpdateOne {
-	_u.mutation.SetEnvironmentStatuses(v)
+// SetEnvironments sets the "environments" field.
+func (_u *TeamUpdateOne) SetEnvironments(v []string) *TeamUpdateOne {
+	_u.mutation.SetEnvironments(v)
 	return _u
 }
 
-// AppendEnvironmentStatuses appends value to the "environment_statuses" field.
-func (_u *TeamUpdateOne) AppendEnvironmentStatuses(v []model.TeamEnvironmentStatus) *TeamUpdateOne {
-	_u.mutation.AppendEnvironmentStatuses(v)
+// AppendEnvironments appends value to the "environments" field.
+func (_u *TeamUpdateOne) AppendEnvironments(v []string) *TeamUpdateOne {
+	_u.mutation.AppendEnvironments(v)
+	return _u
+}
+
+// SetRoverTokenRef sets the "rover_token_ref" field.
+func (_u *TeamUpdateOne) SetRoverTokenRef(v string) *TeamUpdateOne {
+	_u.mutation.SetRoverTokenRef(v)
+	return _u
+}
+
+// SetNillableRoverTokenRef sets the "rover_token_ref" field if the given value is not nil.
+func (_u *TeamUpdateOne) SetNillableRoverTokenRef(v *string) *TeamUpdateOne {
+	if v != nil {
+		_u.SetRoverTokenRef(*v)
+	}
+	return _u
+}
+
+// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
+func (_u *TeamUpdateOne) ClearRoverTokenRef() *TeamUpdateOne {
+	_u.mutation.ClearRoverTokenRef()
 	return _u
 }
 
@@ -665,13 +711,19 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 			sqljson.Append(u, team.FieldMembers, value)
 		})
 	}
-	if value, ok := _u.mutation.EnvironmentStatuses(); ok {
-		_spec.SetField(team.FieldEnvironmentStatuses, field.TypeJSON, value)
+	if value, ok := _u.mutation.Environments(); ok {
+		_spec.SetField(team.FieldEnvironments, field.TypeJSON, value)
 	}
-	if value, ok := _u.mutation.AppendedEnvironmentStatuses(); ok {
+	if value, ok := _u.mutation.AppendedEnvironments(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, team.FieldEnvironmentStatuses, value)
+			sqljson.Append(u, team.FieldEnvironments, value)
 		})
+	}
+	if value, ok := _u.mutation.RoverTokenRef(); ok {
+		_spec.SetField(team.FieldRoverTokenRef, field.TypeString, value)
+	}
+	if _u.mutation.RoverTokenRefCleared() {
+		_spec.ClearField(team.FieldRoverTokenRef, field.TypeString)
 	}
 	if _u.mutation.GroupCleared() {
 		edge := &sqlgraph.EdgeSpec{

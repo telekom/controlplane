@@ -5831,28 +5831,29 @@ func (m *GroupMutation) ResetEdge(name string) error {
 // TeamMutation represents an operation that mutates the Team nodes in the graph.
 type TeamMutation struct {
 	config
-	op                         Op
-	typ                        string
-	id                         *int
-	created_at                 *time.Time
-	last_modified_at           *time.Time
-	status                     *model.ResourceStatus
-	name                       *string
-	email                      *string
-	category                   *team.Category
-	members                    *[]model.Member
-	appendmembers              []model.Member
-	environment_statuses       *[]model.TeamEnvironmentStatus
-	appendenvironment_statuses []model.TeamEnvironmentStatus
-	clearedFields              map[string]struct{}
-	group                      *int
-	clearedgroup               bool
-	applications               map[int]struct{}
-	removedapplications        map[int]struct{}
-	clearedapplications        bool
-	done                       bool
-	oldValue                   func(context.Context) (*Team, error)
-	predicates                 []predicate.Team
+	op                  Op
+	typ                 string
+	id                  *int
+	created_at          *time.Time
+	last_modified_at    *time.Time
+	status              *model.ResourceStatus
+	name                *string
+	email               *string
+	category            *team.Category
+	members             *[]model.Member
+	appendmembers       []model.Member
+	environments        *[]string
+	appendenvironments  []string
+	rover_token_ref     *string
+	clearedFields       map[string]struct{}
+	group               *int
+	clearedgroup        bool
+	applications        map[int]struct{}
+	removedapplications map[int]struct{}
+	clearedapplications bool
+	done                bool
+	oldValue            func(context.Context) (*Team, error)
+	predicates          []predicate.Team
 }
 
 var _ ent.Mutation = (*TeamMutation)(nil)
@@ -6220,55 +6221,104 @@ func (m *TeamMutation) ResetMembers() {
 	m.appendmembers = nil
 }
 
-// SetEnvironmentStatuses sets the "environment_statuses" field.
-func (m *TeamMutation) SetEnvironmentStatuses(mes []model.TeamEnvironmentStatus) {
-	m.environment_statuses = &mes
-	m.appendenvironment_statuses = nil
+// SetEnvironments sets the "environments" field.
+func (m *TeamMutation) SetEnvironments(s []string) {
+	m.environments = &s
+	m.appendenvironments = nil
 }
 
-// EnvironmentStatuses returns the value of the "environment_statuses" field in the mutation.
-func (m *TeamMutation) EnvironmentStatuses() (r []model.TeamEnvironmentStatus, exists bool) {
-	v := m.environment_statuses
+// Environments returns the value of the "environments" field in the mutation.
+func (m *TeamMutation) Environments() (r []string, exists bool) {
+	v := m.environments
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldEnvironmentStatuses returns the old "environment_statuses" field's value of the Team entity.
+// OldEnvironments returns the old "environments" field's value of the Team entity.
 // If the Team object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TeamMutation) OldEnvironmentStatuses(ctx context.Context) (v []model.TeamEnvironmentStatus, err error) {
+func (m *TeamMutation) OldEnvironments(ctx context.Context) (v []string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldEnvironmentStatuses is only allowed on UpdateOne operations")
+		return v, errors.New("OldEnvironments is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldEnvironmentStatuses requires an ID field in the mutation")
+		return v, errors.New("OldEnvironments requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldEnvironmentStatuses: %w", err)
+		return v, fmt.Errorf("querying old value for OldEnvironments: %w", err)
 	}
-	return oldValue.EnvironmentStatuses, nil
+	return oldValue.Environments, nil
 }
 
-// AppendEnvironmentStatuses adds mes to the "environment_statuses" field.
-func (m *TeamMutation) AppendEnvironmentStatuses(mes []model.TeamEnvironmentStatus) {
-	m.appendenvironment_statuses = append(m.appendenvironment_statuses, mes...)
+// AppendEnvironments adds s to the "environments" field.
+func (m *TeamMutation) AppendEnvironments(s []string) {
+	m.appendenvironments = append(m.appendenvironments, s...)
 }
 
-// AppendedEnvironmentStatuses returns the list of values that were appended to the "environment_statuses" field in this mutation.
-func (m *TeamMutation) AppendedEnvironmentStatuses() ([]model.TeamEnvironmentStatus, bool) {
-	if len(m.appendenvironment_statuses) == 0 {
+// AppendedEnvironments returns the list of values that were appended to the "environments" field in this mutation.
+func (m *TeamMutation) AppendedEnvironments() ([]string, bool) {
+	if len(m.appendenvironments) == 0 {
 		return nil, false
 	}
-	return m.appendenvironment_statuses, true
+	return m.appendenvironments, true
 }
 
-// ResetEnvironmentStatuses resets all changes to the "environment_statuses" field.
-func (m *TeamMutation) ResetEnvironmentStatuses() {
-	m.environment_statuses = nil
-	m.appendenvironment_statuses = nil
+// ResetEnvironments resets all changes to the "environments" field.
+func (m *TeamMutation) ResetEnvironments() {
+	m.environments = nil
+	m.appendenvironments = nil
+}
+
+// SetRoverTokenRef sets the "rover_token_ref" field.
+func (m *TeamMutation) SetRoverTokenRef(s string) {
+	m.rover_token_ref = &s
+}
+
+// RoverTokenRef returns the value of the "rover_token_ref" field in the mutation.
+func (m *TeamMutation) RoverTokenRef() (r string, exists bool) {
+	v := m.rover_token_ref
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRoverTokenRef returns the old "rover_token_ref" field's value of the Team entity.
+// If the Team object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TeamMutation) OldRoverTokenRef(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRoverTokenRef is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRoverTokenRef requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRoverTokenRef: %w", err)
+	}
+	return oldValue.RoverTokenRef, nil
+}
+
+// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
+func (m *TeamMutation) ClearRoverTokenRef() {
+	m.rover_token_ref = nil
+	m.clearedFields[team.FieldRoverTokenRef] = struct{}{}
+}
+
+// RoverTokenRefCleared returns if the "rover_token_ref" field was cleared in this mutation.
+func (m *TeamMutation) RoverTokenRefCleared() bool {
+	_, ok := m.clearedFields[team.FieldRoverTokenRef]
+	return ok
+}
+
+// ResetRoverTokenRef resets all changes to the "rover_token_ref" field.
+func (m *TeamMutation) ResetRoverTokenRef() {
+	m.rover_token_ref = nil
+	delete(m.clearedFields, team.FieldRoverTokenRef)
 }
 
 // SetGroupID sets the "group" edge to the Group entity by id.
@@ -6398,7 +6448,7 @@ func (m *TeamMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TeamMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.created_at != nil {
 		fields = append(fields, team.FieldCreatedAt)
 	}
@@ -6420,8 +6470,11 @@ func (m *TeamMutation) Fields() []string {
 	if m.members != nil {
 		fields = append(fields, team.FieldMembers)
 	}
-	if m.environment_statuses != nil {
-		fields = append(fields, team.FieldEnvironmentStatuses)
+	if m.environments != nil {
+		fields = append(fields, team.FieldEnvironments)
+	}
+	if m.rover_token_ref != nil {
+		fields = append(fields, team.FieldRoverTokenRef)
 	}
 	return fields
 }
@@ -6445,8 +6498,10 @@ func (m *TeamMutation) Field(name string) (ent.Value, bool) {
 		return m.Category()
 	case team.FieldMembers:
 		return m.Members()
-	case team.FieldEnvironmentStatuses:
-		return m.EnvironmentStatuses()
+	case team.FieldEnvironments:
+		return m.Environments()
+	case team.FieldRoverTokenRef:
+		return m.RoverTokenRef()
 	}
 	return nil, false
 }
@@ -6470,8 +6525,10 @@ func (m *TeamMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldCategory(ctx)
 	case team.FieldMembers:
 		return m.OldMembers(ctx)
-	case team.FieldEnvironmentStatuses:
-		return m.OldEnvironmentStatuses(ctx)
+	case team.FieldEnvironments:
+		return m.OldEnvironments(ctx)
+	case team.FieldRoverTokenRef:
+		return m.OldRoverTokenRef(ctx)
 	}
 	return nil, fmt.Errorf("unknown Team field %s", name)
 }
@@ -6530,12 +6587,19 @@ func (m *TeamMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetMembers(v)
 		return nil
-	case team.FieldEnvironmentStatuses:
-		v, ok := value.([]model.TeamEnvironmentStatus)
+	case team.FieldEnvironments:
+		v, ok := value.([]string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetEnvironmentStatuses(v)
+		m.SetEnvironments(v)
+		return nil
+	case team.FieldRoverTokenRef:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRoverTokenRef(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Team field %s", name)
@@ -6566,7 +6630,11 @@ func (m *TeamMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *TeamMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(team.FieldRoverTokenRef) {
+		fields = append(fields, team.FieldRoverTokenRef)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -6579,6 +6647,11 @@ func (m *TeamMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *TeamMutation) ClearField(name string) error {
+	switch name {
+	case team.FieldRoverTokenRef:
+		m.ClearRoverTokenRef()
+		return nil
+	}
 	return fmt.Errorf("unknown Team nullable field %s", name)
 }
 
@@ -6607,8 +6680,11 @@ func (m *TeamMutation) ResetField(name string) error {
 	case team.FieldMembers:
 		m.ResetMembers()
 		return nil
-	case team.FieldEnvironmentStatuses:
-		m.ResetEnvironmentStatuses()
+	case team.FieldEnvironments:
+		m.ResetEnvironments()
+		return nil
+	case team.FieldRoverTokenRef:
+		m.ResetRoverTokenRef()
 		return nil
 	}
 	return fmt.Errorf("unknown Team field %s", name)

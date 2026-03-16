@@ -30,7 +30,6 @@ type ResolverRoot interface {
 	AvailableTransition() AvailableTransitionResolver
 	Decision() DecisionResolver
 	Query() QueryResolver
-	TeamEnvironmentStatus() TeamEnvironmentStatusResolver
 }
 
 type DirectiveRoot struct {
@@ -260,17 +259,18 @@ type ComplexityRoot struct {
 	}
 
 	Team struct {
-		Applications        func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) int
-		Category            func(childComplexity int) int
-		CreatedAt           func(childComplexity int) int
-		Email               func(childComplexity int) int
-		EnvironmentStatuses func(childComplexity int) int
-		Group               func(childComplexity int) int
-		ID                  func(childComplexity int) int
-		LastModifiedAt      func(childComplexity int) int
-		Members             func(childComplexity int) int
-		Name                func(childComplexity int) int
-		Status              func(childComplexity int) int
+		Applications   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) int
+		Category       func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		Email          func(childComplexity int) int
+		Environments   func(childComplexity int) int
+		Group          func(childComplexity int) int
+		ID             func(childComplexity int) int
+		LastModifiedAt func(childComplexity int) int
+		Members        func(childComplexity int) int
+		Name           func(childComplexity int) int
+		RoverTokenRef  func(childComplexity int) int
+		Status         func(childComplexity int) int
 	}
 
 	TeamConnection struct {
@@ -282,12 +282,6 @@ type ComplexityRoot struct {
 	TeamEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
-	}
-
-	TeamEnvironmentStatus struct {
-		EnvironmentName func(childComplexity int) int
-		RoverTokenRef   func(childComplexity int) int
-		State           func(childComplexity int) int
 	}
 
 	TeamInfo struct {
@@ -1379,12 +1373,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Team.Email(childComplexity), true
 
-	case "Team.environmentStatuses":
-		if e.ComplexityRoot.Team.EnvironmentStatuses == nil {
+	case "Team.environments":
+		if e.ComplexityRoot.Team.Environments == nil {
 			break
 		}
 
-		return e.ComplexityRoot.Team.EnvironmentStatuses(childComplexity), true
+		return e.ComplexityRoot.Team.Environments(childComplexity), true
 
 	case "Team.group":
 		if e.ComplexityRoot.Team.Group == nil {
@@ -1420,6 +1414,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Team.Name(childComplexity), true
+
+	case "Team.roverTokenRef":
+		if e.ComplexityRoot.Team.RoverTokenRef == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Team.RoverTokenRef(childComplexity), true
 
 	case "Team.status":
 		if e.ComplexityRoot.Team.Status == nil {
@@ -1462,27 +1463,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TeamEdge.Node(childComplexity), true
-
-	case "TeamEnvironmentStatus.environmentName":
-		if e.ComplexityRoot.TeamEnvironmentStatus.EnvironmentName == nil {
-			break
-		}
-
-		return e.ComplexityRoot.TeamEnvironmentStatus.EnvironmentName(childComplexity), true
-
-	case "TeamEnvironmentStatus.roverTokenRef":
-		if e.ComplexityRoot.TeamEnvironmentStatus.RoverTokenRef == nil {
-			break
-		}
-
-		return e.ComplexityRoot.TeamEnvironmentStatus.RoverTokenRef(childComplexity), true
-
-	case "TeamEnvironmentStatus.state":
-		if e.ComplexityRoot.TeamEnvironmentStatus.State == nil {
-			break
-		}
-
-		return e.ComplexityRoot.TeamEnvironmentStatus.State(childComplexity), true
 
 	case "TeamInfo.email":
 		if e.ComplexityRoot.TeamInfo.Email == nil {
@@ -2981,7 +2961,8 @@ type Team implements Node {
   email: String!
   category: TeamCategory!
   members: [Member!]!
-  environmentStatuses: [TeamEnvironmentStatus!]!
+  environments: [String!]!
+  roverTokenRef: String
   group: Group
   applications(
     """
@@ -3153,6 +3134,24 @@ input TeamWhereInput {
   categoryNEQ: TeamCategory
   categoryIn: [TeamCategory!]
   categoryNotIn: [TeamCategory!]
+  """
+  rover_token_ref field predicates
+  """
+  roverTokenRef: String
+  roverTokenRefNEQ: String
+  roverTokenRefIn: [String!]
+  roverTokenRefNotIn: [String!]
+  roverTokenRefGT: String
+  roverTokenRefGTE: String
+  roverTokenRefLT: String
+  roverTokenRefLTE: String
+  roverTokenRefContains: String
+  roverTokenRefHasPrefix: String
+  roverTokenRefHasSuffix: String
+  roverTokenRefIsNil: Boolean
+  roverTokenRefNotNil: Boolean
+  roverTokenRefEqualFold: String
+  roverTokenRefContainsFold: String
   """
   group edge predicates
   """
@@ -3339,19 +3338,6 @@ enum ApprovalAction {
   DENY
   SUSPEND
   RESUME
-}
-
-enum TeamSyncState {
-  SYNCHRONIZED
-  PROCESSING
-  NOT_SYNCHRONIZED
-  NOT_APPLIED
-}
-
-type TeamEnvironmentStatus {
-  environmentName: String!
-  state: TeamSyncState!
-  roverTokenRef: String
 }
 
 extend type Application {
