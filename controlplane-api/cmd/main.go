@@ -6,11 +6,7 @@ package main
 
 import (
 	"context"
-	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -22,6 +18,7 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
@@ -32,9 +29,9 @@ import (
 )
 
 func main() {
-	zapLog, _ := zap.NewProduction()
-	log := zapr.NewLogger(zapLog)
+	log := setupLogger()
 	ctx := logr.NewContext(context.Background(), log)
+	ctx = cserver.SignalHandler(ctx)
 
 	dbURL := envOrDefault("DATABASE_URL", "postgres://controlplane:controlplane@localhost:5432/controlplane?sslmode=disable")
 	addr := envOrDefault("LISTEN_ADDR", ":8080")
@@ -51,7 +48,9 @@ func main() {
 
 	srv := newGraphQLServer(client)
 
-	s := cserver.NewServer()
+	appCfg := cserver.NewAppConfig()
+	appCfg.CtxLog = log
+	s := cserver.NewServerWithApp(cserver.NewAppWithConfig(appCfg))
 
 	probesCtrl := cserver.NewProbesController()
 	probesCtrl.Register(s.App, cserver.ControllerOpts{})
@@ -66,24 +65,31 @@ func main() {
 		},
 	})
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
-		if err := s.Start(addr); err != nil && err != http.ErrServerClosed {
+		if err := s.Start(addr); err != nil {
 			log.Error(err, "failed to start server")
 		}
 	}()
 	log.Info("server started", "addr", addr)
 
-	sig := <-quit
-	log.Info("shutting down server", "signal", sig)
+	<-ctx.Done()
+	log.Info("shutting down server")
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	if err := s.App.ShutdownWithContext(shutdownCtx); err != nil {
+	if err := s.App.Shutdown(); err != nil {
 		log.Error(err, "failed to gracefully shutdown server")
 	}
+}
+
+func setupLogger() logr.Logger {
+	logCfg := zap.NewProductionConfig()
+	logCfg.DisableStacktrace = true
+	logCfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
+	zapLogLevel, err := zapcore.ParseLevel(envOrDefault("LOG_LEVEL", "info"))
+	if err != nil {
+		zapLogLevel = zapcore.InfoLevel
+	}
+	logCfg.Level.SetLevel(zapLogLevel)
+	return zapr.NewLogger(zap.Must(logCfg.Build()))
 }
 
 func newGraphQLServer(client *ent.Client) *handler.Server {
