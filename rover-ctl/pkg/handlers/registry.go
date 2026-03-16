@@ -50,10 +50,14 @@ func handlerKey(kind, apiVersion string) string {
 	return strings.ToLower(apiVersion) + "/" + strings.ToLower(kind)
 }
 
+// RegisterHandlers registers all available handlers in the registry
+// All handlers should be registered here to be discoverable by the system
 func RegisterHandlers() {
 	apiSpecHandler := v0.NewApiSpecHandlerInstance()
 	roverHandler := v0.NewRoverHandlerInstance()
+	eventSpecHandler := v0.NewEventSpecHandlerInstance()
 
 	RegisterHandler(apiSpecHandler.Kind, apiSpecHandler.APIVersion, apiSpecHandler)
 	RegisterHandler(roverHandler.Kind, roverHandler.APIVersion, roverHandler)
+	RegisterHandler(eventSpecHandler.Kind, eventSpecHandler.APIVersion, eventSpecHandler)
 }

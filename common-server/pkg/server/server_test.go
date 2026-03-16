@@ -92,7 +92,7 @@ var _ = Describe("Server", func() {
 
 		It("should create a new app with custom config", func() {
 			appCfg := server.NewAppConfig()
-			appCfg.CtxLog = &GinkgoLogr
+			appCfg.CtxLog = GinkgoLogr
 			app := server.NewAppWithConfig(appCfg)
 			Expect(app).NotTo(BeNil())
 		})

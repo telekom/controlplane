@@ -15,6 +15,7 @@ const (
 	FeatureTypeBasicAuth            FeatureType = "BasicAuth"
 	FeatureTypeIpRestriction        FeatureType = "IpRestriction"
 	FeatureTypeCircuitBreaker       FeatureType = "CircuitBreaker"
+	FeatureTypeDynamicUpstream      FeatureType = "DynamicUpstream"
 )
 
 // Dependent Features

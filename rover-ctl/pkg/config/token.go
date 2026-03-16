@@ -233,7 +233,7 @@ func FromContextOrDie(ctx context.Context) *Token {
 // ensureCorrectBasePath checks and sets the URL path to the expected base path if not already set.
 // It modifies the provided url.URL in place.
 func ensureCorrectBasePath(url *url.URL, expectedPath string) {
-	if expectedPath == "" {
+	if expectedPath == "" || expectedPath == "/" {
 		return
 	}
 	// If the path is empty or just "/", set it to the expected base path

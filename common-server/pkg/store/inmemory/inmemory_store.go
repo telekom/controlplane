@@ -321,19 +321,21 @@ func (s *InmemoryObjectStore[T]) CreateOrReplace(ctx context.Context, in T) erro
 		return err
 	}
 
+	// Initial creation if object does not exist
 	if problems.IsNotFound(err) {
 		obj.GetObjectKind().SetGroupVersionKind(s.gvk)
-		s.log.Info("creating object", "namespace", obj.GetNamespace(), "name", obj.GetName(), "gvk", s.gvk)
+		s.log.Info("creating object", "namespace", obj.GetNamespace(), "name", obj.GetName(), "gvk", obj.GetObjectKind().GroupVersionKind())
 
-		// check if not found
 		obj, err = s.k8sClient.Namespace(obj.GetNamespace()).Create(ctx, obj, metav1.CreateOptions{
 			FieldValidation: "Strict",
 		})
 		if err != nil {
-			return errors.Wrap(mapErrorToProblem(err), "failed to create object")
+			return errors.Wrapf(mapErrorToProblem(err), "failed to create object %v/%v", in.GetNamespace(), in.GetName())
 		}
 		return s.OnCreate(ctx, obj)
 	}
+
+	// Object exists, update it
 
 	obj.SetResourceVersion(currentObj.GetResourceVersion())
 	obj, err = s.k8sClient.Namespace(obj.GetNamespace()).Update(ctx, obj, metav1.UpdateOptions{
@@ -427,6 +429,7 @@ func (s *InmemoryObjectStore[T]) OnCreate(ctx context.Context, obj *unstructured
 }
 
 func (s *InmemoryObjectStore[T]) OnUpdate(ctx context.Context, obj *unstructured.Unstructured) error {
+	obj = obj.DeepCopy()
 	key := calculateKey(obj)
 	informer.SanitizeObject(obj)
 

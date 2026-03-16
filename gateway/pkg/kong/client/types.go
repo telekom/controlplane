@@ -31,6 +31,8 @@ type CustomRoute interface {
 	GetName() string
 	GetHost() string
 	GetPath() string
+	GetRequestBuffering() bool
+	GetResponseBuffering() bool
 }
 
 type CustomConsumer interface {
