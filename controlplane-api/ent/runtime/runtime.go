@@ -16,6 +16,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/environment"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/schema"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
@@ -291,6 +292,26 @@ func init() {
 	groupDescDescription := groupFields[2].Descriptor()
 	// group.DefaultDescription holds the default value on creation for the description field.
 	group.DefaultDescription = groupDescDescription.Default.(string)
+	memberMixin := schema.Member{}.Mixin()
+	member.Policy = privacy.NewPolicies(memberMixin[0], schema.Member{})
+	member.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := member.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	memberFields := schema.Member{}.Fields()
+	_ = memberFields
+	// memberDescName is the schema descriptor for name field.
+	memberDescName := memberFields[0].Descriptor()
+	// member.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	member.NameValidator = memberDescName.Validators[0].(func(string) error)
+	// memberDescEmail is the schema descriptor for email field.
+	memberDescEmail := memberFields[1].Descriptor()
+	// member.EmailValidator is a validator for the "email" field. It is called by the builders before save.
+	member.EmailValidator = memberDescEmail.Validators[0].(func(string) error)
 	teamMixin := schema.Team{}.Mixin()
 	team.Policy = privacy.NewPolicies(teamMixin[0], schema.Team{})
 	team.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -329,14 +350,6 @@ func init() {
 	teamDescEmail := teamFields[1].Descriptor()
 	// team.EmailValidator is a validator for the "email" field. It is called by the builders before save.
 	team.EmailValidator = teamDescEmail.Validators[0].(func(string) error)
-	// teamDescMembers is the schema descriptor for members field.
-	teamDescMembers := teamFields[3].Descriptor()
-	// team.DefaultMembers holds the default value on creation for the members field.
-	team.DefaultMembers = teamDescMembers.Default.([]model.Member)
-	// teamDescEnvironments is the schema descriptor for environments field.
-	teamDescEnvironments := teamFields[4].Descriptor()
-	// team.DefaultEnvironments holds the default value on creation for the environments field.
-	team.DefaultEnvironments = teamDescEnvironments.Default.([]string)
 	zoneMixin := schema.Zone{}.Mixin()
 	zone.Policy = privacy.NewPolicies(zoneMixin[0], schema.Zone{})
 	zone.Hooks[0] = func(next ent.Mutator) ent.Mutator {

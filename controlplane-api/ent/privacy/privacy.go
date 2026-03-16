@@ -281,6 +281,30 @@ func (f GroupMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation)
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.GroupMutation", m)
 }
 
+// The MemberQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type MemberQueryRuleFunc func(context.Context, *ent.MemberQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f MemberQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.MemberQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.MemberQuery", q)
+}
+
+// The MemberMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type MemberMutationRuleFunc func(context.Context, *ent.MemberMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f MemberMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.MemberMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.MemberMutation", m)
+}
+
 // The TeamQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type TeamQueryRuleFunc func(context.Context, *ent.TeamQuery) error

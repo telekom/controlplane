@@ -411,6 +411,52 @@ func HasGroupWith(preds ...predicate.Group) predicate.Team {
 	})
 }
 
+// HasMembers applies the HasEdge predicate on the "members" edge.
+func HasMembers() predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, MembersTable, MembersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMembersWith applies the HasEdge predicate on the "members" edge with a given conditions (other predicates).
+func HasMembersWith(preds ...predicate.Member) predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := newMembersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEnvironments applies the HasEdge predicate on the "environments" edge.
+func HasEnvironments() predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EnvironmentsTable, EnvironmentsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEnvironmentsWith applies the HasEdge predicate on the "environments" edge with a given conditions (other predicates).
+func HasEnvironmentsWith(preds ...predicate.Environment) predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := newEnvironmentsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasApplications applies the HasEdge predicate on the "applications" edge.
 func HasApplications() predicate.Team {
 	return predicate.Team(func(s *sql.Selector) {

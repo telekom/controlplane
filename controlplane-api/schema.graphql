@@ -24,11 +24,6 @@ type RoverStatus {
   activeSubscriptions: Int!
 }
 
-type Member {
-  name: String!
-  email: String!
-}
-
 type Upstream {
   url: String!
   weight: Int!

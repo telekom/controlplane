@@ -22,6 +22,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/environment"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 )
@@ -91,6 +92,7 @@ func checkColumn(t, c string) error {
 			approvalrequest.Table: approvalrequest.ValidColumn,
 			environment.Table:     environment.ValidColumn,
 			group.Table:           group.ValidColumn,
+			member.Table:          member.ValidColumn,
 			team.Table:            team.ValidColumn,
 			zone.Table:            zone.ValidColumn,
 		})

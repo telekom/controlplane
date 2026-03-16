@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/schema/field"
 
 	schemamixin "github.com/telekom/controlplane/controlplane-api/ent/schema/mixin"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 )
 
 // Team holds the schema definition for the Team entity.
@@ -42,11 +41,6 @@ func (Team) Fields() []ent.Field {
 				"Infrastructure", "INFRASTRUCTURE",
 			).
 			Default("CUSTOMER"),
-		field.JSON("members", []model.Member{}).
-			Default([]model.Member{}),
-		field.Strings("environments").
-			Default([]string{}).
-			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 		field.Text("rover_token_ref").
 			Optional().
 			Nillable(),
@@ -58,6 +52,8 @@ func (Team) Edges() []ent.Edge {
 		edge.From("group", Group.Type).
 			Ref("teams").
 			Unique(),
+		edge.To("members", Member.Type),
+		edge.To("environments", Environment.Type),
 		edge.To("applications", Application.Type).
 			Annotations(entgql.RelayConnection()),
 	}

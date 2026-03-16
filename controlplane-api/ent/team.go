@@ -35,10 +35,6 @@ type Team struct {
 	Email string `json:"email,omitempty"`
 	// Category holds the value of the "category" field.
 	Category team.Category `json:"category,omitempty"`
-	// Members holds the value of the "members" field.
-	Members []model.Member `json:"members,omitempty"`
-	// Environments holds the value of the "environments" field.
-	Environments []string `json:"environments,omitempty"`
 	// RoverTokenRef holds the value of the "rover_token_ref" field.
 	RoverTokenRef *string `json:"rover_token_ref,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -52,14 +48,20 @@ type Team struct {
 type TeamEdges struct {
 	// Group holds the value of the group edge.
 	Group *Group `json:"group,omitempty"`
+	// Members holds the value of the members edge.
+	Members []*Member `json:"members,omitempty"`
+	// Environments holds the value of the environments edge.
+	Environments []*Environment `json:"environments,omitempty"`
 	// Applications holds the value of the applications edge.
 	Applications []*Application `json:"applications,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [4]bool
 	// totalCount holds the count of the edges above.
-	totalCount [2]map[string]int
+	totalCount [4]map[string]int
 
+	namedMembers      map[string][]*Member
+	namedEnvironments map[string][]*Environment
 	namedApplications map[string][]*Application
 }
 
@@ -74,10 +76,28 @@ func (e TeamEdges) GroupOrErr() (*Group, error) {
 	return nil, &NotLoadedError{edge: "group"}
 }
 
+// MembersOrErr returns the Members value or an error if the edge
+// was not loaded in eager-loading.
+func (e TeamEdges) MembersOrErr() ([]*Member, error) {
+	if e.loadedTypes[1] {
+		return e.Members, nil
+	}
+	return nil, &NotLoadedError{edge: "members"}
+}
+
+// EnvironmentsOrErr returns the Environments value or an error if the edge
+// was not loaded in eager-loading.
+func (e TeamEdges) EnvironmentsOrErr() ([]*Environment, error) {
+	if e.loadedTypes[2] {
+		return e.Environments, nil
+	}
+	return nil, &NotLoadedError{edge: "environments"}
+}
+
 // ApplicationsOrErr returns the Applications value or an error if the edge
 // was not loaded in eager-loading.
 func (e TeamEdges) ApplicationsOrErr() ([]*Application, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[3] {
 		return e.Applications, nil
 	}
 	return nil, &NotLoadedError{edge: "applications"}
@@ -88,7 +108,7 @@ func (*Team) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case team.FieldStatus, team.FieldMembers, team.FieldEnvironments:
+		case team.FieldStatus:
 			values[i] = new([]byte)
 		case team.FieldID:
 			values[i] = new(sql.NullInt64)
@@ -157,22 +177,6 @@ func (_m *Team) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Category = team.Category(value.String)
 			}
-		case team.FieldMembers:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field members", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.Members); err != nil {
-					return fmt.Errorf("unmarshal field members: %w", err)
-				}
-			}
-		case team.FieldEnvironments:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field environments", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.Environments); err != nil {
-					return fmt.Errorf("unmarshal field environments: %w", err)
-				}
-			}
 		case team.FieldRoverTokenRef:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field rover_token_ref", values[i])
@@ -203,6 +207,16 @@ func (_m *Team) Value(name string) (ent.Value, error) {
 // QueryGroup queries the "group" edge of the Team entity.
 func (_m *Team) QueryGroup() *GroupQuery {
 	return NewTeamClient(_m.config).QueryGroup(_m)
+}
+
+// QueryMembers queries the "members" edge of the Team entity.
+func (_m *Team) QueryMembers() *MemberQuery {
+	return NewTeamClient(_m.config).QueryMembers(_m)
+}
+
+// QueryEnvironments queries the "environments" edge of the Team entity.
+func (_m *Team) QueryEnvironments() *EnvironmentQuery {
+	return NewTeamClient(_m.config).QueryEnvironments(_m)
 }
 
 // QueryApplications queries the "applications" edge of the Team entity.
@@ -251,18 +265,60 @@ func (_m *Team) String() string {
 	builder.WriteString("category=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Category))
 	builder.WriteString(", ")
-	builder.WriteString("members=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Members))
-	builder.WriteString(", ")
-	builder.WriteString("environments=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Environments))
-	builder.WriteString(", ")
 	if v := _m.RoverTokenRef; v != nil {
 		builder.WriteString("rover_token_ref=")
 		builder.WriteString(*v)
 	}
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedMembers returns the Members named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Team) NamedMembers(name string) ([]*Member, error) {
+	if _m.Edges.namedMembers == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedMembers[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Team) appendNamedMembers(name string, edges ...*Member) {
+	if _m.Edges.namedMembers == nil {
+		_m.Edges.namedMembers = make(map[string][]*Member)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedMembers[name] = []*Member{}
+	} else {
+		_m.Edges.namedMembers[name] = append(_m.Edges.namedMembers[name], edges...)
+	}
+}
+
+// NamedEnvironments returns the Environments named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Team) NamedEnvironments(name string) ([]*Environment, error) {
+	if _m.Edges.namedEnvironments == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedEnvironments[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Team) appendNamedEnvironments(name string, edges ...*Environment) {
+	if _m.Edges.namedEnvironments == nil {
+		_m.Edges.namedEnvironments = make(map[string][]*Environment)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedEnvironments[name] = []*Environment{}
+	} else {
+		_m.Edges.namedEnvironments[name] = append(_m.Edges.namedEnvironments[name], edges...)
+	}
 }
 
 // NamedApplications returns the Applications named value or an error if the edge was not

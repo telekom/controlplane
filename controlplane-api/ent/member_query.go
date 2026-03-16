@@ -15,71 +15,95 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/telekom/controlplane/controlplane-api/ent/environment"
+	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
+	"github.com/telekom/controlplane/controlplane-api/ent/team"
 )
 
-// EnvironmentQuery is the builder for querying Environment entities.
-type EnvironmentQuery struct {
+// MemberQuery is the builder for querying Member entities.
+type MemberQuery struct {
 	config
 	ctx        *QueryContext
-	order      []environment.OrderOption
+	order      []member.OrderOption
 	inters     []Interceptor
-	predicates []predicate.Environment
+	predicates []predicate.Member
+	withTeam   *TeamQuery
 	withFKs    bool
 	modifiers  []func(*sql.Selector)
-	loadTotal  []func(context.Context, []*Environment) error
+	loadTotal  []func(context.Context, []*Member) error
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the EnvironmentQuery builder.
-func (_q *EnvironmentQuery) Where(ps ...predicate.Environment) *EnvironmentQuery {
+// Where adds a new predicate for the MemberQuery builder.
+func (_q *MemberQuery) Where(ps ...predicate.Member) *MemberQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *EnvironmentQuery) Limit(limit int) *EnvironmentQuery {
+func (_q *MemberQuery) Limit(limit int) *MemberQuery {
 	_q.ctx.Limit = &limit
 	return _q
 }
 
 // Offset to start from.
-func (_q *EnvironmentQuery) Offset(offset int) *EnvironmentQuery {
+func (_q *MemberQuery) Offset(offset int) *MemberQuery {
 	_q.ctx.Offset = &offset
 	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *EnvironmentQuery) Unique(unique bool) *EnvironmentQuery {
+func (_q *MemberQuery) Unique(unique bool) *MemberQuery {
 	_q.ctx.Unique = &unique
 	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (_q *EnvironmentQuery) Order(o ...environment.OrderOption) *EnvironmentQuery {
+func (_q *MemberQuery) Order(o ...member.OrderOption) *MemberQuery {
 	_q.order = append(_q.order, o...)
 	return _q
 }
 
-// First returns the first Environment entity from the query.
-// Returns a *NotFoundError when no Environment was found.
-func (_q *EnvironmentQuery) First(ctx context.Context) (*Environment, error) {
+// QueryTeam chains the current query on the "team" edge.
+func (_q *MemberQuery) QueryTeam() *TeamQuery {
+	query := (&TeamClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(member.Table, member.FieldID, selector),
+			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, member.TeamTable, member.TeamColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// First returns the first Member entity from the query.
+// Returns a *NotFoundError when no Member was found.
+func (_q *MemberQuery) First(ctx context.Context) (*Member, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{environment.Label}
+		return nil, &NotFoundError{member.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *EnvironmentQuery) FirstX(ctx context.Context) *Environment {
+func (_q *MemberQuery) FirstX(ctx context.Context) *Member {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -87,22 +111,22 @@ func (_q *EnvironmentQuery) FirstX(ctx context.Context) *Environment {
 	return node
 }
 
-// FirstID returns the first Environment ID from the query.
-// Returns a *NotFoundError when no Environment ID was found.
-func (_q *EnvironmentQuery) FirstID(ctx context.Context) (id int, err error) {
+// FirstID returns the first Member ID from the query.
+// Returns a *NotFoundError when no Member ID was found.
+func (_q *MemberQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{environment.Label}
+		err = &NotFoundError{member.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *EnvironmentQuery) FirstIDX(ctx context.Context) int {
+func (_q *MemberQuery) FirstIDX(ctx context.Context) int {
 	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -110,10 +134,10 @@ func (_q *EnvironmentQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns a single Environment entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one Environment entity is found.
-// Returns a *NotFoundError when no Environment entities are found.
-func (_q *EnvironmentQuery) Only(ctx context.Context) (*Environment, error) {
+// Only returns a single Member entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one Member entity is found.
+// Returns a *NotFoundError when no Member entities are found.
+func (_q *MemberQuery) Only(ctx context.Context) (*Member, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -122,14 +146,14 @@ func (_q *EnvironmentQuery) Only(ctx context.Context) (*Environment, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{environment.Label}
+		return nil, &NotFoundError{member.Label}
 	default:
-		return nil, &NotSingularError{environment.Label}
+		return nil, &NotSingularError{member.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *EnvironmentQuery) OnlyX(ctx context.Context) *Environment {
+func (_q *MemberQuery) OnlyX(ctx context.Context) *Member {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -137,10 +161,10 @@ func (_q *EnvironmentQuery) OnlyX(ctx context.Context) *Environment {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Environment ID in the query.
-// Returns a *NotSingularError when more than one Environment ID is found.
+// OnlyID is like Only, but returns the only Member ID in the query.
+// Returns a *NotSingularError when more than one Member ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *EnvironmentQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (_q *MemberQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
@@ -149,15 +173,15 @@ func (_q *EnvironmentQuery) OnlyID(ctx context.Context) (id int, err error) {
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{environment.Label}
+		err = &NotFoundError{member.Label}
 	default:
-		err = &NotSingularError{environment.Label}
+		err = &NotSingularError{member.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *EnvironmentQuery) OnlyIDX(ctx context.Context) int {
+func (_q *MemberQuery) OnlyIDX(ctx context.Context) int {
 	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -165,18 +189,18 @@ func (_q *EnvironmentQuery) OnlyIDX(ctx context.Context) int {
 	return id
 }
 
-// All executes the query and returns a list of Environments.
-func (_q *EnvironmentQuery) All(ctx context.Context) ([]*Environment, error) {
+// All executes the query and returns a list of Members.
+func (_q *MemberQuery) All(ctx context.Context) ([]*Member, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*Environment, *EnvironmentQuery]()
-	return withInterceptors[[]*Environment](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*Member, *MemberQuery]()
+	return withInterceptors[[]*Member](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *EnvironmentQuery) AllX(ctx context.Context) []*Environment {
+func (_q *MemberQuery) AllX(ctx context.Context) []*Member {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -184,20 +208,20 @@ func (_q *EnvironmentQuery) AllX(ctx context.Context) []*Environment {
 	return nodes
 }
 
-// IDs executes the query and returns a list of Environment IDs.
-func (_q *EnvironmentQuery) IDs(ctx context.Context) (ids []int, err error) {
+// IDs executes the query and returns a list of Member IDs.
+func (_q *MemberQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(environment.FieldID).Scan(ctx, &ids); err != nil {
+	if err = _q.Select(member.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *EnvironmentQuery) IDsX(ctx context.Context) []int {
+func (_q *MemberQuery) IDsX(ctx context.Context) []int {
 	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -206,16 +230,16 @@ func (_q *EnvironmentQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (_q *EnvironmentQuery) Count(ctx context.Context) (int, error) {
+func (_q *MemberQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*EnvironmentQuery](), _q.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*MemberQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *EnvironmentQuery) CountX(ctx context.Context) int {
+func (_q *MemberQuery) CountX(ctx context.Context) int {
 	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -224,7 +248,7 @@ func (_q *EnvironmentQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *EnvironmentQuery) Exist(ctx context.Context) (bool, error) {
+func (_q *MemberQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
 	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
@@ -237,7 +261,7 @@ func (_q *EnvironmentQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *EnvironmentQuery) ExistX(ctx context.Context) bool {
+func (_q *MemberQuery) ExistX(ctx context.Context) bool {
 	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -245,22 +269,34 @@ func (_q *EnvironmentQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the EnvironmentQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the MemberQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *EnvironmentQuery) Clone() *EnvironmentQuery {
+func (_q *MemberQuery) Clone() *MemberQuery {
 	if _q == nil {
 		return nil
 	}
-	return &EnvironmentQuery{
+	return &MemberQuery{
 		config:     _q.config,
 		ctx:        _q.ctx.Clone(),
-		order:      append([]environment.OrderOption{}, _q.order...),
+		order:      append([]member.OrderOption{}, _q.order...),
 		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.Environment{}, _q.predicates...),
+		predicates: append([]predicate.Member{}, _q.predicates...),
+		withTeam:   _q.withTeam.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
+}
+
+// WithTeam tells the query-builder to eager-load the nodes that are connected to
+// the "team" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *MemberQuery) WithTeam(opts ...func(*TeamQuery)) *MemberQuery {
+	query := (&TeamClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withTeam = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -273,15 +309,15 @@ func (_q *EnvironmentQuery) Clone() *EnvironmentQuery {
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.Environment.Query().
-//		GroupBy(environment.FieldName).
+//	client.Member.Query().
+//		GroupBy(member.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *EnvironmentQuery) GroupBy(field string, fields ...string) *EnvironmentGroupBy {
+func (_q *MemberQuery) GroupBy(field string, fields ...string) *MemberGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &EnvironmentGroupBy{build: _q}
+	grbuild := &MemberGroupBy{build: _q}
 	grbuild.flds = &_q.ctx.Fields
-	grbuild.label = environment.Label
+	grbuild.label = member.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -295,23 +331,23 @@ func (_q *EnvironmentQuery) GroupBy(field string, fields ...string) *Environment
 //		Name string `json:"name,omitempty"`
 //	}
 //
-//	client.Environment.Query().
-//		Select(environment.FieldName).
+//	client.Member.Query().
+//		Select(member.FieldName).
 //		Scan(ctx, &v)
-func (_q *EnvironmentQuery) Select(fields ...string) *EnvironmentSelect {
+func (_q *MemberQuery) Select(fields ...string) *MemberSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &EnvironmentSelect{EnvironmentQuery: _q}
-	sbuild.label = environment.Label
+	sbuild := &MemberSelect{MemberQuery: _q}
+	sbuild.label = member.Label
 	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a EnvironmentSelect configured with the given aggregations.
-func (_q *EnvironmentQuery) Aggregate(fns ...AggregateFunc) *EnvironmentSelect {
+// Aggregate returns a MemberSelect configured with the given aggregations.
+func (_q *MemberQuery) Aggregate(fns ...AggregateFunc) *MemberSelect {
 	return _q.Select().Aggregate(fns...)
 }
 
-func (_q *EnvironmentQuery) prepareQuery(ctx context.Context) error {
+func (_q *MemberQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -323,7 +359,7 @@ func (_q *EnvironmentQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range _q.ctx.Fields {
-		if !environment.ValidColumn(f) {
+		if !member.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -334,30 +370,37 @@ func (_q *EnvironmentQuery) prepareQuery(ctx context.Context) error {
 		}
 		_q.sql = prev
 	}
-	if environment.Policy == nil {
-		return errors.New("ent: uninitialized environment.Policy (forgotten import ent/runtime?)")
+	if member.Policy == nil {
+		return errors.New("ent: uninitialized member.Policy (forgotten import ent/runtime?)")
 	}
-	if err := environment.Policy.EvalQuery(ctx, _q); err != nil {
+	if err := member.Policy.EvalQuery(ctx, _q); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (_q *EnvironmentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Environment, error) {
+func (_q *MemberQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Member, error) {
 	var (
-		nodes   = []*Environment{}
-		withFKs = _q.withFKs
-		_spec   = _q.querySpec()
+		nodes       = []*Member{}
+		withFKs     = _q.withFKs
+		_spec       = _q.querySpec()
+		loadedTypes = [1]bool{
+			_q.withTeam != nil,
+		}
 	)
+	if _q.withTeam != nil {
+		withFKs = true
+	}
 	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, environment.ForeignKeys...)
+		_spec.Node.Columns = append(_spec.Node.Columns, member.ForeignKeys...)
 	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*Environment).scanValues(nil, columns)
+		return (*Member).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Environment{config: _q.config}
+		node := &Member{config: _q.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if len(_q.modifiers) > 0 {
@@ -372,6 +415,12 @@ func (_q *EnvironmentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := _q.withTeam; query != nil {
+		if err := _q.loadTeam(ctx, query, nodes, nil,
+			func(n *Member, e *Team) { n.Edges.Team = e }); err != nil {
+			return nil, err
+		}
+	}
 	for i := range _q.loadTotal {
 		if err := _q.loadTotal[i](ctx, nodes); err != nil {
 			return nil, err
@@ -380,7 +429,40 @@ func (_q *EnvironmentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	return nodes, nil
 }
 
-func (_q *EnvironmentQuery) sqlCount(ctx context.Context) (int, error) {
+func (_q *MemberQuery) loadTeam(ctx context.Context, query *TeamQuery, nodes []*Member, init func(*Member), assign func(*Member, *Team)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Member)
+	for i := range nodes {
+		if nodes[i].team_members == nil {
+			continue
+		}
+		fk := *nodes[i].team_members
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(team.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "team_members" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+
+func (_q *MemberQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
@@ -392,8 +474,8 @@ func (_q *EnvironmentQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (_q *EnvironmentQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(environment.Table, environment.Columns, sqlgraph.NewFieldSpec(environment.FieldID, field.TypeInt))
+func (_q *MemberQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(member.Table, member.Columns, sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -402,9 +484,9 @@ func (_q *EnvironmentQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, environment.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, member.FieldID)
 		for i := range fields {
-			if fields[i] != environment.FieldID {
+			if fields[i] != member.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
@@ -432,12 +514,12 @@ func (_q *EnvironmentQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *EnvironmentQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (_q *MemberQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(_q.driver.Dialect())
-	t1 := builder.Table(environment.Table)
+	t1 := builder.Table(member.Table)
 	columns := _q.ctx.Fields
 	if len(columns) == 0 {
-		columns = environment.Columns
+		columns = member.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if _q.sql != nil {
@@ -464,28 +546,28 @@ func (_q *EnvironmentQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// EnvironmentGroupBy is the group-by builder for Environment entities.
-type EnvironmentGroupBy struct {
+// MemberGroupBy is the group-by builder for Member entities.
+type MemberGroupBy struct {
 	selector
-	build *EnvironmentQuery
+	build *MemberQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *EnvironmentGroupBy) Aggregate(fns ...AggregateFunc) *EnvironmentGroupBy {
+func (_g *MemberGroupBy) Aggregate(fns ...AggregateFunc) *MemberGroupBy {
 	_g.fns = append(_g.fns, fns...)
 	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *EnvironmentGroupBy) Scan(ctx context.Context, v any) error {
+func (_g *MemberGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
 	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*EnvironmentQuery, *EnvironmentGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*MemberQuery, *MemberGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (_g *EnvironmentGroupBy) sqlScan(ctx context.Context, root *EnvironmentQuery, v any) error {
+func (_g *MemberGroupBy) sqlScan(ctx context.Context, root *MemberQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(_g.fns))
 	for _, fn := range _g.fns {
@@ -512,28 +594,28 @@ func (_g *EnvironmentGroupBy) sqlScan(ctx context.Context, root *EnvironmentQuer
 	return sql.ScanSlice(rows, v)
 }
 
-// EnvironmentSelect is the builder for selecting fields of Environment entities.
-type EnvironmentSelect struct {
-	*EnvironmentQuery
+// MemberSelect is the builder for selecting fields of Member entities.
+type MemberSelect struct {
+	*MemberQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *EnvironmentSelect) Aggregate(fns ...AggregateFunc) *EnvironmentSelect {
+func (_s *MemberSelect) Aggregate(fns ...AggregateFunc) *MemberSelect {
 	_s.fns = append(_s.fns, fns...)
 	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *EnvironmentSelect) Scan(ctx context.Context, v any) error {
+func (_s *MemberSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
 	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*EnvironmentQuery, *EnvironmentSelect](ctx, _s.EnvironmentQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*MemberQuery, *MemberSelect](ctx, _s.MemberQuery, _s, _s.inters, v)
 }
 
-func (_s *EnvironmentSelect) sqlScan(ctx context.Context, root *EnvironmentQuery, v any) error {
+func (_s *MemberSelect) sqlScan(ctx context.Context, root *MemberQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(_s.fns))
 	for _, fn := range _s.fns {

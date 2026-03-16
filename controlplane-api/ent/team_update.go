@@ -13,10 +13,11 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
+	"github.com/telekom/controlplane/controlplane-api/ent/environment"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
+	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
@@ -97,30 +98,6 @@ func (_u *TeamUpdate) SetNillableCategory(v *team.Category) *TeamUpdate {
 	return _u
 }
 
-// SetMembers sets the "members" field.
-func (_u *TeamUpdate) SetMembers(v []model.Member) *TeamUpdate {
-	_u.mutation.SetMembers(v)
-	return _u
-}
-
-// AppendMembers appends value to the "members" field.
-func (_u *TeamUpdate) AppendMembers(v []model.Member) *TeamUpdate {
-	_u.mutation.AppendMembers(v)
-	return _u
-}
-
-// SetEnvironments sets the "environments" field.
-func (_u *TeamUpdate) SetEnvironments(v []string) *TeamUpdate {
-	_u.mutation.SetEnvironments(v)
-	return _u
-}
-
-// AppendEnvironments appends value to the "environments" field.
-func (_u *TeamUpdate) AppendEnvironments(v []string) *TeamUpdate {
-	_u.mutation.AppendEnvironments(v)
-	return _u
-}
-
 // SetRoverTokenRef sets the "rover_token_ref" field.
 func (_u *TeamUpdate) SetRoverTokenRef(v string) *TeamUpdate {
 	_u.mutation.SetRoverTokenRef(v)
@@ -160,6 +137,36 @@ func (_u *TeamUpdate) SetGroup(v *Group) *TeamUpdate {
 	return _u.SetGroupID(v.ID)
 }
 
+// AddMemberIDs adds the "members" edge to the Member entity by IDs.
+func (_u *TeamUpdate) AddMemberIDs(ids ...int) *TeamUpdate {
+	_u.mutation.AddMemberIDs(ids...)
+	return _u
+}
+
+// AddMembers adds the "members" edges to the Member entity.
+func (_u *TeamUpdate) AddMembers(v ...*Member) *TeamUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMemberIDs(ids...)
+}
+
+// AddEnvironmentIDs adds the "environments" edge to the Environment entity by IDs.
+func (_u *TeamUpdate) AddEnvironmentIDs(ids ...int) *TeamUpdate {
+	_u.mutation.AddEnvironmentIDs(ids...)
+	return _u
+}
+
+// AddEnvironments adds the "environments" edges to the Environment entity.
+func (_u *TeamUpdate) AddEnvironments(v ...*Environment) *TeamUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEnvironmentIDs(ids...)
+}
+
 // AddApplicationIDs adds the "applications" edge to the Application entity by IDs.
 func (_u *TeamUpdate) AddApplicationIDs(ids ...int) *TeamUpdate {
 	_u.mutation.AddApplicationIDs(ids...)
@@ -184,6 +191,48 @@ func (_u *TeamUpdate) Mutation() *TeamMutation {
 func (_u *TeamUpdate) ClearGroup() *TeamUpdate {
 	_u.mutation.ClearGroup()
 	return _u
+}
+
+// ClearMembers clears all "members" edges to the Member entity.
+func (_u *TeamUpdate) ClearMembers() *TeamUpdate {
+	_u.mutation.ClearMembers()
+	return _u
+}
+
+// RemoveMemberIDs removes the "members" edge to Member entities by IDs.
+func (_u *TeamUpdate) RemoveMemberIDs(ids ...int) *TeamUpdate {
+	_u.mutation.RemoveMemberIDs(ids...)
+	return _u
+}
+
+// RemoveMembers removes "members" edges to Member entities.
+func (_u *TeamUpdate) RemoveMembers(v ...*Member) *TeamUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMemberIDs(ids...)
+}
+
+// ClearEnvironments clears all "environments" edges to the Environment entity.
+func (_u *TeamUpdate) ClearEnvironments() *TeamUpdate {
+	_u.mutation.ClearEnvironments()
+	return _u
+}
+
+// RemoveEnvironmentIDs removes the "environments" edge to Environment entities by IDs.
+func (_u *TeamUpdate) RemoveEnvironmentIDs(ids ...int) *TeamUpdate {
+	_u.mutation.RemoveEnvironmentIDs(ids...)
+	return _u
+}
+
+// RemoveEnvironments removes "environments" edges to Environment entities.
+func (_u *TeamUpdate) RemoveEnvironments(v ...*Environment) *TeamUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEnvironmentIDs(ids...)
 }
 
 // ClearApplications clears all "applications" edges to the Application entity.
@@ -296,22 +345,6 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(team.FieldCategory, field.TypeEnum, value)
 	}
-	if value, ok := _u.mutation.Members(); ok {
-		_spec.SetField(team.FieldMembers, field.TypeJSON, value)
-	}
-	if value, ok := _u.mutation.AppendedMembers(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, team.FieldMembers, value)
-		})
-	}
-	if value, ok := _u.mutation.Environments(); ok {
-		_spec.SetField(team.FieldEnvironments, field.TypeJSON, value)
-	}
-	if value, ok := _u.mutation.AppendedEnvironments(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, team.FieldEnvironments, value)
-		})
-	}
 	if value, ok := _u.mutation.RoverTokenRef(); ok {
 		_spec.SetField(team.FieldRoverTokenRef, field.TypeString, value)
 	}
@@ -340,6 +373,96 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.MembersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.MembersTable,
+			Columns: []string{team.MembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMembersIDs(); len(nodes) > 0 && !_u.mutation.MembersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.MembersTable,
+			Columns: []string{team.MembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MembersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.MembersTable,
+			Columns: []string{team.MembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EnvironmentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.EnvironmentsTable,
+			Columns: []string{team.EnvironmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(environment.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEnvironmentsIDs(); len(nodes) > 0 && !_u.mutation.EnvironmentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.EnvironmentsTable,
+			Columns: []string{team.EnvironmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(environment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EnvironmentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.EnvironmentsTable,
+			Columns: []string{team.EnvironmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(environment.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -474,30 +597,6 @@ func (_u *TeamUpdateOne) SetNillableCategory(v *team.Category) *TeamUpdateOne {
 	return _u
 }
 
-// SetMembers sets the "members" field.
-func (_u *TeamUpdateOne) SetMembers(v []model.Member) *TeamUpdateOne {
-	_u.mutation.SetMembers(v)
-	return _u
-}
-
-// AppendMembers appends value to the "members" field.
-func (_u *TeamUpdateOne) AppendMembers(v []model.Member) *TeamUpdateOne {
-	_u.mutation.AppendMembers(v)
-	return _u
-}
-
-// SetEnvironments sets the "environments" field.
-func (_u *TeamUpdateOne) SetEnvironments(v []string) *TeamUpdateOne {
-	_u.mutation.SetEnvironments(v)
-	return _u
-}
-
-// AppendEnvironments appends value to the "environments" field.
-func (_u *TeamUpdateOne) AppendEnvironments(v []string) *TeamUpdateOne {
-	_u.mutation.AppendEnvironments(v)
-	return _u
-}
-
 // SetRoverTokenRef sets the "rover_token_ref" field.
 func (_u *TeamUpdateOne) SetRoverTokenRef(v string) *TeamUpdateOne {
 	_u.mutation.SetRoverTokenRef(v)
@@ -537,6 +636,36 @@ func (_u *TeamUpdateOne) SetGroup(v *Group) *TeamUpdateOne {
 	return _u.SetGroupID(v.ID)
 }
 
+// AddMemberIDs adds the "members" edge to the Member entity by IDs.
+func (_u *TeamUpdateOne) AddMemberIDs(ids ...int) *TeamUpdateOne {
+	_u.mutation.AddMemberIDs(ids...)
+	return _u
+}
+
+// AddMembers adds the "members" edges to the Member entity.
+func (_u *TeamUpdateOne) AddMembers(v ...*Member) *TeamUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMemberIDs(ids...)
+}
+
+// AddEnvironmentIDs adds the "environments" edge to the Environment entity by IDs.
+func (_u *TeamUpdateOne) AddEnvironmentIDs(ids ...int) *TeamUpdateOne {
+	_u.mutation.AddEnvironmentIDs(ids...)
+	return _u
+}
+
+// AddEnvironments adds the "environments" edges to the Environment entity.
+func (_u *TeamUpdateOne) AddEnvironments(v ...*Environment) *TeamUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEnvironmentIDs(ids...)
+}
+
 // AddApplicationIDs adds the "applications" edge to the Application entity by IDs.
 func (_u *TeamUpdateOne) AddApplicationIDs(ids ...int) *TeamUpdateOne {
 	_u.mutation.AddApplicationIDs(ids...)
@@ -561,6 +690,48 @@ func (_u *TeamUpdateOne) Mutation() *TeamMutation {
 func (_u *TeamUpdateOne) ClearGroup() *TeamUpdateOne {
 	_u.mutation.ClearGroup()
 	return _u
+}
+
+// ClearMembers clears all "members" edges to the Member entity.
+func (_u *TeamUpdateOne) ClearMembers() *TeamUpdateOne {
+	_u.mutation.ClearMembers()
+	return _u
+}
+
+// RemoveMemberIDs removes the "members" edge to Member entities by IDs.
+func (_u *TeamUpdateOne) RemoveMemberIDs(ids ...int) *TeamUpdateOne {
+	_u.mutation.RemoveMemberIDs(ids...)
+	return _u
+}
+
+// RemoveMembers removes "members" edges to Member entities.
+func (_u *TeamUpdateOne) RemoveMembers(v ...*Member) *TeamUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMemberIDs(ids...)
+}
+
+// ClearEnvironments clears all "environments" edges to the Environment entity.
+func (_u *TeamUpdateOne) ClearEnvironments() *TeamUpdateOne {
+	_u.mutation.ClearEnvironments()
+	return _u
+}
+
+// RemoveEnvironmentIDs removes the "environments" edge to Environment entities by IDs.
+func (_u *TeamUpdateOne) RemoveEnvironmentIDs(ids ...int) *TeamUpdateOne {
+	_u.mutation.RemoveEnvironmentIDs(ids...)
+	return _u
+}
+
+// RemoveEnvironments removes "environments" edges to Environment entities.
+func (_u *TeamUpdateOne) RemoveEnvironments(v ...*Environment) *TeamUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEnvironmentIDs(ids...)
 }
 
 // ClearApplications clears all "applications" edges to the Application entity.
@@ -703,22 +874,6 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(team.FieldCategory, field.TypeEnum, value)
 	}
-	if value, ok := _u.mutation.Members(); ok {
-		_spec.SetField(team.FieldMembers, field.TypeJSON, value)
-	}
-	if value, ok := _u.mutation.AppendedMembers(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, team.FieldMembers, value)
-		})
-	}
-	if value, ok := _u.mutation.Environments(); ok {
-		_spec.SetField(team.FieldEnvironments, field.TypeJSON, value)
-	}
-	if value, ok := _u.mutation.AppendedEnvironments(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, team.FieldEnvironments, value)
-		})
-	}
 	if value, ok := _u.mutation.RoverTokenRef(); ok {
 		_spec.SetField(team.FieldRoverTokenRef, field.TypeString, value)
 	}
@@ -747,6 +902,96 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.MembersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.MembersTable,
+			Columns: []string{team.MembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMembersIDs(); len(nodes) > 0 && !_u.mutation.MembersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.MembersTable,
+			Columns: []string{team.MembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MembersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.MembersTable,
+			Columns: []string{team.MembersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EnvironmentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.EnvironmentsTable,
+			Columns: []string{team.EnvironmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(environment.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEnvironmentsIDs(); len(nodes) > 0 && !_u.mutation.EnvironmentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.EnvironmentsTable,
+			Columns: []string{team.EnvironmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(environment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EnvironmentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   team.EnvironmentsTable,
+			Columns: []string{team.EnvironmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(environment.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

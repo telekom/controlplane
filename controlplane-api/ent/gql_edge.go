@@ -162,12 +162,44 @@ func (_m *Group) Teams(ctx context.Context) (result []*Team, err error) {
 	return result, err
 }
 
+func (_m *Member) Team(ctx context.Context) (*Team, error) {
+	result, err := _m.Edges.TeamOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryTeam().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
 func (_m *Team) Group(ctx context.Context) (*Group, error) {
 	result, err := _m.Edges.GroupOrErr()
 	if IsNotLoaded(err) {
 		result, err = _m.QueryGroup().Only(ctx)
 	}
 	return result, MaskNotFound(err)
+}
+
+func (_m *Team) Members(ctx context.Context) (result []*Member, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedMembers(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.MembersOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryMembers().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Team) Environments(ctx context.Context) (result []*Environment, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedEnvironments(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.EnvironmentsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryEnvironments().All(ctx)
+	}
+	return result, err
 }
 
 func (_m *Team) Applications(
@@ -178,7 +210,7 @@ func (_m *Team) Applications(
 		WithApplicationFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[1][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[3][alias]
 	if nodes, err := _m.NamedApplications(alias); err == nil || hasTotalCount {
 		pager, err := newApplicationPager(opts, last != nil)
 		if err != nil {
