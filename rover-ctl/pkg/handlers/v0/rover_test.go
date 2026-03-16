@@ -285,11 +285,11 @@ var _ = Describe("Rover Handler", func() {
 				Expect(result[0]["security"]).To(HaveKeyWithValue("type", "oauth2"))
 			})
 
-			It("should patch port subscriptions correctly", func() {
+			It("should patch event subscriptions correctly", func() {
 				// Create test subscriptions
 				subscriptions := []any{
 					map[string]any{
-						"port": 8080,
+						"eventType": "test.event",
 						"security": map[string]any{
 							"basicAuth": map[string]any{
 								"username": "testuser",
@@ -303,7 +303,7 @@ var _ = Describe("Rover Handler", func() {
 
 				// Verify the results
 				Expect(result).To(HaveLen(1))
-				Expect(result[0]).To(HaveKeyWithValue("type", "port"))
+				Expect(result[0]).To(HaveKeyWithValue("type", "event"))
 				Expect(result[0]["security"]).To(HaveKeyWithValue("type", "basicAuth"))
 			})
 
@@ -324,7 +324,7 @@ var _ = Describe("Rover Handler", func() {
 				subscriptions := []any{
 					"not a map",
 					map[string]any{
-						"port": 8080,
+						"eventType": "test.event",
 					},
 				}
 
@@ -334,7 +334,7 @@ var _ = Describe("Rover Handler", func() {
 				// Verify the results - should only have the valid entry
 				Expect(result).To(HaveLen(2))
 				Expect(result[0]).To(BeNil())
-				Expect(result[1]).To(HaveKeyWithValue("type", "port"))
+				Expect(result[1]).To(HaveKeyWithValue("type", "event"))
 			})
 		})
 	})

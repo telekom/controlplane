@@ -10,6 +10,10 @@ type Security struct {
 	// +kubebuilder:default:=false
 	DisableAccessControl bool `json:"disableAccessControl,omitempty"`
 
+	// DefaultConsumers defines a list of default consumers that are allowed to access this route without being explicitly added as a consumer
+	// +kubebuilder:validation:Optional
+	DefaultConsumers []string `json:"defaultConsumers,omitempty"`
+
 	// M2M defines machine-to-machine authentication configuration
 	// +kubebuilder:validation:Optional
 	M2M *Machine2MachineAuthentication `json:"m2m,omitempty"`

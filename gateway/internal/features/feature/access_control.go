@@ -58,9 +58,14 @@ func (f *AccessControlFeature) Apply(ctx context.Context, builder features.Featu
 	}
 
 	aclPlugin := builder.AclPlugin()
-	aclPlugin.Config.Allow.Add("gateway")
 	for _, defaultConsumer := range builder.GetRealm().Spec.DefaultConsumers {
 		aclPlugin.Config.Allow.Add(defaultConsumer)
+	}
+
+	if route.Spec.Security != nil {
+		for _, defaultConsumer := range route.Spec.Security.DefaultConsumers {
+			aclPlugin.Config.Allow.Add(defaultConsumer)
+		}
 	}
 
 	for _, consumer := range builder.GetAllowedConsumers() {

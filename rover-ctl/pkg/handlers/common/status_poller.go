@@ -6,6 +6,7 @@ package common
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -20,6 +21,9 @@ type StatusHandler interface {
 type StatusEvalFunc func(ctx context.Context, status types.ObjectStatus) (continuePolling bool, err error)
 
 var defaultStatusEvalFunc StatusEvalFunc = func(_ context.Context, status types.ObjectStatus) (continuePolling bool, err error) {
+	if status.GetProcessingState() == "failed" {
+		return false, fmt.Errorf("resource processing failed")
+	}
 	if status.GetProcessingState() == "done" {
 		return false, nil
 	}

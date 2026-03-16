@@ -160,7 +160,7 @@ func (c *ServerConfig) BuildServer(ctx context.Context, dynamicClient dynamic.In
 	}
 
 	appCfg := server.NewAppConfig()
-	appCfg.CtxLog = &log
+	appCfg.CtxLog = log
 	s := server.NewServerWithApp(server.NewAppWithConfig(appCfg))
 	openapiBuilder := openapi.NewDocumentBuilder()
 	openapiBuilder.NewInfo(c.Openapi.Title, c.Openapi.Description, c.Openapi.Version)
