@@ -137,11 +137,11 @@ func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
 	return requesterPropertiesMap, nil
 }
 
-/*
-To make notifications more generic, we treat both api subscription and event subscription the same.
-If it's neither, the original value is retruned.
-*/
+// To make notifications more generic, we treat both api subscription and event subscription the same.
+// If it's neither, the original value is returned.
 func extractTargetKind(kind string) string {
+	if strings.EqualFold("apisubscription", kind) {
+		return "subscription"
 	if strings.EqualFold("apisubscription", kind) {
 		return "subscription"
 	}
