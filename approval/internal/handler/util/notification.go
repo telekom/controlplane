@@ -142,8 +142,6 @@ func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
 func extractTargetKind(kind string) string {
 	if strings.EqualFold("apisubscription", kind) {
 		return "subscription"
-	if strings.EqualFold("apisubscription", kind) {
-		return "subscription"
 	}
 
 	if strings.EqualFold("eventsubscription", kind) {
