@@ -71,6 +71,3 @@ models:
   ResourceStatusPhase:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ResourceStatusPhase
-  TeamEnvironmentStatus:
-    model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.TeamEnvironmentStatus

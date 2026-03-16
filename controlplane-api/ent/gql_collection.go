@@ -1373,10 +1373,15 @@ func (_q *TeamQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				selectedFields = append(selectedFields, team.FieldMembers)
 				fieldSeen[team.FieldMembers] = struct{}{}
 			}
-		case "environmentStatuses":
-			if _, ok := fieldSeen[team.FieldEnvironmentStatuses]; !ok {
-				selectedFields = append(selectedFields, team.FieldEnvironmentStatuses)
-				fieldSeen[team.FieldEnvironmentStatuses] = struct{}{}
+		case "environments":
+			if _, ok := fieldSeen[team.FieldEnvironments]; !ok {
+				selectedFields = append(selectedFields, team.FieldEnvironments)
+				fieldSeen[team.FieldEnvironments] = struct{}{}
+			}
+		case "roverTokenRef":
+			if _, ok := fieldSeen[team.FieldRoverTokenRef]; !ok {
+				selectedFields = append(selectedFields, team.FieldRoverTokenRef)
+				fieldSeen[team.FieldRoverTokenRef] = struct{}{}
 			}
 		case "id":
 		case "__typename":

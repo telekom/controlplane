@@ -37,8 +37,10 @@ type Team struct {
 	Category team.Category `json:"category,omitempty"`
 	// Members holds the value of the "members" field.
 	Members []model.Member `json:"members,omitempty"`
-	// EnvironmentStatuses holds the value of the "environment_statuses" field.
-	EnvironmentStatuses []model.TeamEnvironmentStatus `json:"environment_statuses,omitempty"`
+	// Environments holds the value of the "environments" field.
+	Environments []string `json:"environments,omitempty"`
+	// RoverTokenRef holds the value of the "rover_token_ref" field.
+	RoverTokenRef *string `json:"rover_token_ref,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the TeamQuery when eager-loading is set.
 	Edges        TeamEdges `json:"edges"`
@@ -86,11 +88,11 @@ func (*Team) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case team.FieldStatus, team.FieldMembers, team.FieldEnvironmentStatuses:
+		case team.FieldStatus, team.FieldMembers, team.FieldEnvironments:
 			values[i] = new([]byte)
 		case team.FieldID:
 			values[i] = new(sql.NullInt64)
-		case team.FieldName, team.FieldEmail, team.FieldCategory:
+		case team.FieldName, team.FieldEmail, team.FieldCategory, team.FieldRoverTokenRef:
 			values[i] = new(sql.NullString)
 		case team.FieldCreatedAt, team.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -163,13 +165,20 @@ func (_m *Team) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field members: %w", err)
 				}
 			}
-		case team.FieldEnvironmentStatuses:
+		case team.FieldEnvironments:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field environment_statuses", values[i])
+				return fmt.Errorf("unexpected type %T for field environments", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.EnvironmentStatuses); err != nil {
-					return fmt.Errorf("unmarshal field environment_statuses: %w", err)
+				if err := json.Unmarshal(*value, &_m.Environments); err != nil {
+					return fmt.Errorf("unmarshal field environments: %w", err)
 				}
+			}
+		case team.FieldRoverTokenRef:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field rover_token_ref", values[i])
+			} else if value.Valid {
+				_m.RoverTokenRef = new(string)
+				*_m.RoverTokenRef = value.String
 			}
 		case team.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -245,8 +254,13 @@ func (_m *Team) String() string {
 	builder.WriteString("members=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Members))
 	builder.WriteString(", ")
-	builder.WriteString("environment_statuses=")
-	builder.WriteString(fmt.Sprintf("%v", _m.EnvironmentStatuses))
+	builder.WriteString("environments=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Environments))
+	builder.WriteString(", ")
+	if v := _m.RoverTokenRef; v != nil {
+		builder.WriteString("rover_token_ref=")
+		builder.WriteString(*v)
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

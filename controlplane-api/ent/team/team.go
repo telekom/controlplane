@@ -36,8 +36,10 @@ const (
 	FieldCategory = "category"
 	// FieldMembers holds the string denoting the members field in the database.
 	FieldMembers = "members"
-	// FieldEnvironmentStatuses holds the string denoting the environment_statuses field in the database.
-	FieldEnvironmentStatuses = "environment_statuses"
+	// FieldEnvironments holds the string denoting the environments field in the database.
+	FieldEnvironments = "environments"
+	// FieldRoverTokenRef holds the string denoting the rover_token_ref field in the database.
+	FieldRoverTokenRef = "rover_token_ref"
 	// EdgeGroup holds the string denoting the group edge name in mutations.
 	EdgeGroup = "group"
 	// EdgeApplications holds the string denoting the applications edge name in mutations.
@@ -70,7 +72,8 @@ var Columns = []string{
 	FieldEmail,
 	FieldCategory,
 	FieldMembers,
-	FieldEnvironmentStatuses,
+	FieldEnvironments,
+	FieldRoverTokenRef,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "teams"
@@ -116,8 +119,8 @@ var (
 	EmailValidator func(string) error
 	// DefaultMembers holds the default value on creation for the "members" field.
 	DefaultMembers []model.Member
-	// DefaultEnvironmentStatuses holds the default value on creation for the "environment_statuses" field.
-	DefaultEnvironmentStatuses []model.TeamEnvironmentStatus
+	// DefaultEnvironments holds the default value on creation for the "environments" field.
+	DefaultEnvironments []string
 )
 
 // Category defines the type for the "category" enum field.
@@ -177,6 +180,11 @@ func ByEmail(opts ...sql.OrderTermOption) OrderOption {
 // ByCategory orders the results by the category field.
 func ByCategory(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCategory, opts...).ToFunc()
+}
+
+// ByRoverTokenRef orders the results by the rover_token_ref field.
+func ByRoverTokenRef(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRoverTokenRef, opts...).ToFunc()
 }
 
 // ByGroupField orders the results by group field.

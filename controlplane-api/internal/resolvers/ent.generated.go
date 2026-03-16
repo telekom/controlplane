@@ -3911,8 +3911,10 @@ func (ec *executionContext) fieldContext_Group_teams(_ context.Context, field gr
 				return ec.fieldContext_Team_category(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "environmentStatuses":
-				return ec.fieldContext_Team_environmentStatuses(ctx, field)
+			case "environments":
+				return ec.fieldContext_Team_environments(ctx, field)
+			case "roverTokenRef":
+				return ec.fieldContext_Team_roverTokenRef(ctx, field)
 			case "group":
 				return ec.fieldContext_Team_group(ctx, field)
 			case "applications":
@@ -4809,38 +4811,59 @@ func (ec *executionContext) fieldContext_Team_members(_ context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _Team_environmentStatuses(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
+func (ec *executionContext) _Team_environments(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Team_environmentStatuses,
+		ec.fieldContext_Team_environments,
 		func(ctx context.Context) (any, error) {
-			return obj.EnvironmentStatuses, nil
+			return obj.Environments, nil
 		},
 		nil,
-		ec.marshalNTeamEnvironmentStatus2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐTeamEnvironmentStatusᚄ,
+		ec.marshalNString2ᚕstringᚄ,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Team_environmentStatuses(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Team_environments(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Team",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "environmentName":
-				return ec.fieldContext_TeamEnvironmentStatus_environmentName(ctx, field)
-			case "state":
-				return ec.fieldContext_TeamEnvironmentStatus_state(ctx, field)
-			case "roverTokenRef":
-				return ec.fieldContext_TeamEnvironmentStatus_roverTokenRef(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type TeamEnvironmentStatus", field.Name)
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Team_roverTokenRef(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Team_roverTokenRef,
+		func(ctx context.Context) (any, error) {
+			return obj.RoverTokenRef, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Team_roverTokenRef(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5079,8 +5102,10 @@ func (ec *executionContext) fieldContext_TeamEdge_node(_ context.Context, field 
 				return ec.fieldContext_Team_category(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "environmentStatuses":
-				return ec.fieldContext_Team_environmentStatuses(ctx, field)
+			case "environments":
+				return ec.fieldContext_Team_environments(ctx, field)
+			case "roverTokenRef":
+				return ec.fieldContext_Team_roverTokenRef(ctx, field)
 			case "group":
 				return ec.fieldContext_Team_group(ctx, field)
 			case "applications":
@@ -8367,7 +8392,7 @@ func (ec *executionContext) unmarshalInputTeamWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "hasGroup", "hasGroupWith", "hasApplications", "hasApplicationsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "roverTokenRef", "roverTokenRefNEQ", "roverTokenRefIn", "roverTokenRefNotIn", "roverTokenRefGT", "roverTokenRefGTE", "roverTokenRefLT", "roverTokenRefLTE", "roverTokenRefContains", "roverTokenRefHasPrefix", "roverTokenRefHasSuffix", "roverTokenRefIsNil", "roverTokenRefNotNil", "roverTokenRefEqualFold", "roverTokenRefContainsFold", "hasGroup", "hasGroupWith", "hasApplications", "hasApplicationsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8773,6 +8798,111 @@ func (ec *executionContext) unmarshalInputTeamWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.CategoryNotIn = data
+		case "roverTokenRef":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRef"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRef = data
+		case "roverTokenRefNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefNEQ = data
+		case "roverTokenRefIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefIn = data
+		case "roverTokenRefNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefNotIn = data
+		case "roverTokenRefGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefGT = data
+		case "roverTokenRefGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefGTE = data
+		case "roverTokenRefLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefLT = data
+		case "roverTokenRefLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefLTE = data
+		case "roverTokenRefContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefContains = data
+		case "roverTokenRefHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefHasPrefix = data
+		case "roverTokenRefHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefHasSuffix = data
+		case "roverTokenRefIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefIsNil = data
+		case "roverTokenRefNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefNotNil = data
+		case "roverTokenRefEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefEqualFold = data
+		case "roverTokenRefContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefContainsFold = data
 		case "hasGroup":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasGroup"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -11022,11 +11152,13 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "environmentStatuses":
-			out.Values[i] = ec._Team_environmentStatuses(ctx, field, obj)
+		case "environments":
+			out.Values[i] = ec._Team_environments(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "roverTokenRef":
+			out.Values[i] = ec._Team_roverTokenRef(ctx, field, obj)
 		case "group":
 			field := field
 

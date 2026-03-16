@@ -221,7 +221,8 @@ var (
 		{Name: "email", Type: field.TypeString, Size: 2147483647},
 		{Name: "category", Type: field.TypeEnum, Enums: []string{"CUSTOMER", "INFRASTRUCTURE"}, Default: "CUSTOMER"},
 		{Name: "members", Type: field.TypeJSON},
-		{Name: "environment_statuses", Type: field.TypeJSON},
+		{Name: "environments", Type: field.TypeJSON},
+		{Name: "rover_token_ref", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "group_teams", Type: field.TypeInt, Nullable: true},
 	}
 	// TeamsTable holds the schema information for the "teams" table.
@@ -232,7 +233,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "teams_groups_teams",
-				Columns:    []*schema.Column{TeamsColumns[9]},
+				Columns:    []*schema.Column{TeamsColumns[10]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

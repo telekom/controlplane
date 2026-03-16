@@ -333,10 +333,10 @@ func init() {
 	teamDescMembers := teamFields[3].Descriptor()
 	// team.DefaultMembers holds the default value on creation for the members field.
 	team.DefaultMembers = teamDescMembers.Default.([]model.Member)
-	// teamDescEnvironmentStatuses is the schema descriptor for environment_statuses field.
-	teamDescEnvironmentStatuses := teamFields[4].Descriptor()
-	// team.DefaultEnvironmentStatuses holds the default value on creation for the environment_statuses field.
-	team.DefaultEnvironmentStatuses = teamDescEnvironmentStatuses.Default.([]model.TeamEnvironmentStatus)
+	// teamDescEnvironments is the schema descriptor for environments field.
+	teamDescEnvironments := teamFields[4].Descriptor()
+	// team.DefaultEnvironments holds the default value on creation for the environments field.
+	team.DefaultEnvironments = teamDescEnvironments.Default.([]string)
 	zoneMixin := schema.Zone{}.Mixin()
 	zone.Policy = privacy.NewPolicies(zoneMixin[0], schema.Zone{})
 	zone.Hooks[0] = func(next ent.Mutator) ent.Mutator {
