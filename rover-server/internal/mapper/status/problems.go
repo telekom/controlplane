@@ -188,7 +188,7 @@ func getAllProblemsInSubResource[T SubResource](ctx context.Context, owner types
 			continue
 		}
 		if notReady := getNotReadyCondition(res.GetConditions()); notReady != nil {
-			problems = append(problems, mapNotReadyConditionToProblem(*notReady, res))
+			problems = append(problems, mapNotReadyConditionToProblem(notReady, res))
 		}
 	}
 	return problems, nil
@@ -228,7 +228,7 @@ func getNotReadyCondition(conditions []metav1.Condition) *metav1.Condition {
 }
 
 // mapNotReadyConditionToProblem converts a not-ready condition and its owning object into an api.Problem.
-func mapNotReadyConditionToProblem(cond metav1.Condition, obj types.Object) api.Problem {
+func mapNotReadyConditionToProblem(cond *metav1.Condition, obj types.Object) api.Problem {
 	gvk := obj.GetObjectKind().GroupVersionKind()
 	return api.Problem{
 		Cause:   cond.Reason,

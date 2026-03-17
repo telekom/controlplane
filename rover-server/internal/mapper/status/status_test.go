@@ -475,4 +475,32 @@ var _ = Describe("CompareAndReturn", func() {
 			Expect(result).To(Equal(api.OverallStatusNone))
 		})
 	})
+
+	Context("when comparing Invalid with Failed", func() {
+		It("Invalid takes precedence over Failed", func() {
+			result := CompareAndReturn(api.OverallStatusInvalid, api.OverallStatusFailed)
+			Expect(result).To(Equal(api.OverallStatusInvalid))
+		})
+	})
+
+	Context("when comparing Done with Complete", func() {
+		It("returns the first when both have equal priority", func() {
+			result := CompareAndReturn(api.OverallStatusDone, api.OverallStatusComplete)
+			Expect(result).To(Equal(api.OverallStatusDone))
+		})
+	})
+
+	Context("when comparing Done with Processing", func() {
+		It("Processing takes precedence over Done", func() {
+			result := CompareAndReturn(api.OverallStatusDone, api.OverallStatusProcessing)
+			Expect(result).To(Equal(api.OverallStatusProcessing))
+		})
+	})
+
+	Context("when comparing an unknown status with Complete", func() {
+		It("Complete takes precedence over unknown", func() {
+			result := CompareAndReturn(api.OverallStatus("unknown"), api.OverallStatusComplete)
+			Expect(result).To(Equal(api.OverallStatusComplete))
+		})
+	})
 })
