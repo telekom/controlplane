@@ -44,9 +44,6 @@ models:
   Upstream:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.Upstream
-  ApiInfo:
-    model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApiInfo
   ApprovalConfig:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApprovalConfig

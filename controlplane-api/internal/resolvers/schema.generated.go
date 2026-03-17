@@ -42,122 +42,6 @@ type DecisionResolver interface {
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _ApiInfo_basePath(ctx context.Context, field graphql.CollectedField, obj *model.ApiInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ApiInfo_basePath,
-		func(ctx context.Context) (any, error) {
-			return obj.BasePath, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ApiInfo_basePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiInfo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApiInfo_version(ctx context.Context, field graphql.CollectedField, obj *model.ApiInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ApiInfo_version,
-		func(ctx context.Context) (any, error) {
-			return obj.Version, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ApiInfo_version(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiInfo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApiInfo_category(ctx context.Context, field graphql.CollectedField, obj *model.ApiInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ApiInfo_category,
-		func(ctx context.Context) (any, error) {
-			return obj.Category, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ApiInfo_category(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiInfo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApiInfo_active(ctx context.Context, field graphql.CollectedField, obj *model.ApiInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ApiInfo_active,
-		func(ctx context.Context) (any, error) {
-			return obj.Active, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ApiInfo_active(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiInfo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _ApprovalConfig_strategy(ctx context.Context, field graphql.CollectedField, obj *model.ApprovalConfig) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -982,60 +866,6 @@ func (ec *executionContext) fieldContext_Upstream_weight(_ context.Context, fiel
 
 // region    **************************** object.gotpl ****************************
 
-var apiInfoImplementors = []string{"ApiInfo"}
-
-func (ec *executionContext) _ApiInfo(ctx context.Context, sel ast.SelectionSet, obj *model.ApiInfo) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, apiInfoImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ApiInfo")
-		case "basePath":
-			out.Values[i] = ec._ApiInfo_basePath(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "version":
-			out.Values[i] = ec._ApiInfo_version(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "category":
-			out.Values[i] = ec._ApiInfo_category(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "active":
-			out.Values[i] = ec._ApiInfo_active(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var approvalConfigImplementors = []string{"ApprovalConfig"}
 
 func (ec *executionContext) _ApprovalConfig(ctx context.Context, sel ast.SelectionSet, obj *model.ApprovalConfig) graphql.Marshaler {
@@ -1698,13 +1528,6 @@ func (ec *executionContext) marshalNUpstream2ᚕgithubᚗcomᚋtelekomᚋcontrol
 	}
 
 	return ret
-}
-
-func (ec *executionContext) marshalOApiInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiInfo(ctx context.Context, sel ast.SelectionSet, v *model.ApiInfo) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._ApiInfo(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalORoverStatus2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRoverStatus(ctx context.Context, sel ast.SelectionSet, v *model.RoverStatus) graphql.Marshaler {

@@ -116,6 +116,23 @@ type ApiExposureWhereInput struct {
 	CircuitBreakerEnabled    *bool `json:"circuitBreakerEnabled,omitempty"`
 	CircuitBreakerEnabledNEQ *bool `json:"circuitBreakerEnabledNEQ,omitempty"`
 
+	// "api_version" field predicates.
+	APIVersion             *string  `json:"apiVersion,omitempty"`
+	APIVersionNEQ          *string  `json:"apiVersionNEQ,omitempty"`
+	APIVersionIn           []string `json:"apiVersionIn,omitempty"`
+	APIVersionNotIn        []string `json:"apiVersionNotIn,omitempty"`
+	APIVersionGT           *string  `json:"apiVersionGT,omitempty"`
+	APIVersionGTE          *string  `json:"apiVersionGTE,omitempty"`
+	APIVersionLT           *string  `json:"apiVersionLT,omitempty"`
+	APIVersionLTE          *string  `json:"apiVersionLTE,omitempty"`
+	APIVersionContains     *string  `json:"apiVersionContains,omitempty"`
+	APIVersionHasPrefix    *string  `json:"apiVersionHasPrefix,omitempty"`
+	APIVersionHasSuffix    *string  `json:"apiVersionHasSuffix,omitempty"`
+	APIVersionIsNil        bool     `json:"apiVersionIsNil,omitempty"`
+	APIVersionNotNil       bool     `json:"apiVersionNotNil,omitempty"`
+	APIVersionEqualFold    *string  `json:"apiVersionEqualFold,omitempty"`
+	APIVersionContainsFold *string  `json:"apiVersionContainsFold,omitempty"`
+
 	// "owner" edge predicates.
 	HasOwner     *bool                    `json:"hasOwner,omitempty"`
 	HasOwnerWith []*ApplicationWhereInput `json:"hasOwnerWith,omitempty"`
@@ -393,6 +410,51 @@ func (i *ApiExposureWhereInput) P() (predicate.ApiExposure, error) {
 	}
 	if i.CircuitBreakerEnabledNEQ != nil {
 		predicates = append(predicates, apiexposure.CircuitBreakerEnabledNEQ(*i.CircuitBreakerEnabledNEQ))
+	}
+	if i.APIVersion != nil {
+		predicates = append(predicates, apiexposure.APIVersionEQ(*i.APIVersion))
+	}
+	if i.APIVersionNEQ != nil {
+		predicates = append(predicates, apiexposure.APIVersionNEQ(*i.APIVersionNEQ))
+	}
+	if len(i.APIVersionIn) > 0 {
+		predicates = append(predicates, apiexposure.APIVersionIn(i.APIVersionIn...))
+	}
+	if len(i.APIVersionNotIn) > 0 {
+		predicates = append(predicates, apiexposure.APIVersionNotIn(i.APIVersionNotIn...))
+	}
+	if i.APIVersionGT != nil {
+		predicates = append(predicates, apiexposure.APIVersionGT(*i.APIVersionGT))
+	}
+	if i.APIVersionGTE != nil {
+		predicates = append(predicates, apiexposure.APIVersionGTE(*i.APIVersionGTE))
+	}
+	if i.APIVersionLT != nil {
+		predicates = append(predicates, apiexposure.APIVersionLT(*i.APIVersionLT))
+	}
+	if i.APIVersionLTE != nil {
+		predicates = append(predicates, apiexposure.APIVersionLTE(*i.APIVersionLTE))
+	}
+	if i.APIVersionContains != nil {
+		predicates = append(predicates, apiexposure.APIVersionContains(*i.APIVersionContains))
+	}
+	if i.APIVersionHasPrefix != nil {
+		predicates = append(predicates, apiexposure.APIVersionHasPrefix(*i.APIVersionHasPrefix))
+	}
+	if i.APIVersionHasSuffix != nil {
+		predicates = append(predicates, apiexposure.APIVersionHasSuffix(*i.APIVersionHasSuffix))
+	}
+	if i.APIVersionIsNil {
+		predicates = append(predicates, apiexposure.APIVersionIsNil())
+	}
+	if i.APIVersionNotNil {
+		predicates = append(predicates, apiexposure.APIVersionNotNil())
+	}
+	if i.APIVersionEqualFold != nil {
+		predicates = append(predicates, apiexposure.APIVersionEqualFold(*i.APIVersionEqualFold))
+	}
+	if i.APIVersionContainsFold != nil {
+		predicates = append(predicates, apiexposure.APIVersionContainsFold(*i.APIVersionContainsFold))
 	}
 
 	if i.HasOwner != nil {

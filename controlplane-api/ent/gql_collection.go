@@ -211,10 +211,10 @@ func (_q *ApiExposureQuery) collectField(ctx context.Context, oneNode bool, opCt
 				selectedFields = append(selectedFields, apiexposure.FieldApprovalConfig)
 				fieldSeen[apiexposure.FieldApprovalConfig] = struct{}{}
 			}
-		case "api":
-			if _, ok := fieldSeen[apiexposure.FieldAPI]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldAPI)
-				fieldSeen[apiexposure.FieldAPI] = struct{}{}
+		case "apiVersion":
+			if _, ok := fieldSeen[apiexposure.FieldAPIVersion]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldAPIVersion)
+				fieldSeen[apiexposure.FieldAPIVersion] = struct{}{}
 			}
 		case "id":
 		case "__typename":

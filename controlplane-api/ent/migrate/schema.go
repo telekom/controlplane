@@ -27,7 +27,7 @@ var (
 		{Name: "provided_scopes", Type: field.TypeJSON},
 		{Name: "upstreams", Type: field.TypeJSON},
 		{Name: "approval_config", Type: field.TypeJSON},
-		{Name: "api", Type: field.TypeJSON, Nullable: true},
+		{Name: "api_version", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "application_exposed_apis", Type: field.TypeInt},
 	}
 	// APIExposuresTable holds the schema information for the "api_exposures" table.

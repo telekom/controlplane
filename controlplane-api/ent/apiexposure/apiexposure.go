@@ -48,8 +48,8 @@ const (
 	FieldUpstreams = "upstreams"
 	// FieldApprovalConfig holds the string denoting the approval_config field in the database.
 	FieldApprovalConfig = "approval_config"
-	// FieldAPI holds the string denoting the api field in the database.
-	FieldAPI = "api"
+	// FieldAPIVersion holds the string denoting the api_version field in the database.
+	FieldAPIVersion = "api_version"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
 	// EdgeSubscriptions holds the string denoting the subscriptions edge name in mutations.
@@ -88,7 +88,7 @@ var Columns = []string{
 	FieldProvidedScopes,
 	FieldUpstreams,
 	FieldApprovalConfig,
-	FieldAPI,
+	FieldAPIVersion,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "api_exposures"
@@ -250,6 +250,11 @@ func ByExternalIdpTokenEndpoint(opts ...sql.OrderTermOption) OrderOption {
 // ByCircuitBreakerEnabled orders the results by the circuit_breaker_enabled field.
 func ByCircuitBreakerEnabled(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCircuitBreakerEnabled, opts...).ToFunc()
+}
+
+// ByAPIVersion orders the results by the api_version field.
+func ByAPIVersion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAPIVersion, opts...).ToFunc()
 }
 
 // ByOwnerField orders the results by owner field.

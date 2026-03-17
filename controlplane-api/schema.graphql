@@ -29,13 +29,6 @@ type Upstream {
   weight: Int!
 }
 
-type ApiInfo {
-  basePath: String!
-  version: String!
-  category: String!
-  active: Boolean!
-}
-
 type ApprovalConfig {
   strategy: ApprovalStrategy!
   trustedTeams: [String!]!
