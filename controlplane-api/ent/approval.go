@@ -33,8 +33,6 @@ type Approval struct {
 	StatusMessage *string `json:"status_message,omitempty"`
 	// Action holds the value of the "action" field.
 	Action string `json:"action,omitempty"`
-	// State holds the value of the "state" field.
-	State approval.State `json:"state,omitempty"`
 	// Strategy holds the value of the "strategy" field.
 	Strategy approval.Strategy `json:"strategy,omitempty"`
 	// Requester holds the value of the "requester" field.
@@ -45,6 +43,8 @@ type Approval struct {
 	Decisions []model.Decision `json:"decisions,omitempty"`
 	// AvailableTransitions holds the value of the "available_transitions" field.
 	AvailableTransitions []model.AvailableTransition `json:"available_transitions,omitempty"`
+	// State holds the value of the "state" field.
+	State approval.State `json:"state,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ApprovalQuery when eager-loading is set.
 	Edges                     ApprovalEdges `json:"edges"`
@@ -83,7 +83,7 @@ func (*Approval) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case approval.FieldID:
 			values[i] = new(sql.NullInt64)
-		case approval.FieldStatusPhase, approval.FieldStatusMessage, approval.FieldAction, approval.FieldState, approval.FieldStrategy:
+		case approval.FieldStatusPhase, approval.FieldStatusMessage, approval.FieldAction, approval.FieldStrategy, approval.FieldState:
 			values[i] = new(sql.NullString)
 		case approval.FieldCreatedAt, approval.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -141,12 +141,6 @@ func (_m *Approval) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Action = value.String
 			}
-		case approval.FieldState:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field state", values[i])
-			} else if value.Valid {
-				_m.State = approval.State(value.String)
-			}
 		case approval.FieldStrategy:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field strategy", values[i])
@@ -184,6 +178,12 @@ func (_m *Approval) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &_m.AvailableTransitions); err != nil {
 					return fmt.Errorf("unmarshal field available_transitions: %w", err)
 				}
+			}
+		case approval.FieldState:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field state", values[i])
+			} else if value.Valid {
+				_m.State = approval.State(value.String)
 			}
 		case approval.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -250,9 +250,6 @@ func (_m *Approval) String() string {
 	builder.WriteString("action=")
 	builder.WriteString(_m.Action)
 	builder.WriteString(", ")
-	builder.WriteString("state=")
-	builder.WriteString(fmt.Sprintf("%v", _m.State))
-	builder.WriteString(", ")
 	builder.WriteString("strategy=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Strategy))
 	builder.WriteString(", ")
@@ -267,6 +264,9 @@ func (_m *Approval) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("available_transitions=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AvailableTransitions))
+	builder.WriteString(", ")
+	builder.WriteString("state=")
+	builder.WriteString(fmt.Sprintf("%v", _m.State))
 	builder.WriteByte(')')
 	return builder.String()
 }

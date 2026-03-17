@@ -1530,8 +1530,6 @@ func (ec *executionContext) fieldContext_ApiSubscription_approval(_ context.Cont
 				return ec.fieldContext_Approval_statusMessage(ctx, field)
 			case "action":
 				return ec.fieldContext_Approval_action(ctx, field)
-			case "state":
-				return ec.fieldContext_Approval_state(ctx, field)
 			case "strategy":
 				return ec.fieldContext_Approval_strategy(ctx, field)
 			case "requester":
@@ -1542,6 +1540,8 @@ func (ec *executionContext) fieldContext_ApiSubscription_approval(_ context.Cont
 				return ec.fieldContext_Approval_decisions(ctx, field)
 			case "availableTransitions":
 				return ec.fieldContext_Approval_availableTransitions(ctx, field)
+			case "state":
+				return ec.fieldContext_Approval_state(ctx, field)
 			case "apiSubscription":
 				return ec.fieldContext_Approval_apiSubscription(ctx, field)
 			}
@@ -1587,8 +1587,6 @@ func (ec *executionContext) fieldContext_ApiSubscription_approvalRequest(_ conte
 				return ec.fieldContext_ApprovalRequest_statusMessage(ctx, field)
 			case "action":
 				return ec.fieldContext_ApprovalRequest_action(ctx, field)
-			case "state":
-				return ec.fieldContext_ApprovalRequest_state(ctx, field)
 			case "strategy":
 				return ec.fieldContext_ApprovalRequest_strategy(ctx, field)
 			case "requester":
@@ -1599,6 +1597,8 @@ func (ec *executionContext) fieldContext_ApiSubscription_approvalRequest(_ conte
 				return ec.fieldContext_ApprovalRequest_decisions(ctx, field)
 			case "availableTransitions":
 				return ec.fieldContext_ApprovalRequest_availableTransitions(ctx, field)
+			case "state":
+				return ec.fieldContext_ApprovalRequest_state(ctx, field)
 			case "apiSubscription":
 				return ec.fieldContext_ApprovalRequest_apiSubscription(ctx, field)
 			}
@@ -2568,35 +2568,6 @@ func (ec *executionContext) fieldContext_Approval_action(_ context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _Approval_state(ctx context.Context, field graphql.CollectedField, obj *ent.Approval) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Approval_state,
-		func(ctx context.Context) (any, error) {
-			return obj.State, nil
-		},
-		nil,
-		ec.marshalNApprovalState2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐState,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Approval_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Approval",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ApprovalState does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Approval_strategy(ctx context.Context, field graphql.CollectedField, obj *ent.Approval) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2771,6 +2742,35 @@ func (ec *executionContext) fieldContext_Approval_availableTransitions(_ context
 				return ec.fieldContext_AvailableTransition_toState(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AvailableTransition", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Approval_state(ctx context.Context, field graphql.CollectedField, obj *ent.Approval) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Approval_state,
+		func(ctx context.Context) (any, error) {
+			return obj.State, nil
+		},
+		nil,
+		ec.marshalNApprovalState2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐState,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Approval_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Approval",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ApprovalState does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2972,8 +2972,6 @@ func (ec *executionContext) fieldContext_ApprovalEdge_node(_ context.Context, fi
 				return ec.fieldContext_Approval_statusMessage(ctx, field)
 			case "action":
 				return ec.fieldContext_Approval_action(ctx, field)
-			case "state":
-				return ec.fieldContext_Approval_state(ctx, field)
 			case "strategy":
 				return ec.fieldContext_Approval_strategy(ctx, field)
 			case "requester":
@@ -2984,6 +2982,8 @@ func (ec *executionContext) fieldContext_ApprovalEdge_node(_ context.Context, fi
 				return ec.fieldContext_Approval_decisions(ctx, field)
 			case "availableTransitions":
 				return ec.fieldContext_Approval_availableTransitions(ctx, field)
+			case "state":
+				return ec.fieldContext_Approval_state(ctx, field)
 			case "apiSubscription":
 				return ec.fieldContext_Approval_apiSubscription(ctx, field)
 			}
@@ -3196,35 +3196,6 @@ func (ec *executionContext) fieldContext_ApprovalRequest_action(_ context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _ApprovalRequest_state(ctx context.Context, field graphql.CollectedField, obj *ent.ApprovalRequest) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ApprovalRequest_state,
-		func(ctx context.Context) (any, error) {
-			return obj.State, nil
-		},
-		nil,
-		ec.marshalNApprovalRequestState2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐState,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ApprovalRequest_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApprovalRequest",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ApprovalRequestState does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _ApprovalRequest_strategy(ctx context.Context, field graphql.CollectedField, obj *ent.ApprovalRequest) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3399,6 +3370,35 @@ func (ec *executionContext) fieldContext_ApprovalRequest_availableTransitions(_ 
 				return ec.fieldContext_AvailableTransition_toState(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AvailableTransition", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApprovalRequest_state(ctx context.Context, field graphql.CollectedField, obj *ent.ApprovalRequest) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApprovalRequest_state,
+		func(ctx context.Context) (any, error) {
+			return obj.State, nil
+		},
+		nil,
+		ec.marshalNApprovalRequestState2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐState,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApprovalRequest_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApprovalRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ApprovalRequestState does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3600,8 +3600,6 @@ func (ec *executionContext) fieldContext_ApprovalRequestEdge_node(_ context.Cont
 				return ec.fieldContext_ApprovalRequest_statusMessage(ctx, field)
 			case "action":
 				return ec.fieldContext_ApprovalRequest_action(ctx, field)
-			case "state":
-				return ec.fieldContext_ApprovalRequest_state(ctx, field)
 			case "strategy":
 				return ec.fieldContext_ApprovalRequest_strategy(ctx, field)
 			case "requester":
@@ -3612,6 +3610,8 @@ func (ec *executionContext) fieldContext_ApprovalRequestEdge_node(_ context.Cont
 				return ec.fieldContext_ApprovalRequest_decisions(ctx, field)
 			case "availableTransitions":
 				return ec.fieldContext_ApprovalRequest_availableTransitions(ctx, field)
+			case "state":
+				return ec.fieldContext_ApprovalRequest_state(ctx, field)
 			case "apiSubscription":
 				return ec.fieldContext_ApprovalRequest_apiSubscription(ctx, field)
 			}
@@ -7662,7 +7662,7 @@ func (ec *executionContext) unmarshalInputApprovalRequestWhereInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "state", "stateNEQ", "stateIn", "stateNotIn", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "hasAPISubscription", "hasAPISubscriptionWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "state", "stateNEQ", "stateIn", "stateNotIn", "hasAPISubscription", "hasAPISubscriptionWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8082,34 +8082,6 @@ func (ec *executionContext) unmarshalInputApprovalRequestWhereInput(ctx context.
 				return it, err
 			}
 			it.ActionContainsFold = data
-		case "state":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("state"))
-			data, err := ec.unmarshalOApprovalRequestState2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐState(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.State = data
-		case "stateNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateNEQ"))
-			data, err := ec.unmarshalOApprovalRequestState2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐState(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.StateNEQ = data
-		case "stateIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateIn"))
-			data, err := ec.unmarshalOApprovalRequestState2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStateᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.StateIn = data
-		case "stateNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateNotIn"))
-			data, err := ec.unmarshalOApprovalRequestState2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStateᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.StateNotIn = data
 		case "strategy":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("strategy"))
 			data, err := ec.unmarshalOApprovalRequestStrategy2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStrategy(ctx, v)
@@ -8138,6 +8110,34 @@ func (ec *executionContext) unmarshalInputApprovalRequestWhereInput(ctx context.
 				return it, err
 			}
 			it.StrategyNotIn = data
+		case "state":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("state"))
+			data, err := ec.unmarshalOApprovalRequestState2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐState(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.State = data
+		case "stateNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateNEQ"))
+			data, err := ec.unmarshalOApprovalRequestState2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐState(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateNEQ = data
+		case "stateIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateIn"))
+			data, err := ec.unmarshalOApprovalRequestState2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStateᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateIn = data
+		case "stateNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateNotIn"))
+			data, err := ec.unmarshalOApprovalRequestState2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStateᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateNotIn = data
 		case "hasAPISubscription":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasAPISubscription"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -8168,7 +8168,7 @@ func (ec *executionContext) unmarshalInputApprovalWhereInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "state", "stateNEQ", "stateIn", "stateNotIn", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "hasAPISubscription", "hasAPISubscriptionWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "state", "stateNEQ", "stateIn", "stateNotIn", "hasAPISubscription", "hasAPISubscriptionWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8588,34 +8588,6 @@ func (ec *executionContext) unmarshalInputApprovalWhereInput(ctx context.Context
 				return it, err
 			}
 			it.ActionContainsFold = data
-		case "state":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("state"))
-			data, err := ec.unmarshalOApprovalState2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐState(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.State = data
-		case "stateNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateNEQ"))
-			data, err := ec.unmarshalOApprovalState2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐState(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.StateNEQ = data
-		case "stateIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateIn"))
-			data, err := ec.unmarshalOApprovalState2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStateᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.StateIn = data
-		case "stateNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateNotIn"))
-			data, err := ec.unmarshalOApprovalState2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStateᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.StateNotIn = data
 		case "strategy":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("strategy"))
 			data, err := ec.unmarshalOApprovalStrategy2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStrategy(ctx, v)
@@ -8644,6 +8616,34 @@ func (ec *executionContext) unmarshalInputApprovalWhereInput(ctx context.Context
 				return it, err
 			}
 			it.StrategyNotIn = data
+		case "state":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("state"))
+			data, err := ec.unmarshalOApprovalState2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐState(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.State = data
+		case "stateNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateNEQ"))
+			data, err := ec.unmarshalOApprovalState2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐState(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateNEQ = data
+		case "stateIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateIn"))
+			data, err := ec.unmarshalOApprovalState2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStateᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateIn = data
+		case "stateNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateNotIn"))
+			data, err := ec.unmarshalOApprovalState2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStateᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateNotIn = data
 		case "hasAPISubscription":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasAPISubscription"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -11794,11 +11794,6 @@ func (ec *executionContext) _Approval(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "state":
-			out.Values[i] = ec._Approval_state(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "strategy":
 			out.Values[i] = ec._Approval_strategy(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -11821,6 +11816,11 @@ func (ec *executionContext) _Approval(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "availableTransitions":
 			out.Values[i] = ec._Approval_availableTransitions(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "state":
+			out.Values[i] = ec._Approval_state(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -12005,11 +12005,6 @@ func (ec *executionContext) _ApprovalRequest(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "state":
-			out.Values[i] = ec._ApprovalRequest_state(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "strategy":
 			out.Values[i] = ec._ApprovalRequest_strategy(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -12032,6 +12027,11 @@ func (ec *executionContext) _ApprovalRequest(ctx context.Context, sel ast.Select
 			}
 		case "availableTransitions":
 			out.Values[i] = ec._ApprovalRequest_availableTransitions(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "state":
+			out.Values[i] = ec._ApprovalRequest_state(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

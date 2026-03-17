@@ -89,20 +89,6 @@ func (_c *ApprovalRequestCreate) SetAction(v string) *ApprovalRequestCreate {
 	return _c
 }
 
-// SetState sets the "state" field.
-func (_c *ApprovalRequestCreate) SetState(v approvalrequest.State) *ApprovalRequestCreate {
-	_c.mutation.SetState(v)
-	return _c
-}
-
-// SetNillableState sets the "state" field if the given value is not nil.
-func (_c *ApprovalRequestCreate) SetNillableState(v *approvalrequest.State) *ApprovalRequestCreate {
-	if v != nil {
-		_c.SetState(*v)
-	}
-	return _c
-}
-
 // SetStrategy sets the "strategy" field.
 func (_c *ApprovalRequestCreate) SetStrategy(v approvalrequest.Strategy) *ApprovalRequestCreate {
 	_c.mutation.SetStrategy(v)
@@ -138,6 +124,20 @@ func (_c *ApprovalRequestCreate) SetDecisions(v []model.Decision) *ApprovalReque
 // SetAvailableTransitions sets the "available_transitions" field.
 func (_c *ApprovalRequestCreate) SetAvailableTransitions(v []model.AvailableTransition) *ApprovalRequestCreate {
 	_c.mutation.SetAvailableTransitions(v)
+	return _c
+}
+
+// SetState sets the "state" field.
+func (_c *ApprovalRequestCreate) SetState(v approvalrequest.State) *ApprovalRequestCreate {
+	_c.mutation.SetState(v)
+	return _c
+}
+
+// SetNillableState sets the "state" field if the given value is not nil.
+func (_c *ApprovalRequestCreate) SetNillableState(v *approvalrequest.State) *ApprovalRequestCreate {
+	if v != nil {
+		_c.SetState(*v)
+	}
 	return _c
 }
 
@@ -215,10 +215,6 @@ func (_c *ApprovalRequestCreate) defaults() error {
 		v := approvalrequest.DefaultStatusPhase
 		_c.mutation.SetStatusPhase(v)
 	}
-	if _, ok := _c.mutation.State(); !ok {
-		v := approvalrequest.DefaultState
-		_c.mutation.SetState(v)
-	}
 	if _, ok := _c.mutation.Strategy(); !ok {
 		v := approvalrequest.DefaultStrategy
 		_c.mutation.SetStrategy(v)
@@ -230,6 +226,10 @@ func (_c *ApprovalRequestCreate) defaults() error {
 	if _, ok := _c.mutation.AvailableTransitions(); !ok {
 		v := approvalrequest.DefaultAvailableTransitions
 		_c.mutation.SetAvailableTransitions(v)
+	}
+	if _, ok := _c.mutation.State(); !ok {
+		v := approvalrequest.DefaultState
+		_c.mutation.SetState(v)
 	}
 	return nil
 }
@@ -258,14 +258,6 @@ func (_c *ApprovalRequestCreate) check() error {
 			return &ValidationError{Name: "action", err: fmt.Errorf(`ent: validator failed for field "ApprovalRequest.action": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.State(); !ok {
-		return &ValidationError{Name: "state", err: errors.New(`ent: missing required field "ApprovalRequest.state"`)}
-	}
-	if v, ok := _c.mutation.State(); ok {
-		if err := approvalrequest.StateValidator(v); err != nil {
-			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "ApprovalRequest.state": %w`, err)}
-		}
-	}
 	if _, ok := _c.mutation.Strategy(); !ok {
 		return &ValidationError{Name: "strategy", err: errors.New(`ent: missing required field "ApprovalRequest.strategy"`)}
 	}
@@ -285,6 +277,14 @@ func (_c *ApprovalRequestCreate) check() error {
 	}
 	if _, ok := _c.mutation.AvailableTransitions(); !ok {
 		return &ValidationError{Name: "available_transitions", err: errors.New(`ent: missing required field "ApprovalRequest.available_transitions"`)}
+	}
+	if _, ok := _c.mutation.State(); !ok {
+		return &ValidationError{Name: "state", err: errors.New(`ent: missing required field "ApprovalRequest.state"`)}
+	}
+	if v, ok := _c.mutation.State(); ok {
+		if err := approvalrequest.StateValidator(v); err != nil {
+			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "ApprovalRequest.state": %w`, err)}
+		}
 	}
 	return nil
 }
@@ -333,10 +333,6 @@ func (_c *ApprovalRequestCreate) createSpec() (*ApprovalRequest, *sqlgraph.Creat
 		_spec.SetField(approvalrequest.FieldAction, field.TypeString, value)
 		_node.Action = value
 	}
-	if value, ok := _c.mutation.State(); ok {
-		_spec.SetField(approvalrequest.FieldState, field.TypeEnum, value)
-		_node.State = value
-	}
 	if value, ok := _c.mutation.Strategy(); ok {
 		_spec.SetField(approvalrequest.FieldStrategy, field.TypeEnum, value)
 		_node.Strategy = value
@@ -356,6 +352,10 @@ func (_c *ApprovalRequestCreate) createSpec() (*ApprovalRequest, *sqlgraph.Creat
 	if value, ok := _c.mutation.AvailableTransitions(); ok {
 		_spec.SetField(approvalrequest.FieldAvailableTransitions, field.TypeJSON, value)
 		_node.AvailableTransitions = value
+	}
+	if value, ok := _c.mutation.State(); ok {
+		_spec.SetField(approvalrequest.FieldState, field.TypeEnum, value)
+		_node.State = value
 	}
 	if nodes := _c.mutation.APISubscriptionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -480,18 +480,6 @@ func (u *ApprovalRequestUpsert) UpdateAction() *ApprovalRequestUpsert {
 	return u
 }
 
-// SetState sets the "state" field.
-func (u *ApprovalRequestUpsert) SetState(v approvalrequest.State) *ApprovalRequestUpsert {
-	u.Set(approvalrequest.FieldState, v)
-	return u
-}
-
-// UpdateState sets the "state" field to the value that was provided on create.
-func (u *ApprovalRequestUpsert) UpdateState() *ApprovalRequestUpsert {
-	u.SetExcluded(approvalrequest.FieldState)
-	return u
-}
-
 // SetStrategy sets the "strategy" field.
 func (u *ApprovalRequestUpsert) SetStrategy(v approvalrequest.Strategy) *ApprovalRequestUpsert {
 	u.Set(approvalrequest.FieldStrategy, v)
@@ -549,6 +537,18 @@ func (u *ApprovalRequestUpsert) SetAvailableTransitions(v []model.AvailableTrans
 // UpdateAvailableTransitions sets the "available_transitions" field to the value that was provided on create.
 func (u *ApprovalRequestUpsert) UpdateAvailableTransitions() *ApprovalRequestUpsert {
 	u.SetExcluded(approvalrequest.FieldAvailableTransitions)
+	return u
+}
+
+// SetState sets the "state" field.
+func (u *ApprovalRequestUpsert) SetState(v approvalrequest.State) *ApprovalRequestUpsert {
+	u.Set(approvalrequest.FieldState, v)
+	return u
+}
+
+// UpdateState sets the "state" field to the value that was provided on create.
+func (u *ApprovalRequestUpsert) UpdateState() *ApprovalRequestUpsert {
+	u.SetExcluded(approvalrequest.FieldState)
 	return u
 }
 
@@ -660,20 +660,6 @@ func (u *ApprovalRequestUpsertOne) UpdateAction() *ApprovalRequestUpsertOne {
 	})
 }
 
-// SetState sets the "state" field.
-func (u *ApprovalRequestUpsertOne) SetState(v approvalrequest.State) *ApprovalRequestUpsertOne {
-	return u.Update(func(s *ApprovalRequestUpsert) {
-		s.SetState(v)
-	})
-}
-
-// UpdateState sets the "state" field to the value that was provided on create.
-func (u *ApprovalRequestUpsertOne) UpdateState() *ApprovalRequestUpsertOne {
-	return u.Update(func(s *ApprovalRequestUpsert) {
-		s.UpdateState()
-	})
-}
-
 // SetStrategy sets the "strategy" field.
 func (u *ApprovalRequestUpsertOne) SetStrategy(v approvalrequest.Strategy) *ApprovalRequestUpsertOne {
 	return u.Update(func(s *ApprovalRequestUpsert) {
@@ -741,6 +727,20 @@ func (u *ApprovalRequestUpsertOne) SetAvailableTransitions(v []model.AvailableTr
 func (u *ApprovalRequestUpsertOne) UpdateAvailableTransitions() *ApprovalRequestUpsertOne {
 	return u.Update(func(s *ApprovalRequestUpsert) {
 		s.UpdateAvailableTransitions()
+	})
+}
+
+// SetState sets the "state" field.
+func (u *ApprovalRequestUpsertOne) SetState(v approvalrequest.State) *ApprovalRequestUpsertOne {
+	return u.Update(func(s *ApprovalRequestUpsert) {
+		s.SetState(v)
+	})
+}
+
+// UpdateState sets the "state" field to the value that was provided on create.
+func (u *ApprovalRequestUpsertOne) UpdateState() *ApprovalRequestUpsertOne {
+	return u.Update(func(s *ApprovalRequestUpsert) {
+		s.UpdateState()
 	})
 }
 
@@ -1018,20 +1018,6 @@ func (u *ApprovalRequestUpsertBulk) UpdateAction() *ApprovalRequestUpsertBulk {
 	})
 }
 
-// SetState sets the "state" field.
-func (u *ApprovalRequestUpsertBulk) SetState(v approvalrequest.State) *ApprovalRequestUpsertBulk {
-	return u.Update(func(s *ApprovalRequestUpsert) {
-		s.SetState(v)
-	})
-}
-
-// UpdateState sets the "state" field to the value that was provided on create.
-func (u *ApprovalRequestUpsertBulk) UpdateState() *ApprovalRequestUpsertBulk {
-	return u.Update(func(s *ApprovalRequestUpsert) {
-		s.UpdateState()
-	})
-}
-
 // SetStrategy sets the "strategy" field.
 func (u *ApprovalRequestUpsertBulk) SetStrategy(v approvalrequest.Strategy) *ApprovalRequestUpsertBulk {
 	return u.Update(func(s *ApprovalRequestUpsert) {
@@ -1099,6 +1085,20 @@ func (u *ApprovalRequestUpsertBulk) SetAvailableTransitions(v []model.AvailableT
 func (u *ApprovalRequestUpsertBulk) UpdateAvailableTransitions() *ApprovalRequestUpsertBulk {
 	return u.Update(func(s *ApprovalRequestUpsert) {
 		s.UpdateAvailableTransitions()
+	})
+}
+
+// SetState sets the "state" field.
+func (u *ApprovalRequestUpsertBulk) SetState(v approvalrequest.State) *ApprovalRequestUpsertBulk {
+	return u.Update(func(s *ApprovalRequestUpsert) {
+		s.SetState(v)
+	})
+}
+
+// UpdateState sets the "state" field to the value that was provided on create.
+func (u *ApprovalRequestUpsertBulk) UpdateState() *ApprovalRequestUpsertBulk {
+	return u.Update(func(s *ApprovalRequestUpsert) {
+		s.UpdateState()
 	})
 }
 

@@ -3155,7 +3155,6 @@ type ApprovalMutation struct {
 	status_phase                *approval.StatusPhase
 	status_message              *string
 	action                      *string
-	state                       *approval.State
 	strategy                    *approval.Strategy
 	requester                   *model.RequesterInfo
 	decider                     *model.DeciderInfo
@@ -3163,6 +3162,7 @@ type ApprovalMutation struct {
 	appenddecisions             []model.Decision
 	available_transitions       *[]model.AvailableTransition
 	appendavailable_transitions []model.AvailableTransition
+	state                       *approval.State
 	clearedFields               map[string]struct{}
 	api_subscription            *int
 	clearedapi_subscription     bool
@@ -3462,42 +3462,6 @@ func (m *ApprovalMutation) ResetAction() {
 	m.action = nil
 }
 
-// SetState sets the "state" field.
-func (m *ApprovalMutation) SetState(a approval.State) {
-	m.state = &a
-}
-
-// State returns the value of the "state" field in the mutation.
-func (m *ApprovalMutation) State() (r approval.State, exists bool) {
-	v := m.state
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldState returns the old "state" field's value of the Approval entity.
-// If the Approval object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApprovalMutation) OldState(ctx context.Context) (v approval.State, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldState is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldState requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldState: %w", err)
-	}
-	return oldValue.State, nil
-}
-
-// ResetState resets all changes to the "state" field.
-func (m *ApprovalMutation) ResetState() {
-	m.state = nil
-}
-
 // SetStrategy sets the "strategy" field.
 func (m *ApprovalMutation) SetStrategy(a approval.Strategy) {
 	m.strategy = &a
@@ -3708,6 +3672,42 @@ func (m *ApprovalMutation) ResetAvailableTransitions() {
 	m.appendavailable_transitions = nil
 }
 
+// SetState sets the "state" field.
+func (m *ApprovalMutation) SetState(a approval.State) {
+	m.state = &a
+}
+
+// State returns the value of the "state" field in the mutation.
+func (m *ApprovalMutation) State() (r approval.State, exists bool) {
+	v := m.state
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldState returns the old "state" field's value of the Approval entity.
+// If the Approval object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalMutation) OldState(ctx context.Context) (v approval.State, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldState is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldState requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldState: %w", err)
+	}
+	return oldValue.State, nil
+}
+
+// ResetState resets all changes to the "state" field.
+func (m *ApprovalMutation) ResetState() {
+	m.state = nil
+}
+
 // SetAPISubscriptionID sets the "api_subscription" edge to the ApiSubscription entity by id.
 func (m *ApprovalMutation) SetAPISubscriptionID(id int) {
 	m.api_subscription = &id
@@ -3797,9 +3797,6 @@ func (m *ApprovalMutation) Fields() []string {
 	if m.action != nil {
 		fields = append(fields, approval.FieldAction)
 	}
-	if m.state != nil {
-		fields = append(fields, approval.FieldState)
-	}
 	if m.strategy != nil {
 		fields = append(fields, approval.FieldStrategy)
 	}
@@ -3814,6 +3811,9 @@ func (m *ApprovalMutation) Fields() []string {
 	}
 	if m.available_transitions != nil {
 		fields = append(fields, approval.FieldAvailableTransitions)
+	}
+	if m.state != nil {
+		fields = append(fields, approval.FieldState)
 	}
 	return fields
 }
@@ -3833,8 +3833,6 @@ func (m *ApprovalMutation) Field(name string) (ent.Value, bool) {
 		return m.StatusMessage()
 	case approval.FieldAction:
 		return m.Action()
-	case approval.FieldState:
-		return m.State()
 	case approval.FieldStrategy:
 		return m.Strategy()
 	case approval.FieldRequester:
@@ -3845,6 +3843,8 @@ func (m *ApprovalMutation) Field(name string) (ent.Value, bool) {
 		return m.Decisions()
 	case approval.FieldAvailableTransitions:
 		return m.AvailableTransitions()
+	case approval.FieldState:
+		return m.State()
 	}
 	return nil, false
 }
@@ -3864,8 +3864,6 @@ func (m *ApprovalMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldStatusMessage(ctx)
 	case approval.FieldAction:
 		return m.OldAction(ctx)
-	case approval.FieldState:
-		return m.OldState(ctx)
 	case approval.FieldStrategy:
 		return m.OldStrategy(ctx)
 	case approval.FieldRequester:
@@ -3876,6 +3874,8 @@ func (m *ApprovalMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldDecisions(ctx)
 	case approval.FieldAvailableTransitions:
 		return m.OldAvailableTransitions(ctx)
+	case approval.FieldState:
+		return m.OldState(ctx)
 	}
 	return nil, fmt.Errorf("unknown Approval field %s", name)
 }
@@ -3920,13 +3920,6 @@ func (m *ApprovalMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetAction(v)
 		return nil
-	case approval.FieldState:
-		v, ok := value.(approval.State)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetState(v)
-		return nil
 	case approval.FieldStrategy:
 		v, ok := value.(approval.Strategy)
 		if !ok {
@@ -3961,6 +3954,13 @@ func (m *ApprovalMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetAvailableTransitions(v)
+		return nil
+	case approval.FieldState:
+		v, ok := value.(approval.State)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetState(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Approval field %s", name)
@@ -4035,9 +4035,6 @@ func (m *ApprovalMutation) ResetField(name string) error {
 	case approval.FieldAction:
 		m.ResetAction()
 		return nil
-	case approval.FieldState:
-		m.ResetState()
-		return nil
 	case approval.FieldStrategy:
 		m.ResetStrategy()
 		return nil
@@ -4052,6 +4049,9 @@ func (m *ApprovalMutation) ResetField(name string) error {
 		return nil
 	case approval.FieldAvailableTransitions:
 		m.ResetAvailableTransitions()
+		return nil
+	case approval.FieldState:
+		m.ResetState()
 		return nil
 	}
 	return fmt.Errorf("unknown Approval field %s", name)
@@ -4142,7 +4142,6 @@ type ApprovalRequestMutation struct {
 	status_phase                *approvalrequest.StatusPhase
 	status_message              *string
 	action                      *string
-	state                       *approvalrequest.State
 	strategy                    *approvalrequest.Strategy
 	requester                   *model.RequesterInfo
 	decider                     *model.DeciderInfo
@@ -4150,6 +4149,7 @@ type ApprovalRequestMutation struct {
 	appenddecisions             []model.Decision
 	available_transitions       *[]model.AvailableTransition
 	appendavailable_transitions []model.AvailableTransition
+	state                       *approvalrequest.State
 	clearedFields               map[string]struct{}
 	api_subscription            *int
 	clearedapi_subscription     bool
@@ -4449,42 +4449,6 @@ func (m *ApprovalRequestMutation) ResetAction() {
 	m.action = nil
 }
 
-// SetState sets the "state" field.
-func (m *ApprovalRequestMutation) SetState(a approvalrequest.State) {
-	m.state = &a
-}
-
-// State returns the value of the "state" field in the mutation.
-func (m *ApprovalRequestMutation) State() (r approvalrequest.State, exists bool) {
-	v := m.state
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldState returns the old "state" field's value of the ApprovalRequest entity.
-// If the ApprovalRequest object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApprovalRequestMutation) OldState(ctx context.Context) (v approvalrequest.State, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldState is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldState requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldState: %w", err)
-	}
-	return oldValue.State, nil
-}
-
-// ResetState resets all changes to the "state" field.
-func (m *ApprovalRequestMutation) ResetState() {
-	m.state = nil
-}
-
 // SetStrategy sets the "strategy" field.
 func (m *ApprovalRequestMutation) SetStrategy(a approvalrequest.Strategy) {
 	m.strategy = &a
@@ -4695,6 +4659,42 @@ func (m *ApprovalRequestMutation) ResetAvailableTransitions() {
 	m.appendavailable_transitions = nil
 }
 
+// SetState sets the "state" field.
+func (m *ApprovalRequestMutation) SetState(a approvalrequest.State) {
+	m.state = &a
+}
+
+// State returns the value of the "state" field in the mutation.
+func (m *ApprovalRequestMutation) State() (r approvalrequest.State, exists bool) {
+	v := m.state
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldState returns the old "state" field's value of the ApprovalRequest entity.
+// If the ApprovalRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalRequestMutation) OldState(ctx context.Context) (v approvalrequest.State, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldState is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldState requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldState: %w", err)
+	}
+	return oldValue.State, nil
+}
+
+// ResetState resets all changes to the "state" field.
+func (m *ApprovalRequestMutation) ResetState() {
+	m.state = nil
+}
+
 // SetAPISubscriptionID sets the "api_subscription" edge to the ApiSubscription entity by id.
 func (m *ApprovalRequestMutation) SetAPISubscriptionID(id int) {
 	m.api_subscription = &id
@@ -4784,9 +4784,6 @@ func (m *ApprovalRequestMutation) Fields() []string {
 	if m.action != nil {
 		fields = append(fields, approvalrequest.FieldAction)
 	}
-	if m.state != nil {
-		fields = append(fields, approvalrequest.FieldState)
-	}
 	if m.strategy != nil {
 		fields = append(fields, approvalrequest.FieldStrategy)
 	}
@@ -4801,6 +4798,9 @@ func (m *ApprovalRequestMutation) Fields() []string {
 	}
 	if m.available_transitions != nil {
 		fields = append(fields, approvalrequest.FieldAvailableTransitions)
+	}
+	if m.state != nil {
+		fields = append(fields, approvalrequest.FieldState)
 	}
 	return fields
 }
@@ -4820,8 +4820,6 @@ func (m *ApprovalRequestMutation) Field(name string) (ent.Value, bool) {
 		return m.StatusMessage()
 	case approvalrequest.FieldAction:
 		return m.Action()
-	case approvalrequest.FieldState:
-		return m.State()
 	case approvalrequest.FieldStrategy:
 		return m.Strategy()
 	case approvalrequest.FieldRequester:
@@ -4832,6 +4830,8 @@ func (m *ApprovalRequestMutation) Field(name string) (ent.Value, bool) {
 		return m.Decisions()
 	case approvalrequest.FieldAvailableTransitions:
 		return m.AvailableTransitions()
+	case approvalrequest.FieldState:
+		return m.State()
 	}
 	return nil, false
 }
@@ -4851,8 +4851,6 @@ func (m *ApprovalRequestMutation) OldField(ctx context.Context, name string) (en
 		return m.OldStatusMessage(ctx)
 	case approvalrequest.FieldAction:
 		return m.OldAction(ctx)
-	case approvalrequest.FieldState:
-		return m.OldState(ctx)
 	case approvalrequest.FieldStrategy:
 		return m.OldStrategy(ctx)
 	case approvalrequest.FieldRequester:
@@ -4863,6 +4861,8 @@ func (m *ApprovalRequestMutation) OldField(ctx context.Context, name string) (en
 		return m.OldDecisions(ctx)
 	case approvalrequest.FieldAvailableTransitions:
 		return m.OldAvailableTransitions(ctx)
+	case approvalrequest.FieldState:
+		return m.OldState(ctx)
 	}
 	return nil, fmt.Errorf("unknown ApprovalRequest field %s", name)
 }
@@ -4907,13 +4907,6 @@ func (m *ApprovalRequestMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetAction(v)
 		return nil
-	case approvalrequest.FieldState:
-		v, ok := value.(approvalrequest.State)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetState(v)
-		return nil
 	case approvalrequest.FieldStrategy:
 		v, ok := value.(approvalrequest.Strategy)
 		if !ok {
@@ -4948,6 +4941,13 @@ func (m *ApprovalRequestMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetAvailableTransitions(v)
+		return nil
+	case approvalrequest.FieldState:
+		v, ok := value.(approvalrequest.State)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetState(v)
 		return nil
 	}
 	return fmt.Errorf("unknown ApprovalRequest field %s", name)
@@ -5022,9 +5022,6 @@ func (m *ApprovalRequestMutation) ResetField(name string) error {
 	case approvalrequest.FieldAction:
 		m.ResetAction()
 		return nil
-	case approvalrequest.FieldState:
-		m.ResetState()
-		return nil
 	case approvalrequest.FieldStrategy:
 		m.ResetStrategy()
 		return nil
@@ -5039,6 +5036,9 @@ func (m *ApprovalRequestMutation) ResetField(name string) error {
 		return nil
 	case approvalrequest.FieldAvailableTransitions:
 		m.ResetAvailableTransitions()
+		return nil
+	case approvalrequest.FieldState:
+		m.ResetState()
 		return nil
 	}
 	return fmt.Errorf("unknown ApprovalRequest field %s", name)

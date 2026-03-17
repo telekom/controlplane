@@ -2302,12 +2302,12 @@ type Approval implements Node {
   statusPhase: ApprovalStatusPhase!
   statusMessage: String
   action: String!
-  state: ApprovalState!
   strategy: ApprovalStrategy!
   requester: RequesterInfo!
   decider: DeciderInfo!
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]!
+  state: ApprovalState!
   apiSubscription: ApiSubscription
 }
 """
@@ -2367,12 +2367,12 @@ type ApprovalRequest implements Node {
   statusPhase: ApprovalRequestStatusPhase!
   statusMessage: String
   action: String!
-  state: ApprovalRequestState!
   strategy: ApprovalRequestStrategy!
   requester: RequesterInfo!
   decider: DeciderInfo!
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]!
+  state: ApprovalRequestState!
   apiSubscription: ApiSubscription
 }
 """
@@ -2433,8 +2433,6 @@ enum ApprovalRequestState @goModel(model: "github.com/telekom/controlplane/contr
   SEMIGRANTED
   GRANTED
   REJECTED
-  SUSPENDED
-  EXPIRED
 }
 """
 ApprovalRequestStatusPhase is enum for the field status_phase
@@ -2536,19 +2534,19 @@ input ApprovalRequestWhereInput {
   actionEqualFold: String
   actionContainsFold: String
   """
-  state field predicates
-  """
-  state: ApprovalRequestState
-  stateNEQ: ApprovalRequestState
-  stateIn: [ApprovalRequestState!]
-  stateNotIn: [ApprovalRequestState!]
-  """
   strategy field predicates
   """
   strategy: ApprovalRequestStrategy
   strategyNEQ: ApprovalRequestStrategy
   strategyIn: [ApprovalRequestStrategy!]
   strategyNotIn: [ApprovalRequestStrategy!]
+  """
+  state field predicates
+  """
+  state: ApprovalRequestState
+  stateNEQ: ApprovalRequestState
+  stateIn: [ApprovalRequestState!]
+  stateNotIn: [ApprovalRequestState!]
   """
   api_subscription edge predicates
   """
@@ -2666,19 +2664,19 @@ input ApprovalWhereInput {
   actionEqualFold: String
   actionContainsFold: String
   """
-  state field predicates
-  """
-  state: ApprovalState
-  stateNEQ: ApprovalState
-  stateIn: [ApprovalState!]
-  stateNotIn: [ApprovalState!]
-  """
   strategy field predicates
   """
   strategy: ApprovalStrategy
   strategyNEQ: ApprovalStrategy
   strategyIn: [ApprovalStrategy!]
   strategyNotIn: [ApprovalStrategy!]
+  """
+  state field predicates
+  """
+  state: ApprovalState
+  stateNEQ: ApprovalState
+  stateIn: [ApprovalState!]
+  stateNotIn: [ApprovalState!]
   """
   api_subscription edge predicates
   """
