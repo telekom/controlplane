@@ -102,65 +102,9 @@ func (_c *ApiExposureCreate) SetNillableActive(v *bool) *ApiExposureCreate {
 	return _c
 }
 
-// SetLastMileSecurity sets the "last_mile_security" field.
-func (_c *ApiExposureCreate) SetLastMileSecurity(v bool) *ApiExposureCreate {
-	_c.mutation.SetLastMileSecurity(v)
-	return _c
-}
-
-// SetNillableLastMileSecurity sets the "last_mile_security" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableLastMileSecurity(v *bool) *ApiExposureCreate {
-	if v != nil {
-		_c.SetLastMileSecurity(*v)
-	}
-	return _c
-}
-
-// SetM2mAuthMethod sets the "m2m_auth_method" field.
-func (_c *ApiExposureCreate) SetM2mAuthMethod(v apiexposure.M2mAuthMethod) *ApiExposureCreate {
-	_c.mutation.SetM2mAuthMethod(v)
-	return _c
-}
-
-// SetNillableM2mAuthMethod sets the "m2m_auth_method" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableM2mAuthMethod(v *apiexposure.M2mAuthMethod) *ApiExposureCreate {
-	if v != nil {
-		_c.SetM2mAuthMethod(*v)
-	}
-	return _c
-}
-
-// SetExternalIdpTokenEndpoint sets the "external_idp_token_endpoint" field.
-func (_c *ApiExposureCreate) SetExternalIdpTokenEndpoint(v string) *ApiExposureCreate {
-	_c.mutation.SetExternalIdpTokenEndpoint(v)
-	return _c
-}
-
-// SetNillableExternalIdpTokenEndpoint sets the "external_idp_token_endpoint" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableExternalIdpTokenEndpoint(v *string) *ApiExposureCreate {
-	if v != nil {
-		_c.SetExternalIdpTokenEndpoint(*v)
-	}
-	return _c
-}
-
-// SetCircuitBreakerEnabled sets the "circuit_breaker_enabled" field.
-func (_c *ApiExposureCreate) SetCircuitBreakerEnabled(v bool) *ApiExposureCreate {
-	_c.mutation.SetCircuitBreakerEnabled(v)
-	return _c
-}
-
-// SetNillableCircuitBreakerEnabled sets the "circuit_breaker_enabled" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableCircuitBreakerEnabled(v *bool) *ApiExposureCreate {
-	if v != nil {
-		_c.SetCircuitBreakerEnabled(*v)
-	}
-	return _c
-}
-
-// SetProvidedScopes sets the "provided_scopes" field.
-func (_c *ApiExposureCreate) SetProvidedScopes(v []string) *ApiExposureCreate {
-	_c.mutation.SetProvidedScopes(v)
+// SetFeatures sets the "features" field.
+func (_c *ApiExposureCreate) SetFeatures(v []string) *ApiExposureCreate {
+	_c.mutation.SetFeatures(v)
 	return _c
 }
 
@@ -287,21 +231,9 @@ func (_c *ApiExposureCreate) defaults() error {
 		v := apiexposure.DefaultActive
 		_c.mutation.SetActive(v)
 	}
-	if _, ok := _c.mutation.LastMileSecurity(); !ok {
-		v := apiexposure.DefaultLastMileSecurity
-		_c.mutation.SetLastMileSecurity(v)
-	}
-	if _, ok := _c.mutation.M2mAuthMethod(); !ok {
-		v := apiexposure.DefaultM2mAuthMethod
-		_c.mutation.SetM2mAuthMethod(v)
-	}
-	if _, ok := _c.mutation.CircuitBreakerEnabled(); !ok {
-		v := apiexposure.DefaultCircuitBreakerEnabled
-		_c.mutation.SetCircuitBreakerEnabled(v)
-	}
-	if _, ok := _c.mutation.ProvidedScopes(); !ok {
-		v := apiexposure.DefaultProvidedScopes
-		_c.mutation.SetProvidedScopes(v)
+	if _, ok := _c.mutation.Features(); !ok {
+		v := apiexposure.DefaultFeatures
+		_c.mutation.SetFeatures(v)
 	}
 	if _, ok := _c.mutation.Upstreams(); !ok {
 		v := apiexposure.DefaultUpstreams
@@ -344,22 +276,8 @@ func (_c *ApiExposureCreate) check() error {
 	if _, ok := _c.mutation.Active(); !ok {
 		return &ValidationError{Name: "active", err: errors.New(`ent: missing required field "ApiExposure.active"`)}
 	}
-	if _, ok := _c.mutation.LastMileSecurity(); !ok {
-		return &ValidationError{Name: "last_mile_security", err: errors.New(`ent: missing required field "ApiExposure.last_mile_security"`)}
-	}
-	if _, ok := _c.mutation.M2mAuthMethod(); !ok {
-		return &ValidationError{Name: "m2m_auth_method", err: errors.New(`ent: missing required field "ApiExposure.m2m_auth_method"`)}
-	}
-	if v, ok := _c.mutation.M2mAuthMethod(); ok {
-		if err := apiexposure.M2mAuthMethodValidator(v); err != nil {
-			return &ValidationError{Name: "m2m_auth_method", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.m2m_auth_method": %w`, err)}
-		}
-	}
-	if _, ok := _c.mutation.CircuitBreakerEnabled(); !ok {
-		return &ValidationError{Name: "circuit_breaker_enabled", err: errors.New(`ent: missing required field "ApiExposure.circuit_breaker_enabled"`)}
-	}
-	if _, ok := _c.mutation.ProvidedScopes(); !ok {
-		return &ValidationError{Name: "provided_scopes", err: errors.New(`ent: missing required field "ApiExposure.provided_scopes"`)}
+	if _, ok := _c.mutation.Features(); !ok {
+		return &ValidationError{Name: "features", err: errors.New(`ent: missing required field "ApiExposure.features"`)}
 	}
 	if _, ok := _c.mutation.Upstreams(); !ok {
 		return &ValidationError{Name: "upstreams", err: errors.New(`ent: missing required field "ApiExposure.upstreams"`)}
@@ -420,25 +338,9 @@ func (_c *ApiExposureCreate) createSpec() (*ApiExposure, *sqlgraph.CreateSpec) {
 		_spec.SetField(apiexposure.FieldActive, field.TypeBool, value)
 		_node.Active = value
 	}
-	if value, ok := _c.mutation.LastMileSecurity(); ok {
-		_spec.SetField(apiexposure.FieldLastMileSecurity, field.TypeBool, value)
-		_node.LastMileSecurity = value
-	}
-	if value, ok := _c.mutation.M2mAuthMethod(); ok {
-		_spec.SetField(apiexposure.FieldM2mAuthMethod, field.TypeEnum, value)
-		_node.M2mAuthMethod = value
-	}
-	if value, ok := _c.mutation.ExternalIdpTokenEndpoint(); ok {
-		_spec.SetField(apiexposure.FieldExternalIdpTokenEndpoint, field.TypeString, value)
-		_node.ExternalIdpTokenEndpoint = &value
-	}
-	if value, ok := _c.mutation.CircuitBreakerEnabled(); ok {
-		_spec.SetField(apiexposure.FieldCircuitBreakerEnabled, field.TypeBool, value)
-		_node.CircuitBreakerEnabled = value
-	}
-	if value, ok := _c.mutation.ProvidedScopes(); ok {
-		_spec.SetField(apiexposure.FieldProvidedScopes, field.TypeJSON, value)
-		_node.ProvidedScopes = value
+	if value, ok := _c.mutation.Features(); ok {
+		_spec.SetField(apiexposure.FieldFeatures, field.TypeJSON, value)
+		_node.Features = value
 	}
 	if value, ok := _c.mutation.Upstreams(); ok {
 		_spec.SetField(apiexposure.FieldUpstreams, field.TypeJSON, value)

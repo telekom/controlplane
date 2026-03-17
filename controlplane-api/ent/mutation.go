@@ -52,34 +52,30 @@ const (
 // ApiExposureMutation represents an operation that mutates the ApiExposure nodes in the graph.
 type ApiExposureMutation struct {
 	config
-	op                          Op
-	typ                         string
-	id                          *int
-	created_at                  *time.Time
-	last_modified_at            *time.Time
-	status                      *model.ResourceStatus
-	base_path                   *string
-	visibility                  *apiexposure.Visibility
-	active                      *bool
-	last_mile_security          *bool
-	m2m_auth_method             *apiexposure.M2mAuthMethod
-	external_idp_token_endpoint *string
-	circuit_breaker_enabled     *bool
-	provided_scopes             *[]string
-	appendprovided_scopes       []string
-	upstreams                   *[]model.Upstream
-	appendupstreams             []model.Upstream
-	approval_config             *model.ApprovalConfig
-	api_version                 *string
-	clearedFields               map[string]struct{}
-	owner                       *int
-	clearedowner                bool
-	subscriptions               map[int]struct{}
-	removedsubscriptions        map[int]struct{}
-	clearedsubscriptions        bool
-	done                        bool
-	oldValue                    func(context.Context) (*ApiExposure, error)
-	predicates                  []predicate.ApiExposure
+	op                   Op
+	typ                  string
+	id                   *int
+	created_at           *time.Time
+	last_modified_at     *time.Time
+	status               *model.ResourceStatus
+	base_path            *string
+	visibility           *apiexposure.Visibility
+	active               *bool
+	features             *[]string
+	appendfeatures       []string
+	upstreams            *[]model.Upstream
+	appendupstreams      []model.Upstream
+	approval_config      *model.ApprovalConfig
+	api_version          *string
+	clearedFields        map[string]struct{}
+	owner                *int
+	clearedowner         bool
+	subscriptions        map[int]struct{}
+	removedsubscriptions map[int]struct{}
+	clearedsubscriptions bool
+	done                 bool
+	oldValue             func(context.Context) (*ApiExposure, error)
+	predicates           []predicate.ApiExposure
 }
 
 var _ ent.Mutation = (*ApiExposureMutation)(nil)
@@ -396,212 +392,55 @@ func (m *ApiExposureMutation) ResetActive() {
 	m.active = nil
 }
 
-// SetLastMileSecurity sets the "last_mile_security" field.
-func (m *ApiExposureMutation) SetLastMileSecurity(b bool) {
-	m.last_mile_security = &b
+// SetFeatures sets the "features" field.
+func (m *ApiExposureMutation) SetFeatures(s []string) {
+	m.features = &s
+	m.appendfeatures = nil
 }
 
-// LastMileSecurity returns the value of the "last_mile_security" field in the mutation.
-func (m *ApiExposureMutation) LastMileSecurity() (r bool, exists bool) {
-	v := m.last_mile_security
+// Features returns the value of the "features" field in the mutation.
+func (m *ApiExposureMutation) Features() (r []string, exists bool) {
+	v := m.features
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldLastMileSecurity returns the old "last_mile_security" field's value of the ApiExposure entity.
+// OldFeatures returns the old "features" field's value of the ApiExposure entity.
 // If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldLastMileSecurity(ctx context.Context) (v bool, err error) {
+func (m *ApiExposureMutation) OldFeatures(ctx context.Context) (v []string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldLastMileSecurity is only allowed on UpdateOne operations")
+		return v, errors.New("OldFeatures is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldLastMileSecurity requires an ID field in the mutation")
+		return v, errors.New("OldFeatures requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldLastMileSecurity: %w", err)
+		return v, fmt.Errorf("querying old value for OldFeatures: %w", err)
 	}
-	return oldValue.LastMileSecurity, nil
+	return oldValue.Features, nil
 }
 
-// ResetLastMileSecurity resets all changes to the "last_mile_security" field.
-func (m *ApiExposureMutation) ResetLastMileSecurity() {
-	m.last_mile_security = nil
+// AppendFeatures adds s to the "features" field.
+func (m *ApiExposureMutation) AppendFeatures(s []string) {
+	m.appendfeatures = append(m.appendfeatures, s...)
 }
 
-// SetM2mAuthMethod sets the "m2m_auth_method" field.
-func (m *ApiExposureMutation) SetM2mAuthMethod(aam apiexposure.M2mAuthMethod) {
-	m.m2m_auth_method = &aam
-}
-
-// M2mAuthMethod returns the value of the "m2m_auth_method" field in the mutation.
-func (m *ApiExposureMutation) M2mAuthMethod() (r apiexposure.M2mAuthMethod, exists bool) {
-	v := m.m2m_auth_method
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldM2mAuthMethod returns the old "m2m_auth_method" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldM2mAuthMethod(ctx context.Context) (v apiexposure.M2mAuthMethod, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldM2mAuthMethod is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldM2mAuthMethod requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldM2mAuthMethod: %w", err)
-	}
-	return oldValue.M2mAuthMethod, nil
-}
-
-// ResetM2mAuthMethod resets all changes to the "m2m_auth_method" field.
-func (m *ApiExposureMutation) ResetM2mAuthMethod() {
-	m.m2m_auth_method = nil
-}
-
-// SetExternalIdpTokenEndpoint sets the "external_idp_token_endpoint" field.
-func (m *ApiExposureMutation) SetExternalIdpTokenEndpoint(s string) {
-	m.external_idp_token_endpoint = &s
-}
-
-// ExternalIdpTokenEndpoint returns the value of the "external_idp_token_endpoint" field in the mutation.
-func (m *ApiExposureMutation) ExternalIdpTokenEndpoint() (r string, exists bool) {
-	v := m.external_idp_token_endpoint
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldExternalIdpTokenEndpoint returns the old "external_idp_token_endpoint" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldExternalIdpTokenEndpoint(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldExternalIdpTokenEndpoint is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldExternalIdpTokenEndpoint requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldExternalIdpTokenEndpoint: %w", err)
-	}
-	return oldValue.ExternalIdpTokenEndpoint, nil
-}
-
-// ClearExternalIdpTokenEndpoint clears the value of the "external_idp_token_endpoint" field.
-func (m *ApiExposureMutation) ClearExternalIdpTokenEndpoint() {
-	m.external_idp_token_endpoint = nil
-	m.clearedFields[apiexposure.FieldExternalIdpTokenEndpoint] = struct{}{}
-}
-
-// ExternalIdpTokenEndpointCleared returns if the "external_idp_token_endpoint" field was cleared in this mutation.
-func (m *ApiExposureMutation) ExternalIdpTokenEndpointCleared() bool {
-	_, ok := m.clearedFields[apiexposure.FieldExternalIdpTokenEndpoint]
-	return ok
-}
-
-// ResetExternalIdpTokenEndpoint resets all changes to the "external_idp_token_endpoint" field.
-func (m *ApiExposureMutation) ResetExternalIdpTokenEndpoint() {
-	m.external_idp_token_endpoint = nil
-	delete(m.clearedFields, apiexposure.FieldExternalIdpTokenEndpoint)
-}
-
-// SetCircuitBreakerEnabled sets the "circuit_breaker_enabled" field.
-func (m *ApiExposureMutation) SetCircuitBreakerEnabled(b bool) {
-	m.circuit_breaker_enabled = &b
-}
-
-// CircuitBreakerEnabled returns the value of the "circuit_breaker_enabled" field in the mutation.
-func (m *ApiExposureMutation) CircuitBreakerEnabled() (r bool, exists bool) {
-	v := m.circuit_breaker_enabled
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCircuitBreakerEnabled returns the old "circuit_breaker_enabled" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldCircuitBreakerEnabled(ctx context.Context) (v bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCircuitBreakerEnabled is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCircuitBreakerEnabled requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCircuitBreakerEnabled: %w", err)
-	}
-	return oldValue.CircuitBreakerEnabled, nil
-}
-
-// ResetCircuitBreakerEnabled resets all changes to the "circuit_breaker_enabled" field.
-func (m *ApiExposureMutation) ResetCircuitBreakerEnabled() {
-	m.circuit_breaker_enabled = nil
-}
-
-// SetProvidedScopes sets the "provided_scopes" field.
-func (m *ApiExposureMutation) SetProvidedScopes(s []string) {
-	m.provided_scopes = &s
-	m.appendprovided_scopes = nil
-}
-
-// ProvidedScopes returns the value of the "provided_scopes" field in the mutation.
-func (m *ApiExposureMutation) ProvidedScopes() (r []string, exists bool) {
-	v := m.provided_scopes
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldProvidedScopes returns the old "provided_scopes" field's value of the ApiExposure entity.
-// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldProvidedScopes(ctx context.Context) (v []string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldProvidedScopes is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldProvidedScopes requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldProvidedScopes: %w", err)
-	}
-	return oldValue.ProvidedScopes, nil
-}
-
-// AppendProvidedScopes adds s to the "provided_scopes" field.
-func (m *ApiExposureMutation) AppendProvidedScopes(s []string) {
-	m.appendprovided_scopes = append(m.appendprovided_scopes, s...)
-}
-
-// AppendedProvidedScopes returns the list of values that were appended to the "provided_scopes" field in this mutation.
-func (m *ApiExposureMutation) AppendedProvidedScopes() ([]string, bool) {
-	if len(m.appendprovided_scopes) == 0 {
+// AppendedFeatures returns the list of values that were appended to the "features" field in this mutation.
+func (m *ApiExposureMutation) AppendedFeatures() ([]string, bool) {
+	if len(m.appendfeatures) == 0 {
 		return nil, false
 	}
-	return m.appendprovided_scopes, true
+	return m.appendfeatures, true
 }
 
-// ResetProvidedScopes resets all changes to the "provided_scopes" field.
-func (m *ApiExposureMutation) ResetProvidedScopes() {
-	m.provided_scopes = nil
-	m.appendprovided_scopes = nil
+// ResetFeatures resets all changes to the "features" field.
+func (m *ApiExposureMutation) ResetFeatures() {
+	m.features = nil
+	m.appendfeatures = nil
 }
 
 // SetUpstreams sets the "upstreams" field.
@@ -867,7 +706,7 @@ func (m *ApiExposureMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApiExposureMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 10)
 	if m.created_at != nil {
 		fields = append(fields, apiexposure.FieldCreatedAt)
 	}
@@ -886,20 +725,8 @@ func (m *ApiExposureMutation) Fields() []string {
 	if m.active != nil {
 		fields = append(fields, apiexposure.FieldActive)
 	}
-	if m.last_mile_security != nil {
-		fields = append(fields, apiexposure.FieldLastMileSecurity)
-	}
-	if m.m2m_auth_method != nil {
-		fields = append(fields, apiexposure.FieldM2mAuthMethod)
-	}
-	if m.external_idp_token_endpoint != nil {
-		fields = append(fields, apiexposure.FieldExternalIdpTokenEndpoint)
-	}
-	if m.circuit_breaker_enabled != nil {
-		fields = append(fields, apiexposure.FieldCircuitBreakerEnabled)
-	}
-	if m.provided_scopes != nil {
-		fields = append(fields, apiexposure.FieldProvidedScopes)
+	if m.features != nil {
+		fields = append(fields, apiexposure.FieldFeatures)
 	}
 	if m.upstreams != nil {
 		fields = append(fields, apiexposure.FieldUpstreams)
@@ -930,16 +757,8 @@ func (m *ApiExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.Visibility()
 	case apiexposure.FieldActive:
 		return m.Active()
-	case apiexposure.FieldLastMileSecurity:
-		return m.LastMileSecurity()
-	case apiexposure.FieldM2mAuthMethod:
-		return m.M2mAuthMethod()
-	case apiexposure.FieldExternalIdpTokenEndpoint:
-		return m.ExternalIdpTokenEndpoint()
-	case apiexposure.FieldCircuitBreakerEnabled:
-		return m.CircuitBreakerEnabled()
-	case apiexposure.FieldProvidedScopes:
-		return m.ProvidedScopes()
+	case apiexposure.FieldFeatures:
+		return m.Features()
 	case apiexposure.FieldUpstreams:
 		return m.Upstreams()
 	case apiexposure.FieldApprovalConfig:
@@ -967,16 +786,8 @@ func (m *ApiExposureMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldVisibility(ctx)
 	case apiexposure.FieldActive:
 		return m.OldActive(ctx)
-	case apiexposure.FieldLastMileSecurity:
-		return m.OldLastMileSecurity(ctx)
-	case apiexposure.FieldM2mAuthMethod:
-		return m.OldM2mAuthMethod(ctx)
-	case apiexposure.FieldExternalIdpTokenEndpoint:
-		return m.OldExternalIdpTokenEndpoint(ctx)
-	case apiexposure.FieldCircuitBreakerEnabled:
-		return m.OldCircuitBreakerEnabled(ctx)
-	case apiexposure.FieldProvidedScopes:
-		return m.OldProvidedScopes(ctx)
+	case apiexposure.FieldFeatures:
+		return m.OldFeatures(ctx)
 	case apiexposure.FieldUpstreams:
 		return m.OldUpstreams(ctx)
 	case apiexposure.FieldApprovalConfig:
@@ -1034,40 +845,12 @@ func (m *ApiExposureMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetActive(v)
 		return nil
-	case apiexposure.FieldLastMileSecurity:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetLastMileSecurity(v)
-		return nil
-	case apiexposure.FieldM2mAuthMethod:
-		v, ok := value.(apiexposure.M2mAuthMethod)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetM2mAuthMethod(v)
-		return nil
-	case apiexposure.FieldExternalIdpTokenEndpoint:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetExternalIdpTokenEndpoint(v)
-		return nil
-	case apiexposure.FieldCircuitBreakerEnabled:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCircuitBreakerEnabled(v)
-		return nil
-	case apiexposure.FieldProvidedScopes:
+	case apiexposure.FieldFeatures:
 		v, ok := value.([]string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetProvidedScopes(v)
+		m.SetFeatures(v)
 		return nil
 	case apiexposure.FieldUpstreams:
 		v, ok := value.([]model.Upstream)
@@ -1120,9 +903,6 @@ func (m *ApiExposureMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *ApiExposureMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(apiexposure.FieldExternalIdpTokenEndpoint) {
-		fields = append(fields, apiexposure.FieldExternalIdpTokenEndpoint)
-	}
 	if m.FieldCleared(apiexposure.FieldAPIVersion) {
 		fields = append(fields, apiexposure.FieldAPIVersion)
 	}
@@ -1140,9 +920,6 @@ func (m *ApiExposureMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ApiExposureMutation) ClearField(name string) error {
 	switch name {
-	case apiexposure.FieldExternalIdpTokenEndpoint:
-		m.ClearExternalIdpTokenEndpoint()
-		return nil
 	case apiexposure.FieldAPIVersion:
 		m.ClearAPIVersion()
 		return nil
@@ -1172,20 +949,8 @@ func (m *ApiExposureMutation) ResetField(name string) error {
 	case apiexposure.FieldActive:
 		m.ResetActive()
 		return nil
-	case apiexposure.FieldLastMileSecurity:
-		m.ResetLastMileSecurity()
-		return nil
-	case apiexposure.FieldM2mAuthMethod:
-		m.ResetM2mAuthMethod()
-		return nil
-	case apiexposure.FieldExternalIdpTokenEndpoint:
-		m.ResetExternalIdpTokenEndpoint()
-		return nil
-	case apiexposure.FieldCircuitBreakerEnabled:
-		m.ResetCircuitBreakerEnabled()
-		return nil
-	case apiexposure.FieldProvidedScopes:
-		m.ResetProvidedScopes()
+	case apiexposure.FieldFeatures:
+		m.ResetFeatures()
 		return nil
 	case apiexposure.FieldUpstreams:
 		m.ResetUpstreams()

@@ -25,6 +25,7 @@ func NewExecutableSchema(cfg Config) graphql.ExecutableSchema {
 type Config = graphql.Config[ResolverRoot, DirectiveRoot, ComplexityRoot]
 
 type ResolverRoot interface {
+	ApiExposure() ApiExposureResolver
 	Application() ApplicationResolver
 	ApprovalConfig() ApprovalConfigResolver
 	AvailableTransition() AvailableTransitionResolver
@@ -37,23 +38,19 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	ApiExposure struct {
-		APIVersion               func(childComplexity int) int
-		Active                   func(childComplexity int) int
-		ApprovalConfig           func(childComplexity int) int
-		BasePath                 func(childComplexity int) int
-		CircuitBreakerEnabled    func(childComplexity int) int
-		CreatedAt                func(childComplexity int) int
-		ExternalIdpTokenEndpoint func(childComplexity int) int
-		ID                       func(childComplexity int) int
-		LastMileSecurity         func(childComplexity int) int
-		LastModifiedAt           func(childComplexity int) int
-		M2mAuthMethod            func(childComplexity int) int
-		Owner                    func(childComplexity int) int
-		ProvidedScopes           func(childComplexity int) int
-		Status                   func(childComplexity int) int
-		Subscriptions            func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
-		Upstreams                func(childComplexity int) int
-		Visibility               func(childComplexity int) int
+		APIVersion     func(childComplexity int) int
+		Active         func(childComplexity int) int
+		ApprovalConfig func(childComplexity int) int
+		BasePath       func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		Features       func(childComplexity int) int
+		ID             func(childComplexity int) int
+		LastModifiedAt func(childComplexity int) int
+		Owner          func(childComplexity int) int
+		Status         func(childComplexity int) int
+		Subscriptions  func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
+		Upstreams      func(childComplexity int) int
+		Visibility     func(childComplexity int) int
 	}
 
 	ApiExposureConnection struct {
@@ -342,13 +339,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiExposure.BasePath(childComplexity), true
 
-	case "ApiExposure.circuitBreakerEnabled":
-		if e.ComplexityRoot.ApiExposure.CircuitBreakerEnabled == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApiExposure.CircuitBreakerEnabled(childComplexity), true
-
 	case "ApiExposure.createdAt":
 		if e.ComplexityRoot.ApiExposure.CreatedAt == nil {
 			break
@@ -356,12 +346,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiExposure.CreatedAt(childComplexity), true
 
-	case "ApiExposure.externalIdpTokenEndpoint":
-		if e.ComplexityRoot.ApiExposure.ExternalIdpTokenEndpoint == nil {
+	case "ApiExposure.features":
+		if e.ComplexityRoot.ApiExposure.Features == nil {
 			break
 		}
 
-		return e.ComplexityRoot.ApiExposure.ExternalIdpTokenEndpoint(childComplexity), true
+		return e.ComplexityRoot.ApiExposure.Features(childComplexity), true
 
 	case "ApiExposure.id":
 		if e.ComplexityRoot.ApiExposure.ID == nil {
@@ -370,13 +360,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiExposure.ID(childComplexity), true
 
-	case "ApiExposure.lastMileSecurity":
-		if e.ComplexityRoot.ApiExposure.LastMileSecurity == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApiExposure.LastMileSecurity(childComplexity), true
-
 	case "ApiExposure.lastModifiedAt":
 		if e.ComplexityRoot.ApiExposure.LastModifiedAt == nil {
 			break
@@ -384,26 +367,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiExposure.LastModifiedAt(childComplexity), true
 
-	case "ApiExposure.m2mAuthMethod":
-		if e.ComplexityRoot.ApiExposure.M2mAuthMethod == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApiExposure.M2mAuthMethod(childComplexity), true
-
 	case "ApiExposure.owner":
 		if e.ComplexityRoot.ApiExposure.Owner == nil {
 			break
 		}
 
 		return e.ComplexityRoot.ApiExposure.Owner(childComplexity), true
-
-	case "ApiExposure.providedScopes":
-		if e.ComplexityRoot.ApiExposure.ProvidedScopes == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApiExposure.ProvidedScopes(childComplexity), true
 
 	case "ApiExposure.status":
 		if e.ComplexityRoot.ApiExposure.Status == nil {
@@ -1616,11 +1585,7 @@ type ApiExposure implements Node {
   basePath: String!
   visibility: ApiExposureVisibility!
   active: Boolean!
-  lastMileSecurity: Boolean!
-  m2mAuthMethod: ApiExposureM2mAuthMethod!
-  externalIdpTokenEndpoint: String
-  circuitBreakerEnabled: Boolean!
-  providedScopes: [String!]!
+  features: [ApiExposureFeature!]!
   upstreams: [Upstream!]!
   approvalConfig: ApprovalConfig!
   apiVersion: String
@@ -1686,15 +1651,6 @@ type ApiExposureEdge {
   A cursor for use in pagination.
   """
   cursor: Cursor!
-}
-"""
-ApiExposureM2mAuthMethod is enum for the field m2m_auth_method
-"""
-enum ApiExposureM2mAuthMethod @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/apiexposure.M2mAuthMethod") {
-  NONE
-  BASIC_AUTH
-  EXTERNAL_IDP
-  SCOPES_ONLY
 }
 """
 Ordering options for ApiExposure connections
@@ -1793,41 +1749,6 @@ input ApiExposureWhereInput {
   """
   active: Boolean
   activeNEQ: Boolean
-  """
-  last_mile_security field predicates
-  """
-  lastMileSecurity: Boolean
-  lastMileSecurityNEQ: Boolean
-  """
-  m2m_auth_method field predicates
-  """
-  m2mAuthMethod: ApiExposureM2mAuthMethod
-  m2mAuthMethodNEQ: ApiExposureM2mAuthMethod
-  m2mAuthMethodIn: [ApiExposureM2mAuthMethod!]
-  m2mAuthMethodNotIn: [ApiExposureM2mAuthMethod!]
-  """
-  external_idp_token_endpoint field predicates
-  """
-  externalIdpTokenEndpoint: String
-  externalIdpTokenEndpointNEQ: String
-  externalIdpTokenEndpointIn: [String!]
-  externalIdpTokenEndpointNotIn: [String!]
-  externalIdpTokenEndpointGT: String
-  externalIdpTokenEndpointGTE: String
-  externalIdpTokenEndpointLT: String
-  externalIdpTokenEndpointLTE: String
-  externalIdpTokenEndpointContains: String
-  externalIdpTokenEndpointHasPrefix: String
-  externalIdpTokenEndpointHasSuffix: String
-  externalIdpTokenEndpointIsNil: Boolean
-  externalIdpTokenEndpointNotNil: Boolean
-  externalIdpTokenEndpointEqualFold: String
-  externalIdpTokenEndpointContainsFold: String
-  """
-  circuit_breaker_enabled field predicates
-  """
-  circuitBreakerEnabled: Boolean
-  circuitBreakerEnabledNEQ: Boolean
   """
   api_version field predicates
   """
@@ -3392,6 +3313,22 @@ enum ResourceStatusPhase {
   PENDING
   ERROR
   UNKNOWN
+}
+
+enum ApiExposureFeature {
+  BASIC_AUTH
+  CIRCUIT_BREAKER
+  CUSTOM_SCOPES
+  DYNAMIC_UPSTREAM
+  EXTERNAL_IDP
+  FAILOVER
+  HEADER_TRANSFORMATION
+  IP_RESTRICTION
+  LAST_MILE_SECURITY
+  LOAD_BALANCING
+  PASSTHROUGH
+  RATE_LIMIT
+  ACCESS_CONTROL
 }
 
 enum ApprovalAction {

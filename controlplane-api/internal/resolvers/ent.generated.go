@@ -28,6 +28,9 @@ import (
 
 // region    ************************** generated!.gotpl **************************
 
+type ApiExposureResolver interface {
+	Features(ctx context.Context, obj *ent.ApiExposure) ([]model.APIExposureFeature, error)
+}
 type ApplicationResolver interface {
 	OwnerTeam(ctx context.Context, obj *ent.Application) (*model.TeamInfo, error)
 	RoverStatus(ctx context.Context, obj *ent.Application) (*model.RoverStatus, error)
@@ -658,146 +661,30 @@ func (ec *executionContext) fieldContext_ApiExposure_active(_ context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _ApiExposure_lastMileSecurity(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApiExposure_features(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ApiExposure_lastMileSecurity,
+		ec.fieldContext_ApiExposure_features,
 		func(ctx context.Context) (any, error) {
-			return obj.LastMileSecurity, nil
+			return ec.Resolvers.ApiExposure().Features(ctx, obj)
 		},
 		nil,
-		ec.marshalNBoolean2bool,
+		ec.marshalNApiExposureFeature2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAPIExposureFeatureᚄ,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_ApiExposure_lastMileSecurity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ApiExposure_features(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ApiExposure",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApiExposure_m2mAuthMethod(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ApiExposure_m2mAuthMethod,
-		func(ctx context.Context) (any, error) {
-			return obj.M2mAuthMethod, nil
-		},
-		nil,
-		ec.marshalNApiExposureM2mAuthMethod2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐM2mAuthMethod,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ApiExposure_m2mAuthMethod(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiExposure",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ApiExposureM2mAuthMethod does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApiExposure_externalIdpTokenEndpoint(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ApiExposure_externalIdpTokenEndpoint,
-		func(ctx context.Context) (any, error) {
-			return obj.ExternalIdpTokenEndpoint, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_ApiExposure_externalIdpTokenEndpoint(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiExposure",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApiExposure_circuitBreakerEnabled(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ApiExposure_circuitBreakerEnabled,
-		func(ctx context.Context) (any, error) {
-			return obj.CircuitBreakerEnabled, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ApiExposure_circuitBreakerEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiExposure",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ApiExposure_providedScopes(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ApiExposure_providedScopes,
-		func(ctx context.Context) (any, error) {
-			return obj.ProvidedScopes, nil
-		},
-		nil,
-		ec.marshalNString2ᚕstringᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ApiExposure_providedScopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiExposure",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type ApiExposureFeature does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1147,16 +1034,8 @@ func (ec *executionContext) fieldContext_ApiExposureEdge_node(_ context.Context,
 				return ec.fieldContext_ApiExposure_visibility(ctx, field)
 			case "active":
 				return ec.fieldContext_ApiExposure_active(ctx, field)
-			case "lastMileSecurity":
-				return ec.fieldContext_ApiExposure_lastMileSecurity(ctx, field)
-			case "m2mAuthMethod":
-				return ec.fieldContext_ApiExposure_m2mAuthMethod(ctx, field)
-			case "externalIdpTokenEndpoint":
-				return ec.fieldContext_ApiExposure_externalIdpTokenEndpoint(ctx, field)
-			case "circuitBreakerEnabled":
-				return ec.fieldContext_ApiExposure_circuitBreakerEnabled(ctx, field)
-			case "providedScopes":
-				return ec.fieldContext_ApiExposure_providedScopes(ctx, field)
+			case "features":
+				return ec.fieldContext_ApiExposure_features(ctx, field)
 			case "upstreams":
 				return ec.fieldContext_ApiExposure_upstreams(ctx, field)
 			case "approvalConfig":
@@ -1505,16 +1384,8 @@ func (ec *executionContext) fieldContext_ApiSubscription_target(_ context.Contex
 				return ec.fieldContext_ApiExposure_visibility(ctx, field)
 			case "active":
 				return ec.fieldContext_ApiExposure_active(ctx, field)
-			case "lastMileSecurity":
-				return ec.fieldContext_ApiExposure_lastMileSecurity(ctx, field)
-			case "m2mAuthMethod":
-				return ec.fieldContext_ApiExposure_m2mAuthMethod(ctx, field)
-			case "externalIdpTokenEndpoint":
-				return ec.fieldContext_ApiExposure_externalIdpTokenEndpoint(ctx, field)
-			case "circuitBreakerEnabled":
-				return ec.fieldContext_ApiExposure_circuitBreakerEnabled(ctx, field)
-			case "providedScopes":
-				return ec.fieldContext_ApiExposure_providedScopes(ctx, field)
+			case "features":
+				return ec.fieldContext_ApiExposure_features(ctx, field)
 			case "upstreams":
 				return ec.fieldContext_ApiExposure_upstreams(ctx, field)
 			case "approvalConfig":
@@ -5515,7 +5386,7 @@ func (ec *executionContext) unmarshalInputApiExposureWhereInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "lastMileSecurity", "lastMileSecurityNEQ", "m2mAuthMethod", "m2mAuthMethodNEQ", "m2mAuthMethodIn", "m2mAuthMethodNotIn", "externalIdpTokenEndpoint", "externalIdpTokenEndpointNEQ", "externalIdpTokenEndpointIn", "externalIdpTokenEndpointNotIn", "externalIdpTokenEndpointGT", "externalIdpTokenEndpointGTE", "externalIdpTokenEndpointLT", "externalIdpTokenEndpointLTE", "externalIdpTokenEndpointContains", "externalIdpTokenEndpointHasPrefix", "externalIdpTokenEndpointHasSuffix", "externalIdpTokenEndpointIsNil", "externalIdpTokenEndpointNotNil", "externalIdpTokenEndpointEqualFold", "externalIdpTokenEndpointContainsFold", "circuitBreakerEnabled", "circuitBreakerEnabledNEQ", "apiVersion", "apiVersionNEQ", "apiVersionIn", "apiVersionNotIn", "apiVersionGT", "apiVersionGTE", "apiVersionLT", "apiVersionLTE", "apiVersionContains", "apiVersionHasPrefix", "apiVersionHasSuffix", "apiVersionIsNil", "apiVersionNotNil", "apiVersionEqualFold", "apiVersionContainsFold", "hasOwner", "hasOwnerWith", "hasSubscriptions", "hasSubscriptionsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "apiVersion", "apiVersionNEQ", "apiVersionIn", "apiVersionNotIn", "apiVersionGT", "apiVersionGTE", "apiVersionLT", "apiVersionLTE", "apiVersionContains", "apiVersionHasPrefix", "apiVersionHasSuffix", "apiVersionIsNil", "apiVersionNotNil", "apiVersionEqualFold", "apiVersionContainsFold", "hasOwner", "hasOwnerWith", "hasSubscriptions", "hasSubscriptionsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5844,167 +5715,6 @@ func (ec *executionContext) unmarshalInputApiExposureWhereInput(ctx context.Cont
 				return it, err
 			}
 			it.ActiveNEQ = data
-		case "lastMileSecurity":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastMileSecurity"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.LastMileSecurity = data
-		case "lastMileSecurityNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastMileSecurityNEQ"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.LastMileSecurityNEQ = data
-		case "m2mAuthMethod":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("m2mAuthMethod"))
-			data, err := ec.unmarshalOApiExposureM2mAuthMethod2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐM2mAuthMethod(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.M2mAuthMethod = data
-		case "m2mAuthMethodNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("m2mAuthMethodNEQ"))
-			data, err := ec.unmarshalOApiExposureM2mAuthMethod2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐM2mAuthMethod(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.M2mAuthMethodNEQ = data
-		case "m2mAuthMethodIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("m2mAuthMethodIn"))
-			data, err := ec.unmarshalOApiExposureM2mAuthMethod2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐM2mAuthMethodᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.M2mAuthMethodIn = data
-		case "m2mAuthMethodNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("m2mAuthMethodNotIn"))
-			data, err := ec.unmarshalOApiExposureM2mAuthMethod2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐM2mAuthMethodᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.M2mAuthMethodNotIn = data
-		case "externalIdpTokenEndpoint":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalIdpTokenEndpoint"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExternalIdpTokenEndpoint = data
-		case "externalIdpTokenEndpointNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalIdpTokenEndpointNEQ"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExternalIdpTokenEndpointNEQ = data
-		case "externalIdpTokenEndpointIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalIdpTokenEndpointIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExternalIdpTokenEndpointIn = data
-		case "externalIdpTokenEndpointNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalIdpTokenEndpointNotIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExternalIdpTokenEndpointNotIn = data
-		case "externalIdpTokenEndpointGT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalIdpTokenEndpointGT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExternalIdpTokenEndpointGT = data
-		case "externalIdpTokenEndpointGTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalIdpTokenEndpointGTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExternalIdpTokenEndpointGTE = data
-		case "externalIdpTokenEndpointLT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalIdpTokenEndpointLT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExternalIdpTokenEndpointLT = data
-		case "externalIdpTokenEndpointLTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalIdpTokenEndpointLTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExternalIdpTokenEndpointLTE = data
-		case "externalIdpTokenEndpointContains":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalIdpTokenEndpointContains"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExternalIdpTokenEndpointContains = data
-		case "externalIdpTokenEndpointHasPrefix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalIdpTokenEndpointHasPrefix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExternalIdpTokenEndpointHasPrefix = data
-		case "externalIdpTokenEndpointHasSuffix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalIdpTokenEndpointHasSuffix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExternalIdpTokenEndpointHasSuffix = data
-		case "externalIdpTokenEndpointIsNil":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalIdpTokenEndpointIsNil"))
-			data, err := ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExternalIdpTokenEndpointIsNil = data
-		case "externalIdpTokenEndpointNotNil":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalIdpTokenEndpointNotNil"))
-			data, err := ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExternalIdpTokenEndpointNotNil = data
-		case "externalIdpTokenEndpointEqualFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalIdpTokenEndpointEqualFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExternalIdpTokenEndpointEqualFold = data
-		case "externalIdpTokenEndpointContainsFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalIdpTokenEndpointContainsFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ExternalIdpTokenEndpointContainsFold = data
-		case "circuitBreakerEnabled":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("circuitBreakerEnabled"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CircuitBreakerEnabled = data
-		case "circuitBreakerEnabledNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("circuitBreakerEnabledNEQ"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CircuitBreakerEnabledNEQ = data
 		case "apiVersion":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersion"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -9962,28 +9672,42 @@ func (ec *executionContext) _ApiExposure(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "lastMileSecurity":
-			out.Values[i] = ec._ApiExposure_lastMileSecurity(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+		case "features":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ApiExposure_features(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
-		case "m2mAuthMethod":
-			out.Values[i] = ec._ApiExposure_m2mAuthMethod(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
 			}
-		case "externalIdpTokenEndpoint":
-			out.Values[i] = ec._ApiExposure_externalIdpTokenEndpoint(ctx, field, obj)
-		case "circuitBreakerEnabled":
-			out.Values[i] = ec._ApiExposure_circuitBreakerEnabled(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "providedScopes":
-			out.Values[i] = ec._ApiExposure_providedScopes(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "upstreams":
 			out.Values[i] = ec._ApiExposure_upstreams(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -12164,16 +11888,6 @@ func (ec *executionContext) marshalNApiExposureConnection2ᚖgithubᚗcomᚋtele
 	return ec._ApiExposureConnection(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNApiExposureM2mAuthMethod2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐM2mAuthMethod(ctx context.Context, v any) (apiexposure.M2mAuthMethod, error) {
-	var res apiexposure.M2mAuthMethod
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNApiExposureM2mAuthMethod2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐM2mAuthMethod(ctx context.Context, sel ast.SelectionSet, v apiexposure.M2mAuthMethod) graphql.Marshaler {
-	return v
-}
-
 func (ec *executionContext) unmarshalNApiExposureOrderField2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApiExposureOrderField(ctx context.Context, v any) (*ent.ApiExposureOrderField, error) {
 	var res = new(ent.ApiExposureOrderField)
 	err := res.UnmarshalGQL(v)
@@ -12631,59 +12345,6 @@ func (ec *executionContext) marshalOApiExposureEdge2ᚖgithubᚗcomᚋtelekomᚋ
 		return graphql.Null
 	}
 	return ec._ApiExposureEdge(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalOApiExposureM2mAuthMethod2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐM2mAuthMethodᚄ(ctx context.Context, v any) ([]apiexposure.M2mAuthMethod, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var vSlice []any
-	vSlice = graphql.CoerceList(v)
-	var err error
-	res := make([]apiexposure.M2mAuthMethod, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNApiExposureM2mAuthMethod2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐM2mAuthMethod(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) marshalOApiExposureM2mAuthMethod2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐM2mAuthMethodᚄ(ctx context.Context, sel ast.SelectionSet, v []apiexposure.M2mAuthMethod) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalNApiExposureM2mAuthMethod2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐM2mAuthMethod(ctx, sel, v[i])
-	})
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) unmarshalOApiExposureM2mAuthMethod2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐM2mAuthMethod(ctx context.Context, v any) (*apiexposure.M2mAuthMethod, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var res = new(apiexposure.M2mAuthMethod)
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOApiExposureM2mAuthMethod2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐM2mAuthMethod(ctx context.Context, sel ast.SelectionSet, v *apiexposure.M2mAuthMethod) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return v
 }
 
 func (ec *executionContext) unmarshalOApiExposureOrder2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApiExposureOrder(ctx context.Context, v any) (*ent.ApiExposureOrder, error) {

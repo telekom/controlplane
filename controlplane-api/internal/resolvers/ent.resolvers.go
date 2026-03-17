@@ -10,10 +10,17 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 
 	"entgo.io/contrib/entgql"
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 )
+
+// Features is the resolver for the features field.
+func (r *apiExposureResolver) Features(ctx context.Context, obj *ent.ApiExposure) ([]model.APIExposureFeature, error) {
+	panic(fmt.Errorf("not implemented: Features - features"))
+}
 
 // Node is the resolver for the node field.
 func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
@@ -84,11 +91,15 @@ func (r *queryResolver) Zones(ctx context.Context) ([]*ent.Zone, error) {
 	return r.client.Zone.Query().All(ctx)
 }
 
+// ApiExposure returns ApiExposureResolver implementation.
+func (r *Resolver) ApiExposure() ApiExposureResolver { return &apiExposureResolver{r} }
+
 // Application returns ApplicationResolver implementation.
 func (r *Resolver) Application() ApplicationResolver { return &applicationResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+type apiExposureResolver struct{ *Resolver }
 type applicationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

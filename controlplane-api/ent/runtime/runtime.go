@@ -68,24 +68,16 @@ func init() {
 	apiexposureDescActive := apiexposureFields[2].Descriptor()
 	// apiexposure.DefaultActive holds the default value on creation for the active field.
 	apiexposure.DefaultActive = apiexposureDescActive.Default.(bool)
-	// apiexposureDescLastMileSecurity is the schema descriptor for last_mile_security field.
-	apiexposureDescLastMileSecurity := apiexposureFields[3].Descriptor()
-	// apiexposure.DefaultLastMileSecurity holds the default value on creation for the last_mile_security field.
-	apiexposure.DefaultLastMileSecurity = apiexposureDescLastMileSecurity.Default.(bool)
-	// apiexposureDescCircuitBreakerEnabled is the schema descriptor for circuit_breaker_enabled field.
-	apiexposureDescCircuitBreakerEnabled := apiexposureFields[6].Descriptor()
-	// apiexposure.DefaultCircuitBreakerEnabled holds the default value on creation for the circuit_breaker_enabled field.
-	apiexposure.DefaultCircuitBreakerEnabled = apiexposureDescCircuitBreakerEnabled.Default.(bool)
-	// apiexposureDescProvidedScopes is the schema descriptor for provided_scopes field.
-	apiexposureDescProvidedScopes := apiexposureFields[7].Descriptor()
-	// apiexposure.DefaultProvidedScopes holds the default value on creation for the provided_scopes field.
-	apiexposure.DefaultProvidedScopes = apiexposureDescProvidedScopes.Default.([]string)
+	// apiexposureDescFeatures is the schema descriptor for features field.
+	apiexposureDescFeatures := apiexposureFields[3].Descriptor()
+	// apiexposure.DefaultFeatures holds the default value on creation for the features field.
+	apiexposure.DefaultFeatures = apiexposureDescFeatures.Default.([]string)
 	// apiexposureDescUpstreams is the schema descriptor for upstreams field.
-	apiexposureDescUpstreams := apiexposureFields[8].Descriptor()
+	apiexposureDescUpstreams := apiexposureFields[4].Descriptor()
 	// apiexposure.DefaultUpstreams holds the default value on creation for the upstreams field.
 	apiexposure.DefaultUpstreams = apiexposureDescUpstreams.Default.([]model.Upstream)
 	// apiexposureDescApprovalConfig is the schema descriptor for approval_config field.
-	apiexposureDescApprovalConfig := apiexposureFields[9].Descriptor()
+	apiexposureDescApprovalConfig := apiexposureFields[5].Descriptor()
 	// apiexposure.DefaultApprovalConfig holds the default value on creation for the approval_config field.
 	apiexposure.DefaultApprovalConfig = apiexposureDescApprovalConfig.Default.(model.ApprovalConfig)
 	apisubscriptionMixin := schema.ApiSubscription{}.Mixin()

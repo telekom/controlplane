@@ -11,11 +11,7 @@ type ApiExposure implements Node {
   basePath: String!
   visibility: ApiExposureVisibility!
   active: Boolean!
-  lastMileSecurity: Boolean!
-  m2mAuthMethod: ApiExposureM2mAuthMethod!
-  externalIdpTokenEndpoint: String
-  circuitBreakerEnabled: Boolean!
-  providedScopes: [String!]!
+  features: [ApiExposureFeature!]!
   upstreams: [Upstream!]!
   approvalConfig: ApprovalConfig!
   apiVersion: String
@@ -81,15 +77,6 @@ type ApiExposureEdge {
   A cursor for use in pagination.
   """
   cursor: Cursor!
-}
-"""
-ApiExposureM2mAuthMethod is enum for the field m2m_auth_method
-"""
-enum ApiExposureM2mAuthMethod @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/apiexposure.M2mAuthMethod") {
-  NONE
-  BASIC_AUTH
-  EXTERNAL_IDP
-  SCOPES_ONLY
 }
 """
 Ordering options for ApiExposure connections
@@ -188,41 +175,6 @@ input ApiExposureWhereInput {
   """
   active: Boolean
   activeNEQ: Boolean
-  """
-  last_mile_security field predicates
-  """
-  lastMileSecurity: Boolean
-  lastMileSecurityNEQ: Boolean
-  """
-  m2m_auth_method field predicates
-  """
-  m2mAuthMethod: ApiExposureM2mAuthMethod
-  m2mAuthMethodNEQ: ApiExposureM2mAuthMethod
-  m2mAuthMethodIn: [ApiExposureM2mAuthMethod!]
-  m2mAuthMethodNotIn: [ApiExposureM2mAuthMethod!]
-  """
-  external_idp_token_endpoint field predicates
-  """
-  externalIdpTokenEndpoint: String
-  externalIdpTokenEndpointNEQ: String
-  externalIdpTokenEndpointIn: [String!]
-  externalIdpTokenEndpointNotIn: [String!]
-  externalIdpTokenEndpointGT: String
-  externalIdpTokenEndpointGTE: String
-  externalIdpTokenEndpointLT: String
-  externalIdpTokenEndpointLTE: String
-  externalIdpTokenEndpointContains: String
-  externalIdpTokenEndpointHasPrefix: String
-  externalIdpTokenEndpointHasSuffix: String
-  externalIdpTokenEndpointIsNil: Boolean
-  externalIdpTokenEndpointNotNil: Boolean
-  externalIdpTokenEndpointEqualFold: String
-  externalIdpTokenEndpointContainsFold: String
-  """
-  circuit_breaker_enabled field predicates
-  """
-  circuitBreakerEnabled: Boolean
-  circuitBreakerEnabledNEQ: Boolean
   """
   api_version field predicates
   """

@@ -42,24 +42,9 @@ func (ApiExposure) Fields() []ent.Field {
 			Default("ENTERPRISE"),
 		field.Bool("active").
 			Default(false),
-		field.Bool("last_mile_security").
-			Default(false),
-		field.Enum("m2m_auth_method").
-			NamedValues(
-				"None", "NONE",
-				"BasicAuth", "BASIC_AUTH",
-				"ExternalIdp", "EXTERNAL_IDP",
-				"ScopesOnly", "SCOPES_ONLY",
-			).
-			Default("NONE"),
-		field.Text("external_idp_token_endpoint").
-			Optional().
-			Nillable(),
-		field.Bool("circuit_breaker_enabled").
-			Default(false),
-		field.JSON("provided_scopes", []string{}).
+		field.JSON("features", []string{}).
 			Default([]string{}).
-			Annotations(entgql.Skip(entgql.SkipWhereInput)),
+			Annotations(entgql.Type("[ApiExposureFeature!]"), entgql.Skip(entgql.SkipWhereInput)),
 		field.JSON("upstreams", []model.Upstream{}).
 			Default([]model.Upstream{}).
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),

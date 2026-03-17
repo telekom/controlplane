@@ -35,16 +35,8 @@ type ApiExposure struct {
 	Visibility apiexposure.Visibility `json:"visibility,omitempty"`
 	// Active holds the value of the "active" field.
 	Active bool `json:"active,omitempty"`
-	// LastMileSecurity holds the value of the "last_mile_security" field.
-	LastMileSecurity bool `json:"last_mile_security,omitempty"`
-	// M2mAuthMethod holds the value of the "m2m_auth_method" field.
-	M2mAuthMethod apiexposure.M2mAuthMethod `json:"m2m_auth_method,omitempty"`
-	// ExternalIdpTokenEndpoint holds the value of the "external_idp_token_endpoint" field.
-	ExternalIdpTokenEndpoint *string `json:"external_idp_token_endpoint,omitempty"`
-	// CircuitBreakerEnabled holds the value of the "circuit_breaker_enabled" field.
-	CircuitBreakerEnabled bool `json:"circuit_breaker_enabled,omitempty"`
-	// ProvidedScopes holds the value of the "provided_scopes" field.
-	ProvidedScopes []string `json:"provided_scopes,omitempty"`
+	// Features holds the value of the "features" field.
+	Features []string `json:"features,omitempty"`
 	// Upstreams holds the value of the "upstreams" field.
 	Upstreams []model.Upstream `json:"upstreams,omitempty"`
 	// ApprovalConfig holds the value of the "approval_config" field.
@@ -98,13 +90,13 @@ func (*ApiExposure) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case apiexposure.FieldStatus, apiexposure.FieldProvidedScopes, apiexposure.FieldUpstreams, apiexposure.FieldApprovalConfig:
+		case apiexposure.FieldStatus, apiexposure.FieldFeatures, apiexposure.FieldUpstreams, apiexposure.FieldApprovalConfig:
 			values[i] = new([]byte)
-		case apiexposure.FieldActive, apiexposure.FieldLastMileSecurity, apiexposure.FieldCircuitBreakerEnabled:
+		case apiexposure.FieldActive:
 			values[i] = new(sql.NullBool)
 		case apiexposure.FieldID:
 			values[i] = new(sql.NullInt64)
-		case apiexposure.FieldBasePath, apiexposure.FieldVisibility, apiexposure.FieldM2mAuthMethod, apiexposure.FieldExternalIdpTokenEndpoint, apiexposure.FieldAPIVersion:
+		case apiexposure.FieldBasePath, apiexposure.FieldVisibility, apiexposure.FieldAPIVersion:
 			values[i] = new(sql.NullString)
 		case apiexposure.FieldCreatedAt, apiexposure.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -169,37 +161,12 @@ func (_m *ApiExposure) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Active = value.Bool
 			}
-		case apiexposure.FieldLastMileSecurity:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field last_mile_security", values[i])
-			} else if value.Valid {
-				_m.LastMileSecurity = value.Bool
-			}
-		case apiexposure.FieldM2mAuthMethod:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field m2m_auth_method", values[i])
-			} else if value.Valid {
-				_m.M2mAuthMethod = apiexposure.M2mAuthMethod(value.String)
-			}
-		case apiexposure.FieldExternalIdpTokenEndpoint:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field external_idp_token_endpoint", values[i])
-			} else if value.Valid {
-				_m.ExternalIdpTokenEndpoint = new(string)
-				*_m.ExternalIdpTokenEndpoint = value.String
-			}
-		case apiexposure.FieldCircuitBreakerEnabled:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field circuit_breaker_enabled", values[i])
-			} else if value.Valid {
-				_m.CircuitBreakerEnabled = value.Bool
-			}
-		case apiexposure.FieldProvidedScopes:
+		case apiexposure.FieldFeatures:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field provided_scopes", values[i])
+				return fmt.Errorf("unexpected type %T for field features", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.ProvidedScopes); err != nil {
-					return fmt.Errorf("unmarshal field provided_scopes: %w", err)
+				if err := json.Unmarshal(*value, &_m.Features); err != nil {
+					return fmt.Errorf("unmarshal field features: %w", err)
 				}
 			}
 		case apiexposure.FieldUpstreams:
@@ -296,22 +263,8 @@ func (_m *ApiExposure) String() string {
 	builder.WriteString("active=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Active))
 	builder.WriteString(", ")
-	builder.WriteString("last_mile_security=")
-	builder.WriteString(fmt.Sprintf("%v", _m.LastMileSecurity))
-	builder.WriteString(", ")
-	builder.WriteString("m2m_auth_method=")
-	builder.WriteString(fmt.Sprintf("%v", _m.M2mAuthMethod))
-	builder.WriteString(", ")
-	if v := _m.ExternalIdpTokenEndpoint; v != nil {
-		builder.WriteString("external_idp_token_endpoint=")
-		builder.WriteString(*v)
-	}
-	builder.WriteString(", ")
-	builder.WriteString("circuit_breaker_enabled=")
-	builder.WriteString(fmt.Sprintf("%v", _m.CircuitBreakerEnabled))
-	builder.WriteString(", ")
-	builder.WriteString("provided_scopes=")
-	builder.WriteString(fmt.Sprintf("%v", _m.ProvidedScopes))
+	builder.WriteString("features=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Features))
 	builder.WriteString(", ")
 	builder.WriteString("upstreams=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Upstreams))
