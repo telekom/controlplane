@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
@@ -21,6 +22,7 @@ type ZoneCreate struct {
 	config
 	mutation *ZoneMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetName sets the "name" field.
@@ -160,6 +162,7 @@ func (_c *ZoneCreate) createSpec() (*Zone, *sqlgraph.CreateSpec) {
 		_node = &Zone{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(zone.Table, sqlgraph.NewFieldSpec(zone.FieldID, field.TypeInt))
 	)
+	_spec.OnConflict = _c.conflict
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(zone.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -191,11 +194,225 @@ func (_c *ZoneCreate) createSpec() (*Zone, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Zone.Create().
+//		SetName(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.ZoneUpsert) {
+//			SetName(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *ZoneCreate) OnConflict(opts ...sql.ConflictOption) *ZoneUpsertOne {
+	_c.conflict = opts
+	return &ZoneUpsertOne{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Zone.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *ZoneCreate) OnConflictColumns(columns ...string) *ZoneUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &ZoneUpsertOne{
+		create: _c,
+	}
+}
+
+type (
+	// ZoneUpsertOne is the builder for "upsert"-ing
+	//  one Zone node.
+	ZoneUpsertOne struct {
+		create *ZoneCreate
+	}
+
+	// ZoneUpsert is the "OnConflict" setter.
+	ZoneUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetName sets the "name" field.
+func (u *ZoneUpsert) SetName(v string) *ZoneUpsert {
+	u.Set(zone.FieldName, v)
+	return u
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *ZoneUpsert) UpdateName() *ZoneUpsert {
+	u.SetExcluded(zone.FieldName)
+	return u
+}
+
+// SetGatewayURL sets the "gateway_url" field.
+func (u *ZoneUpsert) SetGatewayURL(v string) *ZoneUpsert {
+	u.Set(zone.FieldGatewayURL, v)
+	return u
+}
+
+// UpdateGatewayURL sets the "gateway_url" field to the value that was provided on create.
+func (u *ZoneUpsert) UpdateGatewayURL() *ZoneUpsert {
+	u.SetExcluded(zone.FieldGatewayURL)
+	return u
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (u *ZoneUpsert) ClearGatewayURL() *ZoneUpsert {
+	u.SetNull(zone.FieldGatewayURL)
+	return u
+}
+
+// SetVisibility sets the "visibility" field.
+func (u *ZoneUpsert) SetVisibility(v zone.Visibility) *ZoneUpsert {
+	u.Set(zone.FieldVisibility, v)
+	return u
+}
+
+// UpdateVisibility sets the "visibility" field to the value that was provided on create.
+func (u *ZoneUpsert) UpdateVisibility() *ZoneUpsert {
+	u.SetExcluded(zone.FieldVisibility)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// Using this option is equivalent to using:
+//
+//	client.Zone.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//		).
+//		Exec(ctx)
+func (u *ZoneUpsertOne) UpdateNewValues() *ZoneUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Zone.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *ZoneUpsertOne) Ignore() *ZoneUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *ZoneUpsertOne) DoNothing() *ZoneUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the ZoneCreate.OnConflict
+// documentation for more info.
+func (u *ZoneUpsertOne) Update(set func(*ZoneUpsert)) *ZoneUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&ZoneUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetName sets the "name" field.
+func (u *ZoneUpsertOne) SetName(v string) *ZoneUpsertOne {
+	return u.Update(func(s *ZoneUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *ZoneUpsertOne) UpdateName() *ZoneUpsertOne {
+	return u.Update(func(s *ZoneUpsert) {
+		s.UpdateName()
+	})
+}
+
+// SetGatewayURL sets the "gateway_url" field.
+func (u *ZoneUpsertOne) SetGatewayURL(v string) *ZoneUpsertOne {
+	return u.Update(func(s *ZoneUpsert) {
+		s.SetGatewayURL(v)
+	})
+}
+
+// UpdateGatewayURL sets the "gateway_url" field to the value that was provided on create.
+func (u *ZoneUpsertOne) UpdateGatewayURL() *ZoneUpsertOne {
+	return u.Update(func(s *ZoneUpsert) {
+		s.UpdateGatewayURL()
+	})
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (u *ZoneUpsertOne) ClearGatewayURL() *ZoneUpsertOne {
+	return u.Update(func(s *ZoneUpsert) {
+		s.ClearGatewayURL()
+	})
+}
+
+// SetVisibility sets the "visibility" field.
+func (u *ZoneUpsertOne) SetVisibility(v zone.Visibility) *ZoneUpsertOne {
+	return u.Update(func(s *ZoneUpsert) {
+		s.SetVisibility(v)
+	})
+}
+
+// UpdateVisibility sets the "visibility" field to the value that was provided on create.
+func (u *ZoneUpsertOne) UpdateVisibility() *ZoneUpsertOne {
+	return u.Update(func(s *ZoneUpsert) {
+		s.UpdateVisibility()
+	})
+}
+
+// Exec executes the query.
+func (u *ZoneUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for ZoneCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *ZoneUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *ZoneUpsertOne) ID(ctx context.Context) (id int, err error) {
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *ZoneUpsertOne) IDX(ctx context.Context) int {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // ZoneCreateBulk is the builder for creating many Zone entities in bulk.
 type ZoneCreateBulk struct {
 	config
 	err      error
 	builders []*ZoneCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the Zone entities in the database.
@@ -225,6 +442,7 @@ func (_c *ZoneCreateBulk) Save(ctx context.Context) ([]*Zone, error) {
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -275,6 +493,159 @@ func (_c *ZoneCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (_c *ZoneCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Zone.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.ZoneUpsert) {
+//			SetName(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *ZoneCreateBulk) OnConflict(opts ...sql.ConflictOption) *ZoneUpsertBulk {
+	_c.conflict = opts
+	return &ZoneUpsertBulk{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Zone.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *ZoneCreateBulk) OnConflictColumns(columns ...string) *ZoneUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &ZoneUpsertBulk{
+		create: _c,
+	}
+}
+
+// ZoneUpsertBulk is the builder for "upsert"-ing
+// a bulk of Zone nodes.
+type ZoneUpsertBulk struct {
+	create *ZoneCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.Zone.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//		).
+//		Exec(ctx)
+func (u *ZoneUpsertBulk) UpdateNewValues() *ZoneUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Zone.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *ZoneUpsertBulk) Ignore() *ZoneUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *ZoneUpsertBulk) DoNothing() *ZoneUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the ZoneCreateBulk.OnConflict
+// documentation for more info.
+func (u *ZoneUpsertBulk) Update(set func(*ZoneUpsert)) *ZoneUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&ZoneUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetName sets the "name" field.
+func (u *ZoneUpsertBulk) SetName(v string) *ZoneUpsertBulk {
+	return u.Update(func(s *ZoneUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *ZoneUpsertBulk) UpdateName() *ZoneUpsertBulk {
+	return u.Update(func(s *ZoneUpsert) {
+		s.UpdateName()
+	})
+}
+
+// SetGatewayURL sets the "gateway_url" field.
+func (u *ZoneUpsertBulk) SetGatewayURL(v string) *ZoneUpsertBulk {
+	return u.Update(func(s *ZoneUpsert) {
+		s.SetGatewayURL(v)
+	})
+}
+
+// UpdateGatewayURL sets the "gateway_url" field to the value that was provided on create.
+func (u *ZoneUpsertBulk) UpdateGatewayURL() *ZoneUpsertBulk {
+	return u.Update(func(s *ZoneUpsert) {
+		s.UpdateGatewayURL()
+	})
+}
+
+// ClearGatewayURL clears the value of the "gateway_url" field.
+func (u *ZoneUpsertBulk) ClearGatewayURL() *ZoneUpsertBulk {
+	return u.Update(func(s *ZoneUpsert) {
+		s.ClearGatewayURL()
+	})
+}
+
+// SetVisibility sets the "visibility" field.
+func (u *ZoneUpsertBulk) SetVisibility(v zone.Visibility) *ZoneUpsertBulk {
+	return u.Update(func(s *ZoneUpsert) {
+		s.SetVisibility(v)
+	})
+}
+
+// UpdateVisibility sets the "visibility" field to the value that was provided on create.
+func (u *ZoneUpsertBulk) UpdateVisibility() *ZoneUpsertBulk {
+	return u.Update(func(s *ZoneUpsert) {
+		s.UpdateVisibility()
+	})
+}
+
+// Exec executes the query.
+func (u *ZoneUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the ZoneCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for ZoneCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *ZoneUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

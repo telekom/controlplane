@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
@@ -25,6 +26,7 @@ type ApplicationCreate struct {
 	config
 	mutation *ApplicationMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -283,6 +285,7 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 		_node = &Application{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(application.Table, sqlgraph.NewFieldSpec(application.FieldID, field.TypeInt))
 	)
+	_spec.OnConflict = _c.conflict
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(application.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
@@ -380,11 +383,321 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Application.Create().
+//		SetCreatedAt(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.ApplicationUpsert) {
+//			SetCreatedAt(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *ApplicationCreate) OnConflict(opts ...sql.ConflictOption) *ApplicationUpsertOne {
+	_c.conflict = opts
+	return &ApplicationUpsertOne{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Application.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *ApplicationCreate) OnConflictColumns(columns ...string) *ApplicationUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &ApplicationUpsertOne{
+		create: _c,
+	}
+}
+
+type (
+	// ApplicationUpsertOne is the builder for "upsert"-ing
+	//  one Application node.
+	ApplicationUpsertOne struct {
+		create *ApplicationCreate
+	}
+
+	// ApplicationUpsert is the "OnConflict" setter.
+	ApplicationUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (u *ApplicationUpsert) SetLastModifiedAt(v time.Time) *ApplicationUpsert {
+	u.Set(application.FieldLastModifiedAt, v)
+	return u
+}
+
+// UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
+func (u *ApplicationUpsert) UpdateLastModifiedAt() *ApplicationUpsert {
+	u.SetExcluded(application.FieldLastModifiedAt)
+	return u
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (u *ApplicationUpsert) SetStatusPhase(v application.StatusPhase) *ApplicationUpsert {
+	u.Set(application.FieldStatusPhase, v)
+	return u
+}
+
+// UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
+func (u *ApplicationUpsert) UpdateStatusPhase() *ApplicationUpsert {
+	u.SetExcluded(application.FieldStatusPhase)
+	return u
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (u *ApplicationUpsert) SetStatusMessage(v string) *ApplicationUpsert {
+	u.Set(application.FieldStatusMessage, v)
+	return u
+}
+
+// UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
+func (u *ApplicationUpsert) UpdateStatusMessage() *ApplicationUpsert {
+	u.SetExcluded(application.FieldStatusMessage)
+	return u
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (u *ApplicationUpsert) ClearStatusMessage() *ApplicationUpsert {
+	u.SetNull(application.FieldStatusMessage)
+	return u
+}
+
+// SetName sets the "name" field.
+func (u *ApplicationUpsert) SetName(v string) *ApplicationUpsert {
+	u.Set(application.FieldName, v)
+	return u
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *ApplicationUpsert) UpdateName() *ApplicationUpsert {
+	u.SetExcluded(application.FieldName)
+	return u
+}
+
+// SetClientID sets the "client_id" field.
+func (u *ApplicationUpsert) SetClientID(v string) *ApplicationUpsert {
+	u.Set(application.FieldClientID, v)
+	return u
+}
+
+// UpdateClientID sets the "client_id" field to the value that was provided on create.
+func (u *ApplicationUpsert) UpdateClientID() *ApplicationUpsert {
+	u.SetExcluded(application.FieldClientID)
+	return u
+}
+
+// SetIssuerURL sets the "issuer_url" field.
+func (u *ApplicationUpsert) SetIssuerURL(v string) *ApplicationUpsert {
+	u.Set(application.FieldIssuerURL, v)
+	return u
+}
+
+// UpdateIssuerURL sets the "issuer_url" field to the value that was provided on create.
+func (u *ApplicationUpsert) UpdateIssuerURL() *ApplicationUpsert {
+	u.SetExcluded(application.FieldIssuerURL)
+	return u
+}
+
+// ClearIssuerURL clears the value of the "issuer_url" field.
+func (u *ApplicationUpsert) ClearIssuerURL() *ApplicationUpsert {
+	u.SetNull(application.FieldIssuerURL)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// Using this option is equivalent to using:
+//
+//	client.Application.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//		).
+//		Exec(ctx)
+func (u *ApplicationUpsertOne) UpdateNewValues() *ApplicationUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.CreatedAt(); exists {
+			s.SetIgnore(application.FieldCreatedAt)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Application.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *ApplicationUpsertOne) Ignore() *ApplicationUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *ApplicationUpsertOne) DoNothing() *ApplicationUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the ApplicationCreate.OnConflict
+// documentation for more info.
+func (u *ApplicationUpsertOne) Update(set func(*ApplicationUpsert)) *ApplicationUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&ApplicationUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (u *ApplicationUpsertOne) SetLastModifiedAt(v time.Time) *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetLastModifiedAt(v)
+	})
+}
+
+// UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
+func (u *ApplicationUpsertOne) UpdateLastModifiedAt() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateLastModifiedAt()
+	})
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (u *ApplicationUpsertOne) SetStatusPhase(v application.StatusPhase) *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetStatusPhase(v)
+	})
+}
+
+// UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
+func (u *ApplicationUpsertOne) UpdateStatusPhase() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateStatusPhase()
+	})
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (u *ApplicationUpsertOne) SetStatusMessage(v string) *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetStatusMessage(v)
+	})
+}
+
+// UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
+func (u *ApplicationUpsertOne) UpdateStatusMessage() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateStatusMessage()
+	})
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (u *ApplicationUpsertOne) ClearStatusMessage() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearStatusMessage()
+	})
+}
+
+// SetName sets the "name" field.
+func (u *ApplicationUpsertOne) SetName(v string) *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *ApplicationUpsertOne) UpdateName() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateName()
+	})
+}
+
+// SetClientID sets the "client_id" field.
+func (u *ApplicationUpsertOne) SetClientID(v string) *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetClientID(v)
+	})
+}
+
+// UpdateClientID sets the "client_id" field to the value that was provided on create.
+func (u *ApplicationUpsertOne) UpdateClientID() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateClientID()
+	})
+}
+
+// SetIssuerURL sets the "issuer_url" field.
+func (u *ApplicationUpsertOne) SetIssuerURL(v string) *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetIssuerURL(v)
+	})
+}
+
+// UpdateIssuerURL sets the "issuer_url" field to the value that was provided on create.
+func (u *ApplicationUpsertOne) UpdateIssuerURL() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateIssuerURL()
+	})
+}
+
+// ClearIssuerURL clears the value of the "issuer_url" field.
+func (u *ApplicationUpsertOne) ClearIssuerURL() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearIssuerURL()
+	})
+}
+
+// Exec executes the query.
+func (u *ApplicationUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for ApplicationCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *ApplicationUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *ApplicationUpsertOne) ID(ctx context.Context) (id int, err error) {
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *ApplicationUpsertOne) IDX(ctx context.Context) int {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // ApplicationCreateBulk is the builder for creating many Application entities in bulk.
 type ApplicationCreateBulk struct {
 	config
 	err      error
 	builders []*ApplicationCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the Application entities in the database.
@@ -414,6 +727,7 @@ func (_c *ApplicationCreateBulk) Save(ctx context.Context) ([]*Application, erro
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -464,6 +778,215 @@ func (_c *ApplicationCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (_c *ApplicationCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Application.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.ApplicationUpsert) {
+//			SetCreatedAt(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *ApplicationCreateBulk) OnConflict(opts ...sql.ConflictOption) *ApplicationUpsertBulk {
+	_c.conflict = opts
+	return &ApplicationUpsertBulk{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Application.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *ApplicationCreateBulk) OnConflictColumns(columns ...string) *ApplicationUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &ApplicationUpsertBulk{
+		create: _c,
+	}
+}
+
+// ApplicationUpsertBulk is the builder for "upsert"-ing
+// a bulk of Application nodes.
+type ApplicationUpsertBulk struct {
+	create *ApplicationCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.Application.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//		).
+//		Exec(ctx)
+func (u *ApplicationUpsertBulk) UpdateNewValues() *ApplicationUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.CreatedAt(); exists {
+				s.SetIgnore(application.FieldCreatedAt)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Application.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *ApplicationUpsertBulk) Ignore() *ApplicationUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *ApplicationUpsertBulk) DoNothing() *ApplicationUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the ApplicationCreateBulk.OnConflict
+// documentation for more info.
+func (u *ApplicationUpsertBulk) Update(set func(*ApplicationUpsert)) *ApplicationUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&ApplicationUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (u *ApplicationUpsertBulk) SetLastModifiedAt(v time.Time) *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetLastModifiedAt(v)
+	})
+}
+
+// UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
+func (u *ApplicationUpsertBulk) UpdateLastModifiedAt() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateLastModifiedAt()
+	})
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (u *ApplicationUpsertBulk) SetStatusPhase(v application.StatusPhase) *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetStatusPhase(v)
+	})
+}
+
+// UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
+func (u *ApplicationUpsertBulk) UpdateStatusPhase() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateStatusPhase()
+	})
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (u *ApplicationUpsertBulk) SetStatusMessage(v string) *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetStatusMessage(v)
+	})
+}
+
+// UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
+func (u *ApplicationUpsertBulk) UpdateStatusMessage() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateStatusMessage()
+	})
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (u *ApplicationUpsertBulk) ClearStatusMessage() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearStatusMessage()
+	})
+}
+
+// SetName sets the "name" field.
+func (u *ApplicationUpsertBulk) SetName(v string) *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *ApplicationUpsertBulk) UpdateName() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateName()
+	})
+}
+
+// SetClientID sets the "client_id" field.
+func (u *ApplicationUpsertBulk) SetClientID(v string) *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetClientID(v)
+	})
+}
+
+// UpdateClientID sets the "client_id" field to the value that was provided on create.
+func (u *ApplicationUpsertBulk) UpdateClientID() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateClientID()
+	})
+}
+
+// SetIssuerURL sets the "issuer_url" field.
+func (u *ApplicationUpsertBulk) SetIssuerURL(v string) *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetIssuerURL(v)
+	})
+}
+
+// UpdateIssuerURL sets the "issuer_url" field to the value that was provided on create.
+func (u *ApplicationUpsertBulk) UpdateIssuerURL() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateIssuerURL()
+	})
+}
+
+// ClearIssuerURL clears the value of the "issuer_url" field.
+func (u *ApplicationUpsertBulk) ClearIssuerURL() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearIssuerURL()
+	})
+}
+
+// Exec executes the query.
+func (u *ApplicationUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the ApplicationCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for ApplicationCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *ApplicationUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

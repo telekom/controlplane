@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
@@ -26,6 +27,7 @@ type ApiSubscriptionCreate struct {
 	config
 	mutation *ApiSubscriptionMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -318,6 +320,7 @@ func (_c *ApiSubscriptionCreate) createSpec() (*ApiSubscription, *sqlgraph.Creat
 		_node = &ApiSubscription{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(apisubscription.Table, sqlgraph.NewFieldSpec(apisubscription.FieldID, field.TypeInt))
 	)
+	_spec.OnConflict = _c.conflict
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(apisubscription.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
@@ -431,11 +434,308 @@ func (_c *ApiSubscriptionCreate) createSpec() (*ApiSubscription, *sqlgraph.Creat
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.ApiSubscription.Create().
+//		SetCreatedAt(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.ApiSubscriptionUpsert) {
+//			SetCreatedAt(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *ApiSubscriptionCreate) OnConflict(opts ...sql.ConflictOption) *ApiSubscriptionUpsertOne {
+	_c.conflict = opts
+	return &ApiSubscriptionUpsertOne{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.ApiSubscription.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *ApiSubscriptionCreate) OnConflictColumns(columns ...string) *ApiSubscriptionUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &ApiSubscriptionUpsertOne{
+		create: _c,
+	}
+}
+
+type (
+	// ApiSubscriptionUpsertOne is the builder for "upsert"-ing
+	//  one ApiSubscription node.
+	ApiSubscriptionUpsertOne struct {
+		create *ApiSubscriptionCreate
+	}
+
+	// ApiSubscriptionUpsert is the "OnConflict" setter.
+	ApiSubscriptionUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (u *ApiSubscriptionUpsert) SetLastModifiedAt(v time.Time) *ApiSubscriptionUpsert {
+	u.Set(apisubscription.FieldLastModifiedAt, v)
+	return u
+}
+
+// UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsert) UpdateLastModifiedAt() *ApiSubscriptionUpsert {
+	u.SetExcluded(apisubscription.FieldLastModifiedAt)
+	return u
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (u *ApiSubscriptionUpsert) SetStatusPhase(v apisubscription.StatusPhase) *ApiSubscriptionUpsert {
+	u.Set(apisubscription.FieldStatusPhase, v)
+	return u
+}
+
+// UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsert) UpdateStatusPhase() *ApiSubscriptionUpsert {
+	u.SetExcluded(apisubscription.FieldStatusPhase)
+	return u
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (u *ApiSubscriptionUpsert) SetStatusMessage(v string) *ApiSubscriptionUpsert {
+	u.Set(apisubscription.FieldStatusMessage, v)
+	return u
+}
+
+// UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsert) UpdateStatusMessage() *ApiSubscriptionUpsert {
+	u.SetExcluded(apisubscription.FieldStatusMessage)
+	return u
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (u *ApiSubscriptionUpsert) ClearStatusMessage() *ApiSubscriptionUpsert {
+	u.SetNull(apisubscription.FieldStatusMessage)
+	return u
+}
+
+// SetBasePath sets the "base_path" field.
+func (u *ApiSubscriptionUpsert) SetBasePath(v string) *ApiSubscriptionUpsert {
+	u.Set(apisubscription.FieldBasePath, v)
+	return u
+}
+
+// UpdateBasePath sets the "base_path" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsert) UpdateBasePath() *ApiSubscriptionUpsert {
+	u.SetExcluded(apisubscription.FieldBasePath)
+	return u
+}
+
+// SetM2mAuthMethod sets the "m2m_auth_method" field.
+func (u *ApiSubscriptionUpsert) SetM2mAuthMethod(v apisubscription.M2mAuthMethod) *ApiSubscriptionUpsert {
+	u.Set(apisubscription.FieldM2mAuthMethod, v)
+	return u
+}
+
+// UpdateM2mAuthMethod sets the "m2m_auth_method" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsert) UpdateM2mAuthMethod() *ApiSubscriptionUpsert {
+	u.SetExcluded(apisubscription.FieldM2mAuthMethod)
+	return u
+}
+
+// SetApprovedScopes sets the "approved_scopes" field.
+func (u *ApiSubscriptionUpsert) SetApprovedScopes(v []string) *ApiSubscriptionUpsert {
+	u.Set(apisubscription.FieldApprovedScopes, v)
+	return u
+}
+
+// UpdateApprovedScopes sets the "approved_scopes" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsert) UpdateApprovedScopes() *ApiSubscriptionUpsert {
+	u.SetExcluded(apisubscription.FieldApprovedScopes)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// Using this option is equivalent to using:
+//
+//	client.ApiSubscription.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//		).
+//		Exec(ctx)
+func (u *ApiSubscriptionUpsertOne) UpdateNewValues() *ApiSubscriptionUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.CreatedAt(); exists {
+			s.SetIgnore(apisubscription.FieldCreatedAt)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.ApiSubscription.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *ApiSubscriptionUpsertOne) Ignore() *ApiSubscriptionUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *ApiSubscriptionUpsertOne) DoNothing() *ApiSubscriptionUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the ApiSubscriptionCreate.OnConflict
+// documentation for more info.
+func (u *ApiSubscriptionUpsertOne) Update(set func(*ApiSubscriptionUpsert)) *ApiSubscriptionUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&ApiSubscriptionUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (u *ApiSubscriptionUpsertOne) SetLastModifiedAt(v time.Time) *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetLastModifiedAt(v)
+	})
+}
+
+// UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertOne) UpdateLastModifiedAt() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateLastModifiedAt()
+	})
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (u *ApiSubscriptionUpsertOne) SetStatusPhase(v apisubscription.StatusPhase) *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetStatusPhase(v)
+	})
+}
+
+// UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertOne) UpdateStatusPhase() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateStatusPhase()
+	})
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (u *ApiSubscriptionUpsertOne) SetStatusMessage(v string) *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetStatusMessage(v)
+	})
+}
+
+// UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertOne) UpdateStatusMessage() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateStatusMessage()
+	})
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (u *ApiSubscriptionUpsertOne) ClearStatusMessage() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearStatusMessage()
+	})
+}
+
+// SetBasePath sets the "base_path" field.
+func (u *ApiSubscriptionUpsertOne) SetBasePath(v string) *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetBasePath(v)
+	})
+}
+
+// UpdateBasePath sets the "base_path" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertOne) UpdateBasePath() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateBasePath()
+	})
+}
+
+// SetM2mAuthMethod sets the "m2m_auth_method" field.
+func (u *ApiSubscriptionUpsertOne) SetM2mAuthMethod(v apisubscription.M2mAuthMethod) *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetM2mAuthMethod(v)
+	})
+}
+
+// UpdateM2mAuthMethod sets the "m2m_auth_method" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertOne) UpdateM2mAuthMethod() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateM2mAuthMethod()
+	})
+}
+
+// SetApprovedScopes sets the "approved_scopes" field.
+func (u *ApiSubscriptionUpsertOne) SetApprovedScopes(v []string) *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetApprovedScopes(v)
+	})
+}
+
+// UpdateApprovedScopes sets the "approved_scopes" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertOne) UpdateApprovedScopes() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateApprovedScopes()
+	})
+}
+
+// Exec executes the query.
+func (u *ApiSubscriptionUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for ApiSubscriptionCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *ApiSubscriptionUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *ApiSubscriptionUpsertOne) ID(ctx context.Context) (id int, err error) {
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *ApiSubscriptionUpsertOne) IDX(ctx context.Context) int {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // ApiSubscriptionCreateBulk is the builder for creating many ApiSubscription entities in bulk.
 type ApiSubscriptionCreateBulk struct {
 	config
 	err      error
 	builders []*ApiSubscriptionCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the ApiSubscription entities in the database.
@@ -465,6 +765,7 @@ func (_c *ApiSubscriptionCreateBulk) Save(ctx context.Context) ([]*ApiSubscripti
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -515,6 +816,208 @@ func (_c *ApiSubscriptionCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (_c *ApiSubscriptionCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.ApiSubscription.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.ApiSubscriptionUpsert) {
+//			SetCreatedAt(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *ApiSubscriptionCreateBulk) OnConflict(opts ...sql.ConflictOption) *ApiSubscriptionUpsertBulk {
+	_c.conflict = opts
+	return &ApiSubscriptionUpsertBulk{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.ApiSubscription.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *ApiSubscriptionCreateBulk) OnConflictColumns(columns ...string) *ApiSubscriptionUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &ApiSubscriptionUpsertBulk{
+		create: _c,
+	}
+}
+
+// ApiSubscriptionUpsertBulk is the builder for "upsert"-ing
+// a bulk of ApiSubscription nodes.
+type ApiSubscriptionUpsertBulk struct {
+	create *ApiSubscriptionCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.ApiSubscription.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//		).
+//		Exec(ctx)
+func (u *ApiSubscriptionUpsertBulk) UpdateNewValues() *ApiSubscriptionUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.CreatedAt(); exists {
+				s.SetIgnore(apisubscription.FieldCreatedAt)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.ApiSubscription.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *ApiSubscriptionUpsertBulk) Ignore() *ApiSubscriptionUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *ApiSubscriptionUpsertBulk) DoNothing() *ApiSubscriptionUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the ApiSubscriptionCreateBulk.OnConflict
+// documentation for more info.
+func (u *ApiSubscriptionUpsertBulk) Update(set func(*ApiSubscriptionUpsert)) *ApiSubscriptionUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&ApiSubscriptionUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (u *ApiSubscriptionUpsertBulk) SetLastModifiedAt(v time.Time) *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetLastModifiedAt(v)
+	})
+}
+
+// UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertBulk) UpdateLastModifiedAt() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateLastModifiedAt()
+	})
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (u *ApiSubscriptionUpsertBulk) SetStatusPhase(v apisubscription.StatusPhase) *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetStatusPhase(v)
+	})
+}
+
+// UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertBulk) UpdateStatusPhase() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateStatusPhase()
+	})
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (u *ApiSubscriptionUpsertBulk) SetStatusMessage(v string) *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetStatusMessage(v)
+	})
+}
+
+// UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertBulk) UpdateStatusMessage() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateStatusMessage()
+	})
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (u *ApiSubscriptionUpsertBulk) ClearStatusMessage() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearStatusMessage()
+	})
+}
+
+// SetBasePath sets the "base_path" field.
+func (u *ApiSubscriptionUpsertBulk) SetBasePath(v string) *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetBasePath(v)
+	})
+}
+
+// UpdateBasePath sets the "base_path" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertBulk) UpdateBasePath() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateBasePath()
+	})
+}
+
+// SetM2mAuthMethod sets the "m2m_auth_method" field.
+func (u *ApiSubscriptionUpsertBulk) SetM2mAuthMethod(v apisubscription.M2mAuthMethod) *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetM2mAuthMethod(v)
+	})
+}
+
+// UpdateM2mAuthMethod sets the "m2m_auth_method" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertBulk) UpdateM2mAuthMethod() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateM2mAuthMethod()
+	})
+}
+
+// SetApprovedScopes sets the "approved_scopes" field.
+func (u *ApiSubscriptionUpsertBulk) SetApprovedScopes(v []string) *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetApprovedScopes(v)
+	})
+}
+
+// UpdateApprovedScopes sets the "approved_scopes" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertBulk) UpdateApprovedScopes() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateApprovedScopes()
+	})
+}
+
+// Exec executes the query.
+func (u *ApiSubscriptionUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the ApiSubscriptionCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for ApiSubscriptionCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *ApiSubscriptionUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

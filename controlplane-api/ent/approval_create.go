@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
@@ -23,6 +24,7 @@ type ApprovalCreate struct {
 	config
 	mutation *ApprovalMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -310,6 +312,7 @@ func (_c *ApprovalCreate) createSpec() (*Approval, *sqlgraph.CreateSpec) {
 		_node = &Approval{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(approval.Table, sqlgraph.NewFieldSpec(approval.FieldID, field.TypeInt))
 	)
+	_spec.OnConflict = _c.conflict
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(approval.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
@@ -374,11 +377,412 @@ func (_c *ApprovalCreate) createSpec() (*Approval, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Approval.Create().
+//		SetCreatedAt(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.ApprovalUpsert) {
+//			SetCreatedAt(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *ApprovalCreate) OnConflict(opts ...sql.ConflictOption) *ApprovalUpsertOne {
+	_c.conflict = opts
+	return &ApprovalUpsertOne{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Approval.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *ApprovalCreate) OnConflictColumns(columns ...string) *ApprovalUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &ApprovalUpsertOne{
+		create: _c,
+	}
+}
+
+type (
+	// ApprovalUpsertOne is the builder for "upsert"-ing
+	//  one Approval node.
+	ApprovalUpsertOne struct {
+		create *ApprovalCreate
+	}
+
+	// ApprovalUpsert is the "OnConflict" setter.
+	ApprovalUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (u *ApprovalUpsert) SetLastModifiedAt(v time.Time) *ApprovalUpsert {
+	u.Set(approval.FieldLastModifiedAt, v)
+	return u
+}
+
+// UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
+func (u *ApprovalUpsert) UpdateLastModifiedAt() *ApprovalUpsert {
+	u.SetExcluded(approval.FieldLastModifiedAt)
+	return u
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (u *ApprovalUpsert) SetStatusPhase(v approval.StatusPhase) *ApprovalUpsert {
+	u.Set(approval.FieldStatusPhase, v)
+	return u
+}
+
+// UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
+func (u *ApprovalUpsert) UpdateStatusPhase() *ApprovalUpsert {
+	u.SetExcluded(approval.FieldStatusPhase)
+	return u
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (u *ApprovalUpsert) SetStatusMessage(v string) *ApprovalUpsert {
+	u.Set(approval.FieldStatusMessage, v)
+	return u
+}
+
+// UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
+func (u *ApprovalUpsert) UpdateStatusMessage() *ApprovalUpsert {
+	u.SetExcluded(approval.FieldStatusMessage)
+	return u
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (u *ApprovalUpsert) ClearStatusMessage() *ApprovalUpsert {
+	u.SetNull(approval.FieldStatusMessage)
+	return u
+}
+
+// SetAction sets the "action" field.
+func (u *ApprovalUpsert) SetAction(v string) *ApprovalUpsert {
+	u.Set(approval.FieldAction, v)
+	return u
+}
+
+// UpdateAction sets the "action" field to the value that was provided on create.
+func (u *ApprovalUpsert) UpdateAction() *ApprovalUpsert {
+	u.SetExcluded(approval.FieldAction)
+	return u
+}
+
+// SetState sets the "state" field.
+func (u *ApprovalUpsert) SetState(v approval.State) *ApprovalUpsert {
+	u.Set(approval.FieldState, v)
+	return u
+}
+
+// UpdateState sets the "state" field to the value that was provided on create.
+func (u *ApprovalUpsert) UpdateState() *ApprovalUpsert {
+	u.SetExcluded(approval.FieldState)
+	return u
+}
+
+// SetStrategy sets the "strategy" field.
+func (u *ApprovalUpsert) SetStrategy(v approval.Strategy) *ApprovalUpsert {
+	u.Set(approval.FieldStrategy, v)
+	return u
+}
+
+// UpdateStrategy sets the "strategy" field to the value that was provided on create.
+func (u *ApprovalUpsert) UpdateStrategy() *ApprovalUpsert {
+	u.SetExcluded(approval.FieldStrategy)
+	return u
+}
+
+// SetRequester sets the "requester" field.
+func (u *ApprovalUpsert) SetRequester(v model.RequesterInfo) *ApprovalUpsert {
+	u.Set(approval.FieldRequester, v)
+	return u
+}
+
+// UpdateRequester sets the "requester" field to the value that was provided on create.
+func (u *ApprovalUpsert) UpdateRequester() *ApprovalUpsert {
+	u.SetExcluded(approval.FieldRequester)
+	return u
+}
+
+// SetDecider sets the "decider" field.
+func (u *ApprovalUpsert) SetDecider(v model.DeciderInfo) *ApprovalUpsert {
+	u.Set(approval.FieldDecider, v)
+	return u
+}
+
+// UpdateDecider sets the "decider" field to the value that was provided on create.
+func (u *ApprovalUpsert) UpdateDecider() *ApprovalUpsert {
+	u.SetExcluded(approval.FieldDecider)
+	return u
+}
+
+// SetDecisions sets the "decisions" field.
+func (u *ApprovalUpsert) SetDecisions(v []model.Decision) *ApprovalUpsert {
+	u.Set(approval.FieldDecisions, v)
+	return u
+}
+
+// UpdateDecisions sets the "decisions" field to the value that was provided on create.
+func (u *ApprovalUpsert) UpdateDecisions() *ApprovalUpsert {
+	u.SetExcluded(approval.FieldDecisions)
+	return u
+}
+
+// SetAvailableTransitions sets the "available_transitions" field.
+func (u *ApprovalUpsert) SetAvailableTransitions(v []model.AvailableTransition) *ApprovalUpsert {
+	u.Set(approval.FieldAvailableTransitions, v)
+	return u
+}
+
+// UpdateAvailableTransitions sets the "available_transitions" field to the value that was provided on create.
+func (u *ApprovalUpsert) UpdateAvailableTransitions() *ApprovalUpsert {
+	u.SetExcluded(approval.FieldAvailableTransitions)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// Using this option is equivalent to using:
+//
+//	client.Approval.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//		).
+//		Exec(ctx)
+func (u *ApprovalUpsertOne) UpdateNewValues() *ApprovalUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.CreatedAt(); exists {
+			s.SetIgnore(approval.FieldCreatedAt)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Approval.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *ApprovalUpsertOne) Ignore() *ApprovalUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *ApprovalUpsertOne) DoNothing() *ApprovalUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the ApprovalCreate.OnConflict
+// documentation for more info.
+func (u *ApprovalUpsertOne) Update(set func(*ApprovalUpsert)) *ApprovalUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&ApprovalUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (u *ApprovalUpsertOne) SetLastModifiedAt(v time.Time) *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetLastModifiedAt(v)
+	})
+}
+
+// UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
+func (u *ApprovalUpsertOne) UpdateLastModifiedAt() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateLastModifiedAt()
+	})
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (u *ApprovalUpsertOne) SetStatusPhase(v approval.StatusPhase) *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetStatusPhase(v)
+	})
+}
+
+// UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
+func (u *ApprovalUpsertOne) UpdateStatusPhase() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateStatusPhase()
+	})
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (u *ApprovalUpsertOne) SetStatusMessage(v string) *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetStatusMessage(v)
+	})
+}
+
+// UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
+func (u *ApprovalUpsertOne) UpdateStatusMessage() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateStatusMessage()
+	})
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (u *ApprovalUpsertOne) ClearStatusMessage() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.ClearStatusMessage()
+	})
+}
+
+// SetAction sets the "action" field.
+func (u *ApprovalUpsertOne) SetAction(v string) *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetAction(v)
+	})
+}
+
+// UpdateAction sets the "action" field to the value that was provided on create.
+func (u *ApprovalUpsertOne) UpdateAction() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateAction()
+	})
+}
+
+// SetState sets the "state" field.
+func (u *ApprovalUpsertOne) SetState(v approval.State) *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetState(v)
+	})
+}
+
+// UpdateState sets the "state" field to the value that was provided on create.
+func (u *ApprovalUpsertOne) UpdateState() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateState()
+	})
+}
+
+// SetStrategy sets the "strategy" field.
+func (u *ApprovalUpsertOne) SetStrategy(v approval.Strategy) *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetStrategy(v)
+	})
+}
+
+// UpdateStrategy sets the "strategy" field to the value that was provided on create.
+func (u *ApprovalUpsertOne) UpdateStrategy() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateStrategy()
+	})
+}
+
+// SetRequester sets the "requester" field.
+func (u *ApprovalUpsertOne) SetRequester(v model.RequesterInfo) *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetRequester(v)
+	})
+}
+
+// UpdateRequester sets the "requester" field to the value that was provided on create.
+func (u *ApprovalUpsertOne) UpdateRequester() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateRequester()
+	})
+}
+
+// SetDecider sets the "decider" field.
+func (u *ApprovalUpsertOne) SetDecider(v model.DeciderInfo) *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetDecider(v)
+	})
+}
+
+// UpdateDecider sets the "decider" field to the value that was provided on create.
+func (u *ApprovalUpsertOne) UpdateDecider() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateDecider()
+	})
+}
+
+// SetDecisions sets the "decisions" field.
+func (u *ApprovalUpsertOne) SetDecisions(v []model.Decision) *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetDecisions(v)
+	})
+}
+
+// UpdateDecisions sets the "decisions" field to the value that was provided on create.
+func (u *ApprovalUpsertOne) UpdateDecisions() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateDecisions()
+	})
+}
+
+// SetAvailableTransitions sets the "available_transitions" field.
+func (u *ApprovalUpsertOne) SetAvailableTransitions(v []model.AvailableTransition) *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetAvailableTransitions(v)
+	})
+}
+
+// UpdateAvailableTransitions sets the "available_transitions" field to the value that was provided on create.
+func (u *ApprovalUpsertOne) UpdateAvailableTransitions() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateAvailableTransitions()
+	})
+}
+
+// Exec executes the query.
+func (u *ApprovalUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for ApprovalCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *ApprovalUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *ApprovalUpsertOne) ID(ctx context.Context) (id int, err error) {
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *ApprovalUpsertOne) IDX(ctx context.Context) int {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // ApprovalCreateBulk is the builder for creating many Approval entities in bulk.
 type ApprovalCreateBulk struct {
 	config
 	err      error
 	builders []*ApprovalCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the Approval entities in the database.
@@ -408,6 +812,7 @@ func (_c *ApprovalCreateBulk) Save(ctx context.Context) ([]*Approval, error) {
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -458,6 +863,264 @@ func (_c *ApprovalCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (_c *ApprovalCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Approval.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.ApprovalUpsert) {
+//			SetCreatedAt(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *ApprovalCreateBulk) OnConflict(opts ...sql.ConflictOption) *ApprovalUpsertBulk {
+	_c.conflict = opts
+	return &ApprovalUpsertBulk{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Approval.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *ApprovalCreateBulk) OnConflictColumns(columns ...string) *ApprovalUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &ApprovalUpsertBulk{
+		create: _c,
+	}
+}
+
+// ApprovalUpsertBulk is the builder for "upsert"-ing
+// a bulk of Approval nodes.
+type ApprovalUpsertBulk struct {
+	create *ApprovalCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.Approval.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//		).
+//		Exec(ctx)
+func (u *ApprovalUpsertBulk) UpdateNewValues() *ApprovalUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.CreatedAt(); exists {
+				s.SetIgnore(approval.FieldCreatedAt)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Approval.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *ApprovalUpsertBulk) Ignore() *ApprovalUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *ApprovalUpsertBulk) DoNothing() *ApprovalUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the ApprovalCreateBulk.OnConflict
+// documentation for more info.
+func (u *ApprovalUpsertBulk) Update(set func(*ApprovalUpsert)) *ApprovalUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&ApprovalUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetLastModifiedAt sets the "last_modified_at" field.
+func (u *ApprovalUpsertBulk) SetLastModifiedAt(v time.Time) *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetLastModifiedAt(v)
+	})
+}
+
+// UpdateLastModifiedAt sets the "last_modified_at" field to the value that was provided on create.
+func (u *ApprovalUpsertBulk) UpdateLastModifiedAt() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateLastModifiedAt()
+	})
+}
+
+// SetStatusPhase sets the "status_phase" field.
+func (u *ApprovalUpsertBulk) SetStatusPhase(v approval.StatusPhase) *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetStatusPhase(v)
+	})
+}
+
+// UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
+func (u *ApprovalUpsertBulk) UpdateStatusPhase() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateStatusPhase()
+	})
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (u *ApprovalUpsertBulk) SetStatusMessage(v string) *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetStatusMessage(v)
+	})
+}
+
+// UpdateStatusMessage sets the "status_message" field to the value that was provided on create.
+func (u *ApprovalUpsertBulk) UpdateStatusMessage() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateStatusMessage()
+	})
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (u *ApprovalUpsertBulk) ClearStatusMessage() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.ClearStatusMessage()
+	})
+}
+
+// SetAction sets the "action" field.
+func (u *ApprovalUpsertBulk) SetAction(v string) *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetAction(v)
+	})
+}
+
+// UpdateAction sets the "action" field to the value that was provided on create.
+func (u *ApprovalUpsertBulk) UpdateAction() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateAction()
+	})
+}
+
+// SetState sets the "state" field.
+func (u *ApprovalUpsertBulk) SetState(v approval.State) *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetState(v)
+	})
+}
+
+// UpdateState sets the "state" field to the value that was provided on create.
+func (u *ApprovalUpsertBulk) UpdateState() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateState()
+	})
+}
+
+// SetStrategy sets the "strategy" field.
+func (u *ApprovalUpsertBulk) SetStrategy(v approval.Strategy) *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetStrategy(v)
+	})
+}
+
+// UpdateStrategy sets the "strategy" field to the value that was provided on create.
+func (u *ApprovalUpsertBulk) UpdateStrategy() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateStrategy()
+	})
+}
+
+// SetRequester sets the "requester" field.
+func (u *ApprovalUpsertBulk) SetRequester(v model.RequesterInfo) *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetRequester(v)
+	})
+}
+
+// UpdateRequester sets the "requester" field to the value that was provided on create.
+func (u *ApprovalUpsertBulk) UpdateRequester() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateRequester()
+	})
+}
+
+// SetDecider sets the "decider" field.
+func (u *ApprovalUpsertBulk) SetDecider(v model.DeciderInfo) *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetDecider(v)
+	})
+}
+
+// UpdateDecider sets the "decider" field to the value that was provided on create.
+func (u *ApprovalUpsertBulk) UpdateDecider() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateDecider()
+	})
+}
+
+// SetDecisions sets the "decisions" field.
+func (u *ApprovalUpsertBulk) SetDecisions(v []model.Decision) *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetDecisions(v)
+	})
+}
+
+// UpdateDecisions sets the "decisions" field to the value that was provided on create.
+func (u *ApprovalUpsertBulk) UpdateDecisions() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateDecisions()
+	})
+}
+
+// SetAvailableTransitions sets the "available_transitions" field.
+func (u *ApprovalUpsertBulk) SetAvailableTransitions(v []model.AvailableTransition) *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetAvailableTransitions(v)
+	})
+}
+
+// UpdateAvailableTransitions sets the "available_transitions" field to the value that was provided on create.
+func (u *ApprovalUpsertBulk) UpdateAvailableTransitions() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateAvailableTransitions()
+	})
+}
+
+// Exec executes the query.
+func (u *ApprovalUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the ApprovalCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for ApprovalCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *ApprovalUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
