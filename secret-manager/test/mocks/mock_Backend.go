@@ -1,4 +1,4 @@
-// Copyright 2025 Deutsche Telekom IT GmbH
+// Copyright 2026 Deutsche Telekom IT GmbH
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -191,9 +191,16 @@ func (_c *MockBackend_ParseSecretId_Call[T, S]) RunAndReturn(run func(string) (T
 	return _c
 }
 
-// Set provides a mock function with given fields: _a0, _a1, _a2
-func (_m *MockBackend[T, S]) Set(_a0 context.Context, _a1 T, _a2 backend.SecretValue) (S, error) {
-	ret := _m.Called(_a0, _a1, _a2)
+// Set provides a mock function with given fields: _a0, _a1, _a2, _a3
+func (_m *MockBackend[T, S]) Set(_a0 context.Context, _a1 T, _a2 backend.SecretValue, _a3 ...backend.WriteOption) (S, error) {
+	_va := make([]interface{}, len(_a3))
+	for _i := range _a3 {
+		_va[_i] = _a3[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, _a0, _a1, _a2)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Set")
@@ -201,19 +208,19 @@ func (_m *MockBackend[T, S]) Set(_a0 context.Context, _a1 T, _a2 backend.SecretV
 
 	var r0 S
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, T, backend.SecretValue) (S, error)); ok {
-		return rf(_a0, _a1, _a2)
+	if rf, ok := ret.Get(0).(func(context.Context, T, backend.SecretValue, ...backend.WriteOption) (S, error)); ok {
+		return rf(_a0, _a1, _a2, _a3...)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, T, backend.SecretValue) S); ok {
-		r0 = rf(_a0, _a1, _a2)
+	if rf, ok := ret.Get(0).(func(context.Context, T, backend.SecretValue, ...backend.WriteOption) S); ok {
+		r0 = rf(_a0, _a1, _a2, _a3...)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(S)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, T, backend.SecretValue) error); ok {
-		r1 = rf(_a0, _a1, _a2)
+	if rf, ok := ret.Get(1).(func(context.Context, T, backend.SecretValue, ...backend.WriteOption) error); ok {
+		r1 = rf(_a0, _a1, _a2, _a3...)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -230,13 +237,21 @@ type MockBackend_Set_Call[T backend.SecretId, S backend.Secret[T]] struct {
 //   - _a0 context.Context
 //   - _a1 T
 //   - _a2 backend.SecretValue
-func (_e *MockBackend_Expecter[T, S]) Set(_a0 interface{}, _a1 interface{}, _a2 interface{}) *MockBackend_Set_Call[T, S] {
-	return &MockBackend_Set_Call[T, S]{Call: _e.mock.On("Set", _a0, _a1, _a2)}
+//   - _a3 ...backend.WriteOption
+func (_e *MockBackend_Expecter[T, S]) Set(_a0 interface{}, _a1 interface{}, _a2 interface{}, _a3 ...interface{}) *MockBackend_Set_Call[T, S] {
+	return &MockBackend_Set_Call[T, S]{Call: _e.mock.On("Set",
+		append([]interface{}{_a0, _a1, _a2}, _a3...)...)}
 }
 
-func (_c *MockBackend_Set_Call[T, S]) Run(run func(_a0 context.Context, _a1 T, _a2 backend.SecretValue)) *MockBackend_Set_Call[T, S] {
+func (_c *MockBackend_Set_Call[T, S]) Run(run func(_a0 context.Context, _a1 T, _a2 backend.SecretValue, _a3 ...backend.WriteOption)) *MockBackend_Set_Call[T, S] {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(T), args[2].(backend.SecretValue))
+		variadicArgs := make([]backend.WriteOption, len(args)-3)
+		for i, a := range args[3:] {
+			if a != nil {
+				variadicArgs[i] = a.(backend.WriteOption)
+			}
+		}
+		run(args[0].(context.Context), args[1].(T), args[2].(backend.SecretValue), variadicArgs...)
 	})
 	return _c
 }
@@ -246,7 +261,7 @@ func (_c *MockBackend_Set_Call[T, S]) Return(_a0 S, _a1 error) *MockBackend_Set_
 	return _c
 }
 
-func (_c *MockBackend_Set_Call[T, S]) RunAndReturn(run func(context.Context, T, backend.SecretValue) (S, error)) *MockBackend_Set_Call[T, S] {
+func (_c *MockBackend_Set_Call[T, S]) RunAndReturn(run func(context.Context, T, backend.SecretValue, ...backend.WriteOption) (S, error)) *MockBackend_Set_Call[T, S] {
 	_c.Call.Return(run)
 	return _c
 }

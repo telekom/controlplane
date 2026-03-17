@@ -32,6 +32,10 @@ func NewRoverHandlerInstance() *RoverHandler {
 }
 
 func PatchRoverRequest(ctx context.Context, obj types.Object) error {
+	if obj == nil {
+		return nil
+	}
+
 	content := obj.GetContent()
 	spec, ok := content["spec"].(map[string]any)
 	if !ok {
@@ -68,7 +72,7 @@ func PatchRoverRequest(ctx context.Context, obj types.Object) error {
 }
 
 func PatchExposures(exposures []any) []map[string]any {
-	if exposures == nil || len(exposures) == 0 {
+	if len(exposures) == 0 {
 		return nil
 	}
 	exposuresMaps := make([]map[string]any, len(exposures))
@@ -95,7 +99,7 @@ func PatchExposures(exposures []any) []map[string]any {
 }
 
 func PatchSubscriptions(subscriptions []any) []map[string]any {
-	if subscriptions == nil || len(subscriptions) == 0 {
+	if len(subscriptions) == 0 {
 		return nil
 	}
 	subscriptionsMaps := make([]map[string]any, len(subscriptions))
@@ -109,9 +113,9 @@ func PatchSubscriptions(subscriptions []any) []map[string]any {
 	for i, subscription := range subscriptionsMaps {
 		if _, exist := subscription["basePath"]; exist {
 			subscriptionsMaps[i]["type"] = "api"
-		} else if _, exist := subscription["port"]; exist {
-			subscriptionsMaps[i]["type"] = "port"
-		}
+		} else if _, exist := subscription["eventType"]; exist {
+			subscriptionsMaps[i]["type"] = "event"
+		} // TODO: add more types as needed
 		security, exist := subscription["security"]
 		if exist {
 			PatchSecurity(security)

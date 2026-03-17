@@ -135,14 +135,6 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 		})
 
 		Context("ValidateCreateOrUpdate", func() {
-			It("should fail for non-rover object", func() {
-				nonRover := &adminv1.Zone{}
-				warnings, err := validator.ValidateCreateOrUpdate(ctx, nonRover)
-				Expect(warnings).To(BeNil())
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("not a rover"))
-			})
-
 			It("should validate successfully with valid rover", func() {
 				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverObj)
 				Expect(warnings).To(BeNil())

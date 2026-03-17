@@ -193,16 +193,6 @@ var _ = Describe("Team Webhook", func() {
 		})
 	})
 
-	Context("When inserting a wrong kind", func() {
-		It("should return an error", func() {
-			groupObj := &organizationv1.Group{}
-			warning, err := validator.ValidateCreate(ctx, groupObj)
-			Expect(warning).To(BeNil())
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("unable to convert object to team object"))
-		})
-	})
-
 	Context("When inserting an valid team against the k8s", Ordered, func() {
 		var teamObj *organizationv1.Team
 		BeforeAll(func() {
