@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 )
 
 const (
@@ -26,8 +25,10 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldLastModifiedAt holds the string denoting the last_modified_at field in the database.
 	FieldLastModifiedAt = "last_modified_at"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
+	// FieldStatusPhase holds the string denoting the status_phase field in the database.
+	FieldStatusPhase = "status_phase"
+	// FieldStatusMessage holds the string denoting the status_message field in the database.
+	FieldStatusMessage = "status_message"
 	// FieldBasePath holds the string denoting the base_path field in the database.
 	FieldBasePath = "base_path"
 	// FieldM2mAuthMethod holds the string denoting the m2m_auth_method field in the database.
@@ -88,7 +89,8 @@ var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
 	FieldLastModifiedAt,
-	FieldStatus,
+	FieldStatusPhase,
+	FieldStatusMessage,
 	FieldBasePath,
 	FieldM2mAuthMethod,
 	FieldApprovedScopes,
@@ -130,13 +132,39 @@ var (
 	DefaultLastModifiedAt func() time.Time
 	// UpdateDefaultLastModifiedAt holds the default value on update for the "last_modified_at" field.
 	UpdateDefaultLastModifiedAt func() time.Time
-	// DefaultStatus holds the default value on creation for the "status" field.
-	DefaultStatus model.ResourceStatus
 	// BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
 	BasePathValidator func(string) error
 	// DefaultApprovedScopes holds the default value on creation for the "approved_scopes" field.
 	DefaultApprovedScopes []string
 )
+
+// StatusPhase defines the type for the "status_phase" enum field.
+type StatusPhase string
+
+// StatusPhaseUnknown is the default value of the StatusPhase enum.
+const DefaultStatusPhase = StatusPhaseUnknown
+
+// StatusPhase values.
+const (
+	StatusPhaseReady   StatusPhase = "READY"
+	StatusPhasePending StatusPhase = "PENDING"
+	StatusPhaseError   StatusPhase = "ERROR"
+	StatusPhaseUnknown StatusPhase = "UNKNOWN"
+)
+
+func (sp StatusPhase) String() string {
+	return string(sp)
+}
+
+// StatusPhaseValidator is a validator for the "status_phase" field enum values. It is called by the builders before save.
+func StatusPhaseValidator(sp StatusPhase) error {
+	switch sp {
+	case StatusPhaseReady, StatusPhasePending, StatusPhaseError, StatusPhaseUnknown:
+		return nil
+	default:
+		return fmt.Errorf("apisubscription: invalid enum value for status_phase field: %q", sp)
+	}
+}
 
 // M2mAuthMethod defines the type for the "m2m_auth_method" enum field.
 type M2mAuthMethod string
@@ -182,6 +210,16 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByLastModifiedAt orders the results by the last_modified_at field.
 func ByLastModifiedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLastModifiedAt, opts...).ToFunc()
+}
+
+// ByStatusPhase orders the results by the status_phase field.
+func ByStatusPhase(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatusPhase, opts...).ToFunc()
+}
+
+// ByStatusMessage orders the results by the status_message field.
+func ByStatusMessage(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatusMessage, opts...).ToFunc()
 }
 
 // ByBasePath orders the results by the base_path field.
@@ -269,6 +307,24 @@ func newApprovalRequestStep() *sqlgraph.Step {
 		sqlgraph.To(ApprovalRequestInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2O, false, ApprovalRequestTable, ApprovalRequestColumn),
 	)
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (e StatusPhase) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(e.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (e *StatusPhase) UnmarshalGQL(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("enum %T must be a string", val)
+	}
+	*e = StatusPhase(str)
+	if err := StatusPhaseValidator(*e); err != nil {
+		return fmt.Errorf("%s is not a valid StatusPhase", str)
+	}
+	return nil
 }
 
 // MarshalGQL implements graphql.Marshaler interface.

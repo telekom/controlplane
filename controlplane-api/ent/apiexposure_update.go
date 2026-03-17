@@ -41,17 +41,37 @@ func (_u *ApiExposureUpdate) SetLastModifiedAt(v time.Time) *ApiExposureUpdate {
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *ApiExposureUpdate) SetStatus(v model.ResourceStatus) *ApiExposureUpdate {
-	_u.mutation.SetStatus(v)
+// SetStatusPhase sets the "status_phase" field.
+func (_u *ApiExposureUpdate) SetStatusPhase(v apiexposure.StatusPhase) *ApiExposureUpdate {
+	_u.mutation.SetStatusPhase(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableStatus(v *model.ResourceStatus) *ApiExposureUpdate {
+// SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
+func (_u *ApiExposureUpdate) SetNillableStatusPhase(v *apiexposure.StatusPhase) *ApiExposureUpdate {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetStatusPhase(*v)
 	}
+	return _u
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (_u *ApiExposureUpdate) SetStatusMessage(v string) *ApiExposureUpdate {
+	_u.mutation.SetStatusMessage(v)
+	return _u
+}
+
+// SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
+func (_u *ApiExposureUpdate) SetNillableStatusMessage(v *string) *ApiExposureUpdate {
+	if v != nil {
+		_u.SetStatusMessage(*v)
+	}
+	return _u
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (_u *ApiExposureUpdate) ClearStatusMessage() *ApiExposureUpdate {
+	_u.mutation.ClearStatusMessage()
 	return _u
 }
 
@@ -257,6 +277,11 @@ func (_u *ApiExposureUpdate) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ApiExposureUpdate) check() error {
+	if v, ok := _u.mutation.StatusPhase(); ok {
+		if err := apiexposure.StatusPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.status_phase": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.BasePath(); ok {
 		if err := apiexposure.BasePathValidator(v); err != nil {
 			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.base_path": %w`, err)}
@@ -288,8 +313,14 @@ func (_u *ApiExposureUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	if value, ok := _u.mutation.LastModifiedAt(); ok {
 		_spec.SetField(apiexposure.FieldLastModifiedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(apiexposure.FieldStatus, field.TypeJSON, value)
+	if value, ok := _u.mutation.StatusPhase(); ok {
+		_spec.SetField(apiexposure.FieldStatusPhase, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.StatusMessage(); ok {
+		_spec.SetField(apiexposure.FieldStatusMessage, field.TypeString, value)
+	}
+	if _u.mutation.StatusMessageCleared() {
+		_spec.ClearField(apiexposure.FieldStatusMessage, field.TypeString)
 	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(apiexposure.FieldBasePath, field.TypeString, value)
@@ -425,17 +456,37 @@ func (_u *ApiExposureUpdateOne) SetLastModifiedAt(v time.Time) *ApiExposureUpdat
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *ApiExposureUpdateOne) SetStatus(v model.ResourceStatus) *ApiExposureUpdateOne {
-	_u.mutation.SetStatus(v)
+// SetStatusPhase sets the "status_phase" field.
+func (_u *ApiExposureUpdateOne) SetStatusPhase(v apiexposure.StatusPhase) *ApiExposureUpdateOne {
+	_u.mutation.SetStatusPhase(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableStatus(v *model.ResourceStatus) *ApiExposureUpdateOne {
+// SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
+func (_u *ApiExposureUpdateOne) SetNillableStatusPhase(v *apiexposure.StatusPhase) *ApiExposureUpdateOne {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetStatusPhase(*v)
 	}
+	return _u
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (_u *ApiExposureUpdateOne) SetStatusMessage(v string) *ApiExposureUpdateOne {
+	_u.mutation.SetStatusMessage(v)
+	return _u
+}
+
+// SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
+func (_u *ApiExposureUpdateOne) SetNillableStatusMessage(v *string) *ApiExposureUpdateOne {
+	if v != nil {
+		_u.SetStatusMessage(*v)
+	}
+	return _u
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (_u *ApiExposureUpdateOne) ClearStatusMessage() *ApiExposureUpdateOne {
+	_u.mutation.ClearStatusMessage()
 	return _u
 }
 
@@ -654,6 +705,11 @@ func (_u *ApiExposureUpdateOne) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ApiExposureUpdateOne) check() error {
+	if v, ok := _u.mutation.StatusPhase(); ok {
+		if err := apiexposure.StatusPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.status_phase": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.BasePath(); ok {
 		if err := apiexposure.BasePathValidator(v); err != nil {
 			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.base_path": %w`, err)}
@@ -702,8 +758,14 @@ func (_u *ApiExposureUpdateOne) sqlSave(ctx context.Context) (_node *ApiExposure
 	if value, ok := _u.mutation.LastModifiedAt(); ok {
 		_spec.SetField(apiexposure.FieldLastModifiedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(apiexposure.FieldStatus, field.TypeJSON, value)
+	if value, ok := _u.mutation.StatusPhase(); ok {
+		_spec.SetField(apiexposure.FieldStatusPhase, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.StatusMessage(); ok {
+		_spec.SetField(apiexposure.FieldStatusMessage, field.TypeString, value)
+	}
+	if _u.mutation.StatusMessageCleared() {
+		_spec.ClearField(apiexposure.FieldStatusMessage, field.TypeString)
 	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(apiexposure.FieldBasePath, field.TypeString, value)

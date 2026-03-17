@@ -19,7 +19,6 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 )
 
 // ApiSubscriptionCreate is the builder for creating a ApiSubscription entity.
@@ -57,16 +56,30 @@ func (_c *ApiSubscriptionCreate) SetNillableLastModifiedAt(v *time.Time) *ApiSub
 	return _c
 }
 
-// SetStatus sets the "status" field.
-func (_c *ApiSubscriptionCreate) SetStatus(v model.ResourceStatus) *ApiSubscriptionCreate {
-	_c.mutation.SetStatus(v)
+// SetStatusPhase sets the "status_phase" field.
+func (_c *ApiSubscriptionCreate) SetStatusPhase(v apisubscription.StatusPhase) *ApiSubscriptionCreate {
+	_c.mutation.SetStatusPhase(v)
 	return _c
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_c *ApiSubscriptionCreate) SetNillableStatus(v *model.ResourceStatus) *ApiSubscriptionCreate {
+// SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
+func (_c *ApiSubscriptionCreate) SetNillableStatusPhase(v *apisubscription.StatusPhase) *ApiSubscriptionCreate {
 	if v != nil {
-		_c.SetStatus(*v)
+		_c.SetStatusPhase(*v)
+	}
+	return _c
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (_c *ApiSubscriptionCreate) SetStatusMessage(v string) *ApiSubscriptionCreate {
+	_c.mutation.SetStatusMessage(v)
+	return _c
+}
+
+// SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
+func (_c *ApiSubscriptionCreate) SetNillableStatusMessage(v *string) *ApiSubscriptionCreate {
+	if v != nil {
+		_c.SetStatusMessage(*v)
 	}
 	return _c
 }
@@ -223,9 +236,9 @@ func (_c *ApiSubscriptionCreate) defaults() error {
 		v := apisubscription.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		v := apisubscription.DefaultStatus
-		_c.mutation.SetStatus(v)
+	if _, ok := _c.mutation.StatusPhase(); !ok {
+		v := apisubscription.DefaultStatusPhase
+		_c.mutation.SetStatusPhase(v)
 	}
 	if _, ok := _c.mutation.M2mAuthMethod(); !ok {
 		v := apisubscription.DefaultM2mAuthMethod
@@ -246,8 +259,13 @@ func (_c *ApiSubscriptionCreate) check() error {
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
 		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "ApiSubscription.last_modified_at"`)}
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "ApiSubscription.status"`)}
+	if _, ok := _c.mutation.StatusPhase(); !ok {
+		return &ValidationError{Name: "status_phase", err: errors.New(`ent: missing required field "ApiSubscription.status_phase"`)}
+	}
+	if v, ok := _c.mutation.StatusPhase(); ok {
+		if err := apisubscription.StatusPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.status_phase": %w`, err)}
+		}
 	}
 	if _, ok := _c.mutation.BasePath(); !ok {
 		return &ValidationError{Name: "base_path", err: errors.New(`ent: missing required field "ApiSubscription.base_path"`)}
@@ -308,9 +326,13 @@ func (_c *ApiSubscriptionCreate) createSpec() (*ApiSubscription, *sqlgraph.Creat
 		_spec.SetField(apisubscription.FieldLastModifiedAt, field.TypeTime, value)
 		_node.LastModifiedAt = value
 	}
-	if value, ok := _c.mutation.Status(); ok {
-		_spec.SetField(apisubscription.FieldStatus, field.TypeJSON, value)
-		_node.Status = value
+	if value, ok := _c.mutation.StatusPhase(); ok {
+		_spec.SetField(apisubscription.FieldStatusPhase, field.TypeEnum, value)
+		_node.StatusPhase = value
+	}
+	if value, ok := _c.mutation.StatusMessage(); ok {
+		_spec.SetField(apisubscription.FieldStatusMessage, field.TypeString, value)
+		_node.StatusMessage = &value
 	}
 	if value, ok := _c.mutation.BasePath(); ok {
 		_spec.SetField(apisubscription.FieldBasePath, field.TypeString, value)

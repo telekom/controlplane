@@ -6,12 +6,14 @@
 package application
 
 import (
+	"fmt"
+	"io"
+	"strconv"
 	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 )
 
 const (
@@ -23,8 +25,10 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldLastModifiedAt holds the string denoting the last_modified_at field in the database.
 	FieldLastModifiedAt = "last_modified_at"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
+	// FieldStatusPhase holds the string denoting the status_phase field in the database.
+	FieldStatusPhase = "status_phase"
+	// FieldStatusMessage holds the string denoting the status_message field in the database.
+	FieldStatusMessage = "status_message"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldClientID holds the string denoting the client_id field in the database.
@@ -76,7 +80,8 @@ var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
 	FieldLastModifiedAt,
-	FieldStatus,
+	FieldStatusPhase,
+	FieldStatusMessage,
 	FieldName,
 	FieldClientID,
 	FieldIssuerURL,
@@ -118,13 +123,39 @@ var (
 	DefaultLastModifiedAt func() time.Time
 	// UpdateDefaultLastModifiedAt holds the default value on update for the "last_modified_at" field.
 	UpdateDefaultLastModifiedAt func() time.Time
-	// DefaultStatus holds the default value on creation for the "status" field.
-	DefaultStatus model.ResourceStatus
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
 	// ClientIDValidator is a validator for the "client_id" field. It is called by the builders before save.
 	ClientIDValidator func(string) error
 )
+
+// StatusPhase defines the type for the "status_phase" enum field.
+type StatusPhase string
+
+// StatusPhaseUnknown is the default value of the StatusPhase enum.
+const DefaultStatusPhase = StatusPhaseUnknown
+
+// StatusPhase values.
+const (
+	StatusPhaseReady   StatusPhase = "READY"
+	StatusPhasePending StatusPhase = "PENDING"
+	StatusPhaseError   StatusPhase = "ERROR"
+	StatusPhaseUnknown StatusPhase = "UNKNOWN"
+)
+
+func (sp StatusPhase) String() string {
+	return string(sp)
+}
+
+// StatusPhaseValidator is a validator for the "status_phase" field enum values. It is called by the builders before save.
+func StatusPhaseValidator(sp StatusPhase) error {
+	switch sp {
+	case StatusPhaseReady, StatusPhasePending, StatusPhaseError, StatusPhaseUnknown:
+		return nil
+	default:
+		return fmt.Errorf("application: invalid enum value for status_phase field: %q", sp)
+	}
+}
 
 // OrderOption defines the ordering options for the Application queries.
 type OrderOption func(*sql.Selector)
@@ -142,6 +173,16 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByLastModifiedAt orders the results by the last_modified_at field.
 func ByLastModifiedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLastModifiedAt, opts...).ToFunc()
+}
+
+// ByStatusPhase orders the results by the status_phase field.
+func ByStatusPhase(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatusPhase, opts...).ToFunc()
+}
+
+// ByStatusMessage orders the results by the status_message field.
+func ByStatusMessage(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatusMessage, opts...).ToFunc()
 }
 
 // ByName orders the results by the name field.
@@ -227,4 +268,22 @@ func newSubscribedApisStep() *sqlgraph.Step {
 		sqlgraph.To(SubscribedApisInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SubscribedApisTable, SubscribedApisColumn),
 	)
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (e StatusPhase) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(e.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (e *StatusPhase) UnmarshalGQL(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("enum %T must be a string", val)
+	}
+	*e = StatusPhase(str)
+	if err := StatusPhaseValidator(*e); err != nil {
+		return fmt.Errorf("%s is not a valid StatusPhase", str)
+	}
+	return nil
 }

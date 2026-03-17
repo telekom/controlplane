@@ -26,8 +26,10 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldLastModifiedAt holds the string denoting the last_modified_at field in the database.
 	FieldLastModifiedAt = "last_modified_at"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
+	// FieldStatusPhase holds the string denoting the status_phase field in the database.
+	FieldStatusPhase = "status_phase"
+	// FieldStatusMessage holds the string denoting the status_message field in the database.
+	FieldStatusMessage = "status_message"
 	// FieldAction holds the string denoting the action field in the database.
 	FieldAction = "action"
 	// FieldState holds the string denoting the state field in the database.
@@ -60,7 +62,8 @@ var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
 	FieldLastModifiedAt,
-	FieldStatus,
+	FieldStatusPhase,
+	FieldStatusMessage,
 	FieldAction,
 	FieldState,
 	FieldStrategy,
@@ -105,8 +108,6 @@ var (
 	DefaultLastModifiedAt func() time.Time
 	// UpdateDefaultLastModifiedAt holds the default value on update for the "last_modified_at" field.
 	UpdateDefaultLastModifiedAt func() time.Time
-	// DefaultStatus holds the default value on creation for the "status" field.
-	DefaultStatus model.ResourceStatus
 	// ActionValidator is a validator for the "action" field. It is called by the builders before save.
 	ActionValidator func(string) error
 	// DefaultDecisions holds the default value on creation for the "decisions" field.
@@ -114,6 +115,34 @@ var (
 	// DefaultAvailableTransitions holds the default value on creation for the "available_transitions" field.
 	DefaultAvailableTransitions []model.AvailableTransition
 )
+
+// StatusPhase defines the type for the "status_phase" enum field.
+type StatusPhase string
+
+// StatusPhaseUnknown is the default value of the StatusPhase enum.
+const DefaultStatusPhase = StatusPhaseUnknown
+
+// StatusPhase values.
+const (
+	StatusPhaseReady   StatusPhase = "READY"
+	StatusPhasePending StatusPhase = "PENDING"
+	StatusPhaseError   StatusPhase = "ERROR"
+	StatusPhaseUnknown StatusPhase = "UNKNOWN"
+)
+
+func (sp StatusPhase) String() string {
+	return string(sp)
+}
+
+// StatusPhaseValidator is a validator for the "status_phase" field enum values. It is called by the builders before save.
+func StatusPhaseValidator(sp StatusPhase) error {
+	switch sp {
+	case StatusPhaseReady, StatusPhasePending, StatusPhaseError, StatusPhaseUnknown:
+		return nil
+	default:
+		return fmt.Errorf("approvalrequest: invalid enum value for status_phase field: %q", sp)
+	}
+}
 
 // State defines the type for the "state" enum field.
 type State string
@@ -190,6 +219,16 @@ func ByLastModifiedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLastModifiedAt, opts...).ToFunc()
 }
 
+// ByStatusPhase orders the results by the status_phase field.
+func ByStatusPhase(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatusPhase, opts...).ToFunc()
+}
+
+// ByStatusMessage orders the results by the status_message field.
+func ByStatusMessage(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatusMessage, opts...).ToFunc()
+}
+
 // ByAction orders the results by the action field.
 func ByAction(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAction, opts...).ToFunc()
@@ -217,6 +256,24 @@ func newAPISubscriptionStep() *sqlgraph.Step {
 		sqlgraph.To(APISubscriptionInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2O, true, APISubscriptionTable, APISubscriptionColumn),
 	)
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (e StatusPhase) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(e.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (e *StatusPhase) UnmarshalGQL(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("enum %T must be a string", val)
+	}
+	*e = StatusPhase(str)
+	if err := StatusPhaseValidator(*e); err != nil {
+		return fmt.Errorf("%s is not a valid StatusPhase", str)
+	}
+	return nil
 }
 
 // MarshalGQL implements graphql.Marshaler interface.

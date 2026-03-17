@@ -50,66 +50,6 @@ func (r *applicationResolver) OwnerTeam(ctx context.Context, obj *ent.Applicatio
 	}, nil
 }
 
-// RoverStatus is the resolver for the roverStatus field.
-func (r *applicationResolver) RoverStatus(ctx context.Context, obj *ent.Application) (*model.RoverStatus, error) {
-	exposures, err := obj.QueryExposedApis().All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	subscriptions, err := obj.QuerySubscribedApis().All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	totalExposures := len(exposures)
-	totalSubscriptions := len(subscriptions)
-	activeExposures := 0
-	activeSubscriptions := 0
-
-	for _, e := range exposures {
-		if e.Active {
-			activeExposures++
-		}
-	}
-	for _, s := range subscriptions {
-		if s.Status.Phase == model.ResourceStatusPhaseReady {
-			activeSubscriptions++
-		}
-	}
-
-	phase := model.ResourceStatusPhaseReady
-	if totalExposures == 0 && totalSubscriptions == 0 {
-		phase = model.ResourceStatusPhaseUnknown
-	} else if activeExposures < totalExposures || activeSubscriptions < totalSubscriptions {
-		for _, e := range exposures {
-			if e.Status.Phase == model.ResourceStatusPhaseError {
-				phase = model.ResourceStatusPhaseError
-				break
-			}
-		}
-		if phase == model.ResourceStatusPhaseReady {
-			for _, s := range subscriptions {
-				if s.Status.Phase == model.ResourceStatusPhaseError {
-					phase = model.ResourceStatusPhaseError
-					break
-				}
-			}
-		}
-		if phase == model.ResourceStatusPhaseReady {
-			phase = model.ResourceStatusPhasePending
-		}
-	}
-
-	return &model.RoverStatus{
-		Phase:               phase,
-		TotalExposures:      totalExposures,
-		TotalSubscriptions:  totalSubscriptions,
-		ActiveExposures:     activeExposures,
-		ActiveSubscriptions: activeSubscriptions,
-	}, nil
-}
-
 // Strategy is the resolver for the strategy field.
 func (r *approvalConfigResolver) Strategy(ctx context.Context, obj *model.ApprovalConfig) (approval.Strategy, error) {
 	return approval.Strategy(obj.Strategy), nil

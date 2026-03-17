@@ -56,10 +56,6 @@ func init() {
 	apiexposure.DefaultLastModifiedAt = apiexposureDescLastModifiedAt.Default.(func() time.Time)
 	// apiexposure.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
 	apiexposure.UpdateDefaultLastModifiedAt = apiexposureDescLastModifiedAt.UpdateDefault.(func() time.Time)
-	// apiexposureDescStatus is the schema descriptor for status field.
-	apiexposureDescStatus := apiexposureMixinFields2[0].Descriptor()
-	// apiexposure.DefaultStatus holds the default value on creation for the status field.
-	apiexposure.DefaultStatus = apiexposureDescStatus.Default.(model.ResourceStatus)
 	// apiexposureDescBasePath is the schema descriptor for base_path field.
 	apiexposureDescBasePath := apiexposureFields[0].Descriptor()
 	// apiexposure.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
@@ -106,10 +102,6 @@ func init() {
 	apisubscription.DefaultLastModifiedAt = apisubscriptionDescLastModifiedAt.Default.(func() time.Time)
 	// apisubscription.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
 	apisubscription.UpdateDefaultLastModifiedAt = apisubscriptionDescLastModifiedAt.UpdateDefault.(func() time.Time)
-	// apisubscriptionDescStatus is the schema descriptor for status field.
-	apisubscriptionDescStatus := apisubscriptionMixinFields2[0].Descriptor()
-	// apisubscription.DefaultStatus holds the default value on creation for the status field.
-	apisubscription.DefaultStatus = apisubscriptionDescStatus.Default.(model.ResourceStatus)
 	// apisubscriptionDescBasePath is the schema descriptor for base_path field.
 	apisubscriptionDescBasePath := apisubscriptionFields[0].Descriptor()
 	// apisubscription.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
@@ -144,10 +136,6 @@ func init() {
 	application.DefaultLastModifiedAt = applicationDescLastModifiedAt.Default.(func() time.Time)
 	// application.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
 	application.UpdateDefaultLastModifiedAt = applicationDescLastModifiedAt.UpdateDefault.(func() time.Time)
-	// applicationDescStatus is the schema descriptor for status field.
-	applicationDescStatus := applicationMixinFields2[0].Descriptor()
-	// application.DefaultStatus holds the default value on creation for the status field.
-	application.DefaultStatus = applicationDescStatus.Default.(model.ResourceStatus)
 	// applicationDescName is the schema descriptor for name field.
 	applicationDescName := applicationFields[0].Descriptor()
 	// application.NameValidator is a validator for the "name" field. It is called by the builders before save.
@@ -184,10 +172,6 @@ func init() {
 	approval.DefaultLastModifiedAt = approvalDescLastModifiedAt.Default.(func() time.Time)
 	// approval.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
 	approval.UpdateDefaultLastModifiedAt = approvalDescLastModifiedAt.UpdateDefault.(func() time.Time)
-	// approvalDescStatus is the schema descriptor for status field.
-	approvalDescStatus := approvalMixinFields2[0].Descriptor()
-	// approval.DefaultStatus holds the default value on creation for the status field.
-	approval.DefaultStatus = approvalDescStatus.Default.(model.ResourceStatus)
 	// approvalDescAction is the schema descriptor for action field.
 	approvalDescAction := approvalMixinFields3[0].Descriptor()
 	// approval.ActionValidator is a validator for the "action" field. It is called by the builders before save.
@@ -228,10 +212,6 @@ func init() {
 	approvalrequest.DefaultLastModifiedAt = approvalrequestDescLastModifiedAt.Default.(func() time.Time)
 	// approvalrequest.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
 	approvalrequest.UpdateDefaultLastModifiedAt = approvalrequestDescLastModifiedAt.UpdateDefault.(func() time.Time)
-	// approvalrequestDescStatus is the schema descriptor for status field.
-	approvalrequestDescStatus := approvalrequestMixinFields2[0].Descriptor()
-	// approvalrequest.DefaultStatus holds the default value on creation for the status field.
-	approvalrequest.DefaultStatus = approvalrequestDescStatus.Default.(model.ResourceStatus)
 	// approvalrequestDescAction is the schema descriptor for action field.
 	approvalrequestDescAction := approvalrequestMixinFields3[0].Descriptor()
 	// approvalrequest.ActionValidator is a validator for the "action" field. It is called by the builders before save.
@@ -330,10 +310,6 @@ func init() {
 	team.DefaultLastModifiedAt = teamDescLastModifiedAt.Default.(func() time.Time)
 	// team.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
 	team.UpdateDefaultLastModifiedAt = teamDescLastModifiedAt.UpdateDefault.(func() time.Time)
-	// teamDescStatus is the schema descriptor for status field.
-	teamDescStatus := teamMixinFields2[0].Descriptor()
-	// team.DefaultStatus holds the default value on creation for the status field.
-	team.DefaultStatus = teamDescStatus.Default.(model.ResourceStatus)
 	// teamDescName is the schema descriptor for name field.
 	teamDescName := teamFields[0].Descriptor()
 	// team.NameValidator is a validator for the "name" field. It is called by the builders before save.

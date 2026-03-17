@@ -156,10 +156,15 @@ func (_q *ApiExposureQuery) collectField(ctx context.Context, oneNode bool, opCt
 				selectedFields = append(selectedFields, apiexposure.FieldLastModifiedAt)
 				fieldSeen[apiexposure.FieldLastModifiedAt] = struct{}{}
 			}
-		case "status":
-			if _, ok := fieldSeen[apiexposure.FieldStatus]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldStatus)
-				fieldSeen[apiexposure.FieldStatus] = struct{}{}
+		case "statusPhase":
+			if _, ok := fieldSeen[apiexposure.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldStatusPhase)
+				fieldSeen[apiexposure.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[apiexposure.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldStatusMessage)
+				fieldSeen[apiexposure.FieldStatusMessage] = struct{}{}
 			}
 		case "basePath":
 			if _, ok := fieldSeen[apiexposure.FieldBasePath]; !ok {
@@ -347,10 +352,15 @@ func (_q *ApiSubscriptionQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, apisubscription.FieldLastModifiedAt)
 				fieldSeen[apisubscription.FieldLastModifiedAt] = struct{}{}
 			}
-		case "status":
-			if _, ok := fieldSeen[apisubscription.FieldStatus]; !ok {
-				selectedFields = append(selectedFields, apisubscription.FieldStatus)
-				fieldSeen[apisubscription.FieldStatus] = struct{}{}
+		case "statusPhase":
+			if _, ok := fieldSeen[apisubscription.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldStatusPhase)
+				fieldSeen[apisubscription.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[apisubscription.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, apisubscription.FieldStatusMessage)
+				fieldSeen[apisubscription.FieldStatusMessage] = struct{}{}
 			}
 		case "basePath":
 			if _, ok := fieldSeen[apisubscription.FieldBasePath]; !ok {
@@ -650,10 +660,15 @@ func (_q *ApplicationQuery) collectField(ctx context.Context, oneNode bool, opCt
 				selectedFields = append(selectedFields, application.FieldLastModifiedAt)
 				fieldSeen[application.FieldLastModifiedAt] = struct{}{}
 			}
-		case "status":
-			if _, ok := fieldSeen[application.FieldStatus]; !ok {
-				selectedFields = append(selectedFields, application.FieldStatus)
-				fieldSeen[application.FieldStatus] = struct{}{}
+		case "statusPhase":
+			if _, ok := fieldSeen[application.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, application.FieldStatusPhase)
+				fieldSeen[application.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[application.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, application.FieldStatusMessage)
+				fieldSeen[application.FieldStatusMessage] = struct{}{}
 			}
 		case "name":
 			if _, ok := fieldSeen[application.FieldName]; !ok {
@@ -781,10 +796,15 @@ func (_q *ApprovalQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 				selectedFields = append(selectedFields, approval.FieldLastModifiedAt)
 				fieldSeen[approval.FieldLastModifiedAt] = struct{}{}
 			}
-		case "status":
-			if _, ok := fieldSeen[approval.FieldStatus]; !ok {
-				selectedFields = append(selectedFields, approval.FieldStatus)
-				fieldSeen[approval.FieldStatus] = struct{}{}
+		case "statusPhase":
+			if _, ok := fieldSeen[approval.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, approval.FieldStatusPhase)
+				fieldSeen[approval.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[approval.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, approval.FieldStatusMessage)
+				fieldSeen[approval.FieldStatusMessage] = struct{}{}
 			}
 		case "action":
 			if _, ok := fieldSeen[approval.FieldAction]; !ok {
@@ -932,10 +952,15 @@ func (_q *ApprovalRequestQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, approvalrequest.FieldLastModifiedAt)
 				fieldSeen[approvalrequest.FieldLastModifiedAt] = struct{}{}
 			}
-		case "status":
-			if _, ok := fieldSeen[approvalrequest.FieldStatus]; !ok {
-				selectedFields = append(selectedFields, approvalrequest.FieldStatus)
-				fieldSeen[approvalrequest.FieldStatus] = struct{}{}
+		case "statusPhase":
+			if _, ok := fieldSeen[approvalrequest.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, approvalrequest.FieldStatusPhase)
+				fieldSeen[approvalrequest.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[approvalrequest.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, approvalrequest.FieldStatusMessage)
+				fieldSeen[approvalrequest.FieldStatusMessage] = struct{}{}
 			}
 		case "action":
 			if _, ok := fieldSeen[approvalrequest.FieldAction]; !ok {
@@ -1438,10 +1463,15 @@ func (_q *TeamQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				selectedFields = append(selectedFields, team.FieldLastModifiedAt)
 				fieldSeen[team.FieldLastModifiedAt] = struct{}{}
 			}
-		case "status":
-			if _, ok := fieldSeen[team.FieldStatus]; !ok {
-				selectedFields = append(selectedFields, team.FieldStatus)
-				fieldSeen[team.FieldStatus] = struct{}{}
+		case "statusPhase":
+			if _, ok := fieldSeen[team.FieldStatusPhase]; !ok {
+				selectedFields = append(selectedFields, team.FieldStatusPhase)
+				fieldSeen[team.FieldStatusPhase] = struct{}{}
+			}
+		case "statusMessage":
+			if _, ok := fieldSeen[team.FieldStatusMessage]; !ok {
+				selectedFields = append(selectedFields, team.FieldStatusMessage)
+				fieldSeen[team.FieldStatusMessage] = struct{}{}
 			}
 		case "name":
 			if _, ok := fieldSeen[team.FieldName]; !ok {

@@ -38,9 +38,6 @@ models:
   TeamInfo:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.TeamInfo
-  RoverStatus:
-    model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RoverStatus
   Upstream:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.Upstream
@@ -59,9 +56,3 @@ models:
   AvailableTransition:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.AvailableTransition
-  ResourceStatus:
-    model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ResourceStatus
-  ResourceStatusPhase:
-    model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ResourceStatusPhase

@@ -18,7 +18,6 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 )
 
 // ApplicationCreate is the builder for creating a Application entity.
@@ -56,16 +55,30 @@ func (_c *ApplicationCreate) SetNillableLastModifiedAt(v *time.Time) *Applicatio
 	return _c
 }
 
-// SetStatus sets the "status" field.
-func (_c *ApplicationCreate) SetStatus(v model.ResourceStatus) *ApplicationCreate {
-	_c.mutation.SetStatus(v)
+// SetStatusPhase sets the "status_phase" field.
+func (_c *ApplicationCreate) SetStatusPhase(v application.StatusPhase) *ApplicationCreate {
+	_c.mutation.SetStatusPhase(v)
 	return _c
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_c *ApplicationCreate) SetNillableStatus(v *model.ResourceStatus) *ApplicationCreate {
+// SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
+func (_c *ApplicationCreate) SetNillableStatusPhase(v *application.StatusPhase) *ApplicationCreate {
 	if v != nil {
-		_c.SetStatus(*v)
+		_c.SetStatusPhase(*v)
+	}
+	return _c
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (_c *ApplicationCreate) SetStatusMessage(v string) *ApplicationCreate {
+	_c.mutation.SetStatusMessage(v)
+	return _c
+}
+
+// SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
+func (_c *ApplicationCreate) SetNillableStatusMessage(v *string) *ApplicationCreate {
+	if v != nil {
+		_c.SetStatusMessage(*v)
 	}
 	return _c
 }
@@ -199,9 +212,9 @@ func (_c *ApplicationCreate) defaults() error {
 		v := application.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		v := application.DefaultStatus
-		_c.mutation.SetStatus(v)
+	if _, ok := _c.mutation.StatusPhase(); !ok {
+		v := application.DefaultStatusPhase
+		_c.mutation.SetStatusPhase(v)
 	}
 	return nil
 }
@@ -214,8 +227,13 @@ func (_c *ApplicationCreate) check() error {
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
 		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "Application.last_modified_at"`)}
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Application.status"`)}
+	if _, ok := _c.mutation.StatusPhase(); !ok {
+		return &ValidationError{Name: "status_phase", err: errors.New(`ent: missing required field "Application.status_phase"`)}
+	}
+	if v, ok := _c.mutation.StatusPhase(); ok {
+		if err := application.StatusPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "Application.status_phase": %w`, err)}
+		}
 	}
 	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Application.name"`)}
@@ -273,9 +291,13 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 		_spec.SetField(application.FieldLastModifiedAt, field.TypeTime, value)
 		_node.LastModifiedAt = value
 	}
-	if value, ok := _c.mutation.Status(); ok {
-		_spec.SetField(application.FieldStatus, field.TypeJSON, value)
-		_node.Status = value
+	if value, ok := _c.mutation.StatusPhase(); ok {
+		_spec.SetField(application.FieldStatusPhase, field.TypeEnum, value)
+		_node.StatusPhase = value
+	}
+	if value, ok := _c.mutation.StatusMessage(); ok {
+		_spec.SetField(application.FieldStatusMessage, field.TypeString, value)
+		_node.StatusMessage = &value
 	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(application.FieldName, field.TypeString, value)

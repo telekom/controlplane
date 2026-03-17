@@ -18,6 +18,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
+	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
@@ -33,7 +34,6 @@ type ApiExposureResolver interface {
 }
 type ApplicationResolver interface {
 	OwnerTeam(ctx context.Context, obj *ent.Application) (*model.TeamInfo, error)
-	RoverStatus(ctx context.Context, obj *ent.Application) (*model.RoverStatus, error)
 }
 type QueryResolver interface {
 	Node(ctx context.Context, id int) (ent.Noder, error)
@@ -539,36 +539,59 @@ func (ec *executionContext) fieldContext_ApiExposure_lastModifiedAt(_ context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _ApiExposure_status(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApiExposure_statusPhase(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ApiExposure_status,
+		ec.fieldContext_ApiExposure_statusPhase,
 		func(ctx context.Context) (any, error) {
-			return obj.Status, nil
+			return obj.StatusPhase, nil
 		},
 		nil,
-		ec.marshalNResourceStatus2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResourceStatus,
+		ec.marshalNApiExposureStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐStatusPhase,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_ApiExposure_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ApiExposure_statusPhase(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ApiExposure",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "phase":
-				return ec.fieldContext_ResourceStatus_phase(ctx, field)
-			case "message":
-				return ec.fieldContext_ResourceStatus_message(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ResourceStatus", field.Name)
+			return nil, errors.New("field of type ApiExposureStatusPhase does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiExposure_statusMessage(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiExposure_statusMessage,
+		func(ctx context.Context) (any, error) {
+			return obj.StatusMessage, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiExposure_statusMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiExposure",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -819,8 +842,10 @@ func (ec *executionContext) fieldContext_ApiExposure_owner(_ context.Context, fi
 				return ec.fieldContext_Application_createdAt(ctx, field)
 			case "lastModifiedAt":
 				return ec.fieldContext_Application_lastModifiedAt(ctx, field)
-			case "status":
-				return ec.fieldContext_Application_status(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_Application_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_Application_statusMessage(ctx, field)
 			case "name":
 				return ec.fieldContext_Application_name(ctx, field)
 			case "clientID":
@@ -835,8 +860,6 @@ func (ec *executionContext) fieldContext_ApiExposure_owner(_ context.Context, fi
 				return ec.fieldContext_Application_subscribedApis(ctx, field)
 			case "ownerTeam":
 				return ec.fieldContext_Application_ownerTeam(ctx, field)
-			case "roverStatus":
-				return ec.fieldContext_Application_roverStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Application", field.Name)
 		},
@@ -1026,8 +1049,10 @@ func (ec *executionContext) fieldContext_ApiExposureEdge_node(_ context.Context,
 				return ec.fieldContext_ApiExposure_createdAt(ctx, field)
 			case "lastModifiedAt":
 				return ec.fieldContext_ApiExposure_lastModifiedAt(ctx, field)
-			case "status":
-				return ec.fieldContext_ApiExposure_status(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_ApiExposure_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_ApiExposure_statusMessage(ctx, field)
 			case "basePath":
 				return ec.fieldContext_ApiExposure_basePath(ctx, field)
 			case "visibility":
@@ -1169,36 +1194,59 @@ func (ec *executionContext) fieldContext_ApiSubscription_lastModifiedAt(_ contex
 	return fc, nil
 }
 
-func (ec *executionContext) _ApiSubscription_status(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApiSubscription_statusPhase(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ApiSubscription_status,
+		ec.fieldContext_ApiSubscription_statusPhase,
 		func(ctx context.Context) (any, error) {
-			return obj.Status, nil
+			return obj.StatusPhase, nil
 		},
 		nil,
-		ec.marshalNResourceStatus2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResourceStatus,
+		ec.marshalNApiSubscriptionStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhase,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_ApiSubscription_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ApiSubscription_statusPhase(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ApiSubscription",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "phase":
-				return ec.fieldContext_ResourceStatus_phase(ctx, field)
-			case "message":
-				return ec.fieldContext_ResourceStatus_message(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ResourceStatus", field.Name)
+			return nil, errors.New("field of type ApiSubscriptionStatusPhase does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiSubscription_statusMessage(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiSubscription_statusMessage,
+		func(ctx context.Context) (any, error) {
+			return obj.StatusMessage, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiSubscription_statusMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiSubscription",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1321,8 +1369,10 @@ func (ec *executionContext) fieldContext_ApiSubscription_owner(_ context.Context
 				return ec.fieldContext_Application_createdAt(ctx, field)
 			case "lastModifiedAt":
 				return ec.fieldContext_Application_lastModifiedAt(ctx, field)
-			case "status":
-				return ec.fieldContext_Application_status(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_Application_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_Application_statusMessage(ctx, field)
 			case "name":
 				return ec.fieldContext_Application_name(ctx, field)
 			case "clientID":
@@ -1337,8 +1387,6 @@ func (ec *executionContext) fieldContext_ApiSubscription_owner(_ context.Context
 				return ec.fieldContext_Application_subscribedApis(ctx, field)
 			case "ownerTeam":
 				return ec.fieldContext_Application_ownerTeam(ctx, field)
-			case "roverStatus":
-				return ec.fieldContext_Application_roverStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Application", field.Name)
 		},
@@ -1376,8 +1424,10 @@ func (ec *executionContext) fieldContext_ApiSubscription_target(_ context.Contex
 				return ec.fieldContext_ApiExposure_createdAt(ctx, field)
 			case "lastModifiedAt":
 				return ec.fieldContext_ApiExposure_lastModifiedAt(ctx, field)
-			case "status":
-				return ec.fieldContext_ApiExposure_status(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_ApiExposure_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_ApiExposure_statusMessage(ctx, field)
 			case "basePath":
 				return ec.fieldContext_ApiExposure_basePath(ctx, field)
 			case "visibility":
@@ -1474,8 +1524,10 @@ func (ec *executionContext) fieldContext_ApiSubscription_approval(_ context.Cont
 				return ec.fieldContext_Approval_createdAt(ctx, field)
 			case "lastModifiedAt":
 				return ec.fieldContext_Approval_lastModifiedAt(ctx, field)
-			case "status":
-				return ec.fieldContext_Approval_status(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_Approval_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_Approval_statusMessage(ctx, field)
 			case "action":
 				return ec.fieldContext_Approval_action(ctx, field)
 			case "state":
@@ -1529,8 +1581,10 @@ func (ec *executionContext) fieldContext_ApiSubscription_approvalRequest(_ conte
 				return ec.fieldContext_ApprovalRequest_createdAt(ctx, field)
 			case "lastModifiedAt":
 				return ec.fieldContext_ApprovalRequest_lastModifiedAt(ctx, field)
-			case "status":
-				return ec.fieldContext_ApprovalRequest_status(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_ApprovalRequest_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_ApprovalRequest_statusMessage(ctx, field)
 			case "action":
 				return ec.fieldContext_ApprovalRequest_action(ctx, field)
 			case "state":
@@ -1687,8 +1741,10 @@ func (ec *executionContext) fieldContext_ApiSubscriptionEdge_node(_ context.Cont
 				return ec.fieldContext_ApiSubscription_createdAt(ctx, field)
 			case "lastModifiedAt":
 				return ec.fieldContext_ApiSubscription_lastModifiedAt(ctx, field)
-			case "status":
-				return ec.fieldContext_ApiSubscription_status(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_ApiSubscription_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_ApiSubscription_statusMessage(ctx, field)
 			case "basePath":
 				return ec.fieldContext_ApiSubscription_basePath(ctx, field)
 			case "m2mAuthMethod":
@@ -1828,36 +1884,59 @@ func (ec *executionContext) fieldContext_Application_lastModifiedAt(_ context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _Application_status(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
+func (ec *executionContext) _Application_statusPhase(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Application_status,
+		ec.fieldContext_Application_statusPhase,
 		func(ctx context.Context) (any, error) {
-			return obj.Status, nil
+			return obj.StatusPhase, nil
 		},
 		nil,
-		ec.marshalNResourceStatus2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResourceStatus,
+		ec.marshalNApplicationStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapplicationᚐStatusPhase,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Application_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Application_statusPhase(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Application",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "phase":
-				return ec.fieldContext_ResourceStatus_phase(ctx, field)
-			case "message":
-				return ec.fieldContext_ResourceStatus_message(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ResourceStatus", field.Name)
+			return nil, errors.New("field of type ApplicationStatusPhase does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Application_statusMessage(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Application_statusMessage,
+		func(ctx context.Context) (any, error) {
+			return obj.StatusMessage, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Application_statusMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Application",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2128,47 +2207,6 @@ func (ec *executionContext) fieldContext_Application_ownerTeam(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _Application_roverStatus(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Application_roverStatus,
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Application().RoverStatus(ctx, obj)
-		},
-		nil,
-		ec.marshalORoverStatus2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRoverStatus,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Application_roverStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Application",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "phase":
-				return ec.fieldContext_RoverStatus_phase(ctx, field)
-			case "totalExposures":
-				return ec.fieldContext_RoverStatus_totalExposures(ctx, field)
-			case "totalSubscriptions":
-				return ec.fieldContext_RoverStatus_totalSubscriptions(ctx, field)
-			case "activeExposures":
-				return ec.fieldContext_RoverStatus_activeExposures(ctx, field)
-			case "activeSubscriptions":
-				return ec.fieldContext_RoverStatus_activeSubscriptions(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type RoverStatus", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _ApplicationConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.ApplicationConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2302,8 +2340,10 @@ func (ec *executionContext) fieldContext_ApplicationEdge_node(_ context.Context,
 				return ec.fieldContext_Application_createdAt(ctx, field)
 			case "lastModifiedAt":
 				return ec.fieldContext_Application_lastModifiedAt(ctx, field)
-			case "status":
-				return ec.fieldContext_Application_status(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_Application_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_Application_statusMessage(ctx, field)
 			case "name":
 				return ec.fieldContext_Application_name(ctx, field)
 			case "clientID":
@@ -2318,8 +2358,6 @@ func (ec *executionContext) fieldContext_ApplicationEdge_node(_ context.Context,
 				return ec.fieldContext_Application_subscribedApis(ctx, field)
 			case "ownerTeam":
 				return ec.fieldContext_Application_ownerTeam(ctx, field)
-			case "roverStatus":
-				return ec.fieldContext_Application_roverStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Application", field.Name)
 		},
@@ -2443,36 +2481,59 @@ func (ec *executionContext) fieldContext_Approval_lastModifiedAt(_ context.Conte
 	return fc, nil
 }
 
-func (ec *executionContext) _Approval_status(ctx context.Context, field graphql.CollectedField, obj *ent.Approval) (ret graphql.Marshaler) {
+func (ec *executionContext) _Approval_statusPhase(ctx context.Context, field graphql.CollectedField, obj *ent.Approval) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Approval_status,
+		ec.fieldContext_Approval_statusPhase,
 		func(ctx context.Context) (any, error) {
-			return obj.Status, nil
+			return obj.StatusPhase, nil
 		},
 		nil,
-		ec.marshalNResourceStatus2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResourceStatus,
+		ec.marshalNApprovalStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStatusPhase,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Approval_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Approval_statusPhase(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Approval",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "phase":
-				return ec.fieldContext_ResourceStatus_phase(ctx, field)
-			case "message":
-				return ec.fieldContext_ResourceStatus_message(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ResourceStatus", field.Name)
+			return nil, errors.New("field of type ApprovalStatusPhase does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Approval_statusMessage(ctx context.Context, field graphql.CollectedField, obj *ent.Approval) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Approval_statusMessage,
+		func(ctx context.Context) (any, error) {
+			return obj.StatusMessage, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Approval_statusMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Approval",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2745,8 +2806,10 @@ func (ec *executionContext) fieldContext_Approval_apiSubscription(_ context.Cont
 				return ec.fieldContext_ApiSubscription_createdAt(ctx, field)
 			case "lastModifiedAt":
 				return ec.fieldContext_ApiSubscription_lastModifiedAt(ctx, field)
-			case "status":
-				return ec.fieldContext_ApiSubscription_status(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_ApiSubscription_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_ApiSubscription_statusMessage(ctx, field)
 			case "basePath":
 				return ec.fieldContext_ApiSubscription_basePath(ctx, field)
 			case "m2mAuthMethod":
@@ -2903,8 +2966,10 @@ func (ec *executionContext) fieldContext_ApprovalEdge_node(_ context.Context, fi
 				return ec.fieldContext_Approval_createdAt(ctx, field)
 			case "lastModifiedAt":
 				return ec.fieldContext_Approval_lastModifiedAt(ctx, field)
-			case "status":
-				return ec.fieldContext_Approval_status(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_Approval_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_Approval_statusMessage(ctx, field)
 			case "action":
 				return ec.fieldContext_Approval_action(ctx, field)
 			case "state":
@@ -3044,36 +3109,59 @@ func (ec *executionContext) fieldContext_ApprovalRequest_lastModifiedAt(_ contex
 	return fc, nil
 }
 
-func (ec *executionContext) _ApprovalRequest_status(ctx context.Context, field graphql.CollectedField, obj *ent.ApprovalRequest) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApprovalRequest_statusPhase(ctx context.Context, field graphql.CollectedField, obj *ent.ApprovalRequest) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ApprovalRequest_status,
+		ec.fieldContext_ApprovalRequest_statusPhase,
 		func(ctx context.Context) (any, error) {
-			return obj.Status, nil
+			return obj.StatusPhase, nil
 		},
 		nil,
-		ec.marshalNResourceStatus2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResourceStatus,
+		ec.marshalNApprovalRequestStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStatusPhase,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_ApprovalRequest_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ApprovalRequest_statusPhase(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ApprovalRequest",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "phase":
-				return ec.fieldContext_ResourceStatus_phase(ctx, field)
-			case "message":
-				return ec.fieldContext_ResourceStatus_message(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ResourceStatus", field.Name)
+			return nil, errors.New("field of type ApprovalRequestStatusPhase does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApprovalRequest_statusMessage(ctx context.Context, field graphql.CollectedField, obj *ent.ApprovalRequest) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApprovalRequest_statusMessage,
+		func(ctx context.Context) (any, error) {
+			return obj.StatusMessage, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApprovalRequest_statusMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApprovalRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3346,8 +3434,10 @@ func (ec *executionContext) fieldContext_ApprovalRequest_apiSubscription(_ conte
 				return ec.fieldContext_ApiSubscription_createdAt(ctx, field)
 			case "lastModifiedAt":
 				return ec.fieldContext_ApiSubscription_lastModifiedAt(ctx, field)
-			case "status":
-				return ec.fieldContext_ApiSubscription_status(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_ApiSubscription_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_ApiSubscription_statusMessage(ctx, field)
 			case "basePath":
 				return ec.fieldContext_ApiSubscription_basePath(ctx, field)
 			case "m2mAuthMethod":
@@ -3504,8 +3594,10 @@ func (ec *executionContext) fieldContext_ApprovalRequestEdge_node(_ context.Cont
 				return ec.fieldContext_ApprovalRequest_createdAt(ctx, field)
 			case "lastModifiedAt":
 				return ec.fieldContext_ApprovalRequest_lastModifiedAt(ctx, field)
-			case "status":
-				return ec.fieldContext_ApprovalRequest_status(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_ApprovalRequest_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_ApprovalRequest_statusMessage(ctx, field)
 			case "action":
 				return ec.fieldContext_ApprovalRequest_action(ctx, field)
 			case "state":
@@ -3762,8 +3854,10 @@ func (ec *executionContext) fieldContext_Group_teams(_ context.Context, field gr
 				return ec.fieldContext_Team_createdAt(ctx, field)
 			case "lastModifiedAt":
 				return ec.fieldContext_Team_lastModifiedAt(ctx, field)
-			case "status":
-				return ec.fieldContext_Team_status(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_Team_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_Team_statusMessage(ctx, field)
 			case "name":
 				return ec.fieldContext_Team_name(ctx, field)
 			case "email":
@@ -3904,8 +3998,10 @@ func (ec *executionContext) fieldContext_Member_team(_ context.Context, field gr
 				return ec.fieldContext_Team_createdAt(ctx, field)
 			case "lastModifiedAt":
 				return ec.fieldContext_Team_lastModifiedAt(ctx, field)
-			case "status":
-				return ec.fieldContext_Team_status(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_Team_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_Team_statusMessage(ctx, field)
 			case "name":
 				return ec.fieldContext_Team_name(ctx, field)
 			case "email":
@@ -4657,36 +4753,59 @@ func (ec *executionContext) fieldContext_Team_lastModifiedAt(_ context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _Team_status(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
+func (ec *executionContext) _Team_statusPhase(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Team_status,
+		ec.fieldContext_Team_statusPhase,
 		func(ctx context.Context) (any, error) {
-			return obj.Status, nil
+			return obj.StatusPhase, nil
 		},
 		nil,
-		ec.marshalNResourceStatus2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐResourceStatus,
+		ec.marshalNTeamStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋteamᚐStatusPhase,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Team_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Team_statusPhase(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Team",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "phase":
-				return ec.fieldContext_ResourceStatus_phase(ctx, field)
-			case "message":
-				return ec.fieldContext_ResourceStatus_message(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ResourceStatus", field.Name)
+			return nil, errors.New("field of type TeamStatusPhase does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Team_statusMessage(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Team_statusMessage,
+		func(ctx context.Context) (any, error) {
+			return obj.StatusMessage, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Team_statusMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5105,8 +5224,10 @@ func (ec *executionContext) fieldContext_TeamEdge_node(_ context.Context, field 
 				return ec.fieldContext_Team_createdAt(ctx, field)
 			case "lastModifiedAt":
 				return ec.fieldContext_Team_lastModifiedAt(ctx, field)
-			case "status":
-				return ec.fieldContext_Team_status(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_Team_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_Team_statusMessage(ctx, field)
 			case "name":
 				return ec.fieldContext_Team_name(ctx, field)
 			case "email":
@@ -5305,8 +5426,10 @@ func (ec *executionContext) fieldContext_Zone_applications(_ context.Context, fi
 				return ec.fieldContext_Application_createdAt(ctx, field)
 			case "lastModifiedAt":
 				return ec.fieldContext_Application_lastModifiedAt(ctx, field)
-			case "status":
-				return ec.fieldContext_Application_status(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_Application_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_Application_statusMessage(ctx, field)
 			case "name":
 				return ec.fieldContext_Application_name(ctx, field)
 			case "clientID":
@@ -5321,8 +5444,6 @@ func (ec *executionContext) fieldContext_Zone_applications(_ context.Context, fi
 				return ec.fieldContext_Application_subscribedApis(ctx, field)
 			case "ownerTeam":
 				return ec.fieldContext_Application_ownerTeam(ctx, field)
-			case "roverStatus":
-				return ec.fieldContext_Application_roverStatus(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Application", field.Name)
 		},
@@ -5386,7 +5507,7 @@ func (ec *executionContext) unmarshalInputApiExposureWhereInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "apiVersion", "apiVersionNEQ", "apiVersionIn", "apiVersionNotIn", "apiVersionGT", "apiVersionGTE", "apiVersionLT", "apiVersionLTE", "apiVersionContains", "apiVersionHasPrefix", "apiVersionHasSuffix", "apiVersionIsNil", "apiVersionNotNil", "apiVersionEqualFold", "apiVersionContainsFold", "hasOwner", "hasOwnerWith", "hasSubscriptions", "hasSubscriptionsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "apiVersion", "apiVersionNEQ", "apiVersionIn", "apiVersionNotIn", "apiVersionGT", "apiVersionGTE", "apiVersionLT", "apiVersionLTE", "apiVersionContains", "apiVersionHasPrefix", "apiVersionHasSuffix", "apiVersionIsNil", "apiVersionNotNil", "apiVersionEqualFold", "apiVersionContainsFold", "hasOwner", "hasOwnerWith", "hasSubscriptions", "hasSubscriptionsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5582,6 +5703,139 @@ func (ec *executionContext) unmarshalInputApiExposureWhereInput(ctx context.Cont
 				return it, err
 			}
 			it.LastModifiedAtLTE = data
+		case "statusPhase":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhase"))
+			data, err := ec.unmarshalOApiExposureStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐStatusPhase(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhase = data
+		case "statusPhaseNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNEQ"))
+			data, err := ec.unmarshalOApiExposureStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐStatusPhase(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNEQ = data
+		case "statusPhaseIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseIn"))
+			data, err := ec.unmarshalOApiExposureStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐStatusPhaseᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseIn = data
+		case "statusPhaseNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNotIn"))
+			data, err := ec.unmarshalOApiExposureStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐStatusPhaseᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNotIn = data
+		case "statusMessage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessage"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessage = data
+		case "statusMessageNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNEQ = data
+		case "statusMessageIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageIn = data
+		case "statusMessageNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNotIn = data
+		case "statusMessageGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageGT = data
+		case "statusMessageGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageGTE = data
+		case "statusMessageLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageLT = data
+		case "statusMessageLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageLTE = data
+		case "statusMessageContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageContains = data
+		case "statusMessageHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageHasPrefix = data
+		case "statusMessageHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageHasSuffix = data
+		case "statusMessageIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageIsNil = data
+		case "statusMessageNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNotNil = data
+		case "statusMessageEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageEqualFold = data
+		case "statusMessageContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageContainsFold = data
 		case "basePath":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("basePath"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -5905,7 +6159,7 @@ func (ec *executionContext) unmarshalInputApiSubscriptionWhereInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "m2mAuthMethod", "m2mAuthMethodNEQ", "m2mAuthMethodIn", "m2mAuthMethodNotIn", "hasOwner", "hasOwnerWith", "hasTarget", "hasTargetWith", "hasFailoverZones", "hasFailoverZonesWith", "hasApproval", "hasApprovalWith", "hasApprovalRequest", "hasApprovalRequestWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "m2mAuthMethod", "m2mAuthMethodNEQ", "m2mAuthMethodIn", "m2mAuthMethodNotIn", "hasOwner", "hasOwnerWith", "hasTarget", "hasTargetWith", "hasFailoverZones", "hasFailoverZonesWith", "hasApproval", "hasApprovalWith", "hasApprovalRequest", "hasApprovalRequestWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6101,6 +6355,139 @@ func (ec *executionContext) unmarshalInputApiSubscriptionWhereInput(ctx context.
 				return it, err
 			}
 			it.LastModifiedAtLTE = data
+		case "statusPhase":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhase"))
+			data, err := ec.unmarshalOApiSubscriptionStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhase(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhase = data
+		case "statusPhaseNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNEQ"))
+			data, err := ec.unmarshalOApiSubscriptionStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhase(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNEQ = data
+		case "statusPhaseIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseIn"))
+			data, err := ec.unmarshalOApiSubscriptionStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhaseᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseIn = data
+		case "statusPhaseNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNotIn"))
+			data, err := ec.unmarshalOApiSubscriptionStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhaseᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNotIn = data
+		case "statusMessage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessage"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessage = data
+		case "statusMessageNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNEQ = data
+		case "statusMessageIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageIn = data
+		case "statusMessageNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNotIn = data
+		case "statusMessageGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageGT = data
+		case "statusMessageGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageGTE = data
+		case "statusMessageLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageLT = data
+		case "statusMessageLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageLTE = data
+		case "statusMessageContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageContains = data
+		case "statusMessageHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageHasPrefix = data
+		case "statusMessageHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageHasSuffix = data
+		case "statusMessageIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageIsNil = data
+		case "statusMessageNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNotNil = data
+		case "statusMessageEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageEqualFold = data
+		case "statusMessageContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageContainsFold = data
 		case "basePath":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("basePath"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -6347,7 +6734,7 @@ func (ec *executionContext) unmarshalInputApplicationWhereInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "clientID", "clientIDNEQ", "clientIDIn", "clientIDNotIn", "clientIDGT", "clientIDGTE", "clientIDLT", "clientIDLTE", "clientIDContains", "clientIDHasPrefix", "clientIDHasSuffix", "clientIDEqualFold", "clientIDContainsFold", "issuerURL", "issuerURLNEQ", "issuerURLIn", "issuerURLNotIn", "issuerURLGT", "issuerURLGTE", "issuerURLLT", "issuerURLLTE", "issuerURLContains", "issuerURLHasPrefix", "issuerURLHasSuffix", "issuerURLIsNil", "issuerURLNotNil", "issuerURLEqualFold", "issuerURLContainsFold", "hasZone", "hasZoneWith", "hasOwnerTeam", "hasOwnerTeamWith", "hasExposedApis", "hasExposedApisWith", "hasSubscribedApis", "hasSubscribedApisWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "clientID", "clientIDNEQ", "clientIDIn", "clientIDNotIn", "clientIDGT", "clientIDGTE", "clientIDLT", "clientIDLTE", "clientIDContains", "clientIDHasPrefix", "clientIDHasSuffix", "clientIDEqualFold", "clientIDContainsFold", "issuerURL", "issuerURLNEQ", "issuerURLIn", "issuerURLNotIn", "issuerURLGT", "issuerURLGTE", "issuerURLLT", "issuerURLLTE", "issuerURLContains", "issuerURLHasPrefix", "issuerURLHasSuffix", "issuerURLIsNil", "issuerURLNotNil", "issuerURLEqualFold", "issuerURLContainsFold", "hasZone", "hasZoneWith", "hasOwnerTeam", "hasOwnerTeamWith", "hasExposedApis", "hasExposedApisWith", "hasSubscribedApis", "hasSubscribedApisWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6543,6 +6930,139 @@ func (ec *executionContext) unmarshalInputApplicationWhereInput(ctx context.Cont
 				return it, err
 			}
 			it.LastModifiedAtLTE = data
+		case "statusPhase":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhase"))
+			data, err := ec.unmarshalOApplicationStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapplicationᚐStatusPhase(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhase = data
+		case "statusPhaseNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNEQ"))
+			data, err := ec.unmarshalOApplicationStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapplicationᚐStatusPhase(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNEQ = data
+		case "statusPhaseIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseIn"))
+			data, err := ec.unmarshalOApplicationStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapplicationᚐStatusPhaseᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseIn = data
+		case "statusPhaseNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNotIn"))
+			data, err := ec.unmarshalOApplicationStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapplicationᚐStatusPhaseᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNotIn = data
+		case "statusMessage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessage"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessage = data
+		case "statusMessageNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNEQ = data
+		case "statusMessageIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageIn = data
+		case "statusMessageNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNotIn = data
+		case "statusMessageGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageGT = data
+		case "statusMessageGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageGTE = data
+		case "statusMessageLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageLT = data
+		case "statusMessageLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageLTE = data
+		case "statusMessageContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageContains = data
+		case "statusMessageHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageHasPrefix = data
+		case "statusMessageHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageHasSuffix = data
+		case "statusMessageIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageIsNil = data
+		case "statusMessageNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNotNil = data
+		case "statusMessageEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageEqualFold = data
+		case "statusMessageContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageContainsFold = data
 		case "name":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -6984,7 +7504,7 @@ func (ec *executionContext) unmarshalInputApprovalRequestWhereInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "state", "stateNEQ", "stateIn", "stateNotIn", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "hasAPISubscription", "hasAPISubscriptionWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "state", "stateNEQ", "stateIn", "stateNotIn", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "hasAPISubscription", "hasAPISubscriptionWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7180,6 +7700,139 @@ func (ec *executionContext) unmarshalInputApprovalRequestWhereInput(ctx context.
 				return it, err
 			}
 			it.LastModifiedAtLTE = data
+		case "statusPhase":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhase"))
+			data, err := ec.unmarshalOApprovalRequestStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStatusPhase(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhase = data
+		case "statusPhaseNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNEQ"))
+			data, err := ec.unmarshalOApprovalRequestStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStatusPhase(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNEQ = data
+		case "statusPhaseIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseIn"))
+			data, err := ec.unmarshalOApprovalRequestStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStatusPhaseᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseIn = data
+		case "statusPhaseNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNotIn"))
+			data, err := ec.unmarshalOApprovalRequestStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStatusPhaseᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNotIn = data
+		case "statusMessage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessage"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessage = data
+		case "statusMessageNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNEQ = data
+		case "statusMessageIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageIn = data
+		case "statusMessageNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNotIn = data
+		case "statusMessageGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageGT = data
+		case "statusMessageGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageGTE = data
+		case "statusMessageLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageLT = data
+		case "statusMessageLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageLTE = data
+		case "statusMessageContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageContains = data
+		case "statusMessageHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageHasPrefix = data
+		case "statusMessageHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageHasSuffix = data
+		case "statusMessageIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageIsNil = data
+		case "statusMessageNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNotNil = data
+		case "statusMessageEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageEqualFold = data
+		case "statusMessageContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageContainsFold = data
 		case "action":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -7357,7 +8010,7 @@ func (ec *executionContext) unmarshalInputApprovalWhereInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "state", "stateNEQ", "stateIn", "stateNotIn", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "hasAPISubscription", "hasAPISubscriptionWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "state", "stateNEQ", "stateIn", "stateNotIn", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "hasAPISubscription", "hasAPISubscriptionWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7553,6 +8206,139 @@ func (ec *executionContext) unmarshalInputApprovalWhereInput(ctx context.Context
 				return it, err
 			}
 			it.LastModifiedAtLTE = data
+		case "statusPhase":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhase"))
+			data, err := ec.unmarshalOApprovalStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStatusPhase(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhase = data
+		case "statusPhaseNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNEQ"))
+			data, err := ec.unmarshalOApprovalStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStatusPhase(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNEQ = data
+		case "statusPhaseIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseIn"))
+			data, err := ec.unmarshalOApprovalStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStatusPhaseᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseIn = data
+		case "statusPhaseNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNotIn"))
+			data, err := ec.unmarshalOApprovalStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStatusPhaseᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNotIn = data
+		case "statusMessage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessage"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessage = data
+		case "statusMessageNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNEQ = data
+		case "statusMessageIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageIn = data
+		case "statusMessageNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNotIn = data
+		case "statusMessageGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageGT = data
+		case "statusMessageGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageGTE = data
+		case "statusMessageLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageLT = data
+		case "statusMessageLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageLTE = data
+		case "statusMessageContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageContains = data
+		case "statusMessageHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageHasPrefix = data
+		case "statusMessageHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageHasSuffix = data
+		case "statusMessageIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageIsNil = data
+		case "statusMessageNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNotNil = data
+		case "statusMessageEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageEqualFold = data
+		case "statusMessageContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageContainsFold = data
 		case "action":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -8645,7 +9431,7 @@ func (ec *executionContext) unmarshalInputTeamWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "roverTokenRef", "roverTokenRefNEQ", "roverTokenRefIn", "roverTokenRefNotIn", "roverTokenRefGT", "roverTokenRefGTE", "roverTokenRefLT", "roverTokenRefLTE", "roverTokenRefContains", "roverTokenRefHasPrefix", "roverTokenRefHasSuffix", "roverTokenRefIsNil", "roverTokenRefNotNil", "roverTokenRefEqualFold", "roverTokenRefContainsFold", "hasGroup", "hasGroupWith", "hasMembers", "hasMembersWith", "hasEnvironments", "hasEnvironmentsWith", "hasApplications", "hasApplicationsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "roverTokenRef", "roverTokenRefNEQ", "roverTokenRefIn", "roverTokenRefNotIn", "roverTokenRefGT", "roverTokenRefGTE", "roverTokenRefLT", "roverTokenRefLTE", "roverTokenRefContains", "roverTokenRefHasPrefix", "roverTokenRefHasSuffix", "roverTokenRefIsNil", "roverTokenRefNotNil", "roverTokenRefEqualFold", "roverTokenRefContainsFold", "hasGroup", "hasGroupWith", "hasMembers", "hasMembersWith", "hasEnvironments", "hasEnvironmentsWith", "hasApplications", "hasApplicationsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8841,6 +9627,139 @@ func (ec *executionContext) unmarshalInputTeamWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.LastModifiedAtLTE = data
+		case "statusPhase":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhase"))
+			data, err := ec.unmarshalOTeamStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋteamᚐStatusPhase(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhase = data
+		case "statusPhaseNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNEQ"))
+			data, err := ec.unmarshalOTeamStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋteamᚐStatusPhase(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNEQ = data
+		case "statusPhaseIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseIn"))
+			data, err := ec.unmarshalOTeamStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋteamᚐStatusPhaseᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseIn = data
+		case "statusPhaseNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNotIn"))
+			data, err := ec.unmarshalOTeamStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋteamᚐStatusPhaseᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNotIn = data
+		case "statusMessage":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessage"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessage = data
+		case "statusMessageNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNEQ = data
+		case "statusMessageIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageIn = data
+		case "statusMessageNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNotIn = data
+		case "statusMessageGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageGT = data
+		case "statusMessageGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageGTE = data
+		case "statusMessageLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageLT = data
+		case "statusMessageLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageLTE = data
+		case "statusMessageContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageContains = data
+		case "statusMessageHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageHasPrefix = data
+		case "statusMessageHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageHasSuffix = data
+		case "statusMessageIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageIsNil = data
+		case "statusMessageNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageNotNil = data
+		case "statusMessageEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageEqualFold = data
+		case "statusMessageContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessageContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusMessageContainsFold = data
 		case "name":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -9652,11 +10571,13 @@ func (ec *executionContext) _ApiExposure(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "status":
-			out.Values[i] = ec._ApiExposure_status(ctx, field, obj)
+		case "statusPhase":
+			out.Values[i] = ec._ApiExposure_statusPhase(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "statusMessage":
+			out.Values[i] = ec._ApiExposure_statusMessage(ctx, field, obj)
 		case "basePath":
 			out.Values[i] = ec._ApiExposure_basePath(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -9928,11 +10849,13 @@ func (ec *executionContext) _ApiSubscription(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "status":
-			out.Values[i] = ec._ApiSubscription_status(ctx, field, obj)
+		case "statusPhase":
+			out.Values[i] = ec._ApiSubscription_statusPhase(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "statusMessage":
+			out.Values[i] = ec._ApiSubscription_statusMessage(ctx, field, obj)
 		case "basePath":
 			out.Values[i] = ec._ApiSubscription_basePath(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -10255,11 +11178,13 @@ func (ec *executionContext) _Application(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "status":
-			out.Values[i] = ec._Application_status(ctx, field, obj)
+		case "statusPhase":
+			out.Values[i] = ec._Application_statusPhase(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "statusMessage":
+			out.Values[i] = ec._Application_statusMessage(ctx, field, obj)
 		case "name":
 			out.Values[i] = ec._Application_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -10393,39 +11318,6 @@ func (ec *executionContext) _Application(ctx context.Context, sel ast.SelectionS
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "roverStatus":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Application_roverStatus(ctx, field, obj)
 				return res
 			}
 
@@ -10585,11 +11477,13 @@ func (ec *executionContext) _Approval(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "status":
-			out.Values[i] = ec._Approval_status(ctx, field, obj)
+		case "statusPhase":
+			out.Values[i] = ec._Approval_statusPhase(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "statusMessage":
+			out.Values[i] = ec._Approval_statusMessage(ctx, field, obj)
 		case "action":
 			out.Values[i] = ec._Approval_action(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -10794,11 +11688,13 @@ func (ec *executionContext) _ApprovalRequest(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "status":
-			out.Values[i] = ec._ApprovalRequest_status(ctx, field, obj)
+		case "statusPhase":
+			out.Values[i] = ec._ApprovalRequest_statusPhase(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "statusMessage":
+			out.Values[i] = ec._ApprovalRequest_statusMessage(ctx, field, obj)
 		case "action":
 			out.Values[i] = ec._ApprovalRequest_action(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -11509,11 +12405,13 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "status":
-			out.Values[i] = ec._Team_status(ctx, field, obj)
+		case "statusPhase":
+			out.Values[i] = ec._Team_statusPhase(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "statusMessage":
+			out.Values[i] = ec._Team_statusMessage(ctx, field, obj)
 		case "name":
 			out.Values[i] = ec._Team_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -11904,6 +12802,16 @@ func (ec *executionContext) marshalNApiExposureOrderField2ᚖgithubᚗcomᚋtele
 	return v
 }
 
+func (ec *executionContext) unmarshalNApiExposureStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐStatusPhase(ctx context.Context, v any) (apiexposure.StatusPhase, error) {
+	var res apiexposure.StatusPhase
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNApiExposureStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐStatusPhase(ctx context.Context, sel ast.SelectionSet, v apiexposure.StatusPhase) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNApiExposureVisibility2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐVisibility(ctx context.Context, v any) (apiexposure.Visibility, error) {
 	var res apiexposure.Visibility
 	err := res.UnmarshalGQL(v)
@@ -11959,6 +12867,16 @@ func (ec *executionContext) marshalNApiSubscriptionOrderField2ᚖgithubᚗcomᚋ
 	return v
 }
 
+func (ec *executionContext) unmarshalNApiSubscriptionStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhase(ctx context.Context, v any) (apisubscription.StatusPhase, error) {
+	var res apisubscription.StatusPhase
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNApiSubscriptionStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhase(ctx context.Context, sel ast.SelectionSet, v apisubscription.StatusPhase) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNApiSubscriptionWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApiSubscriptionWhereInput(ctx context.Context, v any) (*ent.ApiSubscriptionWhereInput, error) {
 	res, err := ec.unmarshalInputApiSubscriptionWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -12006,6 +12924,16 @@ func (ec *executionContext) marshalNApplicationOrderField2ᚖgithubᚗcomᚋtele
 		}
 		return graphql.Null
 	}
+	return v
+}
+
+func (ec *executionContext) unmarshalNApplicationStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapplicationᚐStatusPhase(ctx context.Context, v any) (application.StatusPhase, error) {
+	var res application.StatusPhase
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNApplicationStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapplicationᚐStatusPhase(ctx context.Context, sel ast.SelectionSet, v application.StatusPhase) graphql.Marshaler {
 	return v
 }
 
@@ -12094,6 +13022,16 @@ func (ec *executionContext) marshalNApprovalRequestState2githubᚗcomᚋtelekom�
 	return v
 }
 
+func (ec *executionContext) unmarshalNApprovalRequestStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStatusPhase(ctx context.Context, v any) (approvalrequest.StatusPhase, error) {
+	var res approvalrequest.StatusPhase
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNApprovalRequestStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStatusPhase(ctx context.Context, sel ast.SelectionSet, v approvalrequest.StatusPhase) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNApprovalRequestStrategy2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStrategy(ctx context.Context, v any) (approvalrequest.Strategy, error) {
 	var res approvalrequest.Strategy
 	err := res.UnmarshalGQL(v)
@@ -12116,6 +13054,16 @@ func (ec *executionContext) unmarshalNApprovalState2githubᚗcomᚋtelekomᚋcon
 }
 
 func (ec *executionContext) marshalNApprovalState2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐState(ctx context.Context, sel ast.SelectionSet, v approval.State) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNApprovalStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStatusPhase(ctx context.Context, v any) (approval.StatusPhase, error) {
+	var res approval.StatusPhase
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNApprovalStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStatusPhase(ctx context.Context, sel ast.SelectionSet, v approval.StatusPhase) graphql.Marshaler {
 	return v
 }
 
@@ -12258,6 +13206,16 @@ func (ec *executionContext) marshalNTeamOrderField2ᚖgithubᚗcomᚋtelekomᚋc
 	return v
 }
 
+func (ec *executionContext) unmarshalNTeamStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋteamᚐStatusPhase(ctx context.Context, v any) (team.StatusPhase, error) {
+	var res team.StatusPhase
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTeamStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋteamᚐStatusPhase(ctx context.Context, sel ast.SelectionSet, v team.StatusPhase) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNTeamWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamWhereInput(ctx context.Context, v any) (*ent.TeamWhereInput, error) {
 	res, err := ec.unmarshalInputTeamWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -12353,6 +13311,59 @@ func (ec *executionContext) unmarshalOApiExposureOrder2ᚖgithubᚗcomᚋtelekom
 	}
 	res, err := ec.unmarshalInputApiExposureOrder(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOApiExposureStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐStatusPhaseᚄ(ctx context.Context, v any) ([]apiexposure.StatusPhase, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]apiexposure.StatusPhase, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNApiExposureStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐStatusPhase(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOApiExposureStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐStatusPhaseᚄ(ctx context.Context, sel ast.SelectionSet, v []apiexposure.StatusPhase) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNApiExposureStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐStatusPhase(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOApiExposureStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐStatusPhase(ctx context.Context, v any) (*apiexposure.StatusPhase, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(apiexposure.StatusPhase)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOApiExposureStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐStatusPhase(ctx context.Context, sel ast.SelectionSet, v *apiexposure.StatusPhase) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOApiExposureVisibility2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐVisibilityᚄ(ctx context.Context, v any) ([]apiexposure.Visibility, error) {
@@ -12522,6 +13533,59 @@ func (ec *executionContext) unmarshalOApiSubscriptionOrder2ᚖgithubᚗcomᚋtel
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalOApiSubscriptionStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhaseᚄ(ctx context.Context, v any) ([]apisubscription.StatusPhase, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]apisubscription.StatusPhase, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNApiSubscriptionStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhase(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOApiSubscriptionStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhaseᚄ(ctx context.Context, sel ast.SelectionSet, v []apisubscription.StatusPhase) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNApiSubscriptionStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhase(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOApiSubscriptionStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhase(ctx context.Context, v any) (*apisubscription.StatusPhase, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(apisubscription.StatusPhase)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOApiSubscriptionStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhase(ctx context.Context, sel ast.SelectionSet, v *apisubscription.StatusPhase) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
 func (ec *executionContext) unmarshalOApiSubscriptionWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApiSubscriptionWhereInputᚄ(ctx context.Context, v any) ([]*ent.ApiSubscriptionWhereInput, error) {
 	if v == nil {
 		return nil, nil
@@ -12610,6 +13674,59 @@ func (ec *executionContext) unmarshalOApplicationOrder2ᚕᚖgithubᚗcomᚋtele
 		}
 	}
 	return res, nil
+}
+
+func (ec *executionContext) unmarshalOApplicationStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapplicationᚐStatusPhaseᚄ(ctx context.Context, v any) ([]application.StatusPhase, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]application.StatusPhase, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNApplicationStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapplicationᚐStatusPhase(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOApplicationStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapplicationᚐStatusPhaseᚄ(ctx context.Context, sel ast.SelectionSet, v []application.StatusPhase) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNApplicationStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapplicationᚐStatusPhase(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOApplicationStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapplicationᚐStatusPhase(ctx context.Context, v any) (*application.StatusPhase, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(application.StatusPhase)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOApplicationStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapplicationᚐStatusPhase(ctx context.Context, sel ast.SelectionSet, v *application.StatusPhase) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOApplicationWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApplicationWhereInputᚄ(ctx context.Context, v any) ([]*ent.ApplicationWhereInput, error) {
@@ -12781,6 +13898,59 @@ func (ec *executionContext) marshalOApprovalRequestState2ᚖgithubᚗcomᚋtelek
 	return v
 }
 
+func (ec *executionContext) unmarshalOApprovalRequestStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStatusPhaseᚄ(ctx context.Context, v any) ([]approvalrequest.StatusPhase, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]approvalrequest.StatusPhase, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNApprovalRequestStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStatusPhase(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOApprovalRequestStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStatusPhaseᚄ(ctx context.Context, sel ast.SelectionSet, v []approvalrequest.StatusPhase) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNApprovalRequestStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStatusPhase(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOApprovalRequestStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStatusPhase(ctx context.Context, v any) (*approvalrequest.StatusPhase, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(approvalrequest.StatusPhase)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOApprovalRequestStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStatusPhase(ctx context.Context, sel ast.SelectionSet, v *approvalrequest.StatusPhase) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
 func (ec *executionContext) unmarshalOApprovalRequestStrategy2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStrategyᚄ(ctx context.Context, v any) ([]approvalrequest.Strategy, error) {
 	if v == nil {
 		return nil, nil
@@ -12907,6 +14077,59 @@ func (ec *executionContext) unmarshalOApprovalState2ᚖgithubᚗcomᚋtelekomᚋ
 }
 
 func (ec *executionContext) marshalOApprovalState2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐState(ctx context.Context, sel ast.SelectionSet, v *approval.State) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalOApprovalStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStatusPhaseᚄ(ctx context.Context, v any) ([]approval.StatusPhase, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]approval.StatusPhase, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNApprovalStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStatusPhase(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOApprovalStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStatusPhaseᚄ(ctx context.Context, sel ast.SelectionSet, v []approval.StatusPhase) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNApprovalStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStatusPhase(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOApprovalStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStatusPhase(ctx context.Context, v any) (*approval.StatusPhase, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(approval.StatusPhase)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOApprovalStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStatusPhase(ctx context.Context, sel ast.SelectionSet, v *approval.StatusPhase) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -13253,6 +14476,59 @@ func (ec *executionContext) unmarshalOTeamOrder2ᚕᚖgithubᚗcomᚋtelekomᚋc
 		}
 	}
 	return res, nil
+}
+
+func (ec *executionContext) unmarshalOTeamStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋteamᚐStatusPhaseᚄ(ctx context.Context, v any) ([]team.StatusPhase, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]team.StatusPhase, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNTeamStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋteamᚐStatusPhase(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOTeamStatusPhase2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋteamᚐStatusPhaseᚄ(ctx context.Context, sel ast.SelectionSet, v []team.StatusPhase) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNTeamStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋteamᚐStatusPhase(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOTeamStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋteamᚐStatusPhase(ctx context.Context, v any) (*team.StatusPhase, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(team.StatusPhase)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTeamStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋteamᚐStatusPhase(ctx context.Context, sel ast.SelectionSet, v *team.StatusPhase) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOTeamWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamWhereInputᚄ(ctx context.Context, v any) ([]*ent.TeamWhereInput, error) {

@@ -54,16 +54,30 @@ func (_c *ApiExposureCreate) SetNillableLastModifiedAt(v *time.Time) *ApiExposur
 	return _c
 }
 
-// SetStatus sets the "status" field.
-func (_c *ApiExposureCreate) SetStatus(v model.ResourceStatus) *ApiExposureCreate {
-	_c.mutation.SetStatus(v)
+// SetStatusPhase sets the "status_phase" field.
+func (_c *ApiExposureCreate) SetStatusPhase(v apiexposure.StatusPhase) *ApiExposureCreate {
+	_c.mutation.SetStatusPhase(v)
 	return _c
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_c *ApiExposureCreate) SetNillableStatus(v *model.ResourceStatus) *ApiExposureCreate {
+// SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
+func (_c *ApiExposureCreate) SetNillableStatusPhase(v *apiexposure.StatusPhase) *ApiExposureCreate {
 	if v != nil {
-		_c.SetStatus(*v)
+		_c.SetStatusPhase(*v)
+	}
+	return _c
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (_c *ApiExposureCreate) SetStatusMessage(v string) *ApiExposureCreate {
+	_c.mutation.SetStatusMessage(v)
+	return _c
+}
+
+// SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
+func (_c *ApiExposureCreate) SetNillableStatusMessage(v *string) *ApiExposureCreate {
+	if v != nil {
+		_c.SetStatusMessage(*v)
 	}
 	return _c
 }
@@ -219,9 +233,9 @@ func (_c *ApiExposureCreate) defaults() error {
 		v := apiexposure.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		v := apiexposure.DefaultStatus
-		_c.mutation.SetStatus(v)
+	if _, ok := _c.mutation.StatusPhase(); !ok {
+		v := apiexposure.DefaultStatusPhase
+		_c.mutation.SetStatusPhase(v)
 	}
 	if _, ok := _c.mutation.Visibility(); !ok {
 		v := apiexposure.DefaultVisibility
@@ -254,8 +268,13 @@ func (_c *ApiExposureCreate) check() error {
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
 		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "ApiExposure.last_modified_at"`)}
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "ApiExposure.status"`)}
+	if _, ok := _c.mutation.StatusPhase(); !ok {
+		return &ValidationError{Name: "status_phase", err: errors.New(`ent: missing required field "ApiExposure.status_phase"`)}
+	}
+	if v, ok := _c.mutation.StatusPhase(); ok {
+		if err := apiexposure.StatusPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.status_phase": %w`, err)}
+		}
 	}
 	if _, ok := _c.mutation.BasePath(); !ok {
 		return &ValidationError{Name: "base_path", err: errors.New(`ent: missing required field "ApiExposure.base_path"`)}
@@ -322,9 +341,13 @@ func (_c *ApiExposureCreate) createSpec() (*ApiExposure, *sqlgraph.CreateSpec) {
 		_spec.SetField(apiexposure.FieldLastModifiedAt, field.TypeTime, value)
 		_node.LastModifiedAt = value
 	}
-	if value, ok := _c.mutation.Status(); ok {
-		_spec.SetField(apiexposure.FieldStatus, field.TypeJSON, value)
-		_node.Status = value
+	if value, ok := _c.mutation.StatusPhase(); ok {
+		_spec.SetField(apiexposure.FieldStatusPhase, field.TypeEnum, value)
+		_node.StatusPhase = value
+	}
+	if value, ok := _c.mutation.StatusMessage(); ok {
+		_spec.SetField(apiexposure.FieldStatusMessage, field.TypeString, value)
+		_node.StatusMessage = &value
 	}
 	if value, ok := _c.mutation.BasePath(); ok {
 		_spec.SetField(apiexposure.FieldBasePath, field.TypeString, value)

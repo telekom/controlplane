@@ -44,19 +44,3 @@ type AvailableTransition struct {
 	Action  string `json:"action"`
 	ToState string `json:"toState"`
 }
-
-// ResourceStatus represents the simplified resource status derived from K8s conditions.
-type ResourceStatus struct {
-	Phase   ResourceStatusPhase `json:"phase"`
-	Message *string             `json:"message,omitempty"`
-}
-
-// ResourceStatusPhase represents the high-level phase of a resource.
-type ResourceStatusPhase string
-
-const (
-	ResourceStatusPhaseReady   ResourceStatusPhase = "READY"
-	ResourceStatusPhasePending ResourceStatusPhase = "PENDING"
-	ResourceStatusPhaseError   ResourceStatusPhase = "ERROR"
-	ResourceStatusPhaseUnknown ResourceStatusPhase = "UNKNOWN"
-)

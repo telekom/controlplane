@@ -14,16 +14,6 @@ type TeamInfo {
   email: String
 }
 
-# Aggregated status from the Rover perspective.
-type RoverStatus {
-  "Overall phase: READY if all exposures/subscriptions are healthy"
-  phase: ResourceStatusPhase!
-  totalExposures: Int!
-  totalSubscriptions: Int!
-  activeExposures: Int!
-  activeSubscriptions: Int!
-}
-
 type Upstream {
   url: String!
   weight: Int!
@@ -59,18 +49,6 @@ type AvailableTransition {
   toState: ApprovalState!
 }
 
-type ResourceStatus {
-  phase: ResourceStatusPhase!
-  message: String
-}
-
-enum ResourceStatusPhase {
-  READY
-  PENDING
-  ERROR
-  UNKNOWN
-}
-
 enum ApiExposureFeature {
   BASIC_AUTH
   CIRCUIT_BREAKER
@@ -97,7 +75,5 @@ enum ApprovalAction {
 extend type Application {
   "Owning team (reduced view for cross-tenant safety)"
   ownerTeam: TeamInfo!
-  "Aggregated Rover status overview"
-  roverStatus: RoverStatus
 }
 

@@ -27,8 +27,10 @@ type Approval struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// LastModifiedAt holds the value of the "last_modified_at" field.
 	LastModifiedAt time.Time `json:"last_modified_at,omitempty"`
-	// Status holds the value of the "status" field.
-	Status model.ResourceStatus `json:"status,omitempty"`
+	// StatusPhase holds the value of the "status_phase" field.
+	StatusPhase approval.StatusPhase `json:"status_phase,omitempty"`
+	// StatusMessage holds the value of the "status_message" field.
+	StatusMessage *string `json:"status_message,omitempty"`
 	// Action holds the value of the "action" field.
 	Action string `json:"action,omitempty"`
 	// State holds the value of the "state" field.
@@ -77,11 +79,11 @@ func (*Approval) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case approval.FieldStatus, approval.FieldRequester, approval.FieldDecider, approval.FieldDecisions, approval.FieldAvailableTransitions:
+		case approval.FieldRequester, approval.FieldDecider, approval.FieldDecisions, approval.FieldAvailableTransitions:
 			values[i] = new([]byte)
 		case approval.FieldID:
 			values[i] = new(sql.NullInt64)
-		case approval.FieldAction, approval.FieldState, approval.FieldStrategy:
+		case approval.FieldStatusPhase, approval.FieldStatusMessage, approval.FieldAction, approval.FieldState, approval.FieldStrategy:
 			values[i] = new(sql.NullString)
 		case approval.FieldCreatedAt, approval.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -120,13 +122,18 @@ func (_m *Approval) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.LastModifiedAt = value.Time
 			}
-		case approval.FieldStatus:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.Status); err != nil {
-					return fmt.Errorf("unmarshal field status: %w", err)
-				}
+		case approval.FieldStatusPhase:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field status_phase", values[i])
+			} else if value.Valid {
+				_m.StatusPhase = approval.StatusPhase(value.String)
+			}
+		case approval.FieldStatusMessage:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field status_message", values[i])
+			} else if value.Valid {
+				_m.StatusMessage = new(string)
+				*_m.StatusMessage = value.String
 			}
 		case approval.FieldAction:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -232,8 +239,13 @@ func (_m *Approval) String() string {
 	builder.WriteString("last_modified_at=")
 	builder.WriteString(_m.LastModifiedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Status))
+	builder.WriteString("status_phase=")
+	builder.WriteString(fmt.Sprintf("%v", _m.StatusPhase))
+	builder.WriteString(", ")
+	if v := _m.StatusMessage; v != nil {
+		builder.WriteString("status_message=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("action=")
 	builder.WriteString(_m.Action)

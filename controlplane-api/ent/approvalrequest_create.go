@@ -53,16 +53,30 @@ func (_c *ApprovalRequestCreate) SetNillableLastModifiedAt(v *time.Time) *Approv
 	return _c
 }
 
-// SetStatus sets the "status" field.
-func (_c *ApprovalRequestCreate) SetStatus(v model.ResourceStatus) *ApprovalRequestCreate {
-	_c.mutation.SetStatus(v)
+// SetStatusPhase sets the "status_phase" field.
+func (_c *ApprovalRequestCreate) SetStatusPhase(v approvalrequest.StatusPhase) *ApprovalRequestCreate {
+	_c.mutation.SetStatusPhase(v)
 	return _c
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_c *ApprovalRequestCreate) SetNillableStatus(v *model.ResourceStatus) *ApprovalRequestCreate {
+// SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
+func (_c *ApprovalRequestCreate) SetNillableStatusPhase(v *approvalrequest.StatusPhase) *ApprovalRequestCreate {
 	if v != nil {
-		_c.SetStatus(*v)
+		_c.SetStatusPhase(*v)
+	}
+	return _c
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (_c *ApprovalRequestCreate) SetStatusMessage(v string) *ApprovalRequestCreate {
+	_c.mutation.SetStatusMessage(v)
+	return _c
+}
+
+// SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
+func (_c *ApprovalRequestCreate) SetNillableStatusMessage(v *string) *ApprovalRequestCreate {
+	if v != nil {
+		_c.SetStatusMessage(*v)
 	}
 	return _c
 }
@@ -195,9 +209,9 @@ func (_c *ApprovalRequestCreate) defaults() error {
 		v := approvalrequest.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		v := approvalrequest.DefaultStatus
-		_c.mutation.SetStatus(v)
+	if _, ok := _c.mutation.StatusPhase(); !ok {
+		v := approvalrequest.DefaultStatusPhase
+		_c.mutation.SetStatusPhase(v)
 	}
 	if _, ok := _c.mutation.State(); !ok {
 		v := approvalrequest.DefaultState
@@ -226,8 +240,13 @@ func (_c *ApprovalRequestCreate) check() error {
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
 		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "ApprovalRequest.last_modified_at"`)}
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "ApprovalRequest.status"`)}
+	if _, ok := _c.mutation.StatusPhase(); !ok {
+		return &ValidationError{Name: "status_phase", err: errors.New(`ent: missing required field "ApprovalRequest.status_phase"`)}
+	}
+	if v, ok := _c.mutation.StatusPhase(); ok {
+		if err := approvalrequest.StatusPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "ApprovalRequest.status_phase": %w`, err)}
+		}
 	}
 	if _, ok := _c.mutation.Action(); !ok {
 		return &ValidationError{Name: "action", err: errors.New(`ent: missing required field "ApprovalRequest.action"`)}
@@ -299,9 +318,13 @@ func (_c *ApprovalRequestCreate) createSpec() (*ApprovalRequest, *sqlgraph.Creat
 		_spec.SetField(approvalrequest.FieldLastModifiedAt, field.TypeTime, value)
 		_node.LastModifiedAt = value
 	}
-	if value, ok := _c.mutation.Status(); ok {
-		_spec.SetField(approvalrequest.FieldStatus, field.TypeJSON, value)
-		_node.Status = value
+	if value, ok := _c.mutation.StatusPhase(); ok {
+		_spec.SetField(approvalrequest.FieldStatusPhase, field.TypeEnum, value)
+		_node.StatusPhase = value
+	}
+	if value, ok := _c.mutation.StatusMessage(); ok {
+		_spec.SetField(approvalrequest.FieldStatusMessage, field.TypeString, value)
+		_node.StatusMessage = &value
 	}
 	if value, ok := _c.mutation.Action(); ok {
 		_spec.SetField(approvalrequest.FieldAction, field.TypeString, value)

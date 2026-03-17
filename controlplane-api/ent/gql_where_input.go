@@ -60,6 +60,29 @@ type ApiExposureWhereInput struct {
 	LastModifiedAtLT    *time.Time  `json:"lastModifiedAtLT,omitempty"`
 	LastModifiedAtLTE   *time.Time  `json:"lastModifiedAtLTE,omitempty"`
 
+	// "status_phase" field predicates.
+	StatusPhase      *apiexposure.StatusPhase  `json:"statusPhase,omitempty"`
+	StatusPhaseNEQ   *apiexposure.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
+	StatusPhaseIn    []apiexposure.StatusPhase `json:"statusPhaseIn,omitempty"`
+	StatusPhaseNotIn []apiexposure.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+
+	// "status_message" field predicates.
+	StatusMessage             *string  `json:"statusMessage,omitempty"`
+	StatusMessageNEQ          *string  `json:"statusMessageNEQ,omitempty"`
+	StatusMessageIn           []string `json:"statusMessageIn,omitempty"`
+	StatusMessageNotIn        []string `json:"statusMessageNotIn,omitempty"`
+	StatusMessageGT           *string  `json:"statusMessageGT,omitempty"`
+	StatusMessageGTE          *string  `json:"statusMessageGTE,omitempty"`
+	StatusMessageLT           *string  `json:"statusMessageLT,omitempty"`
+	StatusMessageLTE          *string  `json:"statusMessageLTE,omitempty"`
+	StatusMessageContains     *string  `json:"statusMessageContains,omitempty"`
+	StatusMessageHasPrefix    *string  `json:"statusMessageHasPrefix,omitempty"`
+	StatusMessageHasSuffix    *string  `json:"statusMessageHasSuffix,omitempty"`
+	StatusMessageIsNil        bool     `json:"statusMessageIsNil,omitempty"`
+	StatusMessageNotNil       bool     `json:"statusMessageNotNil,omitempty"`
+	StatusMessageEqualFold    *string  `json:"statusMessageEqualFold,omitempty"`
+	StatusMessageContainsFold *string  `json:"statusMessageContainsFold,omitempty"`
+
 	// "base_path" field predicates.
 	BasePath             *string  `json:"basePath,omitempty"`
 	BasePathNEQ          *string  `json:"basePathNEQ,omitempty"`
@@ -254,6 +277,63 @@ func (i *ApiExposureWhereInput) P() (predicate.ApiExposure, error) {
 	if i.LastModifiedAtLTE != nil {
 		predicates = append(predicates, apiexposure.LastModifiedAtLTE(*i.LastModifiedAtLTE))
 	}
+	if i.StatusPhase != nil {
+		predicates = append(predicates, apiexposure.StatusPhaseEQ(*i.StatusPhase))
+	}
+	if i.StatusPhaseNEQ != nil {
+		predicates = append(predicates, apiexposure.StatusPhaseNEQ(*i.StatusPhaseNEQ))
+	}
+	if len(i.StatusPhaseIn) > 0 {
+		predicates = append(predicates, apiexposure.StatusPhaseIn(i.StatusPhaseIn...))
+	}
+	if len(i.StatusPhaseNotIn) > 0 {
+		predicates = append(predicates, apiexposure.StatusPhaseNotIn(i.StatusPhaseNotIn...))
+	}
+	if i.StatusMessage != nil {
+		predicates = append(predicates, apiexposure.StatusMessageEQ(*i.StatusMessage))
+	}
+	if i.StatusMessageNEQ != nil {
+		predicates = append(predicates, apiexposure.StatusMessageNEQ(*i.StatusMessageNEQ))
+	}
+	if len(i.StatusMessageIn) > 0 {
+		predicates = append(predicates, apiexposure.StatusMessageIn(i.StatusMessageIn...))
+	}
+	if len(i.StatusMessageNotIn) > 0 {
+		predicates = append(predicates, apiexposure.StatusMessageNotIn(i.StatusMessageNotIn...))
+	}
+	if i.StatusMessageGT != nil {
+		predicates = append(predicates, apiexposure.StatusMessageGT(*i.StatusMessageGT))
+	}
+	if i.StatusMessageGTE != nil {
+		predicates = append(predicates, apiexposure.StatusMessageGTE(*i.StatusMessageGTE))
+	}
+	if i.StatusMessageLT != nil {
+		predicates = append(predicates, apiexposure.StatusMessageLT(*i.StatusMessageLT))
+	}
+	if i.StatusMessageLTE != nil {
+		predicates = append(predicates, apiexposure.StatusMessageLTE(*i.StatusMessageLTE))
+	}
+	if i.StatusMessageContains != nil {
+		predicates = append(predicates, apiexposure.StatusMessageContains(*i.StatusMessageContains))
+	}
+	if i.StatusMessageHasPrefix != nil {
+		predicates = append(predicates, apiexposure.StatusMessageHasPrefix(*i.StatusMessageHasPrefix))
+	}
+	if i.StatusMessageHasSuffix != nil {
+		predicates = append(predicates, apiexposure.StatusMessageHasSuffix(*i.StatusMessageHasSuffix))
+	}
+	if i.StatusMessageIsNil {
+		predicates = append(predicates, apiexposure.StatusMessageIsNil())
+	}
+	if i.StatusMessageNotNil {
+		predicates = append(predicates, apiexposure.StatusMessageNotNil())
+	}
+	if i.StatusMessageEqualFold != nil {
+		predicates = append(predicates, apiexposure.StatusMessageEqualFold(*i.StatusMessageEqualFold))
+	}
+	if i.StatusMessageContainsFold != nil {
+		predicates = append(predicates, apiexposure.StatusMessageContainsFold(*i.StatusMessageContainsFold))
+	}
 	if i.BasePath != nil {
 		predicates = append(predicates, apiexposure.BasePathEQ(*i.BasePath))
 	}
@@ -440,6 +520,29 @@ type ApiSubscriptionWhereInput struct {
 	LastModifiedAtLT    *time.Time  `json:"lastModifiedAtLT,omitempty"`
 	LastModifiedAtLTE   *time.Time  `json:"lastModifiedAtLTE,omitempty"`
 
+	// "status_phase" field predicates.
+	StatusPhase      *apisubscription.StatusPhase  `json:"statusPhase,omitempty"`
+	StatusPhaseNEQ   *apisubscription.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
+	StatusPhaseIn    []apisubscription.StatusPhase `json:"statusPhaseIn,omitempty"`
+	StatusPhaseNotIn []apisubscription.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+
+	// "status_message" field predicates.
+	StatusMessage             *string  `json:"statusMessage,omitempty"`
+	StatusMessageNEQ          *string  `json:"statusMessageNEQ,omitempty"`
+	StatusMessageIn           []string `json:"statusMessageIn,omitempty"`
+	StatusMessageNotIn        []string `json:"statusMessageNotIn,omitempty"`
+	StatusMessageGT           *string  `json:"statusMessageGT,omitempty"`
+	StatusMessageGTE          *string  `json:"statusMessageGTE,omitempty"`
+	StatusMessageLT           *string  `json:"statusMessageLT,omitempty"`
+	StatusMessageLTE          *string  `json:"statusMessageLTE,omitempty"`
+	StatusMessageContains     *string  `json:"statusMessageContains,omitempty"`
+	StatusMessageHasPrefix    *string  `json:"statusMessageHasPrefix,omitempty"`
+	StatusMessageHasSuffix    *string  `json:"statusMessageHasSuffix,omitempty"`
+	StatusMessageIsNil        bool     `json:"statusMessageIsNil,omitempty"`
+	StatusMessageNotNil       bool     `json:"statusMessageNotNil,omitempty"`
+	StatusMessageEqualFold    *string  `json:"statusMessageEqualFold,omitempty"`
+	StatusMessageContainsFold *string  `json:"statusMessageContainsFold,omitempty"`
+
 	// "base_path" field predicates.
 	BasePath             *string  `json:"basePath,omitempty"`
 	BasePathNEQ          *string  `json:"basePathNEQ,omitempty"`
@@ -624,6 +727,63 @@ func (i *ApiSubscriptionWhereInput) P() (predicate.ApiSubscription, error) {
 	}
 	if i.LastModifiedAtLTE != nil {
 		predicates = append(predicates, apisubscription.LastModifiedAtLTE(*i.LastModifiedAtLTE))
+	}
+	if i.StatusPhase != nil {
+		predicates = append(predicates, apisubscription.StatusPhaseEQ(*i.StatusPhase))
+	}
+	if i.StatusPhaseNEQ != nil {
+		predicates = append(predicates, apisubscription.StatusPhaseNEQ(*i.StatusPhaseNEQ))
+	}
+	if len(i.StatusPhaseIn) > 0 {
+		predicates = append(predicates, apisubscription.StatusPhaseIn(i.StatusPhaseIn...))
+	}
+	if len(i.StatusPhaseNotIn) > 0 {
+		predicates = append(predicates, apisubscription.StatusPhaseNotIn(i.StatusPhaseNotIn...))
+	}
+	if i.StatusMessage != nil {
+		predicates = append(predicates, apisubscription.StatusMessageEQ(*i.StatusMessage))
+	}
+	if i.StatusMessageNEQ != nil {
+		predicates = append(predicates, apisubscription.StatusMessageNEQ(*i.StatusMessageNEQ))
+	}
+	if len(i.StatusMessageIn) > 0 {
+		predicates = append(predicates, apisubscription.StatusMessageIn(i.StatusMessageIn...))
+	}
+	if len(i.StatusMessageNotIn) > 0 {
+		predicates = append(predicates, apisubscription.StatusMessageNotIn(i.StatusMessageNotIn...))
+	}
+	if i.StatusMessageGT != nil {
+		predicates = append(predicates, apisubscription.StatusMessageGT(*i.StatusMessageGT))
+	}
+	if i.StatusMessageGTE != nil {
+		predicates = append(predicates, apisubscription.StatusMessageGTE(*i.StatusMessageGTE))
+	}
+	if i.StatusMessageLT != nil {
+		predicates = append(predicates, apisubscription.StatusMessageLT(*i.StatusMessageLT))
+	}
+	if i.StatusMessageLTE != nil {
+		predicates = append(predicates, apisubscription.StatusMessageLTE(*i.StatusMessageLTE))
+	}
+	if i.StatusMessageContains != nil {
+		predicates = append(predicates, apisubscription.StatusMessageContains(*i.StatusMessageContains))
+	}
+	if i.StatusMessageHasPrefix != nil {
+		predicates = append(predicates, apisubscription.StatusMessageHasPrefix(*i.StatusMessageHasPrefix))
+	}
+	if i.StatusMessageHasSuffix != nil {
+		predicates = append(predicates, apisubscription.StatusMessageHasSuffix(*i.StatusMessageHasSuffix))
+	}
+	if i.StatusMessageIsNil {
+		predicates = append(predicates, apisubscription.StatusMessageIsNil())
+	}
+	if i.StatusMessageNotNil {
+		predicates = append(predicates, apisubscription.StatusMessageNotNil())
+	}
+	if i.StatusMessageEqualFold != nil {
+		predicates = append(predicates, apisubscription.StatusMessageEqualFold(*i.StatusMessageEqualFold))
+	}
+	if i.StatusMessageContainsFold != nil {
+		predicates = append(predicates, apisubscription.StatusMessageContainsFold(*i.StatusMessageContainsFold))
 	}
 	if i.BasePath != nil {
 		predicates = append(predicates, apisubscription.BasePathEQ(*i.BasePath))
@@ -813,6 +973,29 @@ type ApplicationWhereInput struct {
 	LastModifiedAtGTE   *time.Time  `json:"lastModifiedAtGTE,omitempty"`
 	LastModifiedAtLT    *time.Time  `json:"lastModifiedAtLT,omitempty"`
 	LastModifiedAtLTE   *time.Time  `json:"lastModifiedAtLTE,omitempty"`
+
+	// "status_phase" field predicates.
+	StatusPhase      *application.StatusPhase  `json:"statusPhase,omitempty"`
+	StatusPhaseNEQ   *application.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
+	StatusPhaseIn    []application.StatusPhase `json:"statusPhaseIn,omitempty"`
+	StatusPhaseNotIn []application.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+
+	// "status_message" field predicates.
+	StatusMessage             *string  `json:"statusMessage,omitempty"`
+	StatusMessageNEQ          *string  `json:"statusMessageNEQ,omitempty"`
+	StatusMessageIn           []string `json:"statusMessageIn,omitempty"`
+	StatusMessageNotIn        []string `json:"statusMessageNotIn,omitempty"`
+	StatusMessageGT           *string  `json:"statusMessageGT,omitempty"`
+	StatusMessageGTE          *string  `json:"statusMessageGTE,omitempty"`
+	StatusMessageLT           *string  `json:"statusMessageLT,omitempty"`
+	StatusMessageLTE          *string  `json:"statusMessageLTE,omitempty"`
+	StatusMessageContains     *string  `json:"statusMessageContains,omitempty"`
+	StatusMessageHasPrefix    *string  `json:"statusMessageHasPrefix,omitempty"`
+	StatusMessageHasSuffix    *string  `json:"statusMessageHasSuffix,omitempty"`
+	StatusMessageIsNil        bool     `json:"statusMessageIsNil,omitempty"`
+	StatusMessageNotNil       bool     `json:"statusMessageNotNil,omitempty"`
+	StatusMessageEqualFold    *string  `json:"statusMessageEqualFold,omitempty"`
+	StatusMessageContainsFold *string  `json:"statusMessageContainsFold,omitempty"`
 
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
@@ -1020,6 +1203,63 @@ func (i *ApplicationWhereInput) P() (predicate.Application, error) {
 	}
 	if i.LastModifiedAtLTE != nil {
 		predicates = append(predicates, application.LastModifiedAtLTE(*i.LastModifiedAtLTE))
+	}
+	if i.StatusPhase != nil {
+		predicates = append(predicates, application.StatusPhaseEQ(*i.StatusPhase))
+	}
+	if i.StatusPhaseNEQ != nil {
+		predicates = append(predicates, application.StatusPhaseNEQ(*i.StatusPhaseNEQ))
+	}
+	if len(i.StatusPhaseIn) > 0 {
+		predicates = append(predicates, application.StatusPhaseIn(i.StatusPhaseIn...))
+	}
+	if len(i.StatusPhaseNotIn) > 0 {
+		predicates = append(predicates, application.StatusPhaseNotIn(i.StatusPhaseNotIn...))
+	}
+	if i.StatusMessage != nil {
+		predicates = append(predicates, application.StatusMessageEQ(*i.StatusMessage))
+	}
+	if i.StatusMessageNEQ != nil {
+		predicates = append(predicates, application.StatusMessageNEQ(*i.StatusMessageNEQ))
+	}
+	if len(i.StatusMessageIn) > 0 {
+		predicates = append(predicates, application.StatusMessageIn(i.StatusMessageIn...))
+	}
+	if len(i.StatusMessageNotIn) > 0 {
+		predicates = append(predicates, application.StatusMessageNotIn(i.StatusMessageNotIn...))
+	}
+	if i.StatusMessageGT != nil {
+		predicates = append(predicates, application.StatusMessageGT(*i.StatusMessageGT))
+	}
+	if i.StatusMessageGTE != nil {
+		predicates = append(predicates, application.StatusMessageGTE(*i.StatusMessageGTE))
+	}
+	if i.StatusMessageLT != nil {
+		predicates = append(predicates, application.StatusMessageLT(*i.StatusMessageLT))
+	}
+	if i.StatusMessageLTE != nil {
+		predicates = append(predicates, application.StatusMessageLTE(*i.StatusMessageLTE))
+	}
+	if i.StatusMessageContains != nil {
+		predicates = append(predicates, application.StatusMessageContains(*i.StatusMessageContains))
+	}
+	if i.StatusMessageHasPrefix != nil {
+		predicates = append(predicates, application.StatusMessageHasPrefix(*i.StatusMessageHasPrefix))
+	}
+	if i.StatusMessageHasSuffix != nil {
+		predicates = append(predicates, application.StatusMessageHasSuffix(*i.StatusMessageHasSuffix))
+	}
+	if i.StatusMessageIsNil {
+		predicates = append(predicates, application.StatusMessageIsNil())
+	}
+	if i.StatusMessageNotNil {
+		predicates = append(predicates, application.StatusMessageNotNil())
+	}
+	if i.StatusMessageEqualFold != nil {
+		predicates = append(predicates, application.StatusMessageEqualFold(*i.StatusMessageEqualFold))
+	}
+	if i.StatusMessageContainsFold != nil {
+		predicates = append(predicates, application.StatusMessageContainsFold(*i.StatusMessageContainsFold))
 	}
 	if i.Name != nil {
 		predicates = append(predicates, application.NameEQ(*i.Name))
@@ -1264,6 +1504,29 @@ type ApprovalWhereInput struct {
 	LastModifiedAtLT    *time.Time  `json:"lastModifiedAtLT,omitempty"`
 	LastModifiedAtLTE   *time.Time  `json:"lastModifiedAtLTE,omitempty"`
 
+	// "status_phase" field predicates.
+	StatusPhase      *approval.StatusPhase  `json:"statusPhase,omitempty"`
+	StatusPhaseNEQ   *approval.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
+	StatusPhaseIn    []approval.StatusPhase `json:"statusPhaseIn,omitempty"`
+	StatusPhaseNotIn []approval.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+
+	// "status_message" field predicates.
+	StatusMessage             *string  `json:"statusMessage,omitempty"`
+	StatusMessageNEQ          *string  `json:"statusMessageNEQ,omitempty"`
+	StatusMessageIn           []string `json:"statusMessageIn,omitempty"`
+	StatusMessageNotIn        []string `json:"statusMessageNotIn,omitempty"`
+	StatusMessageGT           *string  `json:"statusMessageGT,omitempty"`
+	StatusMessageGTE          *string  `json:"statusMessageGTE,omitempty"`
+	StatusMessageLT           *string  `json:"statusMessageLT,omitempty"`
+	StatusMessageLTE          *string  `json:"statusMessageLTE,omitempty"`
+	StatusMessageContains     *string  `json:"statusMessageContains,omitempty"`
+	StatusMessageHasPrefix    *string  `json:"statusMessageHasPrefix,omitempty"`
+	StatusMessageHasSuffix    *string  `json:"statusMessageHasSuffix,omitempty"`
+	StatusMessageIsNil        bool     `json:"statusMessageIsNil,omitempty"`
+	StatusMessageNotNil       bool     `json:"statusMessageNotNil,omitempty"`
+	StatusMessageEqualFold    *string  `json:"statusMessageEqualFold,omitempty"`
+	StatusMessageContainsFold *string  `json:"statusMessageContainsFold,omitempty"`
+
 	// "action" field predicates.
 	Action             *string  `json:"action,omitempty"`
 	ActionNEQ          *string  `json:"actionNEQ,omitempty"`
@@ -1439,6 +1702,63 @@ func (i *ApprovalWhereInput) P() (predicate.Approval, error) {
 	if i.LastModifiedAtLTE != nil {
 		predicates = append(predicates, approval.LastModifiedAtLTE(*i.LastModifiedAtLTE))
 	}
+	if i.StatusPhase != nil {
+		predicates = append(predicates, approval.StatusPhaseEQ(*i.StatusPhase))
+	}
+	if i.StatusPhaseNEQ != nil {
+		predicates = append(predicates, approval.StatusPhaseNEQ(*i.StatusPhaseNEQ))
+	}
+	if len(i.StatusPhaseIn) > 0 {
+		predicates = append(predicates, approval.StatusPhaseIn(i.StatusPhaseIn...))
+	}
+	if len(i.StatusPhaseNotIn) > 0 {
+		predicates = append(predicates, approval.StatusPhaseNotIn(i.StatusPhaseNotIn...))
+	}
+	if i.StatusMessage != nil {
+		predicates = append(predicates, approval.StatusMessageEQ(*i.StatusMessage))
+	}
+	if i.StatusMessageNEQ != nil {
+		predicates = append(predicates, approval.StatusMessageNEQ(*i.StatusMessageNEQ))
+	}
+	if len(i.StatusMessageIn) > 0 {
+		predicates = append(predicates, approval.StatusMessageIn(i.StatusMessageIn...))
+	}
+	if len(i.StatusMessageNotIn) > 0 {
+		predicates = append(predicates, approval.StatusMessageNotIn(i.StatusMessageNotIn...))
+	}
+	if i.StatusMessageGT != nil {
+		predicates = append(predicates, approval.StatusMessageGT(*i.StatusMessageGT))
+	}
+	if i.StatusMessageGTE != nil {
+		predicates = append(predicates, approval.StatusMessageGTE(*i.StatusMessageGTE))
+	}
+	if i.StatusMessageLT != nil {
+		predicates = append(predicates, approval.StatusMessageLT(*i.StatusMessageLT))
+	}
+	if i.StatusMessageLTE != nil {
+		predicates = append(predicates, approval.StatusMessageLTE(*i.StatusMessageLTE))
+	}
+	if i.StatusMessageContains != nil {
+		predicates = append(predicates, approval.StatusMessageContains(*i.StatusMessageContains))
+	}
+	if i.StatusMessageHasPrefix != nil {
+		predicates = append(predicates, approval.StatusMessageHasPrefix(*i.StatusMessageHasPrefix))
+	}
+	if i.StatusMessageHasSuffix != nil {
+		predicates = append(predicates, approval.StatusMessageHasSuffix(*i.StatusMessageHasSuffix))
+	}
+	if i.StatusMessageIsNil {
+		predicates = append(predicates, approval.StatusMessageIsNil())
+	}
+	if i.StatusMessageNotNil {
+		predicates = append(predicates, approval.StatusMessageNotNil())
+	}
+	if i.StatusMessageEqualFold != nil {
+		predicates = append(predicates, approval.StatusMessageEqualFold(*i.StatusMessageEqualFold))
+	}
+	if i.StatusMessageContainsFold != nil {
+		predicates = append(predicates, approval.StatusMessageContainsFold(*i.StatusMessageContainsFold))
+	}
 	if i.Action != nil {
 		predicates = append(predicates, approval.ActionEQ(*i.Action))
 	}
@@ -1567,6 +1887,29 @@ type ApprovalRequestWhereInput struct {
 	LastModifiedAtGTE   *time.Time  `json:"lastModifiedAtGTE,omitempty"`
 	LastModifiedAtLT    *time.Time  `json:"lastModifiedAtLT,omitempty"`
 	LastModifiedAtLTE   *time.Time  `json:"lastModifiedAtLTE,omitempty"`
+
+	// "status_phase" field predicates.
+	StatusPhase      *approvalrequest.StatusPhase  `json:"statusPhase,omitempty"`
+	StatusPhaseNEQ   *approvalrequest.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
+	StatusPhaseIn    []approvalrequest.StatusPhase `json:"statusPhaseIn,omitempty"`
+	StatusPhaseNotIn []approvalrequest.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+
+	// "status_message" field predicates.
+	StatusMessage             *string  `json:"statusMessage,omitempty"`
+	StatusMessageNEQ          *string  `json:"statusMessageNEQ,omitempty"`
+	StatusMessageIn           []string `json:"statusMessageIn,omitempty"`
+	StatusMessageNotIn        []string `json:"statusMessageNotIn,omitempty"`
+	StatusMessageGT           *string  `json:"statusMessageGT,omitempty"`
+	StatusMessageGTE          *string  `json:"statusMessageGTE,omitempty"`
+	StatusMessageLT           *string  `json:"statusMessageLT,omitempty"`
+	StatusMessageLTE          *string  `json:"statusMessageLTE,omitempty"`
+	StatusMessageContains     *string  `json:"statusMessageContains,omitempty"`
+	StatusMessageHasPrefix    *string  `json:"statusMessageHasPrefix,omitempty"`
+	StatusMessageHasSuffix    *string  `json:"statusMessageHasSuffix,omitempty"`
+	StatusMessageIsNil        bool     `json:"statusMessageIsNil,omitempty"`
+	StatusMessageNotNil       bool     `json:"statusMessageNotNil,omitempty"`
+	StatusMessageEqualFold    *string  `json:"statusMessageEqualFold,omitempty"`
+	StatusMessageContainsFold *string  `json:"statusMessageContainsFold,omitempty"`
 
 	// "action" field predicates.
 	Action             *string  `json:"action,omitempty"`
@@ -1742,6 +2085,63 @@ func (i *ApprovalRequestWhereInput) P() (predicate.ApprovalRequest, error) {
 	}
 	if i.LastModifiedAtLTE != nil {
 		predicates = append(predicates, approvalrequest.LastModifiedAtLTE(*i.LastModifiedAtLTE))
+	}
+	if i.StatusPhase != nil {
+		predicates = append(predicates, approvalrequest.StatusPhaseEQ(*i.StatusPhase))
+	}
+	if i.StatusPhaseNEQ != nil {
+		predicates = append(predicates, approvalrequest.StatusPhaseNEQ(*i.StatusPhaseNEQ))
+	}
+	if len(i.StatusPhaseIn) > 0 {
+		predicates = append(predicates, approvalrequest.StatusPhaseIn(i.StatusPhaseIn...))
+	}
+	if len(i.StatusPhaseNotIn) > 0 {
+		predicates = append(predicates, approvalrequest.StatusPhaseNotIn(i.StatusPhaseNotIn...))
+	}
+	if i.StatusMessage != nil {
+		predicates = append(predicates, approvalrequest.StatusMessageEQ(*i.StatusMessage))
+	}
+	if i.StatusMessageNEQ != nil {
+		predicates = append(predicates, approvalrequest.StatusMessageNEQ(*i.StatusMessageNEQ))
+	}
+	if len(i.StatusMessageIn) > 0 {
+		predicates = append(predicates, approvalrequest.StatusMessageIn(i.StatusMessageIn...))
+	}
+	if len(i.StatusMessageNotIn) > 0 {
+		predicates = append(predicates, approvalrequest.StatusMessageNotIn(i.StatusMessageNotIn...))
+	}
+	if i.StatusMessageGT != nil {
+		predicates = append(predicates, approvalrequest.StatusMessageGT(*i.StatusMessageGT))
+	}
+	if i.StatusMessageGTE != nil {
+		predicates = append(predicates, approvalrequest.StatusMessageGTE(*i.StatusMessageGTE))
+	}
+	if i.StatusMessageLT != nil {
+		predicates = append(predicates, approvalrequest.StatusMessageLT(*i.StatusMessageLT))
+	}
+	if i.StatusMessageLTE != nil {
+		predicates = append(predicates, approvalrequest.StatusMessageLTE(*i.StatusMessageLTE))
+	}
+	if i.StatusMessageContains != nil {
+		predicates = append(predicates, approvalrequest.StatusMessageContains(*i.StatusMessageContains))
+	}
+	if i.StatusMessageHasPrefix != nil {
+		predicates = append(predicates, approvalrequest.StatusMessageHasPrefix(*i.StatusMessageHasPrefix))
+	}
+	if i.StatusMessageHasSuffix != nil {
+		predicates = append(predicates, approvalrequest.StatusMessageHasSuffix(*i.StatusMessageHasSuffix))
+	}
+	if i.StatusMessageIsNil {
+		predicates = append(predicates, approvalrequest.StatusMessageIsNil())
+	}
+	if i.StatusMessageNotNil {
+		predicates = append(predicates, approvalrequest.StatusMessageNotNil())
+	}
+	if i.StatusMessageEqualFold != nil {
+		predicates = append(predicates, approvalrequest.StatusMessageEqualFold(*i.StatusMessageEqualFold))
+	}
+	if i.StatusMessageContainsFold != nil {
+		predicates = append(predicates, approvalrequest.StatusMessageContainsFold(*i.StatusMessageContainsFold))
 	}
 	if i.Action != nil {
 		predicates = append(predicates, approvalrequest.ActionEQ(*i.Action))
@@ -2612,6 +3012,29 @@ type TeamWhereInput struct {
 	LastModifiedAtLT    *time.Time  `json:"lastModifiedAtLT,omitempty"`
 	LastModifiedAtLTE   *time.Time  `json:"lastModifiedAtLTE,omitempty"`
 
+	// "status_phase" field predicates.
+	StatusPhase      *team.StatusPhase  `json:"statusPhase,omitempty"`
+	StatusPhaseNEQ   *team.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
+	StatusPhaseIn    []team.StatusPhase `json:"statusPhaseIn,omitempty"`
+	StatusPhaseNotIn []team.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+
+	// "status_message" field predicates.
+	StatusMessage             *string  `json:"statusMessage,omitempty"`
+	StatusMessageNEQ          *string  `json:"statusMessageNEQ,omitempty"`
+	StatusMessageIn           []string `json:"statusMessageIn,omitempty"`
+	StatusMessageNotIn        []string `json:"statusMessageNotIn,omitempty"`
+	StatusMessageGT           *string  `json:"statusMessageGT,omitempty"`
+	StatusMessageGTE          *string  `json:"statusMessageGTE,omitempty"`
+	StatusMessageLT           *string  `json:"statusMessageLT,omitempty"`
+	StatusMessageLTE          *string  `json:"statusMessageLTE,omitempty"`
+	StatusMessageContains     *string  `json:"statusMessageContains,omitempty"`
+	StatusMessageHasPrefix    *string  `json:"statusMessageHasPrefix,omitempty"`
+	StatusMessageHasSuffix    *string  `json:"statusMessageHasSuffix,omitempty"`
+	StatusMessageIsNil        bool     `json:"statusMessageIsNil,omitempty"`
+	StatusMessageNotNil       bool     `json:"statusMessageNotNil,omitempty"`
+	StatusMessageEqualFold    *string  `json:"statusMessageEqualFold,omitempty"`
+	StatusMessageContainsFold *string  `json:"statusMessageContainsFold,omitempty"`
+
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
 	NameNEQ          *string  `json:"nameNEQ,omitempty"`
@@ -2824,6 +3247,63 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 	}
 	if i.LastModifiedAtLTE != nil {
 		predicates = append(predicates, team.LastModifiedAtLTE(*i.LastModifiedAtLTE))
+	}
+	if i.StatusPhase != nil {
+		predicates = append(predicates, team.StatusPhaseEQ(*i.StatusPhase))
+	}
+	if i.StatusPhaseNEQ != nil {
+		predicates = append(predicates, team.StatusPhaseNEQ(*i.StatusPhaseNEQ))
+	}
+	if len(i.StatusPhaseIn) > 0 {
+		predicates = append(predicates, team.StatusPhaseIn(i.StatusPhaseIn...))
+	}
+	if len(i.StatusPhaseNotIn) > 0 {
+		predicates = append(predicates, team.StatusPhaseNotIn(i.StatusPhaseNotIn...))
+	}
+	if i.StatusMessage != nil {
+		predicates = append(predicates, team.StatusMessageEQ(*i.StatusMessage))
+	}
+	if i.StatusMessageNEQ != nil {
+		predicates = append(predicates, team.StatusMessageNEQ(*i.StatusMessageNEQ))
+	}
+	if len(i.StatusMessageIn) > 0 {
+		predicates = append(predicates, team.StatusMessageIn(i.StatusMessageIn...))
+	}
+	if len(i.StatusMessageNotIn) > 0 {
+		predicates = append(predicates, team.StatusMessageNotIn(i.StatusMessageNotIn...))
+	}
+	if i.StatusMessageGT != nil {
+		predicates = append(predicates, team.StatusMessageGT(*i.StatusMessageGT))
+	}
+	if i.StatusMessageGTE != nil {
+		predicates = append(predicates, team.StatusMessageGTE(*i.StatusMessageGTE))
+	}
+	if i.StatusMessageLT != nil {
+		predicates = append(predicates, team.StatusMessageLT(*i.StatusMessageLT))
+	}
+	if i.StatusMessageLTE != nil {
+		predicates = append(predicates, team.StatusMessageLTE(*i.StatusMessageLTE))
+	}
+	if i.StatusMessageContains != nil {
+		predicates = append(predicates, team.StatusMessageContains(*i.StatusMessageContains))
+	}
+	if i.StatusMessageHasPrefix != nil {
+		predicates = append(predicates, team.StatusMessageHasPrefix(*i.StatusMessageHasPrefix))
+	}
+	if i.StatusMessageHasSuffix != nil {
+		predicates = append(predicates, team.StatusMessageHasSuffix(*i.StatusMessageHasSuffix))
+	}
+	if i.StatusMessageIsNil {
+		predicates = append(predicates, team.StatusMessageIsNil())
+	}
+	if i.StatusMessageNotNil {
+		predicates = append(predicates, team.StatusMessageNotNil())
+	}
+	if i.StatusMessageEqualFold != nil {
+		predicates = append(predicates, team.StatusMessageEqualFold(*i.StatusMessageEqualFold))
+	}
+	if i.StatusMessageContainsFold != nil {
+		predicates = append(predicates, team.StatusMessageContainsFold(*i.StatusMessageContainsFold))
 	}
 	if i.Name != nil {
 		predicates = append(predicates, team.NameEQ(*i.Name))

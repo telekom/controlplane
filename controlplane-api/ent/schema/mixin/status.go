@@ -5,23 +5,28 @@
 package mixin
 
 import (
-	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/mixin"
-
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 )
 
-// StatusMixin adds a ResourceStatus JSON field.
+// StatusMixin adds status_phase and status_message fields to an entity.
 type StatusMixin struct {
 	mixin.Schema
 }
 
 func (StatusMixin) Fields() []ent.Field {
 	return []ent.Field{
-		field.JSON("status", model.ResourceStatus{}).
-			Default(model.ResourceStatus{Phase: model.ResourceStatusPhaseUnknown}).
-			Annotations(entgql.Type("ResourceStatus")),
+		field.Enum("status_phase").
+			NamedValues(
+				"Ready", "READY",
+				"Pending", "PENDING",
+				"Error", "ERROR",
+				"Unknown", "UNKNOWN",
+			).
+			Default("UNKNOWN"),
+		field.Text("status_message").
+			Optional().
+			Nillable(),
 	}
 }
