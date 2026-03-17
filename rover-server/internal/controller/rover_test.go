@@ -12,6 +12,7 @@ import (
 
 	"github.com/gkampitakis/go-snaps/match"
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
@@ -90,6 +91,24 @@ var _ = Describe("Rover Controller", func() {
 			req := httptest.NewRequest(http.MethodGet, "/rovers/info", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusBadRequest, "application/problem+json")
+		})
+
+		It("should filter applications by names query parameter", func() {
+			req := httptest.NewRequest(http.MethodGet, "/rovers/info?names=rover-local-sub", nil)
+			responseTeam, err := ExecuteRequestWithToken(req, teamToken)
+			ExpectStatusOk(responseTeam, err)
+		})
+
+		It("should return empty list when names filter matches no rovers", func() {
+			req := httptest.NewRequest(http.MethodGet, "/rovers/info?names=nonexistent", nil)
+			responseTeam, err := ExecuteRequestWithToken(req, teamToken)
+			Expect(err).To(BeNil())
+			Expect(responseTeam.StatusCode).To(Equal(http.StatusOK))
+
+			var resp api.RoverInfoResponse
+			err = json.NewDecoder(responseTeam.Body).Decode(&resp)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resp.Applications).To(BeEmpty())
 		})
 	})
 

@@ -10,6 +10,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+type CacheSizeFunc func() float64
+
 var (
 	registerOnce = sync.Once{}
 	// Cache metrics
@@ -21,22 +23,36 @@ var (
 		[]string{"method", "result", "reason"},
 	)
 
-	CacheSize = prometheus.NewGauge(
+	singleflightDedup = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "cache_singleflight_dedup_total",
+			Help: "Total number of deduplicated requests via singleflight",
+		},
+		[]string{"method"},
+	)
+
+	CacheSize prometheus.GaugeFunc
+)
+
+func SetCacheSizeFunc(cacheSizeFunc CacheSizeFunc) {
+	CacheSize = prometheus.NewGaugeFunc(
 		prometheus.GaugeOpts{
 			Name: "cache_size",
 			Help: "Current size of the cache",
 		},
+		cacheSizeFunc,
 	)
-)
-
-func init() {
-	registerMetrics(prometheus.DefaultRegisterer)
 }
 
 // RegisterMetrics registers all cache-related metrics with Prometheus
-func registerMetrics(reg prometheus.Registerer) {
+func RegisterMetrics(reg prometheus.Registerer, f CacheSizeFunc) {
+	if f == nil {
+		f = func() float64 { return -1 }
+	}
+	SetCacheSizeFunc(f)
 	registerOnce.Do(func() {
 		reg.MustRegister(cacheAccess)
+		reg.MustRegister(singleflightDedup)
 		reg.MustRegister(CacheSize)
 	})
 }
@@ -49,4 +65,9 @@ func RecordCacheHit(method, reason string) {
 // RecordCacheMiss increments the counter for a cache miss with the specified reasons like "expired" or "not_found"
 func RecordCacheMiss(method, reason string) {
 	cacheAccess.WithLabelValues(method, "miss", reason).Inc()
+}
+
+// RecordSingleflightDedup increments the counter when a request was deduplicated via singleflight
+func RecordSingleflightDedup(method string) {
+	singleflightDedup.WithLabelValues(method).Inc()
 }
