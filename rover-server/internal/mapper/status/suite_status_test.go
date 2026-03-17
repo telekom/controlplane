@@ -27,6 +27,7 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 	if mockObjectStore {
 		store.RoverStore = mocks.NewRoverStoreMock(GinkgoT())
 		store.ApiSpecificationStore = mocks.NewApiSpecificationStoreMock(GinkgoT())
+		store.ApiStore = mocks.NewApiStoreMock(GinkgoT())
 		store.ApiSubscriptionStore = mocks.NewApiSubscriptionStoreMock(GinkgoT())
 		store.ApiExposureStore = mocks.NewApiExposureStoreMock(GinkgoT())
 		store.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())

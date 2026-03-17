@@ -27,7 +27,7 @@ func MapRoverResponse(ctx context.Context, in *roverv1.Rover) (res api.RoverResp
 
 	res.Name = in.Name
 	res.Id = mapper.MakeResourceId(in)
-	res.Status = status.MapRoverStatus(ctx, in)
+	res.Status, err = status.MapRoverStatus(ctx, in)
 
 	return
 }

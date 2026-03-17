@@ -23,6 +23,7 @@ const (
 	OpenApiFileName          = "openapi.yaml"
 	apiSubscriptionFileName  = "apiSubscription.json"
 	apiExposureFileName      = "apiExposure.json"
+	apiFileName              = "api.json"
 	applicationFileName      = "application.json"
 	RoverFileName            = "rover.json"
 	zoneFileName             = "zone.json"
@@ -44,6 +45,15 @@ func GetApiSubscription(testing ginkgo.FullGinkgoTInterface, filePath string) *a
 	require.NoError(testing, err)
 
 	return &apiSubscription
+}
+
+func GetApi(testing ginkgo.FullGinkgoTInterface, filePath string) *apiv1.Api {
+	file := data.ReadFile(testing, filePath)
+	var api apiv1.Api
+	err := json.Unmarshal(file, &api)
+	require.NoError(testing, err)
+
+	return &api
 }
 
 func GetApiExposure(testing ginkgo.FullGinkgoTInterface, filePath string) *apiv1.ApiExposure {

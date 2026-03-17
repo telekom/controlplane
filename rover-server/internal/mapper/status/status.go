@@ -15,16 +15,48 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
 
-func fillStateInfo(conditions []metav1.Condition, status *api.Status) {
+// Condition reason values. These must stay in sync with the factory functions
+// in the condition package (e.g. condition.NewBlockedCondition, condition.NewDoneProcessingCondition).
+const (
+	reasonBlocked = "Blocked"
+	reasonDone    = "Done"
+)
+
+// isProcessingStale returns true if the Processing condition's ObservedGeneration
+// is behind the object's metadata.generation, indicating that the spec changed
+// but the controller hasn't reconciled yet. Returns false when either generation
+// is zero (backward compatibility or unknown generation).
+func isProcessingStale(conditions []metav1.Condition, objectGeneration int64) bool {
+	processing := meta.FindStatusCondition(conditions, condition.ConditionTypeProcessing)
+	if processing == nil {
+		return false
+	}
+	return objectGeneration > 0 && processing.ObservedGeneration > 0 && processing.ObservedGeneration < objectGeneration
+}
+
+// fillStateInfo maps Kubernetes Processing/Ready conditions into State, ProcessingState,
+// and any associated warnings or errors on the given status.
+// objectGeneration is the resource's metadata.generation; when a condition's
+// ObservedGeneration is non-zero but less than objectGeneration, the condition
+// is stale (spec changed but controller hasn't reconciled yet) and the status
+// is set to pending. Pass 0 to skip staleness detection.
+func fillStateInfo(conditions []metav1.Condition, objectGeneration int64, status *api.Status) {
 	processing := meta.FindStatusCondition(conditions, condition.ConditionTypeProcessing)
 	if processing == nil {
 		status.State = api.None
 		status.ProcessingState = api.ProcessingStateNone
 		status.Warnings = []api.StateInfo{
-			{
-				Message: "Processing condition not found",
-			},
+			{Message: "Processing condition not found"},
 		}
+		return
+	}
+
+	// Staleness detection: if the controller has started reporting ObservedGeneration
+	// (> 0) but hasn't caught up to the current spec generation, the condition
+	// values are based on an older spec and cannot be trusted.
+	if isProcessingStale(conditions, objectGeneration) {
+		status.State = api.None
+		status.ProcessingState = api.ProcessingStatePending
 		return
 	}
 
@@ -33,9 +65,7 @@ func fillStateInfo(conditions []metav1.Condition, status *api.Status) {
 		status.State = api.None
 		status.ProcessingState = api.ProcessingStateNone
 		status.Warnings = []api.StateInfo{
-			{
-				Message: "Ready condition not found",
-			},
+			{Message: "Ready condition not found"},
 		}
 		return
 	}
@@ -46,75 +76,152 @@ func fillStateInfo(conditions []metav1.Condition, status *api.Status) {
 		return
 	}
 
-	if processing.Reason == "Blocked" {
+	if processing.Reason == reasonBlocked {
 		status.State = api.Blocked
 		status.ProcessingState = api.ProcessingStateDone
 		status.Warnings = []api.StateInfo{
-			{
-				Message: processing.Message,
-			},
+			{Message: processing.Message},
 		}
 		return
 	}
 
-	if processing.Reason == "Done" {
+	if processing.Reason == reasonDone {
 		status.ProcessingState = api.ProcessingStateDone
 		if ready.Status == metav1.ConditionTrue {
 			status.State = api.Complete
 		} else {
 			status.State = api.Blocked
 			status.Warnings = []api.StateInfo{
-				{
-					Message: ready.Message,
-				},
+				{Message: ready.Message},
 			}
 		}
-
 		return
 	}
 
+	// Fallthrough: processing failed (reason is neither Blocked nor Done).
+	status.State = api.Invalid
 	status.ProcessingState = api.ProcessingStateFailed
 	status.Errors = []api.StateInfo{
-		{
-			Message: processing.Message,
-		},
+		{Message: processing.Message},
 	}
 }
 
-func MapStatus(conditions []metav1.Condition) api.Status {
+// MapStatus maps a set of Kubernetes conditions to an api.Status.
+// objectGeneration is the resource's metadata.generation used for staleness
+// detection. Pass 0 to skip staleness detection (e.g. when only conditions
+// are available without the parent object).
+func MapStatus(conditions []metav1.Condition, objectGeneration int64) api.Status {
 	status := api.Status{
 		ProcessingState: api.ProcessingStateNone,
 		State:           api.None,
 	}
-
-	fillStateInfo(conditions, &status)
+	fillStateInfo(conditions, objectGeneration, &status)
 	return status
 }
 
-// MapRoverStatus maps the status of a Rover resource to a Rover API status.
-// It retrieves the conditions of the Rover, maps them to a Rover API status,
-// and checks for any sub-resource conditions with error states.
-//
-// Parameters:
-// - ctx: The context for the operation.
-// - rover: The Rover resource whose status is being mapped.
-//
-// Returns:
-// - *api.Status: The mapped status of the Rover resource.
-func MapRoverStatus(ctx context.Context, rover *v1.Rover) api.Status {
-	status := MapStatus(rover.GetConditions())
-	var stateInfos = []api.StateInfo{}
+// MapRoverStatus maps the status of a Rover resource to an api.Status,
+// including sub-resource error information when the Rover itself is not complete.
+// When the Rover's own conditions indicate Complete/Done but any sub-resource
+// has stale conditions, processingState is set to Processing to reflect that
+// the overall pipeline is not yet done.
+func MapRoverStatus(ctx context.Context, rover *v1.Rover) (api.Status, error) {
+	status := MapStatus(rover.GetConditions(), rover.GetGeneration())
 
-	if status.State != api.Complete {
-		// Load all sub resources and check for conditions with error state
-		stateInfos = AppendStateInfos(stateInfos, GetAllStateInfos(ctx, rover))
-		status.Errors = stateInfos
+	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone {
+		stale, err := AnyRoverSubResourceStale(ctx, rover)
+		if err != nil {
+			return status, err
+		}
+		if stale {
+			status.ProcessingState = api.ProcessingStateProcessing
+		}
 	}
 
-	return status
+	if status.State != api.Complete {
+		stateInfos, err := GetAllRoverStateInfos(ctx, rover)
+		if err != nil {
+			return status, err
+		}
+		status.Errors = append(status.Errors, stateInfos...)
+	}
+
+	return status, nil
 }
 
+// MapApiSpecificationStatus maps the status of an ApiSpecification resource to an api.Status,
+// including sub-resource error information when the ApiSpecification itself is not complete.
+// When the ApiSpecification's own conditions indicate Complete/Done but any sub-resource
+// has stale conditions, processingState is set to Processing to reflect that
+// the overall pipeline is not yet done.
+func MapApiSpecificationStatus(ctx context.Context, apiSpec *v1.ApiSpecification) (api.Status, error) {
+	status := MapStatus(apiSpec.GetConditions(), apiSpec.GetGeneration())
+
+	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone {
+		stale, err := AnyApiSpecificationSubResourceStale(ctx, apiSpec)
+		if err != nil {
+			return status, err
+		}
+		if stale {
+			status.ProcessingState = api.ProcessingStateProcessing
+		}
+	}
+
+	if status.State != api.Complete {
+		stateInfos, err := GetAllApiSpecificationStateInfos(ctx, apiSpec)
+		if err != nil {
+			return status, err
+		}
+		status.Errors = append(status.Errors, stateInfos...)
+	}
+
+	return status, nil
+}
+
+// GetOverallStatus computes the OverallStatus from a set of Kubernetes conditions.
+// Note: staleness detection is not performed here because the object's generation
+// is not available. Callers that need staleness detection should use MapStatus directly.
 func GetOverallStatus(conditions []metav1.Condition) api.OverallStatus {
-	status := MapStatus(conditions)
+	status := MapStatus(conditions, 0)
 	return CalculateOverallStatus(status.State, status.ProcessingState)
+}
+
+// CalculateOverallStatus collapses a State and ProcessingState into a single OverallStatus.
+func CalculateOverallStatus(s api.State, ps api.ProcessingState) api.OverallStatus {
+	if ps == api.ProcessingStateProcessing {
+		return api.OverallStatusProcessing
+	}
+	if ps == api.ProcessingStateFailed {
+		return api.OverallStatusFailed
+	}
+	if s == api.Blocked {
+		return api.OverallStatusBlocked
+	}
+	if ps == api.ProcessingStatePending {
+		return api.OverallStatusPending
+	}
+	if s == api.Complete && ps == api.ProcessingStateDone {
+		return api.OverallStatusComplete
+	}
+	return api.OverallStatusNone
+}
+
+// statusPriority defines severity ordering for OverallStatus values.
+// Higher values indicate more severe statuses.
+// Note: None (undetermined) is more severe than Complete (all done).
+var statusPriority = map[api.OverallStatus]int{
+	api.OverallStatusFailed:     6,
+	api.OverallStatusBlocked:    5,
+	api.OverallStatusProcessing: 4,
+	api.OverallStatusPending:    3,
+	api.OverallStatusNone:       2,
+	api.OverallStatusComplete:   1,
+}
+
+// CompareAndReturn returns the more severe of two OverallStatus values.
+// Priority (highest to lowest): Failed > Blocked > Processing > Pending > None > Complete.
+func CompareAndReturn(a, b api.OverallStatus) api.OverallStatus {
+	if statusPriority[a] >= statusPriority[b] {
+		return a
+	}
+	return b
 }

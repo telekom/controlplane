@@ -28,6 +28,7 @@ var ApplicationStore store.ObjectStore[*applicationv1.Application]
 var ApplicationSecretStore store.ObjectStore[*applicationv1.Application]
 
 var ApiSpecificationStore store.ObjectStore[*roverv1.ApiSpecification]
+var ApiStore store.ObjectStore[*apiv1.Api]
 var ApiSubscriptionStore store.ObjectStore[*apiv1.ApiSubscription]
 var ApiExposureStore store.ObjectStore[*apiv1.ApiExposure]
 var ZoneStore store.ObjectStore[*adminv1.Zone]
@@ -53,6 +54,7 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 
 	RoverStore = NewOrDie[*roverv1.Rover](ctx, roverv1.GroupVersion.WithResource("rovers"), roverv1.GroupVersion.WithKind("Rover"))
 	ApiSpecificationStore = NewOrDie[*roverv1.ApiSpecification](ctx, roverv1.GroupVersion.WithResource("apispecifications"), roverv1.GroupVersion.WithKind("ApiSpecification"))
+	ApiStore = NewOrDie[*apiv1.Api](ctx, apiv1.GroupVersion.WithResource("apis"), apiv1.GroupVersion.WithKind("Api"))
 	ApplicationStore = NewOrDie[*applicationv1.Application](ctx, applicationv1.GroupVersion.WithResource("applications"), applicationv1.GroupVersion.WithKind("Application"))
 	ApiSubscriptionStore = NewOrDie[*apiv1.ApiSubscription](ctx, apiv1.GroupVersion.WithResource("apisubscriptions"), apiv1.GroupVersion.WithKind("ApiSubscription"))
 	ApiExposureStore = NewOrDie[*apiv1.ApiExposure](ctx, apiv1.GroupVersion.WithResource("apiexposures"), apiv1.GroupVersion.WithKind("ApiExposure"))

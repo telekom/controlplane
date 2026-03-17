@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/telekom/controlplane/rover-server/pkg/store"
 	"github.com/telekom/controlplane/rover-server/test/mocks"
 )
 
@@ -47,8 +48,9 @@ var (
 	}
 )
 
+type ContextKey string
+
 var ctx context.Context
-var cancel context.CancelFunc
 
 func TestMapper(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -56,13 +58,14 @@ func TestMapper(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	rover = mocks.GetRover(GinkgoT(), mocks.RoverFileName)
-	ctx, cancel = context.WithCancel(context.TODO())
-})
+	ctx = context.WithValue(context.TODO(), ContextKey("test"), "test")
 
-var _ = AfterSuite(func() {
-	By("tearing down the test environment")
-	cancel()
+	// Initialize mock stores for sub-resource staleness checks used by MapRoverStatus.
+	store.ApiSubscriptionStore = mocks.NewApiSubscriptionStoreMock(GinkgoT())
+	store.ApiExposureStore = mocks.NewApiExposureStoreMock(GinkgoT())
+	store.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
+
+	rover = mocks.GetRover(GinkgoT(), mocks.RoverFileName)
 })
 
 func GetRoverWithReadyCondition(rover *roverv1.Rover) *roverv1.Rover {
