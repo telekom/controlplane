@@ -66,6 +66,17 @@ var _ = Describe("Errors", func() {
 			Expect(backendErr.Type).To(Equal(backend.TypeErrInvalidSecretId))
 			Expect(backendErr.Id).To(BeNil())
 		})
+
+		It("should create an ErrEmptySecretValue error", func() {
+			secretId := mocks.NewMockSecretId(GinkgoT())
+			secretId.EXPECT().String().Return("mocked-secret-id").Times(2)
+			backendErr := backend.ErrEmptySecretValue(secretId)
+
+			Expect(backendErr).To(HaveOccurred())
+			Expect(backendErr.Error()).To(Equal("InvalidSecretId: cannot set empty secret value for " + secretId.String()))
+			Expect(backendErr.Type).To(Equal(backend.TypeErrInvalidSecretId))
+			Expect(backendErr.Id).To(Equal(secretId))
+		})
 	})
 
 	Context("Code", func() {

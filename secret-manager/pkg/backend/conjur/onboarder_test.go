@@ -6,16 +6,20 @@ package conjur_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
+	"sync"
 
 	"github.com/cyberark/conjur-api-go/conjurapi"
+	conjurapi_response "github.com/cyberark/conjur-api-go/conjurapi/response"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
 	"github.com/telekom/controlplane/secret-manager/test/mocks"
 )
 
@@ -45,7 +49,6 @@ var _ = Describe("Conjur Onboarder", func() {
 			const env = "test-env"
 
 			writeAPI.EXPECT().LoadPolicy(conjurapi.PolicyModePost, "controlplane", mock.Anything).Return(nil, nil)
-			writerBackend.EXPECT().Set(ctx, mock.Anything, mock.Anything).Return(backend.DefaultSecret[conjur.ConjurSecretId]{}, nil)
 
 			res, err := conjurOnboarder.OnboardEnvironment(ctx, env)
 			Expect(err).ToNot(HaveOccurred())
@@ -104,9 +107,9 @@ var _ = Describe("Conjur Onboarder", func() {
 			}
 			writeAPI.EXPECT().LoadPolicy(conjurapi.PolicyModePost, "controlplane/test-env", mock.Anything).RunAndReturn(runAndReturn)
 
-			writerBackend.EXPECT().Set(ctx, mock.Anything, mock.Anything).Return(backend.DefaultSecret[conjur.ConjurSecretId]{}, nil).Times(2)
+			writerBackend.EXPECT().Set(ctx, mock.Anything, mock.Anything, mock.Anything).Return(backend.DefaultSecret[conjur.ConjurSecretId]{}, nil).Times(2)
 
-			res, err := conjurOnboarder.OnboardTeam(ctx, env, teamId)
+			res, err := conjurOnboarder.OnboardTeam(ctx, env, teamId, backend.WithStrategy(backend.StrategyMerge))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).ToNot(BeNil())
 		})
@@ -146,7 +149,7 @@ var _ = Describe("Conjur Onboarder", func() {
 			clientSecretCreated := false
 			teamTokenCreated := false
 
-			runAndReturnSecret := func(ctx context.Context, secretId conjur.ConjurSecretId, secretValue backend.SecretValue) (backend.DefaultSecret[conjur.ConjurSecretId], error) {
+			runAndReturnSecret := func(ctx context.Context, secretId conjur.ConjurSecretId, secretValue backend.SecretValue, opts ...backend.WriteOption) (backend.DefaultSecret[conjur.ConjurSecretId], error) {
 				if regexp.MustCompile(`^test-env:test-team::clientSecret:(.+)$`).MatchString(secretId.String()) {
 					Expect(secretId.String()).To(MatchRegexp("test-env:test-team::clientSecret:.+"))
 					Expect(secretValue.Value()).To(Equal("topsecret"))
@@ -163,7 +166,7 @@ var _ = Describe("Conjur Onboarder", func() {
 				return backend.NewDefaultSecret(secretId, secretValue.Value()), nil
 			}
 
-			writerBackend.EXPECT().Set(ctx, mock.Anything, mock.Anything).RunAndReturn(runAndReturnSecret).Times(2)
+			writerBackend.EXPECT().Set(ctx, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(runAndReturnSecret).Times(2)
 
 			res, err := conjurOnboarder.OnboardTeam(ctx, env, teamId,
 				backend.WithSecretValue("teamToken", backend.String("thisismyteamtoken")),
@@ -197,9 +200,9 @@ var _ = Describe("Conjur Onboarder", func() {
 			}
 			writeAPI.EXPECT().LoadPolicy(conjurapi.PolicyModePost, "controlplane/test-env/test-team", mock.Anything).RunAndReturn(runAndReturn)
 
-			writerBackend.EXPECT().Set(ctx, mock.Anything, mock.Anything).Return(backend.DefaultSecret[conjur.ConjurSecretId]{}, nil)
+			writerBackend.EXPECT().Set(ctx, mock.Anything, mock.Anything, mock.Anything).Return(backend.DefaultSecret[conjur.ConjurSecretId]{}, nil)
 
-			res, err := conjurOnboarder.OnboardApplication(ctx, env, teamId, appId)
+			res, err := conjurOnboarder.OnboardApplication(ctx, env, teamId, appId, backend.WithStrategy(backend.StrategyMerge))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).ToNot(BeNil())
 		})
@@ -264,7 +267,7 @@ var _ = Describe("Conjur Onboarder", func() {
 		clientSecretCreated := false
 		externalSecretsCreated := false
 
-		runAndReturnSecret := func(ctx context.Context, secretId conjur.ConjurSecretId, secretValue backend.SecretValue) (backend.DefaultSecret[conjur.ConjurSecretId], error) {
+		runAndReturnSecret := func(ctx context.Context, secretId conjur.ConjurSecretId, secretValue backend.SecretValue, opts ...backend.WriteOption) (backend.DefaultSecret[conjur.ConjurSecretId], error) {
 			if regexp.MustCompile(`^test-env:test-team:test-app:clientSecret:(.+)$`).MatchString(secretId.String()) {
 				Expect(secretId.String()).To(MatchRegexp("test-env:test-team:test-app:clientSecret:.+"))
 				Expect(secretValue.AllowChange()).To(BeFalse())
@@ -281,11 +284,12 @@ var _ = Describe("Conjur Onboarder", func() {
 			return backend.NewDefaultSecret(secretId, secretValue.Value()), nil
 		}
 
-		writerBackend.EXPECT().Set(ctx, mock.Anything, mock.Anything).RunAndReturn(runAndReturnSecret).Times(2)
+		writerBackend.EXPECT().Set(ctx, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(runAndReturnSecret).Times(2)
 
 		res, err := conjurOnboarder.OnboardApplication(ctx, env, teamId, appId,
 			backend.WithSecretValue("externalSecrets/key1", backend.String("value1")),
 			backend.WithSecretValue("externalSecrets/key2", backend.String("value2")),
+			backend.WithStrategy(backend.StrategyMerge),
 		)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(clientSecretCreated).To(BeTrue())
@@ -296,5 +300,273 @@ var _ = Describe("Conjur Onboarder", func() {
 		Expect(res.SecretRefs()).To(HaveKeyWithValue("externalSecrets/key1", MatchRegexp("test-env:test-team:test-app:externalSecrets/key1:.*")))
 		Expect(res.SecretRefs()).To(HaveKeyWithValue("externalSecrets/key2", MatchRegexp("test-env:test-team:test-app:externalSecrets/key2:.*")))
 		Expect(res.SecretRefs()).To(HaveLen(4))
+	})
+
+	Context("Strategy Support", func() {
+
+		It("merge strategy should set ALL allowed secrets with merge write option (team)", func() {
+			ctx := context.Background()
+			conjurOnboarder := conjur.NewOnboarder(writeAPI, writerBackend)
+			const env = "test-env"
+			const teamId = "test-team"
+
+			writeAPI.EXPECT().LoadPolicy(conjurapi.PolicyModePost, "controlplane/test-env", mock.Anything).Return(nil, nil)
+
+			// Both clientSecret and teamToken are Set (ALL allowed secrets)
+			secretsSet := map[string]bool{}
+			writerBackend.EXPECT().Set(ctx, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+				func(ctx context.Context, id conjur.ConjurSecretId, sv backend.SecretValue, opts ...backend.WriteOption) (backend.DefaultSecret[conjur.ConjurSecretId], error) {
+					secretsSet[id.Path()] = true
+					if id.Path() == "clientSecret" {
+						Expect(sv.Value()).To(Equal("my-secret"))
+						Expect(sv.AllowChange()).To(BeTrue())
+					}
+					if id.Path() == "teamToken" {
+						// teamToken not provided by user, so it uses InitialString default
+						Expect(sv.AllowChange()).To(BeFalse())
+					}
+					return backend.NewDefaultSecret(id, sv.Value()), nil
+				},
+			).Times(2)
+
+			res, err := conjurOnboarder.OnboardTeam(ctx, env, teamId,
+				backend.WithSecretValue("clientSecret", backend.String("my-secret")),
+				backend.WithStrategy(backend.StrategyMerge),
+			)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).ToNot(BeNil())
+			Expect(secretsSet).To(HaveKey("clientSecret"))
+			Expect(secretsSet).To(HaveKey("teamToken"))
+			Expect(res.SecretRefs()).To(HaveKey("clientSecret"))
+			Expect(res.SecretRefs()).To(HaveKey("teamToken"))
+		})
+
+		It("replace strategy should set ALL allowed secrets with replace write option (team)", func() {
+			ctx := context.Background()
+			conjurOnboarder := conjur.NewOnboarder(writeAPI, writerBackend)
+			const env = "test-env"
+			const teamId = "test-team"
+
+			writeAPI.EXPECT().LoadPolicy(conjurapi.PolicyModePost, "controlplane/test-env", mock.Anything).Return(nil, nil)
+
+			// Both clientSecret and teamToken are Set (ALL allowed secrets, no Delete)
+			secretsSet := map[string]bool{}
+			writerBackend.EXPECT().Set(ctx, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+				func(ctx context.Context, id conjur.ConjurSecretId, sv backend.SecretValue, opts ...backend.WriteOption) (backend.DefaultSecret[conjur.ConjurSecretId], error) {
+					secretsSet[id.Path()] = true
+					return backend.NewDefaultSecret(id, sv.Value()), nil
+				},
+			).Times(2)
+
+			res, err := conjurOnboarder.OnboardTeam(ctx, env, teamId,
+				backend.WithSecretValue("clientSecret", backend.String("my-secret")),
+				backend.WithStrategy(backend.StrategyReplace),
+			)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).ToNot(BeNil())
+			Expect(secretsSet).To(HaveKey("clientSecret"))
+			Expect(secretsSet).To(HaveKey("teamToken"))
+			Expect(res.SecretRefs()).To(HaveKey("clientSecret"))
+			Expect(res.SecretRefs()).To(HaveKey("teamToken"))
+		})
+
+		It("strategy should be forwarded to Set via WriteOption (application)", func() {
+			ctx := context.Background()
+			conjurOnboarder := conjur.NewOnboarder(writeAPI, writerBackend)
+			env := "test-env"
+			teamId := "test-team"
+			appId := "test-app"
+
+			writeAPI.EXPECT().LoadPolicy(conjurapi.PolicyModePost, "controlplane/test-env/test-team", mock.Anything).Return(nil, nil)
+
+			// Both clientSecret and externalSecrets are Set
+			secretsSet := map[string]bool{}
+			writerBackend.EXPECT().Set(ctx, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+				func(ctx context.Context, id conjur.ConjurSecretId, sv backend.SecretValue, opts ...backend.WriteOption) (backend.DefaultSecret[conjur.ConjurSecretId], error) {
+					secretsSet[id.Path()] = true
+					return backend.NewDefaultSecret(id, sv.Value()), nil
+				},
+			).Times(2)
+
+			res, err := conjurOnboarder.OnboardApplication(ctx, env, teamId, appId,
+				backend.WithSecretValue("externalSecrets/key1", backend.String("value1")),
+				backend.WithStrategy(backend.StrategyMerge),
+			)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).ToNot(BeNil())
+			Expect(secretsSet).To(HaveKey("clientSecret"))
+			Expect(secretsSet).To(HaveKey("externalSecrets"))
+			Expect(res.SecretRefs()).To(HaveKey("clientSecret"))
+			Expect(res.SecretRefs()).To(HaveKey("externalSecrets"))
+		})
+
+		It("no strategy (default) should set ALL allowed secrets (team)", func() {
+			ctx := context.Background()
+			conjurOnboarder := conjur.NewOnboarder(writeAPI, writerBackend)
+			const env = "test-env"
+			const teamId = "test-team"
+
+			writeAPI.EXPECT().LoadPolicy(conjurapi.PolicyModePost, "controlplane/test-env", mock.Anything).Return(nil, nil)
+
+			// Even with no strategy, ALL allowed secrets are Set (no Delete)
+			secretsSet := map[string]bool{}
+			writerBackend.EXPECT().Set(ctx, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+				func(ctx context.Context, id conjur.ConjurSecretId, sv backend.SecretValue, opts ...backend.WriteOption) (backend.DefaultSecret[conjur.ConjurSecretId], error) {
+					secretsSet[id.Path()] = true
+					return backend.NewDefaultSecret(id, sv.Value()), nil
+				},
+			).Times(2)
+
+			res, err := conjurOnboarder.OnboardTeam(ctx, env, teamId,
+				backend.WithSecretValue("clientSecret", backend.String("my-secret")),
+			)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).ToNot(BeNil())
+			Expect(secretsSet).To(HaveKey("clientSecret"))
+			Expect(secretsSet).To(HaveKey("teamToken"))
+			Expect(res.SecretRefs()).To(HaveKey("clientSecret"))
+			Expect(res.SecretRefs()).To(HaveKey("teamToken"))
+		})
+	})
+
+	Context("Concurrent Onboarding with Bouncer", func() {
+
+		It("should preserve all zones sub-keys when concurrent OnboardEnvironment calls use merge strategy", func() {
+			const concurrency = 10
+			const env = "test-env"
+
+			// In-memory store simulating the Conjur variable storage.
+			// Key = variableId (e.g. "controlplane/test-env/zones"), Value = current secret value.
+			store := make(map[string]string)
+			var storeMu sync.Mutex
+
+			// Create mock APIs backed by the in-memory store
+			readAPIConcurrent := mocks.NewMockConjurAPI(GinkgoT())
+			writeAPIConcurrent := mocks.NewMockConjurAPI(GinkgoT())
+
+			readAPIConcurrent.EXPECT().RetrieveSecret(mock.Anything).RunAndReturn(
+				func(variableId string) ([]byte, error) {
+					storeMu.Lock()
+					defer storeMu.Unlock()
+					val, ok := store[variableId]
+					if !ok {
+						return nil, &conjurapi_response.ConjurError{Code: 404, Message: "Not Found"}
+					}
+					return []byte(val), nil
+				},
+			)
+
+			writeAPIConcurrent.EXPECT().AddSecret(mock.Anything, mock.Anything).RunAndReturn(
+				func(variableId, value string) error {
+					storeMu.Lock()
+					defer storeMu.Unlock()
+					store[variableId] = value
+					return nil
+				},
+			)
+
+			writeAPIConcurrent.EXPECT().LoadPolicy(mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+				func(pm conjurapi.PolicyMode, s string, r io.Reader) (*conjurapi.PolicyResponse, error) {
+					_, _ = io.ReadAll(r)
+					return nil, nil
+				},
+			)
+
+			// Create a real ConjurBackend with bouncer (not a mock)
+			locker := bouncer.NewLocker("test-onboard-env")
+			realBackend := conjur.NewBackend(writeAPIConcurrent, readAPIConcurrent).WithBouncer(locker)
+
+			// Create the onboarder with the real backend as its secretWriter and shared bouncer
+			conjurOnboarder := conjur.NewOnboarder(writeAPIConcurrent, realBackend).WithBouncer(locker)
+
+			ctx := context.Background()
+			errs := make(chan error, concurrency)
+			var wg sync.WaitGroup
+			wg.Add(concurrency)
+
+			for i := 0; i < concurrency; i++ {
+				go func(idx int) {
+					defer wg.Done()
+					defer GinkgoRecover()
+					_, err := conjurOnboarder.OnboardEnvironment(ctx, env,
+						backend.WithSecretValue(fmt.Sprintf("zones/foo%d", idx), backend.String(fmt.Sprintf("bar%d", idx))),
+						backend.WithStrategy(backend.StrategyMerge),
+					)
+					errs <- err
+				}(i)
+			}
+
+			wg.Wait()
+			close(errs)
+
+			for err := range errs {
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			// Verify the zones variable contains ALL sub-keys from all concurrent calls
+			storeMu.Lock()
+			zonesValue := store["controlplane/test-env/zones"]
+			storeMu.Unlock()
+
+			Expect(zonesValue).ToNot(BeEmpty())
+
+			var zonesMap map[string]string
+			Expect(json.Unmarshal([]byte(zonesValue), &zonesMap)).To(Succeed())
+			Expect(zonesMap).To(HaveLen(concurrency))
+			for i := 0; i < concurrency; i++ {
+				Expect(zonesMap).To(HaveKeyWithValue(fmt.Sprintf("foo%d", i), fmt.Sprintf("bar%d", i)))
+			}
+		})
+
+		It("should handle concurrent OnboardTeam calls with bouncer without errors", func() {
+			const concurrency = 10
+			const env = "test-env"
+			const teamId = "test-team"
+
+			// Create dedicated mocks for the concurrent test
+			writeAPIConcurrent := mocks.NewMockConjurAPI(GinkgoT())
+			writerBackendConcurrent := mocks.NewMockBackend[conjur.ConjurSecretId, backend.DefaultSecret[conjur.ConjurSecretId]](GinkgoT())
+
+			locker := bouncer.NewLocker("test-onboard")
+			conjurOnboarder := conjur.NewOnboarder(writeAPIConcurrent, writerBackendConcurrent).WithBouncer(locker)
+
+			// LoadPolicy should be called once per concurrent call (serialized by bouncer)
+			writeAPIConcurrent.EXPECT().LoadPolicy(conjurapi.PolicyModePost, "controlplane/test-env", mock.Anything).
+				RunAndReturn(func(pm conjurapi.PolicyMode, s string, r io.Reader) (*conjurapi.PolicyResponse, error) {
+					// Drain the reader to avoid issues with reuse
+					_, _ = io.ReadAll(r)
+					return nil, nil
+				}).Times(concurrency)
+
+			// Set is called twice per onboard (clientSecret + teamToken), serialized
+			writerBackendConcurrent.EXPECT().Set(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				RunAndReturn(func(ctx context.Context, id conjur.ConjurSecretId, sv backend.SecretValue, opts ...backend.WriteOption) (backend.DefaultSecret[conjur.ConjurSecretId], error) {
+					return backend.NewDefaultSecret(id, sv.Value()), nil
+				}).Times(concurrency * 2)
+
+			ctx := context.Background()
+			errs := make(chan error, concurrency)
+			var wg sync.WaitGroup
+			wg.Add(concurrency)
+
+			for i := 0; i < concurrency; i++ {
+				go func(idx int) {
+					defer wg.Done()
+					defer GinkgoRecover()
+					_, err := conjurOnboarder.OnboardTeam(ctx, env, teamId,
+						backend.WithSecretValue("clientSecret", backend.String(fmt.Sprintf("secret-%d", idx))),
+						backend.WithStrategy(backend.StrategyMerge),
+					)
+					errs <- err
+				}(i)
+			}
+
+			wg.Wait()
+			close(errs)
+
+			for err := range errs {
+				Expect(err).ToNot(HaveOccurred())
+			}
+		})
 	})
 })

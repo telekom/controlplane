@@ -24,7 +24,7 @@ func GetSubPath(secretPath string) string {
 	if len(parts) > 1 {
 		return parts[1]
 	}
-	return ""
+	return NoSubPath
 }
 
 func GetPath(secretPath string) string {
