@@ -136,12 +136,12 @@ var (
 		{Name: "status_phase", Type: field.TypeEnum, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}, Default: "UNKNOWN"},
 		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "action", Type: field.TypeString, Size: 2147483647},
-		{Name: "state", Type: field.TypeEnum, Enums: []string{"PENDING", "SEMIGRANTED", "GRANTED", "REJECTED", "SUSPENDED", "EXPIRED"}, Default: "PENDING"},
 		{Name: "strategy", Type: field.TypeEnum, Enums: []string{"AUTO", "SIMPLE", "FOUR_EYES"}, Default: "AUTO"},
 		{Name: "requester", Type: field.TypeJSON},
 		{Name: "decider", Type: field.TypeJSON},
 		{Name: "decisions", Type: field.TypeJSON},
 		{Name: "available_transitions", Type: field.TypeJSON},
+		{Name: "state", Type: field.TypeEnum, Enums: []string{"PENDING", "SEMIGRANTED", "GRANTED", "REJECTED", "SUSPENDED", "EXPIRED"}, Default: "PENDING"},
 		{Name: "api_subscription_approval", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
 	// ApprovalsTable holds the schema information for the "approvals" table.
@@ -166,12 +166,12 @@ var (
 		{Name: "status_phase", Type: field.TypeEnum, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}, Default: "UNKNOWN"},
 		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "action", Type: field.TypeString, Size: 2147483647},
-		{Name: "state", Type: field.TypeEnum, Enums: []string{"PENDING", "SEMIGRANTED", "GRANTED", "REJECTED", "SUSPENDED", "EXPIRED"}, Default: "PENDING"},
 		{Name: "strategy", Type: field.TypeEnum, Enums: []string{"AUTO", "SIMPLE", "FOUR_EYES"}, Default: "AUTO"},
 		{Name: "requester", Type: field.TypeJSON},
 		{Name: "decider", Type: field.TypeJSON},
 		{Name: "decisions", Type: field.TypeJSON},
 		{Name: "available_transitions", Type: field.TypeJSON},
+		{Name: "state", Type: field.TypeEnum, Enums: []string{"PENDING", "SEMIGRANTED", "GRANTED", "REJECTED"}, Default: "PENDING"},
 		{Name: "api_subscription_approval_request", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
 	// ApprovalRequestsTable holds the schema information for the "approval_requests" table.

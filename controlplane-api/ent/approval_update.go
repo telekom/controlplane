@@ -88,20 +88,6 @@ func (_u *ApprovalUpdate) SetNillableAction(v *string) *ApprovalUpdate {
 	return _u
 }
 
-// SetState sets the "state" field.
-func (_u *ApprovalUpdate) SetState(v approval.State) *ApprovalUpdate {
-	_u.mutation.SetState(v)
-	return _u
-}
-
-// SetNillableState sets the "state" field if the given value is not nil.
-func (_u *ApprovalUpdate) SetNillableState(v *approval.State) *ApprovalUpdate {
-	if v != nil {
-		_u.SetState(*v)
-	}
-	return _u
-}
-
 // SetStrategy sets the "strategy" field.
 func (_u *ApprovalUpdate) SetStrategy(v approval.Strategy) *ApprovalUpdate {
 	_u.mutation.SetStrategy(v)
@@ -165,6 +151,20 @@ func (_u *ApprovalUpdate) SetAvailableTransitions(v []model.AvailableTransition)
 // AppendAvailableTransitions appends value to the "available_transitions" field.
 func (_u *ApprovalUpdate) AppendAvailableTransitions(v []model.AvailableTransition) *ApprovalUpdate {
 	_u.mutation.AppendAvailableTransitions(v)
+	return _u
+}
+
+// SetState sets the "state" field.
+func (_u *ApprovalUpdate) SetState(v approval.State) *ApprovalUpdate {
+	_u.mutation.SetState(v)
+	return _u
+}
+
+// SetNillableState sets the "state" field if the given value is not nil.
+func (_u *ApprovalUpdate) SetNillableState(v *approval.State) *ApprovalUpdate {
+	if v != nil {
+		_u.SetState(*v)
+	}
 	return _u
 }
 
@@ -252,14 +252,14 @@ func (_u *ApprovalUpdate) check() error {
 			return &ValidationError{Name: "action", err: fmt.Errorf(`ent: validator failed for field "Approval.action": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.State(); ok {
-		if err := approval.StateValidator(v); err != nil {
-			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "Approval.state": %w`, err)}
-		}
-	}
 	if v, ok := _u.mutation.Strategy(); ok {
 		if err := approval.StrategyValidator(v); err != nil {
 			return &ValidationError{Name: "strategy", err: fmt.Errorf(`ent: validator failed for field "Approval.strategy": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.State(); ok {
+		if err := approval.StateValidator(v); err != nil {
+			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "Approval.state": %w`, err)}
 		}
 	}
 	return nil
@@ -292,9 +292,6 @@ func (_u *ApprovalUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Action(); ok {
 		_spec.SetField(approval.FieldAction, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.State(); ok {
-		_spec.SetField(approval.FieldState, field.TypeEnum, value)
-	}
 	if value, ok := _u.mutation.Strategy(); ok {
 		_spec.SetField(approval.FieldStrategy, field.TypeEnum, value)
 	}
@@ -319,6 +316,9 @@ func (_u *ApprovalUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, approval.FieldAvailableTransitions, value)
 		})
+	}
+	if value, ok := _u.mutation.State(); ok {
+		_spec.SetField(approval.FieldState, field.TypeEnum, value)
 	}
 	if _u.mutation.APISubscriptionCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -423,20 +423,6 @@ func (_u *ApprovalUpdateOne) SetNillableAction(v *string) *ApprovalUpdateOne {
 	return _u
 }
 
-// SetState sets the "state" field.
-func (_u *ApprovalUpdateOne) SetState(v approval.State) *ApprovalUpdateOne {
-	_u.mutation.SetState(v)
-	return _u
-}
-
-// SetNillableState sets the "state" field if the given value is not nil.
-func (_u *ApprovalUpdateOne) SetNillableState(v *approval.State) *ApprovalUpdateOne {
-	if v != nil {
-		_u.SetState(*v)
-	}
-	return _u
-}
-
 // SetStrategy sets the "strategy" field.
 func (_u *ApprovalUpdateOne) SetStrategy(v approval.Strategy) *ApprovalUpdateOne {
 	_u.mutation.SetStrategy(v)
@@ -500,6 +486,20 @@ func (_u *ApprovalUpdateOne) SetAvailableTransitions(v []model.AvailableTransiti
 // AppendAvailableTransitions appends value to the "available_transitions" field.
 func (_u *ApprovalUpdateOne) AppendAvailableTransitions(v []model.AvailableTransition) *ApprovalUpdateOne {
 	_u.mutation.AppendAvailableTransitions(v)
+	return _u
+}
+
+// SetState sets the "state" field.
+func (_u *ApprovalUpdateOne) SetState(v approval.State) *ApprovalUpdateOne {
+	_u.mutation.SetState(v)
+	return _u
+}
+
+// SetNillableState sets the "state" field if the given value is not nil.
+func (_u *ApprovalUpdateOne) SetNillableState(v *approval.State) *ApprovalUpdateOne {
+	if v != nil {
+		_u.SetState(*v)
+	}
 	return _u
 }
 
@@ -600,14 +600,14 @@ func (_u *ApprovalUpdateOne) check() error {
 			return &ValidationError{Name: "action", err: fmt.Errorf(`ent: validator failed for field "Approval.action": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.State(); ok {
-		if err := approval.StateValidator(v); err != nil {
-			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "Approval.state": %w`, err)}
-		}
-	}
 	if v, ok := _u.mutation.Strategy(); ok {
 		if err := approval.StrategyValidator(v); err != nil {
 			return &ValidationError{Name: "strategy", err: fmt.Errorf(`ent: validator failed for field "Approval.strategy": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.State(); ok {
+		if err := approval.StateValidator(v); err != nil {
+			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "Approval.state": %w`, err)}
 		}
 	}
 	return nil
@@ -657,9 +657,6 @@ func (_u *ApprovalUpdateOne) sqlSave(ctx context.Context) (_node *Approval, err 
 	if value, ok := _u.mutation.Action(); ok {
 		_spec.SetField(approval.FieldAction, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.State(); ok {
-		_spec.SetField(approval.FieldState, field.TypeEnum, value)
-	}
 	if value, ok := _u.mutation.Strategy(); ok {
 		_spec.SetField(approval.FieldStrategy, field.TypeEnum, value)
 	}
@@ -684,6 +681,9 @@ func (_u *ApprovalUpdateOne) sqlSave(ctx context.Context) (_node *Approval, err 
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, approval.FieldAvailableTransitions, value)
 		})
+	}
+	if value, ok := _u.mutation.State(); ok {
+		_spec.SetField(approval.FieldState, field.TypeEnum, value)
 	}
 	if _u.mutation.APISubscriptionCleared() {
 		edge := &sqlgraph.EdgeSpec{

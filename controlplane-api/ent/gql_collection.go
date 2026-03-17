@@ -812,11 +812,6 @@ func (_q *ApprovalQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 				selectedFields = append(selectedFields, approval.FieldAction)
 				fieldSeen[approval.FieldAction] = struct{}{}
 			}
-		case "state":
-			if _, ok := fieldSeen[approval.FieldState]; !ok {
-				selectedFields = append(selectedFields, approval.FieldState)
-				fieldSeen[approval.FieldState] = struct{}{}
-			}
 		case "strategy":
 			if _, ok := fieldSeen[approval.FieldStrategy]; !ok {
 				selectedFields = append(selectedFields, approval.FieldStrategy)
@@ -841,6 +836,11 @@ func (_q *ApprovalQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 			if _, ok := fieldSeen[approval.FieldAvailableTransitions]; !ok {
 				selectedFields = append(selectedFields, approval.FieldAvailableTransitions)
 				fieldSeen[approval.FieldAvailableTransitions] = struct{}{}
+			}
+		case "state":
+			if _, ok := fieldSeen[approval.FieldState]; !ok {
+				selectedFields = append(selectedFields, approval.FieldState)
+				fieldSeen[approval.FieldState] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -968,11 +968,6 @@ func (_q *ApprovalRequestQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, approvalrequest.FieldAction)
 				fieldSeen[approvalrequest.FieldAction] = struct{}{}
 			}
-		case "state":
-			if _, ok := fieldSeen[approvalrequest.FieldState]; !ok {
-				selectedFields = append(selectedFields, approvalrequest.FieldState)
-				fieldSeen[approvalrequest.FieldState] = struct{}{}
-			}
 		case "strategy":
 			if _, ok := fieldSeen[approvalrequest.FieldStrategy]; !ok {
 				selectedFields = append(selectedFields, approvalrequest.FieldStrategy)
@@ -997,6 +992,11 @@ func (_q *ApprovalRequestQuery) collectField(ctx context.Context, oneNode bool, 
 			if _, ok := fieldSeen[approvalrequest.FieldAvailableTransitions]; !ok {
 				selectedFields = append(selectedFields, approvalrequest.FieldAvailableTransitions)
 				fieldSeen[approvalrequest.FieldAvailableTransitions] = struct{}{}
+			}
+		case "state":
+			if _, ok := fieldSeen[approvalrequest.FieldState]; !ok {
+				selectedFields = append(selectedFields, approvalrequest.FieldState)
+				fieldSeen[approvalrequest.FieldState] = struct{}{}
 			}
 		case "id":
 		case "__typename":

@@ -1543,17 +1543,17 @@ type ApprovalWhereInput struct {
 	ActionEqualFold    *string  `json:"actionEqualFold,omitempty"`
 	ActionContainsFold *string  `json:"actionContainsFold,omitempty"`
 
-	// "state" field predicates.
-	State      *approval.State  `json:"state,omitempty"`
-	StateNEQ   *approval.State  `json:"stateNEQ,omitempty"`
-	StateIn    []approval.State `json:"stateIn,omitempty"`
-	StateNotIn []approval.State `json:"stateNotIn,omitempty"`
-
 	// "strategy" field predicates.
 	Strategy      *approval.Strategy  `json:"strategy,omitempty"`
 	StrategyNEQ   *approval.Strategy  `json:"strategyNEQ,omitempty"`
 	StrategyIn    []approval.Strategy `json:"strategyIn,omitempty"`
 	StrategyNotIn []approval.Strategy `json:"strategyNotIn,omitempty"`
+
+	// "state" field predicates.
+	State      *approval.State  `json:"state,omitempty"`
+	StateNEQ   *approval.State  `json:"stateNEQ,omitempty"`
+	StateIn    []approval.State `json:"stateIn,omitempty"`
+	StateNotIn []approval.State `json:"stateNotIn,omitempty"`
 
 	// "api_subscription" edge predicates.
 	HasAPISubscription     *bool                        `json:"hasAPISubscription,omitempty"`
@@ -1799,18 +1799,6 @@ func (i *ApprovalWhereInput) P() (predicate.Approval, error) {
 	if i.ActionContainsFold != nil {
 		predicates = append(predicates, approval.ActionContainsFold(*i.ActionContainsFold))
 	}
-	if i.State != nil {
-		predicates = append(predicates, approval.StateEQ(*i.State))
-	}
-	if i.StateNEQ != nil {
-		predicates = append(predicates, approval.StateNEQ(*i.StateNEQ))
-	}
-	if len(i.StateIn) > 0 {
-		predicates = append(predicates, approval.StateIn(i.StateIn...))
-	}
-	if len(i.StateNotIn) > 0 {
-		predicates = append(predicates, approval.StateNotIn(i.StateNotIn...))
-	}
 	if i.Strategy != nil {
 		predicates = append(predicates, approval.StrategyEQ(*i.Strategy))
 	}
@@ -1822,6 +1810,18 @@ func (i *ApprovalWhereInput) P() (predicate.Approval, error) {
 	}
 	if len(i.StrategyNotIn) > 0 {
 		predicates = append(predicates, approval.StrategyNotIn(i.StrategyNotIn...))
+	}
+	if i.State != nil {
+		predicates = append(predicates, approval.StateEQ(*i.State))
+	}
+	if i.StateNEQ != nil {
+		predicates = append(predicates, approval.StateNEQ(*i.StateNEQ))
+	}
+	if len(i.StateIn) > 0 {
+		predicates = append(predicates, approval.StateIn(i.StateIn...))
+	}
+	if len(i.StateNotIn) > 0 {
+		predicates = append(predicates, approval.StateNotIn(i.StateNotIn...))
 	}
 
 	if i.HasAPISubscription != nil {
@@ -1927,17 +1927,17 @@ type ApprovalRequestWhereInput struct {
 	ActionEqualFold    *string  `json:"actionEqualFold,omitempty"`
 	ActionContainsFold *string  `json:"actionContainsFold,omitempty"`
 
-	// "state" field predicates.
-	State      *approvalrequest.State  `json:"state,omitempty"`
-	StateNEQ   *approvalrequest.State  `json:"stateNEQ,omitempty"`
-	StateIn    []approvalrequest.State `json:"stateIn,omitempty"`
-	StateNotIn []approvalrequest.State `json:"stateNotIn,omitempty"`
-
 	// "strategy" field predicates.
 	Strategy      *approvalrequest.Strategy  `json:"strategy,omitempty"`
 	StrategyNEQ   *approvalrequest.Strategy  `json:"strategyNEQ,omitempty"`
 	StrategyIn    []approvalrequest.Strategy `json:"strategyIn,omitempty"`
 	StrategyNotIn []approvalrequest.Strategy `json:"strategyNotIn,omitempty"`
+
+	// "state" field predicates.
+	State      *approvalrequest.State  `json:"state,omitempty"`
+	StateNEQ   *approvalrequest.State  `json:"stateNEQ,omitempty"`
+	StateIn    []approvalrequest.State `json:"stateIn,omitempty"`
+	StateNotIn []approvalrequest.State `json:"stateNotIn,omitempty"`
 
 	// "api_subscription" edge predicates.
 	HasAPISubscription     *bool                        `json:"hasAPISubscription,omitempty"`
@@ -2183,18 +2183,6 @@ func (i *ApprovalRequestWhereInput) P() (predicate.ApprovalRequest, error) {
 	if i.ActionContainsFold != nil {
 		predicates = append(predicates, approvalrequest.ActionContainsFold(*i.ActionContainsFold))
 	}
-	if i.State != nil {
-		predicates = append(predicates, approvalrequest.StateEQ(*i.State))
-	}
-	if i.StateNEQ != nil {
-		predicates = append(predicates, approvalrequest.StateNEQ(*i.StateNEQ))
-	}
-	if len(i.StateIn) > 0 {
-		predicates = append(predicates, approvalrequest.StateIn(i.StateIn...))
-	}
-	if len(i.StateNotIn) > 0 {
-		predicates = append(predicates, approvalrequest.StateNotIn(i.StateNotIn...))
-	}
 	if i.Strategy != nil {
 		predicates = append(predicates, approvalrequest.StrategyEQ(*i.Strategy))
 	}
@@ -2206,6 +2194,18 @@ func (i *ApprovalRequestWhereInput) P() (predicate.ApprovalRequest, error) {
 	}
 	if len(i.StrategyNotIn) > 0 {
 		predicates = append(predicates, approvalrequest.StrategyNotIn(i.StrategyNotIn...))
+	}
+	if i.State != nil {
+		predicates = append(predicates, approvalrequest.StateEQ(*i.State))
+	}
+	if i.StateNEQ != nil {
+		predicates = append(predicates, approvalrequest.StateNEQ(*i.StateNEQ))
+	}
+	if len(i.StateIn) > 0 {
+		predicates = append(predicates, approvalrequest.StateIn(i.StateIn...))
+	}
+	if len(i.StateNotIn) > 0 {
+		predicates = append(predicates, approvalrequest.StateNotIn(i.StateNotIn...))
 	}
 
 	if i.HasAPISubscription != nil {

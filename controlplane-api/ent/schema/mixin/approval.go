@@ -22,16 +22,6 @@ func (ApprovalFieldsMixin) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("action").
 			NotEmpty(),
-		field.Enum("state").
-			NamedValues(
-				"Pending", "PENDING",
-				"Semigranted", "SEMIGRANTED",
-				"Granted", "GRANTED",
-				"Rejected", "REJECTED",
-				"Suspended", "SUSPENDED",
-				"Expired", "EXPIRED",
-			).
-			Default("PENDING"),
 		field.Enum("strategy").
 			NamedValues(
 				"Auto", "AUTO",

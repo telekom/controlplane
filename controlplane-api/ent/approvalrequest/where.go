@@ -318,26 +318,6 @@ func ActionContainsFold(v string) predicate.ApprovalRequest {
 	return predicate.ApprovalRequest(sql.FieldContainsFold(FieldAction, v))
 }
 
-// StateEQ applies the EQ predicate on the "state" field.
-func StateEQ(v State) predicate.ApprovalRequest {
-	return predicate.ApprovalRequest(sql.FieldEQ(FieldState, v))
-}
-
-// StateNEQ applies the NEQ predicate on the "state" field.
-func StateNEQ(v State) predicate.ApprovalRequest {
-	return predicate.ApprovalRequest(sql.FieldNEQ(FieldState, v))
-}
-
-// StateIn applies the In predicate on the "state" field.
-func StateIn(vs ...State) predicate.ApprovalRequest {
-	return predicate.ApprovalRequest(sql.FieldIn(FieldState, vs...))
-}
-
-// StateNotIn applies the NotIn predicate on the "state" field.
-func StateNotIn(vs ...State) predicate.ApprovalRequest {
-	return predicate.ApprovalRequest(sql.FieldNotIn(FieldState, vs...))
-}
-
 // StrategyEQ applies the EQ predicate on the "strategy" field.
 func StrategyEQ(v Strategy) predicate.ApprovalRequest {
 	return predicate.ApprovalRequest(sql.FieldEQ(FieldStrategy, v))
@@ -356,6 +336,26 @@ func StrategyIn(vs ...Strategy) predicate.ApprovalRequest {
 // StrategyNotIn applies the NotIn predicate on the "strategy" field.
 func StrategyNotIn(vs ...Strategy) predicate.ApprovalRequest {
 	return predicate.ApprovalRequest(sql.FieldNotIn(FieldStrategy, vs...))
+}
+
+// StateEQ applies the EQ predicate on the "state" field.
+func StateEQ(v State) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldEQ(FieldState, v))
+}
+
+// StateNEQ applies the NEQ predicate on the "state" field.
+func StateNEQ(v State) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldNEQ(FieldState, v))
+}
+
+// StateIn applies the In predicate on the "state" field.
+func StateIn(vs ...State) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldIn(FieldState, vs...))
+}
+
+// StateNotIn applies the NotIn predicate on the "state" field.
+func StateNotIn(vs ...State) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldNotIn(FieldState, vs...))
 }
 
 // HasAPISubscription applies the HasEdge predicate on the "api_subscription" edge.

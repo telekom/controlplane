@@ -318,26 +318,6 @@ func ActionContainsFold(v string) predicate.Approval {
 	return predicate.Approval(sql.FieldContainsFold(FieldAction, v))
 }
 
-// StateEQ applies the EQ predicate on the "state" field.
-func StateEQ(v State) predicate.Approval {
-	return predicate.Approval(sql.FieldEQ(FieldState, v))
-}
-
-// StateNEQ applies the NEQ predicate on the "state" field.
-func StateNEQ(v State) predicate.Approval {
-	return predicate.Approval(sql.FieldNEQ(FieldState, v))
-}
-
-// StateIn applies the In predicate on the "state" field.
-func StateIn(vs ...State) predicate.Approval {
-	return predicate.Approval(sql.FieldIn(FieldState, vs...))
-}
-
-// StateNotIn applies the NotIn predicate on the "state" field.
-func StateNotIn(vs ...State) predicate.Approval {
-	return predicate.Approval(sql.FieldNotIn(FieldState, vs...))
-}
-
 // StrategyEQ applies the EQ predicate on the "strategy" field.
 func StrategyEQ(v Strategy) predicate.Approval {
 	return predicate.Approval(sql.FieldEQ(FieldStrategy, v))
@@ -356,6 +336,26 @@ func StrategyIn(vs ...Strategy) predicate.Approval {
 // StrategyNotIn applies the NotIn predicate on the "strategy" field.
 func StrategyNotIn(vs ...Strategy) predicate.Approval {
 	return predicate.Approval(sql.FieldNotIn(FieldStrategy, vs...))
+}
+
+// StateEQ applies the EQ predicate on the "state" field.
+func StateEQ(v State) predicate.Approval {
+	return predicate.Approval(sql.FieldEQ(FieldState, v))
+}
+
+// StateNEQ applies the NEQ predicate on the "state" field.
+func StateNEQ(v State) predicate.Approval {
+	return predicate.Approval(sql.FieldNEQ(FieldState, v))
+}
+
+// StateIn applies the In predicate on the "state" field.
+func StateIn(vs ...State) predicate.Approval {
+	return predicate.Approval(sql.FieldIn(FieldState, vs...))
+}
+
+// StateNotIn applies the NotIn predicate on the "state" field.
+func StateNotIn(vs ...State) predicate.Approval {
+	return predicate.Approval(sql.FieldNotIn(FieldState, vs...))
 }
 
 // HasAPISubscription applies the HasEdge predicate on the "api_subscription" edge.

@@ -9,6 +9,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
+	"entgo.io/ent/schema/field"
 
 	schemamixin "github.com/telekom/controlplane/controlplane-api/ent/schema/mixin"
 )
@@ -24,6 +25,21 @@ func (Approval) Mixin() []ent.Mixin {
 		schemamixin.TimestampsMixin{},
 		schemamixin.StatusMixin{},
 		schemamixin.ApprovalFieldsMixin{},
+	}
+}
+
+func (Approval) Fields() []ent.Field {
+	return []ent.Field{
+		field.Enum("state").
+			NamedValues(
+				"Pending", "PENDING",
+				"Semigranted", "SEMIGRANTED",
+				"Granted", "GRANTED",
+				"Rejected", "REJECTED",
+				"Suspended", "SUSPENDED",
+				"Expired", "EXPIRED",
+			).
+			Default("PENDING"),
 	}
 }
 

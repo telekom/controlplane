@@ -32,8 +32,6 @@ const (
 	FieldStatusMessage = "status_message"
 	// FieldAction holds the string denoting the action field in the database.
 	FieldAction = "action"
-	// FieldState holds the string denoting the state field in the database.
-	FieldState = "state"
 	// FieldStrategy holds the string denoting the strategy field in the database.
 	FieldStrategy = "strategy"
 	// FieldRequester holds the string denoting the requester field in the database.
@@ -44,6 +42,8 @@ const (
 	FieldDecisions = "decisions"
 	// FieldAvailableTransitions holds the string denoting the available_transitions field in the database.
 	FieldAvailableTransitions = "available_transitions"
+	// FieldState holds the string denoting the state field in the database.
+	FieldState = "state"
 	// EdgeAPISubscription holds the string denoting the api_subscription edge name in mutations.
 	EdgeAPISubscription = "api_subscription"
 	// Table holds the table name of the approval in the database.
@@ -65,12 +65,12 @@ var Columns = []string{
 	FieldStatusPhase,
 	FieldStatusMessage,
 	FieldAction,
-	FieldState,
 	FieldStrategy,
 	FieldRequester,
 	FieldDecider,
 	FieldDecisions,
 	FieldAvailableTransitions,
+	FieldState,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "approvals"
@@ -144,6 +144,33 @@ func StatusPhaseValidator(sp StatusPhase) error {
 	}
 }
 
+// Strategy defines the type for the "strategy" enum field.
+type Strategy string
+
+// StrategyAuto is the default value of the Strategy enum.
+const DefaultStrategy = StrategyAuto
+
+// Strategy values.
+const (
+	StrategyAuto     Strategy = "AUTO"
+	StrategySimple   Strategy = "SIMPLE"
+	StrategyFourEyes Strategy = "FOUR_EYES"
+)
+
+func (s Strategy) String() string {
+	return string(s)
+}
+
+// StrategyValidator is a validator for the "strategy" field enum values. It is called by the builders before save.
+func StrategyValidator(s Strategy) error {
+	switch s {
+	case StrategyAuto, StrategySimple, StrategyFourEyes:
+		return nil
+	default:
+		return fmt.Errorf("approval: invalid enum value for strategy field: %q", s)
+	}
+}
+
 // State defines the type for the "state" enum field.
 type State string
 
@@ -171,33 +198,6 @@ func StateValidator(s State) error {
 		return nil
 	default:
 		return fmt.Errorf("approval: invalid enum value for state field: %q", s)
-	}
-}
-
-// Strategy defines the type for the "strategy" enum field.
-type Strategy string
-
-// StrategyAuto is the default value of the Strategy enum.
-const DefaultStrategy = StrategyAuto
-
-// Strategy values.
-const (
-	StrategyAuto     Strategy = "AUTO"
-	StrategySimple   Strategy = "SIMPLE"
-	StrategyFourEyes Strategy = "FOUR_EYES"
-)
-
-func (s Strategy) String() string {
-	return string(s)
-}
-
-// StrategyValidator is a validator for the "strategy" field enum values. It is called by the builders before save.
-func StrategyValidator(s Strategy) error {
-	switch s {
-	case StrategyAuto, StrategySimple, StrategyFourEyes:
-		return nil
-	default:
-		return fmt.Errorf("approval: invalid enum value for strategy field: %q", s)
 	}
 }
 
@@ -234,14 +234,14 @@ func ByAction(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAction, opts...).ToFunc()
 }
 
-// ByState orders the results by the state field.
-func ByState(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldState, opts...).ToFunc()
-}
-
 // ByStrategy orders the results by the strategy field.
 func ByStrategy(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStrategy, opts...).ToFunc()
+}
+
+// ByState orders the results by the state field.
+func ByState(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldState, opts...).ToFunc()
 }
 
 // ByAPISubscriptionField orders the results by api_subscription field.
@@ -277,24 +277,6 @@ func (e *StatusPhase) UnmarshalGQL(val interface{}) error {
 }
 
 // MarshalGQL implements graphql.Marshaler interface.
-func (e State) MarshalGQL(w io.Writer) {
-	io.WriteString(w, strconv.Quote(e.String()))
-}
-
-// UnmarshalGQL implements graphql.Unmarshaler interface.
-func (e *State) UnmarshalGQL(val interface{}) error {
-	str, ok := val.(string)
-	if !ok {
-		return fmt.Errorf("enum %T must be a string", val)
-	}
-	*e = State(str)
-	if err := StateValidator(*e); err != nil {
-		return fmt.Errorf("%s is not a valid State", str)
-	}
-	return nil
-}
-
-// MarshalGQL implements graphql.Marshaler interface.
 func (e Strategy) MarshalGQL(w io.Writer) {
 	io.WriteString(w, strconv.Quote(e.String()))
 }
@@ -308,6 +290,24 @@ func (e *Strategy) UnmarshalGQL(val interface{}) error {
 	*e = Strategy(str)
 	if err := StrategyValidator(*e); err != nil {
 		return fmt.Errorf("%s is not a valid Strategy", str)
+	}
+	return nil
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (e State) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(e.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (e *State) UnmarshalGQL(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("enum %T must be a string", val)
+	}
+	*e = State(str)
+	if err := StateValidator(*e); err != nil {
+		return fmt.Errorf("%s is not a valid State", str)
 	}
 	return nil
 }
