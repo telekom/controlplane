@@ -184,9 +184,17 @@ func (_c *ApiExposureCreate) SetNillableApprovalConfig(v *model.ApprovalConfig) 
 	return _c
 }
 
-// SetAPI sets the "api" field.
-func (_c *ApiExposureCreate) SetAPI(v *model.ApiInfo) *ApiExposureCreate {
-	_c.mutation.SetAPI(v)
+// SetAPIVersion sets the "api_version" field.
+func (_c *ApiExposureCreate) SetAPIVersion(v string) *ApiExposureCreate {
+	_c.mutation.SetAPIVersion(v)
+	return _c
+}
+
+// SetNillableAPIVersion sets the "api_version" field if the given value is not nil.
+func (_c *ApiExposureCreate) SetNillableAPIVersion(v *string) *ApiExposureCreate {
+	if v != nil {
+		_c.SetAPIVersion(*v)
+	}
 	return _c
 }
 
@@ -440,9 +448,9 @@ func (_c *ApiExposureCreate) createSpec() (*ApiExposure, *sqlgraph.CreateSpec) {
 		_spec.SetField(apiexposure.FieldApprovalConfig, field.TypeJSON, value)
 		_node.ApprovalConfig = value
 	}
-	if value, ok := _c.mutation.API(); ok {
-		_spec.SetField(apiexposure.FieldAPI, field.TypeJSON, value)
-		_node.API = value
+	if value, ok := _c.mutation.APIVersion(); ok {
+		_spec.SetField(apiexposure.FieldAPIVersion, field.TypeString, value)
+		_node.APIVersion = &value
 	}
 	if nodes := _c.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

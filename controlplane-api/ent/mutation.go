@@ -70,7 +70,7 @@ type ApiExposureMutation struct {
 	upstreams                   *[]model.Upstream
 	appendupstreams             []model.Upstream
 	approval_config             *model.ApprovalConfig
-	api                         **model.ApiInfo
+	api_version                 *string
 	clearedFields               map[string]struct{}
 	owner                       *int
 	clearedowner                bool
@@ -691,53 +691,53 @@ func (m *ApiExposureMutation) ResetApprovalConfig() {
 	m.approval_config = nil
 }
 
-// SetAPI sets the "api" field.
-func (m *ApiExposureMutation) SetAPI(mi *model.ApiInfo) {
-	m.api = &mi
+// SetAPIVersion sets the "api_version" field.
+func (m *ApiExposureMutation) SetAPIVersion(s string) {
+	m.api_version = &s
 }
 
-// API returns the value of the "api" field in the mutation.
-func (m *ApiExposureMutation) API() (r *model.ApiInfo, exists bool) {
-	v := m.api
+// APIVersion returns the value of the "api_version" field in the mutation.
+func (m *ApiExposureMutation) APIVersion() (r string, exists bool) {
+	v := m.api_version
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldAPI returns the old "api" field's value of the ApiExposure entity.
+// OldAPIVersion returns the old "api_version" field's value of the ApiExposure entity.
 // If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldAPI(ctx context.Context) (v *model.ApiInfo, err error) {
+func (m *ApiExposureMutation) OldAPIVersion(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldAPI is only allowed on UpdateOne operations")
+		return v, errors.New("OldAPIVersion is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldAPI requires an ID field in the mutation")
+		return v, errors.New("OldAPIVersion requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldAPI: %w", err)
+		return v, fmt.Errorf("querying old value for OldAPIVersion: %w", err)
 	}
-	return oldValue.API, nil
+	return oldValue.APIVersion, nil
 }
 
-// ClearAPI clears the value of the "api" field.
-func (m *ApiExposureMutation) ClearAPI() {
-	m.api = nil
-	m.clearedFields[apiexposure.FieldAPI] = struct{}{}
+// ClearAPIVersion clears the value of the "api_version" field.
+func (m *ApiExposureMutation) ClearAPIVersion() {
+	m.api_version = nil
+	m.clearedFields[apiexposure.FieldAPIVersion] = struct{}{}
 }
 
-// APICleared returns if the "api" field was cleared in this mutation.
-func (m *ApiExposureMutation) APICleared() bool {
-	_, ok := m.clearedFields[apiexposure.FieldAPI]
+// APIVersionCleared returns if the "api_version" field was cleared in this mutation.
+func (m *ApiExposureMutation) APIVersionCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldAPIVersion]
 	return ok
 }
 
-// ResetAPI resets all changes to the "api" field.
-func (m *ApiExposureMutation) ResetAPI() {
-	m.api = nil
-	delete(m.clearedFields, apiexposure.FieldAPI)
+// ResetAPIVersion resets all changes to the "api_version" field.
+func (m *ApiExposureMutation) ResetAPIVersion() {
+	m.api_version = nil
+	delete(m.clearedFields, apiexposure.FieldAPIVersion)
 }
 
 // SetOwnerID sets the "owner" edge to the Application entity by id.
@@ -907,8 +907,8 @@ func (m *ApiExposureMutation) Fields() []string {
 	if m.approval_config != nil {
 		fields = append(fields, apiexposure.FieldApprovalConfig)
 	}
-	if m.api != nil {
-		fields = append(fields, apiexposure.FieldAPI)
+	if m.api_version != nil {
+		fields = append(fields, apiexposure.FieldAPIVersion)
 	}
 	return fields
 }
@@ -944,8 +944,8 @@ func (m *ApiExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.Upstreams()
 	case apiexposure.FieldApprovalConfig:
 		return m.ApprovalConfig()
-	case apiexposure.FieldAPI:
-		return m.API()
+	case apiexposure.FieldAPIVersion:
+		return m.APIVersion()
 	}
 	return nil, false
 }
@@ -981,8 +981,8 @@ func (m *ApiExposureMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldUpstreams(ctx)
 	case apiexposure.FieldApprovalConfig:
 		return m.OldApprovalConfig(ctx)
-	case apiexposure.FieldAPI:
-		return m.OldAPI(ctx)
+	case apiexposure.FieldAPIVersion:
+		return m.OldAPIVersion(ctx)
 	}
 	return nil, fmt.Errorf("unknown ApiExposure field %s", name)
 }
@@ -1083,12 +1083,12 @@ func (m *ApiExposureMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetApprovalConfig(v)
 		return nil
-	case apiexposure.FieldAPI:
-		v, ok := value.(*model.ApiInfo)
+	case apiexposure.FieldAPIVersion:
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetAPI(v)
+		m.SetAPIVersion(v)
 		return nil
 	}
 	return fmt.Errorf("unknown ApiExposure field %s", name)
@@ -1123,8 +1123,8 @@ func (m *ApiExposureMutation) ClearedFields() []string {
 	if m.FieldCleared(apiexposure.FieldExternalIdpTokenEndpoint) {
 		fields = append(fields, apiexposure.FieldExternalIdpTokenEndpoint)
 	}
-	if m.FieldCleared(apiexposure.FieldAPI) {
-		fields = append(fields, apiexposure.FieldAPI)
+	if m.FieldCleared(apiexposure.FieldAPIVersion) {
+		fields = append(fields, apiexposure.FieldAPIVersion)
 	}
 	return fields
 }
@@ -1143,8 +1143,8 @@ func (m *ApiExposureMutation) ClearField(name string) error {
 	case apiexposure.FieldExternalIdpTokenEndpoint:
 		m.ClearExternalIdpTokenEndpoint()
 		return nil
-	case apiexposure.FieldAPI:
-		m.ClearAPI()
+	case apiexposure.FieldAPIVersion:
+		m.ClearAPIVersion()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiExposure nullable field %s", name)
@@ -1193,8 +1193,8 @@ func (m *ApiExposureMutation) ResetField(name string) error {
 	case apiexposure.FieldApprovalConfig:
 		m.ResetApprovalConfig()
 		return nil
-	case apiexposure.FieldAPI:
-		m.ResetAPI()
+	case apiexposure.FieldAPIVersion:
+		m.ResetAPIVersion()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiExposure field %s", name)

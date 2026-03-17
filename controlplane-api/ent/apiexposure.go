@@ -49,8 +49,8 @@ type ApiExposure struct {
 	Upstreams []model.Upstream `json:"upstreams,omitempty"`
 	// ApprovalConfig holds the value of the "approval_config" field.
 	ApprovalConfig model.ApprovalConfig `json:"approval_config,omitempty"`
-	// API holds the value of the "api" field.
-	API *model.ApiInfo `json:"api,omitempty"`
+	// APIVersion holds the value of the "api_version" field.
+	APIVersion *string `json:"api_version,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ApiExposureQuery when eager-loading is set.
 	Edges                    ApiExposureEdges `json:"edges"`
@@ -98,13 +98,13 @@ func (*ApiExposure) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case apiexposure.FieldStatus, apiexposure.FieldProvidedScopes, apiexposure.FieldUpstreams, apiexposure.FieldApprovalConfig, apiexposure.FieldAPI:
+		case apiexposure.FieldStatus, apiexposure.FieldProvidedScopes, apiexposure.FieldUpstreams, apiexposure.FieldApprovalConfig:
 			values[i] = new([]byte)
 		case apiexposure.FieldActive, apiexposure.FieldLastMileSecurity, apiexposure.FieldCircuitBreakerEnabled:
 			values[i] = new(sql.NullBool)
 		case apiexposure.FieldID:
 			values[i] = new(sql.NullInt64)
-		case apiexposure.FieldBasePath, apiexposure.FieldVisibility, apiexposure.FieldM2mAuthMethod, apiexposure.FieldExternalIdpTokenEndpoint:
+		case apiexposure.FieldBasePath, apiexposure.FieldVisibility, apiexposure.FieldM2mAuthMethod, apiexposure.FieldExternalIdpTokenEndpoint, apiexposure.FieldAPIVersion:
 			values[i] = new(sql.NullString)
 		case apiexposure.FieldCreatedAt, apiexposure.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -218,13 +218,12 @@ func (_m *ApiExposure) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field approval_config: %w", err)
 				}
 			}
-		case apiexposure.FieldAPI:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field api", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.API); err != nil {
-					return fmt.Errorf("unmarshal field api: %w", err)
-				}
+		case apiexposure.FieldAPIVersion:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field api_version", values[i])
+			} else if value.Valid {
+				_m.APIVersion = new(string)
+				*_m.APIVersion = value.String
 			}
 		case apiexposure.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -320,8 +319,10 @@ func (_m *ApiExposure) String() string {
 	builder.WriteString("approval_config=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ApprovalConfig))
 	builder.WriteString(", ")
-	builder.WriteString("api=")
-	builder.WriteString(fmt.Sprintf("%v", _m.API))
+	if v := _m.APIVersion; v != nil {
+		builder.WriteString("api_version=")
+		builder.WriteString(*v)
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -18,7 +18,7 @@ type ApiExposure implements Node {
   providedScopes: [String!]!
   upstreams: [Upstream!]!
   approvalConfig: ApprovalConfig!
-  api: ApiInfo
+  apiVersion: String
   owner: Application!
   subscriptions(
     """
@@ -223,6 +223,24 @@ input ApiExposureWhereInput {
   """
   circuitBreakerEnabled: Boolean
   circuitBreakerEnabledNEQ: Boolean
+  """
+  api_version field predicates
+  """
+  apiVersion: String
+  apiVersionNEQ: String
+  apiVersionIn: [String!]
+  apiVersionNotIn: [String!]
+  apiVersionGT: String
+  apiVersionGTE: String
+  apiVersionLT: String
+  apiVersionLTE: String
+  apiVersionContains: String
+  apiVersionHasPrefix: String
+  apiVersionHasSuffix: String
+  apiVersionIsNil: Boolean
+  apiVersionNotNil: Boolean
+  apiVersionEqualFold: String
+  apiVersionContainsFold: String
   """
   owner edge predicates
   """

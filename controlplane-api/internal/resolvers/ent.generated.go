@@ -873,40 +873,30 @@ func (ec *executionContext) fieldContext_ApiExposure_approvalConfig(_ context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _ApiExposure_api(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
+func (ec *executionContext) _ApiExposure_apiVersion(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_ApiExposure_api,
+		ec.fieldContext_ApiExposure_apiVersion,
 		func(ctx context.Context) (any, error) {
-			return obj.API, nil
+			return obj.APIVersion, nil
 		},
 		nil,
-		ec.marshalOApiInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiInfo,
+		ec.marshalOString2ᚖstring,
 		true,
 		false,
 	)
 }
 
-func (ec *executionContext) fieldContext_ApiExposure_api(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ApiExposure_apiVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ApiExposure",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "basePath":
-				return ec.fieldContext_ApiInfo_basePath(ctx, field)
-			case "version":
-				return ec.fieldContext_ApiInfo_version(ctx, field)
-			case "category":
-				return ec.fieldContext_ApiInfo_category(ctx, field)
-			case "active":
-				return ec.fieldContext_ApiInfo_active(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ApiInfo", field.Name)
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1171,8 +1161,8 @@ func (ec *executionContext) fieldContext_ApiExposureEdge_node(_ context.Context,
 				return ec.fieldContext_ApiExposure_upstreams(ctx, field)
 			case "approvalConfig":
 				return ec.fieldContext_ApiExposure_approvalConfig(ctx, field)
-			case "api":
-				return ec.fieldContext_ApiExposure_api(ctx, field)
+			case "apiVersion":
+				return ec.fieldContext_ApiExposure_apiVersion(ctx, field)
 			case "owner":
 				return ec.fieldContext_ApiExposure_owner(ctx, field)
 			case "subscriptions":
@@ -1529,8 +1519,8 @@ func (ec *executionContext) fieldContext_ApiSubscription_target(_ context.Contex
 				return ec.fieldContext_ApiExposure_upstreams(ctx, field)
 			case "approvalConfig":
 				return ec.fieldContext_ApiExposure_approvalConfig(ctx, field)
-			case "api":
-				return ec.fieldContext_ApiExposure_api(ctx, field)
+			case "apiVersion":
+				return ec.fieldContext_ApiExposure_apiVersion(ctx, field)
 			case "owner":
 				return ec.fieldContext_ApiExposure_owner(ctx, field)
 			case "subscriptions":
@@ -5525,7 +5515,7 @@ func (ec *executionContext) unmarshalInputApiExposureWhereInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "lastMileSecurity", "lastMileSecurityNEQ", "m2mAuthMethod", "m2mAuthMethodNEQ", "m2mAuthMethodIn", "m2mAuthMethodNotIn", "externalIdpTokenEndpoint", "externalIdpTokenEndpointNEQ", "externalIdpTokenEndpointIn", "externalIdpTokenEndpointNotIn", "externalIdpTokenEndpointGT", "externalIdpTokenEndpointGTE", "externalIdpTokenEndpointLT", "externalIdpTokenEndpointLTE", "externalIdpTokenEndpointContains", "externalIdpTokenEndpointHasPrefix", "externalIdpTokenEndpointHasSuffix", "externalIdpTokenEndpointIsNil", "externalIdpTokenEndpointNotNil", "externalIdpTokenEndpointEqualFold", "externalIdpTokenEndpointContainsFold", "circuitBreakerEnabled", "circuitBreakerEnabledNEQ", "hasOwner", "hasOwnerWith", "hasSubscriptions", "hasSubscriptionsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "lastMileSecurity", "lastMileSecurityNEQ", "m2mAuthMethod", "m2mAuthMethodNEQ", "m2mAuthMethodIn", "m2mAuthMethodNotIn", "externalIdpTokenEndpoint", "externalIdpTokenEndpointNEQ", "externalIdpTokenEndpointIn", "externalIdpTokenEndpointNotIn", "externalIdpTokenEndpointGT", "externalIdpTokenEndpointGTE", "externalIdpTokenEndpointLT", "externalIdpTokenEndpointLTE", "externalIdpTokenEndpointContains", "externalIdpTokenEndpointHasPrefix", "externalIdpTokenEndpointHasSuffix", "externalIdpTokenEndpointIsNil", "externalIdpTokenEndpointNotNil", "externalIdpTokenEndpointEqualFold", "externalIdpTokenEndpointContainsFold", "circuitBreakerEnabled", "circuitBreakerEnabledNEQ", "apiVersion", "apiVersionNEQ", "apiVersionIn", "apiVersionNotIn", "apiVersionGT", "apiVersionGTE", "apiVersionLT", "apiVersionLTE", "apiVersionContains", "apiVersionHasPrefix", "apiVersionHasSuffix", "apiVersionIsNil", "apiVersionNotNil", "apiVersionEqualFold", "apiVersionContainsFold", "hasOwner", "hasOwnerWith", "hasSubscriptions", "hasSubscriptionsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6015,6 +6005,111 @@ func (ec *executionContext) unmarshalInputApiExposureWhereInput(ctx context.Cont
 				return it, err
 			}
 			it.CircuitBreakerEnabledNEQ = data
+		case "apiVersion":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersion"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIVersion = data
+		case "apiVersionNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersionNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIVersionNEQ = data
+		case "apiVersionIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersionIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIVersionIn = data
+		case "apiVersionNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersionNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIVersionNotIn = data
+		case "apiVersionGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersionGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIVersionGT = data
+		case "apiVersionGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersionGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIVersionGTE = data
+		case "apiVersionLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersionLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIVersionLT = data
+		case "apiVersionLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersionLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIVersionLTE = data
+		case "apiVersionContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersionContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIVersionContains = data
+		case "apiVersionHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersionHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIVersionHasPrefix = data
+		case "apiVersionHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersionHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIVersionHasSuffix = data
+		case "apiVersionIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersionIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIVersionIsNil = data
+		case "apiVersionNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersionNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIVersionNotNil = data
+		case "apiVersionEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersionEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIVersionEqualFold = data
+		case "apiVersionContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersionContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIVersionContainsFold = data
 		case "hasOwner":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasOwner"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -9899,8 +9994,8 @@ func (ec *executionContext) _ApiExposure(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "api":
-			out.Values[i] = ec._ApiExposure_api(ctx, field, obj)
+		case "apiVersion":
+			out.Values[i] = ec._ApiExposure_apiVersion(ctx, field, obj)
 		case "owner":
 			field := field
 

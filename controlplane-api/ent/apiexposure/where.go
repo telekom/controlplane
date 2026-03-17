@@ -93,6 +93,11 @@ func CircuitBreakerEnabled(v bool) predicate.ApiExposure {
 	return predicate.ApiExposure(sql.FieldEQ(FieldCircuitBreakerEnabled, v))
 }
 
+// APIVersion applies equality check predicate on the "api_version" field. It's identical to APIVersionEQ.
+func APIVersion(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldEQ(FieldAPIVersion, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.ApiExposure {
 	return predicate.ApiExposure(sql.FieldEQ(FieldCreatedAt, v))
@@ -383,14 +388,79 @@ func CircuitBreakerEnabledNEQ(v bool) predicate.ApiExposure {
 	return predicate.ApiExposure(sql.FieldNEQ(FieldCircuitBreakerEnabled, v))
 }
 
-// APIIsNil applies the IsNil predicate on the "api" field.
-func APIIsNil() predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldIsNull(FieldAPI))
+// APIVersionEQ applies the EQ predicate on the "api_version" field.
+func APIVersionEQ(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldEQ(FieldAPIVersion, v))
 }
 
-// APINotNil applies the NotNil predicate on the "api" field.
-func APINotNil() predicate.ApiExposure {
-	return predicate.ApiExposure(sql.FieldNotNull(FieldAPI))
+// APIVersionNEQ applies the NEQ predicate on the "api_version" field.
+func APIVersionNEQ(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldNEQ(FieldAPIVersion, v))
+}
+
+// APIVersionIn applies the In predicate on the "api_version" field.
+func APIVersionIn(vs ...string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldIn(FieldAPIVersion, vs...))
+}
+
+// APIVersionNotIn applies the NotIn predicate on the "api_version" field.
+func APIVersionNotIn(vs ...string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldNotIn(FieldAPIVersion, vs...))
+}
+
+// APIVersionGT applies the GT predicate on the "api_version" field.
+func APIVersionGT(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldGT(FieldAPIVersion, v))
+}
+
+// APIVersionGTE applies the GTE predicate on the "api_version" field.
+func APIVersionGTE(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldGTE(FieldAPIVersion, v))
+}
+
+// APIVersionLT applies the LT predicate on the "api_version" field.
+func APIVersionLT(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldLT(FieldAPIVersion, v))
+}
+
+// APIVersionLTE applies the LTE predicate on the "api_version" field.
+func APIVersionLTE(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldLTE(FieldAPIVersion, v))
+}
+
+// APIVersionContains applies the Contains predicate on the "api_version" field.
+func APIVersionContains(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldContains(FieldAPIVersion, v))
+}
+
+// APIVersionHasPrefix applies the HasPrefix predicate on the "api_version" field.
+func APIVersionHasPrefix(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldHasPrefix(FieldAPIVersion, v))
+}
+
+// APIVersionHasSuffix applies the HasSuffix predicate on the "api_version" field.
+func APIVersionHasSuffix(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldHasSuffix(FieldAPIVersion, v))
+}
+
+// APIVersionIsNil applies the IsNil predicate on the "api_version" field.
+func APIVersionIsNil() predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldIsNull(FieldAPIVersion))
+}
+
+// APIVersionNotNil applies the NotNil predicate on the "api_version" field.
+func APIVersionNotNil() predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldNotNull(FieldAPIVersion))
+}
+
+// APIVersionEqualFold applies the EqualFold predicate on the "api_version" field.
+func APIVersionEqualFold(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldEqualFold(FieldAPIVersion, v))
+}
+
+// APIVersionContainsFold applies the ContainsFold predicate on the "api_version" field.
+func APIVersionContainsFold(v string) predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldContainsFold(FieldAPIVersion, v))
 }
 
 // HasOwner applies the HasEdge predicate on the "owner" edge.

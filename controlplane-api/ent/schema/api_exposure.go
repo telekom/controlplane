@@ -66,9 +66,9 @@ func (ApiExposure) Fields() []ent.Field {
 		field.JSON("approval_config", model.ApprovalConfig{}).
 			Default(model.ApprovalConfig{Strategy: "AUTO"}).
 			Annotations(entgql.Type("ApprovalConfig"), entgql.Skip(entgql.SkipWhereInput)),
-		field.JSON("api", &model.ApiInfo{}).
+		field.Text("api_version").
 			Optional().
-			Annotations(entgql.Type("ApiInfo"), entgql.Skip(entgql.SkipWhereInput)),
+			Nillable(),
 	}
 }
 

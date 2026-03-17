@@ -16,14 +16,6 @@ type ApprovalConfig struct {
 	TrustedTeams []string `json:"trustedTeams"`
 }
 
-// ApiInfo represents the base API definition with version and category information.
-type ApiInfo struct {
-	BasePath string `json:"basePath"`
-	Version  string `json:"version"`
-	Category string `json:"category"`
-	Active   bool   `json:"active"`
-}
-
 // RequesterInfo represents who requested an approval.
 type RequesterInfo struct {
 	TeamName        string  `json:"teamName"`

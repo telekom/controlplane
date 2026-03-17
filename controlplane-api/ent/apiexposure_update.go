@@ -197,15 +197,23 @@ func (_u *ApiExposureUpdate) SetNillableApprovalConfig(v *model.ApprovalConfig) 
 	return _u
 }
 
-// SetAPI sets the "api" field.
-func (_u *ApiExposureUpdate) SetAPI(v *model.ApiInfo) *ApiExposureUpdate {
-	_u.mutation.SetAPI(v)
+// SetAPIVersion sets the "api_version" field.
+func (_u *ApiExposureUpdate) SetAPIVersion(v string) *ApiExposureUpdate {
+	_u.mutation.SetAPIVersion(v)
 	return _u
 }
 
-// ClearAPI clears the value of the "api" field.
-func (_u *ApiExposureUpdate) ClearAPI() *ApiExposureUpdate {
-	_u.mutation.ClearAPI()
+// SetNillableAPIVersion sets the "api_version" field if the given value is not nil.
+func (_u *ApiExposureUpdate) SetNillableAPIVersion(v *string) *ApiExposureUpdate {
+	if v != nil {
+		_u.SetAPIVersion(*v)
+	}
+	return _u
+}
+
+// ClearAPIVersion clears the value of the "api_version" field.
+func (_u *ApiExposureUpdate) ClearAPIVersion() *ApiExposureUpdate {
+	_u.mutation.ClearAPIVersion()
 	return _u
 }
 
@@ -393,11 +401,11 @@ func (_u *ApiExposureUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	if value, ok := _u.mutation.ApprovalConfig(); ok {
 		_spec.SetField(apiexposure.FieldApprovalConfig, field.TypeJSON, value)
 	}
-	if value, ok := _u.mutation.API(); ok {
-		_spec.SetField(apiexposure.FieldAPI, field.TypeJSON, value)
+	if value, ok := _u.mutation.APIVersion(); ok {
+		_spec.SetField(apiexposure.FieldAPIVersion, field.TypeString, value)
 	}
-	if _u.mutation.APICleared() {
-		_spec.ClearField(apiexposure.FieldAPI, field.TypeJSON)
+	if _u.mutation.APIVersionCleared() {
+		_spec.ClearField(apiexposure.FieldAPIVersion, field.TypeString)
 	}
 	if _u.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -655,15 +663,23 @@ func (_u *ApiExposureUpdateOne) SetNillableApprovalConfig(v *model.ApprovalConfi
 	return _u
 }
 
-// SetAPI sets the "api" field.
-func (_u *ApiExposureUpdateOne) SetAPI(v *model.ApiInfo) *ApiExposureUpdateOne {
-	_u.mutation.SetAPI(v)
+// SetAPIVersion sets the "api_version" field.
+func (_u *ApiExposureUpdateOne) SetAPIVersion(v string) *ApiExposureUpdateOne {
+	_u.mutation.SetAPIVersion(v)
 	return _u
 }
 
-// ClearAPI clears the value of the "api" field.
-func (_u *ApiExposureUpdateOne) ClearAPI() *ApiExposureUpdateOne {
-	_u.mutation.ClearAPI()
+// SetNillableAPIVersion sets the "api_version" field if the given value is not nil.
+func (_u *ApiExposureUpdateOne) SetNillableAPIVersion(v *string) *ApiExposureUpdateOne {
+	if v != nil {
+		_u.SetAPIVersion(*v)
+	}
+	return _u
+}
+
+// ClearAPIVersion clears the value of the "api_version" field.
+func (_u *ApiExposureUpdateOne) ClearAPIVersion() *ApiExposureUpdateOne {
+	_u.mutation.ClearAPIVersion()
 	return _u
 }
 
@@ -881,11 +897,11 @@ func (_u *ApiExposureUpdateOne) sqlSave(ctx context.Context) (_node *ApiExposure
 	if value, ok := _u.mutation.ApprovalConfig(); ok {
 		_spec.SetField(apiexposure.FieldApprovalConfig, field.TypeJSON, value)
 	}
-	if value, ok := _u.mutation.API(); ok {
-		_spec.SetField(apiexposure.FieldAPI, field.TypeJSON, value)
+	if value, ok := _u.mutation.APIVersion(); ok {
+		_spec.SetField(apiexposure.FieldAPIVersion, field.TypeString, value)
 	}
-	if _u.mutation.APICleared() {
-		_spec.ClearField(apiexposure.FieldAPI, field.TypeJSON)
+	if _u.mutation.APIVersionCleared() {
+		_spec.ClearField(apiexposure.FieldAPIVersion, field.TypeString)
 	}
 	if _u.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{

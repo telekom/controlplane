@@ -37,7 +37,7 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	ApiExposure struct {
-		API                      func(childComplexity int) int
+		APIVersion               func(childComplexity int) int
 		Active                   func(childComplexity int) int
 		ApprovalConfig           func(childComplexity int) int
 		BasePath                 func(childComplexity int) int
@@ -65,13 +65,6 @@ type ComplexityRoot struct {
 	ApiExposureEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
-	}
-
-	ApiInfo struct {
-		Active   func(childComplexity int) int
-		BasePath func(childComplexity int) int
-		Category func(childComplexity int) int
-		Version  func(childComplexity int) int
 	}
 
 	ApiSubscription struct {
@@ -321,12 +314,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	_ = ec
 	switch typeName + "." + field {
 
-	case "ApiExposure.api":
-		if e.ComplexityRoot.ApiExposure.API == nil {
+	case "ApiExposure.apiVersion":
+		if e.ComplexityRoot.ApiExposure.APIVersion == nil {
 			break
 		}
 
-		return e.ComplexityRoot.ApiExposure.API(childComplexity), true
+		return e.ComplexityRoot.ApiExposure.APIVersion(childComplexity), true
 
 	case "ApiExposure.active":
 		if e.ComplexityRoot.ApiExposure.Active == nil {
@@ -479,34 +472,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposureEdge.Node(childComplexity), true
-
-	case "ApiInfo.active":
-		if e.ComplexityRoot.ApiInfo.Active == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApiInfo.Active(childComplexity), true
-
-	case "ApiInfo.basePath":
-		if e.ComplexityRoot.ApiInfo.BasePath == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApiInfo.BasePath(childComplexity), true
-
-	case "ApiInfo.category":
-		if e.ComplexityRoot.ApiInfo.Category == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApiInfo.Category(childComplexity), true
-
-	case "ApiInfo.version":
-		if e.ComplexityRoot.ApiInfo.Version == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApiInfo.Version(childComplexity), true
 
 	case "ApiSubscription.approval":
 		if e.ComplexityRoot.ApiSubscription.Approval == nil {
@@ -1658,7 +1623,7 @@ type ApiExposure implements Node {
   providedScopes: [String!]!
   upstreams: [Upstream!]!
   approvalConfig: ApprovalConfig!
-  api: ApiInfo
+  apiVersion: String
   owner: Application!
   subscriptions(
     """
@@ -1863,6 +1828,24 @@ input ApiExposureWhereInput {
   """
   circuitBreakerEnabled: Boolean
   circuitBreakerEnabledNEQ: Boolean
+  """
+  api_version field predicates
+  """
+  apiVersion: String
+  apiVersionNEQ: String
+  apiVersionIn: [String!]
+  apiVersionNotIn: [String!]
+  apiVersionGT: String
+  apiVersionGTE: String
+  apiVersionLT: String
+  apiVersionLTE: String
+  apiVersionContains: String
+  apiVersionHasPrefix: String
+  apiVersionHasSuffix: String
+  apiVersionIsNil: Boolean
+  apiVersionNotNil: Boolean
+  apiVersionEqualFold: String
+  apiVersionContainsFold: String
   """
   owner edge predicates
   """
@@ -3367,13 +3350,6 @@ type RoverStatus {
 type Upstream {
   url: String!
   weight: Int!
-}
-
-type ApiInfo {
-  basePath: String!
-  version: String!
-  category: String!
-  active: Boolean!
 }
 
 type ApprovalConfig {
