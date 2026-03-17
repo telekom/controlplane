@@ -16,7 +16,8 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "last_modified_at", Type: field.TypeTime},
-		{Name: "status", Type: field.TypeJSON},
+		{Name: "status_phase", Type: field.TypeEnum, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}, Default: "UNKNOWN"},
+		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ZONE", "ENTERPRISE"}, Default: "ENTERPRISE"},
 		{Name: "active", Type: field.TypeBool, Default: false},
@@ -34,7 +35,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_exposures_applications_exposed_apis",
-				Columns:    []*schema.Column{APIExposuresColumns[11]},
+				Columns:    []*schema.Column{APIExposuresColumns[12]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -43,7 +44,7 @@ var (
 			{
 				Name:    "apiexposure_base_path_application_exposed_apis",
 				Unique:  true,
-				Columns: []*schema.Column{APIExposuresColumns[4], APIExposuresColumns[11]},
+				Columns: []*schema.Column{APIExposuresColumns[5], APIExposuresColumns[12]},
 			},
 		},
 	}
@@ -52,7 +53,8 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "last_modified_at", Type: field.TypeTime},
-		{Name: "status", Type: field.TypeJSON},
+		{Name: "status_phase", Type: field.TypeEnum, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}, Default: "UNKNOWN"},
+		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "m2m_auth_method", Type: field.TypeEnum, Enums: []string{"NONE", "BASIC_AUTH", "OAUTH2_CLIENT", "SCOPES_ONLY"}, Default: "NONE"},
 		{Name: "approved_scopes", Type: field.TypeJSON},
@@ -67,13 +69,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_subscriptions_api_exposures_target",
-				Columns:    []*schema.Column{APISubscriptionsColumns[7]},
+				Columns:    []*schema.Column{APISubscriptionsColumns[8]},
 				RefColumns: []*schema.Column{APIExposuresColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "api_subscriptions_applications_subscribed_apis",
-				Columns:    []*schema.Column{APISubscriptionsColumns[8]},
+				Columns:    []*schema.Column{APISubscriptionsColumns[9]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -82,7 +84,7 @@ var (
 			{
 				Name:    "apisubscription_application_subscribed_apis_api_subscription_target",
 				Unique:  true,
-				Columns: []*schema.Column{APISubscriptionsColumns[8], APISubscriptionsColumns[7]},
+				Columns: []*schema.Column{APISubscriptionsColumns[9], APISubscriptionsColumns[8]},
 			},
 		},
 	}
@@ -91,7 +93,8 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "last_modified_at", Type: field.TypeTime},
-		{Name: "status", Type: field.TypeJSON},
+		{Name: "status_phase", Type: field.TypeEnum, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}, Default: "UNKNOWN"},
+		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "client_id", Type: field.TypeString, Size: 2147483647},
 		{Name: "issuer_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
@@ -106,13 +109,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "applications_teams_applications",
-				Columns:    []*schema.Column{ApplicationsColumns[7]},
+				Columns:    []*schema.Column{ApplicationsColumns[8]},
 				RefColumns: []*schema.Column{TeamsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "applications_zones_applications",
-				Columns:    []*schema.Column{ApplicationsColumns[8]},
+				Columns:    []*schema.Column{ApplicationsColumns[9]},
 				RefColumns: []*schema.Column{ZonesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -121,7 +124,7 @@ var (
 			{
 				Name:    "application_name_team_applications",
 				Unique:  true,
-				Columns: []*schema.Column{ApplicationsColumns[4], ApplicationsColumns[7]},
+				Columns: []*schema.Column{ApplicationsColumns[5], ApplicationsColumns[8]},
 			},
 		},
 	}
@@ -130,7 +133,8 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "last_modified_at", Type: field.TypeTime},
-		{Name: "status", Type: field.TypeJSON},
+		{Name: "status_phase", Type: field.TypeEnum, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}, Default: "UNKNOWN"},
+		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "action", Type: field.TypeString, Size: 2147483647},
 		{Name: "state", Type: field.TypeEnum, Enums: []string{"PENDING", "SEMIGRANTED", "GRANTED", "REJECTED", "SUSPENDED", "EXPIRED"}, Default: "PENDING"},
 		{Name: "strategy", Type: field.TypeEnum, Enums: []string{"AUTO", "SIMPLE", "FOUR_EYES"}, Default: "AUTO"},
@@ -148,7 +152,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "approvals_api_subscriptions_approval",
-				Columns:    []*schema.Column{ApprovalsColumns[11]},
+				Columns:    []*schema.Column{ApprovalsColumns[12]},
 				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -159,7 +163,8 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "last_modified_at", Type: field.TypeTime},
-		{Name: "status", Type: field.TypeJSON},
+		{Name: "status_phase", Type: field.TypeEnum, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}, Default: "UNKNOWN"},
+		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "action", Type: field.TypeString, Size: 2147483647},
 		{Name: "state", Type: field.TypeEnum, Enums: []string{"PENDING", "SEMIGRANTED", "GRANTED", "REJECTED", "SUSPENDED", "EXPIRED"}, Default: "PENDING"},
 		{Name: "strategy", Type: field.TypeEnum, Enums: []string{"AUTO", "SIMPLE", "FOUR_EYES"}, Default: "AUTO"},
@@ -177,7 +182,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "approval_requests_api_subscriptions_approval_request",
-				Columns:    []*schema.Column{ApprovalRequestsColumns[11]},
+				Columns:    []*schema.Column{ApprovalRequestsColumns[12]},
 				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -242,7 +247,8 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "last_modified_at", Type: field.TypeTime},
-		{Name: "status", Type: field.TypeJSON},
+		{Name: "status_phase", Type: field.TypeEnum, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}, Default: "UNKNOWN"},
+		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 2147483647},
 		{Name: "email", Type: field.TypeString, Size: 2147483647},
 		{Name: "category", Type: field.TypeEnum, Enums: []string{"CUSTOMER", "INFRASTRUCTURE"}, Default: "CUSTOMER"},
@@ -257,7 +263,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "teams_groups_teams",
-				Columns:    []*schema.Column{TeamsColumns[8]},
+				Columns:    []*schema.Column{TeamsColumns[9]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

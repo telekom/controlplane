@@ -18,7 +18,6 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 )
 
 // TeamCreate is the builder for creating a Team entity.
@@ -56,16 +55,30 @@ func (_c *TeamCreate) SetNillableLastModifiedAt(v *time.Time) *TeamCreate {
 	return _c
 }
 
-// SetStatus sets the "status" field.
-func (_c *TeamCreate) SetStatus(v model.ResourceStatus) *TeamCreate {
-	_c.mutation.SetStatus(v)
+// SetStatusPhase sets the "status_phase" field.
+func (_c *TeamCreate) SetStatusPhase(v team.StatusPhase) *TeamCreate {
+	_c.mutation.SetStatusPhase(v)
 	return _c
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_c *TeamCreate) SetNillableStatus(v *model.ResourceStatus) *TeamCreate {
+// SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
+func (_c *TeamCreate) SetNillableStatusPhase(v *team.StatusPhase) *TeamCreate {
 	if v != nil {
-		_c.SetStatus(*v)
+		_c.SetStatusPhase(*v)
+	}
+	return _c
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (_c *TeamCreate) SetStatusMessage(v string) *TeamCreate {
+	_c.mutation.SetStatusMessage(v)
+	return _c
+}
+
+// SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
+func (_c *TeamCreate) SetNillableStatusMessage(v *string) *TeamCreate {
+	if v != nil {
+		_c.SetStatusMessage(*v)
 	}
 	return _c
 }
@@ -225,9 +238,9 @@ func (_c *TeamCreate) defaults() error {
 		v := team.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		v := team.DefaultStatus
-		_c.mutation.SetStatus(v)
+	if _, ok := _c.mutation.StatusPhase(); !ok {
+		v := team.DefaultStatusPhase
+		_c.mutation.SetStatusPhase(v)
 	}
 	if _, ok := _c.mutation.Category(); !ok {
 		v := team.DefaultCategory
@@ -244,8 +257,13 @@ func (_c *TeamCreate) check() error {
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
 		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "Team.last_modified_at"`)}
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Team.status"`)}
+	if _, ok := _c.mutation.StatusPhase(); !ok {
+		return &ValidationError{Name: "status_phase", err: errors.New(`ent: missing required field "Team.status_phase"`)}
+	}
+	if v, ok := _c.mutation.StatusPhase(); ok {
+		if err := team.StatusPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "Team.status_phase": %w`, err)}
+		}
 	}
 	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Team.name"`)}
@@ -305,9 +323,13 @@ func (_c *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 		_spec.SetField(team.FieldLastModifiedAt, field.TypeTime, value)
 		_node.LastModifiedAt = value
 	}
-	if value, ok := _c.mutation.Status(); ok {
-		_spec.SetField(team.FieldStatus, field.TypeJSON, value)
-		_node.Status = value
+	if value, ok := _c.mutation.StatusPhase(); ok {
+		_spec.SetField(team.FieldStatusPhase, field.TypeEnum, value)
+		_node.StatusPhase = value
+	}
+	if value, ok := _c.mutation.StatusMessage(); ok {
+		_spec.SetField(team.FieldStatusMessage, field.TypeString, value)
+		_node.StatusMessage = &value
 	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(team.FieldName, field.TypeString, value)

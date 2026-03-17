@@ -68,6 +68,11 @@ func LastModifiedAt(v time.Time) predicate.ApprovalRequest {
 	return predicate.ApprovalRequest(sql.FieldEQ(FieldLastModifiedAt, v))
 }
 
+// StatusMessage applies equality check predicate on the "status_message" field. It's identical to StatusMessageEQ.
+func StatusMessage(v string) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldEQ(FieldStatusMessage, v))
+}
+
 // Action applies equality check predicate on the "action" field. It's identical to ActionEQ.
 func Action(v string) predicate.ApprovalRequest {
 	return predicate.ApprovalRequest(sql.FieldEQ(FieldAction, v))
@@ -151,6 +156,101 @@ func LastModifiedAtLT(v time.Time) predicate.ApprovalRequest {
 // LastModifiedAtLTE applies the LTE predicate on the "last_modified_at" field.
 func LastModifiedAtLTE(v time.Time) predicate.ApprovalRequest {
 	return predicate.ApprovalRequest(sql.FieldLTE(FieldLastModifiedAt, v))
+}
+
+// StatusPhaseEQ applies the EQ predicate on the "status_phase" field.
+func StatusPhaseEQ(v StatusPhase) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldEQ(FieldStatusPhase, v))
+}
+
+// StatusPhaseNEQ applies the NEQ predicate on the "status_phase" field.
+func StatusPhaseNEQ(v StatusPhase) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldNEQ(FieldStatusPhase, v))
+}
+
+// StatusPhaseIn applies the In predicate on the "status_phase" field.
+func StatusPhaseIn(vs ...StatusPhase) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldIn(FieldStatusPhase, vs...))
+}
+
+// StatusPhaseNotIn applies the NotIn predicate on the "status_phase" field.
+func StatusPhaseNotIn(vs ...StatusPhase) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldNotIn(FieldStatusPhase, vs...))
+}
+
+// StatusMessageEQ applies the EQ predicate on the "status_message" field.
+func StatusMessageEQ(v string) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldEQ(FieldStatusMessage, v))
+}
+
+// StatusMessageNEQ applies the NEQ predicate on the "status_message" field.
+func StatusMessageNEQ(v string) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldNEQ(FieldStatusMessage, v))
+}
+
+// StatusMessageIn applies the In predicate on the "status_message" field.
+func StatusMessageIn(vs ...string) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldIn(FieldStatusMessage, vs...))
+}
+
+// StatusMessageNotIn applies the NotIn predicate on the "status_message" field.
+func StatusMessageNotIn(vs ...string) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldNotIn(FieldStatusMessage, vs...))
+}
+
+// StatusMessageGT applies the GT predicate on the "status_message" field.
+func StatusMessageGT(v string) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldGT(FieldStatusMessage, v))
+}
+
+// StatusMessageGTE applies the GTE predicate on the "status_message" field.
+func StatusMessageGTE(v string) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldGTE(FieldStatusMessage, v))
+}
+
+// StatusMessageLT applies the LT predicate on the "status_message" field.
+func StatusMessageLT(v string) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldLT(FieldStatusMessage, v))
+}
+
+// StatusMessageLTE applies the LTE predicate on the "status_message" field.
+func StatusMessageLTE(v string) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldLTE(FieldStatusMessage, v))
+}
+
+// StatusMessageContains applies the Contains predicate on the "status_message" field.
+func StatusMessageContains(v string) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldContains(FieldStatusMessage, v))
+}
+
+// StatusMessageHasPrefix applies the HasPrefix predicate on the "status_message" field.
+func StatusMessageHasPrefix(v string) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldHasPrefix(FieldStatusMessage, v))
+}
+
+// StatusMessageHasSuffix applies the HasSuffix predicate on the "status_message" field.
+func StatusMessageHasSuffix(v string) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldHasSuffix(FieldStatusMessage, v))
+}
+
+// StatusMessageIsNil applies the IsNil predicate on the "status_message" field.
+func StatusMessageIsNil() predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldIsNull(FieldStatusMessage))
+}
+
+// StatusMessageNotNil applies the NotNil predicate on the "status_message" field.
+func StatusMessageNotNil() predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldNotNull(FieldStatusMessage))
+}
+
+// StatusMessageEqualFold applies the EqualFold predicate on the "status_message" field.
+func StatusMessageEqualFold(v string) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldEqualFold(FieldStatusMessage, v))
+}
+
+// StatusMessageContainsFold applies the ContainsFold predicate on the "status_message" field.
+func StatusMessageContainsFold(v string) predicate.ApprovalRequest {
+	return predicate.ApprovalRequest(sql.FieldContainsFold(FieldStatusMessage, v))
 }
 
 // ActionEQ applies the EQ predicate on the "action" field.

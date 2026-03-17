@@ -40,17 +40,37 @@ func (_u *ApprovalRequestUpdate) SetLastModifiedAt(v time.Time) *ApprovalRequest
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *ApprovalRequestUpdate) SetStatus(v model.ResourceStatus) *ApprovalRequestUpdate {
-	_u.mutation.SetStatus(v)
+// SetStatusPhase sets the "status_phase" field.
+func (_u *ApprovalRequestUpdate) SetStatusPhase(v approvalrequest.StatusPhase) *ApprovalRequestUpdate {
+	_u.mutation.SetStatusPhase(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *ApprovalRequestUpdate) SetNillableStatus(v *model.ResourceStatus) *ApprovalRequestUpdate {
+// SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
+func (_u *ApprovalRequestUpdate) SetNillableStatusPhase(v *approvalrequest.StatusPhase) *ApprovalRequestUpdate {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetStatusPhase(*v)
 	}
+	return _u
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (_u *ApprovalRequestUpdate) SetStatusMessage(v string) *ApprovalRequestUpdate {
+	_u.mutation.SetStatusMessage(v)
+	return _u
+}
+
+// SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
+func (_u *ApprovalRequestUpdate) SetNillableStatusMessage(v *string) *ApprovalRequestUpdate {
+	if v != nil {
+		_u.SetStatusMessage(*v)
+	}
+	return _u
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (_u *ApprovalRequestUpdate) ClearStatusMessage() *ApprovalRequestUpdate {
+	_u.mutation.ClearStatusMessage()
 	return _u
 }
 
@@ -222,6 +242,11 @@ func (_u *ApprovalRequestUpdate) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ApprovalRequestUpdate) check() error {
+	if v, ok := _u.mutation.StatusPhase(); ok {
+		if err := approvalrequest.StatusPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "ApprovalRequest.status_phase": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Action(); ok {
 		if err := approvalrequest.ActionValidator(v); err != nil {
 			return &ValidationError{Name: "action", err: fmt.Errorf(`ent: validator failed for field "ApprovalRequest.action": %w`, err)}
@@ -255,8 +280,14 @@ func (_u *ApprovalRequestUpdate) sqlSave(ctx context.Context) (_node int, err er
 	if value, ok := _u.mutation.LastModifiedAt(); ok {
 		_spec.SetField(approvalrequest.FieldLastModifiedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(approvalrequest.FieldStatus, field.TypeJSON, value)
+	if value, ok := _u.mutation.StatusPhase(); ok {
+		_spec.SetField(approvalrequest.FieldStatusPhase, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.StatusMessage(); ok {
+		_spec.SetField(approvalrequest.FieldStatusMessage, field.TypeString, value)
+	}
+	if _u.mutation.StatusMessageCleared() {
+		_spec.ClearField(approvalrequest.FieldStatusMessage, field.TypeString)
 	}
 	if value, ok := _u.mutation.Action(); ok {
 		_spec.SetField(approvalrequest.FieldAction, field.TypeString, value)
@@ -344,17 +375,37 @@ func (_u *ApprovalRequestUpdateOne) SetLastModifiedAt(v time.Time) *ApprovalRequ
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *ApprovalRequestUpdateOne) SetStatus(v model.ResourceStatus) *ApprovalRequestUpdateOne {
-	_u.mutation.SetStatus(v)
+// SetStatusPhase sets the "status_phase" field.
+func (_u *ApprovalRequestUpdateOne) SetStatusPhase(v approvalrequest.StatusPhase) *ApprovalRequestUpdateOne {
+	_u.mutation.SetStatusPhase(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *ApprovalRequestUpdateOne) SetNillableStatus(v *model.ResourceStatus) *ApprovalRequestUpdateOne {
+// SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
+func (_u *ApprovalRequestUpdateOne) SetNillableStatusPhase(v *approvalrequest.StatusPhase) *ApprovalRequestUpdateOne {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetStatusPhase(*v)
 	}
+	return _u
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (_u *ApprovalRequestUpdateOne) SetStatusMessage(v string) *ApprovalRequestUpdateOne {
+	_u.mutation.SetStatusMessage(v)
+	return _u
+}
+
+// SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
+func (_u *ApprovalRequestUpdateOne) SetNillableStatusMessage(v *string) *ApprovalRequestUpdateOne {
+	if v != nil {
+		_u.SetStatusMessage(*v)
+	}
+	return _u
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (_u *ApprovalRequestUpdateOne) ClearStatusMessage() *ApprovalRequestUpdateOne {
+	_u.mutation.ClearStatusMessage()
 	return _u
 }
 
@@ -539,6 +590,11 @@ func (_u *ApprovalRequestUpdateOne) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ApprovalRequestUpdateOne) check() error {
+	if v, ok := _u.mutation.StatusPhase(); ok {
+		if err := approvalrequest.StatusPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "ApprovalRequest.status_phase": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Action(); ok {
 		if err := approvalrequest.ActionValidator(v); err != nil {
 			return &ValidationError{Name: "action", err: fmt.Errorf(`ent: validator failed for field "ApprovalRequest.action": %w`, err)}
@@ -589,8 +645,14 @@ func (_u *ApprovalRequestUpdateOne) sqlSave(ctx context.Context) (_node *Approva
 	if value, ok := _u.mutation.LastModifiedAt(); ok {
 		_spec.SetField(approvalrequest.FieldLastModifiedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(approvalrequest.FieldStatus, field.TypeJSON, value)
+	if value, ok := _u.mutation.StatusPhase(); ok {
+		_spec.SetField(approvalrequest.FieldStatusPhase, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.StatusMessage(); ok {
+		_spec.SetField(approvalrequest.FieldStatusMessage, field.TypeString, value)
+	}
+	if _u.mutation.StatusMessageCleared() {
+		_spec.ClearField(approvalrequest.FieldStatusMessage, field.TypeString)
 	}
 	if value, ok := _u.mutation.Action(); ok {
 		_spec.SetField(approvalrequest.FieldAction, field.TypeString, value)

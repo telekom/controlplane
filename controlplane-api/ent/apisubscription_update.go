@@ -22,7 +22,6 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 )
 
 // ApiSubscriptionUpdate is the builder for updating ApiSubscription entities.
@@ -44,17 +43,37 @@ func (_u *ApiSubscriptionUpdate) SetLastModifiedAt(v time.Time) *ApiSubscription
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *ApiSubscriptionUpdate) SetStatus(v model.ResourceStatus) *ApiSubscriptionUpdate {
-	_u.mutation.SetStatus(v)
+// SetStatusPhase sets the "status_phase" field.
+func (_u *ApiSubscriptionUpdate) SetStatusPhase(v apisubscription.StatusPhase) *ApiSubscriptionUpdate {
+	_u.mutation.SetStatusPhase(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdate) SetNillableStatus(v *model.ResourceStatus) *ApiSubscriptionUpdate {
+// SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
+func (_u *ApiSubscriptionUpdate) SetNillableStatusPhase(v *apisubscription.StatusPhase) *ApiSubscriptionUpdate {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetStatusPhase(*v)
 	}
+	return _u
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (_u *ApiSubscriptionUpdate) SetStatusMessage(v string) *ApiSubscriptionUpdate {
+	_u.mutation.SetStatusMessage(v)
+	return _u
+}
+
+// SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
+func (_u *ApiSubscriptionUpdate) SetNillableStatusMessage(v *string) *ApiSubscriptionUpdate {
+	if v != nil {
+		_u.SetStatusMessage(*v)
+	}
+	return _u
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (_u *ApiSubscriptionUpdate) ClearStatusMessage() *ApiSubscriptionUpdate {
+	_u.mutation.ClearStatusMessage()
 	return _u
 }
 
@@ -267,6 +286,11 @@ func (_u *ApiSubscriptionUpdate) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ApiSubscriptionUpdate) check() error {
+	if v, ok := _u.mutation.StatusPhase(); ok {
+		if err := apisubscription.StatusPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.status_phase": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.BasePath(); ok {
 		if err := apisubscription.BasePathValidator(v); err != nil {
 			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.base_path": %w`, err)}
@@ -301,8 +325,14 @@ func (_u *ApiSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err er
 	if value, ok := _u.mutation.LastModifiedAt(); ok {
 		_spec.SetField(apisubscription.FieldLastModifiedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(apisubscription.FieldStatus, field.TypeJSON, value)
+	if value, ok := _u.mutation.StatusPhase(); ok {
+		_spec.SetField(apisubscription.FieldStatusPhase, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.StatusMessage(); ok {
+		_spec.SetField(apisubscription.FieldStatusMessage, field.TypeString, value)
+	}
+	if _u.mutation.StatusMessageCleared() {
+		_spec.ClearField(apisubscription.FieldStatusMessage, field.TypeString)
 	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(apisubscription.FieldBasePath, field.TypeString, value)
@@ -505,17 +535,37 @@ func (_u *ApiSubscriptionUpdateOne) SetLastModifiedAt(v time.Time) *ApiSubscript
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *ApiSubscriptionUpdateOne) SetStatus(v model.ResourceStatus) *ApiSubscriptionUpdateOne {
-	_u.mutation.SetStatus(v)
+// SetStatusPhase sets the "status_phase" field.
+func (_u *ApiSubscriptionUpdateOne) SetStatusPhase(v apisubscription.StatusPhase) *ApiSubscriptionUpdateOne {
+	_u.mutation.SetStatusPhase(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *ApiSubscriptionUpdateOne) SetNillableStatus(v *model.ResourceStatus) *ApiSubscriptionUpdateOne {
+// SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
+func (_u *ApiSubscriptionUpdateOne) SetNillableStatusPhase(v *apisubscription.StatusPhase) *ApiSubscriptionUpdateOne {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetStatusPhase(*v)
 	}
+	return _u
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (_u *ApiSubscriptionUpdateOne) SetStatusMessage(v string) *ApiSubscriptionUpdateOne {
+	_u.mutation.SetStatusMessage(v)
+	return _u
+}
+
+// SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
+func (_u *ApiSubscriptionUpdateOne) SetNillableStatusMessage(v *string) *ApiSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetStatusMessage(*v)
+	}
+	return _u
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (_u *ApiSubscriptionUpdateOne) ClearStatusMessage() *ApiSubscriptionUpdateOne {
+	_u.mutation.ClearStatusMessage()
 	return _u
 }
 
@@ -741,6 +791,11 @@ func (_u *ApiSubscriptionUpdateOne) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ApiSubscriptionUpdateOne) check() error {
+	if v, ok := _u.mutation.StatusPhase(); ok {
+		if err := apisubscription.StatusPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.status_phase": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.BasePath(); ok {
 		if err := apisubscription.BasePathValidator(v); err != nil {
 			return &ValidationError{Name: "base_path", err: fmt.Errorf(`ent: validator failed for field "ApiSubscription.base_path": %w`, err)}
@@ -792,8 +847,14 @@ func (_u *ApiSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *ApiSubs
 	if value, ok := _u.mutation.LastModifiedAt(); ok {
 		_spec.SetField(apisubscription.FieldLastModifiedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(apisubscription.FieldStatus, field.TypeJSON, value)
+	if value, ok := _u.mutation.StatusPhase(); ok {
+		_spec.SetField(apisubscription.FieldStatusPhase, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.StatusMessage(); ok {
+		_spec.SetField(apisubscription.FieldStatusMessage, field.TypeString, value)
+	}
+	if _u.mutation.StatusMessageCleared() {
+		_spec.ClearField(apisubscription.FieldStatusMessage, field.TypeString)
 	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(apisubscription.FieldBasePath, field.TypeString, value)

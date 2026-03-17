@@ -6,7 +6,6 @@
 package ent
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -15,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 )
 
 // Team is the model entity for the Team schema.
@@ -27,8 +25,10 @@ type Team struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// LastModifiedAt holds the value of the "last_modified_at" field.
 	LastModifiedAt time.Time `json:"last_modified_at,omitempty"`
-	// Status holds the value of the "status" field.
-	Status model.ResourceStatus `json:"status,omitempty"`
+	// StatusPhase holds the value of the "status_phase" field.
+	StatusPhase team.StatusPhase `json:"status_phase,omitempty"`
+	// StatusMessage holds the value of the "status_message" field.
+	StatusMessage *string `json:"status_message,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Email holds the value of the "email" field.
@@ -108,11 +108,9 @@ func (*Team) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case team.FieldStatus:
-			values[i] = new([]byte)
 		case team.FieldID:
 			values[i] = new(sql.NullInt64)
-		case team.FieldName, team.FieldEmail, team.FieldCategory, team.FieldRoverTokenRef:
+		case team.FieldStatusPhase, team.FieldStatusMessage, team.FieldName, team.FieldEmail, team.FieldCategory, team.FieldRoverTokenRef:
 			values[i] = new(sql.NullString)
 		case team.FieldCreatedAt, team.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -151,13 +149,18 @@ func (_m *Team) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.LastModifiedAt = value.Time
 			}
-		case team.FieldStatus:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.Status); err != nil {
-					return fmt.Errorf("unmarshal field status: %w", err)
-				}
+		case team.FieldStatusPhase:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field status_phase", values[i])
+			} else if value.Valid {
+				_m.StatusPhase = team.StatusPhase(value.String)
+			}
+		case team.FieldStatusMessage:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field status_message", values[i])
+			} else if value.Valid {
+				_m.StatusMessage = new(string)
+				*_m.StatusMessage = value.String
 			}
 		case team.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -253,8 +256,13 @@ func (_m *Team) String() string {
 	builder.WriteString("last_modified_at=")
 	builder.WriteString(_m.LastModifiedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Status))
+	builder.WriteString("status_phase=")
+	builder.WriteString(fmt.Sprintf("%v", _m.StatusPhase))
+	builder.WriteString(", ")
+	if v := _m.StatusMessage; v != nil {
+		builder.WriteString("status_message=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)

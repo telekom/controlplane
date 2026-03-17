@@ -20,7 +20,6 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 )
 
 // TeamUpdate is the builder for updating Team entities.
@@ -42,17 +41,37 @@ func (_u *TeamUpdate) SetLastModifiedAt(v time.Time) *TeamUpdate {
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *TeamUpdate) SetStatus(v model.ResourceStatus) *TeamUpdate {
-	_u.mutation.SetStatus(v)
+// SetStatusPhase sets the "status_phase" field.
+func (_u *TeamUpdate) SetStatusPhase(v team.StatusPhase) *TeamUpdate {
+	_u.mutation.SetStatusPhase(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *TeamUpdate) SetNillableStatus(v *model.ResourceStatus) *TeamUpdate {
+// SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
+func (_u *TeamUpdate) SetNillableStatusPhase(v *team.StatusPhase) *TeamUpdate {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetStatusPhase(*v)
 	}
+	return _u
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (_u *TeamUpdate) SetStatusMessage(v string) *TeamUpdate {
+	_u.mutation.SetStatusMessage(v)
+	return _u
+}
+
+// SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
+func (_u *TeamUpdate) SetNillableStatusMessage(v *string) *TeamUpdate {
+	if v != nil {
+		_u.SetStatusMessage(*v)
+	}
+	return _u
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (_u *TeamUpdate) ClearStatusMessage() *TeamUpdate {
+	_u.mutation.ClearStatusMessage()
 	return _u
 }
 
@@ -300,6 +319,11 @@ func (_u *TeamUpdate) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *TeamUpdate) check() error {
+	if v, ok := _u.mutation.StatusPhase(); ok {
+		if err := team.StatusPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "Team.status_phase": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Name(); ok {
 		if err := team.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Team.name": %w`, err)}
@@ -333,8 +357,14 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.LastModifiedAt(); ok {
 		_spec.SetField(team.FieldLastModifiedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(team.FieldStatus, field.TypeJSON, value)
+	if value, ok := _u.mutation.StatusPhase(); ok {
+		_spec.SetField(team.FieldStatusPhase, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.StatusMessage(); ok {
+		_spec.SetField(team.FieldStatusMessage, field.TypeString, value)
+	}
+	if _u.mutation.StatusMessageCleared() {
+		_spec.ClearField(team.FieldStatusMessage, field.TypeString)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(team.FieldName, field.TypeString, value)
@@ -541,17 +571,37 @@ func (_u *TeamUpdateOne) SetLastModifiedAt(v time.Time) *TeamUpdateOne {
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *TeamUpdateOne) SetStatus(v model.ResourceStatus) *TeamUpdateOne {
-	_u.mutation.SetStatus(v)
+// SetStatusPhase sets the "status_phase" field.
+func (_u *TeamUpdateOne) SetStatusPhase(v team.StatusPhase) *TeamUpdateOne {
+	_u.mutation.SetStatusPhase(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *TeamUpdateOne) SetNillableStatus(v *model.ResourceStatus) *TeamUpdateOne {
+// SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
+func (_u *TeamUpdateOne) SetNillableStatusPhase(v *team.StatusPhase) *TeamUpdateOne {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetStatusPhase(*v)
 	}
+	return _u
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (_u *TeamUpdateOne) SetStatusMessage(v string) *TeamUpdateOne {
+	_u.mutation.SetStatusMessage(v)
+	return _u
+}
+
+// SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
+func (_u *TeamUpdateOne) SetNillableStatusMessage(v *string) *TeamUpdateOne {
+	if v != nil {
+		_u.SetStatusMessage(*v)
+	}
+	return _u
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (_u *TeamUpdateOne) ClearStatusMessage() *TeamUpdateOne {
+	_u.mutation.ClearStatusMessage()
 	return _u
 }
 
@@ -812,6 +862,11 @@ func (_u *TeamUpdateOne) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *TeamUpdateOne) check() error {
+	if v, ok := _u.mutation.StatusPhase(); ok {
+		if err := team.StatusPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "Team.status_phase": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Name(); ok {
 		if err := team.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Team.name": %w`, err)}
@@ -862,8 +917,14 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 	if value, ok := _u.mutation.LastModifiedAt(); ok {
 		_spec.SetField(team.FieldLastModifiedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(team.FieldStatus, field.TypeJSON, value)
+	if value, ok := _u.mutation.StatusPhase(); ok {
+		_spec.SetField(team.FieldStatusPhase, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.StatusMessage(); ok {
+		_spec.SetField(team.FieldStatusMessage, field.TypeString, value)
+	}
+	if _u.mutation.StatusMessageCleared() {
+		_spec.ClearField(team.FieldStatusMessage, field.TypeString)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(team.FieldName, field.TypeString, value)

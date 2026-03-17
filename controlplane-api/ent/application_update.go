@@ -20,7 +20,6 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 )
 
 // ApplicationUpdate is the builder for updating Application entities.
@@ -42,17 +41,37 @@ func (_u *ApplicationUpdate) SetLastModifiedAt(v time.Time) *ApplicationUpdate {
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *ApplicationUpdate) SetStatus(v model.ResourceStatus) *ApplicationUpdate {
-	_u.mutation.SetStatus(v)
+// SetStatusPhase sets the "status_phase" field.
+func (_u *ApplicationUpdate) SetStatusPhase(v application.StatusPhase) *ApplicationUpdate {
+	_u.mutation.SetStatusPhase(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *ApplicationUpdate) SetNillableStatus(v *model.ResourceStatus) *ApplicationUpdate {
+// SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
+func (_u *ApplicationUpdate) SetNillableStatusPhase(v *application.StatusPhase) *ApplicationUpdate {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetStatusPhase(*v)
 	}
+	return _u
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (_u *ApplicationUpdate) SetStatusMessage(v string) *ApplicationUpdate {
+	_u.mutation.SetStatusMessage(v)
+	return _u
+}
+
+// SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
+func (_u *ApplicationUpdate) SetNillableStatusMessage(v *string) *ApplicationUpdate {
+	if v != nil {
+		_u.SetStatusMessage(*v)
+	}
+	return _u
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (_u *ApplicationUpdate) ClearStatusMessage() *ApplicationUpdate {
+	_u.mutation.ClearStatusMessage()
 	return _u
 }
 
@@ -259,6 +278,11 @@ func (_u *ApplicationUpdate) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ApplicationUpdate) check() error {
+	if v, ok := _u.mutation.StatusPhase(); ok {
+		if err := application.StatusPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "Application.status_phase": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Name(); ok {
 		if err := application.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Application.name": %w`, err)}
@@ -293,8 +317,14 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	if value, ok := _u.mutation.LastModifiedAt(); ok {
 		_spec.SetField(application.FieldLastModifiedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(application.FieldStatus, field.TypeJSON, value)
+	if value, ok := _u.mutation.StatusPhase(); ok {
+		_spec.SetField(application.FieldStatusPhase, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.StatusMessage(); ok {
+		_spec.SetField(application.FieldStatusMessage, field.TypeString, value)
+	}
+	if _u.mutation.StatusMessageCleared() {
+		_spec.ClearField(application.FieldStatusMessage, field.TypeString)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(application.FieldName, field.TypeString, value)
@@ -482,17 +512,37 @@ func (_u *ApplicationUpdateOne) SetLastModifiedAt(v time.Time) *ApplicationUpdat
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *ApplicationUpdateOne) SetStatus(v model.ResourceStatus) *ApplicationUpdateOne {
-	_u.mutation.SetStatus(v)
+// SetStatusPhase sets the "status_phase" field.
+func (_u *ApplicationUpdateOne) SetStatusPhase(v application.StatusPhase) *ApplicationUpdateOne {
+	_u.mutation.SetStatusPhase(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *ApplicationUpdateOne) SetNillableStatus(v *model.ResourceStatus) *ApplicationUpdateOne {
+// SetNillableStatusPhase sets the "status_phase" field if the given value is not nil.
+func (_u *ApplicationUpdateOne) SetNillableStatusPhase(v *application.StatusPhase) *ApplicationUpdateOne {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetStatusPhase(*v)
 	}
+	return _u
+}
+
+// SetStatusMessage sets the "status_message" field.
+func (_u *ApplicationUpdateOne) SetStatusMessage(v string) *ApplicationUpdateOne {
+	_u.mutation.SetStatusMessage(v)
+	return _u
+}
+
+// SetNillableStatusMessage sets the "status_message" field if the given value is not nil.
+func (_u *ApplicationUpdateOne) SetNillableStatusMessage(v *string) *ApplicationUpdateOne {
+	if v != nil {
+		_u.SetStatusMessage(*v)
+	}
+	return _u
+}
+
+// ClearStatusMessage clears the value of the "status_message" field.
+func (_u *ApplicationUpdateOne) ClearStatusMessage() *ApplicationUpdateOne {
+	_u.mutation.ClearStatusMessage()
 	return _u
 }
 
@@ -712,6 +762,11 @@ func (_u *ApplicationUpdateOne) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ApplicationUpdateOne) check() error {
+	if v, ok := _u.mutation.StatusPhase(); ok {
+		if err := application.StatusPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "Application.status_phase": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Name(); ok {
 		if err := application.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Application.name": %w`, err)}
@@ -763,8 +818,14 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 	if value, ok := _u.mutation.LastModifiedAt(); ok {
 		_spec.SetField(application.FieldLastModifiedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(application.FieldStatus, field.TypeJSON, value)
+	if value, ok := _u.mutation.StatusPhase(); ok {
+		_spec.SetField(application.FieldStatusPhase, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.StatusMessage(); ok {
+		_spec.SetField(application.FieldStatusMessage, field.TypeString, value)
+	}
+	if _u.mutation.StatusMessageCleared() {
+		_spec.ClearField(application.FieldStatusMessage, field.TypeString)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(application.FieldName, field.TypeString, value)

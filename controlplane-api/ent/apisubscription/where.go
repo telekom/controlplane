@@ -68,6 +68,11 @@ func LastModifiedAt(v time.Time) predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.FieldEQ(FieldLastModifiedAt, v))
 }
 
+// StatusMessage applies equality check predicate on the "status_message" field. It's identical to StatusMessageEQ.
+func StatusMessage(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldEQ(FieldStatusMessage, v))
+}
+
 // BasePath applies equality check predicate on the "base_path" field. It's identical to BasePathEQ.
 func BasePath(v string) predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.FieldEQ(FieldBasePath, v))
@@ -151,6 +156,101 @@ func LastModifiedAtLT(v time.Time) predicate.ApiSubscription {
 // LastModifiedAtLTE applies the LTE predicate on the "last_modified_at" field.
 func LastModifiedAtLTE(v time.Time) predicate.ApiSubscription {
 	return predicate.ApiSubscription(sql.FieldLTE(FieldLastModifiedAt, v))
+}
+
+// StatusPhaseEQ applies the EQ predicate on the "status_phase" field.
+func StatusPhaseEQ(v StatusPhase) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldEQ(FieldStatusPhase, v))
+}
+
+// StatusPhaseNEQ applies the NEQ predicate on the "status_phase" field.
+func StatusPhaseNEQ(v StatusPhase) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldNEQ(FieldStatusPhase, v))
+}
+
+// StatusPhaseIn applies the In predicate on the "status_phase" field.
+func StatusPhaseIn(vs ...StatusPhase) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldIn(FieldStatusPhase, vs...))
+}
+
+// StatusPhaseNotIn applies the NotIn predicate on the "status_phase" field.
+func StatusPhaseNotIn(vs ...StatusPhase) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldNotIn(FieldStatusPhase, vs...))
+}
+
+// StatusMessageEQ applies the EQ predicate on the "status_message" field.
+func StatusMessageEQ(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldEQ(FieldStatusMessage, v))
+}
+
+// StatusMessageNEQ applies the NEQ predicate on the "status_message" field.
+func StatusMessageNEQ(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldNEQ(FieldStatusMessage, v))
+}
+
+// StatusMessageIn applies the In predicate on the "status_message" field.
+func StatusMessageIn(vs ...string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldIn(FieldStatusMessage, vs...))
+}
+
+// StatusMessageNotIn applies the NotIn predicate on the "status_message" field.
+func StatusMessageNotIn(vs ...string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldNotIn(FieldStatusMessage, vs...))
+}
+
+// StatusMessageGT applies the GT predicate on the "status_message" field.
+func StatusMessageGT(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldGT(FieldStatusMessage, v))
+}
+
+// StatusMessageGTE applies the GTE predicate on the "status_message" field.
+func StatusMessageGTE(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldGTE(FieldStatusMessage, v))
+}
+
+// StatusMessageLT applies the LT predicate on the "status_message" field.
+func StatusMessageLT(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldLT(FieldStatusMessage, v))
+}
+
+// StatusMessageLTE applies the LTE predicate on the "status_message" field.
+func StatusMessageLTE(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldLTE(FieldStatusMessage, v))
+}
+
+// StatusMessageContains applies the Contains predicate on the "status_message" field.
+func StatusMessageContains(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldContains(FieldStatusMessage, v))
+}
+
+// StatusMessageHasPrefix applies the HasPrefix predicate on the "status_message" field.
+func StatusMessageHasPrefix(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldHasPrefix(FieldStatusMessage, v))
+}
+
+// StatusMessageHasSuffix applies the HasSuffix predicate on the "status_message" field.
+func StatusMessageHasSuffix(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldHasSuffix(FieldStatusMessage, v))
+}
+
+// StatusMessageIsNil applies the IsNil predicate on the "status_message" field.
+func StatusMessageIsNil() predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldIsNull(FieldStatusMessage))
+}
+
+// StatusMessageNotNil applies the NotNil predicate on the "status_message" field.
+func StatusMessageNotNil() predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldNotNull(FieldStatusMessage))
+}
+
+// StatusMessageEqualFold applies the EqualFold predicate on the "status_message" field.
+func StatusMessageEqualFold(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldEqualFold(FieldStatusMessage, v))
+}
+
+// StatusMessageContainsFold applies the ContainsFold predicate on the "status_message" field.
+func StatusMessageContainsFold(v string) predicate.ApiSubscription {
+	return predicate.ApiSubscription(sql.FieldContainsFold(FieldStatusMessage, v))
 }
 
 // BasePathEQ applies the EQ predicate on the "base_path" field.

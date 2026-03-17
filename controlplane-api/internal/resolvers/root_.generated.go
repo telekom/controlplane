@@ -47,7 +47,8 @@ type ComplexityRoot struct {
 		ID             func(childComplexity int) int
 		LastModifiedAt func(childComplexity int) int
 		Owner          func(childComplexity int) int
-		Status         func(childComplexity int) int
+		StatusMessage  func(childComplexity int) int
+		StatusPhase    func(childComplexity int) int
 		Subscriptions  func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
 		Upstreams      func(childComplexity int) int
 		Visibility     func(childComplexity int) int
@@ -75,7 +76,8 @@ type ComplexityRoot struct {
 		LastModifiedAt  func(childComplexity int) int
 		M2mAuthMethod   func(childComplexity int) int
 		Owner           func(childComplexity int) int
-		Status          func(childComplexity int) int
+		StatusMessage   func(childComplexity int) int
+		StatusPhase     func(childComplexity int) int
 		Target          func(childComplexity int) int
 	}
 
@@ -99,8 +101,8 @@ type ComplexityRoot struct {
 		LastModifiedAt func(childComplexity int) int
 		Name           func(childComplexity int) int
 		OwnerTeam      func(childComplexity int) int
-		RoverStatus    func(childComplexity int) int
-		Status         func(childComplexity int) int
+		StatusMessage  func(childComplexity int) int
+		StatusPhase    func(childComplexity int) int
 		SubscribedApis func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
 		Zone           func(childComplexity int) int
 	}
@@ -127,7 +129,8 @@ type ComplexityRoot struct {
 		LastModifiedAt       func(childComplexity int) int
 		Requester            func(childComplexity int) int
 		State                func(childComplexity int) int
-		Status               func(childComplexity int) int
+		StatusMessage        func(childComplexity int) int
+		StatusPhase          func(childComplexity int) int
 		Strategy             func(childComplexity int) int
 	}
 
@@ -158,7 +161,8 @@ type ComplexityRoot struct {
 		LastModifiedAt       func(childComplexity int) int
 		Requester            func(childComplexity int) int
 		State                func(childComplexity int) int
-		Status               func(childComplexity int) int
+		StatusMessage        func(childComplexity int) int
+		StatusPhase          func(childComplexity int) int
 		Strategy             func(childComplexity int) int
 	}
 
@@ -237,19 +241,6 @@ type ComplexityRoot struct {
 		TeamName        func(childComplexity int) int
 	}
 
-	ResourceStatus struct {
-		Message func(childComplexity int) int
-		Phase   func(childComplexity int) int
-	}
-
-	RoverStatus struct {
-		ActiveExposures     func(childComplexity int) int
-		ActiveSubscriptions func(childComplexity int) int
-		Phase               func(childComplexity int) int
-		TotalExposures      func(childComplexity int) int
-		TotalSubscriptions  func(childComplexity int) int
-	}
-
 	Team struct {
 		Applications   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) int
 		Category       func(childComplexity int) int
@@ -262,7 +253,8 @@ type ComplexityRoot struct {
 		Members        func(childComplexity int) int
 		Name           func(childComplexity int) int
 		RoverTokenRef  func(childComplexity int) int
-		Status         func(childComplexity int) int
+		StatusMessage  func(childComplexity int) int
+		StatusPhase    func(childComplexity int) int
 	}
 
 	TeamConnection struct {
@@ -374,12 +366,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiExposure.Owner(childComplexity), true
 
-	case "ApiExposure.status":
-		if e.ComplexityRoot.ApiExposure.Status == nil {
+	case "ApiExposure.statusMessage":
+		if e.ComplexityRoot.ApiExposure.StatusMessage == nil {
 			break
 		}
 
-		return e.ComplexityRoot.ApiExposure.Status(childComplexity), true
+		return e.ComplexityRoot.ApiExposure.StatusMessage(childComplexity), true
+
+	case "ApiExposure.statusPhase":
+		if e.ComplexityRoot.ApiExposure.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposure.StatusPhase(childComplexity), true
 
 	case "ApiExposure.subscriptions":
 		if e.ComplexityRoot.ApiExposure.Subscriptions == nil {
@@ -512,12 +511,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiSubscription.Owner(childComplexity), true
 
-	case "ApiSubscription.status":
-		if e.ComplexityRoot.ApiSubscription.Status == nil {
+	case "ApiSubscription.statusMessage":
+		if e.ComplexityRoot.ApiSubscription.StatusMessage == nil {
 			break
 		}
 
-		return e.ComplexityRoot.ApiSubscription.Status(childComplexity), true
+		return e.ComplexityRoot.ApiSubscription.StatusMessage(childComplexity), true
+
+	case "ApiSubscription.statusPhase":
+		if e.ComplexityRoot.ApiSubscription.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscription.StatusPhase(childComplexity), true
 
 	case "ApiSubscription.target":
 		if e.ComplexityRoot.ApiSubscription.Target == nil {
@@ -622,19 +628,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Application.OwnerTeam(childComplexity), true
 
-	case "Application.roverStatus":
-		if e.ComplexityRoot.Application.RoverStatus == nil {
+	case "Application.statusMessage":
+		if e.ComplexityRoot.Application.StatusMessage == nil {
 			break
 		}
 
-		return e.ComplexityRoot.Application.RoverStatus(childComplexity), true
+		return e.ComplexityRoot.Application.StatusMessage(childComplexity), true
 
-	case "Application.status":
-		if e.ComplexityRoot.Application.Status == nil {
+	case "Application.statusPhase":
+		if e.ComplexityRoot.Application.StatusPhase == nil {
 			break
 		}
 
-		return e.ComplexityRoot.Application.Status(childComplexity), true
+		return e.ComplexityRoot.Application.StatusPhase(childComplexity), true
 
 	case "Application.subscribedApis":
 		if e.ComplexityRoot.Application.SubscribedApis == nil {
@@ -760,12 +766,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Approval.State(childComplexity), true
 
-	case "Approval.status":
-		if e.ComplexityRoot.Approval.Status == nil {
+	case "Approval.statusMessage":
+		if e.ComplexityRoot.Approval.StatusMessage == nil {
 			break
 		}
 
-		return e.ComplexityRoot.Approval.Status(childComplexity), true
+		return e.ComplexityRoot.Approval.StatusMessage(childComplexity), true
+
+	case "Approval.statusPhase":
+		if e.ComplexityRoot.Approval.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Approval.StatusPhase(childComplexity), true
 
 	case "Approval.strategy":
 		if e.ComplexityRoot.Approval.Strategy == nil {
@@ -893,12 +906,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApprovalRequest.State(childComplexity), true
 
-	case "ApprovalRequest.status":
-		if e.ComplexityRoot.ApprovalRequest.Status == nil {
+	case "ApprovalRequest.statusMessage":
+		if e.ComplexityRoot.ApprovalRequest.StatusMessage == nil {
 			break
 		}
 
-		return e.ComplexityRoot.ApprovalRequest.Status(childComplexity), true
+		return e.ComplexityRoot.ApprovalRequest.StatusMessage(childComplexity), true
+
+	case "ApprovalRequest.statusPhase":
+		if e.ComplexityRoot.ApprovalRequest.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalRequest.StatusPhase(childComplexity), true
 
 	case "ApprovalRequest.strategy":
 		if e.ComplexityRoot.ApprovalRequest.Strategy == nil {
@@ -1241,55 +1261,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.RequesterInfo.TeamName(childComplexity), true
 
-	case "ResourceStatus.message":
-		if e.ComplexityRoot.ResourceStatus.Message == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ResourceStatus.Message(childComplexity), true
-
-	case "ResourceStatus.phase":
-		if e.ComplexityRoot.ResourceStatus.Phase == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ResourceStatus.Phase(childComplexity), true
-
-	case "RoverStatus.activeExposures":
-		if e.ComplexityRoot.RoverStatus.ActiveExposures == nil {
-			break
-		}
-
-		return e.ComplexityRoot.RoverStatus.ActiveExposures(childComplexity), true
-
-	case "RoverStatus.activeSubscriptions":
-		if e.ComplexityRoot.RoverStatus.ActiveSubscriptions == nil {
-			break
-		}
-
-		return e.ComplexityRoot.RoverStatus.ActiveSubscriptions(childComplexity), true
-
-	case "RoverStatus.phase":
-		if e.ComplexityRoot.RoverStatus.Phase == nil {
-			break
-		}
-
-		return e.ComplexityRoot.RoverStatus.Phase(childComplexity), true
-
-	case "RoverStatus.totalExposures":
-		if e.ComplexityRoot.RoverStatus.TotalExposures == nil {
-			break
-		}
-
-		return e.ComplexityRoot.RoverStatus.TotalExposures(childComplexity), true
-
-	case "RoverStatus.totalSubscriptions":
-		if e.ComplexityRoot.RoverStatus.TotalSubscriptions == nil {
-			break
-		}
-
-		return e.ComplexityRoot.RoverStatus.TotalSubscriptions(childComplexity), true
-
 	case "Team.applications":
 		if e.ComplexityRoot.Team.Applications == nil {
 			break
@@ -1372,12 +1343,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Team.RoverTokenRef(childComplexity), true
 
-	case "Team.status":
-		if e.ComplexityRoot.Team.Status == nil {
+	case "Team.statusMessage":
+		if e.ComplexityRoot.Team.StatusMessage == nil {
 			break
 		}
 
-		return e.ComplexityRoot.Team.Status(childComplexity), true
+		return e.ComplexityRoot.Team.StatusMessage(childComplexity), true
+
+	case "Team.statusPhase":
+		if e.ComplexityRoot.Team.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Team.StatusPhase(childComplexity), true
 
 	case "TeamConnection.edges":
 		if e.ComplexityRoot.TeamConnection.Edges == nil {
@@ -1581,7 +1559,8 @@ type ApiExposure implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  status: ResourceStatus!
+  statusPhase: ApiExposureStatusPhase!
+  statusMessage: String
   basePath: String!
   visibility: ApiExposureVisibility!
   active: Boolean!
@@ -1673,6 +1652,15 @@ enum ApiExposureOrderField {
   LAST_MODIFIED_AT
 }
 """
+ApiExposureStatusPhase is enum for the field status_phase
+"""
+enum ApiExposureStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/apiexposure.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
 ApiExposureVisibility is enum for the field visibility
 """
 enum ApiExposureVisibility @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/apiexposure.Visibility") {
@@ -1721,6 +1709,31 @@ input ApiExposureWhereInput {
   lastModifiedAtGTE: Time
   lastModifiedAtLT: Time
   lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: ApiExposureStatusPhase
+  statusPhaseNEQ: ApiExposureStatusPhase
+  statusPhaseIn: [ApiExposureStatusPhase!]
+  statusPhaseNotIn: [ApiExposureStatusPhase!]
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
   """
   base_path field predicates
   """
@@ -1782,7 +1795,8 @@ type ApiSubscription implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  status: ResourceStatus!
+  statusPhase: ApiSubscriptionStatusPhase!
+  statusMessage: String
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
   approvedScopes: [String!]!
@@ -1852,6 +1866,15 @@ enum ApiSubscriptionOrderField {
   LAST_MODIFIED_AT
 }
 """
+ApiSubscriptionStatusPhase is enum for the field status_phase
+"""
+enum ApiSubscriptionStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/apisubscription.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
 ApiSubscriptionWhereInput is used for filtering ApiSubscription objects.
 Input was generated by ent.
 """
@@ -1892,6 +1915,31 @@ input ApiSubscriptionWhereInput {
   lastModifiedAtGTE: Time
   lastModifiedAtLT: Time
   lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: ApiSubscriptionStatusPhase
+  statusPhaseNEQ: ApiSubscriptionStatusPhase
+  statusPhaseIn: [ApiSubscriptionStatusPhase!]
+  statusPhaseNotIn: [ApiSubscriptionStatusPhase!]
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
   """
   base_path field predicates
   """
@@ -1945,7 +1993,8 @@ type Application implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  status: ResourceStatus!
+  statusPhase: ApplicationStatusPhase!
+  statusMessage: String
   name: String!
   clientID: String!
   issuerURL: String
@@ -2065,6 +2114,15 @@ enum ApplicationOrderField {
   NAME
 }
 """
+ApplicationStatusPhase is enum for the field status_phase
+"""
+enum ApplicationStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/application.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
 ApplicationWhereInput is used for filtering Application objects.
 Input was generated by ent.
 """
@@ -2105,6 +2163,31 @@ input ApplicationWhereInput {
   lastModifiedAtGTE: Time
   lastModifiedAtLT: Time
   lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: ApplicationStatusPhase
+  statusPhaseNEQ: ApplicationStatusPhase
+  statusPhaseIn: [ApplicationStatusPhase!]
+  statusPhaseNotIn: [ApplicationStatusPhase!]
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
   """
   name field predicates
   """
@@ -2180,7 +2263,8 @@ type Approval implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  status: ResourceStatus!
+  statusPhase: ApprovalStatusPhase!
+  statusMessage: String
   action: String!
   state: ApprovalState!
   strategy: ApprovalStrategy!
@@ -2244,7 +2328,8 @@ type ApprovalRequest implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  status: ResourceStatus!
+  statusPhase: ApprovalRequestStatusPhase!
+  statusMessage: String
   action: String!
   state: ApprovalRequestState!
   strategy: ApprovalRequestStrategy!
@@ -2316,6 +2401,15 @@ enum ApprovalRequestState @goModel(model: "github.com/telekom/controlplane/contr
   EXPIRED
 }
 """
+ApprovalRequestStatusPhase is enum for the field status_phase
+"""
+enum ApprovalRequestStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/approvalrequest.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
 ApprovalRequestStrategy is enum for the field strategy
 """
 enum ApprovalRequestStrategy @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/approvalrequest.Strategy") {
@@ -2365,6 +2459,31 @@ input ApprovalRequestWhereInput {
   lastModifiedAtLT: Time
   lastModifiedAtLTE: Time
   """
+  status_phase field predicates
+  """
+  statusPhase: ApprovalRequestStatusPhase
+  statusPhaseNEQ: ApprovalRequestStatusPhase
+  statusPhaseIn: [ApprovalRequestStatusPhase!]
+  statusPhaseNotIn: [ApprovalRequestStatusPhase!]
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
+  """
   action field predicates
   """
   action: String
@@ -2410,6 +2529,15 @@ enum ApprovalState @goModel(model: "github.com/telekom/controlplane/controlplane
   REJECTED
   SUSPENDED
   EXPIRED
+}
+"""
+ApprovalStatusPhase is enum for the field status_phase
+"""
+enum ApprovalStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/approval.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
 }
 """
 ApprovalStrategy is enum for the field strategy
@@ -2460,6 +2588,31 @@ input ApprovalWhereInput {
   lastModifiedAtGTE: Time
   lastModifiedAtLT: Time
   lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: ApprovalStatusPhase
+  statusPhaseNEQ: ApprovalStatusPhase
+  statusPhaseIn: [ApprovalStatusPhase!]
+  statusPhaseNotIn: [ApprovalStatusPhase!]
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
   """
   action field predicates
   """
@@ -2940,7 +3093,8 @@ type Team implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  status: ResourceStatus!
+  statusPhase: TeamStatusPhase!
+  statusMessage: String
   name: String!
   email: String!
   category: TeamCategory!
@@ -3039,6 +3193,15 @@ enum TeamOrderField {
   NAME
 }
 """
+TeamStatusPhase is enum for the field status_phase
+"""
+enum TeamStatusPhase @goModel(model: "github.com/telekom/controlplane/controlplane-api/ent/team.StatusPhase") {
+  READY
+  PENDING
+  ERROR
+  UNKNOWN
+}
+"""
 TeamWhereInput is used for filtering Team objects.
 Input was generated by ent.
 """
@@ -3079,6 +3242,31 @@ input TeamWhereInput {
   lastModifiedAtGTE: Time
   lastModifiedAtLT: Time
   lastModifiedAtLTE: Time
+  """
+  status_phase field predicates
+  """
+  statusPhase: TeamStatusPhase
+  statusPhaseNEQ: TeamStatusPhase
+  statusPhaseIn: [TeamStatusPhase!]
+  statusPhaseNotIn: [TeamStatusPhase!]
+  """
+  status_message field predicates
+  """
+  statusMessage: String
+  statusMessageNEQ: String
+  statusMessageIn: [String!]
+  statusMessageNotIn: [String!]
+  statusMessageGT: String
+  statusMessageGTE: String
+  statusMessageLT: String
+  statusMessageLTE: String
+  statusMessageContains: String
+  statusMessageHasPrefix: String
+  statusMessageHasSuffix: String
+  statusMessageIsNil: Boolean
+  statusMessageNotNil: Boolean
+  statusMessageEqualFold: String
+  statusMessageContainsFold: String
   """
   name field predicates
   """
@@ -3258,16 +3446,6 @@ type TeamInfo {
   email: String
 }
 
-# Aggregated status from the Rover perspective.
-type RoverStatus {
-  "Overall phase: READY if all exposures/subscriptions are healthy"
-  phase: ResourceStatusPhase!
-  totalExposures: Int!
-  totalSubscriptions: Int!
-  activeExposures: Int!
-  activeSubscriptions: Int!
-}
-
 type Upstream {
   url: String!
   weight: Int!
@@ -3303,18 +3481,6 @@ type AvailableTransition {
   toState: ApprovalState!
 }
 
-type ResourceStatus {
-  phase: ResourceStatusPhase!
-  message: String
-}
-
-enum ResourceStatusPhase {
-  READY
-  PENDING
-  ERROR
-  UNKNOWN
-}
-
 enum ApiExposureFeature {
   BASIC_AUTH
   CIRCUIT_BREAKER
@@ -3341,8 +3507,6 @@ enum ApprovalAction {
 extend type Application {
   "Owning team (reduced view for cross-tenant safety)"
   ownerTeam: TeamInfo!
-  "Aggregated Rover status overview"
-  roverStatus: RoverStatus
 }
 
 `, BuiltIn: false},
