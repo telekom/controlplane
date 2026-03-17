@@ -7,6 +7,7 @@ namespace: controlplane-system
 resources:
   - namespace.yaml
   - issuer.yaml # currently this creates a self-signed issuer, in future this should be replaced by a proper issuer (e.g. ACME)
+  - priority-classes
   - https://github.com/telekom/controlplane//approval/config/default/?timeout=120&ref=v0.17.0
   - https://github.com/telekom/controlplane//secret-manager/config/default/?timeout=120&ref=v0.17.0
   - https://github.com/telekom/controlplane//rover/config/default/?timeout=120&ref=v0.17.0
@@ -18,6 +19,24 @@ resources:
   - https://github.com/telekom/controlplane//admin/config/default/?timeout=120&ref=v0.17.0
   - https://github.com/telekom/controlplane//rover-server/config/default/?timeout=120&ref=v0.17.0
   - https://github.com/telekom/controlplane//file-manager/config/default/?timeout=120&ref=v0.17.0
+
+patches:
+  # High priority: secret-manager is scheduled before all other operators
+  - target:
+      kind: Deployment
+      name: secret-manager
+    patch: |-
+      - op: add
+        path: /spec/template/spec/priorityClassName
+        value: controlplane-critical
+  # Default priority for all other operators
+  - target:
+      kind: Deployment
+      name: ".*controller-manager|file-manager|rover-server"
+    patch: |-
+      - op: add
+        path: /spec/template/spec/priorityClassName
+        value: controlplane-default
 
 images:
   - name: ghcr.io/telekom/controlplane/approval

@@ -1,0 +1,21 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: controlplane-critical
+value: 1000000
+globalDefault: false
+preemptionPolicy: PreemptLowerPriority
+description: "High priority for critical control plane infrastructure (e.g. secret-manager)"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: controlplane-default
+value: 100000
+globalDefault: false
+preemptionPolicy: PreemptLowerPriority
+description: "Default priority for control plane operators"

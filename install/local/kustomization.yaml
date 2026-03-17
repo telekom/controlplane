@@ -7,6 +7,7 @@ namespace: controlplane-system
 resources:
   - namespace.yaml
   - issuer.yaml
+  - ../priority-classes
   - ../../file-manager/config/default
   - ../../secret-manager/config/default
   - ../../identity/config/default
@@ -62,6 +63,22 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: IfNotPresent
+  # High priority: secret-manager is scheduled before all other operators
+  - target:
+      kind: Deployment
+      name: secret-manager
+    patch: |-
+      - op: add
+        path: /spec/template/spec/priorityClassName
+        value: controlplane-critical
+  # Default priority for all other operators
+  - target:
+      kind: Deployment
+      name: ".*controller-manager|file-manager|rover-server"
+    patch: |-
+      - op: add
+        path: /spec/template/spec/priorityClassName
+        value: controlplane-default
 
 images:
   - name: ghcr.io/telekom/controlplane/approval
