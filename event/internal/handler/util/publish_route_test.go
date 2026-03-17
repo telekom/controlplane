@@ -162,7 +162,7 @@ var _ = Describe("CreatePublishRoute", func() {
 		// Verify upstream: from publishEventUrl
 		Expect(route.Spec.Upstreams).To(HaveLen(1))
 		Expect(route.Spec.Upstreams[0].Scheme).To(Equal("http"))
-		Expect(route.Spec.Upstreams[0].Host).To(Equal("publish-service:8080"))
+		Expect(route.Spec.Upstreams[0].Host).To(Equal("publish-service"))
 		Expect(route.Spec.Upstreams[0].Port).To(Equal(8080))
 		Expect(route.Spec.Upstreams[0].Path).To(Equal("/events"))
 
@@ -227,7 +227,7 @@ var _ = Describe("CreatePublishRoute", func() {
 		// Verify upstream with explicit HTTPS port
 		Expect(route.Spec.Upstreams).To(HaveLen(1))
 		Expect(route.Spec.Upstreams[0].Scheme).To(Equal("https"))
-		Expect(route.Spec.Upstreams[0].Host).To(Equal("publish-service.internal:9443"))
+		Expect(route.Spec.Upstreams[0].Host).To(Equal("publish-service.internal"))
 		Expect(route.Spec.Upstreams[0].Port).To(Equal(9443))
 		Expect(route.Spec.Upstreams[0].Path).To(Equal("/api/publish"))
 	})
