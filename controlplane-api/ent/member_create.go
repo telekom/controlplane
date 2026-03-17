@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
@@ -21,6 +22,7 @@ type MemberCreate struct {
 	config
 	mutation *MemberMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetName sets the "name" field.
@@ -130,6 +132,7 @@ func (_c *MemberCreate) createSpec() (*Member, *sqlgraph.CreateSpec) {
 		_node = &Member{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(member.Table, sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt))
 	)
+	_spec.OnConflict = _c.conflict
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(member.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -158,11 +161,186 @@ func (_c *MemberCreate) createSpec() (*Member, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Member.Create().
+//		SetName(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.MemberUpsert) {
+//			SetName(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *MemberCreate) OnConflict(opts ...sql.ConflictOption) *MemberUpsertOne {
+	_c.conflict = opts
+	return &MemberUpsertOne{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Member.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *MemberCreate) OnConflictColumns(columns ...string) *MemberUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &MemberUpsertOne{
+		create: _c,
+	}
+}
+
+type (
+	// MemberUpsertOne is the builder for "upsert"-ing
+	//  one Member node.
+	MemberUpsertOne struct {
+		create *MemberCreate
+	}
+
+	// MemberUpsert is the "OnConflict" setter.
+	MemberUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetName sets the "name" field.
+func (u *MemberUpsert) SetName(v string) *MemberUpsert {
+	u.Set(member.FieldName, v)
+	return u
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *MemberUpsert) UpdateName() *MemberUpsert {
+	u.SetExcluded(member.FieldName)
+	return u
+}
+
+// SetEmail sets the "email" field.
+func (u *MemberUpsert) SetEmail(v string) *MemberUpsert {
+	u.Set(member.FieldEmail, v)
+	return u
+}
+
+// UpdateEmail sets the "email" field to the value that was provided on create.
+func (u *MemberUpsert) UpdateEmail() *MemberUpsert {
+	u.SetExcluded(member.FieldEmail)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// Using this option is equivalent to using:
+//
+//	client.Member.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//		).
+//		Exec(ctx)
+func (u *MemberUpsertOne) UpdateNewValues() *MemberUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Member.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *MemberUpsertOne) Ignore() *MemberUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *MemberUpsertOne) DoNothing() *MemberUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the MemberCreate.OnConflict
+// documentation for more info.
+func (u *MemberUpsertOne) Update(set func(*MemberUpsert)) *MemberUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&MemberUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetName sets the "name" field.
+func (u *MemberUpsertOne) SetName(v string) *MemberUpsertOne {
+	return u.Update(func(s *MemberUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *MemberUpsertOne) UpdateName() *MemberUpsertOne {
+	return u.Update(func(s *MemberUpsert) {
+		s.UpdateName()
+	})
+}
+
+// SetEmail sets the "email" field.
+func (u *MemberUpsertOne) SetEmail(v string) *MemberUpsertOne {
+	return u.Update(func(s *MemberUpsert) {
+		s.SetEmail(v)
+	})
+}
+
+// UpdateEmail sets the "email" field to the value that was provided on create.
+func (u *MemberUpsertOne) UpdateEmail() *MemberUpsertOne {
+	return u.Update(func(s *MemberUpsert) {
+		s.UpdateEmail()
+	})
+}
+
+// Exec executes the query.
+func (u *MemberUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for MemberCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *MemberUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *MemberUpsertOne) ID(ctx context.Context) (id int, err error) {
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *MemberUpsertOne) IDX(ctx context.Context) int {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // MemberCreateBulk is the builder for creating many Member entities in bulk.
 type MemberCreateBulk struct {
 	config
 	err      error
 	builders []*MemberCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the Member entities in the database.
@@ -191,6 +369,7 @@ func (_c *MemberCreateBulk) Save(ctx context.Context) ([]*Member, error) {
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -241,6 +420,138 @@ func (_c *MemberCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (_c *MemberCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Member.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.MemberUpsert) {
+//			SetName(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *MemberCreateBulk) OnConflict(opts ...sql.ConflictOption) *MemberUpsertBulk {
+	_c.conflict = opts
+	return &MemberUpsertBulk{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Member.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *MemberCreateBulk) OnConflictColumns(columns ...string) *MemberUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &MemberUpsertBulk{
+		create: _c,
+	}
+}
+
+// MemberUpsertBulk is the builder for "upsert"-ing
+// a bulk of Member nodes.
+type MemberUpsertBulk struct {
+	create *MemberCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.Member.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//		).
+//		Exec(ctx)
+func (u *MemberUpsertBulk) UpdateNewValues() *MemberUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Member.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *MemberUpsertBulk) Ignore() *MemberUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *MemberUpsertBulk) DoNothing() *MemberUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the MemberCreateBulk.OnConflict
+// documentation for more info.
+func (u *MemberUpsertBulk) Update(set func(*MemberUpsert)) *MemberUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&MemberUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetName sets the "name" field.
+func (u *MemberUpsertBulk) SetName(v string) *MemberUpsertBulk {
+	return u.Update(func(s *MemberUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *MemberUpsertBulk) UpdateName() *MemberUpsertBulk {
+	return u.Update(func(s *MemberUpsert) {
+		s.UpdateName()
+	})
+}
+
+// SetEmail sets the "email" field.
+func (u *MemberUpsertBulk) SetEmail(v string) *MemberUpsertBulk {
+	return u.Update(func(s *MemberUpsert) {
+		s.SetEmail(v)
+	})
+}
+
+// UpdateEmail sets the "email" field to the value that was provided on create.
+func (u *MemberUpsertBulk) UpdateEmail() *MemberUpsertBulk {
+	return u.Update(func(s *MemberUpsert) {
+		s.UpdateEmail()
+	})
+}
+
+// Exec executes the query.
+func (u *MemberUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the MemberCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for MemberCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *MemberUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

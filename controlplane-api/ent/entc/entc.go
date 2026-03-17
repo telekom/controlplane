@@ -27,7 +27,7 @@ func main() {
 	}
 	opts := []entc.Option{
 		entc.Extensions(ex),
-		entc.FeatureNames("privacy"),
+		entc.FeatureNames("privacy", "sql/upsert"),
 	}
 	cfg := &gen.Config{}
 	if err := entc.Generate("./ent/schema", cfg, opts...); err != nil {
