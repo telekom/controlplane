@@ -24,6 +24,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
+	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 )
@@ -46,6 +47,7 @@ const (
 	TypeGroup           = "Group"
 	TypeMember          = "Member"
 	TypeTeam            = "Team"
+	TypeTeamEnvironment = "TeamEnvironment"
 	TypeZone            = "Zone"
 )
 
@@ -5119,14 +5121,17 @@ func (m *ApprovalRequestMutation) ResetEdge(name string) error {
 // EnvironmentMutation represents an operation that mutates the Environment nodes in the graph.
 type EnvironmentMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	name          *string
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*Environment, error)
-	predicates    []predicate.Environment
+	op                       Op
+	typ                      string
+	id                       *int
+	name                     *string
+	clearedFields            map[string]struct{}
+	team_environments        map[int]struct{}
+	removedteam_environments map[int]struct{}
+	clearedteam_environments bool
+	done                     bool
+	oldValue                 func(context.Context) (*Environment, error)
+	predicates               []predicate.Environment
 }
 
 var _ ent.Mutation = (*EnvironmentMutation)(nil)
@@ -5263,6 +5268,60 @@ func (m *EnvironmentMutation) ResetName() {
 	m.name = nil
 }
 
+// AddTeamEnvironmentIDs adds the "team_environments" edge to the TeamEnvironment entity by ids.
+func (m *EnvironmentMutation) AddTeamEnvironmentIDs(ids ...int) {
+	if m.team_environments == nil {
+		m.team_environments = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.team_environments[ids[i]] = struct{}{}
+	}
+}
+
+// ClearTeamEnvironments clears the "team_environments" edge to the TeamEnvironment entity.
+func (m *EnvironmentMutation) ClearTeamEnvironments() {
+	m.clearedteam_environments = true
+}
+
+// TeamEnvironmentsCleared reports if the "team_environments" edge to the TeamEnvironment entity was cleared.
+func (m *EnvironmentMutation) TeamEnvironmentsCleared() bool {
+	return m.clearedteam_environments
+}
+
+// RemoveTeamEnvironmentIDs removes the "team_environments" edge to the TeamEnvironment entity by IDs.
+func (m *EnvironmentMutation) RemoveTeamEnvironmentIDs(ids ...int) {
+	if m.removedteam_environments == nil {
+		m.removedteam_environments = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.team_environments, ids[i])
+		m.removedteam_environments[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedTeamEnvironments returns the removed IDs of the "team_environments" edge to the TeamEnvironment entity.
+func (m *EnvironmentMutation) RemovedTeamEnvironmentsIDs() (ids []int) {
+	for id := range m.removedteam_environments {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// TeamEnvironmentsIDs returns the "team_environments" edge IDs in the mutation.
+func (m *EnvironmentMutation) TeamEnvironmentsIDs() (ids []int) {
+	for id := range m.team_environments {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetTeamEnvironments resets all changes to the "team_environments" edge.
+func (m *EnvironmentMutation) ResetTeamEnvironments() {
+	m.team_environments = nil
+	m.clearedteam_environments = false
+	m.removedteam_environments = nil
+}
+
 // Where appends a list predicates to the EnvironmentMutation builder.
 func (m *EnvironmentMutation) Where(ps ...predicate.Environment) {
 	m.predicates = append(m.predicates, ps...)
@@ -5396,49 +5455,85 @@ func (m *EnvironmentMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *EnvironmentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.team_environments != nil {
+		edges = append(edges, environment.EdgeTeamEnvironments)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *EnvironmentMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case environment.EdgeTeamEnvironments:
+		ids := make([]ent.Value, 0, len(m.team_environments))
+		for id := range m.team_environments {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *EnvironmentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.removedteam_environments != nil {
+		edges = append(edges, environment.EdgeTeamEnvironments)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *EnvironmentMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case environment.EdgeTeamEnvironments:
+		ids := make([]ent.Value, 0, len(m.removedteam_environments))
+		for id := range m.removedteam_environments {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *EnvironmentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedteam_environments {
+		edges = append(edges, environment.EdgeTeamEnvironments)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *EnvironmentMutation) EdgeCleared(name string) bool {
+	switch name {
+	case environment.EdgeTeamEnvironments:
+		return m.clearedteam_environments
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *EnvironmentMutation) ClearEdge(name string) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown Environment unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *EnvironmentMutation) ResetEdge(name string) error {
+	switch name {
+	case environment.EdgeTeamEnvironments:
+		m.ResetTeamEnvironments()
+		return nil
+	}
 	return fmt.Errorf("unknown Environment edge %s", name)
 }
 
@@ -6419,32 +6514,31 @@ func (m *MemberMutation) ResetEdge(name string) error {
 // TeamMutation represents an operation that mutates the Team nodes in the graph.
 type TeamMutation struct {
 	config
-	op                  Op
-	typ                 string
-	id                  *int
-	created_at          *time.Time
-	last_modified_at    *time.Time
-	status_phase        *team.StatusPhase
-	status_message      *string
-	name                *string
-	email               *string
-	category            *team.Category
-	rover_token_ref     *string
-	clearedFields       map[string]struct{}
-	group               *int
-	clearedgroup        bool
-	members             map[int]struct{}
-	removedmembers      map[int]struct{}
-	clearedmembers      bool
-	environments        map[int]struct{}
-	removedenvironments map[int]struct{}
-	clearedenvironments bool
-	applications        map[int]struct{}
-	removedapplications map[int]struct{}
-	clearedapplications bool
-	done                bool
-	oldValue            func(context.Context) (*Team, error)
-	predicates          []predicate.Team
+	op                       Op
+	typ                      string
+	id                       *int
+	created_at               *time.Time
+	last_modified_at         *time.Time
+	status_phase             *team.StatusPhase
+	status_message           *string
+	name                     *string
+	email                    *string
+	category                 *team.Category
+	clearedFields            map[string]struct{}
+	group                    *int
+	clearedgroup             bool
+	members                  map[int]struct{}
+	removedmembers           map[int]struct{}
+	clearedmembers           bool
+	team_environments        map[int]struct{}
+	removedteam_environments map[int]struct{}
+	clearedteam_environments bool
+	applications             map[int]struct{}
+	removedapplications      map[int]struct{}
+	clearedapplications      bool
+	done                     bool
+	oldValue                 func(context.Context) (*Team, error)
+	predicates               []predicate.Team
 }
 
 var _ ent.Mutation = (*TeamMutation)(nil)
@@ -6810,55 +6904,6 @@ func (m *TeamMutation) ResetCategory() {
 	m.category = nil
 }
 
-// SetRoverTokenRef sets the "rover_token_ref" field.
-func (m *TeamMutation) SetRoverTokenRef(s string) {
-	m.rover_token_ref = &s
-}
-
-// RoverTokenRef returns the value of the "rover_token_ref" field in the mutation.
-func (m *TeamMutation) RoverTokenRef() (r string, exists bool) {
-	v := m.rover_token_ref
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldRoverTokenRef returns the old "rover_token_ref" field's value of the Team entity.
-// If the Team object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TeamMutation) OldRoverTokenRef(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRoverTokenRef is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRoverTokenRef requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRoverTokenRef: %w", err)
-	}
-	return oldValue.RoverTokenRef, nil
-}
-
-// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
-func (m *TeamMutation) ClearRoverTokenRef() {
-	m.rover_token_ref = nil
-	m.clearedFields[team.FieldRoverTokenRef] = struct{}{}
-}
-
-// RoverTokenRefCleared returns if the "rover_token_ref" field was cleared in this mutation.
-func (m *TeamMutation) RoverTokenRefCleared() bool {
-	_, ok := m.clearedFields[team.FieldRoverTokenRef]
-	return ok
-}
-
-// ResetRoverTokenRef resets all changes to the "rover_token_ref" field.
-func (m *TeamMutation) ResetRoverTokenRef() {
-	m.rover_token_ref = nil
-	delete(m.clearedFields, team.FieldRoverTokenRef)
-}
-
 // SetGroupID sets the "group" edge to the Group entity by id.
 func (m *TeamMutation) SetGroupID(id int) {
 	m.group = &id
@@ -6952,58 +6997,58 @@ func (m *TeamMutation) ResetMembers() {
 	m.removedmembers = nil
 }
 
-// AddEnvironmentIDs adds the "environments" edge to the Environment entity by ids.
-func (m *TeamMutation) AddEnvironmentIDs(ids ...int) {
-	if m.environments == nil {
-		m.environments = make(map[int]struct{})
+// AddTeamEnvironmentIDs adds the "team_environments" edge to the TeamEnvironment entity by ids.
+func (m *TeamMutation) AddTeamEnvironmentIDs(ids ...int) {
+	if m.team_environments == nil {
+		m.team_environments = make(map[int]struct{})
 	}
 	for i := range ids {
-		m.environments[ids[i]] = struct{}{}
+		m.team_environments[ids[i]] = struct{}{}
 	}
 }
 
-// ClearEnvironments clears the "environments" edge to the Environment entity.
-func (m *TeamMutation) ClearEnvironments() {
-	m.clearedenvironments = true
+// ClearTeamEnvironments clears the "team_environments" edge to the TeamEnvironment entity.
+func (m *TeamMutation) ClearTeamEnvironments() {
+	m.clearedteam_environments = true
 }
 
-// EnvironmentsCleared reports if the "environments" edge to the Environment entity was cleared.
-func (m *TeamMutation) EnvironmentsCleared() bool {
-	return m.clearedenvironments
+// TeamEnvironmentsCleared reports if the "team_environments" edge to the TeamEnvironment entity was cleared.
+func (m *TeamMutation) TeamEnvironmentsCleared() bool {
+	return m.clearedteam_environments
 }
 
-// RemoveEnvironmentIDs removes the "environments" edge to the Environment entity by IDs.
-func (m *TeamMutation) RemoveEnvironmentIDs(ids ...int) {
-	if m.removedenvironments == nil {
-		m.removedenvironments = make(map[int]struct{})
+// RemoveTeamEnvironmentIDs removes the "team_environments" edge to the TeamEnvironment entity by IDs.
+func (m *TeamMutation) RemoveTeamEnvironmentIDs(ids ...int) {
+	if m.removedteam_environments == nil {
+		m.removedteam_environments = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m.environments, ids[i])
-		m.removedenvironments[ids[i]] = struct{}{}
+		delete(m.team_environments, ids[i])
+		m.removedteam_environments[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedEnvironments returns the removed IDs of the "environments" edge to the Environment entity.
-func (m *TeamMutation) RemovedEnvironmentsIDs() (ids []int) {
-	for id := range m.removedenvironments {
+// RemovedTeamEnvironments returns the removed IDs of the "team_environments" edge to the TeamEnvironment entity.
+func (m *TeamMutation) RemovedTeamEnvironmentsIDs() (ids []int) {
+	for id := range m.removedteam_environments {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// EnvironmentsIDs returns the "environments" edge IDs in the mutation.
-func (m *TeamMutation) EnvironmentsIDs() (ids []int) {
-	for id := range m.environments {
+// TeamEnvironmentsIDs returns the "team_environments" edge IDs in the mutation.
+func (m *TeamMutation) TeamEnvironmentsIDs() (ids []int) {
+	for id := range m.team_environments {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetEnvironments resets all changes to the "environments" edge.
-func (m *TeamMutation) ResetEnvironments() {
-	m.environments = nil
-	m.clearedenvironments = false
-	m.removedenvironments = nil
+// ResetTeamEnvironments resets all changes to the "team_environments" edge.
+func (m *TeamMutation) ResetTeamEnvironments() {
+	m.team_environments = nil
+	m.clearedteam_environments = false
+	m.removedteam_environments = nil
 }
 
 // AddApplicationIDs adds the "applications" edge to the Application entity by ids.
@@ -7094,7 +7139,7 @@ func (m *TeamMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TeamMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 7)
 	if m.created_at != nil {
 		fields = append(fields, team.FieldCreatedAt)
 	}
@@ -7115,9 +7160,6 @@ func (m *TeamMutation) Fields() []string {
 	}
 	if m.category != nil {
 		fields = append(fields, team.FieldCategory)
-	}
-	if m.rover_token_ref != nil {
-		fields = append(fields, team.FieldRoverTokenRef)
 	}
 	return fields
 }
@@ -7141,8 +7183,6 @@ func (m *TeamMutation) Field(name string) (ent.Value, bool) {
 		return m.Email()
 	case team.FieldCategory:
 		return m.Category()
-	case team.FieldRoverTokenRef:
-		return m.RoverTokenRef()
 	}
 	return nil, false
 }
@@ -7166,8 +7206,6 @@ func (m *TeamMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldEmail(ctx)
 	case team.FieldCategory:
 		return m.OldCategory(ctx)
-	case team.FieldRoverTokenRef:
-		return m.OldRoverTokenRef(ctx)
 	}
 	return nil, fmt.Errorf("unknown Team field %s", name)
 }
@@ -7226,13 +7264,6 @@ func (m *TeamMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCategory(v)
 		return nil
-	case team.FieldRoverTokenRef:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetRoverTokenRef(v)
-		return nil
 	}
 	return fmt.Errorf("unknown Team field %s", name)
 }
@@ -7266,9 +7297,6 @@ func (m *TeamMutation) ClearedFields() []string {
 	if m.FieldCleared(team.FieldStatusMessage) {
 		fields = append(fields, team.FieldStatusMessage)
 	}
-	if m.FieldCleared(team.FieldRoverTokenRef) {
-		fields = append(fields, team.FieldRoverTokenRef)
-	}
 	return fields
 }
 
@@ -7285,9 +7313,6 @@ func (m *TeamMutation) ClearField(name string) error {
 	switch name {
 	case team.FieldStatusMessage:
 		m.ClearStatusMessage()
-		return nil
-	case team.FieldRoverTokenRef:
-		m.ClearRoverTokenRef()
 		return nil
 	}
 	return fmt.Errorf("unknown Team nullable field %s", name)
@@ -7318,9 +7343,6 @@ func (m *TeamMutation) ResetField(name string) error {
 	case team.FieldCategory:
 		m.ResetCategory()
 		return nil
-	case team.FieldRoverTokenRef:
-		m.ResetRoverTokenRef()
-		return nil
 	}
 	return fmt.Errorf("unknown Team field %s", name)
 }
@@ -7334,8 +7356,8 @@ func (m *TeamMutation) AddedEdges() []string {
 	if m.members != nil {
 		edges = append(edges, team.EdgeMembers)
 	}
-	if m.environments != nil {
-		edges = append(edges, team.EdgeEnvironments)
+	if m.team_environments != nil {
+		edges = append(edges, team.EdgeTeamEnvironments)
 	}
 	if m.applications != nil {
 		edges = append(edges, team.EdgeApplications)
@@ -7357,9 +7379,9 @@ func (m *TeamMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case team.EdgeEnvironments:
-		ids := make([]ent.Value, 0, len(m.environments))
-		for id := range m.environments {
+	case team.EdgeTeamEnvironments:
+		ids := make([]ent.Value, 0, len(m.team_environments))
+		for id := range m.team_environments {
 			ids = append(ids, id)
 		}
 		return ids
@@ -7379,8 +7401,8 @@ func (m *TeamMutation) RemovedEdges() []string {
 	if m.removedmembers != nil {
 		edges = append(edges, team.EdgeMembers)
 	}
-	if m.removedenvironments != nil {
-		edges = append(edges, team.EdgeEnvironments)
+	if m.removedteam_environments != nil {
+		edges = append(edges, team.EdgeTeamEnvironments)
 	}
 	if m.removedapplications != nil {
 		edges = append(edges, team.EdgeApplications)
@@ -7398,9 +7420,9 @@ func (m *TeamMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case team.EdgeEnvironments:
-		ids := make([]ent.Value, 0, len(m.removedenvironments))
-		for id := range m.removedenvironments {
+	case team.EdgeTeamEnvironments:
+		ids := make([]ent.Value, 0, len(m.removedteam_environments))
+		for id := range m.removedteam_environments {
 			ids = append(ids, id)
 		}
 		return ids
@@ -7423,8 +7445,8 @@ func (m *TeamMutation) ClearedEdges() []string {
 	if m.clearedmembers {
 		edges = append(edges, team.EdgeMembers)
 	}
-	if m.clearedenvironments {
-		edges = append(edges, team.EdgeEnvironments)
+	if m.clearedteam_environments {
+		edges = append(edges, team.EdgeTeamEnvironments)
 	}
 	if m.clearedapplications {
 		edges = append(edges, team.EdgeApplications)
@@ -7440,8 +7462,8 @@ func (m *TeamMutation) EdgeCleared(name string) bool {
 		return m.clearedgroup
 	case team.EdgeMembers:
 		return m.clearedmembers
-	case team.EdgeEnvironments:
-		return m.clearedenvironments
+	case team.EdgeTeamEnvironments:
+		return m.clearedteam_environments
 	case team.EdgeApplications:
 		return m.clearedapplications
 	}
@@ -7469,14 +7491,488 @@ func (m *TeamMutation) ResetEdge(name string) error {
 	case team.EdgeMembers:
 		m.ResetMembers()
 		return nil
-	case team.EdgeEnvironments:
-		m.ResetEnvironments()
+	case team.EdgeTeamEnvironments:
+		m.ResetTeamEnvironments()
 		return nil
 	case team.EdgeApplications:
 		m.ResetApplications()
 		return nil
 	}
 	return fmt.Errorf("unknown Team edge %s", name)
+}
+
+// TeamEnvironmentMutation represents an operation that mutates the TeamEnvironment nodes in the graph.
+type TeamEnvironmentMutation struct {
+	config
+	op                 Op
+	typ                string
+	id                 *int
+	rover_token_ref    *string
+	clearedFields      map[string]struct{}
+	team               *int
+	clearedteam        bool
+	environment        *int
+	clearedenvironment bool
+	done               bool
+	oldValue           func(context.Context) (*TeamEnvironment, error)
+	predicates         []predicate.TeamEnvironment
+}
+
+var _ ent.Mutation = (*TeamEnvironmentMutation)(nil)
+
+// teamenvironmentOption allows management of the mutation configuration using functional options.
+type teamenvironmentOption func(*TeamEnvironmentMutation)
+
+// newTeamEnvironmentMutation creates new mutation for the TeamEnvironment entity.
+func newTeamEnvironmentMutation(c config, op Op, opts ...teamenvironmentOption) *TeamEnvironmentMutation {
+	m := &TeamEnvironmentMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeTeamEnvironment,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withTeamEnvironmentID sets the ID field of the mutation.
+func withTeamEnvironmentID(id int) teamenvironmentOption {
+	return func(m *TeamEnvironmentMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *TeamEnvironment
+		)
+		m.oldValue = func(ctx context.Context) (*TeamEnvironment, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().TeamEnvironment.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withTeamEnvironment sets the old TeamEnvironment of the mutation.
+func withTeamEnvironment(node *TeamEnvironment) teamenvironmentOption {
+	return func(m *TeamEnvironmentMutation) {
+		m.oldValue = func(context.Context) (*TeamEnvironment, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m TeamEnvironmentMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m TeamEnvironmentMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *TeamEnvironmentMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *TeamEnvironmentMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().TeamEnvironment.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetRoverTokenRef sets the "rover_token_ref" field.
+func (m *TeamEnvironmentMutation) SetRoverTokenRef(s string) {
+	m.rover_token_ref = &s
+}
+
+// RoverTokenRef returns the value of the "rover_token_ref" field in the mutation.
+func (m *TeamEnvironmentMutation) RoverTokenRef() (r string, exists bool) {
+	v := m.rover_token_ref
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRoverTokenRef returns the old "rover_token_ref" field's value of the TeamEnvironment entity.
+// If the TeamEnvironment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TeamEnvironmentMutation) OldRoverTokenRef(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRoverTokenRef is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRoverTokenRef requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRoverTokenRef: %w", err)
+	}
+	return oldValue.RoverTokenRef, nil
+}
+
+// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
+func (m *TeamEnvironmentMutation) ClearRoverTokenRef() {
+	m.rover_token_ref = nil
+	m.clearedFields[teamenvironment.FieldRoverTokenRef] = struct{}{}
+}
+
+// RoverTokenRefCleared returns if the "rover_token_ref" field was cleared in this mutation.
+func (m *TeamEnvironmentMutation) RoverTokenRefCleared() bool {
+	_, ok := m.clearedFields[teamenvironment.FieldRoverTokenRef]
+	return ok
+}
+
+// ResetRoverTokenRef resets all changes to the "rover_token_ref" field.
+func (m *TeamEnvironmentMutation) ResetRoverTokenRef() {
+	m.rover_token_ref = nil
+	delete(m.clearedFields, teamenvironment.FieldRoverTokenRef)
+}
+
+// SetTeamID sets the "team" edge to the Team entity by id.
+func (m *TeamEnvironmentMutation) SetTeamID(id int) {
+	m.team = &id
+}
+
+// ClearTeam clears the "team" edge to the Team entity.
+func (m *TeamEnvironmentMutation) ClearTeam() {
+	m.clearedteam = true
+}
+
+// TeamCleared reports if the "team" edge to the Team entity was cleared.
+func (m *TeamEnvironmentMutation) TeamCleared() bool {
+	return m.clearedteam
+}
+
+// TeamID returns the "team" edge ID in the mutation.
+func (m *TeamEnvironmentMutation) TeamID() (id int, exists bool) {
+	if m.team != nil {
+		return *m.team, true
+	}
+	return
+}
+
+// TeamIDs returns the "team" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TeamID instead. It exists only for internal usage by the builders.
+func (m *TeamEnvironmentMutation) TeamIDs() (ids []int) {
+	if id := m.team; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTeam resets all changes to the "team" edge.
+func (m *TeamEnvironmentMutation) ResetTeam() {
+	m.team = nil
+	m.clearedteam = false
+}
+
+// SetEnvironmentID sets the "environment" edge to the Environment entity by id.
+func (m *TeamEnvironmentMutation) SetEnvironmentID(id int) {
+	m.environment = &id
+}
+
+// ClearEnvironment clears the "environment" edge to the Environment entity.
+func (m *TeamEnvironmentMutation) ClearEnvironment() {
+	m.clearedenvironment = true
+}
+
+// EnvironmentCleared reports if the "environment" edge to the Environment entity was cleared.
+func (m *TeamEnvironmentMutation) EnvironmentCleared() bool {
+	return m.clearedenvironment
+}
+
+// EnvironmentID returns the "environment" edge ID in the mutation.
+func (m *TeamEnvironmentMutation) EnvironmentID() (id int, exists bool) {
+	if m.environment != nil {
+		return *m.environment, true
+	}
+	return
+}
+
+// EnvironmentIDs returns the "environment" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// EnvironmentID instead. It exists only for internal usage by the builders.
+func (m *TeamEnvironmentMutation) EnvironmentIDs() (ids []int) {
+	if id := m.environment; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetEnvironment resets all changes to the "environment" edge.
+func (m *TeamEnvironmentMutation) ResetEnvironment() {
+	m.environment = nil
+	m.clearedenvironment = false
+}
+
+// Where appends a list predicates to the TeamEnvironmentMutation builder.
+func (m *TeamEnvironmentMutation) Where(ps ...predicate.TeamEnvironment) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the TeamEnvironmentMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *TeamEnvironmentMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.TeamEnvironment, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *TeamEnvironmentMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *TeamEnvironmentMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (TeamEnvironment).
+func (m *TeamEnvironmentMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *TeamEnvironmentMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.rover_token_ref != nil {
+		fields = append(fields, teamenvironment.FieldRoverTokenRef)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *TeamEnvironmentMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case teamenvironment.FieldRoverTokenRef:
+		return m.RoverTokenRef()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *TeamEnvironmentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case teamenvironment.FieldRoverTokenRef:
+		return m.OldRoverTokenRef(ctx)
+	}
+	return nil, fmt.Errorf("unknown TeamEnvironment field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TeamEnvironmentMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case teamenvironment.FieldRoverTokenRef:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRoverTokenRef(v)
+		return nil
+	}
+	return fmt.Errorf("unknown TeamEnvironment field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *TeamEnvironmentMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *TeamEnvironmentMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TeamEnvironmentMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown TeamEnvironment numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *TeamEnvironmentMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(teamenvironment.FieldRoverTokenRef) {
+		fields = append(fields, teamenvironment.FieldRoverTokenRef)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *TeamEnvironmentMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *TeamEnvironmentMutation) ClearField(name string) error {
+	switch name {
+	case teamenvironment.FieldRoverTokenRef:
+		m.ClearRoverTokenRef()
+		return nil
+	}
+	return fmt.Errorf("unknown TeamEnvironment nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *TeamEnvironmentMutation) ResetField(name string) error {
+	switch name {
+	case teamenvironment.FieldRoverTokenRef:
+		m.ResetRoverTokenRef()
+		return nil
+	}
+	return fmt.Errorf("unknown TeamEnvironment field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *TeamEnvironmentMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.team != nil {
+		edges = append(edges, teamenvironment.EdgeTeam)
+	}
+	if m.environment != nil {
+		edges = append(edges, teamenvironment.EdgeEnvironment)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *TeamEnvironmentMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case teamenvironment.EdgeTeam:
+		if id := m.team; id != nil {
+			return []ent.Value{*id}
+		}
+	case teamenvironment.EdgeEnvironment:
+		if id := m.environment; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *TeamEnvironmentMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *TeamEnvironmentMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *TeamEnvironmentMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedteam {
+		edges = append(edges, teamenvironment.EdgeTeam)
+	}
+	if m.clearedenvironment {
+		edges = append(edges, teamenvironment.EdgeEnvironment)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *TeamEnvironmentMutation) EdgeCleared(name string) bool {
+	switch name {
+	case teamenvironment.EdgeTeam:
+		return m.clearedteam
+	case teamenvironment.EdgeEnvironment:
+		return m.clearedenvironment
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *TeamEnvironmentMutation) ClearEdge(name string) error {
+	switch name {
+	case teamenvironment.EdgeTeam:
+		m.ClearTeam()
+		return nil
+	case teamenvironment.EdgeEnvironment:
+		m.ClearEnvironment()
+		return nil
+	}
+	return fmt.Errorf("unknown TeamEnvironment unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *TeamEnvironmentMutation) ResetEdge(name string) error {
+	switch name {
+	case teamenvironment.EdgeTeam:
+		m.ResetTeam()
+		return nil
+	case teamenvironment.EdgeEnvironment:
+		m.ResetEnvironment()
+		return nil
+	}
+	return fmt.Errorf("unknown TeamEnvironment edge %s", name)
 }
 
 // ZoneMutation represents an operation that mutates the Zone nodes in the graph.

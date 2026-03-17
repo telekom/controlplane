@@ -8,6 +8,7 @@ package environment
 import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -17,8 +18,17 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// EdgeTeamEnvironments holds the string denoting the team_environments edge name in mutations.
+	EdgeTeamEnvironments = "team_environments"
 	// Table holds the table name of the environment in the database.
 	Table = "environments"
+	// TeamEnvironmentsTable is the table that holds the team_environments relation/edge.
+	TeamEnvironmentsTable = "team_environments"
+	// TeamEnvironmentsInverseTable is the table name for the TeamEnvironment entity.
+	// It exists in this package in order to avoid circular dependency with the "teamenvironment" package.
+	TeamEnvironmentsInverseTable = "team_environments"
+	// TeamEnvironmentsColumn is the table column denoting the team_environments relation/edge.
+	TeamEnvironmentsColumn = "environment_team_environments"
 )
 
 // Columns holds all SQL columns for environment fields.
@@ -27,21 +37,10 @@ var Columns = []string{
 	FieldName,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the "environments"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"team_environments",
-}
-
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -71,4 +70,25 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByTeamEnvironmentsCount orders the results by team_environments count.
+func ByTeamEnvironmentsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newTeamEnvironmentsStep(), opts...)
+	}
+}
+
+// ByTeamEnvironments orders the results by team_environments terms.
+func ByTeamEnvironments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTeamEnvironmentsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newTeamEnvironmentsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TeamEnvironmentsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, TeamEnvironmentsTable, TeamEnvironmentsColumn),
+	)
 }

@@ -36,5 +36,8 @@ type Member func(*sql.Selector)
 // Team is the predicate function for team builders.
 type Team func(*sql.Selector)
 
+// TeamEnvironment is the predicate function for teamenvironment builders.
+type TeamEnvironment func(*sql.Selector)
+
 // Zone is the predicate function for zone builders.
 type Zone func(*sql.Selector)

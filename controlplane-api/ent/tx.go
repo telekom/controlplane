@@ -33,6 +33,8 @@ type Tx struct {
 	Member *MemberClient
 	// Team is the client for interacting with the Team builders.
 	Team *TeamClient
+	// TeamEnvironment is the client for interacting with the TeamEnvironment builders.
+	TeamEnvironment *TeamEnvironmentClient
 	// Zone is the client for interacting with the Zone builders.
 	Zone *ZoneClient
 
@@ -175,6 +177,7 @@ func (tx *Tx) init() {
 	tx.Group = NewGroupClient(tx.config)
 	tx.Member = NewMemberClient(tx.config)
 	tx.Team = NewTeamClient(tx.config)
+	tx.TeamEnvironment = NewTeamEnvironmentClient(tx.config)
 	tx.Zone = NewZoneClient(tx.config)
 }
 

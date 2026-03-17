@@ -20,6 +20,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
+	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 )
 
@@ -2266,6 +2267,10 @@ type EnvironmentWhereInput struct {
 	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
 	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
 	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
+
+	// "team_environments" edge predicates.
+	HasTeamEnvironments     *bool                        `json:"hasTeamEnvironments,omitempty"`
+	HasTeamEnvironmentsWith []*TeamEnvironmentWhereInput `json:"hasTeamEnvironmentsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -2403,6 +2408,24 @@ func (i *EnvironmentWhereInput) P() (predicate.Environment, error) {
 		predicates = append(predicates, environment.NameContainsFold(*i.NameContainsFold))
 	}
 
+	if i.HasTeamEnvironments != nil {
+		p := environment.HasTeamEnvironments()
+		if !*i.HasTeamEnvironments {
+			p = environment.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasTeamEnvironmentsWith) > 0 {
+		with := make([]predicate.TeamEnvironment, 0, len(i.HasTeamEnvironmentsWith))
+		for _, w := range i.HasTeamEnvironmentsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasTeamEnvironmentsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, environment.HasTeamEnvironmentsWith(with...))
+	}
 	switch len(predicates) {
 	case 0:
 		return nil, ErrEmptyEnvironmentWhereInput
@@ -3071,23 +3094,6 @@ type TeamWhereInput struct {
 	CategoryIn    []team.Category `json:"categoryIn,omitempty"`
 	CategoryNotIn []team.Category `json:"categoryNotIn,omitempty"`
 
-	// "rover_token_ref" field predicates.
-	RoverTokenRef             *string  `json:"roverTokenRef,omitempty"`
-	RoverTokenRefNEQ          *string  `json:"roverTokenRefNEQ,omitempty"`
-	RoverTokenRefIn           []string `json:"roverTokenRefIn,omitempty"`
-	RoverTokenRefNotIn        []string `json:"roverTokenRefNotIn,omitempty"`
-	RoverTokenRefGT           *string  `json:"roverTokenRefGT,omitempty"`
-	RoverTokenRefGTE          *string  `json:"roverTokenRefGTE,omitempty"`
-	RoverTokenRefLT           *string  `json:"roverTokenRefLT,omitempty"`
-	RoverTokenRefLTE          *string  `json:"roverTokenRefLTE,omitempty"`
-	RoverTokenRefContains     *string  `json:"roverTokenRefContains,omitempty"`
-	RoverTokenRefHasPrefix    *string  `json:"roverTokenRefHasPrefix,omitempty"`
-	RoverTokenRefHasSuffix    *string  `json:"roverTokenRefHasSuffix,omitempty"`
-	RoverTokenRefIsNil        bool     `json:"roverTokenRefIsNil,omitempty"`
-	RoverTokenRefNotNil       bool     `json:"roverTokenRefNotNil,omitempty"`
-	RoverTokenRefEqualFold    *string  `json:"roverTokenRefEqualFold,omitempty"`
-	RoverTokenRefContainsFold *string  `json:"roverTokenRefContainsFold,omitempty"`
-
 	// "group" edge predicates.
 	HasGroup     *bool              `json:"hasGroup,omitempty"`
 	HasGroupWith []*GroupWhereInput `json:"hasGroupWith,omitempty"`
@@ -3096,9 +3102,9 @@ type TeamWhereInput struct {
 	HasMembers     *bool               `json:"hasMembers,omitempty"`
 	HasMembersWith []*MemberWhereInput `json:"hasMembersWith,omitempty"`
 
-	// "environments" edge predicates.
-	HasEnvironments     *bool                    `json:"hasEnvironments,omitempty"`
-	HasEnvironmentsWith []*EnvironmentWhereInput `json:"hasEnvironmentsWith,omitempty"`
+	// "team_environments" edge predicates.
+	HasTeamEnvironments     *bool                        `json:"hasTeamEnvironments,omitempty"`
+	HasTeamEnvironmentsWith []*TeamEnvironmentWhereInput `json:"hasTeamEnvironmentsWith,omitempty"`
 
 	// "applications" edge predicates.
 	HasApplications     *bool                    `json:"hasApplications,omitempty"`
@@ -3395,51 +3401,6 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 	if len(i.CategoryNotIn) > 0 {
 		predicates = append(predicates, team.CategoryNotIn(i.CategoryNotIn...))
 	}
-	if i.RoverTokenRef != nil {
-		predicates = append(predicates, team.RoverTokenRefEQ(*i.RoverTokenRef))
-	}
-	if i.RoverTokenRefNEQ != nil {
-		predicates = append(predicates, team.RoverTokenRefNEQ(*i.RoverTokenRefNEQ))
-	}
-	if len(i.RoverTokenRefIn) > 0 {
-		predicates = append(predicates, team.RoverTokenRefIn(i.RoverTokenRefIn...))
-	}
-	if len(i.RoverTokenRefNotIn) > 0 {
-		predicates = append(predicates, team.RoverTokenRefNotIn(i.RoverTokenRefNotIn...))
-	}
-	if i.RoverTokenRefGT != nil {
-		predicates = append(predicates, team.RoverTokenRefGT(*i.RoverTokenRefGT))
-	}
-	if i.RoverTokenRefGTE != nil {
-		predicates = append(predicates, team.RoverTokenRefGTE(*i.RoverTokenRefGTE))
-	}
-	if i.RoverTokenRefLT != nil {
-		predicates = append(predicates, team.RoverTokenRefLT(*i.RoverTokenRefLT))
-	}
-	if i.RoverTokenRefLTE != nil {
-		predicates = append(predicates, team.RoverTokenRefLTE(*i.RoverTokenRefLTE))
-	}
-	if i.RoverTokenRefContains != nil {
-		predicates = append(predicates, team.RoverTokenRefContains(*i.RoverTokenRefContains))
-	}
-	if i.RoverTokenRefHasPrefix != nil {
-		predicates = append(predicates, team.RoverTokenRefHasPrefix(*i.RoverTokenRefHasPrefix))
-	}
-	if i.RoverTokenRefHasSuffix != nil {
-		predicates = append(predicates, team.RoverTokenRefHasSuffix(*i.RoverTokenRefHasSuffix))
-	}
-	if i.RoverTokenRefIsNil {
-		predicates = append(predicates, team.RoverTokenRefIsNil())
-	}
-	if i.RoverTokenRefNotNil {
-		predicates = append(predicates, team.RoverTokenRefNotNil())
-	}
-	if i.RoverTokenRefEqualFold != nil {
-		predicates = append(predicates, team.RoverTokenRefEqualFold(*i.RoverTokenRefEqualFold))
-	}
-	if i.RoverTokenRefContainsFold != nil {
-		predicates = append(predicates, team.RoverTokenRefContainsFold(*i.RoverTokenRefContainsFold))
-	}
 
 	if i.HasGroup != nil {
 		p := team.HasGroup()
@@ -3477,23 +3438,23 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 		}
 		predicates = append(predicates, team.HasMembersWith(with...))
 	}
-	if i.HasEnvironments != nil {
-		p := team.HasEnvironments()
-		if !*i.HasEnvironments {
+	if i.HasTeamEnvironments != nil {
+		p := team.HasTeamEnvironments()
+		if !*i.HasTeamEnvironments {
 			p = team.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
-	if len(i.HasEnvironmentsWith) > 0 {
-		with := make([]predicate.Environment, 0, len(i.HasEnvironmentsWith))
-		for _, w := range i.HasEnvironmentsWith {
+	if len(i.HasTeamEnvironmentsWith) > 0 {
+		with := make([]predicate.TeamEnvironment, 0, len(i.HasTeamEnvironmentsWith))
+		for _, w := range i.HasTeamEnvironmentsWith {
 			p, err := w.P()
 			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasEnvironmentsWith'", err)
+				return nil, fmt.Errorf("%w: field 'HasTeamEnvironmentsWith'", err)
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, team.HasEnvironmentsWith(with...))
+		predicates = append(predicates, team.HasTeamEnvironmentsWith(with...))
 	}
 	if i.HasApplications != nil {
 		p := team.HasApplications()
@@ -3520,6 +3481,236 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 		return predicates[0], nil
 	default:
 		return team.And(predicates...), nil
+	}
+}
+
+// TeamEnvironmentWhereInput represents a where input for filtering TeamEnvironment queries.
+type TeamEnvironmentWhereInput struct {
+	Predicates []predicate.TeamEnvironment  `json:"-"`
+	Not        *TeamEnvironmentWhereInput   `json:"not,omitempty"`
+	Or         []*TeamEnvironmentWhereInput `json:"or,omitempty"`
+	And        []*TeamEnvironmentWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "rover_token_ref" field predicates.
+	RoverTokenRef             *string  `json:"roverTokenRef,omitempty"`
+	RoverTokenRefNEQ          *string  `json:"roverTokenRefNEQ,omitempty"`
+	RoverTokenRefIn           []string `json:"roverTokenRefIn,omitempty"`
+	RoverTokenRefNotIn        []string `json:"roverTokenRefNotIn,omitempty"`
+	RoverTokenRefGT           *string  `json:"roverTokenRefGT,omitempty"`
+	RoverTokenRefGTE          *string  `json:"roverTokenRefGTE,omitempty"`
+	RoverTokenRefLT           *string  `json:"roverTokenRefLT,omitempty"`
+	RoverTokenRefLTE          *string  `json:"roverTokenRefLTE,omitempty"`
+	RoverTokenRefContains     *string  `json:"roverTokenRefContains,omitempty"`
+	RoverTokenRefHasPrefix    *string  `json:"roverTokenRefHasPrefix,omitempty"`
+	RoverTokenRefHasSuffix    *string  `json:"roverTokenRefHasSuffix,omitempty"`
+	RoverTokenRefIsNil        bool     `json:"roverTokenRefIsNil,omitempty"`
+	RoverTokenRefNotNil       bool     `json:"roverTokenRefNotNil,omitempty"`
+	RoverTokenRefEqualFold    *string  `json:"roverTokenRefEqualFold,omitempty"`
+	RoverTokenRefContainsFold *string  `json:"roverTokenRefContainsFold,omitempty"`
+
+	// "team" edge predicates.
+	HasTeam     *bool             `json:"hasTeam,omitempty"`
+	HasTeamWith []*TeamWhereInput `json:"hasTeamWith,omitempty"`
+
+	// "environment" edge predicates.
+	HasEnvironment     *bool                    `json:"hasEnvironment,omitempty"`
+	HasEnvironmentWith []*EnvironmentWhereInput `json:"hasEnvironmentWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *TeamEnvironmentWhereInput) AddPredicates(predicates ...predicate.TeamEnvironment) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the TeamEnvironmentWhereInput filter on the TeamEnvironmentQuery builder.
+func (i *TeamEnvironmentWhereInput) Filter(q *TeamEnvironmentQuery) (*TeamEnvironmentQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyTeamEnvironmentWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyTeamEnvironmentWhereInput is returned in case the TeamEnvironmentWhereInput is empty.
+var ErrEmptyTeamEnvironmentWhereInput = errors.New("ent: empty predicate TeamEnvironmentWhereInput")
+
+// P returns a predicate for filtering teamenvironments.
+// An error is returned if the input is empty or invalid.
+func (i *TeamEnvironmentWhereInput) P() (predicate.TeamEnvironment, error) {
+	var predicates []predicate.TeamEnvironment
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, teamenvironment.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.TeamEnvironment, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, teamenvironment.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.TeamEnvironment, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, teamenvironment.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, teamenvironment.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, teamenvironment.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, teamenvironment.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, teamenvironment.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, teamenvironment.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, teamenvironment.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, teamenvironment.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, teamenvironment.IDLTE(*i.IDLTE))
+	}
+	if i.RoverTokenRef != nil {
+		predicates = append(predicates, teamenvironment.RoverTokenRefEQ(*i.RoverTokenRef))
+	}
+	if i.RoverTokenRefNEQ != nil {
+		predicates = append(predicates, teamenvironment.RoverTokenRefNEQ(*i.RoverTokenRefNEQ))
+	}
+	if len(i.RoverTokenRefIn) > 0 {
+		predicates = append(predicates, teamenvironment.RoverTokenRefIn(i.RoverTokenRefIn...))
+	}
+	if len(i.RoverTokenRefNotIn) > 0 {
+		predicates = append(predicates, teamenvironment.RoverTokenRefNotIn(i.RoverTokenRefNotIn...))
+	}
+	if i.RoverTokenRefGT != nil {
+		predicates = append(predicates, teamenvironment.RoverTokenRefGT(*i.RoverTokenRefGT))
+	}
+	if i.RoverTokenRefGTE != nil {
+		predicates = append(predicates, teamenvironment.RoverTokenRefGTE(*i.RoverTokenRefGTE))
+	}
+	if i.RoverTokenRefLT != nil {
+		predicates = append(predicates, teamenvironment.RoverTokenRefLT(*i.RoverTokenRefLT))
+	}
+	if i.RoverTokenRefLTE != nil {
+		predicates = append(predicates, teamenvironment.RoverTokenRefLTE(*i.RoverTokenRefLTE))
+	}
+	if i.RoverTokenRefContains != nil {
+		predicates = append(predicates, teamenvironment.RoverTokenRefContains(*i.RoverTokenRefContains))
+	}
+	if i.RoverTokenRefHasPrefix != nil {
+		predicates = append(predicates, teamenvironment.RoverTokenRefHasPrefix(*i.RoverTokenRefHasPrefix))
+	}
+	if i.RoverTokenRefHasSuffix != nil {
+		predicates = append(predicates, teamenvironment.RoverTokenRefHasSuffix(*i.RoverTokenRefHasSuffix))
+	}
+	if i.RoverTokenRefIsNil {
+		predicates = append(predicates, teamenvironment.RoverTokenRefIsNil())
+	}
+	if i.RoverTokenRefNotNil {
+		predicates = append(predicates, teamenvironment.RoverTokenRefNotNil())
+	}
+	if i.RoverTokenRefEqualFold != nil {
+		predicates = append(predicates, teamenvironment.RoverTokenRefEqualFold(*i.RoverTokenRefEqualFold))
+	}
+	if i.RoverTokenRefContainsFold != nil {
+		predicates = append(predicates, teamenvironment.RoverTokenRefContainsFold(*i.RoverTokenRefContainsFold))
+	}
+
+	if i.HasTeam != nil {
+		p := teamenvironment.HasTeam()
+		if !*i.HasTeam {
+			p = teamenvironment.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasTeamWith) > 0 {
+		with := make([]predicate.Team, 0, len(i.HasTeamWith))
+		for _, w := range i.HasTeamWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasTeamWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, teamenvironment.HasTeamWith(with...))
+	}
+	if i.HasEnvironment != nil {
+		p := teamenvironment.HasEnvironment()
+		if !*i.HasEnvironment {
+			p = teamenvironment.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasEnvironmentWith) > 0 {
+		with := make([]predicate.Environment, 0, len(i.HasEnvironmentWith))
+		for _, w := range i.HasEnvironmentWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasEnvironmentWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, teamenvironment.HasEnvironmentWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyTeamEnvironmentWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return teamenvironment.And(predicates...), nil
 	}
 }
 

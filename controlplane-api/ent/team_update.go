@@ -15,11 +15,11 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
-	"github.com/telekom/controlplane/controlplane-api/ent/environment"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
+	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 )
 
 // TeamUpdate is the builder for updating Team entities.
@@ -117,26 +117,6 @@ func (_u *TeamUpdate) SetNillableCategory(v *team.Category) *TeamUpdate {
 	return _u
 }
 
-// SetRoverTokenRef sets the "rover_token_ref" field.
-func (_u *TeamUpdate) SetRoverTokenRef(v string) *TeamUpdate {
-	_u.mutation.SetRoverTokenRef(v)
-	return _u
-}
-
-// SetNillableRoverTokenRef sets the "rover_token_ref" field if the given value is not nil.
-func (_u *TeamUpdate) SetNillableRoverTokenRef(v *string) *TeamUpdate {
-	if v != nil {
-		_u.SetRoverTokenRef(*v)
-	}
-	return _u
-}
-
-// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
-func (_u *TeamUpdate) ClearRoverTokenRef() *TeamUpdate {
-	_u.mutation.ClearRoverTokenRef()
-	return _u
-}
-
 // SetGroupID sets the "group" edge to the Group entity by ID.
 func (_u *TeamUpdate) SetGroupID(id int) *TeamUpdate {
 	_u.mutation.SetGroupID(id)
@@ -171,19 +151,19 @@ func (_u *TeamUpdate) AddMembers(v ...*Member) *TeamUpdate {
 	return _u.AddMemberIDs(ids...)
 }
 
-// AddEnvironmentIDs adds the "environments" edge to the Environment entity by IDs.
-func (_u *TeamUpdate) AddEnvironmentIDs(ids ...int) *TeamUpdate {
-	_u.mutation.AddEnvironmentIDs(ids...)
+// AddTeamEnvironmentIDs adds the "team_environments" edge to the TeamEnvironment entity by IDs.
+func (_u *TeamUpdate) AddTeamEnvironmentIDs(ids ...int) *TeamUpdate {
+	_u.mutation.AddTeamEnvironmentIDs(ids...)
 	return _u
 }
 
-// AddEnvironments adds the "environments" edges to the Environment entity.
-func (_u *TeamUpdate) AddEnvironments(v ...*Environment) *TeamUpdate {
+// AddTeamEnvironments adds the "team_environments" edges to the TeamEnvironment entity.
+func (_u *TeamUpdate) AddTeamEnvironments(v ...*TeamEnvironment) *TeamUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.AddEnvironmentIDs(ids...)
+	return _u.AddTeamEnvironmentIDs(ids...)
 }
 
 // AddApplicationIDs adds the "applications" edge to the Application entity by IDs.
@@ -233,25 +213,25 @@ func (_u *TeamUpdate) RemoveMembers(v ...*Member) *TeamUpdate {
 	return _u.RemoveMemberIDs(ids...)
 }
 
-// ClearEnvironments clears all "environments" edges to the Environment entity.
-func (_u *TeamUpdate) ClearEnvironments() *TeamUpdate {
-	_u.mutation.ClearEnvironments()
+// ClearTeamEnvironments clears all "team_environments" edges to the TeamEnvironment entity.
+func (_u *TeamUpdate) ClearTeamEnvironments() *TeamUpdate {
+	_u.mutation.ClearTeamEnvironments()
 	return _u
 }
 
-// RemoveEnvironmentIDs removes the "environments" edge to Environment entities by IDs.
-func (_u *TeamUpdate) RemoveEnvironmentIDs(ids ...int) *TeamUpdate {
-	_u.mutation.RemoveEnvironmentIDs(ids...)
+// RemoveTeamEnvironmentIDs removes the "team_environments" edge to TeamEnvironment entities by IDs.
+func (_u *TeamUpdate) RemoveTeamEnvironmentIDs(ids ...int) *TeamUpdate {
+	_u.mutation.RemoveTeamEnvironmentIDs(ids...)
 	return _u
 }
 
-// RemoveEnvironments removes "environments" edges to Environment entities.
-func (_u *TeamUpdate) RemoveEnvironments(v ...*Environment) *TeamUpdate {
+// RemoveTeamEnvironments removes "team_environments" edges to TeamEnvironment entities.
+func (_u *TeamUpdate) RemoveTeamEnvironments(v ...*TeamEnvironment) *TeamUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.RemoveEnvironmentIDs(ids...)
+	return _u.RemoveTeamEnvironmentIDs(ids...)
 }
 
 // ClearApplications clears all "applications" edges to the Application entity.
@@ -375,12 +355,6 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(team.FieldCategory, field.TypeEnum, value)
 	}
-	if value, ok := _u.mutation.RoverTokenRef(); ok {
-		_spec.SetField(team.FieldRoverTokenRef, field.TypeString, value)
-	}
-	if _u.mutation.RoverTokenRefCleared() {
-		_spec.ClearField(team.FieldRoverTokenRef, field.TypeString)
-	}
 	if _u.mutation.GroupCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -455,28 +429,28 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.EnvironmentsCleared() {
+	if _u.mutation.TeamEnvironmentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.EnvironmentsTable,
-			Columns: []string{team.EnvironmentsColumn},
+			Table:   team.TeamEnvironmentsTable,
+			Columns: []string{team.TeamEnvironmentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(environment.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedEnvironmentsIDs(); len(nodes) > 0 && !_u.mutation.EnvironmentsCleared() {
+	if nodes := _u.mutation.RemovedTeamEnvironmentsIDs(); len(nodes) > 0 && !_u.mutation.TeamEnvironmentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.EnvironmentsTable,
-			Columns: []string{team.EnvironmentsColumn},
+			Table:   team.TeamEnvironmentsTable,
+			Columns: []string{team.TeamEnvironmentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(environment.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -484,15 +458,15 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.EnvironmentsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.TeamEnvironmentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.EnvironmentsTable,
-			Columns: []string{team.EnvironmentsColumn},
+			Table:   team.TeamEnvironmentsTable,
+			Columns: []string{team.TeamEnvironmentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(environment.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -647,26 +621,6 @@ func (_u *TeamUpdateOne) SetNillableCategory(v *team.Category) *TeamUpdateOne {
 	return _u
 }
 
-// SetRoverTokenRef sets the "rover_token_ref" field.
-func (_u *TeamUpdateOne) SetRoverTokenRef(v string) *TeamUpdateOne {
-	_u.mutation.SetRoverTokenRef(v)
-	return _u
-}
-
-// SetNillableRoverTokenRef sets the "rover_token_ref" field if the given value is not nil.
-func (_u *TeamUpdateOne) SetNillableRoverTokenRef(v *string) *TeamUpdateOne {
-	if v != nil {
-		_u.SetRoverTokenRef(*v)
-	}
-	return _u
-}
-
-// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
-func (_u *TeamUpdateOne) ClearRoverTokenRef() *TeamUpdateOne {
-	_u.mutation.ClearRoverTokenRef()
-	return _u
-}
-
 // SetGroupID sets the "group" edge to the Group entity by ID.
 func (_u *TeamUpdateOne) SetGroupID(id int) *TeamUpdateOne {
 	_u.mutation.SetGroupID(id)
@@ -701,19 +655,19 @@ func (_u *TeamUpdateOne) AddMembers(v ...*Member) *TeamUpdateOne {
 	return _u.AddMemberIDs(ids...)
 }
 
-// AddEnvironmentIDs adds the "environments" edge to the Environment entity by IDs.
-func (_u *TeamUpdateOne) AddEnvironmentIDs(ids ...int) *TeamUpdateOne {
-	_u.mutation.AddEnvironmentIDs(ids...)
+// AddTeamEnvironmentIDs adds the "team_environments" edge to the TeamEnvironment entity by IDs.
+func (_u *TeamUpdateOne) AddTeamEnvironmentIDs(ids ...int) *TeamUpdateOne {
+	_u.mutation.AddTeamEnvironmentIDs(ids...)
 	return _u
 }
 
-// AddEnvironments adds the "environments" edges to the Environment entity.
-func (_u *TeamUpdateOne) AddEnvironments(v ...*Environment) *TeamUpdateOne {
+// AddTeamEnvironments adds the "team_environments" edges to the TeamEnvironment entity.
+func (_u *TeamUpdateOne) AddTeamEnvironments(v ...*TeamEnvironment) *TeamUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.AddEnvironmentIDs(ids...)
+	return _u.AddTeamEnvironmentIDs(ids...)
 }
 
 // AddApplicationIDs adds the "applications" edge to the Application entity by IDs.
@@ -763,25 +717,25 @@ func (_u *TeamUpdateOne) RemoveMembers(v ...*Member) *TeamUpdateOne {
 	return _u.RemoveMemberIDs(ids...)
 }
 
-// ClearEnvironments clears all "environments" edges to the Environment entity.
-func (_u *TeamUpdateOne) ClearEnvironments() *TeamUpdateOne {
-	_u.mutation.ClearEnvironments()
+// ClearTeamEnvironments clears all "team_environments" edges to the TeamEnvironment entity.
+func (_u *TeamUpdateOne) ClearTeamEnvironments() *TeamUpdateOne {
+	_u.mutation.ClearTeamEnvironments()
 	return _u
 }
 
-// RemoveEnvironmentIDs removes the "environments" edge to Environment entities by IDs.
-func (_u *TeamUpdateOne) RemoveEnvironmentIDs(ids ...int) *TeamUpdateOne {
-	_u.mutation.RemoveEnvironmentIDs(ids...)
+// RemoveTeamEnvironmentIDs removes the "team_environments" edge to TeamEnvironment entities by IDs.
+func (_u *TeamUpdateOne) RemoveTeamEnvironmentIDs(ids ...int) *TeamUpdateOne {
+	_u.mutation.RemoveTeamEnvironmentIDs(ids...)
 	return _u
 }
 
-// RemoveEnvironments removes "environments" edges to Environment entities.
-func (_u *TeamUpdateOne) RemoveEnvironments(v ...*Environment) *TeamUpdateOne {
+// RemoveTeamEnvironments removes "team_environments" edges to TeamEnvironment entities.
+func (_u *TeamUpdateOne) RemoveTeamEnvironments(v ...*TeamEnvironment) *TeamUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _u.RemoveEnvironmentIDs(ids...)
+	return _u.RemoveTeamEnvironmentIDs(ids...)
 }
 
 // ClearApplications clears all "applications" edges to the Application entity.
@@ -935,12 +889,6 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(team.FieldCategory, field.TypeEnum, value)
 	}
-	if value, ok := _u.mutation.RoverTokenRef(); ok {
-		_spec.SetField(team.FieldRoverTokenRef, field.TypeString, value)
-	}
-	if _u.mutation.RoverTokenRefCleared() {
-		_spec.ClearField(team.FieldRoverTokenRef, field.TypeString)
-	}
 	if _u.mutation.GroupCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -1015,28 +963,28 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.EnvironmentsCleared() {
+	if _u.mutation.TeamEnvironmentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.EnvironmentsTable,
-			Columns: []string{team.EnvironmentsColumn},
+			Table:   team.TeamEnvironmentsTable,
+			Columns: []string{team.TeamEnvironmentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(environment.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedEnvironmentsIDs(); len(nodes) > 0 && !_u.mutation.EnvironmentsCleared() {
+	if nodes := _u.mutation.RemovedTeamEnvironmentsIDs(); len(nodes) > 0 && !_u.mutation.TeamEnvironmentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.EnvironmentsTable,
-			Columns: []string{team.EnvironmentsColumn},
+			Table:   team.TeamEnvironmentsTable,
+			Columns: []string{team.TeamEnvironmentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(environment.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1044,15 +992,15 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.EnvironmentsIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.TeamEnvironmentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.EnvironmentsTable,
-			Columns: []string{team.EnvironmentsColumn},
+			Table:   team.TeamEnvironmentsTable,
+			Columns: []string{team.TeamEnvironmentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(environment.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

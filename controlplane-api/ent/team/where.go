@@ -83,11 +83,6 @@ func Email(v string) predicate.Team {
 	return predicate.Team(sql.FieldEQ(FieldEmail, v))
 }
 
-// RoverTokenRef applies equality check predicate on the "rover_token_ref" field. It's identical to RoverTokenRefEQ.
-func RoverTokenRef(v string) predicate.Team {
-	return predicate.Team(sql.FieldEQ(FieldRoverTokenRef, v))
-}
-
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Team {
 	return predicate.Team(sql.FieldEQ(FieldCreatedAt, v))
@@ -413,81 +408,6 @@ func CategoryNotIn(vs ...Category) predicate.Team {
 	return predicate.Team(sql.FieldNotIn(FieldCategory, vs...))
 }
 
-// RoverTokenRefEQ applies the EQ predicate on the "rover_token_ref" field.
-func RoverTokenRefEQ(v string) predicate.Team {
-	return predicate.Team(sql.FieldEQ(FieldRoverTokenRef, v))
-}
-
-// RoverTokenRefNEQ applies the NEQ predicate on the "rover_token_ref" field.
-func RoverTokenRefNEQ(v string) predicate.Team {
-	return predicate.Team(sql.FieldNEQ(FieldRoverTokenRef, v))
-}
-
-// RoverTokenRefIn applies the In predicate on the "rover_token_ref" field.
-func RoverTokenRefIn(vs ...string) predicate.Team {
-	return predicate.Team(sql.FieldIn(FieldRoverTokenRef, vs...))
-}
-
-// RoverTokenRefNotIn applies the NotIn predicate on the "rover_token_ref" field.
-func RoverTokenRefNotIn(vs ...string) predicate.Team {
-	return predicate.Team(sql.FieldNotIn(FieldRoverTokenRef, vs...))
-}
-
-// RoverTokenRefGT applies the GT predicate on the "rover_token_ref" field.
-func RoverTokenRefGT(v string) predicate.Team {
-	return predicate.Team(sql.FieldGT(FieldRoverTokenRef, v))
-}
-
-// RoverTokenRefGTE applies the GTE predicate on the "rover_token_ref" field.
-func RoverTokenRefGTE(v string) predicate.Team {
-	return predicate.Team(sql.FieldGTE(FieldRoverTokenRef, v))
-}
-
-// RoverTokenRefLT applies the LT predicate on the "rover_token_ref" field.
-func RoverTokenRefLT(v string) predicate.Team {
-	return predicate.Team(sql.FieldLT(FieldRoverTokenRef, v))
-}
-
-// RoverTokenRefLTE applies the LTE predicate on the "rover_token_ref" field.
-func RoverTokenRefLTE(v string) predicate.Team {
-	return predicate.Team(sql.FieldLTE(FieldRoverTokenRef, v))
-}
-
-// RoverTokenRefContains applies the Contains predicate on the "rover_token_ref" field.
-func RoverTokenRefContains(v string) predicate.Team {
-	return predicate.Team(sql.FieldContains(FieldRoverTokenRef, v))
-}
-
-// RoverTokenRefHasPrefix applies the HasPrefix predicate on the "rover_token_ref" field.
-func RoverTokenRefHasPrefix(v string) predicate.Team {
-	return predicate.Team(sql.FieldHasPrefix(FieldRoverTokenRef, v))
-}
-
-// RoverTokenRefHasSuffix applies the HasSuffix predicate on the "rover_token_ref" field.
-func RoverTokenRefHasSuffix(v string) predicate.Team {
-	return predicate.Team(sql.FieldHasSuffix(FieldRoverTokenRef, v))
-}
-
-// RoverTokenRefIsNil applies the IsNil predicate on the "rover_token_ref" field.
-func RoverTokenRefIsNil() predicate.Team {
-	return predicate.Team(sql.FieldIsNull(FieldRoverTokenRef))
-}
-
-// RoverTokenRefNotNil applies the NotNil predicate on the "rover_token_ref" field.
-func RoverTokenRefNotNil() predicate.Team {
-	return predicate.Team(sql.FieldNotNull(FieldRoverTokenRef))
-}
-
-// RoverTokenRefEqualFold applies the EqualFold predicate on the "rover_token_ref" field.
-func RoverTokenRefEqualFold(v string) predicate.Team {
-	return predicate.Team(sql.FieldEqualFold(FieldRoverTokenRef, v))
-}
-
-// RoverTokenRefContainsFold applies the ContainsFold predicate on the "rover_token_ref" field.
-func RoverTokenRefContainsFold(v string) predicate.Team {
-	return predicate.Team(sql.FieldContainsFold(FieldRoverTokenRef, v))
-}
-
 // HasGroup applies the HasEdge predicate on the "group" edge.
 func HasGroup() predicate.Team {
 	return predicate.Team(func(s *sql.Selector) {
@@ -534,21 +454,21 @@ func HasMembersWith(preds ...predicate.Member) predicate.Team {
 	})
 }
 
-// HasEnvironments applies the HasEdge predicate on the "environments" edge.
-func HasEnvironments() predicate.Team {
+// HasTeamEnvironments applies the HasEdge predicate on the "team_environments" edge.
+func HasTeamEnvironments() predicate.Team {
 	return predicate.Team(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, EnvironmentsTable, EnvironmentsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, TeamEnvironmentsTable, TeamEnvironmentsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasEnvironmentsWith applies the HasEdge predicate on the "environments" edge with a given conditions (other predicates).
-func HasEnvironmentsWith(preds ...predicate.Environment) predicate.Team {
+// HasTeamEnvironmentsWith applies the HasEdge predicate on the "team_environments" edge with a given conditions (other predicates).
+func HasTeamEnvironmentsWith(preds ...predicate.TeamEnvironment) predicate.Team {
 	return predicate.Team(func(s *sql.Selector) {
-		step := newEnvironmentsStep()
+		step := newTeamEnvironmentsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

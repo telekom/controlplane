@@ -35,14 +35,12 @@ const (
 	FieldEmail = "email"
 	// FieldCategory holds the string denoting the category field in the database.
 	FieldCategory = "category"
-	// FieldRoverTokenRef holds the string denoting the rover_token_ref field in the database.
-	FieldRoverTokenRef = "rover_token_ref"
 	// EdgeGroup holds the string denoting the group edge name in mutations.
 	EdgeGroup = "group"
 	// EdgeMembers holds the string denoting the members edge name in mutations.
 	EdgeMembers = "members"
-	// EdgeEnvironments holds the string denoting the environments edge name in mutations.
-	EdgeEnvironments = "environments"
+	// EdgeTeamEnvironments holds the string denoting the team_environments edge name in mutations.
+	EdgeTeamEnvironments = "team_environments"
 	// EdgeApplications holds the string denoting the applications edge name in mutations.
 	EdgeApplications = "applications"
 	// Table holds the table name of the team in the database.
@@ -61,13 +59,13 @@ const (
 	MembersInverseTable = "members"
 	// MembersColumn is the table column denoting the members relation/edge.
 	MembersColumn = "team_members"
-	// EnvironmentsTable is the table that holds the environments relation/edge.
-	EnvironmentsTable = "environments"
-	// EnvironmentsInverseTable is the table name for the Environment entity.
-	// It exists in this package in order to avoid circular dependency with the "environment" package.
-	EnvironmentsInverseTable = "environments"
-	// EnvironmentsColumn is the table column denoting the environments relation/edge.
-	EnvironmentsColumn = "team_environments"
+	// TeamEnvironmentsTable is the table that holds the team_environments relation/edge.
+	TeamEnvironmentsTable = "team_environments"
+	// TeamEnvironmentsInverseTable is the table name for the TeamEnvironment entity.
+	// It exists in this package in order to avoid circular dependency with the "teamenvironment" package.
+	TeamEnvironmentsInverseTable = "team_environments"
+	// TeamEnvironmentsColumn is the table column denoting the team_environments relation/edge.
+	TeamEnvironmentsColumn = "team_team_environments"
 	// ApplicationsTable is the table that holds the applications relation/edge.
 	ApplicationsTable = "applications"
 	// ApplicationsInverseTable is the table name for the Application entity.
@@ -87,7 +85,6 @@ var Columns = []string{
 	FieldName,
 	FieldEmail,
 	FieldCategory,
-	FieldRoverTokenRef,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "teams"
@@ -228,11 +225,6 @@ func ByCategory(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCategory, opts...).ToFunc()
 }
 
-// ByRoverTokenRef orders the results by the rover_token_ref field.
-func ByRoverTokenRef(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldRoverTokenRef, opts...).ToFunc()
-}
-
 // ByGroupField orders the results by group field.
 func ByGroupField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -254,17 +246,17 @@ func ByMembers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByEnvironmentsCount orders the results by environments count.
-func ByEnvironmentsCount(opts ...sql.OrderTermOption) OrderOption {
+// ByTeamEnvironmentsCount orders the results by team_environments count.
+func ByTeamEnvironmentsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newEnvironmentsStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newTeamEnvironmentsStep(), opts...)
 	}
 }
 
-// ByEnvironments orders the results by environments terms.
-func ByEnvironments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByTeamEnvironments orders the results by team_environments terms.
+func ByTeamEnvironments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newEnvironmentsStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newTeamEnvironmentsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -295,11 +287,11 @@ func newMembersStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, false, MembersTable, MembersColumn),
 	)
 }
-func newEnvironmentsStep() *sqlgraph.Step {
+func newTeamEnvironmentsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(EnvironmentsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, EnvironmentsTable, EnvironmentsColumn),
+		sqlgraph.To(TeamEnvironmentsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, TeamEnvironmentsTable, TeamEnvironmentsColumn),
 	)
 }
 func newApplicationsStep() *sqlgraph.Step {

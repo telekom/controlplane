@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/environment"
+	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 )
 
 // EnvironmentCreate is the builder for creating a Environment entity.
@@ -28,6 +29,21 @@ type EnvironmentCreate struct {
 func (_c *EnvironmentCreate) SetName(v string) *EnvironmentCreate {
 	_c.mutation.SetName(v)
 	return _c
+}
+
+// AddTeamEnvironmentIDs adds the "team_environments" edge to the TeamEnvironment entity by IDs.
+func (_c *EnvironmentCreate) AddTeamEnvironmentIDs(ids ...int) *EnvironmentCreate {
+	_c.mutation.AddTeamEnvironmentIDs(ids...)
+	return _c
+}
+
+// AddTeamEnvironments adds the "team_environments" edges to the TeamEnvironment entity.
+func (_c *EnvironmentCreate) AddTeamEnvironments(v ...*TeamEnvironment) *EnvironmentCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddTeamEnvironmentIDs(ids...)
 }
 
 // Mutation returns the EnvironmentMutation object of the builder.
@@ -102,6 +118,22 @@ func (_c *EnvironmentCreate) createSpec() (*Environment, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(environment.FieldName, field.TypeString, value)
 		_node.Name = value
+	}
+	if nodes := _c.mutation.TeamEnvironmentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   environment.TeamEnvironmentsTable,
+			Columns: []string{environment.TeamEnvironmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

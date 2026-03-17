@@ -20,9 +20,33 @@ type Environment struct {
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
-	Name              string `json:"name,omitempty"`
-	team_environments *int
-	selectValues      sql.SelectValues
+	Name string `json:"name,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the EnvironmentQuery when eager-loading is set.
+	Edges        EnvironmentEdges `json:"edges"`
+	selectValues sql.SelectValues
+}
+
+// EnvironmentEdges holds the relations/edges for other nodes in the graph.
+type EnvironmentEdges struct {
+	// TeamEnvironments holds the value of the team_environments edge.
+	TeamEnvironments []*TeamEnvironment `json:"team_environments,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+	// totalCount holds the count of the edges above.
+	totalCount [1]map[string]int
+
+	namedTeamEnvironments map[string][]*TeamEnvironment
+}
+
+// TeamEnvironmentsOrErr returns the TeamEnvironments value or an error if the edge
+// was not loaded in eager-loading.
+func (e EnvironmentEdges) TeamEnvironmentsOrErr() ([]*TeamEnvironment, error) {
+	if e.loadedTypes[0] {
+		return e.TeamEnvironments, nil
+	}
+	return nil, &NotLoadedError{edge: "team_environments"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -34,8 +58,6 @@ func (*Environment) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case environment.FieldName:
 			values[i] = new(sql.NullString)
-		case environment.ForeignKeys[0]: // team_environments
-			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -63,13 +85,6 @@ func (_m *Environment) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Name = value.String
 			}
-		case environment.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field team_environments", value)
-			} else if value.Valid {
-				_m.team_environments = new(int)
-				*_m.team_environments = int(value.Int64)
-			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -81,6 +96,11 @@ func (_m *Environment) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *Environment) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryTeamEnvironments queries the "team_environments" edge of the Environment entity.
+func (_m *Environment) QueryTeamEnvironments() *TeamEnvironmentQuery {
+	return NewEnvironmentClient(_m.config).QueryTeamEnvironments(_m)
 }
 
 // Update returns a builder for updating this Environment.
@@ -110,6 +130,30 @@ func (_m *Environment) String() string {
 	builder.WriteString(_m.Name)
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedTeamEnvironments returns the TeamEnvironments named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Environment) NamedTeamEnvironments(name string) ([]*TeamEnvironment, error) {
+	if _m.Edges.namedTeamEnvironments == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedTeamEnvironments[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Environment) appendNamedTeamEnvironments(name string, edges ...*TeamEnvironment) {
+	if _m.Edges.namedTeamEnvironments == nil {
+		_m.Edges.namedTeamEnvironments = make(map[string][]*TeamEnvironment)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedTeamEnvironments[name] = []*TeamEnvironment{}
+	} else {
+		_m.Edges.namedTeamEnvironments[name] = append(_m.Edges.namedTeamEnvironments[name], edges...)
+	}
 }
 
 // Environments is a parsable slice of Environment.

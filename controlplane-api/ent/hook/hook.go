@@ -120,6 +120,18 @@ func (f TeamFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TeamMutation", m)
 }
 
+// The TeamEnvironmentFunc type is an adapter to allow the use of ordinary
+// function as TeamEnvironment mutator.
+type TeamEnvironmentFunc func(context.Context, *ent.TeamEnvironmentMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TeamEnvironmentFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TeamEnvironmentMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TeamEnvironmentMutation", m)
+}
+
 // The ZoneFunc type is an adapter to allow the use of ordinary
 // function as Zone mutator.
 type ZoneFunc func(context.Context, *ent.ZoneMutation) (ent.Value, error)
