@@ -26,7 +26,7 @@ type Command struct {
 	Shallow bool
 }
 
-// NewCommand creates a new delete command
+// NewCommand creates a new get-info command
 func NewCommand() *cobra.Command {
 	baseCmd := base.NewFileCommand(
 		"get-info",

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"slices"
 	"time"
 
@@ -324,21 +325,18 @@ func (h *BaseHandler) InfoMany(ctx context.Context, names []string) (any, error)
 	}
 	token := h.Setup(ctx)
 	reqUrl := h.GetRequestUrl(token.Group, token.Team, "", "info")
-	queryParams := ""
-	for _, name := range names {
-		if queryParams == "" {
-			queryParams = "?name=" + name
-		} else {
-			queryParams += "&name=" + name
+	if len(names) > 0 {
+		params := url.Values{}
+		for _, name := range names {
+			params.Add("names", name)
 		}
+		reqUrl += "?" + params.Encode()
 	}
-	reqUrl += queryParams
 
 	return h.execInfoRequest(ctx, reqUrl)
 }
 
 func (h *BaseHandler) execInfoRequest(ctx context.Context, url string) (any, error) {
-
 	h.logger.V(1).Info("Executing info request", "url", url)
 
 	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
