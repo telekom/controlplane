@@ -405,7 +405,7 @@ func updateCallbackURL(ctx context.Context, exposure *eventv1.EventExposure, sub
 	}
 
 	// Use rawCallbackUrl as new callback URL and add actual callback URL as query parameter so that provider can use it for callbacks.
-	sub.Spec.Delivery.Callback = rawCallbackUrl + "?" + util.CallbackUrlQUeryParam + "=" + sub.Spec.Delivery.Callback
+	sub.Spec.Delivery.Callback = rawCallbackUrl + "?" + util.CallbackURLQueryParam + "=" + sub.Spec.Delivery.Callback
 	logger.V(1).Info("Updated callback URL for proxy scenario", "callback", sub.Spec.Delivery.Callback)
 
 	return nil

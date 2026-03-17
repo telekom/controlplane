@@ -67,10 +67,11 @@ spec:
   admin:
     url: https://my-horizon-instance-aws.test.dhei.telekom.de/api/v1/resources
 
-    # Identity Realm for OAuth2 authentication with the admin backend.
-    realm:
-      name: test-env
-      namespace: test-env--aws
+    # Identity Client for OAuth2 authentication with the admin backend.
+    client:
+      realm:
+        name: test-env
+        namespace: test-env--aws
 
   # Internal URL of the SSE backend service (e.g. horizon-tasse).
   # Used as the upstream for the SSE gateway Route created by EventExposure.

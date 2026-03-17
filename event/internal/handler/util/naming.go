@@ -19,8 +19,8 @@ const (
 	// This client must be configured in the configuration backend.
 	AdminClientName = "admin--controlplane-client"
 
-	// CallbackUrlQUeryParam is the name of the query parameter used to pass the original callback URL in proxy scenarios.
-	CallbackUrlQUeryParam = "callback"
+	// CallbackURLQueryParam is the name of the query parameter used to pass the original callback URL in proxy scenarios.
+	CallbackURLQueryParam = "callback"
 )
 
 func makePublishRouteName(eventConfig *eventv1.EventConfig) string {

@@ -28,8 +28,8 @@ func TestNamingConstants(t *testing.T) {
 			expected: "admin--controlplane-client",
 		},
 		{
-			name:     "CallbackUrlQUeryParam",
-			got:      CallbackUrlQUeryParam,
+			name:     "CallbackURLQueryParam",
+			got:      CallbackURLQueryParam,
 			expected: "callback",
 		},
 	}

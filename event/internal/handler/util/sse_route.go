@@ -151,7 +151,7 @@ func CleanupOldSSERoutes(ctx context.Context, eventType string) (int, error) {
 func CreateSSEProxyRoute(
 	ctx context.Context,
 	eventType string,
-	evenConfig *eventv1.EventConfig,
+	eventConfig *eventv1.EventConfig,
 	subscriberZone *adminv1.Zone,
 	providerZone *adminv1.Zone,
 ) (*gatewayapi.Route, error) {
@@ -195,7 +195,7 @@ func CreateSSEProxyRoute(
 
 	// 4. Build upstream from provider realm with OAuth2 gateway credentials
 	identityClient := &identityapi.Client{}
-	if err := c.Get(ctx, evenConfig.Status.MeshClient.K8s(), identityClient); err != nil {
+	if err := c.Get(ctx, eventConfig.Status.MeshClient.K8s(), identityClient); err != nil {
 		return nil, errors.Wrapf(err, "failed to get gateway identity client for provider realm %s/%s",
 			providerRealm.Name, providerRealm.Namespace)
 	}

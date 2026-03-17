@@ -194,7 +194,7 @@ func CreateCallbackRoute(
 			Traffic: gatewayapi.Traffic{
 				DynamicUpstream: &gatewayapi.DynamicUpstream{
 					// Use DynamicUpstream to extract the actual callback URL from a query parameter at runtime
-					QueryParameter: CallbackUrlQUeryParam,
+					QueryParameter: CallbackURLQueryParam,
 				},
 			},
 		}

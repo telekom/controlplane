@@ -14,7 +14,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
-	"github.com/telekom/controlplane/common/pkg/types"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -61,7 +60,7 @@ func CreatePublishRoute(
 
 	upstream := gatewayv1.Upstream{
 		Scheme: publishUrl.Scheme,
-		Host:   publishUrl.Host,
+		Host:   publishUrl.Hostname(),
 		Path:   publishUrl.Path,
 		Port:   gatewayv1.GetPortOrDefaultFromScheme(publishUrl),
 	}
@@ -89,7 +88,7 @@ func CreatePublishRoute(
 			Downstreams: []gatewayv1.Downstream{
 				downstream,
 			},
-			Realm: *types.ObjectRefFromObject(gatewayRealm),
+			Realm: *ctypes.ObjectRefFromObject(gatewayRealm),
 			Security: &gatewayv1.Security{
 				DisableAccessControl: true,
 			},
