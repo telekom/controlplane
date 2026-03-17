@@ -17,5 +17,5 @@ metadata:
   name: controlplane-default
 value: 100000
 globalDefault: false
-preemptionPolicy: PreemptLowerPriority
+preemptionPolicy: Never
 description: "Default priority for control plane operators"
