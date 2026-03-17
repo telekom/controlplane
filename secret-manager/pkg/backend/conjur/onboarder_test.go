@@ -6,16 +6,20 @@ package conjur_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
+	"sync"
 
 	"github.com/cyberark/conjur-api-go/conjurapi"
+	conjurapi_response "github.com/cyberark/conjur-api-go/conjurapi/response"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
 	"github.com/telekom/controlplane/secret-manager/test/mocks"
 )
 
@@ -422,6 +426,147 @@ var _ = Describe("Conjur Onboarder", func() {
 			Expect(secretsSet).To(HaveKey("teamToken"))
 			Expect(res.SecretRefs()).To(HaveKey("clientSecret"))
 			Expect(res.SecretRefs()).To(HaveKey("teamToken"))
+		})
+	})
+
+	Context("Concurrent Onboarding with Bouncer", func() {
+
+		It("should preserve all zones sub-keys when concurrent OnboardEnvironment calls use merge strategy", func() {
+			const concurrency = 10
+			const env = "test-env"
+
+			// In-memory store simulating the Conjur variable storage.
+			// Key = variableId (e.g. "controlplane/test-env/zones"), Value = current secret value.
+			store := make(map[string]string)
+			var storeMu sync.Mutex
+
+			// Create mock APIs backed by the in-memory store
+			readAPIConcurrent := mocks.NewMockConjurAPI(GinkgoT())
+			writeAPIConcurrent := mocks.NewMockConjurAPI(GinkgoT())
+
+			readAPIConcurrent.EXPECT().RetrieveSecret(mock.Anything).RunAndReturn(
+				func(variableId string) ([]byte, error) {
+					storeMu.Lock()
+					defer storeMu.Unlock()
+					val, ok := store[variableId]
+					if !ok {
+						return nil, &conjurapi_response.ConjurError{Code: 404, Message: "Not Found"}
+					}
+					return []byte(val), nil
+				},
+			)
+
+			writeAPIConcurrent.EXPECT().AddSecret(mock.Anything, mock.Anything).RunAndReturn(
+				func(variableId, value string) error {
+					storeMu.Lock()
+					defer storeMu.Unlock()
+					store[variableId] = value
+					return nil
+				},
+			)
+
+			writeAPIConcurrent.EXPECT().LoadPolicy(mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+				func(pm conjurapi.PolicyMode, s string, r io.Reader) (*conjurapi.PolicyResponse, error) {
+					_, _ = io.ReadAll(r)
+					return nil, nil
+				},
+			)
+
+			// Create a real ConjurBackend with bouncer (not a mock)
+			locker := bouncer.NewLocker("test-onboard-env")
+			realBackend := conjur.NewBackend(writeAPIConcurrent, readAPIConcurrent).WithBouncer(locker)
+
+			// Create the onboarder with the real backend as its secretWriter and shared bouncer
+			conjurOnboarder := conjur.NewOnboarder(writeAPIConcurrent, realBackend).WithBouncer(locker)
+
+			ctx := context.Background()
+			errs := make(chan error, concurrency)
+			var wg sync.WaitGroup
+			wg.Add(concurrency)
+
+			for i := 0; i < concurrency; i++ {
+				go func(idx int) {
+					defer wg.Done()
+					defer GinkgoRecover()
+					_, err := conjurOnboarder.OnboardEnvironment(ctx, env,
+						backend.WithSecretValue(fmt.Sprintf("zones/foo%d", idx), backend.String(fmt.Sprintf("bar%d", idx))),
+						backend.WithStrategy(backend.StrategyMerge),
+					)
+					errs <- err
+				}(i)
+			}
+
+			wg.Wait()
+			close(errs)
+
+			for err := range errs {
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			// Verify the zones variable contains ALL sub-keys from all concurrent calls
+			storeMu.Lock()
+			zonesValue := store["controlplane/test-env/zones"]
+			storeMu.Unlock()
+
+			Expect(zonesValue).ToNot(BeEmpty())
+
+			var zonesMap map[string]string
+			Expect(json.Unmarshal([]byte(zonesValue), &zonesMap)).To(Succeed())
+			Expect(zonesMap).To(HaveLen(concurrency))
+			for i := 0; i < concurrency; i++ {
+				Expect(zonesMap).To(HaveKeyWithValue(fmt.Sprintf("foo%d", i), fmt.Sprintf("bar%d", i)))
+			}
+		})
+
+		It("should handle concurrent OnboardTeam calls with bouncer without errors", func() {
+			const concurrency = 10
+			const env = "test-env"
+			const teamId = "test-team"
+
+			// Create dedicated mocks for the concurrent test
+			writeAPIConcurrent := mocks.NewMockConjurAPI(GinkgoT())
+			writerBackendConcurrent := mocks.NewMockBackend[conjur.ConjurSecretId, backend.DefaultSecret[conjur.ConjurSecretId]](GinkgoT())
+
+			locker := bouncer.NewLocker("test-onboard")
+			conjurOnboarder := conjur.NewOnboarder(writeAPIConcurrent, writerBackendConcurrent).WithBouncer(locker)
+
+			// LoadPolicy should be called once per concurrent call (serialized by bouncer)
+			writeAPIConcurrent.EXPECT().LoadPolicy(conjurapi.PolicyModePost, "controlplane/test-env", mock.Anything).
+				RunAndReturn(func(pm conjurapi.PolicyMode, s string, r io.Reader) (*conjurapi.PolicyResponse, error) {
+					// Drain the reader to avoid issues with reuse
+					_, _ = io.ReadAll(r)
+					return nil, nil
+				}).Times(concurrency)
+
+			// Set is called twice per onboard (clientSecret + teamToken), serialized
+			writerBackendConcurrent.EXPECT().Set(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				RunAndReturn(func(ctx context.Context, id conjur.ConjurSecretId, sv backend.SecretValue, opts ...backend.WriteOption) (backend.DefaultSecret[conjur.ConjurSecretId], error) {
+					return backend.NewDefaultSecret(id, sv.Value()), nil
+				}).Times(concurrency * 2)
+
+			ctx := context.Background()
+			errs := make(chan error, concurrency)
+			var wg sync.WaitGroup
+			wg.Add(concurrency)
+
+			for i := 0; i < concurrency; i++ {
+				go func(idx int) {
+					defer wg.Done()
+					defer GinkgoRecover()
+					_, err := conjurOnboarder.OnboardTeam(ctx, env, teamId,
+						backend.WithSecretValue("clientSecret", backend.String(fmt.Sprintf("secret-%d", idx))),
+						backend.WithStrategy(backend.StrategyMerge),
+					)
+					errs <- err
+				}(i)
+			}
+
+			wg.Wait()
+			close(errs)
+
+			for err := range errs {
+				Expect(err).ToNot(HaveOccurred())
+			}
 		})
 	})
 })

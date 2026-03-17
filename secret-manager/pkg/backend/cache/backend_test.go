@@ -129,6 +129,29 @@ var _ = Describe("Cached Backend cache", func() {
 			Expect(errors.As(err, &backendErr)).To(BeTrue())
 			Expect(backendErr.Code()).To(Equal(400))
 		})
+
+		It("should report cache size in bytes via CacheSizeBytes", func() {
+			Expect(cachedBackend.CacheSizeBytes()).To(Equal(float64(0)), "empty cache should report 0 bytes")
+
+			ctx := context.Background()
+			secretId := mocks.NewMockSecretId(GinkgoT())
+			secretId.EXPECT().CacheKey().Return("size-test-id")
+			secretId.EXPECT().String().Return("size-test-id").Maybe()
+			secretId.EXPECT().Copy().Return(secretId).Once()
+			secretId.EXPECT().SubPath().Return("")
+
+			secretValue := backend.String("some-secret-value")
+			mockBackend.EXPECT().Set(ctx, secretId, secretValue).
+				Return(backend.NewDefaultSecret(secretId, "some-secret-value"), nil).Once()
+
+			_, err := cachedBackend.Set(ctx, secretId, secretValue)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Ristretto is eventually consistent; Wait ensures buffered sets are applied
+			cachedBackend.Cache.Wait()
+
+			Expect(cachedBackend.CacheSizeBytes()).To(BeNumerically(">", 0), "cache should report non-zero bytes after Set")
+		})
 	})
 
 	Context("Singleflight deduplication", func() {

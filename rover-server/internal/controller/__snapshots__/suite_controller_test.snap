@@ -976,3 +976,55 @@
  "type": "Forbidden"
 }
 ---
+
+[Rover Controller Get all rover applications info should filter applications by names query parameter - 1]
+{
+ "applications": [
+  {
+   "errors": [
+    {
+     "cause": "Approval is either rejected or suspended",
+     "message": "ApiSubscription 'poc--eni--hyperion/rover-local-sub--eni-distr-v1' is not ready",
+     "resource": {
+      "apiVersion": "api.cp.ei.telekom.de/v1",
+      "kind": "ApiSubscription",
+      "name": "rover-local-sub--eni-distr-v1",
+      "namespace": "poc--eni--hyperion"
+     }
+    }
+   ],
+   "exposures": [
+    {
+     "approval": "Simple",
+     "basePath": "/eni/distr/v1",
+     "type": "api",
+     "upstream": "https://httpbin.org/anything",
+     "visibility": "World"
+    }
+   ],
+   "infos": null,
+   "irisClientId": "hyperion--rover-local-sub",
+   "irisClientSecret": "abcdefghijklmnop",
+   "irisIssuerUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc",
+   "irisTokenEndpointUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token",
+   "name": "rover-local-sub",
+   "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
+   "stargatePublishEventUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1",
+   "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
+   "status": "blocked",
+   "subscriptions": [
+    {
+     "basePath": "",
+     "type": "api"
+    }
+   ],
+   "variables": null,
+   "warnings": null,
+   "zone": "dataplane1"
+  }
+ ],
+ "environment": "poc",
+ "hub": "eni",
+ "team": "hyperion"
+}
+---

@@ -55,15 +55,17 @@ func GenerateSecretWithOptions(prefix string, length int) (string, error) {
 		if i >= secretLen {
 			break
 		}
-		secret[i], err = randChar(charset)
+		max := big.NewInt(int64(len(charset)))
+		secret[i], err = randChar(charset, max)
 		if err != nil {
 			return "", err
 		}
 	}
 
 	// Fill the rest with random characters from all categories
+	allMax := big.NewInt(int64(len(allChars)))
 	for i := len(required); i < secretLen; i++ {
-		secret[i], err = randChar(allChars)
+		secret[i], err = randChar(allChars, allMax)
 		if err != nil {
 			return "", err
 		}
@@ -77,10 +79,10 @@ func GenerateSecretWithOptions(prefix string, length int) (string, error) {
 	return prefix + string(secret), nil
 }
 
-func randChar(charset string) (byte, error) {
-	n, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+func randChar(charset string, max *big.Int) (byte, error) {
+	n, err := rand.Int(rand.Reader, max)
 	if err != nil {
-		return 0, fmt.Errorf("crypto/rand failed: %v", err)
+		return 0, fmt.Errorf("crypto/rand failed: %w", err)
 	}
 	return charset[n.Int64()], nil
 }
@@ -89,7 +91,7 @@ func shuffle(b []byte) error {
 	for i := len(b) - 1; i > 0; i-- {
 		n, err := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
 		if err != nil {
-			return fmt.Errorf("crypto/rand failed: %v", err)
+			return fmt.Errorf("crypto/rand failed: %w", err)
 		}
 		j := n.Int64()
 		b[i], b[j] = b[j], b[i]

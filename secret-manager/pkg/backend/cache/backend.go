@@ -84,11 +84,17 @@ func NewCachedBackend[T backend.SecretId, S backend.Secret[T]](backend backend.B
 	}
 }
 
+// CacheSizeBytes returns the current cache usage in bytes (MaxCost - RemainingCost).
+// This is intended to be passed as a metrics.CacheSizeFunc for Prometheus gauge registration.
+func (c *CachedBackend[T, S]) CacheSizeBytes() float64 {
+	return float64(c.Cache.MaxCost() - c.Cache.RemainingCost())
+}
+
 // invalidateParent removes the parent secret's cache and singleflight entries
 // when a sub-secret is modified. This prevents stale reads of the parent document
 // after a sub-secret write changes the underlying stored value.
 func (c *CachedBackend[T, S]) invalidateParent(id T) {
-	if id.SubPath() != "" {
+	if id.SubPath() != backend.NoSubPath {
 		parentKey := id.ParentId().CacheKey()
 		c.group.Forget(parentKey)
 		c.Cache.Del(parentKey)

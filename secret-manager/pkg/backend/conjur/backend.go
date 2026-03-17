@@ -10,7 +10,9 @@ import (
 	"maps"
 
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
@@ -24,14 +26,26 @@ type ConjurBackend struct {
 	// MustMatchChecksum is used to check if the checksum of the requested secret
 	// is actually the same as the one in the backend. If it is not, an error is returned.
 	MustMatchChecksum bool
+
+	// bouncer provides per-variable locking for Set operations to prevent
+	// concurrent read-modify-write races on the same secret.
+	bouncer bouncer.Bouncer
 }
 
-func NewBackend(writeAPI, readAPI ConjurAPI) backend.Backend[ConjurSecretId, backend.DefaultSecret[ConjurSecretId]] {
+func NewBackend(writeAPI, readAPI ConjurAPI) *ConjurBackend {
 	return &ConjurBackend{
 		writeAPI:          writeAPI,
 		readAPI:           readAPI,
 		MustMatchChecksum: false,
 	}
+}
+
+func (c *ConjurBackend) WithBouncer(b bouncer.Bouncer) *ConjurBackend {
+	if b == nil {
+		return c
+	}
+	c.bouncer = b
+	return c
 }
 
 func (c *ConjurBackend) ParseSecretId(rawId string) (ConjurSecretId, error) {
@@ -47,7 +61,7 @@ func (c *ConjurBackend) Get(ctx context.Context, id ConjurSecretId) (res backend
 	}
 
 	subPath := id.SubPath()
-	if subPath != "" {
+	if subPath != backend.NoSubPath {
 		log.Info("Subpath found. Using subpath to get secret", "subPath", subPath)
 		result := gjson.GetBytes(secret, subPath)
 		if !result.Exists() {
@@ -60,7 +74,7 @@ func (c *ConjurBackend) Get(ctx context.Context, id ConjurSecretId) (res backend
 		res = backend.NewDefaultSecret(newId, string(secret))
 	}
 
-	if id.checksum != "" && id.checksum != res.Id().checksum {
+	if id.checksum != backend.NoChecksum && id.checksum != res.Id().checksum {
 		if c.MustMatchChecksum {
 			log.Info("Checksum mismatch. Returning error", "id", id.String())
 			return res, backend.ErrBadChecksum(id)
@@ -74,6 +88,21 @@ func (c *ConjurBackend) Get(ctx context.Context, id ConjurSecretId) (res backend
 }
 
 func (c *ConjurBackend) Set(ctx context.Context, id ConjurSecretId, secretValue backend.SecretValue, opts ...backend.WriteOption) (res backend.DefaultSecret[ConjurSecretId], err error) {
+	if c.bouncer != nil {
+		lockKey := id.VariableId()
+		bouncerErr := c.bouncer.RunB(ctx, lockKey, func(ctx context.Context) error {
+			res, err = c.doSet(ctx, id, secretValue, opts...)
+			return err
+		})
+		if bouncerErr != nil && errors.Is(bouncerErr, bouncer.ErrLockNotAcquired) {
+			return res, backend.NewBackendError(nil, bouncerErr, backend.TypeErrTooManyRequests)
+		}
+		return res, err
+	}
+	return c.doSet(ctx, id, secretValue, opts...)
+}
+
+func (c *ConjurBackend) doSet(ctx context.Context, id ConjurSecretId, secretValue backend.SecretValue, opts ...backend.WriteOption) (res backend.DefaultSecret[ConjurSecretId], err error) {
 	log := logr.FromContextOrDiscard(ctx)
 	log.Info("Setting secret", "id", id.VariableId())
 
@@ -93,23 +122,23 @@ func (c *ConjurBackend) Set(ctx context.Context, id ConjurSecretId, secretValue 
 
 	subPath := id.SubPath()
 	currentValue := string(data)
-	if subPath != "" {
+	if subPath != backend.NoSubPath {
 		result := gjson.GetBytes(data, subPath)
 		if !result.Exists() {
-			currentValue = ""
+			currentValue = backend.NoValue
 		} else {
 			currentValue = result.String()
 		}
 	}
 
-	if currentValue != "" && !secretValue.AllowChange() {
+	if currentValue != backend.NoValue && !secretValue.AllowChange() {
 		log.Info("Secret already exists but is not empty. Not updating...", "id", id.String())
 		return backend.NewDefaultSecret(id.CopyWithChecksum(backend.MakeChecksum(currentValue)), currentValue), nil
 	}
 
 	// For merge strategy, shallow-merge JSON objects with the existing value
 	effectiveValue := secretValue.Value()
-	if options.Strategy == backend.StrategyMerge && currentValue != "" {
+	if options.Strategy == backend.StrategyMerge && currentValue != backend.NoValue {
 		merged, wasMerged := shallowMergeJSON(currentValue, effectiveValue)
 		if wasMerged {
 			log.Info("Merge strategy: shallow-merged JSON values", "id", id.String())
@@ -123,7 +152,7 @@ func (c *ConjurBackend) Set(ctx context.Context, id ConjurSecretId, secretValue 
 	}
 
 	nextValue := effectiveValue
-	if subPath != "" {
+	if subPath != backend.NoSubPath {
 		log.Info("Subpath found. Using subpath to set secret", "subPath", subPath)
 		newData, err := sjson.SetBytes(data, subPath, nextValue)
 		if err != nil {
@@ -138,7 +167,7 @@ func (c *ConjurBackend) Set(ctx context.Context, id ConjurSecretId, secretValue 
 		return res, handleError(err, id)
 	}
 	newId := id.CopyWithChecksum(backend.MakeChecksum(effectiveValue))
-	return backend.NewDefaultSecret(newId, ""), nil
+	return backend.NewDefaultSecret(newId, backend.NoValue), nil
 }
 
 func (c *ConjurBackend) Delete(ctx context.Context, id ConjurSecretId) error {
@@ -168,14 +197,14 @@ func (c *ConjurBackend) initialCreation(ctx context.Context, id ConjurSecretId, 
 
 	log.Info("Secret does not exist yet. Initial creation...", "id", id.VariableId())
 	subPath := id.SubPath()
-	if subPath == "" {
+	if subPath == backend.NoSubPath {
 		err = c.writeAPI.AddSecret(id.VariableId(), value.Value())
 		if err != nil {
 			return res, handleError(err, id)
 		}
 		newId := id.CopyWithChecksum(backend.MakeChecksum(value.Value()))
 		log.Info("Successfully created new secret", "id", newId.String())
-		res = backend.NewDefaultSecret(newId, "")
+		res = backend.NewDefaultSecret(newId, backend.NoValue)
 	} else {
 		log.Info("Subpath found. Using subpath to create secret", "subPath", subPath)
 		data, err := c.readAPI.RetrieveSecret(id.VariableId())
@@ -192,7 +221,7 @@ func (c *ConjurBackend) initialCreation(ctx context.Context, id ConjurSecretId, 
 		}
 		newId := id.CopyWithChecksum(backend.MakeChecksum(value.Value()))
 		log.Info("Successfully created new secret", "id", newId.String())
-		res = backend.NewDefaultSecret(newId, "")
+		res = backend.NewDefaultSecret(newId, backend.NoValue)
 	}
 
 	return res, err

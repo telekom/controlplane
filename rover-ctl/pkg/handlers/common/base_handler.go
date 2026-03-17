@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"slices"
 	"time"
 
@@ -202,7 +203,6 @@ func (h *BaseHandler) Get(ctx context.Context, name string) (any, error) {
 	token := h.Setup(ctx)
 	url := h.GetRequestUrl(token.Group, token.Team, name)
 
-	// Send the request (no obj, so no hooks will be executed)
 	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
 	if err != nil {
 		return nil, err
@@ -255,7 +255,6 @@ func (h *BaseHandler) ListWithCursor(ctx context.Context, cursor string) (*ListR
 		url += "?cursor=" + cursor
 	}
 
-	// Send the request (no obj, so no hooks will be executed)
 	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
 	if err != nil {
 		return nil, err
@@ -281,7 +280,6 @@ func (h *BaseHandler) Status(ctx context.Context, name string) (types.ObjectStat
 	token := h.Setup(ctx)
 	url := h.GetRequestUrl(token.Group, token.Team, name, "status")
 
-	// Send the request (no obj, so no hooks will be executed)
 	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
 	if err != nil {
 		return nil, err
@@ -318,7 +316,29 @@ func (h *BaseHandler) Info(ctx context.Context, name string) (any, error) {
 	token := h.Setup(ctx)
 	url := h.GetRequestUrl(token.Group, token.Team, name, "info")
 
-	// Send the request (no obj, so no hooks will be executed)
+	return h.execInfoRequest(ctx, url)
+}
+
+func (h *BaseHandler) InfoMany(ctx context.Context, names []string) (any, error) {
+	if !h.SupportsInfo {
+		return nil, errors.Errorf("info operation is not supported for %s", h.Resource)
+	}
+	token := h.Setup(ctx)
+	reqUrl := h.GetRequestUrl(token.Group, token.Team, "", "info")
+	if len(names) > 0 {
+		params := url.Values{}
+		for _, name := range names {
+			params.Add("names", name)
+		}
+		reqUrl += "?" + params.Encode()
+	}
+
+	return h.execInfoRequest(ctx, reqUrl)
+}
+
+func (h *BaseHandler) execInfoRequest(ctx context.Context, url string) (any, error) {
+	h.logger.V(1).Info("Executing info request", "url", url)
+
 	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
 	if err != nil {
 		return nil, err
@@ -361,11 +381,8 @@ func (h *BaseHandler) RunHooks(stage HandlerHookStage, ctx context.Context, obj 
 // SendRequest handles common request operations including running hooks
 func (h *BaseHandler) SendRequest(ctx context.Context, obj types.Object, method, url string) (*http.Response, error) {
 
-	// Run pre-request hooks if object is provided
-	if obj != nil {
-		if err := h.RunHooks(PreRequestHook, ctx, obj); err != nil {
-			return nil, err
-		}
+	if err := h.RunHooks(PreRequestHook, ctx, obj); err != nil {
+		return nil, err
 	}
 
 	var body io.ReadWriter
@@ -404,11 +421,8 @@ func (h *BaseHandler) SendRequest(ctx context.Context, obj types.Object, method,
 
 	h.logger.V(1).Info("Received response", "status", resp.Status)
 
-	// Run post-request hooks if object is provided
-	if obj != nil {
-		if err := h.RunHooks(PostRequestHook, ctx, obj); err != nil {
-			return nil, err
-		}
+	if err := h.RunHooks(PostRequestHook, ctx, obj); err != nil {
+		return nil, err
 	}
 
 	return resp, nil

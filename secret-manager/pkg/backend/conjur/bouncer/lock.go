@@ -21,9 +21,13 @@ type Locker struct {
 }
 
 func NewDefaultLocker() *Locker {
+	return NewLocker("default")
+}
+
+func NewLocker(queueName string) *Locker {
 	return &Locker{
 		locks:     make(map[string]chan struct{}),
-		queueName: "default",
+		queueName: queueName,
 	}
 }
 
@@ -72,6 +76,7 @@ func (l *Locker) TryAcquireLock(ctx context.Context, key string) error {
 	}
 }
 
+// ReleaseLock releases the lock for the given key. If the lock is not acquired, it will do nothing.
 func (l *Locker) ReleaseLock(ctx context.Context, key string) {
 	l.mu.Lock()
 	lock, ok := l.locks[key]
@@ -87,6 +92,8 @@ func (l *Locker) ReleaseLock(ctx context.Context, key string) {
 	}
 }
 
+// RunB runs the given runnable with the lock acquired for the given key. It will block until the lock is acquired.
+// It will respect the lifecycle of the context and will return an error if the context is done before acquiring the lock.
 func (l *Locker) RunB(ctx context.Context, key string, run Runnable) error {
 	queueLength.WithLabelValues(l.queueName).Inc()
 	defer queueLength.WithLabelValues(l.queueName).Dec()

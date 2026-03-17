@@ -31,6 +31,9 @@ func NewEventSpecHandlerInstance() *EventSpecHandler {
 }
 
 func PatchEventSpecificationRequest(ctx context.Context, obj types.Object) error {
+	if obj == nil {
+		return nil
+	}
 	spec, ok := obj.GetContent()["spec"]
 	if !ok {
 		return errors.New("invalid EventSpecification. Missing 'spec'.")

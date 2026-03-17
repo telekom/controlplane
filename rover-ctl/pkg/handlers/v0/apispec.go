@@ -26,6 +26,9 @@ func NewApiSpecHandlerInstance() *ApiSpecHandler {
 }
 
 func PatchApiSpecificationRequest(ctx context.Context, obj types.Object) error {
+	if obj == nil {
+		return nil
+	}
 	content := map[string]any{
 		"specification": obj.GetContent(),
 	}
