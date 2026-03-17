@@ -176,30 +176,10 @@ func (_q *ApiExposureQuery) collectField(ctx context.Context, oneNode bool, opCt
 				selectedFields = append(selectedFields, apiexposure.FieldActive)
 				fieldSeen[apiexposure.FieldActive] = struct{}{}
 			}
-		case "lastMileSecurity":
-			if _, ok := fieldSeen[apiexposure.FieldLastMileSecurity]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldLastMileSecurity)
-				fieldSeen[apiexposure.FieldLastMileSecurity] = struct{}{}
-			}
-		case "m2mAuthMethod":
-			if _, ok := fieldSeen[apiexposure.FieldM2mAuthMethod]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldM2mAuthMethod)
-				fieldSeen[apiexposure.FieldM2mAuthMethod] = struct{}{}
-			}
-		case "externalIdpTokenEndpoint":
-			if _, ok := fieldSeen[apiexposure.FieldExternalIdpTokenEndpoint]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldExternalIdpTokenEndpoint)
-				fieldSeen[apiexposure.FieldExternalIdpTokenEndpoint] = struct{}{}
-			}
-		case "circuitBreakerEnabled":
-			if _, ok := fieldSeen[apiexposure.FieldCircuitBreakerEnabled]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldCircuitBreakerEnabled)
-				fieldSeen[apiexposure.FieldCircuitBreakerEnabled] = struct{}{}
-			}
-		case "providedScopes":
-			if _, ok := fieldSeen[apiexposure.FieldProvidedScopes]; !ok {
-				selectedFields = append(selectedFields, apiexposure.FieldProvidedScopes)
-				fieldSeen[apiexposure.FieldProvidedScopes] = struct{}{}
+		case "features":
+			if _, ok := fieldSeen[apiexposure.FieldFeatures]; !ok {
+				selectedFields = append(selectedFields, apiexposure.FieldFeatures)
+				fieldSeen[apiexposure.FieldFeatures] = struct{}{}
 			}
 		case "upstreams":
 			if _, ok := fieldSeen[apiexposure.FieldUpstreams]; !ok {

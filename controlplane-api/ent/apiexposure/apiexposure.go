@@ -34,16 +34,8 @@ const (
 	FieldVisibility = "visibility"
 	// FieldActive holds the string denoting the active field in the database.
 	FieldActive = "active"
-	// FieldLastMileSecurity holds the string denoting the last_mile_security field in the database.
-	FieldLastMileSecurity = "last_mile_security"
-	// FieldM2mAuthMethod holds the string denoting the m2m_auth_method field in the database.
-	FieldM2mAuthMethod = "m2m_auth_method"
-	// FieldExternalIdpTokenEndpoint holds the string denoting the external_idp_token_endpoint field in the database.
-	FieldExternalIdpTokenEndpoint = "external_idp_token_endpoint"
-	// FieldCircuitBreakerEnabled holds the string denoting the circuit_breaker_enabled field in the database.
-	FieldCircuitBreakerEnabled = "circuit_breaker_enabled"
-	// FieldProvidedScopes holds the string denoting the provided_scopes field in the database.
-	FieldProvidedScopes = "provided_scopes"
+	// FieldFeatures holds the string denoting the features field in the database.
+	FieldFeatures = "features"
 	// FieldUpstreams holds the string denoting the upstreams field in the database.
 	FieldUpstreams = "upstreams"
 	// FieldApprovalConfig holds the string denoting the approval_config field in the database.
@@ -81,11 +73,7 @@ var Columns = []string{
 	FieldBasePath,
 	FieldVisibility,
 	FieldActive,
-	FieldLastMileSecurity,
-	FieldM2mAuthMethod,
-	FieldExternalIdpTokenEndpoint,
-	FieldCircuitBreakerEnabled,
-	FieldProvidedScopes,
+	FieldFeatures,
 	FieldUpstreams,
 	FieldApprovalConfig,
 	FieldAPIVersion,
@@ -132,12 +120,8 @@ var (
 	BasePathValidator func(string) error
 	// DefaultActive holds the default value on creation for the "active" field.
 	DefaultActive bool
-	// DefaultLastMileSecurity holds the default value on creation for the "last_mile_security" field.
-	DefaultLastMileSecurity bool
-	// DefaultCircuitBreakerEnabled holds the default value on creation for the "circuit_breaker_enabled" field.
-	DefaultCircuitBreakerEnabled bool
-	// DefaultProvidedScopes holds the default value on creation for the "provided_scopes" field.
-	DefaultProvidedScopes []string
+	// DefaultFeatures holds the default value on creation for the "features" field.
+	DefaultFeatures []string
 	// DefaultUpstreams holds the default value on creation for the "upstreams" field.
 	DefaultUpstreams []model.Upstream
 	// DefaultApprovalConfig holds the default value on creation for the "approval_config" field.
@@ -168,34 +152,6 @@ func VisibilityValidator(v Visibility) error {
 		return nil
 	default:
 		return fmt.Errorf("apiexposure: invalid enum value for visibility field: %q", v)
-	}
-}
-
-// M2mAuthMethod defines the type for the "m2m_auth_method" enum field.
-type M2mAuthMethod string
-
-// M2mAuthMethodNone is the default value of the M2mAuthMethod enum.
-const DefaultM2mAuthMethod = M2mAuthMethodNone
-
-// M2mAuthMethod values.
-const (
-	M2mAuthMethodNone        M2mAuthMethod = "NONE"
-	M2mAuthMethodBasicAuth   M2mAuthMethod = "BASIC_AUTH"
-	M2mAuthMethodExternalIdp M2mAuthMethod = "EXTERNAL_IDP"
-	M2mAuthMethodScopesOnly  M2mAuthMethod = "SCOPES_ONLY"
-)
-
-func (mam M2mAuthMethod) String() string {
-	return string(mam)
-}
-
-// M2mAuthMethodValidator is a validator for the "m2m_auth_method" field enum values. It is called by the builders before save.
-func M2mAuthMethodValidator(mam M2mAuthMethod) error {
-	switch mam {
-	case M2mAuthMethodNone, M2mAuthMethodBasicAuth, M2mAuthMethodExternalIdp, M2mAuthMethodScopesOnly:
-		return nil
-	default:
-		return fmt.Errorf("apiexposure: invalid enum value for m2m_auth_method field: %q", mam)
 	}
 }
 
@@ -230,26 +186,6 @@ func ByVisibility(opts ...sql.OrderTermOption) OrderOption {
 // ByActive orders the results by the active field.
 func ByActive(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldActive, opts...).ToFunc()
-}
-
-// ByLastMileSecurity orders the results by the last_mile_security field.
-func ByLastMileSecurity(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldLastMileSecurity, opts...).ToFunc()
-}
-
-// ByM2mAuthMethod orders the results by the m2m_auth_method field.
-func ByM2mAuthMethod(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldM2mAuthMethod, opts...).ToFunc()
-}
-
-// ByExternalIdpTokenEndpoint orders the results by the external_idp_token_endpoint field.
-func ByExternalIdpTokenEndpoint(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldExternalIdpTokenEndpoint, opts...).ToFunc()
-}
-
-// ByCircuitBreakerEnabled orders the results by the circuit_breaker_enabled field.
-func ByCircuitBreakerEnabled(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCircuitBreakerEnabled, opts...).ToFunc()
 }
 
 // ByAPIVersion orders the results by the api_version field.
@@ -306,24 +242,6 @@ func (e *Visibility) UnmarshalGQL(val interface{}) error {
 	*e = Visibility(str)
 	if err := VisibilityValidator(*e); err != nil {
 		return fmt.Errorf("%s is not a valid Visibility", str)
-	}
-	return nil
-}
-
-// MarshalGQL implements graphql.Marshaler interface.
-func (e M2mAuthMethod) MarshalGQL(w io.Writer) {
-	io.WriteString(w, strconv.Quote(e.String()))
-}
-
-// UnmarshalGQL implements graphql.Unmarshaler interface.
-func (e *M2mAuthMethod) UnmarshalGQL(val interface{}) error {
-	str, ok := val.(string)
-	if !ok {
-		return fmt.Errorf("enum %T must be a string", val)
-	}
-	*e = M2mAuthMethod(str)
-	if err := M2mAuthMethodValidator(*e); err != nil {
-		return fmt.Errorf("%s is not a valid M2mAuthMethod", str)
 	}
 	return nil
 }

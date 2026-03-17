@@ -20,11 +20,7 @@ var (
 		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ZONE", "ENTERPRISE"}, Default: "ENTERPRISE"},
 		{Name: "active", Type: field.TypeBool, Default: false},
-		{Name: "last_mile_security", Type: field.TypeBool, Default: false},
-		{Name: "m2m_auth_method", Type: field.TypeEnum, Enums: []string{"NONE", "BASIC_AUTH", "EXTERNAL_IDP", "SCOPES_ONLY"}, Default: "NONE"},
-		{Name: "external_idp_token_endpoint", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "circuit_breaker_enabled", Type: field.TypeBool, Default: false},
-		{Name: "provided_scopes", Type: field.TypeJSON},
+		{Name: "features", Type: field.TypeJSON},
 		{Name: "upstreams", Type: field.TypeJSON},
 		{Name: "approval_config", Type: field.TypeJSON},
 		{Name: "api_version", Type: field.TypeString, Nullable: true, Size: 2147483647},
@@ -38,7 +34,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_exposures_applications_exposed_apis",
-				Columns:    []*schema.Column{APIExposuresColumns[15]},
+				Columns:    []*schema.Column{APIExposuresColumns[11]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -47,7 +43,7 @@ var (
 			{
 				Name:    "apiexposure_base_path_application_exposed_apis",
 				Unique:  true,
-				Columns: []*schema.Column{APIExposuresColumns[4], APIExposuresColumns[15]},
+				Columns: []*schema.Column{APIExposuresColumns[4], APIExposuresColumns[11]},
 			},
 		},
 	}

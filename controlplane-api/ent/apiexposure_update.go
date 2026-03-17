@@ -97,77 +97,15 @@ func (_u *ApiExposureUpdate) SetNillableActive(v *bool) *ApiExposureUpdate {
 	return _u
 }
 
-// SetLastMileSecurity sets the "last_mile_security" field.
-func (_u *ApiExposureUpdate) SetLastMileSecurity(v bool) *ApiExposureUpdate {
-	_u.mutation.SetLastMileSecurity(v)
+// SetFeatures sets the "features" field.
+func (_u *ApiExposureUpdate) SetFeatures(v []string) *ApiExposureUpdate {
+	_u.mutation.SetFeatures(v)
 	return _u
 }
 
-// SetNillableLastMileSecurity sets the "last_mile_security" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableLastMileSecurity(v *bool) *ApiExposureUpdate {
-	if v != nil {
-		_u.SetLastMileSecurity(*v)
-	}
-	return _u
-}
-
-// SetM2mAuthMethod sets the "m2m_auth_method" field.
-func (_u *ApiExposureUpdate) SetM2mAuthMethod(v apiexposure.M2mAuthMethod) *ApiExposureUpdate {
-	_u.mutation.SetM2mAuthMethod(v)
-	return _u
-}
-
-// SetNillableM2mAuthMethod sets the "m2m_auth_method" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableM2mAuthMethod(v *apiexposure.M2mAuthMethod) *ApiExposureUpdate {
-	if v != nil {
-		_u.SetM2mAuthMethod(*v)
-	}
-	return _u
-}
-
-// SetExternalIdpTokenEndpoint sets the "external_idp_token_endpoint" field.
-func (_u *ApiExposureUpdate) SetExternalIdpTokenEndpoint(v string) *ApiExposureUpdate {
-	_u.mutation.SetExternalIdpTokenEndpoint(v)
-	return _u
-}
-
-// SetNillableExternalIdpTokenEndpoint sets the "external_idp_token_endpoint" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableExternalIdpTokenEndpoint(v *string) *ApiExposureUpdate {
-	if v != nil {
-		_u.SetExternalIdpTokenEndpoint(*v)
-	}
-	return _u
-}
-
-// ClearExternalIdpTokenEndpoint clears the value of the "external_idp_token_endpoint" field.
-func (_u *ApiExposureUpdate) ClearExternalIdpTokenEndpoint() *ApiExposureUpdate {
-	_u.mutation.ClearExternalIdpTokenEndpoint()
-	return _u
-}
-
-// SetCircuitBreakerEnabled sets the "circuit_breaker_enabled" field.
-func (_u *ApiExposureUpdate) SetCircuitBreakerEnabled(v bool) *ApiExposureUpdate {
-	_u.mutation.SetCircuitBreakerEnabled(v)
-	return _u
-}
-
-// SetNillableCircuitBreakerEnabled sets the "circuit_breaker_enabled" field if the given value is not nil.
-func (_u *ApiExposureUpdate) SetNillableCircuitBreakerEnabled(v *bool) *ApiExposureUpdate {
-	if v != nil {
-		_u.SetCircuitBreakerEnabled(*v)
-	}
-	return _u
-}
-
-// SetProvidedScopes sets the "provided_scopes" field.
-func (_u *ApiExposureUpdate) SetProvidedScopes(v []string) *ApiExposureUpdate {
-	_u.mutation.SetProvidedScopes(v)
-	return _u
-}
-
-// AppendProvidedScopes appends value to the "provided_scopes" field.
-func (_u *ApiExposureUpdate) AppendProvidedScopes(v []string) *ApiExposureUpdate {
-	_u.mutation.AppendProvidedScopes(v)
+// AppendFeatures appends value to the "features" field.
+func (_u *ApiExposureUpdate) AppendFeatures(v []string) *ApiExposureUpdate {
+	_u.mutation.AppendFeatures(v)
 	return _u
 }
 
@@ -329,11 +267,6 @@ func (_u *ApiExposureUpdate) check() error {
 			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.visibility": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.M2mAuthMethod(); ok {
-		if err := apiexposure.M2mAuthMethodValidator(v); err != nil {
-			return &ValidationError{Name: "m2m_auth_method", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.m2m_auth_method": %w`, err)}
-		}
-	}
 	if _u.mutation.OwnerCleared() && len(_u.mutation.OwnerIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ApiExposure.owner"`)
 	}
@@ -367,27 +300,12 @@ func (_u *ApiExposureUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(apiexposure.FieldActive, field.TypeBool, value)
 	}
-	if value, ok := _u.mutation.LastMileSecurity(); ok {
-		_spec.SetField(apiexposure.FieldLastMileSecurity, field.TypeBool, value)
+	if value, ok := _u.mutation.Features(); ok {
+		_spec.SetField(apiexposure.FieldFeatures, field.TypeJSON, value)
 	}
-	if value, ok := _u.mutation.M2mAuthMethod(); ok {
-		_spec.SetField(apiexposure.FieldM2mAuthMethod, field.TypeEnum, value)
-	}
-	if value, ok := _u.mutation.ExternalIdpTokenEndpoint(); ok {
-		_spec.SetField(apiexposure.FieldExternalIdpTokenEndpoint, field.TypeString, value)
-	}
-	if _u.mutation.ExternalIdpTokenEndpointCleared() {
-		_spec.ClearField(apiexposure.FieldExternalIdpTokenEndpoint, field.TypeString)
-	}
-	if value, ok := _u.mutation.CircuitBreakerEnabled(); ok {
-		_spec.SetField(apiexposure.FieldCircuitBreakerEnabled, field.TypeBool, value)
-	}
-	if value, ok := _u.mutation.ProvidedScopes(); ok {
-		_spec.SetField(apiexposure.FieldProvidedScopes, field.TypeJSON, value)
-	}
-	if value, ok := _u.mutation.AppendedProvidedScopes(); ok {
+	if value, ok := _u.mutation.AppendedFeatures(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, apiexposure.FieldProvidedScopes, value)
+			sqljson.Append(u, apiexposure.FieldFeatures, value)
 		})
 	}
 	if value, ok := _u.mutation.Upstreams(); ok {
@@ -563,77 +481,15 @@ func (_u *ApiExposureUpdateOne) SetNillableActive(v *bool) *ApiExposureUpdateOne
 	return _u
 }
 
-// SetLastMileSecurity sets the "last_mile_security" field.
-func (_u *ApiExposureUpdateOne) SetLastMileSecurity(v bool) *ApiExposureUpdateOne {
-	_u.mutation.SetLastMileSecurity(v)
+// SetFeatures sets the "features" field.
+func (_u *ApiExposureUpdateOne) SetFeatures(v []string) *ApiExposureUpdateOne {
+	_u.mutation.SetFeatures(v)
 	return _u
 }
 
-// SetNillableLastMileSecurity sets the "last_mile_security" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableLastMileSecurity(v *bool) *ApiExposureUpdateOne {
-	if v != nil {
-		_u.SetLastMileSecurity(*v)
-	}
-	return _u
-}
-
-// SetM2mAuthMethod sets the "m2m_auth_method" field.
-func (_u *ApiExposureUpdateOne) SetM2mAuthMethod(v apiexposure.M2mAuthMethod) *ApiExposureUpdateOne {
-	_u.mutation.SetM2mAuthMethod(v)
-	return _u
-}
-
-// SetNillableM2mAuthMethod sets the "m2m_auth_method" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableM2mAuthMethod(v *apiexposure.M2mAuthMethod) *ApiExposureUpdateOne {
-	if v != nil {
-		_u.SetM2mAuthMethod(*v)
-	}
-	return _u
-}
-
-// SetExternalIdpTokenEndpoint sets the "external_idp_token_endpoint" field.
-func (_u *ApiExposureUpdateOne) SetExternalIdpTokenEndpoint(v string) *ApiExposureUpdateOne {
-	_u.mutation.SetExternalIdpTokenEndpoint(v)
-	return _u
-}
-
-// SetNillableExternalIdpTokenEndpoint sets the "external_idp_token_endpoint" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableExternalIdpTokenEndpoint(v *string) *ApiExposureUpdateOne {
-	if v != nil {
-		_u.SetExternalIdpTokenEndpoint(*v)
-	}
-	return _u
-}
-
-// ClearExternalIdpTokenEndpoint clears the value of the "external_idp_token_endpoint" field.
-func (_u *ApiExposureUpdateOne) ClearExternalIdpTokenEndpoint() *ApiExposureUpdateOne {
-	_u.mutation.ClearExternalIdpTokenEndpoint()
-	return _u
-}
-
-// SetCircuitBreakerEnabled sets the "circuit_breaker_enabled" field.
-func (_u *ApiExposureUpdateOne) SetCircuitBreakerEnabled(v bool) *ApiExposureUpdateOne {
-	_u.mutation.SetCircuitBreakerEnabled(v)
-	return _u
-}
-
-// SetNillableCircuitBreakerEnabled sets the "circuit_breaker_enabled" field if the given value is not nil.
-func (_u *ApiExposureUpdateOne) SetNillableCircuitBreakerEnabled(v *bool) *ApiExposureUpdateOne {
-	if v != nil {
-		_u.SetCircuitBreakerEnabled(*v)
-	}
-	return _u
-}
-
-// SetProvidedScopes sets the "provided_scopes" field.
-func (_u *ApiExposureUpdateOne) SetProvidedScopes(v []string) *ApiExposureUpdateOne {
-	_u.mutation.SetProvidedScopes(v)
-	return _u
-}
-
-// AppendProvidedScopes appends value to the "provided_scopes" field.
-func (_u *ApiExposureUpdateOne) AppendProvidedScopes(v []string) *ApiExposureUpdateOne {
-	_u.mutation.AppendProvidedScopes(v)
+// AppendFeatures appends value to the "features" field.
+func (_u *ApiExposureUpdateOne) AppendFeatures(v []string) *ApiExposureUpdateOne {
+	_u.mutation.AppendFeatures(v)
 	return _u
 }
 
@@ -808,11 +664,6 @@ func (_u *ApiExposureUpdateOne) check() error {
 			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.visibility": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.M2mAuthMethod(); ok {
-		if err := apiexposure.M2mAuthMethodValidator(v); err != nil {
-			return &ValidationError{Name: "m2m_auth_method", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.m2m_auth_method": %w`, err)}
-		}
-	}
 	if _u.mutation.OwnerCleared() && len(_u.mutation.OwnerIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ApiExposure.owner"`)
 	}
@@ -863,27 +714,12 @@ func (_u *ApiExposureUpdateOne) sqlSave(ctx context.Context) (_node *ApiExposure
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(apiexposure.FieldActive, field.TypeBool, value)
 	}
-	if value, ok := _u.mutation.LastMileSecurity(); ok {
-		_spec.SetField(apiexposure.FieldLastMileSecurity, field.TypeBool, value)
+	if value, ok := _u.mutation.Features(); ok {
+		_spec.SetField(apiexposure.FieldFeatures, field.TypeJSON, value)
 	}
-	if value, ok := _u.mutation.M2mAuthMethod(); ok {
-		_spec.SetField(apiexposure.FieldM2mAuthMethod, field.TypeEnum, value)
-	}
-	if value, ok := _u.mutation.ExternalIdpTokenEndpoint(); ok {
-		_spec.SetField(apiexposure.FieldExternalIdpTokenEndpoint, field.TypeString, value)
-	}
-	if _u.mutation.ExternalIdpTokenEndpointCleared() {
-		_spec.ClearField(apiexposure.FieldExternalIdpTokenEndpoint, field.TypeString)
-	}
-	if value, ok := _u.mutation.CircuitBreakerEnabled(); ok {
-		_spec.SetField(apiexposure.FieldCircuitBreakerEnabled, field.TypeBool, value)
-	}
-	if value, ok := _u.mutation.ProvidedScopes(); ok {
-		_spec.SetField(apiexposure.FieldProvidedScopes, field.TypeJSON, value)
-	}
-	if value, ok := _u.mutation.AppendedProvidedScopes(); ok {
+	if value, ok := _u.mutation.AppendedFeatures(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, apiexposure.FieldProvidedScopes, value)
+			sqljson.Append(u, apiexposure.FieldFeatures, value)
 		})
 	}
 	if value, ok := _u.mutation.Upstreams(); ok {

@@ -85,37 +85,6 @@ type ApiExposureWhereInput struct {
 	Active    *bool `json:"active,omitempty"`
 	ActiveNEQ *bool `json:"activeNEQ,omitempty"`
 
-	// "last_mile_security" field predicates.
-	LastMileSecurity    *bool `json:"lastMileSecurity,omitempty"`
-	LastMileSecurityNEQ *bool `json:"lastMileSecurityNEQ,omitempty"`
-
-	// "m2m_auth_method" field predicates.
-	M2mAuthMethod      *apiexposure.M2mAuthMethod  `json:"m2mAuthMethod,omitempty"`
-	M2mAuthMethodNEQ   *apiexposure.M2mAuthMethod  `json:"m2mAuthMethodNEQ,omitempty"`
-	M2mAuthMethodIn    []apiexposure.M2mAuthMethod `json:"m2mAuthMethodIn,omitempty"`
-	M2mAuthMethodNotIn []apiexposure.M2mAuthMethod `json:"m2mAuthMethodNotIn,omitempty"`
-
-	// "external_idp_token_endpoint" field predicates.
-	ExternalIdpTokenEndpoint             *string  `json:"externalIdpTokenEndpoint,omitempty"`
-	ExternalIdpTokenEndpointNEQ          *string  `json:"externalIdpTokenEndpointNEQ,omitempty"`
-	ExternalIdpTokenEndpointIn           []string `json:"externalIdpTokenEndpointIn,omitempty"`
-	ExternalIdpTokenEndpointNotIn        []string `json:"externalIdpTokenEndpointNotIn,omitempty"`
-	ExternalIdpTokenEndpointGT           *string  `json:"externalIdpTokenEndpointGT,omitempty"`
-	ExternalIdpTokenEndpointGTE          *string  `json:"externalIdpTokenEndpointGTE,omitempty"`
-	ExternalIdpTokenEndpointLT           *string  `json:"externalIdpTokenEndpointLT,omitempty"`
-	ExternalIdpTokenEndpointLTE          *string  `json:"externalIdpTokenEndpointLTE,omitempty"`
-	ExternalIdpTokenEndpointContains     *string  `json:"externalIdpTokenEndpointContains,omitempty"`
-	ExternalIdpTokenEndpointHasPrefix    *string  `json:"externalIdpTokenEndpointHasPrefix,omitempty"`
-	ExternalIdpTokenEndpointHasSuffix    *string  `json:"externalIdpTokenEndpointHasSuffix,omitempty"`
-	ExternalIdpTokenEndpointIsNil        bool     `json:"externalIdpTokenEndpointIsNil,omitempty"`
-	ExternalIdpTokenEndpointNotNil       bool     `json:"externalIdpTokenEndpointNotNil,omitempty"`
-	ExternalIdpTokenEndpointEqualFold    *string  `json:"externalIdpTokenEndpointEqualFold,omitempty"`
-	ExternalIdpTokenEndpointContainsFold *string  `json:"externalIdpTokenEndpointContainsFold,omitempty"`
-
-	// "circuit_breaker_enabled" field predicates.
-	CircuitBreakerEnabled    *bool `json:"circuitBreakerEnabled,omitempty"`
-	CircuitBreakerEnabledNEQ *bool `json:"circuitBreakerEnabledNEQ,omitempty"`
-
 	// "api_version" field predicates.
 	APIVersion             *string  `json:"apiVersion,omitempty"`
 	APIVersionNEQ          *string  `json:"apiVersionNEQ,omitempty"`
@@ -341,75 +310,6 @@ func (i *ApiExposureWhereInput) P() (predicate.ApiExposure, error) {
 	}
 	if i.ActiveNEQ != nil {
 		predicates = append(predicates, apiexposure.ActiveNEQ(*i.ActiveNEQ))
-	}
-	if i.LastMileSecurity != nil {
-		predicates = append(predicates, apiexposure.LastMileSecurityEQ(*i.LastMileSecurity))
-	}
-	if i.LastMileSecurityNEQ != nil {
-		predicates = append(predicates, apiexposure.LastMileSecurityNEQ(*i.LastMileSecurityNEQ))
-	}
-	if i.M2mAuthMethod != nil {
-		predicates = append(predicates, apiexposure.M2mAuthMethodEQ(*i.M2mAuthMethod))
-	}
-	if i.M2mAuthMethodNEQ != nil {
-		predicates = append(predicates, apiexposure.M2mAuthMethodNEQ(*i.M2mAuthMethodNEQ))
-	}
-	if len(i.M2mAuthMethodIn) > 0 {
-		predicates = append(predicates, apiexposure.M2mAuthMethodIn(i.M2mAuthMethodIn...))
-	}
-	if len(i.M2mAuthMethodNotIn) > 0 {
-		predicates = append(predicates, apiexposure.M2mAuthMethodNotIn(i.M2mAuthMethodNotIn...))
-	}
-	if i.ExternalIdpTokenEndpoint != nil {
-		predicates = append(predicates, apiexposure.ExternalIdpTokenEndpointEQ(*i.ExternalIdpTokenEndpoint))
-	}
-	if i.ExternalIdpTokenEndpointNEQ != nil {
-		predicates = append(predicates, apiexposure.ExternalIdpTokenEndpointNEQ(*i.ExternalIdpTokenEndpointNEQ))
-	}
-	if len(i.ExternalIdpTokenEndpointIn) > 0 {
-		predicates = append(predicates, apiexposure.ExternalIdpTokenEndpointIn(i.ExternalIdpTokenEndpointIn...))
-	}
-	if len(i.ExternalIdpTokenEndpointNotIn) > 0 {
-		predicates = append(predicates, apiexposure.ExternalIdpTokenEndpointNotIn(i.ExternalIdpTokenEndpointNotIn...))
-	}
-	if i.ExternalIdpTokenEndpointGT != nil {
-		predicates = append(predicates, apiexposure.ExternalIdpTokenEndpointGT(*i.ExternalIdpTokenEndpointGT))
-	}
-	if i.ExternalIdpTokenEndpointGTE != nil {
-		predicates = append(predicates, apiexposure.ExternalIdpTokenEndpointGTE(*i.ExternalIdpTokenEndpointGTE))
-	}
-	if i.ExternalIdpTokenEndpointLT != nil {
-		predicates = append(predicates, apiexposure.ExternalIdpTokenEndpointLT(*i.ExternalIdpTokenEndpointLT))
-	}
-	if i.ExternalIdpTokenEndpointLTE != nil {
-		predicates = append(predicates, apiexposure.ExternalIdpTokenEndpointLTE(*i.ExternalIdpTokenEndpointLTE))
-	}
-	if i.ExternalIdpTokenEndpointContains != nil {
-		predicates = append(predicates, apiexposure.ExternalIdpTokenEndpointContains(*i.ExternalIdpTokenEndpointContains))
-	}
-	if i.ExternalIdpTokenEndpointHasPrefix != nil {
-		predicates = append(predicates, apiexposure.ExternalIdpTokenEndpointHasPrefix(*i.ExternalIdpTokenEndpointHasPrefix))
-	}
-	if i.ExternalIdpTokenEndpointHasSuffix != nil {
-		predicates = append(predicates, apiexposure.ExternalIdpTokenEndpointHasSuffix(*i.ExternalIdpTokenEndpointHasSuffix))
-	}
-	if i.ExternalIdpTokenEndpointIsNil {
-		predicates = append(predicates, apiexposure.ExternalIdpTokenEndpointIsNil())
-	}
-	if i.ExternalIdpTokenEndpointNotNil {
-		predicates = append(predicates, apiexposure.ExternalIdpTokenEndpointNotNil())
-	}
-	if i.ExternalIdpTokenEndpointEqualFold != nil {
-		predicates = append(predicates, apiexposure.ExternalIdpTokenEndpointEqualFold(*i.ExternalIdpTokenEndpointEqualFold))
-	}
-	if i.ExternalIdpTokenEndpointContainsFold != nil {
-		predicates = append(predicates, apiexposure.ExternalIdpTokenEndpointContainsFold(*i.ExternalIdpTokenEndpointContainsFold))
-	}
-	if i.CircuitBreakerEnabled != nil {
-		predicates = append(predicates, apiexposure.CircuitBreakerEnabledEQ(*i.CircuitBreakerEnabled))
-	}
-	if i.CircuitBreakerEnabledNEQ != nil {
-		predicates = append(predicates, apiexposure.CircuitBreakerEnabledNEQ(*i.CircuitBreakerEnabledNEQ))
 	}
 	if i.APIVersion != nil {
 		predicates = append(predicates, apiexposure.APIVersionEQ(*i.APIVersion))
