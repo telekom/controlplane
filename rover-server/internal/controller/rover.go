@@ -208,8 +208,20 @@ func (r *RoverController) GetApplicationsInfo(ctx context.Context, params api.Ge
 		return res, err
 	}
 
+	// Build a set of requested names for efficient lookup
+	nameFilter := make(map[string]struct{}, len(params.Names))
+	for _, n := range params.Names {
+		nameFilter[n] = struct{}{}
+	}
+
 	list := make([]api.ApplicationInfo, 0, len(objList.Items))
 	for _, r := range objList.Items {
+		// If names filter is provided, skip rovers not in the list
+		if len(nameFilter) > 0 {
+			if _, ok := nameFilter[r.Name]; !ok {
+				continue
+			}
+		}
 		logr.FromContextOrDiscard(ctx).Info("GetApplicationsInfo", "name", r.Name)
 		applicationInfo, err := applicationinfo.MapApplicationInfo(ctx, r)
 		if err != nil {
