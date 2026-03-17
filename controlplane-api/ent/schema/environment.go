@@ -6,6 +6,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 
 	schemamixin "github.com/telekom/controlplane/controlplane-api/ent/schema/mixin"
@@ -27,5 +28,11 @@ func (Environment) Fields() []ent.Field {
 		field.Text("name").
 			NotEmpty().
 			Unique(),
+	}
+}
+
+func (Environment) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.To("team_environments", TeamEnvironment.Type),
 	}
 }

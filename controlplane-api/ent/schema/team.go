@@ -41,9 +41,6 @@ func (Team) Fields() []ent.Field {
 				"Infrastructure", "INFRASTRUCTURE",
 			).
 			Default("CUSTOMER"),
-		field.Text("rover_token_ref").
-			Optional().
-			Nillable(),
 	}
 }
 
@@ -53,7 +50,7 @@ func (Team) Edges() []ent.Edge {
 			Ref("teams").
 			Unique(),
 		edge.To("members", Member.Type),
-		edge.To("environments", Environment.Type),
+		edge.To("team_environments", TeamEnvironment.Type),
 		edge.To("applications", Application.Type).
 			Annotations(entgql.RelayConnection()),
 	}

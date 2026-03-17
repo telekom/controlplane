@@ -22,6 +22,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
+	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 )
 
@@ -1087,6 +1088,19 @@ func (_q *EnvironmentQuery) collectField(ctx context.Context, oneNode bool, opCt
 	)
 	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
+
+		case "teamEnvironments":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&TeamEnvironmentClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, teamenvironmentImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedTeamEnvironments(alias, func(wq *TeamEnvironmentQuery) {
+				*wq = *query
+			})
 		case "name":
 			if _, ok := fieldSeen[environment.FieldName]; !ok {
 				selectedFields = append(selectedFields, environment.FieldName)
@@ -1352,16 +1366,16 @@ func (_q *TeamQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				*wq = *query
 			})
 
-		case "environments":
+		case "teamEnvironments":
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = (&EnvironmentClient{config: _q.config}).Query()
+				query = (&TeamEnvironmentClient{config: _q.config}).Query()
 			)
-			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, environmentImplementors)...); err != nil {
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, teamenvironmentImplementors)...); err != nil {
 				return err
 			}
-			_q.WithNamedEnvironments(alias, func(wq *EnvironmentQuery) {
+			_q.WithNamedTeamEnvironments(alias, func(wq *TeamEnvironmentQuery) {
 				*wq = *query
 			})
 
@@ -1488,11 +1502,6 @@ func (_q *TeamQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				selectedFields = append(selectedFields, team.FieldCategory)
 				fieldSeen[team.FieldCategory] = struct{}{}
 			}
-		case "roverTokenRef":
-			if _, ok := fieldSeen[team.FieldRoverTokenRef]; !ok {
-				selectedFields = append(selectedFields, team.FieldRoverTokenRef)
-				fieldSeen[team.FieldRoverTokenRef] = struct{}{}
-			}
 		case "id":
 		case "__typename":
 		default:
@@ -1558,6 +1567,95 @@ func newTeamPaginateArgs(rv map[string]any) *teamPaginateArgs {
 	}
 	if v, ok := rv[whereField].(*TeamWhereInput); ok {
 		args.opts = append(args.opts, WithTeamFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *TeamEnvironmentQuery) CollectFields(ctx context.Context, satisfies ...string) (*TeamEnvironmentQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *TeamEnvironmentQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(teamenvironment.Columns))
+		selectedFields = []string{teamenvironment.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "team":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&TeamClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, teamImplementors)...); err != nil {
+				return err
+			}
+			_q.withTeam = query
+
+		case "environment":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&EnvironmentClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, environmentImplementors)...); err != nil {
+				return err
+			}
+			_q.withEnvironment = query
+		case "roverTokenRef":
+			if _, ok := fieldSeen[teamenvironment.FieldRoverTokenRef]; !ok {
+				selectedFields = append(selectedFields, teamenvironment.FieldRoverTokenRef)
+				fieldSeen[teamenvironment.FieldRoverTokenRef] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type teamenvironmentPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []TeamEnvironmentPaginateOption
+}
+
+func newTeamEnvironmentPaginateArgs(rv map[string]any) *teamenvironmentPaginateArgs {
+	args := &teamenvironmentPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*TeamEnvironmentWhereInput); ok {
+		args.opts = append(args.opts, WithTeamEnvironmentFilter(v.Filter))
 	}
 	return args
 }

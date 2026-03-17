@@ -19,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/schema"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
+	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 
@@ -318,6 +319,16 @@ func init() {
 	teamDescEmail := teamFields[1].Descriptor()
 	// team.EmailValidator is a validator for the "email" field. It is called by the builders before save.
 	team.EmailValidator = teamDescEmail.Validators[0].(func(string) error)
+	teamenvironmentMixin := schema.TeamEnvironment{}.Mixin()
+	teamenvironment.Policy = privacy.NewPolicies(teamenvironmentMixin[0], schema.TeamEnvironment{})
+	teamenvironment.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := teamenvironment.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
 	zoneMixin := schema.Zone{}.Mixin()
 	zone.Policy = privacy.NewPolicies(zoneMixin[0], schema.Zone{})
 	zone.Hooks[0] = func(next ent.Mutator) ent.Mutator {

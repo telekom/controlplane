@@ -196,8 +196,9 @@ type ComplexityRoot struct {
 	}
 
 	Environment struct {
-		ID   func(childComplexity int) int
-		Name func(childComplexity int) int
+		ID               func(childComplexity int) int
+		Name             func(childComplexity int) int
+		TeamEnvironments func(childComplexity int) int
 	}
 
 	Group struct {
@@ -242,19 +243,18 @@ type ComplexityRoot struct {
 	}
 
 	Team struct {
-		Applications   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) int
-		Category       func(childComplexity int) int
-		CreatedAt      func(childComplexity int) int
-		Email          func(childComplexity int) int
-		Environments   func(childComplexity int) int
-		Group          func(childComplexity int) int
-		ID             func(childComplexity int) int
-		LastModifiedAt func(childComplexity int) int
-		Members        func(childComplexity int) int
-		Name           func(childComplexity int) int
-		RoverTokenRef  func(childComplexity int) int
-		StatusMessage  func(childComplexity int) int
-		StatusPhase    func(childComplexity int) int
+		Applications     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) int
+		Category         func(childComplexity int) int
+		CreatedAt        func(childComplexity int) int
+		Email            func(childComplexity int) int
+		Group            func(childComplexity int) int
+		ID               func(childComplexity int) int
+		LastModifiedAt   func(childComplexity int) int
+		Members          func(childComplexity int) int
+		Name             func(childComplexity int) int
+		StatusMessage    func(childComplexity int) int
+		StatusPhase      func(childComplexity int) int
+		TeamEnvironments func(childComplexity int) int
 	}
 
 	TeamConnection struct {
@@ -266,6 +266,13 @@ type ComplexityRoot struct {
 	TeamEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
+	}
+
+	TeamEnvironment struct {
+		Environment   func(childComplexity int) int
+		ID            func(childComplexity int) int
+		RoverTokenRef func(childComplexity int) int
+		Team          func(childComplexity int) int
 	}
 
 	TeamInfo struct {
@@ -1039,6 +1046,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Environment.Name(childComplexity), true
 
+	case "Environment.teamEnvironments":
+		if e.ComplexityRoot.Environment.TeamEnvironments == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Environment.TeamEnvironments(childComplexity), true
+
 	case "Group.description":
 		if e.ComplexityRoot.Group.Description == nil {
 			break
@@ -1294,13 +1308,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Team.Email(childComplexity), true
 
-	case "Team.environments":
-		if e.ComplexityRoot.Team.Environments == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Team.Environments(childComplexity), true
-
 	case "Team.group":
 		if e.ComplexityRoot.Team.Group == nil {
 			break
@@ -1336,13 +1343,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Team.Name(childComplexity), true
 
-	case "Team.roverTokenRef":
-		if e.ComplexityRoot.Team.RoverTokenRef == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Team.RoverTokenRef(childComplexity), true
-
 	case "Team.statusMessage":
 		if e.ComplexityRoot.Team.StatusMessage == nil {
 			break
@@ -1356,6 +1356,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Team.StatusPhase(childComplexity), true
+
+	case "Team.teamEnvironments":
+		if e.ComplexityRoot.Team.TeamEnvironments == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Team.TeamEnvironments(childComplexity), true
 
 	case "TeamConnection.edges":
 		if e.ComplexityRoot.TeamConnection.Edges == nil {
@@ -1391,6 +1398,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TeamEdge.Node(childComplexity), true
+
+	case "TeamEnvironment.environment":
+		if e.ComplexityRoot.TeamEnvironment.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TeamEnvironment.Environment(childComplexity), true
+
+	case "TeamEnvironment.id":
+		if e.ComplexityRoot.TeamEnvironment.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TeamEnvironment.ID(childComplexity), true
+
+	case "TeamEnvironment.roverTokenRef":
+		if e.ComplexityRoot.TeamEnvironment.RoverTokenRef == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TeamEnvironment.RoverTokenRef(childComplexity), true
+
+	case "TeamEnvironment.team":
+		if e.ComplexityRoot.TeamEnvironment.Team == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TeamEnvironment.Team(childComplexity), true
 
 	case "TeamInfo.email":
 		if e.ComplexityRoot.TeamInfo.Email == nil {
@@ -1490,6 +1525,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputEnvironmentWhereInput,
 		ec.unmarshalInputGroupWhereInput,
 		ec.unmarshalInputMemberWhereInput,
+		ec.unmarshalInputTeamEnvironmentWhereInput,
 		ec.unmarshalInputTeamOrder,
 		ec.unmarshalInputTeamWhereInput,
 		ec.unmarshalInputZoneWhereInput,
@@ -2657,6 +2693,7 @@ scalar Cursor
 type Environment implements Node {
   id: ID!
   name: String!
+  teamEnvironments: [TeamEnvironment!]
 }
 """
 EnvironmentWhereInput is used for filtering Environment objects.
@@ -2693,6 +2730,11 @@ input EnvironmentWhereInput {
   nameHasSuffix: String
   nameEqualFold: String
   nameContainsFold: String
+  """
+  team_environments edge predicates
+  """
+  hasTeamEnvironments: Boolean
+  hasTeamEnvironmentsWith: [TeamEnvironmentWhereInput!]
 }
 type Group implements Node {
   id: ID!
@@ -3098,10 +3140,9 @@ type Team implements Node {
   name: String!
   email: String!
   category: TeamCategory!
-  roverTokenRef: String
   group: Group
   members: [Member!]
-  environments: [Environment!]
+  teamEnvironments: [TeamEnvironment!]
   applications(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -3170,6 +3211,60 @@ type TeamEdge {
   A cursor for use in pagination.
   """
   cursor: Cursor!
+}
+type TeamEnvironment implements Node {
+  id: ID!
+  roverTokenRef: String
+  team: Team!
+  environment: Environment!
+}
+"""
+TeamEnvironmentWhereInput is used for filtering TeamEnvironment objects.
+Input was generated by ent.
+"""
+input TeamEnvironmentWhereInput {
+  not: TeamEnvironmentWhereInput
+  and: [TeamEnvironmentWhereInput!]
+  or: [TeamEnvironmentWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  rover_token_ref field predicates
+  """
+  roverTokenRef: String
+  roverTokenRefNEQ: String
+  roverTokenRefIn: [String!]
+  roverTokenRefNotIn: [String!]
+  roverTokenRefGT: String
+  roverTokenRefGTE: String
+  roverTokenRefLT: String
+  roverTokenRefLTE: String
+  roverTokenRefContains: String
+  roverTokenRefHasPrefix: String
+  roverTokenRefHasSuffix: String
+  roverTokenRefIsNil: Boolean
+  roverTokenRefNotNil: Boolean
+  roverTokenRefEqualFold: String
+  roverTokenRefContainsFold: String
+  """
+  team edge predicates
+  """
+  hasTeam: Boolean
+  hasTeamWith: [TeamWhereInput!]
+  """
+  environment edge predicates
+  """
+  hasEnvironment: Boolean
+  hasEnvironmentWith: [EnvironmentWhereInput!]
 }
 """
 Ordering options for Team connections
@@ -3307,24 +3402,6 @@ input TeamWhereInput {
   categoryIn: [TeamCategory!]
   categoryNotIn: [TeamCategory!]
   """
-  rover_token_ref field predicates
-  """
-  roverTokenRef: String
-  roverTokenRefNEQ: String
-  roverTokenRefIn: [String!]
-  roverTokenRefNotIn: [String!]
-  roverTokenRefGT: String
-  roverTokenRefGTE: String
-  roverTokenRefLT: String
-  roverTokenRefLTE: String
-  roverTokenRefContains: String
-  roverTokenRefHasPrefix: String
-  roverTokenRefHasSuffix: String
-  roverTokenRefIsNil: Boolean
-  roverTokenRefNotNil: Boolean
-  roverTokenRefEqualFold: String
-  roverTokenRefContainsFold: String
-  """
   group edge predicates
   """
   hasGroup: Boolean
@@ -3335,10 +3412,10 @@ input TeamWhereInput {
   hasMembers: Boolean
   hasMembersWith: [MemberWhereInput!]
   """
-  environments edge predicates
+  team_environments edge predicates
   """
-  hasEnvironments: Boolean
-  hasEnvironmentsWith: [EnvironmentWhereInput!]
+  hasTeamEnvironments: Boolean
+  hasTeamEnvironmentsWith: [TeamEnvironmentWhereInput!]
   """
   applications edge predicates
   """

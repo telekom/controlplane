@@ -7,6 +7,7 @@ package environment
 
 import (
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 )
 
@@ -123,6 +124,29 @@ func NameEqualFold(v string) predicate.Environment {
 // NameContainsFold applies the ContainsFold predicate on the "name" field.
 func NameContainsFold(v string) predicate.Environment {
 	return predicate.Environment(sql.FieldContainsFold(FieldName, v))
+}
+
+// HasTeamEnvironments applies the HasEdge predicate on the "team_environments" edge.
+func HasTeamEnvironments() predicate.Environment {
+	return predicate.Environment(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, TeamEnvironmentsTable, TeamEnvironmentsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTeamEnvironmentsWith applies the HasEdge predicate on the "team_environments" edge with a given conditions (other predicates).
+func HasTeamEnvironmentsWith(preds ...predicate.TeamEnvironment) predicate.Environment {
+	return predicate.Environment(func(s *sql.Selector) {
+		step := newTeamEnvironmentsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // And groups predicates with the AND operator between them.

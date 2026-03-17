@@ -15,10 +15,10 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
-	"github.com/telekom/controlplane/controlplane-api/ent/environment"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
+	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 )
 
 // TeamCreate is the builder for creating a Team entity.
@@ -111,20 +111,6 @@ func (_c *TeamCreate) SetNillableCategory(v *team.Category) *TeamCreate {
 	return _c
 }
 
-// SetRoverTokenRef sets the "rover_token_ref" field.
-func (_c *TeamCreate) SetRoverTokenRef(v string) *TeamCreate {
-	_c.mutation.SetRoverTokenRef(v)
-	return _c
-}
-
-// SetNillableRoverTokenRef sets the "rover_token_ref" field if the given value is not nil.
-func (_c *TeamCreate) SetNillableRoverTokenRef(v *string) *TeamCreate {
-	if v != nil {
-		_c.SetRoverTokenRef(*v)
-	}
-	return _c
-}
-
 // SetGroupID sets the "group" edge to the Group entity by ID.
 func (_c *TeamCreate) SetGroupID(id int) *TeamCreate {
 	_c.mutation.SetGroupID(id)
@@ -159,19 +145,19 @@ func (_c *TeamCreate) AddMembers(v ...*Member) *TeamCreate {
 	return _c.AddMemberIDs(ids...)
 }
 
-// AddEnvironmentIDs adds the "environments" edge to the Environment entity by IDs.
-func (_c *TeamCreate) AddEnvironmentIDs(ids ...int) *TeamCreate {
-	_c.mutation.AddEnvironmentIDs(ids...)
+// AddTeamEnvironmentIDs adds the "team_environments" edge to the TeamEnvironment entity by IDs.
+func (_c *TeamCreate) AddTeamEnvironmentIDs(ids ...int) *TeamCreate {
+	_c.mutation.AddTeamEnvironmentIDs(ids...)
 	return _c
 }
 
-// AddEnvironments adds the "environments" edges to the Environment entity.
-func (_c *TeamCreate) AddEnvironments(v ...*Environment) *TeamCreate {
+// AddTeamEnvironments adds the "team_environments" edges to the TeamEnvironment entity.
+func (_c *TeamCreate) AddTeamEnvironments(v ...*TeamEnvironment) *TeamCreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return _c.AddEnvironmentIDs(ids...)
+	return _c.AddTeamEnvironmentIDs(ids...)
 }
 
 // AddApplicationIDs adds the "applications" edge to the Application entity by IDs.
@@ -346,10 +332,6 @@ func (_c *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 		_spec.SetField(team.FieldCategory, field.TypeEnum, value)
 		_node.Category = value
 	}
-	if value, ok := _c.mutation.RoverTokenRef(); ok {
-		_spec.SetField(team.FieldRoverTokenRef, field.TypeString, value)
-		_node.RoverTokenRef = &value
-	}
 	if nodes := _c.mutation.GroupIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -383,15 +365,15 @@ func (_c *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.EnvironmentsIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.TeamEnvironmentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   team.EnvironmentsTable,
-			Columns: []string{team.EnvironmentsColumn},
+			Table:   team.TeamEnvironmentsTable,
+			Columns: []string{team.TeamEnvironmentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(environment.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -545,24 +527,6 @@ func (u *TeamUpsert) UpdateCategory() *TeamUpsert {
 	return u
 }
 
-// SetRoverTokenRef sets the "rover_token_ref" field.
-func (u *TeamUpsert) SetRoverTokenRef(v string) *TeamUpsert {
-	u.Set(team.FieldRoverTokenRef, v)
-	return u
-}
-
-// UpdateRoverTokenRef sets the "rover_token_ref" field to the value that was provided on create.
-func (u *TeamUpsert) UpdateRoverTokenRef() *TeamUpsert {
-	u.SetExcluded(team.FieldRoverTokenRef)
-	return u
-}
-
-// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
-func (u *TeamUpsert) ClearRoverTokenRef() *TeamUpsert {
-	u.SetNull(team.FieldRoverTokenRef)
-	return u
-}
-
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -696,27 +660,6 @@ func (u *TeamUpsertOne) SetCategory(v team.Category) *TeamUpsertOne {
 func (u *TeamUpsertOne) UpdateCategory() *TeamUpsertOne {
 	return u.Update(func(s *TeamUpsert) {
 		s.UpdateCategory()
-	})
-}
-
-// SetRoverTokenRef sets the "rover_token_ref" field.
-func (u *TeamUpsertOne) SetRoverTokenRef(v string) *TeamUpsertOne {
-	return u.Update(func(s *TeamUpsert) {
-		s.SetRoverTokenRef(v)
-	})
-}
-
-// UpdateRoverTokenRef sets the "rover_token_ref" field to the value that was provided on create.
-func (u *TeamUpsertOne) UpdateRoverTokenRef() *TeamUpsertOne {
-	return u.Update(func(s *TeamUpsert) {
-		s.UpdateRoverTokenRef()
-	})
-}
-
-// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
-func (u *TeamUpsertOne) ClearRoverTokenRef() *TeamUpsertOne {
-	return u.Update(func(s *TeamUpsert) {
-		s.ClearRoverTokenRef()
 	})
 }
 
@@ -1019,27 +962,6 @@ func (u *TeamUpsertBulk) SetCategory(v team.Category) *TeamUpsertBulk {
 func (u *TeamUpsertBulk) UpdateCategory() *TeamUpsertBulk {
 	return u.Update(func(s *TeamUpsert) {
 		s.UpdateCategory()
-	})
-}
-
-// SetRoverTokenRef sets the "rover_token_ref" field.
-func (u *TeamUpsertBulk) SetRoverTokenRef(v string) *TeamUpsertBulk {
-	return u.Update(func(s *TeamUpsert) {
-		s.SetRoverTokenRef(v)
-	})
-}
-
-// UpdateRoverTokenRef sets the "rover_token_ref" field to the value that was provided on create.
-func (u *TeamUpsertBulk) UpdateRoverTokenRef() *TeamUpsertBulk {
-	return u.Update(func(s *TeamUpsert) {
-		s.UpdateRoverTokenRef()
-	})
-}
-
-// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
-func (u *TeamUpsertBulk) ClearRoverTokenRef() *TeamUpsertBulk {
-	return u.Update(func(s *TeamUpsert) {
-		s.ClearRoverTokenRef()
 	})
 }
 

@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/environment"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
+	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 )
 
 // EnvironmentUpdate is the builder for updating Environment entities.
@@ -44,9 +45,45 @@ func (_u *EnvironmentUpdate) SetNillableName(v *string) *EnvironmentUpdate {
 	return _u
 }
 
+// AddTeamEnvironmentIDs adds the "team_environments" edge to the TeamEnvironment entity by IDs.
+func (_u *EnvironmentUpdate) AddTeamEnvironmentIDs(ids ...int) *EnvironmentUpdate {
+	_u.mutation.AddTeamEnvironmentIDs(ids...)
+	return _u
+}
+
+// AddTeamEnvironments adds the "team_environments" edges to the TeamEnvironment entity.
+func (_u *EnvironmentUpdate) AddTeamEnvironments(v ...*TeamEnvironment) *EnvironmentUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddTeamEnvironmentIDs(ids...)
+}
+
 // Mutation returns the EnvironmentMutation object of the builder.
 func (_u *EnvironmentUpdate) Mutation() *EnvironmentMutation {
 	return _u.mutation
+}
+
+// ClearTeamEnvironments clears all "team_environments" edges to the TeamEnvironment entity.
+func (_u *EnvironmentUpdate) ClearTeamEnvironments() *EnvironmentUpdate {
+	_u.mutation.ClearTeamEnvironments()
+	return _u
+}
+
+// RemoveTeamEnvironmentIDs removes the "team_environments" edge to TeamEnvironment entities by IDs.
+func (_u *EnvironmentUpdate) RemoveTeamEnvironmentIDs(ids ...int) *EnvironmentUpdate {
+	_u.mutation.RemoveTeamEnvironmentIDs(ids...)
+	return _u
+}
+
+// RemoveTeamEnvironments removes "team_environments" edges to TeamEnvironment entities.
+func (_u *EnvironmentUpdate) RemoveTeamEnvironments(v ...*TeamEnvironment) *EnvironmentUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveTeamEnvironmentIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -101,6 +138,51 @@ func (_u *EnvironmentUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(environment.FieldName, field.TypeString, value)
 	}
+	if _u.mutation.TeamEnvironmentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   environment.TeamEnvironmentsTable,
+			Columns: []string{environment.TeamEnvironmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedTeamEnvironmentsIDs(); len(nodes) > 0 && !_u.mutation.TeamEnvironmentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   environment.TeamEnvironmentsTable,
+			Columns: []string{environment.TeamEnvironmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TeamEnvironmentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   environment.TeamEnvironmentsTable,
+			Columns: []string{environment.TeamEnvironmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{environment.Label}
@@ -135,9 +217,45 @@ func (_u *EnvironmentUpdateOne) SetNillableName(v *string) *EnvironmentUpdateOne
 	return _u
 }
 
+// AddTeamEnvironmentIDs adds the "team_environments" edge to the TeamEnvironment entity by IDs.
+func (_u *EnvironmentUpdateOne) AddTeamEnvironmentIDs(ids ...int) *EnvironmentUpdateOne {
+	_u.mutation.AddTeamEnvironmentIDs(ids...)
+	return _u
+}
+
+// AddTeamEnvironments adds the "team_environments" edges to the TeamEnvironment entity.
+func (_u *EnvironmentUpdateOne) AddTeamEnvironments(v ...*TeamEnvironment) *EnvironmentUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddTeamEnvironmentIDs(ids...)
+}
+
 // Mutation returns the EnvironmentMutation object of the builder.
 func (_u *EnvironmentUpdateOne) Mutation() *EnvironmentMutation {
 	return _u.mutation
+}
+
+// ClearTeamEnvironments clears all "team_environments" edges to the TeamEnvironment entity.
+func (_u *EnvironmentUpdateOne) ClearTeamEnvironments() *EnvironmentUpdateOne {
+	_u.mutation.ClearTeamEnvironments()
+	return _u
+}
+
+// RemoveTeamEnvironmentIDs removes the "team_environments" edge to TeamEnvironment entities by IDs.
+func (_u *EnvironmentUpdateOne) RemoveTeamEnvironmentIDs(ids ...int) *EnvironmentUpdateOne {
+	_u.mutation.RemoveTeamEnvironmentIDs(ids...)
+	return _u
+}
+
+// RemoveTeamEnvironments removes "team_environments" edges to TeamEnvironment entities.
+func (_u *EnvironmentUpdateOne) RemoveTeamEnvironments(v ...*TeamEnvironment) *EnvironmentUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveTeamEnvironmentIDs(ids...)
 }
 
 // Where appends a list predicates to the EnvironmentUpdate builder.
@@ -221,6 +339,51 @@ func (_u *EnvironmentUpdateOne) sqlSave(ctx context.Context) (_node *Environment
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(environment.FieldName, field.TypeString, value)
+	}
+	if _u.mutation.TeamEnvironmentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   environment.TeamEnvironmentsTable,
+			Columns: []string{environment.TeamEnvironmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedTeamEnvironmentsIDs(); len(nodes) > 0 && !_u.mutation.TeamEnvironmentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   environment.TeamEnvironmentsTable,
+			Columns: []string{environment.TeamEnvironmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TeamEnvironmentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   environment.TeamEnvironmentsTable,
+			Columns: []string{environment.TeamEnvironmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Environment{config: _u.config}
 	_spec.Assign = _node.assignValues

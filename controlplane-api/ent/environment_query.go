@@ -7,6 +7,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"math"
@@ -17,18 +18,20 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/telekom/controlplane/controlplane-api/ent/environment"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
+	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 )
 
 // EnvironmentQuery is the builder for querying Environment entities.
 type EnvironmentQuery struct {
 	config
-	ctx        *QueryContext
-	order      []environment.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Environment
-	withFKs    bool
-	modifiers  []func(*sql.Selector)
-	loadTotal  []func(context.Context, []*Environment) error
+	ctx                       *QueryContext
+	order                     []environment.OrderOption
+	inters                    []Interceptor
+	predicates                []predicate.Environment
+	withTeamEnvironments      *TeamEnvironmentQuery
+	modifiers                 []func(*sql.Selector)
+	loadTotal                 []func(context.Context, []*Environment) error
+	withNamedTeamEnvironments map[string]*TeamEnvironmentQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -63,6 +66,28 @@ func (_q *EnvironmentQuery) Unique(unique bool) *EnvironmentQuery {
 func (_q *EnvironmentQuery) Order(o ...environment.OrderOption) *EnvironmentQuery {
 	_q.order = append(_q.order, o...)
 	return _q
+}
+
+// QueryTeamEnvironments chains the current query on the "team_environments" edge.
+func (_q *EnvironmentQuery) QueryTeamEnvironments() *TeamEnvironmentQuery {
+	query := (&TeamEnvironmentClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(environment.Table, environment.FieldID, selector),
+			sqlgraph.To(teamenvironment.Table, teamenvironment.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, environment.TeamEnvironmentsTable, environment.TeamEnvironmentsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Environment entity from the query.
@@ -252,15 +277,27 @@ func (_q *EnvironmentQuery) Clone() *EnvironmentQuery {
 		return nil
 	}
 	return &EnvironmentQuery{
-		config:     _q.config,
-		ctx:        _q.ctx.Clone(),
-		order:      append([]environment.OrderOption{}, _q.order...),
-		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.Environment{}, _q.predicates...),
+		config:               _q.config,
+		ctx:                  _q.ctx.Clone(),
+		order:                append([]environment.OrderOption{}, _q.order...),
+		inters:               append([]Interceptor{}, _q.inters...),
+		predicates:           append([]predicate.Environment{}, _q.predicates...),
+		withTeamEnvironments: _q.withTeamEnvironments.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
+}
+
+// WithTeamEnvironments tells the query-builder to eager-load the nodes that are connected to
+// the "team_environments" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *EnvironmentQuery) WithTeamEnvironments(opts ...func(*TeamEnvironmentQuery)) *EnvironmentQuery {
+	query := (&TeamEnvironmentClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withTeamEnvironments = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -345,19 +382,19 @@ func (_q *EnvironmentQuery) prepareQuery(ctx context.Context) error {
 
 func (_q *EnvironmentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Environment, error) {
 	var (
-		nodes   = []*Environment{}
-		withFKs = _q.withFKs
-		_spec   = _q.querySpec()
+		nodes       = []*Environment{}
+		_spec       = _q.querySpec()
+		loadedTypes = [1]bool{
+			_q.withTeamEnvironments != nil,
+		}
 	)
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, environment.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Environment).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &Environment{config: _q.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if len(_q.modifiers) > 0 {
@@ -372,12 +409,60 @@ func (_q *EnvironmentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := _q.withTeamEnvironments; query != nil {
+		if err := _q.loadTeamEnvironments(ctx, query, nodes,
+			func(n *Environment) { n.Edges.TeamEnvironments = []*TeamEnvironment{} },
+			func(n *Environment, e *TeamEnvironment) {
+				n.Edges.TeamEnvironments = append(n.Edges.TeamEnvironments, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedTeamEnvironments {
+		if err := _q.loadTeamEnvironments(ctx, query, nodes,
+			func(n *Environment) { n.appendNamedTeamEnvironments(name) },
+			func(n *Environment, e *TeamEnvironment) { n.appendNamedTeamEnvironments(name, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for i := range _q.loadTotal {
 		if err := _q.loadTotal[i](ctx, nodes); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
+}
+
+func (_q *EnvironmentQuery) loadTeamEnvironments(ctx context.Context, query *TeamEnvironmentQuery, nodes []*Environment, init func(*Environment), assign func(*Environment, *TeamEnvironment)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Environment)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.TeamEnvironment(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(environment.TeamEnvironmentsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.environment_team_environments
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "environment_team_environments" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "environment_team_environments" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (_q *EnvironmentQuery) sqlCount(ctx context.Context) (int, error) {
@@ -462,6 +547,20 @@ func (_q *EnvironmentQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// WithNamedTeamEnvironments tells the query-builder to eager-load the nodes that are connected to the "team_environments"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *EnvironmentQuery) WithNamedTeamEnvironments(name string, opts ...func(*TeamEnvironmentQuery)) *EnvironmentQuery {
+	query := (&TeamEnvironmentClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedTeamEnvironments == nil {
+		_q.withNamedTeamEnvironments = make(map[string]*TeamEnvironmentQuery)
+	}
+	_q.withNamedTeamEnvironments[name] = query
+	return _q
 }
 
 // EnvironmentGroupBy is the group-by builder for Environment entities.
