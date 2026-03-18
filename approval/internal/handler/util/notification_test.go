@@ -6,6 +6,7 @@ package util
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
@@ -234,3 +235,46 @@ var _ = Describe("Notification Utilities", func() {
 	})
 
 })
+
+func TestExtractTargetKind(t *testing.T) {
+	type testCase struct {
+		name string
+		kind string
+		want string
+	}
+
+	tests := []testCase{
+		{
+			name: "api subscription lower case",
+			kind: "apisubscription",
+			want: "subscription",
+		},
+		{
+			name: "api subscription mixed case",
+			kind: "ApiSubscription",
+			want: "subscription",
+		},
+		{
+			name: "event subscription lower case",
+			kind: "eventsubscription",
+			want: "subscription",
+		},
+		{
+			name: "event subscription upper case",
+			kind: "EVENTSUBSCRIPTION",
+			want: "subscription",
+		},
+		{
+			name: "other kind unchanged",
+			kind: "SomeOtherKind",
+			want: "SomeOtherKind",
+		},
+	}
+
+	for _, tc := range tests {
+		got := extractTargetKind(tc.kind)
+		if got != tc.want {
+			panic(fmt.Sprintf("testExtractTargetKind: %s: extractTargetKind(%q) = %q, want %q", tc.name, tc.kind, got, tc.want))
+		}
+	}
+}
