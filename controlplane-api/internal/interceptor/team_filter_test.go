@@ -99,10 +99,6 @@ var _ = Describe("TeamFilterInterceptor", func() {
 		Expect(err).NotTo(HaveOccurred())
 	}
 
-	// ───────────────────────────────────────────────────
-	// Context: no viewer / nil viewer / empty teams
-	// ───────────────────────────────────────────────────
-
 	Context("when viewer is nil or empty", func() {
 		BeforeEach(func() { seed() })
 
