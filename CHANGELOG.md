@@ -1,3 +1,22 @@
+# [0.18.0](https://github.com/telekom/controlplane/compare/v0.17.0...v0.18.0) (2026-03-18)
+
+
+### Bug Fixes
+
+* **common-server:** race-condition and security improvements ([#272](https://github.com/telekom/controlplane/issues/272)) ([9d08e02](https://github.com/telekom/controlplane/commit/9d08e02675481ffa35d3f5c7e2c3e091b69af9d2))
+* **gateway:** add deny-all sentinel to ACL plugin when no consumers exist ([#277](https://github.com/telekom/controlplane/issues/277)) ([0dd6017](https://github.com/telekom/controlplane/commit/0dd6017cc3af99bec25de21c270df213297d7275))
+
+
+### Features
+
+* **common-libs:** improve error handling, add feature flags, and fix logger type ([#260](https://github.com/telekom/controlplane/issues/260)) ([03165a0](https://github.com/telekom/controlplane/commit/03165a05a67416f0b540d116db6fe9dcff994e1c))
+* **common-server:** unify latency format in logs ([#267](https://github.com/telekom/controlplane/issues/267)) ([5fbb19e](https://github.com/telekom/controlplane/commit/5fbb19ed2b11e4c620cbb83634266cea7af45291))
+* **gateway:** add buffering config, dynamic upstream, access control fix, and secret-manager integration ([#259](https://github.com/telekom/controlplane/issues/259)) ([719c58f](https://github.com/telekom/controlplane/commit/719c58fd0c472dfb3a85ce0eb01ac58bbfb6e52c))
+* introduce event-driven communication to the control plane ([#265](https://github.com/telekom/controlplane/issues/265)) ([f1ed1f5](https://github.com/telekom/controlplane/commit/f1ed1f512865d4b68e4c880122a72f4ab31f7c2a))
+* **rover-ctl:** add EventSpec handler, env placeholder substitution, and HTTP client improvements ([#264](https://github.com/telekom/controlplane/issues/264)) ([f15e0f7](https://github.com/telekom/controlplane/commit/f15e0f713e96670d35e378018e10f8cc81489d2b))
+* **rover-ctl:** support for get-info-many cmd ([#246](https://github.com/telekom/controlplane/issues/246)) ([1d9f194](https://github.com/telekom/controlplane/commit/1d9f1945fec36073ae728d283703f572bcb9a8c6))
+* **secret-manager:** add write strategy support and improve caching ([#263](https://github.com/telekom/controlplane/issues/263)) ([3f311bf](https://github.com/telekom/controlplane/commit/3f311bfb6a766b7cd950840009776c2962ed411e))
+
 # [0.17.0](https://github.com/telekom/controlplane/compare/v0.16.0...v0.17.0) (2025-11-28)
 
 
