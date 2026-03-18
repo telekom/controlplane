@@ -228,3 +228,102 @@ The realm `ObjectRef` created by the Application handler is consumed by:
     ```go
     realmName := environment // per convention, the realm name is the same as the environment name
     ```
+
+## Possible Solution Concept
+
+Introduce a dedicated `realmName` field on the `Environment` spec and make all realm-producing and realm-consuming code resolve the realm name from the `Environment` object instead of assuming `environment.name == realm.name`.
+
+> [!NOTE]
+> Check is needed that realmName does not equal to any existing env-name
+
+```mermaid
+flowchart TD
+    subgraph A0[Environment Source Of Truth]
+        A[Environment CR]
+        A1[metadata.name: playground]
+        A2[spec.realmName: default]
+        A --> A1
+        A --> A2
+    end
+
+    subgraph B0[Shared Resolution In Admin Domain]
+        B[Realm Resolver in Admin package]
+        B1[Load Environment from context env]
+        B2[If spec.realmName is set use it]
+        B3[Else fallback to metadata.name]
+        B --> B1
+        B1 --> B2
+        B2 --> B3
+    end
+
+    A --> B
+
+    C[Resolved Realm Name = default]
+    B3 --> C
+
+    S[Context env = playground]
+    S --> T[Still used for namespace and environment-specific behavior]
+    S --> B
+
+    D[Admin Zone Handler]
+    H[Application Handler]
+    I[API Route Handlers]
+
+    H1[Application already imports admin/api/v1]
+    I1[API already imports admin/api/v1]
+
+    H --> H1
+    I --> I1
+    H -->|can use same resolver without new dependency| B
+    I -->|can use same resolver without new dependency| B
+    D -->|already has Environment object| B
+
+    E[Identity Realm CR]
+    F[Gateway Realm CR]
+    G[Zone Status Links]
+    O[Application Realm ObjectRefs use default]
+    P[API route naming and realm lookup use default]
+
+    C --> D
+    C --> H
+    C --> I
+
+    D --> E
+    D --> F
+    D --> G
+    H --> O
+    I --> P
+
+    J[Gateway consumes Realm CR]
+    K[Identity consumes Realm CR]
+    E --> K
+    F --> J
+
+    N[issuer URLs end with /auth/realms/default]
+    Q[Gateway exposed paths use realm.Name]
+    R[Keycloak realm identifier = realm.Name]
+
+    G --> N
+    J --> Q
+    K --> R
+```
+
+## Analysis Of This Approach
+
+### Upsides
+
+- **Explicit domain model:** `Environment` becomes the canonical place to describe both the deployment environment and its externally visible realm identity.
+- **Small conceptual change:** this keeps the existing architecture intact and mainly replaces an implicit convention with explicit configuration.
+- **Fits the current orchestration flow:** the admin service already loads the `Environment` object, so resolving the realm name there is a natural extension.
+- **Supports the concrete problem directly:** environments such as `playground` can now have the realm name `default` without renaming the environment itself.
+
+### Downsides
+
+- **Broader propagation than it first appears:** many components currently rely on the realm name indirectly through object names, URLs, route names, status links, and `ObjectRef`s.  They would now need to access env to get the right `realmObj`.
+- **Migration complexity:** if a realm already exists with the old name and the configured `realmName` changes later, the system must decide whether to **rename, recreate, or reject** the change. 
+- **Validation requirements:** the field needs validation rules. 
+
+### Important Design Risks
+
+- **Mutable vs immutable field:** `spec.realmName` should most likely be treated as **immutable after first reconciliation**. 
+- **Defaulting source of truth:** if some handlers read `Environment.Spec.RealmName` directly while others still derive from context or object names, the system will become inconsistent. **A single resolver function is needed and should be used everywhere.**
