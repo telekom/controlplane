@@ -61,14 +61,24 @@ func CreateRoute(ctx context.Context, realm *gatewayv1.Realm, routeType RouteTyp
 		},
 	}
 
-	url, err := url.Parse(realm.Spec.Url)
-	if err != nil {
-		return route, errors.Wrap(err, "failed to parse URL")
+	// Build downstreams for all URLs
+	downstreams := make([]gatewayv1.Downstream, 0, len(realm.Spec.Urls))
+	for _, realmUrl := range realm.Spec.Urls {
+		parsedUrl, err := url.Parse(realmUrl)
+		if err != nil {
+			return route, errors.Wrapf(err, "failed to parse URL: %s", realmUrl)
+		}
+
+		downstreams = append(downstreams, gatewayv1.Downstream{
+			Host:      parsedUrl.Hostname(),
+			Port:      gatewayv1.GetPortOrDefaultFromScheme(parsedUrl),
+			Path:      path.Join(parsedUrl.Path, fmt.Sprintf(cfg.DownstreamPathFormat, realm.Name)),
+			IssuerUrl: "",
+		})
 	}
 
 	mutator := func() error {
-		err := controllerutil.SetControllerReference(realm, route, c.Scheme())
-		if err != nil {
+		if err := controllerutil.SetControllerReference(realm, route, c.Scheme()); err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
@@ -83,20 +93,13 @@ func CreateRoute(ctx context.Context, realm *gatewayv1.Realm, routeType RouteTyp
 					Path:   fmt.Sprintf(cfg.UpstreamPathFormat, realm.Name),
 				},
 			},
-			Downstreams: []gatewayv1.Downstream{
-				{
-					Host:      url.Hostname(),
-					Port:      gatewayv1.GetPortOrDefaultFromScheme(url),
-					Path:      path.Join(url.Path, fmt.Sprintf(cfg.DownstreamPathFormat, realm.Name)),
-					IssuerUrl: "",
-				},
-			},
+			Downstreams: downstreams,
 		}
 
 		return nil
 	}
 
-	_, err = c.CreateOrUpdate(ctx, route, mutator)
+	_, err := c.CreateOrUpdate(ctx, route, mutator)
 	if err != nil {
 		return route, errors.Wrap(err, "failed to create or update route")
 	}

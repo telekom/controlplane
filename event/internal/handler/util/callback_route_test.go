@@ -34,8 +34,8 @@ func makeReadyGatewayRealm(name, ns string) *gatewayapi.Realm {
 	r := &gatewayapi.Realm{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
 		Spec: gatewayapi.RealmSpec{
-			Url:       "https://gateway.example.com:443",
-			IssuerUrl: "https://issuer.example.com",
+			Urls:       []string{"https://gateway.example.com:443"},
+			IssuerUrls: []string{"https://issuer.example.com"},
 		},
 	}
 	meta.SetStatusCondition(&r.Status.Conditions, metav1.Condition{
@@ -50,8 +50,8 @@ func makeNotReadyGatewayRealm(name, ns string) *gatewayapi.Realm {
 	return &gatewayapi.Realm{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
 		Spec: gatewayapi.RealmSpec{
-			Url:       "https://gateway.example.com:443",
-			IssuerUrl: "https://issuer.example.com",
+			Urls:       []string{"https://gateway.example.com:443"},
+			IssuerUrls: []string{"https://issuer.example.com"},
 		},
 	}
 }

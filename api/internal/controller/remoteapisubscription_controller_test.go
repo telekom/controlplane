@@ -141,7 +141,7 @@ var _ = Describe("RemoteApiSubscription Controller - Provider Scenario", Ordered
 		By("Creating the remote Zone")
 		remoteZone = CreateZone(remoteOrgId + "-" + zoneName)
 		remoteRealm := NewRealm(testEnvironment, remoteZone.Name)
-		remoteRealm.Spec.Url = "https://ger.gateway.es"
+		remoteRealm.Spec.Urls = []string{"https://ger.gateway.es"}
 		err := k8sClient.Create(ctx, remoteRealm)
 		Expect(err).ToNot(HaveOccurred())
 		remoteRealm.SetCondition(condition.NewReadyCondition("Ready", "testing"))
