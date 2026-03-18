@@ -79,6 +79,58 @@ var _ = Describe("Errors", func() {
 		})
 	})
 
+	Context("Code", func() {
+		It("should return 403 for Forbidden errors", func() {
+			secretId := mocks.NewMockSecretId(GinkgoT())
+			backendErr := backend.Forbidden(secretId, fmt.Errorf("access denied"))
+			Expect(backendErr.Code()).To(Equal(403))
+		})
+
+		It("should return 404 for NotFound errors", func() {
+			secretId := mocks.NewMockSecretId(GinkgoT())
+			secretId.EXPECT().String().Return("mocked-secret-id").Times(1)
+			backendErr := backend.ErrSecretNotFound(secretId)
+			Expect(backendErr.Code()).To(Equal(404))
+		})
+
+		It("should return 400 for BadChecksum errors", func() {
+			secretId := mocks.NewMockSecretId(GinkgoT())
+			secretId.EXPECT().String().Return("mocked-secret-id").Times(1)
+			backendErr := backend.ErrBadChecksum(secretId)
+			Expect(backendErr.Code()).To(Equal(400))
+		})
+
+		It("should return 400 for InvalidSecretId errors", func() {
+			backendErr := backend.ErrInvalidSecretId("bad-id")
+			Expect(backendErr.Code()).To(Equal(400))
+		})
+
+		It("should return 429 for TooManyRequests errors", func() {
+			backendErr := backend.NewBackendError(nil, fmt.Errorf("rate limited"), backend.TypeErrTooManyRequests)
+			Expect(backendErr.Code()).To(Equal(429))
+		})
+
+		It("should default to 500 for unknown error types without StatusCode", func() {
+			secretId := mocks.NewMockSecretId(GinkgoT())
+			backendErr := backend.ErrIncorrectState(secretId, fmt.Errorf("bad state"))
+			Expect(backendErr.Code()).To(Equal(500))
+		})
+
+		It("should use explicit StatusCode for unknown error types", func() {
+			backendErr := backend.NewBackendError(nil, fmt.Errorf("custom"), "CustomType").WithStatusCode(503)
+			Expect(backendErr.Code()).To(Equal(503))
+		})
+	})
+
+	Context("WithStatusCode", func() {
+		It("should set the status code and return the same error for chaining", func() {
+			backendErr := backend.NewBackendError(nil, fmt.Errorf("test"), "SomeType")
+			result := backendErr.WithStatusCode(418)
+			Expect(result).To(BeIdenticalTo(backendErr))
+			Expect(backendErr.Code()).To(Equal(418))
+		})
+	})
+
 	Context("IsNotFoundErr", func() {
 		It("should return true for a NotFound error", func() {
 			secretId := mocks.NewMockSecretId(GinkgoT())
