@@ -151,6 +151,130 @@ var _ = Describe("ApprovalConfig.Strategy resolver", func() {
 	})
 })
 
+var _ = Describe("ApprovalConfig.TrustedTeams", func() {
+	var client *ent.Client
+
+	BeforeEach(func() {
+		client = testutil.NewTestClient(GinkgoT())
+	})
+
+	AfterEach(func() {
+		client.Close()
+	})
+
+	It("should store and return trusted teams on an exposure", func() {
+		ctx := testutil.AllowContext()
+
+		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		team, err := client.Team.Create().SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		app, err := client.Application.Create().
+			SetName("app-alpha").SetClientID("cid-alpha").
+			SetOwnerTeam(team).SetZone(zone).Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		exposure, err := client.ApiExposure.Create().
+			SetBasePath("/api/v1").
+			SetOwner(app).
+			SetApprovalConfig(model.ApprovalConfig{
+				Strategy:     "FOUR_EYES",
+				TrustedTeams: []string{"team-beta", "team-gamma"},
+			}).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(fetched.ApprovalConfig.TrustedTeams).To(ConsistOf("team-beta", "team-gamma"))
+		Expect(fetched.ApprovalConfig.Strategy).To(Equal("FOUR_EYES"))
+	})
+
+	It("should default to an empty trusted teams list", func() {
+		ctx := testutil.AllowContext()
+
+		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		team, err := client.Team.Create().SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		app, err := client.Application.Create().
+			SetName("app-alpha").SetClientID("cid-alpha").
+			SetOwnerTeam(team).SetZone(zone).Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		exposure, err := client.ApiExposure.Create().
+			SetBasePath("/api/v1").
+			SetOwner(app).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(fetched.ApprovalConfig.Strategy).To(Equal("AUTO"))
+		Expect(fetched.ApprovalConfig.TrustedTeams).To(BeEmpty())
+	})
+
+	It("should allow a single trusted team", func() {
+		ctx := testutil.AllowContext()
+
+		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		team, err := client.Team.Create().SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		app, err := client.Application.Create().
+			SetName("app-alpha").SetClientID("cid-alpha").
+			SetOwnerTeam(team).SetZone(zone).Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		exposure, err := client.ApiExposure.Create().
+			SetBasePath("/api/v1").
+			SetOwner(app).
+			SetApprovalConfig(model.ApprovalConfig{
+				Strategy:     "FOUR_EYES",
+				TrustedTeams: []string{"team-beta"},
+			}).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		fetched, err := client.ApiExposure.Get(ctx, exposure.ID)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(fetched.ApprovalConfig.TrustedTeams).To(HaveLen(1))
+		Expect(fetched.ApprovalConfig.TrustedTeams).To(ContainElement("team-beta"))
+	})
+
+	It("should update trusted teams on an existing exposure", func() {
+		ctx := testutil.AllowContext()
+
+		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		team, err := client.Team.Create().SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		app, err := client.Application.Create().
+			SetName("app-alpha").SetClientID("cid-alpha").
+			SetOwnerTeam(team).SetZone(zone).Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		exposure, err := client.ApiExposure.Create().
+			SetBasePath("/api/v1").
+			SetOwner(app).
+			SetApprovalConfig(model.ApprovalConfig{
+				Strategy:     "FOUR_EYES",
+				TrustedTeams: []string{"team-beta"},
+			}).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		updated, err := client.ApiExposure.UpdateOneID(exposure.ID).
+			SetApprovalConfig(model.ApprovalConfig{
+				Strategy:     "FOUR_EYES",
+				TrustedTeams: []string{"team-gamma", "team-delta"},
+			}).
+			Save(ctx)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(updated.ApprovalConfig.TrustedTeams).To(ConsistOf("team-gamma", "team-delta"))
+	})
+})
+
 var _ = Describe("AvailableTransition resolvers", func() {
 	r := resolvers.NewResolver(nil)
 
