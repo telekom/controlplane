@@ -10,6 +10,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
+	storeLib "github.com/telekom/controlplane/common-server/pkg/store"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -35,6 +38,13 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 		store.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
 		store.ApplicationSecretStore = store.ApplicationStore
 		store.ZoneStore = mocks.NewZoneStoreMock(GinkgoT())
+		store.EventSubscriptionStore = mocks.NewEventSubscriptionStoreMock(GinkgoT())
+
+		eventExposureMock := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
+		eventExposureMock.EXPECT().List(mock.Anything, mock.Anything).Return(
+			&storeLib.ListResponse[*eventv1.EventExposure]{Items: []*eventv1.EventExposure{}}, nil).Maybe()
+		eventExposureMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Maybe()
+		store.EventExposureStore = eventExposureMock
 	}
 }
 

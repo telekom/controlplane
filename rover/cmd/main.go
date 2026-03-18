@@ -31,6 +31,8 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
@@ -55,6 +57,9 @@ func init() {
 	utilruntime.Must(applicationv1.AddToScheme(scheme))
 	utilruntime.Must(adminv1.AddToScheme(scheme))
 	utilruntime.Must(organizationv1.AddToScheme(scheme))
+	if cconfig.FeaturePubSub.IsEnabled() {
+		utilruntime.Must(eventv1.AddToScheme(scheme))
+	}
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -180,6 +185,16 @@ func main() {
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ApiSpecification")
 		os.Exit(1)
+	}
+
+	if cconfig.FeaturePubSub.IsEnabled() {
+		if err = (&controller.EventSpecificationReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "EventSpecification")
+			os.Exit(1)
+		}
 	}
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {

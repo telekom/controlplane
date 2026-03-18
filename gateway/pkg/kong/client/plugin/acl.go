@@ -13,6 +13,12 @@ import (
 
 var _ client.CustomPlugin = &AclPlugin{}
 
+// DenyAllGroup is a sentinel ACL group name used when no consumers are allowed.
+// Kong requires the ACL allow list to be non-empty, so this placeholder ensures
+// the plugin is accepted while effectively denying all traffic, since no real
+// consumer will ever belong to this group.
+const DenyAllGroup = "__deny_all__"
+
 type AclPluginConfig struct {
 	Deny             *hashset.Set `json:"deny,omitempty"`
 	Allow            *hashset.Set `json:"allow,omitempty"`

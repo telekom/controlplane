@@ -24,6 +24,8 @@ updates:
       - common
       - common-server
       - cpapi/api
+      - event
+      - event/api
       - file-manager
       - gateway
       - gateway/api
@@ -31,6 +33,8 @@ updates:
       - identity/api
       - organization
       - organization/api
+      - pubsub
+      - pubsub/api
       - rover
       - rover/api
       - rover-ctl

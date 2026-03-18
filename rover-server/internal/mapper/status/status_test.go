@@ -65,7 +65,7 @@ var _ = Describe("Rover Status Mapper", func() {
 
 	Context("MapRoverResponse", func() {
 		It("must map rover response correctly", func() {
-			response, err := MapRoverResponse(ctx, rover)
+			response, err := MapResponse(ctx, rover)
 
 			Expect(response).ToNot(BeNil())
 			snaps.MatchJSON(GinkgoT(), response)
@@ -74,12 +74,12 @@ var _ = Describe("Rover Status Mapper", func() {
 		})
 
 		It("must return an error if the input rover is nil", func() {
-			response, err := MapRoverResponse(ctx, nil)
+			response, err := MapResponse(ctx, nil)
 
 			Expect(response).ToNot(BeNil())
 
 			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(ContainSubstring("input rover is nil"))
+			Expect(err.Error()).To(ContainSubstring("input object is nil"))
 		})
 
 		It("must map rover response correctly when processing condition is missing", func() {
@@ -94,7 +94,7 @@ var _ = Describe("Rover Status Mapper", func() {
 				},
 			}
 
-			response, err := MapRoverResponse(ctx, roverNoProcessing)
+			response, err := MapResponse(ctx, roverNoProcessing)
 
 			Expect(response).ToNot(BeNil())
 			snaps.MatchJSON(GinkgoT(), response)

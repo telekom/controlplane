@@ -13,6 +13,9 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
+	"github.com/stretchr/testify/mock"
+	storeLib "github.com/telekom/controlplane/common-server/pkg/store"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 	"github.com/telekom/controlplane/rover-server/test/mocks"
 )
@@ -32,6 +35,18 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 		store.ApiExposureStore = mocks.NewApiExposureStoreMock(GinkgoT())
 		store.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
 		store.ZoneStore = mocks.NewZoneStoreMock(GinkgoT())
+		eventConfigMock := mocks.NewMockObjectStore[*eventv1.EventConfig](GinkgoT())
+		store.EventConfigStore = eventConfigMock
+
+		eventSubscriptionMock := mocks.NewMockObjectStore[*eventv1.EventSubscription](GinkgoT())
+		eventSubscriptionMock.EXPECT().List(mock.Anything, mock.Anything).Return(
+			&storeLib.ListResponse[*eventv1.EventSubscription]{Items: []*eventv1.EventSubscription{}}, nil).Maybe()
+		store.EventSubscriptionStore = eventSubscriptionMock
+
+		eventExposureMock := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
+		eventExposureMock.EXPECT().List(mock.Anything, mock.Anything).Return(
+			&storeLib.ListResponse[*eventv1.EventExposure]{Items: []*eventv1.EventExposure{}}, nil).Maybe()
+		store.EventExposureStore = eventExposureMock
 	}
 }
 

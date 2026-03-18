@@ -13,7 +13,10 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common-server/pkg/store/inmemory"
+	"github.com/telekom/controlplane/common-server/pkg/store/noop"
 	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -31,7 +34,12 @@ var ApiSpecificationStore store.ObjectStore[*roverv1.ApiSpecification]
 var ApiStore store.ObjectStore[*apiv1.Api]
 var ApiSubscriptionStore store.ObjectStore[*apiv1.ApiSubscription]
 var ApiExposureStore store.ObjectStore[*apiv1.ApiExposure]
+
+var EventSpecificationStore store.ObjectStore[*roverv1.EventSpecification]
+var EventExposureStore store.ObjectStore[*eventv1.EventExposure]
+var EventSubscriptionStore store.ObjectStore[*eventv1.EventSubscription]
 var ZoneStore store.ObjectStore[*adminv1.Zone]
+var EventConfigStore store.ObjectStore[*eventv1.EventConfig]
 
 var dynamicClient dynamic.Interface
 
@@ -58,6 +66,19 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 	ApplicationStore = NewOrDie[*applicationv1.Application](ctx, applicationv1.GroupVersion.WithResource("applications"), applicationv1.GroupVersion.WithKind("Application"))
 	ApiSubscriptionStore = NewOrDie[*apiv1.ApiSubscription](ctx, apiv1.GroupVersion.WithResource("apisubscriptions"), apiv1.GroupVersion.WithKind("ApiSubscription"))
 	ApiExposureStore = NewOrDie[*apiv1.ApiExposure](ctx, apiv1.GroupVersion.WithResource("apiexposures"), apiv1.GroupVersion.WithKind("ApiExposure"))
+
+	if cconfig.FeaturePubSub.IsEnabled() {
+		EventSpecificationStore = NewOrDie[*roverv1.EventSpecification](ctx, roverv1.GroupVersion.WithResource("eventspecifications"), roverv1.GroupVersion.WithKind("EventSpecification"))
+		EventExposureStore = NewOrDie[*eventv1.EventExposure](ctx, eventv1.GroupVersion.WithResource("eventexposures"), eventv1.GroupVersion.WithKind("EventExposure"))
+		EventSubscriptionStore = NewOrDie[*eventv1.EventSubscription](ctx, eventv1.GroupVersion.WithResource("eventsubscriptions"), eventv1.GroupVersion.WithKind("EventSubscription"))
+		EventConfigStore = NewOrDie[*eventv1.EventConfig](ctx, eventv1.GroupVersion.WithResource("eventconfigs"), eventv1.GroupVersion.WithKind("EventConfig"))
+	} else {
+		EventSpecificationStore = noop.NewStore[*roverv1.EventSpecification](roverv1.GroupVersion.WithResource("eventspecifications"), roverv1.GroupVersion.WithKind("EventSpecification"))
+		EventExposureStore = noop.NewStore[*eventv1.EventExposure](eventv1.GroupVersion.WithResource("eventexposures"), eventv1.GroupVersion.WithKind("EventExposure"))
+		EventSubscriptionStore = noop.NewStore[*eventv1.EventSubscription](eventv1.GroupVersion.WithResource("eventsubscriptions"), eventv1.GroupVersion.WithKind("EventSubscription"))
+		EventConfigStore = noop.NewStore[*eventv1.EventConfig](eventv1.GroupVersion.WithResource("eventconfigs"), eventv1.GroupVersion.WithKind("EventConfig"))
+	}
+
 	ZoneStore = NewOrDie[*adminv1.Zone](ctx, adminv1.GroupVersion.WithResource("zones"), adminv1.GroupVersion.WithKind("Zone"))
 
 	secretsApi := secretsapi.NewSecrets()

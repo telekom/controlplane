@@ -5,6 +5,7 @@
 package out
 
 import (
+	"encoding/json"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -31,9 +32,66 @@ func mapSubscription(in *roverv1.Subscription, out *api.Subscription) error {
 }
 
 func mapEventSubscription(in *roverv1.EventSubscription) api.EventSubscription {
-	return api.EventSubscription{
-		EventType: in.EventType,
+	out := api.EventSubscription{
+		EventType:    in.EventType,
+		DeliveryType: string(in.Delivery.Type),
+		PayloadType:  string(in.Delivery.Payload),
 	}
+
+	// Map delivery fields
+	if in.Delivery.Callback != "" {
+		out.Callback = in.Delivery.Callback
+	}
+	if in.Delivery.EventRetentionTime != "" {
+		out.EventRetentionTime = in.Delivery.EventRetentionTime
+	}
+	if in.Delivery.CircuitBreakerOptOut {
+		out.CircuitBreakerOptOut = in.Delivery.CircuitBreakerOptOut
+	}
+	if in.Delivery.RetryableStatusCodes != nil {
+		out.RetryableStatusCodes = in.Delivery.RetryableStatusCodes
+	}
+	if in.Delivery.RedeliveriesPerSecond != nil {
+		out.RedeliveriesPerSecond = *in.Delivery.RedeliveriesPerSecond
+	}
+	if in.Delivery.EnforceGetHttpRequestMethodForHealthCheck {
+		out.EnforceGetHttpRequestMethodForHealthCheck = in.Delivery.EnforceGetHttpRequestMethodForHealthCheck
+	}
+
+	// Map trigger
+	if in.Trigger != nil {
+		out.Trigger = mapEventTriggerOutForSubscription(in.Trigger)
+	}
+
+	// Map scopes
+	if in.Scopes != nil {
+		out.Scopes = in.Scopes
+	}
+
+	return out
+}
+
+func mapEventTriggerOutForSubscription(in *roverv1.EventTrigger) api.EventTrigger {
+	out := api.EventTrigger{}
+
+	if in.ResponseFilter != nil {
+		out.ResponseFilter = in.ResponseFilter.Paths
+		out.ResponseFilterMode = api.EventTriggerResponseFilterMode(in.ResponseFilter.Mode)
+	}
+
+	if in.SelectionFilter != nil {
+		if in.SelectionFilter.Attributes != nil {
+			out.SelectionFilter = in.SelectionFilter.Attributes
+		}
+		if in.SelectionFilter.Expression != nil && in.SelectionFilter.Expression.Raw != nil {
+			var advFilter map[string]any
+			if err := json.Unmarshal(in.SelectionFilter.Expression.Raw, &advFilter); err == nil {
+				out.AdvancedSelectionFilter = advFilter
+			}
+		}
+	}
+
+	return out
 }
 
 func mapApiSubscription(in *roverv1.ApiSubscription) api.ApiSubscription {

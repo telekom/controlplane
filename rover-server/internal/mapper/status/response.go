@@ -8,7 +8,7 @@ import (
 	"context"
 	"time"
 
-	ghErrors "github.com/pkg/errors"
+	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/rover-server/internal/api"
@@ -41,7 +41,7 @@ func MapResponse(ctx context.Context, obj types.Object) (api.ResourceStatusRespo
 // processingState is set to Processing to reflect that the overall pipeline is not yet done.
 func MapApiSpecificationResponse(ctx context.Context, apiSpec *v1.ApiSpecification) (api.ResourceStatusResponse, error) {
 	if apiSpec == nil {
-		return api.ResourceStatusResponse{}, ghErrors.New("input apiSpec is nil")
+		return api.ResourceStatusResponse{}, errors.New("input apiSpec is nil")
 	}
 	status := MapStatus(apiSpec.GetConditions(), apiSpec.GetGeneration())
 
@@ -86,7 +86,7 @@ func MapApiSpecificationResponse(ctx context.Context, apiSpec *v1.ApiSpecificati
 // processingState is set to Processing to reflect that the overall pipeline is not yet done.
 func MapRoverResponse(ctx context.Context, rover *v1.Rover) (api.ResourceStatusResponse, error) {
 	if rover == nil {
-		return api.ResourceStatusResponse{}, ghErrors.New("input rover is nil")
+		return api.ResourceStatusResponse{}, errors.New("input rover is nil")
 	}
 	status := MapStatus(rover.GetConditions(), rover.GetGeneration())
 
