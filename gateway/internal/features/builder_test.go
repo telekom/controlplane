@@ -123,6 +123,42 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			Expect(aclPlugin.Config.Allow.Contains("gateway")).To(BeTrue())
 			Expect(aclPlugin.Config.Allow.Contains("test")).To(BeTrue())
 			Expect(aclPlugin.Config.Allow.Contains("test-consumer-name")).To(BeTrue())
+			Expect(aclPlugin.Config.Allow.Contains(plugin.DenyAllGroup)).To(BeFalse())
+		})
+
+		It("should use deny-all sentinel when no consumers are allowed", func() {
+			acRoute := route.DeepCopy()
+			acRoute.Spec.Downstreams[0].IssuerUrl = "https://issuer.url"
+			acRoute.Spec.PassThrough = true
+			acRoute.Spec.Security = nil
+
+			emptyRealm := realm.DeepCopy()
+			emptyRealm.Spec.DefaultConsumers = []string{}
+
+			builder := features.NewFeatureBuilder(mockKc, acRoute, nil, emptyRealm, gateway)
+
+			builder.EnableFeature(feature.InstancePassThroughFeature)
+			builder.EnableFeature(feature.InstanceAccessControlFeature)
+
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, acRoute, gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(2)
+			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+
+			By("building the features")
+			err := builder.Build(ctx)
+			Expect(err).ToNot(HaveOccurred())
+
+			b, ok := builder.(*features.Builder)
+			Expect(ok).To(BeTrue())
+
+			By("Checking that the plugins are set")
+			Expect(b.Plugins).To(HaveLen(2))
+
+			By("checking the acl plugin contains only the deny-all sentinel")
+			aclPlugin, ok := b.Plugins["acl"].(*plugin.AclPlugin)
+			Expect(ok).To(BeTrue())
+			Expect(aclPlugin.Config.Allow.Size()).To(Equal(1))
+			Expect(aclPlugin.Config.Allow.Contains(plugin.DenyAllGroup)).To(BeTrue())
 		})
 
 		It("should correctly apply the LastMileSecurity feature for a real-route", func() {
