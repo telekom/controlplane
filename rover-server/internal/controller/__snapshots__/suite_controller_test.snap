@@ -1,4 +1,240 @@
 
+[EventSpecification Controller Get EventSpecification resource should return the EventSpecification successfully - 1]
+{
+ "description": "Horizon demo provider",
+ "id": "eni--hyperion--tardis-horizon-demo-cetus-v1",
+ "specification": {
+  "properties": {
+   "id": {
+    "type": "string"
+   }
+  },
+  "type": "object"
+ },
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ },
+ "type": "tardis.horizon.demo.cetus.v1",
+ "version": "1.0.0"
+}
+---
+
+[EventSpecification Controller Get EventSpecification resource should fail to get a non-existent EventSpecification - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[EventSpecification Controller Get EventSpecification resource should fail to get an EventSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[EventSpecification Controller GetAll EventSpecifications resource should return all EventSpecifications successfully - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/eventspecifications?cursor="
+ },
+ "items": [
+  {
+   "description": "Horizon demo provider",
+   "id": "eni--hyperion--tardis-horizon-demo-cetus-v1",
+   "specification": {
+    "properties": {
+     "id": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   },
+   "type": "tardis.horizon.demo.cetus.v1",
+   "version": "1.0.0"
+  }
+ ]
+}
+---
+
+[EventSpecification Controller GetAll EventSpecifications resource should return all EventSpecifications successfully - 2]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/eventspecifications?cursor="
+ },
+ "items": [
+  {
+   "description": "Horizon demo provider",
+   "id": "eni--hyperion--tardis-horizon-demo-cetus-v1",
+   "specification": {
+    "properties": {
+     "id": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   },
+   "type": "tardis.horizon.demo.cetus.v1",
+   "version": "1.0.0"
+  }
+ ]
+}
+---
+
+[EventSpecification Controller GetAll EventSpecifications resource should return an empty list if no EventSpecifications exist - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/eventspecifications?cursor="
+ },
+ "items": [
+  {
+   "description": "Horizon demo provider",
+   "id": "eni--hyperion--tardis-horizon-demo-cetus-v1",
+   "specification": {
+    "properties": {
+     "id": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   },
+   "type": "tardis.horizon.demo.cetus.v1",
+   "version": "1.0.0"
+  }
+ ]
+}
+---
+
+[EventSpecification Controller GetAll EventSpecifications resource should return an empty list if no EventSpecifications exist - 2]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/eventspecifications?cursor="
+ },
+ "items": [
+  {
+   "description": "Horizon demo provider",
+   "id": "eni--hyperion--tardis-horizon-demo-cetus-v1",
+   "specification": {
+    "properties": {
+     "id": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   },
+   "type": "tardis.horizon.demo.cetus.v1",
+   "version": "1.0.0"
+  }
+ ]
+}
+---
+
+[EventSpecification Controller Delete EventSpecification resource should fail to delete a non-existent EventSpecification - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[EventSpecification Controller Delete EventSpecification resource should fail to delete an EventSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[EventSpecification Controller GetStatus EventSpecification resource should return the status of the EventSpecification successfully - 1]
+{
+ "overallStatus": "complete",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[EventSpecification Controller GetStatus EventSpecification resource should fail to get the status of a non-existent EventSpecification - 1]
+{
+ "detail": "Resource eni--hyperion--blabla not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[EventSpecification Controller GetStatus EventSpecification resource should fail to get the status of an EventSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[EventSpecification Controller Update EventSpecification resource should update the EventSpecification successfully - 1]
+{
+ "description": "Horizon demo provider",
+ "id": "eni--hyperion--tardis-horizon-demo-cetus-v1",
+ "specification": {
+  "properties": {
+   "id": {
+    "type": "string"
+   }
+  },
+  "type": "object"
+ },
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ },
+ "type": "tardis.horizon.demo.cetus.v1",
+ "version": "1.0.0"
+}
+---
+
+[EventSpecification Controller Update EventSpecification resource should fail to update an EventSpecification from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
 [Rover Controller GetAll rover resources should return all rovers successfully - 1]
 {
  "_links": {
@@ -263,13 +499,20 @@
    "irisTokenEndpointUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token",
    "name": "rover-local-sub",
    "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
-   "stargatePublishEventUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1",
    "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
    "status": "blocked",
    "subscriptions": [
     {
-     "basePath": "",
+     "basePath": "/eni/distr/v1",
      "type": "api"
+    },
+    {
+     "deliveryType": "ServerSentEvent",
+     "eventType": "de.telekom.eni.quickstart.v1",
+     "horizonSubscriptionId": "horizon-sub-456",
+     "horizonSubscriptionUrl": "https://sse.example.com/events/horizon-sub-456",
+     "payloadType": "Data",
+     "type": "event"
     }
    ],
    "variables": null,
@@ -335,13 +578,20 @@
    "irisTokenEndpointUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token",
    "name": "rover-local-sub",
    "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
-   "stargatePublishEventUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/horizon/events/v1",
    "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
    "status": "blocked",
    "subscriptions": [
     {
-     "basePath": "",
+     "basePath": "/eni/distr/v1",
      "type": "api"
+    },
+    {
+     "deliveryType": "ServerSentEvent",
+     "eventType": "de.telekom.eni.quickstart.v1",
+     "horizonSubscriptionId": "horizon-sub-456",
+     "horizonSubscriptionUrl": "https://sse.example.com/events/horizon-sub-456",
+     "payloadType": "Data",
+     "type": "event"
     }
    ],
    "variables": null,
@@ -640,63 +890,7 @@
   "next": "",
   "self": "http://example.com/apispecifications?cursor="
  },
- "items": [
-  {
-   "category": "other",
-   "id": "eni--hyperion--eni-distr-v1",
-   "name": "eni-distr-v1",
-   "specification": {
-    "info": {
-     "title": "Rover API",
-     "version": "1.0.0"
-    },
-    "openapi": "3.0.0",
-    "servers": [
-     {
-      "url": "http://rover-api.com/eni/distr/v1"
-     }
-    ]
-   },
-   "status": {
-    "processingState": "done",
-    "state": "complete"
-   },
-   "vendorApi": false
-  }
- ]
-}
----
-
-[ApiSpecification Controller GetAll ApiSpecifications resource should return an empty list if no ApiSpecifications exist - 2]
-{
- "_links": {
-  "next": "",
-  "self": "http://example.com/apispecifications?cursor="
- },
- "items": [
-  {
-   "category": "other",
-   "id": "eni--hyperion--eni-distr-v1",
-   "name": "eni-distr-v1",
-   "specification": {
-    "info": {
-     "title": "Rover API",
-     "version": "1.0.0"
-    },
-    "openapi": "3.0.0",
-    "servers": [
-     {
-      "url": "http://rover-api.com/eni/distr/v1"
-     }
-    ]
-   },
-   "status": {
-    "processingState": "done",
-    "state": "complete"
-   },
-   "vendorApi": false
-  }
- ]
+ "items": []
 }
 ---
 
@@ -770,16 +964,6 @@
   "state": "complete"
  },
  "vendorApi": false
-}
----
-
-[ApiSpecification Controller Update ApiSpecification resource should fail to update a non-existent ApiSpecification - 1]
-{
- "detail": "Resource eni--hyperion--not-there-v1 not found",
- "instance": "",
- "status": 404,
- "title": "Not found",
- "type": "NotFound"
 }
 ---
 

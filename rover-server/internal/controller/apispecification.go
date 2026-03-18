@@ -15,6 +15,7 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
@@ -122,6 +123,7 @@ func (a *ApiSpecificationController) Get(ctx context.Context, resourceId string)
 func (a *ApiSpecificationController) GetAll(ctx context.Context, params api.GetAllApiSpecificationsParams) (*api.ApiSpecificationListResponse, error) {
 	listOpts := store.NewListOpts()
 	listOpts.Cursor = params.Cursor
+	store.EnforcePrefix(security.PrefixFromContext(ctx), &listOpts)
 
 	objList, err := a.Store.List(ctx, listOpts)
 	if err != nil {
@@ -220,7 +222,7 @@ func (a *ApiSpecificationController) GetStatus(ctx context.Context, resourceId s
 		return res, err
 	}
 
-	return status.MapApiSpecificationResponse(ctx, apiSpec)
+	return status.MapResponse(ctx, apiSpec)
 }
 
 func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {

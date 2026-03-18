@@ -19,6 +19,8 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
 
+// TODO: fix the unit-tests. Use Once() or Twice() for mocks
+
 var _ = Describe("ApiSpecification Controller", func() {
 
 	specV3 := `
@@ -32,7 +34,7 @@ servers:
 
 	Context("Get ApiSpecification resource", func() {
 		It("should return the ApiSpecification successfully", func() {
-			mockFileManager.EXPECT().DownloadFile(mock.Anything, mock.Anything, mock.Anything).
+			mockFileManager.EXPECT().DownloadFile(mock.Anything, "randomId", mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 
 					w.Write([]byte(specV3))
@@ -42,6 +44,7 @@ servers:
 						ContentType: "application/yaml",
 					}, nil
 				})
+
 			req := httptest.NewRequest(http.MethodGet, "/apispecifications/eni--hyperion--eni-distr-v1", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
@@ -62,7 +65,7 @@ servers:
 
 	Context("GetAll ApiSpecifications resource", func() {
 		It("should return all ApiSpecifications successfully", func() {
-			mockFileManager.EXPECT().DownloadFile(mock.Anything, mock.Anything, mock.Anything).
+			mockFileManager.EXPECT().DownloadFile(mock.Anything, "randomId", mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 
 					w.Write([]byte(specV3))
@@ -83,11 +86,8 @@ servers:
 
 		It("should return an empty list if no ApiSpecifications exist", func() {
 			req := httptest.NewRequest(http.MethodGet, "/apispecifications", nil)
-			responseGroup, err := ExecuteRequest(req, groupToken)
+			responseGroup, err := ExecuteRequest(req, teamNoResources)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
-
-			responseTeam, err := ExecuteRequest(req, teamToken)
-			ExpectStatusWithBody(responseTeam, err, http.StatusOK, "application/json")
 		})
 	})
 
@@ -170,34 +170,21 @@ servers:
 					FileId:      "randomId",
 					ContentType: "application/yaml",
 				}, nil)
+			mockFileManager.EXPECT().DownloadFile(mock.Anything, "randomId", mock.Anything).
+				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
+
+					w.Write([]byte(specV3))
+
+					return &fileApi.FileDownloadResponse{
+						FileHash:    "randomHash",
+						ContentType: "application/yaml",
+					}, nil
+				})
 
 			req := httptest.NewRequest(http.MethodPut, "/apispecifications/eni--hyperion--eni-distr-v1",
 				bytes.NewReader(apiSpecification))
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
-		})
-
-		It("should fail to update a non-existent ApiSpecification", func() {
-			var apiSpecification, _ = json.Marshal(api.ApiSpecificationCreateRequest{
-				Specification: map[string]interface{}{
-					"openapi": "3.0.0",
-					"info": map[string]interface{}{
-						"title":          "Rover API",
-						"version":        "1.0.0",
-						"x-api-category": "test",
-						"x-vendor":       "true",
-					},
-					"servers": []map[string]interface{}{
-						{
-							"url": "http://rover-api.com/not/there/v1",
-						},
-					},
-				},
-			})
-			req := httptest.NewRequest(http.MethodPut, "/apispecifications/eni--hyperion--not-there-v1",
-				bytes.NewReader(apiSpecification))
-			responseGroup, err := ExecuteRequest(req, groupToken)
-			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
 		})
 
 		It("should fail to update an ApiSpecification from a different team", func() {

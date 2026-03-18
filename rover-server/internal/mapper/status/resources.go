@@ -14,6 +14,7 @@ import (
 	cstore "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/types"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	v1 "github.com/telekom/controlplane/rover/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,7 +26,7 @@ import (
 type SubResource interface {
 	types.Object
 	commonStore.Object
-	*apiv1.ApiSubscription | *apiv1.ApiExposure | *applicationv1.Application
+	*apiv1.ApiSubscription | *apiv1.ApiExposure | *applicationv1.Application | *eventv1.EventSubscription | *eventv1.EventExposure
 }
 
 // GetAllProblemsInSubResource retrieves all problems in a sub-resource for a given Rover resource.

@@ -19,6 +19,7 @@ import (
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	application "github.com/telekom/controlplane/application/api/v1"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	rover "github.com/telekom/controlplane/rover/api/v1"
 )
 
@@ -43,6 +44,9 @@ type RoverReconciler struct {
 // +kubebuilder:rbac:groups=api.cp.ei.telekom.de,resources=apiexposures,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=api.cp.ei.telekom.de,resources=apicategories,verbs=get;list;watch
 
+// +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventexposures,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventsubscriptions,verbs=get;list;watch;create;update;patch;delete
+
 // +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications,verbs=get;list;watch;create;update;patch;delete
 
 func (r *RoverReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -54,14 +58,20 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("rover-controller")
 	r.Controller = cc.NewController(&rover_handler.RoverHandler{}, r.Client, r.Recorder)
 
-	return ctrl.NewControllerManagedBy(mgr).
+	b := ctrl.NewControllerManagedBy(mgr).
 		For(&rover.Rover{}).
 		Owns(&apiapi.ApiSubscription{}).
 		Owns(&apiapi.ApiExposure{}).
-		Owns(&application.Application{}).
-		WithOptions(controller.Options{
-			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
-			RateLimiter:             cc.NewRateLimiter(),
-		}).
+		Owns(&application.Application{})
+
+	if cconfig.FeaturePubSub.IsEnabled() {
+		b = b.Owns(&eventv1.EventExposure{}).
+			Owns(&eventv1.EventSubscription{})
+	}
+
+	return b.WithOptions(controller.Options{
+		MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
+		RateLimiter:             cc.NewRateLimiter(),
+	}).
 		Complete(r)
 }

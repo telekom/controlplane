@@ -26,6 +26,10 @@ type RoverStatus struct {
 	ApiSubscriptions []types.ObjectRef `json:"apiSubscriptions,omitempty"`
 	// ApiExposures are references to ApiExposure resources created by this Rover
 	ApiExposures []types.ObjectRef `json:"apiExposures,omitempty"`
+	// EventExposures are references to EventExposure resources created by this Rover
+	EventExposures []types.ObjectRef `json:"eventExposures,omitempty"`
+	// EventSubscriptions are references to EventSubscription resources created by this Rover
+	EventSubscriptions []types.ObjectRef `json:"eventSubscriptions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -251,10 +255,27 @@ func (apiExp *ApiExposure) HasM2M() bool {
 
 // EventExposure defines an event that is published by this Rover
 type EventExposure struct {
-	// EventType identifies the type of event that is published
+	// EventType identifies the type of event that is published (e.g. "de.telekom.eni.quickstart.v1")
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	EventType string `json:"eventType"`
+
+	// Visibility defines who can see and subscribe to this event
+	// +kubebuilder:validation:Enum=World;Zone;Enterprise
+	// +kubebuilder:default=Enterprise
+	Visibility Visibility `json:"visibility"`
+
+	// Approval defines the approval workflow required for subscriptions to this event
+	// +kubebuilder:validation:Required
+	Approval Approval `json:"approval"`
+
+	// Scopes defines named scopes with optional publisher-side trigger filtering
+	// +kubebuilder:validation:Optional
+	Scopes []EventScope `json:"scopes,omitempty"`
+
+	// AdditionalPublisherIds allows multiple application IDs to publish to the same event type
+	// +kubebuilder:validation:Optional
+	AdditionalPublisherIds []string `json:"additionalPublisherIds,omitempty"`
 }
 
 // ApiSubscription defines an API that this Rover consumes
@@ -297,10 +318,23 @@ func (apiSub *ApiSubscription) HasM2MClient() bool {
 
 // EventSubscription defines an event that this Rover subscribes to
 type EventSubscription struct {
-	// EventType identifies the type of event to subscribe to
+	// EventType identifies the type of event to subscribe to (e.g. "de.telekom.eni.quickstart.v1")
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	EventType string `json:"eventType"`
+
+	// Delivery configures how events are delivered to the subscriber
+	// +kubebuilder:validation:Required
+	Delivery EventDelivery `json:"delivery"`
+
+	// Trigger defines subscriber-side filtering criteria for event delivery
+	// +kubebuilder:validation:Optional
+	Trigger *EventTrigger `json:"trigger,omitempty"`
+
+	// Scopes selects which publisher-defined scopes to subscribe to
+	// Must match scope names defined on the corresponding EventExposure
+	// +kubebuilder:validation:Optional
+	Scopes []string `json:"scopes,omitempty"`
 }
 
 // Approval defines the approval workflow for API exposure

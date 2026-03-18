@@ -50,6 +50,22 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			snaps.MatchJSON(GinkgoT(), applicationInfo)
 		})
 
+		It("must populate HorizonSubscriptionId and HorizonSubscriptionUrl for event subscriptions", func() {
+			var applicationInfo = &api.ApplicationInfo{}
+			err := FillSubscriptionInfo(ctx, rover, applicationInfo)
+
+			Expect(err).To(BeNil())
+
+			// rover fixture has 1 API subscription + 1 event subscription
+			Expect(applicationInfo.Subscriptions).To(HaveLen(2))
+
+			// The event subscription is the second one (after the API subscription)
+			eventSubInfo, err := applicationInfo.Subscriptions[1].AsEventSubscriptionInfo()
+			Expect(err).To(BeNil())
+			Expect(eventSubInfo.HorizonSubscriptionId).To(Equal("horizon-sub-456"))
+			Expect(eventSubInfo.HorizonSubscriptionUrl).To(Equal("https://sse.example.com/events/horizon-sub-456"))
+		})
+
 		It("must return an error if the input rover is nil", func() {
 			var applicationInfo = &api.ApplicationInfo{}
 			err := FillSubscriptionInfo(ctx, nil, applicationInfo)

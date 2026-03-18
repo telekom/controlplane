@@ -1863,6 +1863,10 @@ components:
               type: string
               enum:
                 - event
+            horizonSubscriptionId:
+              type: string
+            horizonSubscriptionUrl:
+              type: string
     SubscriptionInfo:
       readOnly: true
       discriminator:
@@ -1893,8 +1897,6 @@ components:
             type: string
         advancedSelectionFilter:
           type: object
-          additionalProperties:
-            type: object
     TrustedTeam:
       description: >-
         A trusted team is a team that is allowed to access the resource without
