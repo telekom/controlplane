@@ -8,7 +8,15 @@ BOILERPLATE_GO = ../hack/boilerplate.go.txt
 BOILERPLATE_GRAPHQL = ../hack/boilerplate.yaml.txt
 
 generate:
+	@# Clean previously renamed ent files to avoid duplicates on regeneration
+	@find ent/ -name '*.generated.go' ! -path 'ent/schema/*' ! -path 'ent/entc/*' -delete 2>/dev/null || true
 	go run -mod=mod ent/entc/entc.go
+	@# Rename ent-generated files with .generated.go suffix
+	@find ent/ -name '*.go' ! -path 'ent/schema/*' ! -path 'ent/entc/*' | while read f; do \
+		dir=$$(dirname "$$f"); \
+		base=$$(basename "$$f" .go); \
+		mv "$$f" "$$dir/$${base}.generated.go"; \
+	done
 	go run github.com/99designs/gqlgen
 	@# Prepend SPDX headers to generated files that lack them
 	@for f in $$(find ent/ -name '*.go' ! -path 'ent/schema/*' ! -path 'ent/entc/*') \
