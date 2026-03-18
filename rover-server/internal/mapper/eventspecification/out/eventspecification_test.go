@@ -22,7 +22,7 @@ var _ = Describe("EventSpecificationResponse Mapper", func() {
 				},
 			}
 
-			output, err := MapResponse(eventSpecification, specContent)
+			output, err := MapResponse(ctx, eventSpecification, specContent)
 
 			Expect(err).To(BeNil())
 			Expect(output).ToNot(BeNil())
@@ -30,7 +30,7 @@ var _ = Describe("EventSpecificationResponse Mapper", func() {
 		})
 
 		It("must return an error if the input EventSpecification CRD is nil", func() {
-			output, err := MapResponse(nil, nil)
+			output, err := MapResponse(ctx, nil, nil)
 
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)
@@ -40,7 +40,7 @@ var _ = Describe("EventSpecificationResponse Mapper", func() {
 		})
 
 		It("must omit specification from response when specContent is nil", func() {
-			output, err := MapResponse(eventSpecification, nil)
+			output, err := MapResponse(ctx, eventSpecification, nil)
 
 			Expect(err).To(BeNil())
 			Expect(output).ToNot(BeNil())

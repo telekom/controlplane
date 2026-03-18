@@ -15,7 +15,7 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
 )
 
-func MapRoverResponse(ctx context.Context, in *roverv1.Rover) (res api.RoverResponse, err error) {
+func MapResponse(ctx context.Context, in *roverv1.Rover) (res api.RoverResponse, err error) {
 	tmp := api.Rover{}
 	if err = MapRover(in, &tmp); err != nil {
 		return res, err

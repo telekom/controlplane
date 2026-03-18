@@ -86,7 +86,7 @@ func (r *RoverController) Get(ctx context.Context, resourceId string) (res api.R
 		return res, err
 	}
 
-	return out.MapRoverResponse(ctx, rover)
+	return out.MapResponse(ctx, rover)
 }
 
 // GetAll implements server.RoverController.
@@ -102,7 +102,7 @@ func (r *RoverController) GetAll(ctx context.Context, params api.GetAllRoversPar
 
 	list := make([]api.RoverResponse, 0, len(objList.Items))
 	for _, r := range objList.Items {
-		roverResponse, err := out.MapRoverResponse(ctx, r)
+		roverResponse, err := out.MapResponse(ctx, r)
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to map resource", err.Error())
 		}
@@ -160,7 +160,7 @@ func (r *RoverController) GetStatus(ctx context.Context, resourceId string) (res
 		return res, err
 	}
 
-	return status.MapResponse(ctx, rover)
+	return status.MapRoverResponse(ctx, rover)
 }
 
 // GetApplicationInfo implements server.RoverController.

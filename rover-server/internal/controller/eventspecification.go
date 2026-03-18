@@ -103,7 +103,7 @@ func (e *EventSpecificationController) Get(ctx context.Context, resourceId strin
 		return res, err
 	}
 
-	return out.MapResponse(eventSpec, specContent)
+	return out.MapResponse(ctx, eventSpec, specContent)
 }
 
 // GetAll implements server.EventSpecificationController.
@@ -124,7 +124,7 @@ func (e *EventSpecificationController) GetAll(ctx context.Context, params api.Ge
 			return nil, problems.InternalServerError("Failed to download resource", err.Error())
 		}
 
-		resp, err := out.MapResponse(eventSpec, specContent)
+		resp, err := out.MapResponse(ctx, eventSpec, specContent)
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to map resource", err.Error())
 		}
@@ -194,7 +194,7 @@ func (e *EventSpecificationController) GetStatus(ctx context.Context, resourceId
 		return res, err
 	}
 
-	return status.MapResponse(ctx, eventSpec)
+	return status.MapEventSpecificationResponse(ctx, eventSpec)
 }
 
 func (e *EventSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (res *filesapi.FileUploadResponse, err error) {

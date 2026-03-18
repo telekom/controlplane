@@ -36,6 +36,7 @@ var ApiSubscriptionStore store.ObjectStore[*apiv1.ApiSubscription]
 var ApiExposureStore store.ObjectStore[*apiv1.ApiExposure]
 
 var EventSpecificationStore store.ObjectStore[*roverv1.EventSpecification]
+var EventTypeStore store.ObjectStore[*eventv1.EventType]
 var EventExposureStore store.ObjectStore[*eventv1.EventExposure]
 var EventSubscriptionStore store.ObjectStore[*eventv1.EventSubscription]
 var ZoneStore store.ObjectStore[*adminv1.Zone]
@@ -69,11 +70,13 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 
 	if cconfig.FeaturePubSub.IsEnabled() {
 		EventSpecificationStore = NewOrDie[*roverv1.EventSpecification](ctx, roverv1.GroupVersion.WithResource("eventspecifications"), roverv1.GroupVersion.WithKind("EventSpecification"))
+		EventTypeStore = NewOrDie[*eventv1.EventType](ctx, eventv1.GroupVersion.WithResource("eventtypes"), eventv1.GroupVersion.WithKind("EventType"))
 		EventExposureStore = NewOrDie[*eventv1.EventExposure](ctx, eventv1.GroupVersion.WithResource("eventexposures"), eventv1.GroupVersion.WithKind("EventExposure"))
 		EventSubscriptionStore = NewOrDie[*eventv1.EventSubscription](ctx, eventv1.GroupVersion.WithResource("eventsubscriptions"), eventv1.GroupVersion.WithKind("EventSubscription"))
 		EventConfigStore = NewOrDie[*eventv1.EventConfig](ctx, eventv1.GroupVersion.WithResource("eventconfigs"), eventv1.GroupVersion.WithKind("EventConfig"))
 	} else {
 		EventSpecificationStore = noop.NewStore[*roverv1.EventSpecification](roverv1.GroupVersion.WithResource("eventspecifications"), roverv1.GroupVersion.WithKind("EventSpecification"))
+		EventTypeStore = noop.NewStore[*eventv1.EventType](eventv1.GroupVersion.WithResource("eventtypes"), eventv1.GroupVersion.WithKind("EventType"))
 		EventExposureStore = noop.NewStore[*eventv1.EventExposure](eventv1.GroupVersion.WithResource("eventexposures"), eventv1.GroupVersion.WithKind("EventExposure"))
 		EventSubscriptionStore = noop.NewStore[*eventv1.EventSubscription](eventv1.GroupVersion.WithResource("eventsubscriptions"), eventv1.GroupVersion.WithKind("EventSubscription"))
 		EventConfigStore = noop.NewStore[*eventv1.EventConfig](eventv1.GroupVersion.WithResource("eventconfigs"), eventv1.GroupVersion.WithKind("EventConfig"))

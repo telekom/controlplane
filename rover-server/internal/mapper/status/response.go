@@ -124,3 +124,48 @@ func MapRoverResponse(ctx context.Context, rover *v1.Rover) (api.ResourceStatusR
 		Errors:          problems,
 	}, nil
 }
+
+// MapEventSpecificationResponse maps the status of an EventSpecification resource to a ResourceStatusResponse,
+// including problems from sub-resources when the EventSpecification itself is not complete.
+// When the EventSpecification is Complete/Done but any sub-resource has stale conditions,
+// processingState is set to Processing to reflect that the overall pipeline is not yet done.
+func MapEventSpecificationResponse(ctx context.Context, eventSpec *v1.EventSpecification) (api.ResourceStatusResponse, error) {
+	if eventSpec == nil {
+		return api.ResourceStatusResponse{}, errors.New("input eventSpec is nil")
+	}
+	status := MapStatus(eventSpec.GetConditions(), eventSpec.GetGeneration())
+
+	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone {
+		stale, err := AnyEventSpecificationSubResourceStale(ctx, eventSpec)
+		if err != nil {
+			return api.ResourceStatusResponse{}, err
+		}
+		if stale {
+			status.ProcessingState = api.ProcessingStateProcessing
+		}
+	}
+
+	var problems []api.Problem
+	if status.State != api.Complete {
+		var err error
+		problems, err = GetAllEventSpecificationProblems(ctx, eventSpec)
+		if err != nil {
+			return api.ResourceStatusResponse{}, err
+		}
+	}
+
+	processing := meta.FindStatusCondition(eventSpec.GetConditions(), condition.ConditionTypeProcessing)
+	var processedAtTime time.Time
+	if processing != nil {
+		processedAtTime = processing.LastTransitionTime.Time
+	}
+
+	return api.ResourceStatusResponse{
+		CreatedAt:       eventSpec.GetCreationTimestamp().Time,
+		ProcessedAt:     processedAtTime,
+		State:           status.State,
+		ProcessingState: status.ProcessingState,
+		OverallStatus:   CalculateOverallStatus(status.State, status.ProcessingState),
+		Errors:          problems,
+	}, nil
+}

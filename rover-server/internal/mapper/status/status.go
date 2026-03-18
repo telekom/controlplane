@@ -177,6 +177,35 @@ func MapApiSpecificationStatus(ctx context.Context, apiSpec *v1.ApiSpecification
 	return status, nil
 }
 
+// MapEventSpecificationStatus maps the status of an EventSpecification resource to an api.Status,
+// including sub-resource error information when the EventSpecification itself is not complete.
+// When the EventSpecification's own conditions indicate Complete/Done but any sub-resource
+// has stale conditions, processingState is set to Processing to reflect that
+// the overall pipeline is not yet done.
+func MapEventSpecificationStatus(ctx context.Context, eventSpec *v1.EventSpecification) (api.Status, error) {
+	status := MapStatus(eventSpec.GetConditions(), eventSpec.GetGeneration())
+
+	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone {
+		stale, err := AnyEventSpecificationSubResourceStale(ctx, eventSpec)
+		if err != nil {
+			return status, err
+		}
+		if stale {
+			status.ProcessingState = api.ProcessingStateProcessing
+		}
+	}
+
+	if status.State != api.Complete {
+		stateInfos, err := GetAllEventSpecificationStateInfos(ctx, eventSpec)
+		if err != nil {
+			return status, err
+		}
+		status.Errors = append(status.Errors, stateInfos...)
+	}
+
+	return status, nil
+}
+
 // GetOverallStatus computes the OverallStatus from a set of Kubernetes conditions.
 // Note: staleness detection is not performed here because the object's generation
 // is not available. Callers that need staleness detection should use MapStatus directly.

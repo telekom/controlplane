@@ -65,7 +65,7 @@ var _ = Describe("Rover Status Mapper", func() {
 
 	Context("MapRoverResponse", func() {
 		It("must map rover response correctly", func() {
-			response, err := MapResponse(ctx, rover)
+			response, err := MapRoverResponse(ctx, rover)
 
 			Expect(response).ToNot(BeNil())
 			snaps.MatchJSON(GinkgoT(), response)
@@ -74,12 +74,12 @@ var _ = Describe("Rover Status Mapper", func() {
 		})
 
 		It("must return an error if the input rover is nil", func() {
-			response, err := MapResponse(ctx, nil)
+			response, err := MapRoverResponse(ctx, nil)
 
 			Expect(response).ToNot(BeNil())
 
 			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(ContainSubstring("input object is nil"))
+			Expect(err.Error()).To(ContainSubstring("input rover is nil"))
 		})
 
 		It("must map rover response correctly when processing condition is missing", func() {
@@ -94,7 +94,7 @@ var _ = Describe("Rover Status Mapper", func() {
 				},
 			}
 
-			response, err := MapResponse(ctx, roverNoProcessing)
+			response, err := MapRoverResponse(ctx, roverNoProcessing)
 
 			Expect(response).ToNot(BeNil())
 			snaps.MatchJSON(GinkgoT(), response)
@@ -440,67 +440,17 @@ var _ = Describe("CalculateOverallStatus", func() {
 	})
 })
 
-var _ = Describe("CompareAndReturn", func() {
-	Context("when comparing Failed with other statuses", func() {
-		It("Failed takes precedence", func() {
-			result := CompareAndReturn(api.OverallStatusProcessing, api.OverallStatusFailed)
-			Expect(result).To(Equal(api.OverallStatusFailed))
-		})
-	})
-
-	Context("when comparing Blocked with Processing", func() {
-		It("Blocked takes precedence over Processing", func() {
-			result := CompareAndReturn(api.OverallStatusProcessing, api.OverallStatusBlocked)
-			Expect(result).To(Equal(api.OverallStatusBlocked))
-		})
-	})
-
-	Context("when comparing Processing with Pending", func() {
-		It("Processing takes precedence over Pending", func() {
-			result := CompareAndReturn(api.OverallStatusPending, api.OverallStatusProcessing)
-			Expect(result).To(Equal(api.OverallStatusProcessing))
-		})
-	})
-
-	Context("when comparing Complete with Complete", func() {
-		It("returns Complete", func() {
-			result := CompareAndReturn(api.OverallStatusComplete, api.OverallStatusComplete)
-			Expect(result).To(Equal(api.OverallStatusComplete))
-		})
-	})
-
-	Context("when comparing None with None", func() {
-		It("returns None", func() {
-			result := CompareAndReturn(api.OverallStatusNone, api.OverallStatusNone)
-			Expect(result).To(Equal(api.OverallStatusNone))
-		})
-	})
-
-	Context("when comparing Invalid with Failed", func() {
-		It("Invalid takes precedence over Failed", func() {
-			result := CompareAndReturn(api.OverallStatusInvalid, api.OverallStatusFailed)
-			Expect(result).To(Equal(api.OverallStatusInvalid))
-		})
-	})
-
-	Context("when comparing Done with Complete", func() {
-		It("returns the first when both have equal priority", func() {
-			result := CompareAndReturn(api.OverallStatusDone, api.OverallStatusComplete)
-			Expect(result).To(Equal(api.OverallStatusDone))
-		})
-	})
-
-	Context("when comparing Done with Processing", func() {
-		It("Processing takes precedence over Done", func() {
-			result := CompareAndReturn(api.OverallStatusDone, api.OverallStatusProcessing)
-			Expect(result).To(Equal(api.OverallStatusProcessing))
-		})
-	})
-
-	Context("when comparing an unknown status with Complete", func() {
-		It("Complete takes precedence over unknown", func() {
-			result := CompareAndReturn(api.OverallStatus("unknown"), api.OverallStatusComplete)
-			Expect(result).To(Equal(api.OverallStatusComplete))
-		})
-	})
-})
+var _ = DescribeTable("CompareAndReturn",
+	func(a, b, expected api.OverallStatus) {
+		Expect(CompareAndReturn(a, b)).To(Equal(expected))
+	},
+	Entry("Failed takes precedence over Processing", api.OverallStatusProcessing, api.OverallStatusFailed, api.OverallStatusFailed),
+	Entry("Blocked takes precedence over Processing", api.OverallStatusProcessing, api.OverallStatusBlocked, api.OverallStatusBlocked),
+	Entry("Processing takes precedence over Pending", api.OverallStatusPending, api.OverallStatusProcessing, api.OverallStatusProcessing),
+	Entry("Complete vs Complete returns Complete", api.OverallStatusComplete, api.OverallStatusComplete, api.OverallStatusComplete),
+	Entry("None vs None returns None", api.OverallStatusNone, api.OverallStatusNone, api.OverallStatusNone),
+	Entry("Invalid takes precedence over Failed", api.OverallStatusInvalid, api.OverallStatusFailed, api.OverallStatusInvalid),
+	Entry("Done vs Complete returns first when equal priority", api.OverallStatusDone, api.OverallStatusComplete, api.OverallStatusDone),
+	Entry("Processing takes precedence over Done", api.OverallStatusDone, api.OverallStatusProcessing, api.OverallStatusProcessing),
+	Entry("Complete takes precedence over unknown", api.OverallStatus("unknown"), api.OverallStatusComplete, api.OverallStatusComplete),
+)

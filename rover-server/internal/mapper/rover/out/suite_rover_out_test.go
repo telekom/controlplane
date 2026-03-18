@@ -10,7 +10,10 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
+	storeLib "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,6 +67,16 @@ var _ = BeforeSuite(func() {
 	store.ApiSubscriptionStore = mocks.NewApiSubscriptionStoreMock(GinkgoT())
 	store.ApiExposureStore = mocks.NewApiExposureStoreMock(GinkgoT())
 	store.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
+
+	eventExposureMock := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
+	eventExposureMock.EXPECT().List(mock.Anything, mock.Anything).Return(
+		&storeLib.ListResponse[*eventv1.EventExposure]{Items: []*eventv1.EventExposure{}}, nil).Maybe()
+	store.EventExposureStore = eventExposureMock
+
+	eventSubscriptionMock := mocks.NewMockObjectStore[*eventv1.EventSubscription](GinkgoT())
+	eventSubscriptionMock.EXPECT().List(mock.Anything, mock.Anything).Return(
+		&storeLib.ListResponse[*eventv1.EventSubscription]{Items: []*eventv1.EventSubscription{}}, nil).Maybe()
+	store.EventSubscriptionStore = eventSubscriptionMock
 
 	rover = mocks.GetRover(GinkgoT(), mocks.RoverFileName)
 })
