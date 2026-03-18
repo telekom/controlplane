@@ -121,6 +121,17 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		return errors.Wrapf(err, "Cannot combine gatewayUrl %s with realm name %s", obj.Spec.Gateway.Url, gatewayRealm.Name)
 	}
 
+	// DTC Gateway realm (optional)
+	if obj.Spec.Gateway.DtcUrl != nil && *obj.Spec.Gateway.DtcUrl != "" {
+		dtcGatewayRealm, err := createGatewayDtcRealm(ctx, handlingContext, gateway)
+		if err != nil {
+			return err
+		}
+		obj.Status.DtcGatewayRealm = types.ObjectRefFromObject(dtcGatewayRealm)
+	} else {
+		obj.Status.DtcGatewayRealm = nil
+	}
+
 	// Gateway consumer
 	gatewayConsumer, err := createGatewayConsumer(ctx, handlingContext, gatewayRealm)
 	if err != nil {
@@ -288,6 +299,67 @@ func createGatewayRealm(ctx context.Context, handlingContext HandlingContext, ga
 	_, err := scopedClient.CreateOrUpdate(ctx, gatewayRealm, mutator)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create or update Gateway Realm %s in zone %s", handlingContext.Environment.Name, handlingContext.Zone.Name)
+	}
+	return gatewayRealm, nil
+}
+
+func createGatewayDtcRealm(ctx context.Context, handlingContext HandlingContext, gateway *gatewayapi.Gateway) (*gatewayapi.Realm, error) {
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+	realmName := naming.ForDtcGatewayRealm()
+
+	// Get all zones to build DTC URLs and issuer URLs
+	zoneList := &adminv1.ZoneList{}
+	err := scopedClient.List(ctx, zoneList)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list zones for DTC realm creation")
+	}
+
+	// Build URLs array: all DTC URLs from all zones (including current zone)
+	var dtcUrls []string
+	for _, zone := range zoneList.Items {
+		if zone.Spec.Gateway.DtcUrl != nil && *zone.Spec.Gateway.DtcUrl != "" {
+			dtcUrls = append(dtcUrls, *zone.Spec.Gateway.DtcUrl)
+		}
+	}
+
+	// Build IssuerUrls array: issuers from OTHER DTC-enabled zones (excluding current zone)
+	var issuerUrls []string
+	for _, zone := range zoneList.Items {
+		// Skip current zone
+		if zone.Name == handlingContext.Zone.Name && zone.Namespace == handlingContext.Zone.Namespace {
+			continue
+		}
+		// Only add issuer if zone has DTC URL configured
+		if zone.Spec.Gateway.DtcUrl != nil && *zone.Spec.Gateway.DtcUrl != "" {
+			issuerUrls = append(issuerUrls, urls.ForGatewayRealm(zone.Spec.IdentityProvider.Url, realmName))
+		}
+	}
+
+	gatewayRealm := &gatewayapi.Realm{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      realmName,
+			Namespace: handlingContext.Namespace.Name,
+		},
+	}
+
+	mutator := func() error {
+		gatewayRealm.Labels = map[string]string{
+			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
+			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
+		}
+
+		gatewayRealm.Spec = gatewayapi.RealmSpec{
+			Gateway:          types.ObjectRefFromObject(gateway),
+			Urls:             dtcUrls,
+			IssuerUrls:       issuerUrls,
+			DefaultConsumers: []string{"gateway"},
+		}
+		return nil
+	}
+
+	_, err = scopedClient.CreateOrUpdate(ctx, gatewayRealm, mutator)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create or update DTC Gateway Realm %s in zone %s", realmName, handlingContext.Zone.Name)
 	}
 	return gatewayRealm, nil
 }

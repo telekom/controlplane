@@ -341,3 +341,183 @@ func VerifyZone(ctx context.Context, g Gomega, namespacedName client.ObjectKey, 
 	g.Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeProcessing)).To(BeFalse())
 	g.Expect(meta.IsStatusConditionTrue(zone.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
 }
+
+var _ = Describe("Zone Controller - DTC", func() {
+	Context("When reconciling zones with DTC URLs", func() {
+		const zone1Name = "zone1"
+		const zone2Name = "zone2"
+		const zone3Name = "zone3-no-dtc"
+
+		zone1Ref := client.ObjectKey{
+			Name:      zone1Name,
+			Namespace: testNamespace,
+		}
+		zone2Ref := client.ObjectKey{
+			Name:      zone2Name,
+			Namespace: testNamespace,
+		}
+		zone3Ref := client.ObjectKey{
+			Name:      zone3Name,
+			Namespace: testNamespace,
+		}
+
+		environmentRef := client.ObjectKey{
+			Name:      testEnvironment,
+			Namespace: testEnvironment,
+		}
+
+		BeforeEach(func() {
+			By("creating the environment")
+			environment := &adminv1.Environment{}
+			err := k8sClient.Get(ctx, environmentRef, environment)
+			if err != nil && errors.IsNotFound(err) {
+				resource := &adminv1.Environment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      testEnvironment,
+						Namespace: testEnvironment,
+						Labels: map[string]string{
+							config.EnvironmentLabelKey: testEnvironment,
+						},
+					},
+					Spec: adminv1.EnvironmentSpec{},
+				}
+				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+			}
+
+			By("creating zone1 with DTC URL and unique IDP")
+			zone1 := NewZone(zone1Name, testNamespace)
+			dtcUrl1 := "https://dtc1.example.com/"
+			zone1.Spec.Gateway.DtcUrl = &dtcUrl1
+			zone1.Spec.IdentityProvider.Url = "https://idp-zone1.example.com/"
+			err = k8sClient.Create(ctx, zone1)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("creating zone2 with DTC URL and unique IDP")
+			zone2 := NewZone(zone2Name, testNamespace)
+			dtcUrl2 := "https://dtc2.example.com/"
+			zone2.Spec.Gateway.DtcUrl = &dtcUrl2
+			zone2.Spec.IdentityProvider.Url = "https://idp-zone2.example.com/"
+			err = k8sClient.Create(ctx, zone2)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("creating zone3 without DTC URL")
+			zone3 := NewZone(zone3Name, testNamespace)
+			zone3.Spec.IdentityProvider.Url = "https://idp-zone3.example.com/"
+			err = k8sClient.Create(ctx, zone3)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			By("cleanup zones")
+			zone1 := &adminv1.Zone{}
+			err := k8sClient.Get(ctx, zone1Ref, zone1)
+			if err == nil {
+				Expect(k8sClient.Delete(ctx, zone1)).To(Succeed())
+			}
+			zone2 := &adminv1.Zone{}
+			err = k8sClient.Get(ctx, zone2Ref, zone2)
+			if err == nil {
+				Expect(k8sClient.Delete(ctx, zone2)).To(Succeed())
+			}
+			zone3 := &adminv1.Zone{}
+			err = k8sClient.Get(ctx, zone3Ref, zone3)
+			if err == nil {
+				Expect(k8sClient.Delete(ctx, zone3)).To(Succeed())
+			}
+		})
+
+		It("should create DTC gateway realms with correct URLs and issuers", func() {
+			By("waiting for zone1 to be ready")
+			zone1 := &adminv1.Zone{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, zone1Ref, zone1)
+				return err == nil && meta.IsStatusConditionTrue(zone1.Status.Conditions, condition.ConditionTypeReady)
+			}, timeout, interval).Should(BeTrue())
+
+			By("waiting for zone2 to be ready")
+			zone2 := &adminv1.Zone{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, zone2Ref, zone2)
+				return err == nil && meta.IsStatusConditionTrue(zone2.Status.Conditions, condition.ConditionTypeReady)
+			}, timeout, interval).Should(BeTrue())
+
+			By("waiting for zone3 to be ready")
+			zone3 := &adminv1.Zone{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, zone3Ref, zone3)
+				return err == nil && meta.IsStatusConditionTrue(zone3.Status.Conditions, condition.ConditionTypeReady)
+			}, timeout, interval).Should(BeTrue())
+
+			By("verifying zone1 has DTC gateway realm reference in status")
+			Expect(zone1.Status.DtcGatewayRealm).NotTo(BeNil())
+			Expect(zone1.Status.DtcGatewayRealm.Name).To(Equal("dtc"))
+
+			By("verifying zone2 has DTC gateway realm reference in status")
+			Expect(zone2.Status.DtcGatewayRealm).NotTo(BeNil())
+			Expect(zone2.Status.DtcGatewayRealm.Name).To(Equal("dtc"))
+
+			By("verifying zone3 does NOT have DTC gateway realm reference")
+			Expect(zone3.Status.DtcGatewayRealm).To(BeNil())
+
+			By("verifying zone1 DTC realm contains all DTC URLs")
+			dtcRealm1 := &gatewayapi.Realm{}
+			dtcRealm1Ref := client.ObjectKey{
+				Namespace: zone1.Status.Namespace,
+				Name:      "dtc",
+			}
+			err := k8sClient.Get(ctx, dtcRealm1Ref, dtcRealm1)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Should contain both DTC URLs
+			Expect(dtcRealm1.Spec.Urls).To(ContainElements(
+				"https://dtc1.example.com/",
+				"https://dtc2.example.com/",
+			))
+
+			// Should contain issuer from zone2 (OTHER zone with DTC), but not from zone1 (self)
+			Expect(dtcRealm1.Spec.IssuerUrls).To(ContainElement("https://idp-zone2.example.com/auth/realms/dtc"))
+			// Should have exactly 1 issuer (from zone2 only)
+			Expect(dtcRealm1.Spec.IssuerUrls).To(HaveLen(1))
+
+			By("verifying zone2 DTC realm contains all DTC URLs")
+			dtcRealm2 := &gatewayapi.Realm{}
+			dtcRealm2Ref := client.ObjectKey{
+				Namespace: zone2.Status.Namespace,
+				Name:      "dtc",
+			}
+			err = k8sClient.Get(ctx, dtcRealm2Ref, dtcRealm2)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Should contain both DTC URLs
+			Expect(dtcRealm2.Spec.Urls).To(ContainElements(
+				"https://dtc1.example.com/",
+				"https://dtc2.example.com/",
+			))
+
+			// Should contain issuer from zone1 (OTHER zone with DTC), but not from zone2 (self)
+			Expect(dtcRealm2.Spec.IssuerUrls).To(ContainElement("https://idp-zone1.example.com/auth/realms/dtc"))
+			// Should have exactly 1 issuer (from zone1 only)
+			Expect(dtcRealm2.Spec.IssuerUrls).To(HaveLen(1))
+
+			By("verifying zone3 has no DTC realm created")
+			dtcRealm3 := &gatewayapi.Realm{}
+			dtcRealm3Ref := client.ObjectKey{
+				Namespace: zone3.Status.Namespace,
+				Name:      "dtc",
+			}
+			err = k8sClient.Get(ctx, dtcRealm3Ref, dtcRealm3)
+			Expect(errors.IsNotFound(err)).To(BeTrue())
+
+			By("verifying default gateway realms are NOT affected by DTC")
+			defaultRealm1 := &gatewayapi.Realm{}
+			defaultRealm1Ref := client.ObjectKey{
+				Namespace: zone1.Status.Namespace,
+				Name:      testEnvironment,
+			}
+			err = k8sClient.Get(ctx, defaultRealm1Ref, defaultRealm1)
+			Expect(err).NotTo(HaveOccurred())
+			// Default realm should only have the regular URL, NOT DTC URLs
+			Expect(defaultRealm1.Spec.Urls).To(Equal([]string{"https://test-stargate.de/"}))
+		})
+	})
+})

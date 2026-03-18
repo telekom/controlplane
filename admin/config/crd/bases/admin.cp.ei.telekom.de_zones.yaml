@@ -60,6 +60,10 @@ spec:
                       should be enabled on this zone. the config of the CB itself
                       comes from hardcoded values, not configurable
                     type: boolean
+                  dtcUrl:
+                    description: DtcUrl is an optional DTC (Dynamic Traffic Control)
+                      gateway URL for this zone
+                    type: string
                   url:
                     type: string
                 required:
@@ -209,6 +213,25 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              dtcGatewayRealm:
+                description: |-
+                  ObjectRef is a reference to a Kubernetes object
+                  It is similar to types.NamespacedName but has the required json tags for serialization
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
               gateway:
                 description: |-
                   ObjectRef is a reference to a Kubernetes object

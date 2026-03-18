@@ -8,6 +8,7 @@ import adminv1 "github.com/telekom/controlplane/admin/api/v1"
 
 const (
 	teamApiIdentityRealmPrefix = "team-"
+	dtcGatewayRealmName        = "dtc"
 	gatewayClientName          = "gateway"
 	gatewayAdminClientId       = "rover"
 	gateway                    = "gateway"
@@ -28,6 +29,10 @@ func ForDefaultGatewayRealm(environment *adminv1.Environment) string {
 
 func ForTeamApiGatewayRealm(environment *adminv1.Environment) string {
 	return teamApiIdentityRealmPrefix + environment.GetName()
+}
+
+func ForDtcGatewayRealm() string {
+	return dtcGatewayRealmName
 }
 
 func ForIdentityProvider(zone *adminv1.Zone) string {
