@@ -54,13 +54,13 @@ Embedded types stored as JSON fields: Member, Upstream, ApprovalConfig, ApiInfo,
 
 ### Team Isolation
 
-| Entity | Filter Logic |
-|--------|-------------|
-| Team | `WHERE name IN (viewer.teams)` |
-| Application | `WHERE owner_team.name IN (viewer.teams)` |
-| ApiExposure / ApiSubscription | Via application → owner_team edge |
-| Approval / ApprovalRequest | Visible to both subscriber's team AND exposure owner's team |
-| Group, Zone, Environment | No filtering (public reference data) |
+| Entity                        | Filter Logic                                                |
+|-------------------------------|-------------------------------------------------------------|
+| Team                          | `WHERE name IN (viewer.teams)`                              |
+| Application                   | `WHERE owner_team.name IN (viewer.teams)`                   |
+| ApiExposure / ApiSubscription | Via application → owner_team edge                           |
+| Approval / ApprovalRequest    | Visible to both subscriber's team AND exposure owner's team |
+| Group, Zone, Environment      | No filtering (public reference data)                        |
 
 Admin viewers bypass all filtering.
 
@@ -106,6 +106,22 @@ ent/schema/*.go + schema.graphql + gqlgen.yml
 > After running `make generate`, gqlgen may reshuffle resolver implementations between `*.resolvers.go` files and regenerate their import blocks.
 > Always verify that custom imports (e.g., the `viewer` package) are still present after regeneration.
 
+### Project Structure — Generated vs Manual Files
+
+Most of the code under `ent/` is generated and should not be edited manually (marked with `// Code generated ... DO NOT EDIT.`).
+
+| Path                                | Type                 | Description                                         |
+|-------------------------------------|----------------------|-----------------------------------------------------|
+| `ent/schema/`                       | **Manual**           | Entity definitions and mixins — the source of truth |
+| `ent/entc/`                         | **Manual**           | Code generation configuration                       |
+| `ent/*.go`, `ent/*/`                | Generated            | ORM client, builders, predicates, enums             |
+| `ent.graphql`                       | Generated            | GraphQL schema derived from ent schemas             |
+| `schema.graphql`                    | **Manual**           | Custom types and resolver extensions                |
+| `gqlgen.yml`                        | **Manual**           | gqlgen configuration and model mappings             |
+| `internal/resolvers/*.generated.go` | Generated            | GraphQL runtime wiring                              |
+| `internal/resolvers/*.resolvers.go` | Generated (scaffold) | Resolver stubs — implementations are manual         |
+| `internal/resolvers/model/`         | **Manual**           | Go types for custom GraphQL models                  |
+
 ### Adding a New Field
 
 For a field managed by ent (stored in DB):
@@ -122,9 +138,9 @@ For a computed/custom field (not in DB):
 
 ### Configuration
 
-| Environment Variable | Default | Description |
-|---------------------|---------|-------------|
-| `DATABASE_URL` | `postgres://controlplane:controlplane@localhost:5432/controlplane?sslmode=disable` | PostgreSQL connection string |
-| `LISTEN_ADDR` | `:8080` | Server listen address |
-| `PLAYGROUND_ENABLED` | `true` | Enable GraphQL Playground at `/graphql/` |
-| `SECURITY_ENABLED` | `false` | Enable JWT authentication |
+| Environment Variable | Default                                                                            | Description                              |
+|----------------------|------------------------------------------------------------------------------------|------------------------------------------|
+| `DATABASE_URL`       | `postgres://controlplane:controlplane@localhost:5432/controlplane?sslmode=disable` | PostgreSQL connection string             |
+| `LISTEN_ADDR`        | `:8080`                                                                            | Server listen address                    |
+| `PLAYGROUND_ENABLED` | `true`                                                                             | Enable GraphQL Playground at `/graphql/` |
+| `SECURITY_ENABLED`   | `false`                                                                            | Enable JWT authentication                |
