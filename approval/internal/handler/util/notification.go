@@ -77,6 +77,7 @@ type NotificationData struct {
 	Decider                *approvalv1.Decider
 	Scenario               NotificationScenario
 	Actor                  Actor
+	Action                 string
 }
 
 func extractDecider(decider *approvalv1.Decider) (map[string]any, error) {
@@ -137,20 +138,6 @@ func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
 	return requesterPropertiesMap, nil
 }
 
-// To make notifications more generic, we treat both api subscription and event subscription the same.
-// If it's neither, the original value is returned.
-func extractTargetKind(kind string) string {
-	if strings.EqualFold("apisubscription", kind) {
-		return "subscription"
-	}
-
-	if strings.EqualFold("eventsubscription", kind) {
-		return "subscription"
-	}
-
-	return kind
-}
-
 func SendNotification(ctx context.Context, data *NotificationData) (*types.ObjectRef, error) {
 	properties := initializeProperties()
 
@@ -174,15 +161,16 @@ func SendNotification(ctx context.Context, data *NotificationData) (*types.Objec
 		properties[strings.ToLower(k)] = v
 	}
 
-	// let's build the purpose <ownerKind>--<targetKind>--<scenario>--<actor>
-	// example: approvalrequest--apisubscription--created--decider
+	// let's build the purpose <ownerKind>--<approvalAction>--<scenario>--<actor>
+	// example: approvalrequest--subscribe--created--decider
 	purposeStringBuilder := strings.Builder{}
 	// owner kind
 	purposeStringBuilder.WriteString(data.Owner.GetObjectKind().GroupVersionKind().Kind)
 	purposeStringBuilder.WriteString(DELIMITER)
 
 	// target kind
-	purposeStringBuilder.WriteString(extractTargetKind(data.Target.GetKind()))
+	// uses the approval/approvalRequest action - for example "subscribe"
+	purposeStringBuilder.WriteString(data.Action)
 	purposeStringBuilder.WriteString(DELIMITER)
 
 	// scenario

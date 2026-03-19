@@ -233,15 +233,4 @@ var _ = Describe("Notification Utilities", func() {
 		})
 	})
 
-	DescribeTable("should normalize subscription kinds",
-		func(kind string, want string) {
-			got := extractTargetKind(kind)
-			Expect(got).To(Equal(want))
-		},
-		Entry("api subscription lower case", "apisubscription", "subscription"),
-		Entry("api subscription mixed case", "ApiSubscription", "subscription"),
-		Entry("event subscription lower case", "eventsubscription", "subscription"),
-		Entry("event subscription upper case", "EVENTSUBSCRIPTION", "subscription"),
-		Entry("other kind unchanged", "SomeOtherKind", "SomeOtherKind"),
-	)
 })
