@@ -26,8 +26,13 @@ type Config = graphql.Config[ResolverRoot, DirectiveRoot, ComplexityRoot]
 
 type ResolverRoot interface {
 	ApiExposure() ApiExposureResolver
+	ApiExposureInfo() ApiExposureInfoResolver
+	ApiSubscription() ApiSubscriptionResolver
+	ApiSubscriptionInfo() ApiSubscriptionInfoResolver
 	Application() ApplicationResolver
+	Approval() ApprovalResolver
 	ApprovalConfig() ApprovalConfigResolver
+	ApprovalRequest() ApprovalRequestResolver
 	AvailableTransition() AvailableTransitionResolver
 	Decision() DecisionResolver
 	Query() QueryResolver
@@ -49,7 +54,7 @@ type ComplexityRoot struct {
 		Owner          func(childComplexity int) int
 		StatusMessage  func(childComplexity int) int
 		StatusPhase    func(childComplexity int) int
-		Subscriptions  func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiSubscriptionOrder, where *ent.ApiSubscriptionWhereInput) int
+		Subscriptions  func(childComplexity int) int
 		Upstreams      func(childComplexity int) int
 		Visibility     func(childComplexity int) int
 	}
@@ -63,6 +68,18 @@ type ComplexityRoot struct {
 	ApiExposureEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
+	}
+
+	ApiExposureInfo struct {
+		Active               func(childComplexity int) int
+		ApiVersion           func(childComplexity int) int
+		ApprovalConfig       func(childComplexity int) int
+		BasePath             func(childComplexity int) int
+		Features             func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		OwnerApplicationName func(childComplexity int) int
+		OwnerTeam            func(childComplexity int) int
+		Visibility           func(childComplexity int) int
 	}
 
 	ApiSubscription struct {
@@ -90,6 +107,15 @@ type ComplexityRoot struct {
 	ApiSubscriptionEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
+	}
+
+	ApiSubscriptionInfo struct {
+		BasePath             func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		OwnerApplicationName func(childComplexity int) int
+		OwnerTeam            func(childComplexity int) int
+		StatusMessage        func(childComplexity int) int
+		StatusPhase          func(childComplexity int) int
 	}
 
 	Application struct {
@@ -392,12 +418,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_ApiExposure_subscriptions_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.ApiExposure.Subscriptions(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["orderBy"].(*ent.ApiSubscriptionOrder), args["where"].(*ent.ApiSubscriptionWhereInput)), true
+		return e.ComplexityRoot.ApiExposure.Subscriptions(childComplexity), true
 
 	case "ApiExposure.upstreams":
 		if e.ComplexityRoot.ApiExposure.Upstreams == nil {
@@ -447,6 +468,69 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposureEdge.Node(childComplexity), true
+
+	case "ApiExposureInfo.active":
+		if e.ComplexityRoot.ApiExposureInfo.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposureInfo.Active(childComplexity), true
+
+	case "ApiExposureInfo.apiVersion":
+		if e.ComplexityRoot.ApiExposureInfo.ApiVersion == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposureInfo.ApiVersion(childComplexity), true
+
+	case "ApiExposureInfo.approvalConfig":
+		if e.ComplexityRoot.ApiExposureInfo.ApprovalConfig == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposureInfo.ApprovalConfig(childComplexity), true
+
+	case "ApiExposureInfo.basePath":
+		if e.ComplexityRoot.ApiExposureInfo.BasePath == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposureInfo.BasePath(childComplexity), true
+
+	case "ApiExposureInfo.features":
+		if e.ComplexityRoot.ApiExposureInfo.Features == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposureInfo.Features(childComplexity), true
+
+	case "ApiExposureInfo.id":
+		if e.ComplexityRoot.ApiExposureInfo.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposureInfo.ID(childComplexity), true
+
+	case "ApiExposureInfo.ownerApplicationName":
+		if e.ComplexityRoot.ApiExposureInfo.OwnerApplicationName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposureInfo.OwnerApplicationName(childComplexity), true
+
+	case "ApiExposureInfo.ownerTeam":
+		if e.ComplexityRoot.ApiExposureInfo.OwnerTeam == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposureInfo.OwnerTeam(childComplexity), true
+
+	case "ApiExposureInfo.visibility":
+		if e.ComplexityRoot.ApiExposureInfo.Visibility == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposureInfo.Visibility(childComplexity), true
 
 	case "ApiSubscription.approval":
 		if e.ComplexityRoot.ApiSubscription.Approval == nil {
@@ -573,6 +657,48 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscriptionEdge.Node(childComplexity), true
+
+	case "ApiSubscriptionInfo.basePath":
+		if e.ComplexityRoot.ApiSubscriptionInfo.BasePath == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscriptionInfo.BasePath(childComplexity), true
+
+	case "ApiSubscriptionInfo.id":
+		if e.ComplexityRoot.ApiSubscriptionInfo.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscriptionInfo.ID(childComplexity), true
+
+	case "ApiSubscriptionInfo.ownerApplicationName":
+		if e.ComplexityRoot.ApiSubscriptionInfo.OwnerApplicationName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscriptionInfo.OwnerApplicationName(childComplexity), true
+
+	case "ApiSubscriptionInfo.ownerTeam":
+		if e.ComplexityRoot.ApiSubscriptionInfo.OwnerTeam == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscriptionInfo.OwnerTeam(childComplexity), true
+
+	case "ApiSubscriptionInfo.statusMessage":
+		if e.ComplexityRoot.ApiSubscriptionInfo.StatusMessage == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscriptionInfo.StatusMessage(childComplexity), true
+
+	case "ApiSubscriptionInfo.statusPhase":
+		if e.ComplexityRoot.ApiSubscriptionInfo.StatusPhase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscriptionInfo.StatusPhase(childComplexity), true
 
 	case "Application.clientID":
 		if e.ComplexityRoot.Application.ClientID == nil {
@@ -1605,37 +1731,6 @@ type ApiExposure implements Node {
   approvalConfig: ApprovalConfig!
   apiVersion: String
   owner: Application!
-  subscriptions(
-    """
-    Returns the elements in the list that come after the specified cursor.
-    """
-    after: Cursor
-
-    """
-    Returns the first _n_ elements from the list.
-    """
-    first: Int
-
-    """
-    Returns the elements in the list that come before the specified cursor.
-    """
-    before: Cursor
-
-    """
-    Returns the last _n_ elements from the list.
-    """
-    last: Int
-
-    """
-    Ordering options for ApiSubscriptions returned from the connection.
-    """
-    orderBy: ApiSubscriptionOrder
-
-    """
-    Filtering options for ApiSubscriptions returned from the connection.
-    """
-    where: ApiSubscriptionWhereInput
-  ): ApiSubscriptionConnection!
 }
 """
 A connection to a list of items.
@@ -1837,7 +1932,6 @@ type ApiSubscription implements Node {
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
   approvedScopes: [String!]!
   owner: Application!
-  target: ApiExposure!
   failoverZones: [Zone!]
   approval: Approval
   approvalRequest: ApprovalRequest
@@ -2308,7 +2402,6 @@ type Approval implements Node {
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]!
   state: ApprovalState!
-  apiSubscription: ApiSubscription
 }
 """
 A connection to a list of items.
@@ -2373,7 +2466,6 @@ type ApprovalRequest implements Node {
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]!
   state: ApprovalRequestState!
-  apiSubscription: ApiSubscription
 }
 """
 A connection to a list of items.
@@ -3579,9 +3671,62 @@ enum ApprovalAction {
   RESUME
 }
 
+# -- Cross-tenant reduced types --
+# These types terminate graph traversal at tenant boundaries.
+# They expose only safe scalar fields and the owning team/application name.
+
+"Reduced API exposure for cross-tenant contexts (e.g., subscription target)."
+type ApiExposureInfo {
+  id: ID!
+  basePath: String!
+  visibility: ApiExposureVisibility!
+  active: Boolean!
+  apiVersion: String
+  features: [ApiExposureFeature!]!
+  approvalConfig: ApprovalConfig!
+  "Application name that owns this exposure"
+  ownerApplicationName: String!
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
+"Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
+type ApiSubscriptionInfo {
+  id: ID!
+  basePath: String!
+  statusPhase: ApiSubscriptionStatusPhase!
+  statusMessage: String
+  "Application name that owns this subscription"
+  ownerApplicationName: String!
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
+# -- Cross-tenant edge overrides --
+
 extend type Application {
   "Owning team (reduced view for cross-tenant safety)"
   ownerTeam: TeamInfo!
+}
+
+extend type ApiSubscription {
+  "Target exposure (reduced view — cross-tenant boundary)"
+  target: ApiExposureInfo! @goField(forceResolver: true)
+}
+
+extend type ApiExposure {
+  "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
+  subscriptions: [ApiSubscriptionInfo!]! @goField(forceResolver: true)
+}
+
+extend type Approval {
+  "Related subscription (reduced view — cross-tenant boundary)"
+  apiSubscription: ApiSubscriptionInfo @goField(forceResolver: true)
+}
+
+extend type ApprovalRequest {
+  "Related subscription (reduced view — cross-tenant boundary)"
+  apiSubscription: ApiSubscriptionInfo @goField(forceResolver: true)
 }
 
 `, BuiltIn: false},

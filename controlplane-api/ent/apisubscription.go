@@ -63,7 +63,7 @@ type ApiSubscriptionEdges struct {
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [5]bool
 	// totalCount holds the count of the edges above.
-	totalCount [5]map[string]int
+	totalCount [4]map[string]int
 
 	namedFailoverZones map[string][]*Zone
 }

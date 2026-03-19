@@ -12,10 +12,82 @@ import (
 	"context"
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
+	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 )
+
+// Subscriptions is the resolver for the subscriptions field.
+// Returns reduced ApiSubscriptionInfo types for cross-tenant safety.
+func (r *apiExposureResolver) Subscriptions(ctx context.Context, obj *ent.ApiExposure) ([]*model.ApiSubscriptionInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+	subs, err := obj.QuerySubscriptions().
+		WithOwner(func(q *ent.ApplicationQuery) {
+			q.WithOwnerTeam(func(q *ent.TeamQuery) {
+				q.WithGroup()
+			})
+		}).
+		All(sysCtx)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*model.ApiSubscriptionInfo, len(subs))
+	for i, sub := range subs {
+		app := sub.Edges.Owner
+		team := app.Edges.OwnerTeam
+		group, _ := team.Edges.GroupOrErr()
+		result[i] = mapApiSubscriptionInfo(sub, app, team, group)
+	}
+	return result, nil
+}
+
+// Visibility is the resolver for the visibility field.
+func (r *apiExposureInfoResolver) Visibility(ctx context.Context, obj *model.ApiExposureInfo) (apiexposure.Visibility, error) {
+	return apiexposure.Visibility(obj.Visibility), nil
+}
+
+// Features is the resolver for the features field.
+func (r *apiExposureInfoResolver) Features(ctx context.Context, obj *model.ApiExposureInfo) ([]model.APIExposureFeature, error) {
+	result := make([]model.APIExposureFeature, len(obj.Features))
+	for i, f := range obj.Features {
+		result[i] = model.APIExposureFeature(f)
+	}
+	return result, nil
+}
+
+// Target is the resolver for the target field.
+// Returns reduced ApiExposureInfo type for cross-tenant safety.
+func (r *apiSubscriptionResolver) Target(ctx context.Context, obj *ent.ApiSubscription) (*model.ApiExposureInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+
+	exposure, err := obj.Edges.TargetOrErr()
+	if ent.IsNotLoaded(err) {
+		exposure, err = obj.QueryTarget().Only(sysCtx)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	app, err := exposure.QueryOwner().Only(sysCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	team, err := app.QueryOwnerTeam().Only(sysCtx)
+	if err != nil {
+		return nil, err
+	}
+	group, _ := team.QueryGroup().Only(sysCtx)
+
+	return mapApiExposureInfo(exposure, app, team, group), nil
+}
+
+// StatusPhase is the resolver for the statusPhase field.
+func (r *apiSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *model.ApiSubscriptionInfo) (apisubscription.StatusPhase, error) {
+	return apisubscription.StatusPhase(obj.StatusPhase), nil
+}
 
 // OwnerTeam is the resolver for the ownerTeam field.
 func (r *applicationResolver) OwnerTeam(ctx context.Context, obj *ent.Application) (*model.TeamInfo, error) {
@@ -32,27 +104,74 @@ func (r *applicationResolver) OwnerTeam(ctx context.Context, obj *ent.Applicatio
 	if ent.IsNotLoaded(err) {
 		group, err = team.QueryGroup().Only(sysCtx)
 	}
-	groupName := ""
-	if err == nil && group != nil {
-		groupName = group.Name
+	if err != nil {
+		group = nil
 	}
 
-	var email *string
-	if team.Email != "" {
-		email = &team.Email
+	return mapTeamInfo(team, group), nil
+}
+
+// APISubscription is the resolver for the apiSubscription field.
+// Returns reduced ApiSubscriptionInfo type for cross-tenant safety.
+func (r *approvalResolver) APISubscription(ctx context.Context, obj *ent.Approval) (*model.ApiSubscriptionInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+
+	sub, err := obj.Edges.APISubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		sub, err = obj.QueryAPISubscription().Only(sysCtx)
+	}
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
 	}
 
-	return &model.TeamInfo{
-		ID:        team.ID,
-		Name:      team.Name,
-		GroupName: groupName,
-		Email:     email,
-	}, nil
+	app, err := sub.QueryOwner().Only(sysCtx)
+	if err != nil {
+		return nil, err
+	}
+	team, err := app.QueryOwnerTeam().Only(sysCtx)
+	if err != nil {
+		return nil, err
+	}
+	group, _ := team.QueryGroup().Only(sysCtx)
+
+	return mapApiSubscriptionInfo(sub, app, team, group), nil
 }
 
 // Strategy is the resolver for the strategy field.
 func (r *approvalConfigResolver) Strategy(ctx context.Context, obj *model.ApprovalConfig) (approval.Strategy, error) {
 	return approval.Strategy(obj.Strategy), nil
+}
+
+// APISubscription is the resolver for the apiSubscription field.
+// Returns reduced ApiSubscriptionInfo type for cross-tenant safety.
+func (r *approvalRequestResolver) APISubscription(ctx context.Context, obj *ent.ApprovalRequest) (*model.ApiSubscriptionInfo, error) {
+	sysCtx := viewer.SystemContext(ctx)
+
+	sub, err := obj.Edges.APISubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		sub, err = obj.QueryAPISubscription().Only(sysCtx)
+	}
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	app, err := sub.QueryOwner().Only(sysCtx)
+	if err != nil {
+		return nil, err
+	}
+	team, err := app.QueryOwnerTeam().Only(sysCtx)
+	if err != nil {
+		return nil, err
+	}
+	group, _ := team.QueryGroup().Only(sysCtx)
+
+	return mapApiSubscriptionInfo(sub, app, team, group), nil
 }
 
 // Action is the resolver for the action field.
@@ -74,6 +193,14 @@ func (r *decisionResolver) ResultingState(ctx context.Context, obj *model.Decisi
 	return &s, nil
 }
 
+// ApiExposureInfo returns ApiExposureInfoResolver implementation.
+func (r *Resolver) ApiExposureInfo() ApiExposureInfoResolver { return &apiExposureInfoResolver{r} }
+
+// ApiSubscriptionInfo returns ApiSubscriptionInfoResolver implementation.
+func (r *Resolver) ApiSubscriptionInfo() ApiSubscriptionInfoResolver {
+	return &apiSubscriptionInfoResolver{r}
+}
+
 // ApprovalConfig returns ApprovalConfigResolver implementation.
 func (r *Resolver) ApprovalConfig() ApprovalConfigResolver { return &approvalConfigResolver{r} }
 
@@ -85,6 +212,8 @@ func (r *Resolver) AvailableTransition() AvailableTransitionResolver {
 // Decision returns DecisionResolver implementation.
 func (r *Resolver) Decision() DecisionResolver { return &decisionResolver{r} }
 
+type apiExposureInfoResolver struct{ *Resolver }
+type apiSubscriptionInfoResolver struct{ *Resolver }
 type approvalConfigResolver struct{ *Resolver }
 type availableTransitionResolver struct{ *Resolver }
 type decisionResolver struct{ *Resolver }

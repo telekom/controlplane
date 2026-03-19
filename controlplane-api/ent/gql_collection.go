@@ -58,95 +58,6 @@ func (_q *ApiExposureQuery) collectField(ctx context.Context, oneNode bool, opCt
 				return err
 			}
 			_q.withOwner = query
-
-		case "subscriptions":
-			var (
-				alias = field.Alias
-				path  = append(path, alias)
-				query = (&ApiSubscriptionClient{config: _q.config}).Query()
-			)
-			args := newApiSubscriptionPaginateArgs(fieldArgs(ctx, new(ApiSubscriptionWhereInput), path...))
-			if err := validateFirstLast(args.first, args.last); err != nil {
-				return fmt.Errorf("validate first and last in path %q: %w", path, err)
-			}
-			pager, err := newApiSubscriptionPager(args.opts, args.last != nil)
-			if err != nil {
-				return fmt.Errorf("create new pager in path %q: %w", path, err)
-			}
-			if query, err = pager.applyFilter(query); err != nil {
-				return err
-			}
-			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
-			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
-				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
-				if hasPagination || ignoredEdges {
-					query := query.Clone()
-					_q.loadTotal = append(_q.loadTotal, func(ctx context.Context, nodes []*ApiExposure) error {
-						ids := make([]driver.Value, len(nodes))
-						for i := range nodes {
-							ids[i] = nodes[i].ID
-						}
-						var v []struct {
-							NodeID int `sql:"api_subscription_target"`
-							Count  int `sql:"count"`
-						}
-						query.Where(func(s *sql.Selector) {
-							s.Where(sql.InValues(s.C(apiexposure.SubscriptionsColumn), ids...))
-						})
-						if err := query.GroupBy(apiexposure.SubscriptionsColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
-							return err
-						}
-						m := make(map[int]int, len(v))
-						for i := range v {
-							m[v[i].NodeID] = v[i].Count
-						}
-						for i := range nodes {
-							n := m[nodes[i].ID]
-							if nodes[i].Edges.totalCount[1] == nil {
-								nodes[i].Edges.totalCount[1] = make(map[string]int)
-							}
-							nodes[i].Edges.totalCount[1][alias] = n
-						}
-						return nil
-					})
-				} else {
-					_q.loadTotal = append(_q.loadTotal, func(_ context.Context, nodes []*ApiExposure) error {
-						for i := range nodes {
-							n := len(nodes[i].Edges.Subscriptions)
-							if nodes[i].Edges.totalCount[1] == nil {
-								nodes[i].Edges.totalCount[1] = make(map[string]int)
-							}
-							nodes[i].Edges.totalCount[1][alias] = n
-						}
-						return nil
-					})
-				}
-			}
-			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
-				continue
-			}
-			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
-				return err
-			}
-			path = append(path, edgesField, nodeField)
-			if field := collectedField(ctx, path...); field != nil {
-				if err := query.collectField(ctx, false, opCtx, *field, path, mayAddCondition(satisfies, apisubscriptionImplementors)...); err != nil {
-					return err
-				}
-			}
-			if limit := paginateLimit(args.first, args.last); limit > 0 {
-				if oneNode {
-					pager.applyOrder(query.Limit(limit))
-				} else {
-					modify := entgql.LimitPerRow(apiexposure.SubscriptionsColumn, limit, pager.orderExpr(query))
-					query.modifiers = append(query.modifiers, modify)
-				}
-			} else {
-				query = pager.applyOrder(query)
-			}
-			_q.WithNamedSubscriptions(alias, func(wq *ApiSubscriptionQuery) {
-				*wq = *query
-			})
 		case "createdAt":
 			if _, ok := fieldSeen[apiexposure.FieldCreatedAt]; !ok {
 				selectedFields = append(selectedFields, apiexposure.FieldCreatedAt)
@@ -297,17 +208,6 @@ func (_q *ApiSubscriptionQuery) collectField(ctx context.Context, oneNode bool, 
 				return err
 			}
 			_q.withOwner = query
-
-		case "target":
-			var (
-				alias = field.Alias
-				path  = append(path, alias)
-				query = (&ApiExposureClient{config: _q.config}).Query()
-			)
-			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, apiexposureImplementors)...); err != nil {
-				return err
-			}
-			_q.withTarget = query
 
 		case "failoverZones":
 			var (
@@ -776,17 +676,6 @@ func (_q *ApprovalQuery) collectField(ctx context.Context, oneNode bool, opCtx *
 	)
 	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
-
-		case "apiSubscription":
-			var (
-				alias = field.Alias
-				path  = append(path, alias)
-				query = (&ApiSubscriptionClient{config: _q.config}).Query()
-			)
-			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, apisubscriptionImplementors)...); err != nil {
-				return err
-			}
-			_q.withAPISubscription = query
 		case "createdAt":
 			if _, ok := fieldSeen[approval.FieldCreatedAt]; !ok {
 				selectedFields = append(selectedFields, approval.FieldCreatedAt)
@@ -932,17 +821,6 @@ func (_q *ApprovalRequestQuery) collectField(ctx context.Context, oneNode bool, 
 	)
 	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
-
-		case "apiSubscription":
-			var (
-				alias = field.Alias
-				path  = append(path, alias)
-				query = (&ApiSubscriptionClient{config: _q.config}).Query()
-			)
-			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, apisubscriptionImplementors)...); err != nil {
-				return err
-			}
-			_q.withAPISubscription = query
 		case "createdAt":
 			if _, ok := fieldSeen[approvalrequest.FieldCreatedAt]; !ok {
 				selectedFields = append(selectedFields, approvalrequest.FieldCreatedAt)

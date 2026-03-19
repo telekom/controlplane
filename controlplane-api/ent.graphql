@@ -17,37 +17,6 @@ type ApiExposure implements Node {
   approvalConfig: ApprovalConfig!
   apiVersion: String
   owner: Application!
-  subscriptions(
-    """
-    Returns the elements in the list that come after the specified cursor.
-    """
-    after: Cursor
-
-    """
-    Returns the first _n_ elements from the list.
-    """
-    first: Int
-
-    """
-    Returns the elements in the list that come before the specified cursor.
-    """
-    before: Cursor
-
-    """
-    Returns the last _n_ elements from the list.
-    """
-    last: Int
-
-    """
-    Ordering options for ApiSubscriptions returned from the connection.
-    """
-    orderBy: ApiSubscriptionOrder
-
-    """
-    Filtering options for ApiSubscriptions returned from the connection.
-    """
-    where: ApiSubscriptionWhereInput
-  ): ApiSubscriptionConnection!
 }
 """
 A connection to a list of items.
@@ -249,7 +218,6 @@ type ApiSubscription implements Node {
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
   approvedScopes: [String!]!
   owner: Application!
-  target: ApiExposure!
   failoverZones: [Zone!]
   approval: Approval
   approvalRequest: ApprovalRequest
@@ -720,7 +688,6 @@ type Approval implements Node {
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]!
   state: ApprovalState!
-  apiSubscription: ApiSubscription
 }
 """
 A connection to a list of items.
@@ -785,7 +752,6 @@ type ApprovalRequest implements Node {
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]!
   state: ApprovalRequestState!
-  apiSubscription: ApiSubscription
 }
 """
 A connection to a list of items.

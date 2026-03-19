@@ -19,39 +19,10 @@ func (_m *ApiExposure) Owner(ctx context.Context) (*Application, error) {
 	return result, err
 }
 
-func (_m *ApiExposure) Subscriptions(
-	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy *ApiSubscriptionOrder, where *ApiSubscriptionWhereInput,
-) (*ApiSubscriptionConnection, error) {
-	opts := []ApiSubscriptionPaginateOption{
-		WithApiSubscriptionOrder(orderBy),
-		WithApiSubscriptionFilter(where.Filter),
-	}
-	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[1][alias]
-	if nodes, err := _m.NamedSubscriptions(alias); err == nil || hasTotalCount {
-		pager, err := newApiSubscriptionPager(opts, last != nil)
-		if err != nil {
-			return nil, err
-		}
-		conn := &ApiSubscriptionConnection{Edges: []*ApiSubscriptionEdge{}, TotalCount: totalCount}
-		conn.build(nodes, pager, after, first, before, last)
-		return conn, nil
-	}
-	return _m.QuerySubscriptions().Paginate(ctx, after, first, before, last, opts...)
-}
-
 func (_m *ApiSubscription) Owner(ctx context.Context) (*Application, error) {
 	result, err := _m.Edges.OwnerOrErr()
 	if IsNotLoaded(err) {
 		result, err = _m.QueryOwner().Only(ctx)
-	}
-	return result, err
-}
-
-func (_m *ApiSubscription) Target(ctx context.Context) (*ApiExposure, error) {
-	result, err := _m.Edges.TargetOrErr()
-	if IsNotLoaded(err) {
-		result, err = _m.QueryTarget().Only(ctx)
 	}
 	return result, err
 }
@@ -132,22 +103,6 @@ func (_m *Application) SubscribedApis(
 		return conn, nil
 	}
 	return _m.QuerySubscribedApis().Paginate(ctx, after, first, before, last, opts...)
-}
-
-func (_m *Approval) APISubscription(ctx context.Context) (*ApiSubscription, error) {
-	result, err := _m.Edges.APISubscriptionOrErr()
-	if IsNotLoaded(err) {
-		result, err = _m.QueryAPISubscription().Only(ctx)
-	}
-	return result, MaskNotFound(err)
-}
-
-func (_m *ApprovalRequest) APISubscription(ctx context.Context) (*ApiSubscription, error) {
-	result, err := _m.Edges.APISubscriptionOrErr()
-	if IsNotLoaded(err) {
-		result, err = _m.QueryAPISubscription().Only(ctx)
-	}
-	return result, MaskNotFound(err)
 }
 
 func (_m *Environment) TeamEnvironments(ctx context.Context) (result []*TeamEnvironment, err error) {

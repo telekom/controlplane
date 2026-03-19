@@ -31,9 +31,20 @@ import (
 
 type ApiExposureResolver interface {
 	Features(ctx context.Context, obj *ent.ApiExposure) ([]model.APIExposureFeature, error)
+
+	Subscriptions(ctx context.Context, obj *ent.ApiExposure) ([]*model.ApiSubscriptionInfo, error)
+}
+type ApiSubscriptionResolver interface {
+	Target(ctx context.Context, obj *ent.ApiSubscription) (*model.ApiExposureInfo, error)
 }
 type ApplicationResolver interface {
 	OwnerTeam(ctx context.Context, obj *ent.Application) (*model.TeamInfo, error)
+}
+type ApprovalResolver interface {
+	APISubscription(ctx context.Context, obj *ent.Approval) (*model.ApiSubscriptionInfo, error)
+}
+type ApprovalRequestResolver interface {
+	APISubscription(ctx context.Context, obj *ent.ApprovalRequest) (*model.ApiSubscriptionInfo, error)
 }
 type QueryResolver interface {
 	Node(ctx context.Context, id int) (ent.Noder, error)
@@ -50,42 +61,6 @@ type QueryResolver interface {
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
-
-func (ec *executionContext) field_ApiExposure_subscriptions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
-	if err != nil {
-		return nil, err
-	}
-	args["after"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalOInt2ᚖint)
-	if err != nil {
-		return nil, err
-	}
-	args["first"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "before", ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor)
-	if err != nil {
-		return nil, err
-	}
-	args["before"] = arg2
-	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "last", ec.unmarshalOInt2ᚖint)
-	if err != nil {
-		return nil, err
-	}
-	args["last"] = arg3
-	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "orderBy", ec.unmarshalOApiSubscriptionOrder2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApiSubscriptionOrder)
-	if err != nil {
-		return nil, err
-	}
-	args["orderBy"] = arg4
-	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "where", ec.unmarshalOApiSubscriptionWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApiSubscriptionWhereInput)
-	if err != nil {
-		return nil, err
-	}
-	args["where"] = arg5
-	return args, nil
-}
 
 func (ec *executionContext) field_Application_exposedApis_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -874,44 +849,38 @@ func (ec *executionContext) _ApiExposure_subscriptions(ctx context.Context, fiel
 		field,
 		ec.fieldContext_ApiExposure_subscriptions,
 		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return obj.Subscriptions(ctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.ApiSubscriptionOrder), fc.Args["where"].(*ent.ApiSubscriptionWhereInput))
+			return ec.Resolvers.ApiExposure().Subscriptions(ctx, obj)
 		},
 		nil,
-		ec.marshalNApiSubscriptionConnection2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApiSubscriptionConnection,
+		ec.marshalNApiSubscriptionInfo2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfoᚄ,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_ApiExposure_subscriptions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ApiExposure_subscriptions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ApiExposure",
 		Field:      field,
 		IsMethod:   true,
-		IsResolver: false,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "edges":
-				return ec.fieldContext_ApiSubscriptionConnection_edges(ctx, field)
-			case "pageInfo":
-				return ec.fieldContext_ApiSubscriptionConnection_pageInfo(ctx, field)
-			case "totalCount":
-				return ec.fieldContext_ApiSubscriptionConnection_totalCount(ctx, field)
+			case "id":
+				return ec.fieldContext_ApiSubscriptionInfo_id(ctx, field)
+			case "basePath":
+				return ec.fieldContext_ApiSubscriptionInfo_basePath(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_ApiSubscriptionInfo_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_ApiSubscriptionInfo_statusMessage(ctx, field)
+			case "ownerApplicationName":
+				return ec.fieldContext_ApiSubscriptionInfo_ownerApplicationName(ctx, field)
+			case "ownerTeam":
+				return ec.fieldContext_ApiSubscriptionInfo_ownerTeam(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionConnection", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionInfo", field.Name)
 		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_ApiExposure_subscriptions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
 	}
 	return fc, nil
 }
@@ -1394,65 +1363,6 @@ func (ec *executionContext) fieldContext_ApiSubscription_owner(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _ApiSubscription_target(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ApiSubscription_target,
-		func(ctx context.Context) (any, error) {
-			return obj.Target(ctx)
-		},
-		nil,
-		ec.marshalNApiExposure2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApiExposure,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ApiSubscription_target(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ApiSubscription",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_ApiExposure_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_ApiExposure_createdAt(ctx, field)
-			case "lastModifiedAt":
-				return ec.fieldContext_ApiExposure_lastModifiedAt(ctx, field)
-			case "statusPhase":
-				return ec.fieldContext_ApiExposure_statusPhase(ctx, field)
-			case "statusMessage":
-				return ec.fieldContext_ApiExposure_statusMessage(ctx, field)
-			case "basePath":
-				return ec.fieldContext_ApiExposure_basePath(ctx, field)
-			case "visibility":
-				return ec.fieldContext_ApiExposure_visibility(ctx, field)
-			case "active":
-				return ec.fieldContext_ApiExposure_active(ctx, field)
-			case "features":
-				return ec.fieldContext_ApiExposure_features(ctx, field)
-			case "upstreams":
-				return ec.fieldContext_ApiExposure_upstreams(ctx, field)
-			case "approvalConfig":
-				return ec.fieldContext_ApiExposure_approvalConfig(ctx, field)
-			case "apiVersion":
-				return ec.fieldContext_ApiExposure_apiVersion(ctx, field)
-			case "owner":
-				return ec.fieldContext_ApiExposure_owner(ctx, field)
-			case "subscriptions":
-				return ec.fieldContext_ApiExposure_subscriptions(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ApiExposure", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _ApiSubscription_failoverZones(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1608,6 +1518,55 @@ func (ec *executionContext) fieldContext_ApiSubscription_approvalRequest(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _ApiSubscription_target(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiSubscription_target,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.ApiSubscription().Target(ctx, obj)
+		},
+		nil,
+		ec.marshalNApiExposureInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiExposureInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiSubscription_target(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiSubscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ApiExposureInfo_id(ctx, field)
+			case "basePath":
+				return ec.fieldContext_ApiExposureInfo_basePath(ctx, field)
+			case "visibility":
+				return ec.fieldContext_ApiExposureInfo_visibility(ctx, field)
+			case "active":
+				return ec.fieldContext_ApiExposureInfo_active(ctx, field)
+			case "apiVersion":
+				return ec.fieldContext_ApiExposureInfo_apiVersion(ctx, field)
+			case "features":
+				return ec.fieldContext_ApiExposureInfo_features(ctx, field)
+			case "approvalConfig":
+				return ec.fieldContext_ApiExposureInfo_approvalConfig(ctx, field)
+			case "ownerApplicationName":
+				return ec.fieldContext_ApiExposureInfo_ownerApplicationName(ctx, field)
+			case "ownerTeam":
+				return ec.fieldContext_ApiExposureInfo_ownerTeam(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ApiExposureInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ApiSubscriptionConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscriptionConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1753,14 +1712,14 @@ func (ec *executionContext) fieldContext_ApiSubscriptionEdge_node(_ context.Cont
 				return ec.fieldContext_ApiSubscription_approvedScopes(ctx, field)
 			case "owner":
 				return ec.fieldContext_ApiSubscription_owner(ctx, field)
-			case "target":
-				return ec.fieldContext_ApiSubscription_target(ctx, field)
 			case "failoverZones":
 				return ec.fieldContext_ApiSubscription_failoverZones(ctx, field)
 			case "approval":
 				return ec.fieldContext_ApiSubscription_approval(ctx, field)
 			case "approvalRequest":
 				return ec.fieldContext_ApiSubscription_approvalRequest(ctx, field)
+			case "target":
+				return ec.fieldContext_ApiSubscription_target(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ApiSubscription", field.Name)
 		},
@@ -2783,10 +2742,10 @@ func (ec *executionContext) _Approval_apiSubscription(ctx context.Context, field
 		field,
 		ec.fieldContext_Approval_apiSubscription,
 		func(ctx context.Context) (any, error) {
-			return obj.APISubscription(ctx)
+			return ec.Resolvers.Approval().APISubscription(ctx, obj)
 		},
 		nil,
-		ec.marshalOApiSubscription2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApiSubscription,
+		ec.marshalOApiSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfo,
 		true,
 		false,
 	)
@@ -2797,37 +2756,23 @@ func (ec *executionContext) fieldContext_Approval_apiSubscription(_ context.Cont
 		Object:     "Approval",
 		Field:      field,
 		IsMethod:   true,
-		IsResolver: false,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_ApiSubscription_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_ApiSubscription_createdAt(ctx, field)
-			case "lastModifiedAt":
-				return ec.fieldContext_ApiSubscription_lastModifiedAt(ctx, field)
-			case "statusPhase":
-				return ec.fieldContext_ApiSubscription_statusPhase(ctx, field)
-			case "statusMessage":
-				return ec.fieldContext_ApiSubscription_statusMessage(ctx, field)
+				return ec.fieldContext_ApiSubscriptionInfo_id(ctx, field)
 			case "basePath":
-				return ec.fieldContext_ApiSubscription_basePath(ctx, field)
-			case "m2mAuthMethod":
-				return ec.fieldContext_ApiSubscription_m2mAuthMethod(ctx, field)
-			case "approvedScopes":
-				return ec.fieldContext_ApiSubscription_approvedScopes(ctx, field)
-			case "owner":
-				return ec.fieldContext_ApiSubscription_owner(ctx, field)
-			case "target":
-				return ec.fieldContext_ApiSubscription_target(ctx, field)
-			case "failoverZones":
-				return ec.fieldContext_ApiSubscription_failoverZones(ctx, field)
-			case "approval":
-				return ec.fieldContext_ApiSubscription_approval(ctx, field)
-			case "approvalRequest":
-				return ec.fieldContext_ApiSubscription_approvalRequest(ctx, field)
+				return ec.fieldContext_ApiSubscriptionInfo_basePath(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_ApiSubscriptionInfo_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_ApiSubscriptionInfo_statusMessage(ctx, field)
+			case "ownerApplicationName":
+				return ec.fieldContext_ApiSubscriptionInfo_ownerApplicationName(ctx, field)
+			case "ownerTeam":
+				return ec.fieldContext_ApiSubscriptionInfo_ownerTeam(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type ApiSubscription", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionInfo", field.Name)
 		},
 	}
 	return fc, nil
@@ -3411,10 +3356,10 @@ func (ec *executionContext) _ApprovalRequest_apiSubscription(ctx context.Context
 		field,
 		ec.fieldContext_ApprovalRequest_apiSubscription,
 		func(ctx context.Context) (any, error) {
-			return obj.APISubscription(ctx)
+			return ec.Resolvers.ApprovalRequest().APISubscription(ctx, obj)
 		},
 		nil,
-		ec.marshalOApiSubscription2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApiSubscription,
+		ec.marshalOApiSubscriptionInfo2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApiSubscriptionInfo,
 		true,
 		false,
 	)
@@ -3425,37 +3370,23 @@ func (ec *executionContext) fieldContext_ApprovalRequest_apiSubscription(_ conte
 		Object:     "ApprovalRequest",
 		Field:      field,
 		IsMethod:   true,
-		IsResolver: false,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_ApiSubscription_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_ApiSubscription_createdAt(ctx, field)
-			case "lastModifiedAt":
-				return ec.fieldContext_ApiSubscription_lastModifiedAt(ctx, field)
-			case "statusPhase":
-				return ec.fieldContext_ApiSubscription_statusPhase(ctx, field)
-			case "statusMessage":
-				return ec.fieldContext_ApiSubscription_statusMessage(ctx, field)
+				return ec.fieldContext_ApiSubscriptionInfo_id(ctx, field)
 			case "basePath":
-				return ec.fieldContext_ApiSubscription_basePath(ctx, field)
-			case "m2mAuthMethod":
-				return ec.fieldContext_ApiSubscription_m2mAuthMethod(ctx, field)
-			case "approvedScopes":
-				return ec.fieldContext_ApiSubscription_approvedScopes(ctx, field)
-			case "owner":
-				return ec.fieldContext_ApiSubscription_owner(ctx, field)
-			case "target":
-				return ec.fieldContext_ApiSubscription_target(ctx, field)
-			case "failoverZones":
-				return ec.fieldContext_ApiSubscription_failoverZones(ctx, field)
-			case "approval":
-				return ec.fieldContext_ApiSubscription_approval(ctx, field)
-			case "approvalRequest":
-				return ec.fieldContext_ApiSubscription_approvalRequest(ctx, field)
+				return ec.fieldContext_ApiSubscriptionInfo_basePath(ctx, field)
+			case "statusPhase":
+				return ec.fieldContext_ApiSubscriptionInfo_statusPhase(ctx, field)
+			case "statusMessage":
+				return ec.fieldContext_ApiSubscriptionInfo_statusMessage(ctx, field)
+			case "ownerApplicationName":
+				return ec.fieldContext_ApiSubscriptionInfo_ownerApplicationName(ctx, field)
+			case "ownerTeam":
+				return ec.fieldContext_ApiSubscriptionInfo_ownerTeam(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type ApiSubscription", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ApiSubscriptionInfo", field.Name)
 		},
 	}
 	return fc, nil
@@ -11212,42 +11143,6 @@ func (ec *executionContext) _ApiSubscription(ctx context.Context, sel ast.Select
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "target":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._ApiSubscription_target(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "failoverZones":
 			field := field
 
@@ -11324,6 +11219,42 @@ func (ec *executionContext) _ApiSubscription(ctx context.Context, sel ast.Select
 					}
 				}()
 				res = ec._ApiSubscription_approvalRequest(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "target":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ApiSubscription_target(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
@@ -13210,16 +13141,6 @@ func (ec *executionContext) _Zone(ctx context.Context, sel ast.SelectionSet, obj
 // endregion **************************** object.gotpl ****************************
 
 // region    ***************************** type.gotpl *****************************
-
-func (ec *executionContext) marshalNApiExposure2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApiExposure(ctx context.Context, sel ast.SelectionSet, v *ent.ApiExposure) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._ApiExposure(ctx, sel, v)
-}
 
 func (ec *executionContext) marshalNApiExposureConnection2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐApiExposureConnection(ctx context.Context, sel ast.SelectionSet, v ent.ApiExposureConnection) graphql.Marshaler {
 	return ec._ApiExposureConnection(ctx, sel, &v)

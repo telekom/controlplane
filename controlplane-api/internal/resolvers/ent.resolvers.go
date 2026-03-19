@@ -10,7 +10,6 @@ package resolvers
 
 import (
 	"context"
-	"fmt"
 
 	"entgo.io/contrib/entgql"
 	"github.com/telekom/controlplane/controlplane-api/ent"
@@ -19,7 +18,11 @@ import (
 
 // Features is the resolver for the features field.
 func (r *apiExposureResolver) Features(ctx context.Context, obj *ent.ApiExposure) ([]model.APIExposureFeature, error) {
-	panic(fmt.Errorf("not implemented: Features - features"))
+	result := make([]model.APIExposureFeature, len(obj.Features))
+	for i, f := range obj.Features {
+		result[i] = model.APIExposureFeature(f)
+	}
+	return result, nil
 }
 
 // Node is the resolver for the node field.
@@ -94,12 +97,24 @@ func (r *queryResolver) Zones(ctx context.Context) ([]*ent.Zone, error) {
 // ApiExposure returns ApiExposureResolver implementation.
 func (r *Resolver) ApiExposure() ApiExposureResolver { return &apiExposureResolver{r} }
 
+// ApiSubscription returns ApiSubscriptionResolver implementation.
+func (r *Resolver) ApiSubscription() ApiSubscriptionResolver { return &apiSubscriptionResolver{r} }
+
 // Application returns ApplicationResolver implementation.
 func (r *Resolver) Application() ApplicationResolver { return &applicationResolver{r} }
+
+// Approval returns ApprovalResolver implementation.
+func (r *Resolver) Approval() ApprovalResolver { return &approvalResolver{r} }
+
+// ApprovalRequest returns ApprovalRequestResolver implementation.
+func (r *Resolver) ApprovalRequest() ApprovalRequestResolver { return &approvalRequestResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type apiExposureResolver struct{ *Resolver }
+type apiSubscriptionResolver struct{ *Resolver }
 type applicationResolver struct{ *Resolver }
+type approvalResolver struct{ *Resolver }
+type approvalRequestResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

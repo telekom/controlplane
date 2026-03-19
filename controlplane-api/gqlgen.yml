@@ -56,3 +56,9 @@ models:
   AvailableTransition:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.AvailableTransition
+  ApiExposureInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApiExposureInfo
+  ApiSubscriptionInfo:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApiSubscriptionInfo

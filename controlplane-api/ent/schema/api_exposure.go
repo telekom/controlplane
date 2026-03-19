@@ -65,7 +65,7 @@ func (ApiExposure) Edges() []ent.Edge {
 			Unique(),
 		edge.From("subscriptions", ApiSubscription.Type).
 			Ref("target").
-			Annotations(entgql.RelayConnection()),
+			Annotations(entgql.Skip(entgql.SkipType)),
 	}
 }
 

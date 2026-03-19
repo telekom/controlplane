@@ -47,7 +47,8 @@ func (Approval) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("api_subscription", ApiSubscription.Type).
 			Ref("approval").
-			Unique(),
+			Unique().
+			Annotations(entgql.Skip(entgql.SkipType)),
 	}
 }
 

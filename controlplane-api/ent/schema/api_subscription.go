@@ -54,7 +54,8 @@ func (ApiSubscription) Edges() []ent.Edge {
 			Unique(),
 		edge.To("target", ApiExposure.Type).
 			Unique().
-			Required(),
+			Required().
+			Annotations(entgql.Skip(entgql.SkipType)),
 		edge.To("failover_zones", Zone.Type),
 		edge.To("approval", Approval.Type).
 			Unique(),

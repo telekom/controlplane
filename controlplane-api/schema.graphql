@@ -72,8 +72,61 @@ enum ApprovalAction {
   RESUME
 }
 
+# -- Cross-tenant reduced types --
+# These types terminate graph traversal at tenant boundaries.
+# They expose only safe scalar fields and the owning team/application name.
+
+"Reduced API exposure for cross-tenant contexts (e.g., subscription target)."
+type ApiExposureInfo {
+  id: ID!
+  basePath: String!
+  visibility: ApiExposureVisibility!
+  active: Boolean!
+  apiVersion: String
+  features: [ApiExposureFeature!]!
+  approvalConfig: ApprovalConfig!
+  "Application name that owns this exposure"
+  ownerApplicationName: String!
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
+"Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
+type ApiSubscriptionInfo {
+  id: ID!
+  basePath: String!
+  statusPhase: ApiSubscriptionStatusPhase!
+  statusMessage: String
+  "Application name that owns this subscription"
+  ownerApplicationName: String!
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
+# -- Cross-tenant edge overrides --
+
 extend type Application {
   "Owning team (reduced view for cross-tenant safety)"
   ownerTeam: TeamInfo!
+}
+
+extend type ApiSubscription {
+  "Target exposure (reduced view — cross-tenant boundary)"
+  target: ApiExposureInfo! @goField(forceResolver: true)
+}
+
+extend type ApiExposure {
+  "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
+  subscriptions: [ApiSubscriptionInfo!]! @goField(forceResolver: true)
+}
+
+extend type Approval {
+  "Related subscription (reduced view — cross-tenant boundary)"
+  apiSubscription: ApiSubscriptionInfo @goField(forceResolver: true)
+}
+
+extend type ApprovalRequest {
+  "Related subscription (reduced view — cross-tenant boundary)"
+  apiSubscription: ApiSubscriptionInfo @goField(forceResolver: true)
 }
 
