@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 
@@ -36,7 +37,9 @@ func NewEntClient(ctx context.Context, databaseURL string) (*ent.Client, error) 
 	if err := client.Schema.Create(ctx,
 		migrate.WithGlobalUniqueID(true),
 	); err != nil {
-		_ = client.Close()
+		if closeErr := client.Close(); closeErr != nil {
+			logr.FromContextOrDiscard(ctx).Error(closeErr, "failed to close database client after migration error")
+		}
 		return nil, fmt.Errorf("running schema migration: %w", err)
 	}
 
