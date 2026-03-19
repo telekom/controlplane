@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	entgroup "github.com/telekom/controlplane/controlplane-api/ent/group"
@@ -37,7 +38,9 @@ func ViewerFromBusinessContext(client *ent.Client) graphql.OperationMiddleware {
 				Where(entteam.HasGroupWith(entgroup.Name(bCtx.Group))).
 				Select(entteam.FieldName).
 				Strings(sysCtx)
-			if err == nil {
+			if err != nil {
+				logr.FromContextOrDiscard(ctx).Error(err, "failed to resolve teams for group", "group", bCtx.Group)
+			} else {
 				v.Teams = teams
 			}
 		case security.ClientTypeTeam:
