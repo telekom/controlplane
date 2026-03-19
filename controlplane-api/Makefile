@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-.PHONY: generate build test fmt vet lint clean
+.PHONY: generate build test fmt vet lint lint-fix clean
 
 BOILERPLATE_GO = ../hack/boilerplate.go.txt
 BOILERPLATE_GRAPHQL = ../hack/boilerplate.yaml.txt
@@ -37,6 +37,9 @@ vet:
 
 lint:
 	golangci-lint run
+
+lint-fix:
+	golangci-lint run --fix
 
 clean:
 	rm -rf bin/
