@@ -12,6 +12,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	"github.com/telekom/controlplane/rover-server/pkg/store"
 	v1 "github.com/telekom/controlplane/rover/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 )
@@ -35,18 +36,18 @@ func MapResponse(ctx context.Context, obj types.Object) (api.ResourceStatusRespo
 	}, nil
 }
 
-// MapApiSpecificationResponse maps the status of an ApiSpecification resource to a ResourceStatusResponse,
+// MapAPISpecificationResponse maps the status of an ApiSpecification resource to a ResourceStatusResponse,
 // including problems from sub-resources when the ApiSpecification itself is not complete.
 // When the ApiSpecification is Complete/Done but any sub-resource has stale conditions,
 // processingState is set to Processing to reflect that the overall pipeline is not yet done.
-func MapApiSpecificationResponse(ctx context.Context, apiSpec *v1.ApiSpecification) (api.ResourceStatusResponse, error) {
+func MapAPISpecificationResponse(ctx context.Context, apiSpec *v1.ApiSpecification, stores *store.Stores) (api.ResourceStatusResponse, error) {
 	if apiSpec == nil {
 		return api.ResourceStatusResponse{}, errors.New("input apiSpec is nil")
 	}
 	status := MapStatus(apiSpec.GetConditions(), apiSpec.GetGeneration())
 
 	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone {
-		stale, err := AnyApiSpecificationSubResourceStale(ctx, apiSpec)
+		stale, err := AnyAPISpecificationSubResourceStale(ctx, apiSpec, stores)
 		if err != nil {
 			return api.ResourceStatusResponse{}, err
 		}
@@ -58,7 +59,7 @@ func MapApiSpecificationResponse(ctx context.Context, apiSpec *v1.ApiSpecificati
 	var problems []api.Problem
 	if status.State != api.Complete {
 		var err error
-		problems, err = GetAllApiSpecificationProblems(ctx, apiSpec)
+		problems, err = GetAllAPISpecificationProblems(ctx, apiSpec, stores)
 		if err != nil {
 			return api.ResourceStatusResponse{}, err
 		}
@@ -84,14 +85,14 @@ func MapApiSpecificationResponse(ctx context.Context, apiSpec *v1.ApiSpecificati
 // including problems from sub-resources when the Rover itself is not complete.
 // When the Rover is Complete/Done but any sub-resource has stale conditions,
 // processingState is set to Processing to reflect that the overall pipeline is not yet done.
-func MapRoverResponse(ctx context.Context, rover *v1.Rover) (api.ResourceStatusResponse, error) {
+func MapRoverResponse(ctx context.Context, rover *v1.Rover, stores *store.Stores) (api.ResourceStatusResponse, error) {
 	if rover == nil {
 		return api.ResourceStatusResponse{}, errors.New("input rover is nil")
 	}
 	status := MapStatus(rover.GetConditions(), rover.GetGeneration())
 
 	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone {
-		stale, err := AnyRoverSubResourceStale(ctx, rover)
+		stale, err := AnyRoverSubResourceStale(ctx, rover, stores)
 		if err != nil {
 			return api.ResourceStatusResponse{}, err
 		}
@@ -103,7 +104,7 @@ func MapRoverResponse(ctx context.Context, rover *v1.Rover) (api.ResourceStatusR
 	var problems []api.Problem
 	if status.State != api.Complete {
 		var err error
-		problems, err = GetAllRoverProblems(ctx, rover)
+		problems, err = GetAllRoverProblems(ctx, rover, stores)
 		if err != nil {
 			return api.ResourceStatusResponse{}, err
 		}
@@ -129,14 +130,14 @@ func MapRoverResponse(ctx context.Context, rover *v1.Rover) (api.ResourceStatusR
 // including problems from sub-resources when the EventSpecification itself is not complete.
 // When the EventSpecification is Complete/Done but any sub-resource has stale conditions,
 // processingState is set to Processing to reflect that the overall pipeline is not yet done.
-func MapEventSpecificationResponse(ctx context.Context, eventSpec *v1.EventSpecification) (api.ResourceStatusResponse, error) {
+func MapEventSpecificationResponse(ctx context.Context, eventSpec *v1.EventSpecification, stores *store.Stores) (api.ResourceStatusResponse, error) {
 	if eventSpec == nil {
 		return api.ResourceStatusResponse{}, errors.New("input eventSpec is nil")
 	}
 	status := MapStatus(eventSpec.GetConditions(), eventSpec.GetGeneration())
 
 	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone {
-		stale, err := AnyEventSpecificationSubResourceStale(ctx, eventSpec)
+		stale, err := AnyEventSpecificationSubResourceStale(ctx, eventSpec, stores)
 		if err != nil {
 			return api.ResourceStatusResponse{}, err
 		}
@@ -148,7 +149,7 @@ func MapEventSpecificationResponse(ctx context.Context, eventSpec *v1.EventSpeci
 	var problems []api.Problem
 	if status.State != api.Complete {
 		var err error
-		problems, err = GetAllEventSpecificationProblems(ctx, eventSpec)
+		problems, err = GetAllEventSpecificationProblems(ctx, eventSpec, stores)
 		if err != nil {
 			return api.ResourceStatusResponse{}, err
 		}

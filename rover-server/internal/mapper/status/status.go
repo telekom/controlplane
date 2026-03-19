@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	"github.com/telekom/controlplane/rover-server/pkg/store"
 )
 
 // Condition reason values. These must stay in sync with the factory functions
@@ -124,11 +125,11 @@ func MapStatus(conditions []metav1.Condition, objectGeneration int64) api.Status
 // When the Rover's own conditions indicate Complete/Done but any sub-resource
 // has stale conditions, processingState is set to Processing to reflect that
 // the overall pipeline is not yet done.
-func MapRoverStatus(ctx context.Context, rover *v1.Rover) (api.Status, error) {
+func MapRoverStatus(ctx context.Context, rover *v1.Rover, stores *store.Stores) (api.Status, error) {
 	status := MapStatus(rover.GetConditions(), rover.GetGeneration())
 
 	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone {
-		stale, err := AnyRoverSubResourceStale(ctx, rover)
+		stale, err := AnyRoverSubResourceStale(ctx, rover, stores)
 		if err != nil {
 			return status, err
 		}
@@ -138,7 +139,7 @@ func MapRoverStatus(ctx context.Context, rover *v1.Rover) (api.Status, error) {
 	}
 
 	if status.State != api.Complete {
-		stateInfos, err := GetAllRoverStateInfos(ctx, rover)
+		stateInfos, err := GetAllRoverStateInfos(ctx, rover, stores)
 		if err != nil {
 			return status, err
 		}
@@ -148,16 +149,16 @@ func MapRoverStatus(ctx context.Context, rover *v1.Rover) (api.Status, error) {
 	return status, nil
 }
 
-// MapApiSpecificationStatus maps the status of an ApiSpecification resource to an api.Status,
+// MapAPISpecificationStatus maps the status of an ApiSpecification resource to an api.Status,
 // including sub-resource error information when the ApiSpecification itself is not complete.
 // When the ApiSpecification's own conditions indicate Complete/Done but any sub-resource
 // has stale conditions, processingState is set to Processing to reflect that
 // the overall pipeline is not yet done.
-func MapApiSpecificationStatus(ctx context.Context, apiSpec *v1.ApiSpecification) (api.Status, error) {
+func MapAPISpecificationStatus(ctx context.Context, apiSpec *v1.ApiSpecification, stores *store.Stores) (api.Status, error) {
 	status := MapStatus(apiSpec.GetConditions(), apiSpec.GetGeneration())
 
 	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone {
-		stale, err := AnyApiSpecificationSubResourceStale(ctx, apiSpec)
+		stale, err := AnyAPISpecificationSubResourceStale(ctx, apiSpec, stores)
 		if err != nil {
 			return status, err
 		}
@@ -167,7 +168,7 @@ func MapApiSpecificationStatus(ctx context.Context, apiSpec *v1.ApiSpecification
 	}
 
 	if status.State != api.Complete {
-		stateInfos, err := GetAllApiSpecificationStateInfos(ctx, apiSpec)
+		stateInfos, err := GetAllAPISpecificationStateInfos(ctx, apiSpec, stores)
 		if err != nil {
 			return status, err
 		}
@@ -182,11 +183,11 @@ func MapApiSpecificationStatus(ctx context.Context, apiSpec *v1.ApiSpecification
 // When the EventSpecification's own conditions indicate Complete/Done but any sub-resource
 // has stale conditions, processingState is set to Processing to reflect that
 // the overall pipeline is not yet done.
-func MapEventSpecificationStatus(ctx context.Context, eventSpec *v1.EventSpecification) (api.Status, error) {
+func MapEventSpecificationStatus(ctx context.Context, eventSpec *v1.EventSpecification, stores *store.Stores) (api.Status, error) {
 	status := MapStatus(eventSpec.GetConditions(), eventSpec.GetGeneration())
 
 	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone {
-		stale, err := AnyEventSpecificationSubResourceStale(ctx, eventSpec)
+		stale, err := AnyEventSpecificationSubResourceStale(ctx, eventSpec, stores)
 		if err != nil {
 			return status, err
 		}
@@ -196,7 +197,7 @@ func MapEventSpecificationStatus(ctx context.Context, eventSpec *v1.EventSpecifi
 	}
 
 	if status.State != api.Complete {
-		stateInfos, err := GetAllEventSpecificationStateInfos(ctx, eventSpec)
+		stateInfos, err := GetAllEventSpecificationStateInfos(ctx, eventSpec, stores)
 		if err != nil {
 			return status, err
 		}

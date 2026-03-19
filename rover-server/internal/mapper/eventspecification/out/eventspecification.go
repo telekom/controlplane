@@ -11,12 +11,13 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
+	"github.com/telekom/controlplane/rover-server/pkg/store"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 // MapResponse maps an EventSpecification CRD and its optional file content
 // to the API response type.
-func MapResponse(ctx context.Context, in *roverv1.EventSpecification, specContent map[string]any) (res api.EventSpecificationResponse, err error) {
+func MapResponse(ctx context.Context, in *roverv1.EventSpecification, specContent map[string]any, stores *store.Stores) (res api.EventSpecificationResponse, err error) {
 	if in == nil {
 		return res, errors.New("input event specification crd is nil")
 	}
@@ -32,7 +33,7 @@ func MapResponse(ctx context.Context, in *roverv1.EventSpecification, specConten
 		res.Specification = specContent
 	}
 
-	res.Status, err = status.MapEventSpecificationStatus(ctx, in)
+	res.Status, err = status.MapEventSpecificationStatus(ctx, in, stores)
 
 	return
 }

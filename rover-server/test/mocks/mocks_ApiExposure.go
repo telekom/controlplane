@@ -11,13 +11,13 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/store"
 )
 
-func NewApiExposureStoreMock(testing ginkgo.FullGinkgoTInterface) store.ObjectStore[*apiv1.ApiExposure] {
+func NewAPIExposureStoreMock(testing ginkgo.FullGinkgoTInterface) store.ObjectStore[*apiv1.ApiExposure] {
 	mockStore := NewMockObjectStore[*apiv1.ApiExposure](testing)
-	ConfigureApiExposureStoreMock(testing, mockStore)
+	ConfigureAPIExposureStoreMock(testing, mockStore)
 	return mockStore
 }
 
-func ConfigureApiExposureStoreMock(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObjectStore[*apiv1.ApiExposure]) {
+func ConfigureAPIExposureStoreMock(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObjectStore[*apiv1.ApiExposure]) {
 	apiExposure := GetApiExposure(testing, apiExposureFileName)
 
 	mockedStore.EXPECT().List(

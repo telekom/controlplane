@@ -42,22 +42,22 @@ func NewSubResourceChecker[T SubResource](store commonStore.ObjectStore[T]) SubR
 // is returned immediately and remaining sub-resource types are not checked.
 // Store queries are skipped when the Rover's status indicates zero sub-resources
 // of the given type.
-func GetAllRoverProblems(ctx context.Context, rover *v1.Rover) ([]api.Problem, error) {
+func GetAllRoverProblems(ctx context.Context, rover *v1.Rover, stores *roverStore.Stores) ([]api.Problem, error) {
 	var checkers []SubResourceChecker
 	if hasRefs(rover.Status.ApiSubscriptions) {
-		checkers = append(checkers, NewSubResourceChecker(roverStore.ApiSubscriptionStore))
+		checkers = append(checkers, NewSubResourceChecker(stores.APISubscriptionStore))
 	}
 	if hasRefs(rover.Status.ApiExposures) {
-		checkers = append(checkers, NewSubResourceChecker(roverStore.ApiExposureStore))
+		checkers = append(checkers, NewSubResourceChecker(stores.APIExposureStore))
 	}
 	if rover.Status.Application != nil {
-		checkers = append(checkers, NewSubResourceChecker(roverStore.ApplicationStore))
+		checkers = append(checkers, NewSubResourceChecker(stores.ApplicationStore))
 	}
 	if hasRefs(rover.Status.EventExposures) {
-		checkers = append(checkers, NewSubResourceChecker(roverStore.EventExposureStore))
+		checkers = append(checkers, NewSubResourceChecker(stores.EventExposureStore))
 	}
 	if hasRefs(rover.Status.EventSubscriptions) {
-		checkers = append(checkers, NewSubResourceChecker(roverStore.EventSubscriptionStore))
+		checkers = append(checkers, NewSubResourceChecker(stores.EventSubscriptionStore))
 	}
 
 	var allProblems []api.Problem
@@ -73,27 +73,27 @@ func GetAllRoverProblems(ctx context.Context, rover *v1.Rover) ([]api.Problem, e
 
 // GetAllRoverStateInfos retrieves all state information for a Rover including all sub-resources.
 // It uses GetAllRoverProblems and maps problems to state information.
-func GetAllRoverStateInfos(ctx context.Context, rover *v1.Rover) ([]api.StateInfo, error) {
-	problems, err := GetAllRoverProblems(ctx, rover)
+func GetAllRoverStateInfos(ctx context.Context, rover *v1.Rover, stores *roverStore.Stores) ([]api.StateInfo, error) {
+	problems, err := GetAllRoverProblems(ctx, rover, stores)
 	if err != nil {
 		return nil, err
 	}
 	return mapProblemsToStateInfos(problems), nil
 }
 
-// GetAllApiSpecificationProblems retrieves all problems across all ApiSpecification sub-resource types.
+// GetAllAPISpecificationProblems retrieves all problems across all ApiSpecification sub-resource types.
 //
 // Each sub-resource type is queried via its store. If any query fails, the error
 // is returned immediately and remaining sub-resource types are not checked.
 // Store queries are skipped when the ApiSpecification's status indicates zero
 // sub-resources of the given type.
-func GetAllApiSpecificationProblems(ctx context.Context, apiSpec *v1.ApiSpecification) ([]api.Problem, error) {
+func GetAllAPISpecificationProblems(ctx context.Context, apiSpec *v1.ApiSpecification, stores *roverStore.Stores) ([]api.Problem, error) {
 	if apiSpec.Status.Api.IsEmpty() {
 		return nil, nil
 	}
 
 	checkers := []SubResourceChecker{
-		NewSubResourceChecker(roverStore.ApiStore),
+		NewSubResourceChecker(stores.APIStore),
 	}
 
 	var allProblems []api.Problem
@@ -107,10 +107,10 @@ func GetAllApiSpecificationProblems(ctx context.Context, apiSpec *v1.ApiSpecific
 	return allProblems, nil
 }
 
-// GetAllApiSpecificationStateInfos retrieves all state information for an ApiSpecification including all sub-resources.
-// It uses GetAllApiSpecificationProblems and maps problems to state information.
-func GetAllApiSpecificationStateInfos(ctx context.Context, apiSpec *v1.ApiSpecification) ([]api.StateInfo, error) {
-	problems, err := GetAllApiSpecificationProblems(ctx, apiSpec)
+// GetAllAPISpecificationStateInfos retrieves all state information for an ApiSpecification including all sub-resources.
+// It uses GetAllAPISpecificationProblems and maps problems to state information.
+func GetAllAPISpecificationStateInfos(ctx context.Context, apiSpec *v1.ApiSpecification, stores *roverStore.Stores) ([]api.StateInfo, error) {
+	problems, err := GetAllAPISpecificationProblems(ctx, apiSpec, stores)
 	if err != nil {
 		return nil, err
 	}
@@ -123,13 +123,13 @@ func GetAllApiSpecificationStateInfos(ctx context.Context, apiSpec *v1.ApiSpecif
 // is returned immediately and remaining sub-resource types are not checked.
 // Store queries are skipped when the EventSpecification's status indicates zero
 // sub-resources of the given type.
-func GetAllEventSpecificationProblems(ctx context.Context, eventSpec *v1.EventSpecification) ([]api.Problem, error) {
+func GetAllEventSpecificationProblems(ctx context.Context, eventSpec *v1.EventSpecification, stores *roverStore.Stores) ([]api.Problem, error) {
 	if eventSpec.Status.EventType.IsEmpty() {
 		return nil, nil
 	}
 
 	checkers := []SubResourceChecker{
-		NewSubResourceChecker(roverStore.EventTypeStore),
+		NewSubResourceChecker(stores.EventTypeStore),
 	}
 
 	var allProblems []api.Problem
@@ -145,8 +145,8 @@ func GetAllEventSpecificationProblems(ctx context.Context, eventSpec *v1.EventSp
 
 // GetAllEventSpecificationStateInfos retrieves all state information for an EventSpecification including all sub-resources.
 // It uses GetAllEventSpecificationProblems and maps problems to state information.
-func GetAllEventSpecificationStateInfos(ctx context.Context, eventSpec *v1.EventSpecification) ([]api.StateInfo, error) {
-	problems, err := GetAllEventSpecificationProblems(ctx, eventSpec)
+func GetAllEventSpecificationStateInfos(ctx context.Context, eventSpec *v1.EventSpecification, stores *roverStore.Stores) ([]api.StateInfo, error) {
+	problems, err := GetAllEventSpecificationProblems(ctx, eventSpec, stores)
 	if err != nil {
 		return nil, err
 	}

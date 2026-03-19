@@ -34,12 +34,14 @@ import (
 var _ server.EventSpecificationController = &EventSpecificationController{}
 
 type EventSpecificationController struct {
-	Store store.ObjectStore[*roverv1.EventSpecification]
+	stores *s.Stores
+	Store  store.ObjectStore[*roverv1.EventSpecification]
 }
 
-func NewEventSpecificationController() *EventSpecificationController {
+func NewEventSpecificationController(stores *s.Stores) *EventSpecificationController {
 	return &EventSpecificationController{
-		Store: s.EventSpecificationStore,
+		stores: stores,
+		Store:  stores.EventSpecificationStore,
 	}
 }
 
@@ -103,7 +105,7 @@ func (e *EventSpecificationController) Get(ctx context.Context, resourceId strin
 		return res, err
 	}
 
-	return out.MapResponse(ctx, eventSpec, specContent)
+	return out.MapResponse(ctx, eventSpec, specContent, e.stores)
 }
 
 // GetAll implements server.EventSpecificationController.
@@ -124,7 +126,7 @@ func (e *EventSpecificationController) GetAll(ctx context.Context, params api.Ge
 			return nil, problems.InternalServerError("Failed to download resource", err.Error())
 		}
 
-		resp, err := out.MapResponse(ctx, eventSpec, specContent)
+		resp, err := out.MapResponse(ctx, eventSpec, specContent, e.stores)
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to map resource", err.Error())
 		}
@@ -194,7 +196,7 @@ func (e *EventSpecificationController) GetStatus(ctx context.Context, resourceId
 		return res, err
 	}
 
-	return status.MapEventSpecificationResponse(ctx, eventSpec)
+	return status.MapEventSpecificationResponse(ctx, eventSpec, e.stores)
 }
 
 func (e *EventSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (res *filesapi.FileUploadResponse, err error) {

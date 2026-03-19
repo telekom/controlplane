@@ -13,9 +13,10 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
+	"github.com/telekom/controlplane/rover-server/pkg/store"
 )
 
-func MapResponse(ctx context.Context, in *roverv1.Rover) (res api.RoverResponse, err error) {
+func MapResponse(ctx context.Context, in *roverv1.Rover, stores *store.Stores) (res api.RoverResponse, err error) {
 	tmp := api.Rover{}
 	if err = MapRover(in, &tmp); err != nil {
 		return res, err
@@ -27,7 +28,7 @@ func MapResponse(ctx context.Context, in *roverv1.Rover) (res api.RoverResponse,
 
 	res.Name = in.Name
 	res.Id = mapper.MakeResourceId(in)
-	res.Status, err = status.MapRoverStatus(ctx, in)
+	res.Status, err = status.MapRoverStatus(ctx, in, stores)
 
 	return
 }

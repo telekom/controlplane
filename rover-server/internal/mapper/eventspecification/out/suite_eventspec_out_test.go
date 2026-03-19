@@ -24,6 +24,7 @@ type ContextKey string
 var (
 	ctx                context.Context
 	eventSpecification *roverv1.EventSpecification
+	stores             *store.Stores
 )
 
 func TestMapper(t *testing.T) {
@@ -34,10 +35,12 @@ func TestMapper(t *testing.T) {
 var _ = BeforeSuite(func() {
 	ctx = context.WithValue(context.TODO(), ContextKey("test"), "test")
 
+	stores = &store.Stores{}
+
 	eventTypeMock := mocks.NewMockObjectStore[*eventv1.EventType](GinkgoT())
 	eventTypeMock.EXPECT().List(mock.Anything, mock.Anything).Return(
 		&storeLib.ListResponse[*eventv1.EventType]{Items: []*eventv1.EventType{}}, nil).Maybe()
-	store.EventTypeStore = eventTypeMock
+	stores.EventTypeStore = eventTypeMock
 
 	eventSpecification = mocks.GetEventSpecification(GinkgoT(), mocks.EventSpecificationFileName)
 })

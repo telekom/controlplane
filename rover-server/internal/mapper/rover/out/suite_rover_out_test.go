@@ -23,7 +23,8 @@ import (
 )
 
 var (
-	rover *roverv1.Rover
+	rover  *roverv1.Rover
+	stores *store.Stores
 
 	apiExposure = roverv1.ApiExposure{
 		Approval: roverv1.Approval{
@@ -63,20 +64,22 @@ func TestMapper(t *testing.T) {
 var _ = BeforeSuite(func() {
 	ctx = context.WithValue(context.TODO(), ContextKey("test"), "test")
 
+	stores = &store.Stores{}
+
 	// Initialize mock stores for sub-resource staleness checks used by MapRoverStatus.
-	store.ApiSubscriptionStore = mocks.NewApiSubscriptionStoreMock(GinkgoT())
-	store.ApiExposureStore = mocks.NewApiExposureStoreMock(GinkgoT())
-	store.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
+	stores.APISubscriptionStore = mocks.NewAPISubscriptionStoreMock(GinkgoT())
+	stores.APIExposureStore = mocks.NewAPIExposureStoreMock(GinkgoT())
+	stores.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
 
 	eventExposureMock := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
 	eventExposureMock.EXPECT().List(mock.Anything, mock.Anything).Return(
 		&storeLib.ListResponse[*eventv1.EventExposure]{Items: []*eventv1.EventExposure{}}, nil).Maybe()
-	store.EventExposureStore = eventExposureMock
+	stores.EventExposureStore = eventExposureMock
 
 	eventSubscriptionMock := mocks.NewMockObjectStore[*eventv1.EventSubscription](GinkgoT())
 	eventSubscriptionMock.EXPECT().List(mock.Anything, mock.Anything).Return(
 		&storeLib.ListResponse[*eventv1.EventSubscription]{Items: []*eventv1.EventSubscription{}}, nil).Maybe()
-	store.EventSubscriptionStore = eventSubscriptionMock
+	stores.EventSubscriptionStore = eventSubscriptionMock
 
 	rover = mocks.GetRover(GinkgoT(), mocks.RoverFileName)
 })

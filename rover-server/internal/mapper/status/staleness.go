@@ -42,15 +42,15 @@ func anySubResourceStale[T SubResource](ctx context.Context, owner types.Object,
 // given EventSpecification has stale conditions.
 // Store queries are skipped when the EventSpecification's status indicates zero
 // sub-resources of the given type.
-func AnyEventSpecificationSubResourceStale(ctx context.Context, eventSpec *v1.EventSpecification) (bool, error) {
+func AnyEventSpecificationSubResourceStale(ctx context.Context, eventSpec *v1.EventSpecification, stores *roverStore.Stores) (bool, error) {
 	if eventSpec.Status.EventType.IsEmpty() {
 		return false, nil
 	}
 
-	stores := []stalenessChecker{
-		newStalenessChecker(roverStore.EventTypeStore),
+	checkers := []stalenessChecker{
+		newStalenessChecker(stores.EventTypeStore),
 	}
-	for _, check := range stores {
+	for _, check := range checkers {
 		stale, err := check(ctx, eventSpec)
 		if err != nil {
 			return false, err
@@ -62,19 +62,19 @@ func AnyEventSpecificationSubResourceStale(ctx context.Context, eventSpec *v1.Ev
 	return false, nil
 }
 
-// AnyApiSpecificationSubResourceStale returns true if any sub-resource of the
+// AnyAPISpecificationSubResourceStale returns true if any sub-resource of the
 // given ApiSpecification has stale conditions.
 // Store queries are skipped when the ApiSpecification's status indicates zero
 // sub-resources of the given type.
-func AnyApiSpecificationSubResourceStale(ctx context.Context, apiSpec *v1.ApiSpecification) (bool, error) {
+func AnyAPISpecificationSubResourceStale(ctx context.Context, apiSpec *v1.ApiSpecification, stores *roverStore.Stores) (bool, error) {
 	if apiSpec.Status.Api.IsEmpty() {
 		return false, nil
 	}
 
-	stores := []stalenessChecker{
-		newStalenessChecker(roverStore.ApiStore),
+	checkers := []stalenessChecker{
+		newStalenessChecker(stores.APIStore),
 	}
-	for _, check := range stores {
+	for _, check := range checkers {
 		stale, err := check(ctx, apiSpec)
 		if err != nil {
 			return false, err
@@ -90,24 +90,24 @@ func AnyApiSpecificationSubResourceStale(ctx context.Context, apiSpec *v1.ApiSpe
 // has stale conditions (spec changed but controller hasn't reconciled yet).
 // Store queries are skipped when the Rover's status indicates zero sub-resources
 // of the given type.
-func AnyRoverSubResourceStale(ctx context.Context, rover *v1.Rover) (bool, error) {
-	var stores []stalenessChecker
+func AnyRoverSubResourceStale(ctx context.Context, rover *v1.Rover, stores *roverStore.Stores) (bool, error) {
+	var checkers []stalenessChecker
 	if hasRefs(rover.Status.ApiSubscriptions) {
-		stores = append(stores, newStalenessChecker(roverStore.ApiSubscriptionStore))
+		checkers = append(checkers, newStalenessChecker(stores.APISubscriptionStore))
 	}
 	if hasRefs(rover.Status.ApiExposures) {
-		stores = append(stores, newStalenessChecker(roverStore.ApiExposureStore))
+		checkers = append(checkers, newStalenessChecker(stores.APIExposureStore))
 	}
 	if rover.Status.Application != nil {
-		stores = append(stores, newStalenessChecker(roverStore.ApplicationStore))
+		checkers = append(checkers, newStalenessChecker(stores.ApplicationStore))
 	}
 	if hasRefs(rover.Status.EventExposures) {
-		stores = append(stores, newStalenessChecker(roverStore.EventExposureStore))
+		checkers = append(checkers, newStalenessChecker(stores.EventExposureStore))
 	}
 	if hasRefs(rover.Status.EventSubscriptions) {
-		stores = append(stores, newStalenessChecker(roverStore.EventSubscriptionStore))
+		checkers = append(checkers, newStalenessChecker(stores.EventSubscriptionStore))
 	}
-	for _, check := range stores {
+	for _, check := range checkers {
 		stale, err := check(ctx, rover)
 		if err != nil {
 			return false, err

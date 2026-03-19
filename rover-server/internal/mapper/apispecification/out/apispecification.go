@@ -11,10 +11,11 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
+	"github.com/telekom/controlplane/rover-server/pkg/store"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
-func MapResponse(ctx context.Context, in *roverv1.ApiSpecification, inFile map[string]any) (res api.ApiSpecificationResponse, err error) {
+func MapResponse(ctx context.Context, in *roverv1.ApiSpecification, inFile map[string]any, stores *store.Stores) (res api.ApiSpecificationResponse, err error) {
 	if in == nil {
 		return res, errors.New("input api specification crd is nil")
 	}
@@ -30,7 +31,7 @@ func MapResponse(ctx context.Context, in *roverv1.ApiSpecification, inFile map[s
 		Specification: inFile,
 		VendorApi:     in.Spec.XVendor,
 	}
-	res.Status, err = status.MapApiSpecificationStatus(ctx, in)
+	res.Status, err = status.MapAPISpecificationStatus(ctx, in, stores)
 
 	return
 }

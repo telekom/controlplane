@@ -13,7 +13,7 @@ import (
 var _ = Describe("ApiSpecificationResponse Mapper", func() {
 	Context("MapRequest", func() {
 		It("must map a ApiSpecification to an ApiSpecificationResponse correctly", func() {
-			output, err := MapResponse(ctx, apiSpecification, *openapi)
+			output, err := MapResponse(ctx, apiSpecification, *openapi, stores)
 
 			Expect(err).To(BeNil())
 
@@ -22,7 +22,7 @@ var _ = Describe("ApiSpecificationResponse Mapper", func() {
 		})
 
 		It("must return an error if the input ApiSpecification is nil", func() {
-			output, err := MapResponse(ctx, nil, nil)
+			output, err := MapResponse(ctx, nil, nil, stores)
 
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)

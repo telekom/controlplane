@@ -11,13 +11,13 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/store"
 )
 
-func NewApiStoreMock(testing ginkgo.FullGinkgoTInterface) store.ObjectStore[*apiv1.Api] {
+func NewAPIStoreMock(testing ginkgo.FullGinkgoTInterface) store.ObjectStore[*apiv1.Api] {
 	mockStore := NewMockObjectStore[*apiv1.Api](testing)
-	ConfigureApiStoreMock(testing, mockStore)
+	ConfigureAPIStoreMock(testing, mockStore)
 	return mockStore
 }
 
-func ConfigureApiStoreMock(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObjectStore[*apiv1.Api]) {
+func ConfigureAPIStoreMock(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObjectStore[*apiv1.Api]) {
 	api := GetApi(testing, apiFileName)
 	mockedStore.EXPECT().List(
 		mock.AnythingOfType("*context.valueCtx"),

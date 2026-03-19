@@ -31,14 +31,16 @@ import (
 var _ server.RoverController = &RoverController{}
 
 type RoverController struct {
+	stores      *s.Stores
 	Store       store.ObjectStore[*roverv1.Rover]
 	SecretStore store.ObjectStore[*roverv1.Rover]
 }
 
-func NewRoverController() *RoverController {
+func NewRoverController(stores *s.Stores) *RoverController {
 	return &RoverController{
-		Store:       s.RoverStore,
-		SecretStore: s.RoverSecretStore,
+		stores:      stores,
+		Store:       stores.RoverStore,
+		SecretStore: stores.RoverSecretStore,
 	}
 }
 
@@ -86,7 +88,7 @@ func (r *RoverController) Get(ctx context.Context, resourceId string) (res api.R
 		return res, err
 	}
 
-	return out.MapResponse(ctx, rover)
+	return out.MapResponse(ctx, rover, r.stores)
 }
 
 // GetAll implements server.RoverController.
@@ -101,8 +103,8 @@ func (r *RoverController) GetAll(ctx context.Context, params api.GetAllRoversPar
 	}
 
 	list := make([]api.RoverResponse, 0, len(objList.Items))
-	for _, r := range objList.Items {
-		roverResponse, err := out.MapResponse(ctx, r)
+	for _, item := range objList.Items {
+		roverResponse, err := out.MapResponse(ctx, item, r.stores)
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to map resource", err.Error())
 		}
@@ -160,7 +162,7 @@ func (r *RoverController) GetStatus(ctx context.Context, resourceId string) (res
 		return res, err
 	}
 
-	return status.MapRoverResponse(ctx, rover)
+	return status.MapRoverResponse(ctx, rover, r.stores)
 }
 
 // GetApplicationInfo implements server.RoverController.
@@ -183,7 +185,7 @@ func (r *RoverController) GetApplicationInfo(ctx context.Context, resourceId str
 		return res, err
 	}
 
-	appInfo, err := applicationinfo.MapApplicationInfo(ctx, rover)
+	appInfo, err := applicationinfo.MapApplicationInfo(ctx, rover, r.stores)
 	if err != nil {
 		return res, problems.InternalServerError("Failed to map resource", err.Error())
 	}
@@ -222,15 +224,15 @@ func (r *RoverController) GetApplicationsInfo(ctx context.Context, params api.Ge
 	}
 
 	list := make([]api.ApplicationInfo, 0, len(objList.Items))
-	for _, r := range objList.Items {
+	for _, rover := range objList.Items {
 		// If names filter is provided, skip rovers not in the list
 		if len(nameFilter) > 0 {
-			if _, ok := nameFilter[r.Name]; !ok {
+			if _, ok := nameFilter[rover.Name]; !ok {
 				continue
 			}
 		}
-		logr.FromContextOrDiscard(ctx).Info("GetApplicationsInfo", "name", r.Name)
-		applicationInfo, err := applicationinfo.MapApplicationInfo(ctx, r)
+		logr.FromContextOrDiscard(ctx).Info("GetApplicationsInfo", "name", rover.Name)
+		applicationInfo, err := applicationinfo.MapApplicationInfo(ctx, rover, r.stores)
 		if err != nil {
 			return res, problems.InternalServerError("Failed to map resource", err.Error())
 		}
@@ -274,7 +276,7 @@ func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId strin
 	if rover.Status.Application == nil {
 		return res, problems.BadRequest("Application not found or not fully processed. Try again later.")
 	}
-	app, err := s.ApplicationStore.Get(ctx, rover.Status.Application.Namespace, rover.Status.Application.Name)
+	app, err := r.stores.ApplicationStore.Get(ctx, rover.Status.Application.Namespace, rover.Status.Application.Name)
 	if err != nil {
 		return res, err
 	}

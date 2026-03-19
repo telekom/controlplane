@@ -11,13 +11,13 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/store"
 )
 
-func NewApiSubscriptionStoreMock(testing ginkgo.FullGinkgoTInterface) store.ObjectStore[*apiv1.ApiSubscription] {
+func NewAPISubscriptionStoreMock(testing ginkgo.FullGinkgoTInterface) store.ObjectStore[*apiv1.ApiSubscription] {
 	mockStore := NewMockObjectStore[*apiv1.ApiSubscription](testing)
-	ConfigureApiSubscriptionStoreMock(testing, mockStore)
+	ConfigureAPISubscriptionStoreMock(testing, mockStore)
 	return mockStore
 }
 
-func ConfigureApiSubscriptionStoreMock(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObjectStore[*apiv1.ApiSubscription]) {
+func ConfigureAPISubscriptionStoreMock(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObjectStore[*apiv1.ApiSubscription]) {
 	apiSubscription := GetApiSubscription(testing, apiSubscriptionFileName)
 	mockedStore.EXPECT().List(
 		mock.AnythingOfType("*context.valueCtx"),

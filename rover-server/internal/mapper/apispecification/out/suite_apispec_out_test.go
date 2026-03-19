@@ -20,6 +20,7 @@ var (
 	ctx              context.Context
 	apiSpecification *roverv1.ApiSpecification
 	openapi          *map[string]any
+	stores           *store.Stores
 )
 
 type ContextKey string
@@ -31,7 +32,9 @@ func TestMapper(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	ctx = context.WithValue(context.TODO(), ContextKey("test"), "test")
-	store.ApiStore = mocks.NewApiStoreMock(GinkgoT())
+
+	stores = &store.Stores{}
+	stores.APIStore = mocks.NewAPIStoreMock(GinkgoT())
 
 	apiSpecification = mocks.GetApiSpecification(GinkgoT(), mocks.ApiSpecificationFileName)
 	openapi = mocks.GetOpenApi(GinkgoT(), mocks.OpenApiFileName)

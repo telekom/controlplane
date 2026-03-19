@@ -44,6 +44,7 @@ var groupToken string
 var teamNoResources string
 var app *fiber.App
 var mockFileManager *filefake.MockFileManager
+var stores *store.Stores
 
 func TestController(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -52,27 +53,29 @@ func TestController(t *testing.T) {
 
 var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 	if mockObjectStore {
-		store.RoverStore = mocks.NewRoverStoreMock(GinkgoT())
-		store.RoverSecretStore = store.RoverStore
-		store.ApiSpecificationStore = mocks.NewApiSpecificationStoreMock(GinkgoT())
-		store.ApiSubscriptionStore = mocks.NewApiSubscriptionStoreMock(GinkgoT())
-		store.ApiExposureStore = mocks.NewApiExposureStoreMock(GinkgoT())
-		store.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
-		store.ApplicationSecretStore = store.ApplicationStore
-		store.ZoneStore = mocks.NewZoneStoreMock(GinkgoT())
-		store.EventSpecificationStore = mocks.NewEventSpecificationStoreMock(GinkgoT())
+		stores = &store.Stores{}
+
+		stores.RoverStore = mocks.NewRoverStoreMock(GinkgoT())
+		stores.RoverSecretStore = stores.RoverStore
+		stores.APISpecificationStore = mocks.NewAPISpecificationStoreMock(GinkgoT())
+		stores.APISubscriptionStore = mocks.NewAPISubscriptionStoreMock(GinkgoT())
+		stores.APIExposureStore = mocks.NewAPIExposureStoreMock(GinkgoT())
+		stores.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
+		stores.ApplicationSecretStore = stores.ApplicationStore
+		stores.ZoneStore = mocks.NewZoneStoreMock(GinkgoT())
+		stores.EventSpecificationStore = mocks.NewEventSpecificationStoreMock(GinkgoT())
 
 		eventExposureMock := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
 		eventExposureMock.EXPECT().List(mock.Anything, mock.Anything).Return(
 			&cstore.ListResponse[*eventv1.EventExposure]{Items: []*eventv1.EventExposure{}}, nil).Maybe()
-		store.EventExposureStore = eventExposureMock
+		stores.EventExposureStore = eventExposureMock
 
-		store.EventSubscriptionStore = mocks.NewEventSubscriptionStoreMock(GinkgoT())
+		stores.EventSubscriptionStore = mocks.NewEventSubscriptionStoreMock(GinkgoT())
 
 		eventConfigMock := mocks.NewMockObjectStore[*eventv1.EventConfig](GinkgoT())
 		eventConfigMock.EXPECT().List(mock.Anything, mock.Anything).Return(
 			&cstore.ListResponse[*eventv1.EventConfig]{Items: []*eventv1.EventConfig{}}, nil).Maybe()
-		store.EventConfigStore = eventConfigMock
+		stores.EventConfigStore = eventConfigMock
 	}
 
 	mockFileManager = filefake.NewMockFileManager(GinkgoT())
@@ -104,9 +107,9 @@ var _ = BeforeSuite(func() {
 	s := server.Server{
 		Config:              &config.ServerConfig{},
 		Log:                 log.Log,
-		ApiSpecifications:   NewApiSpecificationController(),
-		Rovers:              NewRoverController(),
-		EventSpecifications: NewEventSpecificationController(),
+		ApiSpecifications:   NewApiSpecificationController(stores),
+		Rovers:              NewRoverController(stores),
+		EventSpecifications: NewEventSpecificationController(stores),
 	}
 
 	s.RegisterRoutes(app)

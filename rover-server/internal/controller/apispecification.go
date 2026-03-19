@@ -34,12 +34,14 @@ import (
 var _ server.ApiSpecificationController = &ApiSpecificationController{}
 
 type ApiSpecificationController struct {
-	Store store.ObjectStore[*roverv1.ApiSpecification]
+	stores *s.Stores
+	Store  store.ObjectStore[*roverv1.ApiSpecification]
 }
 
-func NewApiSpecificationController() *ApiSpecificationController {
+func NewApiSpecificationController(stores *s.Stores) *ApiSpecificationController {
 	return &ApiSpecificationController{
-		Store: s.ApiSpecificationStore,
+		stores: stores,
+		Store:  stores.APISpecificationStore,
 	}
 }
 
@@ -116,7 +118,7 @@ func (a *ApiSpecificationController) Get(ctx context.Context, resourceId string)
 		return res, err
 	}
 
-	return out.MapResponse(ctx, apiSpec, m)
+	return out.MapResponse(ctx, apiSpec, m, a.stores)
 }
 
 // GetAll implements server.ApiSpecificationController.
@@ -151,7 +153,7 @@ func (a *ApiSpecificationController) GetAll(ctx context.Context, params api.GetA
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to marshal resource", err.Error())
 		}
-		resp, err := out.MapResponse(ctx, apiSpec, m)
+		resp, err := out.MapResponse(ctx, apiSpec, m, a.stores)
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to map resource", err.Error())
 		}
@@ -222,7 +224,7 @@ func (a *ApiSpecificationController) GetStatus(ctx context.Context, resourceId s
 		return res, err
 	}
 
-	return status.MapApiSpecificationResponse(ctx, apiSpec)
+	return status.MapAPISpecificationResponse(ctx, apiSpec, a.stores)
 }
 
 func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {

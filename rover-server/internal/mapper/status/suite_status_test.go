@@ -25,33 +25,36 @@ const (
 )
 
 var ctx context.Context
+var stores *store.Stores
 
 var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 	if mockObjectStore {
-		store.RoverStore = mocks.NewRoverStoreMock(GinkgoT())
-		store.ApiSpecificationStore = mocks.NewApiSpecificationStoreMock(GinkgoT())
-		store.ApiStore = mocks.NewApiStoreMock(GinkgoT())
-		store.ApiSubscriptionStore = mocks.NewApiSubscriptionStoreMock(GinkgoT())
-		store.ApiExposureStore = mocks.NewApiExposureStoreMock(GinkgoT())
-		store.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
-		store.ZoneStore = mocks.NewZoneStoreMock(GinkgoT())
+		stores = &store.Stores{}
+
+		stores.RoverStore = mocks.NewRoverStoreMock(GinkgoT())
+		stores.APISpecificationStore = mocks.NewAPISpecificationStoreMock(GinkgoT())
+		stores.APIStore = mocks.NewAPIStoreMock(GinkgoT())
+		stores.APISubscriptionStore = mocks.NewAPISubscriptionStoreMock(GinkgoT())
+		stores.APIExposureStore = mocks.NewAPIExposureStoreMock(GinkgoT())
+		stores.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
+		stores.ZoneStore = mocks.NewZoneStoreMock(GinkgoT())
 		eventConfigMock := mocks.NewMockObjectStore[*eventv1.EventConfig](GinkgoT())
-		store.EventConfigStore = eventConfigMock
+		stores.EventConfigStore = eventConfigMock
 
 		eventSubscriptionMock := mocks.NewMockObjectStore[*eventv1.EventSubscription](GinkgoT())
 		eventSubscriptionMock.EXPECT().List(mock.Anything, mock.Anything).Return(
 			&storeLib.ListResponse[*eventv1.EventSubscription]{Items: []*eventv1.EventSubscription{}}, nil).Maybe()
-		store.EventSubscriptionStore = eventSubscriptionMock
+		stores.EventSubscriptionStore = eventSubscriptionMock
 
 		eventExposureMock := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
 		eventExposureMock.EXPECT().List(mock.Anything, mock.Anything).Return(
 			&storeLib.ListResponse[*eventv1.EventExposure]{Items: []*eventv1.EventExposure{}}, nil).Maybe()
-		store.EventExposureStore = eventExposureMock
+		stores.EventExposureStore = eventExposureMock
 
 		eventTypeMock := mocks.NewMockObjectStore[*eventv1.EventType](GinkgoT())
 		eventTypeMock.EXPECT().List(mock.Anything, mock.Anything).Return(
 			&storeLib.ListResponse[*eventv1.EventType]{Items: []*eventv1.EventType{}}, nil).Maybe()
-		store.EventTypeStore = eventTypeMock
+		stores.EventTypeStore = eventTypeMock
 	}
 }
 
