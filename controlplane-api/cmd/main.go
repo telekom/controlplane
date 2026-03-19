@@ -42,8 +42,6 @@ func main() {
 		log.Error(err, "failed to create ent client")
 		os.Exit(1)
 	}
-	defer func() { _ = client.Close() }()
-
 	client.Intercept(interceptor.TeamFilterInterceptor())
 
 	srv := newGraphQLServer(client)
@@ -77,6 +75,10 @@ func main() {
 
 	if err := s.App.Shutdown(); err != nil {
 		log.Error(err, "failed to gracefully shutdown server")
+	}
+
+	if err := client.Close(); err != nil {
+		log.Error(err, "failed to close database client")
 	}
 }
 
