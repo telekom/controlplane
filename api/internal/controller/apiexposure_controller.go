@@ -66,7 +66,7 @@ func (r *ApiExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		).
 		Watches(&apiv1.ApiSubscription{},
 			handler.EnqueueRequestsFromMapFunc(r.MapApiSubscriptionToApiExposure),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(predicate.Or(predicate.GenerationChangedPredicate{}, cc.DeleteOnlyPredicate{})),
 		).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToApiExposure),

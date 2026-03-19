@@ -19,6 +19,8 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/telekom/controlplane/common/pkg/controller"
 )
 
 // setAlreadyExposedConditions sets NotReady and Blocked conditions on the new ApiExposure
@@ -137,6 +139,12 @@ func HasCrossZoneSubscribers(ctx context.Context, apiExp *apiv1.ApiExposure) (bo
 
 	for i := range apiSubscriptions.Items {
 		sub := &apiSubscriptions.Items[i]
+
+		// Skip subscriptions that are being deleted; their finalizer may still
+		// be running, but they should no longer influence the route's ACL.
+		if controller.IsBeingDeleted(sub) {
+			continue
+		}
 		if !sub.Spec.Zone.Equals(&apiExp.Spec.Zone) {
 			return true, nil
 		}
