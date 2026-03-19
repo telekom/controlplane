@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -56,7 +57,7 @@ func main() {
 	gqlCtrl := gqlcontroller.NewController(srv, playgroundEnabled)
 	s.RegisterController(gqlCtrl, cserver.ControllerOpts{
 		Prefix:         "/graphql",
-		AllowedMethods: []string{"HEAD", "GET", "POST", "OPTIONS"},
+		AllowedMethods: []string{http.MethodHead, http.MethodGet, http.MethodPost, http.MethodOptions},
 		Security: security.SecurityOpts{
 			Enabled: envOrDefault("SECURITY_ENABLED", "false") == "true",
 			Log:     log.WithName("security"),
