@@ -46,23 +46,13 @@ func MapAPISpecificationResponse(ctx context.Context, apiSpec *v1.ApiSpecificati
 	}
 	status := MapStatus(apiSpec.GetConditions(), apiSpec.GetGeneration())
 
-	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone {
-		stale, err := AnyAPISpecificationSubResourceStale(ctx, apiSpec, stores)
-		if err != nil {
-			return api.ResourceStatusResponse{}, err
-		}
-		if stale {
-			status.ProcessingState = api.ProcessingStateProcessing
-		}
+	result, err := GetAllAPISpecificationProblems(ctx, apiSpec, stores)
+	if err != nil {
+		return api.ResourceStatusResponse{}, err
 	}
 
-	var problems []api.Problem
-	if status.State != api.Complete {
-		var err error
-		problems, err = GetAllAPISpecificationProblems(ctx, apiSpec, stores)
-		if err != nil {
-			return api.ResourceStatusResponse{}, err
-		}
+	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone && result.HasStale {
+		status.ProcessingState = api.ProcessingStateProcessing
 	}
 
 	processing := meta.FindStatusCondition(apiSpec.GetConditions(), condition.ConditionTypeProcessing)
@@ -71,13 +61,16 @@ func MapAPISpecificationResponse(ctx context.Context, apiSpec *v1.ApiSpecificati
 		processedAtTime = processing.LastTransitionTime.Time
 	}
 
+	parentOverall := CalculateOverallStatus(status.State, status.ProcessingState)
+	finalOverall := CompareAndReturn(parentOverall, result.WorstOverallStatus)
+
 	return api.ResourceStatusResponse{
 		CreatedAt:       apiSpec.GetCreationTimestamp().Time,
 		ProcessedAt:     processedAtTime,
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
-		OverallStatus:   CalculateOverallStatus(status.State, status.ProcessingState),
-		Errors:          problems,
+		OverallStatus:   finalOverall,
+		Errors:          result.Problems,
 	}, nil
 }
 
@@ -91,23 +84,13 @@ func MapRoverResponse(ctx context.Context, rover *v1.Rover, stores *store.Stores
 	}
 	status := MapStatus(rover.GetConditions(), rover.GetGeneration())
 
-	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone {
-		stale, err := AnyRoverSubResourceStale(ctx, rover, stores)
-		if err != nil {
-			return api.ResourceStatusResponse{}, err
-		}
-		if stale {
-			status.ProcessingState = api.ProcessingStateProcessing
-		}
+	result, err := GetAllRoverProblems(ctx, rover, stores)
+	if err != nil {
+		return api.ResourceStatusResponse{}, err
 	}
 
-	var problems []api.Problem
-	if status.State != api.Complete {
-		var err error
-		problems, err = GetAllRoverProblems(ctx, rover, stores)
-		if err != nil {
-			return api.ResourceStatusResponse{}, err
-		}
+	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone && result.HasStale {
+		status.ProcessingState = api.ProcessingStateProcessing
 	}
 
 	processing := meta.FindStatusCondition(rover.GetConditions(), condition.ConditionTypeProcessing)
@@ -116,13 +99,16 @@ func MapRoverResponse(ctx context.Context, rover *v1.Rover, stores *store.Stores
 		processedAtTime = processing.LastTransitionTime.Time
 	}
 
+	parentOverall := CalculateOverallStatus(status.State, status.ProcessingState)
+	finalOverall := CompareAndReturn(parentOverall, result.WorstOverallStatus)
+
 	return api.ResourceStatusResponse{
 		CreatedAt:       rover.GetCreationTimestamp().Time,
 		ProcessedAt:     processedAtTime,
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
-		OverallStatus:   CalculateOverallStatus(status.State, status.ProcessingState),
-		Errors:          problems,
+		OverallStatus:   finalOverall,
+		Errors:          result.Problems,
 	}, nil
 }
 
@@ -136,23 +122,13 @@ func MapEventSpecificationResponse(ctx context.Context, eventSpec *v1.EventSpeci
 	}
 	status := MapStatus(eventSpec.GetConditions(), eventSpec.GetGeneration())
 
-	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone {
-		stale, err := AnyEventSpecificationSubResourceStale(ctx, eventSpec, stores)
-		if err != nil {
-			return api.ResourceStatusResponse{}, err
-		}
-		if stale {
-			status.ProcessingState = api.ProcessingStateProcessing
-		}
+	result, err := GetAllEventSpecificationProblems(ctx, eventSpec, stores)
+	if err != nil {
+		return api.ResourceStatusResponse{}, err
 	}
 
-	var problems []api.Problem
-	if status.State != api.Complete {
-		var err error
-		problems, err = GetAllEventSpecificationProblems(ctx, eventSpec, stores)
-		if err != nil {
-			return api.ResourceStatusResponse{}, err
-		}
+	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone && result.HasStale {
+		status.ProcessingState = api.ProcessingStateProcessing
 	}
 
 	processing := meta.FindStatusCondition(eventSpec.GetConditions(), condition.ConditionTypeProcessing)
@@ -161,12 +137,15 @@ func MapEventSpecificationResponse(ctx context.Context, eventSpec *v1.EventSpeci
 		processedAtTime = processing.LastTransitionTime.Time
 	}
 
+	parentOverall := CalculateOverallStatus(status.State, status.ProcessingState)
+	finalOverall := CompareAndReturn(parentOverall, result.WorstOverallStatus)
+
 	return api.ResourceStatusResponse{
 		CreatedAt:       eventSpec.GetCreationTimestamp().Time,
 		ProcessedAt:     processedAtTime,
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
-		OverallStatus:   CalculateOverallStatus(status.State, status.ProcessingState),
-		Errors:          problems,
+		OverallStatus:   finalOverall,
+		Errors:          result.Problems,
 	}, nil
 }

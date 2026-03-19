@@ -128,23 +128,16 @@ func MapStatus(conditions []metav1.Condition, objectGeneration int64) api.Status
 func MapRoverStatus(ctx context.Context, rover *v1.Rover, stores *store.Stores) (api.Status, error) {
 	status := MapStatus(rover.GetConditions(), rover.GetGeneration())
 
-	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone {
-		stale, err := AnyRoverSubResourceStale(ctx, rover, stores)
-		if err != nil {
-			return status, err
-		}
-		if stale {
-			status.ProcessingState = api.ProcessingStateProcessing
-		}
+	result, err := GetAllRoverProblems(ctx, rover, stores)
+	if err != nil {
+		return status, err
 	}
 
-	if status.State != api.Complete {
-		stateInfos, err := GetAllRoverStateInfos(ctx, rover, stores)
-		if err != nil {
-			return status, err
-		}
-		status.Errors = append(status.Errors, stateInfos...)
+	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone && result.HasStale {
+		status.ProcessingState = api.ProcessingStateProcessing
 	}
+
+	status.Errors = append(status.Errors, mapProblemsToStateInfos(result.Problems)...)
 
 	return status, nil
 }
@@ -157,23 +150,16 @@ func MapRoverStatus(ctx context.Context, rover *v1.Rover, stores *store.Stores) 
 func MapAPISpecificationStatus(ctx context.Context, apiSpec *v1.ApiSpecification, stores *store.Stores) (api.Status, error) {
 	status := MapStatus(apiSpec.GetConditions(), apiSpec.GetGeneration())
 
-	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone {
-		stale, err := AnyAPISpecificationSubResourceStale(ctx, apiSpec, stores)
-		if err != nil {
-			return status, err
-		}
-		if stale {
-			status.ProcessingState = api.ProcessingStateProcessing
-		}
+	result, err := GetAllAPISpecificationProblems(ctx, apiSpec, stores)
+	if err != nil {
+		return status, err
 	}
 
-	if status.State != api.Complete {
-		stateInfos, err := GetAllAPISpecificationStateInfos(ctx, apiSpec, stores)
-		if err != nil {
-			return status, err
-		}
-		status.Errors = append(status.Errors, stateInfos...)
+	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone && result.HasStale {
+		status.ProcessingState = api.ProcessingStateProcessing
 	}
+
+	status.Errors = append(status.Errors, mapProblemsToStateInfos(result.Problems)...)
 
 	return status, nil
 }
@@ -186,23 +172,16 @@ func MapAPISpecificationStatus(ctx context.Context, apiSpec *v1.ApiSpecification
 func MapEventSpecificationStatus(ctx context.Context, eventSpec *v1.EventSpecification, stores *store.Stores) (api.Status, error) {
 	status := MapStatus(eventSpec.GetConditions(), eventSpec.GetGeneration())
 
-	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone {
-		stale, err := AnyEventSpecificationSubResourceStale(ctx, eventSpec, stores)
-		if err != nil {
-			return status, err
-		}
-		if stale {
-			status.ProcessingState = api.ProcessingStateProcessing
-		}
+	result, err := GetAllEventSpecificationProblems(ctx, eventSpec, stores)
+	if err != nil {
+		return status, err
 	}
 
-	if status.State != api.Complete {
-		stateInfos, err := GetAllEventSpecificationStateInfos(ctx, eventSpec, stores)
-		if err != nil {
-			return status, err
-		}
-		status.Errors = append(status.Errors, stateInfos...)
+	if status.State == api.Complete && status.ProcessingState == api.ProcessingStateDone && result.HasStale {
+		status.ProcessingState = api.ProcessingStateProcessing
 	}
+
+	status.Errors = append(status.Errors, mapProblemsToStateInfos(result.Problems)...)
 
 	return status, nil
 }

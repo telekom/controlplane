@@ -120,33 +120,81 @@ var (
 
 var _ = Describe("getAllProblemsInSubResource", func() {
 	Context("when sub-resource has problems", func() {
-		It("returns problems", func() {
+		It("returns problems and worst overall status", func() {
 			ctx := context.Background()
 			mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
 			mockStore.On("List", ctx, mock.Anything).Return(
 				&commonStore.ListResponse[*apiv1.ApiSubscription]{
 					Items: []*apiv1.ApiSubscription{apiSubscription}}, nil).Once()
 
-			problems, err := getAllProblemsInSubResource(ctx, rover, mockStore)
+			result, err := getAllProblemsInSubResource(ctx, rover, mockStore)
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(problems).To(Equal(expectedProblems))
+			Expect(result.Problems).To(Equal(expectedProblems))
+			// apiSubscription has Ready=False and no Processing condition,
+			// so GetOverallStatus returns "none".
+			Expect(result.WorstOverallStatus).To(Equal(api.OverallStatusNone))
+			mockStore.AssertExpectations(GinkgoT())
+		})
+	})
+
+	Context("when sub-resource has a blocked status", func() {
+		It("returns the blocked worst overall status", func() {
+			ctx := context.Background()
+
+			blockedSub := &apiv1.ApiSubscription{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "api.cp.ei.telekom.de/v1",
+					Kind:       "ApiSubscription",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "blocked-sub",
+					Namespace: "poc--eni--hyperion",
+				},
+				Status: apiv1.ApiSubscriptionStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:   condition.ConditionTypeProcessing,
+							Status: metav1.ConditionFalse,
+							Reason: "Done",
+						},
+						{
+							Type:    condition.ConditionTypeReady,
+							Status:  metav1.ConditionFalse,
+							Reason:  "SubResourceNotReady",
+							Message: "Sub-resource is blocked",
+						},
+					},
+				},
+			}
+
+			mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
+			mockStore.On("List", ctx, mock.Anything).Return(
+				&commonStore.ListResponse[*apiv1.ApiSubscription]{
+					Items: []*apiv1.ApiSubscription{blockedSub}}, nil).Once()
+
+			result, err := getAllProblemsInSubResource(ctx, rover, mockStore)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result.Problems).To(HaveLen(1))
+			Expect(result.WorstOverallStatus).To(Equal(api.OverallStatusBlocked))
 			mockStore.AssertExpectations(GinkgoT())
 		})
 	})
 
 	Context("when there are no problems in sub-resource", func() {
-		It("returns no problems", func() {
+		It("returns no problems and zero-value worst overall status", func() {
 			ctx := context.Background()
 			mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
 			mockStore.On("List", ctx, mock.Anything).Return(
 				&commonStore.ListResponse[*apiv1.ApiSubscription]{
 					Items: []*apiv1.ApiSubscription{}}, nil).Once()
 
-			problems, err := getAllProblemsInSubResource(ctx, rover, mockStore)
+			result, err := getAllProblemsInSubResource(ctx, rover, mockStore)
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(problems).To(Equal(expectNoProblems))
+			Expect(result.Problems).To(Equal(expectNoProblems))
+			Expect(result.WorstOverallStatus).To(Equal(api.OverallStatus("")))
 			mockStore.AssertExpectations(GinkgoT())
 		})
 	})
@@ -159,10 +207,10 @@ var _ = Describe("getAllProblemsInSubResource", func() {
 			mockStore.On("List", ctx, mock.Anything).Return(
 				(*commonStore.ListResponse[*apiv1.ApiSubscription])(nil), expectedError).Once()
 
-			problems, err := getAllProblemsInSubResource(ctx, rover, mockStore)
+			result, err := getAllProblemsInSubResource(ctx, rover, mockStore)
 
 			Expect(err).To(HaveOccurred())
-			Expect(problems).To(BeNil())
+			Expect(result).To(Equal(ProblemsResult{}))
 			Expect(err).To(Equal(expectedError))
 			mockStore.AssertExpectations(GinkgoT())
 		})
@@ -274,5 +322,156 @@ var _ = Describe("hasRefs", func() {
 	})
 	It("returns true for non-empty slice", func() {
 		Expect(hasRefs([]types.ObjectRef{{Name: "a", Namespace: "ns"}})).To(BeTrue())
+	})
+})
+
+var _ = Describe("getAllProblemsInSubResource HasStale", func() {
+	Context("when a sub-resource has stale conditions", func() {
+		It("returns HasStale true", func() {
+			ctx := context.Background()
+			mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
+
+			staleAPISubscription := &apiv1.ApiSubscription{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "api.cp.ei.telekom.de/v1",
+					Kind:       "ApiSubscription",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       "stale-sub",
+					Namespace:  "poc--eni--hyperion",
+					Generation: 5,
+				},
+				Status: apiv1.ApiSubscriptionStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:               condition.ConditionTypeProcessing,
+							Status:             metav1.ConditionFalse,
+							Reason:             "Done",
+							ObservedGeneration: 3,
+						},
+						{
+							Type:               condition.ConditionTypeReady,
+							Status:             metav1.ConditionTrue,
+							ObservedGeneration: 3,
+						},
+					},
+				},
+			}
+
+			mockStore.On("List", ctx, mock.Anything).Return(
+				&commonStore.ListResponse[*apiv1.ApiSubscription]{
+					Items: []*apiv1.ApiSubscription{staleAPISubscription}}, nil).Once()
+
+			result, err := getAllProblemsInSubResource(ctx, rover, mockStore)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result.HasStale).To(BeTrue())
+			mockStore.AssertExpectations(GinkgoT())
+		})
+	})
+
+	Context("when all sub-resources are current", func() {
+		It("returns HasStale false", func() {
+			ctx := context.Background()
+			mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
+
+			currentAPISubscription := &apiv1.ApiSubscription{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "api.cp.ei.telekom.de/v1",
+					Kind:       "ApiSubscription",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       "current-sub",
+					Namespace:  "poc--eni--hyperion",
+					Generation: 3,
+				},
+				Status: apiv1.ApiSubscriptionStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:               condition.ConditionTypeProcessing,
+							Status:             metav1.ConditionFalse,
+							Reason:             "Done",
+							ObservedGeneration: 3,
+						},
+						{
+							Type:               condition.ConditionTypeReady,
+							Status:             metav1.ConditionTrue,
+							ObservedGeneration: 3,
+						},
+					},
+				},
+			}
+
+			mockStore.On("List", ctx, mock.Anything).Return(
+				&commonStore.ListResponse[*apiv1.ApiSubscription]{
+					Items: []*apiv1.ApiSubscription{currentAPISubscription}}, nil).Once()
+
+			result, err := getAllProblemsInSubResource(ctx, rover, mockStore)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result.HasStale).To(BeFalse())
+			mockStore.AssertExpectations(GinkgoT())
+		})
+	})
+
+	Context("when sub-resources list is empty", func() {
+		It("returns HasStale false", func() {
+			ctx := context.Background()
+			mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
+
+			mockStore.On("List", ctx, mock.Anything).Return(
+				&commonStore.ListResponse[*apiv1.ApiSubscription]{
+					Items: []*apiv1.ApiSubscription{}}, nil).Once()
+
+			result, err := getAllProblemsInSubResource(ctx, rover, mockStore)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result.HasStale).To(BeFalse())
+			mockStore.AssertExpectations(GinkgoT())
+		})
+	})
+
+	Context("when sub-resource has ObservedGeneration zero (backward compat)", func() {
+		It("returns HasStale false", func() {
+			ctx := context.Background()
+			mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
+
+			legacyAPISubscription := &apiv1.ApiSubscription{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "api.cp.ei.telekom.de/v1",
+					Kind:       "ApiSubscription",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       "legacy-sub",
+					Namespace:  "poc--eni--hyperion",
+					Generation: 5,
+				},
+				Status: apiv1.ApiSubscriptionStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:               condition.ConditionTypeProcessing,
+							Status:             metav1.ConditionFalse,
+							Reason:             "Done",
+							ObservedGeneration: 0,
+						},
+						{
+							Type:               condition.ConditionTypeReady,
+							Status:             metav1.ConditionTrue,
+							ObservedGeneration: 0,
+						},
+					},
+				},
+			}
+
+			mockStore.On("List", ctx, mock.Anything).Return(
+				&commonStore.ListResponse[*apiv1.ApiSubscription]{
+					Items: []*apiv1.ApiSubscription{legacyAPISubscription}}, nil).Once()
+
+			result, err := getAllProblemsInSubResource(ctx, rover, mockStore)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result.HasStale).To(BeFalse())
+			mockStore.AssertExpectations(GinkgoT())
+		})
 	})
 })

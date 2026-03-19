@@ -25,24 +25,36 @@ type SubResource interface {
 	commonStore.Object // implemented by any CR stored in a ObjectStore
 }
 
-// SubResourceChecker collects problems from one type of sub-resource owned by a parent resource.
-type SubResourceChecker func(ctx context.Context, owner types.Object) ([]api.Problem, error)
+// ProblemsResult holds problems found in sub-resources along with the worst
+// OverallStatus observed across all sub-resources and whether any sub-resource
+// has stale conditions (spec changed but controller hasn't reconciled yet).
+type ProblemsResult struct {
+	Problems           []api.Problem
+	WorstOverallStatus api.OverallStatus
+	HasStale           bool
+}
+
+// SubResourceChecker collects problems from one type of sub-resource owned by a parent resource
+// and computes the worst OverallStatus across those sub-resources.
+type SubResourceChecker func(ctx context.Context, owner types.Object) (ProblemsResult, error)
 
 // NewSubResourceChecker creates a SubResourceChecker that queries the given store
 // for sub-resources owned by the parent and reports any that are not ready.
+// It also computes the worst OverallStatus across all sub-resources.
 func NewSubResourceChecker[T SubResource](store commonStore.ObjectStore[T]) SubResourceChecker {
-	return func(ctx context.Context, owner types.Object) ([]api.Problem, error) {
+	return func(ctx context.Context, owner types.Object) (ProblemsResult, error) {
 		return getAllProblemsInSubResource(ctx, owner, store)
 	}
 }
 
-// GetAllRoverProblems retrieves all problems across all Rover sub-resource types.
+// GetAllRoverProblems retrieves all problems across all Rover sub-resource types
+// and computes the worst OverallStatus observed across all sub-resources.
 //
 // Each sub-resource type is queried via its store. If any query fails, the error
 // is returned immediately and remaining sub-resource types are not checked.
 // Store queries are skipped when the Rover's status indicates zero sub-resources
 // of the given type.
-func GetAllRoverProblems(ctx context.Context, rover *v1.Rover, stores *roverStore.Stores) ([]api.Problem, error) {
+func GetAllRoverProblems(ctx context.Context, rover *v1.Rover, stores *roverStore.Stores) (ProblemsResult, error) {
 	var checkers []SubResourceChecker
 	if hasRefs(rover.Status.ApiSubscriptions) {
 		checkers = append(checkers, NewSubResourceChecker(stores.APISubscriptionStore))
@@ -60,100 +72,64 @@ func GetAllRoverProblems(ctx context.Context, rover *v1.Rover, stores *roverStor
 		checkers = append(checkers, NewSubResourceChecker(stores.EventSubscriptionStore))
 	}
 
-	var allProblems []api.Problem
-	for _, check := range checkers {
-		problems, err := check(ctx, rover)
-		if err != nil {
-			return nil, err
-		}
-		allProblems = append(allProblems, problems...)
-	}
-	return allProblems, nil
+	return runCheckers(ctx, rover, checkers)
 }
 
-// GetAllRoverStateInfos retrieves all state information for a Rover including all sub-resources.
-// It uses GetAllRoverProblems and maps problems to state information.
-func GetAllRoverStateInfos(ctx context.Context, rover *v1.Rover, stores *roverStore.Stores) ([]api.StateInfo, error) {
-	problems, err := GetAllRoverProblems(ctx, rover, stores)
-	if err != nil {
-		return nil, err
-	}
-	return mapProblemsToStateInfos(problems), nil
-}
-
-// GetAllAPISpecificationProblems retrieves all problems across all ApiSpecification sub-resource types.
+// GetAllAPISpecificationProblems retrieves all problems across all ApiSpecification sub-resource types
+// and computes the worst OverallStatus observed across all sub-resources.
 //
 // Each sub-resource type is queried via its store. If any query fails, the error
 // is returned immediately and remaining sub-resource types are not checked.
 // Store queries are skipped when the ApiSpecification's status indicates zero
 // sub-resources of the given type.
-func GetAllAPISpecificationProblems(ctx context.Context, apiSpec *v1.ApiSpecification, stores *roverStore.Stores) ([]api.Problem, error) {
+func GetAllAPISpecificationProblems(ctx context.Context, apiSpec *v1.ApiSpecification, stores *roverStore.Stores) (ProblemsResult, error) {
 	if apiSpec.Status.Api.IsEmpty() {
-		return nil, nil
+		return ProblemsResult{}, nil
 	}
 
 	checkers := []SubResourceChecker{
 		NewSubResourceChecker(stores.APIStore),
 	}
 
-	var allProblems []api.Problem
-	for _, check := range checkers {
-		problems, err := check(ctx, apiSpec)
-		if err != nil {
-			return nil, err
-		}
-		allProblems = append(allProblems, problems...)
-	}
-	return allProblems, nil
+	return runCheckers(ctx, apiSpec, checkers)
 }
 
-// GetAllAPISpecificationStateInfos retrieves all state information for an ApiSpecification including all sub-resources.
-// It uses GetAllAPISpecificationProblems and maps problems to state information.
-func GetAllAPISpecificationStateInfos(ctx context.Context, apiSpec *v1.ApiSpecification, stores *roverStore.Stores) ([]api.StateInfo, error) {
-	problems, err := GetAllAPISpecificationProblems(ctx, apiSpec, stores)
-	if err != nil {
-		return nil, err
-	}
-	return mapProblemsToStateInfos(problems), nil
-}
-
-// GetAllEventSpecificationProblems retrieves all problems across all EventSpecification sub-resource types.
+// GetAllEventSpecificationProblems retrieves all problems across all EventSpecification sub-resource types
+// and computes the worst OverallStatus observed across all sub-resources.
 //
 // Each sub-resource type is queried via its store. If any query fails, the error
 // is returned immediately and remaining sub-resource types are not checked.
 // Store queries are skipped when the EventSpecification's status indicates zero
 // sub-resources of the given type.
-func GetAllEventSpecificationProblems(ctx context.Context, eventSpec *v1.EventSpecification, stores *roverStore.Stores) ([]api.Problem, error) {
+func GetAllEventSpecificationProblems(ctx context.Context, eventSpec *v1.EventSpecification, stores *roverStore.Stores) (ProblemsResult, error) {
 	if eventSpec.Status.EventType.IsEmpty() {
-		return nil, nil
+		return ProblemsResult{}, nil
 	}
 
 	checkers := []SubResourceChecker{
 		NewSubResourceChecker(stores.EventTypeStore),
 	}
 
-	var allProblems []api.Problem
-	for _, check := range checkers {
-		problems, err := check(ctx, eventSpec)
-		if err != nil {
-			return nil, err
-		}
-		allProblems = append(allProblems, problems...)
-	}
-	return allProblems, nil
-}
-
-// GetAllEventSpecificationStateInfos retrieves all state information for an EventSpecification including all sub-resources.
-// It uses GetAllEventSpecificationProblems and maps problems to state information.
-func GetAllEventSpecificationStateInfos(ctx context.Context, eventSpec *v1.EventSpecification, stores *roverStore.Stores) ([]api.StateInfo, error) {
-	problems, err := GetAllEventSpecificationProblems(ctx, eventSpec, stores)
-	if err != nil {
-		return nil, err
-	}
-	return mapProblemsToStateInfos(problems), nil
+	return runCheckers(ctx, eventSpec, checkers)
 }
 
 // --- Internal helpers ---
+
+// runCheckers runs a list of SubResourceCheckers against the given owner and
+// aggregates all problems and the worst OverallStatus across all sub-resource types.
+func runCheckers(ctx context.Context, owner types.Object, checkers []SubResourceChecker) (ProblemsResult, error) {
+	combined := ProblemsResult{}
+	for _, check := range checkers {
+		result, err := check(ctx, owner)
+		if err != nil {
+			return ProblemsResult{}, err
+		}
+		combined.Problems = append(combined.Problems, result.Problems...)
+		combined.WorstOverallStatus = CompareAndReturn(combined.WorstOverallStatus, result.WorstOverallStatus)
+		combined.HasStale = combined.HasStale || result.HasStale
+	}
+	return combined, nil
+}
 
 // hasRefs returns true if the given slice of ObjectRefs is non-empty,
 // indicating that sub-resources of this type exist according to the parent's status.
@@ -167,20 +143,30 @@ type Lister[T types.Object] interface {
 }
 
 // getAllProblemsInSubResource queries the store for sub-resources owned by the given owner
-// and returns a Problem for each sub-resource that has a not-ready condition.
-func getAllProblemsInSubResource[T SubResource](ctx context.Context, owner types.Object, store Lister[T]) ([]api.Problem, error) {
+// and returns a ProblemsResult containing a Problem for each sub-resource that has a not-ready
+// condition and the worst OverallStatus across all sub-resources.
+func getAllProblemsInSubResource[T SubResource](ctx context.Context, owner types.Object, store Lister[T]) (ProblemsResult, error) {
 	subResources, err := getAllSubResources(ctx, owner, store)
 	if err != nil {
-		return nil, err
+		return ProblemsResult{}, err
 	}
 
-	problems := make([]api.Problem, 0)
+	result := ProblemsResult{
+		Problems: make([]api.Problem, 0),
+	}
 	for _, res := range subResources {
+		subOverall := GetOverallStatus(res.GetConditions())
+		result.WorstOverallStatus = CompareAndReturn(result.WorstOverallStatus, subOverall)
+
+		if !result.HasStale && isProcessingStale(res.GetConditions(), res.GetGeneration()) {
+			result.HasStale = true
+		}
+
 		if notReady := getNotReadyCondition(res.GetConditions()); notReady != nil {
-			problems = append(problems, mapNotReadyConditionToProblem(notReady, res))
+			result.Problems = append(result.Problems, mapNotReadyConditionToProblem(notReady, res))
 		}
 	}
-	return problems, nil
+	return result, nil
 }
 
 // getAllSubResources lists all sub-resources owned by owner via ownerReference UID filtering.

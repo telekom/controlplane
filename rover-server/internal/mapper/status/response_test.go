@@ -270,6 +270,87 @@ var _ = Describe("Response Mapper", func() {
 			Expect(resp.State).To(Equal(api.Blocked))
 			Expect(resp.Errors).To(BeEmpty())
 		})
+
+		It("sets OverallStatus to blocked when parent is Complete but sub-resource is blocked", func() {
+			apiSpec := &v1.ApiSpecification{
+				TypeMeta: metav1.TypeMeta{APIVersion: "rover.cp.ei.telekom.de/v1", Kind: "ApiSpecification"},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "complete-parent-blocked-sub", Namespace: "ns",
+					UID: "uid-6", Generation: 2,
+					CreationTimestamp: metav1.Time{Time: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)},
+				},
+				Status: v1.ApiSpecificationStatus{
+					Conditions: completeConditions(2),
+					Api:        types.ObjectRef{Name: "api-blocked", Namespace: "ns"},
+				},
+			}
+
+			// Sub-resource is blocked: Processing=Done + Ready=False
+			apiMock := new(MockObjectStore[*apiv1.Api])
+			blockedAPI := &apiv1.Api{
+				TypeMeta:   metav1.TypeMeta{APIVersion: "api.cp.ei.telekom.de/v1", Kind: "Api"},
+				ObjectMeta: metav1.ObjectMeta{Name: "api-blocked", Namespace: "ns", Generation: 2},
+				Status: apiv1.ApiStatus{
+					Conditions: []metav1.Condition{
+						{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: "Done", ObservedGeneration: 2},
+						{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: "Blocked", Message: "Upstream unavailable", ObservedGeneration: 2},
+					},
+				},
+			}
+			apiMock.On("List", mock.Anything, mock.Anything).Return(
+				&commonStore.ListResponse[*apiv1.Api]{Items: []*apiv1.Api{blockedAPI}}, nil)
+
+			s := &store.Stores{APIStore: apiMock}
+
+			resp, err := MapAPISpecificationResponse(ctx, apiSpec, s)
+
+			Expect(err).NotTo(HaveOccurred())
+			// Parent is Complete/Done, but sub-resource is Blocked → OverallStatus must be "blocked"
+			Expect(resp.State).To(Equal(api.Complete))
+			Expect(resp.OverallStatus).To(Equal(api.OverallStatusBlocked))
+			Expect(resp.Errors).To(HaveLen(1))
+			Expect(resp.Errors[0].Cause).To(Equal("Blocked"))
+		})
+
+		It("sets OverallStatus to failed when parent is Complete but sub-resource is failed", func() {
+			apiSpec := &v1.ApiSpecification{
+				TypeMeta: metav1.TypeMeta{APIVersion: "rover.cp.ei.telekom.de/v1", Kind: "ApiSpecification"},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "complete-parent-failed-sub", Namespace: "ns",
+					UID: "uid-7", Generation: 2,
+					CreationTimestamp: metav1.Time{Time: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)},
+				},
+				Status: v1.ApiSpecificationStatus{
+					Conditions: completeConditions(2),
+					Api:        types.ObjectRef{Name: "api-failed", Namespace: "ns"},
+				},
+			}
+
+			// Sub-resource has a failed processing state
+			apiMock := new(MockObjectStore[*apiv1.Api])
+			failedAPI := &apiv1.Api{
+				TypeMeta:   metav1.TypeMeta{APIVersion: "api.cp.ei.telekom.de/v1", Kind: "Api"},
+				ObjectMeta: metav1.ObjectMeta{Name: "api-failed", Namespace: "ns", Generation: 2},
+				Status: apiv1.ApiStatus{
+					Conditions: []metav1.Condition{
+						{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: "ProvisioningError", Message: "Internal server error", ObservedGeneration: 2},
+						{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: "ProvisioningError", Message: "Internal server error", ObservedGeneration: 2},
+					},
+				},
+			}
+			apiMock.On("List", mock.Anything, mock.Anything).Return(
+				&commonStore.ListResponse[*apiv1.Api]{Items: []*apiv1.Api{failedAPI}}, nil)
+
+			s := &store.Stores{APIStore: apiMock}
+
+			resp, err := MapAPISpecificationResponse(ctx, apiSpec, s)
+
+			Expect(err).NotTo(HaveOccurred())
+			// Parent is Complete/Done, but sub-resource is Failed → OverallStatus must be "failed"
+			Expect(resp.State).To(Equal(api.Complete))
+			Expect(resp.OverallStatus).To(Equal(api.OverallStatusFailed))
+			Expect(resp.Errors).To(HaveLen(1))
+		})
 	})
 
 	// --- MapEventSpecificationResponse ---
@@ -438,6 +519,85 @@ var _ = Describe("Response Mapper", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.State).To(Equal(api.Blocked))
 			Expect(resp.Errors).To(BeEmpty())
+		})
+
+		It("sets OverallStatus to blocked when parent is Complete but sub-resource is blocked", func() {
+			eventSpec := &v1.EventSpecification{
+				TypeMeta: metav1.TypeMeta{APIVersion: "rover.cp.ei.telekom.de/v1", Kind: "EventSpecification"},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "complete-parent-blocked-sub", Namespace: "ns",
+					UID: "uid-e6", Generation: 2,
+					CreationTimestamp: metav1.Time{Time: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)},
+				},
+				Status: v1.EventSpecificationStatus{
+					Conditions: completeConditions(2),
+					EventType:  types.ObjectRef{Name: "et-blocked", Namespace: "ns"},
+				},
+			}
+
+			etMock := new(MockObjectStore[*eventv1.EventType])
+			blockedET := &eventv1.EventType{
+				TypeMeta:   metav1.TypeMeta{APIVersion: "event.cp.ei.telekom.de/v1", Kind: "EventType"},
+				ObjectMeta: metav1.ObjectMeta{Name: "et-blocked", Namespace: "ns", Generation: 2},
+				Status: eventv1.EventTypeStatus{
+					Conditions: []metav1.Condition{
+						{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: "Done", ObservedGeneration: 2},
+						{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: "Blocked", Message: "Upstream unavailable", ObservedGeneration: 2},
+					},
+				},
+			}
+			etMock.On("List", mock.Anything, mock.Anything).Return(
+				&commonStore.ListResponse[*eventv1.EventType]{Items: []*eventv1.EventType{blockedET}}, nil)
+
+			s := &store.Stores{EventTypeStore: etMock}
+
+			resp, err := MapEventSpecificationResponse(ctx, eventSpec, s)
+
+			Expect(err).NotTo(HaveOccurred())
+			// Parent is Complete/Done, but sub-resource is Blocked → OverallStatus must be "blocked"
+			Expect(resp.State).To(Equal(api.Complete))
+			Expect(resp.OverallStatus).To(Equal(api.OverallStatusBlocked))
+			Expect(resp.Errors).To(HaveLen(1))
+			Expect(resp.Errors[0].Cause).To(Equal("Blocked"))
+		})
+
+		It("sets OverallStatus to failed when parent is Complete but sub-resource is failed", func() {
+			eventSpec := &v1.EventSpecification{
+				TypeMeta: metav1.TypeMeta{APIVersion: "rover.cp.ei.telekom.de/v1", Kind: "EventSpecification"},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "complete-parent-failed-sub", Namespace: "ns",
+					UID: "uid-e7", Generation: 2,
+					CreationTimestamp: metav1.Time{Time: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)},
+				},
+				Status: v1.EventSpecificationStatus{
+					Conditions: completeConditions(2),
+					EventType:  types.ObjectRef{Name: "et-failed", Namespace: "ns"},
+				},
+			}
+
+			etMock := new(MockObjectStore[*eventv1.EventType])
+			failedET := &eventv1.EventType{
+				TypeMeta:   metav1.TypeMeta{APIVersion: "event.cp.ei.telekom.de/v1", Kind: "EventType"},
+				ObjectMeta: metav1.ObjectMeta{Name: "et-failed", Namespace: "ns", Generation: 2},
+				Status: eventv1.EventTypeStatus{
+					Conditions: []metav1.Condition{
+						{Type: condition.ConditionTypeProcessing, Status: metav1.ConditionFalse, Reason: "ProvisioningError", Message: "Internal server error", ObservedGeneration: 2},
+						{Type: condition.ConditionTypeReady, Status: metav1.ConditionFalse, Reason: "ProvisioningError", Message: "Internal server error", ObservedGeneration: 2},
+					},
+				},
+			}
+			etMock.On("List", mock.Anything, mock.Anything).Return(
+				&commonStore.ListResponse[*eventv1.EventType]{Items: []*eventv1.EventType{failedET}}, nil)
+
+			s := &store.Stores{EventTypeStore: etMock}
+
+			resp, err := MapEventSpecificationResponse(ctx, eventSpec, s)
+
+			Expect(err).NotTo(HaveOccurred())
+			// Parent is Complete/Done, but sub-resource is Failed → OverallStatus must be "failed"
+			Expect(resp.State).To(Equal(api.Complete))
+			Expect(resp.OverallStatus).To(Equal(api.OverallStatusFailed))
+			Expect(resp.Errors).To(HaveLen(1))
 		})
 	})
 })
