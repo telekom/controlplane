@@ -615,6 +615,12 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 
 				Expect(failoverRoute.Spec.Traffic.Failover).ToNot(BeNil())
 
+				// The failover secondary route is a proxy-target for cross-zone requests,
+				// so the gateway mesh-client must be allowed in its ACL.
+				Expect(failoverRoute.Spec.Security).ToNot(BeNil(), "Failover route should have security configured")
+				Expect(failoverRoute.Spec.Security.DefaultConsumers).To(ContainElement(util.GatewayConsumerName),
+					"Failover secondary route should contain gateway consumer for cross-zone proxy access")
+
 				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Host).To(Equal("my-provider-api"))
 				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Port).To(Equal(8080))
 				Expect(failoverRoute.Spec.Traffic.Failover.Upstreams[0].Path).To(Equal("/api/v1"))
@@ -715,6 +721,108 @@ var _ = Describe("ApiExposure Controller with failover scenario", Ordered, func(
 
 			}, timeout, interval).Should(Succeed())
 
+		})
+	})
+})
+
+var _ = Describe("ApiExposure Controller cross-zone proxy target ACL", Ordered, func() {
+	var apiBasePath = "/apiexpctrl/crosszone/v1"
+	var zoneName = "crosszone-exp-zone"
+	var otherZoneName = "crosszone-sub-zone"
+
+	var apiExposure *apiv1.ApiExposure
+	var api *apiv1.Api
+
+	var appName = "crosszone-app"
+
+	var crossZoneSub *apiapi.ApiSubscription
+
+	BeforeAll(func() {
+		By("Creating the Application")
+		CreateApplication(appName)
+
+		By("Creating the zones")
+		zone := CreateZone(zoneName)
+		CreateZone(otherZoneName)
+
+		By("Creating the Realms")
+		CreateRealm(testEnvironment, zone.Name)
+
+		By("Creating the API")
+		api = NewApi(apiBasePath)
+		err := k8sClient.Create(ctx, api)
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	AfterAll(func() {
+		err := k8sClient.Delete(ctx, api)
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	Context("Gateway consumer management based on cross-zone subscriptions", Ordered, func() {
+
+		It("should NOT have gateway consumer in DefaultConsumers when no cross-zone subscriptions exist", func() {
+			By("Creating the ApiExposure")
+			apiExposure = NewApiExposure(apiBasePath, zoneName, appName)
+			err := k8sClient.Create(ctx, apiExposure)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Waiting for the real route to be created")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(apiExposure.Status.Active).To(BeTrue())
+				g.Expect(apiExposure.Status.Route).ToNot(BeNil())
+
+				route := &gatewayapi.Route{}
+				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), route)
+				g.Expect(err).ToNot(HaveOccurred())
+
+				By("Checking that DefaultConsumers does not contain gateway")
+				if route.Spec.Security != nil {
+					g.Expect(route.Spec.Security.DefaultConsumers).ToNot(ContainElement(util.GatewayConsumerName))
+				}
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should add gateway consumer to DefaultConsumers when a cross-zone subscription is created", func() {
+			By("Creating a subscription in a different zone")
+			crossZoneSub = NewApiSubscription(apiBasePath, otherZoneName, appName)
+			err := k8sClient.Create(ctx, crossZoneSub)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Waiting for the ApiExposure to re-reconcile and add gateway consumer to the real route")
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(apiExposure), apiExposure)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(apiExposure.Status.Route).ToNot(BeNil())
+
+				route := &gatewayapi.Route{}
+				err = k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), route)
+				g.Expect(err).ToNot(HaveOccurred())
+
+				g.Expect(route.Spec.Security).ToNot(BeNil(), "Route security should not be nil when cross-zone subscription exists")
+				g.Expect(route.Spec.Security.DefaultConsumers).To(ContainElement(util.GatewayConsumerName),
+					"Real route should contain gateway consumer when cross-zone subscription exists")
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should remove gateway consumer from DefaultConsumers when the cross-zone subscription is deleted", func() {
+			By("Deleting the cross-zone subscription")
+			err := k8sClient.Delete(ctx, crossZoneSub)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Waiting for the ApiExposure to re-reconcile and remove gateway consumer from the real route")
+			Eventually(func(g Gomega) {
+				route := &gatewayapi.Route{}
+				err := k8sClient.Get(ctx, apiExposure.Status.Route.K8s(), route)
+				g.Expect(err).ToNot(HaveOccurred())
+
+				if route.Spec.Security != nil {
+					g.Expect(route.Spec.Security.DefaultConsumers).ToNot(ContainElement(util.GatewayConsumerName),
+						"Real route should NOT contain gateway consumer after cross-zone subscription is deleted")
+				}
+			}, timeout, interval).Should(Succeed())
 		})
 	})
 })

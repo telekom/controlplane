@@ -16,7 +16,9 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // setAlreadyExposedConditions sets NotReady and Blocked conditions on the new ApiExposure
@@ -114,4 +116,31 @@ func ApiMustExist(ctx context.Context, apiExp *apiv1.ApiExposure) (*apiv1.Api, e
 	apiExp.SetCondition(condition.NewBlockedCondition(msg))
 
 	return nil, nil
+}
+
+// HasCrossZoneSubscribers checks if there are any ApiSubscriptions for the given basepath
+// where the subscription zone differs from the exposure zone.
+// This indicates that a cross-zone proxy exists, meaning the real route needs to allow
+// the gateway mesh-client in its ACL.
+func HasCrossZoneSubscribers(ctx context.Context, apiExp *apiv1.ApiExposure) (bool, error) {
+	scopedClient := cclient.ClientFromContextOrDie(ctx)
+
+	apiSubscriptions := &apiv1.ApiSubscriptionList{}
+	err := scopedClient.List(ctx, apiSubscriptions,
+		client.MatchingLabels{
+			apiv1.BasePathLabelKey: labelutil.NormalizeLabelValue(apiExp.Spec.ApiBasePath),
+		},
+	)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to list ApiSubscriptions for basepath %q", apiExp.Spec.ApiBasePath)
+	}
+
+	for i := range apiSubscriptions.Items {
+		sub := &apiSubscriptions.Items[i]
+		if !sub.Spec.Zone.Equals(&apiExp.Spec.Zone) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
