@@ -24,7 +24,14 @@ type DatabaseConfig struct {
 }
 
 type HTTPServerConfig struct {
-	Address string `yaml:"address"`
+	Address string    `yaml:"address"`
+	TLS     TLSConfig `yaml:"tls"`
+}
+
+type TLSConfig struct {
+	Enabled bool   `yaml:"enabled"`
+	Cert    string `yaml:"cert"`
+	Key     string `yaml:"key"`
 }
 
 type SecurityConfig struct {
@@ -46,7 +53,12 @@ func DefaultConfig() *ServerConfig {
 			URL: "postgres://controlplane:controlplane@localhost:5432/controlplane?sslmode=disable",
 		},
 		Server: HTTPServerConfig{
-			Address: ":8080",
+			Address: ":8443",
+			TLS: TLSConfig{
+				Enabled: true,
+				Cert:    "/etc/tls/tls.crt",
+				Key:     "/etc/tls/tls.key",
+			},
 		},
 		Security: SecurityConfig{
 			Enabled: false,
