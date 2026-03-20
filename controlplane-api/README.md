@@ -126,21 +126,30 @@ Most of the code under `ent/` is generated and should not be edited manually (ma
 
 For a field managed by ent (stored in DB):
 1. Edit the ent schema in `ent/schema/`
-2. Run `make generate`
-3. Done — ent + entgql handle the rest automatically
+1. Run `make generate`
+1. Done — ent + entgql handle the rest automatically
 
 For a computed/custom field (not in DB):
 1. Add the field to `schema.graphql` (e.g., via `extend type`)
-2. Add the Go model to `internal/resolvers/model/` if needed
-3. Map it in `gqlgen.yml`
-4. Run `make generate`
-5. Implement the resolver stub in the generated `*.resolvers.go` file
+1. Add the Go model to `internal/resolvers/model/` if needed
+1. Map it in `gqlgen.yml`
+1. Run `make generate`
+1. Implement the resolver stub in the generated `*.resolvers.go` file
 
 ### Configuration
 
-| Environment Variable | Default                                                                            | Description                              |
-|----------------------|------------------------------------------------------------------------------------|------------------------------------------|
-| `DATABASE_URL`       | `postgres://controlplane:controlplane@localhost:5432/controlplane?sslmode=disable` | PostgreSQL connection string             |
-| `LISTEN_ADDR`        | `:8080`                                                                            | Server listen address                    |
-| `PLAYGROUND_ENABLED` | `true`                                                                             | Enable GraphQL Playground at `/graphql/` |
-| `SECURITY_ENABLED`   | `false`                                                                            | Enable JWT authentication                |
+Configuration is loaded from a YAML file via `--configfile`. If omitted, built-in defaults are used.
+
+```bash
+controlplane-api --configfile /etc/controlplane/config/config.yaml
+```
+
+See [`install/local/controlplane-api-config.yaml`](../install/local/controlplane-api-config.yaml) for an example.
+
+| Field                       | Default                                                                            | Description                              |
+|-----------------------------|------------------------------------------------------------------------------------|------------------------------------------|
+| `database.url`              | `postgres://controlplane:controlplane@localhost:5432/controlplane?sslmode=disable` | PostgreSQL connection string             |
+| `server.address`            | `:8080`                                                                            | Server listen address                    |
+| `graphql.playgroundEnabled` | `true`                                                                             | Enable GraphQL Playground at `/graphql/` |
+| `security.enabled`          | `false`                                                                            | Enable JWT authentication                |
+| `log.level`                 | `info`                                                                             | Log level (debug, info, warn, error)     |
