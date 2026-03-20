@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"net/http"
 	"os"
 
@@ -21,6 +22,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/telekom/controlplane/controlplane-api/cmd/config"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	"github.com/telekom/controlplane/controlplane-api/internal/database"
@@ -29,16 +31,23 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
 )
 
+var configFile string
+
+func init() {
+	flag.StringVar(&configFile, "configfile", "", "path to config file")
+}
+
 func main() {
-	log := setupLogger()
+	flag.Parse()
+
+	cfg := config.GetConfigOrDie(configFile)
+	log := setupLogger(cfg.Log.Level)
 	ctx := logr.NewContext(context.Background(), log)
 	ctx = cserver.SignalHandler(ctx)
 
-	dbURL := envOrDefault("DATABASE_URL", "postgres://controlplane:controlplane@localhost:5432/controlplane?sslmode=disable")
-	addr := envOrDefault("LISTEN_ADDR", ":8080")
-	playgroundEnabled := envOrDefault("PLAYGROUND_ENABLED", "true") == "true"
+	log.Info("loaded configuration", "configfile", configFile)
 
-	client, err := database.NewEntClient(ctx, dbURL)
+	client, err := database.NewEntClient(ctx, cfg.Database.URL)
 	if err != nil {
 		log.Error(err, "failed to create ent client")
 		os.Exit(1)
@@ -54,22 +63,22 @@ func main() {
 	probesCtrl := cserver.NewProbesController()
 	probesCtrl.Register(s.App, cserver.ControllerOpts{})
 
-	gqlCtrl := gqlcontroller.NewController(srv, playgroundEnabled)
+	gqlCtrl := gqlcontroller.NewController(srv, cfg.GraphQL.PlaygroundEnabled)
 	s.RegisterController(gqlCtrl, cserver.ControllerOpts{
 		Prefix:         "/graphql",
 		AllowedMethods: []string{http.MethodHead, http.MethodGet, http.MethodPost, http.MethodOptions},
 		Security: security.SecurityOpts{
-			Enabled: envOrDefault("SECURITY_ENABLED", "false") == "true",
+			Enabled: cfg.Security.Enabled,
 			Log:     log.WithName("security"),
 		},
 	})
 
 	go func() {
-		if err := s.Start(addr); err != nil {
+		if err := s.Start(cfg.Server.Address); err != nil {
 			log.Error(err, "failed to start server")
 		}
 	}()
-	log.Info("server started", "addr", addr)
+	log.Info("server started", "addr", cfg.Server.Address)
 
 	<-ctx.Done()
 	log.Info("shutting down server")
@@ -83,11 +92,11 @@ func main() {
 	}
 }
 
-func setupLogger() logr.Logger {
+func setupLogger(level string) logr.Logger {
 	logCfg := zap.NewProductionConfig()
 	logCfg.DisableStacktrace = true
 	logCfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
-	zapLogLevel, err := zapcore.ParseLevel(envOrDefault("LOG_LEVEL", "info"))
+	zapLogLevel, err := zapcore.ParseLevel(level)
 	if err != nil {
 		zapLogLevel = zapcore.InfoLevel
 	}
@@ -110,11 +119,4 @@ func newGraphQLServer(client *ent.Client) *handler.Server {
 	srv.AroundOperations(gqlcontroller.ViewerFromBusinessContext(client))
 
 	return srv
-}
-
-func envOrDefault(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
 }
