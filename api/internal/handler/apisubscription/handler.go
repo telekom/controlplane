@@ -20,6 +20,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
@@ -287,8 +288,21 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 				log.Info("Creating proxy route for failover zone", "zone", subFailoverZone)
 			}
 
+			// Determine which realm to use: try "dtc" first, fall back to "default" if it doesn't exist
+			realmName := "dtc"
+			zone, zoneErr := util.GetZone(ctx, scopedClient, subFailoverZone.K8s())
+			if zoneErr == nil {
+				dtcRealmRef := client.ObjectKey{Name: "dtc", Namespace: zone.Status.Namespace}
+				_, realmErr := util.GetRealm(ctx, dtcRealmRef)
+				if realmErr != nil {
+					// DTC realm doesn't exist for this zone, fall back to default realm
+					log.Info("DTC realm not found for failover zone, falling back to default realm", "zone", subFailoverZone)
+					realmName = contextutil.EnvFromContextOrDie(ctx)
+				}
+			}
+
 			failoverProxyRoute, err := util.CreateProxyRoute(ctx, subFailoverZone, apiExposure.Spec.Zone, apiSub.Spec.ApiBasePath,
-				contextutil.EnvFromContextOrDie(ctx),
+				realmName,
 				options...,
 			)
 			if err != nil {

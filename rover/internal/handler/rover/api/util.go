@@ -41,7 +41,7 @@ func toApiBasic(basic *rover.BasicAuthCredentials) *apiapi.BasicAuthCredentials 
 	}
 }
 
-func getFailoverZones(env string, failoverCfg *rover.Failover) ([]types.ObjectRef, bool) {
+func getProviderFailoverZones(env string, failoverCfg *rover.Failover) ([]types.ObjectRef, bool) {
 	if failoverCfg == nil || len(failoverCfg.Zones) == 0 {
 		return nil, false
 	}

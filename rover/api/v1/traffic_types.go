@@ -27,9 +27,6 @@ type CircuitBreaker struct {
 }
 
 type SubscriberTraffic struct {
-	// Failover defines disaster recovery configuration for this API
-	// +kubebuilder:validation:Optional
-	Failover *Failover `json:"failover,omitempty"`
 }
 
 // LoadBalancing defines load balancing strategy for multiple upstreams

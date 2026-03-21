@@ -103,6 +103,11 @@ type RoverSpec struct {
 	// +kubebuilder:validation:Optional
 	ClientSecret string `json:"clientSecret"`
 
+	// FailoverEnabled enables DTC-based automatic failover for all subscriptions
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=false
+	FailoverEnabled bool `json:"failoverEnabled,omitempty"`
+
 	// Exposures is a list of APIs and Events that this Rover exposes to consumers
 	// +kubebuilder:validation:Optional
 	Exposures []Exposure `json:"exposures,omitempty"`

@@ -596,6 +596,11 @@ spec:
                     rule: self == null || (!has(self.api) && has(self.event)) || (has(self.api)
                       && !has(self.event))
                 type: array
+              failoverEnabled:
+                default: false
+                description: FailoverEnabled enables DTC-based automatic failover
+                  for all subscriptions
+                type: boolean
               ipRestrictions:
                 description: IpRestrictions defines IP-based access restrictions for
                   the entire Application
@@ -713,19 +718,6 @@ spec:
                         traffic:
                           description: Traffic defines optional traffic management
                             configuration for this API
-                          properties:
-                            failover:
-                              description: Failover defines disaster recovery configuration
-                                for this API
-                              properties:
-                                zones:
-                                  description: Zones is a list of zone names to use
-                                    for failover if the primary zone is unavailable
-                                  items:
-                                    type: string
-                                  maxItems: 10
-                                  type: array
-                              type: object
                           type: object
                         transformation:
                           description: Transformation defines optional request/response

@@ -10,8 +10,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -52,6 +54,10 @@ var _ = Describe("Rover Controller", Ordered, func() {
 	AfterEach(func() {
 		resource := &roverv1.Rover{}
 		err := k8sClient.Get(ctx, typeNamespacedName, resource)
+		if errors.IsNotFound(err) {
+			// Resource doesn't exist (e.g., DTC tests use different names), skip cleanup
+			return
+		}
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Cleanup the specific resource instance Rover")
@@ -693,6 +699,193 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				// Verify helper methods
 				g.Expect(apiExposure.HasFailover()).To(BeFalse())
 				g.Expect(apiExposure.HasRateLimit()).To(BeFalse())
+			}, timeout, interval).Should(Succeed())
+		})
+	})
+
+	Context("Rover with DTC failover configuration", Ordered, func() {
+		const (
+			zone1Name = "zone-dtc-1"
+			zone2Name = "zone-dtc-2"
+			zone3Name = "zone-no-dtc"
+		)
+
+		var zone1, zone2, zone3 *adminv1.Zone
+
+		BeforeAll(func() {
+			By("Creating zone 1 with DTC URL and Enterprise visibility")
+			zone1 = newZoneWithDtc(zone1Name, testEnvironment, "https://dtc1.example.com/", "https://idp-zone1.example.com/", adminv1.ZoneVisibilityEnterprise)
+			Expect(k8sClient.Create(ctx, zone1)).To(Succeed())
+
+			By("Creating zone 2 with DTC URL and Enterprise visibility")
+			zone2 = newZoneWithDtc(zone2Name, testEnvironment, "https://dtc2.example.com/", "https://idp-zone2.example.com/", adminv1.ZoneVisibilityEnterprise)
+			Expect(k8sClient.Create(ctx, zone2)).To(Succeed())
+
+			By("Creating zone 3 without DTC URL")
+			zone3 = newZoneWithDtc(zone3Name, testEnvironment, "", "https://idp-zone3.example.com/", adminv1.ZoneVisibilityEnterprise)
+			zone3.Spec.Gateway.DtcUrl = nil
+			Expect(k8sClient.Create(ctx, zone3)).To(Succeed())
+		})
+
+		AfterAll(func() {
+			By("Cleanup zones")
+			Expect(k8sClient.Delete(ctx, zone1)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, zone2)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, zone3)).To(Succeed())
+		})
+
+		It("should create Application with DTC failover zones when failoverEnabled is true", func() {
+			roverName := "test-dtc-enabled"
+			spec := roverv1.RoverSpec{
+				Zone:            zone1Name,
+				ClientSecret:    "topsecret",
+				FailoverEnabled: true,
+				Subscriptions: []roverv1.Subscription{
+					{
+						Api: &roverv1.ApiSubscription{
+							BasePath: BasePath,
+						},
+					},
+				},
+			}
+
+			rover := createRover(roverName, teamNamespace, testEnvironment, spec)
+
+			By("creating the rover with failoverEnabled")
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				application := &applicationv1.Application{}
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      roverName,
+					Namespace: teamNamespace,
+				}, application)
+
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(application.Spec.NeedsClient).To(BeTrue())
+
+				// Should contain zone2 (DTC-eligible, excluding own zone1)
+				g.Expect(application.Spec.FailoverZones).To(ContainElement(types.ObjectRef{
+					Name:      zone2Name,
+					Namespace: testEnvironment,
+				}))
+
+				// Should NOT contain zone1 (own zone)
+				g.Expect(application.Spec.FailoverZones).NotTo(ContainElement(types.ObjectRef{
+					Name:      zone1Name,
+					Namespace: testEnvironment,
+				}))
+
+				// Should NOT contain zone3 (no DTC URL)
+				g.Expect(application.Spec.FailoverZones).NotTo(ContainElement(types.ObjectRef{
+					Name:      zone3Name,
+					Namespace: testEnvironment,
+				}))
+			}, timeout, interval).Should(Succeed())
+
+			By("Cleanup the rover")
+			secretManagerMock.EXPECT().DeleteApplication(mock.Anything, testEnvironment, group+"--"+teamName, roverName).Return(nil).Times(1)
+			fetchedRover := &roverv1.Rover{}
+			err := k8sClient.Get(ctx, client.ObjectKey{Name: roverName, Namespace: teamNamespace}, fetchedRover)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(k8sClient.Delete(ctx, fetchedRover)).To(Succeed())
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKey{Name: roverName, Namespace: teamNamespace}, fetchedRover)
+				g.Expect(errors.IsNotFound(err)).To(BeTrue())
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should create ApiSubscription with failover zones from rover-level failoverEnabled", func() {
+			roverName := "test-dtc-subscription"
+			spec := roverv1.RoverSpec{
+				Zone:            zone1Name,
+				ClientSecret:    "topsecret",
+				FailoverEnabled: true,
+				Subscriptions: []roverv1.Subscription{
+					{
+						Api: &roverv1.ApiSubscription{
+							BasePath: BasePath,
+						},
+					},
+				},
+			}
+
+			rover := createRover(roverName, teamNamespace, testEnvironment, spec)
+
+			By("creating the rover with failoverEnabled")
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				apiSubscription := &apiapi.ApiSubscription{}
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      roverName + "--eni-api-v1",
+					Namespace: teamNamespace,
+				}, apiSubscription)
+
+				g.Expect(err).NotTo(HaveOccurred())
+
+				// ApiSubscription should have failover configuration
+				g.Expect(apiSubscription.Spec.Traffic.Failover).NotTo(BeNil())
+				g.Expect(apiSubscription.Spec.Traffic.Failover.Zones).To(ContainElement(types.ObjectRef{
+					Name:      zone2Name,
+					Namespace: testEnvironment,
+				}))
+			}, timeout, interval).Should(Succeed())
+
+			By("Cleanup the rover")
+			secretManagerMock.EXPECT().DeleteApplication(mock.Anything, testEnvironment, group+"--"+teamName, roverName).Return(nil).Times(1)
+			fetchedRover := &roverv1.Rover{}
+			err := k8sClient.Get(ctx, client.ObjectKey{Name: roverName, Namespace: teamNamespace}, fetchedRover)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(k8sClient.Delete(ctx, fetchedRover)).To(Succeed())
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKey{Name: roverName, Namespace: teamNamespace}, fetchedRover)
+				g.Expect(errors.IsNotFound(err)).To(BeTrue())
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should create Application without failover zones when failoverEnabled is false", func() {
+			roverName := "test-dtc-disabled"
+			spec := roverv1.RoverSpec{
+				Zone:            zone1Name,
+				ClientSecret:    "topsecret",
+				FailoverEnabled: false,
+				Subscriptions: []roverv1.Subscription{
+					{
+						Api: &roverv1.ApiSubscription{
+							BasePath: "/eni/api/v2",
+						},
+					},
+				},
+			}
+
+			rover := createRover(roverName, teamNamespace, testEnvironment, spec)
+
+			By("creating the rover with failoverEnabled=false")
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				application := &applicationv1.Application{}
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      roverName,
+					Namespace: teamNamespace,
+				}, application)
+
+				g.Expect(err).NotTo(HaveOccurred())
+
+				// Should NOT have failover zones
+				g.Expect(application.Spec.FailoverZones).To(BeEmpty())
+			}, timeout, interval).Should(Succeed())
+
+			By("Cleanup the rover")
+			secretManagerMock.EXPECT().DeleteApplication(mock.Anything, testEnvironment, group+"--"+teamName, roverName).Return(nil).Times(1)
+			fetchedRover := &roverv1.Rover{}
+			err := k8sClient.Get(ctx, client.ObjectKey{Name: roverName, Namespace: teamNamespace}, fetchedRover)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(k8sClient.Delete(ctx, fetchedRover)).To(Succeed())
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKey{Name: roverName, Namespace: teamNamespace}, fetchedRover)
+				g.Expect(errors.IsNotFound(err)).To(BeTrue())
 			}, timeout, interval).Should(Succeed())
 		})
 	})

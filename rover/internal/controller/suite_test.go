@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
@@ -82,6 +83,7 @@ var _ = BeforeSuite(func() {
 			filepath.Join("..", "..", "..", "api", "config", "crd", "bases"),
 			filepath.Join("..", "..", "..", "application", "config", "crd", "bases"),
 			filepath.Join("..", "..", "..", "organization", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "admin", "config", "crd", "bases"),
 		),
 		//CRDDirectoryPaths: append(
 		//	testutil.GetCrdPathsOrDie("github.com/telekom/controlplane/(api|application|organization)/api"),
@@ -107,6 +109,9 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = organizationv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = adminv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
