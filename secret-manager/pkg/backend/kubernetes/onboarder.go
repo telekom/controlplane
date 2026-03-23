@@ -46,7 +46,7 @@ func (k *KubernetesOnboarder) OnboardEnvironment(ctx context.Context, env string
 		opt(&options)
 	}
 
-	allowedSecrets := backend.NewTeamSecrets()
+	allowedSecrets := backend.NewEnvironmentSecrets()
 	if err := backend.TryAddSecrets(New, allowedSecrets, env, backend.NoTeam, backend.NoApp, options.SecretValues); err != nil {
 		return nil, err
 	}
@@ -243,7 +243,9 @@ func RemoveFinalizer(ctx context.Context, c client.Client, obj client.Object) er
 }
 
 // applySecrets applies newData to the existing secret data based on the given strategy.
-// With "merge", existing keys not present in newData are preserved in the result.
+// With "merge", existing keys not present in newData are preserved in the result,
+// and JSON object values are shallow-merged with existing values (preserving keys
+// from the existing JSON that are not in the incoming JSON).
 // With "replace" (or any other value, including empty string), only keys from newData
 // are included in the result.
 // In both modes, keys where AllowChange() is false and already exist in the existing
@@ -265,6 +267,16 @@ func applySecrets(strategy backend.WriteStrategy, existing map[string][]byte, ne
 		}
 		if v.IsEmpty() {
 			continue
+		}
+		// For merge strategy, shallow-merge JSON object values with existing data
+		if strategy == backend.StrategyMerge {
+			if existingVal, exists := existing[k]; exists {
+				merged, wasMerged := backend.ShallowMergeJSON(string(existingVal), v.Value())
+				if wasMerged {
+					result[k] = []byte(merged)
+					continue
+				}
+			}
 		}
 		result[k] = []byte(v.Value())
 	}
