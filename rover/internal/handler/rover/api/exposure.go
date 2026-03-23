@@ -183,7 +183,7 @@ func mapTrafficToApiTraffic(env string, roverTraffic *rover.Traffic) apiapi.Traf
 	apiTraffic := apiapi.Traffic{}
 
 	// Handle failover
-	failoverZones, hasFailover := getProviderFailoverZones(env, roverTraffic.Failover)
+	failoverZones, hasFailover := getFailoverZones(env, roverTraffic.Failover)
 	if hasFailover {
 		apiTraffic.Failover = &apiapi.Failover{
 			Zones: failoverZones,

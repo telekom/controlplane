@@ -24,7 +24,6 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	"github.com/telekom/controlplane/rover/internal/handler/rover/util"
 )
 
 func HandleApplication(ctx context.Context, c client.JanitorClient, owner *roverv1.Rover) error {
@@ -58,18 +57,19 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 	needsClient := len(owner.Spec.Subscriptions) > 0 || hasAnyEventExposures
 	var subscriberFailoverZones []types.ObjectRef
 	if needsClient {
-		// Check if there are any API subscriptions
-		hasApiSubscriptions := slices.ContainsFunc(owner.Spec.Subscriptions, func(sub roverv1.Subscription) bool {
-			return sub.Type() == roverv1.TypeApi
-		})
-
-		// Collect DTC failover zones if enabled at rover level and there are API subscriptions
-		if owner.Spec.FailoverEnabled && hasApiSubscriptions {
-			dtcZones, err := util.GetDtcFailoverZones(ctx, owner, environment)
-			if err != nil {
-				return errors.Wrap(err, "failed to get DTC failover zones")
+		for _, subscription := range owner.Spec.Subscriptions {
+			switch subscription.Type() {
+			case roverv1.TypeApi:
+				if subscription.Api.Traffic.Failover != nil {
+					for _, zoneName := range subscription.Api.Traffic.Failover.Zones {
+						zoneRef := types.ObjectRef{
+							Name:      zoneName,
+							Namespace: environment,
+						}
+						subscriberFailoverZones = append(subscriberFailoverZones, zoneRef)
+					}
+				}
 			}
-			subscriberFailoverZones = dtcZones
 		}
 	}
 

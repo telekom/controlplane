@@ -15,7 +15,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	rover "github.com/telekom/controlplane/rover/api/v1"
-	"github.com/telekom/controlplane/rover/internal/handler/rover/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -56,11 +55,8 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 			},
 		}
 
-		failoverZones, err := util.GetDtcFailoverZones(ctx, owner, environment)
-		if err != nil {
-			return errors.Wrap(err, "failed to get DTC failover zones")
-		}
-		if len(failoverZones) > 0 {
+		failoverZones, hasFailover := getFailoverZones(environment, sub.Traffic.Failover)
+		if hasFailover {
 			apiSubscription.Spec.Traffic = apiapi.SubscriberTraffic{
 				Failover: &apiapi.Failover{
 					Zones: failoverZones,

@@ -214,8 +214,7 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 			proxyRoute.Spec.Traffic = gatewayapi.Traffic{
 				Failover: &gatewayapi.Failover{
 					TargetZoneName: upstreamZone.Name,
-
-					Upstreams: failoverUpstreams,
+					Upstreams:      failoverUpstreams,
 				},
 			}
 
