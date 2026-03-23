@@ -23,6 +23,7 @@ updates:
       - approval/api
       - common
       - common-server
+      - controlplane-api
       - cpapi/api
       - event
       - event/api

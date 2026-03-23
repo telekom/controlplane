@@ -114,6 +114,15 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: controlplane-api
+    dir: controlplane-api
+    main: cmd/main.go
+    binary: controlplane-api
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
   - id: rover-server
     dir: rover-server
     main: cmd/main.go
@@ -400,6 +409,26 @@ kos:
       org.opencontainers.image.revision: "{{.FullCommit}}"
       org.opencontainers.image.licenses: "Apache-2.0"
     user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: controlplane-api
+    build: controlplane-api
+    main: .
+    working_dir: controlplane-api/cmd
+    repositories:
+      - ghcr.io/telekom/controlplane/controlplane-api
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    base_image: gcr.io/distroless/static:nonroot
     tags:
       - latest
       - "{{.Tag}}"
