@@ -64,6 +64,7 @@ func main() {
 	probesCtrl.Register(s.App, cserver.ControllerOpts{})
 
 	gqlCtrl := gqlcontroller.NewController(srv, cfg.GraphQL.PlaygroundEnabled)
+	gqlCtrl.RegisterPlayground(s.App, "/graphql")
 	secOpts := security.SecurityOpts{
 		Enabled: cfg.Security.Enabled,
 		Log:     log.WithName("security"),

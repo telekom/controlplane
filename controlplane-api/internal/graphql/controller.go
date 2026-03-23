@@ -36,8 +36,13 @@ func (c *Controller) Register(router fiber.Router, opts server.ControllerOpts) {
 	gqlHandler := httpHandlerWithUserContext(c.srv)
 	router.Post("/query", checkAccess, gqlHandler)
 	router.Get("/query", checkAccess, gqlHandler)
+}
+
+// RegisterPlayground registers the GraphQL playground on the given router
+// without any security middleware, so it can be accessed from a browser.
+func (c *Controller) RegisterPlayground(router fiber.Router, prefix string) {
 	if c.playground {
-		router.Get("/", adaptor.HTTPHandler(playground.Handler("ControlPlane API", "/graphql/query")))
+		router.Get(prefix, adaptor.HTTPHandler(playground.Handler("ControlPlane API", prefix+"/query")))
 	}
 }
 
