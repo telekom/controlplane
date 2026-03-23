@@ -18,11 +18,19 @@ import (
 
 // ViewerFromBusinessContext is a gqlgen AroundOperations middleware that bridges
 // common-server's BusinessContext (from JWT) to ent's privacy system via the Viewer.
-func ViewerFromBusinessContext(client *ent.Client) graphql.OperationMiddleware {
+// When securityEnabled is false and no BusinessContext is present, an admin viewer
+// is injected so that the GraphQL playground works without authentication.
+func ViewerFromBusinessContext(client *ent.Client, securityEnabled ...bool) graphql.OperationMiddleware {
+	secEnabled := true
+	if len(securityEnabled) > 0 {
+		secEnabled = securityEnabled[0]
+	}
 	return func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		bCtx, ok := security.FromContext(ctx)
 		if !ok {
-			// If no business context, let privacy rules deny the query
+			if !secEnabled {
+				ctx = viewer.NewContext(ctx, &viewer.Viewer{Admin: true})
+			}
 			return next(ctx)
 		}
 

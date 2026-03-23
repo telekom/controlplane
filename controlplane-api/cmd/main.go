@@ -54,7 +54,7 @@ func main() {
 	}
 	client.Intercept(interceptor.TeamFilterInterceptor())
 
-	srv := newGraphQLServer(client)
+	srv := newGraphQLServer(client, cfg.Security.Enabled)
 
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log
@@ -64,13 +64,19 @@ func main() {
 	probesCtrl.Register(s.App, cserver.ControllerOpts{})
 
 	gqlCtrl := gqlcontroller.NewController(srv, cfg.GraphQL.PlaygroundEnabled)
+	secOpts := security.SecurityOpts{
+		Enabled: cfg.Security.Enabled,
+		Log:     log.WithName("security"),
+	}
+	if len(cfg.Security.TrustedIssuers) > 0 {
+		secOpts.JWTOpts = []security.Option[*security.JWTOpts]{
+			security.WithTrustedIssuers(cfg.Security.TrustedIssuers),
+		}
+	}
 	s.RegisterController(gqlCtrl, cserver.ControllerOpts{
 		Prefix:         "/graphql",
 		AllowedMethods: []string{http.MethodHead, http.MethodGet, http.MethodPost, http.MethodOptions},
-		Security: security.SecurityOpts{
-			Enabled: cfg.Security.Enabled,
-			Log:     log.WithName("security"),
-		},
+		Security:       secOpts,
 	})
 
 	go func() {
@@ -104,7 +110,7 @@ func setupLogger(level string) logr.Logger {
 	return zapr.NewLogger(zap.Must(logCfg.Build()))
 }
 
-func newGraphQLServer(client *ent.Client) *handler.Server {
+func newGraphQLServer(client *ent.Client, securityEnabled bool) *handler.Server {
 	srv := handler.New(resolvers.NewSchema(client))
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
@@ -116,7 +122,7 @@ func newGraphQLServer(client *ent.Client) *handler.Server {
 		Cache: lru.New[string](100),
 	})
 
-	srv.AroundOperations(gqlcontroller.ViewerFromBusinessContext(client))
+	srv.AroundOperations(gqlcontroller.ViewerFromBusinessContext(client, securityEnabled))
 
 	return srv
 }

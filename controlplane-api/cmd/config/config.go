@@ -28,7 +28,8 @@ type HTTPServerConfig struct {
 }
 
 type SecurityConfig struct {
-	Enabled bool `yaml:"enabled"`
+	Enabled        bool     `yaml:"enabled"`
+	TrustedIssuers []string `yaml:"trustedIssuers"`
 }
 
 type GraphQLConfig struct {
@@ -65,7 +66,8 @@ func ReadConfig(r io.Reader) (*ServerConfig, error) {
 	if err != nil {
 		return cfg, err
 	}
-	if err := yaml.Unmarshal(content, &cfg); err != nil {
+	expanded := os.ExpandEnv(string(content))
+	if err := yaml.Unmarshal([]byte(expanded), &cfg); err != nil {
 		return nil, err
 	}
 	return cfg, nil

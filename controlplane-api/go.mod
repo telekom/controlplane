@@ -16,6 +16,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/telekom/controlplane/common-server v0.0.0
+	github.com/valyala/fasthttp v1.58.0
 	github.com/vektah/gqlparser/v2 v2.5.32
 	go.uber.org/zap v1.27.1
 	golang.org/x/sync v0.20.0
@@ -71,7 +72,6 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/urfave/cli/v3 v3.7.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.58.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
