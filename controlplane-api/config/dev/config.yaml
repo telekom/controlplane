@@ -1,0 +1,16 @@
+database:
+  url: postgres://${DB_USERNAME}:${DB_PASSWORD}@controlplane-api-postgres.controlplane-system.svc:5432/controlplane?sslmode=disable
+
+server:
+  address: ":8080"
+  tls:
+    enabled: false
+
+security:
+  enabled: true
+
+graphql:
+  playgroundEnabled: true
+
+log:
+  level: debug
