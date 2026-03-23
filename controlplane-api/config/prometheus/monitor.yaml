@@ -20,4 +20,4 @@ spec:
         insecureSkipVerify: true
   selector:
     matchLabels:
-      app.kubernetes.io/name: controlplane-api
+      app.kubernetes.io/component: manager
