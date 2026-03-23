@@ -10,7 +10,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: controlplane-api
+      app.kubernetes.io/component: manager
   policyTypes:
     - Ingress
   ingress:
