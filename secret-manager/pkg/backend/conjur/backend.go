@@ -6,8 +6,6 @@ package conjur
 
 import (
 	"context"
-	"encoding/json"
-	"maps"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -139,7 +137,7 @@ func (c *ConjurBackend) doSet(ctx context.Context, id ConjurSecretId, secretValu
 	// For merge strategy, shallow-merge JSON objects with the existing value
 	effectiveValue := secretValue.Value()
 	if options.Strategy == backend.StrategyMerge && currentValue != backend.NoValue {
-		merged, wasMerged := shallowMergeJSON(currentValue, effectiveValue)
+		merged, wasMerged := backend.ShallowMergeJSON(currentValue, effectiveValue)
 		if wasMerged {
 			log.Info("Merge strategy: shallow-merged JSON values", "id", id.String())
 			effectiveValue = merged
@@ -225,33 +223,4 @@ func (c *ConjurBackend) initialCreation(ctx context.Context, id ConjurSecretId, 
 	}
 
 	return res, err
-}
-
-// shallowMergeJSON attempts to shallow-merge two JSON object strings.
-// If both current and incoming are valid JSON objects, it merges incoming keys
-// into current (incoming keys overwrite, existing keys not in incoming are preserved).
-// Returns the merged JSON string and true if merging was performed,
-// or the incoming value and false if either value is not a JSON object.
-func shallowMergeJSON(current, incoming string) (string, bool) {
-	var currentMap map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(current), &currentMap); err != nil {
-		// If current is not a JSON object, we cannot merge, so return incoming as is
-		return incoming, false
-	}
-	var incomingMap map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(incoming), &incomingMap); err != nil {
-		// If incoming is not a JSON object, we cannot merge, so return incoming as is
-		return incoming, false
-	}
-
-	// Shallow merge: incoming keys overwrite, existing keys are preserved
-	maps.Copy(currentMap, incomingMap)
-
-	merged, err := json.Marshal(currentMap)
-	if err != nil {
-		// At this point, both current and incoming were valid JSON objects,
-		// so we should not return an error.
-		return incoming, false
-	}
-	return string(merged), true
 }
