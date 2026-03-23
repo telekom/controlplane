@@ -9,13 +9,14 @@ metadata:
   namespace: system
   labels:
     app.kubernetes.io/name: controlplane-api
+    app.kubernetes.io/component: manager
 spec:
   ports:
     - name: https
       port: 443
       targetPort: 8443
   selector:
-    app.kubernetes.io/name: controlplane-api
+    app.kubernetes.io/component: manager
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -25,7 +26,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: controlplane-api
+      app.kubernetes.io/component: manager
   replicas: 1
   template:
     metadata:
@@ -33,6 +34,7 @@ spec:
         kubectl.kubernetes.io/default-container: manager
       labels:
         app.kubernetes.io/name: controlplane-api
+        app.kubernetes.io/component: manager
     spec:
       securityContext:
         fsGroup: 65534

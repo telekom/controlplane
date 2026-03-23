@@ -16,7 +16,7 @@ spec:
       port: 5432
       targetPort: 5432
   selector:
-    app.kubernetes.io/name: controlplane-api-postgres
+    app.kubernetes.io/component: database
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -45,7 +45,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: controlplane-api-postgres
+      app.kubernetes.io/component: database
   strategy:
     type: Recreate
   template:
