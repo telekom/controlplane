@@ -26,6 +26,7 @@ resources:
   - ../network-policy
   - ../prometheus
   - ../database
+  - ../ingress
 
 # Default configuration
 # Use your own kustomization file to override the default configuration.
