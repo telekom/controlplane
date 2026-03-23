@@ -36,7 +36,7 @@ configMapGenerator:
 images:
   - name: ghcr.io/telekom/controlplane/controlplane-api
     newName: ghcr.io/telekom/controlplane/controlplane-api
-    newTag: feat-cpapi-deployment
+    newTag: latest
   - name: postgres:16-alpine
     newName: postgres
     newTag: 16-alpine
