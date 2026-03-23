@@ -82,6 +82,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				Decider:   decider,
 				Strategy:  approvalv1.ApprovalStrategyAuto,
 				State:     approvalv1.ApprovalStateGranted,
+				Action:    "subscribe",
 			}
 
 			By("Creating the ApprovalRequest")
@@ -137,7 +138,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				Expect(ar.Status.NotificationRefs).NotTo(BeEmpty())
 				var notification = &notificationv1.Notification{}
 				Expect(k8sClient.Get(ctx, ar.Status.NotificationRefs[0].K8s(), notification)).NotTo(HaveOccurred())
-				Expect(notification.Spec.Purpose).To(ContainSubstring("approvalrequest--testresource--created--decider"))
+				Expect(notification.Spec.Purpose).To(ContainSubstring("approvalrequest--subscribe--created--decider"))
 
 				g.Expect(a.ObjectMeta.OwnerReferences).To(HaveLen(1))
 				g.Expect(a.ObjectMeta.OwnerReferences[0].APIVersion).To(Equal("testgroup.cp.ei.telekom.de/v1"))

@@ -6,9 +6,10 @@ package util
 
 import (
 	"encoding/json"
+	"testing"
+
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -59,6 +60,8 @@ var _ = Describe("Notification Utilities", func() {
 				Expect(result).To(HaveKeyWithValue("email", "user@example.com"))
 				Expect(result).To(HaveKeyWithValue("requester_group", "platform"))
 				Expect(result).To(HaveKeyWithValue("requester_team", "backend"))
+				Expect(result).To(HaveKeyWithValue("resource_name", "foo/bar/myapi/v1"))
+				Expect(result).To(HaveKeyWithValue("resource_type", "API"))
 			})
 		})
 
@@ -150,6 +153,8 @@ var _ = Describe("Notification Utilities", func() {
 				Expect(result).To(HaveKey("scopes"))
 				Expect(result).To(HaveKey("metadata"))
 				Expect(result).To(HaveKey("limits"))
+				Expect(result).To(HaveKeyWithValue("resource_name", "api/v2/users"))
+				Expect(result).To(HaveKeyWithValue("resource_type", "API"))
 
 				scopes, ok := result["scopes"].([]any)
 				Expect(ok).To(BeTrue())
@@ -180,6 +185,50 @@ var _ = Describe("Notification Utilities", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(result).To(HaveKeyWithValue("requester_group", "foo"))
 				Expect(result).To(HaveKeyWithValue("requester_team", "bar"))
+			})
+		})
+
+		Context("when requester has event subscription", func() {
+			It("should still extract group and team", func() {
+
+				requesterProperties := map[string]any{
+					"eventType": "some-event-type",
+					"scopes":    []string{"read", "write", "delete"},
+					"metadata": map[string]any{
+						"requestedBy": "john.doe",
+						"department":  "engineering",
+					},
+					"limits": map[string]any{
+						"rateLimit": 1000,
+						"quota":     50000,
+					},
+				}
+
+				propertiesJSON, err := json.Marshal(requesterProperties)
+				Expect(err).NotTo(HaveOccurred())
+
+				requester := &approvalv1.Requester{
+					TeamName:   "foo--bar",
+					Properties: runtime.RawExtension{Raw: propertiesJSON},
+					ApplicationRef: &ctypes.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "application.cp.ei.telekom.de/v1",
+							APIVersion: "Application",
+						},
+						ObjectRef: ctypes.ObjectRef{
+							Name:      "requester-app-name",
+							Namespace: "default",
+						},
+					},
+				}
+
+				result, err := extractRequester(requester)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result).To(HaveKeyWithValue("requester_group", "foo"))
+				Expect(result).To(HaveKeyWithValue("requester_team", "bar"))
+				Expect(result).To(HaveKeyWithValue("resource_name", "some-event-type"))
+				Expect(result).To(HaveKeyWithValue("resource_type", "event"))
 			})
 		})
 	})
