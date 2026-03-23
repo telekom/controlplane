@@ -1,0 +1,92 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Dev overlay — no TLS, no cert-manager, plain HTTP on 8080.
+# Expects controlplane-api-postgres-credentials secret to already exist in the cluster.
+
+namespace: controlplane-system
+
+labels:
+  - includeSelectors: true
+    pairs:
+      domain: controlplane-api
+      app.kubernetes.io/instance: controlplane-api
+      app.kubernetes.io/managed-by: kustomize
+      app.kubernetes.io/name: controlplane-api
+      app.kubernetes.io/part-of: controlplane
+
+resources:
+  - ../manager
+  - ../rbac
+  - ../database
+  - ../ingress
+
+configMapGenerator:
+  - name: controlplane-api-config
+    options:
+      disableNameSuffixHash: true
+    files:
+      - config.yaml=config.yaml
+  - name: controlplane-api-env
+    options:
+      disableNameSuffixHash: true
+    literals: []
+
+images:
+  - name: ghcr.io/telekom/controlplane/controlplane-api
+    newName: ghcr.io/telekom/controlplane/controlplane-api
+    newTag: feat-cpapi-deployment
+  - name: postgres:16-alpine
+    newName: postgres
+    newTag: 16-alpine
+
+patches:
+  - target:
+      kind: Deployment
+      name: controlplane-api
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/ports/0/containerPort
+        value: 8080
+      - op: replace
+        path: /spec/template/spec/containers/0/ports/0/name
+        value: http
+      - op: replace
+        path: /spec/template/spec/containers/0/livenessProbe/httpGet/port
+        value: 8080
+      - op: replace
+        path: /spec/template/spec/containers/0/livenessProbe/httpGet/scheme
+        value: HTTP
+      - op: replace
+        path: /spec/template/spec/containers/0/readinessProbe/httpGet/port
+        value: 8080
+      - op: replace
+        path: /spec/template/spec/containers/0/readinessProbe/httpGet/scheme
+        value: HTTP
+  - target:
+      kind: Ingress
+      name: controlplane-api-ingress
+    patch: |
+      - op: replace
+        path: /spec/ingressClassName
+        value: triton-ingress
+      - op: replace
+        path: /spec/rules/0/host
+        value: controlplane-api.dev.dhei.telekom.de
+      - op: replace
+        path: /spec/rules/0/http/paths/0/backend/service/port/number
+        value: 8080
+  - target:
+      kind: Service
+      name: controlplane-api
+    patch: |
+      - op: replace
+        path: /spec/ports/0/name
+        value: http
+      - op: replace
+        path: /spec/ports/0/port
+        value: 8080
+      - op: replace
+        path: /spec/ports/0/targetPort
+        value: 8080

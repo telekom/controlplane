@@ -45,7 +45,17 @@ spec:
             - --configfile
             - /etc/controlplane-api/config.yaml
           image: ghcr.io/telekom/controlplane/controlplane-api:stable
-          env: []
+          env:
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: controlplane-api-postgres-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: controlplane-api-postgres-credentials
+                  key: password
           envFrom:
             - configMapRef:
                 name: controlplane-api-env
