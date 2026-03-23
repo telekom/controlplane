@@ -8,7 +8,7 @@
 namespace: controlplane-system
 
 labels:
-  - includeSelectors: true
+  - includeSelectors: false
     pairs:
       domain: controlplane-api
       app.kubernetes.io/instance: controlplane-api
