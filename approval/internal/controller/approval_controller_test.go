@@ -7,6 +7,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
@@ -99,6 +100,7 @@ var _ = Describe("Approval Controller", Ordered, func() {
 					Requester: requester,
 					Target:    resource,
 					Decider:   decider,
+					Action:    "subscribe",
 				},
 			}
 			Expect(k8sClient.Create(ctx, resource)).To(Succeed())
@@ -155,28 +157,28 @@ var _ = Describe("Approval Controller", Ordered, func() {
 
 		By("Validating the decider notification")
 		deciderNotificationRef := types.NamespacedName{
-			Name:      "approval--subscription--updated--decider--test-resource--559f5f87c",
+			Name:      "approval--subscribe--updated--decider--test-resource--5954bd5945",
 			Namespace: "default",
 		}
 
 		deciderNotification := &notificationv1.Notification{}
 		err = k8sClient.Get(ctx, deciderNotificationRef, deciderNotification)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(deciderNotification.Spec.Purpose).To(Equal("approval--subscription--updated--decider"))
+		Expect(deciderNotification.Spec.Purpose).To(Equal("approval--subscribe--updated--decider"))
 		Expect(deciderNotification.Spec.Properties).NotTo(BeNil())
 
 		By("Validating the requester notification")
 		requesterNotificationRef := types.NamespacedName{
-			Name:      "approval--subscription--updated--requester--test-resource--7f57689449",
+			Name:      "approval--subscribe--updated--requester--test-resource--869df78585",
 			Namespace: "default",
 		}
 
 		requesterNotification := &notificationv1.Notification{}
 		err = k8sClient.Get(ctx, requesterNotificationRef, requesterNotification)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(requesterNotification.Spec.Purpose).To(Equal("approval--subscription--updated--requester"))
+		Expect(requesterNotification.Spec.Purpose).To(Equal("approval--subscribe--updated--requester"))
 		Expect(requesterNotification.Spec.Properties).NotTo(BeNil())
-		ExpectJSONEqual(requesterNotification.Spec.Properties.Raw, []byte(`{ "requester_team": "requester", "scopes": "read", "state_new": "Granted", "decider_application": "decider-app-name", "decider_group": "test", "environment": "test", "requester_application": "requester-app-name", "requester_group": "test", "state_old": "Pending", "basepath": "/eni/distr/v1", "decider_team": "decider" }`))
+		ExpectJSONEqual(requesterNotification.Spec.Properties.Raw, []byte(`{ "requester_team": "requester", "scopes": "read", "state_new": "Granted", "decider_application": "decider-app-name", "decider_group": "test", "environment": "test", "requester_application": "requester-app-name", "requester_group": "test", "state_old": "Pending", "basepath": "/eni/distr/v1", "decider_team": "decider", "resource_name": "/eni/distr/v1", "resource_type": "API"}`))
 	})
 
 	It("should successfully reconcile the rejected approval", func() {

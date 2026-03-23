@@ -193,17 +193,20 @@ The approval domain automatically sends notifications for approval lifecycle eve
 
 ### Notification Overview
 
-| Resource            | Event             | Trigger                                                      | Purpose                         | Notification Name              | Recipient                     |
-|---------------------|-------------------|--------------------------------------------------------------|---------------------------------|--------------------------------|-------------------------------|
-| **ApprovalRequest** | Request Created   | ApprovalRequest creation (generation == 1)                   | `approvalrequest--{targetKind}` | `{targetKind}--{targetName}`   | **Provider** team namespace   |
-| **ApprovalRequest** | Request Rejected  | State changes to Rejected                                    | `approvalrequest--{targetKind}` | `{targetKind}--{targetName}`   | **Requester** team namespace  |
-| **Approval**        | State Change      | Any state transition (Pending → Granted/Rejected/Suspended)  | `approval--{targetKind}`        | `{targetKind}--{targetName}`   | **Requester** team namespace  |
+| Resource            | Event           | Trigger                                                    | Purpose                                        | Notification Name                                                    | Recipient                                     |
+|---------------------|-----------------|------------------------------------------------------------|------------------------------------------------|----------------------------------------------------------------------|-----------------------------------------------|
+| **ApprovalRequest** | Request Created | ApprovalRequest creation | `approvalrequest--subscribe--created--<actor>` | `approvalrequest--subscribe--created--<actor>--<targetName>--<hash>` | **Provider** team namespace                   |
+| **ApprovalRequest** | Request Updated | State changes to Granted/Rejected  | `approvalrequest--subscribe--updated--<actor>` | `approvalrequest--subscribe--updated--<actor>--<targetName>--<hash>` | **Requester** and **Provider** team namespace |
+| **Approval**        | State Change    | Any state transition (Pending → Granted/Rejected/Suspended) | `approval--subscribe--update--<actor>`         | `approval--subscribe--update--<actor>--<targetName>--<hash>`         | **Requester** and **Provider** team namespace |
 
-> **Note**: The `{targetKind}` and `{targetName}` are derived from the subscription resource being approved (e.g., `apisubscription`, `eventsubscription`). The purpose combines the approval resource kind with the target kind (e.g., `approval--apisubscription`).
->
-> **Provider vs Requester**: 
 > - **Provider** = The team that owns the exposed resource (API/Event) being subscribed to
 > - **Requester** = The team that is requesting access (subscriber)
+> - **Actor**
+>   - can be decider or requester
+> - **TargetName**
+>   - entity that's the target of the approval process - can be an api subscription, event subscription etc.
+> - **Hash**
+>   - calculated value based on the additional data of the notification (see the notification properties below)
 
 ### Notification Channels
 
@@ -217,18 +220,19 @@ The notification system uses the notification builder to automatically discover 
 
 The following properties are automatically included in all approval notifications and can be used in notification templates:
 
-| Property             | Description                                                                                                           | Example                                     |
-|----------------------|-----------------------------------------------------------------------------------------------------------------------|---------------------------------------------|
-| `environment`        | The environment where the approval occurred                                                                           | `prod`, `dev`                               |
-| `state`              | The current state of the approval                                                                                     | `granted`, `rejected`, ...                  |
-| `target_kind`        | The kind of the target resource                                                                                       | `ApiSubscription`, `EventSubscription`, ... |
-| `target_application` | Application name from the target                                                                                      | `my-app`                                    |
-| `target_group`       | Group name from the target namespace                                                                                  | `foo`                                       |
-| `target_team`        | Team name from the target namespace                                                                                   | `bar`                                       |
-| `target_basepath`    | Basepath from the target resource                                                                                     | `foo/bar/myapi/v1`                          |
-| `requester_group`    | Group name of the requester                                                                                           | `onsite-group`                              |
-| `requester_team`     | Team name of the requester                                                                                            | `enemy-team`                                |
-| `scopes`             | OAuth scopes from requester properties (defaults to "undefined")                                                      | `["admin:read", "admin:write"]`             |
+| Property             | Description                                                      | Example                                     |
+|----------------------|------------------------------------------------------------------|---------------------------------------------|
+| `environment`        | The environment where the approval occurred                      | `prod`, `dev`                               |
+| `state`              | The current state of the approval                                | `granted`, `rejected`, ...                  |
+| `target_kind`        | The kind of the target resource                                  | `ApiSubscription`, `EventSubscription`, ... |
+| `target_application` | Application name from the target                                 | `my-app`                                    |
+| `target_group`       | Group name from the target namespace                             | `foo`                                       |
+| `target_team`        | Team name from the target namespace                              | `bar`                                       |
+| `resource_type`      | Type of the resource thats being approved                        | `API` or `event`                            |
+| `resource_name`      | Based on the resource_type its either the basepath of the event  | `eni/foo/bar/v1` or `some-event-type`       |
+| `requester_group`    | Group name of the requester                                      | `onsite-group`                              |
+| `requester_team`     | Team name of the requester                                       | `enemy-team`                                |
+| `scopes`             | OAuth scopes from requester properties (defaults to "undefined") | `["admin:read", "admin:write"]`             |
 
 > [!Note]
 > - If the requester name doesn't follow the `{group}--{team}` format, the entire name is used for both group and team: [requester.Name](./api/v1/common_types.go))
