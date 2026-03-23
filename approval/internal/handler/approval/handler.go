@@ -6,6 +6,7 @@ package approval
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/approval/internal/handler/util"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -83,6 +84,7 @@ func handleNotifications(ctx context.Context, approval *approvalv1.Approval) err
 			Decider:                &approval.Spec.Decider,
 			Scenario:               scenario,
 			Actor:                  util.ActorDecider,
+			Action:                 approval.Spec.Action,
 		})
 
 		if err != nil {
@@ -101,6 +103,7 @@ func handleNotifications(ctx context.Context, approval *approvalv1.Approval) err
 			Decider:                &approval.Spec.Decider,
 			Scenario:               scenario,
 			Actor:                  util.ActorRequester,
+			Action:                 approval.Spec.Action,
 		})
 
 		if err != nil {

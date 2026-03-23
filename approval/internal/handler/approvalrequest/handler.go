@@ -6,6 +6,7 @@ package approvalrequest
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
@@ -125,6 +126,7 @@ func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRe
 		Decider:                &approvalReq.Spec.Decider,
 		Scenario:               scenario,
 		Actor:                  util.ActorDecider,
+		Action:                 approvalReq.Spec.Action,
 	})
 
 	if err != nil {
@@ -143,6 +145,7 @@ func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRe
 			Decider:                &approvalReq.Spec.Decider,
 			Scenario:               scenario,
 			Actor:                  util.ActorRequester,
+			Action:                 approvalReq.Spec.Action,
 		})
 		if err != nil {
 			return errors.Wrapf(err, "Failed to send notification to requester %q while handling approval request %+v", approvalReq.Spec.Requester.TeamName, approvalReq)
