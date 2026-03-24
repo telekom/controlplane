@@ -30,7 +30,6 @@ func NewRealm(name string) *gatewayv1.Realm {
 			Urls:       []string{"https://realm.url"},
 			IssuerUrls: []string{"https://issuer.url"},
 			DefaultConsumers: []string{
-				"gateway",
 				"test",
 			},
 		},

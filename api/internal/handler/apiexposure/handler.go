@@ -87,7 +87,17 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	// TODO: further validations (currently contained in the old code)
 	// - validate if team category allows exposure of api category
 	// create real route
-	route, err := util.CreateRealRoute(ctx, apiExp.Spec.Zone, apiExp, contextutil.EnvFromContextOrDie(ctx))
+
+	// Check if there are cross-zone subscribers for this basepath.
+	// If so, the real route needs to allow the gateway mesh-client in its ACL.
+	hasCrossZoneSubs, err := HasCrossZoneSubscribers(ctx, apiExp)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check cross-zone subscribers for apiExposure: %s", apiExp.Name)
+	}
+
+	route, err := util.CreateRealRoute(ctx, apiExp.Spec.Zone, apiExp, contextutil.EnvFromContextOrDie(ctx),
+		util.WithProxyTarget(hasCrossZoneSubs),
+	)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create real route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
 	}

@@ -20,7 +20,7 @@ jobs:
       - name: Use HTTPS for Git cloning
         run: git config --global url.https://github.com/.insteadOf ssh://git@github.com/
       - name: Checkout project
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Prepare ORT config
         # This allows us to customize the default ORT config available at
         # https://github.com/oss-review-toolkit/ort-config
@@ -39,7 +39,7 @@ jobs:
           # Copy custom config into config dir
           cp ${GITHUB_WORKSPACE}/.github/ort/config.yml ${ORT_CONFIG_DIR}
       - name: Run GitHub Action for ORT
-        uses: oss-review-toolkit/ort-ci-github-action@v1
+        uses: oss-review-toolkit/ort-ci-github-action@1805edcf1f4f55f35ae6e4d2d9795ccfb29b6021 # v1.1.0
         with:
           #  fail-on: violations # todo: remove this when we have a working config
           docker-cli-args: >-

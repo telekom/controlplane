@@ -68,6 +68,12 @@
  "id": "eni--hyperion--rover-local-sub",
  "name": "rover-local-sub",
  "status": {
+  "errors": [
+   {
+    "cause": "NoApproval",
+    "message": "Approval is either rejected or suspended"
+   }
+  ],
   "processingState": "done",
   "state": "complete"
  },

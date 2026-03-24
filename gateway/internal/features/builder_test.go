@@ -87,6 +87,9 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			acRoute := route.DeepCopy()
 			acRoute.Spec.Downstreams[0].IssuerUrl = "https://issuer.url"
 			acRoute.Spec.PassThrough = true
+			// Simulate a proxy target route: the gateway mesh-client is added to the
+			// route's Security.DefaultConsumers (no longer on the Realm level).
+			acRoute.Spec.Security.DefaultConsumers = []string{"gateway"}
 			builder := features.NewFeatureBuilder(mockKc, acRoute, nil, realm, gateway)
 
 			consumeRoute := NewMockConsumeRoute(*types.ObjectRefFromObject(acRoute))

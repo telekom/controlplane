@@ -1,0 +1,132 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Hand-written types that ent/entgql cannot auto-generate.
+# The ent-generated schema is in ent.graphql.
+
+# Reduced team information for cross-tenant contexts.
+type TeamInfo {
+  id: ID!
+  name: String!
+  "Group name for display"
+  groupName: String!
+  email: String
+}
+
+type Upstream {
+  url: String!
+  weight: Int!
+}
+
+type ApprovalConfig {
+  strategy: ApprovalStrategy!
+  trustedTeams: [String!]!
+}
+
+type RequesterInfo {
+  teamName: String!
+  teamEmail: String!
+  reason: String
+  applicationName: String
+}
+
+type DeciderInfo {
+  teamName: String!
+  teamEmail: String
+}
+
+type Decision {
+  name: String!
+  email: String
+  comment: String
+  timestamp: String
+  resultingState: ApprovalState
+}
+
+type AvailableTransition {
+  action: ApprovalAction!
+  toState: ApprovalState!
+}
+
+enum ApiExposureFeature {
+  BASIC_AUTH
+  CIRCUIT_BREAKER
+  CUSTOM_SCOPES
+  DYNAMIC_UPSTREAM
+  EXTERNAL_IDP
+  FAILOVER
+  HEADER_TRANSFORMATION
+  IP_RESTRICTION
+  LAST_MILE_SECURITY
+  LOAD_BALANCING
+  PASSTHROUGH
+  RATE_LIMIT
+  ACCESS_CONTROL
+}
+
+enum ApprovalAction {
+  ALLOW
+  DENY
+  SUSPEND
+  RESUME
+}
+
+# -- Cross-tenant reduced types --
+# These types terminate graph traversal at tenant boundaries.
+# They expose only safe scalar fields and the owning team/application name.
+
+"Reduced API exposure for cross-tenant contexts (e.g., subscription target)."
+type ApiExposureInfo {
+  id: ID!
+  basePath: String!
+  visibility: ApiExposureVisibility!
+  active: Boolean!
+  apiVersion: String
+  features: [ApiExposureFeature!]!
+  approvalConfig: ApprovalConfig!
+  "Application name that owns this exposure"
+  ownerApplicationName: String!
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
+"Reduced API subscription for cross-tenant contexts (e.g., exposure subscribers)."
+type ApiSubscriptionInfo {
+  id: ID!
+  basePath: String!
+  statusPhase: ApiSubscriptionStatusPhase!
+  statusMessage: String
+  "Application name that owns this subscription"
+  ownerApplicationName: String!
+  "Owning team (reduced view)"
+  ownerTeam: TeamInfo!
+}
+
+# -- Cross-tenant edge overrides --
+
+extend type Application {
+  "Owning team (reduced view for cross-tenant safety)"
+  ownerTeam: TeamInfo!
+}
+
+extend type ApiSubscription {
+  "Target exposure (reduced view — cross-tenant boundary)"
+  target: ApiExposureInfo! @goField(forceResolver: true)
+}
+
+extend type ApiExposure {
+  "Subscriptions to this exposure (reduced view — cross-tenant boundary)"
+  subscriptions: [ApiSubscriptionInfo!]! @goField(forceResolver: true)
+}
+
+extend type Approval {
+  "Related subscription (reduced view — cross-tenant boundary)"
+  apiSubscription: ApiSubscriptionInfo @goField(forceResolver: true)
+}
+
+extend type ApprovalRequest {
+  "Related subscription (reduced view — cross-tenant boundary)"
+  apiSubscription: ApiSubscriptionInfo @goField(forceResolver: true)
+}
+

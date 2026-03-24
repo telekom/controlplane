@@ -133,12 +133,14 @@ var _ = Describe("Kubernetes Onboarder", func() {
 			Expect(secret.Data["clientSecret"]).ToNot(BeEmpty())
 			Expect(secret.Data).To(HaveKey("externalSecrets"))
 
-			// K8s merge operates at the Secret data key level, not JSON level.
-			// Each concurrent call overwrites the externalSecrets value with its own
-			// JSON blob. The final value is valid JSON from whichever goroutine wrote last.
+			// With JSON-level merge, all concurrent sub-keys should be preserved
+			// in the externalSecrets JSON blob.
 			var parsed map[string]string
 			Expect(json.Unmarshal(secret.Data["externalSecrets"], &parsed)).To(Succeed())
-			Expect(parsed).To(HaveLen(1))
+			Expect(parsed).To(HaveLen(concurrency))
+			for i := 0; i < concurrency; i++ {
+				Expect(parsed).To(HaveKeyWithValue(fmt.Sprintf("key%d", i), fmt.Sprintf("val%d", i)))
+			}
 		})
 	})
 
@@ -173,6 +175,79 @@ var _ = Describe("Kubernetes Onboarder", func() {
 			secret := &corev1.Secret{}
 			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: "secrets", Namespace: env}, secret)
 			Expect(err).To(HaveOccurred())
+		})
+
+		It("should preserve existing zone entries when onboarding a new zone with merge strategy", func() {
+			onboarder := kubernetes.NewOnboarder(mockK8sClient)
+
+			// Onboard environment with zone dataplane1
+			_, err := onboarder.OnboardEnvironment(ctx, env,
+				backend.WithStrategy(backend.StrategyMerge),
+				backend.WithSecretValue("zones/dataplane1/event/admin/clientSecret", backend.String("dp1-admin-secret")),
+				backend.WithSecretValue("zones/dataplane1/event/mesh/clientSecret", backend.String("dp1-mesh-secret")),
+			)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Verify initial state: zones key contains both dataplane1 entries
+			secret := &corev1.Secret{}
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: "secrets", Namespace: env}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Data).To(HaveKey("zones"))
+
+			var zonesAfterFirst map[string]string
+			Expect(json.Unmarshal(secret.Data["zones"], &zonesAfterFirst)).To(Succeed())
+			Expect(zonesAfterFirst).To(HaveLen(2))
+			Expect(zonesAfterFirst).To(HaveKeyWithValue("dataplane1/event/admin/clientSecret", "dp1-admin-secret"))
+			Expect(zonesAfterFirst).To(HaveKeyWithValue("dataplane1/event/mesh/clientSecret", "dp1-mesh-secret"))
+
+			// Onboard environment with zone dataplane2 (merge strategy)
+			_, err = onboarder.OnboardEnvironment(ctx, env,
+				backend.WithStrategy(backend.StrategyMerge),
+				backend.WithSecretValue("zones/dataplane2/event/admin/clientSecret", backend.String("dp2-admin-secret")),
+				backend.WithSecretValue("zones/dataplane2/event/mesh/clientSecret", backend.String("dp2-mesh-secret")),
+			)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Verify: zones key should contain ALL entries from both onboarding calls
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: "secrets", Namespace: env}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Data).To(HaveKey("zones"))
+
+			var zonesAfterSecond map[string]string
+			Expect(json.Unmarshal(secret.Data["zones"], &zonesAfterSecond)).To(Succeed())
+			Expect(zonesAfterSecond).To(HaveLen(4))
+			Expect(zonesAfterSecond).To(HaveKeyWithValue("dataplane1/event/admin/clientSecret", "dp1-admin-secret"))
+			Expect(zonesAfterSecond).To(HaveKeyWithValue("dataplane1/event/mesh/clientSecret", "dp1-mesh-secret"))
+			Expect(zonesAfterSecond).To(HaveKeyWithValue("dataplane2/event/admin/clientSecret", "dp2-admin-secret"))
+			Expect(zonesAfterSecond).To(HaveKeyWithValue("dataplane2/event/mesh/clientSecret", "dp2-mesh-secret"))
+		})
+
+		It("should overwrite zone entries with same keys on merge", func() {
+			onboarder := kubernetes.NewOnboarder(mockK8sClient)
+
+			// Onboard environment with zone dataplane1
+			_, err := onboarder.OnboardEnvironment(ctx, env,
+				backend.WithStrategy(backend.StrategyMerge),
+				backend.WithSecretValue("zones/dataplane1/event/admin/clientSecret", backend.String("original-secret")),
+			)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Re-onboard with a new value for the same key
+			_, err = onboarder.OnboardEnvironment(ctx, env,
+				backend.WithStrategy(backend.StrategyMerge),
+				backend.WithSecretValue("zones/dataplane1/event/admin/clientSecret", backend.String("updated-secret")),
+			)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Verify: the key should have the updated value
+			secret := &corev1.Secret{}
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: "secrets", Namespace: env}, secret)
+			Expect(err).ToNot(HaveOccurred())
+
+			var zones map[string]string
+			Expect(json.Unmarshal(secret.Data["zones"], &zones)).To(Succeed())
+			Expect(zones).To(HaveLen(1))
+			Expect(zones).To(HaveKeyWithValue("dataplane1/event/admin/clientSecret", "updated-secret"))
 		})
 	})
 
@@ -450,6 +525,36 @@ var _ = Describe("Kubernetes Onboarder", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(v).To(HaveKeyWithValue("key1", "value1"))
 			Expect(v).To(HaveKeyWithValue("key2/sub", "value2"))
+		})
+
+		It("should merge application sub-secrets with existing ones using merge strategy", func() {
+			onboarder := kubernetes.NewOnboarder(mockK8sClient)
+
+			// First onboard with some external secrets
+			_, err := onboarder.OnboardApplication(ctx, env, teamId, appId,
+				backend.WithStrategy(backend.StrategyMerge),
+				backend.WithSecretValue("externalSecrets/key1", backend.String("value1")),
+			)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Second onboard with different external secrets
+			_, err = onboarder.OnboardApplication(ctx, env, teamId, appId,
+				backend.WithStrategy(backend.StrategyMerge),
+				backend.WithSecretValue("externalSecrets/key2", backend.String("value2")),
+			)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Verify: both keys should be present in externalSecrets
+			secret := &corev1.Secret{}
+			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: appId, Namespace: fmt.Sprintf("%s--%s", env, teamId)}, secret)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Data).To(HaveKey("externalSecrets"))
+
+			var parsed map[string]string
+			Expect(json.Unmarshal(secret.Data["externalSecrets"], &parsed)).To(Succeed())
+			Expect(parsed).To(HaveLen(2))
+			Expect(parsed).To(HaveKeyWithValue("key1", "value1"))
+			Expect(parsed).To(HaveKeyWithValue("key2", "value2"))
 		})
 	})
 })
