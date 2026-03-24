@@ -69,6 +69,10 @@ func (v *ApiSpecificationCustomValidator) ValidateDelete(ctx context.Context, ap
 
 func (v *ApiSpecificationCustomValidator) ValidateCreateOrUpdate(ctx context.Context, apispecification *roverv1.ApiSpecification) (admission.Warnings, error) {
 
+	if controller.IsBeingDeleted(apispecification) {
+		return nil, nil
+	}
+
 	valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("ApiSpecification").GroupKind(), apispecification)
 
 	environment, ok := controller.GetEnvironment(apispecification)

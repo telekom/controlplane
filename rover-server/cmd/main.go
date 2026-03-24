@@ -35,7 +35,7 @@ func main() {
 	log.Init()
 	rootCtx := logr.NewContext(context.Background(), log.Log)
 
-	store.InitOrDie(rootCtx, kconfig.GetConfigOrDie())
+	stores := store.NewStores(rootCtx, kconfig.GetConfigOrDie())
 
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log.Log
@@ -51,9 +51,9 @@ func main() {
 	s := server.Server{
 		Config:              cfg,
 		Log:                 log.Log,
-		ApiSpecifications:   controller.NewApiSpecificationController(),
-		Rovers:              controller.NewRoverController(),
-		EventSpecifications: controller.NewEventSpecificationController(),
+		ApiSpecifications:   controller.NewApiSpecificationController(stores),
+		Rovers:              controller.NewRoverController(stores),
+		EventSpecifications: controller.NewEventSpecificationController(stores),
 	}
 
 	s.RegisterRoutes(app)

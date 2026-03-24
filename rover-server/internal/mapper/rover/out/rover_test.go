@@ -63,7 +63,7 @@ var _ = Describe("Rover Mapper", func() {
 		It("must map a Rover to a RoverResponse correctly", func() {
 			input := GetRoverWithReadyCondition(rover)
 
-			output, err := MapRoverResponse(ctx, input)
+			output, err := MapResponse(ctx, input, stores)
 
 			Expect(err).To(BeNil())
 
@@ -72,7 +72,7 @@ var _ = Describe("Rover Mapper", func() {
 		})
 
 		It("must return an error if the input rover is nil", func() {
-			output, err := MapRoverResponse(ctx, nil)
+			output, err := MapResponse(ctx, nil, stores)
 
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)

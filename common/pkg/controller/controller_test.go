@@ -24,6 +24,61 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
+var _ = Describe("StampObservedGeneration", func() {
+	It("should set ObservedGeneration on all conditions to the object's generation", func() {
+		obj := test.NewObject("test-stamp", "default")
+		obj.SetGeneration(5)
+		obj.SetCondition(metav1.Condition{
+			Type:   condition.ConditionTypeProcessing,
+			Status: metav1.ConditionTrue,
+			Reason: "Testing",
+		})
+		obj.SetCondition(metav1.Condition{
+			Type:   condition.ConditionTypeReady,
+			Status: metav1.ConditionFalse,
+			Reason: "NotReady",
+		})
+
+		Expect(obj.GetConditions()).To(HaveLen(2))
+		for _, c := range obj.GetConditions() {
+			Expect(c.ObservedGeneration).To(Equal(int64(0)))
+		}
+
+		StampObservedGeneration(obj)
+
+		for _, c := range obj.GetConditions() {
+			Expect(c.ObservedGeneration).To(Equal(int64(5)))
+		}
+	})
+
+	It("should update existing ObservedGeneration to current generation", func() {
+		obj := test.NewObject("test-stamp-update", "default")
+		obj.SetGeneration(3)
+		obj.SetCondition(metav1.Condition{
+			Type:               condition.ConditionTypeProcessing,
+			Status:             metav1.ConditionFalse,
+			Reason:             "Done",
+			ObservedGeneration: 1,
+		})
+
+		StampObservedGeneration(obj)
+
+		cond := meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing)
+		Expect(cond.ObservedGeneration).To(Equal(int64(3)))
+	})
+
+	It("should be a no-op when there are no conditions", func() {
+		obj := test.NewObject("test-stamp-empty", "default")
+		obj.SetGeneration(7)
+
+		Expect(obj.GetConditions()).To(BeEmpty())
+
+		StampObservedGeneration(obj)
+
+		Expect(obj.GetConditions()).To(BeEmpty())
+	})
+})
+
 var _ = Describe("Controller", func() {
 
 	var (
