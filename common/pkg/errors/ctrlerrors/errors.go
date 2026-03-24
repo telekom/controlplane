@@ -6,10 +6,10 @@ package ctrlerrors
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -35,36 +35,39 @@ type RetryableWithDelayError interface {
 }
 
 // HandleError analyzes the given error and updates the object's conditions accordingly.
+// It uses errors.As to unwrap the error chain, which supports both pkg/errors.Wrap and
+// standard fmt.Errorf %w wrapping.
 // It returns a boolean indicating whether the object's conditions were updated and a reconcile.Result
 // that suggests whether to requeue the reconciliation and after what duration.
 func HandleError(ctx context.Context, obj types.Object, err error, recorder record.EventRecorder) (bool, reconcile.Result) {
-	rootCauseErr := errors.Cause(err)
-
-	if be, ok := rootCauseErr.(BlockedError); ok && be.IsBlocked() {
-		recordError(ctx, obj, rootCauseErr, "Blocked", recorder)
-		updatd := obj.SetCondition(condition.NewBlockedCondition(rootCauseErr.Error()))
-		return updatd, reconcile.Result{
+	var be BlockedError
+	if errors.As(err, &be) && be.IsBlocked() {
+		recordError(ctx, obj, be, "Blocked", recorder)
+		updated := obj.SetCondition(condition.NewBlockedCondition(be.Error()))
+		return updated, reconcile.Result{
 			// Its blocked but we still want to recheck later
 			// However, with the longer interval for normal requeues
 			RequeueAfter: config.RequeueWithJitter(),
 		}
 	}
 
-	if re, ok := rootCauseErr.(RetryableWithDelayError); ok {
-		recordError(ctx, obj, rootCauseErr, "Retryable", recorder)
-		if re.IsRetryable() {
-			deley := re.RetryDelay()
-			if deley <= 0 {
-				deley = config.RetryWithJitterOnError()
+	var rde RetryableWithDelayError
+	if errors.As(err, &rde) {
+		recordError(ctx, obj, rde, "Retryable", recorder)
+		if rde.IsRetryable() {
+			delay := rde.RetryDelay()
+			if delay <= 0 {
+				delay = config.RetryWithJitterOnError()
 			}
-			return false, reconcile.Result{RequeueAfter: config.Jitter(deley)}
+			return false, reconcile.Result{RequeueAfter: config.Jitter(delay)}
 		} else {
 			return false, reconcile.Result{}
 		}
 	}
 
-	if re, ok := rootCauseErr.(RetryableError); ok {
-		recordError(ctx, obj, rootCauseErr, "Retryable", recorder)
+	var re RetryableError
+	if errors.As(err, &re) {
+		recordError(ctx, obj, re, "Retryable", recorder)
 		if re.IsRetryable() {
 			return false, reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
 		} else {
