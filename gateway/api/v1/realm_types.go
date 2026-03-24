@@ -97,7 +97,7 @@ func (r *Realm) AsUpstream(apiBasePath string) (ups Upstream, err error) {
 func (r *Realm) AsDownstream(apiBasePath string) (dws Downstream, err error) {
 	// Use the first URL as the downstream URL
 	if len(r.Spec.Urls) == 0 {
-		return dws, err
+		return dws, errors.New("no downstreams found")
 	}
 	url, err := url.Parse(r.Spec.Urls[0])
 	if err != nil {
