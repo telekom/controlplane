@@ -27,24 +27,27 @@ const (
 
 var ctx context.Context
 var rover *roverv1.Rover
+var stores *store.Stores
 
 var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 	if mockObjectStore {
-		store.RoverStore = mocks.NewRoverStoreMock(GinkgoT())
-		store.RoverSecretStore = store.RoverStore
-		store.ApiSpecificationStore = mocks.NewApiSpecificationStoreMock(GinkgoT())
-		store.ApiSubscriptionStore = mocks.NewApiSubscriptionStoreMock(GinkgoT())
-		store.ApiExposureStore = mocks.NewApiExposureStoreMock(GinkgoT())
-		store.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
-		store.ApplicationSecretStore = store.ApplicationStore
-		store.ZoneStore = mocks.NewZoneStoreMock(GinkgoT())
-		store.EventSubscriptionStore = mocks.NewEventSubscriptionStoreMock(GinkgoT())
+		stores = &store.Stores{}
+
+		stores.RoverStore = mocks.NewRoverStoreMock(GinkgoT())
+		stores.RoverSecretStore = stores.RoverStore
+		stores.APISpecificationStore = mocks.NewAPISpecificationStoreMock(GinkgoT())
+		stores.APISubscriptionStore = mocks.NewAPISubscriptionStoreMock(GinkgoT())
+		stores.APIExposureStore = mocks.NewAPIExposureStoreMock(GinkgoT())
+		stores.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
+		stores.ApplicationSecretStore = stores.ApplicationStore
+		stores.ZoneStore = mocks.NewZoneStoreMock(GinkgoT())
+		stores.EventSubscriptionStore = mocks.NewEventSubscriptionStoreMock(GinkgoT())
 
 		eventExposureMock := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
 		eventExposureMock.EXPECT().List(mock.Anything, mock.Anything).Return(
 			&storeLib.ListResponse[*eventv1.EventExposure]{Items: []*eventv1.EventExposure{}}, nil).Maybe()
 		eventExposureMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Maybe()
-		store.EventExposureStore = eventExposureMock
+		stores.EventExposureStore = eventExposureMock
 	}
 }
 

@@ -274,7 +274,7 @@ func createGatewayRealm(ctx context.Context, handlingContext HandlingContext, ga
 			Gateway:          types.ObjectRefFromObject(gateway),
 			Url:              handlingContext.Zone.Spec.Gateway.Url,
 			IssuerUrl:        urls.ForGatewayRealm(handlingContext.Zone.Spec.IdentityProvider.Url, realmName),
-			DefaultConsumers: []string{"gateway"},
+			DefaultConsumers: []string{},
 		}
 		return nil
 	}

@@ -88,18 +88,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v2.7.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
       - name: Setup Go
-        uses: actions/setup-go@c0137caad775660c0844396c52da96e560aba63d # pin@5.5.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: "${{ inputs.module }}/go.mod"
           cache: false # Using a separate cache step
 
       - name: Restore Go Cache
-        uses: actions/cache@v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             ~/.cache/go-build
@@ -119,7 +119,7 @@ jobs:
 
       - name: Run golangci-lint
         if: ${{ inputs.run_lint }}
-        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 #pin@9.2.0
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
         with:
           version: v2.11
           working-directory: ${{ inputs.module }}
@@ -133,18 +133,18 @@ jobs:
       test_reports_artifact_id: ${{ steps.upload_test_reports_artifact_step.outputs.artifact-id }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v2.7.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
       - name: Setup Go
-        uses: actions/setup-go@c0137caad775660c0844396c52da96e560aba63d # pin@5.5.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: "${{ inputs.module }}/go.mod"
           cache: false # Using a separate cache step
 
       - name: Restore Go Cache
-        uses: actions/cache@v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             ~/.cache/go-build
@@ -154,7 +154,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Set up gotestfmt
-        uses: gotesttools/gotestfmt-action@v2
+        uses: gotesttools/gotestfmt-action@8b4478c7019be847373babde9300210e7de34bfb # v2.2.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -180,7 +180,7 @@ jobs:
 
       - name: Upload go test log
         if: ${{ always() }} # Upload even if previous steps fail
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # pin@v7.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: ${{ inputs.name }}-gotest.log
           path: ${{ inputs.module }}/gotest.log
@@ -189,7 +189,7 @@ jobs:
       - name: Upload test reports artifact
         id: upload_test_reports_artifact_step
         if: ${{ always() }} # Upload even if previous steps fail
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # pin@v7.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: ${{ inputs.name }}-test-report
           path: |
@@ -200,7 +200,7 @@ jobs:
 
       - name: Publish test report as Check
         if: ${{ always() && (github.event_name == 'pull_request') }}
-        uses: mikepenz/action-junit-report@v6
+        uses: mikepenz/action-junit-report@49b2ca06f62aa7ef83ae6769a2179271e160d8e4 # v6.3.1
         with:
           report_paths: "${{ inputs.module }}/junit.xml"
           check_name: "Test Report (${{ inputs.name }})"
@@ -213,19 +213,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v2.7.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
           persist-credentials: false
 
       - name: Setup Go
-        uses: actions/setup-go@c0137caad775660c0844396c52da96e560aba63d # pin@5.5.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: "${{ inputs.module }}/go.mod"
           cache: false
 
       - name: Restore Go Cache
-        uses: actions/cache@v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             ~/.cache/go-build
@@ -235,7 +235,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Run govulncheck
-        uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee # pin@1.0.4
+        uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee # v1.0.4
         with:
           go-package: ./...
           work-dir: ${{ inputs.module }}
@@ -246,18 +246,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v2.7.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0 # CodeQL requires full history
 
       - name: Setup Go
-        uses: actions/setup-go@c0137caad775660c0844396c52da96e560aba63d # pin@5.5.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: "${{ inputs.module }}/go.mod"
           cache: false
 
       - name: Restore Go Cache
-        uses: actions/cache@v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             ~/.cache/go-build
@@ -267,7 +267,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # pinv3.30.5
+        uses: github/codeql-action/init@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # v3.30.5
         with:
           languages: go
           build-mode: manual # Set to manual as we provide a build step
@@ -288,7 +288,7 @@ jobs:
           fi
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # pinv3.30.5
+        uses: github/codeql-action/analyze@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # v3.30.5
         with:
           category: "/language:go/${{ inputs.name }}"
 
@@ -301,18 +301,18 @@ jobs:
       image_digest: ${{ steps.build_image_ko_step.outputs.digest }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v2.7.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
       - name: Setup Go
-        uses: actions/setup-go@c0137caad775660c0844396c52da96e560aba63d # pin@5.5.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: "${{ inputs.module }}/go.mod"
           cache: false
 
       - name: Restore Go Cache
-        uses: actions/cache@v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             ~/.cache/go-build
@@ -322,10 +322,10 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Setup Ko
-        uses: ko-build/setup-ko@v0.9
+        uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d # v0.9
 
       - name: Inject slug vars
-        uses: rlespinasse/github-slug-action@v5
+        uses: rlespinasse/github-slug-action@9e7def61550737ba68c62d34a32dd31792e3f429 # v5.5.0
 
       - name: Build and Push Image with Ko
         id: build_image_ko_step
@@ -364,7 +364,7 @@ jobs:
     steps:
       # No checkout or Go setup needed if only running Trivy on a remote image
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.35.0
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           image-ref: ${{ inputs.container_registry }}/${{ inputs.github_repository }}/${{ inputs.name }}@${{ needs.build.outputs.image_digest }}
           exit-code: "1"

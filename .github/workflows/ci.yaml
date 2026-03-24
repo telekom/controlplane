@@ -35,13 +35,13 @@ jobs:
       modules: ${{ steps.detect-changes.outputs.modules }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.2 # pin@v2.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
       - name: Detect Changes
         id: detect-changes
         continue-on-error: true
-        uses: ron96G/monutil@v1.3.0
+        uses: ron96G/monutil@47e25311bcb8e0bf81ce9c117a23603fe4b9bce6 # v1.3.0
         with:
           base-commit: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event_name == 'push' && github.event.before }}
           head-commit: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'push' && github.sha }}
@@ -71,6 +71,15 @@ jobs:
     uses: ./.github/workflows/helm-release.yaml
     with: 
       chart_path: 'common-server/helm'
+
+  controlplane-api:
+    name: ControlPlane API
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      name: controlplane-api
+      module: controlplane-api
+      run_check_generated_files: false
+      ko_build_path: "cmd/main.go"
 
   secret-manager:
     name: Secret Manager

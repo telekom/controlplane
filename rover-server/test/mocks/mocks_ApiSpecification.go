@@ -14,13 +14,13 @@ import (
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
-func NewApiSpecificationStoreMock(testing ginkgo.FullGinkgoTInterface) store.ObjectStore[*roverv1.ApiSpecification] {
+func NewAPISpecificationStoreMock(testing ginkgo.FullGinkgoTInterface) store.ObjectStore[*roverv1.ApiSpecification] {
 	mockStore := NewMockObjectStore[*roverv1.ApiSpecification](testing)
-	ConfigureApiSpecificationStoreMock(testing, mockStore)
+	ConfigureAPISpecificationStoreMock(testing, mockStore)
 	return mockStore
 }
 
-func ConfigureApiSpecificationStoreMock(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObjectStore[*roverv1.ApiSpecification]) {
+func ConfigureAPISpecificationStoreMock(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObjectStore[*roverv1.ApiSpecification]) {
 	configureApiSpecification(testing, mockedStore)
 	configureNotFound(mockedStore)
 }

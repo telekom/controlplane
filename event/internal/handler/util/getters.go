@@ -14,6 +14,7 @@ import (
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
@@ -182,7 +183,13 @@ func FindCrossZoneSSESubscriptionZones(ctx context.Context, eventType string, ex
 
 	seen := make(map[string]bool)
 	var zones []types.ObjectRef
-	for _, sub := range subList.Items {
+	for i := range subList.Items {
+		sub := &subList.Items[i]
+		// Skip subscriptions that are being deleted; their finalizer may still
+		// be running, but they should no longer influence proxy route creation.
+		if controller.IsBeingDeleted(sub) {
+			continue
+		}
 		if sub.Spec.EventType != eventType {
 			continue
 		}
@@ -291,7 +298,13 @@ func FindCrossZoneCallbackSubscriptions(ctx context.Context, eventType string, e
 	}
 
 	var subs []eventv1.EventSubscription
-	for _, sub := range subList.Items {
+	for i := range subList.Items {
+		sub := &subList.Items[i]
+		// Skip subscriptions that are being deleted; their finalizer may still
+		// be running, but they should no longer influence proxy route creation.
+		if controller.IsBeingDeleted(sub) {
+			continue
+		}
 		if sub.Spec.EventType != eventType {
 			continue
 		}
@@ -308,7 +321,7 @@ func FindCrossZoneCallbackSubscriptions(ctx context.Context, eventType string, e
 			continue
 		}
 
-		subs = append(subs, sub)
+		subs = append(subs, *sub)
 	}
 
 	return subs, nil

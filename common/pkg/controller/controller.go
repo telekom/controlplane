@@ -77,6 +77,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 		log.V(0).Info("Environment label is missing")
 		c.Event(ctx, object, "Warning", "Processing", "Environment label is missing")
 		if object.SetCondition(condition.NewBlockedCondition("Environment label is missing")) {
+			StampObservedGeneration(object)
 			if err := c.Client.Status().Update(ctx, object); err != nil {
 				return HandleError(ctx, err, object, c.Recorder), nil
 			}
@@ -99,6 +100,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 				// Failed
 				EnsureNotReadyOnError(ctx, c.Client, object, err)
 				result := HandleError(ctx, err, object, c.Recorder)
+				StampObservedGeneration(object)
 				if err = c.Client.Status().Update(ctx, object); err != nil {
 					return HandleError(ctx, err, object, c.Recorder), nil
 				}
@@ -131,6 +133,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 		result := HandleError(ctx, err, object, c.Recorder)
 		// Always update the status after reconciliation to persist any changes made by the handler
 		// and to set any conditions related to the error.
+		StampObservedGeneration(object)
 		if err = c.Client.Status().Update(ctx, object); err != nil {
 			return HandleError(ctx, err, object, c.Recorder), nil
 		}
@@ -147,6 +150,7 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 
 	// Always update the status after successful reconciliation to clear any error conditions
 	// and persist any changes made by the handler.
+	StampObservedGeneration(object)
 	if err = c.Client.Status().Update(ctx, object); err != nil {
 		return HandleError(ctx, err, object, c.Recorder), nil
 	}
@@ -231,4 +235,17 @@ func EnsureNotReadyOnError(ctx context.Context, client client.Client, obj common
 		return obj.SetCondition(condition.NewNotReadyCondition("ErrorOccurred", err.Error()))
 	}
 	return false
+}
+
+// StampObservedGeneration sets ObservedGeneration on all conditions to match
+// the object's current metadata.generation, per Kubernetes API conventions.
+// This must be called immediately before Status().Update() to ensure consumers
+// can detect stale conditions (where the spec changed but the controller has
+// not yet reconciled).
+func StampObservedGeneration(obj common_types.Object) {
+	conditions := obj.GetConditions()
+	gen := obj.GetGeneration()
+	for i := range conditions {
+		conditions[i].ObservedGeneration = gen
+	}
 }
