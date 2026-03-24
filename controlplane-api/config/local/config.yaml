@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 database:
-  url: postgres://${DB_USERNAME}:${DB_PASSWORD}@controlplane-api-postgres.controlplane-system.svc:5432/controlplane?sslmode=disable
+  url: ${DATABASE_URL}
 
 server:
   address: ":8080"

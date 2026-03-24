@@ -50,7 +50,7 @@ type LogConfig struct {
 func DefaultConfig() *ServerConfig {
 	return &ServerConfig{
 		Database: DatabaseConfig{
-			URL: "postgres://controlplane:controlplane@localhost:5432/controlplane?sslmode=disable",
+			URL: "postgres://localhost:5432/controlplane?sslmode=disable",
 		},
 		Server: HTTPServerConfig{
 			Address: ":8443",

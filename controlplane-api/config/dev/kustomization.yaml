@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Dev overlay — no TLS, no cert-manager, plain HTTP on 8080.
-# Expects controlplane-api-postgres-credentials secret to already exist in the cluster.
+# Expects controlplane-api-db secret to already exist in the cluster.
 
 namespace: controlplane-system
 

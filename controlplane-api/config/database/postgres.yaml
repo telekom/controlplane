@@ -67,12 +67,12 @@ spec:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: controlplane-api-postgres-credentials
+                  name: controlplane-api-db
                   key: username
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: controlplane-api-postgres-credentials
+                  name: controlplane-api-db
                   key: password
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata

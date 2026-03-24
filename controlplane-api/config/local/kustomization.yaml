@@ -3,8 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Local development overlay — no TLS, no cert-manager, plain HTTP on 8080.
-# Expects controlplane-api-postgres-credentials secret to already exist in the cluster.
-# Create it with: kubectl -n controlplane-system create secret generic controlplane-api-postgres-credentials --from-literal=username=controlplane --from-literal=password=controlplane
+# Expects controlplane-api-db secret to already exist in the cluster.
+# Create it with:
+#   kubectl -n controlplane-system create secret generic controlplane-api-db \
+#     --from-literal=url='postgres://controlplane:controlplane@controlplane-api-postgres:5432/controlplane?sslmode=disable' \
+#     --from-literal=username=controlplane \
+#     --from-literal=password=controlplane
 
 namespace: controlplane-system
 
