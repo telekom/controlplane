@@ -316,22 +316,23 @@ func createGatewayDtcRealm(ctx context.Context, handlingContext HandlingContext,
 
 	// Build URLs array: all DTC URLs from all zones (including current zone)
 	var dtcUrls []string
-	for _, zone := range zoneList.Items {
-		if zone.Spec.Gateway.DtcUrl != nil && *zone.Spec.Gateway.DtcUrl != "" {
-			dtcUrls = append(dtcUrls, *zone.Spec.Gateway.DtcUrl)
-		}
-	}
 
 	// Build IssuerUrls array: issuers from OTHER DTC-enabled zones (excluding current zone)
 	var issuerUrls []string
-	for _, zone := range zoneList.Items {
-		// Skip current zone
-		if zone.Name == handlingContext.Zone.Name && zone.Namespace == handlingContext.Zone.Namespace {
-			continue
-		}
-		// Only add issuer if zone has DTC URL configured
+
+	for i := range zoneList.Items {
+		zone := &zoneList.Items[i]
 		if zone.Spec.Gateway.DtcUrl != nil && *zone.Spec.Gateway.DtcUrl != "" {
-			issuerUrls = append(issuerUrls, urls.ForGatewayRealm(zone.Spec.IdentityProvider.Url, realmName))
+
+			// add the dtcUrl
+			dtcUrls = append(dtcUrls, *zone.Spec.Gateway.DtcUrl)
+
+			// Skip current zone for issuer urls
+			if zone.Name == handlingContext.Zone.Name && zone.Namespace == handlingContext.Zone.Namespace {
+				continue
+			} else {
+				issuerUrls = append(issuerUrls, urls.ForGatewayRealm(zone.Spec.IdentityProvider.Url, realmName))
+			}
 		}
 	}
 

@@ -5,6 +5,7 @@
 package v1
 
 import (
+	"errors"
 	"net/url"
 	"path"
 
@@ -78,7 +79,7 @@ func (r *Realm) SetCondition(condition metav1.Condition) bool {
 func (r *Realm) AsUpstream(apiBasePath string) (ups Upstream, err error) {
 	// Use the first URL as the upstream URL
 	if len(r.Spec.Urls) == 0 {
-		return ups, err
+		return ups, errors.New("no upstreams found")
 	}
 	url, err := url.Parse(r.Spec.Urls[0])
 	if err != nil {
