@@ -60,6 +60,7 @@ func main() {
 
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log
+	appCfg.EnableCors = true
 	s := cserver.NewServerWithApp(cserver.NewAppWithConfig(appCfg))
 
 	probesCtrl := cserver.NewProbesController()
