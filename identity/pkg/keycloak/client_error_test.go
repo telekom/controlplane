@@ -7,6 +7,7 @@ package keycloak
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -31,6 +32,10 @@ func TestStatusCodeIsNotFound(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, "Keycloak client error", err.Error())
 	assert.False(t, err.Retriable())
+	// ctrlerrors-compatible interface
+	assert.False(t, err.IsRetryable())
+	assert.True(t, err.IsBlocked())
+	assert.Equal(t, time.Duration(0), err.RetryDelay())
 }
 
 func TestStatusCodeIsInternalServerError(t *testing.T) {
@@ -39,6 +44,10 @@ func TestStatusCodeIsInternalServerError(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, "Keycloak server error", err.Error())
 	assert.True(t, err.Retriable())
+	// ctrlerrors-compatible interface
+	assert.True(t, err.IsRetryable())
+	assert.False(t, err.IsBlocked())
+	assert.Equal(t, time.Duration(0), err.RetryDelay())
 }
 
 func TestStatusCodeIsBadRequest(t *testing.T) {
@@ -47,6 +56,10 @@ func TestStatusCodeIsBadRequest(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, "Keycloak client error", err.Error())
 	assert.False(t, err.Retriable())
+	// ctrlerrors-compatible interface
+	assert.False(t, err.IsRetryable())
+	assert.True(t, err.IsBlocked())
+	assert.Equal(t, time.Duration(0), err.RetryDelay())
 }
 
 func TestStatusCodeIsServiceUnavailable(t *testing.T) {
@@ -55,4 +68,36 @@ func TestStatusCodeIsServiceUnavailable(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, "Keycloak server error", err.Error())
 	assert.True(t, err.Retriable())
+	// ctrlerrors-compatible interface
+	assert.True(t, err.IsRetryable())
+	assert.False(t, err.IsBlocked())
+	assert.Equal(t, time.Duration(0), err.RetryDelay())
+}
+
+func TestStatusCodeIsTooManyRequests(t *testing.T) {
+	response := &MockApiResponse{statusCode: http.StatusTooManyRequests}
+	err := CheckStatusCode(response, http.StatusOK)
+	assert.NotNil(t, err)
+	assert.Equal(t, "Keycloak rate limit error", err.Error())
+	assert.True(t, err.Retriable())
+	// ctrlerrors-compatible interface
+	assert.True(t, err.IsRetryable())
+	assert.False(t, err.IsBlocked())
+	assert.Equal(t, 3*time.Second, err.RetryDelay())
+}
+
+func TestStatusCodeMultipleAcceptable(t *testing.T) {
+	// Verify that multiple acceptable status codes work
+	response := &MockApiResponse{statusCode: http.StatusNoContent}
+	err := CheckStatusCode(response, http.StatusOK, http.StatusNoContent)
+	assert.Nil(t, err)
+}
+
+func TestApiErrorImplementsErrorInterface(t *testing.T) {
+	response := &MockApiResponse{statusCode: http.StatusForbidden}
+	apiErr := CheckStatusCode(response, http.StatusOK)
+	// Verify it satisfies the standard error interface
+	var stdErr error = apiErr
+	assert.NotNil(t, stdErr)
+	assert.Contains(t, stdErr.Error(), "Keycloak")
 }

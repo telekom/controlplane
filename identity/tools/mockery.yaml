@@ -7,8 +7,9 @@ mockname: "Mock{{.InterfaceName}}"
 dir: "../test/mocks"
 outpkg: "mocks"
 filename: "mock_{{.InterfaceName}}.go"
+boilerplate-file: ../../hack/boilerplate.go.txt
 packages:
-  cp.ei.telekom.de/identity/pkg/api:
+  github.com/telekom/controlplane/identity/pkg/api:
     # place your package-specific config here
     config:
     interfaces:
@@ -16,7 +17,7 @@ packages:
       KeycloakClient:
         # Modify package-level config for this specific interface (if applicable)
         config:
-  cp.ei.telekom.de/identity/pkg/keycloak:
+  github.com/telekom/controlplane/identity/pkg/keycloak:
     # place your package-specific config here
     config:
     interfaces:

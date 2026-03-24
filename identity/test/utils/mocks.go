@@ -27,7 +27,12 @@ const (
 )
 
 func NewKeycloakClientMock(testing ginkgo.FullGinkgoTInterface) *mocks.MockKeycloakClient {
-	var mockKeycloakClient = mocks.NewMockKeycloakClient(testing)
+	// Construct manually instead of using mocks.NewMockKeycloakClient(testing),
+	// because the generated constructor calls t.Cleanup() which maps to
+	// DeferCleanup() in Ginkgo. When called from BeforeSuite, this creates a
+	// nested DeferCleanup-inside-DeferCleanup which Ginkgo forbids.
+	mockKeycloakClient := &mocks.MockKeycloakClient{}
+	mockKeycloakClient.Mock.Test(testing)
 	return mockKeycloakClient
 }
 
