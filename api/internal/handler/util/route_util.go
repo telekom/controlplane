@@ -22,6 +22,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+const (
+	// GatewayConsumerName is the name of the gateway mesh-client that is used to proxy requests across zones.
+	// It must be added to DefaultConsumers on routes that are the target of a cross-zone proxy.
+	GatewayConsumerName = "gateway"
+)
+
 var (
 	LabelFailoverSecondary = config.BuildLabelKey("failover.secondary")
 )
@@ -37,6 +43,11 @@ type CreateRouteOptions struct {
 
 	// In case of proxy route, consumer rate limits must be set as well
 	ConsumerRateLimit *apiapi.Limits
+
+	// IsProxyTarget indicates that this route is the target of a cross-zone proxy route.
+	// When true, the gateway mesh-client consumer is added to the route's DefaultConsumers
+	// to allow the proxy route to access this route.
+	IsProxyTarget bool
 }
 
 type CreateRouteOption func(*CreateRouteOptions)
@@ -93,6 +104,15 @@ func WithServiceRateLimit(rateLimit *apiapi.RateLimitConfig) CreateRouteOption {
 func WithConsumerRateLimit(limits *apiapi.Limits) CreateRouteOption {
 	return func(opts *CreateRouteOptions) {
 		opts.ConsumerRateLimit = limits
+	}
+}
+
+// WithProxyTarget marks the route as a proxy target, indicating that the gateway
+// mesh-client consumer should be added to the route's DefaultConsumers.
+// This mirrors the Event domain's WithProxyTarget option.
+func WithProxyTarget(isProxyTarget bool) CreateRouteOption {
+	return func(opts *CreateRouteOptions) {
+		opts.IsProxyTarget = isProxyTarget
 	}
 }
 
@@ -201,6 +221,13 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 
 		if options.IsFailoverSecondary() {
 			proxyRoute.Labels[LabelFailoverSecondary] = "true"
+
+			// A failover secondary route is the target of cross-zone proxy requests,
+			// so the gateway mesh-client must be allowed to access it.
+			if proxyRoute.Spec.Security == nil {
+				proxyRoute.Spec.Security = &gatewayapi.Security{}
+			}
+			proxyRoute.Spec.Security.DefaultConsumers = append(proxyRoute.Spec.Security.DefaultConsumers, GatewayConsumerName)
 
 			failoverUpstreams := make([]gatewayapi.Upstream, 0, len(options.FailoverUpstreams))
 			for _, rawUpstream := range options.FailoverUpstreams {
@@ -315,8 +342,13 @@ func CleanupProxyRoute(ctx context.Context, routeRef *types.ObjectRef, opts ...C
 	return nil
 }
 
-func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, apiExposure *apiapi.ApiExposure, realmName string) (*gatewayapi.Route, error) {
+func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, apiExposure *apiapi.ApiExposure, realmName string, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
+
+	options := &CreateRouteOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
 
 	// get referenced Zone from exposure
 	zone, err := GetZone(ctx, scopedClient, downstreamZoneRef.K8s())
@@ -372,6 +404,15 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 		}
 		route.Spec.Transformation = mapTransformation(apiExposure.Spec.Transformation)
 		route.Spec.Security = mapSecurity(apiExposure.Spec.Security)
+
+		if options.IsProxyTarget {
+			// If this Route is the target of a cross-zone proxy Route,
+			// the gateway mesh-client must be allowed to access it.
+			if route.Spec.Security == nil {
+				route.Spec.Security = &gatewayapi.Security{}
+			}
+			route.Spec.Security.DefaultConsumers = append(route.Spec.Security.DefaultConsumers, GatewayConsumerName)
+		}
 
 		if apiExposure.HasProviderRateLimit() {
 			route.Spec.Traffic.RateLimit = mapProviderRateLimitToGatewayRateLimit(apiExposure.Spec.Traffic.RateLimit.Provider)

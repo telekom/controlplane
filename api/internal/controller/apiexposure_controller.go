@@ -64,6 +64,10 @@ func (r *ApiExposureReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(r.MapApiExposureToApiExposure),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
+		Watches(&apiv1.ApiSubscription{},
+			handler.EnqueueRequestsFromMapFunc(r.MapApiSubscriptionToApiExposure),
+			builder.WithPredicates(predicate.Or(predicate.GenerationChangedPredicate{}, cc.DeleteOnlyPredicate{})),
+		).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToApiExposure),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
@@ -142,4 +146,32 @@ func (r *ApiExposureReconciler) MapRouteToApiExposure(ctx context.Context, obj c
 
 func (r *ApiExposureReconciler) MapZoneToApiExposure(ctx context.Context, obj client.Object) []reconcile.Request {
 	return nil
+}
+
+// MapApiSubscriptionToApiExposure triggers re-reconciliation of ApiExposures when ApiSubscriptions change.
+// This ensures that the real route's DefaultConsumers is updated when cross-zone subscriptions are created or deleted.
+func (r *ApiExposureReconciler) MapApiSubscriptionToApiExposure(ctx context.Context, obj client.Object) []reconcile.Request {
+	log := log.FromContext(ctx)
+	apiSub, ok := obj.(*apiv1.ApiSubscription)
+	if !ok {
+		log.Info("object is not an ApiSubscription")
+		return nil
+	}
+
+	list := &apiv1.ApiExposureList{}
+	err := r.Client.List(ctx, list, client.MatchingLabels{
+		cconfig.EnvironmentLabelKey: apiSub.Labels[cconfig.EnvironmentLabelKey],
+		apiv1.BasePathLabelKey:      apiSub.Labels[apiv1.BasePathLabelKey],
+	})
+	if err != nil {
+		log.Error(err, "failed to list API-Exposures for ApiSubscription")
+		return nil
+	}
+
+	reqs := make([]reconcile.Request, 0, len(list.Items))
+	for _, item := range list.Items {
+		reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&item)})
+	}
+
+	return reqs
 }
