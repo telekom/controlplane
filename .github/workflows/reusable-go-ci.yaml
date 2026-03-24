@@ -88,12 +88,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v2.7.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v6.0.2
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
       - name: Setup Go
-        uses: actions/setup-go@c0137caad775660c0844396c52da96e560aba63d # pin@5.5.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # pin@v6.3.0
         with:
           go-version-file: "${{ inputs.module }}/go.mod"
           cache: false # Using a separate cache step
@@ -133,12 +133,12 @@ jobs:
       test_reports_artifact_id: ${{ steps.upload_test_reports_artifact_step.outputs.artifact-id }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v2.7.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v6.0.2
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
       - name: Setup Go
-        uses: actions/setup-go@c0137caad775660c0844396c52da96e560aba63d # pin@5.5.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # pin@v6.3.0
         with:
           go-version-file: "${{ inputs.module }}/go.mod"
           cache: false # Using a separate cache step
@@ -213,13 +213,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v2.7.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v6.0.2
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
           persist-credentials: false
 
       - name: Setup Go
-        uses: actions/setup-go@c0137caad775660c0844396c52da96e560aba63d # pin@5.5.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # pin@v6.3.0
         with:
           go-version-file: "${{ inputs.module }}/go.mod"
           cache: false
@@ -246,12 +246,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v2.7.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v6.0.2
         with:
           fetch-depth: 0 # CodeQL requires full history
 
       - name: Setup Go
-        uses: actions/setup-go@c0137caad775660c0844396c52da96e560aba63d # pin@5.5.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # pin@v6.3.0
         with:
           go-version-file: "${{ inputs.module }}/go.mod"
           cache: false
@@ -301,12 +301,12 @@ jobs:
       image_digest: ${{ steps.build_image_ko_step.outputs.digest }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v2.7.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v6.0.2
         with:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
       - name: Setup Go
-        uses: actions/setup-go@c0137caad775660c0844396c52da96e560aba63d # pin@5.5.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # pin@v6.3.0
         with:
           go-version-file: "${{ inputs.module }}/go.mod"
           cache: false
