@@ -8,10 +8,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -24,63 +23,61 @@ import (
 
 var _ handler.Handler[*identityv1.Client] = &HandlerClient{}
 
-type HandlerClient struct{}
+type HandlerClient struct {
+	ClientFactory keycloak.ClientFactory
+}
+
+// NewHandlerClient creates a HandlerClient with the given ClientFactory.
+func NewHandlerClient(factory keycloak.ClientFactory) *HandlerClient {
+	return &HandlerClient{ClientFactory: factory}
+}
 
 func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.Client) (err error) {
-	logger := log.FromContext(ctx)
 	if client == nil {
 		return fmt.Errorf("client is nil")
 	}
 
-	client.Spec.ClientSecret, err = secrets.Get(ctx, client.Spec.ClientSecret)
+	resolvedSecret, err := secrets.Get(ctx, client.Spec.ClientSecret)
 	if err != nil {
-		return errors.Wrap(err, "failed to get client secret from secret-manager")
+		return fmt.Errorf("failed to get client secret from secret-manager: %w", err)
 	}
 
 	ready, realm, err := realmHandler.GetRealmByName(ctx, client.Spec.Realm, true)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			contextutil.RecorderFromContextOrDie(ctx).
-				Eventf(client, "Warning", "RealmNotFound",
-					"Realm '%s' not found", client.Spec.Realm.String())
-			SetStatusBlocked(client)
-			return nil
+			return ctrlerrors.BlockedErrorf("Realm %q not found", client.Spec.Realm.String())
 		}
 		return err
 	}
 
 	if !ready {
-		realm.SetCondition(condition.NewBlockedCondition("Realm not ready"))
-		realm.SetCondition(condition.NewNotReadyCondition("RealmNotReady", "Realm not ready"))
-		return nil
+		return ctrlerrors.BlockedErrorf("Realm %q is not ready", client.Spec.Realm.String())
 	}
 
-	realmStatus := realmHandler.ObfuscateRealm(realm.Status)
-	logger.V(0).Info("Found Realm", "realm", realmStatus)
-
-	MapToClientStatus(&realm.Status, &client.Status)
+	mapToClientStatus(&realm.Status, &client.Status)
 	err = realmHandler.ValidateRealmStatus(&realm.Status)
 	if err != nil {
-		contextutil.RecorderFromContextOrDie(ctx).
-			Eventf(client, "Warning", "RealmNotValid",
-				"Realm '%s' not valid", client.Spec.Realm.String())
-		SetStatusWaiting(client)
-		return errors.Wrap(err, "failed to validate realm")
+		return ctrlerrors.BlockedErrorf("Realm %q is not valid: %s", client.Spec.Realm.String(), err)
 	}
 
-	realmClient, err := keycloak.GetClientFor(realm.Status)
+	realmClient, err := h.ClientFactory.ClientFor(realm.Status)
 	if err != nil {
-		return errors.Wrap(err, "failed to get keycloak client")
+		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}
 
-	err = realmClient.CreateOrUpdateRealmClient(ctx, realm, client)
+	// Use a copy of the client with the resolved secret so the original
+	// client.Spec.ClientSecret (which may be a secret-manager reference)
+	// is never overwritten with plaintext.
+	clientCopy := client.DeepCopy()
+	clientCopy.Spec.ClientSecret = resolvedSecret
+
+	err = realmClient.CreateOrUpdateRealmClient(ctx, realm, clientCopy)
 	if err != nil {
-		return errors.Wrap(err, "failed to create or update client")
+		return fmt.Errorf("failed to create or update client: %w", err)
 	}
 
-	SetStatusReady(client)
-	var message = fmt.Sprintf("RealmClient %s is ready", client.Spec.ClientId)
-	logger.V(1).Info(message, "IssuerUrl", &client.Status.IssuerUrl)
+	client.SetCondition(condition.NewDoneProcessingCondition("Created Client"))
+	client.SetCondition(condition.NewReadyCondition("Ready", "Client is ready"))
 
 	return nil
 }
@@ -91,36 +88,45 @@ func (h *HandlerClient) Delete(ctx context.Context, obj *identityv1.Client) erro
 
 	ready, realm, err := realmHandler.GetRealmByName(ctx, obj.Spec.Realm, true)
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.Info("Realm not found, skipping Keycloak client deletion", "realm", obj.Spec.Realm.String())
+			return nil
+		}
 		return err
 	}
 
-	if realm == nil {
-		return errors.Wrap(err, "realm does not exist, skipping deletion")
+	if realm == nil || !ready {
+		logger.Info("Realm not ready, skipping Keycloak client deletion", "realm", obj.Spec.Realm.String())
+		return nil
 	}
 
-	if !ready {
-		return errors.Wrap(err, "realm not ready!")
-	}
-
-	realmClient, err := keycloak.GetClientFor(realm.Status)
+	realmClient, err := h.ClientFactory.ClientFor(realm.Status)
 	if err != nil {
-		return errors.Wrap(err, "failed to get keycloak client")
+		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}
 
 	getRealmClients, err := realmClient.GetRealmClients(ctx, realm.Name, obj)
 	if err != nil {
-		return errors.Wrap(err, "failed to get realm clients")
+		return fmt.Errorf("failed to get realm clients: %w", err)
 	}
 
 	existingClient, err := mapper.GetClient(*getRealmClients)
 	if err != nil {
-		return errors.Wrap(err, "failed to get realm client")
+		return fmt.Errorf("failed to get realm client: %w", err)
 	}
 
 	err = realmClient.DeleteRealmClient(ctx, realm.Name, *existingClient.Id)
 	if err != nil {
-		return errors.Wrap(err, "failed to delete realm client")
+		return fmt.Errorf("failed to delete realm client: %w", err)
 	}
 
 	return nil
+}
+
+func mapToClientStatus(realmStatus *identityv1.RealmStatus, clientStatus *identityv1.ClientStatus) {
+	if clientStatus == nil {
+		clientStatus = &identityv1.ClientStatus{}
+	}
+
+	clientStatus.IssuerUrl = realmStatus.IssuerUrl
 }

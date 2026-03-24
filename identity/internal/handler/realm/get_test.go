@@ -5,110 +5,85 @@
 package realm
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 )
 
-func TestObfuscateRealmMapsCorrectly(t *testing.T) {
-	realmStatus := identityv1.RealmStatus{
-		IssuerUrl:     "https://issuer.example.com",
-		AdminClientId: "admin-client-id",
-		AdminUserName: "admin-username",
-		AdminPassword: "admin-password",
-		AdminUrl:      "https://admin.example.com",
-		AdminTokenUrl: "https://admin.example.com/token",
-	}
+var _ = Describe("ValidateRealmStatus", func() {
 
-	obfuscatedStatus := ObfuscateRealm(realmStatus)
+	It("should return an error when status is nil", func() {
+		err := ValidateRealmStatus(nil)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("realmStatus is nil"))
+	})
 
-	assert.Equal(t, "https://issuer.example.com", obfuscatedStatus.IssuerUrl)
-	assert.Equal(t, "admin-client-id", obfuscatedStatus.AdminClientId)
-	assert.Equal(t, "****", obfuscatedStatus.AdminUserName)
-	assert.Equal(t, "****", obfuscatedStatus.AdminPassword)
-	assert.Equal(t, "https://admin.example.com", obfuscatedStatus.AdminUrl)
-	assert.Equal(t, "https://admin.example.com/token", obfuscatedStatus.AdminTokenUrl)
-}
+	It("should return an error when IssuerUrl is empty", func() {
+		err := ValidateRealmStatus(&identityv1.RealmStatus{})
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("realmStatus.IssuerUrl is empty"))
+	})
 
-func TestValidateRealmStatusReturnsErrorWhenStatusIsNil(t *testing.T) {
-	err := ValidateRealmStatus(nil)
-	assert.Error(t, err)
-	assert.Equal(t, "realmStatus is nil", err.Error())
-}
+	It("should return an error when AdminClientId is empty", func() {
+		err := ValidateRealmStatus(&identityv1.RealmStatus{
+			IssuerUrl: "https://issuer.example.com",
+		})
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("realmStatus.AdminClientId is empty"))
+	})
 
-func TestValidateRealmStatusReturnsErrorWhenIssuerUrlIsEmpty(t *testing.T) {
-	realmStatus := &identityv1.RealmStatus{}
-	err := ValidateRealmStatus(realmStatus)
-	assert.Error(t, err)
-	assert.Equal(t, "realmStatus.IssuerUrl is empty", err.Error())
-}
+	It("should return an error when AdminUserName is empty", func() {
+		err := ValidateRealmStatus(&identityv1.RealmStatus{
+			IssuerUrl:     "https://issuer.example.com",
+			AdminClientId: "admin-client-id",
+		})
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("realmStatus.AdminUserName is empty"))
+	})
 
-func TestValidateRealmStatusReturnsErrorWhenAdminClientIdIsEmpty(t *testing.T) {
-	realmStatus := &identityv1.RealmStatus{
-		IssuerUrl: "https://issuer.example.com",
-	}
-	err := ValidateRealmStatus(realmStatus)
-	assert.Error(t, err)
-	assert.Equal(t, "realmStatus.AdminClientId is empty", err.Error())
-}
+	It("should return an error when AdminPassword is empty", func() {
+		err := ValidateRealmStatus(&identityv1.RealmStatus{
+			IssuerUrl:     "https://issuer.example.com",
+			AdminClientId: "admin-client-id",
+			AdminUserName: "admin-username",
+		})
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("realmStatus.AdminPassword is empty"))
+	})
 
-func TestValidateRealmStatusReturnsErrorWhenAdminUserNameIsEmpty(t *testing.T) {
-	realmStatus := &identityv1.RealmStatus{
-		IssuerUrl:     "https://issuer.example.com",
-		AdminClientId: "admin-client-id",
-	}
-	err := ValidateRealmStatus(realmStatus)
-	assert.Error(t, err)
-	assert.Equal(t, "realmStatus.AdminUserName is empty", err.Error())
-}
+	It("should return an error when AdminUrl is empty", func() {
+		err := ValidateRealmStatus(&identityv1.RealmStatus{
+			IssuerUrl:     "https://issuer.example.com",
+			AdminClientId: "admin-client-id",
+			AdminUserName: "admin-username",
+			AdminPassword: "admin-password",
+		})
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("realmStatus.AdminUrl is empty"))
+	})
 
-func TestValidateRealmStatusReturnsErrorWhenAdminPasswordIsEmpty(t *testing.T) {
-	realmStatus := &identityv1.RealmStatus{
-		IssuerUrl:     "https://issuer.example.com",
-		AdminClientId: "admin-client-id",
-		AdminUserName: "admin-username",
-	}
-	err := ValidateRealmStatus(realmStatus)
-	assert.Error(t, err)
-	assert.Equal(t, "realmStatus.AdminPassword is empty", err.Error())
-}
+	It("should return an error when AdminTokenUrl is empty", func() {
+		err := ValidateRealmStatus(&identityv1.RealmStatus{
+			IssuerUrl:     "https://issuer.example.com",
+			AdminClientId: "admin-client-id",
+			AdminUserName: "admin-username",
+			AdminPassword: "admin-password",
+			AdminUrl:      "https://admin.example.com",
+		})
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("realmStatus.AdminTokenUrl is empty"))
+	})
 
-func TestValidateRealmStatusReturnsErrorWhenAdminUrlIsEmpty(t *testing.T) {
-	realmStatus := &identityv1.RealmStatus{
-		IssuerUrl:     "https://issuer.example.com",
-		AdminClientId: "admin-client-id",
-		AdminUserName: "admin-username",
-		AdminPassword: "admin-password",
-	}
-	err := ValidateRealmStatus(realmStatus)
-	assert.Error(t, err)
-	assert.Equal(t, "realmStatus.AdminUrl is empty", err.Error())
-}
-
-func TestValidateRealmStatusReturnsErrorWhenAdminTokenUrlIsEmpty(t *testing.T) {
-	realmStatus := &identityv1.RealmStatus{
-		IssuerUrl:     "https://issuer.example.com",
-		AdminClientId: "admin-client-id",
-		AdminUserName: "admin-username",
-		AdminPassword: "admin-password",
-		AdminUrl:      "https://admin.example.com",
-	}
-	err := ValidateRealmStatus(realmStatus)
-	assert.Error(t, err)
-	assert.Equal(t, "realmStatus.AdminTokenUrl is empty", err.Error())
-}
-
-func TestValidateRealmStatusReturnsNilWhenAllFieldsAreValid(t *testing.T) {
-	realmStatus := &identityv1.RealmStatus{
-		IssuerUrl:     "https://issuer.example.com",
-		AdminClientId: "admin-client-id",
-		AdminUserName: "admin-username",
-		AdminPassword: "admin-password",
-		AdminUrl:      "https://admin.example.com",
-		AdminTokenUrl: "https://admin.example.com/token",
-	}
-	err := ValidateRealmStatus(realmStatus)
-	assert.NoError(t, err)
-}
+	It("should return nil when all fields are valid", func() {
+		err := ValidateRealmStatus(&identityv1.RealmStatus{
+			IssuerUrl:     "https://issuer.example.com",
+			AdminClientId: "admin-client-id",
+			AdminUserName: "admin-username",
+			AdminPassword: "admin-password",
+			AdminUrl:      "https://admin.example.com",
+			AdminTokenUrl: "https://admin.example.com/token",
+		})
+		Expect(err).ToNot(HaveOccurred())
+	})
+})

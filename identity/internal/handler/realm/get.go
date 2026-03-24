@@ -65,18 +65,3 @@ func ValidateRealmStatus(realmStatus *identityv1.RealmStatus) error {
 	}
 	return nil
 }
-
-func ObfuscateRealm(status identityv1.RealmStatus) identityv1.RealmStatus {
-	// Create a copy of the status to avoid modifying the original
-	obfuscatedStatus := status
-
-	// Obfuscate sensitive fields
-	if obfuscatedStatus.AdminUserName != "" {
-		obfuscatedStatus.AdminUserName = "****"
-	}
-	if obfuscatedStatus.AdminPassword != "" {
-		obfuscatedStatus.AdminPassword = "****"
-	}
-
-	return obfuscatedStatus
-}

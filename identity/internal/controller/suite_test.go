@@ -96,9 +96,20 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
+	RegisterIndexesOrDie(ctx, k8sManager)
+
+	By("Setting up the required mocks")
+	mockFactory := keycloak.ClientFactoryFunc(func(realmStatus identityv1.RealmStatus) (keycloak.RealmClient, error) {
+		if mockKeycloak {
+			return utils.NewRealmClientMock(GinkgoT()), nil
+		}
+		return keycloak.GetClientForRealm(realmStatus)
+	})
+
 	err = (&ClientReconciler{
-		Client: k8sManager.GetClient(),
-		Scheme: k8sManager.GetScheme(),
+		Client:        k8sManager.GetClient(),
+		Scheme:        k8sManager.GetScheme(),
+		ClientFactory: mockFactory,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -109,19 +120,11 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&RealmReconciler{
-		Client: k8sManager.GetClient(),
-		Scheme: k8sManager.GetScheme(),
+		Client:        k8sManager.GetClient(),
+		Scheme:        k8sManager.GetScheme(),
+		ClientFactory: mockFactory,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
-
-	By("Setting up the required mocks")
-	keycloak.GetClientFor = func(realmStatus identityv1.RealmStatus) (keycloak.RealmClient, error) {
-		if mockKeycloak {
-			return utils.NewRealmClientMock(GinkgoT()), nil
-		} else {
-			return keycloak.GetClientForRealm(realmStatus)
-		}
-	}
 
 	go func() {
 		defer GinkgoRecover()

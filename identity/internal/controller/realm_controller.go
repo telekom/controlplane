@@ -9,6 +9,7 @@ import (
 
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
+	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -22,13 +23,15 @@ import (
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	realmHandler "github.com/telekom/controlplane/identity/internal/handler/realm"
+	"github.com/telekom/controlplane/identity/pkg/keycloak"
 )
 
 // RealmReconciler reconciles a Realm object
 type RealmReconciler struct {
 	client.Client
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	Scheme        *runtime.Scheme
+	Recorder      record.EventRecorder
+	ClientFactory keycloak.ClientFactory
 
 	cc.Controller[*identityv1.Realm]
 }
@@ -46,13 +49,18 @@ func (r *RealmReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 // SetupWithManager sets up the controller with the Manager.
 func (r *RealmReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("realm-controller")
-	r.Controller = cc.NewController(&realmHandler.HandlerRealm{}, r.Client, r.Recorder)
+
+	factory := r.ClientFactory
+	if factory == nil {
+		factory = keycloak.NewClientFactory()
+	}
+	r.Controller = cc.NewController(realmHandler.NewHandlerRealm(factory), r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&identityv1.Realm{}).
 		Watches(&identityv1.IdentityProvider{},
 			handler.EnqueueRequestsFromMapFunc(r.mapIdpObjToRealm),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: cconfig.MaxConcurrentReconciles,
 			RateLimiter:             cc.NewRateLimiter(),
@@ -61,6 +69,8 @@ func (r *RealmReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // mapIdpObjToRealm maps identity provider object to reconcile requests.
+// Uses a field index on spec.identityProvider for efficient lookup instead
+// of listing all Realms in the environment and filtering in-memory.
 func (r *RealmReconciler) mapIdpObjToRealm(ctx context.Context, obj client.Object) []reconcile.Request {
 	logger := log.FromContext(ctx)
 
@@ -69,21 +79,27 @@ func (r *RealmReconciler) mapIdpObjToRealm(ctx context.Context, obj client.Objec
 		logger.V(0).Info("object is not an IdentityProvider")
 		return nil
 	}
+	if idp.Labels == nil {
+		return nil
+	}
+
+	listOpts := []client.ListOption{
+		client.MatchingFields{
+			IndexFieldSpecIdentityProvider: types.ObjectRefFromObject(idp).String(),
+		},
+		client.MatchingLabels{
+			cconfig.EnvironmentLabelKey: idp.Labels[cconfig.EnvironmentLabelKey],
+		},
+	}
 
 	list := &identityv1.RealmList{}
-	err := r.Client.List(ctx, list, client.MatchingLabels{
-		cconfig.EnvironmentLabelKey: idp.Labels[cconfig.EnvironmentLabelKey],
-	})
-	if err != nil {
+	if err := r.Client.List(ctx, list, listOpts...); err != nil {
 		logger.Error(err, "failed to list Realms")
 		return nil
 	}
 
 	requests := make([]reconcile.Request, 0, len(list.Items))
 	for _, item := range list.Items {
-		if idp.UID == item.UID {
-			continue
-		}
 		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&item)})
 	}
 
