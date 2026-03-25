@@ -74,8 +74,8 @@ var _ = Describe("Failover", func() {
 			// Expects
 			mockCreateOrReplaceRoute := func(ctx context.Context, route client.CustomRoute, upstream client.Upstream) error {
 				Expect(route.GetName()).To(Equal("test-route"))
-				Expect(route.GetHost()).To(Equal("gateway1.example.com"))
-				Expect(route.GetPath()).To(Equal("/foo"))
+				Expect(route.GetHosts()).To(Equal([]string{"gateway1.example.com"}))
+				Expect(route.GetPaths()).To(Equal([]string{"/foo"}))
 				Expect(upstream.GetHost()).To(Equal("localhost"))
 				Expect(upstream.GetScheme()).To(Equal("http"))
 				Expect(upstream.GetPort()).To(Equal(8080))
@@ -185,8 +185,8 @@ var _ = Describe("Failover", func() {
 			// Expects
 			mockCreateOrReplaceRoute := func(ctx context.Context, route client.CustomRoute, upstream client.Upstream) error {
 				Expect(route.GetName()).To(Equal("test-route"))
-				Expect(route.GetHost()).To(Equal("gateway1.example.com"))
-				Expect(route.GetPath()).To(Equal("/foo"))
+				Expect(route.GetHosts()).To(Equal([]string{"gateway1.example.com"}))
+				Expect(route.GetPaths()).To(Equal([]string{"/foo"}))
 				Expect(upstream.GetHost()).To(Equal("localhost"))
 				Expect(upstream.GetScheme()).To(Equal("http"))
 				Expect(upstream.GetPort()).To(Equal(8080))
@@ -295,8 +295,8 @@ var _ = Describe("Failover", func() {
 			// Expects
 			mockCreateOrReplaceRoute := func(ctx context.Context, route client.CustomRoute, upstream client.Upstream) error {
 				Expect(route.GetName()).To(Equal("test-route"))
-				Expect(route.GetHost()).To(Equal("gateway1.example.com"))
-				Expect(route.GetPath()).To(Equal("/foo"))
+				Expect(route.GetHosts()).To(Equal([]string{"gateway1.example.com"}))
+				Expect(route.GetPaths()).To(Equal([]string{"/foo"}))
 				Expect(upstream.GetHost()).To(Equal("localhost"))
 				Expect(upstream.GetScheme()).To(Equal("http"))
 				Expect(upstream.GetPort()).To(Equal(8080))

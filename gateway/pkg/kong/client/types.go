@@ -29,8 +29,8 @@ type CustomRoute interface {
 	SetTargetsId(string)
 	GetTargetsId() string
 	GetName() string
-	GetHost() string
-	GetPath() string
+	GetHosts() []string
+	GetPaths() []string
 	GetRequestBuffering() bool
 	GetResponseBuffering() bool
 }

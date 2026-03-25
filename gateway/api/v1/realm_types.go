@@ -23,10 +23,12 @@ type RealmSpec struct {
 	// Urls is the list of Gateway URLs that this realm should accept traffic from
 	// +listType=set
 	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:items:Pattern=`^https?://[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*(:[0-9]{1,5})?(/.*)?$`
 	Urls []string `json:"urls"`
 	// IssuerUrls is the list of token issuer URLs that are trusted for this realm
 	// +listType=set
 	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:items:Pattern=`^https?://[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*(:[0-9]{1,5})?(/.*)?$`
 	IssuerUrls []string `json:"issuerUrls"`
 	// DefaultConsumers is a list of consumers that are allowed to access the Realm for all Routes
 	// +listType=set

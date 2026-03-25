@@ -386,16 +386,14 @@ var _ = Describe("Zone Controller - DTC", func() {
 
 			By("creating zone1 with DTC URL and unique IDP")
 			zone1 := NewZone(zone1Name, testNamespace)
-			dtcUrl1 := "https://dtc1.example.com/"
-			zone1.Spec.Gateway.DtcUrl = &dtcUrl1
+			zone1.Spec.Gateway.DtcUrl = "https://dtc1.example.com/"
 			zone1.Spec.IdentityProvider.Url = "https://idp-zone1.example.com/"
 			err = k8sClient.Create(ctx, zone1)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("creating zone2 with DTC URL and unique IDP")
 			zone2 := NewZone(zone2Name, testNamespace)
-			dtcUrl2 := "https://dtc2.example.com/"
-			zone2.Spec.Gateway.DtcUrl = &dtcUrl2
+			zone2.Spec.Gateway.DtcUrl = "https://dtc2.example.com/"
 			zone2.Spec.IdentityProvider.Url = "https://idp-zone2.example.com/"
 			err = k8sClient.Create(ctx, zone2)
 			Expect(err).NotTo(HaveOccurred())

@@ -45,7 +45,8 @@ type GatewayConfig struct {
 	Admin GatewayAdminConfig `json:"admin"`
 	Url   string             `json:"url"`
 	// DtcUrl is an optional DTC (Dynamic Traffic Control) gateway URL for this zone
-	DtcUrl *string `json:"dtcUrl,omitempty"`
+	// +optional
+	DtcUrl string `json:"dtcUrl,omitempty"`
 	// CircuitBreaker flag that controls if circuit breaker should be enabled on this zone. the config of the CB itself comes from hardcoded values, not configurable
 	CircuitBreaker bool `json:"circuitBreaker"`
 }

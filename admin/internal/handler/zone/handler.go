@@ -122,7 +122,7 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 	}
 
 	// DTC Gateway realm (optional)
-	if obj.Spec.Gateway.DtcUrl != nil && *obj.Spec.Gateway.DtcUrl != "" {
+	if obj.Spec.Gateway.DtcUrl != "" {
 		dtcGatewayRealm, err := createGatewayDtcRealm(ctx, handlingContext, gateway)
 		if err != nil {
 			return err
@@ -322,15 +322,13 @@ func createGatewayDtcRealm(ctx context.Context, handlingContext HandlingContext,
 
 	for i := range zoneList.Items {
 		zone := &zoneList.Items[i]
-		if zone.Spec.Gateway.DtcUrl != nil && *zone.Spec.Gateway.DtcUrl != "" {
+		if zone.Spec.Gateway.DtcUrl != "" {
 
 			// add the dtcUrl
-			dtcUrls = append(dtcUrls, *zone.Spec.Gateway.DtcUrl)
+			dtcUrls = append(dtcUrls, zone.Spec.Gateway.DtcUrl)
 
 			// Skip current zone for issuer urls
-			if zone.Name == handlingContext.Zone.Name && zone.Namespace == handlingContext.Zone.Namespace {
-				continue
-			} else {
+			if !types.Equals(zone, handlingContext.Zone) {
 				issuerUrls = append(issuerUrls, urls.ForGatewayRealm(zone.Spec.IdentityProvider.Url, realmName))
 			}
 		}
