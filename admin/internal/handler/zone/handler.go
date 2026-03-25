@@ -192,7 +192,6 @@ func createTeamApiRoute(ctx context.Context, handlingContext HandlingContext, te
 
 	mutator := func() error {
 		teamRoute.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
@@ -254,7 +253,6 @@ func createGatewayConsumer(ctx context.Context, handlingContext HandlingContext,
 
 	mutator := func() error {
 		gatewayConsumer.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
@@ -283,7 +281,6 @@ func createGatewayRealm(ctx context.Context, handlingContext HandlingContext, ga
 
 	mutator := func() error {
 		gatewayRealm.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
@@ -343,7 +340,6 @@ func createGatewayDtcRealm(ctx context.Context, handlingContext HandlingContext,
 
 	mutator := func() error {
 		gatewayRealm.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
@@ -374,7 +370,6 @@ func createGateway(ctx context.Context, handlingContext HandlingContext) (*gatew
 
 	mutator := func() error {
 		gateway.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
@@ -422,7 +417,6 @@ func createIdentityClient(ctx context.Context, handlingContext HandlingContext, 
 
 	mutator := func() error {
 		identityClient.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
@@ -472,7 +466,6 @@ func createIdentityRealm(ctx context.Context, handlingContext HandlingContext, i
 
 	mutator := func() error {
 		identityRealm.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
@@ -503,7 +496,6 @@ func createIdentityProvider(ctx context.Context, handlingContext HandlingContext
 
 	mutator := func() error {
 		identityProvider.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
