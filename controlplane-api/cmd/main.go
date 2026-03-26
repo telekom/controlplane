@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/go-logr/zapr"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	"github.com/telekom/controlplane/common-server/pkg/server/serve"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -58,6 +60,7 @@ func main() {
 
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log
+	appCfg.EnableCors = true
 	s := cserver.NewServerWithApp(cserver.NewAppWithConfig(appCfg))
 
 	probesCtrl := cserver.NewProbesController()
@@ -81,11 +84,22 @@ func main() {
 	})
 
 	go func() {
-		if err := s.Start(cfg.Server.Address); err != nil {
+		if !cfg.Server.TLS.Enabled {
+			fmt.Println("WARNING: Using HTTP instead of HTTPS. This is not secure.")
+			if err := s.App.Listen(cfg.Server.Address); err != nil {
+				log.Error(err, "failed to start server")
+				os.Exit(1)
+			}
+			return
+		}
+
+		tlsCtx := logr.NewContext(ctx, log.WithName("server"))
+		if err := serve.ServeTLS(tlsCtx, s.App, cfg.Server.Address, cfg.Server.TLS.Cert, cfg.Server.TLS.Key); err != nil {
 			log.Error(err, "failed to start server")
+			os.Exit(1)
 		}
 	}()
-	log.Info("server started", "addr", cfg.Server.Address)
+	log.Info("server started", "addr", cfg.Server.Address, "tls", cfg.Server.TLS.Enabled)
 
 	<-ctx.Done()
 	log.Info("shutting down server")
