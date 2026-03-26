@@ -41,7 +41,7 @@ jobs:
       - name: Detect Changes
         id: detect-changes
         continue-on-error: true
-        uses: ron96G/monutil@47e25311bcb8e0bf81ce9c117a23603fe4b9bce6 # v1.3.0
+        uses: ron96G/monutil@ad41b3c6bc7fd37de00698fa85d2c6073a34621d # v1.3.1
         with:
           base-commit: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event_name == 'push' && github.event.before }}
           head-commit: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'push' && github.sha }}
