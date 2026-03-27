@@ -12,7 +12,6 @@ import (
 
 	entgen "github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/internal/interceptor"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/testutil"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 )
@@ -36,67 +35,7 @@ var _ = Describe("TeamFilterInterceptor", func() {
 	}
 
 	seed := func() {
-		ctx := testutil.AllowContext()
-
-		// Public reference data.
-		zoneEU, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		_, err = client.Environment.Create().SetName("env-dev").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		groupA, err := client.Group.Create().SetName("group-a").SetDisplayName("Group A").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		groupB, err := client.Group.Create().SetName("group-b").SetDisplayName("Group B").Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
-		// Teams
-		teamAlpha, err := client.Team.Create().
-			SetName("team-alpha").SetEmail("alpha@test.dev").SetGroup(groupA).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		teamBeta, err := client.Team.Create().
-			SetName("team-beta").SetEmail("beta@test.dev").SetGroup(groupB).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
-		// Applications
-		appAlpha, err := client.Application.Create().
-			SetName("app-alpha").SetClientID("client-alpha").
-			SetOwnerTeam(teamAlpha).SetZone(zoneEU).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		appBeta, err := client.Application.Create().
-			SetName("app-beta").SetClientID("client-beta").
-			SetOwnerTeam(teamBeta).SetZone(zoneEU).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
-		// API Exposures
-		exposureAlpha, err := client.ApiExposure.Create().
-			SetBasePath("/alpha").SetOwner(appAlpha).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		_, err = client.ApiExposure.Create().
-			SetBasePath("/beta").SetOwner(appBeta).Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
-		// Subscription: app-beta subscribes to exposure-alpha (cross-team).
-		sub, err := client.ApiSubscription.Create().
-			SetBasePath("/alpha").
-			SetOwner(appBeta).
-			SetTarget(exposureAlpha).
-			Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
-		// Approval + ApprovalRequest on that subscription.
-		_, err = client.Approval.Create().
-			SetAction("ALLOW").
-			SetRequester(model.RequesterInfo{TeamName: "team-beta"}).
-			SetDecider(model.DeciderInfo{TeamName: "team-alpha"}).
-			SetAPISubscription(sub).
-			Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		_, err = client.ApprovalRequest.Create().
-			SetAction("ALLOW").
-			SetRequester(model.RequesterInfo{TeamName: "team-beta"}).
-			SetDecider(model.DeciderInfo{TeamName: "team-alpha"}).
-			SetAPISubscription(sub).
-			Save(ctx)
-		Expect(err).NotTo(HaveOccurred())
+		testutil.SeedStandard(client)
 	}
 
 	Context("when viewer is nil or empty", func() {
@@ -157,6 +96,14 @@ var _ = Describe("TeamFilterInterceptor", func() {
 				r, e := client.ApprovalRequest.Query().All(ctx)
 				return len(r), e
 			}, 1),
+			Entry("members", func(ctx context.Context) (int, error) {
+				r, e := client.Member.Query().All(ctx)
+				return len(r), e
+			}, 2),
+			Entry("team environments", func(ctx context.Context) (int, error) {
+				r, e := client.TeamEnvironment.Query().All(ctx)
+				return len(r), e
+			}, 2),
 		)
 	})
 
@@ -195,6 +142,14 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			}, 1),
 			Entry("approval requests (team-alpha is target provider)", func(ctx context.Context) (int, error) {
 				r, e := client.ApprovalRequest.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("members", func(ctx context.Context) (int, error) {
+				r, e := client.Member.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("team environments", func(ctx context.Context) (int, error) {
+				r, e := client.TeamEnvironment.Query().All(ctx)
 				return len(r), e
 			}, 1),
 		)
