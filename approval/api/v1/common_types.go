@@ -23,7 +23,7 @@ const (
 )
 
 // AutoApprovedComment is the comment added to auto-approved ApprovalRequests.
-const AutoApprovedComment = "AUTO-Approved: This Subscription has been automatically approved by the System."
+const AutoApprovedComment = "Auto-approved: The approval strategy does not require manual review."
 
 type ApprovalAction string
 
