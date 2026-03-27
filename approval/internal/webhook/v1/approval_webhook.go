@@ -70,7 +70,7 @@ func (a *ApprovalCustomValidator) ValidateCreate(_ context.Context, obj *approva
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (a *ApprovalCustomValidator) ValidateUpdate(_ context.Context, _ *approvalv1.Approval, newObj *approvalv1.Approval) (warnings admission.Warnings, err error) {
+func (a *ApprovalCustomValidator) ValidateUpdate(_ context.Context, oldObj *approvalv1.Approval, newObj *approvalv1.Approval) (warnings admission.Warnings, err error) {
 	approvallog.Info("validate update", "name", newObj.Name)
 
 	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && newObj.Spec.State != approvalv1.ApprovalStateGranted {
@@ -81,8 +81,28 @@ func (a *ApprovalCustomValidator) ValidateUpdate(_ context.Context, _ *approvalv
 	if newObj.StateChanged() && newObj.Status.AvailableTransitions != nil {
 		if !newObj.Status.AvailableTransitions.HasState(newObj.Spec.State) {
 			err = apierrors.NewBadRequest("Invalid state transition")
+			return warnings, err
 		}
 	}
+
+	// Enforce at least one decision for any non-Auto state change
+	if newObj.Spec.Strategy != approvalv1.ApprovalStrategyAuto && newObj.StateChanged() {
+		if len(newObj.Spec.Decisions) == 0 {
+			err = apierrors.NewBadRequest("at least one decision is required when changing state")
+			return warnings, err
+		}
+	}
+
+	// Enforce distinct deciders for FourEyes strategy
+	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyFourEyes {
+		if newObj.Spec.State == approvalv1.ApprovalStateGranted &&
+			oldObj.Spec.State == approvalv1.ApprovalStateSemigranted {
+			if err := validateDistinctDeciders(newObj.Spec.Decisions); err != nil {
+				return warnings, err
+			}
+		}
+	}
+
 	return warnings, err
 }
 

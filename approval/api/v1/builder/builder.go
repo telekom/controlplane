@@ -168,6 +168,13 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 
 		if approvalReq.Spec.Strategy == v1.ApprovalStrategyAuto {
 			approvalReq.Spec.State = v1.ApprovalStateGranted
+			if !hasAutoApprovedDecision(approvalReq.Spec.Decisions) {
+				approvalReq.Spec.Decisions = append(approvalReq.Spec.Decisions, v1.Decision{
+					Name:           "System",
+					Comment:        v1.AutoApprovedComment,
+					ResultingState: v1.ApprovalStateGranted,
+				})
+			}
 		}
 		return nil
 	}
@@ -255,4 +262,15 @@ func (b *approvalBuilder) isRequesterFromTrustedRequesters() bool {
 	return slices.ContainsFunc(b.TrustedRequesters, func(name string) bool {
 		return strings.EqualFold(name, requesterTeamName)
 	})
+}
+
+// hasAutoApprovedDecision checks whether the decisions slice already contains
+// a system-generated auto-approval decision, preventing duplicates.
+func hasAutoApprovedDecision(decisions []v1.Decision) bool {
+	for _, d := range decisions {
+		if d.Comment == v1.AutoApprovedComment {
+			return true
+		}
+	}
+	return false
 }

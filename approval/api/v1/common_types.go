@@ -6,9 +6,11 @@ package v1
 
 import (
 	"encoding/json"
+
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -19,6 +21,9 @@ const (
 	ApprovalStrategySimple   ApprovalStrategy = "Simple"
 	ApprovalStrategyFourEyes ApprovalStrategy = "FourEyes"
 )
+
+// AutoApprovedComment is the comment added to auto-approved ApprovalRequests.
+const AutoApprovedComment = "AUTO-Approved: This Subscription has been automatically approved by the System."
 
 type ApprovalAction string
 
@@ -123,4 +128,13 @@ type Decision struct {
 
 	// Comment provided by the person making the decision
 	Comment string `json:"comment,omitempty"`
+
+	// Timestamp of when the decision was made
+	// +optional
+	Timestamp *metav1.Time `json:"timestamp,omitempty"`
+
+	// ResultingState is the state the resource transitioned to as a result of this decision
+	// +optional
+	// +kubebuilder:validation:Enum=Pending;Semigranted;Granted;Rejected;Suspended;Expired
+	ResultingState ApprovalState `json:"resultingState,omitempty"`
 }

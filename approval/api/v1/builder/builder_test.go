@@ -117,6 +117,12 @@ var _ = Describe("Approval Builder", Ordered, func() {
 				g.Expect(ar.Spec.Strategy).To(BeEquivalentTo("Auto"))
 				g.Expect(ar.Spec.State).To(BeEquivalentTo("Granted"))
 
+				By("Checking the AUTO-approved decision was added")
+				g.Expect(ar.Spec.Decisions).To(HaveLen(1))
+				g.Expect(ar.Spec.Decisions[0].Name).To(Equal("System"))
+				g.Expect(ar.Spec.Decisions[0].Comment).To(Equal(approvalv1.AutoApprovedComment))
+				g.Expect(ar.Spec.Decisions[0].ResultingState).To(Equal(approvalv1.ApprovalStateGranted))
+
 				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(builder.GetOwner().GetConditions(), ConditionTypeApprovalGranted), "Pending")
 
 				appr := &approvalv1.Approval{}
@@ -213,6 +219,12 @@ var _ = Describe("Approval Builder", Ordered, func() {
 			// Verify that the strategy was overridden to Auto
 			Expect(ar.Spec.Strategy).To(Equal(approvalv1.ApprovalStrategyAuto))
 			Expect(ar.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+
+			By("Checking the AUTO-approved decision was added for trusted requester")
+			Expect(ar.Spec.Decisions).To(HaveLen(1))
+			Expect(ar.Spec.Decisions[0].Name).To(Equal("System"))
+			Expect(ar.Spec.Decisions[0].Comment).To(Equal(approvalv1.AutoApprovedComment))
+			Expect(ar.Spec.Decisions[0].ResultingState).To(Equal(approvalv1.ApprovalStateGranted))
 		})
 	})
 

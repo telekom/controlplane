@@ -65,6 +65,12 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 			return errors.Wrap(err, "failed to handle granted approval")
 		}
 
+	case approvalv1.ApprovalStateSemigranted:
+		log.Info("ApprovalRequest has been partially approved")
+		approvalReq.SetCondition(approval_condition.NewSemigrantedCondition())
+		approvalReq.SetCondition(condition.NewProcessingCondition("Semigranted", "Request partially approved, awaiting second approval"))
+		approvalReq.SetCondition(condition.NewNotReadyCondition("Semigranted", "Request has been partially approved"))
+
 	case approvalv1.ApprovalStateRejected:
 		log.Info("ApprovalRequest has been rejected")
 		approvalReq.SetCondition(approval_condition.NewRejectedCondition())
@@ -93,6 +99,10 @@ func (h *ApprovalRequestHandler) Delete(ctx context.Context, approvalReq *approv
 func shouldNotifyRequester(approvalRequest *approvalv1.ApprovalRequest) bool {
 	// currently only the decider is notified about this
 	if approvalRequest.Spec.State == approvalv1.ApprovalStatePending {
+		return false
+	}
+	// Semigranted is an intermediate state; only deciders need to know
+	if approvalRequest.Spec.State == approvalv1.ApprovalStateSemigranted {
 		return false
 	}
 

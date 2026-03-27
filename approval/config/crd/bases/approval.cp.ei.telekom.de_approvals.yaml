@@ -134,6 +134,21 @@ spec:
                     name:
                       description: Name of the person making the decision
                       type: string
+                    resultingState:
+                      description: ResultingState is the state the resource transitioned
+                        to as a result of this decision
+                      enum:
+                      - Pending
+                      - Semigranted
+                      - Granted
+                      - Rejected
+                      - Suspended
+                      - Expired
+                      type: string
+                    timestamp:
+                      description: Timestamp of when the decision was made
+                      format: date-time
+                      type: string
                   required:
                   - name
                   type: object
@@ -200,6 +215,7 @@ spec:
                 description: State defines the state of the approval
                 enum:
                 - Pending
+                - Semigranted
                 - Granted
                 - Rejected
                 - Suspended
@@ -332,6 +348,7 @@ spec:
                 description: LastState defines the last state of the approval
                 enum:
                 - Pending
+                - Semigranted
                 - Granted
                 - Rejected
                 - Suspended

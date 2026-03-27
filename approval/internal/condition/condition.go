@@ -47,3 +47,12 @@ func NewPendingCondition() metav1.Condition {
 		Message: "Request is pending",
 	}
 }
+
+func NewSemigrantedCondition() metav1.Condition {
+	return metav1.Condition{
+		Type:    "Approved",
+		Status:  metav1.ConditionFalse,
+		Reason:  "Semigranted",
+		Message: "Request has been partially approved, awaiting second approval",
+	}
+}

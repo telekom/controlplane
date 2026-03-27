@@ -52,6 +52,11 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 		approval.SetCondition(condition.NewDoneProcessingCondition("Approval rejected"))
 		approval.SetCondition(condition.NewNotReadyCondition("Rejected", "Approval has been rejected"))
 
+	case approvalv1.ApprovalStateSemigranted:
+		approval.SetCondition(approval_condition.NewSemigrantedCondition())
+		approval.SetCondition(condition.NewProcessingCondition("Semigranted", "Approval partially granted, awaiting second approval"))
+		approval.SetCondition(condition.NewNotReadyCondition("Semigranted", "Approval has been partially granted"))
+
 	case approvalv1.ApprovalStateSuspended:
 		approval.SetCondition(approval_condition.NewSuspendedCondition())
 		approval.SetCondition(condition.NewProcessingCondition("Suspended", "Approval is suspended"))
