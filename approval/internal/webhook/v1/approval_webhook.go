@@ -40,6 +40,9 @@ var _ admission.Defaulter[*approvalv1.Approval] = &ApprovalCustomDefaulter{}
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (a *ApprovalCustomDefaulter) Default(_ context.Context, obj *approvalv1.Approval) error {
 	approvallog.Info("default", "name", obj.GetName())
+	if obj.Spec.Decisions == nil {
+		obj.Spec.Decisions = []approvalv1.Decision{}
+	}
 	defaultDecisionFields(obj.Spec.Decisions, obj.Spec.State)
 	return nil
 }

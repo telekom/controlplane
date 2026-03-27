@@ -121,6 +121,7 @@ spec:
                     type: string
                 type: object
               decisions:
+                default: []
                 description: Decisions contains information about who or what changed
                   this approval
                 items:
@@ -266,6 +267,7 @@ spec:
                 type: object
             required:
             - action
+            - decisions
             - requester
             - state
             - strategy

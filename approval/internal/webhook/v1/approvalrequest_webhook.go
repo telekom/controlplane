@@ -40,6 +40,9 @@ var _ admission.Defaulter[*approvalv1.ApprovalRequest] = &ApprovalRequestCustomD
 func (ar *ApprovalRequestCustomDefaulter) Default(_ context.Context, obj *approvalv1.ApprovalRequest) error {
 	approvalrequestlog.Info("default", "name", obj.Name)
 
+	if obj.Spec.Decisions == nil {
+		obj.Spec.Decisions = []approvalv1.Decision{}
+	}
 	if obj.Spec.Strategy == "" {
 		obj.Spec.Strategy = approvalv1.ApprovalStrategySimple
 	}

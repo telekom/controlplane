@@ -27,7 +27,8 @@ type ApprovalRequestSpec struct {
 	Decider Decider `json:"decider,omitempty"`
 
 	// Decisions contains information about who or what changed this approval
-	Decisions []Decision `json:"decisions,omitempty"`
+	// +kubebuilder:default={}
+	Decisions []Decision `json:"decisions"`
 
 	// Strategy defines the strategy that was used to approve the request
 	// +kubebuilder:validation:Enum=Auto;Simple;FourEyes
