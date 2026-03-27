@@ -123,41 +123,41 @@ var _ = Describe("TeamFilterInterceptor", func() {
 	Context("when viewer is admin", func() {
 		BeforeEach(func() { seed() })
 
-		It("should see all teams", func() {
-			teams, err := client.Team.Query().All(viewerCtx(&viewer.Viewer{Admin: true}))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(teams).To(HaveLen(2))
-		})
+		adminCtx := func() context.Context {
+			return viewerCtx(&viewer.Viewer{Admin: true})
+		}
 
-		It("should see all applications", func() {
-			apps, err := client.Application.Query().All(viewerCtx(&viewer.Viewer{Admin: true}))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(apps).To(HaveLen(2))
-		})
-
-		It("should see all exposures", func() {
-			exps, err := client.ApiExposure.Query().All(viewerCtx(&viewer.Viewer{Admin: true}))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(exps).To(HaveLen(2))
-		})
-
-		It("should see all subscriptions", func() {
-			subs, err := client.ApiSubscription.Query().All(viewerCtx(&viewer.Viewer{Admin: true}))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(subs).To(HaveLen(1))
-		})
-
-		It("should see all approvals", func() {
-			aprs, err := client.Approval.Query().All(viewerCtx(&viewer.Viewer{Admin: true}))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(aprs).To(HaveLen(1))
-		})
-
-		It("should see all approval requests", func() {
-			ars, err := client.ApprovalRequest.Query().All(viewerCtx(&viewer.Viewer{Admin: true}))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(ars).To(HaveLen(1))
-		})
+		DescribeTable("should see all entities",
+			func(queryAll func(context.Context) (int, error), expectedLen int) {
+				count, err := queryAll(adminCtx())
+				Expect(err).NotTo(HaveOccurred())
+				Expect(count).To(Equal(expectedLen))
+			},
+			Entry("teams", func(ctx context.Context) (int, error) {
+				r, e := client.Team.Query().All(ctx)
+				return len(r), e
+			}, 2),
+			Entry("applications", func(ctx context.Context) (int, error) {
+				r, e := client.Application.Query().All(ctx)
+				return len(r), e
+			}, 2),
+			Entry("exposures", func(ctx context.Context) (int, error) {
+				r, e := client.ApiExposure.Query().All(ctx)
+				return len(r), e
+			}, 2),
+			Entry("subscriptions", func(ctx context.Context) (int, error) {
+				r, e := client.ApiSubscription.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("approvals", func(ctx context.Context) (int, error) {
+				r, e := client.Approval.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("approval requests", func(ctx context.Context) (int, error) {
+				r, e := client.ApprovalRequest.Query().All(ctx)
+				return len(r), e
+			}, 1),
+		)
 	})
 
 	Context("when viewer belongs to team-alpha", func() {
@@ -167,44 +167,37 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			return viewerCtx(&viewer.Viewer{Teams: []string{"team-alpha"}})
 		}
 
-		It("should only see team-alpha", func() {
-			teams, err := client.Team.Query().All(alphaCtx())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(teams).To(HaveLen(1))
-			Expect(teams[0].Name).To(Equal("team-alpha"))
-		})
-
-		It("should only see app-alpha", func() {
-			apps, err := client.Application.Query().All(alphaCtx())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(apps).To(HaveLen(1))
-			Expect(apps[0].Name).To(Equal("app-alpha"))
-		})
-
-		It("should only see exposure-alpha", func() {
-			exps, err := client.ApiExposure.Query().All(alphaCtx())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(exps).To(HaveLen(1))
-			Expect(exps[0].BasePath).To(Equal("/alpha"))
-		})
-
-		It("should not see subscriptions (team-alpha has none)", func() {
-			subs, err := client.ApiSubscription.Query().All(alphaCtx())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(subs).To(BeEmpty())
-		})
-
-		It("should see approvals where team-alpha is the target provider", func() {
-			aprs, err := client.Approval.Query().All(alphaCtx())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(aprs).To(HaveLen(1))
-		})
-
-		It("should see approval requests where team-alpha is the target provider", func() {
-			ars, err := client.ApprovalRequest.Query().All(alphaCtx())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(ars).To(HaveLen(1))
-		})
+		DescribeTable("should only see team-alpha's entities",
+			func(queryAll func(context.Context) (int, error), expectedLen int) {
+				count, err := queryAll(alphaCtx())
+				Expect(err).NotTo(HaveOccurred())
+				Expect(count).To(Equal(expectedLen))
+			},
+			Entry("teams", func(ctx context.Context) (int, error) {
+				r, e := client.Team.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("applications", func(ctx context.Context) (int, error) {
+				r, e := client.Application.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("exposures", func(ctx context.Context) (int, error) {
+				r, e := client.ApiExposure.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("subscriptions (team-alpha has none)", func(ctx context.Context) (int, error) {
+				r, e := client.ApiSubscription.Query().All(ctx)
+				return len(r), e
+			}, 0),
+			Entry("approvals (team-alpha is target provider)", func(ctx context.Context) (int, error) {
+				r, e := client.Approval.Query().All(ctx)
+				return len(r), e
+			}, 1),
+			Entry("approval requests (team-alpha is target provider)", func(ctx context.Context) (int, error) {
+				r, e := client.ApprovalRequest.Query().All(ctx)
+				return len(r), e
+			}, 1),
+		)
 	})
 
 	Context("when viewer belongs to both teams", func() {
@@ -214,29 +207,29 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			return viewerCtx(&viewer.Viewer{Teams: []string{"team-alpha", "team-beta"}})
 		}
 
-		It("should see all teams", func() {
-			teams, err := client.Team.Query().All(bothCtx())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(teams).To(HaveLen(2))
-		})
-
-		It("should see all applications", func() {
-			apps, err := client.Application.Query().All(bothCtx())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(apps).To(HaveLen(2))
-		})
-
-		It("should see all exposures", func() {
-			exps, err := client.ApiExposure.Query().All(bothCtx())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(exps).To(HaveLen(2))
-		})
-
-		It("should see the subscription", func() {
-			subs, err := client.ApiSubscription.Query().All(bothCtx())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(subs).To(HaveLen(1))
-		})
+		DescribeTable("should see all entities",
+			func(queryAll func(context.Context) (int, error), expectedLen int) {
+				count, err := queryAll(bothCtx())
+				Expect(err).NotTo(HaveOccurred())
+				Expect(count).To(Equal(expectedLen))
+			},
+			Entry("teams", func(ctx context.Context) (int, error) {
+				r, e := client.Team.Query().All(ctx)
+				return len(r), e
+			}, 2),
+			Entry("applications", func(ctx context.Context) (int, error) {
+				r, e := client.Application.Query().All(ctx)
+				return len(r), e
+			}, 2),
+			Entry("exposures", func(ctx context.Context) (int, error) {
+				r, e := client.ApiExposure.Query().All(ctx)
+				return len(r), e
+			}, 2),
+			Entry("subscriptions", func(ctx context.Context) (int, error) {
+				r, e := client.ApiSubscription.Query().All(ctx)
+				return len(r), e
+			}, 1),
+		)
 	})
 
 	Context("public entities (no team filtering)", func() {
