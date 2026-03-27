@@ -51,3 +51,10 @@ func validateDistinctDeciders(decisions []approvalv1.Decision) error {
 	}
 	return nil
 }
+
+// isTerminalApprovalRequestState returns true when an ApprovalRequest has reached its final
+// state and its spec should be considered frozen. Only Granted is terminal;
+// Rejected ARs can be re-approved through the normal approval flow.
+func isTerminalApprovalRequestState(state approvalv1.ApprovalState) bool {
+	return state == approvalv1.ApprovalStateGranted
+}

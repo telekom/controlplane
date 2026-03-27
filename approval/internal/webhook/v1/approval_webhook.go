@@ -8,6 +8,7 @@ import (
 	"context"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	approvalhandler "github.com/telekom/controlplane/approval/internal/handler/approval"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -84,8 +85,17 @@ func (a *ApprovalCustomValidator) ValidateUpdate(_ context.Context, oldObj *appr
 
 	stateChanged := oldObj.Spec.State != newObj.Spec.State
 
-	if stateChanged && newObj.Status.AvailableTransitions != nil {
-		if !newObj.Status.AvailableTransitions.HasState(newObj.Spec.State) {
+	// Validate FSM transitions on-the-fly using the canonical FSM definitions
+	// instead of Status.AvailableTransitions (which may be stale or nil before
+	// the controller has reconciled). Auto strategy uses its own FSM.
+	if stateChanged {
+		fsmDef, ok := approvalhandler.ApprovalStrategyFSM[newObj.Spec.Strategy]
+		if !ok {
+			err = apierrors.NewBadRequest("Unknown approval strategy")
+			return warnings, err
+		}
+		computed := approvalv1.AvailableTransitions(fsmDef.AvailableTransitions(oldObj.Spec.State))
+		if len(computed) == 0 || !computed.HasState(newObj.Spec.State) {
 			err = apierrors.NewBadRequest("Invalid state transition")
 			return warnings, err
 		}
@@ -99,10 +109,9 @@ func (a *ApprovalCustomValidator) ValidateUpdate(_ context.Context, oldObj *appr
 		}
 	}
 
-	// Enforce distinct deciders for FourEyes strategy
+	// Enforce distinct deciders for FourEyes strategy on ANY transition to Granted
 	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyFourEyes {
-		if newObj.Spec.State == approvalv1.ApprovalStateGranted &&
-			oldObj.Spec.State == approvalv1.ApprovalStateSemigranted {
+		if stateChanged && newObj.Spec.State == approvalv1.ApprovalStateGranted {
 			if err := validateDistinctDeciders(newObj.Spec.Decisions); err != nil {
 				return warnings, err
 			}

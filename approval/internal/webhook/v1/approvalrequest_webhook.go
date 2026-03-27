@@ -8,6 +8,8 @@ import (
 	"context"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	arhandler "github.com/telekom/controlplane/approval/internal/handler/approvalrequest"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -90,6 +92,16 @@ func (ar *ApprovalRequestCustomValidator) ValidateCreate(_ context.Context, obj 
 func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, oldObj *approvalv1.ApprovalRequest, newObj *approvalv1.ApprovalRequest) (warnings admission.Warnings, err error) {
 	approvalrequestlog.Info("validate update", "name", newObj.Name)
 
+	// Block ALL spec changes on terminal-state ApprovalRequests.
+	// Once an AR reaches Granted or Rejected, its spec is frozen and
+	// all further lifecycle management happens on the Approval object.
+	if isTerminalApprovalRequestState(oldObj.Spec.State) {
+		if !apiequality.Semantic.DeepEqual(oldObj.Spec, newObj.Spec) {
+			err = apierrors.NewBadRequest("ApprovalRequest is in a terminal state and cannot be modified")
+			return warnings, err
+		}
+	}
+
 	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && newObj.Spec.State != approvalv1.ApprovalStateGranted {
 		warnings = append(warnings, "Request is auto approved and should be granted")
 		newObj.Spec.State = approvalv1.ApprovalStateGranted
@@ -97,8 +109,17 @@ func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, oldO
 
 	stateChanged := oldObj.Spec.State != newObj.Spec.State
 
-	if stateChanged && newObj.Status.AvailableTransitions != nil {
-		if !newObj.Status.AvailableTransitions.HasState(newObj.Spec.State) {
+	// Validate FSM transitions on-the-fly using the canonical FSM definitions
+	// instead of Status.AvailableTransitions (which may be stale or nil before
+	// the controller has reconciled). Auto strategy has an empty FSM, so skip.
+	if stateChanged && newObj.Spec.Strategy != approvalv1.ApprovalStrategyAuto {
+		fsmDef, ok := arhandler.ApprovalStrategyFSM[newObj.Spec.Strategy]
+		if !ok {
+			err = apierrors.NewBadRequest("Unknown approval strategy")
+			return warnings, err
+		}
+		computed := approvalv1.AvailableTransitions(fsmDef.AvailableTransitions(oldObj.Spec.State))
+		if len(computed) == 0 || !computed.HasState(newObj.Spec.State) {
 			err = apierrors.NewBadRequest("Invalid state transition")
 			return warnings, err
 		}
@@ -112,10 +133,9 @@ func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, oldO
 		}
 	}
 
-	// Enforce distinct deciders for FourEyes strategy
+	// Enforce distinct deciders for FourEyes strategy on ANY transition to Granted
 	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyFourEyes {
-		if newObj.Spec.State == approvalv1.ApprovalStateGranted &&
-			oldObj.Spec.State == approvalv1.ApprovalStateSemigranted {
+		if stateChanged && newObj.Spec.State == approvalv1.ApprovalStateGranted {
 			if err := validateDistinctDeciders(newObj.Spec.Decisions); err != nil {
 				return warnings, err
 			}

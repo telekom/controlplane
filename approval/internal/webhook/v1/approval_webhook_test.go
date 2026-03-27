@@ -78,11 +78,6 @@ var _ = Describe("Approval Webhook", func() {
 				},
 				Status: approvalv1.ApprovalStatus{
 					LastState: lastState,
-					AvailableTransitions: approvalv1.AvailableTransitions{
-						{Action: approvalv1.ApprovalActionAllow, To: approvalv1.ApprovalStateGranted},
-						{Action: approvalv1.ApprovalActionDeny, To: approvalv1.ApprovalStateRejected},
-						{Action: approvalv1.ApprovalActionAllow, To: approvalv1.ApprovalStateSemigranted},
-					},
 				},
 			}
 		}
@@ -137,8 +132,8 @@ var _ = Describe("Approval Webhook", func() {
 		})
 
 		It("should not require decisions for Auto strategy state changes", func() {
-			oldObj := makeApproval(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStatePending, approvalv1.ApprovalStatePending, nil)
-			newObj := makeApproval(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, approvalv1.ApprovalStatePending, nil)
+			oldObj := makeApproval(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateRejected, approvalv1.ApprovalStateRejected, nil)
+			newObj := makeApproval(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, approvalv1.ApprovalStateRejected, nil)
 			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -174,13 +169,6 @@ var _ = Describe("Approval Webhook", func() {
 					Strategy:  approvalv1.ApprovalStrategyFourEyes,
 					State:     newState,
 					Decisions: decisions,
-				},
-				Status: approvalv1.ApprovalStatus{
-					AvailableTransitions: approvalv1.AvailableTransitions{
-						{Action: approvalv1.ApprovalActionAllow, To: approvalv1.ApprovalStateGranted},
-						{Action: approvalv1.ApprovalActionAllow, To: approvalv1.ApprovalStateSemigranted},
-						{Action: approvalv1.ApprovalActionDeny, To: approvalv1.ApprovalStateRejected},
-					},
 				},
 			}
 			return old, new
@@ -262,9 +250,6 @@ var _ = Describe("Approval Webhook", func() {
 				},
 				Status: approvalv1.ApprovalStatus{
 					LastState: approvalv1.ApprovalStatePending,
-					AvailableTransitions: approvalv1.AvailableTransitions{
-						{Action: approvalv1.ApprovalActionAllow, To: approvalv1.ApprovalStateGranted},
-					},
 				},
 			}
 			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
@@ -346,6 +331,149 @@ var _ = Describe("Approval Webhook", func() {
 			d := a.Spec.Decisions[0]
 			Expect(d.ResultingState).To(Equal(approvalv1.ApprovalStateSemigranted))
 			Expect(d.Timestamp.Time).To(Equal(fixedTime.Time))
+		})
+	})
+
+	Context("on-the-fly FSM validation for Approval (Bug 1+2 fix)", func() {
+		var validator ApprovalCustomValidator
+
+		makeApproval := func(strategy approvalv1.ApprovalStrategy, specState approvalv1.ApprovalState, decisions []approvalv1.Decision) *approvalv1.Approval {
+			return &approvalv1.Approval{
+				Spec: approvalv1.ApprovalSpec{
+					Strategy:  strategy,
+					State:     specState,
+					Decisions: decisions,
+				},
+			}
+		}
+
+		oneDecision := []approvalv1.Decision{
+			{Name: "Alice", Email: "alice@telekom.de", Comment: "ok", ResultingState: approvalv1.ApprovalStateGranted},
+		}
+
+		It("should reject invalid transition even when Status.AvailableTransitions is nil (Bug 2)", func() {
+			// Simple strategy: Pending -> Semigranted is NOT a valid transition.
+			oldObj := makeApproval(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStatePending, oneDecision)
+			newObj := makeApproval(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateSemigranted, oneDecision)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Invalid state transition"))
+		})
+
+		It("should reject invalid transition regardless of stale Status.AvailableTransitions (Bug 1)", func() {
+			// FourEyes: Rejected -> Granted is NOT valid (must go Rejected -> Semigranted first).
+			oldObj := makeApproval(approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStateRejected, oneDecision)
+			oldObj.Status.AvailableTransitions = approvalv1.AvailableTransitions{
+				{Action: approvalv1.ApprovalActionAllow, To: approvalv1.ApprovalStateGranted}, // stale!
+			}
+			newObj := makeApproval(approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStateGranted, oneDecision)
+			newObj.Status.AvailableTransitions = approvalv1.AvailableTransitions{
+				{Action: approvalv1.ApprovalActionAllow, To: approvalv1.ApprovalStateGranted}, // stale!
+			}
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Invalid state transition"))
+		})
+
+		It("should allow valid Simple transitions with nil Status", func() {
+			oldObj := makeApproval(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStatePending, oneDecision)
+			newObj := makeApproval(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted, oneDecision)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should allow valid FourEyes Pending -> Semigranted with nil Status", func() {
+			oldObj := makeApproval(approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStatePending, oneDecision)
+			newObj := makeApproval(approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStateSemigranted, oneDecision)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should allow valid Approval Suspend transition (Granted -> Suspended)", func() {
+			oldObj := makeApproval(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted, oneDecision)
+			newObj := makeApproval(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateSuspended, oneDecision)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should allow valid Approval Resume transition (Suspended -> Granted)", func() {
+			oldObj := makeApproval(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateSuspended, oneDecision)
+			newObj := makeApproval(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted, oneDecision)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should reject Suspended -> Rejected for Simple strategy (no such transition)", func() {
+			oldObj := makeApproval(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateSuspended, oneDecision)
+			newObj := makeApproval(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateRejected, oneDecision)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Invalid state transition"))
+		})
+
+		It("should allow Auto strategy transitions (Rejected -> Granted)", func() {
+			oldObj := makeApproval(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateRejected, oneDecision)
+			newObj := makeApproval(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, oneDecision)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should reject Auto strategy invalid transition (Pending -> Granted has no FSM path)", func() {
+			// Auto FSM only has Rejected->Granted, Granted->Rejected, Granted->Suspended, Suspended->Granted
+			// Pending is not a valid source state in Auto FSM for Approval
+			oldObj := makeApproval(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStatePending, nil)
+			newObj := makeApproval(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, nil)
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Invalid state transition"))
+		})
+	})
+
+	Context("broadened distinct-decider check for Approval (Bug 3 fix)", func() {
+		var validator ApprovalCustomValidator
+
+		It("should enforce distinct deciders on Semigranted -> Granted (original case)", func() {
+			twoSameDeciders := []approvalv1.Decision{
+				{Name: "Alice", Email: "alice@telekom.de", Comment: "First", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Alice", Email: "alice@telekom.de", Comment: "Second", ResultingState: approvalv1.ApprovalStateGranted},
+			}
+			oldObj := &approvalv1.Approval{
+				Spec: approvalv1.ApprovalSpec{
+					Strategy: approvalv1.ApprovalStrategyFourEyes,
+					State:    approvalv1.ApprovalStateSemigranted,
+				},
+			}
+			newObj := &approvalv1.Approval{
+				Spec: approvalv1.ApprovalSpec{
+					Strategy:  approvalv1.ApprovalStrategyFourEyes,
+					State:     approvalv1.ApprovalStateGranted,
+					Decisions: twoSameDeciders,
+				},
+			}
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("two distinct deciders"))
+		})
+
+		It("should not enforce distinct deciders for non-Granted FourEyes transitions", func() {
+			oneDecision := []approvalv1.Decision{
+				{Name: "Alice", Email: "alice@telekom.de", Comment: "Approved", ResultingState: approvalv1.ApprovalStateSemigranted},
+			}
+			oldObj := &approvalv1.Approval{
+				Spec: approvalv1.ApprovalSpec{
+					Strategy: approvalv1.ApprovalStrategyFourEyes,
+					State:    approvalv1.ApprovalStatePending,
+				},
+			}
+			newObj := &approvalv1.Approval{
+				Spec: approvalv1.ApprovalSpec{
+					Strategy:  approvalv1.ApprovalStrategyFourEyes,
+					State:     approvalv1.ApprovalStateSemigranted,
+					Decisions: oneDecision,
+				},
+			}
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 })
