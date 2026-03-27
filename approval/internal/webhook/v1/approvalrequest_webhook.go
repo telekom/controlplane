@@ -6,7 +6,6 @@ package v1
 
 import (
 	"context"
-	"strings"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -46,7 +45,7 @@ func (ar *ApprovalRequestCustomDefaulter) Default(_ context.Context, obj *approv
 	}
 	if obj.Spec.Strategy == approvalv1.ApprovalStrategyAuto {
 		obj.Spec.State = approvalv1.ApprovalStateGranted
-		if !hasAutoApprovedDecision(obj.Spec.Decisions) {
+		if len(obj.Spec.Decisions) == 0 {
 			obj.Spec.Decisions = append(obj.Spec.Decisions, approvalv1.Decision{
 				Name:           "System",
 				Comment:        approvalv1.AutoApprovedComment,
@@ -54,19 +53,8 @@ func (ar *ApprovalRequestCustomDefaulter) Default(_ context.Context, obj *approv
 			})
 		}
 	}
+	defaultDecisionFields(obj.Spec.Decisions, obj.Spec.State)
 	return nil
-}
-
-// hasAutoApprovedDecision checks whether the decisions slice already contains
-// a system-generated auto-approval decision, preventing duplicates across
-// repeated webhook admissions.
-func hasAutoApprovedDecision(decisions []approvalv1.Decision) bool {
-	for _, d := range decisions {
-		if d.Comment == approvalv1.AutoApprovedComment {
-			return true
-		}
-	}
-	return false
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
@@ -104,7 +92,9 @@ func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, oldO
 		newObj.Spec.State = approvalv1.ApprovalStateGranted
 	}
 
-	if newObj.StateChanged() && newObj.Status.AvailableTransitions != nil {
+	stateChanged := oldObj.Spec.State != newObj.Spec.State
+
+	if stateChanged && newObj.Status.AvailableTransitions != nil {
 		if !newObj.Status.AvailableTransitions.HasState(newObj.Spec.State) {
 			err = apierrors.NewBadRequest("Invalid state transition")
 			return warnings, err
@@ -112,7 +102,7 @@ func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, oldO
 	}
 
 	// Enforce at least one decision for any non-Auto state change
-	if newObj.Spec.Strategy != approvalv1.ApprovalStrategyAuto && newObj.StateChanged() {
+	if newObj.Spec.Strategy != approvalv1.ApprovalStrategyAuto && stateChanged {
 		if len(newObj.Spec.Decisions) == 0 {
 			err = apierrors.NewBadRequest("at least one decision is required when changing state")
 			return warnings, err
@@ -136,20 +126,4 @@ func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, oldO
 func (ar *ApprovalRequestCustomValidator) ValidateDelete(_ context.Context, obj *approvalv1.ApprovalRequest) (admission.Warnings, error) {
 	approvalrequestlog.Info("validate delete", "name", obj.Name)
 	return nil, nil
-}
-
-// validateDistinctDeciders checks that the last two decisions in the list were made by different people.
-// This enforces the four-eyes principle: the same person cannot approve twice.
-func validateDistinctDeciders(decisions []approvalv1.Decision) error {
-	if len(decisions) < 2 {
-		return apierrors.NewBadRequest(
-			"FourEyes strategy requires at least two decisions for granting")
-	}
-	last := decisions[len(decisions)-1]
-	secondLast := decisions[len(decisions)-2]
-	if strings.EqualFold(last.Email, secondLast.Email) {
-		return apierrors.NewBadRequest(
-			"FourEyes strategy requires two distinct deciders (by email)")
-	}
-	return nil
 }

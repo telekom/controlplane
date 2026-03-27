@@ -222,7 +222,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			By("Transitioning to Granted with a decision")
 			ar.Spec.State = approvalv1.ApprovalStateGranted
 			ar.Spec.Decisions = []approvalv1.Decision{
-				{Name: "Alice", Email: "alice@example.com", Comment: "Approved"},
+				{Name: "Alice", Email: "alice@example.com", Comment: "Approved", ResultingState: approvalv1.ApprovalStateGranted},
 			}
 			Expect(k8sClient.Update(ctx, ar)).To(Succeed())
 
@@ -294,7 +294,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			By("Transitioning to Rejected with a decision")
 			ar.Spec.State = approvalv1.ApprovalStateRejected
 			ar.Spec.Decisions = []approvalv1.Decision{
-				{Name: "Bob", Email: "bob@example.com", Comment: "Denied - insufficient justification"},
+				{Name: "Bob", Email: "bob@example.com", Comment: "Denied - insufficient justification", ResultingState: approvalv1.ApprovalStateRejected},
 			}
 			Expect(k8sClient.Update(ctx, ar)).To(Succeed())
 
@@ -342,7 +342,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				State:     approvalv1.ApprovalStateSemigranted,
 				Action:    "subscribe",
 				Decisions: []approvalv1.Decision{
-					{Name: "Alice", Email: "alice@example.com", Comment: "First approval"},
+					{Name: "Alice", Email: "alice@example.com", Comment: "First approval", ResultingState: approvalv1.ApprovalStateSemigranted},
 				},
 			}
 
@@ -401,7 +401,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				State:     approvalv1.ApprovalStateSemigranted,
 				Action:    "subscribe",
 				Decisions: []approvalv1.Decision{
-					{Name: "Alice", Email: "alice@example.com", Comment: "First approval"},
+					{Name: "Alice", Email: "alice@example.com", Comment: "First approval", ResultingState: approvalv1.ApprovalStateSemigranted},
 				},
 			}
 
@@ -423,7 +423,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			By("Transitioning to Granted with a second decision from a different person")
 			ar.Spec.State = approvalv1.ApprovalStateGranted
 			ar.Spec.Decisions = append(ar.Spec.Decisions, approvalv1.Decision{
-				Name: "Bob", Email: "bob@example.com", Comment: "Second approval",
+				Name: "Bob", Email: "bob@example.com", Comment: "Second approval", ResultingState: approvalv1.ApprovalStateGranted,
 			})
 			Expect(k8sClient.Update(ctx, ar)).To(Succeed())
 
@@ -474,7 +474,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				State:     approvalv1.ApprovalStateSemigranted,
 				Action:    "subscribe",
 				Decisions: []approvalv1.Decision{
-					{Name: "Alice", Email: "alice@example.com", Comment: "First approval"},
+					{Name: "Alice", Email: "alice@example.com", Comment: "First approval", ResultingState: approvalv1.ApprovalStateSemigranted},
 				},
 			}
 
@@ -520,7 +520,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				State:     approvalv1.ApprovalStateSemigranted,
 				Action:    "subscribe",
 				Decisions: []approvalv1.Decision{
-					{Name: "Alice", Email: "alice@example.com", Comment: "First approval"},
+					{Name: "Alice", Email: "alice@example.com", Comment: "First approval", ResultingState: approvalv1.ApprovalStateSemigranted},
 				},
 			}
 
@@ -542,7 +542,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 			By("Transitioning to Rejected")
 			ar.Spec.State = approvalv1.ApprovalStateRejected
 			ar.Spec.Decisions = append(ar.Spec.Decisions, approvalv1.Decision{
-				Name: "Bob", Email: "bob@example.com", Comment: "Denied",
+				Name: "Bob", Email: "bob@example.com", Comment: "Denied", ResultingState: approvalv1.ApprovalStateRejected,
 			})
 			Expect(k8sClient.Update(ctx, ar)).To(Succeed())
 

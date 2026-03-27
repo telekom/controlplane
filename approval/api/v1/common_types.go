@@ -133,8 +133,9 @@ type Decision struct {
 	// +optional
 	Timestamp *metav1.Time `json:"timestamp,omitempty"`
 
-	// ResultingState is the state the resource transitioned to as a result of this decision
-	// +optional
+	// ResultingState is the state the resource transitioned to as a result of this decision.
+	// Automatically set by the defaulting webhook to match Spec.State when not provided.
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=Pending;Semigranted;Granted;Rejected;Suspended;Expired
-	ResultingState ApprovalState `json:"resultingState,omitempty"`
+	ResultingState ApprovalState `json:"resultingState"`
 }

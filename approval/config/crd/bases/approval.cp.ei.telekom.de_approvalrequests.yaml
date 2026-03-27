@@ -117,8 +117,9 @@ spec:
                       description: Name of the person making the decision
                       type: string
                     resultingState:
-                      description: ResultingState is the state the resource transitioned
-                        to as a result of this decision
+                      description: |-
+                        ResultingState is the state the resource transitioned to as a result of this decision.
+                        Automatically set by the defaulting webhook to match Spec.State when not provided.
                       enum:
                       - Pending
                       - Semigranted
@@ -133,6 +134,7 @@ spec:
                       type: string
                   required:
                   - name
+                  - resultingState
                   type: object
                 type: array
               requester:

@@ -97,24 +97,28 @@ func handleNotifications(ctx context.Context, approval *approvalv1.Approval) err
 		}
 		approval.Status.NotificationRefs = append(approval.Status.NotificationRefs, *notificationRef)
 
-		// notify the requester
-		notificationRef, err = util.SendNotification(ctx, &util.NotificationData{
-			Owner:                  approval,
-			SendToChannelNamespace: approval.Spec.Requester.ApplicationRef.Namespace,
-			StateNew:               string(approval.Spec.State),
-			StateOld:               string(approval.Status.LastState),
-			Target:                 &approval.Spec.Target,
-			Requester:              &approval.Spec.Requester,
-			Decider:                &approval.Spec.Decider,
-			Scenario:               scenario,
-			Actor:                  util.ActorRequester,
-			Action:                 approval.Spec.Action,
-		})
+		// Semigranted is an intermediate state; only deciders need to know.
+		// Do not notify the requester until the approval reaches a final state.
+		if approval.Spec.State != approvalv1.ApprovalStateSemigranted {
+			// notify the requester
+			notificationRef, err = util.SendNotification(ctx, &util.NotificationData{
+				Owner:                  approval,
+				SendToChannelNamespace: approval.Spec.Requester.ApplicationRef.Namespace,
+				StateNew:               string(approval.Spec.State),
+				StateOld:               string(approval.Status.LastState),
+				Target:                 &approval.Spec.Target,
+				Requester:              &approval.Spec.Requester,
+				Decider:                &approval.Spec.Decider,
+				Scenario:               scenario,
+				Actor:                  util.ActorRequester,
+				Action:                 approval.Spec.Action,
+			})
 
-		if err != nil {
-			return errors.Wrapf(err, "Failed to send notification to requester %q while handling approval %+v", approval.Spec.Requester.TeamName, approval)
+			if err != nil {
+				return errors.Wrapf(err, "Failed to send notification to requester %q while handling approval %+v", approval.Spec.Requester.TeamName, approval)
+			}
+			approval.Status.NotificationRefs = append(approval.Status.NotificationRefs, *notificationRef)
 		}
-		approval.Status.NotificationRefs = append(approval.Status.NotificationRefs, *notificationRef)
 	}
 
 	return nil

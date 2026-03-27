@@ -40,6 +40,7 @@ var _ admission.Defaulter[*approvalv1.Approval] = &ApprovalCustomDefaulter{}
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (a *ApprovalCustomDefaulter) Default(_ context.Context, obj *approvalv1.Approval) error {
 	approvallog.Info("default", "name", obj.GetName())
+	defaultDecisionFields(obj.Spec.Decisions, obj.Spec.State)
 	return nil
 }
 
@@ -78,7 +79,9 @@ func (a *ApprovalCustomValidator) ValidateUpdate(_ context.Context, oldObj *appr
 		newObj.Spec.State = approvalv1.ApprovalStateGranted
 	}
 
-	if newObj.StateChanged() && newObj.Status.AvailableTransitions != nil {
+	stateChanged := oldObj.Spec.State != newObj.Spec.State
+
+	if stateChanged && newObj.Status.AvailableTransitions != nil {
 		if !newObj.Status.AvailableTransitions.HasState(newObj.Spec.State) {
 			err = apierrors.NewBadRequest("Invalid state transition")
 			return warnings, err
@@ -86,7 +89,7 @@ func (a *ApprovalCustomValidator) ValidateUpdate(_ context.Context, oldObj *appr
 	}
 
 	// Enforce at least one decision for any non-Auto state change
-	if newObj.Spec.Strategy != approvalv1.ApprovalStrategyAuto && newObj.StateChanged() {
+	if newObj.Spec.Strategy != approvalv1.ApprovalStrategyAuto && stateChanged {
 		if len(newObj.Spec.Decisions) == 0 {
 			err = apierrors.NewBadRequest("at least one decision is required when changing state")
 			return warnings, err

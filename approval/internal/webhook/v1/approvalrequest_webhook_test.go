@@ -6,11 +6,13 @@ package v1
 
 import (
 	"context"
+	"time"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("ApprovalRequest Webhook", func() {
@@ -106,7 +108,7 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 		}
 
 		oneDecision := []approvalv1.Decision{
-			{Name: "Alice", Email: "alice@telekom.de", Comment: "Approved"},
+			{Name: "Alice", Email: "alice@telekom.de", Comment: "Approved", ResultingState: approvalv1.ApprovalStateGranted},
 		}
 
 		It("should reject Simple Pending->Granted with zero decisions", func() {
@@ -183,8 +185,8 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 
 		It("should accept two decisions from distinct deciders", func() {
 			decisions := []approvalv1.Decision{
-				{Name: "Alice", Email: "alice@telekom.de", Comment: "Looks good"},
-				{Name: "Bob", Email: "bob@telekom.de", Comment: "Approved"},
+				{Name: "Alice", Email: "alice@telekom.de", Comment: "Looks good", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Bob", Email: "bob@telekom.de", Comment: "Approved", ResultingState: approvalv1.ApprovalStateGranted},
 			}
 			err := validateDistinctDeciders(decisions)
 			Expect(err).NotTo(HaveOccurred())
@@ -192,8 +194,8 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 
 		It("should reject two decisions from the same decider (exact match)", func() {
 			decisions := []approvalv1.Decision{
-				{Name: "Alice", Email: "alice@telekom.de", Comment: "First approval"},
-				{Name: "Alice", Email: "alice@telekom.de", Comment: "Second approval"},
+				{Name: "Alice", Email: "alice@telekom.de", Comment: "First approval", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Alice", Email: "alice@telekom.de", Comment: "Second approval", ResultingState: approvalv1.ApprovalStateGranted},
 			}
 			err := validateDistinctDeciders(decisions)
 			Expect(err).To(HaveOccurred())
@@ -202,8 +204,8 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 
 		It("should reject two decisions from the same decider (case-insensitive)", func() {
 			decisions := []approvalv1.Decision{
-				{Name: "Alice", Email: "Alice@Telekom.DE", Comment: "First"},
-				{Name: "Alice", Email: "alice@telekom.de", Comment: "Second"},
+				{Name: "Alice", Email: "Alice@Telekom.DE", Comment: "First", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Alice", Email: "alice@telekom.de", Comment: "Second", ResultingState: approvalv1.ApprovalStateGranted},
 			}
 			err := validateDistinctDeciders(decisions)
 			Expect(err).To(HaveOccurred())
@@ -212,7 +214,7 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 
 		It("should reject when fewer than two decisions are provided", func() {
 			decisions := []approvalv1.Decision{
-				{Name: "Alice", Email: "alice@telekom.de", Comment: "Only one"},
+				{Name: "Alice", Email: "alice@telekom.de", Comment: "Only one", ResultingState: approvalv1.ApprovalStateSemigranted},
 			}
 			err := validateDistinctDeciders(decisions)
 			Expect(err).To(HaveOccurred())
@@ -228,9 +230,9 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 
 		It("should only check the last two decisions when more than two exist", func() {
 			decisions := []approvalv1.Decision{
-				{Name: "Alice", Email: "alice@telekom.de", Comment: "First"},
-				{Name: "Alice", Email: "alice@telekom.de", Comment: "Rejected then re-decided"},
-				{Name: "Bob", Email: "bob@telekom.de", Comment: "Final approval"},
+				{Name: "Alice", Email: "alice@telekom.de", Comment: "First", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Alice", Email: "alice@telekom.de", Comment: "Rejected then re-decided", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Bob", Email: "bob@telekom.de", Comment: "Final approval", ResultingState: approvalv1.ApprovalStateGranted},
 			}
 			err := validateDistinctDeciders(decisions)
 			Expect(err).NotTo(HaveOccurred())
@@ -238,13 +240,166 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 
 		It("should reject when last two of many decisions are from the same person", func() {
 			decisions := []approvalv1.Decision{
-				{Name: "Bob", Email: "bob@telekom.de", Comment: "Early decision"},
-				{Name: "Alice", Email: "alice@telekom.de", Comment: "Penultimate"},
-				{Name: "Alice", Email: "alice@telekom.de", Comment: "Last"},
+				{Name: "Bob", Email: "bob@telekom.de", Comment: "Early decision", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Alice", Email: "alice@telekom.de", Comment: "Penultimate", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Alice", Email: "alice@telekom.de", Comment: "Last", ResultingState: approvalv1.ApprovalStateGranted},
 			}
 			err := validateDistinctDeciders(decisions)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("two distinct deciders"))
+		})
+
+		It("should reject when last decision has empty email", func() {
+			decisions := []approvalv1.Decision{
+				{Name: "Alice", Email: "alice@telekom.de", Comment: "First", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Bob", Email: "", Comment: "Second", ResultingState: approvalv1.ApprovalStateGranted},
+			}
+			err := validateDistinctDeciders(decisions)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("non-empty email"))
+		})
+
+		It("should reject when second-to-last decision has empty email", func() {
+			decisions := []approvalv1.Decision{
+				{Name: "Alice", Email: "", Comment: "First", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Bob", Email: "bob@telekom.de", Comment: "Second", ResultingState: approvalv1.ApprovalStateGranted},
+			}
+			err := validateDistinctDeciders(decisions)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("non-empty email"))
+		})
+
+		It("should reject when both decisions have empty emails", func() {
+			decisions := []approvalv1.Decision{
+				{Name: "Alice", Email: "", Comment: "First", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Bob", Email: "", Comment: "Second", ResultingState: approvalv1.ApprovalStateGranted},
+			}
+			err := validateDistinctDeciders(decisions)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("non-empty email"))
+		})
+
+		It("should reject when email is only whitespace", func() {
+			decisions := []approvalv1.Decision{
+				{Name: "Alice", Email: "alice@telekom.de", Comment: "First", ResultingState: approvalv1.ApprovalStateSemigranted},
+				{Name: "Bob", Email: "   ", Comment: "Second", ResultingState: approvalv1.ApprovalStateGranted},
+			}
+			err := validateDistinctDeciders(decisions)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("non-empty email"))
+		})
+	})
+
+	Context("stateChanged uses oldObj.Spec.State not Status.LastState", func() {
+		var validator ApprovalRequestCustomValidator
+
+		It("should not flag as state change when only Status.LastState differs", func() {
+			// Both oldObj and newObj have Spec.State=Granted (no real change),
+			// but newObj.Status.LastState=Pending (stale). Should NOT trigger decision check.
+			oldObj := &approvalv1.ApprovalRequest{
+				Spec: approvalv1.ApprovalRequestSpec{
+					Strategy: approvalv1.ApprovalStrategySimple,
+					State:    approvalv1.ApprovalStateGranted,
+				},
+			}
+			newObj := &approvalv1.ApprovalRequest{
+				Spec: approvalv1.ApprovalRequestSpec{
+					Strategy: approvalv1.ApprovalStrategySimple,
+					State:    approvalv1.ApprovalStateGranted,
+				},
+				Status: approvalv1.ApprovalRequestStatus{
+					LastState: approvalv1.ApprovalStatePending, // stale
+				},
+			}
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	Context("defaultDecisionFields via ApprovalRequest defaulter", func() {
+
+		It("should populate Timestamp and ResultingState on new decisions", func() {
+			defaulter := ApprovalRequestCustomDefaulter{}
+			before := time.Now()
+			ar := &approvalv1.ApprovalRequest{
+				Spec: approvalv1.ApprovalRequestSpec{
+					Strategy: approvalv1.ApprovalStrategySimple,
+					State:    approvalv1.ApprovalStateGranted,
+					Decisions: []approvalv1.Decision{
+						{Name: "Alice", Email: "alice@telekom.de", Comment: "ok"},
+					},
+				},
+			}
+
+			err := defaulter.Default(context.Background(), ar)
+			Expect(err).NotTo(HaveOccurred())
+
+			d := ar.Spec.Decisions[0]
+			Expect(d.ResultingState).To(Equal(approvalv1.ApprovalStateGranted))
+			Expect(d.Timestamp).NotTo(BeNil())
+			Expect(d.Timestamp.Time).To(BeTemporally(">=", before))
+			Expect(d.Timestamp.Time).To(BeTemporally("<=", time.Now()))
+		})
+
+		It("should not overwrite existing Timestamp or ResultingState", func() {
+			defaulter := ApprovalRequestCustomDefaulter{}
+			fixedTime := metav1.NewTime(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC))
+			ar := &approvalv1.ApprovalRequest{
+				Spec: approvalv1.ApprovalRequestSpec{
+					Strategy: approvalv1.ApprovalStrategySimple,
+					State:    approvalv1.ApprovalStateGranted,
+					Decisions: []approvalv1.Decision{
+						{
+							Name:           "Alice",
+							Email:          "alice@telekom.de",
+							Comment:        "ok",
+							Timestamp:      &fixedTime,
+							ResultingState: approvalv1.ApprovalStateSemigranted,
+						},
+					},
+				},
+			}
+
+			err := defaulter.Default(context.Background(), ar)
+			Expect(err).NotTo(HaveOccurred())
+
+			d := ar.Spec.Decisions[0]
+			Expect(d.ResultingState).To(Equal(approvalv1.ApprovalStateSemigranted))
+			Expect(d.Timestamp.Time).To(Equal(fixedTime.Time))
+		})
+
+		It("should populate fields for multiple decisions independently", func() {
+			defaulter := ApprovalRequestCustomDefaulter{}
+			fixedTime := metav1.NewTime(time.Date(2024, 6, 15, 12, 0, 0, 0, time.UTC))
+			ar := &approvalv1.ApprovalRequest{
+				Spec: approvalv1.ApprovalRequestSpec{
+					Strategy: approvalv1.ApprovalStrategyFourEyes,
+					State:    approvalv1.ApprovalStateGranted,
+					Decisions: []approvalv1.Decision{
+						{
+							Name:           "Alice",
+							Email:          "alice@telekom.de",
+							Comment:        "First",
+							Timestamp:      &fixedTime,
+							ResultingState: approvalv1.ApprovalStateSemigranted,
+						},
+						{
+							Name:    "Bob",
+							Email:   "bob@telekom.de",
+							Comment: "Second",
+						},
+					},
+				},
+			}
+
+			err := defaulter.Default(context.Background(), ar)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(ar.Spec.Decisions[0].Timestamp.Time).To(Equal(fixedTime.Time))
+			Expect(ar.Spec.Decisions[0].ResultingState).To(Equal(approvalv1.ApprovalStateSemigranted))
+
+			Expect(ar.Spec.Decisions[1].Timestamp).NotTo(BeNil())
+			Expect(ar.Spec.Decisions[1].ResultingState).To(Equal(approvalv1.ApprovalStateGranted))
 		})
 	})
 })
