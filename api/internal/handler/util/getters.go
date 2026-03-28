@@ -197,3 +197,91 @@ func FindActiveAPIExposure(ctx context.Context, apiBasePath string) (bool, *apiv
 
 	return true, relevantApiExposure, nil
 }
+
+// FindCrossZoneApiSubscriptionZones lists all ApiSubscriptions for a given apiBasePath
+// and returns the unique zone ObjectRefs where proxy routes should be created.
+// This includes both subscription zones and subscriber failover zones (exposure-driven pattern).
+// A zone is included if:
+// - It's a subscription zone that differs from the exposure's zone (cross-zone)
+// - It's a subscriber failover zone (for any approved subscription)
+// Zones are excluded if:
+// - Same as exposure zone (no proxy needed, real route serves them)
+// - In provider's failover zone (provider failover route serves them)
+func FindCrossZoneApiSubscriptionZones(ctx context.Context, apiExp *apiv1.ApiExposure) ([]types.ObjectRef, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+	logger := log.FromContext(ctx)
+
+	subList := &apiv1.ApiSubscriptionList{}
+	if err := c.List(ctx, subList, client.MatchingLabels{
+		apiv1.BasePathLabelKey: labelutil.NormalizeLabelValue(apiExp.Spec.ApiBasePath),
+	}); err != nil {
+		return nil, errors.Wrapf(err, "failed to list ApiSubscriptions for basepath %q", apiExp.Spec.ApiBasePath)
+	}
+
+	seen := make(map[string]bool)
+	var zones []types.ObjectRef
+
+	// Helper function to add a zone if it's not already seen and passes filters
+	addZoneIfValid := func(zone types.ObjectRef, reason string) {
+		// Skip same-zone as exposure (no cross-zone proxy needed)
+		if zone.Equals(&apiExp.Spec.Zone) {
+			return
+		}
+
+		// CRITICAL: Skip if zone IS the provider's failover zone
+		// The provider failover route already exists in that zone and serves those zones
+		if apiExp.HasFailover() && apiExp.Spec.Traffic.Failover.ContainsZone(zone) {
+			logger.V(1).Info("Skipping proxy route in provider failover zone", "zone", zone.Name, "reason", reason)
+			return
+		}
+
+		zoneName := zone.Name
+		if !seen[zoneName] {
+			seen[zoneName] = true
+			zones = append(zones, zone)
+			logger.V(1).Info("Adding zone for proxy route", "zone", zone.Name, "reason", reason)
+		}
+	}
+
+	for i := range subList.Items {
+		sub := &subList.Items[i]
+
+		// Skip subscriptions that are being deleted; their finalizer may still
+		// be running, but they should no longer influence proxy route creation.
+		if sub.GetDeletionTimestamp() != nil {
+			continue
+		}
+
+		// Skip if basepath doesn't match exactly (label normalization can cause collisions)
+		if sub.Spec.ApiBasePath != apiExp.Spec.ApiBasePath {
+			logger.V(1).Info("Skipping subscription with non-matching basepath",
+				"subscription", sub.Name, "subscriptionBasePath", sub.Spec.ApiBasePath, "exposureBasePath", apiExp.Spec.ApiBasePath)
+			continue
+		}
+
+		// Check approval status
+		approvalGranted := false
+		for _, cond := range sub.GetConditions() {
+			if cond.Type == "ApprovalGranted" && cond.Status == "True" {
+				approvalGranted = true
+				break
+			}
+		}
+		if !approvalGranted {
+			logger.V(1).Info("Skipping subscription without approval", "subscription", sub.Name, "zone", sub.Spec.Zone.Name)
+			continue
+		}
+
+		// Add the subscription's zone (if cross-zone)
+		addZoneIfValid(sub.Spec.Zone, fmt.Sprintf("subscription %s", sub.Name))
+
+		// Add all subscriber failover zones (exposure-driven pattern)
+		if sub.HasFailover() {
+			for _, failoverZone := range sub.Spec.Traffic.Failover.Zones {
+				addZoneIfValid(failoverZone, fmt.Sprintf("subscriber failover for %s", sub.Name))
+			}
+		}
+	}
+
+	return zones, nil
+}
