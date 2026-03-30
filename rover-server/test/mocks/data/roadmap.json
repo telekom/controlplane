@@ -1,0 +1,30 @@
+{
+  "apiVersion": "rover.cp.ei.telekom.de/v1",
+  "kind": "Roadmap",
+  "metadata": {
+    "name": "eni-test-api-v1",
+    "namespace": "poc--eni--hyperion"
+  },
+  "spec": {
+    "resourceName": "/eni/test-api/v1",
+    "resourceType": "API",
+    "roadmap": "poc--eni--hyperion--eni-test-api-v1",
+    "hash": "roadmapRandomHash"
+  },
+  "status": {
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "Ready",
+        "message": "Roadmap is ready"
+      },
+      {
+        "type": "Processing",
+        "status": "False",
+        "reason": "Done",
+        "message": "Roadmap processed"
+      }
+    ]
+  }
+}

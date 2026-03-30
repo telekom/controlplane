@@ -58,6 +58,7 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 		stores.RoverStore = mocks.NewRoverStoreMock(GinkgoT())
 		stores.RoverSecretStore = stores.RoverStore
 		stores.APISpecificationStore = mocks.NewAPISpecificationStoreMock(GinkgoT())
+		stores.RoadmapStore = mocks.NewRoadmapStoreMock(GinkgoT())
 		stores.APISubscriptionStore = mocks.NewAPISubscriptionStoreMock(GinkgoT())
 		stores.APIExposureStore = mocks.NewAPIExposureStoreMock(GinkgoT())
 		stores.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
@@ -109,6 +110,7 @@ var _ = BeforeSuite(func() {
 		Log:                 log.Log,
 		ApiSpecifications:   NewApiSpecificationController(stores),
 		Rovers:              NewRoverController(stores),
+		Roadmaps:            NewRoadmapController(stores),
 		EventSpecifications: NewEventSpecificationController(stores),
 	}
 

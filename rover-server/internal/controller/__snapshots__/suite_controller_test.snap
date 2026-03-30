@@ -1035,3 +1035,227 @@
  "team": "hyperion"
 }
 ---
+
+[Roadmap Controller Get Roadmap resource should fail to get a non-existent Roadmap - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Roadmap Controller Get Roadmap resource should fail to get a Roadmap from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Roadmap Controller GetAll Roadmaps resource should return an empty list if no Roadmaps exist - 1]
+{
+ "items": []
+}
+---
+
+[Roadmap Controller Update Roadmap resource should fail to update a non-existent Roadmap - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Roadmap Controller Update Roadmap resource should fail to update a Roadmap from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Roadmap Controller Delete Roadmap resource should fail to delete a non-existent Roadmap - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Roadmap Controller Delete Roadmap resource should fail to delete a Roadmap from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Roadmap Controller Create Roadmap resource should fail to create a Roadmap with invalid resourceType - 1]
+{
+ "detail": "multiple errors encountered: Error at \"/resourceType\": value is not one of the allowed values [\"API\",\"Event\"]\nSchema:\n  {\n    \"description\": \"The type of resource this roadmap is for\",\n    \"enum\": [\n      \"API\",\n      \"Event\"\n    ],\n    \"example\": \"API\",\n    \"type\": \"string\"\n  }\n\nValue:\n  \"InvalidType\"\n",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[Roadmap Controller Create Roadmap resource should fail to create a Roadmap with empty items array - 1]
+{
+ "detail": "multiple errors encountered: Error at \"/items\": minimum number of items is 1\nSchema:\n  {\n    \"description\": \"List of roadmap timeline entries\",\n    \"items\": {\n      \"$ref\": \"#/components/schemas/RoadmapItem\"\n    },\n    \"minItems\": 1,\n    \"type\": \"array\"\n  }\n\nValue:\n  []\n",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[Roadmap Controller Get Roadmap resource should return the Roadmap successfully - 1]
+{
+ "id": "eni--hyperion--eni-test-api-v1",
+ "items": [
+  {
+   "date": "Q1 2024",
+   "description": "Initial release with core features",
+   "title": "MVP Release",
+   "titleUrl": "https://example.com/mvp"
+  },
+  {
+   "date": "Q2 2024",
+   "description": "Optimize response times",
+   "title": "Performance Improvements"
+  }
+ ],
+ "name": "eni-test-api-v1",
+ "resourceName": "/eni/test-api/v1",
+ "resourceType": "API",
+ "status": {
+  "message": "Roadmap is ready",
+  "ready": true
+ }
+}
+---
+
+[Roadmap Controller GetAll Roadmaps resource should return all Roadmaps successfully - 1]
+{
+ "items": [
+  {
+   "id": "hyperion--eni-test-api-v1",
+   "items": [
+    {
+     "date": "Q1 2024",
+     "description": "Initial release with core features",
+     "title": "MVP Release",
+     "titleUrl": "https://example.com/mvp"
+    },
+    {
+     "date": "Q2 2024",
+     "description": "Optimize response times",
+     "title": "Performance Improvements"
+    }
+   ],
+   "name": "eni-test-api-v1",
+   "resourceName": "/eni/test-api/v1",
+   "resourceType": "API",
+   "status": {
+    "message": "Roadmap is ready",
+    "ready": true
+   }
+  }
+ ]
+}
+---
+
+[Roadmap Controller GetAll Roadmaps resource should filter Roadmaps by resourceType=API - 1]
+{
+ "items": [
+  {
+   "id": "hyperion--eni-test-api-v1",
+   "items": [
+    {
+     "date": "Q1 2024",
+     "description": "Initial release with core features",
+     "title": "MVP Release",
+     "titleUrl": "https://example.com/mvp"
+    },
+    {
+     "date": "Q2 2024",
+     "description": "Optimize response times",
+     "title": "Performance Improvements"
+    }
+   ],
+   "name": "eni-test-api-v1",
+   "resourceName": "/eni/test-api/v1",
+   "resourceType": "API",
+   "status": {
+    "message": "Roadmap is ready",
+    "ready": true
+   }
+  }
+ ]
+}
+---
+
+[Roadmap Controller Update Roadmap resource should update the Roadmap successfully - 1]
+{
+ "id": "eni--hyperion--eni-test-api-v1",
+ "items": [
+  {
+   "date": "Q1 2024",
+   "description": "Initial release with core features",
+   "title": "MVP Release",
+   "titleUrl": "https://example.com/mvp"
+  },
+  {
+   "date": "Q2 2024",
+   "description": "Optimize response times",
+   "title": "Performance Improvements"
+  }
+ ],
+ "name": "eni-test-api-v1",
+ "resourceName": "/eni/test-api/v1",
+ "resourceType": "API",
+ "status": {
+  "message": "Roadmap is ready",
+  "ready": true
+ }
+}
+---
+
+[Roadmap Controller Hash optimization should skip file upload if hash is unchanged - 1]
+{
+ "id": "eni--hyperion--eni-test-api-v1",
+ "items": [
+  {
+   "date": "Q1 2024",
+   "description": "Initial release with core features",
+   "title": "MVP Release",
+   "titleUrl": "https://example.com/mvp"
+  },
+  {
+   "date": "Q2 2024",
+   "description": "Optimize response times",
+   "title": "Performance Improvements"
+  }
+ ],
+ "name": "eni-test-api-v1",
+ "resourceName": "/eni/test-api/v1",
+ "resourceType": "API",
+ "status": {
+  "message": "Roadmap is ready",
+  "ready": true
+ }
+}
+---

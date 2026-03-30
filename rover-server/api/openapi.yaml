@@ -43,6 +43,8 @@ tags:
     description: Manage EventSpecifications
   - name: Rover
     description: Manage Rovers
+  - name: Roadmap
+    description: Manage Roadmaps
 paths:
   /rovers:
     get:
@@ -999,6 +1001,208 @@ paths:
             - tardis:user:all
             - tardis:user:read
             - tardis:user:obfuscated
+  /roadmaps:
+    get:
+      tags:
+        - Roadmap
+      summary: Find all Roadmaps
+      description: Find all Roadmaps of a Team
+      operationId: getAllRoadmaps
+      parameters:
+        - name: cursor
+          in: query
+          description: cursor for pagination
+          required: false
+          schema:
+            type: string
+        - name: resourceType
+          in: query
+          description: Filter by resource type (API or Event)
+          required: false
+          schema:
+            type: string
+            enum:
+              - API
+              - Event
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoadmapListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:team:all
+            - tardis:team:read
+    post:
+      tags:
+        - Roadmap
+      summary: Create a Roadmap
+      description: Create a Roadmap resource
+      operationId: createRoadmap
+      deprecated: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoadmapRequest'
+      responses:
+        '201':
+          description: CREATED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoadmapResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+  /roadmaps/{resourceId}:
+    get:
+      tags:
+        - Roadmap
+      summary: Find an existing Roadmap
+      description: Find an existing Roadmap
+      operationId: getRoadmap
+      parameters:
+        - name: resourceId
+          description: The unique id of this resource following the pattern group--team--resourceName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoadmapResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:team:all
+            - tardis:team:read
+    put:
+      tags:
+        - Roadmap
+      summary: Update an existing Roadmap
+      description: Update an existing Roadmap
+      operationId: updateRoadmap
+      parameters:
+        - name: resourceId
+          description: The unique id of this resource following the pattern group--team--resourceName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoadmapRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoadmapResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+    delete:
+      tags:
+        - Roadmap
+      summary: Delete a Roadmap
+      description: Delete a Roadmap
+      operationId: deleteRoadmap
+      parameters:
+        - name: resourceId
+          description: The unique id of this resource following the pattern group--team--resourceName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: DELETED
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
 components:
   securitySchemes:
     OAuth2:
@@ -1553,7 +1757,7 @@ components:
         - state
         - processingState
         - overallStatus
-      types: object
+      type: object
       properties:
         createdAt:
           type: string
@@ -2053,6 +2257,118 @@ components:
                 This field is only used for hub-scoped access to control the
                 target team of the resource. For everything else, it can be
                 ignored
+    Roadmap:
+      type: object
+      required:
+        - resourceName
+        - resourceType
+        - items
+      properties:
+        resourceName:
+          description: The resource identifier (API basePath or Event type name)
+          type: string
+          example: /eni/test-api/v1
+        resourceType:
+          description: The type of resource this roadmap is for
+          type: string
+          enum:
+            - API
+            - Event
+          example: API
+        items:
+          description: List of roadmap timeline entries
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/RoadmapItem'
+    RoadmapItem:
+      type: object
+      required:
+        - date
+        - title
+        - description
+      properties:
+        date:
+          description: Timeline date or period
+          type: string
+          example: Q1 2024
+        title:
+          description: Milestone title
+          type: string
+          example: MVP Release
+        description:
+          description: Detailed description of the milestone
+          type: string
+          example: Initial release with core features
+        titleUrl:
+          description: Optional URL for more information
+          type: string
+          format: uri
+          example: https://example.com/mvp
+    RoadmapRequest:
+      allOf:
+        - $ref: '#/components/schemas/Roadmap'
+    RoadmapResponse:
+      type: object
+      required:
+        - id
+        - name
+        - resourceName
+        - resourceType
+        - items
+      properties:
+        id:
+          description: Unique id of this resource
+          type: string
+          readOnly: true
+          example: my-hub--my-team--my-roadmap
+        name:
+          description: Name of the roadmap
+          type: string
+          readOnly: true
+          example: my-roadmap
+        resourceName:
+          description: The resource identifier (API basePath or Event type name)
+          type: string
+          example: /eni/test-api/v1
+        resourceType:
+          description: The type of resource this roadmap is for
+          type: string
+          enum:
+            - API
+            - Event
+          example: API
+        items:
+          description: List of roadmap timeline entries
+          type: array
+          items:
+            $ref: '#/components/schemas/RoadmapItem'
+        status:
+          $ref: '#/components/schemas/RoadmapStatus'
+    RoadmapStatus:
+      type: object
+      readOnly: true
+      properties:
+        ready:
+          type: boolean
+          description: Whether the roadmap is ready
+        processing:
+          type: boolean
+          description: Whether the roadmap is being processed
+        message:
+          type: string
+          description: Status message
+    RoadmapListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        _links:
+          $ref: '#/components/schemas/Links'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoadmapResponse'
     Failover:
       type: object
       required:
