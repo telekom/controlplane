@@ -176,6 +176,13 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 				})
 			}
 		}
+
+		v1.SetApprovalLabels(approvalReq, approvalReq.Spec.Target,
+			approvalReq.Spec.Requester.TeamName,
+			approvalReq.Spec.Decider.TeamName,
+			approvalReq.Spec.Action,
+			string(approvalReq.Spec.Strategy))
+
 		return nil
 	}
 

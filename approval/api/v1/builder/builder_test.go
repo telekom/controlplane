@@ -123,6 +123,14 @@ var _ = Describe("Approval Builder", Ordered, func() {
 				g.Expect(ar.Spec.Decisions[0].Comment).To(Equal(approvalv1.AutoApprovedComment))
 				g.Expect(ar.Spec.Decisions[0].ResultingState).To(Equal(approvalv1.ApprovalStateGranted))
 
+				By("Checking the filtering labels were set on the ApprovalRequest")
+				g.Expect(ar.Labels[approvalv1.TargetKindLabelKey]).To(Equal("testresource"))
+				g.Expect(ar.Labels[approvalv1.TargetNameLabelKey]).To(Equal("apisub"))
+				g.Expect(ar.Labels[approvalv1.RequesterTeamLabelKey]).To(Equal("max"))
+				g.Expect(ar.Labels[approvalv1.DeciderTeamLabelKey]).To(Equal(""))
+				g.Expect(ar.Labels[approvalv1.ActionLabelKey]).To(Equal(""))
+				g.Expect(ar.Labels[approvalv1.ApprovalStrategyLabelKey]).To(Equal("auto"))
+
 				testutil.ExpectConditionToBeFalse(g, meta.FindStatusCondition(builder.GetOwner().GetConditions(), ConditionTypeApprovalGranted), "Pending")
 
 				appr := &approvalv1.Approval{}
@@ -225,6 +233,12 @@ var _ = Describe("Approval Builder", Ordered, func() {
 			Expect(ar.Spec.Decisions[0].Name).To(Equal("System"))
 			Expect(ar.Spec.Decisions[0].Comment).To(Equal(approvalv1.AutoApprovedComment))
 			Expect(ar.Spec.Decisions[0].ResultingState).To(Equal(approvalv1.ApprovalStateGranted))
+
+			By("Checking the filtering labels reflect the overridden Auto strategy")
+			Expect(ar.Labels[approvalv1.TargetKindLabelKey]).To(Equal("testresource"))
+			Expect(ar.Labels[approvalv1.TargetNameLabelKey]).To(Equal("apisub"))
+			Expect(ar.Labels[approvalv1.RequesterTeamLabelKey]).To(Equal("trustedteam"))
+			Expect(ar.Labels[approvalv1.ApprovalStrategyLabelKey]).To(Equal("auto"))
 		})
 	})
 
@@ -273,6 +287,18 @@ var _ = Describe("Approval Builder", Ordered, func() {
 			res, err := builder.Build(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).To(Equal(ApprovalResultGranted)) // There were no changes and Approval is granted
+
+			By("Checking the filtering labels on the ApprovalRequest")
+			ar := &approvalv1.ApprovalRequest{}
+			err = k8sClient.Get(ctx, client.ObjectKey{
+				Name:      builder.GetApprovalRequest().Name,
+				Namespace: testNamespace,
+			}, ar)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ar.Labels[approvalv1.TargetKindLabelKey]).To(Equal("testresource"))
+			Expect(ar.Labels[approvalv1.TargetNameLabelKey]).To(Equal("apisub"))
+			Expect(ar.Labels[approvalv1.RequesterTeamLabelKey]).To(Equal("max"))
+			Expect(ar.Labels[approvalv1.ApprovalStrategyLabelKey]).To(Equal("auto"))
 		})
 
 		It("should handle an already rejected Approval", func() {

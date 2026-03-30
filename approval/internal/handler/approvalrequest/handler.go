@@ -193,6 +193,12 @@ func handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest)
 			ApprovedRequest: types.ObjectRefFromObject(approvalReq),
 		}
 
+		approvalv1.SetApprovalLabels(approvalObj, approvalReq.Spec.Target,
+			approvalReq.Spec.Requester.TeamName,
+			approvalReq.Spec.Decider.TeamName,
+			approvalReq.Spec.Action,
+			string(approvalReq.Spec.Strategy))
+
 		return nil
 	}
 
