@@ -23,6 +23,7 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/controlplane-api/cmd/config"
 	"github.com/telekom/controlplane/controlplane-api/ent"
@@ -44,6 +45,7 @@ func main() {
 
 	cfg := config.GetConfigOrDie(configFile)
 	log := setupLogger(cfg.Log.Level)
+	crlog.SetLogger(log)
 	ctx := logr.NewContext(context.Background(), log)
 	ctx = cserver.SignalHandler(ctx)
 
