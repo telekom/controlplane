@@ -34,7 +34,7 @@ var _ = Describe("Approval Webhook", func() {
 	})
 
 	Context("When creating Approval under Validating Webhook", func() {
-		It("Should warn and fix Auto strategy approval not in Granted state on create", func() {
+		It("Should reject Auto strategy approval not in Granted state on create", func() {
 			validator := ApprovalCustomValidator{}
 			a := &approvalv1.Approval{
 				Spec: approvalv1.ApprovalSpec{
@@ -43,14 +43,12 @@ var _ = Describe("Approval Webhook", func() {
 				},
 			}
 
-			warnings, err := validator.ValidateCreate(context.Background(), a)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(warnings).To(HaveLen(1))
-			Expect(warnings[0]).To(ContainSubstring("auto approved"))
-			Expect(a.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+			_, err := validator.ValidateCreate(context.Background(), a)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Auto strategy Approval must be in Granted state"))
 		})
 
-		It("Should not warn for Auto strategy approval already in Granted state on create", func() {
+		It("Should not reject Auto strategy approval already in Granted state on create", func() {
 			validator := ApprovalCustomValidator{}
 			a := &approvalv1.Approval{
 				Spec: approvalv1.ApprovalSpec{

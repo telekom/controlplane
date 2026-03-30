@@ -81,8 +81,7 @@ func (ar *ApprovalRequestCustomValidator) ValidateCreate(_ context.Context, obj 
 	approvalrequestlog.Info("validate create", "name", obj.Name)
 
 	if obj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && obj.Spec.State != approvalv1.ApprovalStateGranted {
-		warnings = append(warnings, "Request is auto approved and should be granted")
-		obj.Spec.State = approvalv1.ApprovalStateGranted
+		return warnings, apierrors.NewBadRequest("Auto strategy ApprovalRequest must be in Granted state")
 	}
 
 	return warnings, err
@@ -103,8 +102,7 @@ func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, oldO
 	}
 
 	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && newObj.Spec.State != approvalv1.ApprovalStateGranted {
-		warnings = append(warnings, "Request is auto approved and should be granted")
-		newObj.Spec.State = approvalv1.ApprovalStateGranted
+		return warnings, apierrors.NewBadRequest("Auto strategy ApprovalRequest must be in Granted state")
 	}
 
 	stateChanged := oldObj.Spec.State != newObj.Spec.State
