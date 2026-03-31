@@ -10,7 +10,7 @@
 
 set -e
 
-KUSTOMIZATION_FILE="install/kustomization.yaml"
+KUSTOMIZATION_FILE="install/overlays/default/kustomization.yaml"
 NEXT_VERSION="$1"
 if [ -z "$NEXT_VERSION" ]; then
   echo "Usage: $0 <next-version>"

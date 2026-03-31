@@ -1,0 +1,204 @@
+---
+sidebar_position: 4
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Exposing Events
+
+:::info Optional Feature
+Event support is an optional feature of the Control Plane. It must be explicitly enabled by a platform administrator through an EventConfig resource for each zone. If events are not enabled in your environment, you can skip this page.
+:::
+
+Exposing an event is a two-step process. First, you register your event type specification so the platform knows about your event. Then, you declare the exposure in a Rover file to configure messaging and access control. Both steps are applied in the same way using `roverctl apply`.
+
+:::tip Prerequisites
+Your team must be onboarded before you can expose events. See [Applications](./applications.mdx) for details on how the platform identifies your team and application.
+:::
+
+## Step 1: Register Your Event Specification
+
+Before exposing an event, you must register its event type specification. This creates an **EventType** resource in the Control Plane, which serves as the central reference for your event's metadata.
+
+<Tabs groupId="resource-version" defaultValue="legacy">
+  <TabItem value="legacy" label="Legacy">
+
+In the legacy format, the event specification is a dedicated resource with `kind: EventSpecification`. It defines the event type identifier, version, and an optional JSON schema describing the event payload.
+
+```yaml title="eventspec.yaml"
+kind: EventSpecification
+apiVersion: tcp.ei.telekom.de/v1
+metadata:
+  name: order-created-v1
+spec:
+  type: de.telekom.orders.created.v1
+  version: '1.0.0'
+  description: Events published when a new order is created
+  specification: |
+    {
+      "$id": "https://example.com/order-created.schema.json",
+      "$schema": "http://json-schema.org/draft-07/schema",
+      "title": "OrderCreated",
+      "type": "object",
+      "properties": {
+        "orderId": {
+          "type": "string",
+          "description": "Unique identifier for the order."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Total order amount."
+        }
+      }
+    }
+```
+
+Apply the specification:
+
+```bash
+roverctl apply -f eventspec.yaml
+```
+
+  </TabItem>
+  <TabItem value="v1" label="v1">
+
+In the v1 format, the event specification is a dedicated Custom Resource. The optional JSON schema can be uploaded to the File Manager, and the `specification` field references the resulting file ID.
+
+```yaml title="eventspec.yaml"
+apiVersion: rover.cp.ei.telekom.de/v1
+kind: EventSpecification
+metadata:
+  name: de-telekom-orders-created-v1
+  namespace: dev--payment-services--orders
+spec:
+  type: de.telekom.orders.created.v1
+  version: "1.0.0"
+  description: Events published when a new order is created
+```
+
+Apply the specification:
+
+```bash
+kubectl apply -f eventspec.yaml
+```
+
+  </TabItem>
+</Tabs>
+
+### Key Fields
+
+| Field | Description |
+| ----- | ----------- |
+| `type` | A globally unique identifier for the event type, using dot-separated notation (e.g., `de.telekom.orders.created.v1`). |
+| `version` | The version of the event type specification. |
+| `description` | A human-readable summary of what this event represents. |
+| `specification` | An optional JSON schema describing the event payload structure. In the legacy format, this is provided inline. In v1, this references a File Manager ID. |
+
+### What Happens
+
+The EventSpecification handler processes your specification and creates an **EventType** resource. This resource stores the event's metadata and makes the event type discoverable in the platform.
+
+## Step 2: Expose the Event in Your Rover
+
+Once the event specification is registered, you can declare the exposure in your Rover file. The `eventType` in your exposure must match the type registered in Step 1.
+
+<Tabs groupId="resource-version" defaultValue="legacy">
+  <TabItem value="legacy" label="Legacy">
+
+```yaml title="rover.yaml"
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: order-service
+spec:
+  zone: dataplane1
+  exposures:
+    - type: event
+      visibility: ENTERPRISE
+      eventType: de.telekom.orders.created.v1
+      approval: SIMPLE
+```
+
+Apply the Rover file:
+
+```bash
+roverctl apply -f rover.yaml
+```
+
+  </TabItem>
+  <TabItem value="v1" label="v1">
+
+```yaml title="rover.yaml"
+apiVersion: rover.cp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: order-service
+  namespace: dev--payment-services--orders
+spec:
+  zone: dataplane1
+  exposures:
+    - event:
+        eventType: de.telekom.orders.created.v1
+        approval:
+          strategy: Simple
+```
+
+Apply the Rover file:
+
+```bash
+kubectl apply -f rover.yaml
+```
+
+  </TabItem>
+</Tabs>
+
+### Key Fields
+
+| Field | Description |
+| ----- | ----------- |
+| `eventType` | The event type identifier. Must match an existing EventType resource registered in Step 1. |
+| `approval` | The approval strategy for subscription requests: `auto`, `simple`, or `foureyes`. See [Approvals](./approvals.mdx). |
+
+### What Happens
+
+When you apply the Rover file, the Control Plane:
+
+1. Creates an **Application** resource for your service (if it does not already exist)
+2. Creates an **EventExposure** linking your application to the EventType resource
+3. The EventExposure handler verifies that an active **EventType** exists (created in Step 1), then creates a **Publisher** in the PubSub domain and configures **Gateway Routes** for event publishing and SSE delivery
+
+:::caution
+If the EventType does not exist (i.e., the specification was not registered in Step 1), the EventExposure will remain in a pending state until the specification is applied.
+:::
+
+The event type is now discoverable by other teams and ready to receive subscription requests.
+
+## Cross-Zone Event Meshing
+
+One of the most powerful features of the Event domain is cross-zone meshing. When event publishers and subscribers are in different zones (potentially in different cloud environments), the Control Plane automatically creates proxy routes to deliver events across zone boundaries.
+
+This meshing is configured at the zone level through the **EventConfig** resource:
+
+```yaml
+apiVersion: event.cp.ei.telekom.de/v1
+kind: EventConfig
+metadata:
+  name: zone-event-config
+  namespace: dev--dataplane1
+spec:
+  mesh:
+    fullMesh: true
+    zoneNames:
+      - aws
+      - azure
+      - gcp
+```
+
+When `fullMesh` is enabled, every zone can communicate with every other zone. Alternatively, you can specify a subset of zone names for selective meshing.
+
+## Next Steps
+
+- [Subscribing to Events](./subscribing-to-events.mdx) — Learn how other teams can consume your events
+- [Approvals](./approvals.mdx) — Understand how approval workflows protect your events
+- [Architecture: Event Domain](../architecture/event.mdx) — Deep dive into event routing and meshing

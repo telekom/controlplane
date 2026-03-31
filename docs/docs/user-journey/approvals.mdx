@@ -1,0 +1,79 @@
+---
+sidebar_position: 7
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Approvals
+
+The Approval domain provides a configurable workflow for controlling access to APIs and events. When a team subscribes to an API or event that requires approval, an approval request is created and must be granted before access is provisioned.
+
+## Approval Strategies
+
+When exposing an API or event, the provider chooses one of three approval strategies:
+
+| Strategy | Behavior |
+| -------- | -------- |
+| **Auto** | The subscription is approved immediately without human intervention. |
+| **Simple** | A single approver from the provider team must grant the request. |
+| **FourEyes** | Two separate approvers from the provider team must grant the request (dual-control principle). |
+
+The strategy is set in the Rover file when defining an API or event exposure:
+
+<Tabs groupId="resource-version" defaultValue="legacy">
+  <TabItem value="legacy" label="Legacy">
+
+```yaml
+exposures:
+  - type: api
+    visibility: ENTERPRISE
+    basePath: /checkout/v1
+    upstream: https://checkout.internal:8080
+    approval: SIMPLE
+```
+
+  </TabItem>
+  <TabItem value="v1" label="v1">
+
+```yaml
+exposures:
+  - api:
+      basePath: /checkout/v1
+      upstreams:
+        - url: https://checkout.internal:8080
+          weight: 1
+      approval:
+        strategy: Simple
+```
+
+  </TabItem>
+</Tabs>
+
+## Approval States
+
+Each approval moves through a state machine:
+
+| State | Meaning |
+| ----- | ------- |
+| **Pending** | The request has been created and is waiting for review. |
+| **SemiGranted** | One of the two required approvals has been granted (FourEyes only). |
+| **Granted** | The request has been fully approved. Access is provisioned. |
+| **Rejected** | The request has been denied. |
+| **Suspended** | A previously granted approval has been temporarily suspended. |
+| **Expired** | The approval has expired and is no longer valid. |
+
+## Trusted Teams
+
+API and event providers can designate certain teams as **trusted**. Subscriptions from trusted teams are approved automatically, regardless of the configured strategy. This is useful for internal services or well-known partners that do not need manual review.
+
+## Notifications
+
+The Approval domain integrates with the Notification domain to keep both parties informed throughout the process:
+
+- **Requester team** — Notified when their request is granted, rejected, or suspended
+- **Provider team** — Notified when a new approval request is created or when an existing approval changes state
+
+## Next Steps
+
+- [Architecture: Approval Domain](../architecture/approval.mdx) — Deep dive into the approval workflow and state machines

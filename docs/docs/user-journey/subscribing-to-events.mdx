@@ -1,0 +1,113 @@
+---
+sidebar_position: 6
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Subscribing to Events
+
+:::info Optional Feature
+Event support is an optional feature of the Control Plane. It must be explicitly enabled by a platform administrator through an EventConfig resource for each zone. If events are not enabled in your environment, you can skip this page.
+:::
+
+:::warning Prerequisites
+Before subscribing to an event, the event type must already be **exposed** by another team. The provider must have completed both the event specification registration and the event exposure. See [Exposing Events](./exposing-events.mdx) for details on the full exposure process.
+:::
+
+Subscribing to an event grants your application access to events published by another team. The subscription process is managed through Rover files and may require approval depending on the event provider's configuration.
+
+## Defining an Event Subscription
+
+Event subscriptions are declared in the `subscriptions` section of your Rover file:
+
+<Tabs groupId="resource-version" defaultValue="legacy">
+  <TabItem value="legacy" label="Legacy">
+
+```yaml
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: analytics-service
+spec:
+  zone: dataplane1
+  subscriptions:
+    - type: event
+      eventType: de.telekom.orders.created.v1
+      deliveryType: callback
+      payloadType: Data
+      callback: https://analytics.internal:8080/events
+```
+
+  </TabItem>
+  <TabItem value="v1" label="v1">
+
+```yaml
+apiVersion: rover.cp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: analytics-service
+  namespace: dev--analytics--reporting
+spec:
+  zone: dataplane1
+  subscriptions:
+    - event:
+        eventType: de.telekom.orders.created.v1
+        delivery:
+          type: Callback
+          payload: Data
+          callback: https://analytics.internal:8080/events
+```
+
+  </TabItem>
+</Tabs>
+
+### Key Fields
+
+| Field | Description |
+| ----- | ----------- |
+| `eventType` | The event type you want to subscribe to. This must match an existing exposed event type. |
+| `delivery` / `deliveryType` | Configures how events are delivered to your application. See below. |
+
+## What Happens When You Subscribe
+
+When you apply a Rover file with an event subscription, the Control Plane:
+
+1. Creates an **EventSubscription** resource linking your application to the target event type
+2. The EventSubscription handler verifies that both an active **EventType** and an active **EventExposure** exist for the requested event type
+3. Creates an **Approval** resource (if the event requires approval)
+4. Waits for approval to be granted (for `simple` or `foureyes` strategies)
+5. Once approved, creates a **Subscriber** in the PubSub domain, registering your application with the Horizon runtime
+
+:::caution
+If no active EventType or EventExposure exists for the requested event type, your subscription will remain in a pending state. Verify that the event provider has completed both the specification registration and the exposure.
+:::
+
+:::note
+If the event uses the `auto` approval strategy, access is granted immediately. For `simple` or `foureyes` strategies, you will need to wait for the event provider to approve your request. See [Approvals](./approvals.mdx) for details.
+:::
+
+## Event Delivery Methods
+
+The Control Plane supports multiple event delivery methods:
+
+| Method | Description |
+| ------ | ----------- |
+| **Callback** | Events are delivered to a URL endpoint you specify. The platform pushes events to your service. |
+| **SSE (Server-Sent Events)** | Your service opens a persistent connection and receives events as a stream in real time. |
+
+## Checking Subscription Status
+
+You can check the status of your subscriptions using Rover-CTL:
+
+```bash
+rover-ctl get rovers
+```
+
+The output will show the status of each subscription, including whether it is pending approval, granted, or rejected. See the [Rover-CTL CLI Reference](../reference/roverctl/) for more commands and options.
+
+## Next Steps
+
+- [Approvals](./approvals.mdx) — Understand how approval workflows work
+- [Architecture: Event Domain](../architecture/event.mdx) — Deep dive into event routing and meshing
+- [Architecture: PubSub Domain](../architecture/pubsub.mdx) — Understand the runtime layer

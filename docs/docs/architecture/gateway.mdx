@@ -1,0 +1,38 @@
+---
+sidebar_position: 9
+---
+
+# Gateway Domain
+
+The Gateway domain configures the API Gateway at runtime. It manages routes, consumers, and their access relationships. While the architecture is designed to be gateway-agnostic, the current implementation uses Kong as the underlying gateway technology.
+
+## Custom Resources
+
+<CRDReference domain="gateway" />
+
+## Feature Architecture
+
+The Gateway operator uses a plugin-based feature system for configuring route behavior:
+
+| Feature | Description |
+| ------- | ----------- |
+| **PassThrough** | Basic request forwarding. |
+| **AccessControl** | Consumer-based access control. |
+| **RateLimit** | Request rate limiting via Redis. |
+| **ExternalIDP** | External identity provider authentication. |
+| **CustomScopes** | Fine-grained OAuth2 scope enforcement. |
+| **LastMileSecurity** | End-to-end security in cross-mesh scenarios. |
+
+## Domain Interactions
+
+- **Admin domain** — Zones define which gateway instance to use.
+- **API domain** — Creates Routes for exposed APIs and ConsumeRoutes for subscriptions.
+- **Application domain** — Creates Consumers for applications.
+- **Organization domain** — Creates Consumers for teams.
+- **Event domain** — Creates Routes for event publishing and SSE delivery.
+- **Rover domain** — Configures rate limiting and load balancing via traffic management settings.
+
+## Related Pages
+
+- [Architecture: API Domain](./api.mdx)
+- [Architecture: Identity Domain](./identity.mdx)

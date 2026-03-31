@@ -1,0 +1,69 @@
+---
+sidebar_position: 2
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Managing Applications
+
+An Application in the Control Plane is a logical container that groups together all the API exposures, subscriptions, and event configurations for a single service or workload. Applications are created automatically when you apply a Rover file, but understanding the concept helps you structure your configurations.
+
+## What Is an Application?
+
+Each Rover file maps to exactly one Application. When the Rover operator processes your file, it creates an Application resource that:
+
+- Represents your service within the Control Plane
+- Provisions an **Identity Client** so your application can authenticate with the platform
+- Provisions a **Gateway Consumer** so your application can be identified at the API gateway
+- Tracks which **zone** your application is deployed to (and optionally a failover zone)
+
+## Defining an Application in a Rover File
+
+An application is identified by the Rover resource itself (`metadata.name` in your team namespace):
+
+<Tabs groupId="resource-version" defaultValue="legacy">
+  <TabItem value="legacy" label="Legacy">
+
+```yaml
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: checkout-service
+spec:
+  zone: dataplane1
+```
+
+  </TabItem>
+  <TabItem value="v1" label="v1">
+
+```yaml
+apiVersion: rover.cp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: checkout-service
+  namespace: dev--payment-services--checkout
+spec:
+  zone: dataplane1
+```
+
+  </TabItem>
+</Tabs>
+
+### Key Fields
+
+| Field | Description |
+| ----- | ----------- |
+| `zone` | The deployment zone where your application runs. Must match a zone defined by the platform administrator. |
+| `metadata.name` | The logical application identifier used by downstream resources. |
+
+## Zone and Failover
+
+Rover itself defines the primary `zone`. Failover is configured on individual API exposures/subscriptions (not as `spec.failoverZone` on Rover).
+
+## Next Steps
+
+- [Exposing APIs](./exposing-apis.mdx) — Publish APIs from your application
+- [Exposing Events](./exposing-events.mdx) — Publish events from your application
+- [Subscribing to APIs](./subscribing-to-apis.mdx) — Consume APIs provided by other teams
+- [Subscribing to Events](./subscribing-to-events.mdx) — Consume events published by other teams

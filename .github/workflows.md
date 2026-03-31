@@ -180,7 +180,7 @@ Two scripts ensure consistent versioning across the monorepo:
 
 2. **`update_install.sh`**
    - Updates the install kustomization file with new version references
-   - Modifies `install/kustomization.yaml` to point to the new release tag
+   - Modifies `install/overlays/default/kustomization.yaml` to point to the new release tag
    - Updates both `ref` and `newTag` fields
 
 #### **Integration with Semantic Release**
@@ -189,7 +189,7 @@ These scripts are executed automatically during the release process via `.releas
 - Runs during the `prepare` phase before creating the release
 - Updates version references in install files and Helm charts
 - Commits changes back to the repository
-- Modified files: `CHANGELOG.md`, `install/kustomization.yaml`, `common-server/helm/Chart.yaml`
+- Modified files: `CHANGELOG.md`, `install/overlays/default/kustomization.yaml`, `common-server/helm/Chart.yaml`
 
 #### **Benefits**
 

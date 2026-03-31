@@ -1,23 +1,26 @@
-# Node modules
-node_modules/
+# Dependencies
+/node_modules
 
-# npm logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Build output
-dist/
-build/
+# Production
+/build
 
 # Generated files
 .docusaurus
 .cache-loader
 
-# Environment files
-.env
-.env.local
-.env.*.local
+# Generated CLI reference docs (created by scripts/generate-cli-docs.mjs)
+/docs/reference/roverctl/
 
-# Coverage reports
-coverage/
+# Generated CRD data (created by scripts/generate-crd-data.mjs)
+/src/data/crds/
+
+# Misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
