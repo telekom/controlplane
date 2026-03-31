@@ -84,6 +84,34 @@ func (_c *ApiExposureCreate) SetNillableStatusMessage(v *string) *ApiExposureCre
 	return _c
 }
 
+// SetEnvironment sets the "environment" field.
+func (_c *ApiExposureCreate) SetEnvironment(v string) *ApiExposureCreate {
+	_c.mutation.SetEnvironment(v)
+	return _c
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_c *ApiExposureCreate) SetNillableEnvironment(v *string) *ApiExposureCreate {
+	if v != nil {
+		_c.SetEnvironment(*v)
+	}
+	return _c
+}
+
+// SetNamespace sets the "namespace" field.
+func (_c *ApiExposureCreate) SetNamespace(v string) *ApiExposureCreate {
+	_c.mutation.SetNamespace(v)
+	return _c
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_c *ApiExposureCreate) SetNillableNamespace(v *string) *ApiExposureCreate {
+	if v != nil {
+		_c.SetNamespace(*v)
+	}
+	return _c
+}
+
 // SetBasePath sets the "base_path" field.
 func (_c *ApiExposureCreate) SetBasePath(v string) *ApiExposureCreate {
 	_c.mutation.SetBasePath(v)
@@ -352,6 +380,14 @@ func (_c *ApiExposureCreate) createSpec() (*ApiExposure, *sqlgraph.CreateSpec) {
 		_spec.SetField(apiexposure.FieldStatusMessage, field.TypeString, value)
 		_node.StatusMessage = &value
 	}
+	if value, ok := _c.mutation.Environment(); ok {
+		_spec.SetField(apiexposure.FieldEnvironment, field.TypeString, value)
+		_node.Environment = &value
+	}
+	if value, ok := _c.mutation.Namespace(); ok {
+		_spec.SetField(apiexposure.FieldNamespace, field.TypeString, value)
+		_node.Namespace = &value
+	}
 	if value, ok := _c.mutation.BasePath(); ok {
 		_spec.SetField(apiexposure.FieldBasePath, field.TypeString, value)
 		_node.BasePath = value
@@ -504,6 +540,42 @@ func (u *ApiExposureUpsert) UpdateStatusMessage() *ApiExposureUpsert {
 // ClearStatusMessage clears the value of the "status_message" field.
 func (u *ApiExposureUpsert) ClearStatusMessage() *ApiExposureUpsert {
 	u.SetNull(apiexposure.FieldStatusMessage)
+	return u
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *ApiExposureUpsert) SetEnvironment(v string) *ApiExposureUpsert {
+	u.Set(apiexposure.FieldEnvironment, v)
+	return u
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ApiExposureUpsert) UpdateEnvironment() *ApiExposureUpsert {
+	u.SetExcluded(apiexposure.FieldEnvironment)
+	return u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ApiExposureUpsert) ClearEnvironment() *ApiExposureUpsert {
+	u.SetNull(apiexposure.FieldEnvironment)
+	return u
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ApiExposureUpsert) SetNamespace(v string) *ApiExposureUpsert {
+	u.Set(apiexposure.FieldNamespace, v)
+	return u
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ApiExposureUpsert) UpdateNamespace() *ApiExposureUpsert {
+	u.SetExcluded(apiexposure.FieldNamespace)
+	return u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ApiExposureUpsert) ClearNamespace() *ApiExposureUpsert {
+	u.SetNull(apiexposure.FieldNamespace)
 	return u
 }
 
@@ -688,6 +760,48 @@ func (u *ApiExposureUpsertOne) UpdateStatusMessage() *ApiExposureUpsertOne {
 func (u *ApiExposureUpsertOne) ClearStatusMessage() *ApiExposureUpsertOne {
 	return u.Update(func(s *ApiExposureUpsert) {
 		s.ClearStatusMessage()
+	})
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *ApiExposureUpsertOne) SetEnvironment(v string) *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ApiExposureUpsertOne) UpdateEnvironment() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ApiExposureUpsertOne) ClearEnvironment() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ApiExposureUpsertOne) SetNamespace(v string) *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ApiExposureUpsertOne) UpdateNamespace() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ApiExposureUpsertOne) ClearNamespace() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearNamespace()
 	})
 }
 
@@ -1053,6 +1167,48 @@ func (u *ApiExposureUpsertBulk) UpdateStatusMessage() *ApiExposureUpsertBulk {
 func (u *ApiExposureUpsertBulk) ClearStatusMessage() *ApiExposureUpsertBulk {
 	return u.Update(func(s *ApiExposureUpsert) {
 		s.ClearStatusMessage()
+	})
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *ApiExposureUpsertBulk) SetEnvironment(v string) *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ApiExposureUpsertBulk) UpdateEnvironment() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ApiExposureUpsertBulk) ClearEnvironment() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ApiExposureUpsertBulk) SetNamespace(v string) *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ApiExposureUpsertBulk) UpdateNamespace() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ApiExposureUpsertBulk) ClearNamespace() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearNamespace()
 	})
 }
 

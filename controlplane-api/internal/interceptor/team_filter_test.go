@@ -100,10 +100,6 @@ var _ = Describe("TeamFilterInterceptor", func() {
 				r, e := client.Member.Query().All(ctx)
 				return len(r), e
 			}, 2),
-			Entry("team environments", func(ctx context.Context) (int, error) {
-				r, e := client.TeamEnvironment.Query().All(ctx)
-				return len(r), e
-			}, 2),
 		)
 	})
 
@@ -146,10 +142,6 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			}, 1),
 			Entry("members", func(ctx context.Context) (int, error) {
 				r, e := client.Member.Query().All(ctx)
-				return len(r), e
-			}, 1),
-			Entry("team environments", func(ctx context.Context) (int, error) {
-				r, e := client.TeamEnvironment.Query().All(ctx)
 				return len(r), e
 			}, 1),
 		)
@@ -204,12 +196,6 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			Expect(groups).To(HaveLen(2))
 		})
 
-		It("should not filter environments", func() {
-			ctx := viewerCtx(&viewer.Viewer{Teams: []string{"team-alpha"}})
-			envs, err := client.Environment.Query().All(ctx)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(envs).To(HaveLen(1))
-		})
 	})
 
 	Context("when an unsupported query type is encountered", func() {

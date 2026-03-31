@@ -74,6 +74,46 @@ func (_u *ApprovalUpdate) ClearStatusMessage() *ApprovalUpdate {
 	return _u
 }
 
+// SetEnvironment sets the "environment" field.
+func (_u *ApprovalUpdate) SetEnvironment(v string) *ApprovalUpdate {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *ApprovalUpdate) SetNillableEnvironment(v *string) *ApprovalUpdate {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *ApprovalUpdate) ClearEnvironment() *ApprovalUpdate {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *ApprovalUpdate) SetNamespace(v string) *ApprovalUpdate {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *ApprovalUpdate) SetNillableNamespace(v *string) *ApprovalUpdate {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *ApprovalUpdate) ClearNamespace() *ApprovalUpdate {
+	_u.mutation.ClearNamespace()
+	return _u
+}
+
 // SetAction sets the "action" field.
 func (_u *ApprovalUpdate) SetAction(v string) *ApprovalUpdate {
 	_u.mutation.SetAction(v)
@@ -289,6 +329,18 @@ func (_u *ApprovalUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.StatusMessageCleared() {
 		_spec.ClearField(approval.FieldStatusMessage, field.TypeString)
 	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(approval.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(approval.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(approval.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(approval.FieldNamespace, field.TypeString)
+	}
 	if value, ok := _u.mutation.Action(); ok {
 		_spec.SetField(approval.FieldAction, field.TypeString, value)
 	}
@@ -406,6 +458,46 @@ func (_u *ApprovalUpdateOne) SetNillableStatusMessage(v *string) *ApprovalUpdate
 // ClearStatusMessage clears the value of the "status_message" field.
 func (_u *ApprovalUpdateOne) ClearStatusMessage() *ApprovalUpdateOne {
 	_u.mutation.ClearStatusMessage()
+	return _u
+}
+
+// SetEnvironment sets the "environment" field.
+func (_u *ApprovalUpdateOne) SetEnvironment(v string) *ApprovalUpdateOne {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *ApprovalUpdateOne) SetNillableEnvironment(v *string) *ApprovalUpdateOne {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *ApprovalUpdateOne) ClearEnvironment() *ApprovalUpdateOne {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *ApprovalUpdateOne) SetNamespace(v string) *ApprovalUpdateOne {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *ApprovalUpdateOne) SetNillableNamespace(v *string) *ApprovalUpdateOne {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *ApprovalUpdateOne) ClearNamespace() *ApprovalUpdateOne {
+	_u.mutation.ClearNamespace()
 	return _u
 }
 
@@ -653,6 +745,18 @@ func (_u *ApprovalUpdateOne) sqlSave(ctx context.Context) (_node *Approval, err 
 	}
 	if _u.mutation.StatusMessageCleared() {
 		_spec.ClearField(approval.FieldStatusMessage, field.TypeString)
+	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(approval.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(approval.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(approval.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(approval.FieldNamespace, field.TypeString)
 	}
 	if value, ok := _u.mutation.Action(); ok {
 		_spec.SetField(approval.FieldAction, field.TypeString, value)

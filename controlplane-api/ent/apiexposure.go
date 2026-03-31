@@ -31,6 +31,10 @@ type ApiExposure struct {
 	StatusPhase apiexposure.StatusPhase `json:"status_phase,omitempty"`
 	// StatusMessage holds the value of the "status_message" field.
 	StatusMessage *string `json:"status_message,omitempty"`
+	// Environment holds the value of the "environment" field.
+	Environment *string `json:"environment,omitempty"`
+	// Namespace holds the value of the "namespace" field.
+	Namespace *string `json:"namespace,omitempty"`
 	// BasePath holds the value of the "base_path" field.
 	BasePath string `json:"base_path,omitempty"`
 	// Visibility holds the value of the "visibility" field.
@@ -98,7 +102,7 @@ func (*ApiExposure) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case apiexposure.FieldID:
 			values[i] = new(sql.NullInt64)
-		case apiexposure.FieldStatusPhase, apiexposure.FieldStatusMessage, apiexposure.FieldBasePath, apiexposure.FieldVisibility, apiexposure.FieldAPIVersion:
+		case apiexposure.FieldStatusPhase, apiexposure.FieldStatusMessage, apiexposure.FieldEnvironment, apiexposure.FieldNamespace, apiexposure.FieldBasePath, apiexposure.FieldVisibility, apiexposure.FieldAPIVersion:
 			values[i] = new(sql.NullString)
 		case apiexposure.FieldCreatedAt, apiexposure.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -149,6 +153,20 @@ func (_m *ApiExposure) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.StatusMessage = new(string)
 				*_m.StatusMessage = value.String
+			}
+		case apiexposure.FieldEnvironment:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field environment", values[i])
+			} else if value.Valid {
+				_m.Environment = new(string)
+				*_m.Environment = value.String
+			}
+		case apiexposure.FieldNamespace:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field namespace", values[i])
+			} else if value.Valid {
+				_m.Namespace = new(string)
+				*_m.Namespace = value.String
 			}
 		case apiexposure.FieldBasePath:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -263,6 +281,16 @@ func (_m *ApiExposure) String() string {
 	builder.WriteString(", ")
 	if v := _m.StatusMessage; v != nil {
 		builder.WriteString("status_message=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Environment; v != nil {
+		builder.WriteString("environment=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Namespace; v != nil {
+		builder.WriteString("namespace=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

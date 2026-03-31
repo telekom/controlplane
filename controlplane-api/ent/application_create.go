@@ -85,6 +85,34 @@ func (_c *ApplicationCreate) SetNillableStatusMessage(v *string) *ApplicationCre
 	return _c
 }
 
+// SetEnvironment sets the "environment" field.
+func (_c *ApplicationCreate) SetEnvironment(v string) *ApplicationCreate {
+	_c.mutation.SetEnvironment(v)
+	return _c
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_c *ApplicationCreate) SetNillableEnvironment(v *string) *ApplicationCreate {
+	if v != nil {
+		_c.SetEnvironment(*v)
+	}
+	return _c
+}
+
+// SetNamespace sets the "namespace" field.
+func (_c *ApplicationCreate) SetNamespace(v string) *ApplicationCreate {
+	_c.mutation.SetNamespace(v)
+	return _c
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_c *ApplicationCreate) SetNillableNamespace(v *string) *ApplicationCreate {
+	if v != nil {
+		_c.SetNamespace(*v)
+	}
+	return _c
+}
+
 // SetName sets the "name" field.
 func (_c *ApplicationCreate) SetName(v string) *ApplicationCreate {
 	_c.mutation.SetName(v)
@@ -302,6 +330,14 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 		_spec.SetField(application.FieldStatusMessage, field.TypeString, value)
 		_node.StatusMessage = &value
 	}
+	if value, ok := _c.mutation.Environment(); ok {
+		_spec.SetField(application.FieldEnvironment, field.TypeString, value)
+		_node.Environment = &value
+	}
+	if value, ok := _c.mutation.Namespace(); ok {
+		_spec.SetField(application.FieldNamespace, field.TypeString, value)
+		_node.Namespace = &value
+	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(application.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -474,6 +510,42 @@ func (u *ApplicationUpsert) ClearStatusMessage() *ApplicationUpsert {
 	return u
 }
 
+// SetEnvironment sets the "environment" field.
+func (u *ApplicationUpsert) SetEnvironment(v string) *ApplicationUpsert {
+	u.Set(application.FieldEnvironment, v)
+	return u
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ApplicationUpsert) UpdateEnvironment() *ApplicationUpsert {
+	u.SetExcluded(application.FieldEnvironment)
+	return u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ApplicationUpsert) ClearEnvironment() *ApplicationUpsert {
+	u.SetNull(application.FieldEnvironment)
+	return u
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ApplicationUpsert) SetNamespace(v string) *ApplicationUpsert {
+	u.Set(application.FieldNamespace, v)
+	return u
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ApplicationUpsert) UpdateNamespace() *ApplicationUpsert {
+	u.SetExcluded(application.FieldNamespace)
+	return u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ApplicationUpsert) ClearNamespace() *ApplicationUpsert {
+	u.SetNull(application.FieldNamespace)
+	return u
+}
+
 // SetName sets the "name" field.
 func (u *ApplicationUpsert) SetName(v string) *ApplicationUpsert {
 	u.Set(application.FieldName, v)
@@ -607,6 +679,48 @@ func (u *ApplicationUpsertOne) UpdateStatusMessage() *ApplicationUpsertOne {
 func (u *ApplicationUpsertOne) ClearStatusMessage() *ApplicationUpsertOne {
 	return u.Update(func(s *ApplicationUpsert) {
 		s.ClearStatusMessage()
+	})
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *ApplicationUpsertOne) SetEnvironment(v string) *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ApplicationUpsertOne) UpdateEnvironment() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ApplicationUpsertOne) ClearEnvironment() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ApplicationUpsertOne) SetNamespace(v string) *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ApplicationUpsertOne) UpdateNamespace() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ApplicationUpsertOne) ClearNamespace() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearNamespace()
 	})
 }
 
@@ -916,6 +1030,48 @@ func (u *ApplicationUpsertBulk) UpdateStatusMessage() *ApplicationUpsertBulk {
 func (u *ApplicationUpsertBulk) ClearStatusMessage() *ApplicationUpsertBulk {
 	return u.Update(func(s *ApplicationUpsert) {
 		s.ClearStatusMessage()
+	})
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *ApplicationUpsertBulk) SetEnvironment(v string) *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ApplicationUpsertBulk) UpdateEnvironment() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ApplicationUpsertBulk) ClearEnvironment() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ApplicationUpsertBulk) SetNamespace(v string) *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ApplicationUpsertBulk) UpdateNamespace() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ApplicationUpsertBulk) ClearNamespace() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearNamespace()
 	})
 }
 

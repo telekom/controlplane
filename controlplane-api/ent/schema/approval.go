@@ -24,6 +24,8 @@ func (Approval) Mixin() []ent.Mixin {
 		schemamixin.PrivacyMixin{},
 		schemamixin.TimestampsMixin{},
 		schemamixin.StatusMixin{},
+		schemamixin.EnvironmentMixin{},
+		schemamixin.NamespaceMixin{},
 		schemamixin.ApprovalFieldsMixin{},
 	}
 }

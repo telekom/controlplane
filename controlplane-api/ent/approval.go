@@ -31,6 +31,10 @@ type Approval struct {
 	StatusPhase approval.StatusPhase `json:"status_phase,omitempty"`
 	// StatusMessage holds the value of the "status_message" field.
 	StatusMessage *string `json:"status_message,omitempty"`
+	// Environment holds the value of the "environment" field.
+	Environment *string `json:"environment,omitempty"`
+	// Namespace holds the value of the "namespace" field.
+	Namespace *string `json:"namespace,omitempty"`
 	// Action holds the value of the "action" field.
 	Action string `json:"action,omitempty"`
 	// Strategy holds the value of the "strategy" field.
@@ -81,7 +85,7 @@ func (*Approval) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case approval.FieldID:
 			values[i] = new(sql.NullInt64)
-		case approval.FieldStatusPhase, approval.FieldStatusMessage, approval.FieldAction, approval.FieldStrategy, approval.FieldState:
+		case approval.FieldStatusPhase, approval.FieldStatusMessage, approval.FieldEnvironment, approval.FieldNamespace, approval.FieldAction, approval.FieldStrategy, approval.FieldState:
 			values[i] = new(sql.NullString)
 		case approval.FieldCreatedAt, approval.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -132,6 +136,20 @@ func (_m *Approval) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.StatusMessage = new(string)
 				*_m.StatusMessage = value.String
+			}
+		case approval.FieldEnvironment:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field environment", values[i])
+			} else if value.Valid {
+				_m.Environment = new(string)
+				*_m.Environment = value.String
+			}
+		case approval.FieldNamespace:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field namespace", values[i])
+			} else if value.Valid {
+				_m.Namespace = new(string)
+				*_m.Namespace = value.String
 			}
 		case approval.FieldAction:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -242,6 +260,16 @@ func (_m *Approval) String() string {
 	builder.WriteString(", ")
 	if v := _m.StatusMessage; v != nil {
 		builder.WriteString("status_message=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Environment; v != nil {
+		builder.WriteString("environment=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Namespace; v != nil {
+		builder.WriteString("namespace=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

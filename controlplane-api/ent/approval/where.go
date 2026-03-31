@@ -73,6 +73,16 @@ func StatusMessage(v string) predicate.Approval {
 	return predicate.Approval(sql.FieldEQ(FieldStatusMessage, v))
 }
 
+// Environment applies equality check predicate on the "environment" field. It's identical to EnvironmentEQ.
+func Environment(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldEQ(FieldEnvironment, v))
+}
+
+// Namespace applies equality check predicate on the "namespace" field. It's identical to NamespaceEQ.
+func Namespace(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldEQ(FieldNamespace, v))
+}
+
 // Action applies equality check predicate on the "action" field. It's identical to ActionEQ.
 func Action(v string) predicate.Approval {
 	return predicate.Approval(sql.FieldEQ(FieldAction, v))
@@ -251,6 +261,156 @@ func StatusMessageEqualFold(v string) predicate.Approval {
 // StatusMessageContainsFold applies the ContainsFold predicate on the "status_message" field.
 func StatusMessageContainsFold(v string) predicate.Approval {
 	return predicate.Approval(sql.FieldContainsFold(FieldStatusMessage, v))
+}
+
+// EnvironmentEQ applies the EQ predicate on the "environment" field.
+func EnvironmentEQ(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldEQ(FieldEnvironment, v))
+}
+
+// EnvironmentNEQ applies the NEQ predicate on the "environment" field.
+func EnvironmentNEQ(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldNEQ(FieldEnvironment, v))
+}
+
+// EnvironmentIn applies the In predicate on the "environment" field.
+func EnvironmentIn(vs ...string) predicate.Approval {
+	return predicate.Approval(sql.FieldIn(FieldEnvironment, vs...))
+}
+
+// EnvironmentNotIn applies the NotIn predicate on the "environment" field.
+func EnvironmentNotIn(vs ...string) predicate.Approval {
+	return predicate.Approval(sql.FieldNotIn(FieldEnvironment, vs...))
+}
+
+// EnvironmentGT applies the GT predicate on the "environment" field.
+func EnvironmentGT(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldGT(FieldEnvironment, v))
+}
+
+// EnvironmentGTE applies the GTE predicate on the "environment" field.
+func EnvironmentGTE(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldGTE(FieldEnvironment, v))
+}
+
+// EnvironmentLT applies the LT predicate on the "environment" field.
+func EnvironmentLT(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldLT(FieldEnvironment, v))
+}
+
+// EnvironmentLTE applies the LTE predicate on the "environment" field.
+func EnvironmentLTE(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldLTE(FieldEnvironment, v))
+}
+
+// EnvironmentContains applies the Contains predicate on the "environment" field.
+func EnvironmentContains(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldContains(FieldEnvironment, v))
+}
+
+// EnvironmentHasPrefix applies the HasPrefix predicate on the "environment" field.
+func EnvironmentHasPrefix(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldHasPrefix(FieldEnvironment, v))
+}
+
+// EnvironmentHasSuffix applies the HasSuffix predicate on the "environment" field.
+func EnvironmentHasSuffix(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldHasSuffix(FieldEnvironment, v))
+}
+
+// EnvironmentIsNil applies the IsNil predicate on the "environment" field.
+func EnvironmentIsNil() predicate.Approval {
+	return predicate.Approval(sql.FieldIsNull(FieldEnvironment))
+}
+
+// EnvironmentNotNil applies the NotNil predicate on the "environment" field.
+func EnvironmentNotNil() predicate.Approval {
+	return predicate.Approval(sql.FieldNotNull(FieldEnvironment))
+}
+
+// EnvironmentEqualFold applies the EqualFold predicate on the "environment" field.
+func EnvironmentEqualFold(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldEqualFold(FieldEnvironment, v))
+}
+
+// EnvironmentContainsFold applies the ContainsFold predicate on the "environment" field.
+func EnvironmentContainsFold(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldContainsFold(FieldEnvironment, v))
+}
+
+// NamespaceEQ applies the EQ predicate on the "namespace" field.
+func NamespaceEQ(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldEQ(FieldNamespace, v))
+}
+
+// NamespaceNEQ applies the NEQ predicate on the "namespace" field.
+func NamespaceNEQ(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldNEQ(FieldNamespace, v))
+}
+
+// NamespaceIn applies the In predicate on the "namespace" field.
+func NamespaceIn(vs ...string) predicate.Approval {
+	return predicate.Approval(sql.FieldIn(FieldNamespace, vs...))
+}
+
+// NamespaceNotIn applies the NotIn predicate on the "namespace" field.
+func NamespaceNotIn(vs ...string) predicate.Approval {
+	return predicate.Approval(sql.FieldNotIn(FieldNamespace, vs...))
+}
+
+// NamespaceGT applies the GT predicate on the "namespace" field.
+func NamespaceGT(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldGT(FieldNamespace, v))
+}
+
+// NamespaceGTE applies the GTE predicate on the "namespace" field.
+func NamespaceGTE(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldGTE(FieldNamespace, v))
+}
+
+// NamespaceLT applies the LT predicate on the "namespace" field.
+func NamespaceLT(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldLT(FieldNamespace, v))
+}
+
+// NamespaceLTE applies the LTE predicate on the "namespace" field.
+func NamespaceLTE(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldLTE(FieldNamespace, v))
+}
+
+// NamespaceContains applies the Contains predicate on the "namespace" field.
+func NamespaceContains(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldContains(FieldNamespace, v))
+}
+
+// NamespaceHasPrefix applies the HasPrefix predicate on the "namespace" field.
+func NamespaceHasPrefix(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldHasPrefix(FieldNamespace, v))
+}
+
+// NamespaceHasSuffix applies the HasSuffix predicate on the "namespace" field.
+func NamespaceHasSuffix(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldHasSuffix(FieldNamespace, v))
+}
+
+// NamespaceIsNil applies the IsNil predicate on the "namespace" field.
+func NamespaceIsNil() predicate.Approval {
+	return predicate.Approval(sql.FieldIsNull(FieldNamespace))
+}
+
+// NamespaceNotNil applies the NotNil predicate on the "namespace" field.
+func NamespaceNotNil() predicate.Approval {
+	return predicate.Approval(sql.FieldNotNull(FieldNamespace))
+}
+
+// NamespaceEqualFold applies the EqualFold predicate on the "namespace" field.
+func NamespaceEqualFold(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldEqualFold(FieldNamespace, v))
+}
+
+// NamespaceContainsFold applies the ContainsFold predicate on the "namespace" field.
+func NamespaceContainsFold(v string) predicate.Approval {
+	return predicate.Approval(sql.FieldContainsFold(FieldNamespace, v))
 }
 
 // ActionEQ applies the EQ predicate on the "action" field.

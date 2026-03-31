@@ -83,6 +83,34 @@ func (_c *ApprovalCreate) SetNillableStatusMessage(v *string) *ApprovalCreate {
 	return _c
 }
 
+// SetEnvironment sets the "environment" field.
+func (_c *ApprovalCreate) SetEnvironment(v string) *ApprovalCreate {
+	_c.mutation.SetEnvironment(v)
+	return _c
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_c *ApprovalCreate) SetNillableEnvironment(v *string) *ApprovalCreate {
+	if v != nil {
+		_c.SetEnvironment(*v)
+	}
+	return _c
+}
+
+// SetNamespace sets the "namespace" field.
+func (_c *ApprovalCreate) SetNamespace(v string) *ApprovalCreate {
+	_c.mutation.SetNamespace(v)
+	return _c
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_c *ApprovalCreate) SetNillableNamespace(v *string) *ApprovalCreate {
+	if v != nil {
+		_c.SetNamespace(*v)
+	}
+	return _c
+}
+
 // SetAction sets the "action" field.
 func (_c *ApprovalCreate) SetAction(v string) *ApprovalCreate {
 	_c.mutation.SetAction(v)
@@ -329,6 +357,14 @@ func (_c *ApprovalCreate) createSpec() (*Approval, *sqlgraph.CreateSpec) {
 		_spec.SetField(approval.FieldStatusMessage, field.TypeString, value)
 		_node.StatusMessage = &value
 	}
+	if value, ok := _c.mutation.Environment(); ok {
+		_spec.SetField(approval.FieldEnvironment, field.TypeString, value)
+		_node.Environment = &value
+	}
+	if value, ok := _c.mutation.Namespace(); ok {
+		_spec.SetField(approval.FieldNamespace, field.TypeString, value)
+		_node.Namespace = &value
+	}
 	if value, ok := _c.mutation.Action(); ok {
 		_spec.SetField(approval.FieldAction, field.TypeString, value)
 		_node.Action = value
@@ -465,6 +501,42 @@ func (u *ApprovalUpsert) UpdateStatusMessage() *ApprovalUpsert {
 // ClearStatusMessage clears the value of the "status_message" field.
 func (u *ApprovalUpsert) ClearStatusMessage() *ApprovalUpsert {
 	u.SetNull(approval.FieldStatusMessage)
+	return u
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *ApprovalUpsert) SetEnvironment(v string) *ApprovalUpsert {
+	u.Set(approval.FieldEnvironment, v)
+	return u
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ApprovalUpsert) UpdateEnvironment() *ApprovalUpsert {
+	u.SetExcluded(approval.FieldEnvironment)
+	return u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ApprovalUpsert) ClearEnvironment() *ApprovalUpsert {
+	u.SetNull(approval.FieldEnvironment)
+	return u
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ApprovalUpsert) SetNamespace(v string) *ApprovalUpsert {
+	u.Set(approval.FieldNamespace, v)
+	return u
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ApprovalUpsert) UpdateNamespace() *ApprovalUpsert {
+	u.SetExcluded(approval.FieldNamespace)
+	return u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ApprovalUpsert) ClearNamespace() *ApprovalUpsert {
+	u.SetNull(approval.FieldNamespace)
 	return u
 }
 
@@ -643,6 +715,48 @@ func (u *ApprovalUpsertOne) UpdateStatusMessage() *ApprovalUpsertOne {
 func (u *ApprovalUpsertOne) ClearStatusMessage() *ApprovalUpsertOne {
 	return u.Update(func(s *ApprovalUpsert) {
 		s.ClearStatusMessage()
+	})
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *ApprovalUpsertOne) SetEnvironment(v string) *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ApprovalUpsertOne) UpdateEnvironment() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ApprovalUpsertOne) ClearEnvironment() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ApprovalUpsertOne) SetNamespace(v string) *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ApprovalUpsertOne) UpdateNamespace() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ApprovalUpsertOne) ClearNamespace() *ApprovalUpsertOne {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.ClearNamespace()
 	})
 }
 
@@ -1001,6 +1115,48 @@ func (u *ApprovalUpsertBulk) UpdateStatusMessage() *ApprovalUpsertBulk {
 func (u *ApprovalUpsertBulk) ClearStatusMessage() *ApprovalUpsertBulk {
 	return u.Update(func(s *ApprovalUpsert) {
 		s.ClearStatusMessage()
+	})
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *ApprovalUpsertBulk) SetEnvironment(v string) *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ApprovalUpsertBulk) UpdateEnvironment() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ApprovalUpsertBulk) ClearEnvironment() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ApprovalUpsertBulk) SetNamespace(v string) *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ApprovalUpsertBulk) UpdateNamespace() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ApprovalUpsertBulk) ClearNamespace() *ApprovalUpsertBulk {
+	return u.Update(func(s *ApprovalUpsert) {
+		s.ClearNamespace()
 	})
 }
 

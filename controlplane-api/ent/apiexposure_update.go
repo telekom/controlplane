@@ -75,6 +75,46 @@ func (_u *ApiExposureUpdate) ClearStatusMessage() *ApiExposureUpdate {
 	return _u
 }
 
+// SetEnvironment sets the "environment" field.
+func (_u *ApiExposureUpdate) SetEnvironment(v string) *ApiExposureUpdate {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *ApiExposureUpdate) SetNillableEnvironment(v *string) *ApiExposureUpdate {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *ApiExposureUpdate) ClearEnvironment() *ApiExposureUpdate {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *ApiExposureUpdate) SetNamespace(v string) *ApiExposureUpdate {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *ApiExposureUpdate) SetNillableNamespace(v *string) *ApiExposureUpdate {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *ApiExposureUpdate) ClearNamespace() *ApiExposureUpdate {
+	_u.mutation.ClearNamespace()
+	return _u
+}
+
 // SetBasePath sets the "base_path" field.
 func (_u *ApiExposureUpdate) SetBasePath(v string) *ApiExposureUpdate {
 	_u.mutation.SetBasePath(v)
@@ -322,6 +362,18 @@ func (_u *ApiExposureUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	if _u.mutation.StatusMessageCleared() {
 		_spec.ClearField(apiexposure.FieldStatusMessage, field.TypeString)
 	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(apiexposure.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(apiexposure.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(apiexposure.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(apiexposure.FieldNamespace, field.TypeString)
+	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(apiexposure.FieldBasePath, field.TypeString, value)
 	}
@@ -487,6 +539,46 @@ func (_u *ApiExposureUpdateOne) SetNillableStatusMessage(v *string) *ApiExposure
 // ClearStatusMessage clears the value of the "status_message" field.
 func (_u *ApiExposureUpdateOne) ClearStatusMessage() *ApiExposureUpdateOne {
 	_u.mutation.ClearStatusMessage()
+	return _u
+}
+
+// SetEnvironment sets the "environment" field.
+func (_u *ApiExposureUpdateOne) SetEnvironment(v string) *ApiExposureUpdateOne {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *ApiExposureUpdateOne) SetNillableEnvironment(v *string) *ApiExposureUpdateOne {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *ApiExposureUpdateOne) ClearEnvironment() *ApiExposureUpdateOne {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *ApiExposureUpdateOne) SetNamespace(v string) *ApiExposureUpdateOne {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *ApiExposureUpdateOne) SetNillableNamespace(v *string) *ApiExposureUpdateOne {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *ApiExposureUpdateOne) ClearNamespace() *ApiExposureUpdateOne {
+	_u.mutation.ClearNamespace()
 	return _u
 }
 
@@ -766,6 +858,18 @@ func (_u *ApiExposureUpdateOne) sqlSave(ctx context.Context) (_node *ApiExposure
 	}
 	if _u.mutation.StatusMessageCleared() {
 		_spec.ClearField(apiexposure.FieldStatusMessage, field.TypeString)
+	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(apiexposure.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(apiexposure.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(apiexposure.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(apiexposure.FieldNamespace, field.TypeString)
 	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(apiexposure.FieldBasePath, field.TypeString, value)

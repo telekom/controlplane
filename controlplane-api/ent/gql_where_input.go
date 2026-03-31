@@ -15,12 +15,10 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
-	"github.com/telekom/controlplane/controlplane-api/ent/environment"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
-	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 )
 
@@ -83,6 +81,40 @@ type ApiExposureWhereInput struct {
 	StatusMessageNotNil       bool     `json:"statusMessageNotNil,omitempty"`
 	StatusMessageEqualFold    *string  `json:"statusMessageEqualFold,omitempty"`
 	StatusMessageContainsFold *string  `json:"statusMessageContainsFold,omitempty"`
+
+	// "environment" field predicates.
+	Environment             *string  `json:"environment,omitempty"`
+	EnvironmentNEQ          *string  `json:"environmentNEQ,omitempty"`
+	EnvironmentIn           []string `json:"environmentIn,omitempty"`
+	EnvironmentNotIn        []string `json:"environmentNotIn,omitempty"`
+	EnvironmentGT           *string  `json:"environmentGT,omitempty"`
+	EnvironmentGTE          *string  `json:"environmentGTE,omitempty"`
+	EnvironmentLT           *string  `json:"environmentLT,omitempty"`
+	EnvironmentLTE          *string  `json:"environmentLTE,omitempty"`
+	EnvironmentContains     *string  `json:"environmentContains,omitempty"`
+	EnvironmentHasPrefix    *string  `json:"environmentHasPrefix,omitempty"`
+	EnvironmentHasSuffix    *string  `json:"environmentHasSuffix,omitempty"`
+	EnvironmentIsNil        bool     `json:"environmentIsNil,omitempty"`
+	EnvironmentNotNil       bool     `json:"environmentNotNil,omitempty"`
+	EnvironmentEqualFold    *string  `json:"environmentEqualFold,omitempty"`
+	EnvironmentContainsFold *string  `json:"environmentContainsFold,omitempty"`
+
+	// "namespace" field predicates.
+	Namespace             *string  `json:"namespace,omitempty"`
+	NamespaceNEQ          *string  `json:"namespaceNEQ,omitempty"`
+	NamespaceIn           []string `json:"namespaceIn,omitempty"`
+	NamespaceNotIn        []string `json:"namespaceNotIn,omitempty"`
+	NamespaceGT           *string  `json:"namespaceGT,omitempty"`
+	NamespaceGTE          *string  `json:"namespaceGTE,omitempty"`
+	NamespaceLT           *string  `json:"namespaceLT,omitempty"`
+	NamespaceLTE          *string  `json:"namespaceLTE,omitempty"`
+	NamespaceContains     *string  `json:"namespaceContains,omitempty"`
+	NamespaceHasPrefix    *string  `json:"namespaceHasPrefix,omitempty"`
+	NamespaceHasSuffix    *string  `json:"namespaceHasSuffix,omitempty"`
+	NamespaceIsNil        bool     `json:"namespaceIsNil,omitempty"`
+	NamespaceNotNil       bool     `json:"namespaceNotNil,omitempty"`
+	NamespaceEqualFold    *string  `json:"namespaceEqualFold,omitempty"`
+	NamespaceContainsFold *string  `json:"namespaceContainsFold,omitempty"`
 
 	// "base_path" field predicates.
 	BasePath             *string  `json:"basePath,omitempty"`
@@ -335,6 +367,96 @@ func (i *ApiExposureWhereInput) P() (predicate.ApiExposure, error) {
 	if i.StatusMessageContainsFold != nil {
 		predicates = append(predicates, apiexposure.StatusMessageContainsFold(*i.StatusMessageContainsFold))
 	}
+	if i.Environment != nil {
+		predicates = append(predicates, apiexposure.EnvironmentEQ(*i.Environment))
+	}
+	if i.EnvironmentNEQ != nil {
+		predicates = append(predicates, apiexposure.EnvironmentNEQ(*i.EnvironmentNEQ))
+	}
+	if len(i.EnvironmentIn) > 0 {
+		predicates = append(predicates, apiexposure.EnvironmentIn(i.EnvironmentIn...))
+	}
+	if len(i.EnvironmentNotIn) > 0 {
+		predicates = append(predicates, apiexposure.EnvironmentNotIn(i.EnvironmentNotIn...))
+	}
+	if i.EnvironmentGT != nil {
+		predicates = append(predicates, apiexposure.EnvironmentGT(*i.EnvironmentGT))
+	}
+	if i.EnvironmentGTE != nil {
+		predicates = append(predicates, apiexposure.EnvironmentGTE(*i.EnvironmentGTE))
+	}
+	if i.EnvironmentLT != nil {
+		predicates = append(predicates, apiexposure.EnvironmentLT(*i.EnvironmentLT))
+	}
+	if i.EnvironmentLTE != nil {
+		predicates = append(predicates, apiexposure.EnvironmentLTE(*i.EnvironmentLTE))
+	}
+	if i.EnvironmentContains != nil {
+		predicates = append(predicates, apiexposure.EnvironmentContains(*i.EnvironmentContains))
+	}
+	if i.EnvironmentHasPrefix != nil {
+		predicates = append(predicates, apiexposure.EnvironmentHasPrefix(*i.EnvironmentHasPrefix))
+	}
+	if i.EnvironmentHasSuffix != nil {
+		predicates = append(predicates, apiexposure.EnvironmentHasSuffix(*i.EnvironmentHasSuffix))
+	}
+	if i.EnvironmentIsNil {
+		predicates = append(predicates, apiexposure.EnvironmentIsNil())
+	}
+	if i.EnvironmentNotNil {
+		predicates = append(predicates, apiexposure.EnvironmentNotNil())
+	}
+	if i.EnvironmentEqualFold != nil {
+		predicates = append(predicates, apiexposure.EnvironmentEqualFold(*i.EnvironmentEqualFold))
+	}
+	if i.EnvironmentContainsFold != nil {
+		predicates = append(predicates, apiexposure.EnvironmentContainsFold(*i.EnvironmentContainsFold))
+	}
+	if i.Namespace != nil {
+		predicates = append(predicates, apiexposure.NamespaceEQ(*i.Namespace))
+	}
+	if i.NamespaceNEQ != nil {
+		predicates = append(predicates, apiexposure.NamespaceNEQ(*i.NamespaceNEQ))
+	}
+	if len(i.NamespaceIn) > 0 {
+		predicates = append(predicates, apiexposure.NamespaceIn(i.NamespaceIn...))
+	}
+	if len(i.NamespaceNotIn) > 0 {
+		predicates = append(predicates, apiexposure.NamespaceNotIn(i.NamespaceNotIn...))
+	}
+	if i.NamespaceGT != nil {
+		predicates = append(predicates, apiexposure.NamespaceGT(*i.NamespaceGT))
+	}
+	if i.NamespaceGTE != nil {
+		predicates = append(predicates, apiexposure.NamespaceGTE(*i.NamespaceGTE))
+	}
+	if i.NamespaceLT != nil {
+		predicates = append(predicates, apiexposure.NamespaceLT(*i.NamespaceLT))
+	}
+	if i.NamespaceLTE != nil {
+		predicates = append(predicates, apiexposure.NamespaceLTE(*i.NamespaceLTE))
+	}
+	if i.NamespaceContains != nil {
+		predicates = append(predicates, apiexposure.NamespaceContains(*i.NamespaceContains))
+	}
+	if i.NamespaceHasPrefix != nil {
+		predicates = append(predicates, apiexposure.NamespaceHasPrefix(*i.NamespaceHasPrefix))
+	}
+	if i.NamespaceHasSuffix != nil {
+		predicates = append(predicates, apiexposure.NamespaceHasSuffix(*i.NamespaceHasSuffix))
+	}
+	if i.NamespaceIsNil {
+		predicates = append(predicates, apiexposure.NamespaceIsNil())
+	}
+	if i.NamespaceNotNil {
+		predicates = append(predicates, apiexposure.NamespaceNotNil())
+	}
+	if i.NamespaceEqualFold != nil {
+		predicates = append(predicates, apiexposure.NamespaceEqualFold(*i.NamespaceEqualFold))
+	}
+	if i.NamespaceContainsFold != nil {
+		predicates = append(predicates, apiexposure.NamespaceContainsFold(*i.NamespaceContainsFold))
+	}
 	if i.BasePath != nil {
 		predicates = append(predicates, apiexposure.BasePathEQ(*i.BasePath))
 	}
@@ -543,6 +665,40 @@ type ApiSubscriptionWhereInput struct {
 	StatusMessageNotNil       bool     `json:"statusMessageNotNil,omitempty"`
 	StatusMessageEqualFold    *string  `json:"statusMessageEqualFold,omitempty"`
 	StatusMessageContainsFold *string  `json:"statusMessageContainsFold,omitempty"`
+
+	// "environment" field predicates.
+	Environment             *string  `json:"environment,omitempty"`
+	EnvironmentNEQ          *string  `json:"environmentNEQ,omitempty"`
+	EnvironmentIn           []string `json:"environmentIn,omitempty"`
+	EnvironmentNotIn        []string `json:"environmentNotIn,omitempty"`
+	EnvironmentGT           *string  `json:"environmentGT,omitempty"`
+	EnvironmentGTE          *string  `json:"environmentGTE,omitempty"`
+	EnvironmentLT           *string  `json:"environmentLT,omitempty"`
+	EnvironmentLTE          *string  `json:"environmentLTE,omitempty"`
+	EnvironmentContains     *string  `json:"environmentContains,omitempty"`
+	EnvironmentHasPrefix    *string  `json:"environmentHasPrefix,omitempty"`
+	EnvironmentHasSuffix    *string  `json:"environmentHasSuffix,omitempty"`
+	EnvironmentIsNil        bool     `json:"environmentIsNil,omitempty"`
+	EnvironmentNotNil       bool     `json:"environmentNotNil,omitempty"`
+	EnvironmentEqualFold    *string  `json:"environmentEqualFold,omitempty"`
+	EnvironmentContainsFold *string  `json:"environmentContainsFold,omitempty"`
+
+	// "namespace" field predicates.
+	Namespace             *string  `json:"namespace,omitempty"`
+	NamespaceNEQ          *string  `json:"namespaceNEQ,omitempty"`
+	NamespaceIn           []string `json:"namespaceIn,omitempty"`
+	NamespaceNotIn        []string `json:"namespaceNotIn,omitempty"`
+	NamespaceGT           *string  `json:"namespaceGT,omitempty"`
+	NamespaceGTE          *string  `json:"namespaceGTE,omitempty"`
+	NamespaceLT           *string  `json:"namespaceLT,omitempty"`
+	NamespaceLTE          *string  `json:"namespaceLTE,omitempty"`
+	NamespaceContains     *string  `json:"namespaceContains,omitempty"`
+	NamespaceHasPrefix    *string  `json:"namespaceHasPrefix,omitempty"`
+	NamespaceHasSuffix    *string  `json:"namespaceHasSuffix,omitempty"`
+	NamespaceIsNil        bool     `json:"namespaceIsNil,omitempty"`
+	NamespaceNotNil       bool     `json:"namespaceNotNil,omitempty"`
+	NamespaceEqualFold    *string  `json:"namespaceEqualFold,omitempty"`
+	NamespaceContainsFold *string  `json:"namespaceContainsFold,omitempty"`
 
 	// "base_path" field predicates.
 	BasePath             *string  `json:"basePath,omitempty"`
@@ -786,6 +942,96 @@ func (i *ApiSubscriptionWhereInput) P() (predicate.ApiSubscription, error) {
 	if i.StatusMessageContainsFold != nil {
 		predicates = append(predicates, apisubscription.StatusMessageContainsFold(*i.StatusMessageContainsFold))
 	}
+	if i.Environment != nil {
+		predicates = append(predicates, apisubscription.EnvironmentEQ(*i.Environment))
+	}
+	if i.EnvironmentNEQ != nil {
+		predicates = append(predicates, apisubscription.EnvironmentNEQ(*i.EnvironmentNEQ))
+	}
+	if len(i.EnvironmentIn) > 0 {
+		predicates = append(predicates, apisubscription.EnvironmentIn(i.EnvironmentIn...))
+	}
+	if len(i.EnvironmentNotIn) > 0 {
+		predicates = append(predicates, apisubscription.EnvironmentNotIn(i.EnvironmentNotIn...))
+	}
+	if i.EnvironmentGT != nil {
+		predicates = append(predicates, apisubscription.EnvironmentGT(*i.EnvironmentGT))
+	}
+	if i.EnvironmentGTE != nil {
+		predicates = append(predicates, apisubscription.EnvironmentGTE(*i.EnvironmentGTE))
+	}
+	if i.EnvironmentLT != nil {
+		predicates = append(predicates, apisubscription.EnvironmentLT(*i.EnvironmentLT))
+	}
+	if i.EnvironmentLTE != nil {
+		predicates = append(predicates, apisubscription.EnvironmentLTE(*i.EnvironmentLTE))
+	}
+	if i.EnvironmentContains != nil {
+		predicates = append(predicates, apisubscription.EnvironmentContains(*i.EnvironmentContains))
+	}
+	if i.EnvironmentHasPrefix != nil {
+		predicates = append(predicates, apisubscription.EnvironmentHasPrefix(*i.EnvironmentHasPrefix))
+	}
+	if i.EnvironmentHasSuffix != nil {
+		predicates = append(predicates, apisubscription.EnvironmentHasSuffix(*i.EnvironmentHasSuffix))
+	}
+	if i.EnvironmentIsNil {
+		predicates = append(predicates, apisubscription.EnvironmentIsNil())
+	}
+	if i.EnvironmentNotNil {
+		predicates = append(predicates, apisubscription.EnvironmentNotNil())
+	}
+	if i.EnvironmentEqualFold != nil {
+		predicates = append(predicates, apisubscription.EnvironmentEqualFold(*i.EnvironmentEqualFold))
+	}
+	if i.EnvironmentContainsFold != nil {
+		predicates = append(predicates, apisubscription.EnvironmentContainsFold(*i.EnvironmentContainsFold))
+	}
+	if i.Namespace != nil {
+		predicates = append(predicates, apisubscription.NamespaceEQ(*i.Namespace))
+	}
+	if i.NamespaceNEQ != nil {
+		predicates = append(predicates, apisubscription.NamespaceNEQ(*i.NamespaceNEQ))
+	}
+	if len(i.NamespaceIn) > 0 {
+		predicates = append(predicates, apisubscription.NamespaceIn(i.NamespaceIn...))
+	}
+	if len(i.NamespaceNotIn) > 0 {
+		predicates = append(predicates, apisubscription.NamespaceNotIn(i.NamespaceNotIn...))
+	}
+	if i.NamespaceGT != nil {
+		predicates = append(predicates, apisubscription.NamespaceGT(*i.NamespaceGT))
+	}
+	if i.NamespaceGTE != nil {
+		predicates = append(predicates, apisubscription.NamespaceGTE(*i.NamespaceGTE))
+	}
+	if i.NamespaceLT != nil {
+		predicates = append(predicates, apisubscription.NamespaceLT(*i.NamespaceLT))
+	}
+	if i.NamespaceLTE != nil {
+		predicates = append(predicates, apisubscription.NamespaceLTE(*i.NamespaceLTE))
+	}
+	if i.NamespaceContains != nil {
+		predicates = append(predicates, apisubscription.NamespaceContains(*i.NamespaceContains))
+	}
+	if i.NamespaceHasPrefix != nil {
+		predicates = append(predicates, apisubscription.NamespaceHasPrefix(*i.NamespaceHasPrefix))
+	}
+	if i.NamespaceHasSuffix != nil {
+		predicates = append(predicates, apisubscription.NamespaceHasSuffix(*i.NamespaceHasSuffix))
+	}
+	if i.NamespaceIsNil {
+		predicates = append(predicates, apisubscription.NamespaceIsNil())
+	}
+	if i.NamespaceNotNil {
+		predicates = append(predicates, apisubscription.NamespaceNotNil())
+	}
+	if i.NamespaceEqualFold != nil {
+		predicates = append(predicates, apisubscription.NamespaceEqualFold(*i.NamespaceEqualFold))
+	}
+	if i.NamespaceContainsFold != nil {
+		predicates = append(predicates, apisubscription.NamespaceContainsFold(*i.NamespaceContainsFold))
+	}
 	if i.BasePath != nil {
 		predicates = append(predicates, apisubscription.BasePathEQ(*i.BasePath))
 	}
@@ -997,6 +1243,40 @@ type ApplicationWhereInput struct {
 	StatusMessageNotNil       bool     `json:"statusMessageNotNil,omitempty"`
 	StatusMessageEqualFold    *string  `json:"statusMessageEqualFold,omitempty"`
 	StatusMessageContainsFold *string  `json:"statusMessageContainsFold,omitempty"`
+
+	// "environment" field predicates.
+	Environment             *string  `json:"environment,omitempty"`
+	EnvironmentNEQ          *string  `json:"environmentNEQ,omitempty"`
+	EnvironmentIn           []string `json:"environmentIn,omitempty"`
+	EnvironmentNotIn        []string `json:"environmentNotIn,omitempty"`
+	EnvironmentGT           *string  `json:"environmentGT,omitempty"`
+	EnvironmentGTE          *string  `json:"environmentGTE,omitempty"`
+	EnvironmentLT           *string  `json:"environmentLT,omitempty"`
+	EnvironmentLTE          *string  `json:"environmentLTE,omitempty"`
+	EnvironmentContains     *string  `json:"environmentContains,omitempty"`
+	EnvironmentHasPrefix    *string  `json:"environmentHasPrefix,omitempty"`
+	EnvironmentHasSuffix    *string  `json:"environmentHasSuffix,omitempty"`
+	EnvironmentIsNil        bool     `json:"environmentIsNil,omitempty"`
+	EnvironmentNotNil       bool     `json:"environmentNotNil,omitempty"`
+	EnvironmentEqualFold    *string  `json:"environmentEqualFold,omitempty"`
+	EnvironmentContainsFold *string  `json:"environmentContainsFold,omitempty"`
+
+	// "namespace" field predicates.
+	Namespace             *string  `json:"namespace,omitempty"`
+	NamespaceNEQ          *string  `json:"namespaceNEQ,omitempty"`
+	NamespaceIn           []string `json:"namespaceIn,omitempty"`
+	NamespaceNotIn        []string `json:"namespaceNotIn,omitempty"`
+	NamespaceGT           *string  `json:"namespaceGT,omitempty"`
+	NamespaceGTE          *string  `json:"namespaceGTE,omitempty"`
+	NamespaceLT           *string  `json:"namespaceLT,omitempty"`
+	NamespaceLTE          *string  `json:"namespaceLTE,omitempty"`
+	NamespaceContains     *string  `json:"namespaceContains,omitempty"`
+	NamespaceHasPrefix    *string  `json:"namespaceHasPrefix,omitempty"`
+	NamespaceHasSuffix    *string  `json:"namespaceHasSuffix,omitempty"`
+	NamespaceIsNil        bool     `json:"namespaceIsNil,omitempty"`
+	NamespaceNotNil       bool     `json:"namespaceNotNil,omitempty"`
+	NamespaceEqualFold    *string  `json:"namespaceEqualFold,omitempty"`
+	NamespaceContainsFold *string  `json:"namespaceContainsFold,omitempty"`
 
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
@@ -1261,6 +1541,96 @@ func (i *ApplicationWhereInput) P() (predicate.Application, error) {
 	}
 	if i.StatusMessageContainsFold != nil {
 		predicates = append(predicates, application.StatusMessageContainsFold(*i.StatusMessageContainsFold))
+	}
+	if i.Environment != nil {
+		predicates = append(predicates, application.EnvironmentEQ(*i.Environment))
+	}
+	if i.EnvironmentNEQ != nil {
+		predicates = append(predicates, application.EnvironmentNEQ(*i.EnvironmentNEQ))
+	}
+	if len(i.EnvironmentIn) > 0 {
+		predicates = append(predicates, application.EnvironmentIn(i.EnvironmentIn...))
+	}
+	if len(i.EnvironmentNotIn) > 0 {
+		predicates = append(predicates, application.EnvironmentNotIn(i.EnvironmentNotIn...))
+	}
+	if i.EnvironmentGT != nil {
+		predicates = append(predicates, application.EnvironmentGT(*i.EnvironmentGT))
+	}
+	if i.EnvironmentGTE != nil {
+		predicates = append(predicates, application.EnvironmentGTE(*i.EnvironmentGTE))
+	}
+	if i.EnvironmentLT != nil {
+		predicates = append(predicates, application.EnvironmentLT(*i.EnvironmentLT))
+	}
+	if i.EnvironmentLTE != nil {
+		predicates = append(predicates, application.EnvironmentLTE(*i.EnvironmentLTE))
+	}
+	if i.EnvironmentContains != nil {
+		predicates = append(predicates, application.EnvironmentContains(*i.EnvironmentContains))
+	}
+	if i.EnvironmentHasPrefix != nil {
+		predicates = append(predicates, application.EnvironmentHasPrefix(*i.EnvironmentHasPrefix))
+	}
+	if i.EnvironmentHasSuffix != nil {
+		predicates = append(predicates, application.EnvironmentHasSuffix(*i.EnvironmentHasSuffix))
+	}
+	if i.EnvironmentIsNil {
+		predicates = append(predicates, application.EnvironmentIsNil())
+	}
+	if i.EnvironmentNotNil {
+		predicates = append(predicates, application.EnvironmentNotNil())
+	}
+	if i.EnvironmentEqualFold != nil {
+		predicates = append(predicates, application.EnvironmentEqualFold(*i.EnvironmentEqualFold))
+	}
+	if i.EnvironmentContainsFold != nil {
+		predicates = append(predicates, application.EnvironmentContainsFold(*i.EnvironmentContainsFold))
+	}
+	if i.Namespace != nil {
+		predicates = append(predicates, application.NamespaceEQ(*i.Namespace))
+	}
+	if i.NamespaceNEQ != nil {
+		predicates = append(predicates, application.NamespaceNEQ(*i.NamespaceNEQ))
+	}
+	if len(i.NamespaceIn) > 0 {
+		predicates = append(predicates, application.NamespaceIn(i.NamespaceIn...))
+	}
+	if len(i.NamespaceNotIn) > 0 {
+		predicates = append(predicates, application.NamespaceNotIn(i.NamespaceNotIn...))
+	}
+	if i.NamespaceGT != nil {
+		predicates = append(predicates, application.NamespaceGT(*i.NamespaceGT))
+	}
+	if i.NamespaceGTE != nil {
+		predicates = append(predicates, application.NamespaceGTE(*i.NamespaceGTE))
+	}
+	if i.NamespaceLT != nil {
+		predicates = append(predicates, application.NamespaceLT(*i.NamespaceLT))
+	}
+	if i.NamespaceLTE != nil {
+		predicates = append(predicates, application.NamespaceLTE(*i.NamespaceLTE))
+	}
+	if i.NamespaceContains != nil {
+		predicates = append(predicates, application.NamespaceContains(*i.NamespaceContains))
+	}
+	if i.NamespaceHasPrefix != nil {
+		predicates = append(predicates, application.NamespaceHasPrefix(*i.NamespaceHasPrefix))
+	}
+	if i.NamespaceHasSuffix != nil {
+		predicates = append(predicates, application.NamespaceHasSuffix(*i.NamespaceHasSuffix))
+	}
+	if i.NamespaceIsNil {
+		predicates = append(predicates, application.NamespaceIsNil())
+	}
+	if i.NamespaceNotNil {
+		predicates = append(predicates, application.NamespaceNotNil())
+	}
+	if i.NamespaceEqualFold != nil {
+		predicates = append(predicates, application.NamespaceEqualFold(*i.NamespaceEqualFold))
+	}
+	if i.NamespaceContainsFold != nil {
+		predicates = append(predicates, application.NamespaceContainsFold(*i.NamespaceContainsFold))
 	}
 	if i.Name != nil {
 		predicates = append(predicates, application.NameEQ(*i.Name))
@@ -1528,6 +1898,40 @@ type ApprovalWhereInput struct {
 	StatusMessageEqualFold    *string  `json:"statusMessageEqualFold,omitempty"`
 	StatusMessageContainsFold *string  `json:"statusMessageContainsFold,omitempty"`
 
+	// "environment" field predicates.
+	Environment             *string  `json:"environment,omitempty"`
+	EnvironmentNEQ          *string  `json:"environmentNEQ,omitempty"`
+	EnvironmentIn           []string `json:"environmentIn,omitempty"`
+	EnvironmentNotIn        []string `json:"environmentNotIn,omitempty"`
+	EnvironmentGT           *string  `json:"environmentGT,omitempty"`
+	EnvironmentGTE          *string  `json:"environmentGTE,omitempty"`
+	EnvironmentLT           *string  `json:"environmentLT,omitempty"`
+	EnvironmentLTE          *string  `json:"environmentLTE,omitempty"`
+	EnvironmentContains     *string  `json:"environmentContains,omitempty"`
+	EnvironmentHasPrefix    *string  `json:"environmentHasPrefix,omitempty"`
+	EnvironmentHasSuffix    *string  `json:"environmentHasSuffix,omitempty"`
+	EnvironmentIsNil        bool     `json:"environmentIsNil,omitempty"`
+	EnvironmentNotNil       bool     `json:"environmentNotNil,omitempty"`
+	EnvironmentEqualFold    *string  `json:"environmentEqualFold,omitempty"`
+	EnvironmentContainsFold *string  `json:"environmentContainsFold,omitempty"`
+
+	// "namespace" field predicates.
+	Namespace             *string  `json:"namespace,omitempty"`
+	NamespaceNEQ          *string  `json:"namespaceNEQ,omitempty"`
+	NamespaceIn           []string `json:"namespaceIn,omitempty"`
+	NamespaceNotIn        []string `json:"namespaceNotIn,omitempty"`
+	NamespaceGT           *string  `json:"namespaceGT,omitempty"`
+	NamespaceGTE          *string  `json:"namespaceGTE,omitempty"`
+	NamespaceLT           *string  `json:"namespaceLT,omitempty"`
+	NamespaceLTE          *string  `json:"namespaceLTE,omitempty"`
+	NamespaceContains     *string  `json:"namespaceContains,omitempty"`
+	NamespaceHasPrefix    *string  `json:"namespaceHasPrefix,omitempty"`
+	NamespaceHasSuffix    *string  `json:"namespaceHasSuffix,omitempty"`
+	NamespaceIsNil        bool     `json:"namespaceIsNil,omitempty"`
+	NamespaceNotNil       bool     `json:"namespaceNotNil,omitempty"`
+	NamespaceEqualFold    *string  `json:"namespaceEqualFold,omitempty"`
+	NamespaceContainsFold *string  `json:"namespaceContainsFold,omitempty"`
+
 	// "action" field predicates.
 	Action             *string  `json:"action,omitempty"`
 	ActionNEQ          *string  `json:"actionNEQ,omitempty"`
@@ -1760,6 +2164,96 @@ func (i *ApprovalWhereInput) P() (predicate.Approval, error) {
 	if i.StatusMessageContainsFold != nil {
 		predicates = append(predicates, approval.StatusMessageContainsFold(*i.StatusMessageContainsFold))
 	}
+	if i.Environment != nil {
+		predicates = append(predicates, approval.EnvironmentEQ(*i.Environment))
+	}
+	if i.EnvironmentNEQ != nil {
+		predicates = append(predicates, approval.EnvironmentNEQ(*i.EnvironmentNEQ))
+	}
+	if len(i.EnvironmentIn) > 0 {
+		predicates = append(predicates, approval.EnvironmentIn(i.EnvironmentIn...))
+	}
+	if len(i.EnvironmentNotIn) > 0 {
+		predicates = append(predicates, approval.EnvironmentNotIn(i.EnvironmentNotIn...))
+	}
+	if i.EnvironmentGT != nil {
+		predicates = append(predicates, approval.EnvironmentGT(*i.EnvironmentGT))
+	}
+	if i.EnvironmentGTE != nil {
+		predicates = append(predicates, approval.EnvironmentGTE(*i.EnvironmentGTE))
+	}
+	if i.EnvironmentLT != nil {
+		predicates = append(predicates, approval.EnvironmentLT(*i.EnvironmentLT))
+	}
+	if i.EnvironmentLTE != nil {
+		predicates = append(predicates, approval.EnvironmentLTE(*i.EnvironmentLTE))
+	}
+	if i.EnvironmentContains != nil {
+		predicates = append(predicates, approval.EnvironmentContains(*i.EnvironmentContains))
+	}
+	if i.EnvironmentHasPrefix != nil {
+		predicates = append(predicates, approval.EnvironmentHasPrefix(*i.EnvironmentHasPrefix))
+	}
+	if i.EnvironmentHasSuffix != nil {
+		predicates = append(predicates, approval.EnvironmentHasSuffix(*i.EnvironmentHasSuffix))
+	}
+	if i.EnvironmentIsNil {
+		predicates = append(predicates, approval.EnvironmentIsNil())
+	}
+	if i.EnvironmentNotNil {
+		predicates = append(predicates, approval.EnvironmentNotNil())
+	}
+	if i.EnvironmentEqualFold != nil {
+		predicates = append(predicates, approval.EnvironmentEqualFold(*i.EnvironmentEqualFold))
+	}
+	if i.EnvironmentContainsFold != nil {
+		predicates = append(predicates, approval.EnvironmentContainsFold(*i.EnvironmentContainsFold))
+	}
+	if i.Namespace != nil {
+		predicates = append(predicates, approval.NamespaceEQ(*i.Namespace))
+	}
+	if i.NamespaceNEQ != nil {
+		predicates = append(predicates, approval.NamespaceNEQ(*i.NamespaceNEQ))
+	}
+	if len(i.NamespaceIn) > 0 {
+		predicates = append(predicates, approval.NamespaceIn(i.NamespaceIn...))
+	}
+	if len(i.NamespaceNotIn) > 0 {
+		predicates = append(predicates, approval.NamespaceNotIn(i.NamespaceNotIn...))
+	}
+	if i.NamespaceGT != nil {
+		predicates = append(predicates, approval.NamespaceGT(*i.NamespaceGT))
+	}
+	if i.NamespaceGTE != nil {
+		predicates = append(predicates, approval.NamespaceGTE(*i.NamespaceGTE))
+	}
+	if i.NamespaceLT != nil {
+		predicates = append(predicates, approval.NamespaceLT(*i.NamespaceLT))
+	}
+	if i.NamespaceLTE != nil {
+		predicates = append(predicates, approval.NamespaceLTE(*i.NamespaceLTE))
+	}
+	if i.NamespaceContains != nil {
+		predicates = append(predicates, approval.NamespaceContains(*i.NamespaceContains))
+	}
+	if i.NamespaceHasPrefix != nil {
+		predicates = append(predicates, approval.NamespaceHasPrefix(*i.NamespaceHasPrefix))
+	}
+	if i.NamespaceHasSuffix != nil {
+		predicates = append(predicates, approval.NamespaceHasSuffix(*i.NamespaceHasSuffix))
+	}
+	if i.NamespaceIsNil {
+		predicates = append(predicates, approval.NamespaceIsNil())
+	}
+	if i.NamespaceNotNil {
+		predicates = append(predicates, approval.NamespaceNotNil())
+	}
+	if i.NamespaceEqualFold != nil {
+		predicates = append(predicates, approval.NamespaceEqualFold(*i.NamespaceEqualFold))
+	}
+	if i.NamespaceContainsFold != nil {
+		predicates = append(predicates, approval.NamespaceContainsFold(*i.NamespaceContainsFold))
+	}
 	if i.Action != nil {
 		predicates = append(predicates, approval.ActionEQ(*i.Action))
 	}
@@ -1911,6 +2405,40 @@ type ApprovalRequestWhereInput struct {
 	StatusMessageNotNil       bool     `json:"statusMessageNotNil,omitempty"`
 	StatusMessageEqualFold    *string  `json:"statusMessageEqualFold,omitempty"`
 	StatusMessageContainsFold *string  `json:"statusMessageContainsFold,omitempty"`
+
+	// "environment" field predicates.
+	Environment             *string  `json:"environment,omitempty"`
+	EnvironmentNEQ          *string  `json:"environmentNEQ,omitempty"`
+	EnvironmentIn           []string `json:"environmentIn,omitempty"`
+	EnvironmentNotIn        []string `json:"environmentNotIn,omitempty"`
+	EnvironmentGT           *string  `json:"environmentGT,omitempty"`
+	EnvironmentGTE          *string  `json:"environmentGTE,omitempty"`
+	EnvironmentLT           *string  `json:"environmentLT,omitempty"`
+	EnvironmentLTE          *string  `json:"environmentLTE,omitempty"`
+	EnvironmentContains     *string  `json:"environmentContains,omitempty"`
+	EnvironmentHasPrefix    *string  `json:"environmentHasPrefix,omitempty"`
+	EnvironmentHasSuffix    *string  `json:"environmentHasSuffix,omitempty"`
+	EnvironmentIsNil        bool     `json:"environmentIsNil,omitempty"`
+	EnvironmentNotNil       bool     `json:"environmentNotNil,omitempty"`
+	EnvironmentEqualFold    *string  `json:"environmentEqualFold,omitempty"`
+	EnvironmentContainsFold *string  `json:"environmentContainsFold,omitempty"`
+
+	// "namespace" field predicates.
+	Namespace             *string  `json:"namespace,omitempty"`
+	NamespaceNEQ          *string  `json:"namespaceNEQ,omitempty"`
+	NamespaceIn           []string `json:"namespaceIn,omitempty"`
+	NamespaceNotIn        []string `json:"namespaceNotIn,omitempty"`
+	NamespaceGT           *string  `json:"namespaceGT,omitempty"`
+	NamespaceGTE          *string  `json:"namespaceGTE,omitempty"`
+	NamespaceLT           *string  `json:"namespaceLT,omitempty"`
+	NamespaceLTE          *string  `json:"namespaceLTE,omitempty"`
+	NamespaceContains     *string  `json:"namespaceContains,omitempty"`
+	NamespaceHasPrefix    *string  `json:"namespaceHasPrefix,omitempty"`
+	NamespaceHasSuffix    *string  `json:"namespaceHasSuffix,omitempty"`
+	NamespaceIsNil        bool     `json:"namespaceIsNil,omitempty"`
+	NamespaceNotNil       bool     `json:"namespaceNotNil,omitempty"`
+	NamespaceEqualFold    *string  `json:"namespaceEqualFold,omitempty"`
+	NamespaceContainsFold *string  `json:"namespaceContainsFold,omitempty"`
 
 	// "action" field predicates.
 	Action             *string  `json:"action,omitempty"`
@@ -2144,6 +2672,96 @@ func (i *ApprovalRequestWhereInput) P() (predicate.ApprovalRequest, error) {
 	if i.StatusMessageContainsFold != nil {
 		predicates = append(predicates, approvalrequest.StatusMessageContainsFold(*i.StatusMessageContainsFold))
 	}
+	if i.Environment != nil {
+		predicates = append(predicates, approvalrequest.EnvironmentEQ(*i.Environment))
+	}
+	if i.EnvironmentNEQ != nil {
+		predicates = append(predicates, approvalrequest.EnvironmentNEQ(*i.EnvironmentNEQ))
+	}
+	if len(i.EnvironmentIn) > 0 {
+		predicates = append(predicates, approvalrequest.EnvironmentIn(i.EnvironmentIn...))
+	}
+	if len(i.EnvironmentNotIn) > 0 {
+		predicates = append(predicates, approvalrequest.EnvironmentNotIn(i.EnvironmentNotIn...))
+	}
+	if i.EnvironmentGT != nil {
+		predicates = append(predicates, approvalrequest.EnvironmentGT(*i.EnvironmentGT))
+	}
+	if i.EnvironmentGTE != nil {
+		predicates = append(predicates, approvalrequest.EnvironmentGTE(*i.EnvironmentGTE))
+	}
+	if i.EnvironmentLT != nil {
+		predicates = append(predicates, approvalrequest.EnvironmentLT(*i.EnvironmentLT))
+	}
+	if i.EnvironmentLTE != nil {
+		predicates = append(predicates, approvalrequest.EnvironmentLTE(*i.EnvironmentLTE))
+	}
+	if i.EnvironmentContains != nil {
+		predicates = append(predicates, approvalrequest.EnvironmentContains(*i.EnvironmentContains))
+	}
+	if i.EnvironmentHasPrefix != nil {
+		predicates = append(predicates, approvalrequest.EnvironmentHasPrefix(*i.EnvironmentHasPrefix))
+	}
+	if i.EnvironmentHasSuffix != nil {
+		predicates = append(predicates, approvalrequest.EnvironmentHasSuffix(*i.EnvironmentHasSuffix))
+	}
+	if i.EnvironmentIsNil {
+		predicates = append(predicates, approvalrequest.EnvironmentIsNil())
+	}
+	if i.EnvironmentNotNil {
+		predicates = append(predicates, approvalrequest.EnvironmentNotNil())
+	}
+	if i.EnvironmentEqualFold != nil {
+		predicates = append(predicates, approvalrequest.EnvironmentEqualFold(*i.EnvironmentEqualFold))
+	}
+	if i.EnvironmentContainsFold != nil {
+		predicates = append(predicates, approvalrequest.EnvironmentContainsFold(*i.EnvironmentContainsFold))
+	}
+	if i.Namespace != nil {
+		predicates = append(predicates, approvalrequest.NamespaceEQ(*i.Namespace))
+	}
+	if i.NamespaceNEQ != nil {
+		predicates = append(predicates, approvalrequest.NamespaceNEQ(*i.NamespaceNEQ))
+	}
+	if len(i.NamespaceIn) > 0 {
+		predicates = append(predicates, approvalrequest.NamespaceIn(i.NamespaceIn...))
+	}
+	if len(i.NamespaceNotIn) > 0 {
+		predicates = append(predicates, approvalrequest.NamespaceNotIn(i.NamespaceNotIn...))
+	}
+	if i.NamespaceGT != nil {
+		predicates = append(predicates, approvalrequest.NamespaceGT(*i.NamespaceGT))
+	}
+	if i.NamespaceGTE != nil {
+		predicates = append(predicates, approvalrequest.NamespaceGTE(*i.NamespaceGTE))
+	}
+	if i.NamespaceLT != nil {
+		predicates = append(predicates, approvalrequest.NamespaceLT(*i.NamespaceLT))
+	}
+	if i.NamespaceLTE != nil {
+		predicates = append(predicates, approvalrequest.NamespaceLTE(*i.NamespaceLTE))
+	}
+	if i.NamespaceContains != nil {
+		predicates = append(predicates, approvalrequest.NamespaceContains(*i.NamespaceContains))
+	}
+	if i.NamespaceHasPrefix != nil {
+		predicates = append(predicates, approvalrequest.NamespaceHasPrefix(*i.NamespaceHasPrefix))
+	}
+	if i.NamespaceHasSuffix != nil {
+		predicates = append(predicates, approvalrequest.NamespaceHasSuffix(*i.NamespaceHasSuffix))
+	}
+	if i.NamespaceIsNil {
+		predicates = append(predicates, approvalrequest.NamespaceIsNil())
+	}
+	if i.NamespaceNotNil {
+		predicates = append(predicates, approvalrequest.NamespaceNotNil())
+	}
+	if i.NamespaceEqualFold != nil {
+		predicates = append(predicates, approvalrequest.NamespaceEqualFold(*i.NamespaceEqualFold))
+	}
+	if i.NamespaceContainsFold != nil {
+		predicates = append(predicates, approvalrequest.NamespaceContainsFold(*i.NamespaceContainsFold))
+	}
 	if i.Action != nil {
 		predicates = append(predicates, approvalrequest.ActionEQ(*i.Action))
 	}
@@ -2236,206 +2854,6 @@ func (i *ApprovalRequestWhereInput) P() (predicate.ApprovalRequest, error) {
 	}
 }
 
-// EnvironmentWhereInput represents a where input for filtering Environment queries.
-type EnvironmentWhereInput struct {
-	Predicates []predicate.Environment  `json:"-"`
-	Not        *EnvironmentWhereInput   `json:"not,omitempty"`
-	Or         []*EnvironmentWhereInput `json:"or,omitempty"`
-	And        []*EnvironmentWhereInput `json:"and,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
-
-	// "name" field predicates.
-	Name             *string  `json:"name,omitempty"`
-	NameNEQ          *string  `json:"nameNEQ,omitempty"`
-	NameIn           []string `json:"nameIn,omitempty"`
-	NameNotIn        []string `json:"nameNotIn,omitempty"`
-	NameGT           *string  `json:"nameGT,omitempty"`
-	NameGTE          *string  `json:"nameGTE,omitempty"`
-	NameLT           *string  `json:"nameLT,omitempty"`
-	NameLTE          *string  `json:"nameLTE,omitempty"`
-	NameContains     *string  `json:"nameContains,omitempty"`
-	NameHasPrefix    *string  `json:"nameHasPrefix,omitempty"`
-	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
-	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
-	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
-
-	// "team_environments" edge predicates.
-	HasTeamEnvironments     *bool                        `json:"hasTeamEnvironments,omitempty"`
-	HasTeamEnvironmentsWith []*TeamEnvironmentWhereInput `json:"hasTeamEnvironmentsWith,omitempty"`
-}
-
-// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
-func (i *EnvironmentWhereInput) AddPredicates(predicates ...predicate.Environment) {
-	i.Predicates = append(i.Predicates, predicates...)
-}
-
-// Filter applies the EnvironmentWhereInput filter on the EnvironmentQuery builder.
-func (i *EnvironmentWhereInput) Filter(q *EnvironmentQuery) (*EnvironmentQuery, error) {
-	if i == nil {
-		return q, nil
-	}
-	p, err := i.P()
-	if err != nil {
-		if err == ErrEmptyEnvironmentWhereInput {
-			return q, nil
-		}
-		return nil, err
-	}
-	return q.Where(p), nil
-}
-
-// ErrEmptyEnvironmentWhereInput is returned in case the EnvironmentWhereInput is empty.
-var ErrEmptyEnvironmentWhereInput = errors.New("ent: empty predicate EnvironmentWhereInput")
-
-// P returns a predicate for filtering environments.
-// An error is returned if the input is empty or invalid.
-func (i *EnvironmentWhereInput) P() (predicate.Environment, error) {
-	var predicates []predicate.Environment
-	if i.Not != nil {
-		p, err := i.Not.P()
-		if err != nil {
-			return nil, fmt.Errorf("%w: field 'not'", err)
-		}
-		predicates = append(predicates, environment.Not(p))
-	}
-	switch n := len(i.Or); {
-	case n == 1:
-		p, err := i.Or[0].P()
-		if err != nil {
-			return nil, fmt.Errorf("%w: field 'or'", err)
-		}
-		predicates = append(predicates, p)
-	case n > 1:
-		or := make([]predicate.Environment, 0, n)
-		for _, w := range i.Or {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'or'", err)
-			}
-			or = append(or, p)
-		}
-		predicates = append(predicates, environment.Or(or...))
-	}
-	switch n := len(i.And); {
-	case n == 1:
-		p, err := i.And[0].P()
-		if err != nil {
-			return nil, fmt.Errorf("%w: field 'and'", err)
-		}
-		predicates = append(predicates, p)
-	case n > 1:
-		and := make([]predicate.Environment, 0, n)
-		for _, w := range i.And {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'and'", err)
-			}
-			and = append(and, p)
-		}
-		predicates = append(predicates, environment.And(and...))
-	}
-	predicates = append(predicates, i.Predicates...)
-	if i.ID != nil {
-		predicates = append(predicates, environment.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, environment.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, environment.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, environment.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, environment.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, environment.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, environment.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, environment.IDLTE(*i.IDLTE))
-	}
-	if i.Name != nil {
-		predicates = append(predicates, environment.NameEQ(*i.Name))
-	}
-	if i.NameNEQ != nil {
-		predicates = append(predicates, environment.NameNEQ(*i.NameNEQ))
-	}
-	if len(i.NameIn) > 0 {
-		predicates = append(predicates, environment.NameIn(i.NameIn...))
-	}
-	if len(i.NameNotIn) > 0 {
-		predicates = append(predicates, environment.NameNotIn(i.NameNotIn...))
-	}
-	if i.NameGT != nil {
-		predicates = append(predicates, environment.NameGT(*i.NameGT))
-	}
-	if i.NameGTE != nil {
-		predicates = append(predicates, environment.NameGTE(*i.NameGTE))
-	}
-	if i.NameLT != nil {
-		predicates = append(predicates, environment.NameLT(*i.NameLT))
-	}
-	if i.NameLTE != nil {
-		predicates = append(predicates, environment.NameLTE(*i.NameLTE))
-	}
-	if i.NameContains != nil {
-		predicates = append(predicates, environment.NameContains(*i.NameContains))
-	}
-	if i.NameHasPrefix != nil {
-		predicates = append(predicates, environment.NameHasPrefix(*i.NameHasPrefix))
-	}
-	if i.NameHasSuffix != nil {
-		predicates = append(predicates, environment.NameHasSuffix(*i.NameHasSuffix))
-	}
-	if i.NameEqualFold != nil {
-		predicates = append(predicates, environment.NameEqualFold(*i.NameEqualFold))
-	}
-	if i.NameContainsFold != nil {
-		predicates = append(predicates, environment.NameContainsFold(*i.NameContainsFold))
-	}
-
-	if i.HasTeamEnvironments != nil {
-		p := environment.HasTeamEnvironments()
-		if !*i.HasTeamEnvironments {
-			p = environment.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasTeamEnvironmentsWith) > 0 {
-		with := make([]predicate.TeamEnvironment, 0, len(i.HasTeamEnvironmentsWith))
-		for _, w := range i.HasTeamEnvironmentsWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasTeamEnvironmentsWith'", err)
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, environment.HasTeamEnvironmentsWith(with...))
-	}
-	switch len(predicates) {
-	case 0:
-		return nil, ErrEmptyEnvironmentWhereInput
-	case 1:
-		return predicates[0], nil
-	default:
-		return environment.And(predicates...), nil
-	}
-}
-
 // GroupWhereInput represents a where input for filtering Group queries.
 type GroupWhereInput struct {
 	Predicates []predicate.Group  `json:"-"`
@@ -2452,6 +2870,40 @@ type GroupWhereInput struct {
 	IDGTE   *int  `json:"idGTE,omitempty"`
 	IDLT    *int  `json:"idLT,omitempty"`
 	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "environment" field predicates.
+	Environment             *string  `json:"environment,omitempty"`
+	EnvironmentNEQ          *string  `json:"environmentNEQ,omitempty"`
+	EnvironmentIn           []string `json:"environmentIn,omitempty"`
+	EnvironmentNotIn        []string `json:"environmentNotIn,omitempty"`
+	EnvironmentGT           *string  `json:"environmentGT,omitempty"`
+	EnvironmentGTE          *string  `json:"environmentGTE,omitempty"`
+	EnvironmentLT           *string  `json:"environmentLT,omitempty"`
+	EnvironmentLTE          *string  `json:"environmentLTE,omitempty"`
+	EnvironmentContains     *string  `json:"environmentContains,omitempty"`
+	EnvironmentHasPrefix    *string  `json:"environmentHasPrefix,omitempty"`
+	EnvironmentHasSuffix    *string  `json:"environmentHasSuffix,omitempty"`
+	EnvironmentIsNil        bool     `json:"environmentIsNil,omitempty"`
+	EnvironmentNotNil       bool     `json:"environmentNotNil,omitempty"`
+	EnvironmentEqualFold    *string  `json:"environmentEqualFold,omitempty"`
+	EnvironmentContainsFold *string  `json:"environmentContainsFold,omitempty"`
+
+	// "namespace" field predicates.
+	Namespace             *string  `json:"namespace,omitempty"`
+	NamespaceNEQ          *string  `json:"namespaceNEQ,omitempty"`
+	NamespaceIn           []string `json:"namespaceIn,omitempty"`
+	NamespaceNotIn        []string `json:"namespaceNotIn,omitempty"`
+	NamespaceGT           *string  `json:"namespaceGT,omitempty"`
+	NamespaceGTE          *string  `json:"namespaceGTE,omitempty"`
+	NamespaceLT           *string  `json:"namespaceLT,omitempty"`
+	NamespaceLTE          *string  `json:"namespaceLTE,omitempty"`
+	NamespaceContains     *string  `json:"namespaceContains,omitempty"`
+	NamespaceHasPrefix    *string  `json:"namespaceHasPrefix,omitempty"`
+	NamespaceHasSuffix    *string  `json:"namespaceHasSuffix,omitempty"`
+	NamespaceIsNil        bool     `json:"namespaceIsNil,omitempty"`
+	NamespaceNotNil       bool     `json:"namespaceNotNil,omitempty"`
+	NamespaceEqualFold    *string  `json:"namespaceEqualFold,omitempty"`
+	NamespaceContainsFold *string  `json:"namespaceContainsFold,omitempty"`
 
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
@@ -2597,6 +3049,96 @@ func (i *GroupWhereInput) P() (predicate.Group, error) {
 	}
 	if i.IDLTE != nil {
 		predicates = append(predicates, group.IDLTE(*i.IDLTE))
+	}
+	if i.Environment != nil {
+		predicates = append(predicates, group.EnvironmentEQ(*i.Environment))
+	}
+	if i.EnvironmentNEQ != nil {
+		predicates = append(predicates, group.EnvironmentNEQ(*i.EnvironmentNEQ))
+	}
+	if len(i.EnvironmentIn) > 0 {
+		predicates = append(predicates, group.EnvironmentIn(i.EnvironmentIn...))
+	}
+	if len(i.EnvironmentNotIn) > 0 {
+		predicates = append(predicates, group.EnvironmentNotIn(i.EnvironmentNotIn...))
+	}
+	if i.EnvironmentGT != nil {
+		predicates = append(predicates, group.EnvironmentGT(*i.EnvironmentGT))
+	}
+	if i.EnvironmentGTE != nil {
+		predicates = append(predicates, group.EnvironmentGTE(*i.EnvironmentGTE))
+	}
+	if i.EnvironmentLT != nil {
+		predicates = append(predicates, group.EnvironmentLT(*i.EnvironmentLT))
+	}
+	if i.EnvironmentLTE != nil {
+		predicates = append(predicates, group.EnvironmentLTE(*i.EnvironmentLTE))
+	}
+	if i.EnvironmentContains != nil {
+		predicates = append(predicates, group.EnvironmentContains(*i.EnvironmentContains))
+	}
+	if i.EnvironmentHasPrefix != nil {
+		predicates = append(predicates, group.EnvironmentHasPrefix(*i.EnvironmentHasPrefix))
+	}
+	if i.EnvironmentHasSuffix != nil {
+		predicates = append(predicates, group.EnvironmentHasSuffix(*i.EnvironmentHasSuffix))
+	}
+	if i.EnvironmentIsNil {
+		predicates = append(predicates, group.EnvironmentIsNil())
+	}
+	if i.EnvironmentNotNil {
+		predicates = append(predicates, group.EnvironmentNotNil())
+	}
+	if i.EnvironmentEqualFold != nil {
+		predicates = append(predicates, group.EnvironmentEqualFold(*i.EnvironmentEqualFold))
+	}
+	if i.EnvironmentContainsFold != nil {
+		predicates = append(predicates, group.EnvironmentContainsFold(*i.EnvironmentContainsFold))
+	}
+	if i.Namespace != nil {
+		predicates = append(predicates, group.NamespaceEQ(*i.Namespace))
+	}
+	if i.NamespaceNEQ != nil {
+		predicates = append(predicates, group.NamespaceNEQ(*i.NamespaceNEQ))
+	}
+	if len(i.NamespaceIn) > 0 {
+		predicates = append(predicates, group.NamespaceIn(i.NamespaceIn...))
+	}
+	if len(i.NamespaceNotIn) > 0 {
+		predicates = append(predicates, group.NamespaceNotIn(i.NamespaceNotIn...))
+	}
+	if i.NamespaceGT != nil {
+		predicates = append(predicates, group.NamespaceGT(*i.NamespaceGT))
+	}
+	if i.NamespaceGTE != nil {
+		predicates = append(predicates, group.NamespaceGTE(*i.NamespaceGTE))
+	}
+	if i.NamespaceLT != nil {
+		predicates = append(predicates, group.NamespaceLT(*i.NamespaceLT))
+	}
+	if i.NamespaceLTE != nil {
+		predicates = append(predicates, group.NamespaceLTE(*i.NamespaceLTE))
+	}
+	if i.NamespaceContains != nil {
+		predicates = append(predicates, group.NamespaceContains(*i.NamespaceContains))
+	}
+	if i.NamespaceHasPrefix != nil {
+		predicates = append(predicates, group.NamespaceHasPrefix(*i.NamespaceHasPrefix))
+	}
+	if i.NamespaceHasSuffix != nil {
+		predicates = append(predicates, group.NamespaceHasSuffix(*i.NamespaceHasSuffix))
+	}
+	if i.NamespaceIsNil {
+		predicates = append(predicates, group.NamespaceIsNil())
+	}
+	if i.NamespaceNotNil {
+		predicates = append(predicates, group.NamespaceNotNil())
+	}
+	if i.NamespaceEqualFold != nil {
+		predicates = append(predicates, group.NamespaceEqualFold(*i.NamespaceEqualFold))
+	}
+	if i.NamespaceContainsFold != nil {
+		predicates = append(predicates, group.NamespaceContainsFold(*i.NamespaceContainsFold))
 	}
 	if i.Name != nil {
 		predicates = append(predicates, group.NameEQ(*i.Name))
@@ -2761,6 +3303,40 @@ type MemberWhereInput struct {
 	IDLT    *int  `json:"idLT,omitempty"`
 	IDLTE   *int  `json:"idLTE,omitempty"`
 
+	// "environment" field predicates.
+	Environment             *string  `json:"environment,omitempty"`
+	EnvironmentNEQ          *string  `json:"environmentNEQ,omitempty"`
+	EnvironmentIn           []string `json:"environmentIn,omitempty"`
+	EnvironmentNotIn        []string `json:"environmentNotIn,omitempty"`
+	EnvironmentGT           *string  `json:"environmentGT,omitempty"`
+	EnvironmentGTE          *string  `json:"environmentGTE,omitempty"`
+	EnvironmentLT           *string  `json:"environmentLT,omitempty"`
+	EnvironmentLTE          *string  `json:"environmentLTE,omitempty"`
+	EnvironmentContains     *string  `json:"environmentContains,omitempty"`
+	EnvironmentHasPrefix    *string  `json:"environmentHasPrefix,omitempty"`
+	EnvironmentHasSuffix    *string  `json:"environmentHasSuffix,omitempty"`
+	EnvironmentIsNil        bool     `json:"environmentIsNil,omitempty"`
+	EnvironmentNotNil       bool     `json:"environmentNotNil,omitempty"`
+	EnvironmentEqualFold    *string  `json:"environmentEqualFold,omitempty"`
+	EnvironmentContainsFold *string  `json:"environmentContainsFold,omitempty"`
+
+	// "namespace" field predicates.
+	Namespace             *string  `json:"namespace,omitempty"`
+	NamespaceNEQ          *string  `json:"namespaceNEQ,omitempty"`
+	NamespaceIn           []string `json:"namespaceIn,omitempty"`
+	NamespaceNotIn        []string `json:"namespaceNotIn,omitempty"`
+	NamespaceGT           *string  `json:"namespaceGT,omitempty"`
+	NamespaceGTE          *string  `json:"namespaceGTE,omitempty"`
+	NamespaceLT           *string  `json:"namespaceLT,omitempty"`
+	NamespaceLTE          *string  `json:"namespaceLTE,omitempty"`
+	NamespaceContains     *string  `json:"namespaceContains,omitempty"`
+	NamespaceHasPrefix    *string  `json:"namespaceHasPrefix,omitempty"`
+	NamespaceHasSuffix    *string  `json:"namespaceHasSuffix,omitempty"`
+	NamespaceIsNil        bool     `json:"namespaceIsNil,omitempty"`
+	NamespaceNotNil       bool     `json:"namespaceNotNil,omitempty"`
+	NamespaceEqualFold    *string  `json:"namespaceEqualFold,omitempty"`
+	NamespaceContainsFold *string  `json:"namespaceContainsFold,omitempty"`
+
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
 	NameNEQ          *string  `json:"nameNEQ,omitempty"`
@@ -2890,6 +3466,96 @@ func (i *MemberWhereInput) P() (predicate.Member, error) {
 	}
 	if i.IDLTE != nil {
 		predicates = append(predicates, member.IDLTE(*i.IDLTE))
+	}
+	if i.Environment != nil {
+		predicates = append(predicates, member.EnvironmentEQ(*i.Environment))
+	}
+	if i.EnvironmentNEQ != nil {
+		predicates = append(predicates, member.EnvironmentNEQ(*i.EnvironmentNEQ))
+	}
+	if len(i.EnvironmentIn) > 0 {
+		predicates = append(predicates, member.EnvironmentIn(i.EnvironmentIn...))
+	}
+	if len(i.EnvironmentNotIn) > 0 {
+		predicates = append(predicates, member.EnvironmentNotIn(i.EnvironmentNotIn...))
+	}
+	if i.EnvironmentGT != nil {
+		predicates = append(predicates, member.EnvironmentGT(*i.EnvironmentGT))
+	}
+	if i.EnvironmentGTE != nil {
+		predicates = append(predicates, member.EnvironmentGTE(*i.EnvironmentGTE))
+	}
+	if i.EnvironmentLT != nil {
+		predicates = append(predicates, member.EnvironmentLT(*i.EnvironmentLT))
+	}
+	if i.EnvironmentLTE != nil {
+		predicates = append(predicates, member.EnvironmentLTE(*i.EnvironmentLTE))
+	}
+	if i.EnvironmentContains != nil {
+		predicates = append(predicates, member.EnvironmentContains(*i.EnvironmentContains))
+	}
+	if i.EnvironmentHasPrefix != nil {
+		predicates = append(predicates, member.EnvironmentHasPrefix(*i.EnvironmentHasPrefix))
+	}
+	if i.EnvironmentHasSuffix != nil {
+		predicates = append(predicates, member.EnvironmentHasSuffix(*i.EnvironmentHasSuffix))
+	}
+	if i.EnvironmentIsNil {
+		predicates = append(predicates, member.EnvironmentIsNil())
+	}
+	if i.EnvironmentNotNil {
+		predicates = append(predicates, member.EnvironmentNotNil())
+	}
+	if i.EnvironmentEqualFold != nil {
+		predicates = append(predicates, member.EnvironmentEqualFold(*i.EnvironmentEqualFold))
+	}
+	if i.EnvironmentContainsFold != nil {
+		predicates = append(predicates, member.EnvironmentContainsFold(*i.EnvironmentContainsFold))
+	}
+	if i.Namespace != nil {
+		predicates = append(predicates, member.NamespaceEQ(*i.Namespace))
+	}
+	if i.NamespaceNEQ != nil {
+		predicates = append(predicates, member.NamespaceNEQ(*i.NamespaceNEQ))
+	}
+	if len(i.NamespaceIn) > 0 {
+		predicates = append(predicates, member.NamespaceIn(i.NamespaceIn...))
+	}
+	if len(i.NamespaceNotIn) > 0 {
+		predicates = append(predicates, member.NamespaceNotIn(i.NamespaceNotIn...))
+	}
+	if i.NamespaceGT != nil {
+		predicates = append(predicates, member.NamespaceGT(*i.NamespaceGT))
+	}
+	if i.NamespaceGTE != nil {
+		predicates = append(predicates, member.NamespaceGTE(*i.NamespaceGTE))
+	}
+	if i.NamespaceLT != nil {
+		predicates = append(predicates, member.NamespaceLT(*i.NamespaceLT))
+	}
+	if i.NamespaceLTE != nil {
+		predicates = append(predicates, member.NamespaceLTE(*i.NamespaceLTE))
+	}
+	if i.NamespaceContains != nil {
+		predicates = append(predicates, member.NamespaceContains(*i.NamespaceContains))
+	}
+	if i.NamespaceHasPrefix != nil {
+		predicates = append(predicates, member.NamespaceHasPrefix(*i.NamespaceHasPrefix))
+	}
+	if i.NamespaceHasSuffix != nil {
+		predicates = append(predicates, member.NamespaceHasSuffix(*i.NamespaceHasSuffix))
+	}
+	if i.NamespaceIsNil {
+		predicates = append(predicates, member.NamespaceIsNil())
+	}
+	if i.NamespaceNotNil {
+		predicates = append(predicates, member.NamespaceNotNil())
+	}
+	if i.NamespaceEqualFold != nil {
+		predicates = append(predicates, member.NamespaceEqualFold(*i.NamespaceEqualFold))
+	}
+	if i.NamespaceContainsFold != nil {
+		predicates = append(predicates, member.NamespaceContainsFold(*i.NamespaceContainsFold))
 	}
 	if i.Name != nil {
 		predicates = append(predicates, member.NameEQ(*i.Name))
@@ -3058,6 +3724,40 @@ type TeamWhereInput struct {
 	StatusMessageEqualFold    *string  `json:"statusMessageEqualFold,omitempty"`
 	StatusMessageContainsFold *string  `json:"statusMessageContainsFold,omitempty"`
 
+	// "environment" field predicates.
+	Environment             *string  `json:"environment,omitempty"`
+	EnvironmentNEQ          *string  `json:"environmentNEQ,omitempty"`
+	EnvironmentIn           []string `json:"environmentIn,omitempty"`
+	EnvironmentNotIn        []string `json:"environmentNotIn,omitempty"`
+	EnvironmentGT           *string  `json:"environmentGT,omitempty"`
+	EnvironmentGTE          *string  `json:"environmentGTE,omitempty"`
+	EnvironmentLT           *string  `json:"environmentLT,omitempty"`
+	EnvironmentLTE          *string  `json:"environmentLTE,omitempty"`
+	EnvironmentContains     *string  `json:"environmentContains,omitempty"`
+	EnvironmentHasPrefix    *string  `json:"environmentHasPrefix,omitempty"`
+	EnvironmentHasSuffix    *string  `json:"environmentHasSuffix,omitempty"`
+	EnvironmentIsNil        bool     `json:"environmentIsNil,omitempty"`
+	EnvironmentNotNil       bool     `json:"environmentNotNil,omitempty"`
+	EnvironmentEqualFold    *string  `json:"environmentEqualFold,omitempty"`
+	EnvironmentContainsFold *string  `json:"environmentContainsFold,omitempty"`
+
+	// "namespace" field predicates.
+	Namespace             *string  `json:"namespace,omitempty"`
+	NamespaceNEQ          *string  `json:"namespaceNEQ,omitempty"`
+	NamespaceIn           []string `json:"namespaceIn,omitempty"`
+	NamespaceNotIn        []string `json:"namespaceNotIn,omitempty"`
+	NamespaceGT           *string  `json:"namespaceGT,omitempty"`
+	NamespaceGTE          *string  `json:"namespaceGTE,omitempty"`
+	NamespaceLT           *string  `json:"namespaceLT,omitempty"`
+	NamespaceLTE          *string  `json:"namespaceLTE,omitempty"`
+	NamespaceContains     *string  `json:"namespaceContains,omitempty"`
+	NamespaceHasPrefix    *string  `json:"namespaceHasPrefix,omitempty"`
+	NamespaceHasSuffix    *string  `json:"namespaceHasSuffix,omitempty"`
+	NamespaceIsNil        bool     `json:"namespaceIsNil,omitempty"`
+	NamespaceNotNil       bool     `json:"namespaceNotNil,omitempty"`
+	NamespaceEqualFold    *string  `json:"namespaceEqualFold,omitempty"`
+	NamespaceContainsFold *string  `json:"namespaceContainsFold,omitempty"`
+
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
 	NameNEQ          *string  `json:"nameNEQ,omitempty"`
@@ -3094,6 +3794,23 @@ type TeamWhereInput struct {
 	CategoryIn    []team.Category `json:"categoryIn,omitempty"`
 	CategoryNotIn []team.Category `json:"categoryNotIn,omitempty"`
 
+	// "rover_token_ref" field predicates.
+	RoverTokenRef             *string  `json:"roverTokenRef,omitempty"`
+	RoverTokenRefNEQ          *string  `json:"roverTokenRefNEQ,omitempty"`
+	RoverTokenRefIn           []string `json:"roverTokenRefIn,omitempty"`
+	RoverTokenRefNotIn        []string `json:"roverTokenRefNotIn,omitempty"`
+	RoverTokenRefGT           *string  `json:"roverTokenRefGT,omitempty"`
+	RoverTokenRefGTE          *string  `json:"roverTokenRefGTE,omitempty"`
+	RoverTokenRefLT           *string  `json:"roverTokenRefLT,omitempty"`
+	RoverTokenRefLTE          *string  `json:"roverTokenRefLTE,omitempty"`
+	RoverTokenRefContains     *string  `json:"roverTokenRefContains,omitempty"`
+	RoverTokenRefHasPrefix    *string  `json:"roverTokenRefHasPrefix,omitempty"`
+	RoverTokenRefHasSuffix    *string  `json:"roverTokenRefHasSuffix,omitempty"`
+	RoverTokenRefIsNil        bool     `json:"roverTokenRefIsNil,omitempty"`
+	RoverTokenRefNotNil       bool     `json:"roverTokenRefNotNil,omitempty"`
+	RoverTokenRefEqualFold    *string  `json:"roverTokenRefEqualFold,omitempty"`
+	RoverTokenRefContainsFold *string  `json:"roverTokenRefContainsFold,omitempty"`
+
 	// "group" edge predicates.
 	HasGroup     *bool              `json:"hasGroup,omitempty"`
 	HasGroupWith []*GroupWhereInput `json:"hasGroupWith,omitempty"`
@@ -3101,10 +3818,6 @@ type TeamWhereInput struct {
 	// "members" edge predicates.
 	HasMembers     *bool               `json:"hasMembers,omitempty"`
 	HasMembersWith []*MemberWhereInput `json:"hasMembersWith,omitempty"`
-
-	// "team_environments" edge predicates.
-	HasTeamEnvironments     *bool                        `json:"hasTeamEnvironments,omitempty"`
-	HasTeamEnvironmentsWith []*TeamEnvironmentWhereInput `json:"hasTeamEnvironmentsWith,omitempty"`
 
 	// "applications" edge predicates.
 	HasApplications     *bool                    `json:"hasApplications,omitempty"`
@@ -3311,6 +4024,96 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 	if i.StatusMessageContainsFold != nil {
 		predicates = append(predicates, team.StatusMessageContainsFold(*i.StatusMessageContainsFold))
 	}
+	if i.Environment != nil {
+		predicates = append(predicates, team.EnvironmentEQ(*i.Environment))
+	}
+	if i.EnvironmentNEQ != nil {
+		predicates = append(predicates, team.EnvironmentNEQ(*i.EnvironmentNEQ))
+	}
+	if len(i.EnvironmentIn) > 0 {
+		predicates = append(predicates, team.EnvironmentIn(i.EnvironmentIn...))
+	}
+	if len(i.EnvironmentNotIn) > 0 {
+		predicates = append(predicates, team.EnvironmentNotIn(i.EnvironmentNotIn...))
+	}
+	if i.EnvironmentGT != nil {
+		predicates = append(predicates, team.EnvironmentGT(*i.EnvironmentGT))
+	}
+	if i.EnvironmentGTE != nil {
+		predicates = append(predicates, team.EnvironmentGTE(*i.EnvironmentGTE))
+	}
+	if i.EnvironmentLT != nil {
+		predicates = append(predicates, team.EnvironmentLT(*i.EnvironmentLT))
+	}
+	if i.EnvironmentLTE != nil {
+		predicates = append(predicates, team.EnvironmentLTE(*i.EnvironmentLTE))
+	}
+	if i.EnvironmentContains != nil {
+		predicates = append(predicates, team.EnvironmentContains(*i.EnvironmentContains))
+	}
+	if i.EnvironmentHasPrefix != nil {
+		predicates = append(predicates, team.EnvironmentHasPrefix(*i.EnvironmentHasPrefix))
+	}
+	if i.EnvironmentHasSuffix != nil {
+		predicates = append(predicates, team.EnvironmentHasSuffix(*i.EnvironmentHasSuffix))
+	}
+	if i.EnvironmentIsNil {
+		predicates = append(predicates, team.EnvironmentIsNil())
+	}
+	if i.EnvironmentNotNil {
+		predicates = append(predicates, team.EnvironmentNotNil())
+	}
+	if i.EnvironmentEqualFold != nil {
+		predicates = append(predicates, team.EnvironmentEqualFold(*i.EnvironmentEqualFold))
+	}
+	if i.EnvironmentContainsFold != nil {
+		predicates = append(predicates, team.EnvironmentContainsFold(*i.EnvironmentContainsFold))
+	}
+	if i.Namespace != nil {
+		predicates = append(predicates, team.NamespaceEQ(*i.Namespace))
+	}
+	if i.NamespaceNEQ != nil {
+		predicates = append(predicates, team.NamespaceNEQ(*i.NamespaceNEQ))
+	}
+	if len(i.NamespaceIn) > 0 {
+		predicates = append(predicates, team.NamespaceIn(i.NamespaceIn...))
+	}
+	if len(i.NamespaceNotIn) > 0 {
+		predicates = append(predicates, team.NamespaceNotIn(i.NamespaceNotIn...))
+	}
+	if i.NamespaceGT != nil {
+		predicates = append(predicates, team.NamespaceGT(*i.NamespaceGT))
+	}
+	if i.NamespaceGTE != nil {
+		predicates = append(predicates, team.NamespaceGTE(*i.NamespaceGTE))
+	}
+	if i.NamespaceLT != nil {
+		predicates = append(predicates, team.NamespaceLT(*i.NamespaceLT))
+	}
+	if i.NamespaceLTE != nil {
+		predicates = append(predicates, team.NamespaceLTE(*i.NamespaceLTE))
+	}
+	if i.NamespaceContains != nil {
+		predicates = append(predicates, team.NamespaceContains(*i.NamespaceContains))
+	}
+	if i.NamespaceHasPrefix != nil {
+		predicates = append(predicates, team.NamespaceHasPrefix(*i.NamespaceHasPrefix))
+	}
+	if i.NamespaceHasSuffix != nil {
+		predicates = append(predicates, team.NamespaceHasSuffix(*i.NamespaceHasSuffix))
+	}
+	if i.NamespaceIsNil {
+		predicates = append(predicates, team.NamespaceIsNil())
+	}
+	if i.NamespaceNotNil {
+		predicates = append(predicates, team.NamespaceNotNil())
+	}
+	if i.NamespaceEqualFold != nil {
+		predicates = append(predicates, team.NamespaceEqualFold(*i.NamespaceEqualFold))
+	}
+	if i.NamespaceContainsFold != nil {
+		predicates = append(predicates, team.NamespaceContainsFold(*i.NamespaceContainsFold))
+	}
 	if i.Name != nil {
 		predicates = append(predicates, team.NameEQ(*i.Name))
 	}
@@ -3401,6 +4204,51 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 	if len(i.CategoryNotIn) > 0 {
 		predicates = append(predicates, team.CategoryNotIn(i.CategoryNotIn...))
 	}
+	if i.RoverTokenRef != nil {
+		predicates = append(predicates, team.RoverTokenRefEQ(*i.RoverTokenRef))
+	}
+	if i.RoverTokenRefNEQ != nil {
+		predicates = append(predicates, team.RoverTokenRefNEQ(*i.RoverTokenRefNEQ))
+	}
+	if len(i.RoverTokenRefIn) > 0 {
+		predicates = append(predicates, team.RoverTokenRefIn(i.RoverTokenRefIn...))
+	}
+	if len(i.RoverTokenRefNotIn) > 0 {
+		predicates = append(predicates, team.RoverTokenRefNotIn(i.RoverTokenRefNotIn...))
+	}
+	if i.RoverTokenRefGT != nil {
+		predicates = append(predicates, team.RoverTokenRefGT(*i.RoverTokenRefGT))
+	}
+	if i.RoverTokenRefGTE != nil {
+		predicates = append(predicates, team.RoverTokenRefGTE(*i.RoverTokenRefGTE))
+	}
+	if i.RoverTokenRefLT != nil {
+		predicates = append(predicates, team.RoverTokenRefLT(*i.RoverTokenRefLT))
+	}
+	if i.RoverTokenRefLTE != nil {
+		predicates = append(predicates, team.RoverTokenRefLTE(*i.RoverTokenRefLTE))
+	}
+	if i.RoverTokenRefContains != nil {
+		predicates = append(predicates, team.RoverTokenRefContains(*i.RoverTokenRefContains))
+	}
+	if i.RoverTokenRefHasPrefix != nil {
+		predicates = append(predicates, team.RoverTokenRefHasPrefix(*i.RoverTokenRefHasPrefix))
+	}
+	if i.RoverTokenRefHasSuffix != nil {
+		predicates = append(predicates, team.RoverTokenRefHasSuffix(*i.RoverTokenRefHasSuffix))
+	}
+	if i.RoverTokenRefIsNil {
+		predicates = append(predicates, team.RoverTokenRefIsNil())
+	}
+	if i.RoverTokenRefNotNil {
+		predicates = append(predicates, team.RoverTokenRefNotNil())
+	}
+	if i.RoverTokenRefEqualFold != nil {
+		predicates = append(predicates, team.RoverTokenRefEqualFold(*i.RoverTokenRefEqualFold))
+	}
+	if i.RoverTokenRefContainsFold != nil {
+		predicates = append(predicates, team.RoverTokenRefContainsFold(*i.RoverTokenRefContainsFold))
+	}
 
 	if i.HasGroup != nil {
 		p := team.HasGroup()
@@ -3438,24 +4286,6 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 		}
 		predicates = append(predicates, team.HasMembersWith(with...))
 	}
-	if i.HasTeamEnvironments != nil {
-		p := team.HasTeamEnvironments()
-		if !*i.HasTeamEnvironments {
-			p = team.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasTeamEnvironmentsWith) > 0 {
-		with := make([]predicate.TeamEnvironment, 0, len(i.HasTeamEnvironmentsWith))
-		for _, w := range i.HasTeamEnvironmentsWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasTeamEnvironmentsWith'", err)
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, team.HasTeamEnvironmentsWith(with...))
-	}
 	if i.HasApplications != nil {
 		p := team.HasApplications()
 		if !*i.HasApplications {
@@ -3484,236 +4314,6 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 	}
 }
 
-// TeamEnvironmentWhereInput represents a where input for filtering TeamEnvironment queries.
-type TeamEnvironmentWhereInput struct {
-	Predicates []predicate.TeamEnvironment  `json:"-"`
-	Not        *TeamEnvironmentWhereInput   `json:"not,omitempty"`
-	Or         []*TeamEnvironmentWhereInput `json:"or,omitempty"`
-	And        []*TeamEnvironmentWhereInput `json:"and,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
-
-	// "rover_token_ref" field predicates.
-	RoverTokenRef             *string  `json:"roverTokenRef,omitempty"`
-	RoverTokenRefNEQ          *string  `json:"roverTokenRefNEQ,omitempty"`
-	RoverTokenRefIn           []string `json:"roverTokenRefIn,omitempty"`
-	RoverTokenRefNotIn        []string `json:"roverTokenRefNotIn,omitempty"`
-	RoverTokenRefGT           *string  `json:"roverTokenRefGT,omitempty"`
-	RoverTokenRefGTE          *string  `json:"roverTokenRefGTE,omitempty"`
-	RoverTokenRefLT           *string  `json:"roverTokenRefLT,omitempty"`
-	RoverTokenRefLTE          *string  `json:"roverTokenRefLTE,omitempty"`
-	RoverTokenRefContains     *string  `json:"roverTokenRefContains,omitempty"`
-	RoverTokenRefHasPrefix    *string  `json:"roverTokenRefHasPrefix,omitempty"`
-	RoverTokenRefHasSuffix    *string  `json:"roverTokenRefHasSuffix,omitempty"`
-	RoverTokenRefIsNil        bool     `json:"roverTokenRefIsNil,omitempty"`
-	RoverTokenRefNotNil       bool     `json:"roverTokenRefNotNil,omitempty"`
-	RoverTokenRefEqualFold    *string  `json:"roverTokenRefEqualFold,omitempty"`
-	RoverTokenRefContainsFold *string  `json:"roverTokenRefContainsFold,omitempty"`
-
-	// "team" edge predicates.
-	HasTeam     *bool             `json:"hasTeam,omitempty"`
-	HasTeamWith []*TeamWhereInput `json:"hasTeamWith,omitempty"`
-
-	// "environment" edge predicates.
-	HasEnvironment     *bool                    `json:"hasEnvironment,omitempty"`
-	HasEnvironmentWith []*EnvironmentWhereInput `json:"hasEnvironmentWith,omitempty"`
-}
-
-// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
-func (i *TeamEnvironmentWhereInput) AddPredicates(predicates ...predicate.TeamEnvironment) {
-	i.Predicates = append(i.Predicates, predicates...)
-}
-
-// Filter applies the TeamEnvironmentWhereInput filter on the TeamEnvironmentQuery builder.
-func (i *TeamEnvironmentWhereInput) Filter(q *TeamEnvironmentQuery) (*TeamEnvironmentQuery, error) {
-	if i == nil {
-		return q, nil
-	}
-	p, err := i.P()
-	if err != nil {
-		if err == ErrEmptyTeamEnvironmentWhereInput {
-			return q, nil
-		}
-		return nil, err
-	}
-	return q.Where(p), nil
-}
-
-// ErrEmptyTeamEnvironmentWhereInput is returned in case the TeamEnvironmentWhereInput is empty.
-var ErrEmptyTeamEnvironmentWhereInput = errors.New("ent: empty predicate TeamEnvironmentWhereInput")
-
-// P returns a predicate for filtering teamenvironments.
-// An error is returned if the input is empty or invalid.
-func (i *TeamEnvironmentWhereInput) P() (predicate.TeamEnvironment, error) {
-	var predicates []predicate.TeamEnvironment
-	if i.Not != nil {
-		p, err := i.Not.P()
-		if err != nil {
-			return nil, fmt.Errorf("%w: field 'not'", err)
-		}
-		predicates = append(predicates, teamenvironment.Not(p))
-	}
-	switch n := len(i.Or); {
-	case n == 1:
-		p, err := i.Or[0].P()
-		if err != nil {
-			return nil, fmt.Errorf("%w: field 'or'", err)
-		}
-		predicates = append(predicates, p)
-	case n > 1:
-		or := make([]predicate.TeamEnvironment, 0, n)
-		for _, w := range i.Or {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'or'", err)
-			}
-			or = append(or, p)
-		}
-		predicates = append(predicates, teamenvironment.Or(or...))
-	}
-	switch n := len(i.And); {
-	case n == 1:
-		p, err := i.And[0].P()
-		if err != nil {
-			return nil, fmt.Errorf("%w: field 'and'", err)
-		}
-		predicates = append(predicates, p)
-	case n > 1:
-		and := make([]predicate.TeamEnvironment, 0, n)
-		for _, w := range i.And {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'and'", err)
-			}
-			and = append(and, p)
-		}
-		predicates = append(predicates, teamenvironment.And(and...))
-	}
-	predicates = append(predicates, i.Predicates...)
-	if i.ID != nil {
-		predicates = append(predicates, teamenvironment.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, teamenvironment.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, teamenvironment.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, teamenvironment.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, teamenvironment.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, teamenvironment.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, teamenvironment.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, teamenvironment.IDLTE(*i.IDLTE))
-	}
-	if i.RoverTokenRef != nil {
-		predicates = append(predicates, teamenvironment.RoverTokenRefEQ(*i.RoverTokenRef))
-	}
-	if i.RoverTokenRefNEQ != nil {
-		predicates = append(predicates, teamenvironment.RoverTokenRefNEQ(*i.RoverTokenRefNEQ))
-	}
-	if len(i.RoverTokenRefIn) > 0 {
-		predicates = append(predicates, teamenvironment.RoverTokenRefIn(i.RoverTokenRefIn...))
-	}
-	if len(i.RoverTokenRefNotIn) > 0 {
-		predicates = append(predicates, teamenvironment.RoverTokenRefNotIn(i.RoverTokenRefNotIn...))
-	}
-	if i.RoverTokenRefGT != nil {
-		predicates = append(predicates, teamenvironment.RoverTokenRefGT(*i.RoverTokenRefGT))
-	}
-	if i.RoverTokenRefGTE != nil {
-		predicates = append(predicates, teamenvironment.RoverTokenRefGTE(*i.RoverTokenRefGTE))
-	}
-	if i.RoverTokenRefLT != nil {
-		predicates = append(predicates, teamenvironment.RoverTokenRefLT(*i.RoverTokenRefLT))
-	}
-	if i.RoverTokenRefLTE != nil {
-		predicates = append(predicates, teamenvironment.RoverTokenRefLTE(*i.RoverTokenRefLTE))
-	}
-	if i.RoverTokenRefContains != nil {
-		predicates = append(predicates, teamenvironment.RoverTokenRefContains(*i.RoverTokenRefContains))
-	}
-	if i.RoverTokenRefHasPrefix != nil {
-		predicates = append(predicates, teamenvironment.RoverTokenRefHasPrefix(*i.RoverTokenRefHasPrefix))
-	}
-	if i.RoverTokenRefHasSuffix != nil {
-		predicates = append(predicates, teamenvironment.RoverTokenRefHasSuffix(*i.RoverTokenRefHasSuffix))
-	}
-	if i.RoverTokenRefIsNil {
-		predicates = append(predicates, teamenvironment.RoverTokenRefIsNil())
-	}
-	if i.RoverTokenRefNotNil {
-		predicates = append(predicates, teamenvironment.RoverTokenRefNotNil())
-	}
-	if i.RoverTokenRefEqualFold != nil {
-		predicates = append(predicates, teamenvironment.RoverTokenRefEqualFold(*i.RoverTokenRefEqualFold))
-	}
-	if i.RoverTokenRefContainsFold != nil {
-		predicates = append(predicates, teamenvironment.RoverTokenRefContainsFold(*i.RoverTokenRefContainsFold))
-	}
-
-	if i.HasTeam != nil {
-		p := teamenvironment.HasTeam()
-		if !*i.HasTeam {
-			p = teamenvironment.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasTeamWith) > 0 {
-		with := make([]predicate.Team, 0, len(i.HasTeamWith))
-		for _, w := range i.HasTeamWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasTeamWith'", err)
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, teamenvironment.HasTeamWith(with...))
-	}
-	if i.HasEnvironment != nil {
-		p := teamenvironment.HasEnvironment()
-		if !*i.HasEnvironment {
-			p = teamenvironment.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasEnvironmentWith) > 0 {
-		with := make([]predicate.Environment, 0, len(i.HasEnvironmentWith))
-		for _, w := range i.HasEnvironmentWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasEnvironmentWith'", err)
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, teamenvironment.HasEnvironmentWith(with...))
-	}
-	switch len(predicates) {
-	case 0:
-		return nil, ErrEmptyTeamEnvironmentWhereInput
-	case 1:
-		return predicates[0], nil
-	default:
-		return teamenvironment.And(predicates...), nil
-	}
-}
-
 // ZoneWhereInput represents a where input for filtering Zone queries.
 type ZoneWhereInput struct {
 	Predicates []predicate.Zone  `json:"-"`
@@ -3730,6 +4330,40 @@ type ZoneWhereInput struct {
 	IDGTE   *int  `json:"idGTE,omitempty"`
 	IDLT    *int  `json:"idLT,omitempty"`
 	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "environment" field predicates.
+	Environment             *string  `json:"environment,omitempty"`
+	EnvironmentNEQ          *string  `json:"environmentNEQ,omitempty"`
+	EnvironmentIn           []string `json:"environmentIn,omitempty"`
+	EnvironmentNotIn        []string `json:"environmentNotIn,omitempty"`
+	EnvironmentGT           *string  `json:"environmentGT,omitempty"`
+	EnvironmentGTE          *string  `json:"environmentGTE,omitempty"`
+	EnvironmentLT           *string  `json:"environmentLT,omitempty"`
+	EnvironmentLTE          *string  `json:"environmentLTE,omitempty"`
+	EnvironmentContains     *string  `json:"environmentContains,omitempty"`
+	EnvironmentHasPrefix    *string  `json:"environmentHasPrefix,omitempty"`
+	EnvironmentHasSuffix    *string  `json:"environmentHasSuffix,omitempty"`
+	EnvironmentIsNil        bool     `json:"environmentIsNil,omitempty"`
+	EnvironmentNotNil       bool     `json:"environmentNotNil,omitempty"`
+	EnvironmentEqualFold    *string  `json:"environmentEqualFold,omitempty"`
+	EnvironmentContainsFold *string  `json:"environmentContainsFold,omitempty"`
+
+	// "namespace" field predicates.
+	Namespace             *string  `json:"namespace,omitempty"`
+	NamespaceNEQ          *string  `json:"namespaceNEQ,omitempty"`
+	NamespaceIn           []string `json:"namespaceIn,omitempty"`
+	NamespaceNotIn        []string `json:"namespaceNotIn,omitempty"`
+	NamespaceGT           *string  `json:"namespaceGT,omitempty"`
+	NamespaceGTE          *string  `json:"namespaceGTE,omitempty"`
+	NamespaceLT           *string  `json:"namespaceLT,omitempty"`
+	NamespaceLTE          *string  `json:"namespaceLTE,omitempty"`
+	NamespaceContains     *string  `json:"namespaceContains,omitempty"`
+	NamespaceHasPrefix    *string  `json:"namespaceHasPrefix,omitempty"`
+	NamespaceHasSuffix    *string  `json:"namespaceHasSuffix,omitempty"`
+	NamespaceIsNil        bool     `json:"namespaceIsNil,omitempty"`
+	NamespaceNotNil       bool     `json:"namespaceNotNil,omitempty"`
+	NamespaceEqualFold    *string  `json:"namespaceEqualFold,omitempty"`
+	NamespaceContainsFold *string  `json:"namespaceContainsFold,omitempty"`
 
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
@@ -3868,6 +4502,96 @@ func (i *ZoneWhereInput) P() (predicate.Zone, error) {
 	}
 	if i.IDLTE != nil {
 		predicates = append(predicates, zone.IDLTE(*i.IDLTE))
+	}
+	if i.Environment != nil {
+		predicates = append(predicates, zone.EnvironmentEQ(*i.Environment))
+	}
+	if i.EnvironmentNEQ != nil {
+		predicates = append(predicates, zone.EnvironmentNEQ(*i.EnvironmentNEQ))
+	}
+	if len(i.EnvironmentIn) > 0 {
+		predicates = append(predicates, zone.EnvironmentIn(i.EnvironmentIn...))
+	}
+	if len(i.EnvironmentNotIn) > 0 {
+		predicates = append(predicates, zone.EnvironmentNotIn(i.EnvironmentNotIn...))
+	}
+	if i.EnvironmentGT != nil {
+		predicates = append(predicates, zone.EnvironmentGT(*i.EnvironmentGT))
+	}
+	if i.EnvironmentGTE != nil {
+		predicates = append(predicates, zone.EnvironmentGTE(*i.EnvironmentGTE))
+	}
+	if i.EnvironmentLT != nil {
+		predicates = append(predicates, zone.EnvironmentLT(*i.EnvironmentLT))
+	}
+	if i.EnvironmentLTE != nil {
+		predicates = append(predicates, zone.EnvironmentLTE(*i.EnvironmentLTE))
+	}
+	if i.EnvironmentContains != nil {
+		predicates = append(predicates, zone.EnvironmentContains(*i.EnvironmentContains))
+	}
+	if i.EnvironmentHasPrefix != nil {
+		predicates = append(predicates, zone.EnvironmentHasPrefix(*i.EnvironmentHasPrefix))
+	}
+	if i.EnvironmentHasSuffix != nil {
+		predicates = append(predicates, zone.EnvironmentHasSuffix(*i.EnvironmentHasSuffix))
+	}
+	if i.EnvironmentIsNil {
+		predicates = append(predicates, zone.EnvironmentIsNil())
+	}
+	if i.EnvironmentNotNil {
+		predicates = append(predicates, zone.EnvironmentNotNil())
+	}
+	if i.EnvironmentEqualFold != nil {
+		predicates = append(predicates, zone.EnvironmentEqualFold(*i.EnvironmentEqualFold))
+	}
+	if i.EnvironmentContainsFold != nil {
+		predicates = append(predicates, zone.EnvironmentContainsFold(*i.EnvironmentContainsFold))
+	}
+	if i.Namespace != nil {
+		predicates = append(predicates, zone.NamespaceEQ(*i.Namespace))
+	}
+	if i.NamespaceNEQ != nil {
+		predicates = append(predicates, zone.NamespaceNEQ(*i.NamespaceNEQ))
+	}
+	if len(i.NamespaceIn) > 0 {
+		predicates = append(predicates, zone.NamespaceIn(i.NamespaceIn...))
+	}
+	if len(i.NamespaceNotIn) > 0 {
+		predicates = append(predicates, zone.NamespaceNotIn(i.NamespaceNotIn...))
+	}
+	if i.NamespaceGT != nil {
+		predicates = append(predicates, zone.NamespaceGT(*i.NamespaceGT))
+	}
+	if i.NamespaceGTE != nil {
+		predicates = append(predicates, zone.NamespaceGTE(*i.NamespaceGTE))
+	}
+	if i.NamespaceLT != nil {
+		predicates = append(predicates, zone.NamespaceLT(*i.NamespaceLT))
+	}
+	if i.NamespaceLTE != nil {
+		predicates = append(predicates, zone.NamespaceLTE(*i.NamespaceLTE))
+	}
+	if i.NamespaceContains != nil {
+		predicates = append(predicates, zone.NamespaceContains(*i.NamespaceContains))
+	}
+	if i.NamespaceHasPrefix != nil {
+		predicates = append(predicates, zone.NamespaceHasPrefix(*i.NamespaceHasPrefix))
+	}
+	if i.NamespaceHasSuffix != nil {
+		predicates = append(predicates, zone.NamespaceHasSuffix(*i.NamespaceHasSuffix))
+	}
+	if i.NamespaceIsNil {
+		predicates = append(predicates, zone.NamespaceIsNil())
+	}
+	if i.NamespaceNotNil {
+		predicates = append(predicates, zone.NamespaceNotNil())
+	}
+	if i.NamespaceEqualFold != nil {
+		predicates = append(predicates, zone.NamespaceEqualFold(*i.NamespaceEqualFold))
+	}
+	if i.NamespaceContainsFold != nil {
+		predicates = append(predicates, zone.NamespaceContainsFold(*i.NamespaceContainsFold))
 	}
 	if i.Name != nil {
 		predicates = append(predicates, zone.NameEQ(*i.Name))
