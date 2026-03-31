@@ -274,6 +274,11 @@ func (_c *ApplicationCreate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Application.name": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.ClientID(); ok {
+		if err := application.ClientIDValidator(v); err != nil {
+			return &ValidationError{Name: "client_id", err: fmt.Errorf(`ent: validator failed for field "Application.client_id": %w`, err)}
+		}
+	}
 	if len(_c.mutation.ZoneIDs()) == 0 {
 		return &ValidationError{Name: "zone", err: errors.New(`ent: missing required edge "Application.zone"`)}
 	}

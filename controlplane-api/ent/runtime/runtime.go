@@ -129,6 +129,10 @@ func init() {
 	applicationDescName := applicationFields[0].Descriptor()
 	// application.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	application.NameValidator = applicationDescName.Validators[0].(func(string) error)
+	// applicationDescClientID is the schema descriptor for client_id field.
+	applicationDescClientID := applicationFields[1].Descriptor()
+	// application.ClientIDValidator is a validator for the "client_id" field. It is called by the builders before save.
+	application.ClientIDValidator = applicationDescClientID.Validators[0].(func(string) error)
 	approvalMixin := schema.Approval{}.Mixin()
 	approval.Policy = privacy.NewPolicies(approvalMixin[0], schema.Approval{})
 	approval.Hooks[0] = func(next ent.Mutator) ent.Mutator {
