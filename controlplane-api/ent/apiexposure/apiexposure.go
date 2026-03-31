@@ -125,8 +125,6 @@ var (
 	UpdateDefaultLastModifiedAt func() time.Time
 	// BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
 	BasePathValidator func(string) error
-	// DefaultActive holds the default value on creation for the "active" field.
-	DefaultActive bool
 	// DefaultFeatures holds the default value on creation for the "features" field.
 	DefaultFeatures []string
 	// DefaultUpstreams holds the default value on creation for the "upstreams" field.
@@ -137,9 +135,6 @@ var (
 
 // StatusPhase defines the type for the "status_phase" enum field.
 type StatusPhase string
-
-// StatusPhaseUnknown is the default value of the StatusPhase enum.
-const DefaultStatusPhase = StatusPhaseUnknown
 
 // StatusPhase values.
 const (

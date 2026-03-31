@@ -55,6 +55,12 @@ func (_u *ApplicationUpdate) SetNillableStatusPhase(v *application.StatusPhase) 
 	return _u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (_u *ApplicationUpdate) ClearStatusPhase() *ApplicationUpdate {
+	_u.mutation.ClearStatusPhase()
+	return _u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (_u *ApplicationUpdate) SetStatusMessage(v string) *ApplicationUpdate {
 	_u.mutation.SetStatusMessage(v)
@@ -140,6 +146,12 @@ func (_u *ApplicationUpdate) SetNillableClientID(v *string) *ApplicationUpdate {
 	if v != nil {
 		_u.SetClientID(*v)
 	}
+	return _u
+}
+
+// ClearClientID clears the value of the "client_id" field.
+func (_u *ApplicationUpdate) ClearClientID() *ApplicationUpdate {
+	_u.mutation.ClearClientID()
 	return _u
 }
 
@@ -328,11 +340,6 @@ func (_u *ApplicationUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Application.name": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.ClientID(); ok {
-		if err := application.ClientIDValidator(v); err != nil {
-			return &ValidationError{Name: "client_id", err: fmt.Errorf(`ent: validator failed for field "Application.client_id": %w`, err)}
-		}
-	}
 	if _u.mutation.ZoneCleared() && len(_u.mutation.ZoneIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Application.zone"`)
 	}
@@ -360,6 +367,9 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	if value, ok := _u.mutation.StatusPhase(); ok {
 		_spec.SetField(application.FieldStatusPhase, field.TypeEnum, value)
 	}
+	if _u.mutation.StatusPhaseCleared() {
+		_spec.ClearField(application.FieldStatusPhase, field.TypeEnum)
+	}
 	if value, ok := _u.mutation.StatusMessage(); ok {
 		_spec.SetField(application.FieldStatusMessage, field.TypeString, value)
 	}
@@ -383,6 +393,9 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	}
 	if value, ok := _u.mutation.ClientID(); ok {
 		_spec.SetField(application.FieldClientID, field.TypeString, value)
+	}
+	if _u.mutation.ClientIDCleared() {
+		_spec.ClearField(application.FieldClientID, field.TypeString)
 	}
 	if value, ok := _u.mutation.IssuerURL(); ok {
 		_spec.SetField(application.FieldIssuerURL, field.TypeString, value)
@@ -578,6 +591,12 @@ func (_u *ApplicationUpdateOne) SetNillableStatusPhase(v *application.StatusPhas
 	return _u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (_u *ApplicationUpdateOne) ClearStatusPhase() *ApplicationUpdateOne {
+	_u.mutation.ClearStatusPhase()
+	return _u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (_u *ApplicationUpdateOne) SetStatusMessage(v string) *ApplicationUpdateOne {
 	_u.mutation.SetStatusMessage(v)
@@ -663,6 +682,12 @@ func (_u *ApplicationUpdateOne) SetNillableClientID(v *string) *ApplicationUpdat
 	if v != nil {
 		_u.SetClientID(*v)
 	}
+	return _u
+}
+
+// ClearClientID clears the value of the "client_id" field.
+func (_u *ApplicationUpdateOne) ClearClientID() *ApplicationUpdateOne {
+	_u.mutation.ClearClientID()
 	return _u
 }
 
@@ -864,11 +889,6 @@ func (_u *ApplicationUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Application.name": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.ClientID(); ok {
-		if err := application.ClientIDValidator(v); err != nil {
-			return &ValidationError{Name: "client_id", err: fmt.Errorf(`ent: validator failed for field "Application.client_id": %w`, err)}
-		}
-	}
 	if _u.mutation.ZoneCleared() && len(_u.mutation.ZoneIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Application.zone"`)
 	}
@@ -913,6 +933,9 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 	if value, ok := _u.mutation.StatusPhase(); ok {
 		_spec.SetField(application.FieldStatusPhase, field.TypeEnum, value)
 	}
+	if _u.mutation.StatusPhaseCleared() {
+		_spec.ClearField(application.FieldStatusPhase, field.TypeEnum)
+	}
 	if value, ok := _u.mutation.StatusMessage(); ok {
 		_spec.SetField(application.FieldStatusMessage, field.TypeString, value)
 	}
@@ -936,6 +959,9 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 	}
 	if value, ok := _u.mutation.ClientID(); ok {
 		_spec.SetField(application.FieldClientID, field.TypeString, value)
+	}
+	if _u.mutation.ClientIDCleared() {
+		_spec.ClearField(application.FieldClientID, field.TypeString)
 	}
 	if value, ok := _u.mutation.IssuerURL(); ok {
 		_spec.SetField(application.FieldIssuerURL, field.TypeString, value)

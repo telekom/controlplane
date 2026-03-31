@@ -54,6 +54,12 @@ func (_u *TeamUpdate) SetNillableStatusPhase(v *team.StatusPhase) *TeamUpdate {
 	return _u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (_u *TeamUpdate) ClearStatusPhase() *TeamUpdate {
+	_u.mutation.ClearStatusPhase()
+	return _u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (_u *TeamUpdate) SetStatusMessage(v string) *TeamUpdate {
 	_u.mutation.SetStatusMessage(v)
@@ -363,6 +369,9 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.StatusPhase(); ok {
 		_spec.SetField(team.FieldStatusPhase, field.TypeEnum, value)
 	}
+	if _u.mutation.StatusPhaseCleared() {
+		_spec.ClearField(team.FieldStatusPhase, field.TypeEnum)
+	}
 	if value, ok := _u.mutation.StatusMessage(); ok {
 		_spec.SetField(team.FieldStatusMessage, field.TypeString, value)
 	}
@@ -552,6 +561,12 @@ func (_u *TeamUpdateOne) SetNillableStatusPhase(v *team.StatusPhase) *TeamUpdate
 	if v != nil {
 		_u.SetStatusPhase(*v)
 	}
+	return _u
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (_u *TeamUpdateOne) ClearStatusPhase() *TeamUpdateOne {
+	_u.mutation.ClearStatusPhase()
 	return _u
 }
 
@@ -893,6 +908,9 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 	}
 	if value, ok := _u.mutation.StatusPhase(); ok {
 		_spec.SetField(team.FieldStatusPhase, field.TypeEnum, value)
+	}
+	if _u.mutation.StatusPhaseCleared() {
+		_spec.ClearField(team.FieldStatusPhase, field.TypeEnum)
 	}
 	if value, ok := _u.mutation.StatusMessage(); ok {
 		_spec.SetField(team.FieldStatusMessage, field.TypeString, value)

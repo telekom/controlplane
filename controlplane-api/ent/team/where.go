@@ -198,6 +198,16 @@ func StatusPhaseNotIn(vs ...StatusPhase) predicate.Team {
 	return predicate.Team(sql.FieldNotIn(FieldStatusPhase, vs...))
 }
 
+// StatusPhaseIsNil applies the IsNil predicate on the "status_phase" field.
+func StatusPhaseIsNil() predicate.Team {
+	return predicate.Team(sql.FieldIsNull(FieldStatusPhase))
+}
+
+// StatusPhaseNotNil applies the NotNil predicate on the "status_phase" field.
+func StatusPhaseNotNil() predicate.Team {
+	return predicate.Team(sql.FieldNotNull(FieldStatusPhase))
+}
+
 // StatusMessageEQ applies the EQ predicate on the "status_message" field.
 func StatusMessageEQ(v string) predicate.Team {
 	return predicate.Team(sql.FieldEQ(FieldStatusMessage, v))

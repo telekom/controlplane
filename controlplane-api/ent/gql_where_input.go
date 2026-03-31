@@ -60,10 +60,12 @@ type ApiExposureWhereInput struct {
 	LastModifiedAtLTE   *time.Time  `json:"lastModifiedAtLTE,omitempty"`
 
 	// "status_phase" field predicates.
-	StatusPhase      *apiexposure.StatusPhase  `json:"statusPhase,omitempty"`
-	StatusPhaseNEQ   *apiexposure.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
-	StatusPhaseIn    []apiexposure.StatusPhase `json:"statusPhaseIn,omitempty"`
-	StatusPhaseNotIn []apiexposure.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+	StatusPhase       *apiexposure.StatusPhase  `json:"statusPhase,omitempty"`
+	StatusPhaseNEQ    *apiexposure.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
+	StatusPhaseIn     []apiexposure.StatusPhase `json:"statusPhaseIn,omitempty"`
+	StatusPhaseNotIn  []apiexposure.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+	StatusPhaseIsNil  bool                      `json:"statusPhaseIsNil,omitempty"`
+	StatusPhaseNotNil bool                      `json:"statusPhaseNotNil,omitempty"`
 
 	// "status_message" field predicates.
 	StatusMessage             *string  `json:"statusMessage,omitempty"`
@@ -138,8 +140,10 @@ type ApiExposureWhereInput struct {
 	VisibilityNotIn []apiexposure.Visibility `json:"visibilityNotIn,omitempty"`
 
 	// "active" field predicates.
-	Active    *bool `json:"active,omitempty"`
-	ActiveNEQ *bool `json:"activeNEQ,omitempty"`
+	Active       *bool `json:"active,omitempty"`
+	ActiveNEQ    *bool `json:"activeNEQ,omitempty"`
+	ActiveIsNil  bool  `json:"activeIsNil,omitempty"`
+	ActiveNotNil bool  `json:"activeNotNil,omitempty"`
 
 	// "api_version" field predicates.
 	APIVersion             *string  `json:"apiVersion,omitempty"`
@@ -321,6 +325,12 @@ func (i *ApiExposureWhereInput) P() (predicate.ApiExposure, error) {
 	}
 	if len(i.StatusPhaseNotIn) > 0 {
 		predicates = append(predicates, apiexposure.StatusPhaseNotIn(i.StatusPhaseNotIn...))
+	}
+	if i.StatusPhaseIsNil {
+		predicates = append(predicates, apiexposure.StatusPhaseIsNil())
+	}
+	if i.StatusPhaseNotNil {
+		predicates = append(predicates, apiexposure.StatusPhaseNotNil())
 	}
 	if i.StatusMessage != nil {
 		predicates = append(predicates, apiexposure.StatusMessageEQ(*i.StatusMessage))
@@ -514,6 +524,12 @@ func (i *ApiExposureWhereInput) P() (predicate.ApiExposure, error) {
 	if i.ActiveNEQ != nil {
 		predicates = append(predicates, apiexposure.ActiveNEQ(*i.ActiveNEQ))
 	}
+	if i.ActiveIsNil {
+		predicates = append(predicates, apiexposure.ActiveIsNil())
+	}
+	if i.ActiveNotNil {
+		predicates = append(predicates, apiexposure.ActiveNotNil())
+	}
 	if i.APIVersion != nil {
 		predicates = append(predicates, apiexposure.APIVersionEQ(*i.APIVersion))
 	}
@@ -644,10 +660,12 @@ type ApiSubscriptionWhereInput struct {
 	LastModifiedAtLTE   *time.Time  `json:"lastModifiedAtLTE,omitempty"`
 
 	// "status_phase" field predicates.
-	StatusPhase      *apisubscription.StatusPhase  `json:"statusPhase,omitempty"`
-	StatusPhaseNEQ   *apisubscription.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
-	StatusPhaseIn    []apisubscription.StatusPhase `json:"statusPhaseIn,omitempty"`
-	StatusPhaseNotIn []apisubscription.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+	StatusPhase       *apisubscription.StatusPhase  `json:"statusPhase,omitempty"`
+	StatusPhaseNEQ    *apisubscription.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
+	StatusPhaseIn     []apisubscription.StatusPhase `json:"statusPhaseIn,omitempty"`
+	StatusPhaseNotIn  []apisubscription.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+	StatusPhaseIsNil  bool                          `json:"statusPhaseIsNil,omitempty"`
+	StatusPhaseNotNil bool                          `json:"statusPhaseNotNil,omitempty"`
 
 	// "status_message" field predicates.
 	StatusMessage             *string  `json:"statusMessage,omitempty"`
@@ -896,6 +914,12 @@ func (i *ApiSubscriptionWhereInput) P() (predicate.ApiSubscription, error) {
 	}
 	if len(i.StatusPhaseNotIn) > 0 {
 		predicates = append(predicates, apisubscription.StatusPhaseNotIn(i.StatusPhaseNotIn...))
+	}
+	if i.StatusPhaseIsNil {
+		predicates = append(predicates, apisubscription.StatusPhaseIsNil())
+	}
+	if i.StatusPhaseNotNil {
+		predicates = append(predicates, apisubscription.StatusPhaseNotNil())
 	}
 	if i.StatusMessage != nil {
 		predicates = append(predicates, apisubscription.StatusMessageEQ(*i.StatusMessage))
@@ -1222,10 +1246,12 @@ type ApplicationWhereInput struct {
 	LastModifiedAtLTE   *time.Time  `json:"lastModifiedAtLTE,omitempty"`
 
 	// "status_phase" field predicates.
-	StatusPhase      *application.StatusPhase  `json:"statusPhase,omitempty"`
-	StatusPhaseNEQ   *application.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
-	StatusPhaseIn    []application.StatusPhase `json:"statusPhaseIn,omitempty"`
-	StatusPhaseNotIn []application.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+	StatusPhase       *application.StatusPhase  `json:"statusPhase,omitempty"`
+	StatusPhaseNEQ    *application.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
+	StatusPhaseIn     []application.StatusPhase `json:"statusPhaseIn,omitempty"`
+	StatusPhaseNotIn  []application.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+	StatusPhaseIsNil  bool                      `json:"statusPhaseIsNil,omitempty"`
+	StatusPhaseNotNil bool                      `json:"statusPhaseNotNil,omitempty"`
 
 	// "status_message" field predicates.
 	StatusMessage             *string  `json:"statusMessage,omitempty"`
@@ -1305,6 +1331,8 @@ type ApplicationWhereInput struct {
 	ClientIDContains     *string  `json:"clientIDContains,omitempty"`
 	ClientIDHasPrefix    *string  `json:"clientIDHasPrefix,omitempty"`
 	ClientIDHasSuffix    *string  `json:"clientIDHasSuffix,omitempty"`
+	ClientIDIsNil        bool     `json:"clientIDIsNil,omitempty"`
+	ClientIDNotNil       bool     `json:"clientIDNotNil,omitempty"`
 	ClientIDEqualFold    *string  `json:"clientIDEqualFold,omitempty"`
 	ClientIDContainsFold *string  `json:"clientIDContainsFold,omitempty"`
 
@@ -1496,6 +1524,12 @@ func (i *ApplicationWhereInput) P() (predicate.Application, error) {
 	}
 	if len(i.StatusPhaseNotIn) > 0 {
 		predicates = append(predicates, application.StatusPhaseNotIn(i.StatusPhaseNotIn...))
+	}
+	if i.StatusPhaseIsNil {
+		predicates = append(predicates, application.StatusPhaseIsNil())
+	}
+	if i.StatusPhaseNotNil {
+		predicates = append(predicates, application.StatusPhaseNotNil())
 	}
 	if i.StatusMessage != nil {
 		predicates = append(predicates, application.StatusMessageEQ(*i.StatusMessage))
@@ -1704,6 +1738,12 @@ func (i *ApplicationWhereInput) P() (predicate.Application, error) {
 	if i.ClientIDHasSuffix != nil {
 		predicates = append(predicates, application.ClientIDHasSuffix(*i.ClientIDHasSuffix))
 	}
+	if i.ClientIDIsNil {
+		predicates = append(predicates, application.ClientIDIsNil())
+	}
+	if i.ClientIDNotNil {
+		predicates = append(predicates, application.ClientIDNotNil())
+	}
 	if i.ClientIDEqualFold != nil {
 		predicates = append(predicates, application.ClientIDEqualFold(*i.ClientIDEqualFold))
 	}
@@ -1876,10 +1916,12 @@ type ApprovalWhereInput struct {
 	LastModifiedAtLTE   *time.Time  `json:"lastModifiedAtLTE,omitempty"`
 
 	// "status_phase" field predicates.
-	StatusPhase      *approval.StatusPhase  `json:"statusPhase,omitempty"`
-	StatusPhaseNEQ   *approval.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
-	StatusPhaseIn    []approval.StatusPhase `json:"statusPhaseIn,omitempty"`
-	StatusPhaseNotIn []approval.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+	StatusPhase       *approval.StatusPhase  `json:"statusPhase,omitempty"`
+	StatusPhaseNEQ    *approval.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
+	StatusPhaseIn     []approval.StatusPhase `json:"statusPhaseIn,omitempty"`
+	StatusPhaseNotIn  []approval.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+	StatusPhaseIsNil  bool                   `json:"statusPhaseIsNil,omitempty"`
+	StatusPhaseNotNil bool                   `json:"statusPhaseNotNil,omitempty"`
 
 	// "status_message" field predicates.
 	StatusMessage             *string  `json:"statusMessage,omitempty"`
@@ -2118,6 +2160,12 @@ func (i *ApprovalWhereInput) P() (predicate.Approval, error) {
 	}
 	if len(i.StatusPhaseNotIn) > 0 {
 		predicates = append(predicates, approval.StatusPhaseNotIn(i.StatusPhaseNotIn...))
+	}
+	if i.StatusPhaseIsNil {
+		predicates = append(predicates, approval.StatusPhaseIsNil())
+	}
+	if i.StatusPhaseNotNil {
+		predicates = append(predicates, approval.StatusPhaseNotNil())
 	}
 	if i.StatusMessage != nil {
 		predicates = append(predicates, approval.StatusMessageEQ(*i.StatusMessage))
@@ -2384,10 +2432,12 @@ type ApprovalRequestWhereInput struct {
 	LastModifiedAtLTE   *time.Time  `json:"lastModifiedAtLTE,omitempty"`
 
 	// "status_phase" field predicates.
-	StatusPhase      *approvalrequest.StatusPhase  `json:"statusPhase,omitempty"`
-	StatusPhaseNEQ   *approvalrequest.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
-	StatusPhaseIn    []approvalrequest.StatusPhase `json:"statusPhaseIn,omitempty"`
-	StatusPhaseNotIn []approvalrequest.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+	StatusPhase       *approvalrequest.StatusPhase  `json:"statusPhase,omitempty"`
+	StatusPhaseNEQ    *approvalrequest.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
+	StatusPhaseIn     []approvalrequest.StatusPhase `json:"statusPhaseIn,omitempty"`
+	StatusPhaseNotIn  []approvalrequest.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+	StatusPhaseIsNil  bool                          `json:"statusPhaseIsNil,omitempty"`
+	StatusPhaseNotNil bool                          `json:"statusPhaseNotNil,omitempty"`
 
 	// "status_message" field predicates.
 	StatusMessage             *string  `json:"statusMessage,omitempty"`
@@ -2626,6 +2676,12 @@ func (i *ApprovalRequestWhereInput) P() (predicate.ApprovalRequest, error) {
 	}
 	if len(i.StatusPhaseNotIn) > 0 {
 		predicates = append(predicates, approvalrequest.StatusPhaseNotIn(i.StatusPhaseNotIn...))
+	}
+	if i.StatusPhaseIsNil {
+		predicates = append(predicates, approvalrequest.StatusPhaseIsNil())
+	}
+	if i.StatusPhaseNotNil {
+		predicates = append(predicates, approvalrequest.StatusPhaseNotNil())
 	}
 	if i.StatusMessage != nil {
 		predicates = append(predicates, approvalrequest.StatusMessageEQ(*i.StatusMessage))
@@ -3702,10 +3758,12 @@ type TeamWhereInput struct {
 	LastModifiedAtLTE   *time.Time  `json:"lastModifiedAtLTE,omitempty"`
 
 	// "status_phase" field predicates.
-	StatusPhase      *team.StatusPhase  `json:"statusPhase,omitempty"`
-	StatusPhaseNEQ   *team.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
-	StatusPhaseIn    []team.StatusPhase `json:"statusPhaseIn,omitempty"`
-	StatusPhaseNotIn []team.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+	StatusPhase       *team.StatusPhase  `json:"statusPhase,omitempty"`
+	StatusPhaseNEQ    *team.StatusPhase  `json:"statusPhaseNEQ,omitempty"`
+	StatusPhaseIn     []team.StatusPhase `json:"statusPhaseIn,omitempty"`
+	StatusPhaseNotIn  []team.StatusPhase `json:"statusPhaseNotIn,omitempty"`
+	StatusPhaseIsNil  bool               `json:"statusPhaseIsNil,omitempty"`
+	StatusPhaseNotNil bool               `json:"statusPhaseNotNil,omitempty"`
 
 	// "status_message" field predicates.
 	StatusMessage             *string  `json:"statusMessage,omitempty"`
@@ -3978,6 +4036,12 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 	}
 	if len(i.StatusPhaseNotIn) > 0 {
 		predicates = append(predicates, team.StatusPhaseNotIn(i.StatusPhaseNotIn...))
+	}
+	if i.StatusPhaseIsNil {
+		predicates = append(predicates, team.StatusPhaseIsNil())
+	}
+	if i.StatusPhaseNotNil {
+		predicates = append(predicates, team.StatusPhaseNotNil())
 	}
 	if i.StatusMessage != nil {
 		predicates = append(predicates, team.StatusMessageEQ(*i.StatusMessage))

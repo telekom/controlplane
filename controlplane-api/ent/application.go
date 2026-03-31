@@ -27,7 +27,7 @@ type Application struct {
 	// LastModifiedAt holds the value of the "last_modified_at" field.
 	LastModifiedAt time.Time `json:"last_modified_at,omitempty"`
 	// StatusPhase holds the value of the "status_phase" field.
-	StatusPhase application.StatusPhase `json:"status_phase,omitempty"`
+	StatusPhase *application.StatusPhase `json:"status_phase,omitempty"`
 	// StatusMessage holds the value of the "status_message" field.
 	StatusMessage *string `json:"status_message,omitempty"`
 	// Environment holds the value of the "environment" field.
@@ -37,7 +37,7 @@ type Application struct {
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// ClientID holds the value of the "client_id" field.
-	ClientID string `json:"client_id,omitempty"`
+	ClientID *string `json:"client_id,omitempty"`
 	// IssuerURL holds the value of the "issuer_url" field.
 	IssuerURL *string `json:"issuer_url,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -160,7 +160,8 @@ func (_m *Application) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status_phase", values[i])
 			} else if value.Valid {
-				_m.StatusPhase = application.StatusPhase(value.String)
+				_m.StatusPhase = new(application.StatusPhase)
+				*_m.StatusPhase = application.StatusPhase(value.String)
 			}
 		case application.FieldStatusMessage:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -193,7 +194,8 @@ func (_m *Application) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field client_id", values[i])
 			} else if value.Valid {
-				_m.ClientID = value.String
+				_m.ClientID = new(string)
+				*_m.ClientID = value.String
 			}
 		case application.FieldIssuerURL:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -278,8 +280,10 @@ func (_m *Application) String() string {
 	builder.WriteString("last_modified_at=")
 	builder.WriteString(_m.LastModifiedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("status_phase=")
-	builder.WriteString(fmt.Sprintf("%v", _m.StatusPhase))
+	if v := _m.StatusPhase; v != nil {
+		builder.WriteString("status_phase=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	if v := _m.StatusMessage; v != nil {
 		builder.WriteString("status_message=")
@@ -299,8 +303,10 @@ func (_m *Application) String() string {
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
-	builder.WriteString("client_id=")
-	builder.WriteString(_m.ClientID)
+	if v := _m.ClientID; v != nil {
+		builder.WriteString("client_id=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	if v := _m.IssuerURL; v != nil {
 		builder.WriteString("issuer_url=")

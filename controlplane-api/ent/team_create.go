@@ -252,10 +252,6 @@ func (_c *TeamCreate) defaults() error {
 		v := team.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
-	if _, ok := _c.mutation.StatusPhase(); !ok {
-		v := team.DefaultStatusPhase
-		_c.mutation.SetStatusPhase(v)
-	}
 	if _, ok := _c.mutation.Category(); !ok {
 		v := team.DefaultCategory
 		_c.mutation.SetCategory(v)
@@ -270,9 +266,6 @@ func (_c *TeamCreate) check() error {
 	}
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
 		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "Team.last_modified_at"`)}
-	}
-	if _, ok := _c.mutation.StatusPhase(); !ok {
-		return &ValidationError{Name: "status_phase", err: errors.New(`ent: missing required field "Team.status_phase"`)}
 	}
 	if v, ok := _c.mutation.StatusPhase(); ok {
 		if err := team.StatusPhaseValidator(v); err != nil {
@@ -340,7 +333,7 @@ func (_c *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := _c.mutation.StatusPhase(); ok {
 		_spec.SetField(team.FieldStatusPhase, field.TypeEnum, value)
-		_node.StatusPhase = value
+		_node.StatusPhase = &value
 	}
 	if value, ok := _c.mutation.StatusMessage(); ok {
 		_spec.SetField(team.FieldStatusMessage, field.TypeString, value)
@@ -492,6 +485,12 @@ func (u *TeamUpsert) SetStatusPhase(v team.StatusPhase) *TeamUpsert {
 // UpdateStatusPhase sets the "status_phase" field to the value that was provided on create.
 func (u *TeamUpsert) UpdateStatusPhase() *TeamUpsert {
 	u.SetExcluded(team.FieldStatusPhase)
+	return u
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *TeamUpsert) ClearStatusPhase() *TeamUpsert {
+	u.SetNull(team.FieldStatusPhase)
 	return u
 }
 
@@ -673,6 +672,13 @@ func (u *TeamUpsertOne) SetStatusPhase(v team.StatusPhase) *TeamUpsertOne {
 func (u *TeamUpsertOne) UpdateStatusPhase() *TeamUpsertOne {
 	return u.Update(func(s *TeamUpsert) {
 		s.UpdateStatusPhase()
+	})
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *TeamUpsertOne) ClearStatusPhase() *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.ClearStatusPhase()
 	})
 }
 
@@ -1038,6 +1044,13 @@ func (u *TeamUpsertBulk) SetStatusPhase(v team.StatusPhase) *TeamUpsertBulk {
 func (u *TeamUpsertBulk) UpdateStatusPhase() *TeamUpsertBulk {
 	return u.Update(func(s *TeamUpsert) {
 		s.UpdateStatusPhase()
+	})
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *TeamUpsertBulk) ClearStatusPhase() *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.ClearStatusPhase()
 	})
 }
 

@@ -266,7 +266,7 @@ func (m *ApiExposureMutation) StatusPhase() (r apiexposure.StatusPhase, exists b
 // OldStatusPhase returns the old "status_phase" field's value of the ApiExposure entity.
 // If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldStatusPhase(ctx context.Context) (v apiexposure.StatusPhase, err error) {
+func (m *ApiExposureMutation) OldStatusPhase(ctx context.Context) (v *apiexposure.StatusPhase, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
 	}
@@ -280,9 +280,22 @@ func (m *ApiExposureMutation) OldStatusPhase(ctx context.Context) (v apiexposure
 	return oldValue.StatusPhase, nil
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *ApiExposureMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[apiexposure.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *ApiExposureMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldStatusPhase]
+	return ok
+}
+
 // ResetStatusPhase resets all changes to the "status_phase" field.
 func (m *ApiExposureMutation) ResetStatusPhase() {
 	m.status_phase = nil
+	delete(m.clearedFields, apiexposure.FieldStatusPhase)
 }
 
 // SetStatusMessage sets the "status_message" field.
@@ -521,7 +534,7 @@ func (m *ApiExposureMutation) Active() (r bool, exists bool) {
 // OldActive returns the old "active" field's value of the ApiExposure entity.
 // If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldActive(ctx context.Context) (v bool, err error) {
+func (m *ApiExposureMutation) OldActive(ctx context.Context) (v *bool, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldActive is only allowed on UpdateOne operations")
 	}
@@ -535,9 +548,22 @@ func (m *ApiExposureMutation) OldActive(ctx context.Context) (v bool, err error)
 	return oldValue.Active, nil
 }
 
+// ClearActive clears the value of the "active" field.
+func (m *ApiExposureMutation) ClearActive() {
+	m.active = nil
+	m.clearedFields[apiexposure.FieldActive] = struct{}{}
+}
+
+// ActiveCleared returns if the "active" field was cleared in this mutation.
+func (m *ApiExposureMutation) ActiveCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldActive]
+	return ok
+}
+
 // ResetActive resets all changes to the "active" field.
 func (m *ApiExposureMutation) ResetActive() {
 	m.active = nil
+	delete(m.clearedFields, apiexposure.FieldActive)
 }
 
 // SetFeatures sets the "features" field.
@@ -1093,6 +1119,9 @@ func (m *ApiExposureMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *ApiExposureMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(apiexposure.FieldStatusPhase) {
+		fields = append(fields, apiexposure.FieldStatusPhase)
+	}
 	if m.FieldCleared(apiexposure.FieldStatusMessage) {
 		fields = append(fields, apiexposure.FieldStatusMessage)
 	}
@@ -1101,6 +1130,9 @@ func (m *ApiExposureMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(apiexposure.FieldNamespace) {
 		fields = append(fields, apiexposure.FieldNamespace)
+	}
+	if m.FieldCleared(apiexposure.FieldActive) {
+		fields = append(fields, apiexposure.FieldActive)
 	}
 	if m.FieldCleared(apiexposure.FieldAPIVersion) {
 		fields = append(fields, apiexposure.FieldAPIVersion)
@@ -1119,6 +1151,9 @@ func (m *ApiExposureMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ApiExposureMutation) ClearField(name string) error {
 	switch name {
+	case apiexposure.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
 	case apiexposure.FieldStatusMessage:
 		m.ClearStatusMessage()
 		return nil
@@ -1127,6 +1162,9 @@ func (m *ApiExposureMutation) ClearField(name string) error {
 		return nil
 	case apiexposure.FieldNamespace:
 		m.ClearNamespace()
+		return nil
+	case apiexposure.FieldActive:
+		m.ClearActive()
 		return nil
 	case apiexposure.FieldAPIVersion:
 		m.ClearAPIVersion()
@@ -1504,7 +1542,7 @@ func (m *ApiSubscriptionMutation) StatusPhase() (r apisubscription.StatusPhase, 
 // OldStatusPhase returns the old "status_phase" field's value of the ApiSubscription entity.
 // If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldStatusPhase(ctx context.Context) (v apisubscription.StatusPhase, err error) {
+func (m *ApiSubscriptionMutation) OldStatusPhase(ctx context.Context) (v *apisubscription.StatusPhase, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
 	}
@@ -1518,9 +1556,22 @@ func (m *ApiSubscriptionMutation) OldStatusPhase(ctx context.Context) (v apisubs
 	return oldValue.StatusPhase, nil
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *ApiSubscriptionMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[apisubscription.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *ApiSubscriptionMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldStatusPhase]
+	return ok
+}
+
 // ResetStatusPhase resets all changes to the "status_phase" field.
 func (m *ApiSubscriptionMutation) ResetStatusPhase() {
 	m.status_phase = nil
+	delete(m.clearedFields, apisubscription.FieldStatusPhase)
 }
 
 // SetStatusMessage sets the "status_message" field.
@@ -2220,6 +2271,9 @@ func (m *ApiSubscriptionMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *ApiSubscriptionMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(apisubscription.FieldStatusPhase) {
+		fields = append(fields, apisubscription.FieldStatusPhase)
+	}
 	if m.FieldCleared(apisubscription.FieldStatusMessage) {
 		fields = append(fields, apisubscription.FieldStatusMessage)
 	}
@@ -2243,6 +2297,9 @@ func (m *ApiSubscriptionMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ApiSubscriptionMutation) ClearField(name string) error {
 	switch name {
+	case apisubscription.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
 	case apisubscription.FieldStatusMessage:
 		m.ClearStatusMessage()
 		return nil
@@ -2665,7 +2722,7 @@ func (m *ApplicationMutation) StatusPhase() (r application.StatusPhase, exists b
 // OldStatusPhase returns the old "status_phase" field's value of the Application entity.
 // If the Application object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApplicationMutation) OldStatusPhase(ctx context.Context) (v application.StatusPhase, err error) {
+func (m *ApplicationMutation) OldStatusPhase(ctx context.Context) (v *application.StatusPhase, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
 	}
@@ -2679,9 +2736,22 @@ func (m *ApplicationMutation) OldStatusPhase(ctx context.Context) (v application
 	return oldValue.StatusPhase, nil
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *ApplicationMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[application.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *ApplicationMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[application.FieldStatusPhase]
+	return ok
+}
+
 // ResetStatusPhase resets all changes to the "status_phase" field.
 func (m *ApplicationMutation) ResetStatusPhase() {
 	m.status_phase = nil
+	delete(m.clearedFields, application.FieldStatusPhase)
 }
 
 // SetStatusMessage sets the "status_message" field.
@@ -2884,7 +2954,7 @@ func (m *ApplicationMutation) ClientID() (r string, exists bool) {
 // OldClientID returns the old "client_id" field's value of the Application entity.
 // If the Application object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApplicationMutation) OldClientID(ctx context.Context) (v string, err error) {
+func (m *ApplicationMutation) OldClientID(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldClientID is only allowed on UpdateOne operations")
 	}
@@ -2898,9 +2968,22 @@ func (m *ApplicationMutation) OldClientID(ctx context.Context) (v string, err er
 	return oldValue.ClientID, nil
 }
 
+// ClearClientID clears the value of the "client_id" field.
+func (m *ApplicationMutation) ClearClientID() {
+	m.client_id = nil
+	m.clearedFields[application.FieldClientID] = struct{}{}
+}
+
+// ClientIDCleared returns if the "client_id" field was cleared in this mutation.
+func (m *ApplicationMutation) ClientIDCleared() bool {
+	_, ok := m.clearedFields[application.FieldClientID]
+	return ok
+}
+
 // ResetClientID resets all changes to the "client_id" field.
 func (m *ApplicationMutation) ResetClientID() {
 	m.client_id = nil
+	delete(m.clearedFields, application.FieldClientID)
 }
 
 // SetIssuerURL sets the "issuer_url" field.
@@ -3355,6 +3438,9 @@ func (m *ApplicationMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *ApplicationMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(application.FieldStatusPhase) {
+		fields = append(fields, application.FieldStatusPhase)
+	}
 	if m.FieldCleared(application.FieldStatusMessage) {
 		fields = append(fields, application.FieldStatusMessage)
 	}
@@ -3363,6 +3449,9 @@ func (m *ApplicationMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(application.FieldNamespace) {
 		fields = append(fields, application.FieldNamespace)
+	}
+	if m.FieldCleared(application.FieldClientID) {
+		fields = append(fields, application.FieldClientID)
 	}
 	if m.FieldCleared(application.FieldIssuerURL) {
 		fields = append(fields, application.FieldIssuerURL)
@@ -3381,6 +3470,9 @@ func (m *ApplicationMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ApplicationMutation) ClearField(name string) error {
 	switch name {
+	case application.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
 	case application.FieldStatusMessage:
 		m.ClearStatusMessage()
 		return nil
@@ -3389,6 +3481,9 @@ func (m *ApplicationMutation) ClearField(name string) error {
 		return nil
 	case application.FieldNamespace:
 		m.ClearNamespace()
+		return nil
+	case application.FieldClientID:
+		m.ClearClientID()
 		return nil
 	case application.FieldIssuerURL:
 		m.ClearIssuerURL()
@@ -3794,7 +3889,7 @@ func (m *ApprovalMutation) StatusPhase() (r approval.StatusPhase, exists bool) {
 // OldStatusPhase returns the old "status_phase" field's value of the Approval entity.
 // If the Approval object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApprovalMutation) OldStatusPhase(ctx context.Context) (v approval.StatusPhase, err error) {
+func (m *ApprovalMutation) OldStatusPhase(ctx context.Context) (v *approval.StatusPhase, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
 	}
@@ -3808,9 +3903,22 @@ func (m *ApprovalMutation) OldStatusPhase(ctx context.Context) (v approval.Statu
 	return oldValue.StatusPhase, nil
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *ApprovalMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[approval.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *ApprovalMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[approval.FieldStatusPhase]
+	return ok
+}
+
 // ResetStatusPhase resets all changes to the "status_phase" field.
 func (m *ApprovalMutation) ResetStatusPhase() {
 	m.status_phase = nil
+	delete(m.clearedFields, approval.FieldStatusPhase)
 }
 
 // SetStatusMessage sets the "status_message" field.
@@ -4200,10 +4308,24 @@ func (m *ApprovalMutation) AppendedAvailableTransitions() ([]model.AvailableTran
 	return m.appendavailable_transitions, true
 }
 
+// ClearAvailableTransitions clears the value of the "available_transitions" field.
+func (m *ApprovalMutation) ClearAvailableTransitions() {
+	m.available_transitions = nil
+	m.appendavailable_transitions = nil
+	m.clearedFields[approval.FieldAvailableTransitions] = struct{}{}
+}
+
+// AvailableTransitionsCleared returns if the "available_transitions" field was cleared in this mutation.
+func (m *ApprovalMutation) AvailableTransitionsCleared() bool {
+	_, ok := m.clearedFields[approval.FieldAvailableTransitions]
+	return ok
+}
+
 // ResetAvailableTransitions resets all changes to the "available_transitions" field.
 func (m *ApprovalMutation) ResetAvailableTransitions() {
 	m.available_transitions = nil
 	m.appendavailable_transitions = nil
+	delete(m.clearedFields, approval.FieldAvailableTransitions)
 }
 
 // SetState sets the "state" field.
@@ -4554,6 +4676,9 @@ func (m *ApprovalMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *ApprovalMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(approval.FieldStatusPhase) {
+		fields = append(fields, approval.FieldStatusPhase)
+	}
 	if m.FieldCleared(approval.FieldStatusMessage) {
 		fields = append(fields, approval.FieldStatusMessage)
 	}
@@ -4562,6 +4687,9 @@ func (m *ApprovalMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(approval.FieldNamespace) {
 		fields = append(fields, approval.FieldNamespace)
+	}
+	if m.FieldCleared(approval.FieldAvailableTransitions) {
+		fields = append(fields, approval.FieldAvailableTransitions)
 	}
 	return fields
 }
@@ -4577,6 +4705,9 @@ func (m *ApprovalMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ApprovalMutation) ClearField(name string) error {
 	switch name {
+	case approval.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
 	case approval.FieldStatusMessage:
 		m.ClearStatusMessage()
 		return nil
@@ -4585,6 +4716,9 @@ func (m *ApprovalMutation) ClearField(name string) error {
 		return nil
 	case approval.FieldNamespace:
 		m.ClearNamespace()
+		return nil
+	case approval.FieldAvailableTransitions:
+		m.ClearAvailableTransitions()
 		return nil
 	}
 	return fmt.Errorf("unknown Approval nullable field %s", name)
@@ -4927,7 +5061,7 @@ func (m *ApprovalRequestMutation) StatusPhase() (r approvalrequest.StatusPhase, 
 // OldStatusPhase returns the old "status_phase" field's value of the ApprovalRequest entity.
 // If the ApprovalRequest object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApprovalRequestMutation) OldStatusPhase(ctx context.Context) (v approvalrequest.StatusPhase, err error) {
+func (m *ApprovalRequestMutation) OldStatusPhase(ctx context.Context) (v *approvalrequest.StatusPhase, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
 	}
@@ -4941,9 +5075,22 @@ func (m *ApprovalRequestMutation) OldStatusPhase(ctx context.Context) (v approva
 	return oldValue.StatusPhase, nil
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *ApprovalRequestMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[approvalrequest.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *ApprovalRequestMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[approvalrequest.FieldStatusPhase]
+	return ok
+}
+
 // ResetStatusPhase resets all changes to the "status_phase" field.
 func (m *ApprovalRequestMutation) ResetStatusPhase() {
 	m.status_phase = nil
+	delete(m.clearedFields, approvalrequest.FieldStatusPhase)
 }
 
 // SetStatusMessage sets the "status_message" field.
@@ -5333,10 +5480,24 @@ func (m *ApprovalRequestMutation) AppendedAvailableTransitions() ([]model.Availa
 	return m.appendavailable_transitions, true
 }
 
+// ClearAvailableTransitions clears the value of the "available_transitions" field.
+func (m *ApprovalRequestMutation) ClearAvailableTransitions() {
+	m.available_transitions = nil
+	m.appendavailable_transitions = nil
+	m.clearedFields[approvalrequest.FieldAvailableTransitions] = struct{}{}
+}
+
+// AvailableTransitionsCleared returns if the "available_transitions" field was cleared in this mutation.
+func (m *ApprovalRequestMutation) AvailableTransitionsCleared() bool {
+	_, ok := m.clearedFields[approvalrequest.FieldAvailableTransitions]
+	return ok
+}
+
 // ResetAvailableTransitions resets all changes to the "available_transitions" field.
 func (m *ApprovalRequestMutation) ResetAvailableTransitions() {
 	m.available_transitions = nil
 	m.appendavailable_transitions = nil
+	delete(m.clearedFields, approvalrequest.FieldAvailableTransitions)
 }
 
 // SetState sets the "state" field.
@@ -5687,6 +5848,9 @@ func (m *ApprovalRequestMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *ApprovalRequestMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(approvalrequest.FieldStatusPhase) {
+		fields = append(fields, approvalrequest.FieldStatusPhase)
+	}
 	if m.FieldCleared(approvalrequest.FieldStatusMessage) {
 		fields = append(fields, approvalrequest.FieldStatusMessage)
 	}
@@ -5695,6 +5859,9 @@ func (m *ApprovalRequestMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(approvalrequest.FieldNamespace) {
 		fields = append(fields, approvalrequest.FieldNamespace)
+	}
+	if m.FieldCleared(approvalrequest.FieldAvailableTransitions) {
+		fields = append(fields, approvalrequest.FieldAvailableTransitions)
 	}
 	return fields
 }
@@ -5710,6 +5877,9 @@ func (m *ApprovalRequestMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ApprovalRequestMutation) ClearField(name string) error {
 	switch name {
+	case approvalrequest.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
 	case approvalrequest.FieldStatusMessage:
 		m.ClearStatusMessage()
 		return nil
@@ -5718,6 +5888,9 @@ func (m *ApprovalRequestMutation) ClearField(name string) error {
 		return nil
 	case approvalrequest.FieldNamespace:
 		m.ClearNamespace()
+		return nil
+	case approvalrequest.FieldAvailableTransitions:
+		m.ClearAvailableTransitions()
 		return nil
 	}
 	return fmt.Errorf("unknown ApprovalRequest nullable field %s", name)
@@ -7333,7 +7506,7 @@ func (m *TeamMutation) StatusPhase() (r team.StatusPhase, exists bool) {
 // OldStatusPhase returns the old "status_phase" field's value of the Team entity.
 // If the Team object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TeamMutation) OldStatusPhase(ctx context.Context) (v team.StatusPhase, err error) {
+func (m *TeamMutation) OldStatusPhase(ctx context.Context) (v *team.StatusPhase, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
 	}
@@ -7347,9 +7520,22 @@ func (m *TeamMutation) OldStatusPhase(ctx context.Context) (v team.StatusPhase, 
 	return oldValue.StatusPhase, nil
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *TeamMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[team.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *TeamMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[team.FieldStatusPhase]
+	return ok
+}
+
 // ResetStatusPhase resets all changes to the "status_phase" field.
 func (m *TeamMutation) ResetStatusPhase() {
 	m.status_phase = nil
+	delete(m.clearedFields, team.FieldStatusPhase)
 }
 
 // SetStatusMessage sets the "status_message" field.
@@ -8034,6 +8220,9 @@ func (m *TeamMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *TeamMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(team.FieldStatusPhase) {
+		fields = append(fields, team.FieldStatusPhase)
+	}
 	if m.FieldCleared(team.FieldStatusMessage) {
 		fields = append(fields, team.FieldStatusMessage)
 	}
@@ -8060,6 +8249,9 @@ func (m *TeamMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *TeamMutation) ClearField(name string) error {
 	switch name {
+	case team.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
 	case team.FieldStatusMessage:
 		m.ClearStatusMessage()
 		return nil

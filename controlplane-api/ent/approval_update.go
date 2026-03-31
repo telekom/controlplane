@@ -54,6 +54,12 @@ func (_u *ApprovalUpdate) SetNillableStatusPhase(v *approval.StatusPhase) *Appro
 	return _u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (_u *ApprovalUpdate) ClearStatusPhase() *ApprovalUpdate {
+	_u.mutation.ClearStatusPhase()
+	return _u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (_u *ApprovalUpdate) SetStatusMessage(v string) *ApprovalUpdate {
 	_u.mutation.SetStatusMessage(v)
@@ -194,6 +200,12 @@ func (_u *ApprovalUpdate) AppendAvailableTransitions(v []model.AvailableTransiti
 	return _u
 }
 
+// ClearAvailableTransitions clears the value of the "available_transitions" field.
+func (_u *ApprovalUpdate) ClearAvailableTransitions() *ApprovalUpdate {
+	_u.mutation.ClearAvailableTransitions()
+	return _u
+}
+
 // SetState sets the "state" field.
 func (_u *ApprovalUpdate) SetState(v approval.State) *ApprovalUpdate {
 	_u.mutation.SetState(v)
@@ -323,6 +335,9 @@ func (_u *ApprovalUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.StatusPhase(); ok {
 		_spec.SetField(approval.FieldStatusPhase, field.TypeEnum, value)
 	}
+	if _u.mutation.StatusPhaseCleared() {
+		_spec.ClearField(approval.FieldStatusPhase, field.TypeEnum)
+	}
 	if value, ok := _u.mutation.StatusMessage(); ok {
 		_spec.SetField(approval.FieldStatusMessage, field.TypeString, value)
 	}
@@ -368,6 +383,9 @@ func (_u *ApprovalUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, approval.FieldAvailableTransitions, value)
 		})
+	}
+	if _u.mutation.AvailableTransitionsCleared() {
+		_spec.ClearField(approval.FieldAvailableTransitions, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(approval.FieldState, field.TypeEnum, value)
@@ -438,6 +456,12 @@ func (_u *ApprovalUpdateOne) SetNillableStatusPhase(v *approval.StatusPhase) *Ap
 	if v != nil {
 		_u.SetStatusPhase(*v)
 	}
+	return _u
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (_u *ApprovalUpdateOne) ClearStatusPhase() *ApprovalUpdateOne {
+	_u.mutation.ClearStatusPhase()
 	return _u
 }
 
@@ -578,6 +602,12 @@ func (_u *ApprovalUpdateOne) SetAvailableTransitions(v []model.AvailableTransiti
 // AppendAvailableTransitions appends value to the "available_transitions" field.
 func (_u *ApprovalUpdateOne) AppendAvailableTransitions(v []model.AvailableTransition) *ApprovalUpdateOne {
 	_u.mutation.AppendAvailableTransitions(v)
+	return _u
+}
+
+// ClearAvailableTransitions clears the value of the "available_transitions" field.
+func (_u *ApprovalUpdateOne) ClearAvailableTransitions() *ApprovalUpdateOne {
+	_u.mutation.ClearAvailableTransitions()
 	return _u
 }
 
@@ -740,6 +770,9 @@ func (_u *ApprovalUpdateOne) sqlSave(ctx context.Context) (_node *Approval, err 
 	if value, ok := _u.mutation.StatusPhase(); ok {
 		_spec.SetField(approval.FieldStatusPhase, field.TypeEnum, value)
 	}
+	if _u.mutation.StatusPhaseCleared() {
+		_spec.ClearField(approval.FieldStatusPhase, field.TypeEnum)
+	}
 	if value, ok := _u.mutation.StatusMessage(); ok {
 		_spec.SetField(approval.FieldStatusMessage, field.TypeString, value)
 	}
@@ -785,6 +818,9 @@ func (_u *ApprovalUpdateOne) sqlSave(ctx context.Context) (_node *Approval, err 
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, approval.FieldAvailableTransitions, value)
 		})
+	}
+	if _u.mutation.AvailableTransitionsCleared() {
+		_spec.ClearField(approval.FieldAvailableTransitions, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(approval.FieldState, field.TypeEnum, value)

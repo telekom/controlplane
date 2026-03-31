@@ -1801,13 +1801,13 @@ type ApiExposure implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: ApiExposureStatusPhase!
+  statusPhase: ApiExposureStatusPhase
   statusMessage: String
   environment: String
   namespace: String
   basePath: String!
   visibility: ApiExposureVisibility!
-  active: Boolean!
+  active: Boolean
   features: [ApiExposureFeature!]!
   upstreams: [Upstream!]!
   approvalConfig: ApprovalConfig!
@@ -1929,6 +1929,8 @@ input ApiExposureWhereInput {
   statusPhaseNEQ: ApiExposureStatusPhase
   statusPhaseIn: [ApiExposureStatusPhase!]
   statusPhaseNotIn: [ApiExposureStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -2011,6 +2013,8 @@ input ApiExposureWhereInput {
   """
   active: Boolean
   activeNEQ: Boolean
+  activeIsNil: Boolean
+  activeNotNil: Boolean
   """
   api_version field predicates
   """
@@ -2044,7 +2048,7 @@ type ApiSubscription implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: ApiSubscriptionStatusPhase!
+  statusPhase: ApiSubscriptionStatusPhase
   statusMessage: String
   environment: String
   namespace: String
@@ -2172,6 +2176,8 @@ input ApiSubscriptionWhereInput {
   statusPhaseNEQ: ApiSubscriptionStatusPhase
   statusPhaseIn: [ApiSubscriptionStatusPhase!]
   statusPhaseNotIn: [ApiSubscriptionStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -2279,12 +2285,12 @@ type Application implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: ApplicationStatusPhase!
+  statusPhase: ApplicationStatusPhase
   statusMessage: String
   environment: String
   namespace: String
   name: String!
-  clientID: String!
+  clientID: String
   issuerURL: String
   zone: Zone!
   exposedApis(
@@ -2458,6 +2464,8 @@ input ApplicationWhereInput {
   statusPhaseNEQ: ApplicationStatusPhase
   statusPhaseIn: [ApplicationStatusPhase!]
   statusPhaseNotIn: [ApplicationStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -2542,6 +2550,8 @@ input ApplicationWhereInput {
   clientIDContains: String
   clientIDHasPrefix: String
   clientIDHasSuffix: String
+  clientIDIsNil: Boolean
+  clientIDNotNil: Boolean
   clientIDEqualFold: String
   clientIDContainsFold: String
   """
@@ -2587,7 +2597,7 @@ type Approval implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: ApprovalStatusPhase!
+  statusPhase: ApprovalStatusPhase
   statusMessage: String
   environment: String
   namespace: String
@@ -2596,7 +2606,7 @@ type Approval implements Node {
   requester: RequesterInfo!
   decider: DeciderInfo!
   decisions: [Decision!]!
-  availableTransitions: [AvailableTransition!]!
+  availableTransitions: [AvailableTransition!]
   state: ApprovalState!
 }
 """
@@ -2653,7 +2663,7 @@ type ApprovalRequest implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: ApprovalRequestStatusPhase!
+  statusPhase: ApprovalRequestStatusPhase
   statusMessage: String
   environment: String
   namespace: String
@@ -2662,7 +2672,7 @@ type ApprovalRequest implements Node {
   requester: RequesterInfo!
   decider: DeciderInfo!
   decisions: [Decision!]!
-  availableTransitions: [AvailableTransition!]!
+  availableTransitions: [AvailableTransition!]
   state: ApprovalRequestState!
 }
 """
@@ -2789,6 +2799,8 @@ input ApprovalRequestWhereInput {
   statusPhaseNEQ: ApprovalRequestStatusPhase
   statusPhaseIn: [ApprovalRequestStatusPhase!]
   statusPhaseNotIn: [ApprovalRequestStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -2955,6 +2967,8 @@ input ApprovalWhereInput {
   statusPhaseNEQ: ApprovalStatusPhase
   statusPhaseIn: [ApprovalStatusPhase!]
   statusPhaseNotIn: [ApprovalStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -3525,7 +3539,7 @@ type Team implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: TeamStatusPhase!
+  statusPhase: TeamStatusPhase
   statusMessage: String
   environment: String
   namespace: String
@@ -3682,6 +3696,8 @@ input TeamWhereInput {
   statusPhaseNEQ: TeamStatusPhase
   statusPhaseIn: [TeamStatusPhase!]
   statusPhaseNotIn: [TeamStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -4015,7 +4031,7 @@ type ApiExposureInfo {
   id: ID!
   basePath: String!
   visibility: ApiExposureVisibility!
-  active: Boolean!
+  active: Boolean
   apiVersion: String
   features: [ApiExposureFeature!]!
   approvalConfig: ApprovalConfig!
@@ -4029,7 +4045,7 @@ type ApiExposureInfo {
 type ApiSubscriptionInfo {
   id: ID!
   basePath: String!
-  statusPhase: ApiSubscriptionStatusPhase!
+  statusPhase: ApiSubscriptionStatusPhase
   statusMessage: String
   "Application name that owns this subscription"
   ownerApplicationName: String!

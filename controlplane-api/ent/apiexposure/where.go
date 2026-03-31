@@ -198,6 +198,16 @@ func StatusPhaseNotIn(vs ...StatusPhase) predicate.ApiExposure {
 	return predicate.ApiExposure(sql.FieldNotIn(FieldStatusPhase, vs...))
 }
 
+// StatusPhaseIsNil applies the IsNil predicate on the "status_phase" field.
+func StatusPhaseIsNil() predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldIsNull(FieldStatusPhase))
+}
+
+// StatusPhaseNotNil applies the NotNil predicate on the "status_phase" field.
+func StatusPhaseNotNil() predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldNotNull(FieldStatusPhase))
+}
+
 // StatusMessageEQ applies the EQ predicate on the "status_message" field.
 func StatusMessageEQ(v string) predicate.ApiExposure {
 	return predicate.ApiExposure(sql.FieldEQ(FieldStatusMessage, v))
@@ -516,6 +526,16 @@ func ActiveEQ(v bool) predicate.ApiExposure {
 // ActiveNEQ applies the NEQ predicate on the "active" field.
 func ActiveNEQ(v bool) predicate.ApiExposure {
 	return predicate.ApiExposure(sql.FieldNEQ(FieldActive, v))
+}
+
+// ActiveIsNil applies the IsNil predicate on the "active" field.
+func ActiveIsNil() predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldIsNull(FieldActive))
+}
+
+// ActiveNotNil applies the NotNil predicate on the "active" field.
+func ActiveNotNil() predicate.ApiExposure {
+	return predicate.ApiExposure(sql.FieldNotNull(FieldActive))
 }
 
 // APIVersionEQ applies the EQ predicate on the "api_version" field.

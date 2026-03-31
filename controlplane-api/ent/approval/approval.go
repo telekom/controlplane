@@ -118,15 +118,10 @@ var (
 	ActionValidator func(string) error
 	// DefaultDecisions holds the default value on creation for the "decisions" field.
 	DefaultDecisions []model.Decision
-	// DefaultAvailableTransitions holds the default value on creation for the "available_transitions" field.
-	DefaultAvailableTransitions []model.AvailableTransition
 )
 
 // StatusPhase defines the type for the "status_phase" enum field.
 type StatusPhase string
-
-// StatusPhaseUnknown is the default value of the StatusPhase enum.
-const DefaultStatusPhase = StatusPhaseUnknown
 
 // StatusPhase values.
 const (
