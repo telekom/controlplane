@@ -267,6 +267,10 @@ func (_c *ApiExposureCreate) defaults() error {
 		v := apiexposure.DefaultVisibility
 		_c.mutation.SetVisibility(v)
 	}
+	if _, ok := _c.mutation.Active(); !ok {
+		v := apiexposure.DefaultActive
+		_c.mutation.SetActive(v)
+	}
 	if _, ok := _c.mutation.Features(); !ok {
 		v := apiexposure.DefaultFeatures
 		_c.mutation.SetFeatures(v)
