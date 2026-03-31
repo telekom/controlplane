@@ -22,7 +22,7 @@ var (
 		{Name: "namespace", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ZONE", "ENTERPRISE"}, Default: "ENTERPRISE"},
-		{Name: "active", Type: field.TypeBool, Nullable: true},
+		{Name: "active", Type: field.TypeBool, Nullable: true, Default: false},
 		{Name: "features", Type: field.TypeJSON},
 		{Name: "upstreams", Type: field.TypeJSON},
 		{Name: "approval_config", Type: field.TypeJSON},

@@ -125,6 +125,8 @@ var (
 	UpdateDefaultLastModifiedAt func() time.Time
 	// BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
 	BasePathValidator func(string) error
+	// DefaultActive holds the default value on creation for the "active" field.
+	DefaultActive bool
 	// DefaultFeatures holds the default value on creation for the "features" field.
 	DefaultFeatures []string
 	// DefaultUpstreams holds the default value on creation for the "upstreams" field.

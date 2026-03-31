@@ -44,7 +44,8 @@ func (ApiExposure) Fields() []ent.Field {
 			Default("ENTERPRISE"),
 		field.Bool("active").
 			Optional().
-			Nillable(),
+			Nillable().
+			Default(false),
 		field.JSON("features", []string{}).
 			Default([]string{}).
 			Annotations(entgql.Type("[ApiExposureFeature!]"), entgql.Skip(entgql.SkipWhereInput)),

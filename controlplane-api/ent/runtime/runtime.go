@@ -57,6 +57,10 @@ func init() {
 	apiexposureDescBasePath := apiexposureFields[0].Descriptor()
 	// apiexposure.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
 	apiexposure.BasePathValidator = apiexposureDescBasePath.Validators[0].(func(string) error)
+	// apiexposureDescActive is the schema descriptor for active field.
+	apiexposureDescActive := apiexposureFields[2].Descriptor()
+	// apiexposure.DefaultActive holds the default value on creation for the active field.
+	apiexposure.DefaultActive = apiexposureDescActive.Default.(bool)
 	// apiexposureDescFeatures is the schema descriptor for features field.
 	apiexposureDescFeatures := apiexposureFields[3].Descriptor()
 	// apiexposure.DefaultFeatures holds the default value on creation for the features field.
