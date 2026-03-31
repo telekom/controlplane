@@ -1,129 +1,4 @@
 
-[EventType Controller GET /eventtypes should list event types with team token - 1]
-{
- "_links": {
-  "first": "/eventtypes?offset=0&limit=20",
-  "last": "/eventtypes?offset=0&limit=20",
-  "self": "/eventtypes?offset=0&limit=20"
- },
- "items": [
-  {
-   "active": true,
-   "description": "Quickstart event type for testing",
-   "id": "eni--hyperion--de-telekom-eni-quickstart-v1",
-   "name": "de-telekom-eni-quickstart-v1",
-   "status": "<Any value>",
-   "type": "de.telekom.eni.quickstart.v1",
-   "version": "1.0.0"
-  }
- ],
- "paging": {
-  "last_page": 1,
-  "page": 1,
-  "total": 1
- }
-}
----
-
-[EventType Controller GET /eventtypes should list event types with admin token - 1]
-{
- "_links": {
-  "first": "/eventtypes?offset=0&limit=20",
-  "last": "/eventtypes?offset=0&limit=20",
-  "self": "/eventtypes?offset=0&limit=20"
- },
- "items": [
-  {
-   "active": true,
-   "description": "Quickstart event type for testing",
-   "id": "eni--hyperion--de-telekom-eni-quickstart-v1",
-   "name": "de-telekom-eni-quickstart-v1",
-   "status": "<Any value>",
-   "type": "de.telekom.eni.quickstart.v1",
-   "version": "1.0.0"
-  }
- ],
- "paging": {
-  "last_page": 1,
-  "page": 1,
-  "total": 1
- }
-}
----
-
-[EventType Controller GET /eventtypes/:eventTypeId should return a single event type - 1]
-{
- "active": true,
- "description": "Quickstart event type for testing",
- "id": "eni--hyperion--de-telekom-eni-quickstart-v1",
- "name": "de-telekom-eni-quickstart-v1",
- "status": "<Any value>",
- "type": "de.telekom.eni.quickstart.v1",
- "version": "1.0.0"
-}
----
-
-[EventType Controller GET /eventtypes/:eventTypeId/status should return event type status - 1]
-{
- "createdAt": "<Any value>",
- "overallStatus": "complete",
- "processedAt": "<Any value>",
- "processingState": "done",
- "state": "complete"
-}
----
-
-[EventType Controller GET /eventtypes/:eventTypeName/active should return the active event type - 1]
-{
- "active": true,
- "description": "Quickstart event type for testing",
- "id": "eni--hyperion--de-telekom-eni-quickstart-v1",
- "name": "de-telekom-eni-quickstart-v1",
- "status": "<Any value>",
- "type": "de.telekom.eni.quickstart.v1",
- "version": "1.0.0"
-}
----
-
-[Application Controller GET /applications should return applications for a different team (empty if no data) - 1]
-{
- "_links": {
-  "first": "/applications?offset=0&limit=20",
-  "last": "/applications?offset=0&limit=20",
-  "self": "/applications?offset=0&limit=20"
- },
- "items": [
-  {
-   "id": "my-app",
-   "name": "my-app",
-   "security": {
-    "ipRestrictions": {
-     "allow": [
-      "10.0.0.0/8",
-      "172.16.0.0/12"
-     ]
-    }
-   },
-   "status": {
-    "processingState": "done",
-    "state": "complete"
-   },
-   "team": {
-    "email": "hyperion@telekom.de",
-    "hub": "eni",
-    "name": "hyperion"
-   },
-   "zone": "dataplane1"
-  }
- ],
- "paging": {
-  "last_page": 1,
-  "page": 1,
-  "total": 1
- }
-}
----
-
 [EventSubscription Controller GET /applications/:applicationId/eventsubscriptions should list event subscriptions with different scopes team scope - 1]
 {
  "_links": {
@@ -349,216 +224,6 @@
 ---
 
 [EventSubscription Controller GET /applications/:applicationId/eventsubscriptions/:eventSubscriptionName/status should return event subscription status with different scopes admin scope - 1]
-{
- "createdAt": "<Any value>",
- "overallStatus": "complete",
- "processedAt": "<Any value>",
- "processingState": "done",
- "state": "complete"
-}
----
-
-[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions should list API subscriptions with different scopes team scope - 1]
-{
- "_links": {
-  "first": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
-  "last": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
-  "self": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20"
- },
- "items": [
-  {
-   "application": {
-    "name": "my-app"
-   },
-   "approval": {
-    "comment": "Approved for testing",
-    "decider": "admin@telekom.de",
-    "status": "Granted"
-   },
-   "basePath": "/eni/distr/v1",
-   "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
-   "name": "my-app--eni-distr-v1",
-   "status": "<Any value>",
-   "team": {
-    "email": "hyperion@telekom.de",
-    "hub": "eni",
-    "name": "hyperion"
-   },
-   "zone": "dataplane1"
-  }
- ],
- "paging": {
-  "last_page": 1,
-  "page": 1,
-  "total": 1
- }
-}
----
-
-[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions should list API subscriptions with different scopes group scope - 1]
-{
- "_links": {
-  "first": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
-  "last": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
-  "self": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20"
- },
- "items": [
-  {
-   "application": {
-    "name": "my-app"
-   },
-   "approval": {
-    "comment": "Approved for testing",
-    "decider": "admin@telekom.de",
-    "status": "Granted"
-   },
-   "basePath": "/eni/distr/v1",
-   "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
-   "name": "my-app--eni-distr-v1",
-   "status": "<Any value>",
-   "team": {
-    "email": "hyperion@telekom.de",
-    "hub": "eni",
-    "name": "hyperion"
-   },
-   "zone": "dataplane1"
-  }
- ],
- "paging": {
-  "last_page": 1,
-  "page": 1,
-  "total": 1
- }
-}
----
-
-[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions should list API subscriptions with different scopes admin scope - 1]
-{
- "_links": {
-  "first": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
-  "last": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
-  "self": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20"
- },
- "items": [
-  {
-   "application": {
-    "name": "my-app"
-   },
-   "approval": {
-    "comment": "Approved for testing",
-    "decider": "admin@telekom.de",
-    "status": "Granted"
-   },
-   "basePath": "/eni/distr/v1",
-   "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
-   "name": "my-app--eni-distr-v1",
-   "status": "<Any value>",
-   "team": {
-    "email": "hyperion@telekom.de",
-    "hub": "eni",
-    "name": "hyperion"
-   },
-   "zone": "dataplane1"
-  }
- ],
- "paging": {
-  "last_page": 1,
-  "page": 1,
-  "total": 1
- }
-}
----
-
-[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName should return a single API subscription with different scopes team scope - 1]
-{
- "application": {
-  "name": "my-app"
- },
- "approval": {
-  "comment": "Approved for testing",
-  "decider": "admin@telekom.de",
-  "status": "Granted"
- },
- "basePath": "/eni/distr/v1",
- "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
- "name": "my-app--eni-distr-v1",
- "status": "<Any value>",
- "team": {
-  "email": "hyperion@telekom.de",
-  "hub": "eni",
-  "name": "hyperion"
- },
- "zone": "dataplane1"
-}
----
-
-[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName should return a single API subscription with different scopes group scope - 1]
-{
- "application": {
-  "name": "my-app"
- },
- "approval": {
-  "comment": "Approved for testing",
-  "decider": "admin@telekom.de",
-  "status": "Granted"
- },
- "basePath": "/eni/distr/v1",
- "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
- "name": "my-app--eni-distr-v1",
- "status": "<Any value>",
- "team": {
-  "email": "hyperion@telekom.de",
-  "hub": "eni",
-  "name": "hyperion"
- },
- "zone": "dataplane1"
-}
----
-
-[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName should return a single API subscription with different scopes admin scope - 1]
-{
- "application": {
-  "name": "my-app"
- },
- "approval": {
-  "comment": "Approved for testing",
-  "decider": "admin@telekom.de",
-  "status": "Granted"
- },
- "basePath": "/eni/distr/v1",
- "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
- "name": "my-app--eni-distr-v1",
- "status": "<Any value>",
- "team": {
-  "email": "hyperion@telekom.de",
-  "hub": "eni",
-  "name": "hyperion"
- },
- "zone": "dataplane1"
-}
----
-
-[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName/status should return API subscription status with different scopes team scope - 1]
-{
- "createdAt": "<Any value>",
- "overallStatus": "complete",
- "processedAt": "<Any value>",
- "processingState": "done",
- "state": "complete"
-}
----
-
-[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName/status should return API subscription status with different scopes group scope - 1]
-{
- "createdAt": "<Any value>",
- "overallStatus": "complete",
- "processedAt": "<Any value>",
- "processingState": "done",
- "state": "complete"
-}
----
-
-[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName/status should return API subscription status with different scopes admin scope - 1]
 {
  "createdAt": "<Any value>",
  "overallStatus": "complete",
@@ -910,7 +575,7 @@
  },
  "items": [
   {
-   "id": "my-app",
+   "id": "eni--hyperion--my-app",
    "name": "my-app",
    "security": {
     "ipRestrictions": {
@@ -946,7 +611,7 @@
  },
  "items": [
   {
-   "id": "my-app",
+   "id": "eni--hyperion--my-app",
    "name": "my-app",
    "security": {
     "ipRestrictions": {
@@ -982,7 +647,7 @@
  },
  "items": [
   {
-   "id": "my-app",
+   "id": "eni--hyperion--my-app",
    "name": "my-app",
    "security": {
     "ipRestrictions": {
@@ -1009,9 +674,48 @@
 }
 ---
 
+[Application Controller GET /applications should return applications for a different team (empty if no data) - 1]
+{
+ "_links": {
+  "first": "/applications?offset=0&limit=20",
+  "last": "/applications?offset=0&limit=20",
+  "self": "/applications?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "id": "eni--hyperion--my-app",
+   "name": "my-app",
+   "security": {
+    "ipRestrictions": {
+     "allow": [
+      "10.0.0.0/8",
+      "172.16.0.0/12"
+     ]
+    }
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   },
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
 [Application Controller GET /applications/:applicationId should return an application with different scopes team scope - 1]
 {
- "id": "my-app",
+ "id": "eni--hyperion--my-app",
  "name": "my-app",
  "security": {
   "ipRestrictions": {
@@ -1033,7 +737,7 @@
 
 [Application Controller GET /applications/:applicationId should return an application with different scopes group scope - 1]
 {
- "id": "my-app",
+ "id": "eni--hyperion--my-app",
  "name": "my-app",
  "security": {
   "ipRestrictions": {
@@ -1055,7 +759,7 @@
 
 [Application Controller GET /applications/:applicationId should return an application with different scopes admin scope - 1]
 {
- "id": "my-app",
+ "id": "eni--hyperion--my-app",
  "name": "my-app",
  "security": {
   "ipRestrictions": {
@@ -1096,6 +800,216 @@
 ---
 
 [Application Controller GET /applications/:applicationId/status should return application status with different scopes admin scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions should list API subscriptions with different scopes team scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "basePath": "/eni/distr/v1",
+   "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+   "name": "my-app--eni-distr-v1",
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions should list API subscriptions with different scopes group scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "basePath": "/eni/distr/v1",
+   "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+   "name": "my-app--eni-distr-v1",
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions should list API subscriptions with different scopes admin scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/apisubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "basePath": "/eni/distr/v1",
+   "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+   "name": "my-app--eni-distr-v1",
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName should return a single API subscription with different scopes team scope - 1]
+{
+ "application": {
+  "name": "my-app"
+ },
+ "approval": {
+  "comment": "Approved for testing",
+  "decider": "admin@telekom.de",
+  "status": "Granted"
+ },
+ "basePath": "/eni/distr/v1",
+ "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+ "name": "my-app--eni-distr-v1",
+ "status": "<Any value>",
+ "team": {
+  "email": "hyperion@telekom.de",
+  "hub": "eni",
+  "name": "hyperion"
+ },
+ "zone": "dataplane1"
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName should return a single API subscription with different scopes group scope - 1]
+{
+ "application": {
+  "name": "my-app"
+ },
+ "approval": {
+  "comment": "Approved for testing",
+  "decider": "admin@telekom.de",
+  "status": "Granted"
+ },
+ "basePath": "/eni/distr/v1",
+ "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+ "name": "my-app--eni-distr-v1",
+ "status": "<Any value>",
+ "team": {
+  "email": "hyperion@telekom.de",
+  "hub": "eni",
+  "name": "hyperion"
+ },
+ "zone": "dataplane1"
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName should return a single API subscription with different scopes admin scope - 1]
+{
+ "application": {
+  "name": "my-app"
+ },
+ "approval": {
+  "comment": "Approved for testing",
+  "decider": "admin@telekom.de",
+  "status": "Granted"
+ },
+ "basePath": "/eni/distr/v1",
+ "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+ "name": "my-app--eni-distr-v1",
+ "status": "<Any value>",
+ "team": {
+  "email": "hyperion@telekom.de",
+  "hub": "eni",
+  "name": "hyperion"
+ },
+ "zone": "dataplane1"
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName/status should return API subscription status with different scopes team scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName/status should return API subscription status with different scopes group scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[ApiSubscription Controller GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName/status should return API subscription status with different scopes admin scope - 1]
 {
  "createdAt": "<Any value>",
  "overallStatus": "complete",
@@ -1363,5 +1277,91 @@
   "page": 1,
   "total": 1
  }
+}
+---
+
+[EventType Controller GET /eventtypes should list event types with team token - 1]
+{
+ "_links": {
+  "first": "/eventtypes?offset=0&limit=20",
+  "last": "/eventtypes?offset=0&limit=20",
+  "self": "/eventtypes?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "active": true,
+   "description": "Quickstart event type for testing",
+   "id": "eni--hyperion--de-telekom-eni-quickstart-v1",
+   "name": "de-telekom-eni-quickstart-v1",
+   "status": "<Any value>",
+   "type": "de.telekom.eni.quickstart.v1",
+   "version": "1.0.0"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[EventType Controller GET /eventtypes should list event types with admin token - 1]
+{
+ "_links": {
+  "first": "/eventtypes?offset=0&limit=20",
+  "last": "/eventtypes?offset=0&limit=20",
+  "self": "/eventtypes?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "active": true,
+   "description": "Quickstart event type for testing",
+   "id": "eni--hyperion--de-telekom-eni-quickstart-v1",
+   "name": "de-telekom-eni-quickstart-v1",
+   "status": "<Any value>",
+   "type": "de.telekom.eni.quickstart.v1",
+   "version": "1.0.0"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[EventType Controller GET /eventtypes/:eventTypeId should return a single event type - 1]
+{
+ "active": true,
+ "description": "Quickstart event type for testing",
+ "id": "eni--hyperion--de-telekom-eni-quickstart-v1",
+ "name": "de-telekom-eni-quickstart-v1",
+ "status": "<Any value>",
+ "type": "de.telekom.eni.quickstart.v1",
+ "version": "1.0.0"
+}
+---
+
+[EventType Controller GET /eventtypes/:eventTypeId/status should return event type status - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[EventType Controller GET /eventtypes/:eventTypeName/active should return the active event type - 1]
+{
+ "active": true,
+ "description": "Quickstart event type for testing",
+ "id": "eni--hyperion--de-telekom-eni-quickstart-v1",
+ "name": "de-telekom-eni-quickstart-v1",
+ "status": "<Any value>",
+ "type": "de.telekom.eni.quickstart.v1",
+ "version": "1.0.0"
 }
 ---
