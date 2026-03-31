@@ -30,7 +30,7 @@ type ApiSubscription struct {
 	// LastModifiedAt holds the value of the "last_modified_at" field.
 	LastModifiedAt time.Time `json:"last_modified_at,omitempty"`
 	// StatusPhase holds the value of the "status_phase" field.
-	StatusPhase apisubscription.StatusPhase `json:"status_phase,omitempty"`
+	StatusPhase *apisubscription.StatusPhase `json:"status_phase,omitempty"`
 	// StatusMessage holds the value of the "status_message" field.
 	StatusMessage *string `json:"status_message,omitempty"`
 	// Environment holds the value of the "environment" field.
@@ -179,7 +179,8 @@ func (_m *ApiSubscription) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status_phase", values[i])
 			} else if value.Valid {
-				_m.StatusPhase = apisubscription.StatusPhase(value.String)
+				_m.StatusPhase = new(apisubscription.StatusPhase)
+				*_m.StatusPhase = apisubscription.StatusPhase(value.String)
 			}
 		case apisubscription.FieldStatusMessage:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -303,8 +304,10 @@ func (_m *ApiSubscription) String() string {
 	builder.WriteString("last_modified_at=")
 	builder.WriteString(_m.LastModifiedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("status_phase=")
-	builder.WriteString(fmt.Sprintf("%v", _m.StatusPhase))
+	if v := _m.StatusPhase; v != nil {
+		builder.WriteString("status_phase=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	if v := _m.StatusMessage; v != nil {
 		builder.WriteString("status_message=")

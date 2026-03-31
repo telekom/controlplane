@@ -274,10 +274,6 @@ func (_c *ApiSubscriptionCreate) defaults() error {
 		v := apisubscription.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
-	if _, ok := _c.mutation.StatusPhase(); !ok {
-		v := apisubscription.DefaultStatusPhase
-		_c.mutation.SetStatusPhase(v)
-	}
 	if _, ok := _c.mutation.M2mAuthMethod(); !ok {
 		v := apisubscription.DefaultM2mAuthMethod
 		_c.mutation.SetM2mAuthMethod(v)
@@ -296,9 +292,6 @@ func (_c *ApiSubscriptionCreate) check() error {
 	}
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
 		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "ApiSubscription.last_modified_at"`)}
-	}
-	if _, ok := _c.mutation.StatusPhase(); !ok {
-		return &ValidationError{Name: "status_phase", err: errors.New(`ent: missing required field "ApiSubscription.status_phase"`)}
 	}
 	if v, ok := _c.mutation.StatusPhase(); ok {
 		if err := apisubscription.StatusPhaseValidator(v); err != nil {
@@ -364,7 +357,7 @@ func (_c *ApiSubscriptionCreate) createSpec() (*ApiSubscription, *sqlgraph.Creat
 	}
 	if value, ok := _c.mutation.StatusPhase(); ok {
 		_spec.SetField(apisubscription.FieldStatusPhase, field.TypeEnum, value)
-		_node.StatusPhase = value
+		_node.StatusPhase = &value
 	}
 	if value, ok := _c.mutation.StatusMessage(); ok {
 		_spec.SetField(apisubscription.FieldStatusMessage, field.TypeString, value)
@@ -548,6 +541,12 @@ func (u *ApiSubscriptionUpsert) UpdateStatusPhase() *ApiSubscriptionUpsert {
 	return u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApiSubscriptionUpsert) ClearStatusPhase() *ApiSubscriptionUpsert {
+	u.SetNull(apisubscription.FieldStatusPhase)
+	return u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *ApiSubscriptionUpsert) SetStatusMessage(v string) *ApiSubscriptionUpsert {
 	u.Set(apisubscription.FieldStatusMessage, v)
@@ -708,6 +707,13 @@ func (u *ApiSubscriptionUpsertOne) SetStatusPhase(v apisubscription.StatusPhase)
 func (u *ApiSubscriptionUpsertOne) UpdateStatusPhase() *ApiSubscriptionUpsertOne {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
 		s.UpdateStatusPhase()
+	})
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApiSubscriptionUpsertOne) ClearStatusPhase() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearStatusPhase()
 	})
 }
 
@@ -1052,6 +1058,13 @@ func (u *ApiSubscriptionUpsertBulk) SetStatusPhase(v apisubscription.StatusPhase
 func (u *ApiSubscriptionUpsertBulk) UpdateStatusPhase() *ApiSubscriptionUpsertBulk {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
 		s.UpdateStatusPhase()
+	})
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApiSubscriptionUpsertBulk) ClearStatusPhase() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearStatusPhase()
 	})
 }
 

@@ -37,7 +37,7 @@ func (ApprovalFieldsMixin) Fields() []ent.Field {
 			Default([]model.Decision{}).
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 		field.JSON("available_transitions", []model.AvailableTransition{}).
-			Default([]model.AvailableTransition{}).
+			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 	}
 }

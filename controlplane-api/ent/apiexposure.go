@@ -28,7 +28,7 @@ type ApiExposure struct {
 	// LastModifiedAt holds the value of the "last_modified_at" field.
 	LastModifiedAt time.Time `json:"last_modified_at,omitempty"`
 	// StatusPhase holds the value of the "status_phase" field.
-	StatusPhase apiexposure.StatusPhase `json:"status_phase,omitempty"`
+	StatusPhase *apiexposure.StatusPhase `json:"status_phase,omitempty"`
 	// StatusMessage holds the value of the "status_message" field.
 	StatusMessage *string `json:"status_message,omitempty"`
 	// Environment holds the value of the "environment" field.
@@ -40,7 +40,7 @@ type ApiExposure struct {
 	// Visibility holds the value of the "visibility" field.
 	Visibility apiexposure.Visibility `json:"visibility,omitempty"`
 	// Active holds the value of the "active" field.
-	Active bool `json:"active,omitempty"`
+	Active *bool `json:"active,omitempty"`
 	// Features holds the value of the "features" field.
 	Features []string `json:"features,omitempty"`
 	// Upstreams holds the value of the "upstreams" field.
@@ -145,7 +145,8 @@ func (_m *ApiExposure) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status_phase", values[i])
 			} else if value.Valid {
-				_m.StatusPhase = apiexposure.StatusPhase(value.String)
+				_m.StatusPhase = new(apiexposure.StatusPhase)
+				*_m.StatusPhase = apiexposure.StatusPhase(value.String)
 			}
 		case apiexposure.FieldStatusMessage:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -184,7 +185,8 @@ func (_m *ApiExposure) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field active", values[i])
 			} else if value.Valid {
-				_m.Active = value.Bool
+				_m.Active = new(bool)
+				*_m.Active = value.Bool
 			}
 		case apiexposure.FieldFeatures:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -276,8 +278,10 @@ func (_m *ApiExposure) String() string {
 	builder.WriteString("last_modified_at=")
 	builder.WriteString(_m.LastModifiedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("status_phase=")
-	builder.WriteString(fmt.Sprintf("%v", _m.StatusPhase))
+	if v := _m.StatusPhase; v != nil {
+		builder.WriteString("status_phase=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	if v := _m.StatusMessage; v != nil {
 		builder.WriteString("status_message=")
@@ -300,8 +304,10 @@ func (_m *ApiExposure) String() string {
 	builder.WriteString("visibility=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Visibility))
 	builder.WriteString(", ")
-	builder.WriteString("active=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Active))
+	if v := _m.Active; v != nil {
+		builder.WriteString("active=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("features=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Features))

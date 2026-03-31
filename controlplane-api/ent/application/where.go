@@ -198,6 +198,16 @@ func StatusPhaseNotIn(vs ...StatusPhase) predicate.Application {
 	return predicate.Application(sql.FieldNotIn(FieldStatusPhase, vs...))
 }
 
+// StatusPhaseIsNil applies the IsNil predicate on the "status_phase" field.
+func StatusPhaseIsNil() predicate.Application {
+	return predicate.Application(sql.FieldIsNull(FieldStatusPhase))
+}
+
+// StatusPhaseNotNil applies the NotNil predicate on the "status_phase" field.
+func StatusPhaseNotNil() predicate.Application {
+	return predicate.Application(sql.FieldNotNull(FieldStatusPhase))
+}
+
 // StatusMessageEQ applies the EQ predicate on the "status_message" field.
 func StatusMessageEQ(v string) predicate.Application {
 	return predicate.Application(sql.FieldEQ(FieldStatusMessage, v))
@@ -541,6 +551,16 @@ func ClientIDHasPrefix(v string) predicate.Application {
 // ClientIDHasSuffix applies the HasSuffix predicate on the "client_id" field.
 func ClientIDHasSuffix(v string) predicate.Application {
 	return predicate.Application(sql.FieldHasSuffix(FieldClientID, v))
+}
+
+// ClientIDIsNil applies the IsNil predicate on the "client_id" field.
+func ClientIDIsNil() predicate.Application {
+	return predicate.Application(sql.FieldIsNull(FieldClientID))
+}
+
+// ClientIDNotNil applies the NotNil predicate on the "client_id" field.
+func ClientIDNotNil() predicate.Application {
+	return predicate.Application(sql.FieldNotNull(FieldClientID))
 }
 
 // ClientIDEqualFold applies the EqualFold predicate on the "client_id" field.

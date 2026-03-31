@@ -24,7 +24,8 @@ func (StatusMixin) Fields() []ent.Field {
 				"Error", "ERROR",
 				"Unknown", "UNKNOWN",
 			).
-			Default("UNKNOWN"),
+			Optional().
+			Nillable(),
 		field.Text("status_message").
 			Optional().
 			Nillable(),

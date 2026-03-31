@@ -41,8 +41,6 @@ func init() {
 	}
 	apiexposureMixinFields1 := apiexposureMixin[1].Fields()
 	_ = apiexposureMixinFields1
-	apiexposureMixinFields2 := apiexposureMixin[2].Fields()
-	_ = apiexposureMixinFields2
 	apiexposureFields := schema.ApiExposure{}.Fields()
 	_ = apiexposureFields
 	// apiexposureDescCreatedAt is the schema descriptor for created_at field.
@@ -59,10 +57,6 @@ func init() {
 	apiexposureDescBasePath := apiexposureFields[0].Descriptor()
 	// apiexposure.BasePathValidator is a validator for the "base_path" field. It is called by the builders before save.
 	apiexposure.BasePathValidator = apiexposureDescBasePath.Validators[0].(func(string) error)
-	// apiexposureDescActive is the schema descriptor for active field.
-	apiexposureDescActive := apiexposureFields[2].Descriptor()
-	// apiexposure.DefaultActive holds the default value on creation for the active field.
-	apiexposure.DefaultActive = apiexposureDescActive.Default.(bool)
 	// apiexposureDescFeatures is the schema descriptor for features field.
 	apiexposureDescFeatures := apiexposureFields[3].Descriptor()
 	// apiexposure.DefaultFeatures holds the default value on creation for the features field.
@@ -87,8 +81,6 @@ func init() {
 	}
 	apisubscriptionMixinFields1 := apisubscriptionMixin[1].Fields()
 	_ = apisubscriptionMixinFields1
-	apisubscriptionMixinFields2 := apisubscriptionMixin[2].Fields()
-	_ = apisubscriptionMixinFields2
 	apisubscriptionFields := schema.ApiSubscription{}.Fields()
 	_ = apisubscriptionFields
 	// apisubscriptionDescCreatedAt is the schema descriptor for created_at field.
@@ -121,8 +113,6 @@ func init() {
 	}
 	applicationMixinFields1 := applicationMixin[1].Fields()
 	_ = applicationMixinFields1
-	applicationMixinFields2 := applicationMixin[2].Fields()
-	_ = applicationMixinFields2
 	applicationFields := schema.Application{}.Fields()
 	_ = applicationFields
 	// applicationDescCreatedAt is the schema descriptor for created_at field.
@@ -139,10 +129,6 @@ func init() {
 	applicationDescName := applicationFields[0].Descriptor()
 	// application.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	application.NameValidator = applicationDescName.Validators[0].(func(string) error)
-	// applicationDescClientID is the schema descriptor for client_id field.
-	applicationDescClientID := applicationFields[1].Descriptor()
-	// application.ClientIDValidator is a validator for the "client_id" field. It is called by the builders before save.
-	application.ClientIDValidator = applicationDescClientID.Validators[0].(func(string) error)
 	approvalMixin := schema.Approval{}.Mixin()
 	approval.Policy = privacy.NewPolicies(approvalMixin[0], schema.Approval{})
 	approval.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -155,8 +141,6 @@ func init() {
 	}
 	approvalMixinFields1 := approvalMixin[1].Fields()
 	_ = approvalMixinFields1
-	approvalMixinFields2 := approvalMixin[2].Fields()
-	_ = approvalMixinFields2
 	approvalMixinFields5 := approvalMixin[5].Fields()
 	_ = approvalMixinFields5
 	approvalFields := schema.Approval{}.Fields()
@@ -179,10 +163,6 @@ func init() {
 	approvalDescDecisions := approvalMixinFields5[4].Descriptor()
 	// approval.DefaultDecisions holds the default value on creation for the decisions field.
 	approval.DefaultDecisions = approvalDescDecisions.Default.([]model.Decision)
-	// approvalDescAvailableTransitions is the schema descriptor for available_transitions field.
-	approvalDescAvailableTransitions := approvalMixinFields5[5].Descriptor()
-	// approval.DefaultAvailableTransitions holds the default value on creation for the available_transitions field.
-	approval.DefaultAvailableTransitions = approvalDescAvailableTransitions.Default.([]model.AvailableTransition)
 	approvalrequestMixin := schema.ApprovalRequest{}.Mixin()
 	approvalrequest.Policy = privacy.NewPolicies(approvalrequestMixin[0], schema.ApprovalRequest{})
 	approvalrequest.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -195,8 +175,6 @@ func init() {
 	}
 	approvalrequestMixinFields1 := approvalrequestMixin[1].Fields()
 	_ = approvalrequestMixinFields1
-	approvalrequestMixinFields2 := approvalrequestMixin[2].Fields()
-	_ = approvalrequestMixinFields2
 	approvalrequestMixinFields5 := approvalrequestMixin[5].Fields()
 	_ = approvalrequestMixinFields5
 	approvalrequestFields := schema.ApprovalRequest{}.Fields()
@@ -219,10 +197,6 @@ func init() {
 	approvalrequestDescDecisions := approvalrequestMixinFields5[4].Descriptor()
 	// approvalrequest.DefaultDecisions holds the default value on creation for the decisions field.
 	approvalrequest.DefaultDecisions = approvalrequestDescDecisions.Default.([]model.Decision)
-	// approvalrequestDescAvailableTransitions is the schema descriptor for available_transitions field.
-	approvalrequestDescAvailableTransitions := approvalrequestMixinFields5[5].Descriptor()
-	// approvalrequest.DefaultAvailableTransitions holds the default value on creation for the available_transitions field.
-	approvalrequest.DefaultAvailableTransitions = approvalrequestDescAvailableTransitions.Default.([]model.AvailableTransition)
 	groupMixin := schema.Group{}.Mixin()
 	group.Policy = privacy.NewPolicies(groupMixin[0], schema.Group{})
 	group.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -279,8 +253,6 @@ func init() {
 	}
 	teamMixinFields1 := teamMixin[1].Fields()
 	_ = teamMixinFields1
-	teamMixinFields2 := teamMixin[2].Fields()
-	_ = teamMixinFields2
 	teamFields := schema.Team{}.Fields()
 	_ = teamFields
 	// teamDescCreatedAt is the schema descriptor for created_at field.

@@ -57,6 +57,12 @@ func (_u *ApiSubscriptionUpdate) SetNillableStatusPhase(v *apisubscription.Statu
 	return _u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (_u *ApiSubscriptionUpdate) ClearStatusPhase() *ApiSubscriptionUpdate {
+	_u.mutation.ClearStatusPhase()
+	return _u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (_u *ApiSubscriptionUpdate) SetStatusMessage(v string) *ApiSubscriptionUpdate {
 	_u.mutation.SetStatusMessage(v)
@@ -373,6 +379,9 @@ func (_u *ApiSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err er
 	if value, ok := _u.mutation.StatusPhase(); ok {
 		_spec.SetField(apisubscription.FieldStatusPhase, field.TypeEnum, value)
 	}
+	if _u.mutation.StatusPhaseCleared() {
+		_spec.ClearField(apisubscription.FieldStatusPhase, field.TypeEnum)
+	}
 	if value, ok := _u.mutation.StatusMessage(); ok {
 		_spec.SetField(apisubscription.FieldStatusMessage, field.TypeString, value)
 	}
@@ -603,6 +612,12 @@ func (_u *ApiSubscriptionUpdateOne) SetNillableStatusPhase(v *apisubscription.St
 	if v != nil {
 		_u.SetStatusPhase(*v)
 	}
+	return _u
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (_u *ApiSubscriptionUpdateOne) ClearStatusPhase() *ApiSubscriptionUpdateOne {
+	_u.mutation.ClearStatusPhase()
 	return _u
 }
 
@@ -951,6 +966,9 @@ func (_u *ApiSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *ApiSubs
 	}
 	if value, ok := _u.mutation.StatusPhase(); ok {
 		_spec.SetField(apisubscription.FieldStatusPhase, field.TypeEnum, value)
+	}
+	if _u.mutation.StatusPhaseCleared() {
+		_spec.ClearField(apisubscription.FieldStatusPhase, field.TypeEnum)
 	}
 	if value, ok := _u.mutation.StatusMessage(); ok {
 		_spec.SetField(apisubscription.FieldStatusMessage, field.TypeString, value)

@@ -125,6 +125,14 @@ func (_c *ApplicationCreate) SetClientID(v string) *ApplicationCreate {
 	return _c
 }
 
+// SetNillableClientID sets the "client_id" field if the given value is not nil.
+func (_c *ApplicationCreate) SetNillableClientID(v *string) *ApplicationCreate {
+	if v != nil {
+		_c.SetClientID(*v)
+	}
+	return _c
+}
+
 // SetIssuerURL sets the "issuer_url" field.
 func (_c *ApplicationCreate) SetIssuerURL(v string) *ApplicationCreate {
 	_c.mutation.SetIssuerURL(v)
@@ -242,10 +250,6 @@ func (_c *ApplicationCreate) defaults() error {
 		v := application.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
-	if _, ok := _c.mutation.StatusPhase(); !ok {
-		v := application.DefaultStatusPhase
-		_c.mutation.SetStatusPhase(v)
-	}
 	return nil
 }
 
@@ -256,9 +260,6 @@ func (_c *ApplicationCreate) check() error {
 	}
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
 		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "Application.last_modified_at"`)}
-	}
-	if _, ok := _c.mutation.StatusPhase(); !ok {
-		return &ValidationError{Name: "status_phase", err: errors.New(`ent: missing required field "Application.status_phase"`)}
 	}
 	if v, ok := _c.mutation.StatusPhase(); ok {
 		if err := application.StatusPhaseValidator(v); err != nil {
@@ -271,14 +272,6 @@ func (_c *ApplicationCreate) check() error {
 	if v, ok := _c.mutation.Name(); ok {
 		if err := application.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Application.name": %w`, err)}
-		}
-	}
-	if _, ok := _c.mutation.ClientID(); !ok {
-		return &ValidationError{Name: "client_id", err: errors.New(`ent: missing required field "Application.client_id"`)}
-	}
-	if v, ok := _c.mutation.ClientID(); ok {
-		if err := application.ClientIDValidator(v); err != nil {
-			return &ValidationError{Name: "client_id", err: fmt.Errorf(`ent: validator failed for field "Application.client_id": %w`, err)}
 		}
 	}
 	if len(_c.mutation.ZoneIDs()) == 0 {
@@ -324,7 +317,7 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := _c.mutation.StatusPhase(); ok {
 		_spec.SetField(application.FieldStatusPhase, field.TypeEnum, value)
-		_node.StatusPhase = value
+		_node.StatusPhase = &value
 	}
 	if value, ok := _c.mutation.StatusMessage(); ok {
 		_spec.SetField(application.FieldStatusMessage, field.TypeString, value)
@@ -344,7 +337,7 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := _c.mutation.ClientID(); ok {
 		_spec.SetField(application.FieldClientID, field.TypeString, value)
-		_node.ClientID = value
+		_node.ClientID = &value
 	}
 	if value, ok := _c.mutation.IssuerURL(); ok {
 		_spec.SetField(application.FieldIssuerURL, field.TypeString, value)
@@ -492,6 +485,12 @@ func (u *ApplicationUpsert) UpdateStatusPhase() *ApplicationUpsert {
 	return u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApplicationUpsert) ClearStatusPhase() *ApplicationUpsert {
+	u.SetNull(application.FieldStatusPhase)
+	return u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *ApplicationUpsert) SetStatusMessage(v string) *ApplicationUpsert {
 	u.Set(application.FieldStatusMessage, v)
@@ -567,6 +566,12 @@ func (u *ApplicationUpsert) SetClientID(v string) *ApplicationUpsert {
 // UpdateClientID sets the "client_id" field to the value that was provided on create.
 func (u *ApplicationUpsert) UpdateClientID() *ApplicationUpsert {
 	u.SetExcluded(application.FieldClientID)
+	return u
+}
+
+// ClearClientID clears the value of the "client_id" field.
+func (u *ApplicationUpsert) ClearClientID() *ApplicationUpsert {
+	u.SetNull(application.FieldClientID)
 	return u
 }
 
@@ -661,6 +666,13 @@ func (u *ApplicationUpsertOne) UpdateStatusPhase() *ApplicationUpsertOne {
 	})
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApplicationUpsertOne) ClearStatusPhase() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearStatusPhase()
+	})
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *ApplicationUpsertOne) SetStatusMessage(v string) *ApplicationUpsertOne {
 	return u.Update(func(s *ApplicationUpsert) {
@@ -749,6 +761,13 @@ func (u *ApplicationUpsertOne) SetClientID(v string) *ApplicationUpsertOne {
 func (u *ApplicationUpsertOne) UpdateClientID() *ApplicationUpsertOne {
 	return u.Update(func(s *ApplicationUpsert) {
 		s.UpdateClientID()
+	})
+}
+
+// ClearClientID clears the value of the "client_id" field.
+func (u *ApplicationUpsertOne) ClearClientID() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearClientID()
 	})
 }
 
@@ -1012,6 +1031,13 @@ func (u *ApplicationUpsertBulk) UpdateStatusPhase() *ApplicationUpsertBulk {
 	})
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApplicationUpsertBulk) ClearStatusPhase() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearStatusPhase()
+	})
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *ApplicationUpsertBulk) SetStatusMessage(v string) *ApplicationUpsertBulk {
 	return u.Update(func(s *ApplicationUpsert) {
@@ -1100,6 +1126,13 @@ func (u *ApplicationUpsertBulk) SetClientID(v string) *ApplicationUpsertBulk {
 func (u *ApplicationUpsertBulk) UpdateClientID() *ApplicationUpsertBulk {
 	return u.Update(func(s *ApplicationUpsert) {
 		s.UpdateClientID()
+	})
+}
+
+// ClearClientID clears the value of the "client_id" field.
+func (u *ApplicationUpsertBulk) ClearClientID() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearClientID()
 	})
 }
 

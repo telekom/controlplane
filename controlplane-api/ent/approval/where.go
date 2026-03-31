@@ -188,6 +188,16 @@ func StatusPhaseNotIn(vs ...StatusPhase) predicate.Approval {
 	return predicate.Approval(sql.FieldNotIn(FieldStatusPhase, vs...))
 }
 
+// StatusPhaseIsNil applies the IsNil predicate on the "status_phase" field.
+func StatusPhaseIsNil() predicate.Approval {
+	return predicate.Approval(sql.FieldIsNull(FieldStatusPhase))
+}
+
+// StatusPhaseNotNil applies the NotNil predicate on the "status_phase" field.
+func StatusPhaseNotNil() predicate.Approval {
+	return predicate.Approval(sql.FieldNotNull(FieldStatusPhase))
+}
+
 // StatusMessageEQ applies the EQ predicate on the "status_message" field.
 func StatusMessageEQ(v string) predicate.Approval {
 	return predicate.Approval(sql.FieldEQ(FieldStatusMessage, v))
@@ -496,6 +506,16 @@ func StrategyIn(vs ...Strategy) predicate.Approval {
 // StrategyNotIn applies the NotIn predicate on the "strategy" field.
 func StrategyNotIn(vs ...Strategy) predicate.Approval {
 	return predicate.Approval(sql.FieldNotIn(FieldStrategy, vs...))
+}
+
+// AvailableTransitionsIsNil applies the IsNil predicate on the "available_transitions" field.
+func AvailableTransitionsIsNil() predicate.Approval {
+	return predicate.Approval(sql.FieldIsNull(FieldAvailableTransitions))
+}
+
+// AvailableTransitionsNotNil applies the NotNil predicate on the "available_transitions" field.
+func AvailableTransitionsNotNil() predicate.Approval {
+	return predicate.Approval(sql.FieldNotNull(FieldAvailableTransitions))
 }
 
 // StateEQ applies the EQ predicate on the "state" field.

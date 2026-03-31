@@ -28,7 +28,7 @@ type ApiExposureInfoResolver interface {
 	Features(ctx context.Context, obj *model.ApiExposureInfo) ([]model.APIExposureFeature, error)
 }
 type ApiSubscriptionInfoResolver interface {
-	StatusPhase(ctx context.Context, obj *model.ApiSubscriptionInfo) (apisubscription.StatusPhase, error)
+	StatusPhase(ctx context.Context, obj *model.ApiSubscriptionInfo) (*apisubscription.StatusPhase, error)
 }
 type ApprovalConfigResolver interface {
 	Strategy(ctx context.Context, obj *model.ApprovalConfig) (approval.Strategy, error)
@@ -150,9 +150,9 @@ func (ec *executionContext) _ApiExposureInfo_active(ctx context.Context, field g
 			return obj.Active, nil
 		},
 		nil,
-		ec.marshalNBoolean2bool,
+		ec.marshalOBoolean2ᚖbool,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -398,9 +398,9 @@ func (ec *executionContext) _ApiSubscriptionInfo_statusPhase(ctx context.Context
 			return ec.Resolvers.ApiSubscriptionInfo().StatusPhase(ctx, obj)
 		},
 		nil,
-		ec.marshalNApiSubscriptionStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhase,
+		ec.marshalOApiSubscriptionStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhase,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -1194,9 +1194,6 @@ func (ec *executionContext) _ApiExposureInfo(ctx context.Context, sel ast.Select
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "active":
 			out.Values[i] = ec._ApiExposureInfo_active(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "apiVersion":
 			out.Values[i] = ec._ApiExposureInfo_apiVersion(ctx, field, obj)
 		case "features":
@@ -1297,16 +1294,13 @@ func (ec *executionContext) _ApiSubscriptionInfo(ctx context.Context, sel ast.Se
 		case "statusPhase":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._ApiSubscriptionInfo_statusPhase(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
 				return res
 			}
 
@@ -1911,22 +1905,6 @@ func (ec *executionContext) marshalNAvailableTransition2githubᚗcomᚋtelekom�
 	return ec._AvailableTransition(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAvailableTransition2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAvailableTransitionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AvailableTransition) graphql.Marshaler {
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalNAvailableTransition2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAvailableTransition(ctx, sel, v[i])
-	})
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
 func (ec *executionContext) marshalNDeciderInfo2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐDeciderInfo(ctx context.Context, sel ast.SelectionSet, v model.DeciderInfo) graphql.Marshaler {
 	return ec._DeciderInfo(ctx, sel, &v)
 }
@@ -1994,6 +1972,25 @@ func (ec *executionContext) marshalOApiSubscriptionInfo2ᚖgithubᚗcomᚋteleko
 		return graphql.Null
 	}
 	return ec._ApiSubscriptionInfo(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAvailableTransition2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAvailableTransitionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AvailableTransition) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNAvailableTransition2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAvailableTransition(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 // endregion ***************************** type.gotpl *****************************

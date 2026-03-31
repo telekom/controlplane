@@ -239,10 +239,6 @@ func (_c *ApprovalRequestCreate) defaults() error {
 		v := approvalrequest.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
-	if _, ok := _c.mutation.StatusPhase(); !ok {
-		v := approvalrequest.DefaultStatusPhase
-		_c.mutation.SetStatusPhase(v)
-	}
 	if _, ok := _c.mutation.Strategy(); !ok {
 		v := approvalrequest.DefaultStrategy
 		_c.mutation.SetStrategy(v)
@@ -250,10 +246,6 @@ func (_c *ApprovalRequestCreate) defaults() error {
 	if _, ok := _c.mutation.Decisions(); !ok {
 		v := approvalrequest.DefaultDecisions
 		_c.mutation.SetDecisions(v)
-	}
-	if _, ok := _c.mutation.AvailableTransitions(); !ok {
-		v := approvalrequest.DefaultAvailableTransitions
-		_c.mutation.SetAvailableTransitions(v)
 	}
 	if _, ok := _c.mutation.State(); !ok {
 		v := approvalrequest.DefaultState
@@ -269,9 +261,6 @@ func (_c *ApprovalRequestCreate) check() error {
 	}
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
 		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "ApprovalRequest.last_modified_at"`)}
-	}
-	if _, ok := _c.mutation.StatusPhase(); !ok {
-		return &ValidationError{Name: "status_phase", err: errors.New(`ent: missing required field "ApprovalRequest.status_phase"`)}
 	}
 	if v, ok := _c.mutation.StatusPhase(); ok {
 		if err := approvalrequest.StatusPhaseValidator(v); err != nil {
@@ -302,9 +291,6 @@ func (_c *ApprovalRequestCreate) check() error {
 	}
 	if _, ok := _c.mutation.Decisions(); !ok {
 		return &ValidationError{Name: "decisions", err: errors.New(`ent: missing required field "ApprovalRequest.decisions"`)}
-	}
-	if _, ok := _c.mutation.AvailableTransitions(); !ok {
-		return &ValidationError{Name: "available_transitions", err: errors.New(`ent: missing required field "ApprovalRequest.available_transitions"`)}
 	}
 	if _, ok := _c.mutation.State(); !ok {
 		return &ValidationError{Name: "state", err: errors.New(`ent: missing required field "ApprovalRequest.state"`)}
@@ -351,7 +337,7 @@ func (_c *ApprovalRequestCreate) createSpec() (*ApprovalRequest, *sqlgraph.Creat
 	}
 	if value, ok := _c.mutation.StatusPhase(); ok {
 		_spec.SetField(approvalrequest.FieldStatusPhase, field.TypeEnum, value)
-		_node.StatusPhase = value
+		_node.StatusPhase = &value
 	}
 	if value, ok := _c.mutation.StatusMessage(); ok {
 		_spec.SetField(approvalrequest.FieldStatusMessage, field.TypeString, value)
@@ -486,6 +472,12 @@ func (u *ApprovalRequestUpsert) UpdateStatusPhase() *ApprovalRequestUpsert {
 	return u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApprovalRequestUpsert) ClearStatusPhase() *ApprovalRequestUpsert {
+	u.SetNull(approvalrequest.FieldStatusPhase)
+	return u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *ApprovalRequestUpsert) SetStatusMessage(v string) *ApprovalRequestUpsert {
 	u.Set(approvalrequest.FieldStatusMessage, v)
@@ -612,6 +604,12 @@ func (u *ApprovalRequestUpsert) UpdateAvailableTransitions() *ApprovalRequestUps
 	return u
 }
 
+// ClearAvailableTransitions clears the value of the "available_transitions" field.
+func (u *ApprovalRequestUpsert) ClearAvailableTransitions() *ApprovalRequestUpsert {
+	u.SetNull(approvalrequest.FieldAvailableTransitions)
+	return u
+}
+
 // SetState sets the "state" field.
 func (u *ApprovalRequestUpsert) SetState(v approvalrequest.State) *ApprovalRequestUpsert {
 	u.Set(approvalrequest.FieldState, v)
@@ -694,6 +692,13 @@ func (u *ApprovalRequestUpsertOne) SetStatusPhase(v approvalrequest.StatusPhase)
 func (u *ApprovalRequestUpsertOne) UpdateStatusPhase() *ApprovalRequestUpsertOne {
 	return u.Update(func(s *ApprovalRequestUpsert) {
 		s.UpdateStatusPhase()
+	})
+}
+
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApprovalRequestUpsertOne) ClearStatusPhase() *ApprovalRequestUpsertOne {
+	return u.Update(func(s *ApprovalRequestUpsert) {
+		s.ClearStatusPhase()
 	})
 }
 
@@ -841,6 +846,13 @@ func (u *ApprovalRequestUpsertOne) SetAvailableTransitions(v []model.AvailableTr
 func (u *ApprovalRequestUpsertOne) UpdateAvailableTransitions() *ApprovalRequestUpsertOne {
 	return u.Update(func(s *ApprovalRequestUpsert) {
 		s.UpdateAvailableTransitions()
+	})
+}
+
+// ClearAvailableTransitions clears the value of the "available_transitions" field.
+func (u *ApprovalRequestUpsertOne) ClearAvailableTransitions() *ApprovalRequestUpsertOne {
+	return u.Update(func(s *ApprovalRequestUpsert) {
+		s.ClearAvailableTransitions()
 	})
 }
 
@@ -1097,6 +1109,13 @@ func (u *ApprovalRequestUpsertBulk) UpdateStatusPhase() *ApprovalRequestUpsertBu
 	})
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApprovalRequestUpsertBulk) ClearStatusPhase() *ApprovalRequestUpsertBulk {
+	return u.Update(func(s *ApprovalRequestUpsert) {
+		s.ClearStatusPhase()
+	})
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *ApprovalRequestUpsertBulk) SetStatusMessage(v string) *ApprovalRequestUpsertBulk {
 	return u.Update(func(s *ApprovalRequestUpsert) {
@@ -1241,6 +1260,13 @@ func (u *ApprovalRequestUpsertBulk) SetAvailableTransitions(v []model.AvailableT
 func (u *ApprovalRequestUpsertBulk) UpdateAvailableTransitions() *ApprovalRequestUpsertBulk {
 	return u.Update(func(s *ApprovalRequestUpsert) {
 		s.UpdateAvailableTransitions()
+	})
+}
+
+// ClearAvailableTransitions clears the value of the "available_transitions" field.
+func (u *ApprovalRequestUpsertBulk) ClearAvailableTransitions() *ApprovalRequestUpsertBulk {
+	return u.Update(func(s *ApprovalRequestUpsert) {
+		s.ClearAvailableTransitions()
 	})
 }
 

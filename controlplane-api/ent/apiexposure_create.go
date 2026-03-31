@@ -263,17 +263,9 @@ func (_c *ApiExposureCreate) defaults() error {
 		v := apiexposure.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
-	if _, ok := _c.mutation.StatusPhase(); !ok {
-		v := apiexposure.DefaultStatusPhase
-		_c.mutation.SetStatusPhase(v)
-	}
 	if _, ok := _c.mutation.Visibility(); !ok {
 		v := apiexposure.DefaultVisibility
 		_c.mutation.SetVisibility(v)
-	}
-	if _, ok := _c.mutation.Active(); !ok {
-		v := apiexposure.DefaultActive
-		_c.mutation.SetActive(v)
 	}
 	if _, ok := _c.mutation.Features(); !ok {
 		v := apiexposure.DefaultFeatures
@@ -298,9 +290,6 @@ func (_c *ApiExposureCreate) check() error {
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
 		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "ApiExposure.last_modified_at"`)}
 	}
-	if _, ok := _c.mutation.StatusPhase(); !ok {
-		return &ValidationError{Name: "status_phase", err: errors.New(`ent: missing required field "ApiExposure.status_phase"`)}
-	}
 	if v, ok := _c.mutation.StatusPhase(); ok {
 		if err := apiexposure.StatusPhaseValidator(v); err != nil {
 			return &ValidationError{Name: "status_phase", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.status_phase": %w`, err)}
@@ -321,9 +310,6 @@ func (_c *ApiExposureCreate) check() error {
 		if err := apiexposure.VisibilityValidator(v); err != nil {
 			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "ApiExposure.visibility": %w`, err)}
 		}
-	}
-	if _, ok := _c.mutation.Active(); !ok {
-		return &ValidationError{Name: "active", err: errors.New(`ent: missing required field "ApiExposure.active"`)}
 	}
 	if _, ok := _c.mutation.Features(); !ok {
 		return &ValidationError{Name: "features", err: errors.New(`ent: missing required field "ApiExposure.features"`)}
@@ -374,7 +360,7 @@ func (_c *ApiExposureCreate) createSpec() (*ApiExposure, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := _c.mutation.StatusPhase(); ok {
 		_spec.SetField(apiexposure.FieldStatusPhase, field.TypeEnum, value)
-		_node.StatusPhase = value
+		_node.StatusPhase = &value
 	}
 	if value, ok := _c.mutation.StatusMessage(); ok {
 		_spec.SetField(apiexposure.FieldStatusMessage, field.TypeString, value)
@@ -398,7 +384,7 @@ func (_c *ApiExposureCreate) createSpec() (*ApiExposure, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := _c.mutation.Active(); ok {
 		_spec.SetField(apiexposure.FieldActive, field.TypeBool, value)
-		_node.Active = value
+		_node.Active = &value
 	}
 	if value, ok := _c.mutation.Features(); ok {
 		_spec.SetField(apiexposure.FieldFeatures, field.TypeJSON, value)
@@ -525,6 +511,12 @@ func (u *ApiExposureUpsert) UpdateStatusPhase() *ApiExposureUpsert {
 	return u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApiExposureUpsert) ClearStatusPhase() *ApiExposureUpsert {
+	u.SetNull(apiexposure.FieldStatusPhase)
+	return u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *ApiExposureUpsert) SetStatusMessage(v string) *ApiExposureUpsert {
 	u.Set(apiexposure.FieldStatusMessage, v)
@@ -612,6 +604,12 @@ func (u *ApiExposureUpsert) SetActive(v bool) *ApiExposureUpsert {
 // UpdateActive sets the "active" field to the value that was provided on create.
 func (u *ApiExposureUpsert) UpdateActive() *ApiExposureUpsert {
 	u.SetExcluded(apiexposure.FieldActive)
+	return u
+}
+
+// ClearActive clears the value of the "active" field.
+func (u *ApiExposureUpsert) ClearActive() *ApiExposureUpsert {
+	u.SetNull(apiexposure.FieldActive)
 	return u
 }
 
@@ -742,6 +740,13 @@ func (u *ApiExposureUpsertOne) UpdateStatusPhase() *ApiExposureUpsertOne {
 	})
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApiExposureUpsertOne) ClearStatusPhase() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearStatusPhase()
+	})
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *ApiExposureUpsertOne) SetStatusMessage(v string) *ApiExposureUpsertOne {
 	return u.Update(func(s *ApiExposureUpsert) {
@@ -844,6 +849,13 @@ func (u *ApiExposureUpsertOne) SetActive(v bool) *ApiExposureUpsertOne {
 func (u *ApiExposureUpsertOne) UpdateActive() *ApiExposureUpsertOne {
 	return u.Update(func(s *ApiExposureUpsert) {
 		s.UpdateActive()
+	})
+}
+
+// ClearActive clears the value of the "active" field.
+func (u *ApiExposureUpsertOne) ClearActive() *ApiExposureUpsertOne {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearActive()
 	})
 }
 
@@ -1149,6 +1161,13 @@ func (u *ApiExposureUpsertBulk) UpdateStatusPhase() *ApiExposureUpsertBulk {
 	})
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApiExposureUpsertBulk) ClearStatusPhase() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearStatusPhase()
+	})
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *ApiExposureUpsertBulk) SetStatusMessage(v string) *ApiExposureUpsertBulk {
 	return u.Update(func(s *ApiExposureUpsert) {
@@ -1251,6 +1270,13 @@ func (u *ApiExposureUpsertBulk) SetActive(v bool) *ApiExposureUpsertBulk {
 func (u *ApiExposureUpsertBulk) UpdateActive() *ApiExposureUpsertBulk {
 	return u.Update(func(s *ApiExposureUpsert) {
 		s.UpdateActive()
+	})
+}
+
+// ClearActive clears the value of the "active" field.
+func (u *ApiExposureUpsertBulk) ClearActive() *ApiExposureUpsertBulk {
+	return u.Update(func(s *ApiExposureUpsert) {
+		s.ClearActive()
 	})
 }
 

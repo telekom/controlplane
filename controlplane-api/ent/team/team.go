@@ -131,9 +131,6 @@ var (
 // StatusPhase defines the type for the "status_phase" enum field.
 type StatusPhase string
 
-// StatusPhaseUnknown is the default value of the StatusPhase enum.
-const DefaultStatusPhase = StatusPhaseUnknown
-
 // StatusPhase values.
 const (
 	StatusPhaseReady   StatusPhase = "READY"

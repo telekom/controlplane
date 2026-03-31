@@ -524,9 +524,9 @@ func (ec *executionContext) _ApiExposure_statusPhase(ctx context.Context, field 
 			return obj.StatusPhase, nil
 		},
 		nil,
-		ec.marshalNApiExposureStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐStatusPhase,
+		ec.marshalOApiExposureStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapiexposureᚐStatusPhase,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -698,9 +698,9 @@ func (ec *executionContext) _ApiExposure_active(ctx context.Context, field graph
 			return obj.Active, nil
 		},
 		nil,
-		ec.marshalNBoolean2bool,
+		ec.marshalOBoolean2ᚖbool,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -1239,9 +1239,9 @@ func (ec *executionContext) _ApiSubscription_statusPhase(ctx context.Context, fi
 			return obj.StatusPhase, nil
 		},
 		nil,
-		ec.marshalNApiSubscriptionStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhase,
+		ec.marshalOApiSubscriptionStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapisubscriptionᚐStatusPhase,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -1997,9 +1997,9 @@ func (ec *executionContext) _Application_statusPhase(ctx context.Context, field 
 			return obj.StatusPhase, nil
 		},
 		nil,
-		ec.marshalNApplicationStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapplicationᚐStatusPhase,
+		ec.marshalOApplicationStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapplicationᚐStatusPhase,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -2142,9 +2142,9 @@ func (ec *executionContext) _Application_clientID(ctx context.Context, field gra
 			return obj.ClientID, nil
 		},
 		nil,
-		ec.marshalNString2string,
+		ec.marshalOString2ᚖstring,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -2660,9 +2660,9 @@ func (ec *executionContext) _Approval_statusPhase(ctx context.Context, field gra
 			return obj.StatusPhase, nil
 		},
 		nil,
-		ec.marshalNApprovalStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStatusPhase,
+		ec.marshalOApprovalStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalᚐStatusPhase,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -2949,9 +2949,9 @@ func (ec *executionContext) _Approval_availableTransitions(ctx context.Context, 
 			return obj.AvailableTransitions, nil
 		},
 		nil,
-		ec.marshalNAvailableTransition2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAvailableTransitionᚄ,
+		ec.marshalOAvailableTransition2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAvailableTransitionᚄ,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -3336,9 +3336,9 @@ func (ec *executionContext) _ApprovalRequest_statusPhase(ctx context.Context, fi
 			return obj.StatusPhase, nil
 		},
 		nil,
-		ec.marshalNApprovalRequestStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStatusPhase,
+		ec.marshalOApprovalRequestStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋapprovalrequestᚐStatusPhase,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -3625,9 +3625,9 @@ func (ec *executionContext) _ApprovalRequest_availableTransitions(ctx context.Co
 			return obj.AvailableTransitions, nil
 		},
 		nil,
-		ec.marshalNAvailableTransition2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAvailableTransitionᚄ,
+		ec.marshalOAvailableTransition2ᚕgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐAvailableTransitionᚄ,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -5094,9 +5094,9 @@ func (ec *executionContext) _Team_statusPhase(ctx context.Context, field graphql
 			return obj.StatusPhase, nil
 		},
 		nil,
-		ec.marshalNTeamStatusPhase2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋteamᚐStatusPhase,
+		ec.marshalOTeamStatusPhase2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚋteamᚐStatusPhase,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -5933,7 +5933,7 @@ func (ec *executionContext) unmarshalInputApiExposureWhereInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "apiVersion", "apiVersionNEQ", "apiVersionIn", "apiVersionNotIn", "apiVersionGT", "apiVersionGTE", "apiVersionLT", "apiVersionLTE", "apiVersionContains", "apiVersionHasPrefix", "apiVersionHasSuffix", "apiVersionIsNil", "apiVersionNotNil", "apiVersionEqualFold", "apiVersionContainsFold", "hasOwner", "hasOwnerWith", "hasSubscriptions", "hasSubscriptionsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "activeIsNil", "activeNotNil", "apiVersion", "apiVersionNEQ", "apiVersionIn", "apiVersionNotIn", "apiVersionGT", "apiVersionGTE", "apiVersionLT", "apiVersionLTE", "apiVersionContains", "apiVersionHasPrefix", "apiVersionHasSuffix", "apiVersionIsNil", "apiVersionNotNil", "apiVersionEqualFold", "apiVersionContainsFold", "hasOwner", "hasOwnerWith", "hasSubscriptions", "hasSubscriptionsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6157,6 +6157,20 @@ func (ec *executionContext) unmarshalInputApiExposureWhereInput(ctx context.Cont
 				return it, err
 			}
 			it.StatusPhaseNotIn = data
+		case "statusPhaseIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseIsNil = data
+		case "statusPhaseNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNotNil = data
 		case "statusMessage":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessage"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -6605,6 +6619,20 @@ func (ec *executionContext) unmarshalInputApiExposureWhereInput(ctx context.Cont
 				return it, err
 			}
 			it.ActiveNEQ = data
+		case "activeIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveIsNil = data
+		case "activeNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveNotNil = data
 		case "apiVersion":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiVersion"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -6795,7 +6823,7 @@ func (ec *executionContext) unmarshalInputApiSubscriptionWhereInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "m2mAuthMethod", "m2mAuthMethodNEQ", "m2mAuthMethodIn", "m2mAuthMethodNotIn", "hasOwner", "hasOwnerWith", "hasTarget", "hasTargetWith", "hasFailoverZones", "hasFailoverZonesWith", "hasApproval", "hasApprovalWith", "hasApprovalRequest", "hasApprovalRequestWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "m2mAuthMethod", "m2mAuthMethodNEQ", "m2mAuthMethodIn", "m2mAuthMethodNotIn", "hasOwner", "hasOwnerWith", "hasTarget", "hasTargetWith", "hasFailoverZones", "hasFailoverZonesWith", "hasApproval", "hasApprovalWith", "hasApprovalRequest", "hasApprovalRequestWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7019,6 +7047,20 @@ func (ec *executionContext) unmarshalInputApiSubscriptionWhereInput(ctx context.
 				return it, err
 			}
 			it.StatusPhaseNotIn = data
+		case "statusPhaseIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseIsNil = data
+		case "statusPhaseNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNotNil = data
 		case "statusMessage":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessage"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -7580,7 +7622,7 @@ func (ec *executionContext) unmarshalInputApplicationWhereInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "clientID", "clientIDNEQ", "clientIDIn", "clientIDNotIn", "clientIDGT", "clientIDGTE", "clientIDLT", "clientIDLTE", "clientIDContains", "clientIDHasPrefix", "clientIDHasSuffix", "clientIDEqualFold", "clientIDContainsFold", "issuerURL", "issuerURLNEQ", "issuerURLIn", "issuerURLNotIn", "issuerURLGT", "issuerURLGTE", "issuerURLLT", "issuerURLLTE", "issuerURLContains", "issuerURLHasPrefix", "issuerURLHasSuffix", "issuerURLIsNil", "issuerURLNotNil", "issuerURLEqualFold", "issuerURLContainsFold", "hasZone", "hasZoneWith", "hasOwnerTeam", "hasOwnerTeamWith", "hasExposedApis", "hasExposedApisWith", "hasSubscribedApis", "hasSubscribedApisWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "clientID", "clientIDNEQ", "clientIDIn", "clientIDNotIn", "clientIDGT", "clientIDGTE", "clientIDLT", "clientIDLTE", "clientIDContains", "clientIDHasPrefix", "clientIDHasSuffix", "clientIDIsNil", "clientIDNotNil", "clientIDEqualFold", "clientIDContainsFold", "issuerURL", "issuerURLNEQ", "issuerURLIn", "issuerURLNotIn", "issuerURLGT", "issuerURLGTE", "issuerURLLT", "issuerURLLTE", "issuerURLContains", "issuerURLHasPrefix", "issuerURLHasSuffix", "issuerURLIsNil", "issuerURLNotNil", "issuerURLEqualFold", "issuerURLContainsFold", "hasZone", "hasZoneWith", "hasOwnerTeam", "hasOwnerTeamWith", "hasExposedApis", "hasExposedApisWith", "hasSubscribedApis", "hasSubscribedApisWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7804,6 +7846,20 @@ func (ec *executionContext) unmarshalInputApplicationWhereInput(ctx context.Cont
 				return it, err
 			}
 			it.StatusPhaseNotIn = data
+		case "statusPhaseIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseIsNil = data
+		case "statusPhaseNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNotNil = data
 		case "statusMessage":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessage"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -8287,6 +8343,20 @@ func (ec *executionContext) unmarshalInputApplicationWhereInput(ctx context.Cont
 				return it, err
 			}
 			it.ClientIDHasSuffix = data
+		case "clientIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientIDIsNil = data
+		case "clientIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientIDNotNil = data
 		case "clientIDEqualFold":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientIDEqualFold"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -8560,7 +8630,7 @@ func (ec *executionContext) unmarshalInputApprovalRequestWhereInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "state", "stateNEQ", "stateIn", "stateNotIn", "hasAPISubscription", "hasAPISubscriptionWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "state", "stateNEQ", "stateIn", "stateNotIn", "hasAPISubscription", "hasAPISubscriptionWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8784,6 +8854,20 @@ func (ec *executionContext) unmarshalInputApprovalRequestWhereInput(ctx context.
 				return it, err
 			}
 			it.StatusPhaseNotIn = data
+		case "statusPhaseIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseIsNil = data
+		case "statusPhaseNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNotNil = data
 		case "statusMessage":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessage"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -9276,7 +9360,7 @@ func (ec *executionContext) unmarshalInputApprovalWhereInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "state", "stateNEQ", "stateIn", "stateNotIn", "hasAPISubscription", "hasAPISubscriptionWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "state", "stateNEQ", "stateIn", "stateNotIn", "hasAPISubscription", "hasAPISubscriptionWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -9500,6 +9584,20 @@ func (ec *executionContext) unmarshalInputApprovalWhereInput(ctx context.Context
 				return it, err
 			}
 			it.StatusPhaseNotIn = data
+		case "statusPhaseIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseIsNil = data
+		case "statusPhaseNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNotNil = data
 		case "statusMessage":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessage"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -11136,7 +11234,7 @@ func (ec *executionContext) unmarshalInputTeamWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "roverTokenRef", "roverTokenRefNEQ", "roverTokenRefIn", "roverTokenRefNotIn", "roverTokenRefGT", "roverTokenRefGTE", "roverTokenRefLT", "roverTokenRefLTE", "roverTokenRefContains", "roverTokenRefHasPrefix", "roverTokenRefHasSuffix", "roverTokenRefIsNil", "roverTokenRefNotNil", "roverTokenRefEqualFold", "roverTokenRefContainsFold", "hasGroup", "hasGroupWith", "hasMembers", "hasMembersWith", "hasApplications", "hasApplicationsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusPhaseIsNil", "statusPhaseNotNil", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "roverTokenRef", "roverTokenRefNEQ", "roverTokenRefIn", "roverTokenRefNotIn", "roverTokenRefGT", "roverTokenRefGTE", "roverTokenRefLT", "roverTokenRefLTE", "roverTokenRefContains", "roverTokenRefHasPrefix", "roverTokenRefHasSuffix", "roverTokenRefIsNil", "roverTokenRefNotNil", "roverTokenRefEqualFold", "roverTokenRefContainsFold", "hasGroup", "hasGroupWith", "hasMembers", "hasMembersWith", "hasApplications", "hasApplicationsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -11360,6 +11458,20 @@ func (ec *executionContext) unmarshalInputTeamWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.StatusPhaseNotIn = data
+		case "statusPhaseIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseIsNil = data
+		case "statusPhaseNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusPhaseNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusPhaseNotNil = data
 		case "statusMessage":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusMessage"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -12679,9 +12791,6 @@ func (ec *executionContext) _ApiExposure(ctx context.Context, sel ast.SelectionS
 			}
 		case "statusPhase":
 			out.Values[i] = ec._ApiExposure_statusPhase(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "statusMessage":
 			out.Values[i] = ec._ApiExposure_statusMessage(ctx, field, obj)
 		case "environment":
@@ -12700,9 +12809,6 @@ func (ec *executionContext) _ApiExposure(ctx context.Context, sel ast.SelectionS
 			}
 		case "active":
 			out.Values[i] = ec._ApiExposure_active(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "features":
 			field := field
 
@@ -12961,9 +13067,6 @@ func (ec *executionContext) _ApiSubscription(ctx context.Context, sel ast.Select
 			}
 		case "statusPhase":
 			out.Values[i] = ec._ApiSubscription_statusPhase(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "statusMessage":
 			out.Values[i] = ec._ApiSubscription_statusMessage(ctx, field, obj)
 		case "environment":
@@ -13294,9 +13397,6 @@ func (ec *executionContext) _Application(ctx context.Context, sel ast.SelectionS
 			}
 		case "statusPhase":
 			out.Values[i] = ec._Application_statusPhase(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "statusMessage":
 			out.Values[i] = ec._Application_statusMessage(ctx, field, obj)
 		case "environment":
@@ -13310,9 +13410,6 @@ func (ec *executionContext) _Application(ctx context.Context, sel ast.SelectionS
 			}
 		case "clientID":
 			out.Values[i] = ec._Application_clientID(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "issuerURL":
 			out.Values[i] = ec._Application_issuerURL(ctx, field, obj)
 		case "zone":
@@ -13597,9 +13694,6 @@ func (ec *executionContext) _Approval(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "statusPhase":
 			out.Values[i] = ec._Approval_statusPhase(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "statusMessage":
 			out.Values[i] = ec._Approval_statusMessage(ctx, field, obj)
 		case "environment":
@@ -13633,9 +13727,6 @@ func (ec *executionContext) _Approval(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "availableTransitions":
 			out.Values[i] = ec._Approval_availableTransitions(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "state":
 			out.Values[i] = ec._Approval_state(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -13812,9 +13903,6 @@ func (ec *executionContext) _ApprovalRequest(ctx context.Context, sel ast.Select
 			}
 		case "statusPhase":
 			out.Values[i] = ec._ApprovalRequest_statusPhase(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "statusMessage":
 			out.Values[i] = ec._ApprovalRequest_statusMessage(ctx, field, obj)
 		case "environment":
@@ -13848,9 +13936,6 @@ func (ec *executionContext) _ApprovalRequest(ctx context.Context, sel ast.Select
 			}
 		case "availableTransitions":
 			out.Values[i] = ec._ApprovalRequest_availableTransitions(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "state":
 			out.Values[i] = ec._ApprovalRequest_state(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -14497,9 +14582,6 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "statusPhase":
 			out.Values[i] = ec._Team_statusPhase(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "statusMessage":
 			out.Values[i] = ec._Team_statusMessage(ctx, field, obj)
 		case "environment":

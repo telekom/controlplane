@@ -36,7 +36,8 @@ func (Application) Fields() []ent.Field {
 			NotEmpty().
 			Annotations(entgql.OrderField("NAME")),
 		field.Text("client_id").
-			NotEmpty(),
+			Optional().
+			Nillable(),
 		field.Text("issuer_url").
 			Optional().
 			Nillable(),
