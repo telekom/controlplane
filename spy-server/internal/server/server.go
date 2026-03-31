@@ -131,6 +131,10 @@ func (s *Server) RegisterRoutes(router fiber.Router) {
 		},
 	})
 
+	// Deprecated write endpoints must be registered before the OpenAPI validator
+	// because the spec does not define these methods — the validator would reject them first.
+	s.registerDeprecatedRoutes(router, checkAccess)
+
 	router.Use(openapiValidator)
 
 	// Application routes (read-only)
@@ -171,7 +175,4 @@ func (s *Server) RegisterRoutes(router fiber.Router) {
 	router.Get("/eventtypes/:eventTypeId", s.GetEventType)
 	router.Get("/eventtypes/:eventTypeId/status", s.GetEventTypeStatus)
 	router.Get("/eventtypes/:eventTypeName/active", s.GetActiveEventType)
-
-	// Deprecated write endpoints (return 410 Gone)
-	s.registerDeprecatedRoutes(router, checkAccess)
 }
