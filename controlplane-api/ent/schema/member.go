@@ -20,6 +20,8 @@ type Member struct {
 func (Member) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		schemamixin.PrivacyMixin{},
+		schemamixin.EnvironmentMixin{},
+		schemamixin.NamespaceMixin{},
 	}
 }
 

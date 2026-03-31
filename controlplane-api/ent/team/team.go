@@ -29,18 +29,22 @@ const (
 	FieldStatusPhase = "status_phase"
 	// FieldStatusMessage holds the string denoting the status_message field in the database.
 	FieldStatusMessage = "status_message"
+	// FieldEnvironment holds the string denoting the environment field in the database.
+	FieldEnvironment = "environment"
+	// FieldNamespace holds the string denoting the namespace field in the database.
+	FieldNamespace = "namespace"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldEmail holds the string denoting the email field in the database.
 	FieldEmail = "email"
 	// FieldCategory holds the string denoting the category field in the database.
 	FieldCategory = "category"
+	// FieldRoverTokenRef holds the string denoting the rover_token_ref field in the database.
+	FieldRoverTokenRef = "rover_token_ref"
 	// EdgeGroup holds the string denoting the group edge name in mutations.
 	EdgeGroup = "group"
 	// EdgeMembers holds the string denoting the members edge name in mutations.
 	EdgeMembers = "members"
-	// EdgeTeamEnvironments holds the string denoting the team_environments edge name in mutations.
-	EdgeTeamEnvironments = "team_environments"
 	// EdgeApplications holds the string denoting the applications edge name in mutations.
 	EdgeApplications = "applications"
 	// Table holds the table name of the team in the database.
@@ -59,13 +63,6 @@ const (
 	MembersInverseTable = "members"
 	// MembersColumn is the table column denoting the members relation/edge.
 	MembersColumn = "team_members"
-	// TeamEnvironmentsTable is the table that holds the team_environments relation/edge.
-	TeamEnvironmentsTable = "team_environments"
-	// TeamEnvironmentsInverseTable is the table name for the TeamEnvironment entity.
-	// It exists in this package in order to avoid circular dependency with the "teamenvironment" package.
-	TeamEnvironmentsInverseTable = "team_environments"
-	// TeamEnvironmentsColumn is the table column denoting the team_environments relation/edge.
-	TeamEnvironmentsColumn = "team_team_environments"
 	// ApplicationsTable is the table that holds the applications relation/edge.
 	ApplicationsTable = "applications"
 	// ApplicationsInverseTable is the table name for the Application entity.
@@ -82,9 +79,12 @@ var Columns = []string{
 	FieldLastModifiedAt,
 	FieldStatusPhase,
 	FieldStatusMessage,
+	FieldEnvironment,
+	FieldNamespace,
 	FieldName,
 	FieldEmail,
 	FieldCategory,
+	FieldRoverTokenRef,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "teams"
@@ -210,6 +210,16 @@ func ByStatusMessage(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatusMessage, opts...).ToFunc()
 }
 
+// ByEnvironment orders the results by the environment field.
+func ByEnvironment(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEnvironment, opts...).ToFunc()
+}
+
+// ByNamespace orders the results by the namespace field.
+func ByNamespace(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNamespace, opts...).ToFunc()
+}
+
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
@@ -223,6 +233,11 @@ func ByEmail(opts ...sql.OrderTermOption) OrderOption {
 // ByCategory orders the results by the category field.
 func ByCategory(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCategory, opts...).ToFunc()
+}
+
+// ByRoverTokenRef orders the results by the rover_token_ref field.
+func ByRoverTokenRef(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRoverTokenRef, opts...).ToFunc()
 }
 
 // ByGroupField orders the results by group field.
@@ -243,20 +258,6 @@ func ByMembersCount(opts ...sql.OrderTermOption) OrderOption {
 func ByMembers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newMembersStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
-// ByTeamEnvironmentsCount orders the results by team_environments count.
-func ByTeamEnvironmentsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newTeamEnvironmentsStep(), opts...)
-	}
-}
-
-// ByTeamEnvironments orders the results by team_environments terms.
-func ByTeamEnvironments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newTeamEnvironmentsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -285,13 +286,6 @@ func newMembersStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MembersInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, MembersTable, MembersColumn),
-	)
-}
-func newTeamEnvironmentsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(TeamEnvironmentsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, TeamEnvironmentsTable, TeamEnvironmentsColumn),
 	)
 }
 func newApplicationsStep() *sqlgraph.Step {

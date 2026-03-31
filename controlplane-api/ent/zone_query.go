@@ -307,12 +307,12 @@ func (_q *ZoneQuery) WithApplications(opts ...func(*ApplicationQuery)) *ZoneQuer
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Environment string `json:"environment,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Zone.Query().
-//		GroupBy(zone.FieldName).
+//		GroupBy(zone.FieldEnvironment).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *ZoneQuery) GroupBy(field string, fields ...string) *ZoneGroupBy {
@@ -330,11 +330,11 @@ func (_q *ZoneQuery) GroupBy(field string, fields ...string) *ZoneGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Environment string `json:"environment,omitempty"`
 //	}
 //
 //	client.Zone.Query().
-//		Select(zone.FieldName).
+//		Select(zone.FieldEnvironment).
 //		Scan(ctx, &v)
 func (_q *ZoneQuery) Select(fields ...string) *ZoneSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)

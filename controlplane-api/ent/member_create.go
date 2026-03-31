@@ -25,6 +25,34 @@ type MemberCreate struct {
 	conflict []sql.ConflictOption
 }
 
+// SetEnvironment sets the "environment" field.
+func (_c *MemberCreate) SetEnvironment(v string) *MemberCreate {
+	_c.mutation.SetEnvironment(v)
+	return _c
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_c *MemberCreate) SetNillableEnvironment(v *string) *MemberCreate {
+	if v != nil {
+		_c.SetEnvironment(*v)
+	}
+	return _c
+}
+
+// SetNamespace sets the "namespace" field.
+func (_c *MemberCreate) SetNamespace(v string) *MemberCreate {
+	_c.mutation.SetNamespace(v)
+	return _c
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_c *MemberCreate) SetNillableNamespace(v *string) *MemberCreate {
+	if v != nil {
+		_c.SetNamespace(*v)
+	}
+	return _c
+}
+
 // SetName sets the "name" field.
 func (_c *MemberCreate) SetName(v string) *MemberCreate {
 	_c.mutation.SetName(v)
@@ -133,6 +161,14 @@ func (_c *MemberCreate) createSpec() (*Member, *sqlgraph.CreateSpec) {
 		_spec = sqlgraph.NewCreateSpec(member.Table, sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt))
 	)
 	_spec.OnConflict = _c.conflict
+	if value, ok := _c.mutation.Environment(); ok {
+		_spec.SetField(member.FieldEnvironment, field.TypeString, value)
+		_node.Environment = &value
+	}
+	if value, ok := _c.mutation.Namespace(); ok {
+		_spec.SetField(member.FieldNamespace, field.TypeString, value)
+		_node.Namespace = &value
+	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(member.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -165,7 +201,7 @@ func (_c *MemberCreate) createSpec() (*Member, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Member.Create().
-//		SetName(v).
+//		SetEnvironment(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -174,7 +210,7 @@ func (_c *MemberCreate) createSpec() (*Member, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.MemberUpsert) {
-//			SetName(v+v).
+//			SetEnvironment(v+v).
 //		}).
 //		Exec(ctx)
 func (_c *MemberCreate) OnConflict(opts ...sql.ConflictOption) *MemberUpsertOne {
@@ -209,6 +245,42 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetEnvironment sets the "environment" field.
+func (u *MemberUpsert) SetEnvironment(v string) *MemberUpsert {
+	u.Set(member.FieldEnvironment, v)
+	return u
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *MemberUpsert) UpdateEnvironment() *MemberUpsert {
+	u.SetExcluded(member.FieldEnvironment)
+	return u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *MemberUpsert) ClearEnvironment() *MemberUpsert {
+	u.SetNull(member.FieldEnvironment)
+	return u
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *MemberUpsert) SetNamespace(v string) *MemberUpsert {
+	u.Set(member.FieldNamespace, v)
+	return u
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *MemberUpsert) UpdateNamespace() *MemberUpsert {
+	u.SetExcluded(member.FieldNamespace)
+	return u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *MemberUpsert) ClearNamespace() *MemberUpsert {
+	u.SetNull(member.FieldNamespace)
+	return u
+}
 
 // SetName sets the "name" field.
 func (u *MemberUpsert) SetName(v string) *MemberUpsert {
@@ -272,6 +344,48 @@ func (u *MemberUpsertOne) Update(set func(*MemberUpsert)) *MemberUpsertOne {
 		set(&MemberUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *MemberUpsertOne) SetEnvironment(v string) *MemberUpsertOne {
+	return u.Update(func(s *MemberUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *MemberUpsertOne) UpdateEnvironment() *MemberUpsertOne {
+	return u.Update(func(s *MemberUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *MemberUpsertOne) ClearEnvironment() *MemberUpsertOne {
+	return u.Update(func(s *MemberUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *MemberUpsertOne) SetNamespace(v string) *MemberUpsertOne {
+	return u.Update(func(s *MemberUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *MemberUpsertOne) UpdateNamespace() *MemberUpsertOne {
+	return u.Update(func(s *MemberUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *MemberUpsertOne) ClearNamespace() *MemberUpsertOne {
+	return u.Update(func(s *MemberUpsert) {
+		s.ClearNamespace()
+	})
 }
 
 // SetName sets the "name" field.
@@ -436,7 +550,7 @@ func (_c *MemberCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.MemberUpsert) {
-//			SetName(v+v).
+//			SetEnvironment(v+v).
 //		}).
 //		Exec(ctx)
 func (_c *MemberCreateBulk) OnConflict(opts ...sql.ConflictOption) *MemberUpsertBulk {
@@ -503,6 +617,48 @@ func (u *MemberUpsertBulk) Update(set func(*MemberUpsert)) *MemberUpsertBulk {
 		set(&MemberUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *MemberUpsertBulk) SetEnvironment(v string) *MemberUpsertBulk {
+	return u.Update(func(s *MemberUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *MemberUpsertBulk) UpdateEnvironment() *MemberUpsertBulk {
+	return u.Update(func(s *MemberUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *MemberUpsertBulk) ClearEnvironment() *MemberUpsertBulk {
+	return u.Update(func(s *MemberUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *MemberUpsertBulk) SetNamespace(v string) *MemberUpsertBulk {
+	return u.Update(func(s *MemberUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *MemberUpsertBulk) UpdateNamespace() *MemberUpsertBulk {
+	return u.Update(func(s *MemberUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *MemberUpsertBulk) ClearNamespace() *MemberUpsertBulk {
+	return u.Update(func(s *MemberUpsert) {
+		s.ClearNamespace()
+	})
 }
 
 // SetName sets the "name" field.

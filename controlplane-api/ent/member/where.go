@@ -56,6 +56,16 @@ func IDLTE(id int) predicate.Member {
 	return predicate.Member(sql.FieldLTE(FieldID, id))
 }
 
+// Environment applies equality check predicate on the "environment" field. It's identical to EnvironmentEQ.
+func Environment(v string) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldEnvironment, v))
+}
+
+// Namespace applies equality check predicate on the "namespace" field. It's identical to NamespaceEQ.
+func Namespace(v string) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldNamespace, v))
+}
+
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
 func Name(v string) predicate.Member {
 	return predicate.Member(sql.FieldEQ(FieldName, v))
@@ -64,6 +74,156 @@ func Name(v string) predicate.Member {
 // Email applies equality check predicate on the "email" field. It's identical to EmailEQ.
 func Email(v string) predicate.Member {
 	return predicate.Member(sql.FieldEQ(FieldEmail, v))
+}
+
+// EnvironmentEQ applies the EQ predicate on the "environment" field.
+func EnvironmentEQ(v string) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldEnvironment, v))
+}
+
+// EnvironmentNEQ applies the NEQ predicate on the "environment" field.
+func EnvironmentNEQ(v string) predicate.Member {
+	return predicate.Member(sql.FieldNEQ(FieldEnvironment, v))
+}
+
+// EnvironmentIn applies the In predicate on the "environment" field.
+func EnvironmentIn(vs ...string) predicate.Member {
+	return predicate.Member(sql.FieldIn(FieldEnvironment, vs...))
+}
+
+// EnvironmentNotIn applies the NotIn predicate on the "environment" field.
+func EnvironmentNotIn(vs ...string) predicate.Member {
+	return predicate.Member(sql.FieldNotIn(FieldEnvironment, vs...))
+}
+
+// EnvironmentGT applies the GT predicate on the "environment" field.
+func EnvironmentGT(v string) predicate.Member {
+	return predicate.Member(sql.FieldGT(FieldEnvironment, v))
+}
+
+// EnvironmentGTE applies the GTE predicate on the "environment" field.
+func EnvironmentGTE(v string) predicate.Member {
+	return predicate.Member(sql.FieldGTE(FieldEnvironment, v))
+}
+
+// EnvironmentLT applies the LT predicate on the "environment" field.
+func EnvironmentLT(v string) predicate.Member {
+	return predicate.Member(sql.FieldLT(FieldEnvironment, v))
+}
+
+// EnvironmentLTE applies the LTE predicate on the "environment" field.
+func EnvironmentLTE(v string) predicate.Member {
+	return predicate.Member(sql.FieldLTE(FieldEnvironment, v))
+}
+
+// EnvironmentContains applies the Contains predicate on the "environment" field.
+func EnvironmentContains(v string) predicate.Member {
+	return predicate.Member(sql.FieldContains(FieldEnvironment, v))
+}
+
+// EnvironmentHasPrefix applies the HasPrefix predicate on the "environment" field.
+func EnvironmentHasPrefix(v string) predicate.Member {
+	return predicate.Member(sql.FieldHasPrefix(FieldEnvironment, v))
+}
+
+// EnvironmentHasSuffix applies the HasSuffix predicate on the "environment" field.
+func EnvironmentHasSuffix(v string) predicate.Member {
+	return predicate.Member(sql.FieldHasSuffix(FieldEnvironment, v))
+}
+
+// EnvironmentIsNil applies the IsNil predicate on the "environment" field.
+func EnvironmentIsNil() predicate.Member {
+	return predicate.Member(sql.FieldIsNull(FieldEnvironment))
+}
+
+// EnvironmentNotNil applies the NotNil predicate on the "environment" field.
+func EnvironmentNotNil() predicate.Member {
+	return predicate.Member(sql.FieldNotNull(FieldEnvironment))
+}
+
+// EnvironmentEqualFold applies the EqualFold predicate on the "environment" field.
+func EnvironmentEqualFold(v string) predicate.Member {
+	return predicate.Member(sql.FieldEqualFold(FieldEnvironment, v))
+}
+
+// EnvironmentContainsFold applies the ContainsFold predicate on the "environment" field.
+func EnvironmentContainsFold(v string) predicate.Member {
+	return predicate.Member(sql.FieldContainsFold(FieldEnvironment, v))
+}
+
+// NamespaceEQ applies the EQ predicate on the "namespace" field.
+func NamespaceEQ(v string) predicate.Member {
+	return predicate.Member(sql.FieldEQ(FieldNamespace, v))
+}
+
+// NamespaceNEQ applies the NEQ predicate on the "namespace" field.
+func NamespaceNEQ(v string) predicate.Member {
+	return predicate.Member(sql.FieldNEQ(FieldNamespace, v))
+}
+
+// NamespaceIn applies the In predicate on the "namespace" field.
+func NamespaceIn(vs ...string) predicate.Member {
+	return predicate.Member(sql.FieldIn(FieldNamespace, vs...))
+}
+
+// NamespaceNotIn applies the NotIn predicate on the "namespace" field.
+func NamespaceNotIn(vs ...string) predicate.Member {
+	return predicate.Member(sql.FieldNotIn(FieldNamespace, vs...))
+}
+
+// NamespaceGT applies the GT predicate on the "namespace" field.
+func NamespaceGT(v string) predicate.Member {
+	return predicate.Member(sql.FieldGT(FieldNamespace, v))
+}
+
+// NamespaceGTE applies the GTE predicate on the "namespace" field.
+func NamespaceGTE(v string) predicate.Member {
+	return predicate.Member(sql.FieldGTE(FieldNamespace, v))
+}
+
+// NamespaceLT applies the LT predicate on the "namespace" field.
+func NamespaceLT(v string) predicate.Member {
+	return predicate.Member(sql.FieldLT(FieldNamespace, v))
+}
+
+// NamespaceLTE applies the LTE predicate on the "namespace" field.
+func NamespaceLTE(v string) predicate.Member {
+	return predicate.Member(sql.FieldLTE(FieldNamespace, v))
+}
+
+// NamespaceContains applies the Contains predicate on the "namespace" field.
+func NamespaceContains(v string) predicate.Member {
+	return predicate.Member(sql.FieldContains(FieldNamespace, v))
+}
+
+// NamespaceHasPrefix applies the HasPrefix predicate on the "namespace" field.
+func NamespaceHasPrefix(v string) predicate.Member {
+	return predicate.Member(sql.FieldHasPrefix(FieldNamespace, v))
+}
+
+// NamespaceHasSuffix applies the HasSuffix predicate on the "namespace" field.
+func NamespaceHasSuffix(v string) predicate.Member {
+	return predicate.Member(sql.FieldHasSuffix(FieldNamespace, v))
+}
+
+// NamespaceIsNil applies the IsNil predicate on the "namespace" field.
+func NamespaceIsNil() predicate.Member {
+	return predicate.Member(sql.FieldIsNull(FieldNamespace))
+}
+
+// NamespaceNotNil applies the NotNil predicate on the "namespace" field.
+func NamespaceNotNil() predicate.Member {
+	return predicate.Member(sql.FieldNotNull(FieldNamespace))
+}
+
+// NamespaceEqualFold applies the EqualFold predicate on the "namespace" field.
+func NamespaceEqualFold(v string) predicate.Member {
+	return predicate.Member(sql.FieldEqualFold(FieldNamespace, v))
+}
+
+// NamespaceContainsFold applies the ContainsFold predicate on the "namespace" field.
+func NamespaceContainsFold(v string) predicate.Member {
+	return predicate.Member(sql.FieldContainsFold(FieldNamespace, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.

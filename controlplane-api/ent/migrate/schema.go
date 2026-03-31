@@ -18,6 +18,8 @@ var (
 		{Name: "last_modified_at", Type: field.TypeTime},
 		{Name: "status_phase", Type: field.TypeEnum, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}, Default: "UNKNOWN"},
 		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ZONE", "ENTERPRISE"}, Default: "ENTERPRISE"},
 		{Name: "active", Type: field.TypeBool, Default: false},
@@ -35,7 +37,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_exposures_applications_exposed_apis",
-				Columns:    []*schema.Column{APIExposuresColumns[12]},
+				Columns:    []*schema.Column{APIExposuresColumns[14]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -44,7 +46,7 @@ var (
 			{
 				Name:    "apiexposure_base_path_application_exposed_apis",
 				Unique:  true,
-				Columns: []*schema.Column{APIExposuresColumns[5], APIExposuresColumns[12]},
+				Columns: []*schema.Column{APIExposuresColumns[7], APIExposuresColumns[14]},
 			},
 		},
 	}
@@ -55,10 +57,12 @@ var (
 		{Name: "last_modified_at", Type: field.TypeTime},
 		{Name: "status_phase", Type: field.TypeEnum, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}, Default: "UNKNOWN"},
 		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "base_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "m2m_auth_method", Type: field.TypeEnum, Enums: []string{"NONE", "BASIC_AUTH", "OAUTH2_CLIENT", "SCOPES_ONLY"}, Default: "NONE"},
 		{Name: "approved_scopes", Type: field.TypeJSON},
-		{Name: "api_subscription_target", Type: field.TypeInt},
+		{Name: "api_subscription_target", Type: field.TypeInt, Nullable: true},
 		{Name: "application_subscribed_apis", Type: field.TypeInt},
 	}
 	// APISubscriptionsTable holds the schema information for the "api_subscriptions" table.
@@ -69,13 +73,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_subscriptions_api_exposures_target",
-				Columns:    []*schema.Column{APISubscriptionsColumns[8]},
+				Columns:    []*schema.Column{APISubscriptionsColumns[10]},
 				RefColumns: []*schema.Column{APIExposuresColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "api_subscriptions_applications_subscribed_apis",
-				Columns:    []*schema.Column{APISubscriptionsColumns[9]},
+				Columns:    []*schema.Column{APISubscriptionsColumns[11]},
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -84,7 +88,7 @@ var (
 			{
 				Name:    "apisubscription_application_subscribed_apis_api_subscription_target",
 				Unique:  true,
-				Columns: []*schema.Column{APISubscriptionsColumns[9], APISubscriptionsColumns[8]},
+				Columns: []*schema.Column{APISubscriptionsColumns[11], APISubscriptionsColumns[10]},
 			},
 		},
 	}
@@ -95,6 +99,8 @@ var (
 		{Name: "last_modified_at", Type: field.TypeTime},
 		{Name: "status_phase", Type: field.TypeEnum, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}, Default: "UNKNOWN"},
 		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "client_id", Type: field.TypeString, Size: 2147483647},
 		{Name: "issuer_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
@@ -109,13 +115,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "applications_teams_applications",
-				Columns:    []*schema.Column{ApplicationsColumns[8]},
+				Columns:    []*schema.Column{ApplicationsColumns[10]},
 				RefColumns: []*schema.Column{TeamsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "applications_zones_applications",
-				Columns:    []*schema.Column{ApplicationsColumns[9]},
+				Columns:    []*schema.Column{ApplicationsColumns[11]},
 				RefColumns: []*schema.Column{ZonesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -124,7 +130,7 @@ var (
 			{
 				Name:    "application_name_team_applications",
 				Unique:  true,
-				Columns: []*schema.Column{ApplicationsColumns[5], ApplicationsColumns[8]},
+				Columns: []*schema.Column{ApplicationsColumns[7], ApplicationsColumns[10]},
 			},
 		},
 	}
@@ -135,6 +141,8 @@ var (
 		{Name: "last_modified_at", Type: field.TypeTime},
 		{Name: "status_phase", Type: field.TypeEnum, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}, Default: "UNKNOWN"},
 		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "action", Type: field.TypeString, Size: 2147483647},
 		{Name: "strategy", Type: field.TypeEnum, Enums: []string{"AUTO", "SIMPLE", "FOUR_EYES"}, Default: "AUTO"},
 		{Name: "requester", Type: field.TypeJSON},
@@ -152,7 +160,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "approvals_api_subscriptions_approval",
-				Columns:    []*schema.Column{ApprovalsColumns[12]},
+				Columns:    []*schema.Column{ApprovalsColumns[14]},
 				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -165,6 +173,8 @@ var (
 		{Name: "last_modified_at", Type: field.TypeTime},
 		{Name: "status_phase", Type: field.TypeEnum, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}, Default: "UNKNOWN"},
 		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "action", Type: field.TypeString, Size: 2147483647},
 		{Name: "strategy", Type: field.TypeEnum, Enums: []string{"AUTO", "SIMPLE", "FOUR_EYES"}, Default: "AUTO"},
 		{Name: "requester", Type: field.TypeJSON},
@@ -182,26 +192,17 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "approval_requests_api_subscriptions_approval_request",
-				Columns:    []*schema.Column{ApprovalRequestsColumns[12]},
+				Columns:    []*schema.Column{ApprovalRequestsColumns[14]},
 				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
 	}
-	// EnvironmentsColumns holds the columns for the "environments" table.
-	EnvironmentsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString, Unique: true, Size: 2147483647},
-	}
-	// EnvironmentsTable holds the schema information for the "environments" table.
-	EnvironmentsTable = &schema.Table{
-		Name:       "environments",
-		Columns:    EnvironmentsColumns,
-		PrimaryKey: []*schema.Column{EnvironmentsColumns[0]},
-	}
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 2147483647},
 		{Name: "display_name", Type: field.TypeString, Size: 2147483647},
 		{Name: "description", Type: field.TypeString, Size: 2147483647, Default: ""},
@@ -215,6 +216,8 @@ var (
 	// MembersColumns holds the columns for the "members" table.
 	MembersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "email", Type: field.TypeString, Size: 2147483647},
 		{Name: "team_members", Type: field.TypeInt, Nullable: true},
@@ -227,7 +230,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "members_teams_members",
-				Columns:    []*schema.Column{MembersColumns[3]},
+				Columns:    []*schema.Column{MembersColumns[5]},
 				RefColumns: []*schema.Column{TeamsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -240,9 +243,12 @@ var (
 		{Name: "last_modified_at", Type: field.TypeTime},
 		{Name: "status_phase", Type: field.TypeEnum, Enums: []string{"READY", "PENDING", "ERROR", "UNKNOWN"}, Default: "UNKNOWN"},
 		{Name: "status_message", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 2147483647},
 		{Name: "email", Type: field.TypeString, Size: 2147483647},
 		{Name: "category", Type: field.TypeEnum, Enums: []string{"CUSTOMER", "INFRASTRUCTURE"}, Default: "CUSTOMER"},
+		{Name: "rover_token_ref", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "group_teams", Type: field.TypeInt, Nullable: true},
 	}
 	// TeamsTable holds the schema information for the "teams" table.
@@ -253,49 +259,17 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "teams_groups_teams",
-				Columns:    []*schema.Column{TeamsColumns[8]},
+				Columns:    []*schema.Column{TeamsColumns[11]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.SetNull,
-			},
-		},
-	}
-	// TeamEnvironmentsColumns holds the columns for the "team_environments" table.
-	TeamEnvironmentsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "rover_token_ref", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "environment_team_environments", Type: field.TypeInt},
-		{Name: "team_team_environments", Type: field.TypeInt},
-	}
-	// TeamEnvironmentsTable holds the schema information for the "team_environments" table.
-	TeamEnvironmentsTable = &schema.Table{
-		Name:       "team_environments",
-		Columns:    TeamEnvironmentsColumns,
-		PrimaryKey: []*schema.Column{TeamEnvironmentsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "team_environments_environments_team_environments",
-				Columns:    []*schema.Column{TeamEnvironmentsColumns[2]},
-				RefColumns: []*schema.Column{EnvironmentsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "team_environments_teams_team_environments",
-				Columns:    []*schema.Column{TeamEnvironmentsColumns[3]},
-				RefColumns: []*schema.Column{TeamsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "teamenvironment_team_team_environments_environment_team_environments",
-				Unique:  true,
-				Columns: []*schema.Column{TeamEnvironmentsColumns[3], TeamEnvironmentsColumns[2]},
 			},
 		},
 	}
 	// ZonesColumns holds the columns for the "zones" table.
 	ZonesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "environment", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "namespace", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 2147483647},
 		{Name: "gateway_url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"WORLD", "ENTERPRISE"}, Default: "ENTERPRISE"},
@@ -309,7 +283,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "zones_api_subscriptions_failover_zones",
-				Columns:    []*schema.Column{ZonesColumns[4]},
+				Columns:    []*schema.Column{ZonesColumns[6]},
 				RefColumns: []*schema.Column{APISubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -322,11 +296,9 @@ var (
 		ApplicationsTable,
 		ApprovalsTable,
 		ApprovalRequestsTable,
-		EnvironmentsTable,
 		GroupsTable,
 		MembersTable,
 		TeamsTable,
-		TeamEnvironmentsTable,
 		ZonesTable,
 	}
 )
@@ -341,7 +313,5 @@ func init() {
 	ApprovalRequestsTable.ForeignKeys[0].RefTable = APISubscriptionsTable
 	MembersTable.ForeignKeys[0].RefTable = TeamsTable
 	TeamsTable.ForeignKeys[0].RefTable = GroupsTable
-	TeamEnvironmentsTable.ForeignKeys[0].RefTable = EnvironmentsTable
-	TeamEnvironmentsTable.ForeignKeys[1].RefTable = TeamsTable
 	ZonesTable.ForeignKeys[0].RefTable = APISubscriptionsTable
 }

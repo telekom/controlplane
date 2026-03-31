@@ -33,6 +33,10 @@ type ApiSubscription struct {
 	StatusPhase apisubscription.StatusPhase `json:"status_phase,omitempty"`
 	// StatusMessage holds the value of the "status_message" field.
 	StatusMessage *string `json:"status_message,omitempty"`
+	// Environment holds the value of the "environment" field.
+	Environment *string `json:"environment,omitempty"`
+	// Namespace holds the value of the "namespace" field.
+	Namespace *string `json:"namespace,omitempty"`
 	// BasePath holds the value of the "base_path" field.
 	BasePath string `json:"base_path,omitempty"`
 	// M2mAuthMethod holds the value of the "m2m_auth_method" field.
@@ -130,7 +134,7 @@ func (*ApiSubscription) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case apisubscription.FieldID:
 			values[i] = new(sql.NullInt64)
-		case apisubscription.FieldStatusPhase, apisubscription.FieldStatusMessage, apisubscription.FieldBasePath, apisubscription.FieldM2mAuthMethod:
+		case apisubscription.FieldStatusPhase, apisubscription.FieldStatusMessage, apisubscription.FieldEnvironment, apisubscription.FieldNamespace, apisubscription.FieldBasePath, apisubscription.FieldM2mAuthMethod:
 			values[i] = new(sql.NullString)
 		case apisubscription.FieldCreatedAt, apisubscription.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -183,6 +187,20 @@ func (_m *ApiSubscription) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.StatusMessage = new(string)
 				*_m.StatusMessage = value.String
+			}
+		case apisubscription.FieldEnvironment:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field environment", values[i])
+			} else if value.Valid {
+				_m.Environment = new(string)
+				*_m.Environment = value.String
+			}
+		case apisubscription.FieldNamespace:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field namespace", values[i])
+			} else if value.Valid {
+				_m.Namespace = new(string)
+				*_m.Namespace = value.String
 			}
 		case apisubscription.FieldBasePath:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -290,6 +308,16 @@ func (_m *ApiSubscription) String() string {
 	builder.WriteString(", ")
 	if v := _m.StatusMessage; v != nil {
 		builder.WriteString("status_message=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Environment; v != nil {
+		builder.WriteString("environment=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Namespace; v != nil {
+		builder.WriteString("namespace=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

@@ -31,6 +31,46 @@ func (_u *ZoneUpdate) Where(ps ...predicate.Zone) *ZoneUpdate {
 	return _u
 }
 
+// SetEnvironment sets the "environment" field.
+func (_u *ZoneUpdate) SetEnvironment(v string) *ZoneUpdate {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *ZoneUpdate) SetNillableEnvironment(v *string) *ZoneUpdate {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *ZoneUpdate) ClearEnvironment() *ZoneUpdate {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *ZoneUpdate) SetNamespace(v string) *ZoneUpdate {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *ZoneUpdate) SetNillableNamespace(v *string) *ZoneUpdate {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *ZoneUpdate) ClearNamespace() *ZoneUpdate {
+	_u.mutation.ClearNamespace()
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *ZoneUpdate) SetName(v string) *ZoneUpdate {
 	_u.mutation.SetName(v)
@@ -174,6 +214,18 @@ func (_u *ZoneUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(zone.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(zone.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(zone.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(zone.FieldNamespace, field.TypeString)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(zone.FieldName, field.TypeString, value)
 	}
@@ -249,6 +301,46 @@ type ZoneUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *ZoneMutation
+}
+
+// SetEnvironment sets the "environment" field.
+func (_u *ZoneUpdateOne) SetEnvironment(v string) *ZoneUpdateOne {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *ZoneUpdateOne) SetNillableEnvironment(v *string) *ZoneUpdateOne {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *ZoneUpdateOne) ClearEnvironment() *ZoneUpdateOne {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *ZoneUpdateOne) SetNamespace(v string) *ZoneUpdateOne {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *ZoneUpdateOne) SetNillableNamespace(v *string) *ZoneUpdateOne {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *ZoneUpdateOne) ClearNamespace() *ZoneUpdateOne {
+	_u.mutation.ClearNamespace()
+	return _u
 }
 
 // SetName sets the "name" field.
@@ -423,6 +515,18 @@ func (_u *ZoneUpdateOne) sqlSave(ctx context.Context) (_node *Zone, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(zone.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(zone.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(zone.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(zone.FieldNamespace, field.TypeString)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(zone.FieldName, field.TypeString, value)

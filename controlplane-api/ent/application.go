@@ -30,6 +30,10 @@ type Application struct {
 	StatusPhase application.StatusPhase `json:"status_phase,omitempty"`
 	// StatusMessage holds the value of the "status_message" field.
 	StatusMessage *string `json:"status_message,omitempty"`
+	// Environment holds the value of the "environment" field.
+	Environment *string `json:"environment,omitempty"`
+	// Namespace holds the value of the "namespace" field.
+	Namespace *string `json:"namespace,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// ClientID holds the value of the "client_id" field.
@@ -111,7 +115,7 @@ func (*Application) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case application.FieldID:
 			values[i] = new(sql.NullInt64)
-		case application.FieldStatusPhase, application.FieldStatusMessage, application.FieldName, application.FieldClientID, application.FieldIssuerURL:
+		case application.FieldStatusPhase, application.FieldStatusMessage, application.FieldEnvironment, application.FieldNamespace, application.FieldName, application.FieldClientID, application.FieldIssuerURL:
 			values[i] = new(sql.NullString)
 		case application.FieldCreatedAt, application.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -164,6 +168,20 @@ func (_m *Application) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.StatusMessage = new(string)
 				*_m.StatusMessage = value.String
+			}
+		case application.FieldEnvironment:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field environment", values[i])
+			} else if value.Valid {
+				_m.Environment = new(string)
+				*_m.Environment = value.String
+			}
+		case application.FieldNamespace:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field namespace", values[i])
+			} else if value.Valid {
+				_m.Namespace = new(string)
+				*_m.Namespace = value.String
 			}
 		case application.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -265,6 +283,16 @@ func (_m *Application) String() string {
 	builder.WriteString(", ")
 	if v := _m.StatusMessage; v != nil {
 		builder.WriteString("status_message=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Environment; v != nil {
+		builder.WriteString("environment=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Namespace; v != nil {
+		builder.WriteString("namespace=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

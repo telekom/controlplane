@@ -572,6 +572,64 @@ func (ec *executionContext) fieldContext_ApiExposure_statusMessage(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _ApiExposure_environment(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiExposure_environment,
+		func(ctx context.Context) (any, error) {
+			return obj.Environment, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiExposure_environment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiExposure",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiExposure_namespace(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiExposure_namespace,
+		func(ctx context.Context) (any, error) {
+			return obj.Namespace, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiExposure_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiExposure",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ApiExposure_basePath(ctx context.Context, field graphql.CollectedField, obj *ent.ApiExposure) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -821,6 +879,10 @@ func (ec *executionContext) fieldContext_ApiExposure_owner(_ context.Context, fi
 				return ec.fieldContext_Application_statusPhase(ctx, field)
 			case "statusMessage":
 				return ec.fieldContext_Application_statusMessage(ctx, field)
+			case "environment":
+				return ec.fieldContext_Application_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_Application_namespace(ctx, field)
 			case "name":
 				return ec.fieldContext_Application_name(ctx, field)
 			case "clientID":
@@ -1022,6 +1084,10 @@ func (ec *executionContext) fieldContext_ApiExposureEdge_node(_ context.Context,
 				return ec.fieldContext_ApiExposure_statusPhase(ctx, field)
 			case "statusMessage":
 				return ec.fieldContext_ApiExposure_statusMessage(ctx, field)
+			case "environment":
+				return ec.fieldContext_ApiExposure_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_ApiExposure_namespace(ctx, field)
 			case "basePath":
 				return ec.fieldContext_ApiExposure_basePath(ctx, field)
 			case "visibility":
@@ -1221,6 +1287,64 @@ func (ec *executionContext) fieldContext_ApiSubscription_statusMessage(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _ApiSubscription_environment(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiSubscription_environment,
+		func(ctx context.Context) (any, error) {
+			return obj.Environment, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiSubscription_environment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiSubscription",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApiSubscription_namespace(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApiSubscription_namespace,
+		func(ctx context.Context) (any, error) {
+			return obj.Namespace, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApiSubscription_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApiSubscription",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ApiSubscription_basePath(ctx context.Context, field graphql.CollectedField, obj *ent.ApiSubscription) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1342,6 +1466,10 @@ func (ec *executionContext) fieldContext_ApiSubscription_owner(_ context.Context
 				return ec.fieldContext_Application_statusPhase(ctx, field)
 			case "statusMessage":
 				return ec.fieldContext_Application_statusMessage(ctx, field)
+			case "environment":
+				return ec.fieldContext_Application_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_Application_namespace(ctx, field)
 			case "name":
 				return ec.fieldContext_Application_name(ctx, field)
 			case "clientID":
@@ -1389,6 +1517,10 @@ func (ec *executionContext) fieldContext_ApiSubscription_failoverZones(_ context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Zone_id(ctx, field)
+			case "environment":
+				return ec.fieldContext_Zone_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_Zone_namespace(ctx, field)
 			case "name":
 				return ec.fieldContext_Zone_name(ctx, field)
 			case "gatewayURL":
@@ -1438,6 +1570,10 @@ func (ec *executionContext) fieldContext_ApiSubscription_approval(_ context.Cont
 				return ec.fieldContext_Approval_statusPhase(ctx, field)
 			case "statusMessage":
 				return ec.fieldContext_Approval_statusMessage(ctx, field)
+			case "environment":
+				return ec.fieldContext_Approval_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_Approval_namespace(ctx, field)
 			case "action":
 				return ec.fieldContext_Approval_action(ctx, field)
 			case "strategy":
@@ -1495,6 +1631,10 @@ func (ec *executionContext) fieldContext_ApiSubscription_approvalRequest(_ conte
 				return ec.fieldContext_ApprovalRequest_statusPhase(ctx, field)
 			case "statusMessage":
 				return ec.fieldContext_ApprovalRequest_statusMessage(ctx, field)
+			case "environment":
+				return ec.fieldContext_ApprovalRequest_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_ApprovalRequest_namespace(ctx, field)
 			case "action":
 				return ec.fieldContext_ApprovalRequest_action(ctx, field)
 			case "strategy":
@@ -1704,6 +1844,10 @@ func (ec *executionContext) fieldContext_ApiSubscriptionEdge_node(_ context.Cont
 				return ec.fieldContext_ApiSubscription_statusPhase(ctx, field)
 			case "statusMessage":
 				return ec.fieldContext_ApiSubscription_statusMessage(ctx, field)
+			case "environment":
+				return ec.fieldContext_ApiSubscription_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_ApiSubscription_namespace(ctx, field)
 			case "basePath":
 				return ec.fieldContext_ApiSubscription_basePath(ctx, field)
 			case "m2mAuthMethod":
@@ -1901,6 +2045,64 @@ func (ec *executionContext) fieldContext_Application_statusMessage(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _Application_environment(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Application_environment,
+		func(ctx context.Context) (any, error) {
+			return obj.Environment, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Application_environment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Application",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Application_namespace(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Application_namespace,
+		func(ctx context.Context) (any, error) {
+			return obj.Namespace, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Application_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Application",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Application_name(ctx context.Context, field graphql.CollectedField, obj *ent.Application) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2014,6 +2216,10 @@ func (ec *executionContext) fieldContext_Application_zone(_ context.Context, fie
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Zone_id(ctx, field)
+			case "environment":
+				return ec.fieldContext_Zone_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_Zone_namespace(ctx, field)
 			case "name":
 				return ec.fieldContext_Zone_name(ctx, field)
 			case "gatewayURL":
@@ -2303,6 +2509,10 @@ func (ec *executionContext) fieldContext_ApplicationEdge_node(_ context.Context,
 				return ec.fieldContext_Application_statusPhase(ctx, field)
 			case "statusMessage":
 				return ec.fieldContext_Application_statusMessage(ctx, field)
+			case "environment":
+				return ec.fieldContext_Application_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_Application_namespace(ctx, field)
 			case "name":
 				return ec.fieldContext_Application_name(ctx, field)
 			case "clientID":
@@ -2486,6 +2696,64 @@ func (ec *executionContext) _Approval_statusMessage(ctx context.Context, field g
 }
 
 func (ec *executionContext) fieldContext_Approval_statusMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Approval",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Approval_environment(ctx context.Context, field graphql.CollectedField, obj *ent.Approval) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Approval_environment,
+		func(ctx context.Context) (any, error) {
+			return obj.Environment, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Approval_environment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Approval",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Approval_namespace(ctx context.Context, field graphql.CollectedField, obj *ent.Approval) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Approval_namespace,
+		func(ctx context.Context) (any, error) {
+			return obj.Namespace, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Approval_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Approval",
 		Field:      field,
@@ -2915,6 +3183,10 @@ func (ec *executionContext) fieldContext_ApprovalEdge_node(_ context.Context, fi
 				return ec.fieldContext_Approval_statusPhase(ctx, field)
 			case "statusMessage":
 				return ec.fieldContext_Approval_statusMessage(ctx, field)
+			case "environment":
+				return ec.fieldContext_Approval_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_Approval_namespace(ctx, field)
 			case "action":
 				return ec.fieldContext_Approval_action(ctx, field)
 			case "strategy":
@@ -3100,6 +3372,64 @@ func (ec *executionContext) _ApprovalRequest_statusMessage(ctx context.Context, 
 }
 
 func (ec *executionContext) fieldContext_ApprovalRequest_statusMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApprovalRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApprovalRequest_environment(ctx context.Context, field graphql.CollectedField, obj *ent.ApprovalRequest) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApprovalRequest_environment,
+		func(ctx context.Context) (any, error) {
+			return obj.Environment, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApprovalRequest_environment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApprovalRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApprovalRequest_namespace(ctx context.Context, field graphql.CollectedField, obj *ent.ApprovalRequest) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApprovalRequest_namespace,
+		func(ctx context.Context) (any, error) {
+			return obj.Namespace, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApprovalRequest_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ApprovalRequest",
 		Field:      field,
@@ -3529,6 +3859,10 @@ func (ec *executionContext) fieldContext_ApprovalRequestEdge_node(_ context.Cont
 				return ec.fieldContext_ApprovalRequest_statusPhase(ctx, field)
 			case "statusMessage":
 				return ec.fieldContext_ApprovalRequest_statusMessage(ctx, field)
+			case "environment":
+				return ec.fieldContext_ApprovalRequest_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_ApprovalRequest_namespace(ctx, field)
 			case "action":
 				return ec.fieldContext_ApprovalRequest_action(ctx, field)
 			case "strategy":
@@ -3581,103 +3915,6 @@ func (ec *executionContext) fieldContext_ApprovalRequestEdge_cursor(_ context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _Environment_id(ctx context.Context, field graphql.CollectedField, obj *ent.Environment) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Environment_id,
-		func(ctx context.Context) (any, error) {
-			return obj.ID, nil
-		},
-		nil,
-		ec.marshalNID2int,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Environment_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Environment",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Environment_name(ctx context.Context, field graphql.CollectedField, obj *ent.Environment) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Environment_name,
-		func(ctx context.Context) (any, error) {
-			return obj.Name, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Environment_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Environment",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Environment_teamEnvironments(ctx context.Context, field graphql.CollectedField, obj *ent.Environment) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Environment_teamEnvironments,
-		func(ctx context.Context) (any, error) {
-			return obj.TeamEnvironments(ctx)
-		},
-		nil,
-		ec.marshalOTeamEnvironment2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamEnvironmentᚄ,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Environment_teamEnvironments(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Environment",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_TeamEnvironment_id(ctx, field)
-			case "roverTokenRef":
-				return ec.fieldContext_TeamEnvironment_roverTokenRef(ctx, field)
-			case "team":
-				return ec.fieldContext_TeamEnvironment_team(ctx, field)
-			case "environment":
-				return ec.fieldContext_TeamEnvironment_environment(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type TeamEnvironment", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Group_id(ctx context.Context, field graphql.CollectedField, obj *ent.Group) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3702,6 +3939,64 @@ func (ec *executionContext) fieldContext_Group_id(_ context.Context, field graph
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Group_environment(ctx context.Context, field graphql.CollectedField, obj *ent.Group) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Group_environment,
+		func(ctx context.Context) (any, error) {
+			return obj.Environment, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Group_environment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Group",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Group_namespace(ctx context.Context, field graphql.CollectedField, obj *ent.Group) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Group_namespace,
+		func(ctx context.Context) (any, error) {
+			return obj.Namespace, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Group_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Group",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3828,18 +4123,22 @@ func (ec *executionContext) fieldContext_Group_teams(_ context.Context, field gr
 				return ec.fieldContext_Team_statusPhase(ctx, field)
 			case "statusMessage":
 				return ec.fieldContext_Team_statusMessage(ctx, field)
+			case "environment":
+				return ec.fieldContext_Team_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_Team_namespace(ctx, field)
 			case "name":
 				return ec.fieldContext_Team_name(ctx, field)
 			case "email":
 				return ec.fieldContext_Team_email(ctx, field)
 			case "category":
 				return ec.fieldContext_Team_category(ctx, field)
+			case "roverTokenRef":
+				return ec.fieldContext_Team_roverTokenRef(ctx, field)
 			case "group":
 				return ec.fieldContext_Team_group(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "teamEnvironments":
-				return ec.fieldContext_Team_teamEnvironments(ctx, field)
 			case "applications":
 				return ec.fieldContext_Team_applications(ctx, field)
 			}
@@ -3873,6 +4172,64 @@ func (ec *executionContext) fieldContext_Member_id(_ context.Context, field grap
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Member_environment(ctx context.Context, field graphql.CollectedField, obj *ent.Member) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Member_environment,
+		func(ctx context.Context) (any, error) {
+			return obj.Environment, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Member_environment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Member",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Member_namespace(ctx context.Context, field graphql.CollectedField, obj *ent.Member) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Member_namespace,
+		func(ctx context.Context) (any, error) {
+			return obj.Namespace, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Member_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Member",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3970,18 +4327,22 @@ func (ec *executionContext) fieldContext_Member_team(_ context.Context, field gr
 				return ec.fieldContext_Team_statusPhase(ctx, field)
 			case "statusMessage":
 				return ec.fieldContext_Team_statusMessage(ctx, field)
+			case "environment":
+				return ec.fieldContext_Team_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_Team_namespace(ctx, field)
 			case "name":
 				return ec.fieldContext_Team_name(ctx, field)
 			case "email":
 				return ec.fieldContext_Team_email(ctx, field)
 			case "category":
 				return ec.fieldContext_Team_category(ctx, field)
+			case "roverTokenRef":
+				return ec.fieldContext_Team_roverTokenRef(ctx, field)
 			case "group":
 				return ec.fieldContext_Team_group(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "teamEnvironments":
-				return ec.fieldContext_Team_teamEnvironments(ctx, field)
 			case "applications":
 				return ec.fieldContext_Team_applications(ctx, field)
 			}
@@ -4509,6 +4870,10 @@ func (ec *executionContext) fieldContext_Query_zones(_ context.Context, field gr
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Zone_id(ctx, field)
+			case "environment":
+				return ec.fieldContext_Zone_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_Zone_namespace(ctx, field)
 			case "name":
 				return ec.fieldContext_Zone_name(ctx, field)
 			case "gatewayURL":
@@ -4777,6 +5142,64 @@ func (ec *executionContext) fieldContext_Team_statusMessage(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _Team_environment(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Team_environment,
+		func(ctx context.Context) (any, error) {
+			return obj.Environment, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Team_environment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Team_namespace(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Team_namespace,
+		func(ctx context.Context) (any, error) {
+			return obj.Namespace, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Team_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Team_name(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4864,6 +5287,35 @@ func (ec *executionContext) fieldContext_Team_category(_ context.Context, field 
 	return fc, nil
 }
 
+func (ec *executionContext) _Team_roverTokenRef(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Team_roverTokenRef,
+		func(ctx context.Context) (any, error) {
+			return obj.RoverTokenRef, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Team_roverTokenRef(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Team_group(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4890,6 +5342,10 @@ func (ec *executionContext) fieldContext_Team_group(_ context.Context, field gra
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Group_id(ctx, field)
+			case "environment":
+				return ec.fieldContext_Group_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_Group_namespace(ctx, field)
 			case "name":
 				return ec.fieldContext_Group_name(ctx, field)
 			case "displayName":
@@ -4931,6 +5387,10 @@ func (ec *executionContext) fieldContext_Team_members(_ context.Context, field g
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Member_id(ctx, field)
+			case "environment":
+				return ec.fieldContext_Member_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_Member_namespace(ctx, field)
 			case "name":
 				return ec.fieldContext_Member_name(ctx, field)
 			case "email":
@@ -4939,45 +5399,6 @@ func (ec *executionContext) fieldContext_Team_members(_ context.Context, field g
 				return ec.fieldContext_Member_team(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Member", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Team_teamEnvironments(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Team_teamEnvironments,
-		func(ctx context.Context) (any, error) {
-			return obj.TeamEnvironments(ctx)
-		},
-		nil,
-		ec.marshalOTeamEnvironment2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamEnvironmentᚄ,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Team_teamEnvironments(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Team",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_TeamEnvironment_id(ctx, field)
-			case "roverTokenRef":
-				return ec.fieldContext_TeamEnvironment_roverTokenRef(ctx, field)
-			case "team":
-				return ec.fieldContext_TeamEnvironment_team(ctx, field)
-			case "environment":
-				return ec.fieldContext_TeamEnvironment_environment(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type TeamEnvironment", field.Name)
 		},
 	}
 	return fc, nil
@@ -5169,18 +5590,22 @@ func (ec *executionContext) fieldContext_TeamEdge_node(_ context.Context, field 
 				return ec.fieldContext_Team_statusPhase(ctx, field)
 			case "statusMessage":
 				return ec.fieldContext_Team_statusMessage(ctx, field)
+			case "environment":
+				return ec.fieldContext_Team_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_Team_namespace(ctx, field)
 			case "name":
 				return ec.fieldContext_Team_name(ctx, field)
 			case "email":
 				return ec.fieldContext_Team_email(ctx, field)
 			case "category":
 				return ec.fieldContext_Team_category(ctx, field)
+			case "roverTokenRef":
+				return ec.fieldContext_Team_roverTokenRef(ctx, field)
 			case "group":
 				return ec.fieldContext_Team_group(ctx, field)
 			case "members":
 				return ec.fieldContext_Team_members(ctx, field)
-			case "teamEnvironments":
-				return ec.fieldContext_Team_teamEnvironments(ctx, field)
 			case "applications":
 				return ec.fieldContext_Team_applications(ctx, field)
 			}
@@ -5219,156 +5644,6 @@ func (ec *executionContext) fieldContext_TeamEdge_cursor(_ context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _TeamEnvironment_id(ctx context.Context, field graphql.CollectedField, obj *ent.TeamEnvironment) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TeamEnvironment_id,
-		func(ctx context.Context) (any, error) {
-			return obj.ID, nil
-		},
-		nil,
-		ec.marshalNID2int,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_TeamEnvironment_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TeamEnvironment",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TeamEnvironment_roverTokenRef(ctx context.Context, field graphql.CollectedField, obj *ent.TeamEnvironment) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TeamEnvironment_roverTokenRef,
-		func(ctx context.Context) (any, error) {
-			return obj.RoverTokenRef, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_TeamEnvironment_roverTokenRef(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TeamEnvironment",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TeamEnvironment_team(ctx context.Context, field graphql.CollectedField, obj *ent.TeamEnvironment) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TeamEnvironment_team,
-		func(ctx context.Context) (any, error) {
-			return obj.Team(ctx)
-		},
-		nil,
-		ec.marshalNTeam2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeam,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_TeamEnvironment_team(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TeamEnvironment",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Team_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Team_createdAt(ctx, field)
-			case "lastModifiedAt":
-				return ec.fieldContext_Team_lastModifiedAt(ctx, field)
-			case "statusPhase":
-				return ec.fieldContext_Team_statusPhase(ctx, field)
-			case "statusMessage":
-				return ec.fieldContext_Team_statusMessage(ctx, field)
-			case "name":
-				return ec.fieldContext_Team_name(ctx, field)
-			case "email":
-				return ec.fieldContext_Team_email(ctx, field)
-			case "category":
-				return ec.fieldContext_Team_category(ctx, field)
-			case "group":
-				return ec.fieldContext_Team_group(ctx, field)
-			case "members":
-				return ec.fieldContext_Team_members(ctx, field)
-			case "teamEnvironments":
-				return ec.fieldContext_Team_teamEnvironments(ctx, field)
-			case "applications":
-				return ec.fieldContext_Team_applications(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Team", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TeamEnvironment_environment(ctx context.Context, field graphql.CollectedField, obj *ent.TeamEnvironment) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_TeamEnvironment_environment,
-		func(ctx context.Context) (any, error) {
-			return obj.Environment(ctx)
-		},
-		nil,
-		ec.marshalNEnvironment2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironment,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_TeamEnvironment_environment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TeamEnvironment",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Environment_id(ctx, field)
-			case "name":
-				return ec.fieldContext_Environment_name(ctx, field)
-			case "teamEnvironments":
-				return ec.fieldContext_Environment_teamEnvironments(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Environment", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Zone_id(ctx context.Context, field graphql.CollectedField, obj *ent.Zone) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5393,6 +5668,64 @@ func (ec *executionContext) fieldContext_Zone_id(_ context.Context, field graphq
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Zone_environment(ctx context.Context, field graphql.CollectedField, obj *ent.Zone) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Zone_environment,
+		func(ctx context.Context) (any, error) {
+			return obj.Environment, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Zone_environment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Zone",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Zone_namespace(ctx context.Context, field graphql.CollectedField, obj *ent.Zone) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Zone_namespace,
+		func(ctx context.Context) (any, error) {
+			return obj.Namespace, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Zone_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Zone",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5519,6 +5852,10 @@ func (ec *executionContext) fieldContext_Zone_applications(_ context.Context, fi
 				return ec.fieldContext_Application_statusPhase(ctx, field)
 			case "statusMessage":
 				return ec.fieldContext_Application_statusMessage(ctx, field)
+			case "environment":
+				return ec.fieldContext_Application_environment(ctx, field)
+			case "namespace":
+				return ec.fieldContext_Application_namespace(ctx, field)
 			case "name":
 				return ec.fieldContext_Application_name(ctx, field)
 			case "clientID":
@@ -5596,7 +5933,7 @@ func (ec *executionContext) unmarshalInputApiExposureWhereInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "apiVersion", "apiVersionNEQ", "apiVersionIn", "apiVersionNotIn", "apiVersionGT", "apiVersionGTE", "apiVersionLT", "apiVersionLTE", "apiVersionContains", "apiVersionHasPrefix", "apiVersionHasSuffix", "apiVersionIsNil", "apiVersionNotNil", "apiVersionEqualFold", "apiVersionContainsFold", "hasOwner", "hasOwnerWith", "hasSubscriptions", "hasSubscriptionsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "active", "activeNEQ", "apiVersion", "apiVersionNEQ", "apiVersionIn", "apiVersionNotIn", "apiVersionGT", "apiVersionGTE", "apiVersionLT", "apiVersionLTE", "apiVersionContains", "apiVersionHasPrefix", "apiVersionHasSuffix", "apiVersionIsNil", "apiVersionNotNil", "apiVersionEqualFold", "apiVersionContainsFold", "hasOwner", "hasOwnerWith", "hasSubscriptions", "hasSubscriptionsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5925,6 +6262,216 @@ func (ec *executionContext) unmarshalInputApiExposureWhereInput(ctx context.Cont
 				return it, err
 			}
 			it.StatusMessageContainsFold = data
+		case "environment":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environment"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Environment = data
+		case "environmentNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNEQ = data
+		case "environmentIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIn = data
+		case "environmentNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotIn = data
+		case "environmentGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGT = data
+		case "environmentGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGTE = data
+		case "environmentLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLT = data
+		case "environmentLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLTE = data
+		case "environmentContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContains = data
+		case "environmentHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasPrefix = data
+		case "environmentHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasSuffix = data
+		case "environmentIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIsNil = data
+		case "environmentNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotNil = data
+		case "environmentEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentEqualFold = data
+		case "environmentContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContainsFold = data
+		case "namespace":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Namespace = data
+		case "namespaceNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNEQ = data
+		case "namespaceIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIn = data
+		case "namespaceNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotIn = data
+		case "namespaceGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGT = data
+		case "namespaceGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGTE = data
+		case "namespaceLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLT = data
+		case "namespaceLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLTE = data
+		case "namespaceContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContains = data
+		case "namespaceHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasPrefix = data
+		case "namespaceHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasSuffix = data
+		case "namespaceIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIsNil = data
+		case "namespaceNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotNil = data
+		case "namespaceEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceEqualFold = data
+		case "namespaceContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContainsFold = data
 		case "basePath":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("basePath"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -6248,7 +6795,7 @@ func (ec *executionContext) unmarshalInputApiSubscriptionWhereInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "m2mAuthMethod", "m2mAuthMethodNEQ", "m2mAuthMethodIn", "m2mAuthMethodNotIn", "hasOwner", "hasOwnerWith", "hasTarget", "hasTargetWith", "hasFailoverZones", "hasFailoverZonesWith", "hasApproval", "hasApprovalWith", "hasApprovalRequest", "hasApprovalRequestWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "basePath", "basePathNEQ", "basePathIn", "basePathNotIn", "basePathGT", "basePathGTE", "basePathLT", "basePathLTE", "basePathContains", "basePathHasPrefix", "basePathHasSuffix", "basePathEqualFold", "basePathContainsFold", "m2mAuthMethod", "m2mAuthMethodNEQ", "m2mAuthMethodIn", "m2mAuthMethodNotIn", "hasOwner", "hasOwnerWith", "hasTarget", "hasTargetWith", "hasFailoverZones", "hasFailoverZonesWith", "hasApproval", "hasApprovalWith", "hasApprovalRequest", "hasApprovalRequestWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6577,6 +7124,216 @@ func (ec *executionContext) unmarshalInputApiSubscriptionWhereInput(ctx context.
 				return it, err
 			}
 			it.StatusMessageContainsFold = data
+		case "environment":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environment"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Environment = data
+		case "environmentNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNEQ = data
+		case "environmentIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIn = data
+		case "environmentNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotIn = data
+		case "environmentGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGT = data
+		case "environmentGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGTE = data
+		case "environmentLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLT = data
+		case "environmentLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLTE = data
+		case "environmentContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContains = data
+		case "environmentHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasPrefix = data
+		case "environmentHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasSuffix = data
+		case "environmentIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIsNil = data
+		case "environmentNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotNil = data
+		case "environmentEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentEqualFold = data
+		case "environmentContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContainsFold = data
+		case "namespace":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Namespace = data
+		case "namespaceNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNEQ = data
+		case "namespaceIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIn = data
+		case "namespaceNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotIn = data
+		case "namespaceGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGT = data
+		case "namespaceGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGTE = data
+		case "namespaceLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLT = data
+		case "namespaceLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLTE = data
+		case "namespaceContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContains = data
+		case "namespaceHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasPrefix = data
+		case "namespaceHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasSuffix = data
+		case "namespaceIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIsNil = data
+		case "namespaceNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotNil = data
+		case "namespaceEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceEqualFold = data
+		case "namespaceContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContainsFold = data
 		case "basePath":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("basePath"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -6823,7 +7580,7 @@ func (ec *executionContext) unmarshalInputApplicationWhereInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "clientID", "clientIDNEQ", "clientIDIn", "clientIDNotIn", "clientIDGT", "clientIDGTE", "clientIDLT", "clientIDLTE", "clientIDContains", "clientIDHasPrefix", "clientIDHasSuffix", "clientIDEqualFold", "clientIDContainsFold", "issuerURL", "issuerURLNEQ", "issuerURLIn", "issuerURLNotIn", "issuerURLGT", "issuerURLGTE", "issuerURLLT", "issuerURLLTE", "issuerURLContains", "issuerURLHasPrefix", "issuerURLHasSuffix", "issuerURLIsNil", "issuerURLNotNil", "issuerURLEqualFold", "issuerURLContainsFold", "hasZone", "hasZoneWith", "hasOwnerTeam", "hasOwnerTeamWith", "hasExposedApis", "hasExposedApisWith", "hasSubscribedApis", "hasSubscribedApisWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "clientID", "clientIDNEQ", "clientIDIn", "clientIDNotIn", "clientIDGT", "clientIDGTE", "clientIDLT", "clientIDLTE", "clientIDContains", "clientIDHasPrefix", "clientIDHasSuffix", "clientIDEqualFold", "clientIDContainsFold", "issuerURL", "issuerURLNEQ", "issuerURLIn", "issuerURLNotIn", "issuerURLGT", "issuerURLGTE", "issuerURLLT", "issuerURLLTE", "issuerURLContains", "issuerURLHasPrefix", "issuerURLHasSuffix", "issuerURLIsNil", "issuerURLNotNil", "issuerURLEqualFold", "issuerURLContainsFold", "hasZone", "hasZoneWith", "hasOwnerTeam", "hasOwnerTeamWith", "hasExposedApis", "hasExposedApisWith", "hasSubscribedApis", "hasSubscribedApisWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7152,6 +7909,216 @@ func (ec *executionContext) unmarshalInputApplicationWhereInput(ctx context.Cont
 				return it, err
 			}
 			it.StatusMessageContainsFold = data
+		case "environment":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environment"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Environment = data
+		case "environmentNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNEQ = data
+		case "environmentIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIn = data
+		case "environmentNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotIn = data
+		case "environmentGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGT = data
+		case "environmentGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGTE = data
+		case "environmentLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLT = data
+		case "environmentLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLTE = data
+		case "environmentContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContains = data
+		case "environmentHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasPrefix = data
+		case "environmentHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasSuffix = data
+		case "environmentIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIsNil = data
+		case "environmentNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotNil = data
+		case "environmentEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentEqualFold = data
+		case "environmentContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContainsFold = data
+		case "namespace":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Namespace = data
+		case "namespaceNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNEQ = data
+		case "namespaceIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIn = data
+		case "namespaceNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotIn = data
+		case "namespaceGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGT = data
+		case "namespaceGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGTE = data
+		case "namespaceLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLT = data
+		case "namespaceLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLTE = data
+		case "namespaceContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContains = data
+		case "namespaceHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasPrefix = data
+		case "namespaceHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasSuffix = data
+		case "namespaceIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIsNil = data
+		case "namespaceNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotNil = data
+		case "namespaceEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceEqualFold = data
+		case "namespaceContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContainsFold = data
 		case "name":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -7593,7 +8560,7 @@ func (ec *executionContext) unmarshalInputApprovalRequestWhereInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "state", "stateNEQ", "stateIn", "stateNotIn", "hasAPISubscription", "hasAPISubscriptionWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "state", "stateNEQ", "stateIn", "stateNotIn", "hasAPISubscription", "hasAPISubscriptionWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7922,6 +8889,216 @@ func (ec *executionContext) unmarshalInputApprovalRequestWhereInput(ctx context.
 				return it, err
 			}
 			it.StatusMessageContainsFold = data
+		case "environment":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environment"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Environment = data
+		case "environmentNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNEQ = data
+		case "environmentIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIn = data
+		case "environmentNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotIn = data
+		case "environmentGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGT = data
+		case "environmentGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGTE = data
+		case "environmentLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLT = data
+		case "environmentLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLTE = data
+		case "environmentContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContains = data
+		case "environmentHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasPrefix = data
+		case "environmentHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasSuffix = data
+		case "environmentIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIsNil = data
+		case "environmentNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotNil = data
+		case "environmentEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentEqualFold = data
+		case "environmentContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContainsFold = data
+		case "namespace":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Namespace = data
+		case "namespaceNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNEQ = data
+		case "namespaceIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIn = data
+		case "namespaceNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotIn = data
+		case "namespaceGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGT = data
+		case "namespaceGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGTE = data
+		case "namespaceLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLT = data
+		case "namespaceLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLTE = data
+		case "namespaceContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContains = data
+		case "namespaceHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasPrefix = data
+		case "namespaceHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasSuffix = data
+		case "namespaceIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIsNil = data
+		case "namespaceNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotNil = data
+		case "namespaceEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceEqualFold = data
+		case "namespaceContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContainsFold = data
 		case "action":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -8099,7 +9276,7 @@ func (ec *executionContext) unmarshalInputApprovalWhereInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "state", "stateNEQ", "stateIn", "stateNotIn", "hasAPISubscription", "hasAPISubscriptionWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "action", "actionNEQ", "actionIn", "actionNotIn", "actionGT", "actionGTE", "actionLT", "actionLTE", "actionContains", "actionHasPrefix", "actionHasSuffix", "actionEqualFold", "actionContainsFold", "strategy", "strategyNEQ", "strategyIn", "strategyNotIn", "state", "stateNEQ", "stateIn", "stateNotIn", "hasAPISubscription", "hasAPISubscriptionWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8428,6 +9605,216 @@ func (ec *executionContext) unmarshalInputApprovalWhereInput(ctx context.Context
 				return it, err
 			}
 			it.StatusMessageContainsFold = data
+		case "environment":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environment"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Environment = data
+		case "environmentNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNEQ = data
+		case "environmentIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIn = data
+		case "environmentNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotIn = data
+		case "environmentGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGT = data
+		case "environmentGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGTE = data
+		case "environmentLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLT = data
+		case "environmentLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLTE = data
+		case "environmentContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContains = data
+		case "environmentHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasPrefix = data
+		case "environmentHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasSuffix = data
+		case "environmentIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIsNil = data
+		case "environmentNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotNil = data
+		case "environmentEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentEqualFold = data
+		case "environmentContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContainsFold = data
+		case "namespace":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Namespace = data
+		case "namespaceNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNEQ = data
+		case "namespaceIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIn = data
+		case "namespaceNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotIn = data
+		case "namespaceGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGT = data
+		case "namespaceGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGTE = data
+		case "namespaceLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLT = data
+		case "namespaceLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLTE = data
+		case "namespaceContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContains = data
+		case "namespaceHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasPrefix = data
+		case "namespaceHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasSuffix = data
+		case "namespaceIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIsNil = data
+		case "namespaceNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotNil = data
+		case "namespaceEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceEqualFold = data
+		case "namespaceContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContainsFold = data
 		case "action":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -8594,211 +9981,6 @@ func (ec *executionContext) unmarshalInputApprovalWhereInput(ctx context.Context
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputEnvironmentWhereInput(ctx context.Context, obj any) (ent.EnvironmentWhereInput, error) {
-	var it ent.EnvironmentWhereInput
-	if obj == nil {
-		return it, nil
-	}
-
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "hasTeamEnvironments", "hasTeamEnvironmentsWith"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "not":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
-			data, err := ec.unmarshalOEnvironmentWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironmentWhereInput(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Not = data
-		case "and":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
-			data, err := ec.unmarshalOEnvironmentWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironmentWhereInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.And = data
-		case "or":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
-			data, err := ec.unmarshalOEnvironmentWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironmentWhereInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Or = data
-		case "id":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			data, err := ec.unmarshalOID2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ID = data
-		case "idNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
-			data, err := ec.unmarshalOID2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IDNEQ = data
-		case "idIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
-			data, err := ec.unmarshalOID2ᚕintᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IDIn = data
-		case "idNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
-			data, err := ec.unmarshalOID2ᚕintᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IDNotIn = data
-		case "idGT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
-			data, err := ec.unmarshalOID2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IDGT = data
-		case "idGTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
-			data, err := ec.unmarshalOID2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IDGTE = data
-		case "idLT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
-			data, err := ec.unmarshalOID2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IDLT = data
-		case "idLTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
-			data, err := ec.unmarshalOID2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IDLTE = data
-		case "name":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Name = data
-		case "nameNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameNEQ"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.NameNEQ = data
-		case "nameIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.NameIn = data
-		case "nameNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameNotIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.NameNotIn = data
-		case "nameGT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameGT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.NameGT = data
-		case "nameGTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameGTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.NameGTE = data
-		case "nameLT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameLT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.NameLT = data
-		case "nameLTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameLTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.NameLTE = data
-		case "nameContains":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameContains"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.NameContains = data
-		case "nameHasPrefix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameHasPrefix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.NameHasPrefix = data
-		case "nameHasSuffix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameHasSuffix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.NameHasSuffix = data
-		case "nameEqualFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameEqualFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.NameEqualFold = data
-		case "nameContainsFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameContainsFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.NameContainsFold = data
-		case "hasTeamEnvironments":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTeamEnvironments"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasTeamEnvironments = data
-		case "hasTeamEnvironmentsWith":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTeamEnvironmentsWith"))
-			data, err := ec.unmarshalOTeamEnvironmentWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamEnvironmentWhereInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasTeamEnvironmentsWith = data
-		}
-	}
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputGroupWhereInput(ctx context.Context, obj any) (ent.GroupWhereInput, error) {
 	var it ent.GroupWhereInput
 	if obj == nil {
@@ -8810,7 +9992,7 @@ func (ec *executionContext) unmarshalInputGroupWhereInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "displayName", "displayNameNEQ", "displayNameIn", "displayNameNotIn", "displayNameGT", "displayNameGTE", "displayNameLT", "displayNameLTE", "displayNameContains", "displayNameHasPrefix", "displayNameHasSuffix", "displayNameEqualFold", "displayNameContainsFold", "description", "descriptionNEQ", "descriptionIn", "descriptionNotIn", "descriptionGT", "descriptionGTE", "descriptionLT", "descriptionLTE", "descriptionContains", "descriptionHasPrefix", "descriptionHasSuffix", "descriptionEqualFold", "descriptionContainsFold", "hasTeams", "hasTeamsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "displayName", "displayNameNEQ", "displayNameIn", "displayNameNotIn", "displayNameGT", "displayNameGTE", "displayNameLT", "displayNameLTE", "displayNameContains", "displayNameHasPrefix", "displayNameHasSuffix", "displayNameEqualFold", "displayNameContainsFold", "description", "descriptionNEQ", "descriptionIn", "descriptionNotIn", "descriptionGT", "descriptionGTE", "descriptionLT", "descriptionLTE", "descriptionContains", "descriptionHasPrefix", "descriptionHasSuffix", "descriptionEqualFold", "descriptionContainsFold", "hasTeams", "hasTeamsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8894,6 +10076,216 @@ func (ec *executionContext) unmarshalInputGroupWhereInput(ctx context.Context, o
 				return it, err
 			}
 			it.IDLTE = data
+		case "environment":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environment"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Environment = data
+		case "environmentNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNEQ = data
+		case "environmentIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIn = data
+		case "environmentNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotIn = data
+		case "environmentGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGT = data
+		case "environmentGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGTE = data
+		case "environmentLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLT = data
+		case "environmentLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLTE = data
+		case "environmentContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContains = data
+		case "environmentHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasPrefix = data
+		case "environmentHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasSuffix = data
+		case "environmentIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIsNil = data
+		case "environmentNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotNil = data
+		case "environmentEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentEqualFold = data
+		case "environmentContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContainsFold = data
+		case "namespace":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Namespace = data
+		case "namespaceNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNEQ = data
+		case "namespaceIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIn = data
+		case "namespaceNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotIn = data
+		case "namespaceGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGT = data
+		case "namespaceGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGTE = data
+		case "namespaceLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLT = data
+		case "namespaceLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLTE = data
+		case "namespaceContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContains = data
+		case "namespaceHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasPrefix = data
+		case "namespaceHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasSuffix = data
+		case "namespaceIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIsNil = data
+		case "namespaceNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotNil = data
+		case "namespaceEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceEqualFold = data
+		case "namespaceContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContainsFold = data
 		case "name":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -9197,7 +10589,7 @@ func (ec *executionContext) unmarshalInputMemberWhereInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "hasTeam", "hasTeamWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "hasTeam", "hasTeamWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -9281,6 +10673,216 @@ func (ec *executionContext) unmarshalInputMemberWhereInput(ctx context.Context, 
 				return it, err
 			}
 			it.IDLTE = data
+		case "environment":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environment"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Environment = data
+		case "environmentNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNEQ = data
+		case "environmentIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIn = data
+		case "environmentNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotIn = data
+		case "environmentGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGT = data
+		case "environmentGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGTE = data
+		case "environmentLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLT = data
+		case "environmentLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLTE = data
+		case "environmentContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContains = data
+		case "environmentHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasPrefix = data
+		case "environmentHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasSuffix = data
+		case "environmentIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIsNil = data
+		case "environmentNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotNil = data
+		case "environmentEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentEqualFold = data
+		case "environmentContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContainsFold = data
+		case "namespace":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Namespace = data
+		case "namespaceNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNEQ = data
+		case "namespaceIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIn = data
+		case "namespaceNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotIn = data
+		case "namespaceGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGT = data
+		case "namespaceGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGTE = data
+		case "namespaceLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLT = data
+		case "namespaceLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLTE = data
+		case "namespaceContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContains = data
+		case "namespaceHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasPrefix = data
+		case "namespaceHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasSuffix = data
+		case "namespaceIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIsNil = data
+		case "namespaceNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotNil = data
+		case "namespaceEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceEqualFold = data
+		case "namespaceContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContainsFold = data
 		case "name":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -9482,239 +11084,6 @@ func (ec *executionContext) unmarshalInputMemberWhereInput(ctx context.Context, 
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputTeamEnvironmentWhereInput(ctx context.Context, obj any) (ent.TeamEnvironmentWhereInput, error) {
-	var it ent.TeamEnvironmentWhereInput
-	if obj == nil {
-		return it, nil
-	}
-
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "roverTokenRef", "roverTokenRefNEQ", "roverTokenRefIn", "roverTokenRefNotIn", "roverTokenRefGT", "roverTokenRefGTE", "roverTokenRefLT", "roverTokenRefLTE", "roverTokenRefContains", "roverTokenRefHasPrefix", "roverTokenRefHasSuffix", "roverTokenRefIsNil", "roverTokenRefNotNil", "roverTokenRefEqualFold", "roverTokenRefContainsFold", "hasTeam", "hasTeamWith", "hasEnvironment", "hasEnvironmentWith"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "not":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
-			data, err := ec.unmarshalOTeamEnvironmentWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamEnvironmentWhereInput(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Not = data
-		case "and":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
-			data, err := ec.unmarshalOTeamEnvironmentWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamEnvironmentWhereInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.And = data
-		case "or":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
-			data, err := ec.unmarshalOTeamEnvironmentWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamEnvironmentWhereInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Or = data
-		case "id":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			data, err := ec.unmarshalOID2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ID = data
-		case "idNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
-			data, err := ec.unmarshalOID2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IDNEQ = data
-		case "idIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
-			data, err := ec.unmarshalOID2ᚕintᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IDIn = data
-		case "idNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
-			data, err := ec.unmarshalOID2ᚕintᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IDNotIn = data
-		case "idGT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
-			data, err := ec.unmarshalOID2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IDGT = data
-		case "idGTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
-			data, err := ec.unmarshalOID2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IDGTE = data
-		case "idLT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
-			data, err := ec.unmarshalOID2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IDLT = data
-		case "idLTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
-			data, err := ec.unmarshalOID2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IDLTE = data
-		case "roverTokenRef":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRef"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RoverTokenRef = data
-		case "roverTokenRefNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefNEQ"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RoverTokenRefNEQ = data
-		case "roverTokenRefIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RoverTokenRefIn = data
-		case "roverTokenRefNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefNotIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RoverTokenRefNotIn = data
-		case "roverTokenRefGT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefGT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RoverTokenRefGT = data
-		case "roverTokenRefGTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefGTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RoverTokenRefGTE = data
-		case "roverTokenRefLT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefLT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RoverTokenRefLT = data
-		case "roverTokenRefLTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefLTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RoverTokenRefLTE = data
-		case "roverTokenRefContains":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefContains"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RoverTokenRefContains = data
-		case "roverTokenRefHasPrefix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefHasPrefix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RoverTokenRefHasPrefix = data
-		case "roverTokenRefHasSuffix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefHasSuffix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RoverTokenRefHasSuffix = data
-		case "roverTokenRefIsNil":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefIsNil"))
-			data, err := ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RoverTokenRefIsNil = data
-		case "roverTokenRefNotNil":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefNotNil"))
-			data, err := ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RoverTokenRefNotNil = data
-		case "roverTokenRefEqualFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefEqualFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RoverTokenRefEqualFold = data
-		case "roverTokenRefContainsFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefContainsFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RoverTokenRefContainsFold = data
-		case "hasTeam":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTeam"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasTeam = data
-		case "hasTeamWith":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTeamWith"))
-			data, err := ec.unmarshalOTeamWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamWhereInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasTeamWith = data
-		case "hasEnvironment":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasEnvironment"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasEnvironment = data
-		case "hasEnvironmentWith":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasEnvironmentWith"))
-			data, err := ec.unmarshalOEnvironmentWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironmentWhereInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasEnvironmentWith = data
-		}
-	}
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputTeamOrder(ctx context.Context, obj any) (ent.TeamOrder, error) {
 	var it ent.TeamOrder
 	if obj == nil {
@@ -9767,7 +11136,7 @@ func (ec *executionContext) unmarshalInputTeamWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "hasGroup", "hasGroupWith", "hasMembers", "hasMembersWith", "hasTeamEnvironments", "hasTeamEnvironmentsWith", "hasApplications", "hasApplicationsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "lastModifiedAt", "lastModifiedAtNEQ", "lastModifiedAtIn", "lastModifiedAtNotIn", "lastModifiedAtGT", "lastModifiedAtGTE", "lastModifiedAtLT", "lastModifiedAtLTE", "statusPhase", "statusPhaseNEQ", "statusPhaseIn", "statusPhaseNotIn", "statusMessage", "statusMessageNEQ", "statusMessageIn", "statusMessageNotIn", "statusMessageGT", "statusMessageGTE", "statusMessageLT", "statusMessageLTE", "statusMessageContains", "statusMessageHasPrefix", "statusMessageHasSuffix", "statusMessageIsNil", "statusMessageNotNil", "statusMessageEqualFold", "statusMessageContainsFold", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "category", "categoryNEQ", "categoryIn", "categoryNotIn", "roverTokenRef", "roverTokenRefNEQ", "roverTokenRefIn", "roverTokenRefNotIn", "roverTokenRefGT", "roverTokenRefGTE", "roverTokenRefLT", "roverTokenRefLTE", "roverTokenRefContains", "roverTokenRefHasPrefix", "roverTokenRefHasSuffix", "roverTokenRefIsNil", "roverTokenRefNotNil", "roverTokenRefEqualFold", "roverTokenRefContainsFold", "hasGroup", "hasGroupWith", "hasMembers", "hasMembersWith", "hasApplications", "hasApplicationsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -10096,6 +11465,216 @@ func (ec *executionContext) unmarshalInputTeamWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.StatusMessageContainsFold = data
+		case "environment":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environment"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Environment = data
+		case "environmentNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNEQ = data
+		case "environmentIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIn = data
+		case "environmentNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotIn = data
+		case "environmentGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGT = data
+		case "environmentGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGTE = data
+		case "environmentLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLT = data
+		case "environmentLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLTE = data
+		case "environmentContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContains = data
+		case "environmentHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasPrefix = data
+		case "environmentHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasSuffix = data
+		case "environmentIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIsNil = data
+		case "environmentNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotNil = data
+		case "environmentEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentEqualFold = data
+		case "environmentContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContainsFold = data
+		case "namespace":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Namespace = data
+		case "namespaceNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNEQ = data
+		case "namespaceIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIn = data
+		case "namespaceNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotIn = data
+		case "namespaceGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGT = data
+		case "namespaceGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGTE = data
+		case "namespaceLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLT = data
+		case "namespaceLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLTE = data
+		case "namespaceContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContains = data
+		case "namespaceHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasPrefix = data
+		case "namespaceHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasSuffix = data
+		case "namespaceIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIsNil = data
+		case "namespaceNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotNil = data
+		case "namespaceEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceEqualFold = data
+		case "namespaceContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContainsFold = data
 		case "name":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -10306,6 +11885,111 @@ func (ec *executionContext) unmarshalInputTeamWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.CategoryNotIn = data
+		case "roverTokenRef":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRef"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRef = data
+		case "roverTokenRefNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefNEQ = data
+		case "roverTokenRefIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefIn = data
+		case "roverTokenRefNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefNotIn = data
+		case "roverTokenRefGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefGT = data
+		case "roverTokenRefGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefGTE = data
+		case "roverTokenRefLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefLT = data
+		case "roverTokenRefLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefLTE = data
+		case "roverTokenRefContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefContains = data
+		case "roverTokenRefHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefHasPrefix = data
+		case "roverTokenRefHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefHasSuffix = data
+		case "roverTokenRefIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefIsNil = data
+		case "roverTokenRefNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefNotNil = data
+		case "roverTokenRefEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefEqualFold = data
+		case "roverTokenRefContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roverTokenRefContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoverTokenRefContainsFold = data
 		case "hasGroup":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasGroup"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -10334,20 +12018,6 @@ func (ec *executionContext) unmarshalInputTeamWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.HasMembersWith = data
-		case "hasTeamEnvironments":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTeamEnvironments"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasTeamEnvironments = data
-		case "hasTeamEnvironmentsWith":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTeamEnvironmentsWith"))
-			data, err := ec.unmarshalOTeamEnvironmentWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamEnvironmentWhereInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.HasTeamEnvironmentsWith = data
 		case "hasApplications":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasApplications"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -10378,7 +12048,7 @@ func (ec *executionContext) unmarshalInputZoneWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "gatewayURL", "gatewayURLNEQ", "gatewayURLIn", "gatewayURLNotIn", "gatewayURLGT", "gatewayURLGTE", "gatewayURLLT", "gatewayURLLTE", "gatewayURLContains", "gatewayURLHasPrefix", "gatewayURLHasSuffix", "gatewayURLIsNil", "gatewayURLNotNil", "gatewayURLEqualFold", "gatewayURLContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "hasApplications", "hasApplicationsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "environment", "environmentNEQ", "environmentIn", "environmentNotIn", "environmentGT", "environmentGTE", "environmentLT", "environmentLTE", "environmentContains", "environmentHasPrefix", "environmentHasSuffix", "environmentIsNil", "environmentNotNil", "environmentEqualFold", "environmentContainsFold", "namespace", "namespaceNEQ", "namespaceIn", "namespaceNotIn", "namespaceGT", "namespaceGTE", "namespaceLT", "namespaceLTE", "namespaceContains", "namespaceHasPrefix", "namespaceHasSuffix", "namespaceIsNil", "namespaceNotNil", "namespaceEqualFold", "namespaceContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "gatewayURL", "gatewayURLNEQ", "gatewayURLIn", "gatewayURLNotIn", "gatewayURLGT", "gatewayURLGTE", "gatewayURLLT", "gatewayURLLTE", "gatewayURLContains", "gatewayURLHasPrefix", "gatewayURLHasSuffix", "gatewayURLIsNil", "gatewayURLNotNil", "gatewayURLEqualFold", "gatewayURLContainsFold", "visibility", "visibilityNEQ", "visibilityIn", "visibilityNotIn", "hasApplications", "hasApplicationsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -10462,6 +12132,216 @@ func (ec *executionContext) unmarshalInputZoneWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.IDLTE = data
+		case "environment":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environment"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Environment = data
+		case "environmentNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNEQ = data
+		case "environmentIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIn = data
+		case "environmentNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotIn = data
+		case "environmentGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGT = data
+		case "environmentGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentGTE = data
+		case "environmentLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLT = data
+		case "environmentLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentLTE = data
+		case "environmentContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContains = data
+		case "environmentHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasPrefix = data
+		case "environmentHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentHasSuffix = data
+		case "environmentIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentIsNil = data
+		case "environmentNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentNotNil = data
+		case "environmentEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentEqualFold = data
+		case "environmentContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environmentContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EnvironmentContainsFold = data
+		case "namespace":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Namespace = data
+		case "namespaceNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNEQ = data
+		case "namespaceIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIn = data
+		case "namespaceNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotIn = data
+		case "namespaceGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGT = data
+		case "namespaceGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceGTE = data
+		case "namespaceLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLT = data
+		case "namespaceLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceLTE = data
+		case "namespaceContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContains = data
+		case "namespaceHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasPrefix = data
+		case "namespaceHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceHasSuffix = data
+		case "namespaceIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceIsNil = data
+		case "namespaceNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceNotNil = data
+		case "namespaceEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceEqualFold = data
+		case "namespaceContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NamespaceContainsFold = data
 		case "name":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -10718,11 +12598,6 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 			return graphql.Null
 		}
 		return ec._Zone(ctx, sel, obj)
-	case *ent.TeamEnvironment:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._TeamEnvironment(ctx, sel, obj)
 	case *ent.Team:
 		if obj == nil {
 			return graphql.Null
@@ -10738,11 +12613,6 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 			return graphql.Null
 		}
 		return ec._Group(ctx, sel, obj)
-	case *ent.Environment:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Environment(ctx, sel, obj)
 	case *ent.ApprovalRequest:
 		if obj == nil {
 			return graphql.Null
@@ -10814,6 +12684,10 @@ func (ec *executionContext) _ApiExposure(ctx context.Context, sel ast.SelectionS
 			}
 		case "statusMessage":
 			out.Values[i] = ec._ApiExposure_statusMessage(ctx, field, obj)
+		case "environment":
+			out.Values[i] = ec._ApiExposure_environment(ctx, field, obj)
+		case "namespace":
+			out.Values[i] = ec._ApiExposure_namespace(ctx, field, obj)
 		case "basePath":
 			out.Values[i] = ec._ApiExposure_basePath(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -11092,6 +12966,10 @@ func (ec *executionContext) _ApiSubscription(ctx context.Context, sel ast.Select
 			}
 		case "statusMessage":
 			out.Values[i] = ec._ApiSubscription_statusMessage(ctx, field, obj)
+		case "environment":
+			out.Values[i] = ec._ApiSubscription_environment(ctx, field, obj)
+		case "namespace":
+			out.Values[i] = ec._ApiSubscription_namespace(ctx, field, obj)
 		case "basePath":
 			out.Values[i] = ec._ApiSubscription_basePath(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -11421,6 +13299,10 @@ func (ec *executionContext) _Application(ctx context.Context, sel ast.SelectionS
 			}
 		case "statusMessage":
 			out.Values[i] = ec._Application_statusMessage(ctx, field, obj)
+		case "environment":
+			out.Values[i] = ec._Application_environment(ctx, field, obj)
+		case "namespace":
+			out.Values[i] = ec._Application_namespace(ctx, field, obj)
 		case "name":
 			out.Values[i] = ec._Application_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -11720,6 +13602,10 @@ func (ec *executionContext) _Approval(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "statusMessage":
 			out.Values[i] = ec._Approval_statusMessage(ctx, field, obj)
+		case "environment":
+			out.Values[i] = ec._Approval_environment(ctx, field, obj)
+		case "namespace":
+			out.Values[i] = ec._Approval_namespace(ctx, field, obj)
 		case "action":
 			out.Values[i] = ec._Approval_action(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -11931,6 +13817,10 @@ func (ec *executionContext) _ApprovalRequest(ctx context.Context, sel ast.Select
 			}
 		case "statusMessage":
 			out.Values[i] = ec._ApprovalRequest_statusMessage(ctx, field, obj)
+		case "environment":
+			out.Values[i] = ec._ApprovalRequest_environment(ctx, field, obj)
+		case "namespace":
+			out.Values[i] = ec._ApprovalRequest_namespace(ctx, field, obj)
 		case "action":
 			out.Values[i] = ec._ApprovalRequest_action(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -12109,83 +13999,6 @@ func (ec *executionContext) _ApprovalRequestEdge(ctx context.Context, sel ast.Se
 	return out
 }
 
-var environmentImplementors = []string{"Environment", "Node"}
-
-func (ec *executionContext) _Environment(ctx context.Context, sel ast.SelectionSet, obj *ent.Environment) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, environmentImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Environment")
-		case "id":
-			out.Values[i] = ec._Environment_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "name":
-			out.Values[i] = ec._Environment_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "teamEnvironments":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Environment_teamEnvironments(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var groupImplementors = []string{"Group", "Node"}
 
 func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, obj *ent.Group) graphql.Marshaler {
@@ -12202,6 +14015,10 @@ func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "environment":
+			out.Values[i] = ec._Group_environment(ctx, field, obj)
+		case "namespace":
+			out.Values[i] = ec._Group_namespace(ctx, field, obj)
 		case "name":
 			out.Values[i] = ec._Group_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -12289,6 +14106,10 @@ func (ec *executionContext) _Member(ctx context.Context, sel ast.SelectionSet, o
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "environment":
+			out.Values[i] = ec._Member_environment(ctx, field, obj)
+		case "namespace":
+			out.Values[i] = ec._Member_namespace(ctx, field, obj)
 		case "name":
 			out.Values[i] = ec._Member_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -12681,6 +14502,10 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "statusMessage":
 			out.Values[i] = ec._Team_statusMessage(ctx, field, obj)
+		case "environment":
+			out.Values[i] = ec._Team_environment(ctx, field, obj)
+		case "namespace":
+			out.Values[i] = ec._Team_namespace(ctx, field, obj)
 		case "name":
 			out.Values[i] = ec._Team_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -12696,6 +14521,8 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "roverTokenRef":
+			out.Values[i] = ec._Team_roverTokenRef(ctx, field, obj)
 		case "group":
 			field := field
 
@@ -12739,39 +14566,6 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Team_members(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "teamEnvironments":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Team_teamEnvironments(ctx, field, obj)
 				return res
 			}
 
@@ -12941,119 +14735,6 @@ func (ec *executionContext) _TeamEdge(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
-var teamEnvironmentImplementors = []string{"TeamEnvironment", "Node"}
-
-func (ec *executionContext) _TeamEnvironment(ctx context.Context, sel ast.SelectionSet, obj *ent.TeamEnvironment) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, teamEnvironmentImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("TeamEnvironment")
-		case "id":
-			out.Values[i] = ec._TeamEnvironment_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "roverTokenRef":
-			out.Values[i] = ec._TeamEnvironment_roverTokenRef(ctx, field, obj)
-		case "team":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._TeamEnvironment_team(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "environment":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._TeamEnvironment_environment(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var zoneImplementors = []string{"Zone", "Node"}
 
 func (ec *executionContext) _Zone(ctx context.Context, sel ast.SelectionSet, obj *ent.Zone) graphql.Marshaler {
@@ -13070,6 +14751,10 @@ func (ec *executionContext) _Zone(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "environment":
+			out.Values[i] = ec._Zone_environment(ctx, field, obj)
+		case "namespace":
+			out.Values[i] = ec._Zone_namespace(ctx, field, obj)
 		case "name":
 			out.Values[i] = ec._Zone_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -13462,21 +15147,6 @@ func (ec *executionContext) marshalNCursor2entgoᚗioᚋcontribᚋentgqlᚐCurso
 	return v
 }
 
-func (ec *executionContext) marshalNEnvironment2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironment(ctx context.Context, sel ast.SelectionSet, v *ent.Environment) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._Environment(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNEnvironmentWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironmentWhereInput(ctx context.Context, v any) (*ent.EnvironmentWhereInput, error) {
-	res, err := ec.unmarshalInputEnvironmentWhereInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalNGroupWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐGroupWhereInput(ctx context.Context, v any) (*ent.GroupWhereInput, error) {
 	res, err := ec.unmarshalInputGroupWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -13553,21 +15223,6 @@ func (ec *executionContext) marshalNTeamConnection2ᚖgithubᚗcomᚋtelekomᚋc
 		return graphql.Null
 	}
 	return ec._TeamConnection(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNTeamEnvironment2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamEnvironment(ctx context.Context, sel ast.SelectionSet, v *ent.TeamEnvironment) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._TeamEnvironment(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNTeamEnvironmentWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamEnvironmentWhereInput(ctx context.Context, v any) (*ent.TeamEnvironmentWhereInput, error) {
-	res, err := ec.unmarshalInputTeamEnvironmentWhereInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNTeamOrder2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamOrder(ctx context.Context, v any) (*ent.TeamOrder, error) {
@@ -14616,32 +16271,6 @@ func (ec *executionContext) marshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCu
 	return v
 }
 
-func (ec *executionContext) unmarshalOEnvironmentWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironmentWhereInputᚄ(ctx context.Context, v any) ([]*ent.EnvironmentWhereInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var vSlice []any
-	vSlice = graphql.CoerceList(v)
-	var err error
-	res := make([]*ent.EnvironmentWhereInput, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNEnvironmentWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironmentWhereInput(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) unmarshalOEnvironmentWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐEnvironmentWhereInput(ctx context.Context, v any) (*ent.EnvironmentWhereInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputEnvironmentWhereInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) marshalOGroup2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v *ent.Group) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -14824,51 +16453,6 @@ func (ec *executionContext) marshalOTeamEdge2ᚖgithubᚗcomᚋtelekomᚋcontrol
 		return graphql.Null
 	}
 	return ec._TeamEdge(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOTeamEnvironment2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamEnvironmentᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.TeamEnvironment) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalNTeamEnvironment2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamEnvironment(ctx, sel, v[i])
-	})
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) unmarshalOTeamEnvironmentWhereInput2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamEnvironmentWhereInputᚄ(ctx context.Context, v any) ([]*ent.TeamEnvironmentWhereInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var vSlice []any
-	vSlice = graphql.CoerceList(v)
-	var err error
-	res := make([]*ent.TeamEnvironmentWhereInput, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNTeamEnvironmentWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamEnvironmentWhereInput(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) unmarshalOTeamEnvironmentWhereInput2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamEnvironmentWhereInput(ctx context.Context, v any) (*ent.TeamEnvironmentWhereInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputTeamEnvironmentWhereInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOTeamOrder2ᚕᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋentᚐTeamOrderᚄ(ctx context.Context, v any) ([]*ent.TeamOrder, error) {

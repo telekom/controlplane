@@ -75,6 +75,46 @@ func (_u *ApplicationUpdate) ClearStatusMessage() *ApplicationUpdate {
 	return _u
 }
 
+// SetEnvironment sets the "environment" field.
+func (_u *ApplicationUpdate) SetEnvironment(v string) *ApplicationUpdate {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *ApplicationUpdate) SetNillableEnvironment(v *string) *ApplicationUpdate {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *ApplicationUpdate) ClearEnvironment() *ApplicationUpdate {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *ApplicationUpdate) SetNamespace(v string) *ApplicationUpdate {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *ApplicationUpdate) SetNillableNamespace(v *string) *ApplicationUpdate {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *ApplicationUpdate) ClearNamespace() *ApplicationUpdate {
+	_u.mutation.ClearNamespace()
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *ApplicationUpdate) SetName(v string) *ApplicationUpdate {
 	_u.mutation.SetName(v)
@@ -326,6 +366,18 @@ func (_u *ApplicationUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	if _u.mutation.StatusMessageCleared() {
 		_spec.ClearField(application.FieldStatusMessage, field.TypeString)
 	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(application.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(application.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(application.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(application.FieldNamespace, field.TypeString)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(application.FieldName, field.TypeString, value)
 	}
@@ -543,6 +595,46 @@ func (_u *ApplicationUpdateOne) SetNillableStatusMessage(v *string) *Application
 // ClearStatusMessage clears the value of the "status_message" field.
 func (_u *ApplicationUpdateOne) ClearStatusMessage() *ApplicationUpdateOne {
 	_u.mutation.ClearStatusMessage()
+	return _u
+}
+
+// SetEnvironment sets the "environment" field.
+func (_u *ApplicationUpdateOne) SetEnvironment(v string) *ApplicationUpdateOne {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *ApplicationUpdateOne) SetNillableEnvironment(v *string) *ApplicationUpdateOne {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *ApplicationUpdateOne) ClearEnvironment() *ApplicationUpdateOne {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *ApplicationUpdateOne) SetNamespace(v string) *ApplicationUpdateOne {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *ApplicationUpdateOne) SetNillableNamespace(v *string) *ApplicationUpdateOne {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *ApplicationUpdateOne) ClearNamespace() *ApplicationUpdateOne {
+	_u.mutation.ClearNamespace()
 	return _u
 }
 
@@ -826,6 +918,18 @@ func (_u *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application
 	}
 	if _u.mutation.StatusMessageCleared() {
 		_spec.ClearField(application.FieldStatusMessage, field.TypeString)
+	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(application.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(application.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(application.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(application.FieldNamespace, field.TypeString)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(application.FieldName, field.TypeString, value)

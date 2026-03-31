@@ -14,12 +14,10 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
-	"github.com/telekom/controlplane/controlplane-api/ent/environment"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/schema"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
-	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 
@@ -159,8 +157,8 @@ func init() {
 	_ = approvalMixinFields1
 	approvalMixinFields2 := approvalMixin[2].Fields()
 	_ = approvalMixinFields2
-	approvalMixinFields3 := approvalMixin[3].Fields()
-	_ = approvalMixinFields3
+	approvalMixinFields5 := approvalMixin[5].Fields()
+	_ = approvalMixinFields5
 	approvalFields := schema.Approval{}.Fields()
 	_ = approvalFields
 	// approvalDescCreatedAt is the schema descriptor for created_at field.
@@ -174,15 +172,15 @@ func init() {
 	// approval.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
 	approval.UpdateDefaultLastModifiedAt = approvalDescLastModifiedAt.UpdateDefault.(func() time.Time)
 	// approvalDescAction is the schema descriptor for action field.
-	approvalDescAction := approvalMixinFields3[0].Descriptor()
+	approvalDescAction := approvalMixinFields5[0].Descriptor()
 	// approval.ActionValidator is a validator for the "action" field. It is called by the builders before save.
 	approval.ActionValidator = approvalDescAction.Validators[0].(func(string) error)
 	// approvalDescDecisions is the schema descriptor for decisions field.
-	approvalDescDecisions := approvalMixinFields3[4].Descriptor()
+	approvalDescDecisions := approvalMixinFields5[4].Descriptor()
 	// approval.DefaultDecisions holds the default value on creation for the decisions field.
 	approval.DefaultDecisions = approvalDescDecisions.Default.([]model.Decision)
 	// approvalDescAvailableTransitions is the schema descriptor for available_transitions field.
-	approvalDescAvailableTransitions := approvalMixinFields3[5].Descriptor()
+	approvalDescAvailableTransitions := approvalMixinFields5[5].Descriptor()
 	// approval.DefaultAvailableTransitions holds the default value on creation for the available_transitions field.
 	approval.DefaultAvailableTransitions = approvalDescAvailableTransitions.Default.([]model.AvailableTransition)
 	approvalrequestMixin := schema.ApprovalRequest{}.Mixin()
@@ -199,8 +197,8 @@ func init() {
 	_ = approvalrequestMixinFields1
 	approvalrequestMixinFields2 := approvalrequestMixin[2].Fields()
 	_ = approvalrequestMixinFields2
-	approvalrequestMixinFields3 := approvalrequestMixin[3].Fields()
-	_ = approvalrequestMixinFields3
+	approvalrequestMixinFields5 := approvalrequestMixin[5].Fields()
+	_ = approvalrequestMixinFields5
 	approvalrequestFields := schema.ApprovalRequest{}.Fields()
 	_ = approvalrequestFields
 	// approvalrequestDescCreatedAt is the schema descriptor for created_at field.
@@ -214,33 +212,17 @@ func init() {
 	// approvalrequest.UpdateDefaultLastModifiedAt holds the default value on update for the last_modified_at field.
 	approvalrequest.UpdateDefaultLastModifiedAt = approvalrequestDescLastModifiedAt.UpdateDefault.(func() time.Time)
 	// approvalrequestDescAction is the schema descriptor for action field.
-	approvalrequestDescAction := approvalrequestMixinFields3[0].Descriptor()
+	approvalrequestDescAction := approvalrequestMixinFields5[0].Descriptor()
 	// approvalrequest.ActionValidator is a validator for the "action" field. It is called by the builders before save.
 	approvalrequest.ActionValidator = approvalrequestDescAction.Validators[0].(func(string) error)
 	// approvalrequestDescDecisions is the schema descriptor for decisions field.
-	approvalrequestDescDecisions := approvalrequestMixinFields3[4].Descriptor()
+	approvalrequestDescDecisions := approvalrequestMixinFields5[4].Descriptor()
 	// approvalrequest.DefaultDecisions holds the default value on creation for the decisions field.
 	approvalrequest.DefaultDecisions = approvalrequestDescDecisions.Default.([]model.Decision)
 	// approvalrequestDescAvailableTransitions is the schema descriptor for available_transitions field.
-	approvalrequestDescAvailableTransitions := approvalrequestMixinFields3[5].Descriptor()
+	approvalrequestDescAvailableTransitions := approvalrequestMixinFields5[5].Descriptor()
 	// approvalrequest.DefaultAvailableTransitions holds the default value on creation for the available_transitions field.
 	approvalrequest.DefaultAvailableTransitions = approvalrequestDescAvailableTransitions.Default.([]model.AvailableTransition)
-	environmentMixin := schema.Environment{}.Mixin()
-	environment.Policy = privacy.NewPolicies(environmentMixin[0], schema.Environment{})
-	environment.Hooks[0] = func(next ent.Mutator) ent.Mutator {
-		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-			if err := environment.Policy.EvalMutation(ctx, m); err != nil {
-				return nil, err
-			}
-			return next.Mutate(ctx, m)
-		})
-	}
-	environmentFields := schema.Environment{}.Fields()
-	_ = environmentFields
-	// environmentDescName is the schema descriptor for name field.
-	environmentDescName := environmentFields[0].Descriptor()
-	// environment.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	environment.NameValidator = environmentDescName.Validators[0].(func(string) error)
 	groupMixin := schema.Group{}.Mixin()
 	group.Policy = privacy.NewPolicies(groupMixin[0], schema.Group{})
 	group.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -319,16 +301,6 @@ func init() {
 	teamDescEmail := teamFields[1].Descriptor()
 	// team.EmailValidator is a validator for the "email" field. It is called by the builders before save.
 	team.EmailValidator = teamDescEmail.Validators[0].(func(string) error)
-	teamenvironmentMixin := schema.TeamEnvironment{}.Mixin()
-	teamenvironment.Policy = privacy.NewPolicies(teamenvironmentMixin[0], schema.TeamEnvironment{})
-	teamenvironment.Hooks[0] = func(next ent.Mutator) ent.Mutator {
-		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-			if err := teamenvironment.Policy.EvalMutation(ctx, m); err != nil {
-				return nil, err
-			}
-			return next.Mutate(ctx, m)
-		})
-	}
 	zoneMixin := schema.Zone{}.Mixin()
 	zone.Policy = privacy.NewPolicies(zoneMixin[0], schema.Zone{})
 	zone.Hooks[0] = func(next ent.Mutator) ent.Mutator {

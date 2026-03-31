@@ -21,26 +21,23 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
-	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 )
 
 // TeamQuery is the builder for querying Team entities.
 type TeamQuery struct {
 	config
-	ctx                       *QueryContext
-	order                     []team.OrderOption
-	inters                    []Interceptor
-	predicates                []predicate.Team
-	withGroup                 *GroupQuery
-	withMembers               *MemberQuery
-	withTeamEnvironments      *TeamEnvironmentQuery
-	withApplications          *ApplicationQuery
-	withFKs                   bool
-	modifiers                 []func(*sql.Selector)
-	loadTotal                 []func(context.Context, []*Team) error
-	withNamedMembers          map[string]*MemberQuery
-	withNamedTeamEnvironments map[string]*TeamEnvironmentQuery
-	withNamedApplications     map[string]*ApplicationQuery
+	ctx                   *QueryContext
+	order                 []team.OrderOption
+	inters                []Interceptor
+	predicates            []predicate.Team
+	withGroup             *GroupQuery
+	withMembers           *MemberQuery
+	withApplications      *ApplicationQuery
+	withFKs               bool
+	modifiers             []func(*sql.Selector)
+	loadTotal             []func(context.Context, []*Team) error
+	withNamedMembers      map[string]*MemberQuery
+	withNamedApplications map[string]*ApplicationQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -114,28 +111,6 @@ func (_q *TeamQuery) QueryMembers() *MemberQuery {
 			sqlgraph.From(team.Table, team.FieldID, selector),
 			sqlgraph.To(member.Table, member.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, team.MembersTable, team.MembersColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryTeamEnvironments chains the current query on the "team_environments" edge.
-func (_q *TeamQuery) QueryTeamEnvironments() *TeamEnvironmentQuery {
-	query := (&TeamEnvironmentClient{config: _q.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := _q.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := _q.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(team.Table, team.FieldID, selector),
-			sqlgraph.To(teamenvironment.Table, teamenvironment.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, team.TeamEnvironmentsTable, team.TeamEnvironmentsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -352,15 +327,14 @@ func (_q *TeamQuery) Clone() *TeamQuery {
 		return nil
 	}
 	return &TeamQuery{
-		config:               _q.config,
-		ctx:                  _q.ctx.Clone(),
-		order:                append([]team.OrderOption{}, _q.order...),
-		inters:               append([]Interceptor{}, _q.inters...),
-		predicates:           append([]predicate.Team{}, _q.predicates...),
-		withGroup:            _q.withGroup.Clone(),
-		withMembers:          _q.withMembers.Clone(),
-		withTeamEnvironments: _q.withTeamEnvironments.Clone(),
-		withApplications:     _q.withApplications.Clone(),
+		config:           _q.config,
+		ctx:              _q.ctx.Clone(),
+		order:            append([]team.OrderOption{}, _q.order...),
+		inters:           append([]Interceptor{}, _q.inters...),
+		predicates:       append([]predicate.Team{}, _q.predicates...),
+		withGroup:        _q.withGroup.Clone(),
+		withMembers:      _q.withMembers.Clone(),
+		withApplications: _q.withApplications.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -386,17 +360,6 @@ func (_q *TeamQuery) WithMembers(opts ...func(*MemberQuery)) *TeamQuery {
 		opt(query)
 	}
 	_q.withMembers = query
-	return _q
-}
-
-// WithTeamEnvironments tells the query-builder to eager-load the nodes that are connected to
-// the "team_environments" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *TeamQuery) WithTeamEnvironments(opts ...func(*TeamEnvironmentQuery)) *TeamQuery {
-	query := (&TeamEnvironmentClient{config: _q.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	_q.withTeamEnvironments = query
 	return _q
 }
 
@@ -496,10 +459,9 @@ func (_q *TeamQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Team, e
 		nodes       = []*Team{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [3]bool{
 			_q.withGroup != nil,
 			_q.withMembers != nil,
-			_q.withTeamEnvironments != nil,
 			_q.withApplications != nil,
 		}
 	)
@@ -543,13 +505,6 @@ func (_q *TeamQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Team, e
 			return nil, err
 		}
 	}
-	if query := _q.withTeamEnvironments; query != nil {
-		if err := _q.loadTeamEnvironments(ctx, query, nodes,
-			func(n *Team) { n.Edges.TeamEnvironments = []*TeamEnvironment{} },
-			func(n *Team, e *TeamEnvironment) { n.Edges.TeamEnvironments = append(n.Edges.TeamEnvironments, e) }); err != nil {
-			return nil, err
-		}
-	}
 	if query := _q.withApplications; query != nil {
 		if err := _q.loadApplications(ctx, query, nodes,
 			func(n *Team) { n.Edges.Applications = []*Application{} },
@@ -561,13 +516,6 @@ func (_q *TeamQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Team, e
 		if err := _q.loadMembers(ctx, query, nodes,
 			func(n *Team) { n.appendNamedMembers(name) },
 			func(n *Team, e *Member) { n.appendNamedMembers(name, e) }); err != nil {
-			return nil, err
-		}
-	}
-	for name, query := range _q.withNamedTeamEnvironments {
-		if err := _q.loadTeamEnvironments(ctx, query, nodes,
-			func(n *Team) { n.appendNamedTeamEnvironments(name) },
-			func(n *Team, e *TeamEnvironment) { n.appendNamedTeamEnvironments(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -644,37 +592,6 @@ func (_q *TeamQuery) loadMembers(ctx context.Context, query *MemberQuery, nodes 
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "team_members" returned %v for node %v`, *fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (_q *TeamQuery) loadTeamEnvironments(ctx context.Context, query *TeamEnvironmentQuery, nodes []*Team, init func(*Team), assign func(*Team, *TeamEnvironment)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*Team)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	query.withFKs = true
-	query.Where(predicate.TeamEnvironment(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(team.TeamEnvironmentsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.team_team_environments
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "team_team_environments" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "team_team_environments" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -807,20 +724,6 @@ func (_q *TeamQuery) WithNamedMembers(name string, opts ...func(*MemberQuery)) *
 		_q.withNamedMembers = make(map[string]*MemberQuery)
 	}
 	_q.withNamedMembers[name] = query
-	return _q
-}
-
-// WithNamedTeamEnvironments tells the query-builder to eager-load the nodes that are connected to the "team_environments"
-// edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (_q *TeamQuery) WithNamedTeamEnvironments(name string, opts ...func(*TeamEnvironmentQuery)) *TeamQuery {
-	query := (&TeamEnvironmentClient{config: _q.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	if _q.withNamedTeamEnvironments == nil {
-		_q.withNamedTeamEnvironments = make(map[string]*TeamEnvironmentQuery)
-	}
-	_q.withNamedTeamEnvironments[name] = query
 	return _q
 }
 

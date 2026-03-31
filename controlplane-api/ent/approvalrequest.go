@@ -31,6 +31,10 @@ type ApprovalRequest struct {
 	StatusPhase approvalrequest.StatusPhase `json:"status_phase,omitempty"`
 	// StatusMessage holds the value of the "status_message" field.
 	StatusMessage *string `json:"status_message,omitempty"`
+	// Environment holds the value of the "environment" field.
+	Environment *string `json:"environment,omitempty"`
+	// Namespace holds the value of the "namespace" field.
+	Namespace *string `json:"namespace,omitempty"`
 	// Action holds the value of the "action" field.
 	Action string `json:"action,omitempty"`
 	// Strategy holds the value of the "strategy" field.
@@ -81,7 +85,7 @@ func (*ApprovalRequest) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case approvalrequest.FieldID:
 			values[i] = new(sql.NullInt64)
-		case approvalrequest.FieldStatusPhase, approvalrequest.FieldStatusMessage, approvalrequest.FieldAction, approvalrequest.FieldStrategy, approvalrequest.FieldState:
+		case approvalrequest.FieldStatusPhase, approvalrequest.FieldStatusMessage, approvalrequest.FieldEnvironment, approvalrequest.FieldNamespace, approvalrequest.FieldAction, approvalrequest.FieldStrategy, approvalrequest.FieldState:
 			values[i] = new(sql.NullString)
 		case approvalrequest.FieldCreatedAt, approvalrequest.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -132,6 +136,20 @@ func (_m *ApprovalRequest) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.StatusMessage = new(string)
 				*_m.StatusMessage = value.String
+			}
+		case approvalrequest.FieldEnvironment:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field environment", values[i])
+			} else if value.Valid {
+				_m.Environment = new(string)
+				*_m.Environment = value.String
+			}
+		case approvalrequest.FieldNamespace:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field namespace", values[i])
+			} else if value.Valid {
+				_m.Namespace = new(string)
+				*_m.Namespace = value.String
 			}
 		case approvalrequest.FieldAction:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -242,6 +260,16 @@ func (_m *ApprovalRequest) String() string {
 	builder.WriteString(", ")
 	if v := _m.StatusMessage; v != nil {
 		builder.WriteString("status_message=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Environment; v != nil {
+		builder.WriteString("environment=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Namespace; v != nil {
+		builder.WriteString("namespace=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
