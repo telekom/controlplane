@@ -26,8 +26,12 @@ generate:
 build: generate
 	go build -o bin/controlplane-api ./cmd/main.go
 
+# Run all tests, but only calculate coverage for hand-written packages (excludes generated ent/ code)
+TEST_PACKAGES=./...
+COVER_PACKAGES=./internal/...
+
 test:
-	go test ./... -coverprofile cover.out -json 2>&1 | tee gotest.log | gotestfmt
+	go test $(TEST_PACKAGES) -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -json 2>&1 | tee gotest.log | gotestfmt
 
 fmt:
 	go fmt ./...
