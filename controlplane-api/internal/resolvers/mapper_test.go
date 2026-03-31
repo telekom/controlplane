@@ -31,7 +31,7 @@ var _ = Describe("Subscriptions resolver (cross-tenant)", func() {
 	})
 
 	AfterEach(func() {
-		client.Close()
+		_ = client.Close()
 	})
 
 	It("should return ApiSubscriptionInfo for an exposure's subscriptions", func() {
@@ -68,7 +68,7 @@ var _ = Describe("Target resolver (cross-tenant)", func() {
 	})
 
 	AfterEach(func() {
-		client.Close()
+		_ = client.Close()
 	})
 
 	It("should return ApiExposureInfo for a subscription's target", func() {
@@ -84,7 +84,7 @@ var _ = Describe("Target resolver (cross-tenant)", func() {
 	})
 })
 
-var _ = Describe("Approval.APISubscription resolver (cross-tenant)", func() {
+var _ = Describe("Approval/ApprovalRequest.APISubscription resolver (cross-tenant)", func() {
 	var (
 		client *ent.Client
 		r      *resolvers.Resolver
@@ -98,45 +98,25 @@ var _ = Describe("Approval.APISubscription resolver (cross-tenant)", func() {
 	})
 
 	AfterEach(func() {
-		client.Close()
+		_ = client.Close()
 	})
 
-	It("should return ApiSubscriptionInfo from an approval", func() {
-		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Admin: true})
-		info, err := r.Approval().APISubscription(ctx, s.Approval)
+	assertSubscriptionInfo := func(info *model.ApiSubscriptionInfo, err error) {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(info).NotTo(BeNil())
 		Expect(info.BasePath).To(Equal("/alpha"))
 		Expect(info.OwnerApplicationName).To(Equal("app-beta"))
 		Expect(info.OwnerTeam.Name).To(Equal("team-beta"))
-	})
-})
+	}
 
-var _ = Describe("ApprovalRequest.APISubscription resolver (cross-tenant)", func() {
-	var (
-		client *ent.Client
-		r      *resolvers.Resolver
-		s      *testutil.SeedData
-	)
-
-	BeforeEach(func() {
-		client = testutil.NewTestClient(GinkgoT())
-		r = resolvers.NewResolver(client)
-		s = testutil.SeedStandard(client)
-	})
-
-	AfterEach(func() {
-		client.Close()
+	It("should return ApiSubscriptionInfo from an approval", func() {
+		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Admin: true})
+		assertSubscriptionInfo(r.Approval().APISubscription(ctx, s.Approval))
 	})
 
 	It("should return ApiSubscriptionInfo from an approval request", func() {
 		ctx := viewer.NewContext(testutil.AllowContext(), &viewer.Viewer{Admin: true})
-		info, err := r.ApprovalRequest().APISubscription(ctx, s.ApprovalRequest)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(info).NotTo(BeNil())
-		Expect(info.BasePath).To(Equal("/alpha"))
-		Expect(info.OwnerApplicationName).To(Equal("app-beta"))
-		Expect(info.OwnerTeam.Name).To(Equal("team-beta"))
+		assertSubscriptionInfo(r.ApprovalRequest().APISubscription(ctx, s.ApprovalRequest))
 	})
 })
 

@@ -30,7 +30,7 @@ var _ = Describe("OwnerTeam resolver", func() {
 	})
 
 	AfterEach(func() {
-		client.Close()
+		_ = client.Close()
 	})
 
 	It("should return TeamInfo with group name and email", func() {
@@ -159,7 +159,7 @@ var _ = Describe("ApprovalConfig.TrustedTeams", func() {
 	})
 
 	AfterEach(func() {
-		client.Close()
+		_ = client.Close()
 	})
 
 	It("should store and return trusted teams on an exposure", func() {

@@ -26,7 +26,7 @@ var _ = Describe("ViewerFromBusinessContext", func() {
 	})
 
 	AfterEach(func() {
-		client.Close()
+		_ = client.Close()
 	})
 
 	// captureViewer invokes the middleware and returns the Viewer that was set in the context.

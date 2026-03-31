@@ -26,7 +26,7 @@ var _ = Describe("TeamFilterInterceptor", func() {
 	})
 
 	AfterEach(func() {
-		client.Close()
+		_ = client.Close()
 	})
 
 	// viewerCtx creates a context with the given viewer and privacy bypass.
@@ -59,92 +59,68 @@ var _ = Describe("TeamFilterInterceptor", func() {
 		})
 	})
 
+	// assertEntityCounts runs the given query functions against the provided context
+	// and asserts that each returns the expected count.
+	assertEntityCounts := func(ctx context.Context, expected map[string]int) {
+		queries := map[string]func(context.Context) (int, error){
+			"teams": func(ctx context.Context) (int, error) {
+				r, e := client.Team.Query().All(ctx)
+				return len(r), e
+			},
+			"applications": func(ctx context.Context) (int, error) {
+				r, e := client.Application.Query().All(ctx)
+				return len(r), e
+			},
+			"exposures": func(ctx context.Context) (int, error) {
+				r, e := client.ApiExposure.Query().All(ctx)
+				return len(r), e
+			},
+			"subscriptions": func(ctx context.Context) (int, error) {
+				r, e := client.ApiSubscription.Query().All(ctx)
+				return len(r), e
+			},
+			"approvals": func(ctx context.Context) (int, error) {
+				r, e := client.Approval.Query().All(ctx)
+				return len(r), e
+			},
+			"approval requests": func(ctx context.Context) (int, error) {
+				r, e := client.ApprovalRequest.Query().All(ctx)
+				return len(r), e
+			},
+			"members": func(ctx context.Context) (int, error) {
+				r, e := client.Member.Query().All(ctx)
+				return len(r), e
+			},
+		}
+		for name, expectedLen := range expected {
+			count, err := queries[name](ctx)
+			Expect(err).NotTo(HaveOccurred(), name)
+			Expect(count).To(Equal(expectedLen), name)
+		}
+	}
+
 	Context("when viewer is admin", func() {
 		BeforeEach(func() { seed() })
 
-		adminCtx := func() context.Context {
-			return viewerCtx(&viewer.Viewer{Admin: true})
-		}
-
-		DescribeTable("should see all entities",
-			func(queryAll func(context.Context) (int, error), expectedLen int) {
-				count, err := queryAll(adminCtx())
-				Expect(err).NotTo(HaveOccurred())
-				Expect(count).To(Equal(expectedLen))
-			},
-			Entry("teams", func(ctx context.Context) (int, error) {
-				r, e := client.Team.Query().All(ctx)
-				return len(r), e
-			}, 2),
-			Entry("applications", func(ctx context.Context) (int, error) {
-				r, e := client.Application.Query().All(ctx)
-				return len(r), e
-			}, 2),
-			Entry("exposures", func(ctx context.Context) (int, error) {
-				r, e := client.ApiExposure.Query().All(ctx)
-				return len(r), e
-			}, 2),
-			Entry("subscriptions", func(ctx context.Context) (int, error) {
-				r, e := client.ApiSubscription.Query().All(ctx)
-				return len(r), e
-			}, 1),
-			Entry("approvals", func(ctx context.Context) (int, error) {
-				r, e := client.Approval.Query().All(ctx)
-				return len(r), e
-			}, 1),
-			Entry("approval requests", func(ctx context.Context) (int, error) {
-				r, e := client.ApprovalRequest.Query().All(ctx)
-				return len(r), e
-			}, 1),
-			Entry("members", func(ctx context.Context) (int, error) {
-				r, e := client.Member.Query().All(ctx)
-				return len(r), e
-			}, 2),
-		)
+		It("should see all entities", func() {
+			ctx := viewerCtx(&viewer.Viewer{Admin: true})
+			assertEntityCounts(ctx, map[string]int{
+				"teams": 2, "applications": 2, "exposures": 2,
+				"subscriptions": 1, "approvals": 1, "approval requests": 1, "members": 2,
+			})
+		})
 	})
 
 	Context("when viewer belongs to team-alpha", func() {
 		BeforeEach(func() { seed() })
 
-		alphaCtx := func() context.Context {
-			return viewerCtx(&viewer.Viewer{Teams: []string{"team-alpha"}})
-		}
-
-		DescribeTable("should only see team-alpha's entities",
-			func(queryAll func(context.Context) (int, error), expectedLen int) {
-				count, err := queryAll(alphaCtx())
-				Expect(err).NotTo(HaveOccurred())
-				Expect(count).To(Equal(expectedLen))
-			},
-			Entry("teams", func(ctx context.Context) (int, error) {
-				r, e := client.Team.Query().All(ctx)
-				return len(r), e
-			}, 1),
-			Entry("applications", func(ctx context.Context) (int, error) {
-				r, e := client.Application.Query().All(ctx)
-				return len(r), e
-			}, 1),
-			Entry("exposures", func(ctx context.Context) (int, error) {
-				r, e := client.ApiExposure.Query().All(ctx)
-				return len(r), e
-			}, 1),
-			Entry("subscriptions (team-alpha has none)", func(ctx context.Context) (int, error) {
-				r, e := client.ApiSubscription.Query().All(ctx)
-				return len(r), e
-			}, 0),
-			Entry("approvals (team-alpha is target provider)", func(ctx context.Context) (int, error) {
-				r, e := client.Approval.Query().All(ctx)
-				return len(r), e
-			}, 1),
-			Entry("approval requests (team-alpha is target provider)", func(ctx context.Context) (int, error) {
-				r, e := client.ApprovalRequest.Query().All(ctx)
-				return len(r), e
-			}, 1),
-			Entry("members", func(ctx context.Context) (int, error) {
-				r, e := client.Member.Query().All(ctx)
-				return len(r), e
-			}, 1),
-		)
+		It("should only see team-alpha's entities", func() {
+			ctx := viewerCtx(&viewer.Viewer{Teams: []string{"team-alpha"}})
+			assertEntityCounts(ctx, map[string]int{
+				"teams": 1, "applications": 1, "exposures": 1,
+				"subscriptions": 0, "approvals": 1, "approval requests": 1, "members": 1,
+			})
+		})
 	})
 
 	Context("when viewer belongs to both teams", func() {
