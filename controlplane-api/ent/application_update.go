@@ -340,6 +340,11 @@ func (_u *ApplicationUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Application.name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ClientID(); ok {
+		if err := application.ClientIDValidator(v); err != nil {
+			return &ValidationError{Name: "client_id", err: fmt.Errorf(`ent: validator failed for field "Application.client_id": %w`, err)}
+		}
+	}
 	if _u.mutation.ZoneCleared() && len(_u.mutation.ZoneIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Application.zone"`)
 	}
@@ -887,6 +892,11 @@ func (_u *ApplicationUpdateOne) check() error {
 	if v, ok := _u.mutation.Name(); ok {
 		if err := application.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Application.name": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ClientID(); ok {
+		if err := application.ClientIDValidator(v); err != nil {
+			return &ValidationError{Name: "client_id", err: fmt.Errorf(`ent: validator failed for field "Application.client_id": %w`, err)}
 		}
 	}
 	if _u.mutation.ZoneCleared() && len(_u.mutation.ZoneIDs()) > 0 {
