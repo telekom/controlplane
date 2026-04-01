@@ -161,19 +161,6 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		return errors.Wrapf(err, "unable to create real route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
 	}
 
-	if apiExp.HasFailover() {
-		failoverZone := apiExp.Spec.Traffic.Failover.Zones[0] // currently only one failover zone is supported
-		failoverRoute, err := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
-			contextutil.EnvFromContextOrDie(ctx),
-			util.WithFailoverUpstreams(apiExp.Spec.Upstreams...),
-			util.WithFailoverSecurity(apiExp.Spec.Security),
-		)
-		if err != nil {
-			return errors.Wrapf(err, "unable to create failover route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
-		}
-		apiExp.Status.FailoverRoute = types.ObjectRefFromObject(failoverRoute)
-	}
-
 	apiExp.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
 	apiExp.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
 	apiExp.Status.Route = types.ObjectRefFromObject(realRoute)
