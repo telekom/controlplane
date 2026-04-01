@@ -51,14 +51,16 @@ var _ = BeforeSuite(func() {
 	log.Init()
 
 	stores = &sstore.Stores{
-		ApplicationStore:       mocks.NewApplicationStoreMock(GinkgoT()),
-		APIExposureStore:       mocks.NewAPIExposureStoreMock(GinkgoT()),
-		APISubscriptionStore:   mocks.NewAPISubscriptionStoreMock(GinkgoT()),
-		ZoneStore:              mocks.NewZoneStoreMock(GinkgoT()),
-		ApprovalStore:          mocks.NewApprovalStoreMock(GinkgoT()),
-		EventExposureStore:     mocks.NewEventExposureStoreMock(GinkgoT()),
-		EventSubscriptionStore: mocks.NewEventSubscriptionStoreMock(GinkgoT()),
-		EventTypeStore:         mocks.NewEventTypeStoreMock(GinkgoT()),
+		ApplicationStore:           mocks.NewApplicationStoreMock(GinkgoT()),
+		APIExposureStore:           mocks.NewAPIExposureStoreMock(GinkgoT()),
+		APIExposureSecretStore:     mocks.NewAPIExposureStoreMock(GinkgoT()),
+		APISubscriptionStore:       mocks.NewAPISubscriptionStoreMock(GinkgoT()),
+		APISubscriptionSecretStore: mocks.NewAPISubscriptionStoreMock(GinkgoT()),
+		ZoneStore:                  mocks.NewZoneStoreMock(GinkgoT()),
+		ApprovalStore:              mocks.NewApprovalStoreMock(GinkgoT()),
+		EventExposureStore:         mocks.NewEventExposureStoreMock(GinkgoT()),
+		EventSubscriptionStore:     mocks.NewEventSubscriptionStoreMock(GinkgoT()),
+		EventTypeStore:             mocks.NewEventTypeStoreMock(GinkgoT()),
 	}
 
 	appCfg := cserver.NewAppConfig()
