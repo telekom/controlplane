@@ -42,8 +42,8 @@ func TestMapResponse(t *testing.T) {
 
 	resp := MapResponse(in)
 
-	if resp.Name != "my-app--eni-distr-v1" {
-		t.Fatalf("unexpected name: %q", resp.Name)
+	if resp.Name != "eni-distr-v1" {
+		t.Fatalf("unexpected name: %q, want %q", resp.Name, "eni-distr-v1")
 	}
 	if resp.Upstream != "https://httpbin.org/anything" {
 		t.Fatalf("unexpected upstream: %q", resp.Upstream)

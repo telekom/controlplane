@@ -25,7 +25,7 @@ import (
 // resolving cross-resource references (Zone, Application, Approval) from stores.
 func MapResponse(ctx context.Context, in *apiv1.ApiSubscription, stores *sstore.Stores) api.ApiSubscriptionResponse {
 	resp := api.ApiSubscriptionResponse{
-		Name:     in.GetName(),
+		Name:     mapper.MakeResourceName(in),
 		BasePath: in.Spec.ApiBasePath,
 		Zone:     in.Spec.Zone.Name,
 		Status:   status.MapStatus(in.GetConditions(), in.GetGeneration()),

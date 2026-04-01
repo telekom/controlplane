@@ -18,7 +18,7 @@
    },
    "basePath": "/eni/distr/v1",
    "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
-   "name": "my-app--eni-distr-v1",
+   "name": "eni-distr-v1",
    "security": {
     "password": "subscriber-secret-password",
     "type": "basicAuth",
@@ -60,7 +60,7 @@
    },
    "basePath": "/eni/distr/v1",
    "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
-   "name": "my-app--eni-distr-v1",
+   "name": "eni-distr-v1",
    "security": {
     "password": "subscriber-secret-password",
     "type": "basicAuth",
@@ -102,7 +102,7 @@
    },
    "basePath": "/eni/distr/v1",
    "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
-   "name": "my-app--eni-distr-v1",
+   "name": "eni-distr-v1",
    "security": {
     "password": "subscriber-secret-password",
     "type": "basicAuth",
@@ -144,7 +144,7 @@
    },
    "basePath": "/eni/distr/v1",
    "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
-   "name": "my-app--eni-distr-v1",
+   "name": "eni-distr-v1",
    "security": {
     "password": "**********",
     "type": "basicAuth",
@@ -179,7 +179,7 @@
  },
  "basePath": "/eni/distr/v1",
  "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
- "name": "my-app--eni-distr-v1",
+ "name": "eni-distr-v1",
  "security": {
   "password": "subscriber-secret-password",
   "type": "basicAuth",
@@ -207,7 +207,7 @@
  },
  "basePath": "/eni/distr/v1",
  "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
- "name": "my-app--eni-distr-v1",
+ "name": "eni-distr-v1",
  "security": {
   "password": "subscriber-secret-password",
   "type": "basicAuth",
@@ -235,7 +235,7 @@
  },
  "basePath": "/eni/distr/v1",
  "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
- "name": "my-app--eni-distr-v1",
+ "name": "eni-distr-v1",
  "security": {
   "password": "subscriber-secret-password",
   "type": "basicAuth",
@@ -263,7 +263,7 @@
  },
  "basePath": "/eni/distr/v1",
  "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
- "name": "my-app--eni-distr-v1",
+ "name": "eni-distr-v1",
  "security": {
   "password": "**********",
   "type": "basicAuth",

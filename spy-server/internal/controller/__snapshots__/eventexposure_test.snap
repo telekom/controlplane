@@ -17,7 +17,7 @@
    },
    "callbackURL": "https://callback.example.com/events",
    "eventType": "de.telekom.eni.quickstart.v1",
-   "name": "my-app--de-telekom-eni-quickstart-v1",
+   "name": "de-telekom-eni-quickstart-v1",
    "status": "<Any value>",
    "team": {
     "email": "hyperion@telekom.de",
@@ -54,7 +54,7 @@
    },
    "callbackURL": "https://callback.example.com/events",
    "eventType": "de.telekom.eni.quickstart.v1",
-   "name": "my-app--de-telekom-eni-quickstart-v1",
+   "name": "de-telekom-eni-quickstart-v1",
    "status": "<Any value>",
    "team": {
     "email": "hyperion@telekom.de",
@@ -91,7 +91,7 @@
    },
    "callbackURL": "https://callback.example.com/events",
    "eventType": "de.telekom.eni.quickstart.v1",
-   "name": "my-app--de-telekom-eni-quickstart-v1",
+   "name": "de-telekom-eni-quickstart-v1",
    "status": "<Any value>",
    "team": {
     "email": "hyperion@telekom.de",
@@ -121,7 +121,7 @@
  },
  "callbackURL": "https://callback.example.com/events",
  "eventType": "de.telekom.eni.quickstart.v1",
- "name": "my-app--de-telekom-eni-quickstart-v1",
+ "name": "de-telekom-eni-quickstart-v1",
  "status": "<Any value>",
  "team": {
   "email": "hyperion@telekom.de",
@@ -144,7 +144,7 @@
  },
  "callbackURL": "https://callback.example.com/events",
  "eventType": "de.telekom.eni.quickstart.v1",
- "name": "my-app--de-telekom-eni-quickstart-v1",
+ "name": "de-telekom-eni-quickstart-v1",
  "status": "<Any value>",
  "team": {
   "email": "hyperion@telekom.de",
@@ -167,7 +167,7 @@
  },
  "callbackURL": "https://callback.example.com/events",
  "eventType": "de.telekom.eni.quickstart.v1",
- "name": "my-app--de-telekom-eni-quickstart-v1",
+ "name": "de-telekom-eni-quickstart-v1",
  "status": "<Any value>",
  "team": {
   "email": "hyperion@telekom.de",
@@ -232,7 +232,7 @@
     "type": "Callback"
    },
    "eventType": "de.telekom.eni.quickstart.v1",
-   "name": "my-app--de-telekom-eni-quickstart-v1",
+   "name": "de-telekom-eni-quickstart-v1",
    "status": "<Any value>",
    "team": {
     "email": "hyperion@telekom.de",
@@ -273,7 +273,7 @@
     "type": "Callback"
    },
    "eventType": "de.telekom.eni.quickstart.v1",
-   "name": "my-app--de-telekom-eni-quickstart-v1",
+   "name": "de-telekom-eni-quickstart-v1",
    "status": "<Any value>",
    "team": {
     "email": "hyperion@telekom.de",
@@ -314,7 +314,7 @@
     "type": "Callback"
    },
    "eventType": "de.telekom.eni.quickstart.v1",
-   "name": "my-app--de-telekom-eni-quickstart-v1",
+   "name": "de-telekom-eni-quickstart-v1",
    "status": "<Any value>",
    "team": {
     "email": "hyperion@telekom.de",

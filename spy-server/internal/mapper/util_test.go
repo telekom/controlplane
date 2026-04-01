@@ -203,6 +203,18 @@ func TestMakeResourceIdAndName(t *testing.T) {
 	if got := MakeResourceName(plainNameObj); got != "my-app" {
 		t.Fatalf("unexpected plain resource name: %q", got)
 	}
+
+	// ApiExposure k8s names follow the pattern <appName>--<exposureName>.
+	// MakeResourceName must strip the app prefix and return only the exposure name.
+	exposureObj := &applicationv1.Application{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-app--eni-distr-v1",
+			Namespace: "poc--eni--hyperion",
+		},
+	}
+	if got := MakeResourceName(exposureObj); got != "eni-distr-v1" {
+		t.Fatalf("unexpected exposure resource name: got %q, want %q", got, "eni-distr-v1")
+	}
 }
 
 func TestVerifyApplicationLabel(t *testing.T) {

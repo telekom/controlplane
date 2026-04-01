@@ -24,7 +24,7 @@ import (
 // resolving cross-resource references (Application) from stores.
 func MapResponse(ctx context.Context, in *eventv1.EventExposure, stores *sstore.Stores) api.EventExposureResponse {
 	resp := api.EventExposureResponse{
-		Name:       in.GetName(),
+		Name:       mapper.MakeResourceName(in),
 		EventType:  in.Spec.EventType,
 		Visibility: toAPIVisibility(in.Spec.Visibility),
 		Approval: api.EventApproval{
