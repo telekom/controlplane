@@ -185,15 +185,33 @@ func TestMapSecurity(t *testing.T) {
 		assert func(t *testing.T, out api.ApiSubscriptionResponse)
 	}{
 		{
+			name: "no security",
+			setup: func(in *apiv1.ApiSubscription) {
+				in.Spec.Security = nil
+			},
+			assert: func(t *testing.T, out api.ApiSubscriptionResponse) {
+				t.Helper()
+				// Neither variant should be set when spec has no security.
+				_, errOAuth := out.Security.AsOAuth2()
+				_, errBasic := out.Security.AsBasicAuth()
+				if errOAuth == nil || errBasic == nil {
+					t.Fatalf("expected no security to be set, but got a valid variant")
+				}
+			},
+		},
+		{
 			name: "basic auth",
 			setup: func(in *apiv1.ApiSubscription) {
 				in.Spec.Security = &apiv1.SubscriberSecurity{M2M: &apiv1.SubscriberMachine2MachineAuthentication{Basic: &apiv1.BasicAuthCredentials{Username: "u", Password: "p"}}}
 			},
 			assert: func(t *testing.T, out api.ApiSubscriptionResponse) {
 				t.Helper()
-				_, err := out.Security.AsBasicAuth()
+				got, err := out.Security.AsBasicAuth()
 				if err != nil {
 					t.Fatalf("expected basic auth, got err: %v", err)
+				}
+				if got.Username != "u" || got.Password != "p" {
+					t.Fatalf("expected username=u password=p, got %#v", got)
 				}
 			},
 		},
@@ -208,7 +226,7 @@ func TestMapSecurity(t *testing.T) {
 				if err != nil {
 					t.Fatalf("expected oauth2, got err: %v", err)
 				}
-				if got.ClientId != "cid" || len(got.Scopes) != 1 {
+				if got.ClientId != "cid" || got.ClientSecret != "sec" || len(got.Scopes) != 1 {
 					t.Fatalf("unexpected oauth2 mapping: %#v", got)
 				}
 			},

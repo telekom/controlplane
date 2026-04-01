@@ -14,6 +14,8 @@ import (
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common-server/pkg/store/inmemory"
+	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -34,12 +36,27 @@ type Stores struct {
 	EventTypeStore         store.ObjectStore[*eventv1.EventType]
 }
 
+// secretsForKinds maps each resource kind to the JSON paths within its CRD
+// that may contain secret placeholders (e.g. "$<secret-id>") managed by the
+// secret-manager service.
+var secretsForKinds = map[string][]string{
+	"ApiSubscription": {
+		"spec.security.m2m.client.clientSecret",
+		"spec.security.m2m.basic.password",
+	},
+	"ApiExposure": {
+		"spec.security.m2m.externalIDP.client.clientSecret",
+		"spec.security.m2m.externalIDP.basic.password",
+		"spec.security.m2m.basic.password",
+	},
+}
+
 // NewStores creates and initialises all stores. It panics if any store
 // cannot be created (same semantics as rover-server).
 func NewStores(ctx context.Context, cfg *rest.Config) *Stores {
 	dynamicClient := dynamic.NewForConfigOrDie(cfg)
 
-	return &Stores{
+	s := &Stores{
 		APIExposureStore:     NewOrDie[*apiv1.ApiExposure](ctx, dynamicClient, apiv1.GroupVersion.WithResource("apiexposures"), apiv1.GroupVersion.WithKind("ApiExposure")),
 		APISubscriptionStore: NewOrDie[*apiv1.ApiSubscription](ctx, dynamicClient, apiv1.GroupVersion.WithResource("apisubscriptions"), apiv1.GroupVersion.WithKind("ApiSubscription")),
 		ApplicationStore:     NewOrDie[*applicationv1.Application](ctx, dynamicClient, applicationv1.GroupVersion.WithResource("applications"), applicationv1.GroupVersion.WithKind("Application")),
@@ -50,6 +67,14 @@ func NewStores(ctx context.Context, cfg *rest.Config) *Stores {
 		EventSubscriptionStore: NewOrDie[*eventv1.EventSubscription](ctx, dynamicClient, eventv1.GroupVersion.WithResource("eventsubscriptions"), eventv1.GroupVersion.WithKind("EventSubscription")),
 		EventTypeStore:         NewOrDie[*eventv1.EventType](ctx, dynamicClient, eventv1.GroupVersion.WithResource("eventtypes"), eventv1.GroupVersion.WithKind("EventType")),
 	}
+
+	if cconfig.FeatureSecretManager.IsEnabled() {
+		resolver := secrets.NewDefaultSecretManagerResolver()
+		s.APISubscriptionStore = secrets.WrapStore(s.APISubscriptionStore, secretsForKinds["ApiSubscription"], resolver)
+		s.APIExposureStore = secrets.WrapStore(s.APIExposureStore, secretsForKinds["ApiExposure"], resolver)
+	}
+
+	return s
 }
 
 func NewOrDie[T store.Object](ctx context.Context, dynamicClient dynamic.Interface, gvr schema.GroupVersionResource, gvk schema.GroupVersionKind) store.ObjectStore[T] {

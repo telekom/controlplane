@@ -108,6 +108,21 @@ func TestMapSecurity(t *testing.T) {
 		assert func(t *testing.T, out api.ApiExposureResponse)
 	}{
 		{
+			name: "no security",
+			setup: func(in *apiv1.ApiExposure) {
+				in.Spec.Security = nil
+			},
+			assert: func(t *testing.T, out api.ApiExposureResponse) {
+				t.Helper()
+				// Neither variant should be set when spec has no security.
+				_, errOAuth := out.Security.AsOAuth2()
+				_, errBasic := out.Security.AsBasicAuth()
+				if errOAuth == nil || errBasic == nil {
+					t.Fatalf("expected no security to be set, but got a valid variant")
+				}
+			},
+		},
+		{
 			name: "basic auth",
 			setup: func(in *apiv1.ApiExposure) {
 				in.Spec.Security = &apiv1.Security{M2M: &apiv1.Machine2MachineAuthentication{Basic: &apiv1.BasicAuthCredentials{Username: "u", Password: "p"}}}
@@ -134,7 +149,7 @@ func TestMapSecurity(t *testing.T) {
 				if err != nil {
 					t.Fatalf("expected oauth2 security, got err: %v", err)
 				}
-				if got.TokenEndpoint != "https://idp/token" || got.ClientId != "cid" || len(got.Scopes) != 1 {
+				if got.TokenEndpoint != "https://idp/token" || got.ClientId != "cid" || got.ClientSecret != "sec" || len(got.Scopes) != 1 {
 					t.Fatalf("unexpected oauth2 mapping: %#v", got)
 				}
 			},
