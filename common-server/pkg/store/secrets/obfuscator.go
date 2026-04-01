@@ -6,6 +6,7 @@ package secrets
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -59,7 +60,7 @@ func (o *Obfuscator) ReplaceAll(ctx context.Context, obj any, jsonPaths []string
 		return u, nil
 	}
 
-	return nil, errors.New("unsupported type")
+	return nil, fmt.Errorf("unsupported type %T", obj)
 }
 
 func (o *Obfuscator) ReplaceAllFromBytes(ctx context.Context, b []byte, jsonPaths []string) ([]byte, error) {
