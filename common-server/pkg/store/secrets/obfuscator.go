@@ -6,6 +6,7 @@ package secrets
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -58,6 +59,19 @@ func (o *Obfuscator) ReplaceAll(ctx context.Context, obj any, jsonPaths []string
 		}
 		u.SetUnstructuredContent(m)
 		return u, nil
+	}
+
+	b, err := json.Marshal(obj)
+	if err == nil {
+		b, err = o.ReplaceAllFromBytes(ctx, b, jsonPaths)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to obfuscate from json")
+		}
+		err = json.Unmarshal(b, &obj)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal obfuscated json")
+		}
+		return obj, nil
 	}
 
 	return nil, fmt.Errorf("unsupported type %T", obj)
