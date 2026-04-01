@@ -10,14 +10,17 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/gkampitakis/go-snaps/match"
-	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/gofiber/fiber/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	securitymock "github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
+	csstore "github.com/telekom/controlplane/common-server/pkg/store"
+	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
+	csmocks "github.com/telekom/controlplane/common-server/test/mocks"
 
 	"github.com/telekom/controlplane/spy-server/internal/config"
 	"github.com/telekom/controlplane/spy-server/internal/server"
@@ -36,11 +39,20 @@ var (
 	groupToken     = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:group:all"})
 	adminToken     = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:admin:all"})
 	teamNoResToken = securitymock.NewMockAccessToken("poc", "eni", "nohyper", []string{"tardis:team:all"})
+	obfuscToken    = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:team:obfuscated"})
 )
 
 func TestController(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Controller Suite")
+}
+
+// noopReplacer passes through objects unchanged. Used in tests where
+// the secret-manager resolver is not needed (test data has no secret placeholders).
+type noopReplacer struct{}
+
+func (n *noopReplacer) ReplaceAll(_ context.Context, obj any, _ []string) (any, error) {
+	return obj, nil
 }
 
 var _ = BeforeSuite(func() {
@@ -50,12 +62,47 @@ var _ = BeforeSuite(func() {
 
 	log.Init()
 
+	// Create secret-wrapped stores that return deep copies (the obfuscator
+	// modifies objects in place via JSON round-trip, so each call must
+	// receive a fresh copy to avoid corrupting shared test data).
+	apiExposure := mocks.GetApiExposure(GinkgoT(), "apiExposure.json")
+	exposureSecretMock := csmocks.NewMockObjectStore[*apiv1.ApiExposure](GinkgoT())
+	exposureSecretMock.EXPECT().Get(
+		mock.AnythingOfType("*context.valueCtx"),
+		mock.AnythingOfType("string"),
+		mock.Anything,
+	).RunAndReturn(func(_ context.Context, _ string, _ string) (*apiv1.ApiExposure, error) {
+		return apiExposure.DeepCopy(), nil
+	}).Maybe()
+	exposureSecretMock.EXPECT().List(
+		mock.AnythingOfType("*context.valueCtx"),
+		mock.Anything,
+	).RunAndReturn(func(_ context.Context, _ csstore.ListOpts) (*csstore.ListResponse[*apiv1.ApiExposure], error) {
+		return &csstore.ListResponse[*apiv1.ApiExposure]{Items: []*apiv1.ApiExposure{apiExposure.DeepCopy()}}, nil
+	}).Maybe()
+
+	apiSubscription := mocks.GetApiSubscription(GinkgoT(), "apiSubscription.json")
+	subscriptionSecretMock := csmocks.NewMockObjectStore[*apiv1.ApiSubscription](GinkgoT())
+	subscriptionSecretMock.EXPECT().Get(
+		mock.AnythingOfType("*context.valueCtx"),
+		mock.AnythingOfType("string"),
+		mock.Anything,
+	).RunAndReturn(func(_ context.Context, _ string, _ string) (*apiv1.ApiSubscription, error) {
+		return apiSubscription.DeepCopy(), nil
+	}).Maybe()
+	subscriptionSecretMock.EXPECT().List(
+		mock.AnythingOfType("*context.valueCtx"),
+		mock.Anything,
+	).RunAndReturn(func(_ context.Context, _ csstore.ListOpts) (*csstore.ListResponse[*apiv1.ApiSubscription], error) {
+		return &csstore.ListResponse[*apiv1.ApiSubscription]{Items: []*apiv1.ApiSubscription{apiSubscription.DeepCopy()}}, nil
+	}).Maybe()
+
 	stores = &sstore.Stores{
 		ApplicationStore:           mocks.NewApplicationStoreMock(GinkgoT()),
 		APIExposureStore:           mocks.NewAPIExposureStoreMock(GinkgoT()),
-		APIExposureSecretStore:     mocks.NewAPIExposureStoreMock(GinkgoT()),
+		APIExposureSecretStore:     secrets.WrapStore(exposureSecretMock, sstore.SecretsForKinds["ApiExposure"], &noopReplacer{}),
 		APISubscriptionStore:       mocks.NewAPISubscriptionStoreMock(GinkgoT()),
-		APISubscriptionSecretStore: mocks.NewAPISubscriptionStoreMock(GinkgoT()),
+		APISubscriptionSecretStore: secrets.WrapStore(subscriptionSecretMock, sstore.SecretsForKinds["ApiSubscription"], &noopReplacer{}),
 		ZoneStore:                  mocks.NewZoneStoreMock(GinkgoT()),
 		ApprovalStore:              mocks.NewApprovalStoreMock(GinkgoT()),
 		EventExposureStore:         mocks.NewEventExposureStoreMock(GinkgoT()),
@@ -92,17 +139,11 @@ func ExecuteRequest(request *http.Request, bearerToken string) (*http.Response, 
 	return app.Test(request, -1)
 }
 
-// ExpectStatusOk asserts HTTP 200 with application/json content type and matches the body snapshot.
-func ExpectStatusOk(response *http.Response, err error, matchers ...match.JSONMatcher) {
+// ExpectStatusOk asserts HTTP 200 with application/json content type and returns the response body.
+func ExpectStatusOk(response *http.Response, err error) string {
 	expectNoError(err)
 	expectResponseWithStatus(response, http.StatusOK, "application/json")
-	expectResponseWithBody(response, matchers...)
-}
-
-// ExpectStatusWithBody asserts response status, content type, and matches the body snapshot.
-func ExpectStatusWithBody(response *http.Response, err error, statusCode int, contentType string, matchers ...match.JSONMatcher) {
-	ExpectStatus(response, err, statusCode, contentType)
-	expectResponseWithBody(response, matchers...)
+	return readBody(response)
 }
 
 // ExpectStatus asserts response status code and content type.
@@ -122,8 +163,8 @@ func expectResponseWithStatus(response *http.Response, statusCode int, contentTy
 	Expect(response.Header.Get("Content-Type")).To(Equal(contentType))
 }
 
-func expectResponseWithBody(response *http.Response, matchers ...match.JSONMatcher) {
+func readBody(response *http.Response) string {
 	b, err := io.ReadAll(response.Body)
 	Expect(err).ToNot(HaveOccurred())
-	snaps.MatchJSON(GinkgoT(), string(b), matchers...)
+	return string(b)
 }

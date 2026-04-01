@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 
 	"github.com/gkampitakis/go-snaps/match"
+	"github.com/gkampitakis/go-snaps/snaps"
 	. "github.com/onsi/ginkgo/v2"
 )
 
@@ -18,13 +19,15 @@ var _ = Describe("EventType Controller", func() {
 		It("should list event types with team token", func() {
 			req := httptest.NewRequest(http.MethodGet, "/eventtypes", nil)
 			resp, err := ExecuteRequest(req, teamToken)
-			ExpectStatusOk(resp, err, match.Any("items.0.status"))
+			body := ExpectStatusOk(resp, err)
+			snaps.MatchJSON(GinkgoT(), body, match.Any("items.0.status"))
 		})
 
 		It("should list event types with admin token", func() {
 			req := httptest.NewRequest(http.MethodGet, "/eventtypes", nil)
 			resp, err := ExecuteRequest(req, adminToken)
-			ExpectStatusOk(resp, err, match.Any("items.0.status"))
+			body := ExpectStatusOk(resp, err)
+			snaps.MatchJSON(GinkgoT(), body, match.Any("items.0.status"))
 		})
 	})
 
@@ -32,7 +35,8 @@ var _ = Describe("EventType Controller", func() {
 		It("should return a single event type", func() {
 			req := httptest.NewRequest(http.MethodGet, "/eventtypes/eni--hyperion--de-telekom-eni-quickstart-v1", nil)
 			resp, err := ExecuteRequest(req, teamToken)
-			ExpectStatusOk(resp, err, match.Any("status"))
+			body := ExpectStatusOk(resp, err)
+			snaps.MatchJSON(GinkgoT(), body, match.Any("status"))
 		})
 
 	})
@@ -41,7 +45,8 @@ var _ = Describe("EventType Controller", func() {
 		It("should return event type status", func() {
 			req := httptest.NewRequest(http.MethodGet, "/eventtypes/eni--hyperion--de-telekom-eni-quickstart-v1/status", nil)
 			resp, err := ExecuteRequest(req, teamToken)
-			ExpectStatusOk(resp, err, match.Any("createdAt"), match.Any("processedAt"))
+			body := ExpectStatusOk(resp, err)
+			snaps.MatchJSON(GinkgoT(), body, match.Any("createdAt"), match.Any("processedAt"))
 		})
 
 	})
@@ -50,7 +55,8 @@ var _ = Describe("EventType Controller", func() {
 		It("should return the active event type", func() {
 			req := httptest.NewRequest(http.MethodGet, "/eventtypes/de-telekom-eni-quickstart-v1/active", nil)
 			resp, err := ExecuteRequest(req, teamToken)
-			ExpectStatusOk(resp, err, match.Any("status"))
+			body := ExpectStatusOk(resp, err)
+			snaps.MatchJSON(GinkgoT(), body, match.Any("status"))
 		})
 	})
 })

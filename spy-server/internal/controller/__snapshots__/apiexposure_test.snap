@@ -1,0 +1,408 @@
+
+[ApiExposure Controller GET /applications/:applicationId/apiexposures should list API exposures with different scopes team scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/apiexposures?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/apiexposures?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/apiexposures?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "approval": "SIMPLE",
+   "basePath": "/eni/distr/v1",
+   "name": "my-app--eni-distr-v1",
+   "security": {
+    "password": "super-secret-password",
+    "type": "basicAuth",
+    "username": "admin"
+   },
+   "status": "<Any value>",
+   "upstream": "https://httpbin.org/anything",
+   "variant": "DEFAULT",
+   "visibility": "WORLD",
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[ApiExposure Controller GET /applications/:applicationId/apiexposures should list API exposures with different scopes group scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/apiexposures?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/apiexposures?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/apiexposures?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "approval": "SIMPLE",
+   "basePath": "/eni/distr/v1",
+   "name": "my-app--eni-distr-v1",
+   "security": {
+    "password": "super-secret-password",
+    "type": "basicAuth",
+    "username": "admin"
+   },
+   "status": "<Any value>",
+   "upstream": "https://httpbin.org/anything",
+   "variant": "DEFAULT",
+   "visibility": "WORLD",
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[ApiExposure Controller GET /applications/:applicationId/apiexposures should list API exposures with different scopes admin scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/apiexposures?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/apiexposures?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/apiexposures?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "approval": "SIMPLE",
+   "basePath": "/eni/distr/v1",
+   "name": "my-app--eni-distr-v1",
+   "security": {
+    "password": "super-secret-password",
+    "type": "basicAuth",
+    "username": "admin"
+   },
+   "status": "<Any value>",
+   "upstream": "https://httpbin.org/anything",
+   "variant": "DEFAULT",
+   "visibility": "WORLD",
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[ApiExposure Controller GET /applications/:applicationId/apiexposures should list API exposures with different scopes obfuscated scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/apiexposures?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/apiexposures?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/apiexposures?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "approval": "SIMPLE",
+   "basePath": "/eni/distr/v1",
+   "name": "my-app--eni-distr-v1",
+   "security": {
+    "password": "**********",
+    "type": "basicAuth",
+    "username": "admin"
+   },
+   "status": "<Any value>",
+   "upstream": "https://httpbin.org/anything",
+   "variant": "DEFAULT",
+   "visibility": "WORLD",
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[ApiExposure Controller GET /applications/:applicationId/apiexposures/:apiExposureName should return a single API exposure with different scopes team scope - 1]
+{
+ "approval": "SIMPLE",
+ "basePath": "/eni/distr/v1",
+ "name": "my-app--eni-distr-v1",
+ "security": {
+  "password": "super-secret-password",
+  "type": "basicAuth",
+  "username": "admin"
+ },
+ "status": "<Any value>",
+ "upstream": "https://httpbin.org/anything",
+ "variant": "DEFAULT",
+ "visibility": "WORLD",
+ "zone": "dataplane1"
+}
+---
+
+[ApiExposure Controller GET /applications/:applicationId/apiexposures/:apiExposureName should return a single API exposure with different scopes group scope - 1]
+{
+ "approval": "SIMPLE",
+ "basePath": "/eni/distr/v1",
+ "name": "my-app--eni-distr-v1",
+ "security": {
+  "password": "super-secret-password",
+  "type": "basicAuth",
+  "username": "admin"
+ },
+ "status": "<Any value>",
+ "upstream": "https://httpbin.org/anything",
+ "variant": "DEFAULT",
+ "visibility": "WORLD",
+ "zone": "dataplane1"
+}
+---
+
+[ApiExposure Controller GET /applications/:applicationId/apiexposures/:apiExposureName should return a single API exposure with different scopes admin scope - 1]
+{
+ "approval": "SIMPLE",
+ "basePath": "/eni/distr/v1",
+ "name": "my-app--eni-distr-v1",
+ "security": {
+  "password": "super-secret-password",
+  "type": "basicAuth",
+  "username": "admin"
+ },
+ "status": "<Any value>",
+ "upstream": "https://httpbin.org/anything",
+ "variant": "DEFAULT",
+ "visibility": "WORLD",
+ "zone": "dataplane1"
+}
+---
+
+[ApiExposure Controller GET /applications/:applicationId/apiexposures/:apiExposureName should return a single API exposure with different scopes obfuscated scope - 1]
+{
+ "approval": "SIMPLE",
+ "basePath": "/eni/distr/v1",
+ "name": "my-app--eni-distr-v1",
+ "security": {
+  "password": "**********",
+  "type": "basicAuth",
+  "username": "admin"
+ },
+ "status": "<Any value>",
+ "upstream": "https://httpbin.org/anything",
+ "variant": "DEFAULT",
+ "visibility": "WORLD",
+ "zone": "dataplane1"
+}
+---
+
+[ApiExposure Controller GET /applications/:applicationId/apiexposures/:apiExposureName/status should return API exposure status with different scopes team scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[ApiExposure Controller GET /applications/:applicationId/apiexposures/:apiExposureName/status should return API exposure status with different scopes group scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[ApiExposure Controller GET /applications/:applicationId/apiexposures/:apiExposureName/status should return API exposure status with different scopes admin scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[ApiExposure Controller GET /applications/:applicationId/apiexposures/:apiExposureName/status should return API exposure status with different scopes obfuscated scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[ApiExposure Controller GET /applications/:applicationId/apiexposures/:apiExposureName/apisubscriptions should list subscriptions for an API exposure with different scopes team scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/apiexposures/eni-distr-v1/apisubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/apiexposures/eni-distr-v1/apisubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/apiexposures/eni-distr-v1/apisubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "basePath": "/eni/distr/v1",
+   "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+   "name": "my-app--eni-distr-v1",
+   "security": {
+    "password": "subscriber-secret-password",
+    "type": "basicAuth",
+    "username": "subscriber-user"
+   },
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[ApiExposure Controller GET /applications/:applicationId/apiexposures/:apiExposureName/apisubscriptions should list subscriptions for an API exposure with different scopes group scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/apiexposures/eni-distr-v1/apisubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/apiexposures/eni-distr-v1/apisubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/apiexposures/eni-distr-v1/apisubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "basePath": "/eni/distr/v1",
+   "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+   "name": "my-app--eni-distr-v1",
+   "security": {
+    "password": "subscriber-secret-password",
+    "type": "basicAuth",
+    "username": "subscriber-user"
+   },
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[ApiExposure Controller GET /applications/:applicationId/apiexposures/:apiExposureName/apisubscriptions should list subscriptions for an API exposure with different scopes admin scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/apiexposures/eni-distr-v1/apisubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/apiexposures/eni-distr-v1/apisubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/apiexposures/eni-distr-v1/apisubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "basePath": "/eni/distr/v1",
+   "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+   "name": "my-app--eni-distr-v1",
+   "security": {
+    "password": "subscriber-secret-password",
+    "type": "basicAuth",
+    "username": "subscriber-user"
+   },
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[ApiExposure Controller GET /applications/:applicationId/apiexposures/:apiExposureName/apisubscriptions should list subscriptions for an API exposure with different scopes obfuscated scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/apiexposures/eni-distr-v1/apisubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/apiexposures/eni-distr-v1/apisubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/apiexposures/eni-distr-v1/apisubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "basePath": "/eni/distr/v1",
+   "gatewayUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/eni/distr/v1",
+   "name": "my-app--eni-distr-v1",
+   "security": {
+    "password": "**********",
+    "type": "basicAuth",
+    "username": "subscriber-user"
+   },
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---

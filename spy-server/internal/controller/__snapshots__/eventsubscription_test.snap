@@ -1,0 +1,234 @@
+
+[EventSubscription Controller GET /applications/:applicationId/eventsubscriptions should list event subscriptions with different scopes team scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/eventsubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/eventsubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/eventsubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "delivery": {
+    "callback": "https://my-app.example.com/events",
+    "payload": "Data",
+    "type": "Callback"
+   },
+   "eventType": "de.telekom.eni.quickstart.v1",
+   "name": "my-app--de-telekom-eni-quickstart-v1",
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[EventSubscription Controller GET /applications/:applicationId/eventsubscriptions should list event subscriptions with different scopes group scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/eventsubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/eventsubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/eventsubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "delivery": {
+    "callback": "https://my-app.example.com/events",
+    "payload": "Data",
+    "type": "Callback"
+   },
+   "eventType": "de.telekom.eni.quickstart.v1",
+   "name": "my-app--de-telekom-eni-quickstart-v1",
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[EventSubscription Controller GET /applications/:applicationId/eventsubscriptions should list event subscriptions with different scopes admin scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/eventsubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/eventsubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/eventsubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "delivery": {
+    "callback": "https://my-app.example.com/events",
+    "payload": "Data",
+    "type": "Callback"
+   },
+   "eventType": "de.telekom.eni.quickstart.v1",
+   "name": "my-app--de-telekom-eni-quickstart-v1",
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[EventSubscription Controller GET /applications/:applicationId/eventsubscriptions/:eventSubscriptionName should return a single event subscription with different scopes team scope - 1]
+{
+ "application": {
+  "name": "my-app"
+ },
+ "approval": {
+  "comment": "Approved for testing",
+  "decider": "admin@telekom.de",
+  "status": "Granted"
+ },
+ "delivery": {
+  "callback": "https://my-app.example.com/events",
+  "payload": "Data",
+  "type": "Callback"
+ },
+ "eventType": "de.telekom.eni.quickstart.v1",
+ "name": "my-app--de-telekom-eni-quickstart-v1",
+ "status": "<Any value>",
+ "team": {
+  "email": "hyperion@telekom.de",
+  "hub": "eni",
+  "name": "hyperion"
+ },
+ "zone": "dataplane1"
+}
+---
+
+[EventSubscription Controller GET /applications/:applicationId/eventsubscriptions/:eventSubscriptionName should return a single event subscription with different scopes group scope - 1]
+{
+ "application": {
+  "name": "my-app"
+ },
+ "approval": {
+  "comment": "Approved for testing",
+  "decider": "admin@telekom.de",
+  "status": "Granted"
+ },
+ "delivery": {
+  "callback": "https://my-app.example.com/events",
+  "payload": "Data",
+  "type": "Callback"
+ },
+ "eventType": "de.telekom.eni.quickstart.v1",
+ "name": "my-app--de-telekom-eni-quickstart-v1",
+ "status": "<Any value>",
+ "team": {
+  "email": "hyperion@telekom.de",
+  "hub": "eni",
+  "name": "hyperion"
+ },
+ "zone": "dataplane1"
+}
+---
+
+[EventSubscription Controller GET /applications/:applicationId/eventsubscriptions/:eventSubscriptionName should return a single event subscription with different scopes admin scope - 1]
+{
+ "application": {
+  "name": "my-app"
+ },
+ "approval": {
+  "comment": "Approved for testing",
+  "decider": "admin@telekom.de",
+  "status": "Granted"
+ },
+ "delivery": {
+  "callback": "https://my-app.example.com/events",
+  "payload": "Data",
+  "type": "Callback"
+ },
+ "eventType": "de.telekom.eni.quickstart.v1",
+ "name": "my-app--de-telekom-eni-quickstart-v1",
+ "status": "<Any value>",
+ "team": {
+  "email": "hyperion@telekom.de",
+  "hub": "eni",
+  "name": "hyperion"
+ },
+ "zone": "dataplane1"
+}
+---
+
+[EventSubscription Controller GET /applications/:applicationId/eventsubscriptions/:eventSubscriptionName/status should return event subscription status with different scopes team scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[EventSubscription Controller GET /applications/:applicationId/eventsubscriptions/:eventSubscriptionName/status should return event subscription status with different scopes group scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[EventSubscription Controller GET /applications/:applicationId/eventsubscriptions/:eventSubscriptionName/status should return event subscription status with different scopes admin scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---

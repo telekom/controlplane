@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 
 	"github.com/gkampitakis/go-snaps/match"
+	"github.com/gkampitakis/go-snaps/snaps"
 	. "github.com/onsi/ginkgo/v2"
 )
 
@@ -19,7 +20,8 @@ var _ = Describe("Application Controller", func() {
 			func(token string) {
 				req := httptest.NewRequest(http.MethodGet, "/applications", nil)
 				resp, err := ExecuteRequest(req, token)
-				ExpectStatusOk(resp, err, match.Any("items.0.status"))
+				body := ExpectStatusOk(resp, err)
+				snaps.MatchJSON(GinkgoT(), body, match.Any("items.0.status"))
 			},
 			Entry("team scope", teamToken),
 			Entry("group scope", groupToken),
@@ -29,7 +31,8 @@ var _ = Describe("Application Controller", func() {
 		It("should return applications for a different team (empty if no data)", func() {
 			req := httptest.NewRequest(http.MethodGet, "/applications", nil)
 			resp, err := ExecuteRequest(req, teamNoResToken)
-			ExpectStatusOk(resp, err)
+			body := ExpectStatusOk(resp, err)
+			snaps.MatchJSON(GinkgoT(), body)
 		})
 	})
 
@@ -38,7 +41,8 @@ var _ = Describe("Application Controller", func() {
 			func(token string) {
 				req := httptest.NewRequest(http.MethodGet, "/applications/eni--hyperion--my-app", nil)
 				resp, err := ExecuteRequest(req, token)
-				ExpectStatusOk(resp, err, match.Any("status"))
+				body := ExpectStatusOk(resp, err)
+				snaps.MatchJSON(GinkgoT(), body, match.Any("status"))
 			},
 			Entry("team scope", teamToken),
 			Entry("group scope", groupToken),
@@ -58,7 +62,8 @@ var _ = Describe("Application Controller", func() {
 			func(token string) {
 				req := httptest.NewRequest(http.MethodGet, "/applications/eni--hyperion--my-app/status", nil)
 				resp, err := ExecuteRequest(req, token)
-				ExpectStatusOk(resp, err, match.Any("createdAt"), match.Any("processedAt"))
+				body := ExpectStatusOk(resp, err)
+				snaps.MatchJSON(GinkgoT(), body, match.Any("createdAt"), match.Any("processedAt"))
 			},
 			Entry("team scope", teamToken),
 			Entry("group scope", groupToken),

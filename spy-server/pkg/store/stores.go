@@ -40,7 +40,8 @@ type Stores struct {
 	EventTypeStore         store.ObjectStore[*eventv1.EventType]
 }
 
-var secretsForKinds = map[string][]string{
+// SecretsForKinds maps CRD kind names to the JSON paths of their secret fields.
+var SecretsForKinds = map[string][]string{
 	"ApiSubscription": {
 		"spec.security.m2m.client.clientSecret",
 		"spec.security.m2m.basic.password",
@@ -70,8 +71,8 @@ func NewStores(ctx context.Context, cfg *rest.Config) *Stores {
 	s.EventTypeStore = NewOrDie[*eventv1.EventType](ctx, dynamicClient, eventv1.GroupVersion.WithResource("eventtypes"), eventv1.GroupVersion.WithKind("EventType"))
 
 	secretsAPI := secretsapi.NewSecrets()
-	s.APIExposureSecretStore = secrets.WrapStore(s.APIExposureStore, secretsForKinds["ApiExposure"], secrets.NewSecretManagerResolver(secretsAPI))
-	s.APISubscriptionSecretStore = secrets.WrapStore(s.APISubscriptionStore, secretsForKinds["ApiSubscription"], secrets.NewSecretManagerResolver(secretsAPI))
+	s.APIExposureSecretStore = secrets.WrapStore(s.APIExposureStore, SecretsForKinds["ApiExposure"], secrets.NewSecretManagerResolver(secretsAPI))
+	s.APISubscriptionSecretStore = secrets.WrapStore(s.APISubscriptionStore, SecretsForKinds["ApiSubscription"], secrets.NewSecretManagerResolver(secretsAPI))
 
 	return s
 }

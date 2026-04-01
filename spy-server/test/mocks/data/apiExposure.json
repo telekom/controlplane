@@ -26,6 +26,14 @@
       "name": "dataplane1",
       "namespace": "poc"
     },
+    "security": {
+      "m2m": {
+        "basic": {
+          "username": "admin",
+          "password": "super-secret-password"
+        }
+      }
+    },
     "traffic": {}
   },
   "status": {
