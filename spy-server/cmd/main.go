@@ -33,7 +33,7 @@ func main() {
 	log.Init()
 	rootCtx := logr.NewContext(context.Background(), log.Log)
 
-	stores := store.NewStores(rootCtx, kconfig.GetConfigOrDie())
+	stores := store.NewStores(rootCtx, kconfig.GetConfigOrDie(), cfg)
 
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log.Log

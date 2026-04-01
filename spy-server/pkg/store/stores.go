@@ -15,8 +15,8 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common-server/pkg/store/inmemory"
 	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	"github.com/telekom/controlplane/spy-server/internal/config"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
@@ -36,24 +36,9 @@ type Stores struct {
 	EventTypeStore         store.ObjectStore[*eventv1.EventType]
 }
 
-// secretsForKinds maps each resource kind to the JSON paths within its CRD
-// that may contain secret placeholders (e.g. "$<secret-id>") managed by the
-// secret-manager service.
-var secretsForKinds = map[string][]string{
-	"ApiSubscription": {
-		"spec.security.m2m.client.clientSecret",
-		"spec.security.m2m.basic.password",
-	},
-	"ApiExposure": {
-		"spec.security.m2m.externalIDP.client.clientSecret",
-		"spec.security.m2m.externalIDP.basic.password",
-		"spec.security.m2m.basic.password",
-	},
-}
-
 // NewStores creates and initialises all stores. It panics if any store
 // cannot be created (same semantics as rover-server).
-func NewStores(ctx context.Context, cfg *rest.Config) *Stores {
+func NewStores(ctx context.Context, cfg *rest.Config, serverCfg *config.ServerConfig) *Stores {
 	dynamicClient := dynamic.NewForConfigOrDie(cfg)
 
 	s := &Stores{
@@ -68,10 +53,14 @@ func NewStores(ctx context.Context, cfg *rest.Config) *Stores {
 		EventTypeStore:         NewOrDie[*eventv1.EventType](ctx, dynamicClient, eventv1.GroupVersion.WithResource("eventtypes"), eventv1.GroupVersion.WithKind("EventType")),
 	}
 
-	if cconfig.FeatureSecretManager.IsEnabled() {
+	if serverCfg.SecretManager.Enabled {
 		resolver := secrets.NewDefaultSecretManagerResolver()
-		s.APISubscriptionStore = secrets.WrapStore(s.APISubscriptionStore, secretsForKinds["ApiSubscription"], resolver)
-		s.APIExposureStore = secrets.WrapStore(s.APIExposureStore, secretsForKinds["ApiExposure"], resolver)
+		if paths, ok := serverCfg.Secrets["ApiSubscription"]; ok && len(paths) > 0 {
+			s.APISubscriptionStore = secrets.WrapStore(s.APISubscriptionStore, paths, resolver)
+		}
+		if paths, ok := serverCfg.Secrets["ApiExposure"]; ok && len(paths) > 0 {
+			s.APIExposureStore = secrets.WrapStore(s.APIExposureStore, paths, resolver)
+		}
 	}
 
 	return s
