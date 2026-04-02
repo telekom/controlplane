@@ -143,7 +143,9 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 			return err
 		}
 		obj.Status.TeamApiGatewayRealm = types.ObjectRefFromObject(teamApisGatewayRealm)
-		obj.Status.Links.TeamIssuer = teamApisGatewayRealm.Spec.IssuerUrl
+		if len(teamApisGatewayRealm.Spec.IssuerUrls) > 0 {
+			obj.Status.Links.TeamIssuer = teamApisGatewayRealm.Spec.IssuerUrls[0]
+		}
 
 		// Team api routes
 		var teamApiRouteRefs []types.ObjectRef
@@ -198,11 +200,15 @@ func createTeamApiRoute(ctx context.Context, handlingContext HandlingContext, te
 		if err != nil {
 			return err
 		}
+		issuerUrl := ""
+		if len(gatewayRealm.Spec.IssuerUrls) > 0 {
+			issuerUrl = gatewayRealm.Spec.IssuerUrls[0]
+		}
 		downstream := gatewayapi.Downstream{
 			Host:      downstreamUrl.Host,
 			Port:      0,
 			Path:      downstreamUrl.Path,
-			IssuerUrl: gatewayRealm.Spec.IssuerUrl,
+			IssuerUrl: issuerUrl,
 		}
 
 		teamRoute.Spec = gatewayapi.RouteSpec{
@@ -272,8 +278,8 @@ func createGatewayRealm(ctx context.Context, handlingContext HandlingContext, ga
 
 		gatewayRealm.Spec = gatewayapi.RealmSpec{
 			Gateway:          types.ObjectRefFromObject(gateway),
-			Url:              handlingContext.Zone.Spec.Gateway.Url,
-			IssuerUrl:        urls.ForGatewayRealm(handlingContext.Zone.Spec.IdentityProvider.Url, realmName),
+			Urls:             []string{handlingContext.Zone.Spec.Gateway.Url},
+			IssuerUrls:       []string{urls.ForGatewayRealm(handlingContext.Zone.Spec.IdentityProvider.Url, realmName)},
 			DefaultConsumers: []string{},
 		}
 		return nil

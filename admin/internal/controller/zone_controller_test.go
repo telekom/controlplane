@@ -252,8 +252,8 @@ func VerifyZone(ctx context.Context, g Gomega, namespacedName client.ObjectKey, 
 
 	gatewayRealmSpec := gatewayapi.RealmSpec{
 		Gateway:          types.ObjectRefFromObject(gateway),
-		Url:              "https://test-stargate.de/",
-		IssuerUrl:        "https://test-iris.de/auth/realms/test",
+		Urls:             []string{"https://test-stargate.de/"},
+		IssuerUrls:       []string{"https://test-iris.de/auth/realms/test"},
 		DefaultConsumers: []string{},
 	}
 	g.Expect(gatewayRealm.Spec).To(Equal(gatewayRealmSpec))
@@ -288,8 +288,8 @@ func VerifyZone(ctx context.Context, g Gomega, namespacedName client.ObjectKey, 
 
 	teamApiGatewayRealmSpec := gatewayapi.RealmSpec{
 		Gateway:          types.ObjectRefFromObject(gateway),
-		Url:              "https://test-stargate.de/",
-		IssuerUrl:        "https://test-iris.de/auth/realms/team-test",
+		Urls:             []string{"https://test-stargate.de/"},
+		IssuerUrls:       []string{"https://test-iris.de/auth/realms/team-test"},
 		DefaultConsumers: []string{},
 	}
 	g.Expect(teamApiGatewayRealm.Spec).To(Equal(teamApiGatewayRealmSpec))

@@ -61,7 +61,10 @@ func CreateRoute(ctx context.Context, realm *gatewayv1.Realm, routeType RouteTyp
 		},
 	}
 
-	url, err := url.Parse(realm.Spec.Url)
+	if len(realm.Spec.Urls) == 0 {
+		return route, errors.New("realm has no URLs configured")
+	}
+	url, err := url.Parse(realm.Spec.Urls[0])
 	if err != nil {
 		return route, errors.Wrap(err, "failed to parse URL")
 	}
