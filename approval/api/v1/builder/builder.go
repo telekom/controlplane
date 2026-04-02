@@ -154,19 +154,35 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 
 	approvalReq := b.Request.DeepCopy()
 	mutate := func() error {
-		if approvalReq.Spec.State != "" && approvalReq.Spec.State != v1.ApprovalStatePending {
-			return nil // no need to create approval request as it already exists
-		}
+		// Preserve the server-side state and decisions before applying spec updates.
+		// After controllerutil.CreateOrUpdate fetches the existing object, approvalReq
+		// contains the server-side values. We must not overwrite the state set by a
+		// decider, nor lose any recorded decisions.
+		currentState := approvalReq.Spec.State
+		currentDecisions := approvalReq.Spec.Decisions
 
 		if err := controllerutil.SetControllerReference(b.Owner, approvalReq, b.Client.Scheme()); err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
+		// Apply desired spec fields from the builder
+		approvalReq.Spec.Target = b.Request.Spec.Target
+		approvalReq.Spec.Requester = b.Request.Spec.Requester
+		approvalReq.Spec.Decider = b.Request.Spec.Decider
+		approvalReq.Spec.Action = b.Request.Spec.Action
+		approvalReq.Spec.Strategy = b.Request.Spec.Strategy
+
 		if b.isRequesterFromTrustedRequesters() {
 			approvalReq.Spec.Strategy = v1.ApprovalStrategyAuto
 		}
 
-		if approvalReq.Spec.Strategy == v1.ApprovalStrategyAuto {
+		// Restore decisions — these are managed by the decider, not the owner
+		approvalReq.Spec.Decisions = currentDecisions
+
+		// Preserve the decider's decision; only set the state for new or pending requests
+		if currentState != "" && currentState != v1.ApprovalStatePending {
+			approvalReq.Spec.State = currentState
+		} else if approvalReq.Spec.Strategy == v1.ApprovalStrategyAuto {
 			approvalReq.Spec.State = v1.ApprovalStateGranted
 			if len(approvalReq.Spec.Decisions) == 0 {
 				approvalReq.Spec.Decisions = append(approvalReq.Spec.Decisions, v1.Decision{
@@ -175,6 +191,8 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 					ResultingState: v1.ApprovalStateGranted,
 				})
 			}
+		} else {
+			approvalReq.Spec.State = v1.ApprovalStatePending
 		}
 
 		v1.SetApprovalLabels(approvalReq, approvalReq.Spec.Target,
