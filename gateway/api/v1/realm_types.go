@@ -81,7 +81,7 @@ func (r *Realm) SetCondition(condition metav1.Condition) bool {
 func (r *Realm) AsUpstream(apiBasePath string) (ups Upstream, err error) {
 	// Use the first URL as the upstream URL
 	if len(r.Spec.Urls) == 0 {
-		return ups, errors.New("no upstreams found")
+		return ups, errors.New("realm has no URLs configured")
 	}
 	url, err := url.Parse(r.Spec.Urls[0])
 	if err != nil {
@@ -99,7 +99,7 @@ func (r *Realm) AsUpstream(apiBasePath string) (ups Upstream, err error) {
 func (r *Realm) AsDownstream(apiBasePath string) (dws Downstream, err error) {
 	// Use the first URL as the downstream URL
 	if len(r.Spec.Urls) == 0 {
-		return dws, errors.New("no downstreams found")
+		return dws, errors.New("realm has no URLs configured")
 	}
 	url, err := url.Parse(r.Spec.Urls[0])
 	if err != nil {
