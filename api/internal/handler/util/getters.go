@@ -14,6 +14,7 @@ import (
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
+	approvalbuilder "github.com/telekom/controlplane/approval/api/v1/builder"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
@@ -262,7 +263,7 @@ func FindCrossZoneApiSubscriptionZones(ctx context.Context, apiExp *apiv1.ApiExp
 		// Check approval status
 		approvalGranted := false
 		for _, cond := range sub.GetConditions() {
-			if cond.Type == "ApprovalGranted" && cond.Status == "True" {
+			if cond.Type == approvalbuilder.ConditionTypeApprovalGranted && cond.Status == "True" {
 				approvalGranted = true
 				break
 			}
