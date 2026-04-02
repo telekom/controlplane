@@ -27,13 +27,17 @@ type Application struct {
 	// LastModifiedAt holds the value of the "last_modified_at" field.
 	LastModifiedAt time.Time `json:"last_modified_at,omitempty"`
 	// StatusPhase holds the value of the "status_phase" field.
-	StatusPhase application.StatusPhase `json:"status_phase,omitempty"`
+	StatusPhase *application.StatusPhase `json:"status_phase,omitempty"`
 	// StatusMessage holds the value of the "status_message" field.
 	StatusMessage *string `json:"status_message,omitempty"`
+	// Environment holds the value of the "environment" field.
+	Environment *string `json:"environment,omitempty"`
+	// Namespace holds the value of the "namespace" field.
+	Namespace *string `json:"namespace,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// ClientID holds the value of the "client_id" field.
-	ClientID string `json:"client_id,omitempty"`
+	ClientID *string `json:"client_id,omitempty"`
 	// IssuerURL holds the value of the "issuer_url" field.
 	IssuerURL *string `json:"issuer_url,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -111,7 +115,7 @@ func (*Application) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case application.FieldID:
 			values[i] = new(sql.NullInt64)
-		case application.FieldStatusPhase, application.FieldStatusMessage, application.FieldName, application.FieldClientID, application.FieldIssuerURL:
+		case application.FieldStatusPhase, application.FieldStatusMessage, application.FieldEnvironment, application.FieldNamespace, application.FieldName, application.FieldClientID, application.FieldIssuerURL:
 			values[i] = new(sql.NullString)
 		case application.FieldCreatedAt, application.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -156,7 +160,8 @@ func (_m *Application) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status_phase", values[i])
 			} else if value.Valid {
-				_m.StatusPhase = application.StatusPhase(value.String)
+				_m.StatusPhase = new(application.StatusPhase)
+				*_m.StatusPhase = application.StatusPhase(value.String)
 			}
 		case application.FieldStatusMessage:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -164,6 +169,20 @@ func (_m *Application) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.StatusMessage = new(string)
 				*_m.StatusMessage = value.String
+			}
+		case application.FieldEnvironment:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field environment", values[i])
+			} else if value.Valid {
+				_m.Environment = new(string)
+				*_m.Environment = value.String
+			}
+		case application.FieldNamespace:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field namespace", values[i])
+			} else if value.Valid {
+				_m.Namespace = new(string)
+				*_m.Namespace = value.String
 			}
 		case application.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -175,7 +194,8 @@ func (_m *Application) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field client_id", values[i])
 			} else if value.Valid {
-				_m.ClientID = value.String
+				_m.ClientID = new(string)
+				*_m.ClientID = value.String
 			}
 		case application.FieldIssuerURL:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -260,19 +280,33 @@ func (_m *Application) String() string {
 	builder.WriteString("last_modified_at=")
 	builder.WriteString(_m.LastModifiedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("status_phase=")
-	builder.WriteString(fmt.Sprintf("%v", _m.StatusPhase))
+	if v := _m.StatusPhase; v != nil {
+		builder.WriteString("status_phase=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	if v := _m.StatusMessage; v != nil {
 		builder.WriteString("status_message=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
+	if v := _m.Environment; v != nil {
+		builder.WriteString("environment=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Namespace; v != nil {
+		builder.WriteString("namespace=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
-	builder.WriteString("client_id=")
-	builder.WriteString(_m.ClientID)
+	if v := _m.ClientID; v != nil {
+		builder.WriteString("client_id=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	if v := _m.IssuerURL; v != nil {
 		builder.WriteString("issuer_url=")

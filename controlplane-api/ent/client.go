@@ -23,11 +23,9 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
-	"github.com/telekom/controlplane/controlplane-api/ent/environment"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
-	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 )
 
@@ -46,16 +44,12 @@ type Client struct {
 	Approval *ApprovalClient
 	// ApprovalRequest is the client for interacting with the ApprovalRequest builders.
 	ApprovalRequest *ApprovalRequestClient
-	// Environment is the client for interacting with the Environment builders.
-	Environment *EnvironmentClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// Member is the client for interacting with the Member builders.
 	Member *MemberClient
 	// Team is the client for interacting with the Team builders.
 	Team *TeamClient
-	// TeamEnvironment is the client for interacting with the TeamEnvironment builders.
-	TeamEnvironment *TeamEnvironmentClient
 	// Zone is the client for interacting with the Zone builders.
 	Zone *ZoneClient
 	// additional fields for node api
@@ -76,11 +70,9 @@ func (c *Client) init() {
 	c.Application = NewApplicationClient(c.config)
 	c.Approval = NewApprovalClient(c.config)
 	c.ApprovalRequest = NewApprovalRequestClient(c.config)
-	c.Environment = NewEnvironmentClient(c.config)
 	c.Group = NewGroupClient(c.config)
 	c.Member = NewMemberClient(c.config)
 	c.Team = NewTeamClient(c.config)
-	c.TeamEnvironment = NewTeamEnvironmentClient(c.config)
 	c.Zone = NewZoneClient(c.config)
 }
 
@@ -179,11 +171,9 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Application:     NewApplicationClient(cfg),
 		Approval:        NewApprovalClient(cfg),
 		ApprovalRequest: NewApprovalRequestClient(cfg),
-		Environment:     NewEnvironmentClient(cfg),
 		Group:           NewGroupClient(cfg),
 		Member:          NewMemberClient(cfg),
 		Team:            NewTeamClient(cfg),
-		TeamEnvironment: NewTeamEnvironmentClient(cfg),
 		Zone:            NewZoneClient(cfg),
 	}, nil
 }
@@ -209,11 +199,9 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Application:     NewApplicationClient(cfg),
 		Approval:        NewApprovalClient(cfg),
 		ApprovalRequest: NewApprovalRequestClient(cfg),
-		Environment:     NewEnvironmentClient(cfg),
 		Group:           NewGroupClient(cfg),
 		Member:          NewMemberClient(cfg),
 		Team:            NewTeamClient(cfg),
-		TeamEnvironment: NewTeamEnvironmentClient(cfg),
 		Zone:            NewZoneClient(cfg),
 	}, nil
 }
@@ -245,7 +233,7 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.ApiExposure, c.ApiSubscription, c.Application, c.Approval, c.ApprovalRequest,
-		c.Environment, c.Group, c.Member, c.Team, c.TeamEnvironment, c.Zone,
+		c.Group, c.Member, c.Team, c.Zone,
 	} {
 		n.Use(hooks...)
 	}
@@ -256,7 +244,7 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.ApiExposure, c.ApiSubscription, c.Application, c.Approval, c.ApprovalRequest,
-		c.Environment, c.Group, c.Member, c.Team, c.TeamEnvironment, c.Zone,
+		c.Group, c.Member, c.Team, c.Zone,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -275,16 +263,12 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Approval.mutate(ctx, m)
 	case *ApprovalRequestMutation:
 		return c.ApprovalRequest.mutate(ctx, m)
-	case *EnvironmentMutation:
-		return c.Environment.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
 	case *MemberMutation:
 		return c.Member.mutate(ctx, m)
 	case *TeamMutation:
 		return c.Team.mutate(ctx, m)
-	case *TeamEnvironmentMutation:
-		return c.TeamEnvironment.mutate(ctx, m)
 	case *ZoneMutation:
 		return c.Zone.mutate(ctx, m)
 	default:
@@ -1170,156 +1154,6 @@ func (c *ApprovalRequestClient) mutate(ctx context.Context, m *ApprovalRequestMu
 	}
 }
 
-// EnvironmentClient is a client for the Environment schema.
-type EnvironmentClient struct {
-	config
-}
-
-// NewEnvironmentClient returns a client for the Environment from the given config.
-func NewEnvironmentClient(c config) *EnvironmentClient {
-	return &EnvironmentClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `environment.Hooks(f(g(h())))`.
-func (c *EnvironmentClient) Use(hooks ...Hook) {
-	c.hooks.Environment = append(c.hooks.Environment, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `environment.Intercept(f(g(h())))`.
-func (c *EnvironmentClient) Intercept(interceptors ...Interceptor) {
-	c.inters.Environment = append(c.inters.Environment, interceptors...)
-}
-
-// Create returns a builder for creating a Environment entity.
-func (c *EnvironmentClient) Create() *EnvironmentCreate {
-	mutation := newEnvironmentMutation(c.config, OpCreate)
-	return &EnvironmentCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of Environment entities.
-func (c *EnvironmentClient) CreateBulk(builders ...*EnvironmentCreate) *EnvironmentCreateBulk {
-	return &EnvironmentCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *EnvironmentClient) MapCreateBulk(slice any, setFunc func(*EnvironmentCreate, int)) *EnvironmentCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &EnvironmentCreateBulk{err: fmt.Errorf("calling to EnvironmentClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*EnvironmentCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &EnvironmentCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for Environment.
-func (c *EnvironmentClient) Update() *EnvironmentUpdate {
-	mutation := newEnvironmentMutation(c.config, OpUpdate)
-	return &EnvironmentUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *EnvironmentClient) UpdateOne(_m *Environment) *EnvironmentUpdateOne {
-	mutation := newEnvironmentMutation(c.config, OpUpdateOne, withEnvironment(_m))
-	return &EnvironmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *EnvironmentClient) UpdateOneID(id int) *EnvironmentUpdateOne {
-	mutation := newEnvironmentMutation(c.config, OpUpdateOne, withEnvironmentID(id))
-	return &EnvironmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for Environment.
-func (c *EnvironmentClient) Delete() *EnvironmentDelete {
-	mutation := newEnvironmentMutation(c.config, OpDelete)
-	return &EnvironmentDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *EnvironmentClient) DeleteOne(_m *Environment) *EnvironmentDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *EnvironmentClient) DeleteOneID(id int) *EnvironmentDeleteOne {
-	builder := c.Delete().Where(environment.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &EnvironmentDeleteOne{builder}
-}
-
-// Query returns a query builder for Environment.
-func (c *EnvironmentClient) Query() *EnvironmentQuery {
-	return &EnvironmentQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeEnvironment},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a Environment entity by its id.
-func (c *EnvironmentClient) Get(ctx context.Context, id int) (*Environment, error) {
-	return c.Query().Where(environment.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *EnvironmentClient) GetX(ctx context.Context, id int) *Environment {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryTeamEnvironments queries the team_environments edge of a Environment.
-func (c *EnvironmentClient) QueryTeamEnvironments(_m *Environment) *TeamEnvironmentQuery {
-	query := (&TeamEnvironmentClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(environment.Table, environment.FieldID, id),
-			sqlgraph.To(teamenvironment.Table, teamenvironment.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, environment.TeamEnvironmentsTable, environment.TeamEnvironmentsColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *EnvironmentClient) Hooks() []Hook {
-	hooks := c.hooks.Environment
-	return append(hooks[:len(hooks):len(hooks)], environment.Hooks[:]...)
-}
-
-// Interceptors returns the client interceptors.
-func (c *EnvironmentClient) Interceptors() []Interceptor {
-	return c.inters.Environment
-}
-
-func (c *EnvironmentClient) mutate(ctx context.Context, m *EnvironmentMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&EnvironmentCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&EnvironmentUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&EnvironmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&EnvironmentDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown Environment mutation op: %q", m.Op())
-	}
-}
-
 // GroupClient is a client for the Group schema.
 type GroupClient struct {
 	config
@@ -1760,22 +1594,6 @@ func (c *TeamClient) QueryMembers(_m *Team) *MemberQuery {
 	return query
 }
 
-// QueryTeamEnvironments queries the team_environments edge of a Team.
-func (c *TeamClient) QueryTeamEnvironments(_m *Team) *TeamEnvironmentQuery {
-	query := (&TeamEnvironmentClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(team.Table, team.FieldID, id),
-			sqlgraph.To(teamenvironment.Table, teamenvironment.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, team.TeamEnvironmentsTable, team.TeamEnvironmentsColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryApplications queries the applications edge of a Team.
 func (c *TeamClient) QueryApplications(_m *Team) *ApplicationQuery {
 	query := (&ApplicationClient{config: c.config}).Query()
@@ -1815,172 +1633,6 @@ func (c *TeamClient) mutate(ctx context.Context, m *TeamMutation) (Value, error)
 		return (&TeamDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Team mutation op: %q", m.Op())
-	}
-}
-
-// TeamEnvironmentClient is a client for the TeamEnvironment schema.
-type TeamEnvironmentClient struct {
-	config
-}
-
-// NewTeamEnvironmentClient returns a client for the TeamEnvironment from the given config.
-func NewTeamEnvironmentClient(c config) *TeamEnvironmentClient {
-	return &TeamEnvironmentClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `teamenvironment.Hooks(f(g(h())))`.
-func (c *TeamEnvironmentClient) Use(hooks ...Hook) {
-	c.hooks.TeamEnvironment = append(c.hooks.TeamEnvironment, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `teamenvironment.Intercept(f(g(h())))`.
-func (c *TeamEnvironmentClient) Intercept(interceptors ...Interceptor) {
-	c.inters.TeamEnvironment = append(c.inters.TeamEnvironment, interceptors...)
-}
-
-// Create returns a builder for creating a TeamEnvironment entity.
-func (c *TeamEnvironmentClient) Create() *TeamEnvironmentCreate {
-	mutation := newTeamEnvironmentMutation(c.config, OpCreate)
-	return &TeamEnvironmentCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of TeamEnvironment entities.
-func (c *TeamEnvironmentClient) CreateBulk(builders ...*TeamEnvironmentCreate) *TeamEnvironmentCreateBulk {
-	return &TeamEnvironmentCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *TeamEnvironmentClient) MapCreateBulk(slice any, setFunc func(*TeamEnvironmentCreate, int)) *TeamEnvironmentCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &TeamEnvironmentCreateBulk{err: fmt.Errorf("calling to TeamEnvironmentClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*TeamEnvironmentCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &TeamEnvironmentCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for TeamEnvironment.
-func (c *TeamEnvironmentClient) Update() *TeamEnvironmentUpdate {
-	mutation := newTeamEnvironmentMutation(c.config, OpUpdate)
-	return &TeamEnvironmentUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *TeamEnvironmentClient) UpdateOne(_m *TeamEnvironment) *TeamEnvironmentUpdateOne {
-	mutation := newTeamEnvironmentMutation(c.config, OpUpdateOne, withTeamEnvironment(_m))
-	return &TeamEnvironmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *TeamEnvironmentClient) UpdateOneID(id int) *TeamEnvironmentUpdateOne {
-	mutation := newTeamEnvironmentMutation(c.config, OpUpdateOne, withTeamEnvironmentID(id))
-	return &TeamEnvironmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for TeamEnvironment.
-func (c *TeamEnvironmentClient) Delete() *TeamEnvironmentDelete {
-	mutation := newTeamEnvironmentMutation(c.config, OpDelete)
-	return &TeamEnvironmentDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *TeamEnvironmentClient) DeleteOne(_m *TeamEnvironment) *TeamEnvironmentDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *TeamEnvironmentClient) DeleteOneID(id int) *TeamEnvironmentDeleteOne {
-	builder := c.Delete().Where(teamenvironment.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &TeamEnvironmentDeleteOne{builder}
-}
-
-// Query returns a query builder for TeamEnvironment.
-func (c *TeamEnvironmentClient) Query() *TeamEnvironmentQuery {
-	return &TeamEnvironmentQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeTeamEnvironment},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a TeamEnvironment entity by its id.
-func (c *TeamEnvironmentClient) Get(ctx context.Context, id int) (*TeamEnvironment, error) {
-	return c.Query().Where(teamenvironment.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *TeamEnvironmentClient) GetX(ctx context.Context, id int) *TeamEnvironment {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryTeam queries the team edge of a TeamEnvironment.
-func (c *TeamEnvironmentClient) QueryTeam(_m *TeamEnvironment) *TeamQuery {
-	query := (&TeamClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(teamenvironment.Table, teamenvironment.FieldID, id),
-			sqlgraph.To(team.Table, team.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, teamenvironment.TeamTable, teamenvironment.TeamColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryEnvironment queries the environment edge of a TeamEnvironment.
-func (c *TeamEnvironmentClient) QueryEnvironment(_m *TeamEnvironment) *EnvironmentQuery {
-	query := (&EnvironmentClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(teamenvironment.Table, teamenvironment.FieldID, id),
-			sqlgraph.To(environment.Table, environment.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, teamenvironment.EnvironmentTable, teamenvironment.EnvironmentColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *TeamEnvironmentClient) Hooks() []Hook {
-	hooks := c.hooks.TeamEnvironment
-	return append(hooks[:len(hooks):len(hooks)], teamenvironment.Hooks[:]...)
-}
-
-// Interceptors returns the client interceptors.
-func (c *TeamEnvironmentClient) Interceptors() []Interceptor {
-	return c.inters.TeamEnvironment
-}
-
-func (c *TeamEnvironmentClient) mutate(ctx context.Context, m *TeamEnvironmentMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&TeamEnvironmentCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&TeamEnvironmentUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&TeamEnvironmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&TeamEnvironmentDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown TeamEnvironment mutation op: %q", m.Op())
 	}
 }
 
@@ -2137,11 +1789,11 @@ func (c *ZoneClient) mutate(ctx context.Context, m *ZoneMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		ApiExposure, ApiSubscription, Application, Approval, ApprovalRequest,
-		Environment, Group, Member, Team, TeamEnvironment, Zone []ent.Hook
+		ApiExposure, ApiSubscription, Application, Approval, ApprovalRequest, Group,
+		Member, Team, Zone []ent.Hook
 	}
 	inters struct {
-		ApiExposure, ApiSubscription, Application, Approval, ApprovalRequest,
-		Environment, Group, Member, Team, TeamEnvironment, Zone []ent.Interceptor
+		ApiExposure, ApiSubscription, Application, Approval, ApprovalRequest, Group,
+		Member, Team, Zone []ent.Interceptor
 	}
 )

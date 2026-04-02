@@ -44,10 +44,15 @@ func mapApiExposureInfo(exposure *ent.ApiExposure, app *ent.Application, team *e
 }
 
 func mapApiSubscriptionInfo(sub *ent.ApiSubscription, app *ent.Application, team *ent.Team, group *ent.Group) *model.ApiSubscriptionInfo {
+	var statusPhase *string
+	if sub.StatusPhase != nil {
+		s := string(*sub.StatusPhase)
+		statusPhase = &s
+	}
 	return &model.ApiSubscriptionInfo{
 		ID:                   sub.ID,
 		BasePath:             sub.BasePath,
-		StatusPhase:          string(sub.StatusPhase),
+		StatusPhase:          statusPhase,
 		StatusMessage:        sub.StatusMessage,
 		OwnerApplicationName: app.Name,
 		OwnerTeam:            mapTeamInfo(team, group),

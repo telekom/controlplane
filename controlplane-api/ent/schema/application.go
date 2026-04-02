@@ -25,6 +25,8 @@ func (Application) Mixin() []ent.Mixin {
 		schemamixin.PrivacyMixin{},
 		schemamixin.TimestampsMixin{},
 		schemamixin.StatusMixin{},
+		schemamixin.EnvironmentMixin{},
+		schemamixin.NamespaceMixin{},
 	}
 }
 
@@ -34,6 +36,8 @@ func (Application) Fields() []ent.Field {
 			NotEmpty().
 			Annotations(entgql.OrderField("NAME")),
 		field.Text("client_id").
+			Optional().
+			Nillable().
 			NotEmpty(),
 		field.Text("issuer_url").
 			Optional().

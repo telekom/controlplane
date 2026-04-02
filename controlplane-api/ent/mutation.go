@@ -19,12 +19,10 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
-	"github.com/telekom/controlplane/controlplane-api/ent/environment"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
-	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 )
@@ -43,11 +41,9 @@ const (
 	TypeApplication     = "Application"
 	TypeApproval        = "Approval"
 	TypeApprovalRequest = "ApprovalRequest"
-	TypeEnvironment     = "Environment"
 	TypeGroup           = "Group"
 	TypeMember          = "Member"
 	TypeTeam            = "Team"
-	TypeTeamEnvironment = "TeamEnvironment"
 	TypeZone            = "Zone"
 )
 
@@ -61,6 +57,8 @@ type ApiExposureMutation struct {
 	last_modified_at     *time.Time
 	status_phase         *apiexposure.StatusPhase
 	status_message       *string
+	environment          *string
+	namespace            *string
 	base_path            *string
 	visibility           *apiexposure.Visibility
 	active               *bool
@@ -268,7 +266,7 @@ func (m *ApiExposureMutation) StatusPhase() (r apiexposure.StatusPhase, exists b
 // OldStatusPhase returns the old "status_phase" field's value of the ApiExposure entity.
 // If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldStatusPhase(ctx context.Context) (v apiexposure.StatusPhase, err error) {
+func (m *ApiExposureMutation) OldStatusPhase(ctx context.Context) (v *apiexposure.StatusPhase, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
 	}
@@ -282,9 +280,22 @@ func (m *ApiExposureMutation) OldStatusPhase(ctx context.Context) (v apiexposure
 	return oldValue.StatusPhase, nil
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *ApiExposureMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[apiexposure.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *ApiExposureMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldStatusPhase]
+	return ok
+}
+
 // ResetStatusPhase resets all changes to the "status_phase" field.
 func (m *ApiExposureMutation) ResetStatusPhase() {
 	m.status_phase = nil
+	delete(m.clearedFields, apiexposure.FieldStatusPhase)
 }
 
 // SetStatusMessage sets the "status_message" field.
@@ -334,6 +345,104 @@ func (m *ApiExposureMutation) StatusMessageCleared() bool {
 func (m *ApiExposureMutation) ResetStatusMessage() {
 	m.status_message = nil
 	delete(m.clearedFields, apiexposure.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *ApiExposureMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *ApiExposureMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the ApiExposure entity.
+// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiExposureMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *ApiExposureMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[apiexposure.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *ApiExposureMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *ApiExposureMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, apiexposure.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *ApiExposureMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *ApiExposureMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the ApiExposure entity.
+// If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiExposureMutation) OldNamespace(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (m *ApiExposureMutation) ClearNamespace() {
+	m.namespace = nil
+	m.clearedFields[apiexposure.FieldNamespace] = struct{}{}
+}
+
+// NamespaceCleared returns if the "namespace" field was cleared in this mutation.
+func (m *ApiExposureMutation) NamespaceCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldNamespace]
+	return ok
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *ApiExposureMutation) ResetNamespace() {
+	m.namespace = nil
+	delete(m.clearedFields, apiexposure.FieldNamespace)
 }
 
 // SetBasePath sets the "base_path" field.
@@ -425,7 +534,7 @@ func (m *ApiExposureMutation) Active() (r bool, exists bool) {
 // OldActive returns the old "active" field's value of the ApiExposure entity.
 // If the ApiExposure object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiExposureMutation) OldActive(ctx context.Context) (v bool, err error) {
+func (m *ApiExposureMutation) OldActive(ctx context.Context) (v *bool, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldActive is only allowed on UpdateOne operations")
 	}
@@ -439,9 +548,22 @@ func (m *ApiExposureMutation) OldActive(ctx context.Context) (v bool, err error)
 	return oldValue.Active, nil
 }
 
+// ClearActive clears the value of the "active" field.
+func (m *ApiExposureMutation) ClearActive() {
+	m.active = nil
+	m.clearedFields[apiexposure.FieldActive] = struct{}{}
+}
+
+// ActiveCleared returns if the "active" field was cleared in this mutation.
+func (m *ApiExposureMutation) ActiveCleared() bool {
+	_, ok := m.clearedFields[apiexposure.FieldActive]
+	return ok
+}
+
 // ResetActive resets all changes to the "active" field.
 func (m *ApiExposureMutation) ResetActive() {
 	m.active = nil
+	delete(m.clearedFields, apiexposure.FieldActive)
 }
 
 // SetFeatures sets the "features" field.
@@ -758,7 +880,7 @@ func (m *ApiExposureMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApiExposureMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, apiexposure.FieldCreatedAt)
 	}
@@ -770,6 +892,12 @@ func (m *ApiExposureMutation) Fields() []string {
 	}
 	if m.status_message != nil {
 		fields = append(fields, apiexposure.FieldStatusMessage)
+	}
+	if m.environment != nil {
+		fields = append(fields, apiexposure.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, apiexposure.FieldNamespace)
 	}
 	if m.base_path != nil {
 		fields = append(fields, apiexposure.FieldBasePath)
@@ -808,6 +936,10 @@ func (m *ApiExposureMutation) Field(name string) (ent.Value, bool) {
 		return m.StatusPhase()
 	case apiexposure.FieldStatusMessage:
 		return m.StatusMessage()
+	case apiexposure.FieldEnvironment:
+		return m.Environment()
+	case apiexposure.FieldNamespace:
+		return m.Namespace()
 	case apiexposure.FieldBasePath:
 		return m.BasePath()
 	case apiexposure.FieldVisibility:
@@ -839,6 +971,10 @@ func (m *ApiExposureMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldStatusPhase(ctx)
 	case apiexposure.FieldStatusMessage:
 		return m.OldStatusMessage(ctx)
+	case apiexposure.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case apiexposure.FieldNamespace:
+		return m.OldNamespace(ctx)
 	case apiexposure.FieldBasePath:
 		return m.OldBasePath(ctx)
 	case apiexposure.FieldVisibility:
@@ -889,6 +1025,20 @@ func (m *ApiExposureMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatusMessage(v)
+		return nil
+	case apiexposure.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case apiexposure.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
 		return nil
 	case apiexposure.FieldBasePath:
 		v, ok := value.(string)
@@ -969,8 +1119,20 @@ func (m *ApiExposureMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *ApiExposureMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(apiexposure.FieldStatusPhase) {
+		fields = append(fields, apiexposure.FieldStatusPhase)
+	}
 	if m.FieldCleared(apiexposure.FieldStatusMessage) {
 		fields = append(fields, apiexposure.FieldStatusMessage)
+	}
+	if m.FieldCleared(apiexposure.FieldEnvironment) {
+		fields = append(fields, apiexposure.FieldEnvironment)
+	}
+	if m.FieldCleared(apiexposure.FieldNamespace) {
+		fields = append(fields, apiexposure.FieldNamespace)
+	}
+	if m.FieldCleared(apiexposure.FieldActive) {
+		fields = append(fields, apiexposure.FieldActive)
 	}
 	if m.FieldCleared(apiexposure.FieldAPIVersion) {
 		fields = append(fields, apiexposure.FieldAPIVersion)
@@ -989,8 +1151,20 @@ func (m *ApiExposureMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ApiExposureMutation) ClearField(name string) error {
 	switch name {
+	case apiexposure.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
 	case apiexposure.FieldStatusMessage:
 		m.ClearStatusMessage()
+		return nil
+	case apiexposure.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case apiexposure.FieldNamespace:
+		m.ClearNamespace()
+		return nil
+	case apiexposure.FieldActive:
+		m.ClearActive()
 		return nil
 	case apiexposure.FieldAPIVersion:
 		m.ClearAPIVersion()
@@ -1014,6 +1188,12 @@ func (m *ApiExposureMutation) ResetField(name string) error {
 		return nil
 	case apiexposure.FieldStatusMessage:
 		m.ResetStatusMessage()
+		return nil
+	case apiexposure.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case apiexposure.FieldNamespace:
+		m.ResetNamespace()
 		return nil
 	case apiexposure.FieldBasePath:
 		m.ResetBasePath()
@@ -1152,6 +1332,8 @@ type ApiSubscriptionMutation struct {
 	last_modified_at        *time.Time
 	status_phase            *apisubscription.StatusPhase
 	status_message          *string
+	environment             *string
+	namespace               *string
 	base_path               *string
 	m2m_auth_method         *apisubscription.M2mAuthMethod
 	approved_scopes         *[]string
@@ -1360,7 +1542,7 @@ func (m *ApiSubscriptionMutation) StatusPhase() (r apisubscription.StatusPhase, 
 // OldStatusPhase returns the old "status_phase" field's value of the ApiSubscription entity.
 // If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiSubscriptionMutation) OldStatusPhase(ctx context.Context) (v apisubscription.StatusPhase, err error) {
+func (m *ApiSubscriptionMutation) OldStatusPhase(ctx context.Context) (v *apisubscription.StatusPhase, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
 	}
@@ -1374,9 +1556,22 @@ func (m *ApiSubscriptionMutation) OldStatusPhase(ctx context.Context) (v apisubs
 	return oldValue.StatusPhase, nil
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *ApiSubscriptionMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[apisubscription.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *ApiSubscriptionMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldStatusPhase]
+	return ok
+}
+
 // ResetStatusPhase resets all changes to the "status_phase" field.
 func (m *ApiSubscriptionMutation) ResetStatusPhase() {
 	m.status_phase = nil
+	delete(m.clearedFields, apisubscription.FieldStatusPhase)
 }
 
 // SetStatusMessage sets the "status_message" field.
@@ -1426,6 +1621,104 @@ func (m *ApiSubscriptionMutation) StatusMessageCleared() bool {
 func (m *ApiSubscriptionMutation) ResetStatusMessage() {
 	m.status_message = nil
 	delete(m.clearedFields, apisubscription.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *ApiSubscriptionMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *ApiSubscriptionMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the ApiSubscription entity.
+// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiSubscriptionMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *ApiSubscriptionMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[apisubscription.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *ApiSubscriptionMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *ApiSubscriptionMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, apisubscription.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *ApiSubscriptionMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *ApiSubscriptionMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the ApiSubscription entity.
+// If the ApiSubscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiSubscriptionMutation) OldNamespace(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (m *ApiSubscriptionMutation) ClearNamespace() {
+	m.namespace = nil
+	m.clearedFields[apisubscription.FieldNamespace] = struct{}{}
+}
+
+// NamespaceCleared returns if the "namespace" field was cleared in this mutation.
+func (m *ApiSubscriptionMutation) NamespaceCleared() bool {
+	_, ok := m.clearedFields[apisubscription.FieldNamespace]
+	return ok
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *ApiSubscriptionMutation) ResetNamespace() {
+	m.namespace = nil
+	delete(m.clearedFields, apisubscription.FieldNamespace)
 }
 
 // SetBasePath sets the "base_path" field.
@@ -1795,7 +2088,7 @@ func (m *ApiSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApiSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 9)
 	if m.created_at != nil {
 		fields = append(fields, apisubscription.FieldCreatedAt)
 	}
@@ -1807,6 +2100,12 @@ func (m *ApiSubscriptionMutation) Fields() []string {
 	}
 	if m.status_message != nil {
 		fields = append(fields, apisubscription.FieldStatusMessage)
+	}
+	if m.environment != nil {
+		fields = append(fields, apisubscription.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, apisubscription.FieldNamespace)
 	}
 	if m.base_path != nil {
 		fields = append(fields, apisubscription.FieldBasePath)
@@ -1833,6 +2132,10 @@ func (m *ApiSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.StatusPhase()
 	case apisubscription.FieldStatusMessage:
 		return m.StatusMessage()
+	case apisubscription.FieldEnvironment:
+		return m.Environment()
+	case apisubscription.FieldNamespace:
+		return m.Namespace()
 	case apisubscription.FieldBasePath:
 		return m.BasePath()
 	case apisubscription.FieldM2mAuthMethod:
@@ -1856,6 +2159,10 @@ func (m *ApiSubscriptionMutation) OldField(ctx context.Context, name string) (en
 		return m.OldStatusPhase(ctx)
 	case apisubscription.FieldStatusMessage:
 		return m.OldStatusMessage(ctx)
+	case apisubscription.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case apisubscription.FieldNamespace:
+		return m.OldNamespace(ctx)
 	case apisubscription.FieldBasePath:
 		return m.OldBasePath(ctx)
 	case apisubscription.FieldM2mAuthMethod:
@@ -1898,6 +2205,20 @@ func (m *ApiSubscriptionMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatusMessage(v)
+		return nil
+	case apisubscription.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case apisubscription.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
 		return nil
 	case apisubscription.FieldBasePath:
 		v, ok := value.(string)
@@ -1950,8 +2271,17 @@ func (m *ApiSubscriptionMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *ApiSubscriptionMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(apisubscription.FieldStatusPhase) {
+		fields = append(fields, apisubscription.FieldStatusPhase)
+	}
 	if m.FieldCleared(apisubscription.FieldStatusMessage) {
 		fields = append(fields, apisubscription.FieldStatusMessage)
+	}
+	if m.FieldCleared(apisubscription.FieldEnvironment) {
+		fields = append(fields, apisubscription.FieldEnvironment)
+	}
+	if m.FieldCleared(apisubscription.FieldNamespace) {
+		fields = append(fields, apisubscription.FieldNamespace)
 	}
 	return fields
 }
@@ -1967,8 +2297,17 @@ func (m *ApiSubscriptionMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ApiSubscriptionMutation) ClearField(name string) error {
 	switch name {
+	case apisubscription.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
 	case apisubscription.FieldStatusMessage:
 		m.ClearStatusMessage()
+		return nil
+	case apisubscription.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case apisubscription.FieldNamespace:
+		m.ClearNamespace()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiSubscription nullable field %s", name)
@@ -1989,6 +2328,12 @@ func (m *ApiSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case apisubscription.FieldStatusMessage:
 		m.ResetStatusMessage()
+		return nil
+	case apisubscription.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case apisubscription.FieldNamespace:
+		m.ResetNamespace()
 		return nil
 	case apisubscription.FieldBasePath:
 		m.ResetBasePath()
@@ -2169,6 +2514,8 @@ type ApplicationMutation struct {
 	last_modified_at       *time.Time
 	status_phase           *application.StatusPhase
 	status_message         *string
+	environment            *string
+	namespace              *string
 	name                   *string
 	client_id              *string
 	issuer_url             *string
@@ -2375,7 +2722,7 @@ func (m *ApplicationMutation) StatusPhase() (r application.StatusPhase, exists b
 // OldStatusPhase returns the old "status_phase" field's value of the Application entity.
 // If the Application object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApplicationMutation) OldStatusPhase(ctx context.Context) (v application.StatusPhase, err error) {
+func (m *ApplicationMutation) OldStatusPhase(ctx context.Context) (v *application.StatusPhase, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
 	}
@@ -2389,9 +2736,22 @@ func (m *ApplicationMutation) OldStatusPhase(ctx context.Context) (v application
 	return oldValue.StatusPhase, nil
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *ApplicationMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[application.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *ApplicationMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[application.FieldStatusPhase]
+	return ok
+}
+
 // ResetStatusPhase resets all changes to the "status_phase" field.
 func (m *ApplicationMutation) ResetStatusPhase() {
 	m.status_phase = nil
+	delete(m.clearedFields, application.FieldStatusPhase)
 }
 
 // SetStatusMessage sets the "status_message" field.
@@ -2441,6 +2801,104 @@ func (m *ApplicationMutation) StatusMessageCleared() bool {
 func (m *ApplicationMutation) ResetStatusMessage() {
 	m.status_message = nil
 	delete(m.clearedFields, application.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *ApplicationMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *ApplicationMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the Application entity.
+// If the Application object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApplicationMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *ApplicationMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[application.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *ApplicationMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[application.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *ApplicationMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, application.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *ApplicationMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *ApplicationMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the Application entity.
+// If the Application object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApplicationMutation) OldNamespace(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (m *ApplicationMutation) ClearNamespace() {
+	m.namespace = nil
+	m.clearedFields[application.FieldNamespace] = struct{}{}
+}
+
+// NamespaceCleared returns if the "namespace" field was cleared in this mutation.
+func (m *ApplicationMutation) NamespaceCleared() bool {
+	_, ok := m.clearedFields[application.FieldNamespace]
+	return ok
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *ApplicationMutation) ResetNamespace() {
+	m.namespace = nil
+	delete(m.clearedFields, application.FieldNamespace)
 }
 
 // SetName sets the "name" field.
@@ -2496,7 +2954,7 @@ func (m *ApplicationMutation) ClientID() (r string, exists bool) {
 // OldClientID returns the old "client_id" field's value of the Application entity.
 // If the Application object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApplicationMutation) OldClientID(ctx context.Context) (v string, err error) {
+func (m *ApplicationMutation) OldClientID(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldClientID is only allowed on UpdateOne operations")
 	}
@@ -2510,9 +2968,22 @@ func (m *ApplicationMutation) OldClientID(ctx context.Context) (v string, err er
 	return oldValue.ClientID, nil
 }
 
+// ClearClientID clears the value of the "client_id" field.
+func (m *ApplicationMutation) ClearClientID() {
+	m.client_id = nil
+	m.clearedFields[application.FieldClientID] = struct{}{}
+}
+
+// ClientIDCleared returns if the "client_id" field was cleared in this mutation.
+func (m *ApplicationMutation) ClientIDCleared() bool {
+	_, ok := m.clearedFields[application.FieldClientID]
+	return ok
+}
+
 // ResetClientID resets all changes to the "client_id" field.
 func (m *ApplicationMutation) ResetClientID() {
 	m.client_id = nil
+	delete(m.clearedFields, application.FieldClientID)
 }
 
 // SetIssuerURL sets the "issuer_url" field.
@@ -2784,7 +3255,7 @@ func (m *ApplicationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApplicationMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 9)
 	if m.created_at != nil {
 		fields = append(fields, application.FieldCreatedAt)
 	}
@@ -2796,6 +3267,12 @@ func (m *ApplicationMutation) Fields() []string {
 	}
 	if m.status_message != nil {
 		fields = append(fields, application.FieldStatusMessage)
+	}
+	if m.environment != nil {
+		fields = append(fields, application.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, application.FieldNamespace)
 	}
 	if m.name != nil {
 		fields = append(fields, application.FieldName)
@@ -2822,6 +3299,10 @@ func (m *ApplicationMutation) Field(name string) (ent.Value, bool) {
 		return m.StatusPhase()
 	case application.FieldStatusMessage:
 		return m.StatusMessage()
+	case application.FieldEnvironment:
+		return m.Environment()
+	case application.FieldNamespace:
+		return m.Namespace()
 	case application.FieldName:
 		return m.Name()
 	case application.FieldClientID:
@@ -2845,6 +3326,10 @@ func (m *ApplicationMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldStatusPhase(ctx)
 	case application.FieldStatusMessage:
 		return m.OldStatusMessage(ctx)
+	case application.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case application.FieldNamespace:
+		return m.OldNamespace(ctx)
 	case application.FieldName:
 		return m.OldName(ctx)
 	case application.FieldClientID:
@@ -2887,6 +3372,20 @@ func (m *ApplicationMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatusMessage(v)
+		return nil
+	case application.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case application.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
 		return nil
 	case application.FieldName:
 		v, ok := value.(string)
@@ -2939,8 +3438,20 @@ func (m *ApplicationMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *ApplicationMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(application.FieldStatusPhase) {
+		fields = append(fields, application.FieldStatusPhase)
+	}
 	if m.FieldCleared(application.FieldStatusMessage) {
 		fields = append(fields, application.FieldStatusMessage)
+	}
+	if m.FieldCleared(application.FieldEnvironment) {
+		fields = append(fields, application.FieldEnvironment)
+	}
+	if m.FieldCleared(application.FieldNamespace) {
+		fields = append(fields, application.FieldNamespace)
+	}
+	if m.FieldCleared(application.FieldClientID) {
+		fields = append(fields, application.FieldClientID)
 	}
 	if m.FieldCleared(application.FieldIssuerURL) {
 		fields = append(fields, application.FieldIssuerURL)
@@ -2959,8 +3470,20 @@ func (m *ApplicationMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ApplicationMutation) ClearField(name string) error {
 	switch name {
+	case application.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
 	case application.FieldStatusMessage:
 		m.ClearStatusMessage()
+		return nil
+	case application.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case application.FieldNamespace:
+		m.ClearNamespace()
+		return nil
+	case application.FieldClientID:
+		m.ClearClientID()
 		return nil
 	case application.FieldIssuerURL:
 		m.ClearIssuerURL()
@@ -2984,6 +3507,12 @@ func (m *ApplicationMutation) ResetField(name string) error {
 		return nil
 	case application.FieldStatusMessage:
 		m.ResetStatusMessage()
+		return nil
+	case application.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case application.FieldNamespace:
+		m.ResetNamespace()
 		return nil
 	case application.FieldName:
 		m.ResetName()
@@ -3154,6 +3683,8 @@ type ApprovalMutation struct {
 	last_modified_at            *time.Time
 	status_phase                *approval.StatusPhase
 	status_message              *string
+	environment                 *string
+	namespace                   *string
 	action                      *string
 	strategy                    *approval.Strategy
 	requester                   *model.RequesterInfo
@@ -3358,7 +3889,7 @@ func (m *ApprovalMutation) StatusPhase() (r approval.StatusPhase, exists bool) {
 // OldStatusPhase returns the old "status_phase" field's value of the Approval entity.
 // If the Approval object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApprovalMutation) OldStatusPhase(ctx context.Context) (v approval.StatusPhase, err error) {
+func (m *ApprovalMutation) OldStatusPhase(ctx context.Context) (v *approval.StatusPhase, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
 	}
@@ -3372,9 +3903,22 @@ func (m *ApprovalMutation) OldStatusPhase(ctx context.Context) (v approval.Statu
 	return oldValue.StatusPhase, nil
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *ApprovalMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[approval.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *ApprovalMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[approval.FieldStatusPhase]
+	return ok
+}
+
 // ResetStatusPhase resets all changes to the "status_phase" field.
 func (m *ApprovalMutation) ResetStatusPhase() {
 	m.status_phase = nil
+	delete(m.clearedFields, approval.FieldStatusPhase)
 }
 
 // SetStatusMessage sets the "status_message" field.
@@ -3424,6 +3968,104 @@ func (m *ApprovalMutation) StatusMessageCleared() bool {
 func (m *ApprovalMutation) ResetStatusMessage() {
 	m.status_message = nil
 	delete(m.clearedFields, approval.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *ApprovalMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *ApprovalMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the Approval entity.
+// If the Approval object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *ApprovalMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[approval.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *ApprovalMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[approval.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *ApprovalMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, approval.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *ApprovalMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *ApprovalMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the Approval entity.
+// If the Approval object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalMutation) OldNamespace(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (m *ApprovalMutation) ClearNamespace() {
+	m.namespace = nil
+	m.clearedFields[approval.FieldNamespace] = struct{}{}
+}
+
+// NamespaceCleared returns if the "namespace" field was cleared in this mutation.
+func (m *ApprovalMutation) NamespaceCleared() bool {
+	_, ok := m.clearedFields[approval.FieldNamespace]
+	return ok
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *ApprovalMutation) ResetNamespace() {
+	m.namespace = nil
+	delete(m.clearedFields, approval.FieldNamespace)
 }
 
 // SetAction sets the "action" field.
@@ -3666,10 +4308,24 @@ func (m *ApprovalMutation) AppendedAvailableTransitions() ([]model.AvailableTran
 	return m.appendavailable_transitions, true
 }
 
+// ClearAvailableTransitions clears the value of the "available_transitions" field.
+func (m *ApprovalMutation) ClearAvailableTransitions() {
+	m.available_transitions = nil
+	m.appendavailable_transitions = nil
+	m.clearedFields[approval.FieldAvailableTransitions] = struct{}{}
+}
+
+// AvailableTransitionsCleared returns if the "available_transitions" field was cleared in this mutation.
+func (m *ApprovalMutation) AvailableTransitionsCleared() bool {
+	_, ok := m.clearedFields[approval.FieldAvailableTransitions]
+	return ok
+}
+
 // ResetAvailableTransitions resets all changes to the "available_transitions" field.
 func (m *ApprovalMutation) ResetAvailableTransitions() {
 	m.available_transitions = nil
 	m.appendavailable_transitions = nil
+	delete(m.clearedFields, approval.FieldAvailableTransitions)
 }
 
 // SetState sets the "state" field.
@@ -3781,7 +4437,7 @@ func (m *ApprovalMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApprovalMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, approval.FieldCreatedAt)
 	}
@@ -3793,6 +4449,12 @@ func (m *ApprovalMutation) Fields() []string {
 	}
 	if m.status_message != nil {
 		fields = append(fields, approval.FieldStatusMessage)
+	}
+	if m.environment != nil {
+		fields = append(fields, approval.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, approval.FieldNamespace)
 	}
 	if m.action != nil {
 		fields = append(fields, approval.FieldAction)
@@ -3831,6 +4493,10 @@ func (m *ApprovalMutation) Field(name string) (ent.Value, bool) {
 		return m.StatusPhase()
 	case approval.FieldStatusMessage:
 		return m.StatusMessage()
+	case approval.FieldEnvironment:
+		return m.Environment()
+	case approval.FieldNamespace:
+		return m.Namespace()
 	case approval.FieldAction:
 		return m.Action()
 	case approval.FieldStrategy:
@@ -3862,6 +4528,10 @@ func (m *ApprovalMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldStatusPhase(ctx)
 	case approval.FieldStatusMessage:
 		return m.OldStatusMessage(ctx)
+	case approval.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case approval.FieldNamespace:
+		return m.OldNamespace(ctx)
 	case approval.FieldAction:
 		return m.OldAction(ctx)
 	case approval.FieldStrategy:
@@ -3912,6 +4582,20 @@ func (m *ApprovalMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatusMessage(v)
+		return nil
+	case approval.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case approval.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
 		return nil
 	case approval.FieldAction:
 		v, ok := value.(string)
@@ -3992,8 +4676,20 @@ func (m *ApprovalMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *ApprovalMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(approval.FieldStatusPhase) {
+		fields = append(fields, approval.FieldStatusPhase)
+	}
 	if m.FieldCleared(approval.FieldStatusMessage) {
 		fields = append(fields, approval.FieldStatusMessage)
+	}
+	if m.FieldCleared(approval.FieldEnvironment) {
+		fields = append(fields, approval.FieldEnvironment)
+	}
+	if m.FieldCleared(approval.FieldNamespace) {
+		fields = append(fields, approval.FieldNamespace)
+	}
+	if m.FieldCleared(approval.FieldAvailableTransitions) {
+		fields = append(fields, approval.FieldAvailableTransitions)
 	}
 	return fields
 }
@@ -4009,8 +4705,20 @@ func (m *ApprovalMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ApprovalMutation) ClearField(name string) error {
 	switch name {
+	case approval.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
 	case approval.FieldStatusMessage:
 		m.ClearStatusMessage()
+		return nil
+	case approval.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case approval.FieldNamespace:
+		m.ClearNamespace()
+		return nil
+	case approval.FieldAvailableTransitions:
+		m.ClearAvailableTransitions()
 		return nil
 	}
 	return fmt.Errorf("unknown Approval nullable field %s", name)
@@ -4031,6 +4739,12 @@ func (m *ApprovalMutation) ResetField(name string) error {
 		return nil
 	case approval.FieldStatusMessage:
 		m.ResetStatusMessage()
+		return nil
+	case approval.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case approval.FieldNamespace:
+		m.ResetNamespace()
 		return nil
 	case approval.FieldAction:
 		m.ResetAction()
@@ -4141,6 +4855,8 @@ type ApprovalRequestMutation struct {
 	last_modified_at            *time.Time
 	status_phase                *approvalrequest.StatusPhase
 	status_message              *string
+	environment                 *string
+	namespace                   *string
 	action                      *string
 	strategy                    *approvalrequest.Strategy
 	requester                   *model.RequesterInfo
@@ -4345,7 +5061,7 @@ func (m *ApprovalRequestMutation) StatusPhase() (r approvalrequest.StatusPhase, 
 // OldStatusPhase returns the old "status_phase" field's value of the ApprovalRequest entity.
 // If the ApprovalRequest object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApprovalRequestMutation) OldStatusPhase(ctx context.Context) (v approvalrequest.StatusPhase, err error) {
+func (m *ApprovalRequestMutation) OldStatusPhase(ctx context.Context) (v *approvalrequest.StatusPhase, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
 	}
@@ -4359,9 +5075,22 @@ func (m *ApprovalRequestMutation) OldStatusPhase(ctx context.Context) (v approva
 	return oldValue.StatusPhase, nil
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *ApprovalRequestMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[approvalrequest.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *ApprovalRequestMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[approvalrequest.FieldStatusPhase]
+	return ok
+}
+
 // ResetStatusPhase resets all changes to the "status_phase" field.
 func (m *ApprovalRequestMutation) ResetStatusPhase() {
 	m.status_phase = nil
+	delete(m.clearedFields, approvalrequest.FieldStatusPhase)
 }
 
 // SetStatusMessage sets the "status_message" field.
@@ -4411,6 +5140,104 @@ func (m *ApprovalRequestMutation) StatusMessageCleared() bool {
 func (m *ApprovalRequestMutation) ResetStatusMessage() {
 	m.status_message = nil
 	delete(m.clearedFields, approvalrequest.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *ApprovalRequestMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *ApprovalRequestMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the ApprovalRequest entity.
+// If the ApprovalRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalRequestMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *ApprovalRequestMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[approvalrequest.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *ApprovalRequestMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[approvalrequest.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *ApprovalRequestMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, approvalrequest.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *ApprovalRequestMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *ApprovalRequestMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the ApprovalRequest entity.
+// If the ApprovalRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApprovalRequestMutation) OldNamespace(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (m *ApprovalRequestMutation) ClearNamespace() {
+	m.namespace = nil
+	m.clearedFields[approvalrequest.FieldNamespace] = struct{}{}
+}
+
+// NamespaceCleared returns if the "namespace" field was cleared in this mutation.
+func (m *ApprovalRequestMutation) NamespaceCleared() bool {
+	_, ok := m.clearedFields[approvalrequest.FieldNamespace]
+	return ok
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *ApprovalRequestMutation) ResetNamespace() {
+	m.namespace = nil
+	delete(m.clearedFields, approvalrequest.FieldNamespace)
 }
 
 // SetAction sets the "action" field.
@@ -4653,10 +5480,24 @@ func (m *ApprovalRequestMutation) AppendedAvailableTransitions() ([]model.Availa
 	return m.appendavailable_transitions, true
 }
 
+// ClearAvailableTransitions clears the value of the "available_transitions" field.
+func (m *ApprovalRequestMutation) ClearAvailableTransitions() {
+	m.available_transitions = nil
+	m.appendavailable_transitions = nil
+	m.clearedFields[approvalrequest.FieldAvailableTransitions] = struct{}{}
+}
+
+// AvailableTransitionsCleared returns if the "available_transitions" field was cleared in this mutation.
+func (m *ApprovalRequestMutation) AvailableTransitionsCleared() bool {
+	_, ok := m.clearedFields[approvalrequest.FieldAvailableTransitions]
+	return ok
+}
+
 // ResetAvailableTransitions resets all changes to the "available_transitions" field.
 func (m *ApprovalRequestMutation) ResetAvailableTransitions() {
 	m.available_transitions = nil
 	m.appendavailable_transitions = nil
+	delete(m.clearedFields, approvalrequest.FieldAvailableTransitions)
 }
 
 // SetState sets the "state" field.
@@ -4768,7 +5609,7 @@ func (m *ApprovalRequestMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApprovalRequestMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, approvalrequest.FieldCreatedAt)
 	}
@@ -4780,6 +5621,12 @@ func (m *ApprovalRequestMutation) Fields() []string {
 	}
 	if m.status_message != nil {
 		fields = append(fields, approvalrequest.FieldStatusMessage)
+	}
+	if m.environment != nil {
+		fields = append(fields, approvalrequest.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, approvalrequest.FieldNamespace)
 	}
 	if m.action != nil {
 		fields = append(fields, approvalrequest.FieldAction)
@@ -4818,6 +5665,10 @@ func (m *ApprovalRequestMutation) Field(name string) (ent.Value, bool) {
 		return m.StatusPhase()
 	case approvalrequest.FieldStatusMessage:
 		return m.StatusMessage()
+	case approvalrequest.FieldEnvironment:
+		return m.Environment()
+	case approvalrequest.FieldNamespace:
+		return m.Namespace()
 	case approvalrequest.FieldAction:
 		return m.Action()
 	case approvalrequest.FieldStrategy:
@@ -4849,6 +5700,10 @@ func (m *ApprovalRequestMutation) OldField(ctx context.Context, name string) (en
 		return m.OldStatusPhase(ctx)
 	case approvalrequest.FieldStatusMessage:
 		return m.OldStatusMessage(ctx)
+	case approvalrequest.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case approvalrequest.FieldNamespace:
+		return m.OldNamespace(ctx)
 	case approvalrequest.FieldAction:
 		return m.OldAction(ctx)
 	case approvalrequest.FieldStrategy:
@@ -4899,6 +5754,20 @@ func (m *ApprovalRequestMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatusMessage(v)
+		return nil
+	case approvalrequest.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case approvalrequest.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
 		return nil
 	case approvalrequest.FieldAction:
 		v, ok := value.(string)
@@ -4979,8 +5848,20 @@ func (m *ApprovalRequestMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *ApprovalRequestMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(approvalrequest.FieldStatusPhase) {
+		fields = append(fields, approvalrequest.FieldStatusPhase)
+	}
 	if m.FieldCleared(approvalrequest.FieldStatusMessage) {
 		fields = append(fields, approvalrequest.FieldStatusMessage)
+	}
+	if m.FieldCleared(approvalrequest.FieldEnvironment) {
+		fields = append(fields, approvalrequest.FieldEnvironment)
+	}
+	if m.FieldCleared(approvalrequest.FieldNamespace) {
+		fields = append(fields, approvalrequest.FieldNamespace)
+	}
+	if m.FieldCleared(approvalrequest.FieldAvailableTransitions) {
+		fields = append(fields, approvalrequest.FieldAvailableTransitions)
 	}
 	return fields
 }
@@ -4996,8 +5877,20 @@ func (m *ApprovalRequestMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ApprovalRequestMutation) ClearField(name string) error {
 	switch name {
+	case approvalrequest.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
 	case approvalrequest.FieldStatusMessage:
 		m.ClearStatusMessage()
+		return nil
+	case approvalrequest.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case approvalrequest.FieldNamespace:
+		m.ClearNamespace()
+		return nil
+	case approvalrequest.FieldAvailableTransitions:
+		m.ClearAvailableTransitions()
 		return nil
 	}
 	return fmt.Errorf("unknown ApprovalRequest nullable field %s", name)
@@ -5018,6 +5911,12 @@ func (m *ApprovalRequestMutation) ResetField(name string) error {
 		return nil
 	case approvalrequest.FieldStatusMessage:
 		m.ResetStatusMessage()
+		return nil
+	case approvalrequest.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case approvalrequest.FieldNamespace:
+		m.ResetNamespace()
 		return nil
 	case approvalrequest.FieldAction:
 		m.ResetAction()
@@ -5118,431 +6017,14 @@ func (m *ApprovalRequestMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown ApprovalRequest edge %s", name)
 }
 
-// EnvironmentMutation represents an operation that mutates the Environment nodes in the graph.
-type EnvironmentMutation struct {
-	config
-	op                       Op
-	typ                      string
-	id                       *int
-	name                     *string
-	clearedFields            map[string]struct{}
-	team_environments        map[int]struct{}
-	removedteam_environments map[int]struct{}
-	clearedteam_environments bool
-	done                     bool
-	oldValue                 func(context.Context) (*Environment, error)
-	predicates               []predicate.Environment
-}
-
-var _ ent.Mutation = (*EnvironmentMutation)(nil)
-
-// environmentOption allows management of the mutation configuration using functional options.
-type environmentOption func(*EnvironmentMutation)
-
-// newEnvironmentMutation creates new mutation for the Environment entity.
-func newEnvironmentMutation(c config, op Op, opts ...environmentOption) *EnvironmentMutation {
-	m := &EnvironmentMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeEnvironment,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withEnvironmentID sets the ID field of the mutation.
-func withEnvironmentID(id int) environmentOption {
-	return func(m *EnvironmentMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *Environment
-		)
-		m.oldValue = func(ctx context.Context) (*Environment, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().Environment.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withEnvironment sets the old Environment of the mutation.
-func withEnvironment(node *Environment) environmentOption {
-	return func(m *EnvironmentMutation) {
-		m.oldValue = func(context.Context) (*Environment, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m EnvironmentMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m EnvironmentMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// ID returns the ID value in the mutation. Note that the ID is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *EnvironmentMutation) ID() (id int, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// IDs queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *EnvironmentMutation) IDs(ctx context.Context) ([]int, error) {
-	switch {
-	case m.op.Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.ID()
-		if exists {
-			return []int{id}, nil
-		}
-		fallthrough
-	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().Environment.Query().Where(m.predicates...).IDs(ctx)
-	default:
-		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
-	}
-}
-
-// SetName sets the "name" field.
-func (m *EnvironmentMutation) SetName(s string) {
-	m.name = &s
-}
-
-// Name returns the value of the "name" field in the mutation.
-func (m *EnvironmentMutation) Name() (r string, exists bool) {
-	v := m.name
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldName returns the old "name" field's value of the Environment entity.
-// If the Environment object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EnvironmentMutation) OldName(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldName is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldName requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldName: %w", err)
-	}
-	return oldValue.Name, nil
-}
-
-// ResetName resets all changes to the "name" field.
-func (m *EnvironmentMutation) ResetName() {
-	m.name = nil
-}
-
-// AddTeamEnvironmentIDs adds the "team_environments" edge to the TeamEnvironment entity by ids.
-func (m *EnvironmentMutation) AddTeamEnvironmentIDs(ids ...int) {
-	if m.team_environments == nil {
-		m.team_environments = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.team_environments[ids[i]] = struct{}{}
-	}
-}
-
-// ClearTeamEnvironments clears the "team_environments" edge to the TeamEnvironment entity.
-func (m *EnvironmentMutation) ClearTeamEnvironments() {
-	m.clearedteam_environments = true
-}
-
-// TeamEnvironmentsCleared reports if the "team_environments" edge to the TeamEnvironment entity was cleared.
-func (m *EnvironmentMutation) TeamEnvironmentsCleared() bool {
-	return m.clearedteam_environments
-}
-
-// RemoveTeamEnvironmentIDs removes the "team_environments" edge to the TeamEnvironment entity by IDs.
-func (m *EnvironmentMutation) RemoveTeamEnvironmentIDs(ids ...int) {
-	if m.removedteam_environments == nil {
-		m.removedteam_environments = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.team_environments, ids[i])
-		m.removedteam_environments[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedTeamEnvironments returns the removed IDs of the "team_environments" edge to the TeamEnvironment entity.
-func (m *EnvironmentMutation) RemovedTeamEnvironmentsIDs() (ids []int) {
-	for id := range m.removedteam_environments {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// TeamEnvironmentsIDs returns the "team_environments" edge IDs in the mutation.
-func (m *EnvironmentMutation) TeamEnvironmentsIDs() (ids []int) {
-	for id := range m.team_environments {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetTeamEnvironments resets all changes to the "team_environments" edge.
-func (m *EnvironmentMutation) ResetTeamEnvironments() {
-	m.team_environments = nil
-	m.clearedteam_environments = false
-	m.removedteam_environments = nil
-}
-
-// Where appends a list predicates to the EnvironmentMutation builder.
-func (m *EnvironmentMutation) Where(ps ...predicate.Environment) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the EnvironmentMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *EnvironmentMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.Environment, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *EnvironmentMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *EnvironmentMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (Environment).
-func (m *EnvironmentMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *EnvironmentMutation) Fields() []string {
-	fields := make([]string, 0, 1)
-	if m.name != nil {
-		fields = append(fields, environment.FieldName)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *EnvironmentMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case environment.FieldName:
-		return m.Name()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *EnvironmentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case environment.FieldName:
-		return m.OldName(ctx)
-	}
-	return nil, fmt.Errorf("unknown Environment field %s", name)
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *EnvironmentMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case environment.FieldName:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetName(v)
-		return nil
-	}
-	return fmt.Errorf("unknown Environment field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *EnvironmentMutation) AddedFields() []string {
-	return nil
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *EnvironmentMutation) AddedField(name string) (ent.Value, bool) {
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *EnvironmentMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown Environment numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *EnvironmentMutation) ClearedFields() []string {
-	return nil
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *EnvironmentMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *EnvironmentMutation) ClearField(name string) error {
-	return fmt.Errorf("unknown Environment nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *EnvironmentMutation) ResetField(name string) error {
-	switch name {
-	case environment.FieldName:
-		m.ResetName()
-		return nil
-	}
-	return fmt.Errorf("unknown Environment field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *EnvironmentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.team_environments != nil {
-		edges = append(edges, environment.EdgeTeamEnvironments)
-	}
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *EnvironmentMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case environment.EdgeTeamEnvironments:
-		ids := make([]ent.Value, 0, len(m.team_environments))
-		for id := range m.team_environments {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *EnvironmentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.removedteam_environments != nil {
-		edges = append(edges, environment.EdgeTeamEnvironments)
-	}
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *EnvironmentMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case environment.EdgeTeamEnvironments:
-		ids := make([]ent.Value, 0, len(m.removedteam_environments))
-		for id := range m.removedteam_environments {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *EnvironmentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.clearedteam_environments {
-		edges = append(edges, environment.EdgeTeamEnvironments)
-	}
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *EnvironmentMutation) EdgeCleared(name string) bool {
-	switch name {
-	case environment.EdgeTeamEnvironments:
-		return m.clearedteam_environments
-	}
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *EnvironmentMutation) ClearEdge(name string) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown Environment unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *EnvironmentMutation) ResetEdge(name string) error {
-	switch name {
-	case environment.EdgeTeamEnvironments:
-		m.ResetTeamEnvironments()
-		return nil
-	}
-	return fmt.Errorf("unknown Environment edge %s", name)
-}
-
 // GroupMutation represents an operation that mutates the Group nodes in the graph.
 type GroupMutation struct {
 	config
 	op            Op
 	typ           string
 	id            *int
+	environment   *string
+	namespace     *string
 	name          *string
 	display_name  *string
 	description   *string
@@ -5651,6 +6133,104 @@ func (m *GroupMutation) IDs(ctx context.Context) ([]int, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *GroupMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *GroupMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *GroupMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[group.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *GroupMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[group.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *GroupMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, group.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *GroupMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *GroupMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldNamespace(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (m *GroupMutation) ClearNamespace() {
+	m.namespace = nil
+	m.clearedFields[group.FieldNamespace] = struct{}{}
+}
+
+// NamespaceCleared returns if the "namespace" field was cleared in this mutation.
+func (m *GroupMutation) NamespaceCleared() bool {
+	_, ok := m.clearedFields[group.FieldNamespace]
+	return ok
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *GroupMutation) ResetNamespace() {
+	m.namespace = nil
+	delete(m.clearedFields, group.FieldNamespace)
 }
 
 // SetName sets the "name" field.
@@ -5849,7 +6429,13 @@ func (m *GroupMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GroupMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 5)
+	if m.environment != nil {
+		fields = append(fields, group.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, group.FieldNamespace)
+	}
 	if m.name != nil {
 		fields = append(fields, group.FieldName)
 	}
@@ -5867,6 +6453,10 @@ func (m *GroupMutation) Fields() []string {
 // schema.
 func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case group.FieldEnvironment:
+		return m.Environment()
+	case group.FieldNamespace:
+		return m.Namespace()
 	case group.FieldName:
 		return m.Name()
 	case group.FieldDisplayName:
@@ -5882,6 +6472,10 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case group.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case group.FieldNamespace:
+		return m.OldNamespace(ctx)
 	case group.FieldName:
 		return m.OldName(ctx)
 	case group.FieldDisplayName:
@@ -5897,6 +6491,20 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 // type.
 func (m *GroupMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case group.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case group.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
 	case group.FieldName:
 		v, ok := value.(string)
 		if !ok {
@@ -5947,7 +6555,14 @@ func (m *GroupMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *GroupMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(group.FieldEnvironment) {
+		fields = append(fields, group.FieldEnvironment)
+	}
+	if m.FieldCleared(group.FieldNamespace) {
+		fields = append(fields, group.FieldNamespace)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -5960,6 +6575,14 @@ func (m *GroupMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *GroupMutation) ClearField(name string) error {
+	switch name {
+	case group.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case group.FieldNamespace:
+		m.ClearNamespace()
+		return nil
+	}
 	return fmt.Errorf("unknown Group nullable field %s", name)
 }
 
@@ -5967,6 +6590,12 @@ func (m *GroupMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *GroupMutation) ResetField(name string) error {
 	switch name {
+	case group.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case group.FieldNamespace:
+		m.ResetNamespace()
+		return nil
 	case group.FieldName:
 		m.ResetName()
 		return nil
@@ -6070,6 +6699,8 @@ type MemberMutation struct {
 	op            Op
 	typ           string
 	id            *int
+	environment   *string
+	namespace     *string
 	name          *string
 	email         *string
 	clearedFields map[string]struct{}
@@ -6176,6 +6807,104 @@ func (m *MemberMutation) IDs(ctx context.Context) ([]int, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *MemberMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *MemberMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the Member entity.
+// If the Member object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MemberMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *MemberMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[member.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *MemberMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[member.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *MemberMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, member.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *MemberMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *MemberMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the Member entity.
+// If the Member object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MemberMutation) OldNamespace(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (m *MemberMutation) ClearNamespace() {
+	m.namespace = nil
+	m.clearedFields[member.FieldNamespace] = struct{}{}
+}
+
+// NamespaceCleared returns if the "namespace" field was cleared in this mutation.
+func (m *MemberMutation) NamespaceCleared() bool {
+	_, ok := m.clearedFields[member.FieldNamespace]
+	return ok
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *MemberMutation) ResetNamespace() {
+	m.namespace = nil
+	delete(m.clearedFields, member.FieldNamespace)
 }
 
 // SetName sets the "name" field.
@@ -6323,7 +7052,13 @@ func (m *MemberMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MemberMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 4)
+	if m.environment != nil {
+		fields = append(fields, member.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, member.FieldNamespace)
+	}
 	if m.name != nil {
 		fields = append(fields, member.FieldName)
 	}
@@ -6338,6 +7073,10 @@ func (m *MemberMutation) Fields() []string {
 // schema.
 func (m *MemberMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case member.FieldEnvironment:
+		return m.Environment()
+	case member.FieldNamespace:
+		return m.Namespace()
 	case member.FieldName:
 		return m.Name()
 	case member.FieldEmail:
@@ -6351,6 +7090,10 @@ func (m *MemberMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *MemberMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case member.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case member.FieldNamespace:
+		return m.OldNamespace(ctx)
 	case member.FieldName:
 		return m.OldName(ctx)
 	case member.FieldEmail:
@@ -6364,6 +7107,20 @@ func (m *MemberMutation) OldField(ctx context.Context, name string) (ent.Value, 
 // type.
 func (m *MemberMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case member.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case member.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
 	case member.FieldName:
 		v, ok := value.(string)
 		if !ok {
@@ -6407,7 +7164,14 @@ func (m *MemberMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *MemberMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(member.FieldEnvironment) {
+		fields = append(fields, member.FieldEnvironment)
+	}
+	if m.FieldCleared(member.FieldNamespace) {
+		fields = append(fields, member.FieldNamespace)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -6420,6 +7184,14 @@ func (m *MemberMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *MemberMutation) ClearField(name string) error {
+	switch name {
+	case member.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case member.FieldNamespace:
+		m.ClearNamespace()
+		return nil
+	}
 	return fmt.Errorf("unknown Member nullable field %s", name)
 }
 
@@ -6427,6 +7199,12 @@ func (m *MemberMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *MemberMutation) ResetField(name string) error {
 	switch name {
+	case member.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case member.FieldNamespace:
+		m.ResetNamespace()
+		return nil
 	case member.FieldName:
 		m.ResetName()
 		return nil
@@ -6514,31 +7292,31 @@ func (m *MemberMutation) ResetEdge(name string) error {
 // TeamMutation represents an operation that mutates the Team nodes in the graph.
 type TeamMutation struct {
 	config
-	op                       Op
-	typ                      string
-	id                       *int
-	created_at               *time.Time
-	last_modified_at         *time.Time
-	status_phase             *team.StatusPhase
-	status_message           *string
-	name                     *string
-	email                    *string
-	category                 *team.Category
-	clearedFields            map[string]struct{}
-	group                    *int
-	clearedgroup             bool
-	members                  map[int]struct{}
-	removedmembers           map[int]struct{}
-	clearedmembers           bool
-	team_environments        map[int]struct{}
-	removedteam_environments map[int]struct{}
-	clearedteam_environments bool
-	applications             map[int]struct{}
-	removedapplications      map[int]struct{}
-	clearedapplications      bool
-	done                     bool
-	oldValue                 func(context.Context) (*Team, error)
-	predicates               []predicate.Team
+	op                  Op
+	typ                 string
+	id                  *int
+	created_at          *time.Time
+	last_modified_at    *time.Time
+	status_phase        *team.StatusPhase
+	status_message      *string
+	environment         *string
+	namespace           *string
+	name                *string
+	email               *string
+	category            *team.Category
+	rover_token_ref     *string
+	clearedFields       map[string]struct{}
+	group               *int
+	clearedgroup        bool
+	members             map[int]struct{}
+	removedmembers      map[int]struct{}
+	clearedmembers      bool
+	applications        map[int]struct{}
+	removedapplications map[int]struct{}
+	clearedapplications bool
+	done                bool
+	oldValue            func(context.Context) (*Team, error)
+	predicates          []predicate.Team
 }
 
 var _ ent.Mutation = (*TeamMutation)(nil)
@@ -6728,7 +7506,7 @@ func (m *TeamMutation) StatusPhase() (r team.StatusPhase, exists bool) {
 // OldStatusPhase returns the old "status_phase" field's value of the Team entity.
 // If the Team object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TeamMutation) OldStatusPhase(ctx context.Context) (v team.StatusPhase, err error) {
+func (m *TeamMutation) OldStatusPhase(ctx context.Context) (v *team.StatusPhase, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatusPhase is only allowed on UpdateOne operations")
 	}
@@ -6742,9 +7520,22 @@ func (m *TeamMutation) OldStatusPhase(ctx context.Context) (v team.StatusPhase, 
 	return oldValue.StatusPhase, nil
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (m *TeamMutation) ClearStatusPhase() {
+	m.status_phase = nil
+	m.clearedFields[team.FieldStatusPhase] = struct{}{}
+}
+
+// StatusPhaseCleared returns if the "status_phase" field was cleared in this mutation.
+func (m *TeamMutation) StatusPhaseCleared() bool {
+	_, ok := m.clearedFields[team.FieldStatusPhase]
+	return ok
+}
+
 // ResetStatusPhase resets all changes to the "status_phase" field.
 func (m *TeamMutation) ResetStatusPhase() {
 	m.status_phase = nil
+	delete(m.clearedFields, team.FieldStatusPhase)
 }
 
 // SetStatusMessage sets the "status_message" field.
@@ -6794,6 +7585,104 @@ func (m *TeamMutation) StatusMessageCleared() bool {
 func (m *TeamMutation) ResetStatusMessage() {
 	m.status_message = nil
 	delete(m.clearedFields, team.FieldStatusMessage)
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *TeamMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *TeamMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the Team entity.
+// If the Team object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TeamMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *TeamMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[team.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *TeamMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[team.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *TeamMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, team.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *TeamMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *TeamMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the Team entity.
+// If the Team object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TeamMutation) OldNamespace(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (m *TeamMutation) ClearNamespace() {
+	m.namespace = nil
+	m.clearedFields[team.FieldNamespace] = struct{}{}
+}
+
+// NamespaceCleared returns if the "namespace" field was cleared in this mutation.
+func (m *TeamMutation) NamespaceCleared() bool {
+	_, ok := m.clearedFields[team.FieldNamespace]
+	return ok
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *TeamMutation) ResetNamespace() {
+	m.namespace = nil
+	delete(m.clearedFields, team.FieldNamespace)
 }
 
 // SetName sets the "name" field.
@@ -6904,6 +7793,55 @@ func (m *TeamMutation) ResetCategory() {
 	m.category = nil
 }
 
+// SetRoverTokenRef sets the "rover_token_ref" field.
+func (m *TeamMutation) SetRoverTokenRef(s string) {
+	m.rover_token_ref = &s
+}
+
+// RoverTokenRef returns the value of the "rover_token_ref" field in the mutation.
+func (m *TeamMutation) RoverTokenRef() (r string, exists bool) {
+	v := m.rover_token_ref
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRoverTokenRef returns the old "rover_token_ref" field's value of the Team entity.
+// If the Team object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TeamMutation) OldRoverTokenRef(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRoverTokenRef is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRoverTokenRef requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRoverTokenRef: %w", err)
+	}
+	return oldValue.RoverTokenRef, nil
+}
+
+// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
+func (m *TeamMutation) ClearRoverTokenRef() {
+	m.rover_token_ref = nil
+	m.clearedFields[team.FieldRoverTokenRef] = struct{}{}
+}
+
+// RoverTokenRefCleared returns if the "rover_token_ref" field was cleared in this mutation.
+func (m *TeamMutation) RoverTokenRefCleared() bool {
+	_, ok := m.clearedFields[team.FieldRoverTokenRef]
+	return ok
+}
+
+// ResetRoverTokenRef resets all changes to the "rover_token_ref" field.
+func (m *TeamMutation) ResetRoverTokenRef() {
+	m.rover_token_ref = nil
+	delete(m.clearedFields, team.FieldRoverTokenRef)
+}
+
 // SetGroupID sets the "group" edge to the Group entity by id.
 func (m *TeamMutation) SetGroupID(id int) {
 	m.group = &id
@@ -6997,60 +7935,6 @@ func (m *TeamMutation) ResetMembers() {
 	m.removedmembers = nil
 }
 
-// AddTeamEnvironmentIDs adds the "team_environments" edge to the TeamEnvironment entity by ids.
-func (m *TeamMutation) AddTeamEnvironmentIDs(ids ...int) {
-	if m.team_environments == nil {
-		m.team_environments = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.team_environments[ids[i]] = struct{}{}
-	}
-}
-
-// ClearTeamEnvironments clears the "team_environments" edge to the TeamEnvironment entity.
-func (m *TeamMutation) ClearTeamEnvironments() {
-	m.clearedteam_environments = true
-}
-
-// TeamEnvironmentsCleared reports if the "team_environments" edge to the TeamEnvironment entity was cleared.
-func (m *TeamMutation) TeamEnvironmentsCleared() bool {
-	return m.clearedteam_environments
-}
-
-// RemoveTeamEnvironmentIDs removes the "team_environments" edge to the TeamEnvironment entity by IDs.
-func (m *TeamMutation) RemoveTeamEnvironmentIDs(ids ...int) {
-	if m.removedteam_environments == nil {
-		m.removedteam_environments = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.team_environments, ids[i])
-		m.removedteam_environments[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedTeamEnvironments returns the removed IDs of the "team_environments" edge to the TeamEnvironment entity.
-func (m *TeamMutation) RemovedTeamEnvironmentsIDs() (ids []int) {
-	for id := range m.removedteam_environments {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// TeamEnvironmentsIDs returns the "team_environments" edge IDs in the mutation.
-func (m *TeamMutation) TeamEnvironmentsIDs() (ids []int) {
-	for id := range m.team_environments {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetTeamEnvironments resets all changes to the "team_environments" edge.
-func (m *TeamMutation) ResetTeamEnvironments() {
-	m.team_environments = nil
-	m.clearedteam_environments = false
-	m.removedteam_environments = nil
-}
-
 // AddApplicationIDs adds the "applications" edge to the Application entity by ids.
 func (m *TeamMutation) AddApplicationIDs(ids ...int) {
 	if m.applications == nil {
@@ -7139,7 +8023,7 @@ func (m *TeamMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TeamMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 10)
 	if m.created_at != nil {
 		fields = append(fields, team.FieldCreatedAt)
 	}
@@ -7152,6 +8036,12 @@ func (m *TeamMutation) Fields() []string {
 	if m.status_message != nil {
 		fields = append(fields, team.FieldStatusMessage)
 	}
+	if m.environment != nil {
+		fields = append(fields, team.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, team.FieldNamespace)
+	}
 	if m.name != nil {
 		fields = append(fields, team.FieldName)
 	}
@@ -7160,6 +8050,9 @@ func (m *TeamMutation) Fields() []string {
 	}
 	if m.category != nil {
 		fields = append(fields, team.FieldCategory)
+	}
+	if m.rover_token_ref != nil {
+		fields = append(fields, team.FieldRoverTokenRef)
 	}
 	return fields
 }
@@ -7177,12 +8070,18 @@ func (m *TeamMutation) Field(name string) (ent.Value, bool) {
 		return m.StatusPhase()
 	case team.FieldStatusMessage:
 		return m.StatusMessage()
+	case team.FieldEnvironment:
+		return m.Environment()
+	case team.FieldNamespace:
+		return m.Namespace()
 	case team.FieldName:
 		return m.Name()
 	case team.FieldEmail:
 		return m.Email()
 	case team.FieldCategory:
 		return m.Category()
+	case team.FieldRoverTokenRef:
+		return m.RoverTokenRef()
 	}
 	return nil, false
 }
@@ -7200,12 +8099,18 @@ func (m *TeamMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldStatusPhase(ctx)
 	case team.FieldStatusMessage:
 		return m.OldStatusMessage(ctx)
+	case team.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case team.FieldNamespace:
+		return m.OldNamespace(ctx)
 	case team.FieldName:
 		return m.OldName(ctx)
 	case team.FieldEmail:
 		return m.OldEmail(ctx)
 	case team.FieldCategory:
 		return m.OldCategory(ctx)
+	case team.FieldRoverTokenRef:
+		return m.OldRoverTokenRef(ctx)
 	}
 	return nil, fmt.Errorf("unknown Team field %s", name)
 }
@@ -7243,6 +8148,20 @@ func (m *TeamMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetStatusMessage(v)
 		return nil
+	case team.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case team.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
 	case team.FieldName:
 		v, ok := value.(string)
 		if !ok {
@@ -7263,6 +8182,13 @@ func (m *TeamMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCategory(v)
+		return nil
+	case team.FieldRoverTokenRef:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRoverTokenRef(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Team field %s", name)
@@ -7294,8 +8220,20 @@ func (m *TeamMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *TeamMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(team.FieldStatusPhase) {
+		fields = append(fields, team.FieldStatusPhase)
+	}
 	if m.FieldCleared(team.FieldStatusMessage) {
 		fields = append(fields, team.FieldStatusMessage)
+	}
+	if m.FieldCleared(team.FieldEnvironment) {
+		fields = append(fields, team.FieldEnvironment)
+	}
+	if m.FieldCleared(team.FieldNamespace) {
+		fields = append(fields, team.FieldNamespace)
+	}
+	if m.FieldCleared(team.FieldRoverTokenRef) {
+		fields = append(fields, team.FieldRoverTokenRef)
 	}
 	return fields
 }
@@ -7311,8 +8249,20 @@ func (m *TeamMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *TeamMutation) ClearField(name string) error {
 	switch name {
+	case team.FieldStatusPhase:
+		m.ClearStatusPhase()
+		return nil
 	case team.FieldStatusMessage:
 		m.ClearStatusMessage()
+		return nil
+	case team.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case team.FieldNamespace:
+		m.ClearNamespace()
+		return nil
+	case team.FieldRoverTokenRef:
+		m.ClearRoverTokenRef()
 		return nil
 	}
 	return fmt.Errorf("unknown Team nullable field %s", name)
@@ -7334,6 +8284,12 @@ func (m *TeamMutation) ResetField(name string) error {
 	case team.FieldStatusMessage:
 		m.ResetStatusMessage()
 		return nil
+	case team.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case team.FieldNamespace:
+		m.ResetNamespace()
+		return nil
 	case team.FieldName:
 		m.ResetName()
 		return nil
@@ -7343,21 +8299,21 @@ func (m *TeamMutation) ResetField(name string) error {
 	case team.FieldCategory:
 		m.ResetCategory()
 		return nil
+	case team.FieldRoverTokenRef:
+		m.ResetRoverTokenRef()
+		return nil
 	}
 	return fmt.Errorf("unknown Team field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *TeamMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 3)
 	if m.group != nil {
 		edges = append(edges, team.EdgeGroup)
 	}
 	if m.members != nil {
 		edges = append(edges, team.EdgeMembers)
-	}
-	if m.team_environments != nil {
-		edges = append(edges, team.EdgeTeamEnvironments)
 	}
 	if m.applications != nil {
 		edges = append(edges, team.EdgeApplications)
@@ -7379,12 +8335,6 @@ func (m *TeamMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case team.EdgeTeamEnvironments:
-		ids := make([]ent.Value, 0, len(m.team_environments))
-		for id := range m.team_environments {
-			ids = append(ids, id)
-		}
-		return ids
 	case team.EdgeApplications:
 		ids := make([]ent.Value, 0, len(m.applications))
 		for id := range m.applications {
@@ -7397,12 +8347,9 @@ func (m *TeamMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TeamMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 3)
 	if m.removedmembers != nil {
 		edges = append(edges, team.EdgeMembers)
-	}
-	if m.removedteam_environments != nil {
-		edges = append(edges, team.EdgeTeamEnvironments)
 	}
 	if m.removedapplications != nil {
 		edges = append(edges, team.EdgeApplications)
@@ -7420,12 +8367,6 @@ func (m *TeamMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case team.EdgeTeamEnvironments:
-		ids := make([]ent.Value, 0, len(m.removedteam_environments))
-		for id := range m.removedteam_environments {
-			ids = append(ids, id)
-		}
-		return ids
 	case team.EdgeApplications:
 		ids := make([]ent.Value, 0, len(m.removedapplications))
 		for id := range m.removedapplications {
@@ -7438,15 +8379,12 @@ func (m *TeamMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *TeamMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 3)
 	if m.clearedgroup {
 		edges = append(edges, team.EdgeGroup)
 	}
 	if m.clearedmembers {
 		edges = append(edges, team.EdgeMembers)
-	}
-	if m.clearedteam_environments {
-		edges = append(edges, team.EdgeTeamEnvironments)
 	}
 	if m.clearedapplications {
 		edges = append(edges, team.EdgeApplications)
@@ -7462,8 +8400,6 @@ func (m *TeamMutation) EdgeCleared(name string) bool {
 		return m.clearedgroup
 	case team.EdgeMembers:
 		return m.clearedmembers
-	case team.EdgeTeamEnvironments:
-		return m.clearedteam_environments
 	case team.EdgeApplications:
 		return m.clearedapplications
 	}
@@ -7491,488 +8427,11 @@ func (m *TeamMutation) ResetEdge(name string) error {
 	case team.EdgeMembers:
 		m.ResetMembers()
 		return nil
-	case team.EdgeTeamEnvironments:
-		m.ResetTeamEnvironments()
-		return nil
 	case team.EdgeApplications:
 		m.ResetApplications()
 		return nil
 	}
 	return fmt.Errorf("unknown Team edge %s", name)
-}
-
-// TeamEnvironmentMutation represents an operation that mutates the TeamEnvironment nodes in the graph.
-type TeamEnvironmentMutation struct {
-	config
-	op                 Op
-	typ                string
-	id                 *int
-	rover_token_ref    *string
-	clearedFields      map[string]struct{}
-	team               *int
-	clearedteam        bool
-	environment        *int
-	clearedenvironment bool
-	done               bool
-	oldValue           func(context.Context) (*TeamEnvironment, error)
-	predicates         []predicate.TeamEnvironment
-}
-
-var _ ent.Mutation = (*TeamEnvironmentMutation)(nil)
-
-// teamenvironmentOption allows management of the mutation configuration using functional options.
-type teamenvironmentOption func(*TeamEnvironmentMutation)
-
-// newTeamEnvironmentMutation creates new mutation for the TeamEnvironment entity.
-func newTeamEnvironmentMutation(c config, op Op, opts ...teamenvironmentOption) *TeamEnvironmentMutation {
-	m := &TeamEnvironmentMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeTeamEnvironment,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withTeamEnvironmentID sets the ID field of the mutation.
-func withTeamEnvironmentID(id int) teamenvironmentOption {
-	return func(m *TeamEnvironmentMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *TeamEnvironment
-		)
-		m.oldValue = func(ctx context.Context) (*TeamEnvironment, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().TeamEnvironment.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withTeamEnvironment sets the old TeamEnvironment of the mutation.
-func withTeamEnvironment(node *TeamEnvironment) teamenvironmentOption {
-	return func(m *TeamEnvironmentMutation) {
-		m.oldValue = func(context.Context) (*TeamEnvironment, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m TeamEnvironmentMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m TeamEnvironmentMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// ID returns the ID value in the mutation. Note that the ID is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *TeamEnvironmentMutation) ID() (id int, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// IDs queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *TeamEnvironmentMutation) IDs(ctx context.Context) ([]int, error) {
-	switch {
-	case m.op.Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.ID()
-		if exists {
-			return []int{id}, nil
-		}
-		fallthrough
-	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().TeamEnvironment.Query().Where(m.predicates...).IDs(ctx)
-	default:
-		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
-	}
-}
-
-// SetRoverTokenRef sets the "rover_token_ref" field.
-func (m *TeamEnvironmentMutation) SetRoverTokenRef(s string) {
-	m.rover_token_ref = &s
-}
-
-// RoverTokenRef returns the value of the "rover_token_ref" field in the mutation.
-func (m *TeamEnvironmentMutation) RoverTokenRef() (r string, exists bool) {
-	v := m.rover_token_ref
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldRoverTokenRef returns the old "rover_token_ref" field's value of the TeamEnvironment entity.
-// If the TeamEnvironment object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TeamEnvironmentMutation) OldRoverTokenRef(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRoverTokenRef is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRoverTokenRef requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRoverTokenRef: %w", err)
-	}
-	return oldValue.RoverTokenRef, nil
-}
-
-// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
-func (m *TeamEnvironmentMutation) ClearRoverTokenRef() {
-	m.rover_token_ref = nil
-	m.clearedFields[teamenvironment.FieldRoverTokenRef] = struct{}{}
-}
-
-// RoverTokenRefCleared returns if the "rover_token_ref" field was cleared in this mutation.
-func (m *TeamEnvironmentMutation) RoverTokenRefCleared() bool {
-	_, ok := m.clearedFields[teamenvironment.FieldRoverTokenRef]
-	return ok
-}
-
-// ResetRoverTokenRef resets all changes to the "rover_token_ref" field.
-func (m *TeamEnvironmentMutation) ResetRoverTokenRef() {
-	m.rover_token_ref = nil
-	delete(m.clearedFields, teamenvironment.FieldRoverTokenRef)
-}
-
-// SetTeamID sets the "team" edge to the Team entity by id.
-func (m *TeamEnvironmentMutation) SetTeamID(id int) {
-	m.team = &id
-}
-
-// ClearTeam clears the "team" edge to the Team entity.
-func (m *TeamEnvironmentMutation) ClearTeam() {
-	m.clearedteam = true
-}
-
-// TeamCleared reports if the "team" edge to the Team entity was cleared.
-func (m *TeamEnvironmentMutation) TeamCleared() bool {
-	return m.clearedteam
-}
-
-// TeamID returns the "team" edge ID in the mutation.
-func (m *TeamEnvironmentMutation) TeamID() (id int, exists bool) {
-	if m.team != nil {
-		return *m.team, true
-	}
-	return
-}
-
-// TeamIDs returns the "team" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// TeamID instead. It exists only for internal usage by the builders.
-func (m *TeamEnvironmentMutation) TeamIDs() (ids []int) {
-	if id := m.team; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetTeam resets all changes to the "team" edge.
-func (m *TeamEnvironmentMutation) ResetTeam() {
-	m.team = nil
-	m.clearedteam = false
-}
-
-// SetEnvironmentID sets the "environment" edge to the Environment entity by id.
-func (m *TeamEnvironmentMutation) SetEnvironmentID(id int) {
-	m.environment = &id
-}
-
-// ClearEnvironment clears the "environment" edge to the Environment entity.
-func (m *TeamEnvironmentMutation) ClearEnvironment() {
-	m.clearedenvironment = true
-}
-
-// EnvironmentCleared reports if the "environment" edge to the Environment entity was cleared.
-func (m *TeamEnvironmentMutation) EnvironmentCleared() bool {
-	return m.clearedenvironment
-}
-
-// EnvironmentID returns the "environment" edge ID in the mutation.
-func (m *TeamEnvironmentMutation) EnvironmentID() (id int, exists bool) {
-	if m.environment != nil {
-		return *m.environment, true
-	}
-	return
-}
-
-// EnvironmentIDs returns the "environment" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// EnvironmentID instead. It exists only for internal usage by the builders.
-func (m *TeamEnvironmentMutation) EnvironmentIDs() (ids []int) {
-	if id := m.environment; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetEnvironment resets all changes to the "environment" edge.
-func (m *TeamEnvironmentMutation) ResetEnvironment() {
-	m.environment = nil
-	m.clearedenvironment = false
-}
-
-// Where appends a list predicates to the TeamEnvironmentMutation builder.
-func (m *TeamEnvironmentMutation) Where(ps ...predicate.TeamEnvironment) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the TeamEnvironmentMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *TeamEnvironmentMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.TeamEnvironment, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *TeamEnvironmentMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *TeamEnvironmentMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (TeamEnvironment).
-func (m *TeamEnvironmentMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *TeamEnvironmentMutation) Fields() []string {
-	fields := make([]string, 0, 1)
-	if m.rover_token_ref != nil {
-		fields = append(fields, teamenvironment.FieldRoverTokenRef)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *TeamEnvironmentMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case teamenvironment.FieldRoverTokenRef:
-		return m.RoverTokenRef()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *TeamEnvironmentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case teamenvironment.FieldRoverTokenRef:
-		return m.OldRoverTokenRef(ctx)
-	}
-	return nil, fmt.Errorf("unknown TeamEnvironment field %s", name)
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *TeamEnvironmentMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case teamenvironment.FieldRoverTokenRef:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetRoverTokenRef(v)
-		return nil
-	}
-	return fmt.Errorf("unknown TeamEnvironment field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *TeamEnvironmentMutation) AddedFields() []string {
-	return nil
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *TeamEnvironmentMutation) AddedField(name string) (ent.Value, bool) {
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *TeamEnvironmentMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown TeamEnvironment numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *TeamEnvironmentMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(teamenvironment.FieldRoverTokenRef) {
-		fields = append(fields, teamenvironment.FieldRoverTokenRef)
-	}
-	return fields
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *TeamEnvironmentMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *TeamEnvironmentMutation) ClearField(name string) error {
-	switch name {
-	case teamenvironment.FieldRoverTokenRef:
-		m.ClearRoverTokenRef()
-		return nil
-	}
-	return fmt.Errorf("unknown TeamEnvironment nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *TeamEnvironmentMutation) ResetField(name string) error {
-	switch name {
-	case teamenvironment.FieldRoverTokenRef:
-		m.ResetRoverTokenRef()
-		return nil
-	}
-	return fmt.Errorf("unknown TeamEnvironment field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *TeamEnvironmentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.team != nil {
-		edges = append(edges, teamenvironment.EdgeTeam)
-	}
-	if m.environment != nil {
-		edges = append(edges, teamenvironment.EdgeEnvironment)
-	}
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *TeamEnvironmentMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case teamenvironment.EdgeTeam:
-		if id := m.team; id != nil {
-			return []ent.Value{*id}
-		}
-	case teamenvironment.EdgeEnvironment:
-		if id := m.environment; id != nil {
-			return []ent.Value{*id}
-		}
-	}
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *TeamEnvironmentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *TeamEnvironmentMutation) RemovedIDs(name string) []ent.Value {
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *TeamEnvironmentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.clearedteam {
-		edges = append(edges, teamenvironment.EdgeTeam)
-	}
-	if m.clearedenvironment {
-		edges = append(edges, teamenvironment.EdgeEnvironment)
-	}
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *TeamEnvironmentMutation) EdgeCleared(name string) bool {
-	switch name {
-	case teamenvironment.EdgeTeam:
-		return m.clearedteam
-	case teamenvironment.EdgeEnvironment:
-		return m.clearedenvironment
-	}
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *TeamEnvironmentMutation) ClearEdge(name string) error {
-	switch name {
-	case teamenvironment.EdgeTeam:
-		m.ClearTeam()
-		return nil
-	case teamenvironment.EdgeEnvironment:
-		m.ClearEnvironment()
-		return nil
-	}
-	return fmt.Errorf("unknown TeamEnvironment unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *TeamEnvironmentMutation) ResetEdge(name string) error {
-	switch name {
-	case teamenvironment.EdgeTeam:
-		m.ResetTeam()
-		return nil
-	case teamenvironment.EdgeEnvironment:
-		m.ResetEnvironment()
-		return nil
-	}
-	return fmt.Errorf("unknown TeamEnvironment edge %s", name)
 }
 
 // ZoneMutation represents an operation that mutates the Zone nodes in the graph.
@@ -7981,6 +8440,8 @@ type ZoneMutation struct {
 	op                  Op
 	typ                 string
 	id                  *int
+	environment         *string
+	namespace           *string
 	name                *string
 	gateway_url         *string
 	visibility          *zone.Visibility
@@ -8089,6 +8550,104 @@ func (m *ZoneMutation) IDs(ctx context.Context) ([]int, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
+}
+
+// SetEnvironment sets the "environment" field.
+func (m *ZoneMutation) SetEnvironment(s string) {
+	m.environment = &s
+}
+
+// Environment returns the value of the "environment" field in the mutation.
+func (m *ZoneMutation) Environment() (r string, exists bool) {
+	v := m.environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvironment returns the old "environment" field's value of the Zone entity.
+// If the Zone object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ZoneMutation) OldEnvironment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvironment: %w", err)
+	}
+	return oldValue.Environment, nil
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (m *ZoneMutation) ClearEnvironment() {
+	m.environment = nil
+	m.clearedFields[zone.FieldEnvironment] = struct{}{}
+}
+
+// EnvironmentCleared returns if the "environment" field was cleared in this mutation.
+func (m *ZoneMutation) EnvironmentCleared() bool {
+	_, ok := m.clearedFields[zone.FieldEnvironment]
+	return ok
+}
+
+// ResetEnvironment resets all changes to the "environment" field.
+func (m *ZoneMutation) ResetEnvironment() {
+	m.environment = nil
+	delete(m.clearedFields, zone.FieldEnvironment)
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *ZoneMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *ZoneMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the Zone entity.
+// If the Zone object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ZoneMutation) OldNamespace(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (m *ZoneMutation) ClearNamespace() {
+	m.namespace = nil
+	m.clearedFields[zone.FieldNamespace] = struct{}{}
+}
+
+// NamespaceCleared returns if the "namespace" field was cleared in this mutation.
+func (m *ZoneMutation) NamespaceCleared() bool {
+	_, ok := m.clearedFields[zone.FieldNamespace]
+	return ok
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *ZoneMutation) ResetNamespace() {
+	m.namespace = nil
+	delete(m.clearedFields, zone.FieldNamespace)
 }
 
 // SetName sets the "name" field.
@@ -8300,7 +8859,13 @@ func (m *ZoneMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ZoneMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 5)
+	if m.environment != nil {
+		fields = append(fields, zone.FieldEnvironment)
+	}
+	if m.namespace != nil {
+		fields = append(fields, zone.FieldNamespace)
+	}
 	if m.name != nil {
 		fields = append(fields, zone.FieldName)
 	}
@@ -8318,6 +8883,10 @@ func (m *ZoneMutation) Fields() []string {
 // schema.
 func (m *ZoneMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case zone.FieldEnvironment:
+		return m.Environment()
+	case zone.FieldNamespace:
+		return m.Namespace()
 	case zone.FieldName:
 		return m.Name()
 	case zone.FieldGatewayURL:
@@ -8333,6 +8902,10 @@ func (m *ZoneMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *ZoneMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case zone.FieldEnvironment:
+		return m.OldEnvironment(ctx)
+	case zone.FieldNamespace:
+		return m.OldNamespace(ctx)
 	case zone.FieldName:
 		return m.OldName(ctx)
 	case zone.FieldGatewayURL:
@@ -8348,6 +8921,20 @@ func (m *ZoneMutation) OldField(ctx context.Context, name string) (ent.Value, er
 // type.
 func (m *ZoneMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case zone.FieldEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvironment(v)
+		return nil
+	case zone.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
 	case zone.FieldName:
 		v, ok := value.(string)
 		if !ok {
@@ -8399,6 +8986,12 @@ func (m *ZoneMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *ZoneMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(zone.FieldEnvironment) {
+		fields = append(fields, zone.FieldEnvironment)
+	}
+	if m.FieldCleared(zone.FieldNamespace) {
+		fields = append(fields, zone.FieldNamespace)
+	}
 	if m.FieldCleared(zone.FieldGatewayURL) {
 		fields = append(fields, zone.FieldGatewayURL)
 	}
@@ -8416,6 +9009,12 @@ func (m *ZoneMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ZoneMutation) ClearField(name string) error {
 	switch name {
+	case zone.FieldEnvironment:
+		m.ClearEnvironment()
+		return nil
+	case zone.FieldNamespace:
+		m.ClearNamespace()
+		return nil
 	case zone.FieldGatewayURL:
 		m.ClearGatewayURL()
 		return nil
@@ -8427,6 +9026,12 @@ func (m *ZoneMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *ZoneMutation) ResetField(name string) error {
 	switch name {
+	case zone.FieldEnvironment:
+		m.ResetEnvironment()
+		return nil
+	case zone.FieldNamespace:
+		m.ResetNamespace()
+		return nil
 	case zone.FieldName:
 		m.ResetName()
 		return nil

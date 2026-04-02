@@ -20,11 +20,9 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
-	"github.com/telekom/controlplane/controlplane-api/ent/environment"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
-	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 )
 
@@ -91,11 +89,9 @@ func checkColumn(t, c string) error {
 			application.Table:     application.ValidColumn,
 			approval.Table:        approval.ValidColumn,
 			approvalrequest.Table: approvalrequest.ValidColumn,
-			environment.Table:     environment.ValidColumn,
 			group.Table:           group.ValidColumn,
 			member.Table:          member.ValidColumn,
 			team.Table:            team.ValidColumn,
-			teamenvironment.Table: teamenvironment.ValidColumn,
 			zone.Table:            zone.ValidColumn,
 		})
 	})

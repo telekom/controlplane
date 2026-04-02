@@ -31,6 +31,46 @@ func (_u *GroupUpdate) Where(ps ...predicate.Group) *GroupUpdate {
 	return _u
 }
 
+// SetEnvironment sets the "environment" field.
+func (_u *GroupUpdate) SetEnvironment(v string) *GroupUpdate {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableEnvironment(v *string) *GroupUpdate {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *GroupUpdate) ClearEnvironment() *GroupUpdate {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *GroupUpdate) SetNamespace(v string) *GroupUpdate {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableNamespace(v *string) *GroupUpdate {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *GroupUpdate) ClearNamespace() *GroupUpdate {
+	_u.mutation.ClearNamespace()
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *GroupUpdate) SetName(v string) *GroupUpdate {
 	_u.mutation.SetName(v)
@@ -168,6 +208,18 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(group.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(group.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(group.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(group.FieldNamespace, field.TypeString)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(group.FieldName, field.TypeString, value)
 	}
@@ -240,6 +292,46 @@ type GroupUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *GroupMutation
+}
+
+// SetEnvironment sets the "environment" field.
+func (_u *GroupUpdateOne) SetEnvironment(v string) *GroupUpdateOne {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableEnvironment(v *string) *GroupUpdateOne {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *GroupUpdateOne) ClearEnvironment() *GroupUpdateOne {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *GroupUpdateOne) SetNamespace(v string) *GroupUpdateOne {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableNamespace(v *string) *GroupUpdateOne {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *GroupUpdateOne) ClearNamespace() *GroupUpdateOne {
+	_u.mutation.ClearNamespace()
+	return _u
 }
 
 // SetName sets the "name" field.
@@ -408,6 +500,18 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(group.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(group.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(group.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(group.FieldNamespace, field.TypeString)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(group.FieldName, field.TypeString, value)

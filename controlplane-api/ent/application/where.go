@@ -73,6 +73,16 @@ func StatusMessage(v string) predicate.Application {
 	return predicate.Application(sql.FieldEQ(FieldStatusMessage, v))
 }
 
+// Environment applies equality check predicate on the "environment" field. It's identical to EnvironmentEQ.
+func Environment(v string) predicate.Application {
+	return predicate.Application(sql.FieldEQ(FieldEnvironment, v))
+}
+
+// Namespace applies equality check predicate on the "namespace" field. It's identical to NamespaceEQ.
+func Namespace(v string) predicate.Application {
+	return predicate.Application(sql.FieldEQ(FieldNamespace, v))
+}
+
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
 func Name(v string) predicate.Application {
 	return predicate.Application(sql.FieldEQ(FieldName, v))
@@ -188,6 +198,16 @@ func StatusPhaseNotIn(vs ...StatusPhase) predicate.Application {
 	return predicate.Application(sql.FieldNotIn(FieldStatusPhase, vs...))
 }
 
+// StatusPhaseIsNil applies the IsNil predicate on the "status_phase" field.
+func StatusPhaseIsNil() predicate.Application {
+	return predicate.Application(sql.FieldIsNull(FieldStatusPhase))
+}
+
+// StatusPhaseNotNil applies the NotNil predicate on the "status_phase" field.
+func StatusPhaseNotNil() predicate.Application {
+	return predicate.Application(sql.FieldNotNull(FieldStatusPhase))
+}
+
 // StatusMessageEQ applies the EQ predicate on the "status_message" field.
 func StatusMessageEQ(v string) predicate.Application {
 	return predicate.Application(sql.FieldEQ(FieldStatusMessage, v))
@@ -261,6 +281,156 @@ func StatusMessageEqualFold(v string) predicate.Application {
 // StatusMessageContainsFold applies the ContainsFold predicate on the "status_message" field.
 func StatusMessageContainsFold(v string) predicate.Application {
 	return predicate.Application(sql.FieldContainsFold(FieldStatusMessage, v))
+}
+
+// EnvironmentEQ applies the EQ predicate on the "environment" field.
+func EnvironmentEQ(v string) predicate.Application {
+	return predicate.Application(sql.FieldEQ(FieldEnvironment, v))
+}
+
+// EnvironmentNEQ applies the NEQ predicate on the "environment" field.
+func EnvironmentNEQ(v string) predicate.Application {
+	return predicate.Application(sql.FieldNEQ(FieldEnvironment, v))
+}
+
+// EnvironmentIn applies the In predicate on the "environment" field.
+func EnvironmentIn(vs ...string) predicate.Application {
+	return predicate.Application(sql.FieldIn(FieldEnvironment, vs...))
+}
+
+// EnvironmentNotIn applies the NotIn predicate on the "environment" field.
+func EnvironmentNotIn(vs ...string) predicate.Application {
+	return predicate.Application(sql.FieldNotIn(FieldEnvironment, vs...))
+}
+
+// EnvironmentGT applies the GT predicate on the "environment" field.
+func EnvironmentGT(v string) predicate.Application {
+	return predicate.Application(sql.FieldGT(FieldEnvironment, v))
+}
+
+// EnvironmentGTE applies the GTE predicate on the "environment" field.
+func EnvironmentGTE(v string) predicate.Application {
+	return predicate.Application(sql.FieldGTE(FieldEnvironment, v))
+}
+
+// EnvironmentLT applies the LT predicate on the "environment" field.
+func EnvironmentLT(v string) predicate.Application {
+	return predicate.Application(sql.FieldLT(FieldEnvironment, v))
+}
+
+// EnvironmentLTE applies the LTE predicate on the "environment" field.
+func EnvironmentLTE(v string) predicate.Application {
+	return predicate.Application(sql.FieldLTE(FieldEnvironment, v))
+}
+
+// EnvironmentContains applies the Contains predicate on the "environment" field.
+func EnvironmentContains(v string) predicate.Application {
+	return predicate.Application(sql.FieldContains(FieldEnvironment, v))
+}
+
+// EnvironmentHasPrefix applies the HasPrefix predicate on the "environment" field.
+func EnvironmentHasPrefix(v string) predicate.Application {
+	return predicate.Application(sql.FieldHasPrefix(FieldEnvironment, v))
+}
+
+// EnvironmentHasSuffix applies the HasSuffix predicate on the "environment" field.
+func EnvironmentHasSuffix(v string) predicate.Application {
+	return predicate.Application(sql.FieldHasSuffix(FieldEnvironment, v))
+}
+
+// EnvironmentIsNil applies the IsNil predicate on the "environment" field.
+func EnvironmentIsNil() predicate.Application {
+	return predicate.Application(sql.FieldIsNull(FieldEnvironment))
+}
+
+// EnvironmentNotNil applies the NotNil predicate on the "environment" field.
+func EnvironmentNotNil() predicate.Application {
+	return predicate.Application(sql.FieldNotNull(FieldEnvironment))
+}
+
+// EnvironmentEqualFold applies the EqualFold predicate on the "environment" field.
+func EnvironmentEqualFold(v string) predicate.Application {
+	return predicate.Application(sql.FieldEqualFold(FieldEnvironment, v))
+}
+
+// EnvironmentContainsFold applies the ContainsFold predicate on the "environment" field.
+func EnvironmentContainsFold(v string) predicate.Application {
+	return predicate.Application(sql.FieldContainsFold(FieldEnvironment, v))
+}
+
+// NamespaceEQ applies the EQ predicate on the "namespace" field.
+func NamespaceEQ(v string) predicate.Application {
+	return predicate.Application(sql.FieldEQ(FieldNamespace, v))
+}
+
+// NamespaceNEQ applies the NEQ predicate on the "namespace" field.
+func NamespaceNEQ(v string) predicate.Application {
+	return predicate.Application(sql.FieldNEQ(FieldNamespace, v))
+}
+
+// NamespaceIn applies the In predicate on the "namespace" field.
+func NamespaceIn(vs ...string) predicate.Application {
+	return predicate.Application(sql.FieldIn(FieldNamespace, vs...))
+}
+
+// NamespaceNotIn applies the NotIn predicate on the "namespace" field.
+func NamespaceNotIn(vs ...string) predicate.Application {
+	return predicate.Application(sql.FieldNotIn(FieldNamespace, vs...))
+}
+
+// NamespaceGT applies the GT predicate on the "namespace" field.
+func NamespaceGT(v string) predicate.Application {
+	return predicate.Application(sql.FieldGT(FieldNamespace, v))
+}
+
+// NamespaceGTE applies the GTE predicate on the "namespace" field.
+func NamespaceGTE(v string) predicate.Application {
+	return predicate.Application(sql.FieldGTE(FieldNamespace, v))
+}
+
+// NamespaceLT applies the LT predicate on the "namespace" field.
+func NamespaceLT(v string) predicate.Application {
+	return predicate.Application(sql.FieldLT(FieldNamespace, v))
+}
+
+// NamespaceLTE applies the LTE predicate on the "namespace" field.
+func NamespaceLTE(v string) predicate.Application {
+	return predicate.Application(sql.FieldLTE(FieldNamespace, v))
+}
+
+// NamespaceContains applies the Contains predicate on the "namespace" field.
+func NamespaceContains(v string) predicate.Application {
+	return predicate.Application(sql.FieldContains(FieldNamespace, v))
+}
+
+// NamespaceHasPrefix applies the HasPrefix predicate on the "namespace" field.
+func NamespaceHasPrefix(v string) predicate.Application {
+	return predicate.Application(sql.FieldHasPrefix(FieldNamespace, v))
+}
+
+// NamespaceHasSuffix applies the HasSuffix predicate on the "namespace" field.
+func NamespaceHasSuffix(v string) predicate.Application {
+	return predicate.Application(sql.FieldHasSuffix(FieldNamespace, v))
+}
+
+// NamespaceIsNil applies the IsNil predicate on the "namespace" field.
+func NamespaceIsNil() predicate.Application {
+	return predicate.Application(sql.FieldIsNull(FieldNamespace))
+}
+
+// NamespaceNotNil applies the NotNil predicate on the "namespace" field.
+func NamespaceNotNil() predicate.Application {
+	return predicate.Application(sql.FieldNotNull(FieldNamespace))
+}
+
+// NamespaceEqualFold applies the EqualFold predicate on the "namespace" field.
+func NamespaceEqualFold(v string) predicate.Application {
+	return predicate.Application(sql.FieldEqualFold(FieldNamespace, v))
+}
+
+// NamespaceContainsFold applies the ContainsFold predicate on the "namespace" field.
+func NamespaceContainsFold(v string) predicate.Application {
+	return predicate.Application(sql.FieldContainsFold(FieldNamespace, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -381,6 +551,16 @@ func ClientIDHasPrefix(v string) predicate.Application {
 // ClientIDHasSuffix applies the HasSuffix predicate on the "client_id" field.
 func ClientIDHasSuffix(v string) predicate.Application {
 	return predicate.Application(sql.FieldHasSuffix(FieldClientID, v))
+}
+
+// ClientIDIsNil applies the IsNil predicate on the "client_id" field.
+func ClientIDIsNil() predicate.Application {
+	return predicate.Application(sql.FieldIsNull(FieldClientID))
+}
+
+// ClientIDNotNil applies the NotNil predicate on the "client_id" field.
+func ClientIDNotNil() predicate.Application {
+	return predicate.Application(sql.FieldNotNull(FieldClientID))
 }
 
 // ClientIDEqualFold applies the EqualFold predicate on the "client_id" field.

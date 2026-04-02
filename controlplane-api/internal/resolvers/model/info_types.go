@@ -10,7 +10,7 @@ type ApiExposureInfo struct {
 	ID                   int            `json:"id"`
 	BasePath             string         `json:"basePath"`
 	Visibility           string         `json:"visibility"`
-	Active               bool           `json:"active"`
+	Active               *bool          `json:"active,omitempty"`
 	ApiVersion           *string        `json:"apiVersion,omitempty"`
 	Features             []string       `json:"features"`
 	ApprovalConfig       ApprovalConfig `json:"approvalConfig"`
@@ -23,7 +23,7 @@ type ApiExposureInfo struct {
 type ApiSubscriptionInfo struct {
 	ID                   int       `json:"id"`
 	BasePath             string    `json:"basePath"`
-	StatusPhase          string    `json:"statusPhase"`
+	StatusPhase          *string   `json:"statusPhase,omitempty"`
 	StatusMessage        *string   `json:"statusMessage,omitempty"`
 	OwnerApplicationName string    `json:"ownerApplicationName"`
 	OwnerTeam            *TeamInfo `json:"ownerTeam"`

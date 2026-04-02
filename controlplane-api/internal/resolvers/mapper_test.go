@@ -170,8 +170,16 @@ var _ = Describe("ApiSubscriptionInfo.StatusPhase resolver", func() {
 	r := resolvers.NewResolver(nil)
 
 	It("should convert status phase string to enum", func() {
-		phase, err := r.ApiSubscriptionInfo().StatusPhase(context.TODO(), &model.ApiSubscriptionInfo{StatusPhase: "SUBSCRIBED"})
+		sp := "SUBSCRIBED"
+		phase, err := r.ApiSubscriptionInfo().StatusPhase(context.TODO(), &model.ApiSubscriptionInfo{StatusPhase: &sp})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(string(phase)).To(Equal("SUBSCRIBED"))
+		Expect(phase).NotTo(BeNil())
+		Expect(string(*phase)).To(Equal("SUBSCRIBED"))
+	})
+
+	It("should return nil for nil status phase", func() {
+		phase, err := r.ApiSubscriptionInfo().StatusPhase(context.TODO(), &model.ApiSubscriptionInfo{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(phase).To(BeNil())
 	})
 })

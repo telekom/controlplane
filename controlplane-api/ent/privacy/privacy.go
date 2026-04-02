@@ -233,30 +233,6 @@ func (f ApprovalRequestMutationRuleFunc) EvalMutation(ctx context.Context, m ent
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ApprovalRequestMutation", m)
 }
 
-// The EnvironmentQueryRuleFunc type is an adapter to allow the use of ordinary
-// functions as a query rule.
-type EnvironmentQueryRuleFunc func(context.Context, *ent.EnvironmentQuery) error
-
-// EvalQuery return f(ctx, q).
-func (f EnvironmentQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
-	if q, ok := q.(*ent.EnvironmentQuery); ok {
-		return f(ctx, q)
-	}
-	return Denyf("ent/privacy: unexpected query type %T, expect *ent.EnvironmentQuery", q)
-}
-
-// The EnvironmentMutationRuleFunc type is an adapter to allow the use of ordinary
-// functions as a mutation rule.
-type EnvironmentMutationRuleFunc func(context.Context, *ent.EnvironmentMutation) error
-
-// EvalMutation calls f(ctx, m).
-func (f EnvironmentMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
-	if m, ok := m.(*ent.EnvironmentMutation); ok {
-		return f(ctx, m)
-	}
-	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.EnvironmentMutation", m)
-}
-
 // The GroupQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type GroupQueryRuleFunc func(context.Context, *ent.GroupQuery) error
@@ -327,30 +303,6 @@ func (f TeamMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) 
 		return f(ctx, m)
 	}
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.TeamMutation", m)
-}
-
-// The TeamEnvironmentQueryRuleFunc type is an adapter to allow the use of ordinary
-// functions as a query rule.
-type TeamEnvironmentQueryRuleFunc func(context.Context, *ent.TeamEnvironmentQuery) error
-
-// EvalQuery return f(ctx, q).
-func (f TeamEnvironmentQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
-	if q, ok := q.(*ent.TeamEnvironmentQuery); ok {
-		return f(ctx, q)
-	}
-	return Denyf("ent/privacy: unexpected query type %T, expect *ent.TeamEnvironmentQuery", q)
-}
-
-// The TeamEnvironmentMutationRuleFunc type is an adapter to allow the use of ordinary
-// functions as a mutation rule.
-type TeamEnvironmentMutationRuleFunc func(context.Context, *ent.TeamEnvironmentMutation) error
-
-// EvalMutation calls f(ctx, m).
-func (f TeamEnvironmentMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
-	if m, ok := m.(*ent.TeamEnvironmentMutation); ok {
-		return f(ctx, m)
-	}
-	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.TeamEnvironmentMutation", m)
 }
 
 // The ZoneQueryRuleFunc type is an adapter to allow the use of ordinary

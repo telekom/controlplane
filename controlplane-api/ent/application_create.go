@@ -85,6 +85,34 @@ func (_c *ApplicationCreate) SetNillableStatusMessage(v *string) *ApplicationCre
 	return _c
 }
 
+// SetEnvironment sets the "environment" field.
+func (_c *ApplicationCreate) SetEnvironment(v string) *ApplicationCreate {
+	_c.mutation.SetEnvironment(v)
+	return _c
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_c *ApplicationCreate) SetNillableEnvironment(v *string) *ApplicationCreate {
+	if v != nil {
+		_c.SetEnvironment(*v)
+	}
+	return _c
+}
+
+// SetNamespace sets the "namespace" field.
+func (_c *ApplicationCreate) SetNamespace(v string) *ApplicationCreate {
+	_c.mutation.SetNamespace(v)
+	return _c
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_c *ApplicationCreate) SetNillableNamespace(v *string) *ApplicationCreate {
+	if v != nil {
+		_c.SetNamespace(*v)
+	}
+	return _c
+}
+
 // SetName sets the "name" field.
 func (_c *ApplicationCreate) SetName(v string) *ApplicationCreate {
 	_c.mutation.SetName(v)
@@ -94,6 +122,14 @@ func (_c *ApplicationCreate) SetName(v string) *ApplicationCreate {
 // SetClientID sets the "client_id" field.
 func (_c *ApplicationCreate) SetClientID(v string) *ApplicationCreate {
 	_c.mutation.SetClientID(v)
+	return _c
+}
+
+// SetNillableClientID sets the "client_id" field if the given value is not nil.
+func (_c *ApplicationCreate) SetNillableClientID(v *string) *ApplicationCreate {
+	if v != nil {
+		_c.SetClientID(*v)
+	}
 	return _c
 }
 
@@ -214,10 +250,6 @@ func (_c *ApplicationCreate) defaults() error {
 		v := application.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
-	if _, ok := _c.mutation.StatusPhase(); !ok {
-		v := application.DefaultStatusPhase
-		_c.mutation.SetStatusPhase(v)
-	}
 	return nil
 }
 
@@ -228,9 +260,6 @@ func (_c *ApplicationCreate) check() error {
 	}
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
 		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "Application.last_modified_at"`)}
-	}
-	if _, ok := _c.mutation.StatusPhase(); !ok {
-		return &ValidationError{Name: "status_phase", err: errors.New(`ent: missing required field "Application.status_phase"`)}
 	}
 	if v, ok := _c.mutation.StatusPhase(); ok {
 		if err := application.StatusPhaseValidator(v); err != nil {
@@ -244,9 +273,6 @@ func (_c *ApplicationCreate) check() error {
 		if err := application.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Application.name": %w`, err)}
 		}
-	}
-	if _, ok := _c.mutation.ClientID(); !ok {
-		return &ValidationError{Name: "client_id", err: errors.New(`ent: missing required field "Application.client_id"`)}
 	}
 	if v, ok := _c.mutation.ClientID(); ok {
 		if err := application.ClientIDValidator(v); err != nil {
@@ -296,11 +322,19 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := _c.mutation.StatusPhase(); ok {
 		_spec.SetField(application.FieldStatusPhase, field.TypeEnum, value)
-		_node.StatusPhase = value
+		_node.StatusPhase = &value
 	}
 	if value, ok := _c.mutation.StatusMessage(); ok {
 		_spec.SetField(application.FieldStatusMessage, field.TypeString, value)
 		_node.StatusMessage = &value
+	}
+	if value, ok := _c.mutation.Environment(); ok {
+		_spec.SetField(application.FieldEnvironment, field.TypeString, value)
+		_node.Environment = &value
+	}
+	if value, ok := _c.mutation.Namespace(); ok {
+		_spec.SetField(application.FieldNamespace, field.TypeString, value)
+		_node.Namespace = &value
 	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(application.FieldName, field.TypeString, value)
@@ -308,7 +342,7 @@ func (_c *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := _c.mutation.ClientID(); ok {
 		_spec.SetField(application.FieldClientID, field.TypeString, value)
-		_node.ClientID = value
+		_node.ClientID = &value
 	}
 	if value, ok := _c.mutation.IssuerURL(); ok {
 		_spec.SetField(application.FieldIssuerURL, field.TypeString, value)
@@ -456,6 +490,12 @@ func (u *ApplicationUpsert) UpdateStatusPhase() *ApplicationUpsert {
 	return u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApplicationUpsert) ClearStatusPhase() *ApplicationUpsert {
+	u.SetNull(application.FieldStatusPhase)
+	return u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *ApplicationUpsert) SetStatusMessage(v string) *ApplicationUpsert {
 	u.Set(application.FieldStatusMessage, v)
@@ -471,6 +511,42 @@ func (u *ApplicationUpsert) UpdateStatusMessage() *ApplicationUpsert {
 // ClearStatusMessage clears the value of the "status_message" field.
 func (u *ApplicationUpsert) ClearStatusMessage() *ApplicationUpsert {
 	u.SetNull(application.FieldStatusMessage)
+	return u
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *ApplicationUpsert) SetEnvironment(v string) *ApplicationUpsert {
+	u.Set(application.FieldEnvironment, v)
+	return u
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ApplicationUpsert) UpdateEnvironment() *ApplicationUpsert {
+	u.SetExcluded(application.FieldEnvironment)
+	return u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ApplicationUpsert) ClearEnvironment() *ApplicationUpsert {
+	u.SetNull(application.FieldEnvironment)
+	return u
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ApplicationUpsert) SetNamespace(v string) *ApplicationUpsert {
+	u.Set(application.FieldNamespace, v)
+	return u
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ApplicationUpsert) UpdateNamespace() *ApplicationUpsert {
+	u.SetExcluded(application.FieldNamespace)
+	return u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ApplicationUpsert) ClearNamespace() *ApplicationUpsert {
+	u.SetNull(application.FieldNamespace)
 	return u
 }
 
@@ -495,6 +571,12 @@ func (u *ApplicationUpsert) SetClientID(v string) *ApplicationUpsert {
 // UpdateClientID sets the "client_id" field to the value that was provided on create.
 func (u *ApplicationUpsert) UpdateClientID() *ApplicationUpsert {
 	u.SetExcluded(application.FieldClientID)
+	return u
+}
+
+// ClearClientID clears the value of the "client_id" field.
+func (u *ApplicationUpsert) ClearClientID() *ApplicationUpsert {
+	u.SetNull(application.FieldClientID)
 	return u
 }
 
@@ -589,6 +671,13 @@ func (u *ApplicationUpsertOne) UpdateStatusPhase() *ApplicationUpsertOne {
 	})
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApplicationUpsertOne) ClearStatusPhase() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearStatusPhase()
+	})
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *ApplicationUpsertOne) SetStatusMessage(v string) *ApplicationUpsertOne {
 	return u.Update(func(s *ApplicationUpsert) {
@@ -607,6 +696,48 @@ func (u *ApplicationUpsertOne) UpdateStatusMessage() *ApplicationUpsertOne {
 func (u *ApplicationUpsertOne) ClearStatusMessage() *ApplicationUpsertOne {
 	return u.Update(func(s *ApplicationUpsert) {
 		s.ClearStatusMessage()
+	})
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *ApplicationUpsertOne) SetEnvironment(v string) *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ApplicationUpsertOne) UpdateEnvironment() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ApplicationUpsertOne) ClearEnvironment() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ApplicationUpsertOne) SetNamespace(v string) *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ApplicationUpsertOne) UpdateNamespace() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ApplicationUpsertOne) ClearNamespace() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearNamespace()
 	})
 }
 
@@ -635,6 +766,13 @@ func (u *ApplicationUpsertOne) SetClientID(v string) *ApplicationUpsertOne {
 func (u *ApplicationUpsertOne) UpdateClientID() *ApplicationUpsertOne {
 	return u.Update(func(s *ApplicationUpsert) {
 		s.UpdateClientID()
+	})
+}
+
+// ClearClientID clears the value of the "client_id" field.
+func (u *ApplicationUpsertOne) ClearClientID() *ApplicationUpsertOne {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearClientID()
 	})
 }
 
@@ -898,6 +1036,13 @@ func (u *ApplicationUpsertBulk) UpdateStatusPhase() *ApplicationUpsertBulk {
 	})
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApplicationUpsertBulk) ClearStatusPhase() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearStatusPhase()
+	})
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *ApplicationUpsertBulk) SetStatusMessage(v string) *ApplicationUpsertBulk {
 	return u.Update(func(s *ApplicationUpsert) {
@@ -916,6 +1061,48 @@ func (u *ApplicationUpsertBulk) UpdateStatusMessage() *ApplicationUpsertBulk {
 func (u *ApplicationUpsertBulk) ClearStatusMessage() *ApplicationUpsertBulk {
 	return u.Update(func(s *ApplicationUpsert) {
 		s.ClearStatusMessage()
+	})
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *ApplicationUpsertBulk) SetEnvironment(v string) *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ApplicationUpsertBulk) UpdateEnvironment() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ApplicationUpsertBulk) ClearEnvironment() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ApplicationUpsertBulk) SetNamespace(v string) *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ApplicationUpsertBulk) UpdateNamespace() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ApplicationUpsertBulk) ClearNamespace() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearNamespace()
 	})
 }
 
@@ -944,6 +1131,13 @@ func (u *ApplicationUpsertBulk) SetClientID(v string) *ApplicationUpsertBulk {
 func (u *ApplicationUpsertBulk) UpdateClientID() *ApplicationUpsertBulk {
 	return u.Update(func(s *ApplicationUpsert) {
 		s.UpdateClientID()
+	})
+}
+
+// ClearClientID clears the value of the "client_id" field.
+func (u *ApplicationUpsertBulk) ClearClientID() *ApplicationUpsertBulk {
+	return u.Update(func(s *ApplicationUpsert) {
+		s.ClearClientID()
 	})
 }
 
