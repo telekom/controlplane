@@ -16,6 +16,10 @@ const (
 	Label = "group"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldEnvironment holds the string denoting the environment field in the database.
+	FieldEnvironment = "environment"
+	// FieldNamespace holds the string denoting the namespace field in the database.
+	FieldNamespace = "namespace"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldDisplayName holds the string denoting the display_name field in the database.
@@ -38,6 +42,8 @@ const (
 // Columns holds all SQL columns for group fields.
 var Columns = []string{
 	FieldID,
+	FieldEnvironment,
+	FieldNamespace,
 	FieldName,
 	FieldDisplayName,
 	FieldDescription,
@@ -75,6 +81,16 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByEnvironment orders the results by the environment field.
+func ByEnvironment(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEnvironment, opts...).ToFunc()
+}
+
+// ByNamespace orders the results by the namespace field.
+func ByNamespace(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNamespace, opts...).ToFunc()
 }
 
 // ByName orders the results by the name field.

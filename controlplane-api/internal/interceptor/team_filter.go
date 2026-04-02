@@ -18,7 +18,6 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
-	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 )
 
@@ -89,10 +88,7 @@ func TeamFilterInterceptor() ent.Interceptor {
 			case *entgen.MemberQuery:
 				q.Where(member.HasTeamWith(team.NameIn(teams...)))
 
-			case *entgen.TeamEnvironmentQuery:
-				q.Where(teamenvironment.HasTeamWith(team.NameIn(teams...)))
-
-			case *entgen.GroupQuery, *entgen.ZoneQuery, *entgen.EnvironmentQuery:
+			case *entgen.GroupQuery, *entgen.ZoneQuery:
 				// No team filtering for public entities
 
 			default:

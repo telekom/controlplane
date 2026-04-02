@@ -28,7 +28,8 @@ type ApprovalSpec struct {
 	Decider Decider `json:"decider,omitempty"`
 
 	// Decisions contains information about who or what changed this approval
-	Decisions []Decision `json:"decisions,omitempty"`
+	// +kubebuilder:default={}
+	Decisions []Decision `json:"decisions"`
 
 	// Strategy defines the strategy that was used to approve the request
 	// +kubebuilder:validation:Enum=Auto;Simple;FourEyes
@@ -36,7 +37,7 @@ type ApprovalSpec struct {
 	Strategy ApprovalStrategy `json:"strategy"`
 
 	// State defines the state of the approval
-	// +kubebuilder:validation:Enum=Pending;Granted;Rejected;Suspended
+	// +kubebuilder:validation:Enum=Pending;Semigranted;Granted;Rejected;Suspended
 	// +kubebuilder:default=Pending
 	State ApprovalState `json:"state"`
 
@@ -56,7 +57,7 @@ type ApprovalStatus struct {
 	AvailableTransitions AvailableTransitions `json:"availableTransitions,omitempty"`
 
 	// LastState defines the last state of the approval
-	// +kubebuilder:validation:Enum=Pending;Granted;Rejected;Suspended
+	// +kubebuilder:validation:Enum=Pending;Semigranted;Granted;Rejected;Suspended
 	// +kubebuilder:default=Pending
 	LastState ApprovalState `json:"lastState,omitempty"`
 

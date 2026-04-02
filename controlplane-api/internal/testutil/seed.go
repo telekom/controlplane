@@ -12,7 +12,6 @@ import (
 // SeedData holds references to all entities created by SeedStandard.
 type SeedData struct {
 	ZoneEU *ent.Zone
-	EnvDev *ent.Environment
 
 	GroupA *ent.Group
 	GroupB *ent.Group
@@ -33,9 +32,6 @@ type SeedData struct {
 
 	MemberAlpha *ent.Member
 	MemberBeta  *ent.Member
-
-	TeamEnvAlpha *ent.TeamEnvironment
-	TeamEnvBeta  *ent.TeamEnvironment
 }
 
 // SeedStandard creates a standard set of test data covering all entity types.
@@ -46,7 +42,6 @@ func SeedStandard(client *ent.Client) *SeedData {
 
 	// Public reference data
 	s.ZoneEU = must(client.Zone.Create().SetName("zone-eu").Save(ctx))
-	s.EnvDev = must(client.Environment.Create().SetName("env-dev").Save(ctx))
 	s.GroupA = must(client.Group.Create().SetName("group-a").SetDisplayName("Group A").Save(ctx))
 	s.GroupB = must(client.Group.Create().SetName("group-b").SetDisplayName("Group B").Save(ctx))
 
@@ -61,12 +56,6 @@ func SeedStandard(client *ent.Client) *SeedData {
 		SetName("Alice Alpha").SetEmail("alice@test.dev").SetTeam(s.TeamAlpha).Save(ctx))
 	s.MemberBeta = must(client.Member.Create().
 		SetName("Bob Beta").SetEmail("bob@test.dev").SetTeam(s.TeamBeta).Save(ctx))
-
-	// TeamEnvironments
-	s.TeamEnvAlpha = must(client.TeamEnvironment.Create().
-		SetTeam(s.TeamAlpha).SetEnvironment(s.EnvDev).Save(ctx))
-	s.TeamEnvBeta = must(client.TeamEnvironment.Create().
-		SetTeam(s.TeamBeta).SetEnvironment(s.EnvDev).Save(ctx))
 
 	// Applications
 	s.AppAlpha = must(client.Application.Create().

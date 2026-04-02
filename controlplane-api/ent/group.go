@@ -19,6 +19,10 @@ type Group struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// Environment holds the value of the "environment" field.
+	Environment *string `json:"environment,omitempty"`
+	// Namespace holds the value of the "namespace" field.
+	Namespace *string `json:"namespace,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// DisplayName holds the value of the "display_name" field.
@@ -60,7 +64,7 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case group.FieldID:
 			values[i] = new(sql.NullInt64)
-		case group.FieldName, group.FieldDisplayName, group.FieldDescription:
+		case group.FieldEnvironment, group.FieldNamespace, group.FieldName, group.FieldDisplayName, group.FieldDescription:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -83,6 +87,20 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			_m.ID = int(value.Int64)
+		case group.FieldEnvironment:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field environment", values[i])
+			} else if value.Valid {
+				_m.Environment = new(string)
+				*_m.Environment = value.String
+			}
+		case group.FieldNamespace:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field namespace", values[i])
+			} else if value.Valid {
+				_m.Namespace = new(string)
+				*_m.Namespace = value.String
+			}
 		case group.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
@@ -142,6 +160,16 @@ func (_m *Group) String() string {
 	var builder strings.Builder
 	builder.WriteString("Group(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	if v := _m.Environment; v != nil {
+		builder.WriteString("environment=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Namespace; v != nil {
+		builder.WriteString("namespace=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")

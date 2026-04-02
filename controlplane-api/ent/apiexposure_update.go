@@ -55,6 +55,12 @@ func (_u *ApiExposureUpdate) SetNillableStatusPhase(v *apiexposure.StatusPhase) 
 	return _u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (_u *ApiExposureUpdate) ClearStatusPhase() *ApiExposureUpdate {
+	_u.mutation.ClearStatusPhase()
+	return _u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (_u *ApiExposureUpdate) SetStatusMessage(v string) *ApiExposureUpdate {
 	_u.mutation.SetStatusMessage(v)
@@ -72,6 +78,46 @@ func (_u *ApiExposureUpdate) SetNillableStatusMessage(v *string) *ApiExposureUpd
 // ClearStatusMessage clears the value of the "status_message" field.
 func (_u *ApiExposureUpdate) ClearStatusMessage() *ApiExposureUpdate {
 	_u.mutation.ClearStatusMessage()
+	return _u
+}
+
+// SetEnvironment sets the "environment" field.
+func (_u *ApiExposureUpdate) SetEnvironment(v string) *ApiExposureUpdate {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *ApiExposureUpdate) SetNillableEnvironment(v *string) *ApiExposureUpdate {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *ApiExposureUpdate) ClearEnvironment() *ApiExposureUpdate {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *ApiExposureUpdate) SetNamespace(v string) *ApiExposureUpdate {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *ApiExposureUpdate) SetNillableNamespace(v *string) *ApiExposureUpdate {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *ApiExposureUpdate) ClearNamespace() *ApiExposureUpdate {
+	_u.mutation.ClearNamespace()
 	return _u
 }
 
@@ -114,6 +160,12 @@ func (_u *ApiExposureUpdate) SetNillableActive(v *bool) *ApiExposureUpdate {
 	if v != nil {
 		_u.SetActive(*v)
 	}
+	return _u
+}
+
+// ClearActive clears the value of the "active" field.
+func (_u *ApiExposureUpdate) ClearActive() *ApiExposureUpdate {
+	_u.mutation.ClearActive()
 	return _u
 }
 
@@ -316,11 +368,26 @@ func (_u *ApiExposureUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	if value, ok := _u.mutation.StatusPhase(); ok {
 		_spec.SetField(apiexposure.FieldStatusPhase, field.TypeEnum, value)
 	}
+	if _u.mutation.StatusPhaseCleared() {
+		_spec.ClearField(apiexposure.FieldStatusPhase, field.TypeEnum)
+	}
 	if value, ok := _u.mutation.StatusMessage(); ok {
 		_spec.SetField(apiexposure.FieldStatusMessage, field.TypeString, value)
 	}
 	if _u.mutation.StatusMessageCleared() {
 		_spec.ClearField(apiexposure.FieldStatusMessage, field.TypeString)
+	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(apiexposure.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(apiexposure.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(apiexposure.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(apiexposure.FieldNamespace, field.TypeString)
 	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(apiexposure.FieldBasePath, field.TypeString, value)
@@ -330,6 +397,9 @@ func (_u *ApiExposureUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	}
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(apiexposure.FieldActive, field.TypeBool, value)
+	}
+	if _u.mutation.ActiveCleared() {
+		_spec.ClearField(apiexposure.FieldActive, field.TypeBool)
 	}
 	if value, ok := _u.mutation.Features(); ok {
 		_spec.SetField(apiexposure.FieldFeatures, field.TypeJSON, value)
@@ -470,6 +540,12 @@ func (_u *ApiExposureUpdateOne) SetNillableStatusPhase(v *apiexposure.StatusPhas
 	return _u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (_u *ApiExposureUpdateOne) ClearStatusPhase() *ApiExposureUpdateOne {
+	_u.mutation.ClearStatusPhase()
+	return _u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (_u *ApiExposureUpdateOne) SetStatusMessage(v string) *ApiExposureUpdateOne {
 	_u.mutation.SetStatusMessage(v)
@@ -487,6 +563,46 @@ func (_u *ApiExposureUpdateOne) SetNillableStatusMessage(v *string) *ApiExposure
 // ClearStatusMessage clears the value of the "status_message" field.
 func (_u *ApiExposureUpdateOne) ClearStatusMessage() *ApiExposureUpdateOne {
 	_u.mutation.ClearStatusMessage()
+	return _u
+}
+
+// SetEnvironment sets the "environment" field.
+func (_u *ApiExposureUpdateOne) SetEnvironment(v string) *ApiExposureUpdateOne {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *ApiExposureUpdateOne) SetNillableEnvironment(v *string) *ApiExposureUpdateOne {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *ApiExposureUpdateOne) ClearEnvironment() *ApiExposureUpdateOne {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *ApiExposureUpdateOne) SetNamespace(v string) *ApiExposureUpdateOne {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *ApiExposureUpdateOne) SetNillableNamespace(v *string) *ApiExposureUpdateOne {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *ApiExposureUpdateOne) ClearNamespace() *ApiExposureUpdateOne {
+	_u.mutation.ClearNamespace()
 	return _u
 }
 
@@ -529,6 +645,12 @@ func (_u *ApiExposureUpdateOne) SetNillableActive(v *bool) *ApiExposureUpdateOne
 	if v != nil {
 		_u.SetActive(*v)
 	}
+	return _u
+}
+
+// ClearActive clears the value of the "active" field.
+func (_u *ApiExposureUpdateOne) ClearActive() *ApiExposureUpdateOne {
+	_u.mutation.ClearActive()
 	return _u
 }
 
@@ -761,11 +883,26 @@ func (_u *ApiExposureUpdateOne) sqlSave(ctx context.Context) (_node *ApiExposure
 	if value, ok := _u.mutation.StatusPhase(); ok {
 		_spec.SetField(apiexposure.FieldStatusPhase, field.TypeEnum, value)
 	}
+	if _u.mutation.StatusPhaseCleared() {
+		_spec.ClearField(apiexposure.FieldStatusPhase, field.TypeEnum)
+	}
 	if value, ok := _u.mutation.StatusMessage(); ok {
 		_spec.SetField(apiexposure.FieldStatusMessage, field.TypeString, value)
 	}
 	if _u.mutation.StatusMessageCleared() {
 		_spec.ClearField(apiexposure.FieldStatusMessage, field.TypeString)
+	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(apiexposure.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(apiexposure.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(apiexposure.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(apiexposure.FieldNamespace, field.TypeString)
 	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(apiexposure.FieldBasePath, field.TypeString, value)
@@ -775,6 +912,9 @@ func (_u *ApiExposureUpdateOne) sqlSave(ctx context.Context) (_node *ApiExposure
 	}
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(apiexposure.FieldActive, field.TypeBool, value)
+	}
+	if _u.mutation.ActiveCleared() {
+		_spec.ClearField(apiexposure.FieldActive, field.TypeBool)
 	}
 	if value, ok := _u.mutation.Features(); ok {
 		_spec.SetField(apiexposure.FieldFeatures, field.TypeJSON, value)
