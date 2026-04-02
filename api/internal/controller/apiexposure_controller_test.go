@@ -82,8 +82,8 @@ func NewRealm(name, zoneName string) *gatewayapi.Realm {
 			},
 		},
 		Spec: gatewayapi.RealmSpec{
-			Url:       fmt.Sprintf("http://my-gateway.%s:8080", zoneName),
-			IssuerUrl: fmt.Sprintf("http://my-issuer.%s:8080/auth/realms/%s", zoneName, testEnvironment),
+			Urls:       []string{fmt.Sprintf("http://my-gateway.%s:8080", zoneName)},
+			IssuerUrls: []string{fmt.Sprintf("http://my-issuer.%s:8080/auth/realms/%s", zoneName, testEnvironment)},
 		},
 		Status: gatewayapi.RealmStatus{},
 	}

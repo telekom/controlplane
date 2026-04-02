@@ -27,8 +27,8 @@ func NewRealm(name string) *gatewayv1.Realm {
 			},
 		},
 		Spec: gatewayv1.RealmSpec{
-			Url:       "https://realm.url",
-			IssuerUrl: "https://issuer.url",
+			Urls:       []string{"https://realm.url"},
+			IssuerUrls: []string{"https://issuer.url"},
 			DefaultConsumers: []string{
 				"test",
 			},
@@ -118,6 +118,56 @@ var _ = Describe("Realm Controller", Ordered, func() {
 
 			}, timeout, interval).Should(Succeed())
 
+		})
+	})
+
+	Context("URL Validation", func() {
+		It("should reject invalid URLs", func() {
+			invalidRealm := &gatewayv1.Realm{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "invalid-realm",
+					Namespace: testNamespace,
+					Labels: map[string]string{
+						config.EnvironmentLabelKey:   testEnvironment,
+						config.BuildLabelKey("zone"): "test",
+					},
+				},
+				Spec: gatewayv1.RealmSpec{
+					Urls:             []string{"not-a-valid-url"},
+					IssuerUrls:       []string{"also-not-valid"},
+					DefaultConsumers: []string{},
+				},
+			}
+
+			By("Attempting to create a realm with invalid URLs")
+			err := k8sClient.Create(ctx, invalidRealm)
+			Expect(err).To(HaveOccurred(), "Expected validation error for invalid URLs")
+		})
+
+		It("should accept valid URLs", func() {
+			validRealm := &gatewayv1.Realm{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "valid-realm",
+					Namespace: testNamespace,
+					Labels: map[string]string{
+						config.EnvironmentLabelKey:   testEnvironment,
+						config.BuildLabelKey("zone"): "test",
+					},
+				},
+				Spec: gatewayv1.RealmSpec{
+					Urls:             []string{"https://valid.example.com", "http://another.example.com:8080/path"},
+					IssuerUrls:       []string{"https://issuer.example.com/auth/realms/test"},
+					DefaultConsumers: []string{},
+				},
+			}
+
+			By("Creating a realm with valid URLs")
+			err := k8sClient.Create(ctx, validRealm)
+			Expect(err).NotTo(HaveOccurred(), "Valid URLs should be accepted")
+
+			By("Cleaning up the valid realm")
+			err = k8sClient.Delete(ctx, validRealm)
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 })

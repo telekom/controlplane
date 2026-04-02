@@ -5,6 +5,7 @@
 package v1
 
 import (
+	"errors"
 	"net/url"
 	"path"
 
@@ -19,10 +20,16 @@ type RealmSpec struct {
 	// Gateway is the Gateway that is associated with the Realm
 	// If empty, the realm considered a virtual realm
 	Gateway *types.ObjectRef `json:"gateway,omitempty"`
-	// Url is the URL of the Gateway when its used as an upstream
-	Url string `json:"url"`
-	// IssuerUrl is the URL of the issuer of the Token sent by the Gateway when its used as a downstream
-	IssuerUrl string `json:"issuerUrl"`
+	// Urls is the list of Gateway URLs that this realm should accept traffic from
+	// +listType=set
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:items:Format=uri
+	Urls []string `json:"urls"`
+	// IssuerUrls is the list of token issuer URLs that are trusted for this realm
+	// +listType=set
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:items:Format=uri
+	IssuerUrls []string `json:"issuerUrls"`
 	// DefaultConsumers is a list of consumers that are allowed to access the Realm for all Routes
 	// +listType=set
 	// +kubebuilder:default={}
@@ -72,7 +79,11 @@ func (r *Realm) SetCondition(condition metav1.Condition) bool {
 }
 
 func (r *Realm) AsUpstream(apiBasePath string) (ups Upstream, err error) {
-	url, err := url.Parse(r.Spec.Url)
+	// Use the first URL as the upstream URL
+	if len(r.Spec.Urls) == 0 {
+		return ups, errors.New("no upstreams found")
+	}
+	url, err := url.Parse(r.Spec.Urls[0])
 	if err != nil {
 		return ups, err
 	}
@@ -86,15 +97,24 @@ func (r *Realm) AsUpstream(apiBasePath string) (ups Upstream, err error) {
 }
 
 func (r *Realm) AsDownstream(apiBasePath string) (dws Downstream, err error) {
-	url, err := url.Parse(r.Spec.Url)
+	// Use the first URL as the downstream URL
+	if len(r.Spec.Urls) == 0 {
+		return dws, errors.New("no downstreams found")
+	}
+	url, err := url.Parse(r.Spec.Urls[0])
 	if err != nil {
 		return dws, err
+	}
+	// Use the first issuer URL
+	issuerUrl := ""
+	if len(r.Spec.IssuerUrls) > 0 {
+		issuerUrl = r.Spec.IssuerUrls[0]
 	}
 	dws = Downstream{
 		Host:      url.Hostname(),
 		Port:      GetPortOrDefaultFromScheme(url),
 		Path:      path.Join(url.Path, apiBasePath),
-		IssuerUrl: r.Spec.IssuerUrl,
+		IssuerUrl: issuerUrl,
 	}
 	return
 }
