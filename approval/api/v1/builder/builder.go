@@ -159,6 +159,7 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 		// contains the server-side values. We must not overwrite the state set by a
 		// decider, nor lose any recorded decisions.
 		currentState := approvalReq.Spec.State
+		currentStrategy := approvalReq.Spec.Strategy
 		currentDecisions := approvalReq.Spec.Decisions
 
 		if err := controllerutil.SetControllerReference(b.Owner, approvalReq, b.Client.Scheme()); err != nil {
@@ -179,9 +180,11 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 		// Restore decisions — these are managed by the decider, not the owner
 		approvalReq.Spec.Decisions = currentDecisions
 
-		// Preserve the decider's decision; only set the state for new or pending requests
+		// Preserve the decider's decision and strategy once a request is decided.
+		// Only pending/new requests should be recalculated from desired inputs.
 		if currentState != "" && currentState != v1.ApprovalStatePending {
 			approvalReq.Spec.State = currentState
+			approvalReq.Spec.Strategy = currentStrategy
 		} else if approvalReq.Spec.Strategy == v1.ApprovalStrategyAuto {
 			approvalReq.Spec.State = v1.ApprovalStateGranted
 			if len(approvalReq.Spec.Decisions) == 0 {
