@@ -1,0 +1,192 @@
+---
+sidebar_position: 3
+---
+
+# Security
+
+Security features allow you to configure how your application authenticates when communicating with other services through the gateway. You can set up machine-to-machine authentication for both API providers and consumers, and restrict access based on IP addresses.
+
+## Machine-to-Machine Authentication
+
+Machine-to-machine (M2M) authentication is used when services communicate with each other without human involvement. By default, the Control Plane manages authentication between services automatically using platform-managed credentials. You can override this behavior by providing your own authentication configuration.
+
+**Applies to:** API Exposure, API Subscription
+
+### OAuth2 Authentication (API Exposure)
+
+As an API provider, you can configure the gateway to obtain an OAuth2 token from an external identity provider before forwarding requests to your backend. This is useful when your service requires a specific token format or scopes that differ from the platform-managed identity.
+
+```yaml
+exposures:
+  - type: api
+    basePath: /checkout/v1
+    upstream: https://checkout.internal:8080
+    approval: SIMPLE
+    visibility: ENTERPRISE
+    security:
+      type: oauth2
+      tokenEndpoint: https://auth.example.com/oauth/token
+      grantType: CLIENT_CREDENTIALS
+      clientId: my-api-client
+      clientSecret: my-api-secret
+```
+
+### OAuth2 Authentication (API Subscription)
+
+As an API consumer, you can provide your own OAuth2 client credentials instead of relying on the platform-managed identity. This is necessary when the API provider requires credentials from a specific identity provider.
+
+```yaml
+subscriptions:
+  - type: api
+    basePath: /checkout/v1
+    security:
+      type: oauth2
+      clientId: my-consumer-client
+      clientSecret: my-consumer-secret
+```
+
+### Basic Authentication (API Exposure)
+
+If your backend service uses basic authentication (username and password), you can configure the gateway to include these credentials when forwarding requests.
+
+```yaml
+exposures:
+  - type: api
+    basePath: /checkout/v1
+    upstream: https://checkout.internal:8080
+    approval: SIMPLE
+    visibility: ENTERPRISE
+    security:
+      type: basicAuth
+      username: api-user
+      password: api-password
+```
+
+### Basic Authentication (API Subscription)
+
+As a consumer, you can also use basic authentication to access an API that requires it.
+
+```yaml
+subscriptions:
+  - type: api
+    basePath: /checkout/v1
+    security:
+      type: basicAuth
+      username: consumer-user
+      password: consumer-password
+```
+
+### Custom Scopes
+
+When using OAuth2 authentication, you can request additional scopes to be included in the token. This is useful when the API provider requires specific scopes beyond the default platform scopes.
+
+```yaml
+exposures:
+  - type: api
+    basePath: /checkout/v1
+    upstream: https://checkout.internal:8080
+    approval: SIMPLE
+    visibility: ENTERPRISE
+    security:
+      type: oauth2
+      scopes:
+        - read:orders
+        - write:orders
+```
+
+### Security Settings
+
+| Field | Description |
+| ----- | ----------- |
+| `security.type` | The authentication method. Use `oauth2` for OAuth2-based authentication or `basicAuth` for username/password authentication. |
+| `security.tokenEndpoint` | The OAuth2 token endpoint URL. Required when using an external identity provider. |
+| `security.grantType` | The OAuth2 grant type. Supported values: `CLIENT_CREDENTIALS`, `PASSWORD`, `REFRESH_TOKEN`. |
+| `security.clientId` | The OAuth2 client identifier. |
+| `security.clientSecret` | The OAuth2 client secret. Cannot be used together with `clientKey`. |
+| `security.clientKey` | An alternative to `clientSecret` for asymmetric authentication. Cannot be used together with `clientSecret`. |
+| `security.tokenRequest` | How authentication data is sent to the identity provider: `body` or `header`. |
+| `security.username` | Username for basic authentication or the OAuth2 password grant. |
+| `security.password` | Password for basic authentication or the OAuth2 password grant. |
+| `security.scopes` | A list of additional OAuth2 scopes to request. Maximum: 10 scopes. |
+
+:::caution Handling Secrets
+Secrets such as `clientSecret`, `clientKey`, and `password` are sensitive values. **Do not hardcode them in your Rover files.** Instead, use environment variable placeholders. Rover-CTL automatically substitutes `${VARIABLE_NAME}` references with their corresponding environment variable values before sending the file to the server.
+
+```yaml
+security:
+  type: oauth2
+  tokenEndpoint: https://auth.example.com/oauth/token
+  grantType: CLIENT_CREDENTIALS
+  clientId: ${MY_CLIENT_ID}
+  clientSecret: ${MY_CLIENT_SECRET}
+```
+
+Set the environment variables before applying:
+
+```bash
+export MY_CLIENT_ID="my-api-client"
+export MY_CLIENT_SECRET="s3cr3t-v4lu3"
+roverctl apply -f rover.yaml
+```
+
+If any referenced environment variable is not set, `roverctl apply` will fail with an error listing the unresolved variables. This ensures secrets are never accidentally left empty.
+:::
+
+---
+
+## IP Restrictions
+
+IP restrictions let you control which IP addresses or network ranges are allowed to access your application. This is configured at the **Rover level**, meaning it applies to all exposures and subscriptions of the application.
+
+**Applies to:** Entire application (Rover-level)
+
+```yaml
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: checkout-service
+spec:
+  zone: dataplane1
+  ipRestrictions:
+    allow:
+      - 10.0.0.0/8
+      - 192.168.1.100
+  exposures:
+    - type: api
+      basePath: /checkout/v1
+      upstream: https://checkout.internal:8080
+      approval: SIMPLE
+      visibility: ENTERPRISE
+```
+
+### IP Restriction Settings
+
+| Field | Description |
+| ----- | ----------- |
+| `ipRestrictions.allow` | A list of IP addresses or CIDR ranges that are allowed to access the application. Maximum: 10 entries. |
+
+---
+
+## Header Removal
+
+You can remove specific HTTP headers from incoming requests before they are forwarded to your backend service. This is useful for stripping headers that should not be passed through the gateway.
+
+**Applies to:** API Exposure
+
+```yaml
+exposures:
+  - type: api
+    basePath: /checkout/v1
+    upstream: https://checkout.internal:8080
+    approval: SIMPLE
+    visibility: ENTERPRISE
+    removeHeaders:
+      - X-Internal-Debug
+      - X-Legacy-Auth
+```
+
+### Header Removal Settings
+
+| Field | Description |
+| ----- | ----------- |
+| `removeHeaders` | A list of HTTP header names to remove from incoming requests before forwarding them to the upstream service. |

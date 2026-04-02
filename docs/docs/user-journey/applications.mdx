@@ -2,9 +2,6 @@
 sidebar_position: 2
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 # Managing Applications
 
 An Application in the Control Plane is a logical container that groups together all the API exposures, subscriptions, and event configurations for a single service or workload. Applications are created automatically when you apply a Rover file, but understanding the concept helps you structure your configurations.
@@ -22,9 +19,6 @@ Each Rover file maps to exactly one Application. When the Rover operator process
 
 An application is identified by the Rover resource itself (`metadata.name` in your team namespace):
 
-<Tabs groupId="resource-version" defaultValue="legacy">
-  <TabItem value="legacy" label="Legacy">
-
 ```yaml
 apiVersion: tcp.ei.telekom.de/v1
 kind: Rover
@@ -34,28 +28,35 @@ spec:
   zone: dataplane1
 ```
 
-  </TabItem>
-  <TabItem value="v1" label="v1">
-
-```yaml
-apiVersion: rover.cp.ei.telekom.de/v1
-kind: Rover
-metadata:
-  name: checkout-service
-  namespace: dev--payment-services--checkout
-spec:
-  zone: dataplane1
-```
-
-  </TabItem>
-</Tabs>
-
 ### Key Fields
 
 | Field | Description |
 | ----- | ----------- |
 | `zone` | The deployment zone where your application runs. Must match a zone defined by the platform administrator. |
 | `metadata.name` | The logical application identifier used by downstream resources. |
+
+## IP Restrictions
+
+IP restrictions are configured at the **application level** in the Rover resource. This allows you to define which source IP ranges are allowed to access your application through the gateway.
+
+```yaml
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: checkout-service
+spec:
+  zone: dataplane1
+  ipRestrictions:
+    allow:
+      - 10.0.0.0/8
+      - 192.168.1.0/24
+```
+
+### Key Fields
+
+| Field | Description |
+| ----- | ----------- |
+| `ipRestrictions.allow` | List of CIDR ranges that are allowed. |
 
 ## Zone and Failover
 

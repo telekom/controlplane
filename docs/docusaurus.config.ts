@@ -99,7 +99,7 @@ const config: Config = {
             },
             {
               label: 'Admin Journey',
-              to: '/docs/admin-journey/setup',
+              to: '/docs/admin-journey/installation',
             },
           ],
         },

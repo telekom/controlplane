@@ -2,9 +2,6 @@
 sidebar_position: 6
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 # Subscribing to Events
 
 :::info Optional Feature
@@ -21,9 +18,6 @@ Subscribing to an event grants your application access to events published by an
 
 Event subscriptions are declared in the `subscriptions` section of your Rover file:
 
-<Tabs groupId="resource-version" defaultValue="legacy">
-  <TabItem value="legacy" label="Legacy">
-
 ```yaml
 apiVersion: tcp.ei.telekom.de/v1
 kind: Rover
@@ -39,35 +33,12 @@ spec:
       callback: https://analytics.internal:8080/events
 ```
 
-  </TabItem>
-  <TabItem value="v1" label="v1">
-
-```yaml
-apiVersion: rover.cp.ei.telekom.de/v1
-kind: Rover
-metadata:
-  name: analytics-service
-  namespace: dev--analytics--reporting
-spec:
-  zone: dataplane1
-  subscriptions:
-    - event:
-        eventType: de.telekom.orders.created.v1
-        delivery:
-          type: Callback
-          payload: Data
-          callback: https://analytics.internal:8080/events
-```
-
-  </TabItem>
-</Tabs>
-
 ### Key Fields
 
 | Field | Description |
 | ----- | ----------- |
 | `eventType` | The event type you want to subscribe to. This must match an existing exposed event type. |
-| `delivery` / `deliveryType` | Configures how events are delivered to your application. See below. |
+| `deliveryType` | Configures how events are delivered to your application. See below. |
 
 ## What Happens When You Subscribe
 
@@ -96,12 +67,26 @@ The Control Plane supports multiple event delivery methods:
 | **Callback** | Events are delivered to a URL endpoint you specify. The platform pushes events to your service. |
 | **SSE (Server-Sent Events)** | Your service opens a persistent connection and receives events as a stream in real time. |
 
+## Additional Features
+
+Beyond the basic subscription, you can customize event delivery and filtering with additional features.
+
+:::tip
+See [Additional Features](./features/overview.mdx) for the full list of features and detailed configuration examples.
+:::
+
+| Feature | Description |
+| ------- | ----------- |
+| [Event Delivery Settings](./features/event-delivery.mdx) | Customize payload format, retention time, circuit breaker behavior, retry logic, and health checks. |
+| [Subscriber Triggers](./features/event-filtering.mdx#subscriber-triggers-event-subscription) | Filter which events are delivered to your application based on CloudEvents attributes and payload content. |
+| [Scope Selection](./features/event-filtering.mdx#scope-selection-event-subscription) | Choose which publisher-defined scopes you want to receive. |
+
 ## Checking Subscription Status
 
 You can check the status of your subscriptions using Rover-CTL:
 
 ```bash
-rover-ctl get rovers
+roverctl get-info
 ```
 
 The output will show the status of each subscription, including whether it is pending approval, granted, or rejected. See the [Rover-CTL CLI Reference](../reference/roverctl/) for more commands and options.

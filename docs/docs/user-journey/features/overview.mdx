@@ -1,0 +1,68 @@
+---
+sidebar_position: 1
+---
+
+# Additional Features
+
+Every API exposure, API subscription, event exposure, and event subscription works out of the box with a sensible default configuration. However, you can customize behavior by adding **additional features** to your Rover file. These features let you fine-tune traffic management, secure communication between services, filter events, and more.
+
+:::tip
+All features on this page are **optional**. You only need to configure them if the default behavior does not meet your requirements.
+:::
+
+## Feature Overview
+
+The following table shows which features are available for each resource type. Click on a feature category to learn more.
+
+| Feature | API Exposure | API Subscription | Event Exposure | Event Subscription |
+| ------- | :----------: | :--------------: | :------------: | :----------------: |
+| **[Traffic Management](./traffic-management.mdx)** | | | | |
+| Rate limiting | ✅ | | | |
+| Load balancing | ✅ | | | |
+| Failover | ✅ | ✅ | | |
+| Circuit breaker | ✅ | | | |
+| **[Security](./security.mdx)** | | | | |
+| OAuth2 / External IDP | ✅ | ✅ | | |
+| Basic authentication | ✅ | ✅ | | |
+| Custom scopes | ✅ | ✅ | | |
+| IP restrictions | ✅ | ✅ | ✅ | ✅ |
+| Header removal | ✅ | | | |
+| **[Event Delivery](./event-delivery.mdx)** | | | | |
+| Delivery type (Callback / SSE) | | | | ✅ |
+| Payload type (Data / DataRef) | | | | ✅ |
+| Event retention time | | | | ✅ |
+| Circuit breaker opt-out | | | | ✅ |
+| Retryable status codes | | | | ✅ |
+| Redelivery rate | | | | ✅ |
+| Health check method | | | | ✅ |
+| **[Event Filtering](./event-filtering.mdx)** | | | | |
+| Publisher scopes | | | ✅ | |
+| Subscriber triggers | | | | ✅ |
+| Scope selection | | | | ✅ |
+| Additional publisher IDs | | | ✅ | |
+
+✅ = available for this resource type
+
+## How to Use Additional Features
+
+Additional features are configured directly in your Rover file, alongside the basic exposure or subscription definition. For example, to add rate limiting to an API exposure:
+
+```yaml
+exposures:
+  - type: api
+    basePath: /checkout/v1
+    upstream: https://checkout.internal:8080
+    approval: SIMPLE
+    visibility: ENTERPRISE
+    # Additional feature:
+    rateLimit:
+      provider:
+        second: 100
+```
+
+Each feature page in this section explains:
+
+- **What the feature does** and when you might need it
+- **Which resource types** support it
+- **How to configure it** with complete YAML examples
+- **Available settings** and their default values

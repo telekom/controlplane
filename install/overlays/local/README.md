@@ -24,9 +24,19 @@ For complete installation instructions, please refer to [Installation Guide](htt
 
 ## Important Configuration Notes
 
-Before installing, you may need to update the zone configuration files in `resources/admin/zones` with your identity provider and gateway configuration:
+Before installing, create local zone configuration files from the provided examples in `resources/admin/zones` and then replace all placeholders with your real values:
 
-**Identity Provider Configuration (in dataplane1.yaml and dataplane2.yaml)**
+```bash
+cp install/overlays/local/resources/admin/zones/dataplane1.example.yaml install/overlays/local/resources/admin/zones/dataplane1.yaml
+cp install/overlays/local/resources/admin/zones/dataplane2.example.yaml install/overlays/local/resources/admin/zones/dataplane2.yaml
+```
+
+> The `.example.yaml` files are safe templates and are tracked in Git.
+> The copied `dataplane1.yaml` and `dataplane2.yaml` files are intentionally ignored via `.gitignore` to reduce the risk of committing secrets.
+
+After copying the files, update them with your identity provider and gateway configuration:
+
+**Identity Provider Configuration (in your local `dataplane1.yaml` and `dataplane2.yaml`)**
 ```yaml
 identityProvider:
   admin:
@@ -36,7 +46,7 @@ identityProvider:
   url: https://my-idp.example.com/
 ```
 
-**Gateway Configuration (in dataplane1.yaml and dataplane2.yaml)**
+**Gateway Configuration (in your local `dataplane1.yaml` and `dataplane2.yaml`)**
 ```yaml
 gateway:
   admin:

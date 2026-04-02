@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 5
 ---
 
 # Organizations & Teams
@@ -16,6 +16,9 @@ kind: Group
 metadata:
   name: payment-services
   namespace: dev
+spec:
+  displayName: Payment Services
+  description: Teams responsible for payment-related capabilities
 ```
 
 ## Teams
@@ -35,11 +38,13 @@ metadata:
   namespace: dev
 spec:
   group: payment-services
-  team: checkout
+  name: checkout
   email: checkout-team@example.com
   members:
-    - alice@example.com
-    - bob@example.com
+    - name: Alice Example
+      email: alice@example.com
+    - name: Bob Example
+      email: bob@example.com
 ```
 
 ### Team Tokens

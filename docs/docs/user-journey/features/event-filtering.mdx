@@ -1,0 +1,400 @@
+---
+sidebar_position: 5
+---
+
+# Event Filtering
+
+Event filtering features give publishers and subscribers fine-grained control over which events are delivered and what data they contain. Publishers can define **scopes** to partition their events, and subscribers can apply **triggers** to filter which events they receive. There are two filter types: **response filters** control which fields of the payload are delivered, and **selection filters** control when an event should be delivered. Both publishers and subscribers can set these filters — the publisher as scopes, and the consumer within their subscription.
+
+:::info Filter execution order
+If both a publisher scope and a consumer filter are configured, the **scope filter is executed first**. This is important to keep in mind: if a response filter in the scope removes certain fields, a consumer selection filter that tries to access those fields will not find them.
+:::
+
+:::important Filtering applies to the data field
+All filtering is applied to the contents of the `data` field of an event message, not to the root of the entire event message. Therefore, a nested field `data.foobar` is referenced as `foobar` in response filters and as `$.foobar` in selection filters.
+:::
+
+## Response Filter
+
+The response filter defines which fields within the event payload should be delivered to the consumer. This is useful, for instance, when an event contains sensitive data that should not be sent to certain consumers.
+
+A response filter is defined by providing a list of field paths in the `responseFilter` field inside the `trigger`. Fields that cannot be resolved are ignored at runtime. An optional `responseFilterMode` can be set to either `INCLUDE` or `EXCLUDE`, specifying whether the listed fields should be included (whitelisted) or excluded (blacklisted). If no mode is set, the fields are included by default.
+
+```yaml
+subscriptions:
+  - type: event
+    eventType: de.telekom.orders.created.v1
+    deliveryType: callback
+    payloadType: Data
+    callback: https://analytics.internal:8080/events
+    trigger:
+      responseFilterMode: INCLUDE
+      responseFilter:
+        - total.amount
+        - total.currency
+        - order.number
+```
+
+### Response Filter Example
+
+With the filter above, the following event payload sent by the provider:
+
+```json
+{
+  "order": {
+    "number": 2389848,
+    "shoppingCartRef": "/shoppingCart/b717b88c-ba6d-43be-b4f9-ad0316a60755"
+  },
+  "customer": {
+    "name": "Jane Doe",
+    "email": "jane@example.com"
+  },
+  "total": {
+    "amount": 39.99,
+    "currency": "EUR",
+    "taxRate": 19
+  }
+}
+```
+
+Would result in the following payload being delivered to the consumer:
+
+```json
+{
+  "order": {
+    "number": 2389848
+  },
+  "total": {
+    "amount": 39.99,
+    "currency": "EUR"
+  }
+}
+```
+
+The `customer` object, `order.shoppingCartRef`, and `total.taxRate` are removed because they were not listed in the response filter.
+
+---
+
+## Selection Filter
+
+The selection filter defines when an event should be delivered. You can use a simple key-value map (`selectionFilter`) for basic attribute matching, or an advanced expression (`advancedSelectionFilter`) for complex logic.
+
+### Simple Selection Filter
+
+The simple selection filter is a key-value map that matches CloudEvents attributes. All entries must match for the event to be delivered (logical AND).
+
+```yaml
+trigger:
+  selectionFilter:
+    type: order.created
+    source: /orders
+```
+
+This filter only delivers events where **both** `type` is `order.created` **and** `source` is `/orders`.
+
+### Advanced Selection Filter
+
+For more complex filtering logic, use the `advancedSelectionFilter`. This supports comparison operators and logical operators that can be nested to build complex expressions.
+
+```yaml
+trigger:
+  advancedSelectionFilter:
+    and:
+      - eq:
+          field: $.processing.state
+          value: IN_PROGRESS
+      - or:
+          - ge:
+              field: $.total.amount
+              value: 100000
+          - eq:
+              field: $.notify.policy
+              value: ALWAYS
+```
+
+This filter delivers events where the processing state is `IN_PROGRESS` **and** either the total amount is at least 100,000 **or** the notify policy is `ALWAYS`.
+
+### Filter Operators
+
+#### Comparison Operators
+
+Each comparison operator takes a `field` (a JSON path reference into the event payload) and a `value` to compare against. All operators return `false` when the specified field does not exist. The value can be of type string, number, boolean, or array.
+
+```yaml
+- <operator>:
+    field: <field-reference>
+    value: <expected-value>
+```
+
+| Name | Operator | Description |
+| ---- | -------- | ----------- |
+| Equal | `eq` | True if `field` equals `value`. |
+| Not equal | `ne` | True if `field` does not equal `value`. |
+| Less than | `lt` | True if `field` is less than `value`. |
+| Less or equal | `le` | True if `field` is less than or equal to `value`. |
+| Greater than | `gt` | True if `field` is greater than `value`. |
+| Greater or equal | `ge` | True if `field` is greater than or equal to `value`. |
+| Regex | `rx` | True if `field` matches the regular expression defined in `value`. |
+| In | `in` | True if `field` is contained in `value` (where `value` is an array). |
+| Contains | `ct` | True if `field` (an array) contains `value`. |
+| Does not contain | `nct` | True if `field` (an array) does not contain `value`. |
+
+#### Logical Operators
+
+Logical operators combine multiple comparison or logical operators into a single expression.
+
+```yaml
+- <operator>:
+    - <child operator>
+    - <child operator>
+```
+
+| Name | Operator | Description |
+| ---- | -------- | ----------- |
+| Or | `or` | True if **at least one** of the child operators returns true. |
+| And | `and` | True if **all** of the child operators return true. |
+
+### Field References (JSON Path)
+
+Selection filters use JSON path notation to reference fields in the event payload. The following operators are supported:
+
+| Operator | Description |
+| -------- | ----------- |
+| `$` | The root element. This starts all path expressions. |
+| `@` | The current node being processed by a filter predicate. |
+| `*` | Wildcard. Available anywhere a name or number is required. |
+| `..` | Deep scan. Available anywhere a name is required. |
+| `.<name>` | Dot-notated child. |
+| `['<name>' (, '<name>')]` | Bracket-notated child or children. |
+| `[<number> (, <number>)]` | Array index or indexes. |
+| `[start:end]` | Array slice operator. |
+
+For example, to match only when the quantity of a specific product is below a threshold:
+
+```yaml
+advancedSelectionFilter:
+  lt:
+    field: $..product[?(@.name == "iPhone 13 Mini Black")].quantity
+    value: 10
+```
+
+Given the following event payload:
+
+```json
+{
+  "stock": {
+    "product": [
+      {
+        "name": "Samsung Galaxy S21",
+        "quantity": 293
+      },
+      {
+        "name": "iPhone 13 Mini Black",
+        "quantity": 2
+      }
+    ]
+  }
+}
+```
+
+This filter would match because the quantity of "iPhone 13 Mini Black" (2) is less than 10.
+
+### Filter Settings
+
+| Field | Description |
+| ----- | ----------- |
+| `trigger.selectionFilter` | A key-value map that matches CloudEvents attributes. All entries must match (logical AND). |
+| `trigger.advancedSelectionFilter` | An advanced filter expression for complex matching logic. See [Filter Operators](#filter-operators) for the full syntax. |
+| `trigger.responseFilter` | A list of field paths that control which fields are included or excluded from the event payload. Uses dot notation (e.g., `total.amount`). |
+| `trigger.responseFilterMode` | How the response filter is applied: `INCLUDE` (only return listed paths) or `EXCLUDE` (return everything except listed paths). Default: `INCLUDE`. |
+
+:::tip
+You can combine response filters with selection filters. The response filter controls **what data** is delivered, and the selection filter controls **when** an event is delivered.
+:::
+
+---
+
+## Publisher Scopes (Event Exposure)
+
+As an event publisher, you can define **scopes** on your event exposure. Scopes are named partitions that allow you to categorize events and apply publisher-side filters. Subscribers can then choose which scopes they want to receive.
+
+Each scope has a name and a trigger that defines the filtering rules for that scope. The trigger uses the same response filter and selection filter syntax described above.
+
+**Applies to:** Event Exposure
+
+```yaml
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: orders-provider
+spec:
+  zone: dataplane1
+  exposures:
+    - type: event
+      eventType: de.telekom.orders.created.v1
+      approval: SIMPLE
+      visibility: ENTERPRISE
+      scopes:
+        - name: billing
+          trigger:
+            responseFilter:
+              - orderId
+              - customerId
+              - orderItem.productid
+              - orderItem.quantity
+        - name: device-orders
+          trigger:
+            advancedSelectionFilter:
+              eq:
+                field: type
+                value: DEVICE
+            responseFilter:
+              - orderItem.productid
+              - orderItem.quantity
+        - name: service-orders
+          trigger:
+            advancedSelectionFilter:
+              eq:
+                field: type
+                value: SERVICE
+            responseFilter:
+              - orderItem.productid
+              - orderItem.quantity
+```
+
+In this example, three scopes are defined:
+- **billing** — delivers only order and customer IDs with item details (no selection filter, so all events match)
+- **device-orders** — delivers only item details, and only for events where `type` is `DEVICE`
+- **service-orders** — delivers only item details, and only for events where `type` is `SERVICE`
+
+### Scope Settings
+
+| Field | Description |
+| ----- | ----------- |
+| `scopes[].name` | A unique name for this scope. Subscribers reference this name to select the scope. |
+| `scopes[].trigger` | The filtering rules for this scope. Uses the same `selectionFilter`, `advancedSelectionFilter`, `responseFilter`, and `responseFilterMode` fields described in the [Filter Settings](#filter-settings) section. |
+
+---
+
+## Default Scopes
+
+Publishers can define a special scope named `default` that applies automatically when a consumer does not specify any scopes. This lets the publisher set a restrictive baseline filter that protects sensitive data by default.
+
+```yaml
+exposures:
+  - type: event
+    eventType: de.telekom.orders.created.v1
+    approval: SIMPLE
+    visibility: ENTERPRISE
+    scopes:
+      - name: default
+        trigger:
+          responseFilter:
+            - orderItem.productid
+            - orderItem.quantity
+```
+
+If the publisher does not define a `default` scope, the implicit default is an empty trigger (no filtering at all):
+
+```yaml
+- name: default
+  trigger: {}
+```
+
+:::note
+Default scope filters are **not** combined with named scope filters. When a consumer specifies one or more scopes, only those scope filters are applied — the default scope is ignored entirely.
+:::
+
+---
+
+## Scope Selection (Event Subscription)
+
+When a publisher defines scopes on their event exposure, subscribers can choose which scopes they want to receive. If no scopes are specified, the subscriber receives events filtered by the default scope.
+
+**Applies to:** Event Subscription
+
+```yaml
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: deviceorders-consumer
+spec:
+  zone: dataplane1
+  subscriptions:
+    - type: event
+      eventType: de.telekom.orders.created.v1
+      deliveryType: server_sent_event
+      payloadType: Data
+      scopes:
+        - device-orders
+```
+
+The consumer can list as many scopes as they like and can additionally specify consumer-side filters in the `trigger` field, which are evaluated **after** the publisher-side scope filters have been applied.
+
+### Scope Selection Settings
+
+| Field | Description |
+| ----- | ----------- |
+| `scopes` | A list of scope names to subscribe to. Must match scope names defined on the corresponding event exposure. If omitted, the default scope applies. |
+
+:::info Scope changes require re-approval
+To ensure the event provider retains control over its data, changing the scopes on an existing subscription triggers a new **ApprovalRequest**. The event provider must approve the updated scope configuration before the changes take effect.
+
+This requirement does **not** apply to consumer-side filters in the `trigger` field, which can be changed at any time without re-approval.
+:::
+
+---
+
+## Subscriber Triggers (Event Subscription)
+
+As an event subscriber, you can apply a **trigger** to filter which events you receive. This works independently of publisher scopes and lets you narrow down the events delivered to your application. The trigger uses the same response filter and selection filter syntax described in the [Filter Settings](#filter-settings) section.
+
+**Applies to:** Event Subscription
+
+```yaml
+subscriptions:
+  - type: event
+    eventType: de.telekom.orders.created.v1
+    deliveryType: callback
+    payloadType: Data
+    callback: https://analytics.internal:8080/events
+    trigger:
+      advancedSelectionFilter:
+        and:
+          - eq:
+              field: $.processing.state
+              value: IN_PROGRESS
+          - ge:
+              field: $.total.amount
+              value: 100000
+      responseFilterMode: INCLUDE
+      responseFilter:
+        - total.amount
+        - total.currency
+        - order.number
+```
+
+---
+
+## Additional Publisher IDs (Event Exposure)
+
+By default, only the application that owns an event exposure can publish events to that event type. If you need multiple applications to publish to the same event type (for example, in a distributed or federated setup), you can list their application IDs as additional publishers.
+
+**Applies to:** Event Exposure
+
+```yaml
+exposures:
+  - type: event
+    eventType: de.telekom.orders.created.v1
+    approval: SIMPLE
+    visibility: ENTERPRISE
+    additionalPublisherIds:
+      - hub42--team-orders--order-processor
+      - hub42--team-orders--order-importer
+```
+
+### Additional Publisher Settings
+
+| Field | Description |
+| ----- | ----------- |
+| `additionalPublisherIds` | A list of application IDs that are allowed to publish events to this event type, in addition to the owning application. Each ID must be unique. |

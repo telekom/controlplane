@@ -2,9 +2,6 @@
 sidebar_position: 3
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 # Exposing APIs
 
 Exposing an API is a two-step process. First, you register your API specification so the platform knows about your API. Then, you declare the exposure in a Rover file to configure routing and access control. Both steps are applied in the same way using `roverctl apply`.
@@ -17,10 +14,7 @@ Your team must be onboarded before you can expose APIs. See [Applications](./app
 
 Before exposing an API, you must register its OpenAPI specification. This creates an **Api** resource in the Control Plane, which serves as the central reference for your API's metadata (title, version, category, and base path).
 
-<Tabs groupId="resource-version" defaultValue="legacy">
-  <TabItem value="legacy" label="Legacy">
-
-In the legacy format, the specification file is the OpenAPI document itself. Rover-CTL automatically detects it as an API specification based on the `openapi` or `swagger` field and extracts the name from the base path.
+The specification file is the OpenAPI document itself. Rover-CTL automatically detects it as an API specification based on the `openapi` or `swagger` field and extracts the name from the base path.
 
 ```yaml title="checkout-spec.yaml"
 openapi: 3.0.0
@@ -46,34 +40,6 @@ Apply the specification:
 roverctl apply -f checkout-spec.yaml
 ```
 
-  </TabItem>
-  <TabItem value="v1" label="v1">
-
-In the v1 format, the specification is a dedicated Custom Resource. The OpenAPI document content is uploaded to the File Manager separately, and the `specification` field references the resulting file ID.
-
-```yaml title="checkout-apispec.yaml"
-apiVersion: rover.cp.ei.telekom.de/v1
-kind: ApiSpecification
-metadata:
-  name: checkout-v1
-  namespace: dev--payment-services--checkout
-spec:
-  specification: "file-manager-id-abc123"
-  basepath: /checkout/v1
-  version: "1.0.0"
-  hash: "sha256:a1b2c3d4..."
-  category: other
-```
-
-Apply the specification:
-
-```bash
-kubectl apply -f checkout-apispec.yaml
-```
-
-  </TabItem>
-</Tabs>
-
 ### What Happens
 
 The ApiSpecification handler processes your specification and creates an **Api** resource. This resource stores the API's metadata — including its base path, version, and category — and makes the API discoverable in the platform. The specification content is stored in the **File Manager** for later retrieval.
@@ -81,9 +47,6 @@ The ApiSpecification handler processes your specification and creates an **Api**
 ## Step 2: Expose the API in Your Rover
 
 Once the API specification is registered, you can declare the exposure in your Rover file. The `basePath` in your exposure must match the base path registered in Step 1.
-
-<Tabs groupId="resource-version" defaultValue="legacy">
-  <TabItem value="legacy" label="Legacy">
 
 ```yaml title="rover.yaml"
 apiVersion: tcp.ei.telekom.de/v1
@@ -106,42 +69,12 @@ Apply the Rover file:
 roverctl apply -f rover.yaml
 ```
 
-  </TabItem>
-  <TabItem value="v1" label="v1">
-
-```yaml title="rover.yaml"
-apiVersion: rover.cp.ei.telekom.de/v1
-kind: Rover
-metadata:
-  name: checkout-service
-  namespace: dev--payment-services--checkout
-spec:
-  zone: dataplane1
-  exposures:
-    - api:
-        basePath: /checkout/v1
-        upstreams:
-          - url: https://checkout.internal:8080
-            weight: 1
-        approval:
-          strategy: Simple
-```
-
-Apply the Rover file:
-
-```bash
-kubectl apply -f rover.yaml
-```
-
-  </TabItem>
-</Tabs>
-
 ### Key Fields
 
 | Field | Description |
 | ----- | ----------- |
 | `basePath` | The public API path. Must match an existing Api resource and be unique across the platform. This is how consumers will reach your API. |
-| `upstream` / `upstreams` | The internal URL where your service is running. The gateway proxies incoming requests to this address. In v1, this is an array of upstream objects with optional weights for load balancing. |
+| `upstream` | The internal URL where your service is running. The gateway proxies incoming requests to this address. |
 | `approval` | The approval strategy for subscription requests: `auto`, `simple`, or `foureyes`. See [Approvals](./approvals.mdx). |
 
 ### What Happens
@@ -158,57 +91,24 @@ If the Api resource does not exist (i.e., the specification was not registered i
 
 The API is now discoverable by other teams and ready to receive subscription requests.
 
-## Traffic Management
+## Additional Features
 
-You can configure traffic management settings for your exposed APIs:
+Beyond the basic exposure configuration, you can customize your API with additional features such as rate limiting, load balancing, failover, circuit breakers, security, and header removal.
 
-<Tabs groupId="resource-version" defaultValue="legacy">
-  <TabItem value="legacy" label="Legacy">
+:::tip
+See [Additional Features](./features/overview.mdx) for the full list of features and detailed configuration examples.
+:::
 
-```yaml
-exposures:
-  - type: api
-    visibility: ENTERPRISE
-    basePath: /checkout/v1
-    upstream: https://checkout.internal:8080
-    rateLimit:
-      provider:
-        second: 100
-      consumerDefault:
-        second: 10
-    loadBalancing:
-      servers:
-        - upstream: https://checkout.internal:8080
-          weight: 1
-```
+Here is a quick overview of what is available for API exposures:
 
-  </TabItem>
-  <TabItem value="v1" label="v1">
-
-```yaml
-exposures:
-  - api:
-      basePath: /checkout/v1
-      upstreams:
-        - url: https://checkout.internal:8080
-          weight: 1
-      approval:
-        strategy: Simple
-      traffic:
-        rateLimit:
-          provider:
-            limits:
-              second: 100
-          consumers:
-            default:
-              limits:
-                second: 10
-        loadBalancing:
-          strategy: RoundRobin
-```
-
-  </TabItem>
-</Tabs>
+| Feature | Description |
+| ------- | ----------- |
+| [Rate Limiting](./features/traffic-management.mdx#rate-limiting) | Limit the number of requests per second, minute, or hour — for the API as a whole or per consumer. |
+| [Load Balancing](./features/traffic-management.mdx#load-balancing) | Distribute traffic across multiple backend servers with weighted routing. |
+| [Failover](./features/traffic-management.mdx#failover) | Route traffic to backup zones when the primary zone is unavailable. |
+| [Circuit Breaker](./features/traffic-management.mdx#circuit-breaker) | Automatically stop requests to failing backends to prevent cascading failures. |
+| [Security](./features/security.mdx) | Configure OAuth2, basic authentication, or custom scopes for provider-side M2M auth. |
+| [Header Removal](./features/security.mdx#header-removal) | Strip specific HTTP headers before forwarding requests to your backend. |
 
 ## Next Steps
 

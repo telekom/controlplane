@@ -52,7 +52,6 @@ Backend services that are not Kubernetes operators:
 | `install/overlays/default/` | Production overlay (pulls images from GitHub Container Registry) |
 | `install/overlays/local/` | Local development overlay (images at `latest`, eventing enabled) |
 | `install/components/eventing/` | Optional kustomize Component for event and pubsub controllers |
-| `install.sh` | Interactive installer script for production/staging clusters |
 
 ### Tools
 
@@ -68,7 +67,7 @@ Backend services that are not Kubernetes operators:
 
 ## Local Installation
 
-There are three ways to deploy the Control Plane to your local cluster.
+There are two ways to deploy the Control Plane to your local cluster.
 
 ### Option A — Full Local Setup (Recommended)
 
@@ -88,16 +87,7 @@ This is the fastest way to get a complete local environment. The script also sup
 ./hack/local-setup.sh --build-only --only gateway
 ```
 
-### Option B — Interactive Installer
-
-The `install.sh` script installs prerequisites (cert-manager, trust-manager, Prometheus CRDs) and downloads the kustomization file. You then apply it yourself:
-
-```bash
-./install.sh --with-cert-manager --with-trust-manager --with-monitoring-crds
-kubectl apply -k .
-```
-
-### Option C — Manual Kustomize
+### Option B — Manual Kustomize
 
 If you prefer full control, apply the local overlay directly:
 

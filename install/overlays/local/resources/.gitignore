@@ -4,3 +4,7 @@
 
 .local
 **/*.local
+
+# local zone configs copied from *.example.yaml templates (may contain secrets)
+admin/zones/dataplane1.yaml
+admin/zones/dataplane2.yaml

@@ -98,3 +98,4 @@ Each domain is described in detail on its own page:
 | [Identity](./identity.mdx) | Identity and access management |
 | [Event](./event.mdx) | Event publishing, subscribing, and meshing |
 | [PubSub](./pubsub.mdx) | Runtime layer for publish/subscribe messaging |
+| [Secret Manager](./secret-manager.mdx) | Centralized secret storage, references, and retrieval |

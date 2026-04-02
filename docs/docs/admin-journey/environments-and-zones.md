@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 4
 ---
 
 # Environments & Zones
@@ -31,6 +31,20 @@ Create the Kubernetes namespace before applying the Environment resource, or use
 A Zone represents a physical or logical deployment target within an environment. Each zone has its own gateway and identity provider configuration, and the Control Plane creates a dedicated namespace for the zone's resources.
 
 Zones are the key building block for multi-cloud deployments. You can have zones pointing to different cloud providers (for example, one zone on AWS and another on Azure), and the Control Plane will manage API routing and event meshing across them.
+
+### How a Zone is Set Up
+
+Each zone is expected to have:
+
+- **1 Gateway instance** — used for API routing and policy enforcement in that zone
+- **1 Identity Provider (IDP) instance** — used for authentication and client management in that zone
+
+By default, the current platform setup uses:
+
+- **Kong** as the gateway, typically deployed with Helm via [`gateway-kong-charts`](https://github.com/telekom/gateway-kong-charts)
+- **Keycloak** as the IDP, typically deployed with Helm via [`identity-iris-keycloak-charts`](https://github.com/telekom/identity-iris-keycloak-charts)
+
+When creating the Zone resource in the Control Plane, you provide the connection details for exactly these zone-local instances (gateway + IDP). This keeps each zone self-contained and allows different zones to use separate runtime endpoints if needed.
 
 ### Creating a Zone
 
@@ -93,6 +107,81 @@ spec:
     name: dataplane1
     namespace: dev
 ```
+
+## Event Config
+
+:::info
+Before creating an `EventConfig`, make sure the eventing subsystem is enabled in your Control Plane installation. Follow the steps in [Installation](./installation.md#optional-enable-the-eventing-subsystem).
+:::
+
+After a zone is created, eventing is still not active for that zone by default. To enable the event feature, create an `EventConfig` resource for the zone.
+
+`EventConfig` is the zone-level setup for the Event domain. It bootstraps the required event infrastructure in that zone (for example gateway routes, identity clients, and event store wiring).
+
+### What `EventConfig` does
+
+When an `EventConfig` is reconciled, the event controller prepares core building blocks used by event publishers and subscribers:
+
+- **Identity clients** for event administration and cross-zone mesh communication
+- **EventStore** connection used by the pub/sub runtime
+- **Gateway routes and URLs** for publishing, callbacks, and (optionally) Voyager APIs
+
+### Creating an `EventConfig`
+
+Apply one `EventConfig` per zone:
+
+```yaml
+apiVersion: event.cp.ei.telekom.de/v1
+kind: EventConfig
+metadata:
+  name: dataplane1-event-config
+  namespace: dev
+spec:
+  zone:
+    name: dataplane1
+    namespace: dev
+  admin:
+    url: https://config-backend.example.com
+    client:
+      clientId: event-admin
+      clientSecret: <your-event-admin-secret>
+  serverSendEventUrl: http://event-backend.dev.svc.cluster.local/sse
+  publishEventUrl: http://event-backend.dev.svc.cluster.local/publish
+  voyagerApiUrl: http://voyager.dev.svc.cluster.local
+  mesh:
+    fullMesh: true
+    client:
+      clientId: event-mesh
+      clientSecret: <your-event-mesh-secret>
+```
+
+### Mesh configuration options
+
+- **`fullMesh: true`** — events can be distributed across all zones.
+- **`fullMesh: false` + `zoneNames`** — events are only distributed to selected zones.
+
+Example for partial mesh:
+
+```yaml
+mesh:
+  fullMesh: false
+  zoneNames:
+    - dataplane2
+    - dataplane3
+  client:
+    clientId: event-mesh
+    clientSecret: <your-event-mesh-secret>
+```
+
+### Verifying readiness
+
+After creation, the resource status is populated with generated references and URLs (for example `publishUrl`, `callbackUrl`, and `eventStore`).
+
+If these fields appear and conditions are healthy, your zone is ready for event exposures and subscriptions.
+
+:::caution
+Do not commit secrets (for example `clientSecret`) to version control. Use your platform's secret management approach.
+:::
 
 ## Next Steps
 

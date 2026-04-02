@@ -171,23 +171,23 @@ The repository uses a **unified versioning approach** where all modules and Helm
 
 #### **Versioning Scripts** (`.github/scripts/`)
 
-Two scripts ensure consistent versioning across the monorepo:
+Two scripts ensure consistent versioning across install overlays and Helm charts:
 
-1. **`update_chart_version.sh`**
+1. **`update_install.sh`**
+   - Updates `install/overlays/default/kustomization.yaml` to the newly released tag
+   - Rewrites both remote `ref` values and image `newTag` values
+   - Called by semantic-release during the prepare phase
+
+2. **`update_chart_version.sh`**
    - Updates `version` and `appVersion` in Helm Chart.yaml files
    - Called by semantic-release during the prepare phase
    - Example: Updates `common-server/helm/Chart.yaml`
-
-2. **`update_install.sh`**
-   - Updates the install kustomization file with new version references
-   - Modifies `install/overlays/default/kustomization.yaml` to point to the new release tag
-   - Updates both `ref` and `newTag` fields
 
 #### **Integration with Semantic Release**
 
 These scripts are executed automatically during the release process via `.releaserc.mjs`:
 - Runs during the `prepare` phase before creating the release
-- Updates version references in install files and Helm charts
+- Updates version references in install overlays and Helm charts
 - Commits changes back to the repository
 - Modified files: `CHANGELOG.md`, `install/overlays/default/kustomization.yaml`, `common-server/helm/Chart.yaml`
 

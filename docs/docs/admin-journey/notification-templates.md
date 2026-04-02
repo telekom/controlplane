@@ -1,10 +1,15 @@
 ---
-sidebar_position: 4
+sidebar_position: 6
 ---
 
 # Notification Templates
 
-The Notification domain handles the delivery of platform notifications. As a platform administrator, you define **templates** that control how notifications are formatted and which channels they are delivered through.
+The Notification domain handles delivery of platform notifications. As a platform administrator, you define **templates** that control how messages look for each use case and channel.
+
+Templates give you a clean separation between:
+
+- **When** a notification is triggered (by domain logic)
+- **How** the message is rendered (by your template)
 
 ## Channels
 
@@ -16,9 +21,22 @@ The Control Plane supports three notification channel types:
 | **MS Teams** | Delivers notifications to Microsoft Teams channels via webhooks. |
 | **Webhook** | Delivers notifications to any HTTP endpoint. |
 
-### Automatic Channel Provisioning
+### Automatic channel provisioning
 
-When a team is created through the Organization domain, a **Notification Channel** is automatically created for that team. You can configure each channel with authentication settings and filter which notification purposes it should receive.
+When a team is created through the Organization domain, a **NotificationChannel** is automatically created for that team. You can configure channel details (recipients, webhook settings, filters) to control what each team receives.
+
+## How template selection works
+
+At send time, the platform selects a template by combining:
+
+- the notification **purpose** (for example, `onboarded`)
+- the channel type suffix (for email channels this is `mail`)
+
+So an onboarding email template is expected to be named:
+
+`onboarded--mail`
+
+If no matching template exists, the notification cannot be rendered.
 
 ## Templates
 
@@ -28,26 +46,95 @@ A Notification Template defines how a notification for a specific purpose and ch
 apiVersion: notification.cp.ei.telekom.de/v1
 kind: NotificationTemplate
 metadata:
-  name: approval-created--email
+  name: approvalrequest--subscribe--created--decider--mail
   namespace: dev
 spec:
-  purpose: approval-created
+  purpose: approvalrequest--subscribe--created--decider
   channelType: Email
-  subject: "New approval request: {{.ApiName}}"
-  body: |
-    A new approval request has been created for API {{.ApiName}}
-    by team {{.RequesterTeam}}.
+  subjectTemplate: "[{{.environment}}] New subscription request for {{.resource_name}}"
+  template: |
+    Hello team {{.decider_team}},
+
+    A new subscription request has been created by team {{.requester_team}}
+    for {{.resource_type}} {{.resource_name}}.
 
     Please review and approve or reject the request.
 ```
 
-### Notification Purposes
+### Required fields
 
-Templates are linked to specific purposes. The following purposes are built into the platform:
+- `metadata.name` — must follow the lookup convention (`<purpose>--<channelSuffix>`)
+- `spec.purpose` — event type that this template handles
+- `spec.channelType` — `Email`, `MsTeams`, or `Webhook`
+- `spec.template` — message body (text or HTML)
+- `spec.subjectTemplate` — optional, but typically required for `Email`
 
-- **Approval lifecycle** — Request created, state changed (granted, rejected, suspended, expired)
-- **Team lifecycle** — Onboarding, token rotation, member changes
-- **Subscription events** — API or event subscription created, updated, or removed
+### Placeholders
+
+Placeholders are dynamic values injected at delivery time.
+
+Common examples:
+
+- `{{.environment}}`
+- `{{.requester_team}}`, `{{.requester_group}}`, `{{.requester_application}}`
+- `{{.decider_team}}`, `{{.decider_group}}`, `{{.decider_application}}`
+- `{{.resource_type}}`, `{{.resource_name}}`
+- `{{.state_old}}`, `{{.state_new}}`
+- `{{.scopes}}`
+
+You can also use basic Go-template logic such as `if` and `range`.
+
+### Built-in purposes (default templates)
+
+The installation component `install/components/notificationtemplates` ships templates for these built-in purposes:
+
+| Purpose | Typical trigger |
+| ------- | --------------- |
+| `approvalrequest--subscribe--created--decider` | New subscription request created |
+| `approvalrequest--subscribe--updated--decider` | Request state changed (decider view) |
+| `approvalrequest--subscribe--updated--requester` | Request state changed (requester view) |
+| `approval--subscribe--updated--decider` | Subscription updated (decider view) |
+| `approval--subscribe--updated--requester` | Subscription updated (requester view) |
+| `onboarded` | Team created |
+| `token-rotated` | Team token rotated |
+| `team-members-changed` | Team members updated |
+
+## Enabling default templates
+
+The default templates are provided as a Kustomize component.
+
+1. Add the component to your overlay:
+
+```yaml
+components:
+  - ../../components/notificationtemplates
+```
+
+2. Apply your overlay:
+
+```bash
+kubectl apply -k install/overlays/local
+```
+
+Adjust the overlay path to match your installation model.
+
+## Recommended admin workflow
+
+1. **Start from defaults**: enable the notification template component.
+2. **Brand safely**: update wording, layout, and logos without changing `purpose` and template naming conventions.
+3. **Test in non-production**: trigger an onboarding or approval flow and verify rendered output.
+4. **Promote with GitOps**: version template changes like any other platform config.
+
+## Troubleshooting
+
+- **Notification exists but not delivered**
+  - Check that the team has a ready `NotificationChannel`.
+- **Template not found errors**
+  - Verify `metadata.name` matches `<purpose>--<channelSuffix>`.
+  - Verify `spec.purpose` exactly matches the emitted purpose.
+- **Broken rendering / empty fields**
+  - Check placeholder names (they are case-sensitive).
+  - Ensure the expected properties are provided by the source notification.
 
 ## Next Steps
 

@@ -2,9 +2,6 @@
 sidebar_position: 4
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 # Exposing Events
 
 :::info Optional Feature
@@ -21,10 +18,7 @@ Your team must be onboarded before you can expose events. See [Applications](./a
 
 Before exposing an event, you must register its event type specification. This creates an **EventType** resource in the Control Plane, which serves as the central reference for your event's metadata.
 
-<Tabs groupId="resource-version" defaultValue="legacy">
-  <TabItem value="legacy" label="Legacy">
-
-In the legacy format, the event specification is a dedicated resource with `kind: EventSpecification`. It defines the event type identifier, version, and an optional JSON schema describing the event payload.
+The event specification is a dedicated resource with `kind: EventSpecification`. It defines the event type identifier, version, and an optional JSON schema describing the event payload.
 
 ```yaml title="eventspec.yaml"
 kind: EventSpecification
@@ -60,32 +54,6 @@ Apply the specification:
 roverctl apply -f eventspec.yaml
 ```
 
-  </TabItem>
-  <TabItem value="v1" label="v1">
-
-In the v1 format, the event specification is a dedicated Custom Resource. The optional JSON schema can be uploaded to the File Manager, and the `specification` field references the resulting file ID.
-
-```yaml title="eventspec.yaml"
-apiVersion: rover.cp.ei.telekom.de/v1
-kind: EventSpecification
-metadata:
-  name: de-telekom-orders-created-v1
-  namespace: dev--payment-services--orders
-spec:
-  type: de.telekom.orders.created.v1
-  version: "1.0.0"
-  description: Events published when a new order is created
-```
-
-Apply the specification:
-
-```bash
-kubectl apply -f eventspec.yaml
-```
-
-  </TabItem>
-</Tabs>
-
 ### Key Fields
 
 | Field | Description |
@@ -93,7 +61,7 @@ kubectl apply -f eventspec.yaml
 | `type` | A globally unique identifier for the event type, using dot-separated notation (e.g., `de.telekom.orders.created.v1`). |
 | `version` | The version of the event type specification. |
 | `description` | A human-readable summary of what this event represents. |
-| `specification` | An optional JSON schema describing the event payload structure. In the legacy format, this is provided inline. In v1, this references a File Manager ID. |
+| `specification` | An optional inline JSON schema describing the event payload structure. |
 
 ### What Happens
 
@@ -102,9 +70,6 @@ The EventSpecification handler processes your specification and creates an **Eve
 ## Step 2: Expose the Event in Your Rover
 
 Once the event specification is registered, you can declare the exposure in your Rover file. The `eventType` in your exposure must match the type registered in Step 1.
-
-<Tabs groupId="resource-version" defaultValue="legacy">
-  <TabItem value="legacy" label="Legacy">
 
 ```yaml title="rover.yaml"
 apiVersion: tcp.ei.telekom.de/v1
@@ -126,33 +91,6 @@ Apply the Rover file:
 roverctl apply -f rover.yaml
 ```
 
-  </TabItem>
-  <TabItem value="v1" label="v1">
-
-```yaml title="rover.yaml"
-apiVersion: rover.cp.ei.telekom.de/v1
-kind: Rover
-metadata:
-  name: order-service
-  namespace: dev--payment-services--orders
-spec:
-  zone: dataplane1
-  exposures:
-    - event:
-        eventType: de.telekom.orders.created.v1
-        approval:
-          strategy: Simple
-```
-
-Apply the Rover file:
-
-```bash
-kubectl apply -f rover.yaml
-```
-
-  </TabItem>
-</Tabs>
-
 ### Key Fields
 
 | Field | Description |
@@ -173,6 +111,19 @@ If the EventType does not exist (i.e., the specification was not registered in S
 :::
 
 The event type is now discoverable by other teams and ready to receive subscription requests.
+
+## Additional Features
+
+Beyond the basic event exposure, you can customize your event type with additional features such as publisher scopes and additional publisher IDs.
+
+:::tip
+See [Additional Features](./features/overview.mdx) for the full list of features and detailed configuration examples.
+:::
+
+| Feature | Description |
+| ------- | ----------- |
+| [Publisher Scopes](./features/event-filtering.mdx#publisher-scopes-event-exposure) | Define named scopes to partition your events and apply publisher-side filters. Subscribers can choose which scopes to receive. |
+| [Additional Publisher IDs](./features/event-filtering.mdx#additional-publisher-ids-event-exposure) | Allow multiple applications to publish events to the same event type. |
 
 ## Cross-Zone Event Meshing
 

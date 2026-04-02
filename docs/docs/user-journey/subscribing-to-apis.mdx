@@ -2,9 +2,6 @@
 sidebar_position: 5
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 # Subscribing to APIs
 
 :::warning Prerequisites
@@ -17,9 +14,6 @@ Subscribing to an API grants your application access to an API exposed by anothe
 
 API subscriptions are declared in the `subscriptions` section of your Rover file:
 
-<Tabs groupId="resource-version" defaultValue="legacy">
-  <TabItem value="legacy" label="Legacy">
-
 ```yaml
 apiVersion: tcp.ei.telekom.de/v1
 kind: Rover
@@ -31,25 +25,6 @@ spec:
     - type: api
       basePath: /checkout/v1
 ```
-
-  </TabItem>
-  <TabItem value="v1" label="v1">
-
-```yaml
-apiVersion: rover.cp.ei.telekom.de/v1
-kind: Rover
-metadata:
-  name: frontend-app
-  namespace: dev--webshop--frontend
-spec:
-  zone: dataplane1
-  subscriptions:
-    - api:
-        basePath: /checkout/v1
-```
-
-  </TabItem>
-</Tabs>
 
 ### Key Fields
 
@@ -75,48 +50,25 @@ If no active Api resource or ApiExposure exists for the requested base path, you
 If the API uses the `auto` approval strategy, access is granted immediately. For `simple` or `foureyes` strategies, you will need to wait for the API provider to approve your request. See [Approvals](./approvals.mdx) for details.
 :::
 
-## Traffic Management for Subscriptions
+## Additional Features
 
-You can configure failover settings for your subscriptions:
+Beyond the basic subscription, you can customize your API subscription with additional features such as failover and security.
 
-<Tabs groupId="resource-version" defaultValue="legacy">
-  <TabItem value="legacy" label="Legacy">
+:::tip
+See [Additional Features](./features/overview.mdx) for the full list of features and detailed configuration examples.
+:::
 
-```yaml
-subscriptions:
-  - type: api
-    basePath: /checkout/v1
-    failover:
-      zones:
-        - dataplane2
-```
-
-  </TabItem>
-  <TabItem value="v1" label="v1">
-
-```yaml
-subscriptions:
-  - api:
-      basePath: /checkout/v1
-      traffic:
-        failover:
-          zones:
-            - dataplane2
-```
-
-  </TabItem>
-</Tabs>
-
-| Setting | Description |
+| Feature | Description |
 | ------- | ----------- |
-| `failover.zones` | Defines fallback zones that can be used if the primary zone is unavailable. |
+| [Failover](./features/traffic-management.mdx#failover) | Define fallback zones to try when the primary provider zone is unavailable. |
+| [Security](./features/security.mdx) | Provide your own OAuth2 or basic authentication credentials instead of using platform-managed identity. |
 
 ## Checking Subscription Status
 
 You can check the status of your subscriptions using Rover-CTL:
 
 ```bash
-rover-ctl get rovers
+roverctl get-info
 ```
 
 The output will show the status of each subscription, including whether it is pending approval, granted, or rejected. See the [Rover-CTL CLI Reference](../reference/roverctl/) for more commands and options.

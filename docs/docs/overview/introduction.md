@@ -28,6 +28,6 @@ The Control Plane serves two primary audiences:
 ## Next steps
 
 - [Components](./components.md) — See all the building blocks at a glance
-- [Admin Journey](../admin-journey/setup.md) — Install and configure the Control Plane
+- [Admin Journey](../admin-journey/installation.md) — Install and configure the Control Plane
 - [User Journey](../user-journey/onboarding.md) — Start using the platform as an application team
 - [Architecture](../architecture/overview.md) — Understand the system design

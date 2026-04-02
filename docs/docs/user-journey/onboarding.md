@@ -61,14 +61,13 @@ Additional configuration options:
 | Variable | Description |
 | -------- | ----------- |
 | `ROVER_TOKEN` | Your team's authentication token |
-| `ROVER_URL` | The Rover Server endpoint URL |
 
 ### Verify Your Setup
 
 To confirm that Rover-CTL is correctly configured and can reach the platform:
 
 ```bash
-rover-ctl get rovers
+roverctl get-info
 ```
 
 This should return a list of your team's existing Rover resources (which will be empty if you are starting fresh).

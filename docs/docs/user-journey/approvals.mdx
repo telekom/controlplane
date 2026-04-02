@@ -2,9 +2,6 @@
 sidebar_position: 7
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 # Approvals
 
 The Approval domain provides a configurable workflow for controlling access to APIs and events. When a team subscribes to an API or event that requires approval, an approval request is created and must be granted before access is provisioned.
@@ -21,9 +18,6 @@ When exposing an API or event, the provider chooses one of three approval strate
 
 The strategy is set in the Rover file when defining an API or event exposure:
 
-<Tabs groupId="resource-version" defaultValue="legacy">
-  <TabItem value="legacy" label="Legacy">
-
 ```yaml
 exposures:
   - type: api
@@ -32,23 +26,6 @@ exposures:
     upstream: https://checkout.internal:8080
     approval: SIMPLE
 ```
-
-  </TabItem>
-  <TabItem value="v1" label="v1">
-
-```yaml
-exposures:
-  - api:
-      basePath: /checkout/v1
-      upstreams:
-        - url: https://checkout.internal:8080
-          weight: 1
-      approval:
-        strategy: Simple
-```
-
-  </TabItem>
-</Tabs>
 
 ## Approval States
 
