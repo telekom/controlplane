@@ -81,7 +81,7 @@ type ApiExposureInfo {
   id: ID!
   basePath: String!
   visibility: ApiExposureVisibility!
-  active: Boolean!
+  active: Boolean
   apiVersion: String
   features: [ApiExposureFeature!]!
   approvalConfig: ApprovalConfig!
@@ -95,7 +95,7 @@ type ApiExposureInfo {
 type ApiSubscriptionInfo {
   id: ID!
   basePath: String!
-  statusPhase: ApiSubscriptionStatusPhase!
+  statusPhase: ApiSubscriptionStatusPhase
   statusMessage: String
   "Application name that owns this subscription"
   ownerApplicationName: String!

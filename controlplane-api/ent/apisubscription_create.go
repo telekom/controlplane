@@ -86,6 +86,34 @@ func (_c *ApiSubscriptionCreate) SetNillableStatusMessage(v *string) *ApiSubscri
 	return _c
 }
 
+// SetEnvironment sets the "environment" field.
+func (_c *ApiSubscriptionCreate) SetEnvironment(v string) *ApiSubscriptionCreate {
+	_c.mutation.SetEnvironment(v)
+	return _c
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_c *ApiSubscriptionCreate) SetNillableEnvironment(v *string) *ApiSubscriptionCreate {
+	if v != nil {
+		_c.SetEnvironment(*v)
+	}
+	return _c
+}
+
+// SetNamespace sets the "namespace" field.
+func (_c *ApiSubscriptionCreate) SetNamespace(v string) *ApiSubscriptionCreate {
+	_c.mutation.SetNamespace(v)
+	return _c
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_c *ApiSubscriptionCreate) SetNillableNamespace(v *string) *ApiSubscriptionCreate {
+	if v != nil {
+		_c.SetNamespace(*v)
+	}
+	return _c
+}
+
 // SetBasePath sets the "base_path" field.
 func (_c *ApiSubscriptionCreate) SetBasePath(v string) *ApiSubscriptionCreate {
 	_c.mutation.SetBasePath(v)
@@ -126,6 +154,14 @@ func (_c *ApiSubscriptionCreate) SetOwner(v *Application) *ApiSubscriptionCreate
 // SetTargetID sets the "target" edge to the ApiExposure entity by ID.
 func (_c *ApiSubscriptionCreate) SetTargetID(id int) *ApiSubscriptionCreate {
 	_c.mutation.SetTargetID(id)
+	return _c
+}
+
+// SetNillableTargetID sets the "target" edge to the ApiExposure entity by ID if the given value is not nil.
+func (_c *ApiSubscriptionCreate) SetNillableTargetID(id *int) *ApiSubscriptionCreate {
+	if id != nil {
+		_c = _c.SetTargetID(*id)
+	}
 	return _c
 }
 
@@ -238,10 +274,6 @@ func (_c *ApiSubscriptionCreate) defaults() error {
 		v := apisubscription.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
-	if _, ok := _c.mutation.StatusPhase(); !ok {
-		v := apisubscription.DefaultStatusPhase
-		_c.mutation.SetStatusPhase(v)
-	}
 	if _, ok := _c.mutation.M2mAuthMethod(); !ok {
 		v := apisubscription.DefaultM2mAuthMethod
 		_c.mutation.SetM2mAuthMethod(v)
@@ -260,9 +292,6 @@ func (_c *ApiSubscriptionCreate) check() error {
 	}
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
 		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "ApiSubscription.last_modified_at"`)}
-	}
-	if _, ok := _c.mutation.StatusPhase(); !ok {
-		return &ValidationError{Name: "status_phase", err: errors.New(`ent: missing required field "ApiSubscription.status_phase"`)}
 	}
 	if v, ok := _c.mutation.StatusPhase(); ok {
 		if err := apisubscription.StatusPhaseValidator(v); err != nil {
@@ -290,9 +319,6 @@ func (_c *ApiSubscriptionCreate) check() error {
 	}
 	if len(_c.mutation.OwnerIDs()) == 0 {
 		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "ApiSubscription.owner"`)}
-	}
-	if len(_c.mutation.TargetIDs()) == 0 {
-		return &ValidationError{Name: "target", err: errors.New(`ent: missing required edge "ApiSubscription.target"`)}
 	}
 	return nil
 }
@@ -331,11 +357,19 @@ func (_c *ApiSubscriptionCreate) createSpec() (*ApiSubscription, *sqlgraph.Creat
 	}
 	if value, ok := _c.mutation.StatusPhase(); ok {
 		_spec.SetField(apisubscription.FieldStatusPhase, field.TypeEnum, value)
-		_node.StatusPhase = value
+		_node.StatusPhase = &value
 	}
 	if value, ok := _c.mutation.StatusMessage(); ok {
 		_spec.SetField(apisubscription.FieldStatusMessage, field.TypeString, value)
 		_node.StatusMessage = &value
+	}
+	if value, ok := _c.mutation.Environment(); ok {
+		_spec.SetField(apisubscription.FieldEnvironment, field.TypeString, value)
+		_node.Environment = &value
+	}
+	if value, ok := _c.mutation.Namespace(); ok {
+		_spec.SetField(apisubscription.FieldNamespace, field.TypeString, value)
+		_node.Namespace = &value
 	}
 	if value, ok := _c.mutation.BasePath(); ok {
 		_spec.SetField(apisubscription.FieldBasePath, field.TypeString, value)
@@ -507,6 +541,12 @@ func (u *ApiSubscriptionUpsert) UpdateStatusPhase() *ApiSubscriptionUpsert {
 	return u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApiSubscriptionUpsert) ClearStatusPhase() *ApiSubscriptionUpsert {
+	u.SetNull(apisubscription.FieldStatusPhase)
+	return u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *ApiSubscriptionUpsert) SetStatusMessage(v string) *ApiSubscriptionUpsert {
 	u.Set(apisubscription.FieldStatusMessage, v)
@@ -522,6 +562,42 @@ func (u *ApiSubscriptionUpsert) UpdateStatusMessage() *ApiSubscriptionUpsert {
 // ClearStatusMessage clears the value of the "status_message" field.
 func (u *ApiSubscriptionUpsert) ClearStatusMessage() *ApiSubscriptionUpsert {
 	u.SetNull(apisubscription.FieldStatusMessage)
+	return u
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *ApiSubscriptionUpsert) SetEnvironment(v string) *ApiSubscriptionUpsert {
+	u.Set(apisubscription.FieldEnvironment, v)
+	return u
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsert) UpdateEnvironment() *ApiSubscriptionUpsert {
+	u.SetExcluded(apisubscription.FieldEnvironment)
+	return u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ApiSubscriptionUpsert) ClearEnvironment() *ApiSubscriptionUpsert {
+	u.SetNull(apisubscription.FieldEnvironment)
+	return u
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ApiSubscriptionUpsert) SetNamespace(v string) *ApiSubscriptionUpsert {
+	u.Set(apisubscription.FieldNamespace, v)
+	return u
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsert) UpdateNamespace() *ApiSubscriptionUpsert {
+	u.SetExcluded(apisubscription.FieldNamespace)
+	return u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ApiSubscriptionUpsert) ClearNamespace() *ApiSubscriptionUpsert {
+	u.SetNull(apisubscription.FieldNamespace)
 	return u
 }
 
@@ -634,6 +710,13 @@ func (u *ApiSubscriptionUpsertOne) UpdateStatusPhase() *ApiSubscriptionUpsertOne
 	})
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApiSubscriptionUpsertOne) ClearStatusPhase() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearStatusPhase()
+	})
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *ApiSubscriptionUpsertOne) SetStatusMessage(v string) *ApiSubscriptionUpsertOne {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
@@ -652,6 +735,48 @@ func (u *ApiSubscriptionUpsertOne) UpdateStatusMessage() *ApiSubscriptionUpsertO
 func (u *ApiSubscriptionUpsertOne) ClearStatusMessage() *ApiSubscriptionUpsertOne {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
 		s.ClearStatusMessage()
+	})
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *ApiSubscriptionUpsertOne) SetEnvironment(v string) *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertOne) UpdateEnvironment() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ApiSubscriptionUpsertOne) ClearEnvironment() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ApiSubscriptionUpsertOne) SetNamespace(v string) *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertOne) UpdateNamespace() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ApiSubscriptionUpsertOne) ClearNamespace() *ApiSubscriptionUpsertOne {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearNamespace()
 	})
 }
 
@@ -936,6 +1061,13 @@ func (u *ApiSubscriptionUpsertBulk) UpdateStatusPhase() *ApiSubscriptionUpsertBu
 	})
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *ApiSubscriptionUpsertBulk) ClearStatusPhase() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearStatusPhase()
+	})
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *ApiSubscriptionUpsertBulk) SetStatusMessage(v string) *ApiSubscriptionUpsertBulk {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
@@ -954,6 +1086,48 @@ func (u *ApiSubscriptionUpsertBulk) UpdateStatusMessage() *ApiSubscriptionUpsert
 func (u *ApiSubscriptionUpsertBulk) ClearStatusMessage() *ApiSubscriptionUpsertBulk {
 	return u.Update(func(s *ApiSubscriptionUpsert) {
 		s.ClearStatusMessage()
+	})
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *ApiSubscriptionUpsertBulk) SetEnvironment(v string) *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertBulk) UpdateEnvironment() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ApiSubscriptionUpsertBulk) ClearEnvironment() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ApiSubscriptionUpsertBulk) SetNamespace(v string) *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ApiSubscriptionUpsertBulk) UpdateNamespace() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ApiSubscriptionUpsertBulk) ClearNamespace() *ApiSubscriptionUpsertBulk {
+	return u.Update(func(s *ApiSubscriptionUpsert) {
+		s.ClearNamespace()
 	})
 }
 

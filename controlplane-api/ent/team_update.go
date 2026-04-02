@@ -19,7 +19,6 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/predicate"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
-	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 )
 
 // TeamUpdate is the builder for updating Team entities.
@@ -55,6 +54,12 @@ func (_u *TeamUpdate) SetNillableStatusPhase(v *team.StatusPhase) *TeamUpdate {
 	return _u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (_u *TeamUpdate) ClearStatusPhase() *TeamUpdate {
+	_u.mutation.ClearStatusPhase()
+	return _u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (_u *TeamUpdate) SetStatusMessage(v string) *TeamUpdate {
 	_u.mutation.SetStatusMessage(v)
@@ -72,6 +77,46 @@ func (_u *TeamUpdate) SetNillableStatusMessage(v *string) *TeamUpdate {
 // ClearStatusMessage clears the value of the "status_message" field.
 func (_u *TeamUpdate) ClearStatusMessage() *TeamUpdate {
 	_u.mutation.ClearStatusMessage()
+	return _u
+}
+
+// SetEnvironment sets the "environment" field.
+func (_u *TeamUpdate) SetEnvironment(v string) *TeamUpdate {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *TeamUpdate) SetNillableEnvironment(v *string) *TeamUpdate {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *TeamUpdate) ClearEnvironment() *TeamUpdate {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *TeamUpdate) SetNamespace(v string) *TeamUpdate {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *TeamUpdate) SetNillableNamespace(v *string) *TeamUpdate {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *TeamUpdate) ClearNamespace() *TeamUpdate {
+	_u.mutation.ClearNamespace()
 	return _u
 }
 
@@ -117,6 +162,26 @@ func (_u *TeamUpdate) SetNillableCategory(v *team.Category) *TeamUpdate {
 	return _u
 }
 
+// SetRoverTokenRef sets the "rover_token_ref" field.
+func (_u *TeamUpdate) SetRoverTokenRef(v string) *TeamUpdate {
+	_u.mutation.SetRoverTokenRef(v)
+	return _u
+}
+
+// SetNillableRoverTokenRef sets the "rover_token_ref" field if the given value is not nil.
+func (_u *TeamUpdate) SetNillableRoverTokenRef(v *string) *TeamUpdate {
+	if v != nil {
+		_u.SetRoverTokenRef(*v)
+	}
+	return _u
+}
+
+// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
+func (_u *TeamUpdate) ClearRoverTokenRef() *TeamUpdate {
+	_u.mutation.ClearRoverTokenRef()
+	return _u
+}
+
 // SetGroupID sets the "group" edge to the Group entity by ID.
 func (_u *TeamUpdate) SetGroupID(id int) *TeamUpdate {
 	_u.mutation.SetGroupID(id)
@@ -149,21 +214,6 @@ func (_u *TeamUpdate) AddMembers(v ...*Member) *TeamUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddMemberIDs(ids...)
-}
-
-// AddTeamEnvironmentIDs adds the "team_environments" edge to the TeamEnvironment entity by IDs.
-func (_u *TeamUpdate) AddTeamEnvironmentIDs(ids ...int) *TeamUpdate {
-	_u.mutation.AddTeamEnvironmentIDs(ids...)
-	return _u
-}
-
-// AddTeamEnvironments adds the "team_environments" edges to the TeamEnvironment entity.
-func (_u *TeamUpdate) AddTeamEnvironments(v ...*TeamEnvironment) *TeamUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddTeamEnvironmentIDs(ids...)
 }
 
 // AddApplicationIDs adds the "applications" edge to the Application entity by IDs.
@@ -211,27 +261,6 @@ func (_u *TeamUpdate) RemoveMembers(v ...*Member) *TeamUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMemberIDs(ids...)
-}
-
-// ClearTeamEnvironments clears all "team_environments" edges to the TeamEnvironment entity.
-func (_u *TeamUpdate) ClearTeamEnvironments() *TeamUpdate {
-	_u.mutation.ClearTeamEnvironments()
-	return _u
-}
-
-// RemoveTeamEnvironmentIDs removes the "team_environments" edge to TeamEnvironment entities by IDs.
-func (_u *TeamUpdate) RemoveTeamEnvironmentIDs(ids ...int) *TeamUpdate {
-	_u.mutation.RemoveTeamEnvironmentIDs(ids...)
-	return _u
-}
-
-// RemoveTeamEnvironments removes "team_environments" edges to TeamEnvironment entities.
-func (_u *TeamUpdate) RemoveTeamEnvironments(v ...*TeamEnvironment) *TeamUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveTeamEnvironmentIDs(ids...)
 }
 
 // ClearApplications clears all "applications" edges to the Application entity.
@@ -340,11 +369,26 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.StatusPhase(); ok {
 		_spec.SetField(team.FieldStatusPhase, field.TypeEnum, value)
 	}
+	if _u.mutation.StatusPhaseCleared() {
+		_spec.ClearField(team.FieldStatusPhase, field.TypeEnum)
+	}
 	if value, ok := _u.mutation.StatusMessage(); ok {
 		_spec.SetField(team.FieldStatusMessage, field.TypeString, value)
 	}
 	if _u.mutation.StatusMessageCleared() {
 		_spec.ClearField(team.FieldStatusMessage, field.TypeString)
+	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(team.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(team.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(team.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(team.FieldNamespace, field.TypeString)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(team.FieldName, field.TypeString, value)
@@ -354,6 +398,12 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(team.FieldCategory, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.RoverTokenRef(); ok {
+		_spec.SetField(team.FieldRoverTokenRef, field.TypeString, value)
+	}
+	if _u.mutation.RoverTokenRefCleared() {
+		_spec.ClearField(team.FieldRoverTokenRef, field.TypeString)
 	}
 	if _u.mutation.GroupCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -422,51 +472,6 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.TeamEnvironmentsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   team.TeamEnvironmentsTable,
-			Columns: []string{team.TeamEnvironmentsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedTeamEnvironmentsIDs(); len(nodes) > 0 && !_u.mutation.TeamEnvironmentsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   team.TeamEnvironmentsTable,
-			Columns: []string{team.TeamEnvironmentsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.TeamEnvironmentsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   team.TeamEnvironmentsTable,
-			Columns: []string{team.TeamEnvironmentsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -559,6 +564,12 @@ func (_u *TeamUpdateOne) SetNillableStatusPhase(v *team.StatusPhase) *TeamUpdate
 	return _u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (_u *TeamUpdateOne) ClearStatusPhase() *TeamUpdateOne {
+	_u.mutation.ClearStatusPhase()
+	return _u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (_u *TeamUpdateOne) SetStatusMessage(v string) *TeamUpdateOne {
 	_u.mutation.SetStatusMessage(v)
@@ -576,6 +587,46 @@ func (_u *TeamUpdateOne) SetNillableStatusMessage(v *string) *TeamUpdateOne {
 // ClearStatusMessage clears the value of the "status_message" field.
 func (_u *TeamUpdateOne) ClearStatusMessage() *TeamUpdateOne {
 	_u.mutation.ClearStatusMessage()
+	return _u
+}
+
+// SetEnvironment sets the "environment" field.
+func (_u *TeamUpdateOne) SetEnvironment(v string) *TeamUpdateOne {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *TeamUpdateOne) SetNillableEnvironment(v *string) *TeamUpdateOne {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *TeamUpdateOne) ClearEnvironment() *TeamUpdateOne {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *TeamUpdateOne) SetNamespace(v string) *TeamUpdateOne {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *TeamUpdateOne) SetNillableNamespace(v *string) *TeamUpdateOne {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *TeamUpdateOne) ClearNamespace() *TeamUpdateOne {
+	_u.mutation.ClearNamespace()
 	return _u
 }
 
@@ -621,6 +672,26 @@ func (_u *TeamUpdateOne) SetNillableCategory(v *team.Category) *TeamUpdateOne {
 	return _u
 }
 
+// SetRoverTokenRef sets the "rover_token_ref" field.
+func (_u *TeamUpdateOne) SetRoverTokenRef(v string) *TeamUpdateOne {
+	_u.mutation.SetRoverTokenRef(v)
+	return _u
+}
+
+// SetNillableRoverTokenRef sets the "rover_token_ref" field if the given value is not nil.
+func (_u *TeamUpdateOne) SetNillableRoverTokenRef(v *string) *TeamUpdateOne {
+	if v != nil {
+		_u.SetRoverTokenRef(*v)
+	}
+	return _u
+}
+
+// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
+func (_u *TeamUpdateOne) ClearRoverTokenRef() *TeamUpdateOne {
+	_u.mutation.ClearRoverTokenRef()
+	return _u
+}
+
 // SetGroupID sets the "group" edge to the Group entity by ID.
 func (_u *TeamUpdateOne) SetGroupID(id int) *TeamUpdateOne {
 	_u.mutation.SetGroupID(id)
@@ -653,21 +724,6 @@ func (_u *TeamUpdateOne) AddMembers(v ...*Member) *TeamUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.AddMemberIDs(ids...)
-}
-
-// AddTeamEnvironmentIDs adds the "team_environments" edge to the TeamEnvironment entity by IDs.
-func (_u *TeamUpdateOne) AddTeamEnvironmentIDs(ids ...int) *TeamUpdateOne {
-	_u.mutation.AddTeamEnvironmentIDs(ids...)
-	return _u
-}
-
-// AddTeamEnvironments adds the "team_environments" edges to the TeamEnvironment entity.
-func (_u *TeamUpdateOne) AddTeamEnvironments(v ...*TeamEnvironment) *TeamUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddTeamEnvironmentIDs(ids...)
 }
 
 // AddApplicationIDs adds the "applications" edge to the Application entity by IDs.
@@ -715,27 +771,6 @@ func (_u *TeamUpdateOne) RemoveMembers(v ...*Member) *TeamUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMemberIDs(ids...)
-}
-
-// ClearTeamEnvironments clears all "team_environments" edges to the TeamEnvironment entity.
-func (_u *TeamUpdateOne) ClearTeamEnvironments() *TeamUpdateOne {
-	_u.mutation.ClearTeamEnvironments()
-	return _u
-}
-
-// RemoveTeamEnvironmentIDs removes the "team_environments" edge to TeamEnvironment entities by IDs.
-func (_u *TeamUpdateOne) RemoveTeamEnvironmentIDs(ids ...int) *TeamUpdateOne {
-	_u.mutation.RemoveTeamEnvironmentIDs(ids...)
-	return _u
-}
-
-// RemoveTeamEnvironments removes "team_environments" edges to TeamEnvironment entities.
-func (_u *TeamUpdateOne) RemoveTeamEnvironments(v ...*TeamEnvironment) *TeamUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveTeamEnvironmentIDs(ids...)
 }
 
 // ClearApplications clears all "applications" edges to the Application entity.
@@ -874,11 +909,26 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 	if value, ok := _u.mutation.StatusPhase(); ok {
 		_spec.SetField(team.FieldStatusPhase, field.TypeEnum, value)
 	}
+	if _u.mutation.StatusPhaseCleared() {
+		_spec.ClearField(team.FieldStatusPhase, field.TypeEnum)
+	}
 	if value, ok := _u.mutation.StatusMessage(); ok {
 		_spec.SetField(team.FieldStatusMessage, field.TypeString, value)
 	}
 	if _u.mutation.StatusMessageCleared() {
 		_spec.ClearField(team.FieldStatusMessage, field.TypeString)
+	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(team.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(team.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(team.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(team.FieldNamespace, field.TypeString)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(team.FieldName, field.TypeString, value)
@@ -888,6 +938,12 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 	}
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(team.FieldCategory, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.RoverTokenRef(); ok {
+		_spec.SetField(team.FieldRoverTokenRef, field.TypeString, value)
+	}
+	if _u.mutation.RoverTokenRefCleared() {
+		_spec.ClearField(team.FieldRoverTokenRef, field.TypeString)
 	}
 	if _u.mutation.GroupCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -956,51 +1012,6 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.TeamEnvironmentsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   team.TeamEnvironmentsTable,
-			Columns: []string{team.TeamEnvironmentsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedTeamEnvironmentsIDs(); len(nodes) > 0 && !_u.mutation.TeamEnvironmentsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   team.TeamEnvironmentsTable,
-			Columns: []string{team.TeamEnvironmentsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.TeamEnvironmentsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   team.TeamEnvironmentsTable,
-			Columns: []string{team.TeamEnvironmentsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

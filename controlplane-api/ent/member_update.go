@@ -31,6 +31,46 @@ func (_u *MemberUpdate) Where(ps ...predicate.Member) *MemberUpdate {
 	return _u
 }
 
+// SetEnvironment sets the "environment" field.
+func (_u *MemberUpdate) SetEnvironment(v string) *MemberUpdate {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableEnvironment(v *string) *MemberUpdate {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *MemberUpdate) ClearEnvironment() *MemberUpdate {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *MemberUpdate) SetNamespace(v string) *MemberUpdate {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *MemberUpdate) SetNillableNamespace(v *string) *MemberUpdate {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *MemberUpdate) ClearNamespace() *MemberUpdate {
+	_u.mutation.ClearNamespace()
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *MemberUpdate) SetName(v string) *MemberUpdate {
 	_u.mutation.SetName(v)
@@ -143,6 +183,18 @@ func (_u *MemberUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(member.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(member.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(member.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(member.FieldNamespace, field.TypeString)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(member.FieldName, field.TypeString, value)
 	}
@@ -196,6 +248,46 @@ type MemberUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *MemberMutation
+}
+
+// SetEnvironment sets the "environment" field.
+func (_u *MemberUpdateOne) SetEnvironment(v string) *MemberUpdateOne {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableEnvironment(v *string) *MemberUpdateOne {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *MemberUpdateOne) ClearEnvironment() *MemberUpdateOne {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *MemberUpdateOne) SetNamespace(v string) *MemberUpdateOne {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *MemberUpdateOne) SetNillableNamespace(v *string) *MemberUpdateOne {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *MemberUpdateOne) ClearNamespace() *MemberUpdateOne {
+	_u.mutation.ClearNamespace()
+	return _u
 }
 
 // SetName sets the "name" field.
@@ -339,6 +431,18 @@ func (_u *MemberUpdateOne) sqlSave(ctx context.Context) (_node *Member, err erro
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(member.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(member.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(member.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(member.FieldNamespace, field.TypeString)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(member.FieldName, field.TypeString, value)

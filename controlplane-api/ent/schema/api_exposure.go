@@ -26,6 +26,8 @@ func (ApiExposure) Mixin() []ent.Mixin {
 		schemamixin.PrivacyMixin{},
 		schemamixin.TimestampsMixin{},
 		schemamixin.StatusMixin{},
+		schemamixin.EnvironmentMixin{},
+		schemamixin.NamespaceMixin{},
 	}
 }
 
@@ -41,6 +43,8 @@ func (ApiExposure) Fields() []ent.Field {
 			).
 			Default("ENTERPRISE"),
 		field.Bool("active").
+			Optional().
+			Nillable().
 			Default(false),
 		field.JSON("features", []string{}).
 			Default([]string{}).

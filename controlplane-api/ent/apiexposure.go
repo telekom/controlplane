@@ -28,15 +28,19 @@ type ApiExposure struct {
 	// LastModifiedAt holds the value of the "last_modified_at" field.
 	LastModifiedAt time.Time `json:"last_modified_at,omitempty"`
 	// StatusPhase holds the value of the "status_phase" field.
-	StatusPhase apiexposure.StatusPhase `json:"status_phase,omitempty"`
+	StatusPhase *apiexposure.StatusPhase `json:"status_phase,omitempty"`
 	// StatusMessage holds the value of the "status_message" field.
 	StatusMessage *string `json:"status_message,omitempty"`
+	// Environment holds the value of the "environment" field.
+	Environment *string `json:"environment,omitempty"`
+	// Namespace holds the value of the "namespace" field.
+	Namespace *string `json:"namespace,omitempty"`
 	// BasePath holds the value of the "base_path" field.
 	BasePath string `json:"base_path,omitempty"`
 	// Visibility holds the value of the "visibility" field.
 	Visibility apiexposure.Visibility `json:"visibility,omitempty"`
 	// Active holds the value of the "active" field.
-	Active bool `json:"active,omitempty"`
+	Active *bool `json:"active,omitempty"`
 	// Features holds the value of the "features" field.
 	Features []string `json:"features,omitempty"`
 	// Upstreams holds the value of the "upstreams" field.
@@ -98,7 +102,7 @@ func (*ApiExposure) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case apiexposure.FieldID:
 			values[i] = new(sql.NullInt64)
-		case apiexposure.FieldStatusPhase, apiexposure.FieldStatusMessage, apiexposure.FieldBasePath, apiexposure.FieldVisibility, apiexposure.FieldAPIVersion:
+		case apiexposure.FieldStatusPhase, apiexposure.FieldStatusMessage, apiexposure.FieldEnvironment, apiexposure.FieldNamespace, apiexposure.FieldBasePath, apiexposure.FieldVisibility, apiexposure.FieldAPIVersion:
 			values[i] = new(sql.NullString)
 		case apiexposure.FieldCreatedAt, apiexposure.FieldLastModifiedAt:
 			values[i] = new(sql.NullTime)
@@ -141,7 +145,8 @@ func (_m *ApiExposure) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status_phase", values[i])
 			} else if value.Valid {
-				_m.StatusPhase = apiexposure.StatusPhase(value.String)
+				_m.StatusPhase = new(apiexposure.StatusPhase)
+				*_m.StatusPhase = apiexposure.StatusPhase(value.String)
 			}
 		case apiexposure.FieldStatusMessage:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -149,6 +154,20 @@ func (_m *ApiExposure) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.StatusMessage = new(string)
 				*_m.StatusMessage = value.String
+			}
+		case apiexposure.FieldEnvironment:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field environment", values[i])
+			} else if value.Valid {
+				_m.Environment = new(string)
+				*_m.Environment = value.String
+			}
+		case apiexposure.FieldNamespace:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field namespace", values[i])
+			} else if value.Valid {
+				_m.Namespace = new(string)
+				*_m.Namespace = value.String
 			}
 		case apiexposure.FieldBasePath:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -166,7 +185,8 @@ func (_m *ApiExposure) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field active", values[i])
 			} else if value.Valid {
-				_m.Active = value.Bool
+				_m.Active = new(bool)
+				*_m.Active = value.Bool
 			}
 		case apiexposure.FieldFeatures:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -258,11 +278,23 @@ func (_m *ApiExposure) String() string {
 	builder.WriteString("last_modified_at=")
 	builder.WriteString(_m.LastModifiedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("status_phase=")
-	builder.WriteString(fmt.Sprintf("%v", _m.StatusPhase))
+	if v := _m.StatusPhase; v != nil {
+		builder.WriteString("status_phase=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	if v := _m.StatusMessage; v != nil {
 		builder.WriteString("status_message=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Environment; v != nil {
+		builder.WriteString("environment=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Namespace; v != nil {
+		builder.WriteString("namespace=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
@@ -272,8 +304,10 @@ func (_m *ApiExposure) String() string {
 	builder.WriteString("visibility=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Visibility))
 	builder.WriteString(", ")
-	builder.WriteString("active=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Active))
+	if v := _m.Active; v != nil {
+		builder.WriteString("active=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("features=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Features))

@@ -57,6 +57,12 @@ func (_u *ApiSubscriptionUpdate) SetNillableStatusPhase(v *apisubscription.Statu
 	return _u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (_u *ApiSubscriptionUpdate) ClearStatusPhase() *ApiSubscriptionUpdate {
+	_u.mutation.ClearStatusPhase()
+	return _u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (_u *ApiSubscriptionUpdate) SetStatusMessage(v string) *ApiSubscriptionUpdate {
 	_u.mutation.SetStatusMessage(v)
@@ -74,6 +80,46 @@ func (_u *ApiSubscriptionUpdate) SetNillableStatusMessage(v *string) *ApiSubscri
 // ClearStatusMessage clears the value of the "status_message" field.
 func (_u *ApiSubscriptionUpdate) ClearStatusMessage() *ApiSubscriptionUpdate {
 	_u.mutation.ClearStatusMessage()
+	return _u
+}
+
+// SetEnvironment sets the "environment" field.
+func (_u *ApiSubscriptionUpdate) SetEnvironment(v string) *ApiSubscriptionUpdate {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *ApiSubscriptionUpdate) SetNillableEnvironment(v *string) *ApiSubscriptionUpdate {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *ApiSubscriptionUpdate) ClearEnvironment() *ApiSubscriptionUpdate {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *ApiSubscriptionUpdate) SetNamespace(v string) *ApiSubscriptionUpdate {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *ApiSubscriptionUpdate) SetNillableNamespace(v *string) *ApiSubscriptionUpdate {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *ApiSubscriptionUpdate) ClearNamespace() *ApiSubscriptionUpdate {
+	_u.mutation.ClearNamespace()
 	return _u
 }
 
@@ -131,6 +177,14 @@ func (_u *ApiSubscriptionUpdate) SetOwner(v *Application) *ApiSubscriptionUpdate
 // SetTargetID sets the "target" edge to the ApiExposure entity by ID.
 func (_u *ApiSubscriptionUpdate) SetTargetID(id int) *ApiSubscriptionUpdate {
 	_u.mutation.SetTargetID(id)
+	return _u
+}
+
+// SetNillableTargetID sets the "target" edge to the ApiExposure entity by ID if the given value is not nil.
+func (_u *ApiSubscriptionUpdate) SetNillableTargetID(id *int) *ApiSubscriptionUpdate {
+	if id != nil {
+		_u = _u.SetTargetID(*id)
+	}
 	return _u
 }
 
@@ -304,9 +358,6 @@ func (_u *ApiSubscriptionUpdate) check() error {
 	if _u.mutation.OwnerCleared() && len(_u.mutation.OwnerIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ApiSubscription.owner"`)
 	}
-	if _u.mutation.TargetCleared() && len(_u.mutation.TargetIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "ApiSubscription.target"`)
-	}
 	return nil
 }
 
@@ -328,11 +379,26 @@ func (_u *ApiSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err er
 	if value, ok := _u.mutation.StatusPhase(); ok {
 		_spec.SetField(apisubscription.FieldStatusPhase, field.TypeEnum, value)
 	}
+	if _u.mutation.StatusPhaseCleared() {
+		_spec.ClearField(apisubscription.FieldStatusPhase, field.TypeEnum)
+	}
 	if value, ok := _u.mutation.StatusMessage(); ok {
 		_spec.SetField(apisubscription.FieldStatusMessage, field.TypeString, value)
 	}
 	if _u.mutation.StatusMessageCleared() {
 		_spec.ClearField(apisubscription.FieldStatusMessage, field.TypeString)
+	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(apisubscription.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(apisubscription.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(apisubscription.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(apisubscription.FieldNamespace, field.TypeString)
 	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(apisubscription.FieldBasePath, field.TypeString, value)
@@ -549,6 +615,12 @@ func (_u *ApiSubscriptionUpdateOne) SetNillableStatusPhase(v *apisubscription.St
 	return _u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (_u *ApiSubscriptionUpdateOne) ClearStatusPhase() *ApiSubscriptionUpdateOne {
+	_u.mutation.ClearStatusPhase()
+	return _u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (_u *ApiSubscriptionUpdateOne) SetStatusMessage(v string) *ApiSubscriptionUpdateOne {
 	_u.mutation.SetStatusMessage(v)
@@ -566,6 +638,46 @@ func (_u *ApiSubscriptionUpdateOne) SetNillableStatusMessage(v *string) *ApiSubs
 // ClearStatusMessage clears the value of the "status_message" field.
 func (_u *ApiSubscriptionUpdateOne) ClearStatusMessage() *ApiSubscriptionUpdateOne {
 	_u.mutation.ClearStatusMessage()
+	return _u
+}
+
+// SetEnvironment sets the "environment" field.
+func (_u *ApiSubscriptionUpdateOne) SetEnvironment(v string) *ApiSubscriptionUpdateOne {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *ApiSubscriptionUpdateOne) SetNillableEnvironment(v *string) *ApiSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *ApiSubscriptionUpdateOne) ClearEnvironment() *ApiSubscriptionUpdateOne {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *ApiSubscriptionUpdateOne) SetNamespace(v string) *ApiSubscriptionUpdateOne {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *ApiSubscriptionUpdateOne) SetNillableNamespace(v *string) *ApiSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *ApiSubscriptionUpdateOne) ClearNamespace() *ApiSubscriptionUpdateOne {
+	_u.mutation.ClearNamespace()
 	return _u
 }
 
@@ -623,6 +735,14 @@ func (_u *ApiSubscriptionUpdateOne) SetOwner(v *Application) *ApiSubscriptionUpd
 // SetTargetID sets the "target" edge to the ApiExposure entity by ID.
 func (_u *ApiSubscriptionUpdateOne) SetTargetID(id int) *ApiSubscriptionUpdateOne {
 	_u.mutation.SetTargetID(id)
+	return _u
+}
+
+// SetNillableTargetID sets the "target" edge to the ApiExposure entity by ID if the given value is not nil.
+func (_u *ApiSubscriptionUpdateOne) SetNillableTargetID(id *int) *ApiSubscriptionUpdateOne {
+	if id != nil {
+		_u = _u.SetTargetID(*id)
+	}
 	return _u
 }
 
@@ -809,9 +929,6 @@ func (_u *ApiSubscriptionUpdateOne) check() error {
 	if _u.mutation.OwnerCleared() && len(_u.mutation.OwnerIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ApiSubscription.owner"`)
 	}
-	if _u.mutation.TargetCleared() && len(_u.mutation.TargetIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "ApiSubscription.target"`)
-	}
 	return nil
 }
 
@@ -850,11 +967,26 @@ func (_u *ApiSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *ApiSubs
 	if value, ok := _u.mutation.StatusPhase(); ok {
 		_spec.SetField(apisubscription.FieldStatusPhase, field.TypeEnum, value)
 	}
+	if _u.mutation.StatusPhaseCleared() {
+		_spec.ClearField(apisubscription.FieldStatusPhase, field.TypeEnum)
+	}
 	if value, ok := _u.mutation.StatusMessage(); ok {
 		_spec.SetField(apisubscription.FieldStatusMessage, field.TypeString, value)
 	}
 	if _u.mutation.StatusMessageCleared() {
 		_spec.ClearField(apisubscription.FieldStatusMessage, field.TypeString)
+	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(apisubscription.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(apisubscription.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(apisubscription.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(apisubscription.FieldNamespace, field.TypeString)
 	}
 	if value, ok := _u.mutation.BasePath(); ok {
 		_spec.SetField(apisubscription.FieldBasePath, field.TypeString, value)

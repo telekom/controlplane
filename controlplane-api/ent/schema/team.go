@@ -24,6 +24,8 @@ func (Team) Mixin() []ent.Mixin {
 		schemamixin.PrivacyMixin{},
 		schemamixin.TimestampsMixin{},
 		schemamixin.StatusMixin{},
+		schemamixin.EnvironmentMixin{},
+		schemamixin.NamespaceMixin{},
 	}
 }
 
@@ -41,6 +43,9 @@ func (Team) Fields() []ent.Field {
 				"Infrastructure", "INFRASTRUCTURE",
 			).
 			Default("CUSTOMER"),
+		field.Text("rover_token_ref").
+			Optional().
+			Nillable(),
 	}
 }
 
@@ -50,7 +55,6 @@ func (Team) Edges() []ent.Edge {
 			Ref("teams").
 			Unique(),
 		edge.To("members", Member.Type),
-		edge.To("team_environments", TeamEnvironment.Type),
 		edge.To("applications", Application.Type).
 			Annotations(entgql.RelayConnection()),
 	}

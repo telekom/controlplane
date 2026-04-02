@@ -25,6 +25,34 @@ type ZoneCreate struct {
 	conflict []sql.ConflictOption
 }
 
+// SetEnvironment sets the "environment" field.
+func (_c *ZoneCreate) SetEnvironment(v string) *ZoneCreate {
+	_c.mutation.SetEnvironment(v)
+	return _c
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_c *ZoneCreate) SetNillableEnvironment(v *string) *ZoneCreate {
+	if v != nil {
+		_c.SetEnvironment(*v)
+	}
+	return _c
+}
+
+// SetNamespace sets the "namespace" field.
+func (_c *ZoneCreate) SetNamespace(v string) *ZoneCreate {
+	_c.mutation.SetNamespace(v)
+	return _c
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_c *ZoneCreate) SetNillableNamespace(v *string) *ZoneCreate {
+	if v != nil {
+		_c.SetNamespace(*v)
+	}
+	return _c
+}
+
 // SetName sets the "name" field.
 func (_c *ZoneCreate) SetName(v string) *ZoneCreate {
 	_c.mutation.SetName(v)
@@ -163,6 +191,14 @@ func (_c *ZoneCreate) createSpec() (*Zone, *sqlgraph.CreateSpec) {
 		_spec = sqlgraph.NewCreateSpec(zone.Table, sqlgraph.NewFieldSpec(zone.FieldID, field.TypeInt))
 	)
 	_spec.OnConflict = _c.conflict
+	if value, ok := _c.mutation.Environment(); ok {
+		_spec.SetField(zone.FieldEnvironment, field.TypeString, value)
+		_node.Environment = &value
+	}
+	if value, ok := _c.mutation.Namespace(); ok {
+		_spec.SetField(zone.FieldNamespace, field.TypeString, value)
+		_node.Namespace = &value
+	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(zone.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -198,7 +234,7 @@ func (_c *ZoneCreate) createSpec() (*Zone, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Zone.Create().
-//		SetName(v).
+//		SetEnvironment(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -207,7 +243,7 @@ func (_c *ZoneCreate) createSpec() (*Zone, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ZoneUpsert) {
-//			SetName(v+v).
+//			SetEnvironment(v+v).
 //		}).
 //		Exec(ctx)
 func (_c *ZoneCreate) OnConflict(opts ...sql.ConflictOption) *ZoneUpsertOne {
@@ -242,6 +278,42 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetEnvironment sets the "environment" field.
+func (u *ZoneUpsert) SetEnvironment(v string) *ZoneUpsert {
+	u.Set(zone.FieldEnvironment, v)
+	return u
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ZoneUpsert) UpdateEnvironment() *ZoneUpsert {
+	u.SetExcluded(zone.FieldEnvironment)
+	return u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ZoneUpsert) ClearEnvironment() *ZoneUpsert {
+	u.SetNull(zone.FieldEnvironment)
+	return u
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ZoneUpsert) SetNamespace(v string) *ZoneUpsert {
+	u.Set(zone.FieldNamespace, v)
+	return u
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ZoneUpsert) UpdateNamespace() *ZoneUpsert {
+	u.SetExcluded(zone.FieldNamespace)
+	return u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ZoneUpsert) ClearNamespace() *ZoneUpsert {
+	u.SetNull(zone.FieldNamespace)
+	return u
+}
 
 // SetName sets the "name" field.
 func (u *ZoneUpsert) SetName(v string) *ZoneUpsert {
@@ -323,6 +395,48 @@ func (u *ZoneUpsertOne) Update(set func(*ZoneUpsert)) *ZoneUpsertOne {
 		set(&ZoneUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *ZoneUpsertOne) SetEnvironment(v string) *ZoneUpsertOne {
+	return u.Update(func(s *ZoneUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ZoneUpsertOne) UpdateEnvironment() *ZoneUpsertOne {
+	return u.Update(func(s *ZoneUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ZoneUpsertOne) ClearEnvironment() *ZoneUpsertOne {
+	return u.Update(func(s *ZoneUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ZoneUpsertOne) SetNamespace(v string) *ZoneUpsertOne {
+	return u.Update(func(s *ZoneUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ZoneUpsertOne) UpdateNamespace() *ZoneUpsertOne {
+	return u.Update(func(s *ZoneUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ZoneUpsertOne) ClearNamespace() *ZoneUpsertOne {
+	return u.Update(func(s *ZoneUpsert) {
+		s.ClearNamespace()
+	})
 }
 
 // SetName sets the "name" field.
@@ -509,7 +623,7 @@ func (_c *ZoneCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ZoneUpsert) {
-//			SetName(v+v).
+//			SetEnvironment(v+v).
 //		}).
 //		Exec(ctx)
 func (_c *ZoneCreateBulk) OnConflict(opts ...sql.ConflictOption) *ZoneUpsertBulk {
@@ -576,6 +690,48 @@ func (u *ZoneUpsertBulk) Update(set func(*ZoneUpsert)) *ZoneUpsertBulk {
 		set(&ZoneUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *ZoneUpsertBulk) SetEnvironment(v string) *ZoneUpsertBulk {
+	return u.Update(func(s *ZoneUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *ZoneUpsertBulk) UpdateEnvironment() *ZoneUpsertBulk {
+	return u.Update(func(s *ZoneUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *ZoneUpsertBulk) ClearEnvironment() *ZoneUpsertBulk {
+	return u.Update(func(s *ZoneUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *ZoneUpsertBulk) SetNamespace(v string) *ZoneUpsertBulk {
+	return u.Update(func(s *ZoneUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *ZoneUpsertBulk) UpdateNamespace() *ZoneUpsertBulk {
+	return u.Update(func(s *ZoneUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *ZoneUpsertBulk) ClearNamespace() *ZoneUpsertBulk {
+	return u.Update(func(s *ZoneUpsert) {
+		s.ClearNamespace()
+	})
 }
 
 // SetName sets the "name" field.
