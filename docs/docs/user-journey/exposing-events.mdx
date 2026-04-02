@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 5
 ---
 
 # Exposing Events
@@ -124,29 +124,6 @@ See [Additional Features](./features/overview.mdx) for the full list of features
 | ------- | ----------- |
 | [Publisher Scopes](./features/event-filtering.mdx#publisher-scopes-event-exposure) | Define named scopes to partition your events and apply publisher-side filters. Subscribers can choose which scopes to receive. |
 | [Additional Publisher IDs](./features/event-filtering.mdx#additional-publisher-ids-event-exposure) | Allow multiple applications to publish events to the same event type. |
-
-## Cross-Zone Event Meshing
-
-One of the most powerful features of the Event domain is cross-zone meshing. When event publishers and subscribers are in different zones (potentially in different cloud environments), the Control Plane automatically creates proxy routes to deliver events across zone boundaries.
-
-This meshing is configured at the zone level through the **EventConfig** resource:
-
-```yaml
-apiVersion: event.cp.ei.telekom.de/v1
-kind: EventConfig
-metadata:
-  name: zone-event-config
-  namespace: dev--dataplane1
-spec:
-  mesh:
-    fullMesh: true
-    zoneNames:
-      - aws
-      - azure
-      - gcp
-```
-
-When `fullMesh` is enabled, every zone can communicate with every other zone. Alternatively, you can specify a subset of zone names for selective meshing.
 
 ## Next Steps
 
