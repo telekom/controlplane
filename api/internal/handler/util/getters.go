@@ -226,28 +226,6 @@ func FindCrossZoneApiSubscriptionZones(ctx context.Context, apiExp *apiv1.ApiExp
 	seen := make(map[string]bool)
 	var zones []types.ObjectRef
 
-	// Helper function to add a zone if it's not already seen and passes filters
-	addZoneIfValid := func(zone types.ObjectRef, reason string) {
-		// Skip same-zone as exposure (no cross-zone proxy needed)
-		if zone.Equals(&apiExp.Spec.Zone) {
-			return
-		}
-
-		// CRITICAL: Skip if zone IS the provider's failover zone
-		// The provider failover route already exists in that zone and serves those zones
-		if apiExp.HasFailover() && apiExp.Spec.Traffic.Failover.ContainsZone(zone) {
-			logger.V(1).Info("Skipping proxy route in provider failover zone", "zone", zone.Name, "reason", reason)
-			return
-		}
-
-		zoneName := zone.Name
-		if !seen[zoneName] {
-			seen[zoneName] = true
-			zones = append(zones, zone)
-			logger.V(1).Info("Adding zone for proxy route", "zone", zone.Name, "reason", reason)
-		}
-	}
-
 	for i := range subList.Items {
 		sub := &subList.Items[i]
 
@@ -271,13 +249,30 @@ func FindCrossZoneApiSubscriptionZones(ctx context.Context, apiExp *apiv1.ApiExp
 			continue
 		}
 
-		// Add the subscription's zone (if cross-zone)
-		addZoneIfValid(sub.Spec.Zone, fmt.Sprintf("subscription %s", sub.Name))
-
-		// Add all subscriber failover zones (exposure-driven pattern)
+		// Collect candidate zones: subscription zone + subscriber failover zones
+		var candidateZones []types.ObjectRef
+		candidateZones = append(candidateZones, sub.Spec.Zone)
 		if sub.HasFailover() {
-			for _, failoverZone := range sub.Spec.Traffic.Failover.Zones {
-				addZoneIfValid(failoverZone, fmt.Sprintf("subscriber failover for %s", sub.Name))
+			candidateZones = append(candidateZones, sub.Spec.Traffic.Failover.Zones...)
+		}
+
+		// Filter and deduplicate zones
+		for _, zone := range candidateZones {
+			// Skip same-zone as exposure (no cross-zone proxy needed)
+			if zone.Equals(&apiExp.Spec.Zone) {
+				continue
+			}
+
+			// CRITICAL: Skip if zone IS the provider's failover zone
+			// The provider failover route already exists in that zone and serves those zones
+			if apiExp.HasFailover() && apiExp.Spec.Traffic.Failover.ContainsZone(zone) {
+				continue
+			}
+
+			// Add zone if not already seen
+			if !seen[zone.Name] {
+				seen[zone.Name] = true
+				zones = append(zones, zone)
 			}
 		}
 	}
