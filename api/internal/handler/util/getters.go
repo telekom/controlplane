@@ -7,8 +7,9 @@ package util
 import (
 	"context"
 	"fmt"
-	"github.com/telekom/controlplane/common/pkg/config"
 	"sort"
+
+	"github.com/telekom/controlplane/common/pkg/config"
 
 	"github.com/pkg/errors"
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
@@ -17,11 +18,14 @@ import (
 	approvalbuilder "github.com/telekom/controlplane/approval/api/v1/builder"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -249,7 +253,7 @@ func FindCrossZoneApiSubscriptionZones(ctx context.Context, apiExp *apiv1.ApiExp
 
 		// Skip subscriptions that are being deleted; their finalizer may still
 		// be running, but they should no longer influence proxy route creation.
-		if sub.GetDeletionTimestamp() != nil {
+		if controller.IsBeingDeleted(sub) {
 			continue
 		}
 
@@ -261,14 +265,8 @@ func FindCrossZoneApiSubscriptionZones(ctx context.Context, apiExp *apiv1.ApiExp
 		}
 
 		// Check approval status
-		approvalGranted := false
-		for _, cond := range sub.GetConditions() {
-			if cond.Type == approvalbuilder.ConditionTypeApprovalGranted && cond.Status == "True" {
-				approvalGranted = true
-				break
-			}
-		}
-		if !approvalGranted {
+		approvalCond := meta.FindStatusCondition(sub.GetConditions(), approvalbuilder.ConditionTypeApprovalGranted)
+		if approvalCond == nil || approvalCond.Status != metav1.ConditionTrue {
 			logger.V(1).Info("Skipping subscription without approval", "subscription", sub.Name, "zone", sub.Spec.Zone.Name)
 			continue
 		}

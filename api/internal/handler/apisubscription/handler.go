@@ -208,53 +208,59 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		return errors.Errorf("unknown approval-builder result %q", res)
 	}
 
-	// Construct reference to the route (proxy route is now created by ApiExposure)
+	// Construct reference to the route using ApiExposure.Status
 	// The route reference depends on the subscription zone:
-	// - Same zone as exposure: reference the real route in exposure zone
-	// - Provider failover zone: reference the provider failover route
-	// - Cross-zone: reference the proxy route created by ApiExposure in subscriber zone
+	// - Same zone as exposure: use the real route from ApiExposure.Status.Route
+	// - Provider failover zone: use the failover route from ApiExposure.Status.FailoverRoute
+	// - Cross-zone: find matching proxy route in ApiExposure.Status.ProxyRoutes
 
 	sameZoneAsExposure := apiSub.Spec.Zone.Equals(&apiExposure.Spec.Zone)
 	inProviderFailoverZone := apiExposure.HasFailover() && apiExposure.Spec.Traffic.Failover.ContainsZone(apiSub.Spec.Zone)
 
-	var routeRef types.ObjectRef
+	var routeRef *types.ObjectRef
 
 	if sameZoneAsExposure {
-		// Same zone: reference the real route in exposure zone
-		zone, err := util.GetZone(ctx, scopedClient, apiExposure.Spec.Zone.K8s())
-		if err != nil {
-			return errors.Wrapf(err, "failed to get exposure zone %s", apiExposure.Spec.Zone.Name)
+		// Same zone: reference the real route from ApiExposure status
+		if apiExposure.Status.Route == nil {
+			apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the route"))
+			return nil
 		}
-		routeRef = types.ObjectRef{
-			Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath, contextutil.EnvFromContextOrDie(ctx)),
-			Namespace: zone.Status.Namespace,
-		}
-		log.V(1).Info("Referencing real route in same zone", "zone", apiSub.Spec.Zone.Name)
+		routeRef = apiExposure.Status.Route
+		log.V(1).Info("Referencing real route from ApiExposure", "route", routeRef.String())
 	} else if inProviderFailoverZone {
-		// Provider failover zone: reference the provider failover route
-		failoverZone, err := util.GetZone(ctx, scopedClient, apiExposure.Spec.Traffic.Failover.Zones[0].K8s())
-		if err != nil {
-			return errors.Wrapf(err, "failed to get provider failover zone %s", apiExposure.Spec.Traffic.Failover.Zones[0].Name)
+		// Provider failover zone: reference the failover route from ApiExposure status
+		if apiExposure.Status.FailoverRoute == nil {
+			apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the failover route"))
+			return nil
 		}
-		routeRef = types.ObjectRef{
-			Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath, contextutil.EnvFromContextOrDie(ctx)),
-			Namespace: failoverZone.Status.Namespace,
-		}
-		log.V(1).Info("Referencing provider failover route", "zone", apiSub.Spec.Zone.Name)
+		routeRef = apiExposure.Status.FailoverRoute
+		log.V(1).Info("Referencing provider failover route from ApiExposure", "route", routeRef.String())
 	} else {
-		// Cross-zone: reference the proxy route created by ApiExposure in subscriber zone
+		// Cross-zone: find the proxy route for this subscriber zone in ApiExposure status
+		// Get the subscription zone to find the correct proxy route by namespace
 		zone, err := util.GetZone(ctx, scopedClient, apiSub.Spec.Zone.K8s())
 		if err != nil {
 			return errors.Wrapf(err, "failed to get subscription zone %s", apiSub.Spec.Zone.Name)
 		}
-		routeRef = types.ObjectRef{
-			Name:      util.MakeRouteName(apiSub.Spec.ApiBasePath, contextutil.EnvFromContextOrDie(ctx)),
-			Namespace: zone.Status.Namespace,
+
+		// Find the proxy route that matches our zone's namespace
+		var found bool
+		for _, proxyRoute := range apiExposure.Status.ProxyRoutes {
+			if proxyRoute.Namespace == zone.Status.Namespace {
+				routeRef = &proxyRoute
+				found = true
+				break
+			}
 		}
-		log.V(1).Info("Referencing proxy route created by ApiExposure", "zone", apiSub.Spec.Zone.Name)
+
+		if !found {
+			apiSub.SetCondition(condition.NewBlockedCondition("Waiting for ApiExposure to create the proxy route for this zone"))
+			return nil
+		}
+		log.V(1).Info("Referencing proxy route from ApiExposure", "zone", apiSub.Spec.Zone.Name, "route", routeRef.String())
 	}
 
-	apiSub.Status.Route = &routeRef
+	apiSub.Status.Route = routeRef
 
 	consumeRouteOptions := []util.CreateConsumeRouteOption{}
 
@@ -264,7 +270,7 @@ func (h *ApiSubscriptionHandler) CreateOrUpdate(ctx context.Context, apiSub *api
 		consumeRouteOptions = append(consumeRouteOptions, util.WithConsumerRouteRateLimit(apiExposure.Spec.Traffic.RateLimit.SubscriberRateLimit.Default.Limits))
 	}
 
-	consumeRoute, err := util.CreateConsumeRoute(ctx, apiSub, apiSub.Spec.Zone, routeRef, apiSubApplication.Status.ClientId, consumeRouteOptions...)
+	consumeRoute, err := util.CreateConsumeRoute(ctx, apiSub, apiSub.Spec.Zone, *routeRef, apiSubApplication.Status.ClientId, consumeRouteOptions...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create normal ConsumeRoute")
 	}
