@@ -460,6 +460,10 @@ func (in *ZoneStatus) DeepCopyInto(out *ZoneStatus) {
 		in, out := &in.GatewayConsumer, &out.GatewayConsumer
 		*out = (*in).DeepCopy()
 	}
+	if in.DtcGatewayRealm != nil {
+		in, out := &in.DtcGatewayRealm, &out.DtcGatewayRealm
+		*out = (*in).DeepCopy()
+	}
 	if in.TeamApiIdentityRealm != nil {
 		in, out := &in.TeamApiIdentityRealm, &out.TeamApiIdentityRealm
 		*out = (*in).DeepCopy()

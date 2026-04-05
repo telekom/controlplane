@@ -64,9 +64,23 @@ func CreateRoute(ctx context.Context, realm *gatewayv1.Realm, routeType RouteTyp
 	if len(realm.Spec.Urls) == 0 {
 		return route, errors.New("realm has no URLs configured")
 	}
-	url, err := url.Parse(realm.Spec.Urls[0])
-	if err != nil {
-		return route, errors.Wrap(err, "failed to parse URL")
+
+	// Build downstreams array: one downstream per URL in the realm
+	var downstreams []gatewayv1.Downstream
+	var err error
+	for _, realmUrl := range realm.Spec.Urls {
+		var parsedUrl *url.URL
+		parsedUrl, err = url.Parse(realmUrl)
+		if err != nil {
+			return route, errors.Wrapf(err, "failed to parse URL: %s", realmUrl)
+		}
+
+		downstreams = append(downstreams, gatewayv1.Downstream{
+			Host:      parsedUrl.Hostname(),
+			Port:      gatewayv1.GetPortOrDefaultFromScheme(parsedUrl),
+			Path:      path.Join(parsedUrl.Path, fmt.Sprintf(cfg.DownstreamPathFormat, realm.Name)),
+			IssuerUrl: "",
+		})
 	}
 
 	mutator := func() error {
@@ -86,14 +100,7 @@ func CreateRoute(ctx context.Context, realm *gatewayv1.Realm, routeType RouteTyp
 					Path:   fmt.Sprintf(cfg.UpstreamPathFormat, realm.Name),
 				},
 			},
-			Downstreams: []gatewayv1.Downstream{
-				{
-					Host:      url.Hostname(),
-					Port:      gatewayv1.GetPortOrDefaultFromScheme(url),
-					Path:      path.Join(url.Path, fmt.Sprintf(cfg.DownstreamPathFormat, realm.Name)),
-					IssuerUrl: "",
-				},
-			},
+			Downstreams: downstreams,
 		}
 
 		return nil

@@ -172,6 +172,34 @@ func (g *Route) GetPath() string {
 	return g.Spec.Downstreams[0].Path
 }
 
+// GetHosts returns all unique hosts from the route's downstreams.
+// Hosts are deduplicated while maintaining order (first occurrence wins).
+func (g *Route) GetHosts() []string {
+	seen := make(map[string]bool)
+	hosts := make([]string, 0, len(g.Spec.Downstreams))
+	for _, downstream := range g.Spec.Downstreams {
+		if !seen[downstream.Host] {
+			seen[downstream.Host] = true
+			hosts = append(hosts, downstream.Host)
+		}
+	}
+	return hosts
+}
+
+// GetPaths returns all unique paths from the route's downstreams.
+// Paths are deduplicated while maintaining order (first occurrence wins).
+func (g *Route) GetPaths() []string {
+	seen := make(map[string]bool)
+	paths := make([]string, 0, len(g.Spec.Downstreams))
+	for _, downstream := range g.Spec.Downstreams {
+		if !seen[downstream.Path] {
+			seen[downstream.Path] = true
+			paths = append(paths, downstream.Path)
+		}
+	}
+	return paths
+}
+
 func (g *Route) GetRequestBuffering() bool {
 	return !g.Spec.Buffering.DisableRequestBuffering
 }

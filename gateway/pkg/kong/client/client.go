@@ -453,18 +453,17 @@ func (c *kongClient) CreateOrReplaceRoute(ctx context.Context, route CustomRoute
 	service := serviceResponse.JSON200
 	route.SetServiceId(*service.Id)
 
+	hosts := route.GetHosts()
+	paths := route.GetPaths()
+
 	routeBody := kong.CreateRouteJSONRequestBody{
 		Name: &routeName,
 		Protocols: []string{
 			"http",
 			"https",
 		},
-		Paths: &[]string{
-			route.GetPath(),
-		},
-		Hosts: &[]string{
-			route.GetHost(),
-		},
+		Paths: &paths,
+		Hosts: &hosts,
 		Service: &kong.CreateRouteRequestService{
 			Id: service.Id,
 		},
