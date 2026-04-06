@@ -192,7 +192,6 @@ func createTeamApiRoute(ctx context.Context, handlingContext HandlingContext, te
 
 	mutator := func() error {
 		teamRoute.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
@@ -254,7 +253,6 @@ func createGatewayConsumer(ctx context.Context, handlingContext HandlingContext,
 
 	mutator := func() error {
 		gatewayConsumer.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
@@ -283,7 +281,6 @@ func createGatewayRealm(ctx context.Context, handlingContext HandlingContext, ga
 
 	mutator := func() error {
 		gatewayRealm.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
 			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
@@ -305,7 +302,7 @@ func createGatewayRealm(ctx context.Context, handlingContext HandlingContext, ga
 
 func createGatewayDtcRealm(ctx context.Context, handlingContext HandlingContext, gateway *gatewayapi.Gateway) (*gatewayapi.Realm, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
-	realmName := naming.ForDefaultGatewayRealm(handlingContext.Environment)
+	realmName := naming.ForDtcGatewayRealm()
 
 	// Get all zones to build DTC URLs and issuer URLs
 	zoneList := &adminv1.ZoneList{}
@@ -314,20 +311,24 @@ func createGatewayDtcRealm(ctx context.Context, handlingContext HandlingContext,
 		return nil, errors.Wrap(err, "failed to list zones for DTC realm creation")
 	}
 
-	// Build URLs array: all DTC URLs from all zones (including current zone)
-	var dtcUrls []string
+	// Build URLs array: DTC realm is a superset of default realm
+	// Start with the default gateway URL from current zone
+	realmUrls := []string{handlingContext.Zone.Spec.Gateway.Url}
 
-	// Build IssuerUrls array: issuers from ALL DTC-enabled zones (including current zone)
-	var issuerUrls []string
+	// Build IssuerUrls array: Start with default issuer from current zone
+	issuerUrls := []string{urls.ForGatewayRealm(handlingContext.Zone.Spec.IdentityProvider.Url, realmName)}
 
 	for i := range zoneList.Items {
 		zone := &zoneList.Items[i]
 		if zone.Spec.Gateway.DtcUrl != "" {
-			// Add the dtcUrl
-			dtcUrls = append(dtcUrls, zone.Spec.Gateway.DtcUrl)
 
-			// Include current zone issuer (don't skip it)
-			issuerUrls = append(issuerUrls, urls.ForGatewayRealm(zone.Spec.IdentityProvider.Url, realmName))
+			// Add the dtcUrl to realm URLs
+			realmUrls = append(realmUrls, zone.Spec.Gateway.DtcUrl)
+
+			// Add issuer from OTHER DTC-enabled zones (current zone issuer already added above)
+			if !types.Equals(zone, handlingContext.Zone) {
+				issuerUrls = append(issuerUrls, urls.ForGatewayRealm(zone.Spec.IdentityProvider.Url, realmName))
+			}
 		}
 	}
 
@@ -345,7 +346,7 @@ func createGatewayDtcRealm(ctx context.Context, handlingContext HandlingContext,
 
 		gatewayRealm.Spec = gatewayapi.RealmSpec{
 			Gateway:          types.ObjectRefFromObject(gateway),
-			Urls:             dtcUrls,
+			Urls:             realmUrls,
 			IssuerUrls:       issuerUrls,
 			DefaultConsumers: []string{}, // Keep empty, no "gateway" default consumer
 		}

@@ -30,6 +30,10 @@ func ForTeamApiGatewayRealm(environment *adminv1.Environment) string {
 	return teamApiIdentityRealmPrefix + environment.GetName()
 }
 
+func ForDtcGatewayRealm() string {
+	return "dtc"
+}
+
 func ForIdentityProvider(zone *adminv1.Zone) string {
 	return zone.Name
 }

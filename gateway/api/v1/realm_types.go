@@ -5,10 +5,10 @@
 package v1
 
 import (
-	"errors"
 	"net/url"
 	"path"
 
+	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -117,6 +117,39 @@ func (r *Realm) AsDownstream(apiBasePath string) (dws Downstream, err error) {
 		IssuerUrl: issuerUrl,
 	}
 	return
+}
+
+// AsDownstreams returns multiple downstreams, one for each URL in the realm.
+// This is critical for DTC realms which aggregate multiple zone URLs.
+// Each downstream is paired with its corresponding issuer URL.
+func (r *Realm) AsDownstreams(apiBasePath string) ([]Downstream, error) {
+	if len(r.Spec.Urls) == 0 {
+		return nil, errors.New("no downstreams found")
+	}
+
+	downstreams := make([]Downstream, 0, len(r.Spec.Urls))
+
+	for i, realmUrl := range r.Spec.Urls {
+		parsedUrl, err := url.Parse(realmUrl)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse URL: %s", realmUrl)
+		}
+
+		// Use corresponding issuer URL if available, otherwise empty
+		issuerUrl := ""
+		if i < len(r.Spec.IssuerUrls) {
+			issuerUrl = r.Spec.IssuerUrls[i]
+		}
+
+		downstreams = append(downstreams, Downstream{
+			Host:      parsedUrl.Hostname(),
+			Port:      GetPortOrDefaultFromScheme(parsedUrl),
+			Path:      path.Join(parsedUrl.Path, apiBasePath),
+			IssuerUrl: issuerUrl,
+		})
+	}
+
+	return downstreams, nil
 }
 
 // +kubebuilder:object:root=true

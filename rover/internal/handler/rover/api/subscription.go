@@ -55,14 +55,28 @@ func HandleSubscription(ctx context.Context, c client.JanitorClient, owner *rove
 			},
 		}
 
-		failoverZones, hasFailover := getFailoverZones(environment, sub.Traffic.Failover)
-		if hasFailover {
-			apiSubscription.Spec.Traffic = apiapi.SubscriberTraffic{
-				Failover: &apiapi.Failover{
-					Zones: failoverZones,
-				},
+		// Handle failover configuration
+		// Failover is ONLY enabled when failoverEnabled=true at rover spec level
+		// Manual traffic.failover configuration is deprecated and blocked by validation
+		if owner.Spec.FailoverEnabled {
+			log.V(1).Info("FailoverEnabled is true, discovering DTC-eligible zones for subscription", "basePath", sub.BasePath)
+			failoverZones, dtcErr := GetDtcEligibleZones(ctx, c, environment)
+			if dtcErr != nil {
+				return errors.Wrap(dtcErr, "failed to discover DTC-eligible zones")
+			}
+
+			if len(failoverZones) > 0 {
+				apiSubscription.Spec.Traffic = apiapi.SubscriberTraffic{
+					Failover: &apiapi.Failover{
+						Zones: failoverZones,
+					},
+				}
+				log.V(1).Info("Configured DTC failover zones for subscription", "basePath", sub.BasePath, "zones", failoverZones)
+			} else {
+				log.V(1).Info("No DTC-eligible zones found for failover", "basePath", sub.BasePath)
 			}
 		}
+		// If failoverEnabled=false, no failover is configured (no traffic.failover at all)
 
 		apiSubscription.Labels = map[string]string{
 			apiapi.BasePathLabelKey:             labelutil.NormalizeLabelValue(sub.BasePath),

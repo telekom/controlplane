@@ -13,6 +13,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -156,14 +157,18 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 		opt(options)
 	}
 
-	// Downstream
+	// Downstream: Use the provided realm (could be DTC if failover is enabled)
+	// This allows subscribers to access the API via DTC gateway hosts
 	downstreamRealm, downstreamZone, err := GetRealmForZone(ctx, downstreamZoneRef, realmName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get downstream-realm %s", downstreamZoneRef.String())
 	}
 
-	// Upstream
-	upstreamRealm, upstreamZone, err := GetRealmForZone(ctx, upstreamZoneRef, realmName)
+	// Upstream: ALWAYS use the default realm of the provider zone
+	// DTC realm is NOT guaranteed to exist in the upstream zone, and proxy routes
+	// need to forward to the specific provider zone's default gateway
+	upstreamRealmName := contextutil.EnvFromContextOrDie(ctx) // default realm name
+	upstreamRealm, upstreamZone, err := GetRealmForZone(ctx, upstreamZoneRef, upstreamRealmName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get upstream-realm %s", upstreamZoneRef.Name)
 	}
@@ -191,9 +196,11 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 			config.BuildLabelKey("type"):  "proxy",
 		}
 
-		downstream, err := downstreamRealm.AsDownstream(apiBasePath)
+		// Use AsDownstreams to get all downstreams from the realm
+		// This is critical for DTC realms which have multiple URLs and issuers
+		downstreams, err := downstreamRealm.AsDownstreams(apiBasePath)
 		if err != nil {
-			return errors.Wrap(err, "failed to create downstream")
+			return errors.Wrap(err, "failed to create downstreams")
 		}
 
 		upstream, err := AsUpstreamForProxyRoute(ctx, upstreamRealm, apiBasePath)
@@ -202,13 +209,9 @@ func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, up
 		}
 
 		proxyRoute.Spec = gatewayapi.RouteSpec{
-			Realm: *types.ObjectRefFromObject(downstreamRealm),
-			Upstreams: []gatewayapi.Upstream{
-				upstream,
-			},
-			Downstreams: []gatewayapi.Downstream{
-				downstream,
-			},
+			Realm:       *types.ObjectRefFromObject(downstreamRealm),
+			Upstreams:   []gatewayapi.Upstream{upstream},
+			Downstreams: downstreams,
 		}
 
 		log.Info("Creating proxy route", "route", proxyRoute.Name, "namespace", proxyRoute.Namespace, "failover", options.HasFailover())
@@ -403,9 +406,11 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 			config.BuildLabelKey("type"):  "real",
 		}
 
-		downstream, err := downstreamRealm.AsDownstream(apiExposure.Spec.ApiBasePath)
+		// Use AsDownstreams to get all downstreams from the realm
+		// This is critical for DTC realms which have multiple URLs and issuers
+		downstreams, err := downstreamRealm.AsDownstreams(apiExposure.Spec.ApiBasePath)
 		if err != nil {
-			return errors.Wrap(err, "failed to create downstream")
+			return errors.Wrap(err, "failed to create downstreams")
 		}
 
 		gatewayUpstreams := make([]gatewayapi.Upstream, 0, len(apiExposure.Spec.Upstreams))
@@ -418,12 +423,10 @@ func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, api
 		}
 
 		route.Spec = gatewayapi.RouteSpec{
-			Realm:     *types.ObjectRefFromObject(downstreamRealm),
-			Upstreams: gatewayUpstreams,
-			Downstreams: []gatewayapi.Downstream{
-				downstream,
-			},
-			Traffic: gatewayapi.Traffic{},
+			Realm:       *types.ObjectRefFromObject(downstreamRealm),
+			Upstreams:   gatewayUpstreams,
+			Downstreams: downstreams,
+			Traffic:     gatewayapi.Traffic{},
 		}
 		route.Spec.Transformation = mapTransformation(apiExposure.Spec.Transformation)
 		route.Spec.Security = mapSecurity(apiExposure.Spec.Security)

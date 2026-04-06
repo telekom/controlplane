@@ -87,6 +87,21 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	// TODO: further validations (currently contained in the old code)
 	// - validate if team category allows exposure of api category
 
+	// --- Determine Realm ---
+	// Check if any subscription has failover configured
+	// If yes, use DTC realm (superset with all DTC capabilities)
+	// Otherwise, use default realm
+	hasFailoverSubscription, err := util.HasAnySubscriptionWithFailover(ctx, apiExp)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check for failover subscriptions for apiExposure: %s", apiExp.Name)
+	}
+
+	realmName := contextutil.EnvFromContextOrDie(ctx) // default
+	if hasFailoverSubscription {
+		realmName = "dtc"
+		log.V(1).Info("Using DTC realm due to failover subscription", "apiBasePath", apiExp.Spec.ApiBasePath)
+	}
+
 	// --- Proxy Route Management ---
 	// Query cross-zone subscription zones (exposure-driven pattern)
 	crossZoneRefs, err := util.FindCrossZoneApiSubscriptionZones(ctx, apiExp)
@@ -112,7 +127,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		}
 
 		proxyRoute, err := util.CreateProxyRoute(ctx, subscriberZoneRef, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
-			contextutil.EnvFromContextOrDie(ctx),
+			realmName,
 			options...,
 		)
 		if err != nil {
@@ -126,7 +141,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 	if apiExp.HasFailover() {
 		failoverZone := apiExp.Spec.Traffic.Failover.Zones[0] // currently only one failover zone is supported
 		failoverRoute, err := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
-			contextutil.EnvFromContextOrDie(ctx),
+			realmName,
 			util.WithFailoverUpstreams(apiExp.Spec.Upstreams...),
 			util.WithFailoverSecurity(apiExp.Spec.Security),
 		)
@@ -154,7 +169,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 		return errors.Wrapf(err, "failed to check cross-zone subscribers for apiExposure: %s", apiExp.Name)
 	}
 
-	realRoute, err := util.CreateRealRoute(ctx, apiExp.Spec.Zone, apiExp, contextutil.EnvFromContextOrDie(ctx),
+	realRoute, err := util.CreateRealRoute(ctx, apiExp.Spec.Zone, apiExp, realmName,
 		util.WithProxyTarget(hasCrossZoneSubs),
 	)
 	if err != nil {

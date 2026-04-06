@@ -98,6 +98,12 @@ type RoverSpec struct {
 	// +kubebuilder:validation:Optional
 	IpRestrictions *IpRestrictions `json:"ipRestrictions,omitempty"`
 
+	// FailoverEnabled enables automatic DTC-based failover for API subscriptions
+	// When enabled, the system automatically discovers DTC-eligible zones and configures failover
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=false
+	FailoverEnabled bool `json:"failoverEnabled,omitempty"`
+
 	// ClientSecret is the secret used for client authentication
 	// If not specified, a randomly generated secret will be used
 	// +kubebuilder:validation:Optional

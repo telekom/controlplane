@@ -26,10 +26,11 @@ type CircuitBreaker struct {
 	Enabled bool `json:"enabled,omitempty"`
 }
 
+// SubscriberTraffic defines traffic configuration for API subscriptions
+// Failover is now controlled via the top-level Rover.Spec.FailoverEnabled field
+// and is auto-discovered from DTC-eligible zones
 type SubscriberTraffic struct {
-	// Failover defines disaster recovery configuration for this API
-	// +kubebuilder:validation:Optional
-	Failover *Failover `json:"failover,omitempty"`
+	// Reserved for future subscriber traffic configuration
 }
 
 // LoadBalancing defines load balancing strategy for multiple upstreams

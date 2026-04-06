@@ -279,3 +279,48 @@ func FindCrossZoneApiSubscriptionZones(ctx context.Context, apiExp *apiv1.ApiExp
 
 	return zones, nil
 }
+
+// HasAnySubscriptionWithFailover checks if any approved subscription for this API has failover zones configured.
+// This is used to determine if routes should be created in the DTC realm (superset with all failover capabilities).
+func HasAnySubscriptionWithFailover(ctx context.Context, apiExp *apiv1.ApiExposure) (bool, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+	logger := log.FromContext(ctx)
+
+	subList := &apiv1.ApiSubscriptionList{}
+	if err := c.List(ctx, subList, client.MatchingLabels{
+		apiv1.BasePathLabelKey: labelutil.NormalizeLabelValue(apiExp.Spec.ApiBasePath),
+	}); err != nil {
+		return false, errors.Wrapf(err, "failed to list ApiSubscriptions for basepath %q", apiExp.Spec.ApiBasePath)
+	}
+
+	for i := range subList.Items {
+		sub := &subList.Items[i]
+
+		// Skip subscriptions that are being deleted
+		if controller.IsBeingDeleted(sub) {
+			continue
+		}
+
+		// Skip if basepath doesn't match exactly
+		if sub.Spec.ApiBasePath != apiExp.Spec.ApiBasePath {
+			continue
+		}
+
+		// Check approval status
+		approvalCond := meta.FindStatusCondition(sub.GetConditions(), approvalbuilder.ConditionTypeApprovalGranted)
+		if approvalCond == nil || approvalCond.Status != metav1.ConditionTrue {
+			logger.V(1).Info("Skipping subscription without approval", "subscription", sub.Name)
+			continue
+		}
+
+		// Check if this subscription has failover configured
+		if sub.HasFailover() {
+			logger.V(1).Info("Found subscription with failover - using DTC realm",
+				"subscription", sub.Name,
+				"failoverZones", sub.Spec.Traffic.Failover.Zones)
+			return true, nil
+		}
+	}
+
+	return false, nil
+}

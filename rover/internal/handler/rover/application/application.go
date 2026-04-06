@@ -24,6 +24,7 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/api"
 )
 
 func HandleApplication(ctx context.Context, c client.JanitorClient, owner *roverv1.Rover) error {
@@ -55,22 +56,17 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 	})
 
 	needsClient := len(owner.Spec.Subscriptions) > 0 || hasAnyEventExposures
+
+	// Discover failover zones when failoverEnabled=true
+	// These are used to create identity clients and gateway consumers in all DTC zones
 	var subscriberFailoverZones []types.ObjectRef
-	if needsClient {
-		for _, subscription := range owner.Spec.Subscriptions {
-			switch subscription.Type() {
-			case roverv1.TypeApi:
-				if subscription.Api.Traffic.Failover != nil {
-					for _, zoneName := range subscription.Api.Traffic.Failover.Zones {
-						zoneRef := types.ObjectRef{
-							Name:      zoneName,
-							Namespace: environment,
-						}
-						subscriberFailoverZones = append(subscriberFailoverZones, zoneRef)
-					}
-				}
-			}
+	if owner.Spec.FailoverEnabled {
+		dtcZones, err := api.GetDtcEligibleZones(ctx, c, environment)
+		if err != nil {
+			return errors.Wrap(err, "failed to discover DTC-eligible zones for application")
 		}
+		subscriberFailoverZones = dtcZones
+		log.V(1).Info("Discovered DTC-eligible zones for application", "zones", dtcZones)
 	}
 
 	mutator := func() error {
