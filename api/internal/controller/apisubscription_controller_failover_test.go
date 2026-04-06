@@ -23,30 +23,102 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func CreateApiExposure(name, apiBasePath, zoneName string) *apiapi.ApiExposure {
-	return &apiapi.ApiExposure{
+func CreateZoneWithDtc(name, dtcUrl string, visibility adminapi.ZoneVisibility) *adminapi.Zone {
+	zone := &adminapi.Zone{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: testNamespace,
+			Namespace: testEnvironment,
 			Labels: map[string]string{
 				config.EnvironmentLabelKey: testEnvironment,
-				apiapi.BasePathLabelKey:    labelutil.NormalizeLabelValue(apiBasePath),
 			},
 		},
-		Spec: apiapi.ApiExposureSpec{
-			ApiBasePath: apiBasePath,
-			Zone: types.ObjectRef{
-				Name:      zoneName,
-				Namespace: testEnvironment,
-			},
-			Upstreams: []apiapi.Upstream{
-				{
-					Url:    "http://test-api:8080/api/v1",
-					Weight: 100,
-				},
+		Spec: adminapi.ZoneSpec{
+			Visibility: visibility,
+			Gateway: adminapi.GatewayConfig{
+				Url:    "http://my-gateway." + name + ":8080",
+				DtcUrl: dtcUrl,
 			},
 		},
 	}
+
+	err := k8sClient.Create(ctx, zone)
+	Expect(err).ToNot(HaveOccurred())
+
+	zone.Status.Namespace = testEnvironment + "--" + name
+	zone.Status.Links = adminapi.Links{
+		Url:       "http://test." + name + ".de",
+		Issuer:    "http://issuer." + name + ".de:8080/auth/realms/test",
+		LmsIssuer: "http://lms-issuer." + name + ".de:8080/auth/realms/test",
+	}
+	zone.SetCondition(condition.NewReadyCondition("Ready", "testing"))
+
+	err = k8sClient.Status().Update(ctx, zone)
+	Expect(err).ToNot(HaveOccurred())
+
+	CreateNamespace(zone.Status.Namespace)
+	return zone
+}
+
+// DtcZoneConfig represents a zone's DTC configuration for realm creation
+type DtcZoneConfig struct {
+	ZoneName string
+	DtcUrl   string
+}
+
+// CreateDtcRealmForZone creates a DTC realm for a zone with multiple URLs.
+// This mimics what the Zone controller does in production (see admin/internal/handler/zone/handler.go:createGatewayDtcRealm).
+// The DTC realm is a "superset" that includes:
+// 1. The default gateway URL for the zone (always first)
+// 2. ALL DTC URLs from all zones (for multi-zone failover), each paired with its zone's issuer
+//
+// IMPORTANT: The default issuer already covers the current zone, so we only add issuers for OTHER zones.
+//
+// Example:
+//
+//	CreateDtcRealmForZone("dtc-zone1", []DtcZoneConfig{
+//	  {ZoneName: "dtc-zone1", DtcUrl: "https://dtc-zone1.example.com/"},
+//	  {ZoneName: "dtc-zone2", DtcUrl: "https://dtc-zone2.example.com/"},
+//	})
+func CreateDtcRealmForZone(zoneName string, allDtcZones []DtcZoneConfig) *gatewayapi.Realm {
+	// Start with default gateway URL for THIS zone
+	realmUrls := []string{"http://my-gateway." + zoneName + ":8080"}
+
+	// Start with default issuer for THIS zone
+	issuerUrls := []string{"http://my-issuer." + zoneName + ":8080/auth/realms/" + testEnvironment}
+
+	// Add DTC URLs and their corresponding issuers
+	for _, dtcZone := range allDtcZones {
+		realmUrls = append(realmUrls, dtcZone.DtcUrl)
+
+		// Only add issuer if it's NOT the current zone (default issuer already covers it)
+		if dtcZone.ZoneName != zoneName {
+			issuerUrls = append(issuerUrls, "http://my-issuer."+dtcZone.ZoneName+":8080/auth/realms/"+testEnvironment)
+		}
+	}
+
+	realm := &gatewayapi.Realm{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "dtc",
+			Namespace: testEnvironment + "--" + zoneName,
+			Labels: map[string]string{
+				config.EnvironmentLabelKey:   testEnvironment,
+				config.BuildLabelKey("zone"): zoneName,
+			},
+		},
+		Spec: gatewayapi.RealmSpec{
+			Urls:       realmUrls,
+			IssuerUrls: issuerUrls,
+		},
+	}
+
+	err := k8sClient.Create(ctx, realm)
+	Expect(err).ToNot(HaveOccurred())
+
+	realm.SetCondition(condition.NewReadyCondition("Ready", "testing"))
+	err = k8sClient.Status().Update(ctx, realm)
+	Expect(err).ToNot(HaveOccurred())
+
+	return realm
 }
 
 var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, func() {
@@ -298,11 +370,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 		})
 	})
 
-	// SKIPPED: Same issue as "Provider Failover Reuse" test
-	// When ApiExposure switches realms (default → DTC), route names change due to prefixing,
-	// breaking Subscription.Status.FailoverRoutes and ConsumeRoute references.
-	// Will be re-enabled after route naming refactor (remove realm prefixing).
-	XContext("ApiSubscription with Multiple Failover Zones", func() {
+	Context("ApiSubscription with Multiple Failover Zones", func() {
 		var multiFailoverZoneName1 = "multi-failover-zone1"
 		var multiFailoverZoneName2 = "multi-failover-zone2"
 		var multiFailoverZone1, multiFailoverZone2 *adminapi.Zone
@@ -310,10 +378,10 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 
 		BeforeAll(func() {
 			By("Creating subscriber zone for multiple failover test")
-			differentZone := CreateZone("different-zone")
+			differentZone := CreateZone("subscriber-zone")
 			CreateGatewayClient(differentZone)
-			CreateRealm(testEnvironment, "different-zone")
-			CreateRealm("dtc", "different-zone")
+			CreateRealm(testEnvironment, "subscriber-zone")
+			CreateRealm("dtc", "subscriber-zone")
 
 			By("Creating multiple failover zones")
 			multiFailoverZone1 = CreateZone(multiFailoverZoneName1)
@@ -333,7 +401,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			multiFailoverSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
 			multiFailoverSubscription.Name = "multi-failover-zone-subscription"
 			multiFailoverSubscription.Spec.Zone = types.ObjectRef{
-				Name:      "different-zone",
+				Name:      "subscriber-zone",
 				Namespace: testEnvironment,
 			}
 			// Configure multiple failover zones
@@ -380,7 +448,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 				g.Expect(err).ToNot(HaveOccurred())
 
 				// Verify proxy route has proper downstream configuration
-				g.Expect(route.Spec.Downstreams[0].Url()).To(Equal("https://my-gateway.different-zone:8080/apisub/failovertest/v1"))
+				g.Expect(route.Spec.Downstreams[0].Url()).To(Equal("https://my-gateway.subscriber-zone:8080/apisub/failovertest/v1"))
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -636,11 +704,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 		})
 	})
 
-	// SKIPPED: Same realm-switching + naming bug as "Provider Failover Reuse" test
-	// When ApiExposure switches from default realm to DTC realm, route names change ("test--..." → "dtc--..."),
-	// breaking references in Subscription.Status.FailoverRoutes and ConsumeRoute.Spec.Route.
-	// Will be re-enabled after route naming refactor (remove realm prefixing).
-	XContext("Subscriber Failover to Provider Failover Zone", func() {
+	Context("Subscriber Failover to Provider Failover Zone", func() {
 		var subFailoverToProviderZoneName = "sub-failover-provider-collision-zone"
 		var subFailoverToProviderZone *adminapi.Zone
 		var subFailoverToProviderSubscription *apiapi.ApiSubscription
@@ -782,10 +846,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 		})
 	})
 
-	// SKIPPED: Same realm-switching + naming bug
-	// ApiExposure switches to DTC realm when detecting failover subscriptions, causing route name changes.
-	// Will be re-enabled after route naming refactor.
-	XContext("Same-Zone Subscription with Cross-Zone Failover", func() {
+	Context("Same-Zone Subscription with Cross-Zone Failover", func() {
 		var sameZoneFailoverZoneName = "same-zone-sub-failover-zone"
 		var sameZoneFailoverZone *adminapi.Zone
 		var sameZoneWithFailoverSubscription *apiapi.ApiSubscription
@@ -795,6 +856,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			sameZoneFailoverZone = CreateZone(sameZoneFailoverZoneName)
 			CreateGatewayClient(sameZoneFailoverZone)
 			CreateRealm(testEnvironment, sameZoneFailoverZone.Name)
+			CreateRealm("dtc", sameZoneFailoverZone.Name)
 
 			By("Creating ApiSubscription in same zone as exposure with cross-zone failover")
 			sameZoneWithFailoverSubscription = NewApiSubscription(apiBasePath, providerZoneName, appName)
@@ -926,10 +988,7 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 		})
 	})
 
-	// SKIPPED: Same realm-switching + naming bug
-	// ApiExposure switches to DTC realm when detecting failover subscriptions, causing route name changes.
-	// Will be re-enabled after route naming refactor.
-	XContext("Multiple Subscriptions Sharing Zone with Different Failover Configs", func() {
+	Context("Multiple Subscriptions Sharing Zone with Different Failover Configs", func() {
 		var sharedZoneName = "multi-sub-shared-zone"
 		var sharedZone *adminapi.Zone
 		var sharedFailoverZoneName = "multi-sub-failover-zone"
@@ -942,11 +1001,13 @@ var _ = Describe("ApiSubscription Controller with failover scenario", Ordered, f
 			sharedZone = CreateZone(sharedZoneName)
 			CreateGatewayClient(sharedZone)
 			CreateRealm(testEnvironment, sharedZone.Name)
+			CreateRealm("dtc", sharedZone.Name)
 
 			By("Creating failover zone for subscription2")
 			sharedFailoverZone = CreateZone(sharedFailoverZoneName)
 			CreateGatewayClient(sharedFailoverZone)
 			CreateRealm(testEnvironment, sharedFailoverZone.Name)
+			CreateRealm("dtc", sharedFailoverZone.Name)
 
 			By("Creating ApiSubscription 1 (no failover)")
 			subscription1 = NewApiSubscription(apiBasePath, providerZoneName, appName)
@@ -1302,19 +1363,7 @@ var _ = Describe("ApiSubscription Controller - All Subscriptions Same Zone", Ord
 })
 
 // Test #6: Provider Failover Zone Reuse with Subscriber Failover (Isolated)
-// SKIPPED: This test fails due to known issue with route naming + realm switching
-// Problem: When ApiExposure switches from default realm to DTC realm (upon detecting failover subscription),
-//
-//	the route name changes (e.g., "test--api-v1" → "dtc--api-v1") due to realm prefixing in MakeRouteName.
-//	This breaks references in:
-//	- Subscription.Status.FailoverRoutes (references old route name)
-//	- ConsumeRoute.Spec.Route (references old route name)
-//	Result: ConsumeRoutes point to non-existent routes, breaking traffic routing.
-//
-// Solution: Route naming refactor (remove realm prefixing) will fix this - route names will stay constant
-//
-//	regardless of realm switches. This test will be re-enabled after the naming refactor.
-var _ = XDescribe("ApiSubscription Controller - Provider Failover Reuse", Ordered, func() {
+var _ = Describe("ApiSubscription Controller - Provider Failover Reuse", Ordered, func() {
 	// ISOLATED TEST: Uses unique apiBasePath to avoid pollution from other tests
 	// Scenario: ApiExposure has provider failover zone B
 	//           Subscription in zone A with subscriber failover to zone B
@@ -1487,13 +1536,6 @@ var _ = XDescribe("ApiSubscription Controller - Provider Failover Reuse", Ordere
 	})
 
 	Context("DTC-Based Automatic Failover Discovery", Ordered, func() {
-		// This test scenario covers the new DTC Part 2 feature:
-		// 1. Multiple zones with DTC URLs and Enterprise visibility
-		// 2. ApiSubscription with automatic DTC zone discovery
-		// 3. DTC realm is a superset (includes default + all DTC URLs)
-		// 4. Proxy routes use DTC realm with multiple downstreams
-		// 5. Route names are consistent between default and DTC realms
-
 		const (
 			dtcZone1Name = "dtc-zone1"
 			dtcZone2Name = "dtc-zone2"
@@ -1507,58 +1549,40 @@ var _ = XDescribe("ApiSubscription Controller - Provider Failover Reuse", Ordere
 			dtcApiExposure  *apiapi.ApiExposure
 			dtcSubscription *apiapi.ApiSubscription
 			dtcApplication  *applicationapi.Application
-			dtcRealm1       *gatewayapi.Realm
-			dtcRealm2       *gatewayapi.Realm
 		)
 
 		BeforeAll(func() {
 			By("Creating zone1 with DTC URL and Enterprise visibility")
-			dtcZone1 = CreateZone(dtcZone1Name)
-			dtcZone1.Spec.Gateway.DtcUrl = "https://dtc-zone1.example.com/"
-			dtcZone1.Spec.Visibility = adminapi.ZoneVisibilityEnterprise
-			err := k8sClient.Create(ctx, dtcZone1)
-			Expect(err).ToNot(HaveOccurred())
-
-			By("Waiting for zone1 to be ready")
-			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(dtcZone1), dtcZone1)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(meta.IsStatusConditionTrue(dtcZone1.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
-			}, timeout, interval).Should(Succeed())
+			dtcZone1 = CreateZoneWithDtc(dtcZone1Name, "https://dtc-zone1.example.com/", adminapi.ZoneVisibilityEnterprise)
+			CreateGatewayClient(dtcZone1)
 
 			By("Creating zone2 with DTC URL and Enterprise visibility")
-			dtcZone2 = CreateZone(dtcZone2Name)
-			dtcZone2.Spec.Gateway.DtcUrl = "https://dtc-zone2.example.com/"
-			dtcZone2.Spec.Visibility = adminapi.ZoneVisibilityEnterprise
-			err = k8sClient.Create(ctx, dtcZone2)
+			dtcZone2 = CreateZoneWithDtc(dtcZone2Name, "https://dtc-zone2.example.com/", adminapi.ZoneVisibilityEnterprise)
+			CreateGatewayClient(dtcZone2)
+
+			By("Creating default and DTC realms for both zones")
+			CreateRealm(testEnvironment, dtcZone1Name)
+			CreateRealm(testEnvironment, dtcZone2Name)
+
+			// DTC realms are "supersets" containing ALL DTC URLs from all zones
+			allDtcZones := []DtcZoneConfig{
+				{ZoneName: dtcZone1Name, DtcUrl: "https://dtc-zone1.example.com/"},
+				{ZoneName: dtcZone2Name, DtcUrl: "https://dtc-zone2.example.com/"},
+			}
+			CreateDtcRealmForZone(dtcZone1Name, allDtcZones)
+			CreateDtcRealmForZone(dtcZone2Name, allDtcZones)
+
+			By("Creating Application for ApiExposure")
+			dtcExpApp := CreateApplication("dtc-test-app")
+			_ = dtcExpApp // Variable is created but not used elsewhere in test
+
+			By("Creating Api resource")
+			dtcApi := NewApi(dtcBasePath)
+			err := k8sClient.Create(ctx, dtcApi)
 			Expect(err).ToNot(HaveOccurred())
 
-			By("Waiting for zone2 to be ready")
-			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(dtcZone2), dtcZone2)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(meta.IsStatusConditionTrue(dtcZone2.Status.Conditions, condition.ConditionTypeReady)).To(BeTrue())
-			}, timeout, interval).Should(Succeed())
-
-			By("Verifying DTC realms were created in both zones")
-			Eventually(func(g Gomega) {
-				dtcRealm1 = &gatewayapi.Realm{}
-				err := k8sClient.Get(ctx, client.ObjectKey{
-					Name:      "dtc",
-					Namespace: dtcZone1.Status.Namespace,
-				}, dtcRealm1)
-				g.Expect(err).ToNot(HaveOccurred())
-
-				dtcRealm2 = &gatewayapi.Realm{}
-				err = k8sClient.Get(ctx, client.ObjectKey{
-					Name:      "dtc",
-					Namespace: dtcZone2.Status.Namespace,
-				}, dtcRealm2)
-				g.Expect(err).ToNot(HaveOccurred())
-			}, timeout, interval).Should(Succeed())
-
 			By("Creating ApiExposure in zone1")
-			dtcApiExposure = CreateApiExposure("dtc-api-exposure", dtcBasePath, dtcZone1Name)
+			dtcApiExposure = NewApiExposure(dtcBasePath, dtcZone1Name, "dtc-test-app")
 			err = k8sClient.Create(ctx, dtcApiExposure)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -1581,6 +1605,7 @@ var _ = XDescribe("ApiSubscription Controller - Provider Failover Reuse", Ordere
 				Spec: applicationapi.ApplicationSpec{
 					Team:      teamId,
 					TeamEmail: "team@mail.de",
+					Secret:    "topsecret",
 					Zone: types.ObjectRef{
 						Name:      dtcZone2Name,
 						Namespace: testEnvironment,
@@ -1590,6 +1615,13 @@ var _ = XDescribe("ApiSubscription Controller - Provider Failover Reuse", Ordere
 				},
 			}
 			err = k8sClient.Create(ctx, dtcApplication)
+			Expect(err).ToNot(HaveOccurred())
+
+			dtcApplication.Status.ClientId = "test-client-id"
+			dtcApplication.Status.ClientSecret = "topsecret"
+			dtcApplication.SetCondition(condition.NewReadyCondition("AppReady", "Trust me, I am ready"))
+
+			err = k8sClient.Status().Update(ctx, dtcApplication)
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Creating ApiSubscription with automatic DTC failover discovery")
@@ -1649,28 +1681,6 @@ var _ = XDescribe("ApiSubscription Controller - Provider Failover Reuse", Ordere
 			}
 		})
 
-		It("should verify DTC realms are supersets (default + all DTC URLs)", func() {
-			By("Verifying zone1 DTC realm contains all URLs")
-			Expect(dtcRealm1.Spec.Urls).To(ContainElements(
-				dtcZone1.Spec.Gateway.Url,    // Default URL (superset!)
-				dtcZone1.Spec.Gateway.DtcUrl, // Zone1's DTC URL
-				dtcZone2.Spec.Gateway.DtcUrl, // Zone2's DTC URL
-			))
-			Expect(dtcRealm1.Spec.Urls).To(HaveLen(3))
-
-			By("Verifying zone2 DTC realm contains all URLs")
-			Expect(dtcRealm2.Spec.Urls).To(ContainElements(
-				dtcZone2.Spec.Gateway.Url,    // Default URL (superset!)
-				dtcZone1.Spec.Gateway.DtcUrl, // Zone1's DTC URL
-				dtcZone2.Spec.Gateway.DtcUrl, // Zone2's DTC URL
-			))
-			Expect(dtcRealm2.Spec.Urls).To(HaveLen(3))
-
-			By("Verifying DTC realms have corresponding issuer URLs")
-			Expect(dtcRealm1.Spec.IssuerUrls).ToNot(BeEmpty())
-			Expect(dtcRealm2.Spec.IssuerUrls).ToNot(BeEmpty())
-		})
-
 		It("should approve the subscription", func() {
 			By("Approving the DTC subscription")
 			Eventually(func(g Gomega) {
@@ -1702,8 +1712,7 @@ var _ = XDescribe("ApiSubscription Controller - Provider Failover Reuse", Ordere
 				g.Expect(proxyRoute.Spec.Realm.Name).To(Equal("dtc"),
 					"Proxy route should use DTC realm when any subscription has failover")
 
-				// KNOWN ISSUE: Route name currently has "dtc--" prefix due to MakeRouteName bug
-				// Will be fixed in upcoming naming refactor
+				// Route name is consistent regardless of realm (no realm prefix)
 				expectedRouteName := util.MakeRouteName(dtcBasePath, "dtc")
 				g.Expect(proxyRoute.Name).To(Equal(expectedRouteName))
 			}, timeout, interval).Should(Succeed())
@@ -1731,17 +1740,28 @@ var _ = XDescribe("ApiSubscription Controller - Provider Failover Reuse", Ordere
 				}
 
 				// Verify downstreams contain all expected hosts
+				// Note: Proxy route is created in dtc-zone2 (subscription zone),
+				// so default gateway URL is from dtc-zone2
 				g.Expect(hosts).To(ContainElements(
-					"test-stargate.de",      // Default gateway URL
+					"my-gateway.dtc-zone2",  // Default gateway URL from dtc-zone2
 					"dtc-zone1.example.com", // Zone1 DTC URL
 					"dtc-zone2.example.com", // Zone2 DTC URL
 				))
 
-				// Verify each downstream has an issuer URL
+				// Verify that the expected issuer URLs are present across all downstreams.
+				// Not every downstream needs its own issuer URL — the realm's Urls (Kong route hosts)
+				// and IssuerUrls (JWT plugin trusted issuers) are independent sets.
+				// The current zone's default issuer already covers its own DTC URL.
+				issuerUrls := make([]string, 0)
 				for _, ds := range proxyRoute.Spec.Downstreams {
-					g.Expect(ds.IssuerUrl).ToNot(BeEmpty(),
-						"Each downstream should have an issuer URL for JWT validation")
+					if ds.IssuerUrl != "" {
+						issuerUrls = append(issuerUrls, ds.IssuerUrl)
+					}
 				}
+				g.Expect(issuerUrls).To(ContainElements(
+					"http://my-issuer.dtc-zone2:8080/auth/realms/test", // Default issuer for zone2
+					"http://my-issuer.dtc-zone1:8080/auth/realms/test", // Issuer from zone1
+				))
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -1758,8 +1778,8 @@ var _ = XDescribe("ApiSubscription Controller - Provider Failover Reuse", Ordere
 				// Should have exactly 1 upstream (always default realm)
 				g.Expect(proxyRoute.Spec.Upstreams).To(HaveLen(1))
 
-				// Upstream should point to default gateway URL (not DTC)
-				g.Expect(proxyRoute.Spec.Upstreams[0].Host).To(Equal("test-stargate.de"),
+				// Upstream should point to default gateway URL of provider zone1 (not DTC)
+				g.Expect(proxyRoute.Spec.Upstreams[0].Host).To(Equal("my-gateway.dtc-zone1"),
 					"Upstream should always use default gateway URL")
 			}, timeout, interval).Should(Succeed())
 		})
@@ -1803,14 +1823,10 @@ var _ = XDescribe("ApiSubscription Controller - Provider Failover Reuse", Ordere
 				err := k8sClient.Get(ctx, dtcApiExposure.Status.ProxyRoutes[0].K8s(), proxyRoute)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				// KNOWN ISSUE: Route name currently includes "dtc--" prefix due to bug in MakeRouteName
-				// The function checks for literal "default" but should check for environment name OR "dtc"
-				// This will be fixed in upcoming naming refactor
-				// For now, we accept the prefixed name
 				expectedName := util.MakeRouteName(dtcBasePath, "dtc")
 				g.Expect(proxyRoute.Name).To(Equal(expectedName))
-				g.Expect(proxyRoute.Name).To(HavePrefix("dtc--"),
-					"KNOWN ISSUE: DTC routes currently have realm prefix (will be fixed in naming refactor)")
+				g.Expect(proxyRoute.Name).ToNot(HavePrefix("dtc--"),
+					"Route name should not have realm prefix")
 			}, timeout, interval).Should(Succeed())
 		})
 	})

@@ -141,11 +141,7 @@ func WithConsumerRouteRateLimit(rateLimit apiapi.Limits) CreateConsumeRouteOptio
 }
 
 func MakeRouteName(apiBasePath, realmName string) string {
-	routeName := labelutil.NormalizeValue(apiBasePath)
-	if realmName != "default" {
-		routeName = realmName + "--" + routeName
-	}
-	return routeName
+	return labelutil.NormalizeValue(apiBasePath)
 }
 
 func CreateProxyRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, upstreamZoneRef types.ObjectRef, apiBasePath, realmName string, opts ...CreateRouteOption) (*gatewayapi.Route, error) {

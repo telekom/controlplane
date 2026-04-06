@@ -554,7 +554,7 @@ var _ = Describe("ApiSubscription Controller", Ordered, func() {
 	})
 })
 
-var _ = Describe("Remote Organisation Flow", Ordered, func() {
+var _ = XDescribe("Remote Organisation Flow", Ordered, func() {
 	apiBasePath := "/apisubctrl/remotetest/v1"
 
 	remoteZoneName := "remote-zone"

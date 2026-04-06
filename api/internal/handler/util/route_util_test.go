@@ -21,12 +21,10 @@ var _ = Describe("Route Util", func() {
 	})
 
 	Describe("MakeRouteName", func() {
-		It("should omit realm prefix for default realm", func() {
+		It("should return normalized api base path without realm prefix", func() {
 			Expect(MakeRouteName("/my/api/v1", "default")).To(Equal("my-api-v1"))
-		})
-
-		It("should include realm prefix for non-default realm", func() {
-			Expect(MakeRouteName("/my/api/v1", "test")).To(Equal("test--my-api-v1"))
+			Expect(MakeRouteName("/my/api/v1", "dtc")).To(Equal("my-api-v1"))
+			Expect(MakeRouteName("/my/api/v1", "test")).To(Equal("my-api-v1"))
 		})
 	})
 
