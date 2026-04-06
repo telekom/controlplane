@@ -105,11 +105,8 @@ func mapSubscriptionSecurity(in api.ApiSubscription, out *roverv1.ApiSubscriptio
 func mapSubscriptionTransformation(in api.ApiSubscription, out *roverv1.ApiSubscription) {}
 
 func mapSubscriptionTraffic(in api.ApiSubscription, out *roverv1.ApiSubscription) {
-	if len(in.Failover.Zones) > 0 {
-		out.Traffic.Failover = &roverv1.Failover{
-			Zones: in.Failover.Zones,
-		}
-	}
+	// Failover is now controlled at the Rover level via RoverSpec.FailoverEnabled
+	// Individual subscription traffic configuration is reserved for future use
 }
 
 func mapEventSubscription(in api.EventSubscription) *roverv1.EventSubscription {

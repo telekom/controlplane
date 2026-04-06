@@ -4,10 +4,11 @@
     TypeMeta:   v1.TypeMeta{},
     ObjectMeta: v1.ObjectMeta{},
     Spec:       v1.RoverSpec{
-        Zone:           "zone",
-        IpRestrictions: (*v1.IpRestrictions)(nil),
-        ClientSecret:   "",
-        Exposures:      {
+        Zone:            "zone",
+        IpRestrictions:  (*v1.IpRestrictions)(nil),
+        FailoverEnabled: false,
+        ClientSecret:    "",
+        Exposures:       {
             {
                 Api: &v1.ApiExposure{
                     BasePath:  "/eni/distr/v1",
@@ -48,10 +49,11 @@
     TypeMeta:   v1.TypeMeta{},
     ObjectMeta: v1.ObjectMeta{},
     Spec:       v1.RoverSpec{
-        Zone:           "",
-        IpRestrictions: (*v1.IpRestrictions)(nil),
-        ClientSecret:   "",
-        Exposures:      {
+        Zone:            "",
+        IpRestrictions:  (*v1.IpRestrictions)(nil),
+        FailoverEnabled: false,
+        ClientSecret:    "",
+        Exposures:       {
             {
                 Api: &v1.ApiExposure{
                     BasePath:  "/eni/distr/v1",
@@ -81,11 +83,12 @@
     TypeMeta:   v1.TypeMeta{},
     ObjectMeta: v1.ObjectMeta{},
     Spec:       v1.RoverSpec{
-        Zone:           "",
-        IpRestrictions: (*v1.IpRestrictions)(nil),
-        ClientSecret:   "",
-        Exposures:      nil,
-        Subscriptions:  {
+        Zone:            "",
+        IpRestrictions:  (*v1.IpRestrictions)(nil),
+        FailoverEnabled: false,
+        ClientSecret:    "",
+        Exposures:       nil,
+        Subscriptions:   {
             {
                 Api: &v1.ApiSubscription{
                     BasePath:       "/eni/distr/v1",
@@ -123,10 +126,11 @@
         ManagedFields:              nil,
     },
     Spec: v1.RoverSpec{
-        Zone:           "zone",
-        IpRestrictions: (*v1.IpRestrictions)(nil),
-        ClientSecret:   "",
-        Exposures:      {
+        Zone:            "zone",
+        IpRestrictions:  (*v1.IpRestrictions)(nil),
+        FailoverEnabled: false,
+        ClientSecret:    "",
+        Exposures:       {
             {
                 Api: &v1.ApiExposure{
                     BasePath:  "/eni/distr/v1",
@@ -208,10 +212,11 @@
         ManagedFields:              nil,
     },
     Spec: v1.RoverSpec{
-        Zone:           "zone",
-        IpRestrictions: (*v1.IpRestrictions)(nil),
-        ClientSecret:   "",
-        Exposures:      {
+        Zone:            "zone",
+        IpRestrictions:  (*v1.IpRestrictions)(nil),
+        FailoverEnabled: false,
+        ClientSecret:    "",
+        Exposures:       {
             {
                 Api: &v1.ApiExposure{
                     BasePath:  "/eni/distr/v1",
@@ -268,10 +273,11 @@
         ManagedFields:              nil,
     },
     Spec: v1.RoverSpec{
-        Zone:           "zone",
-        IpRestrictions: (*v1.IpRestrictions)(nil),
-        ClientSecret:   "supersecret",
-        Exposures:      {
+        Zone:            "zone",
+        IpRestrictions:  (*v1.IpRestrictions)(nil),
+        FailoverEnabled: false,
+        ClientSecret:    "supersecret",
+        Exposures:       {
             {
                 Api: &v1.ApiExposure{
                     BasePath:  "/eni/distr/v1",
