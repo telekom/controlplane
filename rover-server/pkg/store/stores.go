@@ -44,6 +44,8 @@ type Stores struct {
 	EventSubscriptionStore  store.ObjectStore[*eventv1.EventSubscription]
 	ZoneStore               store.ObjectStore[*adminv1.Zone]
 	EventConfigStore        store.ObjectStore[*eventv1.EventConfig]
+
+	ChangelogStore store.ObjectStore[*roverv1.Changelog]
 }
 
 var secretsForKinds = map[string][]string{
@@ -87,6 +89,8 @@ func NewStores(ctx context.Context, cfg *rest.Config) *Stores {
 		s.EventSubscriptionStore = noop.NewStore[*eventv1.EventSubscription](eventv1.GroupVersion.WithResource("eventsubscriptions"), eventv1.GroupVersion.WithKind("EventSubscription"))
 		s.EventConfigStore = noop.NewStore[*eventv1.EventConfig](eventv1.GroupVersion.WithResource("eventconfigs"), eventv1.GroupVersion.WithKind("EventConfig"))
 	}
+
+	s.ChangelogStore = NewOrDie[*roverv1.Changelog](ctx, dynamicClient, roverv1.GroupVersion.WithResource("changelogs"), roverv1.GroupVersion.WithKind("Changelog"))
 
 	s.ZoneStore = NewOrDie[*adminv1.Zone](ctx, dynamicClient, adminv1.GroupVersion.WithResource("zones"), adminv1.GroupVersion.WithKind("Zone"))
 

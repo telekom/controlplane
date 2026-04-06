@@ -49,6 +49,13 @@ type EventSpecificationController interface {
 	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
 }
 
+type ChangelogController interface {
+	Get(ctx context.Context, resourceId string) (api.ChangelogResponse, error)
+	GetAll(ctx context.Context, params api.GetAllChangelogsParams) (*api.ChangelogListResponse, error)
+	Update(ctx context.Context, resourceId string, req api.ChangelogRequest) (api.ChangelogResponse, error)
+	Delete(ctx context.Context, resourceId string) error
+}
+
 var securityTemplates = map[security.ClientType]security.ComparisonTemplates{
 	security.ClientTypeTeam: {
 		ExpectedTemplate:  "{{ .B.Environment }}--{{ .B.Group }}--{{ .B.Team }}--",
@@ -73,6 +80,7 @@ type Server struct {
 	ApiSpecifications   ApiSpecificationController
 	Rovers              RoverController
 	EventSpecifications EventSpecificationController
+	Changelogs          ChangelogController
 }
 
 func (s *Server) RegisterRoutes(router fiber.Router) {
@@ -146,5 +154,12 @@ func (s *Server) RegisterRoutes(router fiber.Router) {
 	router.Get("/eventspecifications/:resourceId", checkAccess, s.GetEventSpecification)
 	router.Put("/eventspecifications/:resourceId", checkAccess, s.UpdateEventSpecification)
 	router.Delete("/eventspecifications/:resourceId", checkAccess, s.DeleteEventSpecification)
+
+	s.Log.Info("Registering changelogs routes")
+
+	router.Get("/changelogs", checkAccess, s.GetAllChangelogs)
+	router.Get("/changelogs/:resourceId", checkAccess, s.GetChangelog)
+	router.Put("/changelogs/:resourceId", checkAccess, s.UpdateChangelog)
+	router.Delete("/changelogs/:resourceId", checkAccess, s.DeleteChangelog)
 
 }

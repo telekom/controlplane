@@ -54,6 +54,7 @@ func main() {
 		ApiSpecifications:   controller.NewApiSpecificationController(stores),
 		Rovers:              controller.NewRoverController(stores),
 		EventSpecifications: controller.NewEventSpecificationController(stores),
+		Changelogs:          controller.NewChangelogController(stores),
 	}
 
 	s.RegisterRoutes(app)

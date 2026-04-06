@@ -64,6 +64,7 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 		stores.ApplicationSecretStore = stores.ApplicationStore
 		stores.ZoneStore = mocks.NewZoneStoreMock(GinkgoT())
 		stores.EventSpecificationStore = mocks.NewEventSpecificationStoreMock(GinkgoT())
+		stores.ChangelogStore = mocks.NewChangelogStoreMock(GinkgoT())
 
 		eventExposureMock := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
 		eventExposureMock.EXPECT().List(mock.Anything, mock.Anything).Return(
@@ -110,6 +111,7 @@ var _ = BeforeSuite(func() {
 		ApiSpecifications:   NewApiSpecificationController(stores),
 		Rovers:              NewRoverController(stores),
 		EventSpecifications: NewEventSpecificationController(stores),
+		Changelogs:          NewChangelogController(stores),
 	}
 
 	s.RegisterRoutes(app)

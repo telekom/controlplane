@@ -1035,3 +1035,218 @@
  "team": "hyperion"
 }
 ---
+
+[Changelog Controller Get Changelog resource should return the Changelog successfully - 1]
+{
+ "id": "eni--hyperion--eni-test-api-v1",
+ "items": [
+  {
+   "date": "2024-03-15",
+   "description": "Security fixes and performance improvements",
+   "version": "1.2.3"
+  },
+  {
+   "date": "2024-01-10",
+   "description": "Initial release",
+   "version": "1.0.0",
+   "versionUrl": "https://example.com/releases/v1.0.0"
+  }
+ ],
+ "name": "eni-test-api-v1",
+ "resourceName": "/eni/test-api/v1",
+ "resourceType": "API"
+}
+---
+
+[Changelog Controller Get Changelog resource should fail to get a non-existent Changelog - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Changelog Controller Get Changelog resource should fail to get a Changelog from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Changelog Controller GetAll Changelogs resource should return all Changelogs successfully - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/changelogs?cursor="
+ },
+ "items": [
+  {
+   "id": "poc--eni--hyperion--eni-test-api-v1",
+   "items": [
+    {
+     "date": "2024-03-15",
+     "description": "Security fixes and performance improvements",
+     "version": "1.2.3"
+    },
+    {
+     "date": "2024-01-10",
+     "description": "Initial release",
+     "version": "1.0.0",
+     "versionUrl": "https://example.com/releases/v1.0.0"
+    }
+   ],
+   "name": "eni-test-api-v1",
+   "resourceName": "/eni/test-api/v1",
+   "resourceType": "API"
+  }
+ ]
+}
+---
+
+[Changelog Controller GetAll Changelogs resource should filter Changelogs by resourceType=API - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/changelogs?cursor="
+ },
+ "items": [
+  {
+   "id": "poc--eni--hyperion--eni-test-api-v1",
+   "items": [
+    {
+     "date": "2024-03-15",
+     "description": "Security fixes and performance improvements",
+     "version": "1.2.3"
+    },
+    {
+     "date": "2024-01-10",
+     "description": "Initial release",
+     "version": "1.0.0",
+     "versionUrl": "https://example.com/releases/v1.0.0"
+    }
+   ],
+   "name": "eni-test-api-v1",
+   "resourceName": "/eni/test-api/v1",
+   "resourceType": "API"
+  }
+ ]
+}
+---
+
+[Changelog Controller GetAll Changelogs resource should return an empty list if no Changelogs exist - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/changelogs?cursor="
+ }
+}
+---
+
+[Changelog Controller Update Changelog resource should update the Changelog successfully - 1]
+{
+ "id": "eni--hyperion--eni-test-api-v1",
+ "items": [
+  {
+   "date": "2024-03-15",
+   "description": "Security fixes and performance improvements",
+   "version": "1.2.3"
+  },
+  {
+   "date": "2024-01-10",
+   "description": "Initial release",
+   "version": "1.0.0",
+   "versionUrl": "https://example.com/releases/v1.0.0"
+  }
+ ],
+ "name": "eni-test-api-v1",
+ "resourceName": "/eni/test-api/v1",
+ "resourceType": "API"
+}
+---
+
+[Changelog Controller Update Changelog resource should fail to update a Changelog from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Changelog Controller Update Changelog resource should reject invalid version format - 1]
+{
+ "detail": "multiple errors encountered: Error at \"/items/0/version\": string doesn't match the regular expression \"^\\d+\\.\\d+\\.\\d+$\"\nSchema:\n  {\n    \"description\": \"Semantic version number\",\n    \"example\": \"1.2.3\",\n    \"pattern\": \"^\\\\d+\\\\.\\\\d+\\\\.\\\\d+$\",\n    \"type\": \"string\"\n  }\n\nValue:\n  \"not-semver\"\n",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[Changelog Controller Update Changelog resource should reject empty items array - 1]
+{
+ "detail": "multiple errors encountered: Error at \"/items\": minimum number of items is 1\nSchema:\n  {\n    \"description\": \"List of changelog version entries\",\n    \"items\": {\n      \"$ref\": \"#/components/schemas/ChangelogItem\"\n    },\n    \"minItems\": 1,\n    \"type\": \"array\"\n  }\n\nValue:\n  []\n",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[Changelog Controller Update Changelog resource should reject invalid resourceType - 1]
+{
+ "detail": "multiple errors encountered: Error at \"/resourceType\": value is not one of the allowed values [\"API\",\"Event\"]\nSchema:\n  {\n    \"description\": \"The type of resource this changelog is for\",\n    \"enum\": [\n      \"API\",\n      \"Event\"\n    ],\n    \"example\": \"API\",\n    \"type\": \"string\"\n  }\n\nValue:\n  \"INVALID\"\n",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[Changelog Controller Delete Changelog resource should fail to delete a non-existent Changelog - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Changelog Controller Delete Changelog resource should fail to delete a Changelog from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Changelog Controller Hash optimization should skip file upload if hash is unchanged - 1]
+{
+ "id": "eni--hyperion--eni-test-api-v1",
+ "items": [
+  {
+   "date": "2024-03-15",
+   "description": "Security fixes and performance improvements",
+   "version": "1.2.3"
+  },
+  {
+   "date": "2024-01-10",
+   "description": "Initial release",
+   "version": "1.0.0",
+   "versionUrl": "https://example.com/releases/v1.0.0"
+  }
+ ],
+ "name": "eni-test-api-v1",
+ "resourceName": "/eni/test-api/v1",
+ "resourceType": "API"
+}
+---

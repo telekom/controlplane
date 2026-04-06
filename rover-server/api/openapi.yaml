@@ -41,6 +41,8 @@ tags:
     description: Manage ApiSpecifications
   - name: EventSpecification
     description: Manage EventSpecifications
+  - name: Changelog
+    description: Manage Changelogs
   - name: Rover
     description: Manage Rovers
 paths:
@@ -999,6 +1001,184 @@ paths:
             - tardis:user:all
             - tardis:user:read
             - tardis:user:obfuscated
+  /changelogs:
+    get:
+      tags:
+        - Changelog
+      summary: Find all Changelogs
+      description: Find all Changelogs of a Team
+      operationId: getAllChangelogs
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - name: resourceType
+          in: query
+          description: Filter changelogs by resource type
+          required: false
+          schema:
+            type: string
+            enum:
+              - API
+              - Event
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangelogListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:admin:obfuscated
+            - tardis:supervisor:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:hub:obfuscated
+            - tardis:team:all
+            - tardis:team:read
+            - tardis:team:obfuscated
+            - tardis:user:all
+            - tardis:user:read
+            - tardis:user:obfuscated
+  /changelogs/{changelogId}:
+    get:
+      tags:
+        - Changelog
+      summary: Find an existing Changelog
+      description: Find an existing Changelog
+      operationId: getChangelog
+      parameters:
+        - name: changelogId
+          description: The unique id of this resource
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangelogResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:admin:obfuscated
+            - tardis:supervisor:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:hub:obfuscated
+            - tardis:team:all
+            - tardis:team:read
+            - tardis:team:obfuscated
+            - tardis:user:all
+            - tardis:user:read
+            - tardis:user:obfuscated
+    put:
+      tags:
+        - Changelog
+      summary: Create or update a Changelog
+      description: >-
+        Create or update a Changelog using declarative PUT.
+      operationId: updateChangelog
+      parameters:
+        - name: changelogId
+          description: The unique id of this resource
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangelogRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangelogResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+            - tardis:user:all
+    delete:
+      tags:
+        - Changelog
+      summary: Delete a Changelog
+      description: Delete a Changelog
+      operationId: deleteChangelog
+      parameters:
+        - name: changelogId
+          description: The unique id of this resource
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: DELETED
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+            - tardis:user:all
 components:
   securitySchemes:
     OAuth2:
@@ -2053,6 +2233,89 @@ components:
                 This field is only used for hub-scoped access to control the
                 target team of the resource. For everything else, it can be
                 ignored
+    Changelog:
+      type: object
+      required:
+        - resourceName
+        - resourceType
+        - items
+      properties:
+        resourceName:
+          description: The resource identifier (API basePath or Event type name)
+          type: string
+          example: /eni/test-api/v1
+        resourceType:
+          description: The type of resource this changelog is for
+          type: string
+          enum:
+            - API
+            - Event
+          example: API
+        items:
+          description: List of changelog version entries
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ChangelogItem'
+    ChangelogItem:
+      type: object
+      required:
+        - date
+        - version
+        - description
+      properties:
+        date:
+          description: Release date in yyyy-MM-dd format
+          type: string
+          format: date
+          example: "2024-03-15"
+        version:
+          description: Semantic version number
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+          example: "1.2.3"
+        description:
+          description: Description of changes in this version
+          type: string
+          example: Security fixes and performance improvements
+        versionUrl:
+          description: Optional URL to release notes
+          type: string
+          format: uri
+          example: https://example.com/releases/v1.2.3
+    ChangelogRequest:
+      allOf:
+        - $ref: '#/components/schemas/Changelog'
+    ChangelogResponse:
+      required:
+        - id
+        - name
+        - resourceName
+        - resourceType
+        - items
+      allOf:
+        - $ref: '#/components/schemas/Changelog'
+        - type: object
+          properties:
+            id:
+              readOnly: true
+              description: Unique id of this resource
+              type: string
+              example: group--team--api-name
+            name:
+              readOnly: true
+              description: Name of the changelog
+              type: string
+              example: api-name
+    ChangelogListResponse:
+      type: object
+      properties:
+        _links:
+          $ref: '#/components/schemas/Links'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChangelogResponse'
     Failover:
       type: object
       required:

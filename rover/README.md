@@ -75,6 +75,35 @@ This CRD represents an OpenAPI specification for an API exposed through a Rover.
 </details>
 <br />
 
+<details>
+<summary>
+<strong>EventSpecification</strong>
+This CRD represents an AsyncAPI specification for an event exposed through a Rover.
+</summary>
+
+- The EventSpecification CR SHOULD be created in the same namespace as the Rover that exposes the event.
+- The EventSpecification name is generated from the event type by replacing dots with hyphens.
+- The EventSpecification status tracks a reference to the created EventType resource.
+- The EventSpecification controller extracts metadata from the AsyncAPI document to enhance the EventType resource.
+
+</details>
+<br />
+
+<details>
+<summary>
+<strong>Changelog</strong>
+This CRD represents a version history changelog for APIs or Events.
+</summary>
+
+- The Changelog CR SHOULD be created in the same namespace as the API or Event it documents.
+- The Changelog name matches the resource name (e.g., API basePath or Event type).
+- The Changelog stores version history items as JSON in the file-manager.
+- Each changelog item includes a date (yyyy-MM-dd), semantic version, description, and optional release URL.
+- The Changelog supports both API and Event resource types via the resourceType field.
+
+</details>
+<br />
+
 ## Difference to Rover Server
 It provides a REST API for creating and updating Rover resources. It is the intended way for providers and consumers to interact with the controlplane, it offloads onboarding, security checks and more to keep the controller lean.
 Furthermore, it enables access to the controlplane without requiring access right to the kubernetes cluster. Please review [rover-server](../rover-server) for more information.

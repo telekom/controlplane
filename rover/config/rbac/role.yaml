@@ -90,6 +90,7 @@ rules:
   - rover.cp.ei.telekom.de
   resources:
   - apispecifications
+  - changelogs
   - eventspecifications
   - rovers
   verbs:
@@ -104,6 +105,7 @@ rules:
   - rover.cp.ei.telekom.de
   resources:
   - apispecifications/finalizers
+  - changelogs/finalizers
   - eventspecifications/finalizers
   - rovers/finalizers
   verbs:
@@ -112,6 +114,7 @@ rules:
   - rover.cp.ei.telekom.de
   resources:
   - apispecifications/status
+  - changelogs/status
   - eventspecifications/status
   - rovers/status
   verbs:

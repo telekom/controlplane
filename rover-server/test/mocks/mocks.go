@@ -21,6 +21,7 @@ import (
 
 const (
 	ApiSpecificationFileName   = "apiSpecification.json"
+	ChangelogFileName          = "changelog.json"
 	EventSpecificationFileName = "eventSpecification.json"
 	EventSubscriptionFileName  = "eventSubscription.json"
 	OpenApiFileName            = "openapi.yaml"
@@ -102,6 +103,15 @@ func GetApiSpecification(testing ginkgo.FullGinkgoTInterface, filePath string) *
 	require.NoError(testing, err)
 
 	return &apiSpecification
+}
+
+func GetChangelog(testing ginkgo.FullGinkgoTInterface, filePath string) *roverv1.Changelog {
+	file := data.ReadFile(testing, filePath)
+	var changelog roverv1.Changelog
+	err := json.Unmarshal(file, &changelog)
+	require.NoError(testing, err)
+
+	return &changelog
 }
 
 func GetEventSpecification(testing ginkgo.FullGinkgoTInterface, filePath string) *roverv1.EventSpecification {
