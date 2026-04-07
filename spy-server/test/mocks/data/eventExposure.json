@@ -1,0 +1,51 @@
+{
+  "apiVersion": "event.cp.ei.telekom.de/v1",
+  "kind": "EventExposure",
+  "metadata": {
+    "name": "my-app--de-telekom-eni-quickstart-v1",
+    "namespace": "poc--eni--hyperion",
+    "generation": 1,
+    "creationTimestamp": "2025-01-15T10:00:00Z",
+    "labels": {
+      "cp.ei.telekom.de/application": "my-app"
+    }
+  },
+  "spec": {
+    "eventType": "de.telekom.eni.quickstart.v1",
+    "visibility": "World",
+    "approval": {
+      "strategy": "Auto"
+    },
+    "zone": {
+      "name": "dataplane1",
+      "namespace": "poc"
+    },
+    "provider": {
+      "kind": "Application",
+      "name": "my-app",
+      "namespace": "poc--eni--hyperion"
+    }
+  },
+  "status": {
+    "active": true,
+    "callbackURL": "https://callback.example.com/events",
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "Provisioned",
+        "message": "Successfully provisioned subresources",
+        "lastTransitionTime": "2025-01-15T10:01:00Z",
+        "observedGeneration": 1
+      },
+      {
+        "type": "Processing",
+        "status": "False",
+        "reason": "Done",
+        "message": "Successfully provisioned subresources",
+        "lastTransitionTime": "2025-01-15T10:01:00Z",
+        "observedGeneration": 1
+      }
+    ]
+  }
+}

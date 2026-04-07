@@ -19,7 +19,7 @@ func MapResponse(in *applicationv1.Application) api.ApplicationResponse {
 	nsInfo := mapper.ParseNamespace(in.GetNamespace())
 
 	resp := api.ApplicationResponse{
-		Id:   mapper.MakeResourceName(in), // <group>--<team>--<appName>
+		Id:   mapper.MakeResourceId(in), // <group>--<team>--<appName>
 		Name: in.GetName(),
 		Team: api.Team{
 			Hub:      nsInfo.Group,

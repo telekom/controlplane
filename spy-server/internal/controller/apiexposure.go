@@ -41,7 +41,7 @@ func (c *apiExposureController) Get(ctx context.Context, applicationId, apiExpos
 
 	apiExposureFullName := fmt.Sprintf("%s--%s", appInfo.AppName, apiExposureName)
 
-	exposure, err := c.stores.APIExposureStore.Get(ctx, appInfo.Namespace, apiExposureFullName)
+	exposure, err := c.stores.APIExposureSecretStore.Get(ctx, appInfo.Namespace, apiExposureFullName)
 	if err != nil {
 		return api.ApiExposureResponse{}, err
 	}
@@ -68,7 +68,7 @@ func (c *apiExposureController) GetAll(ctx context.Context, applicationId string
 		Value: appInfo.AppName,
 	})
 
-	items, err := pagination.FetchAll(ctx, c.stores.APIExposureStore, listOpts)
+	items, err := pagination.FetchAll(ctx, c.stores.APIExposureSecretStore, listOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (c *apiExposureController) GetSubscriptions(ctx context.Context, applicatio
 	// Fetch all subscriptions (cross-namespace — no prefix, no app label filter)
 	// and filter by basePath. Subscribers come from different teams/apps.
 	listOpts := store.NewListOpts()
-	allSubs, err := pagination.FetchAll(ctx, c.stores.APISubscriptionStore, listOpts)
+	allSubs, err := pagination.FetchAll(ctx, c.stores.APISubscriptionSecretStore, listOpts)
 	if err != nil {
 		return nil, err
 	}

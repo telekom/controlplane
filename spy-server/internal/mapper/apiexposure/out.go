@@ -17,7 +17,7 @@ import (
 // MapResponse maps an ApiExposure CRD to an ApiExposureResponse.
 func MapResponse(in *apiv1.ApiExposure) api.ApiExposureResponse {
 	resp := api.ApiExposureResponse{
-		Name:       in.GetName(),
+		Name:       mapper.MakeResourceName(in),
 		BasePath:   in.Spec.ApiBasePath,
 		Visibility: toAPIVisibility(in.Spec.Visibility),
 		Approval:   toAPIApprovalStrategy(in.Spec.Approval.Strategy),

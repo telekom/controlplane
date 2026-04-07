@@ -1,0 +1,333 @@
+
+[EventExposure Controller GET /applications/:applicationId/eventexposures should list event exposures with different scopes team scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/eventexposures?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/eventexposures?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/eventexposures?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "active": true,
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "strategy": "Auto"
+   },
+   "callbackURL": "https://callback.example.com/events",
+   "eventType": "de.telekom.eni.quickstart.v1",
+   "name": "de-telekom-eni-quickstart-v1",
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "visibility": "World",
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[EventExposure Controller GET /applications/:applicationId/eventexposures should list event exposures with different scopes group scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/eventexposures?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/eventexposures?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/eventexposures?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "active": true,
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "strategy": "Auto"
+   },
+   "callbackURL": "https://callback.example.com/events",
+   "eventType": "de.telekom.eni.quickstart.v1",
+   "name": "de-telekom-eni-quickstart-v1",
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "visibility": "World",
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[EventExposure Controller GET /applications/:applicationId/eventexposures should list event exposures with different scopes admin scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/eventexposures?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/eventexposures?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/eventexposures?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "active": true,
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "strategy": "Auto"
+   },
+   "callbackURL": "https://callback.example.com/events",
+   "eventType": "de.telekom.eni.quickstart.v1",
+   "name": "de-telekom-eni-quickstart-v1",
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "visibility": "World",
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[EventExposure Controller GET /applications/:applicationId/eventexposures/:eventExposureName should return a single event exposure with different scopes team scope - 1]
+{
+ "active": true,
+ "application": {
+  "name": "my-app"
+ },
+ "approval": {
+  "strategy": "Auto"
+ },
+ "callbackURL": "https://callback.example.com/events",
+ "eventType": "de.telekom.eni.quickstart.v1",
+ "name": "de-telekom-eni-quickstart-v1",
+ "status": "<Any value>",
+ "team": {
+  "email": "hyperion@telekom.de",
+  "hub": "eni",
+  "name": "hyperion"
+ },
+ "visibility": "World",
+ "zone": "dataplane1"
+}
+---
+
+[EventExposure Controller GET /applications/:applicationId/eventexposures/:eventExposureName should return a single event exposure with different scopes group scope - 1]
+{
+ "active": true,
+ "application": {
+  "name": "my-app"
+ },
+ "approval": {
+  "strategy": "Auto"
+ },
+ "callbackURL": "https://callback.example.com/events",
+ "eventType": "de.telekom.eni.quickstart.v1",
+ "name": "de-telekom-eni-quickstart-v1",
+ "status": "<Any value>",
+ "team": {
+  "email": "hyperion@telekom.de",
+  "hub": "eni",
+  "name": "hyperion"
+ },
+ "visibility": "World",
+ "zone": "dataplane1"
+}
+---
+
+[EventExposure Controller GET /applications/:applicationId/eventexposures/:eventExposureName should return a single event exposure with different scopes admin scope - 1]
+{
+ "active": true,
+ "application": {
+  "name": "my-app"
+ },
+ "approval": {
+  "strategy": "Auto"
+ },
+ "callbackURL": "https://callback.example.com/events",
+ "eventType": "de.telekom.eni.quickstart.v1",
+ "name": "de-telekom-eni-quickstart-v1",
+ "status": "<Any value>",
+ "team": {
+  "email": "hyperion@telekom.de",
+  "hub": "eni",
+  "name": "hyperion"
+ },
+ "visibility": "World",
+ "zone": "dataplane1"
+}
+---
+
+[EventExposure Controller GET /applications/:applicationId/eventexposures/:eventExposureName/status should return event exposure status with different scopes team scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[EventExposure Controller GET /applications/:applicationId/eventexposures/:eventExposureName/status should return event exposure status with different scopes group scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[EventExposure Controller GET /applications/:applicationId/eventexposures/:eventExposureName/status should return event exposure status with different scopes admin scope - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[EventExposure Controller GET /applications/:applicationId/eventexposures/:eventExposureName/eventsubscriptions should list subscriptions for an event exposure with different scopes team scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/eventexposures/de-telekom-eni-quickstart-v1/eventsubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/eventexposures/de-telekom-eni-quickstart-v1/eventsubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/eventexposures/de-telekom-eni-quickstart-v1/eventsubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "delivery": {
+    "callback": "https://my-app.example.com/events",
+    "payload": "Data",
+    "type": "Callback"
+   },
+   "eventType": "de.telekom.eni.quickstart.v1",
+   "name": "de-telekom-eni-quickstart-v1",
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[EventExposure Controller GET /applications/:applicationId/eventexposures/:eventExposureName/eventsubscriptions should list subscriptions for an event exposure with different scopes group scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/eventexposures/de-telekom-eni-quickstart-v1/eventsubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/eventexposures/de-telekom-eni-quickstart-v1/eventsubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/eventexposures/de-telekom-eni-quickstart-v1/eventsubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "delivery": {
+    "callback": "https://my-app.example.com/events",
+    "payload": "Data",
+    "type": "Callback"
+   },
+   "eventType": "de.telekom.eni.quickstart.v1",
+   "name": "de-telekom-eni-quickstart-v1",
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[EventExposure Controller GET /applications/:applicationId/eventexposures/:eventExposureName/eventsubscriptions should list subscriptions for an event exposure with different scopes admin scope - 1]
+{
+ "_links": {
+  "first": "/applications/eni--hyperion--my-app/eventexposures/de-telekom-eni-quickstart-v1/eventsubscriptions?offset=0&limit=20",
+  "last": "/applications/eni--hyperion--my-app/eventexposures/de-telekom-eni-quickstart-v1/eventsubscriptions?offset=0&limit=20",
+  "self": "/applications/eni--hyperion--my-app/eventexposures/de-telekom-eni-quickstart-v1/eventsubscriptions?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "application": {
+    "name": "my-app"
+   },
+   "approval": {
+    "comment": "Approved for testing",
+    "decider": "admin@telekom.de",
+    "status": "Granted"
+   },
+   "delivery": {
+    "callback": "https://my-app.example.com/events",
+    "payload": "Data",
+    "type": "Callback"
+   },
+   "eventType": "de.telekom.eni.quickstart.v1",
+   "name": "de-telekom-eni-quickstart-v1",
+   "status": "<Any value>",
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---

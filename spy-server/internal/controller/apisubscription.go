@@ -40,7 +40,7 @@ func (c *apiSubscriptionController) Get(ctx context.Context, applicationId, apiS
 
 	apiSubscriptionFullName := fmt.Sprintf("%s--%s", appInfo.AppName, apiSubscriptionName)
 
-	sub, err := c.stores.APISubscriptionStore.Get(ctx, appInfo.Namespace, apiSubscriptionFullName)
+	sub, err := c.stores.APISubscriptionSecretStore.Get(ctx, appInfo.Namespace, apiSubscriptionFullName)
 	if err != nil {
 		return api.ApiSubscriptionResponse{}, err
 	}
@@ -67,7 +67,7 @@ func (c *apiSubscriptionController) GetAll(ctx context.Context, applicationId st
 		Value: appInfo.AppName,
 	})
 
-	items, err := pagination.FetchAll(ctx, c.stores.APISubscriptionStore, listOpts)
+	items, err := pagination.FetchAll(ctx, c.stores.APISubscriptionSecretStore, listOpts)
 	if err != nil {
 		return nil, err
 	}
