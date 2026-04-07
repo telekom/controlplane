@@ -141,23 +141,10 @@ func (r *RoadmapController) Get(ctx context.Context, resourceId string) (res api
 		return res, errors.Wrap(err, "failed to download roadmap items from file-manager")
 	}
 
-	b, err := io.ReadAll(reader)
-	if err != nil {
-		return res, errors.Wrap(err, "failed to read downloaded roadmap items")
-	}
-
-	if len(b) == 0 {
-		return res, errors.Errorf("roadmap items response is empty (fileId: %s)", roadmap.Spec.Roadmap)
-	}
-
 	var items []api.RoadmapItem
-	err = json.Unmarshal(b, &items)
+	err = json.NewDecoder(reader).Decode(&items)
 	if err != nil {
-		preview := string(b)
-		if len(preview) > 100 {
-			preview = preview[:100] + "..."
-		}
-		return res, errors.Wrapf(err, "failed to unmarshal roadmap items (got %d bytes): %s", len(b), preview)
+		return res, errors.Wrap(err, "failed to decode roadmap items")
 	}
 
 	// Map to response
@@ -167,7 +154,7 @@ func (r *RoadmapController) Get(ctx context.Context, resourceId string) (res api
 		ResourceName: roadmap.Spec.ResourceName,
 		ResourceType: api.RoadmapResponseResourceType(roadmap.Spec.ResourceType),
 		Items:        items,
-		Status:       *mapStatus(roadmap),
+		Status:       mapStatus(roadmap),
 	}, nil
 }
 
@@ -197,19 +184,10 @@ func (r *RoadmapController) GetAll(ctx context.Context, params api.GetAllRoadmap
 			return nil, problems.InternalServerError("Failed to download roadmap items", err.Error())
 		}
 
-		b, err := io.ReadAll(reader)
-		if err != nil {
-			return nil, problems.InternalServerError("Failed to read roadmap items", err.Error())
-		}
-
-		if len(b) == 0 {
-			return nil, errors.New("roadmap items response is empty")
-		}
-
 		var items []api.RoadmapItem
-		err = json.Unmarshal(b, &items)
+		err = json.NewDecoder(reader).Decode(&items)
 		if err != nil {
-			return nil, problems.InternalServerError("Failed to unmarshal roadmap items", err.Error())
+			return nil, problems.InternalServerError("Failed to decode roadmap items", err.Error())
 		}
 
 		// Create resource ID
@@ -225,7 +203,7 @@ func (r *RoadmapController) GetAll(ctx context.Context, params api.GetAllRoadmap
 			ResourceName: roadmap.Spec.ResourceName,
 			ResourceType: api.RoadmapResponseResourceType(roadmap.Spec.ResourceType),
 			Items:        items,
-			Status:       *mapStatus(roadmap),
+			Status:       mapStatus(roadmap),
 		}
 		list = append(list, resp)
 	}
@@ -364,12 +342,12 @@ func (r *RoadmapController) removeDuplicates(ctx context.Context, newRoadmap *ro
 }
 
 // mapStatus maps CRD status to response status
-func mapStatus(roadmap *roverv1.Roadmap) *api.RoadmapStatus {
+func mapStatus(roadmap *roverv1.Roadmap) api.RoadmapStatus {
 	if roadmap.Status.Conditions == nil || len(roadmap.Status.Conditions) == 0 {
-		return nil
+		return api.RoadmapStatus{}
 	}
 
-	status := &api.RoadmapStatus{}
+	status := api.RoadmapStatus{}
 	for _, cond := range roadmap.Status.Conditions {
 		if cond.Type == "Ready" {
 			status.Ready = cond.Status == "True"
