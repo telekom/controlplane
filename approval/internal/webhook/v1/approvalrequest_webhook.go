@@ -47,7 +47,7 @@ func (ar *ApprovalRequestCustomDefaulter) Default(_ context.Context, obj *approv
 	if obj.Spec.Strategy == "" {
 		obj.Spec.Strategy = approvalv1.ApprovalStrategySimple
 	}
-	if obj.Spec.Strategy == approvalv1.ApprovalStrategyAuto {
+	if obj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && !isTerminalApprovalRequestState(obj.Spec.State) {
 		obj.Spec.State = approvalv1.ApprovalStateGranted
 		if len(obj.Spec.Decisions) == 0 {
 			obj.Spec.Decisions = append(obj.Spec.Decisions, approvalv1.Decision{
