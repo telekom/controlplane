@@ -10,9 +10,12 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
@@ -62,6 +65,17 @@ func (r *RoadmapController) Update(ctx context.Context, resourceId string, req a
 		return res, err
 	}
 
+	// Validate that URL resourceId matches payload resourceName (following ApiSpecification pattern)
+	// ApiSpecification does this in MapRequest(), but since we don't have a mapper layer for Roadmap,
+	// we validate directly here
+	expectedName := normalizeResourceName(req.ResourceName)
+	if id.Name != expectedName {
+		return res, problems.BadRequest(fmt.Sprintf(
+			"roadmap name %q does not match expected name %q (derived from resourceName %q)",
+			id.Name, expectedName, req.ResourceName,
+		))
+	}
+
 	// Marshal items to JSON
 	itemsMarshaled, err := json.Marshal(req.Items)
 	if err != nil {
@@ -92,6 +106,14 @@ func (r *RoadmapController) Update(ctx context.Context, resourceId string, req a
 	err = r.Store.CreateOrReplace(ctx, roadmap)
 	if err != nil {
 		return res, err
+	}
+
+	// Remove any duplicate roadmaps with the same resourceName + resourceType
+	// This ensures only one roadmap exists per resource, but we exclude the one we just created
+	if err := r.removeDuplicates(ctx, roadmap); err != nil {
+		// Log error but don't fail - the new roadmap is already created
+		// Returning an error here would be confusing since the PUT succeeded
+		log.Warnf("Failed to remove duplicate roadmaps for %s/%s: %v", req.ResourceName, req.ResourceType, err)
 	}
 
 	return r.Get(ctx, resourceId)
@@ -307,19 +329,25 @@ func (r *RoadmapController) downloadFile(ctx context.Context, fileId string) (io
 
 // removeDuplicates removes existing roadmaps with the same resourceName + resourceType
 // This implements the duplicate removal logic from the Java system
-func (r *RoadmapController) removeDuplicates(ctx context.Context, resourceName string, resourceType roverv1.ResourceType, environment string) error {
-	// List all roadmaps in the environment/namespace
+// It excludes the newly created roadmap (by name) to avoid deleting what we just created
+func (r *RoadmapController) removeDuplicates(ctx context.Context, newRoadmap *roverv1.Roadmap) error {
+	// List all roadmaps in the same namespace
 	listOpts := store.NewListOpts()
-	store.EnforcePrefix(environment+"--", &listOpts)
+	store.EnforcePrefix(newRoadmap.Namespace+"/", &listOpts)
 
 	objList, err := r.Store.List(ctx, listOpts)
 	if err != nil {
 		return err
 	}
 
-	// Find and delete roadmaps with matching resourceName + resourceType
+	// Find and delete roadmaps with matching resourceName + resourceType (excluding the one we just created)
 	for _, existing := range objList.Items {
-		if existing.Spec.ResourceName == resourceName && existing.Spec.ResourceType == resourceType {
+		if existing.Name == newRoadmap.Name {
+			// Skip the roadmap we just created
+			continue
+		}
+		if existing.Spec.ResourceName == newRoadmap.Spec.ResourceName &&
+			existing.Spec.ResourceType == newRoadmap.Spec.ResourceType {
 			// Delete file from file-manager
 			fileId := existing.Spec.Roadmap
 			_ = file.GetFileManager().DeleteFile(ctx, fileId) // Ignore errors
@@ -355,13 +383,10 @@ func mapStatus(roadmap *roverv1.Roadmap) *api.RoadmapStatus {
 	return status
 }
 
-// normalizeResourceName normalizes the resource name for use as a Kubernetes resource name
+// normalizeResourceName normalizes the resource name to match Kubernetes naming rules
+// This uses the same logic as ApiSpecification.MakeName()
 func normalizeResourceName(resourceName string) string {
-	// Replace slashes with hyphens and convert to lowercase
-	// This is a simplified version - a real implementation would need more robust normalization
-	name := resourceName
-	if len(name) > 0 && name[0] == '/' {
-		name = name[1:]
-	}
-	return name
+	name := strings.Trim(resourceName, "/")
+	name = strings.ReplaceAll(name, "/", "-")
+	return strings.ToLower(name)
 }
