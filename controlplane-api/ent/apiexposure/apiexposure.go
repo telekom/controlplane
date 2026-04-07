@@ -30,6 +30,10 @@ const (
 	FieldStatusPhase = "status_phase"
 	// FieldStatusMessage holds the string denoting the status_message field in the database.
 	FieldStatusMessage = "status_message"
+	// FieldEnvironment holds the string denoting the environment field in the database.
+	FieldEnvironment = "environment"
+	// FieldNamespace holds the string denoting the namespace field in the database.
+	FieldNamespace = "namespace"
 	// FieldBasePath holds the string denoting the base_path field in the database.
 	FieldBasePath = "base_path"
 	// FieldVisibility holds the string denoting the visibility field in the database.
@@ -73,6 +77,8 @@ var Columns = []string{
 	FieldLastModifiedAt,
 	FieldStatusPhase,
 	FieldStatusMessage,
+	FieldEnvironment,
+	FieldNamespace,
 	FieldBasePath,
 	FieldVisibility,
 	FieldActive,
@@ -131,9 +137,6 @@ var (
 
 // StatusPhase defines the type for the "status_phase" enum field.
 type StatusPhase string
-
-// StatusPhaseUnknown is the default value of the StatusPhase enum.
-const DefaultStatusPhase = StatusPhaseUnknown
 
 // StatusPhase values.
 const (
@@ -210,6 +213,16 @@ func ByStatusPhase(opts ...sql.OrderTermOption) OrderOption {
 // ByStatusMessage orders the results by the status_message field.
 func ByStatusMessage(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatusMessage, opts...).ToFunc()
+}
+
+// ByEnvironment orders the results by the environment field.
+func ByEnvironment(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEnvironment, opts...).ToFunc()
+}
+
+// ByNamespace orders the results by the namespace field.
+func ByNamespace(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNamespace, opts...).ToFunc()
 }
 
 // ByBasePath orders the results by the base_path field.

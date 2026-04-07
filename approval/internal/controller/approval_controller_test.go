@@ -198,6 +198,14 @@ var _ = Describe("Approval Controller", Ordered, func() {
 			"Suspended", "Suspended")
 
 	})
+
+	It("should successfully reconcile the semigranted approval", func() {
+		By("Semigranted")
+		checkApprovalStatus(typeNamespacedName, approvalv1.ApprovalStateSemigranted,
+			metav1.ConditionTrue, metav1.ConditionFalse,
+			"Approval partially granted, awaiting second approval", "Approval has been partially granted",
+			"Semigranted", "Semigranted")
+	})
 })
 
 func checkApprovalStatus(typeNamespacedName types.NamespacedName, state approvalv1.ApprovalState,

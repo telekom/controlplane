@@ -24,9 +24,6 @@ type Approval func(*sql.Selector)
 // ApprovalRequest is the predicate function for approvalrequest builders.
 type ApprovalRequest func(*sql.Selector)
 
-// Environment is the predicate function for environment builders.
-type Environment func(*sql.Selector)
-
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
 
@@ -35,9 +32,6 @@ type Member func(*sql.Selector)
 
 // Team is the predicate function for team builders.
 type Team func(*sql.Selector)
-
-// TeamEnvironment is the predicate function for teamenvironment builders.
-type TeamEnvironment func(*sql.Selector)
 
 // Zone is the predicate function for zone builders.
 type Zone func(*sql.Selector)

@@ -168,7 +168,21 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 
 		if approvalReq.Spec.Strategy == v1.ApprovalStrategyAuto {
 			approvalReq.Spec.State = v1.ApprovalStateGranted
+			if len(approvalReq.Spec.Decisions) == 0 {
+				approvalReq.Spec.Decisions = append(approvalReq.Spec.Decisions, v1.Decision{
+					Name:           "System",
+					Comment:        v1.AutoApprovedComment,
+					ResultingState: v1.ApprovalStateGranted,
+				})
+			}
 		}
+
+		v1.SetApprovalLabels(approvalReq, approvalReq.Spec.Target,
+			approvalReq.Spec.Requester.TeamName,
+			approvalReq.Spec.Decider.TeamName,
+			approvalReq.Spec.Action,
+			string(approvalReq.Spec.Strategy))
+
 		return nil
 	}
 

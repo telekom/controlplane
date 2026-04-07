@@ -48,9 +48,11 @@ type ComplexityRoot struct {
 		ApprovalConfig func(childComplexity int) int
 		BasePath       func(childComplexity int) int
 		CreatedAt      func(childComplexity int) int
+		Environment    func(childComplexity int) int
 		Features       func(childComplexity int) int
 		ID             func(childComplexity int) int
 		LastModifiedAt func(childComplexity int) int
+		Namespace      func(childComplexity int) int
 		Owner          func(childComplexity int) int
 		StatusMessage  func(childComplexity int) int
 		StatusPhase    func(childComplexity int) int
@@ -88,10 +90,12 @@ type ComplexityRoot struct {
 		ApprovedScopes  func(childComplexity int) int
 		BasePath        func(childComplexity int) int
 		CreatedAt       func(childComplexity int) int
+		Environment     func(childComplexity int) int
 		FailoverZones   func(childComplexity int) int
 		ID              func(childComplexity int) int
 		LastModifiedAt  func(childComplexity int) int
 		M2mAuthMethod   func(childComplexity int) int
+		Namespace       func(childComplexity int) int
 		Owner           func(childComplexity int) int
 		StatusMessage   func(childComplexity int) int
 		StatusPhase     func(childComplexity int) int
@@ -121,11 +125,13 @@ type ComplexityRoot struct {
 	Application struct {
 		ClientID       func(childComplexity int) int
 		CreatedAt      func(childComplexity int) int
+		Environment    func(childComplexity int) int
 		ExposedApis    func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
 		ID             func(childComplexity int) int
 		IssuerURL      func(childComplexity int) int
 		LastModifiedAt func(childComplexity int) int
 		Name           func(childComplexity int) int
+		Namespace      func(childComplexity int) int
 		OwnerTeam      func(childComplexity int) int
 		StatusMessage  func(childComplexity int) int
 		StatusPhase    func(childComplexity int) int
@@ -151,8 +157,10 @@ type ComplexityRoot struct {
 		CreatedAt            func(childComplexity int) int
 		Decider              func(childComplexity int) int
 		Decisions            func(childComplexity int) int
+		Environment          func(childComplexity int) int
 		ID                   func(childComplexity int) int
 		LastModifiedAt       func(childComplexity int) int
+		Namespace            func(childComplexity int) int
 		Requester            func(childComplexity int) int
 		State                func(childComplexity int) int
 		StatusMessage        func(childComplexity int) int
@@ -183,8 +191,10 @@ type ComplexityRoot struct {
 		CreatedAt            func(childComplexity int) int
 		Decider              func(childComplexity int) int
 		Decisions            func(childComplexity int) int
+		Environment          func(childComplexity int) int
 		ID                   func(childComplexity int) int
 		LastModifiedAt       func(childComplexity int) int
+		Namespace            func(childComplexity int) int
 		Requester            func(childComplexity int) int
 		State                func(childComplexity int) int
 		StatusMessage        func(childComplexity int) int
@@ -221,25 +231,23 @@ type ComplexityRoot struct {
 		Timestamp      func(childComplexity int) int
 	}
 
-	Environment struct {
-		ID               func(childComplexity int) int
-		Name             func(childComplexity int) int
-		TeamEnvironments func(childComplexity int) int
-	}
-
 	Group struct {
 		Description func(childComplexity int) int
 		DisplayName func(childComplexity int) int
+		Environment func(childComplexity int) int
 		ID          func(childComplexity int) int
 		Name        func(childComplexity int) int
+		Namespace   func(childComplexity int) int
 		Teams       func(childComplexity int) int
 	}
 
 	Member struct {
-		Email func(childComplexity int) int
-		ID    func(childComplexity int) int
-		Name  func(childComplexity int) int
-		Team  func(childComplexity int) int
+		Email       func(childComplexity int) int
+		Environment func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Namespace   func(childComplexity int) int
+		Team        func(childComplexity int) int
 	}
 
 	PageInfo struct {
@@ -269,18 +277,20 @@ type ComplexityRoot struct {
 	}
 
 	Team struct {
-		Applications     func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) int
-		Category         func(childComplexity int) int
-		CreatedAt        func(childComplexity int) int
-		Email            func(childComplexity int) int
-		Group            func(childComplexity int) int
-		ID               func(childComplexity int) int
-		LastModifiedAt   func(childComplexity int) int
-		Members          func(childComplexity int) int
-		Name             func(childComplexity int) int
-		StatusMessage    func(childComplexity int) int
-		StatusPhase      func(childComplexity int) int
-		TeamEnvironments func(childComplexity int) int
+		Applications   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.ApplicationOrder, where *ent.ApplicationWhereInput) int
+		Category       func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		Email          func(childComplexity int) int
+		Environment    func(childComplexity int) int
+		Group          func(childComplexity int) int
+		ID             func(childComplexity int) int
+		LastModifiedAt func(childComplexity int) int
+		Members        func(childComplexity int) int
+		Name           func(childComplexity int) int
+		Namespace      func(childComplexity int) int
+		RoverTokenRef  func(childComplexity int) int
+		StatusMessage  func(childComplexity int) int
+		StatusPhase    func(childComplexity int) int
 	}
 
 	TeamConnection struct {
@@ -292,13 +302,6 @@ type ComplexityRoot struct {
 	TeamEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
-	}
-
-	TeamEnvironment struct {
-		Environment   func(childComplexity int) int
-		ID            func(childComplexity int) int
-		RoverTokenRef func(childComplexity int) int
-		Team          func(childComplexity int) int
 	}
 
 	TeamInfo struct {
@@ -315,9 +318,11 @@ type ComplexityRoot struct {
 
 	Zone struct {
 		Applications func(childComplexity int) int
+		Environment  func(childComplexity int) int
 		GatewayURL   func(childComplexity int) int
 		ID           func(childComplexity int) int
 		Name         func(childComplexity int) int
+		Namespace    func(childComplexity int) int
 		Visibility   func(childComplexity int) int
 	}
 }
@@ -371,6 +376,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiExposure.CreatedAt(childComplexity), true
 
+	case "ApiExposure.environment":
+		if e.ComplexityRoot.ApiExposure.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposure.Environment(childComplexity), true
+
 	case "ApiExposure.features":
 		if e.ComplexityRoot.ApiExposure.Features == nil {
 			break
@@ -391,6 +403,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiExposure.LastModifiedAt(childComplexity), true
+
+	case "ApiExposure.namespace":
+		if e.ComplexityRoot.ApiExposure.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiExposure.Namespace(childComplexity), true
 
 	case "ApiExposure.owner":
 		if e.ComplexityRoot.ApiExposure.Owner == nil {
@@ -567,6 +586,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiSubscription.CreatedAt(childComplexity), true
 
+	case "ApiSubscription.environment":
+		if e.ComplexityRoot.ApiSubscription.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscription.Environment(childComplexity), true
+
 	case "ApiSubscription.failoverZones":
 		if e.ComplexityRoot.ApiSubscription.FailoverZones == nil {
 			break
@@ -594,6 +620,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscription.M2mAuthMethod(childComplexity), true
+
+	case "ApiSubscription.namespace":
+		if e.ComplexityRoot.ApiSubscription.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscription.Namespace(childComplexity), true
 
 	case "ApiSubscription.owner":
 		if e.ComplexityRoot.ApiSubscription.Owner == nil {
@@ -714,6 +747,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Application.CreatedAt(childComplexity), true
 
+	case "Application.environment":
+		if e.ComplexityRoot.Application.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.Environment(childComplexity), true
+
 	case "Application.exposedApis":
 		if e.ComplexityRoot.Application.ExposedApis == nil {
 			break
@@ -753,6 +793,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.Name(childComplexity), true
+
+	case "Application.namespace":
+		if e.ComplexityRoot.Application.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.Namespace(childComplexity), true
 
 	case "Application.ownerTeam":
 		if e.ComplexityRoot.Application.OwnerTeam == nil {
@@ -871,6 +918,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Approval.Decisions(childComplexity), true
 
+	case "Approval.environment":
+		if e.ComplexityRoot.Approval.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Approval.Environment(childComplexity), true
+
 	case "Approval.id":
 		if e.ComplexityRoot.Approval.ID == nil {
 			break
@@ -884,6 +938,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Approval.LastModifiedAt(childComplexity), true
+
+	case "Approval.namespace":
+		if e.ComplexityRoot.Approval.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Approval.Namespace(childComplexity), true
 
 	case "Approval.requester":
 		if e.ComplexityRoot.Approval.Requester == nil {
@@ -1011,6 +1072,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApprovalRequest.Decisions(childComplexity), true
 
+	case "ApprovalRequest.environment":
+		if e.ComplexityRoot.ApprovalRequest.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalRequest.Environment(childComplexity), true
+
 	case "ApprovalRequest.id":
 		if e.ComplexityRoot.ApprovalRequest.ID == nil {
 			break
@@ -1024,6 +1092,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.LastModifiedAt(childComplexity), true
+
+	case "ApprovalRequest.namespace":
+		if e.ComplexityRoot.ApprovalRequest.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalRequest.Namespace(childComplexity), true
 
 	case "ApprovalRequest.requester":
 		if e.ComplexityRoot.ApprovalRequest.Requester == nil {
@@ -1158,27 +1233,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Decision.Timestamp(childComplexity), true
 
-	case "Environment.id":
-		if e.ComplexityRoot.Environment.ID == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Environment.ID(childComplexity), true
-
-	case "Environment.name":
-		if e.ComplexityRoot.Environment.Name == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Environment.Name(childComplexity), true
-
-	case "Environment.teamEnvironments":
-		if e.ComplexityRoot.Environment.TeamEnvironments == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Environment.TeamEnvironments(childComplexity), true
-
 	case "Group.description":
 		if e.ComplexityRoot.Group.Description == nil {
 			break
@@ -1192,6 +1246,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Group.DisplayName(childComplexity), true
+
+	case "Group.environment":
+		if e.ComplexityRoot.Group.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Group.Environment(childComplexity), true
 
 	case "Group.id":
 		if e.ComplexityRoot.Group.ID == nil {
@@ -1207,6 +1268,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Group.Name(childComplexity), true
 
+	case "Group.namespace":
+		if e.ComplexityRoot.Group.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Group.Namespace(childComplexity), true
+
 	case "Group.teams":
 		if e.ComplexityRoot.Group.Teams == nil {
 			break
@@ -1221,6 +1289,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Member.Email(childComplexity), true
 
+	case "Member.environment":
+		if e.ComplexityRoot.Member.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Member.Environment(childComplexity), true
+
 	case "Member.id":
 		if e.ComplexityRoot.Member.ID == nil {
 			break
@@ -1234,6 +1309,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Member.Name(childComplexity), true
+
+	case "Member.namespace":
+		if e.ComplexityRoot.Member.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Member.Namespace(childComplexity), true
 
 	case "Member.team":
 		if e.ComplexityRoot.Member.Team == nil {
@@ -1434,6 +1516,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Team.Email(childComplexity), true
 
+	case "Team.environment":
+		if e.ComplexityRoot.Team.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Team.Environment(childComplexity), true
+
 	case "Team.group":
 		if e.ComplexityRoot.Team.Group == nil {
 			break
@@ -1469,6 +1558,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Team.Name(childComplexity), true
 
+	case "Team.namespace":
+		if e.ComplexityRoot.Team.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Team.Namespace(childComplexity), true
+
+	case "Team.roverTokenRef":
+		if e.ComplexityRoot.Team.RoverTokenRef == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Team.RoverTokenRef(childComplexity), true
+
 	case "Team.statusMessage":
 		if e.ComplexityRoot.Team.StatusMessage == nil {
 			break
@@ -1482,13 +1585,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Team.StatusPhase(childComplexity), true
-
-	case "Team.teamEnvironments":
-		if e.ComplexityRoot.Team.TeamEnvironments == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Team.TeamEnvironments(childComplexity), true
 
 	case "TeamConnection.edges":
 		if e.ComplexityRoot.TeamConnection.Edges == nil {
@@ -1524,34 +1620,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TeamEdge.Node(childComplexity), true
-
-	case "TeamEnvironment.environment":
-		if e.ComplexityRoot.TeamEnvironment.Environment == nil {
-			break
-		}
-
-		return e.ComplexityRoot.TeamEnvironment.Environment(childComplexity), true
-
-	case "TeamEnvironment.id":
-		if e.ComplexityRoot.TeamEnvironment.ID == nil {
-			break
-		}
-
-		return e.ComplexityRoot.TeamEnvironment.ID(childComplexity), true
-
-	case "TeamEnvironment.roverTokenRef":
-		if e.ComplexityRoot.TeamEnvironment.RoverTokenRef == nil {
-			break
-		}
-
-		return e.ComplexityRoot.TeamEnvironment.RoverTokenRef(childComplexity), true
-
-	case "TeamEnvironment.team":
-		if e.ComplexityRoot.TeamEnvironment.Team == nil {
-			break
-		}
-
-		return e.ComplexityRoot.TeamEnvironment.Team(childComplexity), true
 
 	case "TeamInfo.email":
 		if e.ComplexityRoot.TeamInfo.Email == nil {
@@ -1602,6 +1670,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Zone.Applications(childComplexity), true
 
+	case "Zone.environment":
+		if e.ComplexityRoot.Zone.Environment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Zone.Environment(childComplexity), true
+
 	case "Zone.gatewayURL":
 		if e.ComplexityRoot.Zone.GatewayURL == nil {
 			break
@@ -1622,6 +1697,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Zone.Name(childComplexity), true
+
+	case "Zone.namespace":
+		if e.ComplexityRoot.Zone.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Zone.Namespace(childComplexity), true
 
 	case "Zone.visibility":
 		if e.ComplexityRoot.Zone.Visibility == nil {
@@ -1648,10 +1730,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputApprovalRequestOrder,
 		ec.unmarshalInputApprovalRequestWhereInput,
 		ec.unmarshalInputApprovalWhereInput,
-		ec.unmarshalInputEnvironmentWhereInput,
 		ec.unmarshalInputGroupWhereInput,
 		ec.unmarshalInputMemberWhereInput,
-		ec.unmarshalInputTeamEnvironmentWhereInput,
 		ec.unmarshalInputTeamOrder,
 		ec.unmarshalInputTeamWhereInput,
 		ec.unmarshalInputZoneWhereInput,
@@ -1721,11 +1801,13 @@ type ApiExposure implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: ApiExposureStatusPhase!
+  statusPhase: ApiExposureStatusPhase
   statusMessage: String
+  environment: String
+  namespace: String
   basePath: String!
   visibility: ApiExposureVisibility!
-  active: Boolean!
+  active: Boolean
   features: [ApiExposureFeature!]!
   upstreams: [Upstream!]!
   approvalConfig: ApprovalConfig!
@@ -1847,6 +1929,8 @@ input ApiExposureWhereInput {
   statusPhaseNEQ: ApiExposureStatusPhase
   statusPhaseIn: [ApiExposureStatusPhase!]
   statusPhaseNotIn: [ApiExposureStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -1865,6 +1949,42 @@ input ApiExposureWhereInput {
   statusMessageNotNil: Boolean
   statusMessageEqualFold: String
   statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceIsNil: Boolean
+  namespaceNotNil: Boolean
+  namespaceEqualFold: String
+  namespaceContainsFold: String
   """
   base_path field predicates
   """
@@ -1893,6 +2013,8 @@ input ApiExposureWhereInput {
   """
   active: Boolean
   activeNEQ: Boolean
+  activeIsNil: Boolean
+  activeNotNil: Boolean
   """
   api_version field predicates
   """
@@ -1926,8 +2048,10 @@ type ApiSubscription implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: ApiSubscriptionStatusPhase!
+  statusPhase: ApiSubscriptionStatusPhase
   statusMessage: String
+  environment: String
+  namespace: String
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
   approvedScopes: [String!]!
@@ -2052,6 +2176,8 @@ input ApiSubscriptionWhereInput {
   statusPhaseNEQ: ApiSubscriptionStatusPhase
   statusPhaseIn: [ApiSubscriptionStatusPhase!]
   statusPhaseNotIn: [ApiSubscriptionStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -2070,6 +2196,42 @@ input ApiSubscriptionWhereInput {
   statusMessageNotNil: Boolean
   statusMessageEqualFold: String
   statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceIsNil: Boolean
+  namespaceNotNil: Boolean
+  namespaceEqualFold: String
+  namespaceContainsFold: String
   """
   base_path field predicates
   """
@@ -2123,10 +2285,12 @@ type Application implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: ApplicationStatusPhase!
+  statusPhase: ApplicationStatusPhase
   statusMessage: String
+  environment: String
+  namespace: String
   name: String!
-  clientID: String!
+  clientID: String
   issuerURL: String
   zone: Zone!
   exposedApis(
@@ -2300,6 +2464,8 @@ input ApplicationWhereInput {
   statusPhaseNEQ: ApplicationStatusPhase
   statusPhaseIn: [ApplicationStatusPhase!]
   statusPhaseNotIn: [ApplicationStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -2318,6 +2484,42 @@ input ApplicationWhereInput {
   statusMessageNotNil: Boolean
   statusMessageEqualFold: String
   statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceIsNil: Boolean
+  namespaceNotNil: Boolean
+  namespaceEqualFold: String
+  namespaceContainsFold: String
   """
   name field predicates
   """
@@ -2348,6 +2550,8 @@ input ApplicationWhereInput {
   clientIDContains: String
   clientIDHasPrefix: String
   clientIDHasSuffix: String
+  clientIDIsNil: Boolean
+  clientIDNotNil: Boolean
   clientIDEqualFold: String
   clientIDContainsFold: String
   """
@@ -2393,14 +2597,16 @@ type Approval implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: ApprovalStatusPhase!
+  statusPhase: ApprovalStatusPhase
   statusMessage: String
+  environment: String
+  namespace: String
   action: String!
   strategy: ApprovalStrategy!
   requester: RequesterInfo!
   decider: DeciderInfo!
   decisions: [Decision!]!
-  availableTransitions: [AvailableTransition!]!
+  availableTransitions: [AvailableTransition!]
   state: ApprovalState!
 }
 """
@@ -2457,14 +2663,16 @@ type ApprovalRequest implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: ApprovalRequestStatusPhase!
+  statusPhase: ApprovalRequestStatusPhase
   statusMessage: String
+  environment: String
+  namespace: String
   action: String!
   strategy: ApprovalRequestStrategy!
   requester: RequesterInfo!
   decider: DeciderInfo!
   decisions: [Decision!]!
-  availableTransitions: [AvailableTransition!]!
+  availableTransitions: [AvailableTransition!]
   state: ApprovalRequestState!
 }
 """
@@ -2591,6 +2799,8 @@ input ApprovalRequestWhereInput {
   statusPhaseNEQ: ApprovalRequestStatusPhase
   statusPhaseIn: [ApprovalRequestStatusPhase!]
   statusPhaseNotIn: [ApprovalRequestStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -2609,6 +2819,42 @@ input ApprovalRequestWhereInput {
   statusMessageNotNil: Boolean
   statusMessageEqualFold: String
   statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceIsNil: Boolean
+  namespaceNotNil: Boolean
+  namespaceEqualFold: String
+  namespaceContainsFold: String
   """
   action field predicates
   """
@@ -2721,6 +2967,8 @@ input ApprovalWhereInput {
   statusPhaseNEQ: ApprovalStatusPhase
   statusPhaseIn: [ApprovalStatusPhase!]
   statusPhaseNotIn: [ApprovalStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -2739,6 +2987,42 @@ input ApprovalWhereInput {
   statusMessageNotNil: Boolean
   statusMessageEqualFold: String
   statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceIsNil: Boolean
+  namespaceNotNil: Boolean
+  namespaceEqualFold: String
+  namespaceContainsFold: String
   """
   action field predicates
   """
@@ -2780,54 +3064,10 @@ Define a Relay Cursor type:
 https://relay.dev/graphql/connections.htm#sec-Cursor
 """
 scalar Cursor
-type Environment implements Node {
-  id: ID!
-  name: String!
-  teamEnvironments: [TeamEnvironment!]
-}
-"""
-EnvironmentWhereInput is used for filtering Environment objects.
-Input was generated by ent.
-"""
-input EnvironmentWhereInput {
-  not: EnvironmentWhereInput
-  and: [EnvironmentWhereInput!]
-  or: [EnvironmentWhereInput!]
-  """
-  id field predicates
-  """
-  id: ID
-  idNEQ: ID
-  idIn: [ID!]
-  idNotIn: [ID!]
-  idGT: ID
-  idGTE: ID
-  idLT: ID
-  idLTE: ID
-  """
-  name field predicates
-  """
-  name: String
-  nameNEQ: String
-  nameIn: [String!]
-  nameNotIn: [String!]
-  nameGT: String
-  nameGTE: String
-  nameLT: String
-  nameLTE: String
-  nameContains: String
-  nameHasPrefix: String
-  nameHasSuffix: String
-  nameEqualFold: String
-  nameContainsFold: String
-  """
-  team_environments edge predicates
-  """
-  hasTeamEnvironments: Boolean
-  hasTeamEnvironmentsWith: [TeamEnvironmentWhereInput!]
-}
 type Group implements Node {
   id: ID!
+  environment: String
+  namespace: String
   name: String!
   displayName: String!
   description: String!
@@ -2852,6 +3092,42 @@ input GroupWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceIsNil: Boolean
+  namespaceNotNil: Boolean
+  namespaceEqualFold: String
+  namespaceContainsFold: String
   """
   name field predicates
   """
@@ -2908,6 +3184,8 @@ input GroupWhereInput {
 }
 type Member implements Node {
   id: ID!
+  environment: String
+  namespace: String
   name: String!
   email: String!
   team: Team
@@ -2931,6 +3209,42 @@ input MemberWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceIsNil: Boolean
+  namespaceNotNil: Boolean
+  namespaceEqualFold: String
+  namespaceContainsFold: String
   """
   name field predicates
   """
@@ -3225,14 +3539,16 @@ type Team implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: TeamStatusPhase!
+  statusPhase: TeamStatusPhase
   statusMessage: String
+  environment: String
+  namespace: String
   name: String!
   email: String!
   category: TeamCategory!
+  roverTokenRef: String
   group: Group
   members: [Member!]
-  teamEnvironments: [TeamEnvironment!]
   applications(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -3301,60 +3617,6 @@ type TeamEdge {
   A cursor for use in pagination.
   """
   cursor: Cursor!
-}
-type TeamEnvironment implements Node {
-  id: ID!
-  roverTokenRef: String
-  team: Team!
-  environment: Environment!
-}
-"""
-TeamEnvironmentWhereInput is used for filtering TeamEnvironment objects.
-Input was generated by ent.
-"""
-input TeamEnvironmentWhereInput {
-  not: TeamEnvironmentWhereInput
-  and: [TeamEnvironmentWhereInput!]
-  or: [TeamEnvironmentWhereInput!]
-  """
-  id field predicates
-  """
-  id: ID
-  idNEQ: ID
-  idIn: [ID!]
-  idNotIn: [ID!]
-  idGT: ID
-  idGTE: ID
-  idLT: ID
-  idLTE: ID
-  """
-  rover_token_ref field predicates
-  """
-  roverTokenRef: String
-  roverTokenRefNEQ: String
-  roverTokenRefIn: [String!]
-  roverTokenRefNotIn: [String!]
-  roverTokenRefGT: String
-  roverTokenRefGTE: String
-  roverTokenRefLT: String
-  roverTokenRefLTE: String
-  roverTokenRefContains: String
-  roverTokenRefHasPrefix: String
-  roverTokenRefHasSuffix: String
-  roverTokenRefIsNil: Boolean
-  roverTokenRefNotNil: Boolean
-  roverTokenRefEqualFold: String
-  roverTokenRefContainsFold: String
-  """
-  team edge predicates
-  """
-  hasTeam: Boolean
-  hasTeamWith: [TeamWhereInput!]
-  """
-  environment edge predicates
-  """
-  hasEnvironment: Boolean
-  hasEnvironmentWith: [EnvironmentWhereInput!]
 }
 """
 Ordering options for Team connections
@@ -3434,6 +3696,8 @@ input TeamWhereInput {
   statusPhaseNEQ: TeamStatusPhase
   statusPhaseIn: [TeamStatusPhase!]
   statusPhaseNotIn: [TeamStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -3452,6 +3716,42 @@ input TeamWhereInput {
   statusMessageNotNil: Boolean
   statusMessageEqualFold: String
   statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceIsNil: Boolean
+  namespaceNotNil: Boolean
+  namespaceEqualFold: String
+  namespaceContainsFold: String
   """
   name field predicates
   """
@@ -3492,6 +3792,24 @@ input TeamWhereInput {
   categoryIn: [TeamCategory!]
   categoryNotIn: [TeamCategory!]
   """
+  rover_token_ref field predicates
+  """
+  roverTokenRef: String
+  roverTokenRefNEQ: String
+  roverTokenRefIn: [String!]
+  roverTokenRefNotIn: [String!]
+  roverTokenRefGT: String
+  roverTokenRefGTE: String
+  roverTokenRefLT: String
+  roverTokenRefLTE: String
+  roverTokenRefContains: String
+  roverTokenRefHasPrefix: String
+  roverTokenRefHasSuffix: String
+  roverTokenRefIsNil: Boolean
+  roverTokenRefNotNil: Boolean
+  roverTokenRefEqualFold: String
+  roverTokenRefContainsFold: String
+  """
   group edge predicates
   """
   hasGroup: Boolean
@@ -3501,11 +3819,6 @@ input TeamWhereInput {
   """
   hasMembers: Boolean
   hasMembersWith: [MemberWhereInput!]
-  """
-  team_environments edge predicates
-  """
-  hasTeamEnvironments: Boolean
-  hasTeamEnvironmentsWith: [TeamEnvironmentWhereInput!]
   """
   applications edge predicates
   """
@@ -3518,6 +3831,8 @@ The builtin Time type
 scalar Time
 type Zone implements Node {
   id: ID!
+  environment: String
+  namespace: String
   name: String!
   gatewayURL: String
   visibility: ZoneVisibility!
@@ -3549,6 +3864,42 @@ input ZoneWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceIsNil: Boolean
+  namespaceNotNil: Boolean
+  namespaceEqualFold: String
+  namespaceContainsFold: String
   """
   name field predicates
   """
@@ -3680,7 +4031,7 @@ type ApiExposureInfo {
   id: ID!
   basePath: String!
   visibility: ApiExposureVisibility!
-  active: Boolean!
+  active: Boolean
   apiVersion: String
   features: [ApiExposureFeature!]!
   approvalConfig: ApprovalConfig!
@@ -3694,7 +4045,7 @@ type ApiExposureInfo {
 type ApiSubscriptionInfo {
   id: ID!
   basePath: String!
-  statusPhase: ApiSubscriptionStatusPhase!
+  statusPhase: ApiSubscriptionStatusPhase
   statusMessage: String
   "Application name that owns this subscription"
   ownerApplicationName: String!

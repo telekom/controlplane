@@ -121,6 +121,7 @@ spec:
                     type: string
                 type: object
               decisions:
+                default: []
                 description: Decisions contains information about who or what changed
                   this approval
                 items:
@@ -134,8 +135,25 @@ spec:
                     name:
                       description: Name of the person making the decision
                       type: string
+                    resultingState:
+                      description: |-
+                        ResultingState is the state the resource transitioned to as a result of this decision.
+                        Automatically set by the defaulting webhook to match Spec.State when not provided.
+                      enum:
+                      - Pending
+                      - Semigranted
+                      - Granted
+                      - Rejected
+                      - Suspended
+                      - Expired
+                      type: string
+                    timestamp:
+                      description: Timestamp of when the decision was made
+                      format: date-time
+                      type: string
                   required:
                   - name
+                  - resultingState
                   type: object
                 type: array
               requester:
@@ -200,6 +218,7 @@ spec:
                 description: State defines the state of the approval
                 enum:
                 - Pending
+                - Semigranted
                 - Granted
                 - Rejected
                 - Suspended
@@ -248,6 +267,7 @@ spec:
                 type: object
             required:
             - action
+            - decisions
             - requester
             - state
             - strategy
@@ -332,6 +352,7 @@ spec:
                 description: LastState defines the last state of the approval
                 enum:
                 - Pending
+                - Semigranted
                 - Granted
                 - Rejected
                 - Suspended
