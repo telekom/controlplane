@@ -149,7 +149,7 @@ func (r *RoadmapController) Get(ctx context.Context, resourceId string) (res api
 
 	// Map to response
 	return api.RoadmapResponse{
-		Id:           id.ResourceId,
+		Id:           mapper.MakeResourceId(roadmap),
 		Name:         roadmap.Name,
 		ResourceName: roadmap.Spec.ResourceName,
 		ResourceType: api.RoadmapResponseResourceType(roadmap.Spec.ResourceType),
@@ -190,15 +190,8 @@ func (r *RoadmapController) GetAll(ctx context.Context, params api.GetAllRoadmap
 			return nil, problems.InternalServerError("Failed to decode roadmap items", err.Error())
 		}
 
-		// Create resource ID
-		resourceId := roadmap.Namespace[len(security.PrefixFromContext(ctx)):] + "--" + roadmap.Name
-		if len(roadmap.Namespace) > 0 && roadmap.Namespace[0:len(security.PrefixFromContext(ctx))] != security.PrefixFromContext(ctx) {
-			// Namespace doesn't match prefix, use full namespace
-			resourceId = roadmap.Namespace + "--" + roadmap.Name
-		}
-
 		resp := api.RoadmapResponse{
-			Id:           resourceId,
+			Id:           mapper.MakeResourceId(roadmap),
 			Name:         roadmap.Name,
 			ResourceName: roadmap.Spec.ResourceName,
 			ResourceType: api.RoadmapResponseResourceType(roadmap.Spec.ResourceType),
