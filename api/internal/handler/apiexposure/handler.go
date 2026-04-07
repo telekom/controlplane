@@ -86,38 +86,84 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 
 	// TODO: further validations (currently contained in the old code)
 	// - validate if team category allows exposure of api category
-	// create real route
 
-	// Check if there are cross-zone subscribers for this basepath.
-	// If so, the real route needs to allow the gateway mesh-client in its ACL.
+	// --- Proxy Route Management ---
+	// Query cross-zone subscription zones (exposure-driven pattern)
+	crossZoneRefs, err := util.FindCrossZoneApiSubscriptionZones(ctx, apiExp)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find cross-zone subscription zones for apiExposure: %s", apiExp.Name)
+	}
+
+	// Reset proxy routes status
+	apiExp.Status.ProxyRoutes = nil
+
+	// Create proxy route for each unique subscriber zone
+	for _, subscriberZoneRef := range crossZoneRefs {
+		options := []util.CreateRouteOption{}
+
+		// Pass provider failover zone if exists
+		if apiExp.HasFailover() {
+			options = append(options, util.WithFailoverZone(apiExp.Spec.Traffic.Failover.Zones[0]))
+		}
+
+		// Add service-level rate limits
+		if apiExp.HasProviderRateLimit() {
+			options = append(options, util.WithServiceRateLimit(apiExp.Spec.Traffic.RateLimit.Provider))
+		}
+
+		proxyRoute, err := util.CreateProxyRoute(ctx, subscriberZoneRef, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
+			contextutil.EnvFromContextOrDie(ctx),
+			options...,
+		)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create proxy route for zone %s", subscriberZoneRef.Name)
+		}
+		apiExp.Status.ProxyRoutes = append(apiExp.Status.ProxyRoutes, *types.ObjectRefFromObject(proxyRoute))
+		log.V(1).Info("Proxy route created/updated", "zone", subscriberZoneRef.Name, "route", proxyRoute.Name)
+	}
+
+	// Create provider failover route if configured (must be before cleanup to prevent deletion)
+	if apiExp.HasFailover() {
+		failoverZone := apiExp.Spec.Traffic.Failover.Zones[0] // currently only one failover zone is supported
+		failoverRoute, err := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
+			contextutil.EnvFromContextOrDie(ctx),
+			util.WithFailoverUpstreams(apiExp.Spec.Upstreams...),
+			util.WithFailoverSecurity(apiExp.Spec.Security),
+		)
+		if err != nil {
+			return errors.Wrapf(err, "unable to create failover route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
+		}
+		apiExp.Status.FailoverRoute = types.ObjectRefFromObject(failoverRoute)
+	}
+
+	// Cleanup stale proxy routes that were not touched in this reconciliation
+	deleted, err := util.CleanupStaleProxyRoutes(ctx, apiExp.Spec.ApiBasePath)
+	if err != nil {
+		return errors.Wrap(err, "failed to cleanup stale proxy routes")
+	}
+	if deleted > 0 {
+		log.V(1).Info("Cleaned up stale proxy routes", "deleted", deleted)
+	}
+
+	// Create real route with proxy target flag if there are cross-zone subscribers
+	// Check using HasCrossZoneSubscribers (approval-agnostic) for ACL, not just ProxyRoutes count
+	// This ensures the gateway consumer is added even before subscriptions are approved,
+	// preventing a brief window where proxy routes exist but can't access the real route
 	hasCrossZoneSubs, err := HasCrossZoneSubscribers(ctx, apiExp)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check cross-zone subscribers for apiExposure: %s", apiExp.Name)
 	}
 
-	route, err := util.CreateRealRoute(ctx, apiExp.Spec.Zone, apiExp, contextutil.EnvFromContextOrDie(ctx),
+	realRoute, err := util.CreateRealRoute(ctx, apiExp.Spec.Zone, apiExp, contextutil.EnvFromContextOrDie(ctx),
 		util.WithProxyTarget(hasCrossZoneSubs),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create real route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
 	}
 
-	if apiExp.HasFailover() {
-		failoverZone := apiExp.Spec.Traffic.Failover.Zones[0] // currently only one failover zone is supported
-		route, err := util.CreateProxyRoute(ctx, failoverZone, apiExp.Spec.Zone, apiExp.Spec.ApiBasePath,
-			contextutil.EnvFromContextOrDie(ctx),
-			util.WithFailoverUpstreams(apiExp.Spec.Upstreams...),
-			util.WithFailoverSecurity(apiExp.Spec.Security),
-		)
-		if err != nil {
-			return errors.Wrapf(err, "unable to create real route for apiExposure: %s in namespace: %s", apiExp.Name, apiExp.Namespace)
-		}
-		apiExp.Status.FailoverRoute = types.ObjectRefFromObject(route)
-	}
-
 	apiExp.SetCondition(condition.NewReadyCondition("Provisioned", "Successfully provisioned subresources"))
 	apiExp.SetCondition(condition.NewDoneProcessingCondition("Successfully provisioned subresources"))
-	apiExp.Status.Route = types.ObjectRefFromObject(route)
+	apiExp.Status.Route = types.ObjectRefFromObject(realRoute)
 	log.Info("✅ ApiExposure is processed")
 
 	return nil
@@ -126,6 +172,24 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 func (h *ApiExposureHandler) Delete(ctx context.Context, obj *apiapi.ApiExposure) error {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 	log := log.FromContext(ctx)
+
+	// Clean up proxy routes
+	for i := range obj.Status.ProxyRoutes {
+		ref := &obj.Status.ProxyRoutes[i]
+		proxyRoute := &gatewayapi.Route{}
+		err := scopedClient.Get(ctx, ref.K8s(), proxyRoute)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				continue
+			}
+			return errors.Wrapf(err, "failed to get proxy route %s", ref.String())
+		}
+		log.Info("🧹 Deleting proxy route of exposure", "route", ref.String())
+		err = scopedClient.Delete(ctx, proxyRoute)
+		if err != nil {
+			return errors.Wrapf(err, "failed to delete proxy route %s", ref.String())
+		}
+	}
 
 	if obj.Status.Route != nil {
 
