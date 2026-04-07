@@ -146,6 +146,82 @@ var _ = Describe("Approval Builder", Ordered, func() {
 		})
 	})
 
+	Context("Spec fields update on granted ApprovalRequest", func() {
+
+		It("should update spec fields while preserving state and decisions", func() {
+			By("creating the initial ApprovalRequest via the builder")
+
+			err := requester.SetProperties(properties)
+			Expect(err).NotTo(HaveOccurred())
+
+			jclient := cclient.NewJanitorClient(cclient.NewScopedClient(k8sm.GetClient(), testEnvironment))
+
+			owner := test.NewObject("apisub", testNamespace)
+			owner.SetUID(types.UID("99d819b2-7dcb-41dd-abac-415719674737"))
+			owner.SetLabels(map[string]string{
+				config.EnvironmentLabelKey: testEnvironment,
+			})
+
+			builder := NewApprovalBuilder(jclient, owner)
+			builder.WithHashValue(requester.Properties)
+			builder.WithRequester(requester)
+			builder.WithStrategy(approvalv1.ApprovalStrategySimple)
+
+			res, err := builder.Build(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).To(Equal(ApprovalResultPending))
+
+			arKey := client.ObjectKey{
+				Name:      builder.GetApprovalRequest().Name,
+				Namespace: testNamespace,
+			}
+
+			By("simulating a decider granting the ApprovalRequest with decisions")
+			ar := &approvalv1.ApprovalRequest{}
+			err = k8sClient.Get(ctx, arKey, ar)
+			Expect(err).ToNot(HaveOccurred())
+
+			ar.Spec.State = approvalv1.ApprovalStateGranted
+			ar.Spec.Decisions = []approvalv1.Decision{
+				{Name: "John Doe", Email: "john.doe@telekom.de", Comment: "Approved!", ResultingState: approvalv1.ApprovalStateGranted},
+			}
+			err = k8sClient.Update(ctx, ar)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("running the builder again with updated requester reason")
+			updatedRequester := &approvalv1.Requester{
+				TeamName:  "Max",
+				TeamEmail: "max.mustermann@telekom.de",
+				Reason:    "Updated reason for access",
+			}
+			err = updatedRequester.SetProperties(properties)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Need a fresh builder since it can only run once
+			builder2 := NewApprovalBuilder(jclient, owner)
+			builder2.WithHashValue(updatedRequester.Properties) // same hash so it targets the same AR
+			builder2.WithRequester(updatedRequester)
+			builder2.WithStrategy(approvalv1.ApprovalStrategySimple)
+
+			res, err = builder2.Build(ctx)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("verifying spec fields are updated, state and decisions preserved")
+			updatedAR := &approvalv1.ApprovalRequest{}
+			err = k8sClient.Get(ctx, arKey, updatedAR)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Spec fields should be updated
+			Expect(updatedAR.Spec.Requester.Reason).To(Equal("Updated reason for access"))
+			// State should be preserved (Granted, not reset to Pending)
+			Expect(updatedAR.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+			// Decisions should be preserved
+			Expect(updatedAR.Spec.Decisions).To(HaveLen(1))
+			Expect(updatedAR.Spec.Decisions[0].Name).To(Equal("John Doe"))
+			Expect(updatedAR.Spec.Decisions[0].Comment).To(Equal("Approved!"))
+		})
+	})
+
 	Context("Required Requester missing", func() {
 
 		It("should fail creating the resources", func() {
