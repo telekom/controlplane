@@ -10,10 +10,13 @@ import (
 	"slices"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -207,7 +210,12 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 		return nil
 	}
 
-	res, err := b.Client.CreateOrUpdate(ctx, approvalReq, mutate)
+	var res controllerutil.OperationResult
+	conflictRetryBackoff := wait.Backoff{Steps: 2, Duration: 10 * time.Millisecond, Factor: 1.0, Jitter: 0.1}
+	err = retry.RetryOnConflict(conflictRetryBackoff, func() (err error) {
+		res, err = b.Client.CreateOrUpdate(ctx, approvalReq, mutate)
+		return err
+	})
 	if err != nil {
 		return ApprovalResultNone, errors.Wrap(err, "failed to create approval-request")
 	}
