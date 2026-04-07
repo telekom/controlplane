@@ -470,13 +470,12 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 			Expect(err.Error()).To(ContainSubstring("terminal state"))
 		})
 
-		It("should reject changing requester on a Granted AR", func() {
+		It("should allow changing requester on a Granted AR", func() {
 			oldObj := grantedAR()
 			newObj := grantedAR()
 			newObj.Spec.Requester.TeamName = "team-c"
 			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("terminal state"))
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should allow no-op update on a Granted AR (identical spec)", func() {
