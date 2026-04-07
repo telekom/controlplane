@@ -12,6 +12,7 @@ const (
 	gatewayAdminClientId       = "rover"
 	gateway                    = "gateway"
 	gatewayConsumer            = "gateway"
+	dtcGatewayRealm            = "dtc"
 )
 
 func ForDefaultIdentityRealm(environment *adminv1.Environment) string {
@@ -30,8 +31,10 @@ func ForTeamApiGatewayRealm(environment *adminv1.Environment) string {
 	return teamApiIdentityRealmPrefix + environment.GetName()
 }
 
+// ForDtcGatewayRealm This is a special realm for the dynamic traffic control feature. It contains all eligible dtc urls
+// that are used to create multi-host routes in the Kong gateway
 func ForDtcGatewayRealm() string {
-	return "dtc"
+	return dtcGatewayRealm
 }
 
 func ForIdentityProvider(zone *adminv1.Zone) string {

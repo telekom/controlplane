@@ -98,6 +98,7 @@ func (h *ApiExposureHandler) CreateOrUpdate(ctx context.Context, apiExp *apiapi.
 
 	realmName := contextutil.EnvFromContextOrDie(ctx) // default
 	if hasFailoverSubscription {
+		// Must match naming.ForDtcGatewayRealm() in admin module
 		realmName = "dtc"
 		log.V(1).Info("Using DTC realm due to failover subscription", "apiBasePath", apiExp.Spec.ApiBasePath)
 	}

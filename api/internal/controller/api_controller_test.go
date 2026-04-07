@@ -30,9 +30,10 @@ func NewApi(apiBasePath string) *apiv1.Api {
 			},
 		},
 		Spec: apiv1.ApiSpec{
-			Version:      "v1",
-			BasePath:     apiBasePath,
-			Category:     "other",
+			Version:  "v1",
+			BasePath: apiBasePath,
+			Category: "other",
+
 			Oauth2Scopes: []string{"scope1", "scope2", "team:scope", "api:scope"},
 			XVendor:      false,
 		},
