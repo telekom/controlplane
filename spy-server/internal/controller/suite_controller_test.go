@@ -115,7 +115,7 @@ var _ = BeforeSuite(func() {
 	app = cserver.NewAppWithConfig(appCfg)
 
 	s := server.Server{
-		Config:             &config.ServerConfig{},
+		Config:             &config.ServerConfig{Security: config.SecurityConfig{Enabled: true}},
 		Log:                log.Log,
 		Applications:       NewApplicationController(stores),
 		ApiExposures:       NewApiExposureController(stores),
