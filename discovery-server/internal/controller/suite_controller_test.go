@@ -40,6 +40,13 @@ var (
 	adminToken     = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:admin:all"})
 	teamNoResToken = securitymock.NewMockAccessToken("poc", "eni", "nohyper", []string{"tardis:team:all"})
 	obfuscToken    = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:team:obfuscated"})
+
+	// groupOtherToken belongs to a different group ("other") – must be denied access to "eni" resources.
+	groupOtherToken = securitymock.NewMockAccessToken("poc", "other", "someteam", []string{"tardis:group:all"})
+	// teamPrefixToken has team="hyper" (a prefix of "hyperion") – must NOT match "hyperion" resources.
+	teamPrefixToken = securitymock.NewMockAccessToken("poc", "eni", "hyper", []string{"tardis:team:all"})
+	// groupPrefixToken has group="en" (a prefix of "eni") – must NOT match "eni" resources.
+	groupPrefixToken = securitymock.NewMockAccessToken("poc", "en", "hyperion", []string{"tardis:group:all"})
 )
 
 func TestController(t *testing.T) {

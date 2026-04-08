@@ -241,3 +241,159 @@
  "state": "complete"
 }
 ---
+
+[Application Controller GET /applications should return applications for a different group (empty if no data) - 1]
+{
+ "_links": {
+  "first": "/applications?offset=0&limit=20",
+  "last": "/applications?offset=0&limit=20",
+  "self": "/applications?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "id": "eni--hyperion--my-app",
+   "name": "my-app",
+   "security": {
+    "ipRestrictions": {
+     "allow": [
+      "10.0.0.0/8",
+      "172.16.0.0/12"
+     ]
+    }
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   },
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[Application Controller GET /applications should return applications for a different environment (empty if no data) - 1]
+{
+ "_links": {
+  "first": "/applications?offset=0&limit=20",
+  "last": "/applications?offset=0&limit=20",
+  "self": "/applications?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "id": "eni--hyperion--my-app",
+   "name": "my-app",
+   "security": {
+    "ipRestrictions": {
+     "allow": [
+      "10.0.0.0/8",
+      "172.16.0.0/12"
+     ]
+    }
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   },
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[Application Controller GET /applications should return applications for a partial team prefix (empty if no data) - 1]
+{
+ "_links": {
+  "first": "/applications?offset=0&limit=20",
+  "last": "/applications?offset=0&limit=20",
+  "self": "/applications?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "id": "eni--hyperion--my-app",
+   "name": "my-app",
+   "security": {
+    "ipRestrictions": {
+     "allow": [
+      "10.0.0.0/8",
+      "172.16.0.0/12"
+     ]
+    }
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   },
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[Application Controller GET /applications should return applications for a partial group prefix (empty if no data) - 1]
+{
+ "_links": {
+  "first": "/applications?offset=0&limit=20",
+  "last": "/applications?offset=0&limit=20",
+  "self": "/applications?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "id": "eni--hyperion--my-app",
+   "name": "my-app",
+   "security": {
+    "ipRestrictions": {
+     "allow": [
+      "10.0.0.0/8",
+      "172.16.0.0/12"
+     ]
+    }
+   },
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   },
+   "team": {
+    "email": "hyperion@telekom.de",
+    "hub": "eni",
+    "name": "hyperion"
+   },
+   "zone": "dataplane1"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---

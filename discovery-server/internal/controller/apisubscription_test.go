@@ -34,6 +34,24 @@ var _ = Describe("ApiSubscription Controller", func() {
 			resp, err := ExecuteRequest(req, teamNoResToken)
 			ExpectStatus(resp, err, http.StatusForbidden, "application/problem+json")
 		})
+
+		It("should return 403 for a different group", func() {
+			req := httptest.NewRequest(http.MethodGet, "/applications/eni--hyperion--my-app/apisubscriptions", nil)
+			resp, err := ExecuteRequest(req, groupOtherToken)
+			ExpectStatus(resp, err, http.StatusForbidden, "application/problem+json")
+		})
+
+		It("should return 403 for a partial team name prefix (hyper != hyperion)", func() {
+			req := httptest.NewRequest(http.MethodGet, "/applications/eni--hyperion--my-app/apisubscriptions", nil)
+			resp, err := ExecuteRequest(req, teamPrefixToken)
+			ExpectStatus(resp, err, http.StatusForbidden, "application/problem+json")
+		})
+
+		It("should return 403 for a partial group name prefix (en != eni)", func() {
+			req := httptest.NewRequest(http.MethodGet, "/applications/eni--hyperion--my-app/apisubscriptions", nil)
+			resp, err := ExecuteRequest(req, groupPrefixToken)
+			ExpectStatus(resp, err, http.StatusForbidden, "application/problem+json")
+		})
 	})
 
 	Describe("GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName", func() {
@@ -56,6 +74,24 @@ var _ = Describe("ApiSubscription Controller", func() {
 			ExpectStatus(resp, err, http.StatusForbidden, "application/problem+json")
 		})
 
+		It("should return 403 for a different group", func() {
+			req := httptest.NewRequest(http.MethodGet, "/applications/eni--hyperion--my-app/apisubscriptions/eni-distr-v1", nil)
+			resp, err := ExecuteRequest(req, groupOtherToken)
+			ExpectStatus(resp, err, http.StatusForbidden, "application/problem+json")
+		})
+
+		It("should return 403 for a partial team name prefix (hyper != hyperion)", func() {
+			req := httptest.NewRequest(http.MethodGet, "/applications/eni--hyperion--my-app/apisubscriptions/eni-distr-v1", nil)
+			resp, err := ExecuteRequest(req, teamPrefixToken)
+			ExpectStatus(resp, err, http.StatusForbidden, "application/problem+json")
+		})
+
+		It("should return 403 for a partial group name prefix (en != eni)", func() {
+			req := httptest.NewRequest(http.MethodGet, "/applications/eni--hyperion--my-app/apisubscriptions/eni-distr-v1", nil)
+			resp, err := ExecuteRequest(req, groupPrefixToken)
+			ExpectStatus(resp, err, http.StatusForbidden, "application/problem+json")
+		})
+
 	})
 
 	Describe("GET /applications/:applicationId/apisubscriptions/:apiSubscriptionName/status", func() {
@@ -75,6 +111,24 @@ var _ = Describe("ApiSubscription Controller", func() {
 		It("should return 403 for a different team", func() {
 			req := httptest.NewRequest(http.MethodGet, "/applications/eni--hyperion--my-app/apisubscriptions/eni-distr-v1/status", nil)
 			resp, err := ExecuteRequest(req, teamNoResToken)
+			ExpectStatus(resp, err, http.StatusForbidden, "application/problem+json")
+		})
+
+		It("should return 403 for a different group", func() {
+			req := httptest.NewRequest(http.MethodGet, "/applications/eni--hyperion--my-app/apisubscriptions/eni-distr-v1/status", nil)
+			resp, err := ExecuteRequest(req, groupOtherToken)
+			ExpectStatus(resp, err, http.StatusForbidden, "application/problem+json")
+		})
+
+		It("should return 403 for a partial team name prefix (hyper != hyperion)", func() {
+			req := httptest.NewRequest(http.MethodGet, "/applications/eni--hyperion--my-app/apisubscriptions/eni-distr-v1/status", nil)
+			resp, err := ExecuteRequest(req, teamPrefixToken)
+			ExpectStatus(resp, err, http.StatusForbidden, "application/problem+json")
+		})
+
+		It("should return 403 for a partial group name prefix (en != eni)", func() {
+			req := httptest.NewRequest(http.MethodGet, "/applications/eni--hyperion--my-app/apisubscriptions/eni-distr-v1/status", nil)
+			resp, err := ExecuteRequest(req, groupPrefixToken)
 			ExpectStatus(resp, err, http.StatusForbidden, "application/problem+json")
 		})
 
