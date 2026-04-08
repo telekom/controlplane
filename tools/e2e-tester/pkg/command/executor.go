@@ -90,6 +90,10 @@ func (e *RoverCtlExecutor) Execute(ctx context.Context, cmdStr string, params ma
 // CreateSnapshot creates a CommandSnapshot from a command execution
 func (e *RoverCtlExecutor) CreateSnapshot(cmdStr string, result *ExecuteResult, envName string, suiteName string, caseIndex string, caseName string) *snapshot.CommandSnapshot {
 
+	if envName == "" {
+		envName = e.environment.Name
+	}
+
 	id := snapshot.MakeSnapshotID(suiteName, envName, caseIndex, caseName)
 
 	output := snapshot.CommandOutput{
