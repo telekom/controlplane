@@ -1,0 +1,53 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# E2E Test Configuration with real world use cases
+
+# Snapshotter configuration
+snapshotter:
+  # url: "http://localhost:8080"
+  # or
+  binary: snapshotter
+
+# RoverCtl configuration
+roverctl:
+  binary: "roverctl"
+  run_as: "e2e-user"
+
+# Test environments
+environments:
+  - name: "eni--e2e"
+    token: "env:E2E-TEAM-TOKEN"
+
+# Test suites
+suites:
+  - name: "basic-suite"
+    environments:
+      - "eni--e2e"
+    cases:
+      - name: "version-check"
+        type: "roverctl"  # Type is optional, defaults to "roverctl"
+        must_pass: true
+        command: "--version"
+        compare: true
+
+      - name: "apply-config"
+        must_pass: true
+        command: "apply -f ./data/simple-api/apispec.yaml ./data/simple-api/rover.yaml"
+        compare: true
+        wait_after: 2s
+
+
+      - name: "system-state-snapshot"
+        type: "snapshot" 
+        must_pass: false
+        command: "snap --no-store --format yaml --source poc-dataplane1 --route poc--eni-e2e-test-v1"
+        compare: true
+        selector: "$.b" # snapshotter has new snapshot in $.b and old in $.a
+        wait_before: 30s
+
+      - name: "delete"
+        must_pass: false
+        command: "delete -f ./data/simple-api/apispec.yaml ./data/simple-api/rover.yaml"
+        compare: true
