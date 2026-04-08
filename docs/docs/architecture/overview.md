@@ -38,7 +38,7 @@ In addition to domain boundaries, the Control Plane is organized into **layers**
 
 #### Admin Layer
 
-The Admin Layer is exclusively used by the administrators of the Control Plane. It provides the tools to configure global components such as environments, zones, and remote organizations — the foundational infrastructure that all other layers depend on.
+The Admin Layer is exclusively used by the administrators of the Control Plane. It provides the tools to configure global components such as environments, zones, and remote organizations (planned feature) — the foundational infrastructure that all other layers depend on.
 
 #### UI Layer
 
@@ -87,7 +87,7 @@ Each domain is described in detail on its own page:
 
 | Domain | Description |
 | ------ | ----------- |
-| [Admin](./admin.mdx) | Environments, zones, and remote organizations |
+| [Admin](./admin.mdx) | Environments, zones, and remote organizations (planned feature) |
 | [Organization](./organization.mdx) | Teams, groups, and auto-provisioning |
 | [Application](./application.mdx) | Application abstraction and resource provisioning |
 | [API](./api.mdx) | API lifecycle — registration, exposure, and subscription |

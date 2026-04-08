@@ -45,7 +45,7 @@ Platform-wide settings such as environments, zones, and federation.
 | ---- | ----------- |
 | **Environment** | Represents a deployment environment — the top-level organizational unit. |
 | **Zone** | Configures a deployment zone with identity provider, gateway, and connection settings. Controls visibility (World/Enterprise) and circuit breaker settings. |
-| **RemoteOrganization** | Represents a federated remote organization for cross-organization API subscription flows. |
+| **RemoteOrganization** | Represents a federated remote organization for cross-organization API subscription flows. *(Planned feature — not yet fully supported.)* |
 
 ---
 
@@ -187,53 +187,6 @@ The primary user-facing interface for declarative application configuration.
 | **Rover** | The primary user-facing resource — defines an application's complete API and event posture declaratively. |
 | **ApiSpecification** | Stores an uploaded OpenAPI specification and creates the corresponding Api resource. |
 | **EventSpecification** | Stores event type metadata and creates the corresponding EventType resource. |
-
----
-
-## Feature Support by Rover Section
-
-This overview shows where key features are configured in the user journey and whether they are available in both request formats. For detailed configuration examples, see [Additional Features](../user-journey/features/overview.mdx).
-
-| Feature | API Exposure | API Subscription | Event Exposure | Event Subscription |
-| ------- | :----------: | :--------------: | :------------: | :----------------: |
-| **Traffic Management** | | | | |
-| Rate limiting | ✅ | | | |
-| Load balancing | ✅ | | | |
-| Provider-side failover | ✅ | | | |
-| Consumer-side failover | | ✅ | | |
-| Circuit breaker | ✅ | | | |
-| **Security** | | | | |
-| OAuth2 / External IDP | ✅ | ✅ | | |
-| Basic authentication | ✅ | ✅ | | |
-| Custom scopes | ✅ | ✅ | | |
-| IP restrictions | ✅ | ✅ | ✅ | ✅ |
-| Header removal | ✅ | | | |
-| **Core Settings** | | | | |
-| Approval strategy | ✅ | | ✅ | |
-| Visibility | ✅ | | ✅ | |
-| **Event Delivery** | | | | |
-| Delivery type (Callback / SSE) | | | | ✅ |
-| Payload type (Data / DataRef) | | | | ✅ |
-| Event retention time | | | | ✅ |
-| Circuit breaker opt-out | | | | ✅ |
-| Retryable status codes | | | | ✅ |
-| Redelivery rate | | | | ✅ |
-| Health check method | | | | ✅ |
-| **Event Filtering** | | | | |
-| Publisher scopes | | | ✅ | |
-| Subscriber triggers | | | | ✅ |
-| Scope selection | | | | ✅ |
-| Additional publisher IDs | | | ✅ | |
-
-✅ = configured in that section
-
-See details in:
-
-- [Additional Features Overview](../user-journey/features/overview.mdx)
-- [Traffic Management](../user-journey/features/traffic-management.mdx)
-- [Security](../user-journey/features/security.mdx)
-- [Event Delivery](../user-journey/features/event-delivery.mdx)
-- [Event Filtering](../user-journey/features/event-filtering.mdx)
 
 ---
 

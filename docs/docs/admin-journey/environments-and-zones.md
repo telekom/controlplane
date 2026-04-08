@@ -6,6 +6,10 @@ sidebar_position: 4
 
 Environments and zones form the foundational infrastructure of the Control Plane. They define *where* applications are deployed and *which* gateway and identity provider instances are used.
 
+:::tip
+For a visual overview of how environments, zones, and other resources fit together, see the [Resource Hierarchy](../overview/components.md#resource-hierarchy) diagram.
+:::
+
 ## Environments
 
 An Environment represents a logical separation of workloads — for example, `dev`, `staging`, or `production`. Each environment is a Kubernetes namespace, and all resources belonging to that environment (zones, groups, teams, applications) are created within it.
@@ -90,6 +94,10 @@ Zones can be configured with different visibility levels:
 - **Enterprise** — The zone is accessible only within the organization's network.
 
 ## Remote Organizations
+
+:::caution Planned Feature
+Remote Organizations are a **planned feature** and not yet fully supported. The API surface exists but may change, and end-to-end federation workflows are not production-ready. This section is provided for early awareness only.
+:::
 
 For cross-platform federation, the Control Plane supports Remote Organizations. A Remote Organization represents an external Control Plane instance that your platform can exchange API subscriptions and events with.
 

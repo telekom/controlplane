@@ -6,13 +6,88 @@ sidebar_position: 2
 
 The Control Plane is made up of several domains, services, and shared libraries that work together to provide a complete API management and orchestration platform. This page gives a high-level overview of each component and how they relate to one another.
 
+## Resource Hierarchy
+
+Before diving into the individual components, the diagram below shows the resource model that these components manage. Each level is created inside the one above it, and the labels indicate how many child resources are allowed.
+
+```mermaid
+graph TD
+    Cluster["<b>Kubernetes Cluster</b><br/><i>Runtime infrastructure</i>"]
+
+    Env1["<b>Environment</b><br/><i>e.g. dev</i>"]
+    Env2["<b>Environment</b><br/><i>e.g. production</i>"]
+
+    Zone1["<b>Zone</b><br/>1 Gateway · 1 IDP"]
+    Zone2["<b>Zone</b><br/>1 Gateway · 1 IDP"]
+    Zone3["<b>Zone</b><br/>1 Gateway · 1 IDP"]
+
+    EC1["<b>EventConfig</b>"]
+    EC2["<b>EventConfig</b>"]
+
+    Group1["<b>Group</b>"]
+    Group2["<b>Group</b>"]
+
+    Team1["<b>Team</b>"]
+    Team2["<b>Team</b>"]
+
+    App1["<b>Application</b>"]
+    App2["<b>Application</b>"]
+    App3["<b>Application</b>"]
+
+    RO["<b>RemoteOrganization</b><br/><i>planned feature</i>"]
+
+    Cluster -- "1 .. n" --> Env1
+    Cluster -- "1 .. n" --> Env2
+
+    Env1 -- "1 .. n" --> Zone1
+    Env1 -- "1 .. n" --> Zone2
+    Env1 -- "0 .. n" --> Group1
+    Env1 -- "0 .. n" --> RO
+
+    Env2 -- "1 .. n" --> Zone3
+    Env2 -- "0 .. n" --> Group2
+
+    Zone1 -- "0 .. 1" --> EC1
+    Zone2 -- "0 .. 1" --> EC2
+
+    Group1 -- "0 .. n" --> Team1
+    Group2 -- "0 .. n" --> Team2
+
+    Team1 -- "0 .. n" --> App1
+    Team1 -- "0 .. n" --> App2
+    Team2 -- "0 .. n" --> App3
+
+    %% Styles
+    classDef cluster fill:#e20074,stroke:#b8005c,color:#fff
+    classDef env fill:#f0f0f0,stroke:#e20074,color:#1a1a1a
+    classDef zone fill:#fff0f6,stroke:#e20074,color:#1a1a1a
+    classDef event fill:#fce4f0,stroke:#cc0066,color:#1a1a1a
+    classDef org fill:#f5f5f5,stroke:#999,color:#1a1a1a
+    classDef planned fill:#f5f5f5,stroke:#999,color:#888,stroke-dasharray: 5 5
+
+    class Cluster cluster
+    class Env1,Env2 env
+    class Zone1,Zone2,Zone3 zone
+    class EC1,EC2 event
+    class Group1,Group2,Team1,Team2,App1,App2,App3 org
+    class RO planned
+```
+
+**Reading the diagram:**
+
+- A single **Kubernetes Cluster** hosts one or more **Environments** (e.g. `dev`, `production`).
+- Each **Environment** maps to its own Kubernetes namespace and contains **Zones**, **Groups**, and optionally **Remote Organizations**.
+- A **Zone** is a deployment target with exactly one Gateway and one Identity Provider. You can create an **EventConfig** for a zone to enable eventing.
+- **Groups** organize **Teams**, and each team owns one or more **Applications**.
+- **Remote Organizations** (dashed border) are a planned feature for cross-platform federation.
+
 ## Domain Operators
 
 Domain operators are the core building blocks of the Control Plane. Each operator manages a specific set of Kubernetes custom resources and reconciles them to the desired state.
 
 | Domain | Purpose |
 | ------ | ------- |
-| [Admin](../architecture/admin.mdx) | Manages environments, zones, and remote organizations — the foundational infrastructure of the platform. |
+| [Admin](../architecture/admin.mdx) | Manages environments, zones, and remote organizations (planned feature) — the foundational infrastructure of the platform. |
 | [Organization](../architecture/organization.mdx) | Manages teams and groups. Automatically provisions namespaces, identity clients, gateway consumers, and notification channels for each team. |
 | [Application](../architecture/application.mdx) | Represents applications as an abstraction over Rover files. Provisions the identity and gateway resources an application needs to interact with the platform. |
 | [Rover](../architecture/rover.mdx) | The primary user-facing entry point. Translates declarative Rover files into resources across the API, Application, Gateway, and Identity domains. |
