@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -57,4 +58,16 @@ func validateDistinctDeciders(decisions []approvalv1.Decision) error {
 // Rejected ARs can be re-approved through the normal approval flow.
 func isTerminalApprovalRequestState(state approvalv1.ApprovalState) bool {
 	return state == approvalv1.ApprovalStateGranted
+}
+
+// hasRelevantGrantedARSpecChanges returns true if update attempts to modify
+// approval-outcome fields on an already granted ApprovalRequest.
+func hasRelevantGrantedARSpecChanges(oldSpec approvalv1.ApprovalRequestSpec, newSpec approvalv1.ApprovalRequestSpec) bool {
+	if oldSpec.State != newSpec.State {
+		return true
+	}
+	if oldSpec.Strategy != newSpec.Strategy {
+		return true
+	}
+	return !apiequality.Semantic.DeepEqual(oldSpec.Decisions, newSpec.Decisions)
 }

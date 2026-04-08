@@ -7,20 +7,25 @@ package util
 import (
 	"context"
 	"fmt"
-	"github.com/telekom/controlplane/common/pkg/config"
 	"sort"
+
+	"github.com/telekom/controlplane/common/pkg/config"
 
 	"github.com/pkg/errors"
 	adminapi "github.com/telekom/controlplane/admin/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
+	approvalbuilder "github.com/telekom/controlplane/approval/api/v1/builder"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/controller"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -196,4 +201,81 @@ func FindActiveAPIExposure(ctx context.Context, apiBasePath string) (bool, *apiv
 	}
 
 	return true, relevantApiExposure, nil
+}
+
+// FindCrossZoneApiSubscriptionZones lists all ApiSubscriptions for a given apiBasePath
+// and returns the unique zone ObjectRefs where proxy routes should be created.
+// This includes both subscription zones and subscriber failover zones (exposure-driven pattern).
+// A zone is included if:
+// - It's a subscription zone that differs from the exposure's zone (cross-zone)
+// - It's a subscriber failover zone (for any approved subscription)
+// Zones are excluded if:
+// - Same as exposure zone (no proxy needed, real route serves them)
+// - In provider's failover zone (provider failover route serves them)
+func FindCrossZoneApiSubscriptionZones(ctx context.Context, apiExp *apiv1.ApiExposure) ([]types.ObjectRef, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+	logger := log.FromContext(ctx)
+
+	subList := &apiv1.ApiSubscriptionList{}
+	if err := c.List(ctx, subList, client.MatchingLabels{
+		apiv1.BasePathLabelKey: labelutil.NormalizeLabelValue(apiExp.Spec.ApiBasePath),
+	}); err != nil {
+		return nil, errors.Wrapf(err, "failed to list ApiSubscriptions for basepath %q", apiExp.Spec.ApiBasePath)
+	}
+
+	seen := make(map[string]bool)
+	var zones []types.ObjectRef
+
+	for i := range subList.Items {
+		sub := &subList.Items[i]
+
+		// Skip subscriptions that are being deleted; their finalizer may still
+		// be running, but they should no longer influence proxy route creation.
+		if controller.IsBeingDeleted(sub) {
+			continue
+		}
+
+		// Skip if basepath doesn't match exactly (label normalization can cause collisions)
+		if sub.Spec.ApiBasePath != apiExp.Spec.ApiBasePath {
+			logger.V(1).Info("Skipping subscription with non-matching basepath",
+				"subscription", sub.Name, "subscriptionBasePath", sub.Spec.ApiBasePath, "exposureBasePath", apiExp.Spec.ApiBasePath)
+			continue
+		}
+
+		// Check approval status
+		approvalCond := meta.FindStatusCondition(sub.GetConditions(), approvalbuilder.ConditionTypeApprovalGranted)
+		if approvalCond == nil || approvalCond.Status != metav1.ConditionTrue {
+			logger.V(1).Info("Skipping subscription without approval", "subscription", sub.Name, "zone", sub.Spec.Zone.Name)
+			continue
+		}
+
+		// Collect candidate zones: subscription zone + subscriber failover zones
+		var candidateZones []types.ObjectRef
+		candidateZones = append(candidateZones, sub.Spec.Zone)
+		if sub.HasFailover() {
+			candidateZones = append(candidateZones, sub.Spec.Traffic.Failover.Zones...)
+		}
+
+		// Filter and deduplicate zones
+		for _, zone := range candidateZones {
+			// Skip same-zone as exposure (no cross-zone proxy needed)
+			if zone.Equals(&apiExp.Spec.Zone) {
+				continue
+			}
+
+			// CRITICAL: Skip if zone IS the provider's failover zone
+			// The provider failover route already exists in that zone and serves those zones
+			if apiExp.HasFailover() && apiExp.Spec.Traffic.Failover.ContainsZone(zone) {
+				continue
+			}
+
+			// Add zone if not already seen
+			if !seen[zone.Name] {
+				seen[zone.Name] = true
+				zones = append(zones, zone)
+			}
+		}
+	}
+
+	return zones, nil
 }

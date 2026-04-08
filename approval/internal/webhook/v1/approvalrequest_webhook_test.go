@@ -396,6 +396,22 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 			Expect(ar.Spec.Decisions[1].Timestamp).NotTo(BeNil())
 			Expect(ar.Spec.Decisions[1].ResultingState).To(Equal(approvalv1.ApprovalStateGranted))
 		})
+
+		It("should not mutate Auto AR that is already in terminal state", func() {
+			defaulter := ApprovalRequestCustomDefaulter{}
+			ar := &approvalv1.ApprovalRequest{
+				Spec: approvalv1.ApprovalRequestSpec{
+					Strategy:  approvalv1.ApprovalStrategyAuto,
+					State:     approvalv1.ApprovalStateGranted,
+					Decisions: []approvalv1.Decision{},
+				},
+			}
+
+			err := defaulter.Default(context.Background(), ar)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ar.Spec.Decisions).To(BeEmpty())
+			Expect(ar.Spec.State).To(Equal(approvalv1.ApprovalStateGranted))
+		})
 	})
 
 	Context("terminal state spec-freeze", func() {
@@ -461,6 +477,21 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 			Expect(err.Error()).To(ContainSubstring("terminal state"))
 		})
 
+		It("should reject changing decisions on a Granted Auto AR", func() {
+			oldObj := grantedAR()
+			oldObj.Spec.Strategy = approvalv1.ApprovalStrategyAuto
+
+			newObj := grantedAR()
+			newObj.Spec.Strategy = approvalv1.ApprovalStrategyAuto
+			newObj.Spec.Decisions = []approvalv1.Decision{
+				{Name: "Hacker", Comment: "tampering"},
+			}
+
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("terminal state"))
+		})
+
 		It("should reject changing strategy on a Granted AR", func() {
 			oldObj := grantedAR()
 			newObj := grantedAR()
@@ -470,13 +501,12 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 			Expect(err.Error()).To(ContainSubstring("terminal state"))
 		})
 
-		It("should reject changing requester on a Granted AR", func() {
+		It("should allow changing requester on a Granted AR", func() {
 			oldObj := grantedAR()
 			newObj := grantedAR()
 			newObj.Spec.Requester.TeamName = "team-c"
 			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("terminal state"))
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should allow no-op update on a Granted AR (identical spec)", func() {
