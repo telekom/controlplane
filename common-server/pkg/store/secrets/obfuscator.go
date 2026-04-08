@@ -6,10 +6,10 @@ package secrets
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
+	"github.com/bytedance/sonic"
 	"github.com/pkg/errors"
 	"github.com/tidwall/sjson"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -61,13 +61,13 @@ func (o *Obfuscator) ReplaceAll(ctx context.Context, obj any, jsonPaths []string
 		return u, nil
 	}
 
-	b, err := json.Marshal(obj)
+	b, err := sonic.Marshal(obj)
 	if err == nil {
 		b, err = o.ReplaceAllFromBytes(ctx, b, jsonPaths)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to obfuscate from json")
 		}
-		err = json.Unmarshal(b, &obj)
+		err = sonic.Unmarshal(b, &obj)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal obfuscated json")
 		}
