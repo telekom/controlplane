@@ -14,6 +14,9 @@
 # Generated CRD data (created by scripts/generate-crd-data.mjs)
 /src/data/crds/
 
+# Generated JSON Schemas (created by scripts/generate-crd-schemas.mjs)
+/static/schemas/
+
 # Misc
 .DS_Store
 .env.local
