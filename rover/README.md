@@ -33,7 +33,7 @@ A Rover resource represents a complete application configuration, including:
 ## Features
 
 - **Declarative API Management**: Define API exposures and subscriptions in a single Rover file
-- **Specification File Management**: Extend API and Event information with ApiSpecification and EventSpecification
+- **Specification File Management**: Extend API information with APISpecification
 - **Roadmap Management**: Track timeline information for APIs and Events using the Roadmap CRD
 - **Approval Workflows**: Integrate with the approval domain for subscription requests
 - **Traffic Management**: Configure circuit breakers, timeouts, and retry policies
@@ -49,13 +49,13 @@ All CRDs can be found here: [CRDs](./config/crd/bases/).
 <summary>
 <strong>Rover</strong>
 This CRD represents a complete application configuration including API exposures and subscriptions.
-</summary>  
+</summary>
 
 - The Rover CR SHOULD be created in the namespace that corresponds to the team's environment.
 - The Rover CR name SHOULD match the application name.
 - The Rover CR MUST specify a zone where the application will be deployed.
 - The Rover CR can define multiple API exposures
-- The Rover CR can define multiple API subscriptions 
+- The Rover CR can define multiple API subscriptions
 - The Rover status tracks references to all created resources
 - The Rover controller translates the Rover CR into resources in other domains (API, Application,...).
 
@@ -72,22 +72,6 @@ This CRD represents an OpenAPI specification for an API exposed through a Rover.
 - The ApiSpecification name is generated from the BasePath by removing leading/trailing slashes and replacing slashes with hyphens.
 - The ApiSpecification status tracks a reference to the created API resource.
 - The ApiSpecification controller extracts metadata from the OpenAPI document to enhance the API resource.
-- The OpenAPI specification content is stored in file-manager, while metadata is kept in the CRD.
-
-</details>
-<br />
-
-<details>
-<summary>
-<strong>EventSpecification</strong>
-This CRD represents an AsyncAPI specification for an Event type.
-</summary>
-
-- The EventSpecification CR SHOULD be created in the namespace of the team that defines the event.
-- The EventSpecification name is generated from the event type by converting dots to hyphens and lowercasing.
-- The EventSpecification controller extracts metadata from the AsyncAPI document.
-- The specification content is stored in file-manager (optional), while metadata is kept in the CRD.
-- Events can be published and subscribed to through the Event domain integration.
 
 </details>
 <br />
@@ -98,12 +82,11 @@ This CRD represents an AsyncAPI specification for an Event type.
 This CRD represents timeline and roadmap information for various resource types (APIs, Events, etc.).
 </summary>
 
-- The Roadmap CR provides a generic way to track development plans and milestones for resources.
-- It supports multiple resource types via the `resourceType` enum (currently "API" and "Event").
-- The Roadmap items (timeline entries) are stored in file-manager as JSON, keeping the CRD lightweight.
-- Each roadmap is uniquely identified by the combination of `resourceName` and `resourceType`.
-- **Use REST API for creation**: Use `PUT /rover/v3/roadmaps/{resourceId}` (declarative approach). POST returns 501 Not Implemented.
-- For detailed usage, see [Roadmap Feature Documentation](../docs/roadmap-feature.md).
+- The Roadmap CR SHOULD be created in the namespace of the team that owns the resource.
+- The Roadmap name is generated from the resourceName by removing leading/trailing slashes, replacing slashes with hyphens, and lowercasing.
+- Roadmap items are stored as JSON in file-manager, with only metadata in the CRD.
+- The Roadmap controller ensures only one roadmap exists per resourceName+resourceType combination.
+- The OpenAPI specification content is stored in file-manager, while metadata is kept in the CRD.
 
 </details>
 <br />
