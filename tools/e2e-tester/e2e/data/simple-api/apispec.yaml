@@ -7,5 +7,5 @@ info:
   version: 1.0.0
   x-api-category: Test
 servers:
-  - url: http://localhost:8080/eni/e2e-test/v1
+  - url: http://localhost:8080/eni/e2e-test-url/v1
     description: Local server for testing

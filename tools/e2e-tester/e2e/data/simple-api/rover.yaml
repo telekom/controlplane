@@ -2,19 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-apiVersion: cp.ei.telekom.de/v1
+apiVersion: tcp.ei.telekom.de/v1
 kind: Rover
 metadata:
-  name: test-rover
+  name: simple-e2e-rover
 spec:
   zone: dataplane1
   exposures:
-  - api: 
-      approval:
-        strategy: Auto
-      basePath: /eni/e2e/v1
-      visibility: Enterprise
-      upstreams: 
-       - url: http://localhost:8080/eni/e2e-test/v1
+  - basePath: /eni/e2e-test-url/v1
+    visibility: ENTERPRISE
+    upstreams: 
+      - http://localhost:8080/eni/e2e-test-url/v1
+    approval: AUTO
   subscriptions:
-  - basePath: /eni/e2e/v1
+  - basePath: /eni/e2e-test-url/v1

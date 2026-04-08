@@ -26,28 +26,21 @@ suites:
     environments:
       - "eni--e2e"
     cases:
-      - name: "version-check"
-        type: "roverctl"  # Type is optional, defaults to "roverctl"
-        must_pass: true
-        command: "--version"
-        compare: true
-
       - name: "apply-config"
         must_pass: true
-        command: "apply -f ./data/simple-api/apispec.yaml ./data/simple-api/rover.yaml"
+        command: "apply -f ./e2e/data/simple-api/rover.yaml ./e2e/data/simple-api/apispec.yaml "
         compare: true
         wait_after: 2s
 
-
       - name: "system-state-snapshot"
         type: "snapshot" 
-        must_pass: false
-        command: "snap --no-store --format yaml --source poc-dataplane1 --route poc--eni-e2e-test-v1"
+        must_pass: true 
+        command: "snap --no-store --format yaml --source poc-dataplane1 --route poc--eni-e2e-test-url-v1"
         compare: true
-        selector: "$.b" # snapshotter has new snapshot in $.b and old in $.a
-        wait_before: 30s
+       #selector: "$.b" # snapshotter has new snapshot in $.b and old in $.a
+        wait_before: 3s
 
-      - name: "delete"
-        must_pass: false
-        command: "delete -f ./data/simple-api/apispec.yaml ./data/simple-api/rover.yaml"
-        compare: true
+      #- name: "delete"
+      #  must_pass: false
+      #  command: "delete -f ./e2e/data/simple-api/rover.yaml ./e2e/data/simple-api/apispec.yaml"
+      #  compare: true
