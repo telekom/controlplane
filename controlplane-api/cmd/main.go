@@ -23,6 +23,13 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"k8s.io/apimachinery/pkg/runtime"
+	rest "k8s.io/client-go/rest"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/clientcmd"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/controlplane-api/cmd/config"
@@ -32,6 +39,8 @@ import (
 	gqlcontroller "github.com/telekom/controlplane/controlplane-api/internal/graphql"
 	"github.com/telekom/controlplane/controlplane-api/internal/interceptor"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
+	"github.com/telekom/controlplane/controlplane-api/internal/service"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 )
 
 var configFile string
@@ -58,7 +67,20 @@ func main() {
 	}
 	client.Intercept(interceptor.TeamFilterInterceptor())
 
-	srv := newGraphQLServer(client, cfg.Security.Enabled)
+	var teamService service.TeamService
+	if cfg.Kubernetes.Enabled {
+		k8sClient, err := newK8sClient(cfg.Kubernetes)
+		if err != nil {
+			log.Error(err, "failed to create Kubernetes client")
+			os.Exit(1)
+		}
+		teamService = service.NewTeamK8sService(k8sClient)
+		log.Info("Kubernetes integration enabled")
+	} else {
+		log.Info("Kubernetes integration disabled, mutations will be unavailable")
+	}
+
+	srv := newGraphQLServer(client, teamService, cfg.Security.Enabled)
 
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log
@@ -127,8 +149,27 @@ func setupLogger(level string) logr.Logger {
 	return zapr.NewLogger(zap.Must(logCfg.Build()))
 }
 
-func newGraphQLServer(client *ent.Client, securityEnabled bool) *handler.Server {
-	srv := handler.New(resolvers.NewSchema(client))
+func newK8sClient(cfg config.KubernetesConfig) (client.Client, error) {
+	scheme := runtime.NewScheme()
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(organizationv1.AddToScheme(scheme))
+
+	var restConfig *rest.Config
+	var err error
+	if cfg.Kubeconfig != "" {
+		restConfig, err = clientcmd.BuildConfigFromFlags("", cfg.Kubeconfig)
+	} else {
+		restConfig, err = ctrl.GetConfig()
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Kubernetes config: %w", err)
+	}
+
+	return client.New(restConfig, client.Options{Scheme: scheme})
+}
+
+func newGraphQLServer(entClient *ent.Client, teamService service.TeamService, securityEnabled bool) *handler.Server {
+	srv := handler.New(resolvers.NewSchema(entClient, teamService))
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})
@@ -139,7 +180,7 @@ func newGraphQLServer(client *ent.Client, securityEnabled bool) *handler.Server 
 		Cache: lru.New[string](100),
 	})
 
-	srv.AroundOperations(gqlcontroller.ViewerFromBusinessContext(client, securityEnabled))
+	srv.AroundOperations(gqlcontroller.ViewerFromBusinessContext(entClient, securityEnabled))
 
 	return srv
 }

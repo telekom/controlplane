@@ -32,6 +32,21 @@ models:
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.IntID
+  TeamMutationResult:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.TeamMutationResult
+  CreateTeamInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.CreateTeamInput
+  UpdateTeamInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.UpdateTeamInput
+  MemberInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.MemberInput
+  TeamCategoryInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.TeamCategoryInput
   Node:
     model:
       - github.com/telekom/controlplane/controlplane-api/ent.Noder

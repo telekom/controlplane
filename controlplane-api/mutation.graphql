@@ -1,0 +1,62 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+input CreateTeamInput {
+  "Target environment (used for namespace derivation)"
+  environment: String!
+  "Group this team belongs to"
+  group: String!
+  "Team name"
+  name: String!
+  "Team contact email"
+  email: String!
+  "Team members (at least one required)"
+  members: [MemberInput!]!
+  "Team category"
+  category: TeamCategoryInput! = CUSTOMER
+}
+
+input UpdateTeamInput {
+  "Target environment"
+  environment: String!
+  "Group this team belongs to"
+  group: String!
+  "Team name (identifies which team to update)"
+  name: String!
+  "Updated team contact email"
+  email: String
+  "Updated team members"
+  members: [MemberInput!]
+  "Updated team category"
+  category: TeamCategoryInput
+}
+
+input MemberInput {
+  name: String!
+  email: String!
+}
+
+enum TeamCategoryInput {
+  CUSTOMER
+  INFRASTRUCTURE
+}
+
+"Result of a team mutation. Reports acceptance status - the actual reconciliation happens asynchronously."
+type TeamMutationResult {
+  "Whether the K8s API accepted the request"
+  success: Boolean!
+  "Human-readable message"
+  message: String!
+  "The namespace where the Team CRD was created/updated"
+  namespace: String
+  "The Team CRD resource name"
+  resourceName: String
+}
+
+type Mutation {
+  "Create a new Team in Kubernetes"
+  createTeam(input: CreateTeamInput!): TeamMutationResult!
+  "Update an existing Team in Kubernetes"
+  updateTeam(input: UpdateTeamInput!): TeamMutationResult!
+}
