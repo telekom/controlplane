@@ -13,6 +13,7 @@ import (
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -35,6 +36,7 @@ type ResolverRoot interface {
 	ApprovalRequest() ApprovalRequestResolver
 	AvailableTransition() AvailableTransitionResolver
 	Decision() DecisionResolver
+	Mutation() MutationResolver
 	Query() QueryResolver
 }
 
@@ -250,6 +252,11 @@ type ComplexityRoot struct {
 		Team        func(childComplexity int) int
 	}
 
+	Mutation struct {
+		CreateTeam func(childComplexity int, input model.CreateTeamInput) int
+		UpdateTeam func(childComplexity int, input model.UpdateTeamInput) int
+	}
+
 	PageInfo struct {
 		EndCursor       func(childComplexity int) int
 		HasNextPage     func(childComplexity int) int
@@ -309,6 +316,13 @@ type ComplexityRoot struct {
 		GroupName func(childComplexity int) int
 		ID        func(childComplexity int) int
 		Name      func(childComplexity int) int
+	}
+
+	TeamMutationResult struct {
+		Message      func(childComplexity int) int
+		Namespace    func(childComplexity int) int
+		ResourceName func(childComplexity int) int
+		Success      func(childComplexity int) int
 	}
 
 	Upstream struct {
@@ -1324,6 +1338,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Member.Team(childComplexity), true
 
+	case "Mutation.createTeam":
+		if e.ComplexityRoot.Mutation.CreateTeam == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createTeam_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CreateTeam(childComplexity, args["input"].(model.CreateTeamInput)), true
+
+	case "Mutation.updateTeam":
+		if e.ComplexityRoot.Mutation.UpdateTeam == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateTeam_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateTeam(childComplexity, args["input"].(model.UpdateTeamInput)), true
+
 	case "PageInfo.endCursor":
 		if e.ComplexityRoot.PageInfo.EndCursor == nil {
 			break
@@ -1649,6 +1687,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.TeamInfo.Name(childComplexity), true
 
+	case "TeamMutationResult.message":
+		if e.ComplexityRoot.TeamMutationResult.Message == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TeamMutationResult.Message(childComplexity), true
+
+	case "TeamMutationResult.namespace":
+		if e.ComplexityRoot.TeamMutationResult.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TeamMutationResult.Namespace(childComplexity), true
+
+	case "TeamMutationResult.resourceName":
+		if e.ComplexityRoot.TeamMutationResult.ResourceName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TeamMutationResult.ResourceName(childComplexity), true
+
+	case "TeamMutationResult.success":
+		if e.ComplexityRoot.TeamMutationResult.Success == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TeamMutationResult.Success(childComplexity), true
+
 	case "Upstream.url":
 		if e.ComplexityRoot.Upstream.URL == nil {
 			break
@@ -1730,10 +1796,13 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputApprovalRequestOrder,
 		ec.unmarshalInputApprovalRequestWhereInput,
 		ec.unmarshalInputApprovalWhereInput,
+		ec.unmarshalInputCreateTeamInput,
 		ec.unmarshalInputGroupWhereInput,
+		ec.unmarshalInputMemberInput,
 		ec.unmarshalInputMemberWhereInput,
 		ec.unmarshalInputTeamOrder,
 		ec.unmarshalInputTeamWhereInput,
+		ec.unmarshalInputUpdateTeamInput,
 		ec.unmarshalInputZoneWhereInput,
 	)
 	first := true
@@ -1768,6 +1837,21 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			}
 
 			return &response
+		}
+	case ast.Mutation:
+		return func(ctx context.Context) *graphql.Response {
+			if !first {
+				return nil
+			}
+			first = false
+			ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
+			data := ec._Mutation(ctx, opCtx.Operation.SelectionSet)
+			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
 		}
 
 	default:
@@ -3946,6 +4030,69 @@ input ZoneWhereInput {
   """
   hasApplications: Boolean
   hasApplicationsWith: [ApplicationWhereInput!]
+}
+`, BuiltIn: false},
+	{Name: "../../mutation.graphql", Input: `# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+input CreateTeamInput {
+  "Target environment (used for namespace derivation)"
+  environment: String!
+  "Group this team belongs to"
+  group: String!
+  "Team name"
+  name: String!
+  "Team contact email"
+  email: String!
+  "Team members (at least one required)"
+  members: [MemberInput!]!
+  "Team category"
+  category: TeamCategoryInput! = CUSTOMER
+}
+
+input UpdateTeamInput {
+  "Target environment"
+  environment: String!
+  "Group this team belongs to"
+  group: String!
+  "Team name (identifies which team to update)"
+  name: String!
+  "Updated team contact email"
+  email: String
+  "Updated team members"
+  members: [MemberInput!]
+  "Updated team category"
+  category: TeamCategoryInput
+}
+
+input MemberInput {
+  name: String!
+  email: String!
+}
+
+enum TeamCategoryInput {
+  CUSTOMER
+  INFRASTRUCTURE
+}
+
+"Result of a team mutation. Reports acceptance status - the actual reconciliation happens asynchronously."
+type TeamMutationResult {
+  "Whether the K8s API accepted the request"
+  success: Boolean!
+  "Human-readable message"
+  message: String!
+  "The namespace where the Team CRD was created/updated"
+  namespace: String
+  "The Team CRD resource name"
+  resourceName: String
+}
+
+type Mutation {
+  "Create a new Team in Kubernetes"
+  createTeam(input: CreateTeamInput!): TeamMutationResult!
+  "Update an existing Team in Kubernetes"
+  updateTeam(input: UpdateTeamInput!): TeamMutationResult!
 }
 `, BuiltIn: false},
 	{Name: "../../schema.graphql", Input: `# Copyright 2025 Deutsche Telekom IT GmbH

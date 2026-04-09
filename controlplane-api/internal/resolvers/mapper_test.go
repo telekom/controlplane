@@ -26,7 +26,7 @@ var _ = Describe("Subscriptions resolver (cross-tenant)", func() {
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
-		r = resolvers.NewResolver(client)
+		r = resolvers.NewResolver(client, nil)
 		s = testutil.SeedStandard(client)
 	})
 
@@ -63,7 +63,7 @@ var _ = Describe("Target resolver (cross-tenant)", func() {
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
-		r = resolvers.NewResolver(client)
+		r = resolvers.NewResolver(client, nil)
 		s = testutil.SeedStandard(client)
 	})
 
@@ -93,7 +93,7 @@ var _ = Describe("Approval.APISubscription resolver (cross-tenant)", func() {
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
-		r = resolvers.NewResolver(client)
+		r = resolvers.NewResolver(client, nil)
 		s = testutil.SeedStandard(client)
 	})
 
@@ -121,7 +121,7 @@ var _ = Describe("ApprovalRequest.APISubscription resolver (cross-tenant)", func
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
-		r = resolvers.NewResolver(client)
+		r = resolvers.NewResolver(client, nil)
 		s = testutil.SeedStandard(client)
 	})
 
@@ -141,7 +141,7 @@ var _ = Describe("ApprovalRequest.APISubscription resolver (cross-tenant)", func
 })
 
 var _ = Describe("ApiExposureInfo resolvers", func() {
-	r := resolvers.NewResolver(nil)
+	r := resolvers.NewResolver(nil, nil)
 
 	It("should convert visibility string to enum", func() {
 		v, err := r.ApiExposureInfo().Visibility(context.TODO(), &model.ApiExposureInfo{Visibility: "WORLD"})
@@ -167,7 +167,7 @@ var _ = Describe("ApiExposureInfo resolvers", func() {
 })
 
 var _ = Describe("ApiSubscriptionInfo.StatusPhase resolver", func() {
-	r := resolvers.NewResolver(nil)
+	r := resolvers.NewResolver(nil, nil)
 
 	It("should convert status phase string to enum", func() {
 		sp := "SUBSCRIBED"

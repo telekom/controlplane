@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /home/igar/projects/controlplane/controlplane-api -maxdepth 2 -type f -name README* -o -name CLAUDE* -o -name Makefile -o -name package.json -o -name go.mod -o -name *.toml)",
+      "Bash(find /home/igar/projects/controlplane -name register.go -o -name zz_generated*)",
+      "Bash(grep -r \"AddToScheme\\\\|RegisterSchemes\" /home/igar/projects/controlplane/*/cmd/main.go)",
+      "Bash(go mod:*)",
+      "Bash(go build:*)",
+      "Bash(make test:*)",
+      "Bash(go test:*)",
+      "Bash(make generate:*)",
+      "Bash(make build:*)",
+      "Bash(make lint:*)",
+      "Bash(make vet:*)"
+    ]
+  }
+}
