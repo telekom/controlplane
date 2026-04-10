@@ -128,5 +128,7 @@ extend type Approval {
 extend type ApprovalRequest {
   "Related subscription (reduced view — cross-tenant boundary)"
   apiSubscription: ApiSubscriptionInfo @goField(forceResolver: true)
+  "The corresponding approval, if one exists (traverses via ApiSubscription)"
+  approval: Approval @goField(forceResolver: true)
 }
 
