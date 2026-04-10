@@ -54,9 +54,20 @@ type TeamMutationResult {
   resourceName: String
 }
 
+input RotateTeamTokenInput {
+  "Target environment"
+  environment: String!
+  "Group this team belongs to"
+  group: String!
+  "Team name"
+  name: String!
+}
+
 type Mutation {
   "Create a new Team in Kubernetes"
   createTeam(input: CreateTeamInput!): TeamMutationResult!
   "Update an existing Team in Kubernetes"
   updateTeam(input: UpdateTeamInput!): TeamMutationResult!
+  "Rotate the token for an existing Team. Triggers async secret regeneration via the operator."
+  rotateTeamToken(input: RotateTeamTokenInput!): TeamMutationResult!
 }

@@ -38,6 +38,13 @@ type MemberInput struct {
 	Email string `json:"email"`
 }
 
+// RotateTeamTokenInput is the input for rotating a team's token.
+type RotateTeamTokenInput struct {
+	Environment string `json:"environment"`
+	Group       string `json:"group"`
+	Name        string `json:"name"`
+}
+
 // TeamCategoryInput represents the team category enum for mutations.
 type TeamCategoryInput string
 
