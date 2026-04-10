@@ -21,4 +21,4 @@ debug-results
 
 # ignore Claude AI files
 CLAUDE.md
-.claude
+.claude/
