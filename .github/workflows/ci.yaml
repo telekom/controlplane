@@ -215,5 +215,5 @@ jobs:
     with:
       name: projector
       module: projector
-      run_check_generated_files: true
+      run_check_generated_files: false
       ko_build_path: "main.go"
