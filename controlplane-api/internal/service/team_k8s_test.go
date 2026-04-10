@@ -206,6 +206,78 @@ var _ = Describe("TeamK8sService", func() {
 			})
 		})
 	})
+
+	Describe("RotateTeamToken", func() {
+		rotateInput := model.RotateTeamTokenInput{
+			Environment: "dev",
+			Group:       "group-a",
+			Name:        "team-alpha",
+		}
+
+		BeforeEach(func() {
+			// Seed a team first
+			_, err := svc.CreateTeam(adminCtx(), createInput)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		Describe("Authorization", func() {
+			It("should allow admin to rotate any team token", func() {
+				result, err := svc.RotateTeamToken(adminCtx(), rotateInput)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result.Success).To(BeTrue())
+			})
+
+			It("should allow group viewer to rotate token for team in their group", func() {
+				result, err := svc.RotateTeamToken(groupCtx("group-a"), rotateInput)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result.Success).To(BeTrue())
+			})
+
+			It("should deny group viewer rotating token for team in a different group", func() {
+				_, err := svc.RotateTeamToken(groupCtx("group-b"), rotateInput)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("forbidden"))
+			})
+
+			It("should allow team viewer to rotate their own team token", func() {
+				result, err := svc.RotateTeamToken(teamCtx("team-alpha"), rotateInput)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result.Success).To(BeTrue())
+			})
+
+			It("should deny team viewer rotating a different team's token", func() {
+				_, err := svc.RotateTeamToken(teamCtx("team-beta"), rotateInput)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("forbidden"))
+			})
+
+			It("should deny when no viewer is present", func() {
+				_, err := svc.RotateTeamToken(noViewerCtx(), rotateInput)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("unauthorized"))
+			})
+		})
+
+		Describe("Success", func() {
+			It("should set Spec.Secret to 'rotate' and return correct result", func() {
+				result, err := svc.RotateTeamToken(adminCtx(), rotateInput)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result.Success).To(BeTrue())
+				Expect(result.Message).To(Equal("team token rotation initiated"))
+				Expect(*result.Namespace).To(Equal("dev"))
+				Expect(*result.ResourceName).To(Equal("group-a--team-alpha"))
+
+				// Verify Spec.Secret was set on the CRD
+				team := &organizationv1.Team{}
+				err = k8sClient.Get(context.Background(), client.ObjectKey{
+					Namespace: "dev",
+					Name:      "group-a--team-alpha",
+				}, team)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(team.Spec.Secret).To(Equal("rotate"))
+			})
+		})
+	})
 })
 
 func strPtr(s string) *string {

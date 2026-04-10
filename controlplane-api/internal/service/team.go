@@ -14,4 +14,5 @@ import (
 type TeamService interface {
 	CreateTeam(ctx context.Context, input model.CreateTeamInput) (*model.TeamMutationResult, error)
 	UpdateTeam(ctx context.Context, input model.UpdateTeamInput) (*model.TeamMutationResult, error)
+	RotateTeamToken(ctx context.Context, input model.RotateTeamTokenInput) (*model.TeamMutationResult, error)
 }

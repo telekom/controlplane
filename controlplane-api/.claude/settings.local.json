@@ -11,7 +11,8 @@
       "Bash(make generate:*)",
       "Bash(make build:*)",
       "Bash(make lint:*)",
-      "Bash(make vet:*)"
+      "Bash(make vet:*)",
+      "Bash(go vet:*)"
     ]
   }
 }

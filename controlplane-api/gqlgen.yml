@@ -47,6 +47,9 @@ models:
   TeamCategoryInput:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.TeamCategoryInput
+  RotateTeamTokenInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateTeamTokenInput
   Node:
     model:
       - github.com/telekom/controlplane/controlplane-api/ent.Noder

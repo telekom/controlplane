@@ -3,10 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 database:
-  url: "postgres://controlplane:controlplane@localhost:5432/controlplane?sslmode=disable"
+  url: "postgres://controlplane:controlplane@localhost:50314/controlplane?sslmode=disable"
 
 server:
   address: ":8080"
+  tls:
+    enabled: false
 
 security:
   enabled: false
@@ -16,3 +18,7 @@ graphql:
 
 log:
   level: "info"
+
+kubernetes:
+  enabled: true
+  kubeconfig: "/home/igar/.kube/config"  # path to your kubeconfig

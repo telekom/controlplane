@@ -253,8 +253,9 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateTeam func(childComplexity int, input model.CreateTeamInput) int
-		UpdateTeam func(childComplexity int, input model.UpdateTeamInput) int
+		CreateTeam      func(childComplexity int, input model.CreateTeamInput) int
+		RotateTeamToken func(childComplexity int, input model.RotateTeamTokenInput) int
+		UpdateTeam      func(childComplexity int, input model.UpdateTeamInput) int
 	}
 
 	PageInfo struct {
@@ -1350,6 +1351,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Mutation.CreateTeam(childComplexity, args["input"].(model.CreateTeamInput)), true
 
+	case "Mutation.rotateTeamToken":
+		if e.ComplexityRoot.Mutation.RotateTeamToken == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_rotateTeamToken_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.RotateTeamToken(childComplexity, args["input"].(model.RotateTeamTokenInput)), true
+
 	case "Mutation.updateTeam":
 		if e.ComplexityRoot.Mutation.UpdateTeam == nil {
 			break
@@ -1800,6 +1813,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputGroupWhereInput,
 		ec.unmarshalInputMemberInput,
 		ec.unmarshalInputMemberWhereInput,
+		ec.unmarshalInputRotateTeamTokenInput,
 		ec.unmarshalInputTeamOrder,
 		ec.unmarshalInputTeamWhereInput,
 		ec.unmarshalInputUpdateTeamInput,
@@ -4088,11 +4102,22 @@ type TeamMutationResult {
   resourceName: String
 }
 
+input RotateTeamTokenInput {
+  "Target environment"
+  environment: String!
+  "Group this team belongs to"
+  group: String!
+  "Team name"
+  name: String!
+}
+
 type Mutation {
   "Create a new Team in Kubernetes"
   createTeam(input: CreateTeamInput!): TeamMutationResult!
   "Update an existing Team in Kubernetes"
   updateTeam(input: UpdateTeamInput!): TeamMutationResult!
+  "Rotate the token for an existing Team. Triggers async secret regeneration via the operator."
+  rotateTeamToken(input: RotateTeamTokenInput!): TeamMutationResult!
 }
 `, BuiltIn: false},
 	{Name: "../../schema.graphql", Input: `# Copyright 2025 Deutsche Telekom IT GmbH

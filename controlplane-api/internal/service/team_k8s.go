@@ -103,6 +103,39 @@ func (s *teamK8sService) UpdateTeam(ctx context.Context, input model.UpdateTeamI
 	}, nil
 }
 
+func (s *teamK8sService) RotateTeamToken(ctx context.Context, input model.RotateTeamTokenInput) (*model.TeamMutationResult, error) {
+	if err := authorizeUpdateTeam(ctx, input.Group, input.Name); err != nil {
+		return nil, err
+	}
+
+	resourceName := teamResourceName(input.Group, input.Name)
+	namespace := input.Environment
+
+	scopedClient := cc.NewScopedClient(s.client, input.Environment)
+
+	team := &organizationv1.Team{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      resourceName,
+			Namespace: namespace,
+		},
+	}
+
+	_, err := scopedClient.CreateOrUpdate(ctx, team, func() error {
+		team.Spec.Secret = "rotate"
+		return nil
+	})
+	if err != nil {
+		return nil, mapK8sError(err)
+	}
+
+	return &model.TeamMutationResult{
+		Success:      true,
+		Message:      "team token rotation initiated",
+		Namespace:    &namespace,
+		ResourceName: &resourceName,
+	}, nil
+}
+
 func toK8sMembers(members []model.MemberInput) []organizationv1.Member {
 	result := make([]organizationv1.Member, len(members))
 	for i, m := range members {
