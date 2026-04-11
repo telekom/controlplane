@@ -26,7 +26,7 @@ func ConfigureRoadmapStoreMock(testing ginkgo.FullGinkgoTInterface, mockedStore 
 }
 
 func configureRoadmap(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObjectStore[*roverv1.Roadmap]) {
-	roadmap := GetRoadmap(testing, RoadmapFileName) // eni-test-api-v1
+	roadmap := GetRoadmap(testing, RoadmapFileName) // eni-test-api
 
 	mockedStore.EXPECT().Get(
 		mock.AnythingOfType("*context.valueCtx"),
@@ -34,7 +34,7 @@ func configureRoadmap(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObje
 			return s == "poc--eni--hyperion"
 		}),
 		mock.MatchedBy(func(s string) bool {
-			return s == "eni-test-api-v1"
+			return s == "eni-test-api"
 		}),
 	).Return(roadmap, nil).Maybe()
 
@@ -64,7 +64,7 @@ func configureRoadmap(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObje
 			return s == "poc--eni--hyperion"
 		}),
 		mock.MatchedBy(func(s string) bool {
-			return s == "eni-test-api-v1"
+			return s == "eni-test-api"
 		}),
 	).Return(nil).Maybe()
 
@@ -79,7 +79,7 @@ func configureRoadmapNotFound(mockedStore *MockObjectStore[*roverv1.Roadmap]) {
 		mock.AnythingOfType("*context.valueCtx"),
 		mock.AnythingOfType("string"),
 		mock.MatchedBy(func(s string) bool {
-			return s != "eni-test-api-v1"
+			return s != "eni-test-api"
 		}),
 	).Return(nil, problems.NotFound("roadmap not found")).Maybe()
 
@@ -87,7 +87,7 @@ func configureRoadmapNotFound(mockedStore *MockObjectStore[*roverv1.Roadmap]) {
 		mock.AnythingOfType("*context.valueCtx"),
 		mock.AnythingOfType("string"),
 		mock.MatchedBy(func(s string) bool {
-			return s != "eni-test-api-v1"
+			return s != "eni-test-api"
 		}),
 	).Return(problems.NotFound("roadmap not found")).Maybe()
 }

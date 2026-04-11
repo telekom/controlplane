@@ -43,8 +43,8 @@ tags:
     description: Manage EventSpecifications
   - name: Rover
     description: Manage Rovers
-  - name: Roadmap
-    description: Manage Roadmaps
+  - name: ApiRoadmap
+    description: Manage ApiRoadmaps
 paths:
   /rovers:
     get:
@@ -1001,13 +1001,13 @@ paths:
             - tardis:user:all
             - tardis:user:read
             - tardis:user:obfuscated
-  /roadmaps:
+  /apiroadmaps:
     get:
       tags:
-        - Roadmap
-      summary: Find all Roadmaps
-      description: Find all Roadmaps of a Team
-      operationId: getAllRoadmaps
+        - ApiRoadmap
+      summary: Find all ApiRoadmaps
+      description: Find all ApiRoadmaps of a Team
+      operationId: getAllApiRoadmaps
       parameters:
         - name: cursor
           in: query
@@ -1015,22 +1015,13 @@ paths:
           required: false
           schema:
             type: string
-        - name: resourceType
-          in: query
-          description: Filter by resource type (API or Event)
-          required: false
-          schema:
-            type: string
-            enum:
-              - API
-              - Event
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoadmapListResponse'
+                $ref: '#/components/schemas/ApiRoadmapListResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1053,23 +1044,22 @@ paths:
             - tardis:team:read
     post:
       tags:
-        - Roadmap
-      summary: Create a Roadmap
-      description: Create a Roadmap resource
-      operationId: createRoadmap
-      deprecated: true
+        - ApiRoadmap
+      summary: Create an ApiRoadmap
+      description: Create an ApiRoadmap resource
+      operationId: createApiRoadmap
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RoadmapRequest'
+              $ref: '#/components/schemas/ApiRoadmapCreateRequest'
       responses:
-        '201':
-          description: CREATED
+        '202':
+          description: ACCEPTED
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoadmapResponse'
+                $ref: '#/components/schemas/ApiRoadmapResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1087,16 +1077,16 @@ paths:
             - tardis:admin:all
             - tardis:hub:all
             - tardis:team:all
-  /roadmaps/{resourceId}:
+  /apiroadmaps/{apiRoadmapId}:
     get:
       tags:
-        - Roadmap
-      summary: Find an existing Roadmap
-      description: Find an existing Roadmap
-      operationId: getRoadmap
+        - ApiRoadmap
+      summary: Find an existing ApiRoadmap
+      description: Find an existing ApiRoadmap
+      operationId: getApiRoadmap
       parameters:
-        - name: resourceId
-          description: The unique id of this resource following the pattern group--team--resourceName
+        - name: apiRoadmapId
+          description: The unique id of this resource following the pattern group--team--basePath
           in: path
           required: true
           schema:
@@ -1107,7 +1097,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoadmapResponse'
+                $ref: '#/components/schemas/ApiRoadmapResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1130,13 +1120,13 @@ paths:
             - tardis:team:read
     put:
       tags:
-        - Roadmap
-      summary: Update an existing Roadmap
-      description: Update an existing Roadmap
-      operationId: updateRoadmap
+        - ApiRoadmap
+      summary: Update an existing ApiRoadmap
+      description: Update an existing ApiRoadmap
+      operationId: updateApiRoadmap
       parameters:
-        - name: resourceId
-          description: The unique id of this resource following the pattern group--team--resourceName
+        - name: apiRoadmapId
+          description: The unique id of this resource following the pattern group--team--basePath
           in: path
           required: true
           schema:
@@ -1145,14 +1135,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RoadmapRequest'
+              $ref: '#/components/schemas/ApiRoadmapUpdateRequest'
       responses:
-        '200':
-          description: OK
+        '202':
+          description: ACCEPTED
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoadmapResponse'
+                $ref: '#/components/schemas/ApiRoadmapResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1172,13 +1162,13 @@ paths:
             - tardis:team:all
     delete:
       tags:
-        - Roadmap
-      summary: Delete a Roadmap
-      description: Delete a Roadmap
-      operationId: deleteRoadmap
+        - ApiRoadmap
+      summary: Delete an ApiRoadmap
+      description: Delete an ApiRoadmap
+      operationId: deleteApiRoadmap
       parameters:
-        - name: resourceId
-          description: The unique id of this resource following the pattern group--team--resourceName
+        - name: apiRoadmapId
+          description: The unique id of this resource following the pattern group--team--basePath
           in: path
           required: true
           schema:
@@ -2257,31 +2247,23 @@ components:
                 This field is only used for hub-scoped access to control the
                 target team of the resource. For everything else, it can be
                 ignored
-    Roadmap:
+    ApiRoadmap:
       type: object
       required:
-        - resourceName
-        - resourceType
+        - basePath
         - items
       properties:
-        resourceName:
-          description: The resource identifier (API basePath or Event type name)
+        basePath:
+          description: The API basePath
           type: string
           example: /eni/test-api/v1
-        resourceType:
-          description: The type of resource this roadmap is for
-          type: string
-          enum:
-            - API
-            - Event
-          example: API
         items:
           description: List of roadmap timeline entries
           type: array
           minItems: 1
           items:
-            $ref: '#/components/schemas/RoadmapItem'
-    RoadmapItem:
+            $ref: '#/components/schemas/ApiRoadmapItem'
+    ApiRoadmapItem:
       type: object
       required:
         - date
@@ -2305,60 +2287,39 @@ components:
           type: string
           format: uri
           example: https://example.com/mvp
-    RoadmapRequest:
+    ApiRoadmapCreateRequest:
       allOf:
-        - $ref: '#/components/schemas/Roadmap'
-    RoadmapResponse:
-      type: object
-      required:
-        - id
-        - name
-        - resourceName
-        - resourceType
-        - items
-      properties:
-        id:
-          description: Unique id of this resource
-          type: string
-          readOnly: true
-          example: my-hub--my-team--my-roadmap
-        name:
-          description: Name of the roadmap
-          type: string
-          readOnly: true
-          example: my-roadmap
-        resourceName:
-          description: The resource identifier (API basePath or Event type name)
-          type: string
-          example: /eni/test-api/v1
-        resourceType:
-          description: The type of resource this roadmap is for
-          type: string
-          enum:
-            - API
-            - Event
-          example: API
-        items:
-          description: List of roadmap timeline entries
-          type: array
-          items:
-            $ref: '#/components/schemas/RoadmapItem'
-        status:
-          $ref: '#/components/schemas/RoadmapStatus'
-    RoadmapStatus:
-      type: object
-      readOnly: true
-      properties:
-        ready:
-          type: boolean
-          description: Whether the roadmap is ready
-        processing:
-          type: boolean
-          description: Whether the roadmap is being processed
-        message:
-          type: string
-          description: Status message
-    RoadmapListResponse:
+        - $ref: '#/components/schemas/ApiRoadmap'
+        - type: object
+          properties:
+            team:
+              type: string
+              example: hyperion
+              description: >-
+                This field is only used for hub-scoped access to control the
+                target team of the resource. For everything else, it can be
+                ignored
+    ApiRoadmapUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/ApiRoadmap'
+    ApiRoadmapResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiRoadmap'
+        - type: object
+          properties:
+            id:
+              description: Unique id of this resource
+              type: string
+              readOnly: true
+              example: my-hub--my-team--my-roadmap
+            name:
+              description: Name of the roadmap
+              type: string
+              readOnly: true
+              example: my-roadmap
+            status:
+              $ref: '#/components/schemas/Status'
+    ApiRoadmapListResponse:
       type: object
       required:
         - items
@@ -2368,7 +2329,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/RoadmapResponse'
+            $ref: '#/components/schemas/ApiRoadmapResponse'
     Failover:
       type: object
       required:

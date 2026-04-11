@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/types"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,7 +23,7 @@ var _ = Describe("Roadmap Webhook", func() {
 
 		var ctx = context.Background()
 
-		It("should allow valid Roadmap with API resource type", func() {
+		It("should allow valid Roadmap with specification reference", func() {
 			roadmap := &roverv1.Roadmap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-roadmap",
@@ -32,35 +33,18 @@ var _ = Describe("Roadmap Webhook", func() {
 					},
 				},
 				Spec: roverv1.RoadmapSpec{
-					ResourceName: "/eni/my-api/v1",
-					ResourceType: roverv1.ResourceTypeAPI,
-					Roadmap:      "test--eni--team--my-api-v1",
-					Hash:         "abc123hash",
-				},
-			}
-
-			validator := &RoadmapCustomValidator{}
-
-			warnings, err := validator.ValidateCreate(ctx, roadmap)
-
-			Expect(err).ToNot(HaveOccurred())
-			Expect(warnings).To(BeNil())
-		})
-
-		It("should allow valid Roadmap with Event resource type", func() {
-			roadmap := &roverv1.Roadmap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-roadmap-event",
-					Namespace: "test--my-group--my-team",
-					Labels: map[string]string{
-						config.EnvironmentLabelKey: "test",
+					SpecificationRef: types.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "ApiSpecification",
+							APIVersion: "rover.cp.ei.telekom.de/v1",
+						},
+						ObjectRef: types.ObjectRef{
+							Name:      "eni-my-api",
+							Namespace: "test--my-group--my-team",
+						},
 					},
-				},
-				Spec: roverv1.RoadmapSpec{
-					ResourceName: "de.telekom.eni.myevent.v1",
-					ResourceType: roverv1.ResourceTypeEvent,
-					Roadmap:      "test--eni--team--myevent",
-					Hash:         "def456hash",
+					Contents: "test--eni--team--my-api-v1",
+					Hash:     "abc123hash",
 				},
 			}
 
@@ -80,10 +64,18 @@ var _ = Describe("Roadmap Webhook", func() {
 					Labels:    map[string]string{},
 				},
 				Spec: roverv1.RoadmapSpec{
-					ResourceName: "/eni/my-api/v1",
-					ResourceType: roverv1.ResourceTypeAPI,
-					Roadmap:      "test--file-id",
-					Hash:         "somehash",
+					SpecificationRef: types.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "ApiSpecification",
+							APIVersion: "rover.cp.ei.telekom.de/v1",
+						},
+						ObjectRef: types.ObjectRef{
+							Name:      "eni-my-api",
+							Namespace: "test--my-group--my-team",
+						},
+					},
+					Contents: "test--file-id",
+					Hash:     "somehash",
 				},
 			}
 
@@ -102,7 +94,7 @@ var _ = Describe("Roadmap Webhook", func() {
 			Expect(statusErr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring("environment label is required"))
 		})
 
-		It("should block when resourceName is empty", func() {
+		It("should block when specification name is empty", func() {
 			roadmap := &roverv1.Roadmap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-roadmap",
@@ -112,10 +104,18 @@ var _ = Describe("Roadmap Webhook", func() {
 					},
 				},
 				Spec: roverv1.RoadmapSpec{
-					ResourceName: "", // Empty resourceName
-					ResourceType: roverv1.ResourceTypeAPI,
-					Roadmap:      "test--file-id",
-					Hash:         "somehash",
+					SpecificationRef: types.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "ApiSpecification",
+							APIVersion: "rover.cp.ei.telekom.de/v1",
+						},
+						ObjectRef: types.ObjectRef{
+							Name:      "", // Empty name
+							Namespace: "test--my-group--my-team",
+						},
+					},
+					Contents: "test--file-id",
+					Hash:     "somehash",
 				},
 			}
 
@@ -130,11 +130,11 @@ var _ = Describe("Roadmap Webhook", func() {
 			statusErr, ok := err.(*apierrors.StatusError)
 			Expect(ok).To(BeTrue(), "Expected a StatusError, got: %T", err)
 			Expect(statusErr.ErrStatus.Details.Causes).To(HaveLen(1))
-			Expect(statusErr.ErrStatus.Details.Causes[0].Field).To(Equal("spec.resourceName"))
-			Expect(statusErr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring("resourceName must not be empty"))
+			Expect(statusErr.ErrStatus.Details.Causes[0].Field).To(Equal("spec.specificationRef.name"))
+			Expect(statusErr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring("specificationRef name must not be empty"))
 		})
 
-		It("should block when resourceType is invalid", func() {
+		It("should block when specification namespace is empty", func() {
 			roadmap := &roverv1.Roadmap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-roadmap",
@@ -144,10 +144,18 @@ var _ = Describe("Roadmap Webhook", func() {
 					},
 				},
 				Spec: roverv1.RoadmapSpec{
-					ResourceName: "/eni/my-api/v1",
-					ResourceType: "InvalidType", // Invalid enum value
-					Roadmap:      "test--file-id",
-					Hash:         "somehash",
+					SpecificationRef: types.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "ApiSpecification",
+							APIVersion: "rover.cp.ei.telekom.de/v1",
+						},
+						ObjectRef: types.ObjectRef{
+							Name:      "eni-my-api",
+							Namespace: "", // Empty namespace
+						},
+					},
+					Contents: "test--file-id",
+					Hash:     "somehash",
 				},
 			}
 
@@ -162,11 +170,11 @@ var _ = Describe("Roadmap Webhook", func() {
 			statusErr, ok := err.(*apierrors.StatusError)
 			Expect(ok).To(BeTrue(), "Expected a StatusError, got: %T", err)
 			Expect(statusErr.ErrStatus.Details.Causes).To(HaveLen(1))
-			Expect(statusErr.ErrStatus.Details.Causes[0].Field).To(Equal("spec.resourceType"))
-			Expect(statusErr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring("resourceType must be either 'API' or 'Event'"))
+			Expect(statusErr.ErrStatus.Details.Causes[0].Field).To(Equal("spec.specificationRef.namespace"))
+			Expect(statusErr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring("specificationRef namespace must not be empty"))
 		})
 
-		It("should block when roadmap file ID is empty", func() {
+		It("should block when contents file ID is empty", func() {
 			roadmap := &roverv1.Roadmap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-roadmap",
@@ -176,10 +184,18 @@ var _ = Describe("Roadmap Webhook", func() {
 					},
 				},
 				Spec: roverv1.RoadmapSpec{
-					ResourceName: "/eni/my-api/v1",
-					ResourceType: roverv1.ResourceTypeAPI,
-					Roadmap:      "", // Empty file ID
-					Hash:         "somehash",
+					SpecificationRef: types.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "ApiSpecification",
+							APIVersion: "rover.cp.ei.telekom.de/v1",
+						},
+						ObjectRef: types.ObjectRef{
+							Name:      "eni-my-api",
+							Namespace: "test--my-group--my-team",
+						},
+					},
+					Contents: "", // Empty file ID
+					Hash:     "somehash",
 				},
 			}
 
@@ -194,8 +210,8 @@ var _ = Describe("Roadmap Webhook", func() {
 			statusErr, ok := err.(*apierrors.StatusError)
 			Expect(ok).To(BeTrue(), "Expected a StatusError, got: %T", err)
 			Expect(statusErr.ErrStatus.Details.Causes).To(HaveLen(1))
-			Expect(statusErr.ErrStatus.Details.Causes[0].Field).To(Equal("spec.roadmap"))
-			Expect(statusErr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring("roadmap file ID must not be empty"))
+			Expect(statusErr.ErrStatus.Details.Causes[0].Field).To(Equal("spec.contents"))
+			Expect(statusErr.ErrStatus.Details.Causes[0].Message).To(ContainSubstring("contents file ID must not be empty"))
 		})
 
 		It("should block when hash is empty", func() {
@@ -208,10 +224,18 @@ var _ = Describe("Roadmap Webhook", func() {
 					},
 				},
 				Spec: roverv1.RoadmapSpec{
-					ResourceName: "/eni/my-api/v1",
-					ResourceType: roverv1.ResourceTypeAPI,
-					Roadmap:      "test--file-id",
-					Hash:         "", // Empty hash
+					SpecificationRef: types.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "ApiSpecification",
+							APIVersion: "rover.cp.ei.telekom.de/v1",
+						},
+						ObjectRef: types.ObjectRef{
+							Name:      "eni-my-api",
+							Namespace: "test--my-group--my-team",
+						},
+					},
+					Contents: "test--file-id",
+					Hash:     "", // Empty hash
 				},
 			}
 
@@ -238,10 +262,18 @@ var _ = Describe("Roadmap Webhook", func() {
 					Labels:    map[string]string{}, // Missing environment label
 				},
 				Spec: roverv1.RoadmapSpec{
-					ResourceName: "",            // Empty resourceName
-					ResourceType: "InvalidType", // Invalid resourceType
-					Roadmap:      "",            // Empty roadmap
-					Hash:         "",            // Empty hash
+					SpecificationRef: types.TypedObjectRef{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "ApiSpecification",
+							APIVersion: "rover.cp.ei.telekom.de/v1",
+						},
+						ObjectRef: types.ObjectRef{
+							Name:      "", // Empty name
+							Namespace: "", // Empty namespace
+						},
+					},
+					Contents: "", // Empty contents
+					Hash:     "", // Empty hash
 				},
 			}
 
@@ -255,7 +287,7 @@ var _ = Describe("Roadmap Webhook", func() {
 
 			statusErr, ok := err.(*apierrors.StatusError)
 			Expect(ok).To(BeTrue(), "Expected a StatusError, got: %T", err)
-			// Should have all 5 validation errors
+			// Should have all 5 validation errors: env label, apispec name, apispec namespace, contents, hash
 			Expect(statusErr.ErrStatus.Details.Causes).To(HaveLen(5))
 		})
 	})

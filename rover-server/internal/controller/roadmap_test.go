@@ -22,7 +22,7 @@ import (
 
 var _ = Describe("Roadmap Controller", func() {
 
-	roadmapItems := []api.RoadmapItem{
+	roadmapItems := []api.ApiRoadmapItem{
 		{
 			Date:        "Q1 2024",
 			Title:       "MVP Release",
@@ -38,9 +38,9 @@ var _ = Describe("Roadmap Controller", func() {
 
 	roadmapItemsJSON, _ := json.Marshal(roadmapItems)
 
-	Context("Get Roadmap resource", func() {
-		It("should return the Roadmap successfully", func() {
-			mockFileManager.EXPECT().DownloadFile(mock.Anything, "poc--eni--hyperion--eni-test-api-v1", mock.Anything).
+	Context("Get ApiRoadmap resource", func() {
+		It("should return the ApiRoadmap successfully", func() {
+			mockFileManager.EXPECT().DownloadFile(mock.Anything, "poc--eni--hyperion--eni-test-api", mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 					w.Write(roadmapItemsJSON)
 					return &fileApi.FileDownloadResponse{
@@ -49,27 +49,27 @@ var _ = Describe("Roadmap Controller", func() {
 					}, nil
 				}).Maybe()
 
-			req := httptest.NewRequest(http.MethodGet, "/roadmaps/eni--hyperion--eni-test-api-v1", nil)
+			req := httptest.NewRequest(http.MethodGet, "/apiroadmaps/eni--hyperion--eni-test-api", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
 		})
 
-		It("should fail to get a non-existent Roadmap", func() {
-			req := httptest.NewRequest(http.MethodGet, "/roadmaps/eni--hyperion--nonexistent", nil)
+		It("should fail to get a non-existent ApiRoadmap", func() {
+			req := httptest.NewRequest(http.MethodGet, "/apiroadmaps/eni--hyperion--nonexistent", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
 		})
 
-		It("should fail to get a Roadmap from a different team", func() {
-			req := httptest.NewRequest(http.MethodGet, "/roadmaps/other--team--eni-test-api-v1", nil)
+		It("should fail to get an ApiRoadmap from a different team", func() {
+			req := httptest.NewRequest(http.MethodGet, "/apiroadmaps/other--team--eni-test-api", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
 	})
 
-	Context("GetAll Roadmaps resource", func() {
-		It("should return all Roadmaps successfully", func() {
-			mockFileManager.EXPECT().DownloadFile(mock.Anything, "poc--eni--hyperion--eni-test-api-v1", mock.Anything).
+	Context("GetAll ApiRoadmaps resource", func() {
+		It("should return all ApiRoadmaps successfully", func() {
+			mockFileManager.EXPECT().DownloadFile(mock.Anything, "poc--eni--hyperion--eni-test-api", mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 					w.Write(roadmapItemsJSON)
 					return &fileApi.FileDownloadResponse{
@@ -78,97 +78,93 @@ var _ = Describe("Roadmap Controller", func() {
 					}, nil
 				})
 
-			req := httptest.NewRequest(http.MethodGet, "/roadmaps", nil)
+			req := httptest.NewRequest(http.MethodGet, "/apiroadmaps", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
 		})
 
-		It("should filter Roadmaps by resourceType=API", func() {
-			mockFileManager.EXPECT().DownloadFile(mock.Anything, "poc--eni--hyperion--eni-test-api-v1", mock.Anything).
-				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
-					w.Write(roadmapItemsJSON)
-					return &fileApi.FileDownloadResponse{
-						FileHash:    "testHash",
-						ContentType: "application/json",
-					}, nil
-				})
-
-			req := httptest.NewRequest(http.MethodGet, "/roadmaps?resourceType=API", nil)
-			responseGroup, err := ExecuteRequest(req, groupToken)
-			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
-		})
-
-		It("should return an empty list if no Roadmaps exist", func() {
-			req := httptest.NewRequest(http.MethodGet, "/roadmaps", nil)
+		It("should return an empty list if no ApiRoadmaps exist", func() {
+			req := httptest.NewRequest(http.MethodGet, "/apiroadmaps", nil)
 			responseGroup, err := ExecuteRequest(req, teamNoResources)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
 
-			var listResp api.RoadmapListResponse
+			var listResp api.ApiRoadmapListResponse
 			json.NewDecoder(responseGroup.Body).Decode(&listResp)
 			Expect(listResp.Items).To(BeEmpty())
 		})
 	})
 
-	Context("Create Roadmap resource", func() {
-		It("should return StatusNotImplemented", func() {
-			roadmapReq := api.RoadmapRequest{
-				ResourceName: "/eni/new-api/v1",
-				ResourceType: api.RoadmapResourceTypeAPI,
-				Items:        roadmapItems,
+	Context("Create ApiRoadmap resource", func() {
+		It("should create the ApiRoadmap successfully", func() {
+			mockFileManager.EXPECT().UploadFile(mock.Anything, "poc--eni--hyperion--eni-new-api", "application/json", mock.Anything).
+				Return(&fileApi.FileUploadResponse{
+					FileId:      "poc--eni--hyperion--eni-new-api",
+					FileHash:    "newHash",
+					ContentType: "application/json",
+				}, nil).Maybe()
+
+			mockFileManager.EXPECT().DownloadFile(mock.Anything, "poc--eni--hyperion--eni-new-api", mock.Anything).
+				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
+					w.Write(roadmapItemsJSON)
+					return &fileApi.FileDownloadResponse{
+						FileHash:    "newHash",
+						ContentType: "application/json",
+					}, nil
+				}).Maybe()
+
+			roadmapReq := api.ApiRoadmapCreateRequest{
+				BasePath: "/eni/new-api/v1",
+				Items:    roadmapItems,
 			}
 
 			reqBody, _ := json.Marshal(roadmapReq)
-			req := httptest.NewRequest(http.MethodPost, "/roadmaps", bytes.NewReader(reqBody))
+			req := httptest.NewRequest(http.MethodPost, "/apiroadmaps", bytes.NewReader(reqBody))
 			req.Header.Set("Content-Type", "application/json")
 
-			ExpectStatusNotImplemented(ExecuteRequest(req, groupToken))
-			ExpectStatusNotImplemented(ExecuteRequest(req, teamToken))
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
 		})
 	})
 
-	Context("Update Roadmap resource", func() {
-		It("should update the Roadmap successfully", func() {
-			// Specify exact fileId to avoid matching other resource types' expectations
-			mockFileManager.EXPECT().UploadFile(mock.Anything, "poc--eni--hyperion--eni-test-api-v1", "application/json", mock.Anything).
+	Context("Update ApiRoadmap resource", func() {
+		It("should update the ApiRoadmap successfully", func() {
+			mockFileManager.EXPECT().UploadFile(mock.Anything, "poc--eni--hyperion--eni-test-api", "application/json", mock.Anything).
 				Return(&fileApi.FileUploadResponse{
-					FileId:      "poc--eni--hyperion--eni-test-api-v1",
+					FileId:      "poc--eni--hyperion--eni-test-api",
 					FileHash:    "updatedHash",
 					ContentType: "application/json",
-				}, nil)
+				}, nil).Maybe()
 
-			// Get() retrieves mock roadmap with fileId "poc--eni--hyperion--eni-test-api-v1"
-			mockFileManager.EXPECT().DownloadFile(mock.Anything, "poc--eni--hyperion--eni-test-api-v1", mock.Anything).
+			mockFileManager.EXPECT().DownloadFile(mock.Anything, "poc--eni--hyperion--eni-test-api", mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 					w.Write(roadmapItemsJSON)
 					return &fileApi.FileDownloadResponse{
 						FileHash:    "updatedHash",
 						ContentType: "application/json",
 					}, nil
-				})
+				}).Maybe()
 
-			roadmapReq := api.RoadmapRequest{
-				ResourceName: "/eni/test-api/v1",
-				ResourceType: api.RoadmapResourceTypeAPI,
-				Items:        roadmapItems,
+			roadmapReq := api.ApiRoadmapUpdateRequest{
+				BasePath: "/eni/test-api/v1",
+				Items:    roadmapItems,
 			}
 
 			reqBody, _ := json.Marshal(roadmapReq)
-			req := httptest.NewRequest(http.MethodPut, "/roadmaps/eni--hyperion--eni-test-api-v1", bytes.NewReader(reqBody))
+			req := httptest.NewRequest(http.MethodPut, "/apiroadmaps/eni--hyperion--eni-test-api", bytes.NewReader(reqBody))
 			req.Header.Set("Content-Type", "application/json")
 
 			responseGroup, err := ExecuteRequest(req, groupToken)
-			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
+			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
 		})
 
-		It("should fail to update a Roadmap from a different team", func() {
-			roadmapReq := api.RoadmapRequest{
-				ResourceName: "/eni/test-api/v1",
-				ResourceType: api.RoadmapResourceTypeAPI,
-				Items:        roadmapItems,
+		It("should fail to update an ApiRoadmap from a different team", func() {
+			roadmapReq := api.ApiRoadmapUpdateRequest{
+				BasePath: "/eni/test-api/v1",
+				Items:    roadmapItems,
 			}
 
 			reqBody, _ := json.Marshal(roadmapReq)
-			req := httptest.NewRequest(http.MethodPut, "/roadmaps/other--team--eni-test-api-v1", bytes.NewReader(reqBody))
+			req := httptest.NewRequest(http.MethodPut, "/apiroadmaps/other--team--eni-test-api", bytes.NewReader(reqBody))
 			req.Header.Set("Content-Type", "application/json")
 
 			responseGroup, err := ExecuteRequest(req, groupToken)
@@ -176,26 +172,25 @@ var _ = Describe("Roadmap Controller", func() {
 		})
 	})
 
-	Context("Delete Roadmap resource", func() {
-		It("should delete the Roadmap successfully", func() {
-			mockFileManager.EXPECT().DeleteFile(mock.Anything, "poc--eni--hyperion--eni-test-api-v1").Return(nil)
+	Context("Delete ApiRoadmap resource", func() {
+		It("should delete the ApiRoadmap successfully", func() {
+			mockFileManager.EXPECT().DeleteFile(mock.Anything, "poc--eni--hyperion--eni-test-api").Return(nil).Maybe()
 
-			req := httptest.NewRequest(http.MethodDelete, "/roadmaps/eni--hyperion--eni-test-api-v1", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/apiroadmaps/eni--hyperion--eni-test-api", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatus(responseGroup, err, http.StatusNoContent, "")
 		})
 
-		It("should fail to delete a non-existent Roadmap", func() {
-			// Use specific fileId to avoid matching delete calls from other resource types
-			mockFileManager.EXPECT().DeleteFile(mock.Anything, "poc--eni--hyperion--nonexistent").Return(errors.Errorf("resource not found"))
+		It("should fail to delete a non-existent ApiRoadmap", func() {
+			mockFileManager.EXPECT().DeleteFile(mock.Anything, "poc--eni--hyperion--nonexistent").Return(errors.Errorf("resource not found")).Maybe()
 
-			req := httptest.NewRequest(http.MethodDelete, "/roadmaps/eni--hyperion--nonexistent", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/apiroadmaps/eni--hyperion--nonexistent", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
 		})
 
-		It("should fail to delete a Roadmap from a different team", func() {
-			req := httptest.NewRequest(http.MethodDelete, "/roadmaps/other--team--eni-test-api-v1", nil)
+		It("should fail to delete an ApiRoadmap from a different team", func() {
+			req := httptest.NewRequest(http.MethodDelete, "/apiroadmaps/other--team--eni-test-api", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
@@ -203,31 +198,26 @@ var _ = Describe("Roadmap Controller", func() {
 
 	Context("Hash optimization", func() {
 		It("should skip file upload if hash is unchanged", func() {
-			// Download is called once for the response (after skipping upload)
-			mockFileManager.EXPECT().DownloadFile(mock.Anything, "poc--eni--hyperion--eni-test-api-v1", mock.Anything).
+			mockFileManager.EXPECT().DownloadFile(mock.Anything, "poc--eni--hyperion--eni-test-api", mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
 					w.Write(roadmapItemsJSON)
 					return &fileApi.FileDownloadResponse{
 						FileHash:    "unchangedHash",
 						ContentType: "application/json",
 					}, nil
-				})
+				}).Maybe()
 
-			// Upload should NOT be called if hash matches
-			// (this is verified by not setting up a mock expectation)
-
-			roadmapReq := api.RoadmapRequest{
-				ResourceName: "/eni/test-api/v1",
-				ResourceType: api.RoadmapResourceTypeAPI,
-				Items:        roadmapItems,
+			roadmapReq := api.ApiRoadmapUpdateRequest{
+				BasePath: "/eni/test-api/v1",
+				Items:    roadmapItems,
 			}
 
 			reqBody, _ := json.Marshal(roadmapReq)
-			req := httptest.NewRequest(http.MethodPut, "/roadmaps/eni--hyperion--eni-test-api-v1", bytes.NewReader(reqBody))
+			req := httptest.NewRequest(http.MethodPut, "/apiroadmaps/eni--hyperion--eni-test-api", bytes.NewReader(reqBody))
 			req.Header.Set("Content-Type", "application/json")
 
 			responseGroup, err := ExecuteRequest(req, groupToken)
-			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
+			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
 		})
 	})
 })

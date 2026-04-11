@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,10 +43,18 @@ var _ = Describe("Roadmap Controller", func() {
 						},
 					},
 					Spec: roverv1.RoadmapSpec{
-						ResourceName: "/eni/my-api/v1",
-						ResourceType: roverv1.ResourceTypeAPI,
-						Roadmap:      "test--eni--team--my-api-v1",
-						Hash:         "abc123hash",
+						SpecificationRef: types.TypedObjectRef{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "ApiSpecification",
+								APIVersion: "rover.cp.ei.telekom.de/v1",
+							},
+							ObjectRef: types.ObjectRef{
+								Name:      "eni-my-api",
+								Namespace: testNamespace,
+							},
+						},
+						Contents: "test--eni--team--my-api-v1",
+						Hash:     "abc123hash",
 					},
 				}
 				Expect(k8sClient.Create(ctx, obj)).To(Succeed())
@@ -85,53 +94,6 @@ var _ = Describe("Roadmap Controller", func() {
 				g.Expect(processingCondition).To(BeTrue(), "Processing condition should be false")
 
 			}, timeout, interval).Should(Succeed())
-		})
-
-		It("should handle Event resource type", func() {
-			eventResourceName := "test-roadmap-event"
-			eventNamespacedName := client.ObjectKey{
-				Name:      eventResourceName,
-				Namespace: testNamespace,
-			}
-
-			By("creating a Roadmap for Event resource type")
-			eventRoadmap := &roverv1.Roadmap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      eventResourceName,
-					Namespace: testNamespace,
-					Labels: map[string]string{
-						config.EnvironmentLabelKey: testEnvironment,
-					},
-				},
-				Spec: roverv1.RoadmapSpec{
-					ResourceName: "de.telekom.eni.myevent.v1",
-					ResourceType: roverv1.ResourceTypeEvent,
-					Roadmap:      "test--eni--team--myevent",
-					Hash:         "def456hash",
-				},
-			}
-			Expect(k8sClient.Create(ctx, eventRoadmap)).To(Succeed())
-
-			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, eventNamespacedName, eventRoadmap)
-				g.Expect(err).NotTo(HaveOccurred())
-
-				// Verify conditions are set correctly
-				g.Expect(eventRoadmap.Status.Conditions).NotTo(BeEmpty())
-
-				readyCondition := false
-				for _, cond := range eventRoadmap.Status.Conditions {
-					if cond.Type == "Ready" && cond.Status == metav1.ConditionTrue {
-						readyCondition = true
-					}
-				}
-
-				g.Expect(readyCondition).To(BeTrue(), "Ready condition should be true")
-
-			}, timeout, interval).Should(Succeed())
-
-			By("Cleanup event roadmap")
-			Expect(k8sClient.Delete(ctx, eventRoadmap)).To(Succeed())
 		})
 	})
 })

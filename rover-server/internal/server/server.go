@@ -49,12 +49,12 @@ type EventSpecificationController interface {
 	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
 }
 
-type RoadmapController interface {
-	Create(ctx context.Context, req api.RoadmapRequest) (api.RoadmapResponse, error)
-	Get(ctx context.Context, resourceId string) (api.RoadmapResponse, error)
-	GetAll(ctx context.Context, params api.GetAllRoadmapsParams) (*api.RoadmapListResponse, error)
-	Update(ctx context.Context, resourceId string, req api.RoadmapRequest) (api.RoadmapResponse, error)
-	Delete(ctx context.Context, resourceId string) error
+type ApiRoadmapController interface {
+	CreateApiRoadmap(c *fiber.Ctx) error
+	UpdateApiRoadmap(c *fiber.Ctx, apiRoadmapId string) error
+	GetApiRoadmap(c *fiber.Ctx, apiRoadmapId string) error
+	GetAllApiRoadmaps(c *fiber.Ctx, params api.GetAllApiRoadmapsParams) error
+	DeleteApiRoadmap(c *fiber.Ctx, apiRoadmapId string) error
 }
 
 var securityTemplates = map[security.ClientType]security.ComparisonTemplates{
@@ -80,7 +80,7 @@ type Server struct {
 	Log                 logr.Logger
 	ApiSpecifications   ApiSpecificationController
 	Rovers              RoverController
-	Roadmaps            RoadmapController
+	Roadmaps            ApiRoadmapController
 	EventSpecifications EventSpecificationController
 }
 
@@ -156,13 +156,13 @@ func (s *Server) RegisterRoutes(router fiber.Router) {
 	router.Put("/eventspecifications/:resourceId", checkAccess, s.UpdateEventSpecification)
 	router.Delete("/eventspecifications/:resourceId", checkAccess, s.DeleteEventSpecification)
 
-	s.Log.Info("Registering roadmaps routes")
+	s.Log.Info("Registering apiroadmaps routes")
 
-	router.Get("/roadmaps", checkAccess, s.GetAllRoadmaps)
-	router.Post("/roadmaps", checkAccess, s.CreateRoadmap)
+	router.Get("/apiroadmaps", checkAccess, s.GetAllApiRoadmaps)
+	router.Post("/apiroadmaps", checkAccess, s.CreateApiRoadmap)
 
-	router.Get("/roadmaps/:resourceId", checkAccess, s.GetRoadmap)
-	router.Put("/roadmaps/:resourceId", checkAccess, s.UpdateRoadmap)
-	router.Delete("/roadmaps/:resourceId", checkAccess, s.DeleteRoadmap)
+	router.Get("/apiroadmaps/:resourceId", checkAccess, s.GetApiRoadmap)
+	router.Put("/apiroadmaps/:resourceId", checkAccess, s.UpdateApiRoadmap)
+	router.Delete("/apiroadmaps/:resourceId", checkAccess, s.DeleteApiRoadmap)
 
 }

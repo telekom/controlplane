@@ -10,17 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ResourceType represents the type of resource the roadmap is associated with
-// +kubebuilder:validation:Enum=API;Event
-type ResourceType string
-
-const (
-	// ResourceTypeAPI indicates the roadmap is for an API resource
-	ResourceTypeAPI ResourceType = "API"
-	// ResourceTypeEvent indicates the roadmap is for an Event resource
-	ResourceTypeEvent ResourceType = "Event"
-)
-
 // RoadmapItem represents a single timeline entry in the roadmap
 // This struct is used for API/mapping layer only and is NOT stored in the CRD
 // The actual items are stored in file-manager as JSON
@@ -40,23 +29,15 @@ type RoadmapItem struct {
 
 // RoadmapSpec defines the desired state of Roadmap
 type RoadmapSpec struct {
-	// ResourceName is the generic identifier for the resource
-	// For APIs: the basePath (e.g., "/eni/my-api/v1")
-	// For Events: the event type name (e.g., "de.telekom.eni.myevent.v1")
+	// SpecificationRef is a reference to the specification (ApiSpecification or EventSpecification) this roadmap describes
+	// The referenced specification may or may not exist yet
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=253
-	ResourceName string `json:"resourceName"`
+	SpecificationRef types.TypedObjectRef `json:"specificationRef"`
 
-	// ResourceType distinguishes the type of resource
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=API;Event
-	ResourceType ResourceType `json:"resourceType"`
-
-	// Roadmap contains the file ID reference from the file manager
+	// Contents contains the file ID reference from the file manager
 	// The actual roadmap items array is stored in file-manager as JSON
 	// +kubebuilder:validation:Required
-	Roadmap string `json:"roadmap"`
+	Contents string `json:"contents"`
 
 	// Hash is the SHA-256 hash of the roadmap content for integrity verification
 	// +kubebuilder:validation:Required
@@ -77,6 +58,8 @@ type RoadmapStatus struct {
 //+kubebuilder:subresource:status
 
 // Roadmap is the Schema for the roadmaps API
+// The Roadmap name is the normalized basePath with major version removed
+// Example: basePath "/eni/my-api/v1" → roadmap name "eni-my-api"
 // +kubebuilder:pruning:PreserveUnknownFields
 type Roadmap struct {
 	metav1.TypeMeta   `json:",inline"`

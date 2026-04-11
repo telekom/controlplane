@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/types"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"github.com/telekom/controlplane/rover/internal/handler/roadmap"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -23,10 +24,18 @@ func createRoadmapObject() *roverv1.Roadmap {
 			Namespace: teamNamespace,
 		},
 		Spec: roverv1.RoadmapSpec{
-			ResourceName: "/eni/my-api/v1",
-			ResourceType: roverv1.ResourceTypeAPI,
-			Roadmap:      "test--eni--team--my-api-v1",
-			Hash:         "abc123hash",
+			SpecificationRef: types.TypedObjectRef{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "ApiSpecification",
+					APIVersion: "rover.cp.ei.telekom.de/v1",
+				},
+				ObjectRef: types.ObjectRef{
+					Name:      "eni-my-api",
+					Namespace: teamNamespace,
+				},
+			},
+			Contents: "test--eni--team--my-api-v1",
+			Hash:     "abc123hash",
 		},
 	}
 }
@@ -64,22 +73,9 @@ var _ = Describe("Roadmap Handler", func() {
 			Expect(processingCond.Status).To(Equal(metav1.ConditionFalse))
 		})
 
-		It("should handle API resource type", func() {
+		It("should handle roadmap with different specification ref", func() {
 			roadmapObj := createRoadmapObject()
-			roadmapObj.Spec.ResourceType = roverv1.ResourceTypeAPI
-			roadmapObj.Spec.ResourceName = "/eni/test-api/v1"
-
-			err := roadmapHandler.CreateOrUpdate(ctx, roadmapObj)
-			Expect(err).ToNot(HaveOccurred())
-
-			readyCond := meta.FindStatusCondition(roadmapObj.Status.Conditions, condition.ConditionTypeReady)
-			Expect(readyCond.Status).To(Equal(metav1.ConditionTrue))
-		})
-
-		It("should handle Event resource type", func() {
-			roadmapObj := createRoadmapObject()
-			roadmapObj.Spec.ResourceType = roverv1.ResourceTypeEvent
-			roadmapObj.Spec.ResourceName = "de.telekom.eni.myevent.v1"
+			roadmapObj.Spec.SpecificationRef.Name = "eni-test-api"
 
 			err := roadmapHandler.CreateOrUpdate(ctx, roadmapObj)
 			Expect(err).ToNot(HaveOccurred())

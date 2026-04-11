@@ -20,7 +20,10 @@ spec:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: Roadmap is the Schema for the roadmaps API
+        description: |-
+          Roadmap is the Schema for the roadmaps API
+          The Roadmap name is the normalized basePath with major version removed
+          Example: basePath "/eni/my-api/v1" → roadmap name "eni-my-api"
         properties:
           apiVersion:
             description: |-
@@ -42,38 +45,53 @@ spec:
           spec:
             description: RoadmapSpec defines the desired state of Roadmap
             properties:
+              contents:
+                description: |-
+                  Contents contains the file ID reference from the file manager
+                  The actual roadmap items array is stored in file-manager as JSON
+                type: string
               hash:
                 description: Hash is the SHA-256 hash of the roadmap content for integrity
                   verification
                 type: string
-              resourceName:
+              specificationRef:
                 description: |-
-                  ResourceName is the generic identifier for the resource
-                  For APIs: the basePath (e.g., "/eni/my-api/v1")
-                  For Events: the event type name (e.g., "de.telekom.eni.myevent.v1")
-                maxLength: 253
-                minLength: 1
-                type: string
-              resourceType:
-                allOf:
-                - enum:
-                  - API
-                  - Event
-                - enum:
-                  - API
-                  - Event
-                description: ResourceType distinguishes the type of resource
-                type: string
-              roadmap:
-                description: |-
-                  Roadmap contains the file ID reference from the file manager
-                  The actual roadmap items array is stored in file-manager as JSON
-                type: string
+                  SpecificationRef is a reference to the specification (ApiSpecification or EventSpecification) this roadmap describes
+                  The referenced specification may or may not exist yet
+                properties:
+                  apiVersion:
+                    description: |-
+                      APIVersion defines the versioned schema of this representation of an object.
+                      Servers should convert recognized schemas to the latest internal value, and
+                      may reject unrecognized values.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+                    type: string
+                  kind:
+                    description: |-
+                      Kind is a string value representing the REST resource this object represents.
+                      Servers may infer this from the endpoint the client submits requests to.
+                      Cannot be updated.
+                      In CamelCase.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                    type: string
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
             required:
+            - contents
             - hash
-            - resourceName
-            - resourceType
-            - roadmap
+            - specificationRef
             type: object
           status:
             description: RoadmapStatus defines the observed state of Roadmap

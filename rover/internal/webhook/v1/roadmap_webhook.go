@@ -58,20 +58,17 @@ func (v *RoadmapCustomValidator) ValidateCreateOrUpdate(ctx context.Context, roa
 		valErr.AddInvalidError(cerrors.MetadataEnvPath, "", "environment label is required")
 	}
 
-	// Validate resourceName is not empty
-	if roadmap.Spec.ResourceName == "" {
-		valErr.AddInvalidError(field.NewPath("spec").Child("resourceName"), roadmap.Spec.ResourceName, "resourceName must not be empty")
+	// Validate specification reference is not empty
+	if roadmap.Spec.SpecificationRef.Name == "" {
+		valErr.AddInvalidError(field.NewPath("spec").Child("specificationRef").Child("name"), roadmap.Spec.SpecificationRef.Name, "specificationRef name must not be empty")
+	}
+	if roadmap.Spec.SpecificationRef.Namespace == "" {
+		valErr.AddInvalidError(field.NewPath("spec").Child("specificationRef").Child("namespace"), roadmap.Spec.SpecificationRef.Namespace, "specificationRef namespace must not be empty")
 	}
 
-	// Validate resourceType is valid enum (API or Event)
-	// This should be caught by kubebuilder validation, but we double-check here
-	if roadmap.Spec.ResourceType != roverv1.ResourceTypeAPI && roadmap.Spec.ResourceType != roverv1.ResourceTypeEvent {
-		valErr.AddInvalidError(field.NewPath("spec").Child("resourceType"), string(roadmap.Spec.ResourceType), "resourceType must be either 'API' or 'Event'")
-	}
-
-	// Validate roadmap field (file ID reference) is not empty
-	if roadmap.Spec.Roadmap == "" {
-		valErr.AddInvalidError(field.NewPath("spec").Child("roadmap"), roadmap.Spec.Roadmap, "roadmap file ID must not be empty")
+	// Validate contents field (file ID reference) is not empty
+	if roadmap.Spec.Contents == "" {
+		valErr.AddInvalidError(field.NewPath("spec").Child("contents"), roadmap.Spec.Contents, "contents file ID must not be empty")
 	}
 
 	// Validate hash field is not empty

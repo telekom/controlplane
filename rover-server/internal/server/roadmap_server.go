@@ -5,8 +5,6 @@
 package server
 
 import (
-	"net/http"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server"
@@ -14,70 +12,29 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
 
-func (s *Server) GetAllRoadmaps(c *fiber.Ctx) error {
-	var params api.GetAllRoadmapsParams
+func (s *Server) GetAllApiRoadmaps(c *fiber.Ctx) error {
+	var params api.GetAllApiRoadmapsParams
 	if err := c.QueryParser(&params); err != nil {
 		return server.ReturnWithProblem(c, problems.BadRequest("invalid query parameters"), err)
 	}
-	res, err := s.Roadmaps.GetAll(c.UserContext(), params)
-	if err != nil {
-		return server.ReturnWithProblem(c, nil, err)
-	}
-
-	if res.UnderscoreLinks.Self != "" {
-		res.UnderscoreLinks.Self = buildCursorUrl(c.BaseURL(), c.Path(), res.UnderscoreLinks.Self)
-		if res.UnderscoreLinks.Next != "" {
-			res.UnderscoreLinks.Next = buildCursorUrl(c.BaseURL(), c.Path(), res.UnderscoreLinks.Next)
-		}
-	}
-
-	return c.JSON(res)
+	return s.Roadmaps.GetAllApiRoadmaps(c, params)
 }
 
-func (s *Server) GetRoadmap(c *fiber.Ctx) error {
-	resourceId := c.Params("resourceId")
-	res, err := s.Roadmaps.Get(c.UserContext(), resourceId)
-	if err != nil {
-		return server.ReturnWithProblem(c, nil, err)
-	}
-
-	return c.JSON(res)
+func (s *Server) GetApiRoadmap(c *fiber.Ctx) error {
+	apiRoadmapId := c.Params("resourceId")
+	return s.Roadmaps.GetApiRoadmap(c, apiRoadmapId)
 }
 
-func (s *Server) CreateRoadmap(c *fiber.Ctx) error {
-	var req api.RoadmapRequest
-	if err := c.BodyParser(&req); err != nil {
-		return server.ReturnWithProblem(c, problems.BadRequest("invalid request body"), err)
-	}
-
-	res, err := s.Roadmaps.Create(c.UserContext(), req)
-	if err != nil {
-		return server.ReturnWithProblem(c, nil, err)
-	}
-
-	return c.Status(http.StatusCreated).JSON(res)
+func (s *Server) CreateApiRoadmap(c *fiber.Ctx) error {
+	return s.Roadmaps.CreateApiRoadmap(c)
 }
 
-func (s *Server) UpdateRoadmap(c *fiber.Ctx) error {
-	resourceId := c.Params("resourceId")
-	var req api.RoadmapRequest
-	if err := c.BodyParser(&req); err != nil {
-		return server.ReturnWithProblem(c, problems.BadRequest("invalid request body"), err)
-	}
-
-	res, err := s.Roadmaps.Update(c.UserContext(), resourceId, req)
-	if err != nil {
-		return server.ReturnWithProblem(c, nil, err)
-	}
-
-	return c.Status(http.StatusOK).JSON(res)
+func (s *Server) UpdateApiRoadmap(c *fiber.Ctx) error {
+	apiRoadmapId := c.Params("resourceId")
+	return s.Roadmaps.UpdateApiRoadmap(c, apiRoadmapId)
 }
 
-func (s *Server) DeleteRoadmap(c *fiber.Ctx) error {
-	resourceId := c.Params("resourceId")
-	if err := s.Roadmaps.Delete(c.UserContext(), resourceId); err != nil {
-		return server.ReturnWithProblem(c, nil, err)
-	}
-
-	return c.SendStatus(http.StatusNoContent)
+func (s *Server) DeleteApiRoadmap(c *fiber.Ctx) error {
+	apiRoadmapId := c.Params("resourceId")
+	return s.Roadmaps.DeleteApiRoadmap(c, apiRoadmapId)
 }
