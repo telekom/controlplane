@@ -249,7 +249,7 @@ func mapEventTrigger(in api.EventTrigger) *roverv1.EventTrigger {
 	if in.ResponseFilter != nil {
 		out.ResponseFilter = &roverv1.EventResponseFilter{
 			Paths: in.ResponseFilter,
-			Mode:  roverv1.EventResponseFilterMode(in.ResponseFilterMode),
+			Mode:  FuzzyMatchEventResponseFilterMode(string(in.ResponseFilterMode)),
 		}
 	}
 

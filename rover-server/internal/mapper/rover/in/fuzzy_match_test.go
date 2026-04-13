@@ -46,3 +46,20 @@ var _ = DescribeTable("FuzzyMatchEventPayloadType",
 	Entry("unknown passthrough", "binary", roverv1.EventPayloadType("binary")),
 	Entry("empty passthrough", "", roverv1.EventPayloadType("")),
 )
+
+var _ = DescribeTable("FuzzyMatchEventResponseFilterMode",
+	func(input string, expected roverv1.EventResponseFilterMode) {
+		Expect(FuzzyMatchEventResponseFilterMode(input)).To(Equal(expected))
+	},
+	// Include variants
+	Entry("include", "include", roverv1.EventResponseFilterModeInclude),
+	Entry("INCLUDE", "INCLUDE", roverv1.EventResponseFilterModeInclude),
+	Entry("Include", "Include", roverv1.EventResponseFilterModeInclude),
+	// Exclude variants
+	Entry("exclude", "exclude", roverv1.EventResponseFilterModeExclude),
+	Entry("EXCLUDE", "EXCLUDE", roverv1.EventResponseFilterModeExclude),
+	Entry("Exclude", "Exclude", roverv1.EventResponseFilterModeExclude),
+	// Default passthrough
+	Entry("unknown passthrough", "filter", roverv1.EventResponseFilterMode("filter")),
+	Entry("empty passthrough", "", roverv1.EventResponseFilterMode("")),
+)
