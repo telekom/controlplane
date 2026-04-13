@@ -64,6 +64,22 @@ func authorizeApplicationAction(ctx context.Context, appTeam string) error {
 	return fmt.Errorf("forbidden: insufficient permissions for application owned by team %q", appTeam)
 }
 
+// authorizeApprovalAction checks that the viewer is allowed to decide on an approval.
+// Allowed: Admin, or Team viewer matching the decider team.
+func authorizeApprovalAction(ctx context.Context, deciderTeam string) error {
+	v := viewer.FromContext(ctx)
+	if v == nil {
+		return fmt.Errorf("unauthorized: no viewer in context")
+	}
+	if v.Admin {
+		return nil
+	}
+	if v.HasTeam(deciderTeam) {
+		return nil
+	}
+	return fmt.Errorf("forbidden: insufficient permissions — only the decider team %q can decide on this approval", deciderTeam)
+}
+
 // teamResourceName returns the K8s resource name for a team: <group>--<team>.
 func teamResourceName(group, team string) string {
 	return group + "--" + team

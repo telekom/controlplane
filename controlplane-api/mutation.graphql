@@ -84,6 +84,55 @@ type ApplicationMutationResult {
   resourceName: String
 }
 
+input DecideApprovalRequestInput {
+  "Target environment"
+  environment: String!
+  "Requester team that owns the namespace where the ApprovalRequest lives"
+  team: String!
+  "ApprovalRequest resource name"
+  name: String!
+  "Action to take"
+  action: ApprovalAction!
+  "Decision details"
+  decision: DecisionInput!
+}
+
+input DecideApprovalInput {
+  "Target environment"
+  environment: String!
+  "Requester team that owns the namespace where the Approval lives"
+  team: String!
+  "Approval resource name"
+  name: String!
+  "Action to take (Allow, Deny, Suspend, Resume)"
+  action: ApprovalAction!
+  "Decision details"
+  decision: DecisionInput!
+}
+
+input DecisionInput {
+  "Name of the person making the decision"
+  name: String!
+  "Email of the person making the decision"
+  email: String
+  "Optional comment"
+  comment: String
+}
+
+"Result of an approval mutation."
+type ApprovalMutationResult {
+  "Whether the K8s API accepted the request"
+  success: Boolean!
+  "Human-readable message"
+  message: String!
+  "The new state after the transition"
+  newState: String
+  "The namespace of the resource"
+  namespace: String
+  "The resource name"
+  resourceName: String
+}
+
 type Mutation {
   "Create a new Team in Kubernetes"
   createTeam(input: CreateTeamInput!): TeamMutationResult!
@@ -93,4 +142,8 @@ type Mutation {
   rotateTeamToken(input: RotateTeamTokenInput!): TeamMutationResult!
   "Rotate the client secret for an existing Application. Triggers async secret regeneration via the operator webhook."
   rotateApplicationSecret(input: RotateApplicationSecretInput!): ApplicationMutationResult!
+  "Decide on an ApprovalRequest (approve or deny initial access)."
+  decideApprovalRequest(input: DecideApprovalRequestInput!): ApprovalMutationResult!
+  "Decide on an existing Approval (suspend, resume, deny, or re-allow ongoing access)."
+  decideApproval(input: DecideApprovalInput!): ApprovalMutationResult!
 }

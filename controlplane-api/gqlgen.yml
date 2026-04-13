@@ -56,6 +56,18 @@ models:
   ApplicationMutationResult:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApplicationMutationResult
+  DecideApprovalRequestInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecideApprovalRequestInput
+  DecideApprovalInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecideApprovalInput
+  DecisionInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecisionInput
+  ApprovalMutationResult:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApprovalMutationResult
   Node:
     model:
       - github.com/telekom/controlplane/controlplane-api/ent.Noder

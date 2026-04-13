@@ -60,6 +60,40 @@ type RotateTeamTokenInput struct {
 	Name        string `json:"name"`
 }
 
+// DecisionInput represents the decision details for approval mutations.
+type DecisionInput struct {
+	Name    string  `json:"name"`
+	Email   *string `json:"email,omitempty"`
+	Comment *string `json:"comment,omitempty"`
+}
+
+// DecideApprovalRequestInput is the input for deciding on an ApprovalRequest.
+type DecideApprovalRequestInput struct {
+	Environment string        `json:"environment"`
+	Team        string        `json:"team"`
+	Name        string        `json:"name"`
+	Action      string        `json:"action"`
+	Decision    DecisionInput `json:"decision"`
+}
+
+// DecideApprovalInput is the input for deciding on an existing Approval.
+type DecideApprovalInput struct {
+	Environment string        `json:"environment"`
+	Team        string        `json:"team"`
+	Name        string        `json:"name"`
+	Action      string        `json:"action"`
+	Decision    DecisionInput `json:"decision"`
+}
+
+// ApprovalMutationResult is the response type for approval mutations.
+type ApprovalMutationResult struct {
+	Success      bool    `json:"success"`
+	Message      string  `json:"message"`
+	NewState     *string `json:"newState,omitempty"`
+	Namespace    *string `json:"namespace,omitempty"`
+	ResourceName *string `json:"resourceName,omitempty"`
+}
+
 // TeamCategoryInput represents the team category enum for mutations.
 type TeamCategoryInput string
 

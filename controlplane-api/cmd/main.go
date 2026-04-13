@@ -40,6 +40,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/internal/interceptor"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
 	"github.com/telekom/controlplane/controlplane-api/internal/service"
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 )
@@ -70,6 +71,7 @@ func main() {
 
 	var teamService service.TeamService
 	var applicationService service.ApplicationService
+	var approvalService service.ApprovalService
 	if cfg.Kubernetes.Enabled {
 		k8sClient, err := newK8sClient(cfg.Kubernetes)
 		if err != nil {
@@ -78,12 +80,13 @@ func main() {
 		}
 		teamService = service.NewTeamK8sService(k8sClient)
 		applicationService = service.NewApplicationK8sService(k8sClient)
+		approvalService = service.NewApprovalK8sService(k8sClient)
 		log.Info("Kubernetes integration enabled")
 	} else {
 		log.Info("Kubernetes integration disabled, mutations will be unavailable")
 	}
 
-	srv := newGraphQLServer(client, teamService, applicationService, cfg.Security.Enabled)
+	srv := newGraphQLServer(client, teamService, applicationService, approvalService, cfg.Security.Enabled)
 
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log
@@ -156,6 +159,7 @@ func newK8sClient(cfg config.KubernetesConfig) (client.Client, error) {
 	scheme := runtime.NewScheme()
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(applicationv1.AddToScheme(scheme))
+	utilruntime.Must(approvalv1.AddToScheme(scheme))
 	utilruntime.Must(organizationv1.AddToScheme(scheme))
 
 	var restConfig *rest.Config
@@ -172,8 +176,8 @@ func newK8sClient(cfg config.KubernetesConfig) (client.Client, error) {
 	return client.New(restConfig, client.Options{Scheme: scheme})
 }
 
-func newGraphQLServer(entClient *ent.Client, teamService service.TeamService, applicationService service.ApplicationService, securityEnabled bool) *handler.Server {
-	srv := handler.New(resolvers.NewSchema(entClient, teamService, applicationService))
+func newGraphQLServer(entClient *ent.Client, teamService service.TeamService, applicationService service.ApplicationService, approvalService service.ApprovalService, securityEnabled bool) *handler.Server {
+	srv := handler.New(resolvers.NewSchema(entClient, teamService, applicationService, approvalService))
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})
