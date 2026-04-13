@@ -155,6 +155,13 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	ApplicationMutationResult struct {
+		Message      func(childComplexity int) int
+		Namespace    func(childComplexity int) int
+		ResourceName func(childComplexity int) int
+		Success      func(childComplexity int) int
+	}
+
 	Approval struct {
 		APISubscription      func(childComplexity int) int
 		Action               func(childComplexity int) int
@@ -260,9 +267,10 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateTeam      func(childComplexity int, input model.CreateTeamInput) int
-		RotateTeamToken func(childComplexity int, input model.RotateTeamTokenInput) int
-		UpdateTeam      func(childComplexity int, input model.UpdateTeamInput) int
+		CreateTeam              func(childComplexity int, input model.CreateTeamInput) int
+		RotateApplicationSecret func(childComplexity int, input model.RotateApplicationSecretInput) int
+		RotateTeamToken         func(childComplexity int, input model.RotateTeamTokenInput) int
+		UpdateTeam              func(childComplexity int, input model.UpdateTeamInput) int
 	}
 
 	PageInfo struct {
@@ -911,6 +919,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApplicationEdge.Node(childComplexity), true
 
+	case "ApplicationMutationResult.message":
+		if e.ComplexityRoot.ApplicationMutationResult.Message == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationMutationResult.Message(childComplexity), true
+
+	case "ApplicationMutationResult.namespace":
+		if e.ComplexityRoot.ApplicationMutationResult.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationMutationResult.Namespace(childComplexity), true
+
+	case "ApplicationMutationResult.resourceName":
+		if e.ComplexityRoot.ApplicationMutationResult.ResourceName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationMutationResult.ResourceName(childComplexity), true
+
+	case "ApplicationMutationResult.success":
+		if e.ComplexityRoot.ApplicationMutationResult.Success == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApplicationMutationResult.Success(childComplexity), true
+
 	case "Approval.apiSubscription":
 		if e.ComplexityRoot.Approval.APISubscription == nil {
 			break
@@ -1399,6 +1435,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Mutation.CreateTeam(childComplexity, args["input"].(model.CreateTeamInput)), true
 
+	case "Mutation.rotateApplicationSecret":
+		if e.ComplexityRoot.Mutation.RotateApplicationSecret == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_rotateApplicationSecret_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.RotateApplicationSecret(childComplexity, args["input"].(model.RotateApplicationSecretInput)), true
+
 	case "Mutation.rotateTeamToken":
 		if e.ComplexityRoot.Mutation.RotateTeamToken == nil {
 			break
@@ -1854,6 +1902,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputGroupWhereInput,
 		ec.unmarshalInputMemberInput,
 		ec.unmarshalInputMemberWhereInput,
+		ec.unmarshalInputRotateApplicationSecretInput,
 		ec.unmarshalInputRotateTeamTokenInput,
 		ec.unmarshalInputTeamOrder,
 		ec.unmarshalInputTeamWhereInput,
@@ -4204,6 +4253,27 @@ input RotateTeamTokenInput {
   name: String!
 }
 
+input RotateApplicationSecretInput {
+  "Target environment"
+  environment: String!
+  "Team that owns this application"
+  team: String!
+  "Application resource name"
+  name: String!
+}
+
+"Result of an application mutation. Reports acceptance status - the actual reconciliation happens asynchronously."
+type ApplicationMutationResult {
+  "Whether the K8s API accepted the request"
+  success: Boolean!
+  "Human-readable message"
+  message: String!
+  "The namespace where the Application CRD was updated"
+  namespace: String
+  "The Application CRD resource name"
+  resourceName: String
+}
+
 type Mutation {
   "Create a new Team in Kubernetes"
   createTeam(input: CreateTeamInput!): TeamMutationResult!
@@ -4211,6 +4281,8 @@ type Mutation {
   updateTeam(input: UpdateTeamInput!): TeamMutationResult!
   "Rotate the token for an existing Team. Triggers async secret regeneration via the operator."
   rotateTeamToken(input: RotateTeamTokenInput!): TeamMutationResult!
+  "Rotate the client secret for an existing Application. Triggers async secret regeneration via the operator webhook."
+  rotateApplicationSecret(input: RotateApplicationSecretInput!): ApplicationMutationResult!
 }
 `, BuiltIn: false},
 	{Name: "../../schema.graphql", Input: `# Copyright 2025 Deutsche Telekom IT GmbH

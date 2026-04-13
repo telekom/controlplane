@@ -63,6 +63,27 @@ input RotateTeamTokenInput {
   name: String!
 }
 
+input RotateApplicationSecretInput {
+  "Target environment"
+  environment: String!
+  "Team that owns this application"
+  team: String!
+  "Application resource name"
+  name: String!
+}
+
+"Result of an application mutation. Reports acceptance status - the actual reconciliation happens asynchronously."
+type ApplicationMutationResult {
+  "Whether the K8s API accepted the request"
+  success: Boolean!
+  "Human-readable message"
+  message: String!
+  "The namespace where the Application CRD was updated"
+  namespace: String
+  "The Application CRD resource name"
+  resourceName: String
+}
+
 type Mutation {
   "Create a new Team in Kubernetes"
   createTeam(input: CreateTeamInput!): TeamMutationResult!
@@ -70,4 +91,6 @@ type Mutation {
   updateTeam(input: UpdateTeamInput!): TeamMutationResult!
   "Rotate the token for an existing Team. Triggers async secret regeneration via the operator."
   rotateTeamToken(input: RotateTeamTokenInput!): TeamMutationResult!
+  "Rotate the client secret for an existing Application. Triggers async secret regeneration via the operator webhook."
+  rotateApplicationSecret(input: RotateApplicationSecretInput!): ApplicationMutationResult!
 }

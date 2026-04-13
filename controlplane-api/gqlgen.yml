@@ -50,6 +50,12 @@ models:
   RotateTeamTokenInput:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateTeamTokenInput
+  RotateApplicationSecretInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateApplicationSecretInput
+  ApplicationMutationResult:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApplicationMutationResult
   Node:
     model:
       - github.com/telekom/controlplane/controlplane-api/ent.Noder

@@ -12,18 +12,19 @@ import (
 
 // Resolver is the root resolver for the GraphQL API.
 type Resolver struct {
-	client      *ent.Client
-	teamService service.TeamService
+	client             *ent.Client
+	teamService        service.TeamService
+	applicationService service.ApplicationService
 }
 
-// NewResolver creates a new root resolver with the given ent client and optional team service.
-func NewResolver(client *ent.Client, teamService service.TeamService) *Resolver {
-	return &Resolver{client: client, teamService: teamService}
+// NewResolver creates a new root resolver with the given ent client and optional services.
+func NewResolver(client *ent.Client, teamService service.TeamService, applicationService service.ApplicationService) *Resolver {
+	return &Resolver{client: client, teamService: teamService, applicationService: applicationService}
 }
 
 // NewSchema creates a graphql executable schema.
-func NewSchema(client *ent.Client, teamService service.TeamService) graphql.ExecutableSchema {
+func NewSchema(client *ent.Client, teamService service.TeamService, applicationService service.ApplicationService) graphql.ExecutableSchema {
 	return NewExecutableSchema(Config{
-		Resolvers: NewResolver(client, teamService),
+		Resolvers: NewResolver(client, teamService, applicationService),
 	})
 }

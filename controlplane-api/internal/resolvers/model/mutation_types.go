@@ -38,6 +38,21 @@ type MemberInput struct {
 	Email string `json:"email"`
 }
 
+// RotateApplicationSecretInput is the input for rotating an application's client secret.
+type RotateApplicationSecretInput struct {
+	Environment string `json:"environment"`
+	Team        string `json:"team"`
+	Name        string `json:"name"`
+}
+
+// ApplicationMutationResult is the response type for application mutations.
+type ApplicationMutationResult struct {
+	Success      bool    `json:"success"`
+	Message      string  `json:"message"`
+	Namespace    *string `json:"namespace,omitempty"`
+	ResourceName *string `json:"resourceName,omitempty"`
+}
+
 // RotateTeamTokenInput is the input for rotating a team's token.
 type RotateTeamTokenInput struct {
 	Environment string `json:"environment"`

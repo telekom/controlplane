@@ -18,6 +18,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.37
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
+	github.com/telekom/controlplane/application/api v0.0.0-00010101000000-000000000000
 	github.com/telekom/controlplane/common v0.0.0
 	github.com/telekom/controlplane/common-server v0.0.0
 	github.com/telekom/controlplane/organization/api v0.0.0-00010101000000-000000000000
@@ -141,6 +142,8 @@ tool github.com/99designs/gqlgen
 replace github.com/telekom/controlplane/common => ../common
 
 replace github.com/telekom/controlplane/common-server => ../common-server
+
+replace github.com/telekom/controlplane/application/api => ../application/api
 
 replace github.com/telekom/controlplane/organization/api => ../organization/api
 
