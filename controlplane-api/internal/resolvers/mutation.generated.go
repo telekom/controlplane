@@ -23,6 +23,7 @@ type MutationResolver interface {
 	CreateTeam(ctx context.Context, input model.CreateTeamInput) (*model.TeamMutationResult, error)
 	UpdateTeam(ctx context.Context, input model.UpdateTeamInput) (*model.TeamMutationResult, error)
 	RotateTeamToken(ctx context.Context, input model.RotateTeamTokenInput) (*model.TeamMutationResult, error)
+	RotateApplicationSecret(ctx context.Context, input model.RotateApplicationSecretInput) (*model.ApplicationMutationResult, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -33,6 +34,17 @@ func (ec *executionContext) field_Mutation_createTeam_args(ctx context.Context, 
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateTeamInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐCreateTeamInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_rotateApplicationSecret_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRotateApplicationSecretInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRotateApplicationSecretInput)
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +81,122 @@ func (ec *executionContext) field_Mutation_updateTeam_args(ctx context.Context, 
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _ApplicationMutationResult_success(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationMutationResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApplicationMutationResult_success,
+		func(ctx context.Context) (any, error) {
+			return obj.Success, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApplicationMutationResult_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApplicationMutationResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApplicationMutationResult_message(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationMutationResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApplicationMutationResult_message,
+		func(ctx context.Context) (any, error) {
+			return obj.Message, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApplicationMutationResult_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApplicationMutationResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApplicationMutationResult_namespace(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationMutationResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApplicationMutationResult_namespace,
+		func(ctx context.Context) (any, error) {
+			return obj.Namespace, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApplicationMutationResult_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApplicationMutationResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ApplicationMutationResult_resourceName(ctx context.Context, field graphql.CollectedField, obj *model.ApplicationMutationResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ApplicationMutationResult_resourceName,
+		func(ctx context.Context) (any, error) {
+			return obj.ResourceName, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ApplicationMutationResult_resourceName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ApplicationMutationResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _Mutation_createTeam(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
@@ -217,6 +345,57 @@ func (ec *executionContext) fieldContext_Mutation_rotateTeamToken(ctx context.Co
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_rotateTeamToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_rotateApplicationSecret(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_rotateApplicationSecret,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().RotateApplicationSecret(ctx, fc.Args["input"].(model.RotateApplicationSecretInput))
+		},
+		nil,
+		ec.marshalNApplicationMutationResult2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationMutationResult,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_rotateApplicationSecret(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "success":
+				return ec.fieldContext_ApplicationMutationResult_success(ctx, field)
+			case "message":
+				return ec.fieldContext_ApplicationMutationResult_message(ctx, field)
+			case "namespace":
+				return ec.fieldContext_ApplicationMutationResult_namespace(ctx, field)
+			case "resourceName":
+				return ec.fieldContext_ApplicationMutationResult_resourceName(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ApplicationMutationResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_rotateApplicationSecret_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -449,6 +628,50 @@ func (ec *executionContext) unmarshalInputMemberInput(ctx context.Context, obj a
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputRotateApplicationSecretInput(ctx context.Context, obj any) (model.RotateApplicationSecretInput, error) {
+	var it model.RotateApplicationSecretInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"environment", "team", "name"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "environment":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("environment"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Environment = data
+		case "team":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("team"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Team = data
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputRotateTeamTokenInput(ctx context.Context, obj any) (model.RotateTeamTokenInput, error) {
 	var it model.RotateTeamTokenInput
 	if obj == nil {
@@ -566,6 +789,54 @@ func (ec *executionContext) unmarshalInputUpdateTeamInput(ctx context.Context, o
 
 // region    **************************** object.gotpl ****************************
 
+var applicationMutationResultImplementors = []string{"ApplicationMutationResult"}
+
+func (ec *executionContext) _ApplicationMutationResult(ctx context.Context, sel ast.SelectionSet, obj *model.ApplicationMutationResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, applicationMutationResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ApplicationMutationResult")
+		case "success":
+			out.Values[i] = ec._ApplicationMutationResult_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "message":
+			out.Values[i] = ec._ApplicationMutationResult_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "namespace":
+			out.Values[i] = ec._ApplicationMutationResult_namespace(ctx, field, obj)
+		case "resourceName":
+			out.Values[i] = ec._ApplicationMutationResult_resourceName(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -602,6 +873,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "rotateTeamToken":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_rotateTeamToken(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "rotateApplicationSecret":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_rotateApplicationSecret(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -681,6 +959,20 @@ func (ec *executionContext) _TeamMutationResult(ctx context.Context, sel ast.Sel
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) marshalNApplicationMutationResult2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationMutationResult(ctx context.Context, sel ast.SelectionSet, v model.ApplicationMutationResult) graphql.Marshaler {
+	return ec._ApplicationMutationResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNApplicationMutationResult2ᚖgithubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐApplicationMutationResult(ctx context.Context, sel ast.SelectionSet, v *model.ApplicationMutationResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ApplicationMutationResult(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCreateTeamInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐCreateTeamInput(ctx context.Context, v any) (model.CreateTeamInput, error) {
 	res, err := ec.unmarshalInputCreateTeamInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -704,6 +996,11 @@ func (ec *executionContext) unmarshalNMemberInput2ᚕgithubᚗcomᚋtelekomᚋco
 		}
 	}
 	return res, nil
+}
+
+func (ec *executionContext) unmarshalNRotateApplicationSecretInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRotateApplicationSecretInput(ctx context.Context, v any) (model.RotateApplicationSecretInput, error) {
+	res, err := ec.unmarshalInputRotateApplicationSecretInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNRotateTeamTokenInput2githubᚗcomᚋtelekomᚋcontrolplaneᚋcontrolplaneᚑapiᚋinternalᚋresolversᚋmodelᚐRotateTeamTokenInput(ctx context.Context, v any) (model.RotateTeamTokenInput, error) {

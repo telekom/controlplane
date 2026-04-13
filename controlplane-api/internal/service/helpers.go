@@ -48,6 +48,22 @@ func authorizeUpdateTeam(ctx context.Context, targetGroup, targetTeam string) er
 	return fmt.Errorf("forbidden: insufficient permissions to update team %q", targetTeam)
 }
 
+// authorizeApplicationAction checks that the viewer is allowed to act on an application.
+// Allowed: Admin, or Team viewer matching the application's owning team.
+func authorizeApplicationAction(ctx context.Context, appTeam string) error {
+	v := viewer.FromContext(ctx)
+	if v == nil {
+		return fmt.Errorf("unauthorized: no viewer in context")
+	}
+	if v.Admin {
+		return nil
+	}
+	if v.HasTeam(appTeam) {
+		return nil
+	}
+	return fmt.Errorf("forbidden: insufficient permissions for application owned by team %q", appTeam)
+}
+
 // teamResourceName returns the K8s resource name for a team: <group>--<team>.
 func teamResourceName(group, team string) string {
 	return group + "--" + team
@@ -62,12 +78,12 @@ func mapK8sError(err error) *gqlerror.Error {
 	switch {
 	case apierrors.IsNotFound(err):
 		return &gqlerror.Error{
-			Message:    "team not found",
+			Message:    "resource not found",
 			Extensions: map[string]interface{}{"code": "NOT_FOUND"},
 		}
 	case apierrors.IsAlreadyExists(err):
 		return &gqlerror.Error{
-			Message:    "team already exists",
+			Message:    "resource already exists",
 			Extensions: map[string]interface{}{"code": "ALREADY_EXISTS"},
 		}
 	case apierrors.IsConflict(err):

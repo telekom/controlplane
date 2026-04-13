@@ -39,6 +39,14 @@ func (r *mutationResolver) RotateTeamToken(ctx context.Context, input model.Rota
 	return r.teamService.RotateTeamToken(ctx, input)
 }
 
+// RotateApplicationSecret is the resolver for the rotateApplicationSecret field.
+func (r *mutationResolver) RotateApplicationSecret(ctx context.Context, input model.RotateApplicationSecretInput) (*model.ApplicationMutationResult, error) {
+	if r.applicationService == nil {
+		return nil, fmt.Errorf("mutations are not enabled: Kubernetes integration is disabled")
+	}
+	return r.applicationService.RotateApplicationSecret(ctx, input)
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 

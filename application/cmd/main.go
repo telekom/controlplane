@@ -26,6 +26,7 @@ import (
 	admin "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/application/internal/controller"
+	webhookv1 "github.com/telekom/controlplane/application/internal/webhook/v1"
 	gateway "github.com/telekom/controlplane/gateway/api/v1"
 	identity "github.com/telekom/controlplane/identity/api/v1"
 	// +kubebuilder:scaffold:imports
@@ -144,6 +145,12 @@ func main() {
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Application")
 		os.Exit(1)
+	}
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err = webhookv1.SetupApplicationWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Application")
+			os.Exit(1)
+		}
 	}
 	// +kubebuilder:scaffold:builder
 

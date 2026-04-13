@@ -12,7 +12,10 @@
       "Bash(make build:*)",
       "Bash(make lint:*)",
       "Bash(make vet:*)",
-      "Bash(go vet:*)"
+      "Bash(go vet:*)",
+      "Bash(grep -E \"\\\\.\\(go|yaml\\)$\")",
+      "Bash(find /home/igar/projects/controlplane -type f -name *application_webhook* -o -name *webhook*application*)",
+      "Bash(find /home/igar/projects/application-operator -type f -name *webhook* -o -name *mutator*)"
     ]
   }
 }
