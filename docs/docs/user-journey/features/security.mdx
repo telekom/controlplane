@@ -100,7 +100,7 @@ exposures:
 | ----- | ----------- |
 | `security.type` | The authentication method. Use `oauth2` for OAuth2-based authentication or `basicAuth` for username/password authentication. |
 | `security.tokenEndpoint` | The OAuth2 token endpoint URL. Required when using an external identity provider. |
-| `security.grantType` | The OAuth2 grant type. Supported values: `CLIENT_CREDENTIALS`, `PASSWORD`, `REFRESH_TOKEN`. |
+| `security.grantType` | The OAuth2 grant type. Supported values: `CLIENT_CREDENTIALS`, `PASSWORD`. |
 | `security.clientId` | The OAuth2 client identifier. |
 | `security.clientSecret` | The OAuth2 client secret. Cannot be used together with `clientKey`. |
 | `security.clientKey` | An alternative to `clientSecret` for asymmetric authentication. Cannot be used together with `clientSecret`. |
@@ -189,4 +189,4 @@ exposures:
 
 | Field | Description |
 | ----- | ----------- |
-| `removeHeaders` | A list of HTTP header names to remove from incoming requests before forwarding them to the upstream service. |
+| `removeHeaders` | A list of HTTP header names to remove from incoming requests before forwarding them to the upstream service. Maximum: 5 headers. |

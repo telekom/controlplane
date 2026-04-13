@@ -12,16 +12,7 @@ The Gateway domain configures the API Gateway at runtime. It manages routes, con
 
 ## Feature Architecture
 
-The Gateway operator uses a plugin-based feature system for configuring route behavior:
-
-| Feature | Description |
-| ------- | ----------- |
-| **PassThrough** | Basic request forwarding. |
-| **AccessControl** | Consumer-based access control. |
-| **RateLimit** | Request rate limiting via Redis. |
-| **ExternalIDP** | External identity provider authentication. |
-| **CustomScopes** | Fine-grained OAuth2 scope enforcement. |
-| **LastMileSecurity** | End-to-end security in cross-mesh scenarios. |
+The Gateway operator uses a plugin-based feature system for configuring route behavior. Each feature is implemented as a separate plugin that can be enabled or disabled per route, allowing fine-grained control over how requests are processed.
 
 ## Domain Interactions
 

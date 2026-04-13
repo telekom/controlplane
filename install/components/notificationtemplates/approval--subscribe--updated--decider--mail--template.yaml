@@ -6,9 +6,8 @@ apiVersion: notification.cp.ei.telekom.de/v1
 kind: NotificationTemplate
 metadata:
   labels:
-    cp.ei.telekom.de/environment: env
+    app.kubernetes.io/managed-by: kustomize
   name:  approval--subscribe--updated--decider--mail
-  namespace: env
 spec:
   purpose:  approval--subscribe--updated--decider
   channelType: Email

@@ -18,7 +18,7 @@ All filtering is applied to the contents of the `data` field of an event message
 
 The response filter defines which fields within the event payload should be delivered to the consumer. This is useful, for instance, when an event contains sensitive data that should not be sent to certain consumers.
 
-A response filter is defined by providing a list of field paths in the `responseFilter` field inside the `trigger`. Fields that cannot be resolved are ignored at runtime. An optional `responseFilterMode` can be set to either `INCLUDE` or `EXCLUDE`, specifying whether the listed fields should be included (whitelisted) or excluded (blacklisted). If no mode is set, the fields are included by default.
+A response filter is defined by providing a list of field paths in the `responseFilter` field inside the `trigger`. Fields that cannot be resolved are ignored at runtime. An optional `responseFilterMode` can be set to either `include` or `exclude`, specifying whether the listed fields should be included (whitelisted) or excluded (blacklisted). If no mode is set, the fields are included by default.
 
 ```yaml
 subscriptions:
@@ -28,7 +28,7 @@ subscriptions:
     payloadType: Data
     callback: https://analytics.internal:8080/events
     trigger:
-      responseFilterMode: INCLUDE
+      responseFilterMode: include
       responseFilter:
         - total.amount
         - total.currency
@@ -206,7 +206,7 @@ This filter would match because the quantity of "iPhone 13 Mini Black" (2) is le
 | `trigger.selectionFilter` | A key-value map that matches CloudEvents attributes. All entries must match (logical AND). |
 | `trigger.advancedSelectionFilter` | An advanced filter expression for complex matching logic. See [Filter Operators](#filter-operators) for the full syntax. |
 | `trigger.responseFilter` | A list of field paths that control which fields are included or excluded from the event payload. Uses dot notation (e.g., `total.amount`). |
-| `trigger.responseFilterMode` | How the response filter is applied: `INCLUDE` (only return listed paths) or `EXCLUDE` (return everything except listed paths). Default: `INCLUDE`. |
+| `trigger.responseFilterMode` | How the response filter is applied: `include` (only return listed paths) or `exclude` (return everything except listed paths). Default: `include`. |
 
 :::tip
 You can combine response filters with selection filters. The response filter controls **what data** is delivered, and the selection filter controls **when** an event is delivered.
@@ -367,7 +367,7 @@ subscriptions:
           - ge:
               field: $.total.amount
               value: 100000
-      responseFilterMode: INCLUDE
+      responseFilterMode: include
       responseFilter:
         - total.amount
         - total.currency

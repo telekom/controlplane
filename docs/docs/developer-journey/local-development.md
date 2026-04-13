@@ -8,14 +8,14 @@ This page covers how to set up a local development environment for working on th
 
 ## Prerequisites
 
-Make sure the following tools are installed before you begin:
+Make sure the following tools are installed before you begin. For specific version requirements and setup instructions, see the [Contributing guide](./contributing.md) and the repository's [`CONTRIBUTING.md`](https://github.com/telekom/controlplane/blob/main/CONTRIBUTING.md).
 
-- **Go 1.25.8** — the primary language for all operators and services
-- **Kubebuilder 4.9.0** — scaffolding and code generation for Kubernetes operators
+- **Go** — the primary language for all operators and services
+- **Kubebuilder** — scaffolding and code generation for Kubernetes operators
 - **A local Kubernetes cluster** — for example [kind](https://kind.sigs.k8s.io/) or [minikube](https://minikube.sigs.k8s.io/)
 - **kubectl** — configured to communicate with your local cluster
 - **Helm** — for installing dependencies such as cert-manager
-- **pip + pre-commit** — for running pre-commit hooks (see [Contributing](./contributing.md))
+- **pip + pre-commit** — for running pre-commit hooks
 
 ## Repository Structure
 
@@ -23,9 +23,7 @@ The Control Plane is organised as a monorepo. Each domain lives in its own direc
 
 ### Operators
 
-These are Kubebuilder-scaffolded controllers, each managing a specific domain:
-
-`admin/` · `api/` · `application/` · `approval/` · `event/` · `gateway/` · `identity/` · `notification/` · `organization/` · `pubsub/` · `rover/`
+Each domain has its own Kubebuilder-scaffolded controller in a dedicated directory (for example `gateway/`, `identity/`, `rover/`). See the repository root for the full list of operator directories.
 
 ### Services
 
@@ -131,14 +129,6 @@ make test
 
 Uses [envtest](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest) with Kubernetes 1.31.0 assets. Output is formatted with [gotestfmt](https://github.com/gotesttools/gotestfmt).
 
-### End-to-End Tests
-
-```bash
-make test-e2e
-```
-
-Runs [Ginkgo](https://onsi.github.io/ginkgo/) tests against a Kind cluster.
-
 ### Linting and Formatting
 
 ```bash
@@ -166,7 +156,6 @@ Every operator directory exposes a consistent set of Make targets:
 | `fmt` | Run `go fmt` |
 | `vet` | Run `go vet` |
 | `test` | Run unit tests with envtest |
-| `test-e2e` | Run end-to-end tests with Ginkgo |
 | `lint` | Run golangci-lint |
 | `build` | Build the manager binary |
 | `run` | Run the operator locally |

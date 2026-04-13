@@ -6,9 +6,8 @@ apiVersion: notification.cp.ei.telekom.de/v1
 kind: NotificationTemplate
 metadata:
   labels:
-    cp.ei.telekom.de/environment: env
+    app.kubernetes.io/managed-by: kustomize
   name: token-rotated--mail
-  namespace: env
 spec:
   purpose: token-rotated
   channelType: Email

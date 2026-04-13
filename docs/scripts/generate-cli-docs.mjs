@@ -108,7 +108,7 @@ function transform(content, sidebarPosition, isRoot) {
   // Replace (roverctl) with (./) but only when it is an exact match — not a
   // prefix like roverctl_apply.
   if (!isRoot) {
-    transformed = transformed.replace(/\]\(roverctl\)/g, "](.)");
+    transformed = transformed.replace(/\]\(roverctl\)/g, "](./)");
   }
 
   // Replace the auto-generated footer with a Docusaurus admonition

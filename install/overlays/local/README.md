@@ -10,7 +10,7 @@ This directory contains the Kubernetes manifests for installing the controlplane
 
 ## Documentation
 
-For complete installation instructions, please refer to [Installation Guide](https://telekom.github.io/controlplane/docs/Installation/installation).
+For complete installation instructions, please refer to [Installation Guide](https://telekom.github.io/controlplane/docs/admin-journey/installation).
 
 ## Directory Structure
 
