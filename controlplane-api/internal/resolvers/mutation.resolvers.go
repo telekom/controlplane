@@ -91,6 +91,34 @@ func (r *mutationResolver) RotateApplicationSecret(ctx context.Context, input mo
 	return r.applicationService.RotateApplicationSecret(ctx, input)
 }
 
+// DecideApprovalRequest is the resolver for the decideApprovalRequest field.
+func (r *mutationResolver) DecideApprovalRequest(ctx context.Context, input model.DecideApprovalRequestInput) (*model.ApprovalMutationResult, error) {
+	if r.approvalService == nil {
+		return nil, fmt.Errorf("mutations are not enabled: Kubernetes integration is disabled")
+	}
+	return r.approvalService.DecideApprovalRequest(ctx, input)
+}
+
+// DecideApproval is the resolver for the decideApproval field.
+func (r *mutationResolver) DecideApproval(ctx context.Context, input model.DecideApprovalInput) (*model.ApprovalMutationResult, error) {
+	if r.approvalService == nil {
+		return nil, fmt.Errorf("mutations are not enabled: Kubernetes integration is disabled")
+	}
+	return r.approvalService.DecideApproval(ctx, input)
+}
+
+// Action is the resolver for the action field.
+func (r *decideApprovalInputResolver) Action(ctx context.Context, obj *model.DecideApprovalInput, data model.ApprovalAction) error {
+	obj.Action = string(data)
+	return nil
+}
+
+// Action is the resolver for the action field.
+func (r *decideApprovalRequestInputResolver) Action(ctx context.Context, obj *model.DecideApprovalRequestInput, data model.ApprovalAction) error {
+	obj.Action = string(data)
+	return nil
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
