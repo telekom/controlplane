@@ -99,11 +99,13 @@ var _ = BeforeSuite(func() {
 	RegisterIndexesOrDie(ctx, k8sManager)
 
 	By("Setting up the required mocks")
-	mockFactory := keycloak.ClientFactoryFunc(func(realmStatus identityv1.RealmStatus) (keycloak.RealmClient, error) {
+	mockFactory := keycloak.ServiceFactoryFunc(func(realmStatus identityv1.RealmStatus) (keycloak.KeycloakService, error) {
 		if mockKeycloak {
-			return utils.NewRealmClientMock(GinkgoT()), nil
+			mockClient := utils.NewKeycloakClientMock(GinkgoT())
+			utils.ConfigureKeycloakClientMock(mockClient)
+			return keycloak.NewKeycloakService(mockClient), nil
 		}
-		return keycloak.GetClientForRealm(realmStatus)
+		return keycloak.NewKeycloakServiceFor(realmStatus)
 	})
 
 	err = (&ClientReconciler{

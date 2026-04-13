@@ -61,6 +61,44 @@ spec:
                 - name
                 - namespace
                 type: object
+              secretRotation:
+                description: |-
+                  SecretRotation configures the Keycloak client-secret rotation policy
+                  for this realm. When set, the controller ensures a client-policy
+                  profile + policy with the given grace period exists in Keycloak.
+                  When nil, the controller does not manage rotation policy.
+                properties:
+                  expirationPeriod:
+                    description: |-
+                      ExpirationPeriod is how long a client secret is valid before it must
+                      be rotated, specified as a duration string (e.g. "696h", "2505600s").
+                      Maps to Keycloak's "expiration-period".
+                    type: string
+                  gracePeriod:
+                    description: |-
+                      GracePeriod is how long the old client secret remains valid after
+                      rotation, specified as a duration string (e.g. "1h", "300s", "30m").
+                      Maps to Keycloak's "rotated-expiration-period".
+                    type: string
+                  remainingRotationPeriod:
+                    description: |-
+                      RemainingRotationPeriod is the window before secret expiry during
+                      which rotation is allowed, specified as a duration string (e.g. "240h", "864000s").
+                      Maps to Keycloak's "remaining-rotation-period".
+
+                      Keycloak blocks rotation attempts that fall outside this window. For
+                      example, if ExpirationPeriod is 29 days and RemainingRotationPeriod
+                      is 10 days, rotation is only permitted in the last 10 days before
+                      expiry. Setting RemainingRotationPeriod equal to ExpirationPeriod
+                      allows rotation at any time (recommended, since the controller
+                      drives rotation externally rather than relying on Keycloak's
+                      expiration timer).
+                    type: string
+                required:
+                - expirationPeriod
+                - gracePeriod
+                - remainingRotationPeriod
+                type: object
             required:
             - identityProvider
             type: object

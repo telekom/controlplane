@@ -26,7 +26,10 @@ func (h *HandlerIdentityProvider) CreateOrUpdate(ctx context.Context, idp *ident
 		return fmt.Errorf("IdentityProvider is nil")
 	}
 
-	idp.Status = mapToIdpStatus(&idp.Spec)
+	idp.Status.AdminUrl = idp.Spec.AdminUrl
+	idp.Status.AdminTokenUrl = keycloak.DetermineAdminTokenUrlFrom(idp.Spec.AdminUrl, keycloak.MasterRealm)
+	idp.Status.AdminConsoleUrl = keycloak.DetermineAdminConsoleUrlFrom(idp.Spec.AdminUrl, keycloak.MasterRealm)
+
 	idp.SetCondition(condition.NewDoneProcessingCondition("Created IdentityProvider"))
 	idp.SetCondition(condition.NewReadyCondition("Ready", "IdentityProvider is ready"))
 
@@ -38,12 +41,4 @@ func (h *HandlerIdentityProvider) CreateOrUpdate(ctx context.Context, idp *ident
 
 func (h *HandlerIdentityProvider) Delete(ctx context.Context, obj *identityv1.IdentityProvider) error {
 	return nil
-}
-
-func mapToIdpStatus(idpSpec *identityv1.IdentityProviderSpec) identityv1.IdentityProviderStatus {
-	return identityv1.IdentityProviderStatus{
-		AdminUrl:        idpSpec.AdminUrl,
-		AdminTokenUrl:   keycloak.DetermineAdminTokenUrlFrom(idpSpec.AdminUrl, keycloak.MasterRealm),
-		AdminConsoleUrl: keycloak.DetermineAdminConsoleUrlFrom(idpSpec.AdminUrl, keycloak.MasterRealm),
-	}
 }

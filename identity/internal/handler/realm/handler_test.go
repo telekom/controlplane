@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -95,7 +96,7 @@ var _ = Describe("HandlerRealm", func() {
 	Context("CreateOrUpdate", func() {
 
 		It("should return an error when the realm is nil", func() {
-			handler := NewHandlerRealm(keycloak.NewClientFactory())
+			handler := NewHandlerRealm(keycloak.NewServiceFactory())
 			err := handler.CreateOrUpdate(context.Background(), nil)
 
 			Expect(err).To(HaveOccurred())
@@ -110,7 +111,7 @@ var _ = Describe("HandlerRealm", func() {
 				Get(mock.Anything, types.NamespacedName{Namespace: "default", Name: "test-idp"}, mock.AnythingOfType("*v1.IdentityProvider"), mock.Anything).
 				Return(&notFoundError{})
 
-			handler := NewHandlerRealm(keycloak.NewClientFactory())
+			handler := NewHandlerRealm(keycloak.NewServiceFactory())
 			err := handler.CreateOrUpdate(ctx, realm)
 
 			By("expecting a BlockedError")
@@ -139,7 +140,7 @@ var _ = Describe("HandlerRealm", func() {
 				}).
 				Return(nil)
 
-			handler := NewHandlerRealm(keycloak.NewClientFactory())
+			handler := NewHandlerRealm(keycloak.NewServiceFactory())
 
 			Expect(func() {
 				_ = handler.CreateOrUpdate(ctx, realm)
@@ -160,7 +161,7 @@ var _ = Describe("HandlerRealm", func() {
 				}).
 				Return(nil)
 
-			handler := NewHandlerRealm(keycloak.NewClientFactory())
+			handler := NewHandlerRealm(keycloak.NewServiceFactory())
 			err := handler.CreateOrUpdate(ctx, realm)
 
 			Expect(err).To(HaveOccurred())
@@ -184,7 +185,7 @@ var _ = Describe("HandlerRealm", func() {
 				return "", fmt.Errorf("secret manager unavailable")
 			})
 
-			handler := NewHandlerRealm(keycloak.NewClientFactory())
+			handler := NewHandlerRealm(keycloak.NewServiceFactory())
 			err := handler.CreateOrUpdate(ctx, realm)
 
 			Expect(err).To(HaveOccurred())
@@ -207,7 +208,7 @@ var _ = Describe("HandlerRealm", func() {
 			})
 
 			factoryErr := fmt.Errorf("oauth2 token failure")
-			factory := keycloak.ClientFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.RealmClient, error) {
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
 				return nil, factoryErr
 			})
 
@@ -219,7 +220,7 @@ var _ = Describe("HandlerRealm", func() {
 			Expect(errors.Is(err, factoryErr)).To(BeTrue())
 		})
 
-		It("should return an error when Keycloak CreateOrUpdateRealm fails", func() {
+		It("should return an error when Keycloak CreateOrReplaceRealm fails", func() {
 			realm := newValidRealm()
 			idp := newValidIdP()
 
@@ -234,13 +235,13 @@ var _ = Describe("HandlerRealm", func() {
 				return "resolved-password", nil
 			})
 
-			mockRealmClient := mocks.NewMockRealmClient(GinkgoT())
-			mockRealmClient.EXPECT().
-				CreateOrUpdateRealm(mock.Anything, mock.Anything).
+			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
+				CreateOrReplaceRealm(mock.Anything, mock.Anything).
 				Return(fmt.Errorf("keycloak 503: service unavailable"))
 
-			factory := keycloak.ClientFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.RealmClient, error) {
-				return mockRealmClient, nil
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
 			})
 
 			handler := NewHandlerRealm(factory)
@@ -266,13 +267,13 @@ var _ = Describe("HandlerRealm", func() {
 				return "resolved-password", nil
 			})
 
-			mockRealmClient := mocks.NewMockRealmClient(GinkgoT())
-			mockRealmClient.EXPECT().
-				CreateOrUpdateRealm(mock.Anything, mock.Anything).
+			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
+				CreateOrReplaceRealm(mock.Anything, mock.Anything).
 				Return(nil)
 
-			factory := keycloak.ClientFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.RealmClient, error) {
-				return mockRealmClient, nil
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
 			})
 
 			handler := NewHandlerRealm(factory)
@@ -291,6 +292,133 @@ var _ = Describe("HandlerRealm", func() {
 				}
 			}
 			Expect(readyFound).To(BeTrue(), "realm should have Ready=True condition after successful CreateOrUpdate")
+
+			By("verifying realm status fields are populated from the IdentityProvider")
+			Expect(realm.Status.IssuerUrl).To(Equal(keycloak.DetermineIssuerUrlFrom(idp.Spec.AdminUrl, realm.Name)))
+			Expect(realm.Status.AdminClientId).To(Equal(idp.Spec.AdminClientId))
+			Expect(realm.Status.AdminUserName).To(Equal(idp.Spec.AdminUserName))
+			Expect(realm.Status.AdminPassword).To(Equal(idp.Spec.AdminPassword))
+			Expect(realm.Status.AdminUrl).To(Equal(idp.Status.AdminUrl))
+			Expect(realm.Status.AdminTokenUrl).To(Equal(idp.Status.AdminTokenUrl))
+		})
+
+		It("should not call ConfigureSecretRotationPolicy when SecretRotation is nil", func() {
+			realm := newValidRealm()
+			idp := newValidIdP()
+
+			mockK8s.EXPECT().
+				Get(mock.Anything, types.NamespacedName{Namespace: "default", Name: "test-idp"}, mock.AnythingOfType("*v1.IdentityProvider"), mock.Anything).
+				Run(func(_ context.Context, _ types.NamespacedName, obj pkgclient.Object, _ ...pkgclient.GetOption) {
+					*obj.(*identityv1.IdentityProvider) = *idp
+				}).
+				Return(nil)
+
+			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
+				return "resolved-password", nil
+			})
+
+			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
+				CreateOrReplaceRealm(mock.Anything, mock.Anything).
+				Return(nil)
+			// ConfigureSecretRotationPolicy should NOT be called — mockery
+			// will fail the test if it is called unexpectedly.
+
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
+			})
+
+			handler := NewHandlerRealm(factory)
+			err := handler.CreateOrUpdate(ctx, realm)
+
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should call ConfigureSecretRotationPolicy when SecretRotation is set", func() {
+			realm := newValidRealm()
+			realm.Spec.SecretRotation = &identityv1.SecretRotationConfig{
+				GracePeriod:             metav1.Duration{Duration: 5 * time.Minute},
+				ExpirationPeriod:        metav1.Duration{Duration: 29 * 24 * time.Hour},
+				RemainingRotationPeriod: metav1.Duration{Duration: 10 * 24 * time.Hour},
+			}
+			idp := newValidIdP()
+
+			mockK8s.EXPECT().
+				Get(mock.Anything, types.NamespacedName{Namespace: "default", Name: "test-idp"}, mock.AnythingOfType("*v1.IdentityProvider"), mock.Anything).
+				Run(func(_ context.Context, _ types.NamespacedName, obj pkgclient.Object, _ ...pkgclient.GetOption) {
+					*obj.(*identityv1.IdentityProvider) = *idp
+				}).
+				Return(nil)
+
+			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
+				return "resolved-password", nil
+			})
+
+			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
+				CreateOrReplaceRealm(mock.Anything, mock.Anything).
+				Return(nil)
+			mockSvc.EXPECT().
+				ConfigureSecretRotationPolicy(mock.Anything, "test-realm", realm.Spec.SecretRotation).
+				Return(nil)
+
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
+			})
+
+			handler := NewHandlerRealm(factory)
+			err := handler.CreateOrUpdate(ctx, realm)
+
+			Expect(err).ToNot(HaveOccurred())
+
+			By("verifying the Ready condition is still set")
+			var readyFound bool
+			for _, c := range realm.GetConditions() {
+				if c.Type == condition.ConditionTypeReady && c.Status == metav1.ConditionTrue {
+					readyFound = true
+				}
+			}
+			Expect(readyFound).To(BeTrue())
+		})
+
+		It("should return an error when ConfigureSecretRotationPolicy fails", func() {
+			realm := newValidRealm()
+			realm.Spec.SecretRotation = &identityv1.SecretRotationConfig{
+				GracePeriod:             metav1.Duration{Duration: 10 * time.Minute},
+				ExpirationPeriod:        metav1.Duration{Duration: 29 * 24 * time.Hour},
+				RemainingRotationPeriod: metav1.Duration{Duration: 10 * 24 * time.Hour},
+			}
+			idp := newValidIdP()
+
+			mockK8s.EXPECT().
+				Get(mock.Anything, types.NamespacedName{Namespace: "default", Name: "test-idp"}, mock.AnythingOfType("*v1.IdentityProvider"), mock.Anything).
+				Run(func(_ context.Context, _ types.NamespacedName, obj pkgclient.Object, _ ...pkgclient.GetOption) {
+					*obj.(*identityv1.IdentityProvider) = *idp
+				}).
+				Return(nil)
+
+			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
+				return "resolved-password", nil
+			})
+
+			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
+				CreateOrReplaceRealm(mock.Anything, mock.Anything).
+				Return(nil)
+			mockSvc.EXPECT().
+				ConfigureSecretRotationPolicy(mock.Anything, "test-realm", realm.Spec.SecretRotation).
+				Return(fmt.Errorf("keycloak 403: forbidden"))
+
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
+			})
+
+			handler := NewHandlerRealm(factory)
+			err := handler.CreateOrUpdate(ctx, realm)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("failed to configure secret rotation policy"))
+			Expect(err.Error()).To(ContainSubstring("keycloak 403"))
 		})
 	})
 
@@ -311,13 +439,13 @@ var _ = Describe("HandlerRealm", func() {
 				return "resolved-password", nil
 			})
 
-			mockRealmClient := mocks.NewMockRealmClient(GinkgoT())
-			mockRealmClient.EXPECT().
+			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
 				DeleteRealm(mock.Anything, "test-realm").
 				Return(nil)
 
-			factory := keycloak.ClientFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.RealmClient, error) {
-				return mockRealmClient, nil
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
 			})
 
 			handler := NewHandlerRealm(factory)
@@ -338,7 +466,7 @@ var _ = Describe("HandlerRealm", func() {
 				return "", fmt.Errorf("secret manager unavailable")
 			})
 
-			handler := NewHandlerRealm(keycloak.NewClientFactory())
+			handler := NewHandlerRealm(keycloak.NewServiceFactory())
 			err := handler.Delete(ctx, realm)
 
 			Expect(err).To(HaveOccurred())
@@ -361,7 +489,7 @@ var _ = Describe("HandlerRealm", func() {
 			})
 
 			factoryErr := fmt.Errorf("oauth2 token failure")
-			factory := keycloak.ClientFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.RealmClient, error) {
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
 				return nil, factoryErr
 			})
 
@@ -388,13 +516,13 @@ var _ = Describe("HandlerRealm", func() {
 				return ref, nil
 			})
 
-			mockRealmClient := mocks.NewMockRealmClient(GinkgoT())
-			mockRealmClient.EXPECT().
+			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
 				DeleteRealm(mock.Anything, "test-realm").
 				Return(fmt.Errorf("keycloak 500: internal server error"))
 
-			factory := keycloak.ClientFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.RealmClient, error) {
-				return mockRealmClient, nil
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
 			})
 
 			handler := NewHandlerRealm(factory)

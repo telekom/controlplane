@@ -7,29 +7,30 @@ package client
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	realmHandler "github.com/telekom/controlplane/identity/internal/handler/realm"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
-	"github.com/telekom/controlplane/identity/pkg/keycloak/mapper"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
 )
 
 var _ handler.Handler[*identityv1.Client] = &HandlerClient{}
 
 type HandlerClient struct {
-	ClientFactory keycloak.ClientFactory
+	ServiceFactory keycloak.ServiceFactory
 }
 
 // NewHandlerClient creates a HandlerClient with the given ClientFactory.
-func NewHandlerClient(factory keycloak.ClientFactory) *HandlerClient {
-	return &HandlerClient{ClientFactory: factory}
+func NewHandlerClient(factory keycloak.ServiceFactory) *HandlerClient {
+	return &HandlerClient{ServiceFactory: factory}
 }
 
 func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.Client) (err error) {
@@ -60,7 +61,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		return ctrlerrors.BlockedErrorf("Realm %q is not valid: %s", client.Spec.Realm.String(), err)
 	}
 
-	realmClient, err := h.ClientFactory.ClientFor(realm.Status)
+	realmClient, err := h.ServiceFactory.ServiceFor(realm.Status)
 	if err != nil {
 		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}
@@ -71,11 +72,48 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 	clientCopy := client.DeepCopy()
 	clientCopy.Spec.ClientSecret = resolvedSecret
 
-	err = realmClient.CreateOrUpdateRealmClient(ctx, realm, clientCopy)
+	err = realmClient.CreateOrReplaceClient(ctx, realm.Name, clientCopy)
 	if err != nil {
 		return fmt.Errorf("failed to create or update client: %w", err)
 	}
 
+	// --- Graceful rotation: check for a rotated (old) secret ---
+	// After ensuring the primary client is up-to-date in Keycloak, check
+	// whether a rotated secret exists (indicating a grace period is active).
+	rotatedInfo, rotErr := realmClient.GetRotatedClientSecret(ctx, realm.Name, clientCopy)
+	if rotErr != nil {
+		return fmt.Errorf("failed to check rotated client secret: %w", rotErr)
+	}
+
+	if rotatedInfo != nil {
+		// if the original client secret was a reference, we should not expose the rotated secret in the status, as it may be sensitive.
+		if !secrets.IsRef(client.Spec.ClientSecret) {
+			client.Status.RotatedClientSecret = rotatedInfo.Secret
+		} else {
+			client.Status.RotatedClientSecret = ""
+		}
+
+		// Use the expiration timestamp directly from Keycloak's client
+		// attributes (epoch seconds). This is the final expiry — no grace
+		// period arithmetic is needed on our side.
+		if rotatedInfo.ExpiresAt != nil {
+			expiresAt := time.Unix(*rotatedInfo.ExpiresAt, 0)
+			client.Status.RotatedSecretExpiresAt = &metav1.Time{Time: expiresAt.UTC()}
+		} else {
+			client.Status.RotatedSecretExpiresAt = nil
+		}
+		if rotatedInfo.CreatedAt != nil {
+			createdAt := time.Unix(*rotatedInfo.CreatedAt, 0)
+			client.SetCondition(identityv1.NewSecretRotatedCondition(createdAt))
+		}
+
+	} else {
+		// No rotation in progress — clear the status fields.
+		client.Status.RotatedClientSecret = ""
+		client.Status.RotatedSecretExpiresAt = nil
+	}
+
+	client.Status.ClientUid = clientCopy.Status.ClientUid
 	client.SetCondition(condition.NewDoneProcessingCondition("Created Client"))
 	client.SetCondition(condition.NewReadyCondition("Ready", "Client is ready"))
 
@@ -100,24 +138,14 @@ func (h *HandlerClient) Delete(ctx context.Context, obj *identityv1.Client) erro
 		return nil
 	}
 
-	realmClient, err := h.ClientFactory.ClientFor(realm.Status)
+	svc, err := h.ServiceFactory.ServiceFor(realm.Status)
 	if err != nil {
 		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}
 
-	getRealmClients, err := realmClient.GetRealmClients(ctx, realm.Name, obj)
+	err = svc.DeleteClient(ctx, realm.Name, obj)
 	if err != nil {
-		return fmt.Errorf("failed to get realm clients: %w", err)
-	}
-
-	existingClient, err := mapper.GetClient(*getRealmClients)
-	if err != nil {
-		return fmt.Errorf("failed to get realm client: %w", err)
-	}
-
-	err = realmClient.DeleteRealmClient(ctx, realm.Name, *existingClient.Id)
-	if err != nil {
-		return fmt.Errorf("failed to delete realm client: %w", err)
+		return fmt.Errorf("failed to delete client: %w", err)
 	}
 
 	return nil

@@ -15,7 +15,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/telekom/controlplane/identity/pkg/api"
-	"github.com/telekom/controlplane/identity/pkg/keycloak"
 	"github.com/telekom/controlplane/identity/test/mocks"
 )
 
@@ -41,77 +40,76 @@ func ConfigureKeycloakClientMock(mockedClient *mocks.MockKeycloakClient) {
 
 	// The parameter "reqEditors ...RequestEditorFn" is not used in the implementation and therefore omitted
 	// in the mock configuration.
+	//
+	// We use mock.Anything for the context parameter to avoid brittle type
+	// assertions — the exact concrete context type may vary depending on
+	// how controller-runtime wraps the reconciler context.
+
+	realmMatcher := mock.MatchedBy(func(s string) bool {
+		return s == Realm || s == RealmForClient
+	})
 
 	mockedClient.EXPECT().GetRealmWithResponse(
-		mock.AnythingOfType("*context.valueCtx"),
-		mock.MatchedBy(func(s string) bool {
-			return s == Realm || s == RealmForClient
-		})).
+		mock.Anything,
+		realmMatcher).
 		Return(mockGetRealmResponse(Realm, mockedBody), nil).Maybe()
 
 	mockedClient.EXPECT().DeleteRealmWithResponse(
-		mock.AnythingOfType("*context.valueCtx"),
-		mock.MatchedBy(func(s string) bool {
-			return s == Realm || s == RealmForClient
-		})).
+		mock.Anything,
+		realmMatcher).
 		Return(mockDeleteRealmResponse(mockedBody), nil).Maybe()
 
 	mockedClient.EXPECT().DeleteRealmClientsIdWithResponse(
-		mock.AnythingOfType("*context.valueCtx"),
-		mock.MatchedBy(func(s string) bool {
-			return s == Realm || s == RealmForClient
-		}), ClientId).
+		mock.Anything,
+		realmMatcher,
+		mock.AnythingOfType("string")).
 		Return(mockDeleteRealmClientsIdResponse(mockedBody), nil).Maybe()
 
 	mockedClient.EXPECT().PutRealmWithResponse(
-		mock.AnythingOfType("*context.valueCtx"),
-		mock.MatchedBy(func(s string) bool {
-			return s == Realm || s == RealmForClient
-		}),
+		mock.Anything,
+		realmMatcher,
 		mock.AnythingOfType("api.RealmRepresentation")).
 		Return(mockPutRealmResponse(mockedBody), nil).Maybe()
 
+	// PostWithResponse creates a new realm: signature is (ctx, body RealmRepresentation, ...RequestEditorFn)
 	mockedClient.EXPECT().PostWithResponse(
-		mock.AnythingOfType("*context.valueCtx"),
-		mock.MatchedBy(func(s string) bool {
-			return s == Realm || s == RealmForClient
-		}),
-		mock.AnythingOfType("api.PostResponse"),
-		mock.Anything).
+		mock.Anything,
+		mock.AnythingOfType("api.RealmRepresentation")).
 		Return(mockPostResponse(mockedBody), nil).Maybe()
 
 	mockedClient.EXPECT().GetRealmClientsWithResponse(
-		mock.AnythingOfType("*context.valueCtx"),
-		mock.MatchedBy(func(s string) bool {
-			return s == Realm || s == RealmForClient
-		}),
+		mock.Anything,
+		realmMatcher,
 		mock.AnythingOfType("*api.GetRealmClientsParams")).
 		Return(mockGetRealmClientsWithResponse(mockedBody, ClientId, ClientSecret), nil).Maybe()
 
 	mockedClient.EXPECT().PutRealmClientsIdWithResponse(
-		mock.AnythingOfType("*context.valueCtx"),
-		mock.MatchedBy(func(s string) bool {
-			return s == Realm || s == RealmForClient
-		}),
-		ClientId,
+		mock.Anything,
+		realmMatcher,
+		mock.AnythingOfType("string"),
 		mock.AnythingOfType("api.ClientRepresentation")).
 		Return(mockPutRealmClientsIdResponse(mockedBody), nil).Maybe()
 
 	mockedClient.EXPECT().PostRealmClientsWithResponse(
-		mock.AnythingOfType("*context.valueCtx"),
-		mock.MatchedBy(func(s string) bool {
-			return s == Realm || s == RealmForClient
-		}),
+		mock.Anything,
+		realmMatcher,
 		mock.AnythingOfType("api.ClientRepresentation")).
 		Return(mockPostRealmClientsResponse(mockedBody), nil).Maybe()
 
-}
+	mockedClient.EXPECT().PostRealmClientsIdClientSecretWithResponse(
+		mock.Anything,
+		realmMatcher,
+		mock.AnythingOfType("string")).
+		Return(mockPostRealmClientsIdClientSecretResponse(), nil).Maybe()
 
-func NewRealmClientMock(testing ginkgo.FullGinkgoTInterface) keycloak.RealmClient {
-	var mockedKeycloakClient = NewKeycloakClientMock(testing)
-	ConfigureKeycloakClientMock(mockedKeycloakClient)
-	realmClient := keycloak.NewRealmClient(mockedKeycloakClient)
-	return realmClient
+	// GetRealmClientsIdClientSecretRotatedWithResponse is called by the client
+	// handler to check for an active graceful rotation. Return 404 (no rotation).
+	mockedClient.EXPECT().GetRealmClientsIdClientSecretRotatedWithResponse(
+		mock.Anything,
+		realmMatcher,
+		mock.AnythingOfType("string")).
+		Return(mockGetRealmClientsIdClientSecretRotatedResponse(), nil).Maybe()
+
 }
 
 func mockGetRealmResponse(realm string, body []byte) *api.GetRealmResponse {
@@ -125,14 +123,14 @@ func mockGetRealmResponse(realm string, body []byte) *api.GetRealmResponse {
 func mockDeleteRealmResponse(body []byte) *api.DeleteRealmResponse {
 	return &api.DeleteRealmResponse{
 		Body:         body,
-		HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusOK}),
+		HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusNoContent}),
 	}
 }
 
 func mockDeleteRealmClientsIdResponse(body []byte) *api.DeleteRealmClientsIdResponse {
 	return &api.DeleteRealmClientsIdResponse{
 		Body:         body,
-		HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusOK}),
+		HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusNoContent}),
 	}
 }
 
@@ -166,6 +164,7 @@ func mockGetRealmClientsWithResponse(body []byte, clientId, clientSecret string)
 	}
 
 	var clientRepresentation = api.ClientRepresentation{
+		Id:                     ptr.To("mock-client-uuid"),
 		ClientId:               ptr.To(clientId),
 		Name:                   ptr.To(clientId),
 		Enabled:                ptr.To(true),
@@ -194,5 +193,20 @@ func mockPostRealmClientsResponse(body []byte) *api.PostRealmClientsResponse {
 	return &api.PostRealmClientsResponse{
 		Body:         body,
 		HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusCreated}),
+	}
+}
+
+func mockPostRealmClientsIdClientSecretResponse() *api.PostRealmClientsIdClientSecretResponse {
+	return &api.PostRealmClientsIdClientSecretResponse{
+		Body:         []byte(`{}`),
+		HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusOK}),
+		JSON2XX:      &api.CredentialRepresentation{},
+	}
+}
+
+func mockGetRealmClientsIdClientSecretRotatedResponse() *api.GetRealmClientsIdClientSecretRotatedResponse {
+	return &api.GetRealmClientsIdClientSecretRotatedResponse{
+		Body:         []byte(`{}`),
+		HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusNotFound}),
 	}
 }

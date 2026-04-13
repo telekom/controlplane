@@ -73,6 +73,10 @@ spec:
           status:
             description: ClientStatus defines the observed state of Client
             properties:
+              clientUid:
+                description: ClientUid is the unique identifier of the client in Keycloak.
+                  It is immutable and assigned by Keycloak upon client creation.
+                type: string
               conditions:
                 items:
                   description: Condition contains details for one aspect of the current
@@ -133,6 +137,19 @@ spec:
                 - type
                 x-kubernetes-list-type: map
               issuerUrl:
+                description: IssuerUrl is the URL of the Keycloak realm's OpenID Connect
+                  issuer, which clients can use for authentication and token retrieval.
+                type: string
+              rotatedClientSecret:
+                description: |-
+                  RotatedClientSecret holds the previous client secret during a graceful
+                  rotation grace period. Empty when no rotation is in progress.
+                type: string
+              rotatedSecretExpiresAt:
+                description: |-
+                  RotatedSecretExpiresAt indicates when the rotated (old) secret will
+                  stop being accepted. Nil when no rotation is in progress.
+                format: date-time
                 type: string
             required:
             - issuerUrl

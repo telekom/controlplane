@@ -9,19 +9,14 @@ outpkg: "mocks"
 filename: "mock_{{.InterfaceName}}.go"
 boilerplate-file: ../../hack/boilerplate.go.txt
 packages:
-  github.com/telekom/controlplane/identity/pkg/api:
-    # place your package-specific config here
-    config:
-    interfaces:
-      # select the interfaces you want mocked
-      KeycloakClient:
-        # Modify package-level config for this specific interface (if applicable)
-        config:
   github.com/telekom/controlplane/identity/pkg/keycloak:
     # place your package-specific config here
     config:
     interfaces:
       # select the interfaces you want mocked
-      RealmClient:
+      KeycloakService:
+        # Modify package-level config for this specific interface (if applicable)
+        config:
+      KeycloakClient:
         # Modify package-level config for this specific interface (if applicable)
         config:

@@ -70,21 +70,4 @@ var _ = Describe("HandlerIdentityProvider", func() {
 			Expect(doneProcessingFound).To(BeTrue(), "idp should have Processing=False/Done condition")
 		})
 	})
-
-	Context("mapToIdpStatus", func() {
-
-		It("should map the spec fields correctly", func() {
-			idpSpec := &identityv1.IdentityProviderSpec{
-				AdminUrl: "https://admin.example.com",
-			}
-
-			idpStatus := mapToIdpStatus(idpSpec)
-
-			Expect(idpStatus.AdminUrl).To(Equal("https://admin.example.com"))
-			Expect(idpStatus.AdminTokenUrl).To(Equal(
-				keycloak.DetermineAdminTokenUrlFrom(idpSpec.AdminUrl, keycloak.MasterRealm)))
-			Expect(idpStatus.AdminConsoleUrl).To(Equal(
-				keycloak.DetermineAdminConsoleUrlFrom(idpSpec.AdminUrl, keycloak.MasterRealm)))
-		})
-	})
 })

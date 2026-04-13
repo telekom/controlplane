@@ -31,7 +31,7 @@ type ClientReconciler struct {
 	client.Client
 	Scheme        *runtime.Scheme
 	Recorder      record.EventRecorder
-	ClientFactory keycloak.ClientFactory
+	ClientFactory keycloak.ServiceFactory
 
 	cc.Controller[*identityv1.Client]
 }
@@ -52,7 +52,7 @@ func (r *ClientReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	factory := r.ClientFactory
 	if factory == nil {
-		factory = keycloak.NewClientFactory()
+		factory = keycloak.NewServiceFactory()
 	}
 	r.Controller = cc.NewController(clientHandler.NewHandlerClient(factory), r.Client, r.Recorder)
 

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package mapper
+package util
 
 import (
 	"k8s.io/utils/ptr"
@@ -19,8 +19,20 @@ func MapToRealmRepresentation(realm *identityv1.Realm) api.RealmRepresentation {
 }
 
 func CompareRealmRepresentation(existingRealm, newRealm *api.RealmRepresentation) bool {
-	return *existingRealm.Realm == *newRealm.Realm &&
-		*existingRealm.Enabled == *newRealm.Enabled
+	if existingRealm == nil || newRealm == nil {
+		return existingRealm == newRealm
+	}
+	if existingRealm.Realm == nil || newRealm.Realm == nil {
+		if existingRealm.Realm != newRealm.Realm {
+			return false
+		}
+	} else if *existingRealm.Realm != *newRealm.Realm {
+		return false
+	}
+	if existingRealm.Enabled == nil || newRealm.Enabled == nil {
+		return existingRealm.Enabled == newRealm.Enabled
+	}
+	return *existingRealm.Enabled == *newRealm.Enabled
 }
 
 func MergeRealmRepresentation(existingRealm, newRealm *api.RealmRepresentation) *api.RealmRepresentation {

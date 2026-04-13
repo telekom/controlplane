@@ -5,6 +5,7 @@
 package keycloak
 
 import (
+	stderrors "errors"
 	"net/http"
 	"slices"
 	"time"
@@ -87,4 +88,21 @@ func CheckStatusCode(res ApiResponse, okStatusCodes ...int) ApiError {
 		message:      "Keycloak client error",
 		retryAllowed: false,
 	}
+}
+
+// IsNotFound returns true if the error is an ApiError with a 404 status code.
+// This is useful for distinguishing "resource doesn't exist" from other errors,
+// e.g. when checking for a rotated client secret that hasn't been created yet.
+func IsNotFound(err error) bool {
+	var ae *apiError
+	if ok := errorAs(err, &ae); ok {
+		return ae.statusCode == http.StatusNotFound
+	}
+	return false
+}
+
+// errorAs is a thin wrapper around errors.As to allow testing with the
+// unexported apiError type. Production code uses the standard library.
+var errorAs = func(err error, target interface{}) bool {
+	return stderrors.As(err, target)
 }

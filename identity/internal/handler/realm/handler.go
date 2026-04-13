@@ -24,15 +24,16 @@ import (
 var _ handler.Handler[*identityv1.Realm] = &HandlerRealm{}
 
 type HandlerRealm struct {
-	ClientFactory keycloak.ClientFactory
+	ServiceFactory keycloak.ServiceFactory
 }
 
 // NewHandlerRealm creates a HandlerRealm with the given ClientFactory.
-func NewHandlerRealm(factory keycloak.ClientFactory) *HandlerRealm {
-	return &HandlerRealm{ClientFactory: factory}
+func NewHandlerRealm(factory keycloak.ServiceFactory) *HandlerRealm {
+	return &HandlerRealm{ServiceFactory: factory}
 }
 
 func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Realm) error {
+	logger := log.FromContext(ctx)
 	if realm == nil {
 		return fmt.Errorf("realm is nil")
 	}
@@ -59,16 +60,29 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 		return fmt.Errorf("failed to retrieve password from secret manager: %w", err)
 	}
 
-	realmClient, err := h.ClientFactory.ClientFor(*replacedRealmStatus)
+	realmClient, err := h.ServiceFactory.ServiceFor(*replacedRealmStatus)
 	if err != nil {
 		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}
 
-	err = realmClient.CreateOrUpdateRealm(ctx, realm)
+	err = realmClient.CreateOrReplaceRealm(ctx, realm)
 	if err != nil {
 		return fmt.Errorf("failed to create or update realm: %w", err)
 	}
 
+	// If secret rotation is configured, ensure the Keycloak realm has the
+	// corresponding client-policy profile + policy.
+	if realm.SupportsGracefulSecretRotation() {
+		logger.Info("configuring secret rotation policy for realm", "realm", realm.Name, "policy", realm.Spec.SecretRotation)
+		if err := realmClient.ConfigureSecretRotationPolicy(
+			ctx, realm.Name, realm.Spec.SecretRotation,
+		); err != nil {
+			return fmt.Errorf("failed to configure secret rotation policy: %w", err)
+		}
+	}
+
+	// Persist the computed status so that downstream controllers (e.g. client)
+	// can read IssuerUrl, AdminUrl, AdminTokenUrl, etc. from the realm status.
 	realm.Status = realmStatus
 	realm.SetCondition(condition.NewDoneProcessingCondition("Created Realm"))
 	realm.SetCondition(condition.NewReadyCondition("Ready", "Realm is ready"))
@@ -92,7 +106,7 @@ func (h *HandlerRealm) Delete(ctx context.Context, realm *identityv1.Realm) erro
 	resolvedStatus := *realm.Status.DeepCopy()
 	resolvedStatus.AdminPassword = adminPassword
 
-	realmClient, err := h.ClientFactory.ClientFor(resolvedStatus)
+	realmClient, err := h.ServiceFactory.ServiceFor(resolvedStatus)
 	if err != nil {
 		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}

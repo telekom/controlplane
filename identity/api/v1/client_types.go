@@ -19,7 +19,20 @@ type ClientSpec struct {
 
 // ClientStatus defines the observed state of Client
 type ClientStatus struct {
+	// ClientUid is the unique identifier of the client in Keycloak. It is immutable and assigned by Keycloak upon client creation.
+	ClientUid string `json:"clientUid,omitempty"`
+
+	// IssuerUrl is the URL of the Keycloak realm's OpenID Connect issuer, which clients can use for authentication and token retrieval.
 	IssuerUrl string `json:"issuerUrl"`
+	// RotatedClientSecret holds the previous client secret during a graceful
+	// rotation grace period. Empty when no rotation is in progress.
+	// +optional
+	RotatedClientSecret string `json:"rotatedClientSecret,omitempty"`
+
+	// RotatedSecretExpiresAt indicates when the rotated (old) secret will
+	// stop being accepted. Nil when no rotation is in progress.
+	// +optional
+	RotatedSecretExpiresAt *metav1.Time `json:"rotatedSecretExpiresAt,omitempty"`
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge

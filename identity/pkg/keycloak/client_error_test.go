@@ -5,6 +5,7 @@
 package keycloak
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -100,4 +101,31 @@ func TestApiErrorImplementsErrorInterface(t *testing.T) {
 	var stdErr error = apiErr
 	assert.NotNil(t, stdErr)
 	assert.Contains(t, stdErr.Error(), "Keycloak")
+}
+
+func TestIsNotFound_True(t *testing.T) {
+	response := &MockApiResponse{statusCode: http.StatusNotFound}
+	err := CheckStatusCode(response, http.StatusOK)
+	assert.True(t, IsNotFound(err))
+}
+
+func TestIsNotFound_FalseForOtherClientError(t *testing.T) {
+	response := &MockApiResponse{statusCode: http.StatusBadRequest}
+	err := CheckStatusCode(response, http.StatusOK)
+	assert.False(t, IsNotFound(err))
+}
+
+func TestIsNotFound_FalseForServerError(t *testing.T) {
+	response := &MockApiResponse{statusCode: http.StatusInternalServerError}
+	err := CheckStatusCode(response, http.StatusOK)
+	assert.False(t, IsNotFound(err))
+}
+
+func TestIsNotFound_FalseForNilError(t *testing.T) {
+	assert.False(t, IsNotFound(nil))
+}
+
+func TestIsNotFound_FalseForNonApiError(t *testing.T) {
+	err := fmt.Errorf("some random error")
+	assert.False(t, IsNotFound(err))
 }

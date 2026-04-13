@@ -2,33 +2,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package mapper
+package util
 
 import (
 	"reflect"
 
-	"k8s.io/utils/ptr"
-
 	"github.com/telekom/controlplane/identity/pkg/api"
 )
 
-func MapToProtocolMapperRepresentation() api.ProtocolMapperRepresentation {
-	return api.ProtocolMapperRepresentation{
-		Name:           ptr.To("Client ID"),
-		Protocol:       ptr.To("openid-connect"),
-		ProtocolMapper: ptr.To("oidc-usersessionmodel-note-mapper"),
-		Config: &map[string]interface{}{
-			"user.session.note":    "clientId",
-			"id.token.claim":       "true",
-			"access.token.claim":   "true",
-			"userinfo.token.claim": "false",
-			"claim.name":           "clientId",
-			"jsonType.label":       "String",
-		},
-	}
-}
-
 func containsAllProtocolMappers(existingClientMappers, newClientMappers *[]api.ProtocolMapperRepresentation) bool {
+	if newClientMappers == nil {
+		return true
+	}
+	if existingClientMappers == nil {
+		return len(*newClientMappers) == 0
+	}
 	for _, mapper2 := range *newClientMappers {
 		found := false
 		for _, mapper1 := range *existingClientMappers {
@@ -45,6 +33,14 @@ func containsAllProtocolMappers(existingClientMappers, newClientMappers *[]api.P
 }
 
 func CompareProtocolMapperRepresentation(existingMapper, newMapper *api.ProtocolMapperRepresentation) bool {
+	if existingMapper == nil || newMapper == nil {
+		return existingMapper == newMapper
+	}
+	if existingMapper.Name == nil || newMapper.Name == nil ||
+		existingMapper.Protocol == nil || newMapper.Protocol == nil ||
+		existingMapper.ProtocolMapper == nil || newMapper.ProtocolMapper == nil {
+		return false
+	}
 	return *existingMapper.Name == *newMapper.Name &&
 		*existingMapper.Protocol == *newMapper.Protocol &&
 		*existingMapper.ProtocolMapper == *newMapper.ProtocolMapper &&
@@ -53,10 +49,16 @@ func CompareProtocolMapperRepresentation(existingMapper, newMapper *api.Protocol
 
 func MergeProtocolMappers(existingMappers,
 	newMappers *[]api.ProtocolMapperRepresentation) *[]api.ProtocolMapperRepresentation {
+	if newMappers == nil {
+		return existingMappers
+	}
+	if existingMappers == nil {
+		return newMappers
+	}
 	for _, mapper := range *newMappers {
 		found := false
 		for i, existingMapper := range *existingMappers {
-			if *existingMapper.Name == *mapper.Name {
+			if existingMapper.Name != nil && mapper.Name != nil && *existingMapper.Name == *mapper.Name {
 				(*existingMappers)[i] = *MergeProtocolMapperRepresentation(&existingMapper, &mapper)
 				found = true
 				break
