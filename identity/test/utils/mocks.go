@@ -83,6 +83,12 @@ func ConfigureKeycloakClientMock(mockedClient *mocks.MockKeycloakClient) {
 		mock.AnythingOfType("*api.GetRealmClientsParams")).
 		Return(mockGetRealmClientsWithResponse(mockedBody, ClientId, ClientSecret), nil).Maybe()
 
+	mockedClient.EXPECT().GetRealmClientsIdWithResponse(
+		mock.Anything,
+		realmMatcher,
+		mock.AnythingOfType("string")).
+		Return(mockGetRealmClientsIdResponse(ClientId, ClientSecret), nil).Maybe()
+
 	mockedClient.EXPECT().PutRealmClientsIdWithResponse(
 		mock.Anything,
 		realmMatcher,
@@ -201,6 +207,23 @@ func mockPostRealmClientsIdClientSecretResponse() *api.PostRealmClientsIdClientS
 		Body:         []byte(`{}`),
 		HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusOK}),
 		JSON2XX:      &api.CredentialRepresentation{},
+	}
+}
+
+func mockGetRealmClientsIdResponse(clientId, clientSecret string) *api.GetRealmClientsIdResponse {
+	return &api.GetRealmClientsIdResponse{
+		Body:         []byte(`{}`),
+		HTTPResponse: ptr.To(http.Response{StatusCode: http.StatusOK}),
+		JSON2XX: &api.ClientRepresentation{
+			Id:                     ptr.To("mock-client-uuid"),
+			ClientId:               ptr.To(clientId),
+			Name:                   ptr.To(clientId),
+			Enabled:                ptr.To(true),
+			FullScopeAllowed:       ptr.To(false),
+			ServiceAccountsEnabled: ptr.To(true),
+			StandardFlowEnabled:    ptr.To(false),
+			Secret:                 ptr.To(clientSecret),
+		},
 	}
 }
 

@@ -243,7 +243,7 @@ var _ = Describe("HandlerClient", func() {
 
 			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
-				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything).
+				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(fmt.Errorf("keycloak 503: service unavailable"))
 
 			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
@@ -269,7 +269,7 @@ var _ = Describe("HandlerClient", func() {
 
 			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
-				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything).
+				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
 			mockSvc.EXPECT().
 				GetRotatedClientSecret(mock.Anything, mock.Anything, mock.Anything).
@@ -315,7 +315,7 @@ var _ = Describe("HandlerClient", func() {
 
 			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
-				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything).
+				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
 			mockSvc.EXPECT().
 				GetRotatedClientSecret(mock.Anything, mock.Anything, mock.Anything).
@@ -345,7 +345,7 @@ var _ = Describe("HandlerClient", func() {
 
 			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
-				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything).
+				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
 			mockSvc.EXPECT().
 				GetRotatedClientSecret(mock.Anything, mock.Anything, mock.Anything).
@@ -390,7 +390,7 @@ var _ = Describe("HandlerClient", func() {
 			var createdAt int64 = 1750075200
 			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
-				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything).
+				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
 			mockSvc.EXPECT().
 				GetRotatedClientSecret(mock.Anything, mock.Anything, mock.Anything).
@@ -429,7 +429,7 @@ var _ = Describe("HandlerClient", func() {
 			var createdAt int64 = 1750075200
 			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
-				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything).
+				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
 			mockSvc.EXPECT().
 				GetRotatedClientSecret(mock.Anything, mock.Anything, mock.Anything).
@@ -463,7 +463,7 @@ var _ = Describe("HandlerClient", func() {
 
 			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
-				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything).
+				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
 			mockSvc.EXPECT().
 				GetRotatedClientSecret(mock.Anything, mock.Anything, mock.Anything).

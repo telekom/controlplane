@@ -72,7 +72,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 	clientCopy := client.DeepCopy()
 	clientCopy.Spec.ClientSecret = resolvedSecret
 
-	err = realmClient.CreateOrReplaceClient(ctx, realm.Name, clientCopy)
+	err = realmClient.CreateOrReplaceClient(ctx, realm.Name, clientCopy, realm.SupportsGracefulSecretRotation())
 	if err != nil {
 		return fmt.Errorf("failed to create or update client: %w", err)
 	}

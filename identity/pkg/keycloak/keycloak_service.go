@@ -71,7 +71,7 @@ type KeycloakService interface {
 	ConfigureSecretRotationPolicy(ctx context.Context, realmName string, policy *identityv1.SecretRotationConfig) error
 
 	// Client operations
-	CreateOrReplaceClient(ctx context.Context, realmName string, client *identityv1.Client) error
+	CreateOrReplaceClient(ctx context.Context, realmName string, client *identityv1.Client, supportsGracefulRotation bool) error
 	DeleteClient(ctx context.Context, realmName string, client *identityv1.Client) error
 
 	// Secret rotation
@@ -143,7 +143,7 @@ func (k *keycloakService) getClient(ctx context.Context, realmName string, clien
 }
 
 // CreateOrReplaceClient implements [KeycloakService].
-func (k *keycloakService) CreateOrReplaceClient(ctx context.Context, realmName string, client *identityv1.Client) error {
+func (k *keycloakService) CreateOrReplaceClient(ctx context.Context, realmName string, client *identityv1.Client, supportsGracefulRotation bool) error {
 	existing, err := k.getClient(ctx, realmName, client)
 	if err != nil {
 		return fmt.Errorf("error checking for existing client: %w", err)
@@ -153,7 +153,7 @@ func (k *keycloakService) CreateOrReplaceClient(ctx context.Context, realmName s
 		return k.createClient(ctx, realmName, client)
 	}
 
-	return k.updateClient(ctx, realmName, existing, client)
+	return k.updateClient(ctx, realmName, existing, client, supportsGracefulRotation)
 }
 
 func (k *keycloakService) createClient(ctx context.Context, realmName string, client *identityv1.Client) error {
@@ -185,9 +185,10 @@ func (k *keycloakService) createClient(ctx context.Context, realmName string, cl
 // representation. When differences are detected the existing object is merged
 // with the desired fields (preserving Keycloak-managed attributes such as Id,
 // DefaultClientScopes, Attributes, etc.) and PUT back. If the client secret
-// changed, a forced secret rotation is triggered first so that Keycloak's
-// rotation executor preserves the old secret in the "rotated" slot.
-func (k *keycloakService) updateClient(ctx context.Context, realmName string, existing *api.ClientRepresentation, client *identityv1.Client) error {
+// changed and the realm supports graceful rotation, a forced secret rotation is
+// triggered first so that Keycloak's rotation executor preserves the old secret
+// in the "rotated" slot.
+func (k *keycloakService) updateClient(ctx context.Context, realmName string, existing *api.ClientRepresentation, client *identityv1.Client, supportsGracefulRotation bool) error {
 	logger := logr.FromContextOrDiscard(ctx)
 	clientUUID := *existing.Id
 	client.Status.ClientUid = clientUUID
@@ -201,9 +202,10 @@ func (k *keycloakService) updateClient(ctx context.Context, realmName string, ex
 		return nil
 	}
 
-	// If the secret changed, force rotation before PUT so Keycloak moves the
-	// current secret into the "rotated" slot with the configured grace period.
-	if util.HasSecretChanged(existing, &desired) {
+	// If the secret changed and the realm supports graceful rotation, force
+	// rotation before PUT so Keycloak moves the current secret into the
+	// "rotated" slot with the configured grace period.
+	if util.HasSecretChanged(existing, &desired) && supportsGracefulRotation {
 		logger.V(1).Info("secret change detected, forcing rotation before update",
 			"clientId", client.Spec.ClientId, "keycloakId", clientUUID)
 		if err := k.forceSecretRotation(ctx, realmName, clientUUID); err != nil {
