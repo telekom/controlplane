@@ -38,6 +38,8 @@ type ResolverRoot interface {
 	Decision() DecisionResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
+	DecideApprovalInput() DecideApprovalInputResolver
+	DecideApprovalRequestInput() DecideApprovalRequestInputResolver
 }
 
 type DirectiveRoot struct {
@@ -193,6 +195,14 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	ApprovalMutationResult struct {
+		Message      func(childComplexity int) int
+		Namespace    func(childComplexity int) int
+		NewState     func(childComplexity int) int
+		ResourceName func(childComplexity int) int
+		Success      func(childComplexity int) int
+	}
+
 	ApprovalRequest struct {
 		APISubscription      func(childComplexity int) int
 		Action               func(childComplexity int) int
@@ -261,6 +271,8 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		CreateTeam              func(childComplexity int, input model.CreateTeamInput) int
+		DecideApproval          func(childComplexity int, input model.DecideApprovalInput) int
+		DecideApprovalRequest   func(childComplexity int, input model.DecideApprovalRequestInput) int
 		RotateApplicationSecret func(childComplexity int, input model.RotateApplicationSecretInput) int
 		RotateTeamToken         func(childComplexity int, input model.RotateTeamTokenInput) int
 		UpdateTeam              func(childComplexity int, input model.UpdateTeamInput) int
@@ -1081,6 +1093,41 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApprovalEdge.Node(childComplexity), true
 
+	case "ApprovalMutationResult.message":
+		if e.ComplexityRoot.ApprovalMutationResult.Message == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalMutationResult.Message(childComplexity), true
+
+	case "ApprovalMutationResult.namespace":
+		if e.ComplexityRoot.ApprovalMutationResult.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalMutationResult.Namespace(childComplexity), true
+
+	case "ApprovalMutationResult.newState":
+		if e.ComplexityRoot.ApprovalMutationResult.NewState == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalMutationResult.NewState(childComplexity), true
+
+	case "ApprovalMutationResult.resourceName":
+		if e.ComplexityRoot.ApprovalMutationResult.ResourceName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalMutationResult.ResourceName(childComplexity), true
+
+	case "ApprovalMutationResult.success":
+		if e.ComplexityRoot.ApprovalMutationResult.Success == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalMutationResult.Success(childComplexity), true
+
 	case "ApprovalRequest.apiSubscription":
 		if e.ComplexityRoot.ApprovalRequest.APISubscription == nil {
 			break
@@ -1386,6 +1433,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CreateTeam(childComplexity, args["input"].(model.CreateTeamInput)), true
+
+	case "Mutation.decideApproval":
+		if e.ComplexityRoot.Mutation.DecideApproval == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_decideApproval_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DecideApproval(childComplexity, args["input"].(model.DecideApprovalInput)), true
+
+	case "Mutation.decideApprovalRequest":
+		if e.ComplexityRoot.Mutation.DecideApprovalRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_decideApprovalRequest_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DecideApprovalRequest(childComplexity, args["input"].(model.DecideApprovalRequestInput)), true
 
 	case "Mutation.rotateApplicationSecret":
 		if e.ComplexityRoot.Mutation.RotateApplicationSecret == nil {
@@ -1858,6 +1929,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputApprovalRequestWhereInput,
 		ec.unmarshalInputApprovalWhereInput,
 		ec.unmarshalInputCreateTeamInput,
+		ec.unmarshalInputDecideApprovalInput,
+		ec.unmarshalInputDecideApprovalRequestInput,
+		ec.unmarshalInputDecisionInput,
 		ec.unmarshalInputGroupWhereInput,
 		ec.unmarshalInputMemberInput,
 		ec.unmarshalInputMemberWhereInput,
@@ -4181,6 +4255,55 @@ type ApplicationMutationResult {
   resourceName: String
 }
 
+input DecideApprovalRequestInput {
+  "Target environment"
+  environment: String!
+  "Requester team that owns the namespace where the ApprovalRequest lives"
+  team: String!
+  "ApprovalRequest resource name"
+  name: String!
+  "Action to take"
+  action: ApprovalAction!
+  "Decision details"
+  decision: DecisionInput!
+}
+
+input DecideApprovalInput {
+  "Target environment"
+  environment: String!
+  "Requester team that owns the namespace where the Approval lives"
+  team: String!
+  "Approval resource name"
+  name: String!
+  "Action to take (Allow, Deny, Suspend, Resume)"
+  action: ApprovalAction!
+  "Decision details"
+  decision: DecisionInput!
+}
+
+input DecisionInput {
+  "Name of the person making the decision"
+  name: String!
+  "Email of the person making the decision"
+  email: String
+  "Optional comment"
+  comment: String
+}
+
+"Result of an approval mutation."
+type ApprovalMutationResult {
+  "Whether the K8s API accepted the request"
+  success: Boolean!
+  "Human-readable message"
+  message: String!
+  "The new state after the transition"
+  newState: String
+  "The namespace of the resource"
+  namespace: String
+  "The resource name"
+  resourceName: String
+}
+
 type Mutation {
   "Create a new Team in Kubernetes"
   createTeam(input: CreateTeamInput!): TeamMutationResult!
@@ -4190,6 +4313,10 @@ type Mutation {
   rotateTeamToken(input: RotateTeamTokenInput!): TeamMutationResult!
   "Rotate the client secret for an existing Application. Triggers async secret regeneration via the operator webhook."
   rotateApplicationSecret(input: RotateApplicationSecretInput!): ApplicationMutationResult!
+  "Decide on an ApprovalRequest (approve or deny initial access)."
+  decideApprovalRequest(input: DecideApprovalRequestInput!): ApprovalMutationResult!
+  "Decide on an existing Approval (suspend, resume, deny, or re-allow ongoing access)."
+  decideApproval(input: DecideApprovalInput!): ApprovalMutationResult!
 }
 `, BuiltIn: false},
 	{Name: "../../schema.graphql", Input: `# Copyright 2025 Deutsche Telekom IT GmbH

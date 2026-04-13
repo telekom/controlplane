@@ -15,16 +15,17 @@ type Resolver struct {
 	client             *ent.Client
 	teamService        service.TeamService
 	applicationService service.ApplicationService
+	approvalService    service.ApprovalService
 }
 
 // NewResolver creates a new root resolver with the given ent client and optional services.
-func NewResolver(client *ent.Client, teamService service.TeamService, applicationService service.ApplicationService) *Resolver {
-	return &Resolver{client: client, teamService: teamService, applicationService: applicationService}
+func NewResolver(client *ent.Client, teamService service.TeamService, applicationService service.ApplicationService, approvalService service.ApprovalService) *Resolver {
+	return &Resolver{client: client, teamService: teamService, applicationService: applicationService, approvalService: approvalService}
 }
 
 // NewSchema creates a graphql executable schema.
-func NewSchema(client *ent.Client, teamService service.TeamService, applicationService service.ApplicationService) graphql.ExecutableSchema {
+func NewSchema(client *ent.Client, teamService service.TeamService, applicationService service.ApplicationService, approvalService service.ApprovalService) graphql.ExecutableSchema {
 	return NewExecutableSchema(Config{
-		Resolvers: NewResolver(client, teamService, applicationService),
+		Resolvers: NewResolver(client, teamService, applicationService, approvalService),
 	})
 }

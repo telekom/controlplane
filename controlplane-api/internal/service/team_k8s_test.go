@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/service"
@@ -25,6 +26,7 @@ func newTestScheme() *runtime.Scheme {
 	s := runtime.NewScheme()
 	utilruntime.Must(clientgoscheme.AddToScheme(s))
 	utilruntime.Must(applicationv1.AddToScheme(s))
+	utilruntime.Must(approvalv1.AddToScheme(s))
 	utilruntime.Must(organizationv1.AddToScheme(s))
 	return s
 }
