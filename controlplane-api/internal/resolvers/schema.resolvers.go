@@ -85,8 +85,12 @@ func (r *apiSubscriptionResolver) Target(ctx context.Context, obj *ent.ApiSubscr
 }
 
 // StatusPhase is the resolver for the statusPhase field.
-func (r *apiSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *model.ApiSubscriptionInfo) (apisubscription.StatusPhase, error) {
-	return apisubscription.StatusPhase(obj.StatusPhase), nil
+func (r *apiSubscriptionInfoResolver) StatusPhase(ctx context.Context, obj *model.ApiSubscriptionInfo) (*apisubscription.StatusPhase, error) {
+	if obj.StatusPhase == nil {
+		return nil, nil
+	}
+	s := apisubscription.StatusPhase(*obj.StatusPhase)
+	return &s, nil
 }
 
 // OwnerTeam is the resolver for the ownerTeam field.

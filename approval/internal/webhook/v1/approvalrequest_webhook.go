@@ -8,6 +8,7 @@ import (
 	"context"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	arhandler "github.com/telekom/controlplane/approval/internal/handler/approvalrequest"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -40,12 +41,23 @@ var _ admission.Defaulter[*approvalv1.ApprovalRequest] = &ApprovalRequestCustomD
 func (ar *ApprovalRequestCustomDefaulter) Default(_ context.Context, obj *approvalv1.ApprovalRequest) error {
 	approvalrequestlog.Info("default", "name", obj.Name)
 
+	if obj.Spec.Decisions == nil {
+		obj.Spec.Decisions = []approvalv1.Decision{}
+	}
 	if obj.Spec.Strategy == "" {
 		obj.Spec.Strategy = approvalv1.ApprovalStrategySimple
 	}
-	if obj.Spec.Strategy == approvalv1.ApprovalStrategyAuto {
+	if obj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && !isTerminalApprovalRequestState(obj.Spec.State) {
 		obj.Spec.State = approvalv1.ApprovalStateGranted
+		if len(obj.Spec.Decisions) == 0 {
+			obj.Spec.Decisions = append(obj.Spec.Decisions, approvalv1.Decision{
+				Name:           "System",
+				Comment:        approvalv1.AutoApprovedComment,
+				ResultingState: approvalv1.ApprovalStateGranted,
+			})
+		}
 	}
+	defaultDecisionFields(obj.Spec.Decisions, obj.Spec.State)
 	return nil
 }
 
@@ -68,25 +80,62 @@ func (ar *ApprovalRequestCustomValidator) ValidateCreate(_ context.Context, obj 
 	approvalrequestlog.Info("validate create", "name", obj.Name)
 
 	if obj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && obj.Spec.State != approvalv1.ApprovalStateGranted {
-		warnings = append(warnings, "Request is auto approved and should be granted")
-		obj.Spec.State = approvalv1.ApprovalStateGranted
+		return warnings, apierrors.NewBadRequest("Auto strategy ApprovalRequest must be in Granted state")
 	}
 
 	return warnings, err
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, _ *approvalv1.ApprovalRequest, newObj *approvalv1.ApprovalRequest) (warnings admission.Warnings, err error) {
+func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, oldObj *approvalv1.ApprovalRequest, newObj *approvalv1.ApprovalRequest) (warnings admission.Warnings, err error) {
 	approvalrequestlog.Info("validate update", "name", newObj.Name)
 
-	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && newObj.Spec.State != approvalv1.ApprovalStateGranted {
-		warnings = append(warnings, "Request is auto approved and should be granted")
-		newObj.Spec.State = approvalv1.ApprovalStateGranted
+	// Block relevant approval-outcome changes on terminal-state ApprovalRequests.
+	// Granted ARs may still receive non-critical spec refreshes (for stale
+	// reconciliation), but outcome-defining fields stay immutable.
+	if isTerminalApprovalRequestState(oldObj.Spec.State) {
+		if hasRelevantGrantedARSpecChanges(oldObj.Spec, newObj.Spec) {
+			err = apierrors.NewBadRequest("ApprovalRequest is in a terminal state and cannot be modified")
+			return warnings, err
+		}
 	}
 
-	if newObj.StateChanged() && newObj.Status.AvailableTransitions != nil {
-		if !newObj.Status.AvailableTransitions.HasState(newObj.Spec.State) {
+	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && newObj.Spec.State != approvalv1.ApprovalStateGranted {
+		return warnings, apierrors.NewBadRequest("Auto strategy ApprovalRequest must be in Granted state")
+	}
+
+	stateChanged := oldObj.Spec.State != newObj.Spec.State
+
+	// Validate FSM transitions on-the-fly using the canonical FSM definitions
+	// instead of Status.AvailableTransitions (which may be stale or nil before
+	// the controller has reconciled). Auto strategy has an empty FSM, so skip.
+	if stateChanged && newObj.Spec.Strategy != approvalv1.ApprovalStrategyAuto {
+		fsmDef, ok := arhandler.ApprovalStrategyFSM[newObj.Spec.Strategy]
+		if !ok {
+			err = apierrors.NewBadRequest("Unknown approval strategy")
+			return warnings, err
+		}
+		computed := approvalv1.AvailableTransitions(fsmDef.AvailableTransitions(oldObj.Spec.State))
+		if len(computed) == 0 || !computed.HasState(newObj.Spec.State) {
 			err = apierrors.NewBadRequest("Invalid state transition")
+			return warnings, err
+		}
+	}
+
+	// Enforce at least one decision for any non-Auto state change
+	if newObj.Spec.Strategy != approvalv1.ApprovalStrategyAuto && stateChanged {
+		if len(newObj.Spec.Decisions) == 0 {
+			err = apierrors.NewBadRequest("at least one decision is required when changing state")
+			return warnings, err
+		}
+	}
+
+	// Enforce distinct deciders for FourEyes strategy on ANY transition to Granted
+	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyFourEyes {
+		if stateChanged && newObj.Spec.State == approvalv1.ApprovalStateGranted {
+			if err := validateDistinctDeciders(newObj.Spec.Decisions); err != nil {
+				return warnings, err
+			}
 		}
 	}
 

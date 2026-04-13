@@ -93,7 +93,7 @@ jobs:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
       - name: Setup Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version-file: "${{ inputs.module }}/go.mod"
           cache: false # Using a separate cache step
@@ -138,7 +138,7 @@ jobs:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
       - name: Setup Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version-file: "${{ inputs.module }}/go.mod"
           cache: false # Using a separate cache step
@@ -219,7 +219,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version-file: "${{ inputs.module }}/go.mod"
           cache: false
@@ -235,7 +235,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Run govulncheck
-        uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee # v1.0.4
+        uses: golang/govulncheck-action@31f7c5463448f83528bd771c2d978d940080c9fd # unreleased, includes fix for golang/go#75908
         with:
           go-package: ./...
           work-dir: ${{ inputs.module }}
@@ -251,7 +251,7 @@ jobs:
           fetch-depth: 0 # CodeQL requires full history
 
       - name: Setup Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version-file: "${{ inputs.module }}/go.mod"
           cache: false
@@ -267,7 +267,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # v3.30.5
+        uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
         with:
           languages: go
           build-mode: manual # Set to manual as we provide a build step
@@ -288,7 +288,7 @@ jobs:
           fi
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # v3.30.5
+        uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
         with:
           category: "/language:go/${{ inputs.name }}"
 
@@ -306,7 +306,7 @@ jobs:
           fetch-depth: ${{ inputs.run_code_analysis && 0 || 1 }}
 
       - name: Setup Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version-file: "${{ inputs.module }}/go.mod"
           cache: false

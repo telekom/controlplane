@@ -25,6 +25,34 @@ type GroupCreate struct {
 	conflict []sql.ConflictOption
 }
 
+// SetEnvironment sets the "environment" field.
+func (_c *GroupCreate) SetEnvironment(v string) *GroupCreate {
+	_c.mutation.SetEnvironment(v)
+	return _c
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableEnvironment(v *string) *GroupCreate {
+	if v != nil {
+		_c.SetEnvironment(*v)
+	}
+	return _c
+}
+
+// SetNamespace sets the "namespace" field.
+func (_c *GroupCreate) SetNamespace(v string) *GroupCreate {
+	_c.mutation.SetNamespace(v)
+	return _c
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableNamespace(v *string) *GroupCreate {
+	if v != nil {
+		_c.SetNamespace(*v)
+	}
+	return _c
+}
+
 // SetName sets the "name" field.
 func (_c *GroupCreate) SetName(v string) *GroupCreate {
 	_c.mutation.SetName(v)
@@ -158,6 +186,14 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		_spec = sqlgraph.NewCreateSpec(group.Table, sqlgraph.NewFieldSpec(group.FieldID, field.TypeInt))
 	)
 	_spec.OnConflict = _c.conflict
+	if value, ok := _c.mutation.Environment(); ok {
+		_spec.SetField(group.FieldEnvironment, field.TypeString, value)
+		_node.Environment = &value
+	}
+	if value, ok := _c.mutation.Namespace(); ok {
+		_spec.SetField(group.FieldNamespace, field.TypeString, value)
+		_node.Namespace = &value
+	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(group.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -193,7 +229,7 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Group.Create().
-//		SetName(v).
+//		SetEnvironment(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -202,7 +238,7 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.GroupUpsert) {
-//			SetName(v+v).
+//			SetEnvironment(v+v).
 //		}).
 //		Exec(ctx)
 func (_c *GroupCreate) OnConflict(opts ...sql.ConflictOption) *GroupUpsertOne {
@@ -237,6 +273,42 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetEnvironment sets the "environment" field.
+func (u *GroupUpsert) SetEnvironment(v string) *GroupUpsert {
+	u.Set(group.FieldEnvironment, v)
+	return u
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateEnvironment() *GroupUpsert {
+	u.SetExcluded(group.FieldEnvironment)
+	return u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *GroupUpsert) ClearEnvironment() *GroupUpsert {
+	u.SetNull(group.FieldEnvironment)
+	return u
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *GroupUpsert) SetNamespace(v string) *GroupUpsert {
+	u.Set(group.FieldNamespace, v)
+	return u
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateNamespace() *GroupUpsert {
+	u.SetExcluded(group.FieldNamespace)
+	return u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *GroupUpsert) ClearNamespace() *GroupUpsert {
+	u.SetNull(group.FieldNamespace)
+	return u
+}
 
 // SetName sets the "name" field.
 func (u *GroupUpsert) SetName(v string) *GroupUpsert {
@@ -312,6 +384,48 @@ func (u *GroupUpsertOne) Update(set func(*GroupUpsert)) *GroupUpsertOne {
 		set(&GroupUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *GroupUpsertOne) SetEnvironment(v string) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateEnvironment() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *GroupUpsertOne) ClearEnvironment() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *GroupUpsertOne) SetNamespace(v string) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateNamespace() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *GroupUpsertOne) ClearNamespace() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearNamespace()
+	})
 }
 
 // SetName sets the "name" field.
@@ -491,7 +605,7 @@ func (_c *GroupCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.GroupUpsert) {
-//			SetName(v+v).
+//			SetEnvironment(v+v).
 //		}).
 //		Exec(ctx)
 func (_c *GroupCreateBulk) OnConflict(opts ...sql.ConflictOption) *GroupUpsertBulk {
@@ -558,6 +672,48 @@ func (u *GroupUpsertBulk) Update(set func(*GroupUpsert)) *GroupUpsertBulk {
 		set(&GroupUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *GroupUpsertBulk) SetEnvironment(v string) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateEnvironment() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *GroupUpsertBulk) ClearEnvironment() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *GroupUpsertBulk) SetNamespace(v string) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateNamespace() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *GroupUpsertBulk) ClearNamespace() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearNamespace()
+	})
 }
 
 // SetName sets the "name" field.

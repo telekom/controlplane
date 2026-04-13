@@ -130,8 +130,9 @@ func makeReadyGatewayRealm() *gatewayv1.Realm {
 			Namespace: "default",
 		},
 		Spec: gatewayv1.RealmSpec{
-			Url:       "https://gateway.example.com:443",
-			IssuerUrl: "https://issuer.example.com",
+			Urls:             []string{"https://gateway.example.com:443"},
+			IssuerUrls:       []string{"https://issuer.example.com"},
+			DefaultConsumers: []string{},
 		},
 	}
 	meta.SetStatusCondition(&r.Status.Conditions, metav1.Condition{

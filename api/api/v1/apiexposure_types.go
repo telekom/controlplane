@@ -144,9 +144,10 @@ type ApiExposureStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
-	Active        bool              `json:"active"`
-	Route         *ctypes.ObjectRef `json:"route,omitempty"`
-	FailoverRoute *ctypes.ObjectRef `json:"failoverRoute,omitempty"`
+	Active        bool               `json:"active"`
+	Route         *ctypes.ObjectRef  `json:"route,omitempty"`
+	FailoverRoute *ctypes.ObjectRef  `json:"failoverRoute,omitempty"`
+	ProxyRoutes   []ctypes.ObjectRef `json:"proxyRoutes,omitempty"`
 }
 
 // +kubebuilder:object:root=true

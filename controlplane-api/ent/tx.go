@@ -25,16 +25,12 @@ type Tx struct {
 	Approval *ApprovalClient
 	// ApprovalRequest is the client for interacting with the ApprovalRequest builders.
 	ApprovalRequest *ApprovalRequestClient
-	// Environment is the client for interacting with the Environment builders.
-	Environment *EnvironmentClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// Member is the client for interacting with the Member builders.
 	Member *MemberClient
 	// Team is the client for interacting with the Team builders.
 	Team *TeamClient
-	// TeamEnvironment is the client for interacting with the TeamEnvironment builders.
-	TeamEnvironment *TeamEnvironmentClient
 	// Zone is the client for interacting with the Zone builders.
 	Zone *ZoneClient
 
@@ -173,11 +169,9 @@ func (tx *Tx) init() {
 	tx.Application = NewApplicationClient(tx.config)
 	tx.Approval = NewApprovalClient(tx.config)
 	tx.ApprovalRequest = NewApprovalRequestClient(tx.config)
-	tx.Environment = NewEnvironmentClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
 	tx.Member = NewMemberClient(tx.config)
 	tx.Team = NewTeamClient(tx.config)
-	tx.TeamEnvironment = NewTeamEnvironmentClient(tx.config)
 	tx.Zone = NewZoneClient(tx.config)
 }
 

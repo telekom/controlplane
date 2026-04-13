@@ -18,7 +18,6 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
-	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 )
 
 // TeamCreate is the builder for creating a Team entity.
@@ -85,6 +84,34 @@ func (_c *TeamCreate) SetNillableStatusMessage(v *string) *TeamCreate {
 	return _c
 }
 
+// SetEnvironment sets the "environment" field.
+func (_c *TeamCreate) SetEnvironment(v string) *TeamCreate {
+	_c.mutation.SetEnvironment(v)
+	return _c
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_c *TeamCreate) SetNillableEnvironment(v *string) *TeamCreate {
+	if v != nil {
+		_c.SetEnvironment(*v)
+	}
+	return _c
+}
+
+// SetNamespace sets the "namespace" field.
+func (_c *TeamCreate) SetNamespace(v string) *TeamCreate {
+	_c.mutation.SetNamespace(v)
+	return _c
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_c *TeamCreate) SetNillableNamespace(v *string) *TeamCreate {
+	if v != nil {
+		_c.SetNamespace(*v)
+	}
+	return _c
+}
+
 // SetName sets the "name" field.
 func (_c *TeamCreate) SetName(v string) *TeamCreate {
 	_c.mutation.SetName(v)
@@ -107,6 +134,20 @@ func (_c *TeamCreate) SetCategory(v team.Category) *TeamCreate {
 func (_c *TeamCreate) SetNillableCategory(v *team.Category) *TeamCreate {
 	if v != nil {
 		_c.SetCategory(*v)
+	}
+	return _c
+}
+
+// SetRoverTokenRef sets the "rover_token_ref" field.
+func (_c *TeamCreate) SetRoverTokenRef(v string) *TeamCreate {
+	_c.mutation.SetRoverTokenRef(v)
+	return _c
+}
+
+// SetNillableRoverTokenRef sets the "rover_token_ref" field if the given value is not nil.
+func (_c *TeamCreate) SetNillableRoverTokenRef(v *string) *TeamCreate {
+	if v != nil {
+		_c.SetRoverTokenRef(*v)
 	}
 	return _c
 }
@@ -143,21 +184,6 @@ func (_c *TeamCreate) AddMembers(v ...*Member) *TeamCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddMemberIDs(ids...)
-}
-
-// AddTeamEnvironmentIDs adds the "team_environments" edge to the TeamEnvironment entity by IDs.
-func (_c *TeamCreate) AddTeamEnvironmentIDs(ids ...int) *TeamCreate {
-	_c.mutation.AddTeamEnvironmentIDs(ids...)
-	return _c
-}
-
-// AddTeamEnvironments adds the "team_environments" edges to the TeamEnvironment entity.
-func (_c *TeamCreate) AddTeamEnvironments(v ...*TeamEnvironment) *TeamCreate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _c.AddTeamEnvironmentIDs(ids...)
 }
 
 // AddApplicationIDs adds the "applications" edge to the Application entity by IDs.
@@ -226,10 +252,6 @@ func (_c *TeamCreate) defaults() error {
 		v := team.DefaultLastModifiedAt()
 		_c.mutation.SetLastModifiedAt(v)
 	}
-	if _, ok := _c.mutation.StatusPhase(); !ok {
-		v := team.DefaultStatusPhase
-		_c.mutation.SetStatusPhase(v)
-	}
 	if _, ok := _c.mutation.Category(); !ok {
 		v := team.DefaultCategory
 		_c.mutation.SetCategory(v)
@@ -244,9 +266,6 @@ func (_c *TeamCreate) check() error {
 	}
 	if _, ok := _c.mutation.LastModifiedAt(); !ok {
 		return &ValidationError{Name: "last_modified_at", err: errors.New(`ent: missing required field "Team.last_modified_at"`)}
-	}
-	if _, ok := _c.mutation.StatusPhase(); !ok {
-		return &ValidationError{Name: "status_phase", err: errors.New(`ent: missing required field "Team.status_phase"`)}
 	}
 	if v, ok := _c.mutation.StatusPhase(); ok {
 		if err := team.StatusPhaseValidator(v); err != nil {
@@ -314,11 +333,19 @@ func (_c *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := _c.mutation.StatusPhase(); ok {
 		_spec.SetField(team.FieldStatusPhase, field.TypeEnum, value)
-		_node.StatusPhase = value
+		_node.StatusPhase = &value
 	}
 	if value, ok := _c.mutation.StatusMessage(); ok {
 		_spec.SetField(team.FieldStatusMessage, field.TypeString, value)
 		_node.StatusMessage = &value
+	}
+	if value, ok := _c.mutation.Environment(); ok {
+		_spec.SetField(team.FieldEnvironment, field.TypeString, value)
+		_node.Environment = &value
+	}
+	if value, ok := _c.mutation.Namespace(); ok {
+		_spec.SetField(team.FieldNamespace, field.TypeString, value)
+		_node.Namespace = &value
 	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(team.FieldName, field.TypeString, value)
@@ -331,6 +358,10 @@ func (_c *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Category(); ok {
 		_spec.SetField(team.FieldCategory, field.TypeEnum, value)
 		_node.Category = value
+	}
+	if value, ok := _c.mutation.RoverTokenRef(); ok {
+		_spec.SetField(team.FieldRoverTokenRef, field.TypeString, value)
+		_node.RoverTokenRef = &value
 	}
 	if nodes := _c.mutation.GroupIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -358,22 +389,6 @@ func (_c *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(member.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := _c.mutation.TeamEnvironmentsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   team.TeamEnvironmentsTable,
-			Columns: []string{team.TeamEnvironmentsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(teamenvironment.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -473,6 +488,12 @@ func (u *TeamUpsert) UpdateStatusPhase() *TeamUpsert {
 	return u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *TeamUpsert) ClearStatusPhase() *TeamUpsert {
+	u.SetNull(team.FieldStatusPhase)
+	return u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *TeamUpsert) SetStatusMessage(v string) *TeamUpsert {
 	u.Set(team.FieldStatusMessage, v)
@@ -488,6 +509,42 @@ func (u *TeamUpsert) UpdateStatusMessage() *TeamUpsert {
 // ClearStatusMessage clears the value of the "status_message" field.
 func (u *TeamUpsert) ClearStatusMessage() *TeamUpsert {
 	u.SetNull(team.FieldStatusMessage)
+	return u
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *TeamUpsert) SetEnvironment(v string) *TeamUpsert {
+	u.Set(team.FieldEnvironment, v)
+	return u
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *TeamUpsert) UpdateEnvironment() *TeamUpsert {
+	u.SetExcluded(team.FieldEnvironment)
+	return u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *TeamUpsert) ClearEnvironment() *TeamUpsert {
+	u.SetNull(team.FieldEnvironment)
+	return u
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *TeamUpsert) SetNamespace(v string) *TeamUpsert {
+	u.Set(team.FieldNamespace, v)
+	return u
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *TeamUpsert) UpdateNamespace() *TeamUpsert {
+	u.SetExcluded(team.FieldNamespace)
+	return u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *TeamUpsert) ClearNamespace() *TeamUpsert {
+	u.SetNull(team.FieldNamespace)
 	return u
 }
 
@@ -524,6 +581,24 @@ func (u *TeamUpsert) SetCategory(v team.Category) *TeamUpsert {
 // UpdateCategory sets the "category" field to the value that was provided on create.
 func (u *TeamUpsert) UpdateCategory() *TeamUpsert {
 	u.SetExcluded(team.FieldCategory)
+	return u
+}
+
+// SetRoverTokenRef sets the "rover_token_ref" field.
+func (u *TeamUpsert) SetRoverTokenRef(v string) *TeamUpsert {
+	u.Set(team.FieldRoverTokenRef, v)
+	return u
+}
+
+// UpdateRoverTokenRef sets the "rover_token_ref" field to the value that was provided on create.
+func (u *TeamUpsert) UpdateRoverTokenRef() *TeamUpsert {
+	u.SetExcluded(team.FieldRoverTokenRef)
+	return u
+}
+
+// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
+func (u *TeamUpsert) ClearRoverTokenRef() *TeamUpsert {
+	u.SetNull(team.FieldRoverTokenRef)
 	return u
 }
 
@@ -600,6 +675,13 @@ func (u *TeamUpsertOne) UpdateStatusPhase() *TeamUpsertOne {
 	})
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *TeamUpsertOne) ClearStatusPhase() *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.ClearStatusPhase()
+	})
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *TeamUpsertOne) SetStatusMessage(v string) *TeamUpsertOne {
 	return u.Update(func(s *TeamUpsert) {
@@ -618,6 +700,48 @@ func (u *TeamUpsertOne) UpdateStatusMessage() *TeamUpsertOne {
 func (u *TeamUpsertOne) ClearStatusMessage() *TeamUpsertOne {
 	return u.Update(func(s *TeamUpsert) {
 		s.ClearStatusMessage()
+	})
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *TeamUpsertOne) SetEnvironment(v string) *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *TeamUpsertOne) UpdateEnvironment() *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *TeamUpsertOne) ClearEnvironment() *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *TeamUpsertOne) SetNamespace(v string) *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *TeamUpsertOne) UpdateNamespace() *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *TeamUpsertOne) ClearNamespace() *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.ClearNamespace()
 	})
 }
 
@@ -660,6 +784,27 @@ func (u *TeamUpsertOne) SetCategory(v team.Category) *TeamUpsertOne {
 func (u *TeamUpsertOne) UpdateCategory() *TeamUpsertOne {
 	return u.Update(func(s *TeamUpsert) {
 		s.UpdateCategory()
+	})
+}
+
+// SetRoverTokenRef sets the "rover_token_ref" field.
+func (u *TeamUpsertOne) SetRoverTokenRef(v string) *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.SetRoverTokenRef(v)
+	})
+}
+
+// UpdateRoverTokenRef sets the "rover_token_ref" field to the value that was provided on create.
+func (u *TeamUpsertOne) UpdateRoverTokenRef() *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.UpdateRoverTokenRef()
+	})
+}
+
+// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
+func (u *TeamUpsertOne) ClearRoverTokenRef() *TeamUpsertOne {
+	return u.Update(func(s *TeamUpsert) {
+		s.ClearRoverTokenRef()
 	})
 }
 
@@ -902,6 +1047,13 @@ func (u *TeamUpsertBulk) UpdateStatusPhase() *TeamUpsertBulk {
 	})
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (u *TeamUpsertBulk) ClearStatusPhase() *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.ClearStatusPhase()
+	})
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (u *TeamUpsertBulk) SetStatusMessage(v string) *TeamUpsertBulk {
 	return u.Update(func(s *TeamUpsert) {
@@ -920,6 +1072,48 @@ func (u *TeamUpsertBulk) UpdateStatusMessage() *TeamUpsertBulk {
 func (u *TeamUpsertBulk) ClearStatusMessage() *TeamUpsertBulk {
 	return u.Update(func(s *TeamUpsert) {
 		s.ClearStatusMessage()
+	})
+}
+
+// SetEnvironment sets the "environment" field.
+func (u *TeamUpsertBulk) SetEnvironment(v string) *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.SetEnvironment(v)
+	})
+}
+
+// UpdateEnvironment sets the "environment" field to the value that was provided on create.
+func (u *TeamUpsertBulk) UpdateEnvironment() *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.UpdateEnvironment()
+	})
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (u *TeamUpsertBulk) ClearEnvironment() *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.ClearEnvironment()
+	})
+}
+
+// SetNamespace sets the "namespace" field.
+func (u *TeamUpsertBulk) SetNamespace(v string) *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.SetNamespace(v)
+	})
+}
+
+// UpdateNamespace sets the "namespace" field to the value that was provided on create.
+func (u *TeamUpsertBulk) UpdateNamespace() *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.UpdateNamespace()
+	})
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (u *TeamUpsertBulk) ClearNamespace() *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.ClearNamespace()
 	})
 }
 
@@ -962,6 +1156,27 @@ func (u *TeamUpsertBulk) SetCategory(v team.Category) *TeamUpsertBulk {
 func (u *TeamUpsertBulk) UpdateCategory() *TeamUpsertBulk {
 	return u.Update(func(s *TeamUpsert) {
 		s.UpdateCategory()
+	})
+}
+
+// SetRoverTokenRef sets the "rover_token_ref" field.
+func (u *TeamUpsertBulk) SetRoverTokenRef(v string) *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.SetRoverTokenRef(v)
+	})
+}
+
+// UpdateRoverTokenRef sets the "rover_token_ref" field to the value that was provided on create.
+func (u *TeamUpsertBulk) UpdateRoverTokenRef() *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.UpdateRoverTokenRef()
+	})
+}
+
+// ClearRoverTokenRef clears the value of the "rover_token_ref" field.
+func (u *TeamUpsertBulk) ClearRoverTokenRef() *TeamUpsertBulk {
+	return u.Update(func(s *TeamUpsert) {
+		s.ClearRoverTokenRef()
 	})
 }
 

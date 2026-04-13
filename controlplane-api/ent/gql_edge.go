@@ -105,18 +105,6 @@ func (_m *Application) SubscribedApis(
 	return _m.QuerySubscribedApis().Paginate(ctx, after, first, before, last, opts...)
 }
 
-func (_m *Environment) TeamEnvironments(ctx context.Context) (result []*TeamEnvironment, err error) {
-	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = _m.NamedTeamEnvironments(graphql.GetFieldContext(ctx).Field.Alias)
-	} else {
-		result, err = _m.Edges.TeamEnvironmentsOrErr()
-	}
-	if IsNotLoaded(err) {
-		result, err = _m.QueryTeamEnvironments().All(ctx)
-	}
-	return result, err
-}
-
 func (_m *Group) Teams(ctx context.Context) (result []*Team, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
 		result, err = _m.NamedTeams(graphql.GetFieldContext(ctx).Field.Alias)
@@ -157,18 +145,6 @@ func (_m *Team) Members(ctx context.Context) (result []*Member, err error) {
 	return result, err
 }
 
-func (_m *Team) TeamEnvironments(ctx context.Context) (result []*TeamEnvironment, err error) {
-	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = _m.NamedTeamEnvironments(graphql.GetFieldContext(ctx).Field.Alias)
-	} else {
-		result, err = _m.Edges.TeamEnvironmentsOrErr()
-	}
-	if IsNotLoaded(err) {
-		result, err = _m.QueryTeamEnvironments().All(ctx)
-	}
-	return result, err
-}
-
 func (_m *Team) Applications(
 	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, orderBy []*ApplicationOrder, where *ApplicationWhereInput,
 ) (*ApplicationConnection, error) {
@@ -177,7 +153,7 @@ func (_m *Team) Applications(
 		WithApplicationFilter(where.Filter),
 	}
 	alias := graphql.GetFieldContext(ctx).Field.Alias
-	totalCount, hasTotalCount := _m.Edges.totalCount[3][alias]
+	totalCount, hasTotalCount := _m.Edges.totalCount[2][alias]
 	if nodes, err := _m.NamedApplications(alias); err == nil || hasTotalCount {
 		pager, err := newApplicationPager(opts, last != nil)
 		if err != nil {
@@ -188,22 +164,6 @@ func (_m *Team) Applications(
 		return conn, nil
 	}
 	return _m.QueryApplications().Paginate(ctx, after, first, before, last, opts...)
-}
-
-func (_m *TeamEnvironment) Team(ctx context.Context) (*Team, error) {
-	result, err := _m.Edges.TeamOrErr()
-	if IsNotLoaded(err) {
-		result, err = _m.QueryTeam().Only(ctx)
-	}
-	return result, err
-}
-
-func (_m *TeamEnvironment) Environment(ctx context.Context) (*Environment, error) {
-	result, err := _m.Edges.EnvironmentOrErr()
-	if IsNotLoaded(err) {
-		result, err = _m.QueryEnvironment().Only(ctx)
-	}
-	return result, err
 }
 
 func (_m *Zone) Applications(ctx context.Context) (result []*Application, err error) {

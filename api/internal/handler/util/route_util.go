@@ -342,6 +342,29 @@ func CleanupProxyRoute(ctx context.Context, routeRef *types.ObjectRef, opts ...C
 	return nil
 }
 
+// CleanupStaleProxyRoutes uses the JanitorClient's Cleanup() to delete any stale proxy Routes
+// for the given apiBasePath that were NOT created/updated in this reconciliation cycle.
+// This handles zone changes: when subscriptions move or are deleted, old proxy routes are cleaned up.
+// NOTE: This does NOT delete provider failover routes (labeled with failover.secondary=true),
+// as those are managed separately by ApiExposure and should not be cleaned up here.
+func CleanupStaleProxyRoutes(ctx context.Context, apiBasePath string) (int, error) {
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	// Use janitor's Cleanup for all proxy routes with this basepath
+	// The janitor will only delete routes that were NOT touched in this reconciliation cycle
+	deleted, err := c.Cleanup(ctx, &gatewayapi.RouteList{}, []client.ListOption{
+		client.MatchingLabels{
+			apiapi.BasePathLabelKey:      labelutil.NormalizeLabelValue(apiBasePath),
+			config.BuildLabelKey("type"): "proxy",
+		},
+	})
+	if err != nil {
+		return deleted, errors.Wrapf(err, "failed to cleanup stale proxy routes for basepath %q", apiBasePath)
+	}
+
+	return deleted, nil
+}
+
 func CreateRealRoute(ctx context.Context, downstreamZoneRef types.ObjectRef, apiExposure *apiapi.ApiExposure, realmName string, opts ...CreateRouteOption) (*gatewayapi.Route, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 

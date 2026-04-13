@@ -25,6 +25,8 @@ func (ApiSubscription) Mixin() []ent.Mixin {
 		schemamixin.PrivacyMixin{},
 		schemamixin.TimestampsMixin{},
 		schemamixin.StatusMixin{},
+		schemamixin.EnvironmentMixin{},
+		schemamixin.NamespaceMixin{},
 	}
 }
 
@@ -54,7 +56,6 @@ func (ApiSubscription) Edges() []ent.Edge {
 			Unique(),
 		edge.To("target", ApiExposure.Type).
 			Unique().
-			Required().
 			Annotations(entgql.Skip(entgql.SkipType)),
 		edge.To("failover_zones", Zone.Type),
 		edge.To("approval", Approval.Type).

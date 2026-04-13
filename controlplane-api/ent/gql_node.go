@@ -22,11 +22,9 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/approvalrequest"
-	"github.com/telekom/controlplane/controlplane-api/ent/environment"
 	"github.com/telekom/controlplane/controlplane-api/ent/group"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	"github.com/telekom/controlplane/controlplane-api/ent/team"
-	"github.com/telekom/controlplane/controlplane-api/ent/teamenvironment"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"golang.org/x/sync/semaphore"
 )
@@ -61,11 +59,6 @@ var approvalrequestImplementors = []string{"ApprovalRequest", "Node"}
 // IsNode implements the Node interface check for GQLGen.
 func (*ApprovalRequest) IsNode() {}
 
-var environmentImplementors = []string{"Environment", "Node"}
-
-// IsNode implements the Node interface check for GQLGen.
-func (*Environment) IsNode() {}
-
 var groupImplementors = []string{"Group", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
@@ -80,11 +73,6 @@ var teamImplementors = []string{"Team", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*Team) IsNode() {}
-
-var teamenvironmentImplementors = []string{"TeamEnvironment", "Node"}
-
-// IsNode implements the Node interface check for GQLGen.
-func (*TeamEnvironment) IsNode() {}
 
 var zoneImplementors = []string{"Zone", "Node"}
 
@@ -194,15 +182,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			}
 		}
 		return query.Only(ctx)
-	case environment.Table:
-		query := c.Environment.Query().
-			Where(environment.ID(id))
-		if fc := graphql.GetFieldContext(ctx); fc != nil {
-			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, environmentImplementors...); err != nil {
-				return nil, err
-			}
-		}
-		return query.Only(ctx)
 	case group.Table:
 		query := c.Group.Query().
 			Where(group.ID(id))
@@ -226,15 +205,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			Where(team.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, teamImplementors...); err != nil {
-				return nil, err
-			}
-		}
-		return query.Only(ctx)
-	case teamenvironment.Table:
-		query := c.TeamEnvironment.Query().
-			Where(teamenvironment.ID(id))
-		if fc := graphql.GetFieldContext(ctx); fc != nil {
-			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, teamenvironmentImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -401,22 +371,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 				*noder = node
 			}
 		}
-	case environment.Table:
-		query := c.Environment.Query().
-			Where(environment.IDIn(ids...))
-		query, err := query.CollectFields(ctx, environmentImplementors...)
-		if err != nil {
-			return nil, err
-		}
-		nodes, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range nodes {
-			for _, noder := range idmap[node.ID] {
-				*noder = node
-			}
-		}
 	case group.Table:
 		query := c.Group.Query().
 			Where(group.IDIn(ids...))
@@ -453,22 +407,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		query := c.Team.Query().
 			Where(team.IDIn(ids...))
 		query, err := query.CollectFields(ctx, teamImplementors...)
-		if err != nil {
-			return nil, err
-		}
-		nodes, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range nodes {
-			for _, noder := range idmap[node.ID] {
-				*noder = node
-			}
-		}
-	case teamenvironment.Table:
-		query := c.TeamEnvironment.Query().
-			Where(teamenvironment.IDIn(ids...))
-		query, err := query.CollectFields(ctx, teamenvironmentImplementors...)
 		if err != nil {
 			return nil, err
 		}

@@ -54,6 +54,12 @@ func (_u *ApprovalUpdate) SetNillableStatusPhase(v *approval.StatusPhase) *Appro
 	return _u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (_u *ApprovalUpdate) ClearStatusPhase() *ApprovalUpdate {
+	_u.mutation.ClearStatusPhase()
+	return _u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (_u *ApprovalUpdate) SetStatusMessage(v string) *ApprovalUpdate {
 	_u.mutation.SetStatusMessage(v)
@@ -71,6 +77,46 @@ func (_u *ApprovalUpdate) SetNillableStatusMessage(v *string) *ApprovalUpdate {
 // ClearStatusMessage clears the value of the "status_message" field.
 func (_u *ApprovalUpdate) ClearStatusMessage() *ApprovalUpdate {
 	_u.mutation.ClearStatusMessage()
+	return _u
+}
+
+// SetEnvironment sets the "environment" field.
+func (_u *ApprovalUpdate) SetEnvironment(v string) *ApprovalUpdate {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *ApprovalUpdate) SetNillableEnvironment(v *string) *ApprovalUpdate {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *ApprovalUpdate) ClearEnvironment() *ApprovalUpdate {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *ApprovalUpdate) SetNamespace(v string) *ApprovalUpdate {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *ApprovalUpdate) SetNillableNamespace(v *string) *ApprovalUpdate {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *ApprovalUpdate) ClearNamespace() *ApprovalUpdate {
+	_u.mutation.ClearNamespace()
 	return _u
 }
 
@@ -151,6 +197,12 @@ func (_u *ApprovalUpdate) SetAvailableTransitions(v []model.AvailableTransition)
 // AppendAvailableTransitions appends value to the "available_transitions" field.
 func (_u *ApprovalUpdate) AppendAvailableTransitions(v []model.AvailableTransition) *ApprovalUpdate {
 	_u.mutation.AppendAvailableTransitions(v)
+	return _u
+}
+
+// ClearAvailableTransitions clears the value of the "available_transitions" field.
+func (_u *ApprovalUpdate) ClearAvailableTransitions() *ApprovalUpdate {
+	_u.mutation.ClearAvailableTransitions()
 	return _u
 }
 
@@ -283,11 +335,26 @@ func (_u *ApprovalUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.StatusPhase(); ok {
 		_spec.SetField(approval.FieldStatusPhase, field.TypeEnum, value)
 	}
+	if _u.mutation.StatusPhaseCleared() {
+		_spec.ClearField(approval.FieldStatusPhase, field.TypeEnum)
+	}
 	if value, ok := _u.mutation.StatusMessage(); ok {
 		_spec.SetField(approval.FieldStatusMessage, field.TypeString, value)
 	}
 	if _u.mutation.StatusMessageCleared() {
 		_spec.ClearField(approval.FieldStatusMessage, field.TypeString)
+	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(approval.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(approval.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(approval.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(approval.FieldNamespace, field.TypeString)
 	}
 	if value, ok := _u.mutation.Action(); ok {
 		_spec.SetField(approval.FieldAction, field.TypeString, value)
@@ -316,6 +383,9 @@ func (_u *ApprovalUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, approval.FieldAvailableTransitions, value)
 		})
+	}
+	if _u.mutation.AvailableTransitionsCleared() {
+		_spec.ClearField(approval.FieldAvailableTransitions, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(approval.FieldState, field.TypeEnum, value)
@@ -389,6 +459,12 @@ func (_u *ApprovalUpdateOne) SetNillableStatusPhase(v *approval.StatusPhase) *Ap
 	return _u
 }
 
+// ClearStatusPhase clears the value of the "status_phase" field.
+func (_u *ApprovalUpdateOne) ClearStatusPhase() *ApprovalUpdateOne {
+	_u.mutation.ClearStatusPhase()
+	return _u
+}
+
 // SetStatusMessage sets the "status_message" field.
 func (_u *ApprovalUpdateOne) SetStatusMessage(v string) *ApprovalUpdateOne {
 	_u.mutation.SetStatusMessage(v)
@@ -406,6 +482,46 @@ func (_u *ApprovalUpdateOne) SetNillableStatusMessage(v *string) *ApprovalUpdate
 // ClearStatusMessage clears the value of the "status_message" field.
 func (_u *ApprovalUpdateOne) ClearStatusMessage() *ApprovalUpdateOne {
 	_u.mutation.ClearStatusMessage()
+	return _u
+}
+
+// SetEnvironment sets the "environment" field.
+func (_u *ApprovalUpdateOne) SetEnvironment(v string) *ApprovalUpdateOne {
+	_u.mutation.SetEnvironment(v)
+	return _u
+}
+
+// SetNillableEnvironment sets the "environment" field if the given value is not nil.
+func (_u *ApprovalUpdateOne) SetNillableEnvironment(v *string) *ApprovalUpdateOne {
+	if v != nil {
+		_u.SetEnvironment(*v)
+	}
+	return _u
+}
+
+// ClearEnvironment clears the value of the "environment" field.
+func (_u *ApprovalUpdateOne) ClearEnvironment() *ApprovalUpdateOne {
+	_u.mutation.ClearEnvironment()
+	return _u
+}
+
+// SetNamespace sets the "namespace" field.
+func (_u *ApprovalUpdateOne) SetNamespace(v string) *ApprovalUpdateOne {
+	_u.mutation.SetNamespace(v)
+	return _u
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (_u *ApprovalUpdateOne) SetNillableNamespace(v *string) *ApprovalUpdateOne {
+	if v != nil {
+		_u.SetNamespace(*v)
+	}
+	return _u
+}
+
+// ClearNamespace clears the value of the "namespace" field.
+func (_u *ApprovalUpdateOne) ClearNamespace() *ApprovalUpdateOne {
+	_u.mutation.ClearNamespace()
 	return _u
 }
 
@@ -486,6 +602,12 @@ func (_u *ApprovalUpdateOne) SetAvailableTransitions(v []model.AvailableTransiti
 // AppendAvailableTransitions appends value to the "available_transitions" field.
 func (_u *ApprovalUpdateOne) AppendAvailableTransitions(v []model.AvailableTransition) *ApprovalUpdateOne {
 	_u.mutation.AppendAvailableTransitions(v)
+	return _u
+}
+
+// ClearAvailableTransitions clears the value of the "available_transitions" field.
+func (_u *ApprovalUpdateOne) ClearAvailableTransitions() *ApprovalUpdateOne {
+	_u.mutation.ClearAvailableTransitions()
 	return _u
 }
 
@@ -648,11 +770,26 @@ func (_u *ApprovalUpdateOne) sqlSave(ctx context.Context) (_node *Approval, err 
 	if value, ok := _u.mutation.StatusPhase(); ok {
 		_spec.SetField(approval.FieldStatusPhase, field.TypeEnum, value)
 	}
+	if _u.mutation.StatusPhaseCleared() {
+		_spec.ClearField(approval.FieldStatusPhase, field.TypeEnum)
+	}
 	if value, ok := _u.mutation.StatusMessage(); ok {
 		_spec.SetField(approval.FieldStatusMessage, field.TypeString, value)
 	}
 	if _u.mutation.StatusMessageCleared() {
 		_spec.ClearField(approval.FieldStatusMessage, field.TypeString)
+	}
+	if value, ok := _u.mutation.Environment(); ok {
+		_spec.SetField(approval.FieldEnvironment, field.TypeString, value)
+	}
+	if _u.mutation.EnvironmentCleared() {
+		_spec.ClearField(approval.FieldEnvironment, field.TypeString)
+	}
+	if value, ok := _u.mutation.Namespace(); ok {
+		_spec.SetField(approval.FieldNamespace, field.TypeString, value)
+	}
+	if _u.mutation.NamespaceCleared() {
+		_spec.ClearField(approval.FieldNamespace, field.TypeString)
 	}
 	if value, ok := _u.mutation.Action(); ok {
 		_spec.SetField(approval.FieldAction, field.TypeString, value)
@@ -681,6 +818,9 @@ func (_u *ApprovalUpdateOne) sqlSave(ctx context.Context) (_node *Approval, err 
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, approval.FieldAvailableTransitions, value)
 		})
+	}
+	if _u.mutation.AvailableTransitionsCleared() {
+		_spec.ClearField(approval.FieldAvailableTransitions, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(approval.FieldState, field.TypeEnum, value)
