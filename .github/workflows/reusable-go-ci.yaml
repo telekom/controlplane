@@ -154,7 +154,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Install gotestsum
-        run: go install gotest.tools/gotestsum@v1.13.0
+        run: go install gotest.tools/gotestsum@v1.13.0 # h1:+Lh454O9mu9AMG1APV4o0y7oDYKyik/3kBOiCqiEpRo=
 
       - name: Build and test module
         shell: bash
