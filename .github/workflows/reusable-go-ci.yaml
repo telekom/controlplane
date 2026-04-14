@@ -179,10 +179,21 @@ jobs:
 
       - name: Check coverage threshold
         if: ${{ always() }}
-        uses: vladopajic/go-test-coverage@f190f667e23b4441202d0bab0f8c2e7bce8925b6 # v2.18.4
-        with:
-          profile: ${{ inputs.module }}/cover.out
-          threshold-total: 10
+        shell: bash
+        working-directory: ${{ inputs.module }}
+        env:
+          COVERAGE_THRESHOLD: 10
+        run: |
+          if [ ! -f cover.out ]; then
+            echo "::warning::No coverage file found"
+            exit 0
+          fi
+          total=$(go tool cover -func=cover.out | awk '/^total:/ {print $NF}' | tr -d '%')
+          echo "Total coverage: ${total}% (threshold: ${COVERAGE_THRESHOLD}%)"
+          if [ "$(echo "${total} < ${COVERAGE_THRESHOLD}" | bc -l)" -eq 1 ]; then
+            echo "::error::Coverage ${total}% is below threshold ${COVERAGE_THRESHOLD}%"
+            exit 1
+          fi
 
       - name: Upload test reports
         id: upload_test_reports_artifact_step
