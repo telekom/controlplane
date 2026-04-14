@@ -473,6 +473,26 @@ func (mr *MockKongAdminApiMockRecorder) UpsertServiceWithResponse(ctx, serviceId
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertServiceWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).UpsertServiceWithResponse), varargs...)
 }
 
+// UpsertTargetForUpstreamWithResponse mocks base method.
+func (m *MockKongAdminApi) UpsertTargetForUpstreamWithResponse(ctx context.Context, upstreamIdOrName, targetIdOrTarget string, body kong.UpsertTargetForUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertTargetForUpstreamResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, upstreamIdOrName, targetIdOrTarget, body}
+	for _, a := range reqEditors {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpsertTargetForUpstreamWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.UpsertTargetForUpstreamResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpsertTargetForUpstreamWithResponse indicates an expected call of UpsertTargetForUpstreamWithResponse.
+func (mr *MockKongAdminApiMockRecorder) UpsertTargetForUpstreamWithResponse(ctx, upstreamIdOrName, targetIdOrTarget, body any, reqEditors ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, upstreamIdOrName, targetIdOrTarget, body}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertTargetForUpstreamWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).UpsertTargetForUpstreamWithResponse), varargs...)
+}
+
 // UpsertUpstreamWithResponse mocks base method.
 func (m *MockKongAdminApi) UpsertUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, body kong.UpsertUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertUpstreamResponse, error) {
 	m.ctrl.T.Helper()

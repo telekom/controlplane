@@ -6,12 +6,13 @@ package feature_test
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"github.com/telekom/controlplane/gateway/internal/features/feature/config"
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"net/http"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -155,25 +156,27 @@ var _ = Describe("CircuitBreakerFeature", func() {
 				}
 				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(upsertUpstreamWithResponse_func).Times(1)
 
-				// mock CreateTargetForUpstreamWithResponse
-				var createTargetForUpstreamWithResponse_upstreamNameArg string
-				var createTargetForUpstreamWithResponse_targetBodyArg kong.CreateTargetForUpstreamJSONRequestBody
+				// mock UpsertTargetForUpstreamWithResponse
+				var upsertTargetForUpstreamWithResponse_upstreamNameArg string
+				var upsertTargetForUpstreamWithResponse_targetIdArg string
+				var upsertTargetForUpstreamWithResponse_targetBodyArg kong.UpsertTargetForUpstreamJSONRequestBody
 
-				createTargetForUpstreamWithResponse_func := func(_ context.Context, upstreamName string, targetsBody kong.CreateTargetForUpstreamJSONRequestBody, _ ...kong.RequestEditorFn) (*kong.CreateTargetForUpstreamResponse, error) {
-					createTargetForUpstreamWithResponse_upstreamNameArg = upstreamName
-					createTargetForUpstreamWithResponse_targetBodyArg = targetsBody
+				upsertTargetForUpstreamWithResponse_func := func(_ context.Context, upstreamName string, targetIdOrTarget string, targetsBody kong.UpsertTargetForUpstreamJSONRequestBody, _ ...kong.RequestEditorFn) (*kong.UpsertTargetForUpstreamResponse, error) {
+					upsertTargetForUpstreamWithResponse_upstreamNameArg = upstreamName
+					upsertTargetForUpstreamWithResponse_targetIdArg = targetIdOrTarget
+					upsertTargetForUpstreamWithResponse_targetBodyArg = targetsBody
 
-					createTargetForUpstreamResponseId := "kong_target_response_id"
-					return &kong.CreateTargetForUpstreamResponse{
+					upsertTargetForUpstreamResponseId := "kong_target_response_id"
+					return &kong.UpsertTargetForUpstreamResponse{
 						HTTPResponse: &http.Response{
 							StatusCode: 200,
 						},
 						JSON200: &kong.Target{
-							Id: &createTargetForUpstreamResponseId,
+							Id: &upsertTargetForUpstreamResponseId,
 						},
 					}, nil
 				}
-				mockKongAdminApi.EXPECT().CreateTargetForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(createTargetForUpstreamWithResponse_func).Times(1)
+				mockKongAdminApi.EXPECT().UpsertTargetForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(upsertTargetForUpstreamWithResponse_func).Times(1)
 
 				// Execute
 				err := feature.InstanceCircuitBreakerFeature.Apply(ctx, mockFeatureBuilder)
@@ -195,10 +198,11 @@ var _ = Describe("CircuitBreakerFeature", func() {
 				Expect(upsertUpstreamWithResponse_upstreamBodyArg).To(Equal(*expectedUpstreamBody))
 				Expect(route.GetUpstreamId()).To(Equal("kong_upstream_response_id"))
 
-				Expect(createTargetForUpstreamWithResponse_upstreamNameArg).To(Equal("test-route-name"))
+				Expect(upsertTargetForUpstreamWithResponse_upstreamNameArg).To(Equal("test-route-name"))
+				Expect(upsertTargetForUpstreamWithResponse_targetIdArg).To(Equal("localhost:8080"))
 				expectedTargetTarget := "localhost:8080"
 				expectedTargetWeight := 100
-				Expect(createTargetForUpstreamWithResponse_targetBodyArg).To(Equal(kong.CreateTargetForUpstreamJSONRequestBody{
+				Expect(upsertTargetForUpstreamWithResponse_targetBodyArg).To(Equal(kong.UpsertTargetForUpstreamJSONRequestBody{
 					Tags:   &[]string{"env--test", "targets--test-route-name", "route--test-route-name"},
 					Target: &expectedTargetTarget,
 					Weight: &expectedTargetWeight,

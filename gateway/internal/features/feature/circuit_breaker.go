@@ -7,6 +7,7 @@ package feature
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -171,7 +172,7 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 	targetsName := routeName
 	targetsTarget := DefaultTargetsTarget
 	targetsWeight := 100
-	targetsBody := kong.CreateTargetForUpstreamJSONRequestBody{
+	targetsBody := kong.UpsertTargetForUpstreamJSONRequestBody{
 		Tags: &[]string{
 			client.BuildTag("env", contextutil.EnvFromContextOrDie(ctx)),
 			client.BuildTag("targets", targetsName),
@@ -181,13 +182,13 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 		Weight: &targetsWeight,
 	}
 
-	// this is a special case with the kong admin API - this endpoint /upstreams/:upstreamName/targets actually accepts multiple POST requests, so this is not a mistake
-	targetsResponse, err := kongAdminApi.CreateTargetForUpstreamWithResponse(ctx, upstreamName, targetsBody)
+	// Use upsert (PUT) instead of create (POST) to handle re-reconciliation gracefully
+	targetsResponse, err := kongAdminApi.UpsertTargetForUpstreamWithResponse(ctx, upstreamName, targetsTarget, targetsBody)
 	if err != nil {
-		return errors.Wrap(err, "failed to create targets for upstream")
+		return errors.Wrap(err, "failed to upsert targets for upstream")
 	}
-	if err := client.CheckStatusCode(targetsResponse, 200, 201); err != nil {
-		return errors.Wrap(fmt.Errorf("error body from kong admin api: %s", string(targetsResponse.Body)), "failed to create targets for upstream")
+	if err := client.CheckStatusCode(targetsResponse, 200); err != nil {
+		return errors.Wrap(fmt.Errorf("error body from kong admin api: %s", string(targetsResponse.Body)), "failed to upsert targets for upstream")
 	}
 	route.SetTargetsId(*targetsResponse.JSON200.Id)
 
