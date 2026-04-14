@@ -172,6 +172,15 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: notification
+    dir: notification
+    main: cmd/main.go
+    binary: notification
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
 archives:
   - id: rover-ctl
     ids: [rover-ctl]
