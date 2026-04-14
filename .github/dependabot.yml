@@ -25,6 +25,7 @@ updates:
       - common-server
       - controlplane-api
       - cpapi/api
+      - discovery-server
       - event
       - event/api
       - file-manager
