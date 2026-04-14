@@ -1,0 +1,36 @@
+{
+  "apiVersion": "event.cp.ei.telekom.de/v1",
+  "kind": "EventType",
+  "metadata": {
+    "name": "de-telekom-eni-quickstart-v1",
+    "namespace": "poc--eni--hyperion",
+    "generation": 1,
+    "creationTimestamp": "2025-01-15T10:00:00Z"
+  },
+  "spec": {
+    "type": "de.telekom.eni.quickstart.v1",
+    "version": "1.0.0",
+    "description": "Quickstart event type for testing"
+  },
+  "status": {
+    "active": true,
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "Provisioned",
+        "message": "Event type registered",
+        "lastTransitionTime": "2025-01-15T10:01:00Z",
+        "observedGeneration": 1
+      },
+      {
+        "type": "Processing",
+        "status": "False",
+        "reason": "Done",
+        "message": "Event type registered",
+        "lastTransitionTime": "2025-01-15T10:01:00Z",
+        "observedGeneration": 1
+      }
+    ]
+  }
+}
