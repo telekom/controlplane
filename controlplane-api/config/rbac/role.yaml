@@ -1,0 +1,38 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: controlplane-api
+    app.kubernetes.io/managed-by: kustomize
+  name: manager-role
+rules:
+- apiGroups:
+  - organization.cp.ei.telekom.de
+  resources:
+  - teams
+  verbs:
+  - get
+  - create
+  - update
+  - patch
+- apiGroups:
+  - application.cp.ei.telekom.de
+  resources:
+  - applications
+  verbs:
+  - get
+  - update
+  - patch
+- apiGroups:
+  - approval.cp.ei.telekom.de
+  resources:
+  - approvalrequests
+  - approvals
+  verbs:
+  - get
+  - update
+  - patch
