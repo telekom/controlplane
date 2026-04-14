@@ -163,6 +163,15 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: discovery-server
+    dir: discovery-server
+    main: cmd/main.go
+    binary: discovery-server
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
 archives:
   - id: rover-ctl
     ids: [rover-ctl]
