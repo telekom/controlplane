@@ -29,3 +29,15 @@ func FuzzyMatchEventPayloadType(in string) roverv1.EventPayloadType {
 		return roverv1.EventPayloadType(in)
 	}
 }
+
+// FuzzyMatchEventResponseFilterMode performs a fuzzy match on the input string to determine the EventResponseFilterMode.
+func FuzzyMatchEventResponseFilterMode(in string) roverv1.EventResponseFilterMode {
+	switch in {
+	case "include", "INCLUDE", "Include":
+		return roverv1.EventResponseFilterModeInclude
+	case "exclude", "EXCLUDE", "Exclude":
+		return roverv1.EventResponseFilterModeExclude
+	default:
+		return roverv1.EventResponseFilterMode(in)
+	}
+}
