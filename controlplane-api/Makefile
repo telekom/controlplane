@@ -27,7 +27,7 @@ build: generate
 	go build -o bin/controlplane-api ./cmd/main.go
 
 test:
-	go test ./... -coverprofile cover.out -json 2>&1 | tee gotest.log | gotestfmt
+	gotestsum --format pkgname --junitfile junit.xml --jsonfile gotest.log -- ./... -coverprofile cover.out -race
 
 fmt:
 	go fmt ./...

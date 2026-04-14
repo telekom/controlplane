@@ -25,7 +25,7 @@ build: fmt vet ## Run go build against code.
 
 .PHONY: test
 test: fmt vet ## Run tests.
-	go test $$(go list ./... | grep -v /test |grep -v /internal/api) -coverprofile cover.out -mod=readonly -race -json 2>&1 | tee gotest.log | gotestfmt
+	gotestsum --format pkgname --junitfile junit.xml --jsonfile gotest.log -- $$(go list ./... | grep -v /test |grep -v /internal/api) -coverprofile cover.out -mod=readonly -race
 
 .PHONY: install
 install: build ## Install roverctl binary.
