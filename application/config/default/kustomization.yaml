@@ -50,6 +50,14 @@ patches:
   target:
     kind: Deployment
 
+# [SECRET_MANAGER] The following patch will add the secret manager to the deployment.
+- path: deployment_patch.yaml
+  target:
+    kind: Deployment
+- path: namespace_patch.yaml
+  target:
+    kind: Namespace
+
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
 # crd/kustomization.yaml
 - path: manager_webhook_patch.yaml
