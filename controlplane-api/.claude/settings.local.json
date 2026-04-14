@@ -17,7 +17,9 @@
       "Bash(find /home/igar/projects/controlplane -type f -name *application_webhook* -o -name *webhook*application*)",
       "Bash(find /home/igar/projects/application-operator -type f -name *webhook* -o -name *mutator*)",
       "Bash(xargs cat:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(kustomize build:*)",
+      "Bash(kubectl kustomize:*)"
     ]
   }
 }
