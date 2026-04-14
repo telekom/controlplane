@@ -153,10 +153,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-${{ inputs.module }}-
 
-      - name: Set up gotestfmt
-        uses: gotesttools/gotestfmt-action@8b4478c7019be847373babde9300210e7de34bfb # v2.2.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@v1.13.0
 
       - name: Build and test module
         shell: bash
@@ -166,46 +164,44 @@ jobs:
         run: make test
         continue-on-error: ${{ inputs.allow_tests_failure }}
 
-      - name: Generate HTML coverage report
-        shell: bash
-        working-directory: ${{ inputs.module }}
-        run: go tool cover -html=cover.out -o coverage.html
-
-      - name: Generate Cobertura coverage report
+      - name: Coverage summary
+        if: ${{ always() }}
         shell: bash
         working-directory: ${{ inputs.module }}
         run: |
-          go install github.com/boumenot/gocover-cobertura@latest
-          gocover-cobertura < cover.out > cobertura.xml
+          if [ -f cover.out ]; then
+            echo "### Coverage for ${{ inputs.name }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            go tool cover -func=cover.out >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
 
-      - name: Upload go test log
-        if: ${{ always() }} # Upload even if previous steps fail
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      - name: Check coverage threshold
+        if: ${{ always() }}
+        uses: vladopajic/go-test-coverage@f190f667e23b4441202d0bab0f8c2e7bce8925b6 # v2.18.4
         with:
-          name: ${{ inputs.name }}-gotest.log
-          path: ${{ inputs.module }}/gotest.log
-          if-no-files-found: error
+          profile: ${{ inputs.module }}/cover.out
+          threshold-total: 10
 
-      - name: Upload test reports artifact
+      - name: Upload test reports
         id: upload_test_reports_artifact_step
-        if: ${{ always() }} # Upload even if previous steps fail
+        if: ${{ always() }}
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: ${{ inputs.name }}-test-report
           path: |
             ${{ inputs.module }}/cover.out
-            ${{ inputs.module }}/coverage.html
-            ${{ inputs.module }}/cobertura.xml
             ${{ inputs.module }}/junit.xml
+            ${{ inputs.module }}/gotest.log
 
-      - name: Publish test report as Check
+      - name: Publish test report
         if: ${{ always() && (github.event_name == 'pull_request') }}
-        uses: mikepenz/action-junit-report@49b2ca06f62aa7ef83ae6769a2179271e160d8e4 # v6.3.1
+        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
         with:
-          report_paths: "${{ inputs.module }}/junit.xml"
-          check_name: "Test Report (${{ inputs.name }})"
-          comment: false
-          include_passed: true
+          name: "Test Results (${{ inputs.name }})"
+          path: "${{ inputs.module }}/junit.xml"
+          reporter: java-junit
 
   source_scan:
     name: "Source Vulnerability Scan for ${{ inputs.name }}"
