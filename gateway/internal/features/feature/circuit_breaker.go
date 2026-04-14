@@ -162,10 +162,10 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 
 	upstreamResponse, err := kongAdminApi.UpsertUpstreamWithResponse(ctx, upstreamName, upstreamBody)
 	if err != nil {
-		return errors.Wrap(err, "failed to create upstream")
+		return errors.Wrapf(err, "failed to create upstream [PUT /upstreams/%s]", upstreamName)
 	}
 	if err := client.CheckStatusCode(upstreamResponse, 200); err != nil {
-		return errors.Wrap(fmt.Errorf("error body from kong admin api: %s", string(upstreamResponse.Body)), "failed to create upstream")
+		return errors.Wrap(fmt.Errorf("error body from kong admin api [%s %s]: %s", upstreamResponse.HTTPResponse.Request.Method, upstreamResponse.HTTPResponse.Request.URL.Path, string(upstreamResponse.Body)), "failed to create upstream")
 	}
 	route.SetUpstreamId(*upstreamResponse.JSON200.Id)
 
@@ -185,10 +185,10 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 	// Use upsert (PUT) instead of create (POST) to handle re-reconciliation gracefully
 	targetsResponse, err := kongAdminApi.UpsertTargetForUpstreamWithResponse(ctx, upstreamName, targetsTarget, targetsBody)
 	if err != nil {
-		return errors.Wrap(err, "failed to upsert targets for upstream")
+		return errors.Wrapf(err, "failed to upsert targets for upstream [PUT /upstreams/%s/targets/%s]", upstreamName, targetsTarget)
 	}
 	if err := client.CheckStatusCode(targetsResponse, 200); err != nil {
-		return errors.Wrap(fmt.Errorf("error body from kong admin api: %s", string(targetsResponse.Body)), "failed to upsert targets for upstream")
+		return errors.Wrap(fmt.Errorf("error body from kong admin api [%s %s]: %s", targetsResponse.HTTPResponse.Request.Method, targetsResponse.HTTPResponse.Request.URL.Path, string(targetsResponse.Body)), "failed to upsert targets for upstream")
 	}
 	route.SetTargetsId(*targetsResponse.JSON200.Id)
 
