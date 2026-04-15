@@ -1,0 +1,25 @@
+---
+sidebar_position: 2
+---
+
+# Admin Domain
+
+The Admin domain manages the foundational infrastructure of the Control Plane — environments, zones, and remote organizations (planned feature). These resources define *where* applications are deployed and *how* different cloud environments are connected.
+
+This domain is typically managed by platform administrators, not application teams.
+
+## Custom Resources
+
+<CRDReference domain="admin" />
+
+## Domain Interactions
+
+- **Gateway domain** — Zones define which gateway instance is used. The Gateway operator reads the zone's gateway configuration when provisioning routes.
+- **Identity domain** — Zones define which identity provider is used. The Identity operator reads the zone's IDP configuration when provisioning clients and realms.
+- **Organization domain** — Teams are created within environments. Zones determine where team resources are provisioned.
+- **Event domain** — EventConfig resources reference zones for event routing and meshing.
+
+## Related Pages
+
+- [Admin Journey: Environments & Zones](../admin-journey/environments-and-zones.md)
+- [Architecture Overview](./overview.md)

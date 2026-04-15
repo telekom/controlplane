@@ -1,0 +1,132 @@
+---
+sidebar_position: 5
+---
+
+# Exposing Events
+
+:::info Optional Feature
+Event support is an optional feature of the Control Plane. It must be explicitly enabled by a platform administrator through an EventConfig resource for each zone. If events are not enabled in your environment, you can skip this page.
+:::
+
+Exposing an event is a two-step process. First, you register your event type specification so the platform knows about your event. Then, you declare the exposure in a Rover file to configure messaging and access control. Both steps are applied in the same way using `roverctl apply`.
+
+:::tip Prerequisites
+Your team must be onboarded before you can expose events. See [Applications](./applications.mdx) for details on how the platform identifies your team and application.
+:::
+
+## Step 1: Register Your Event Specification
+
+Before exposing an event, you must register its event type specification. This creates an **EventType** resource in the Control Plane, which serves as the central reference for your event's metadata.
+
+The event specification is a dedicated resource with `kind: EventSpecification`. It defines the event type identifier, version, and an optional JSON schema describing the event payload.
+
+```yaml title="eventspec.yaml"
+kind: EventSpecification
+apiVersion: tcp.ei.telekom.de/v1
+metadata:
+  name: order-created-v1
+spec:
+  type: de.telekom.orders.created.v1
+  version: '1.0.0'
+  description: Events published when a new order is created
+  specification: |
+    {
+      "$id": "https://example.com/order-created.schema.json",
+      "$schema": "http://json-schema.org/draft-07/schema",
+      "title": "OrderCreated",
+      "type": "object",
+      "properties": {
+        "orderId": {
+          "type": "string",
+          "description": "Unique identifier for the order."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Total order amount."
+        }
+      }
+    }
+```
+
+Apply the specification:
+
+```bash
+roverctl apply -f eventspec.yaml
+```
+
+### Key Fields
+
+| Field | Description |
+| ----- | ----------- |
+| `type` | A globally unique identifier for the event type, using dot-separated notation (e.g., `de.telekom.orders.created.v1`). |
+| `version` | The version of the event type specification. |
+| `description` | A human-readable summary of what this event represents. |
+| `specification` | An optional inline JSON schema describing the event payload structure. |
+
+### What Happens
+
+The EventSpecification handler processes your specification and creates an **EventType** resource. This resource stores the event's metadata and makes the event type discoverable in the platform.
+
+## Step 2: Expose the Event in Your Rover
+
+Once the event specification is registered, you can declare the exposure in your Rover file. The `eventType` in your exposure must match the type registered in Step 1.
+
+```yaml title="rover.yaml"
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: order-service
+spec:
+  zone: dataplane1
+  exposures:
+    - type: event
+      visibility: ENTERPRISE
+      eventType: de.telekom.orders.created.v1
+      approval: SIMPLE
+```
+
+Apply the Rover file:
+
+```bash
+roverctl apply -f rover.yaml
+```
+
+### Key Fields
+
+| Field | Description |
+| ----- | ----------- |
+| `eventType` | The event type identifier. Must match an existing EventType resource registered in Step 1. |
+| `approval` | The approval strategy for subscription requests: `auto`, `simple`, or `foureyes`. See [Approvals](./approvals.mdx). |
+
+### What Happens
+
+When you apply the Rover file, the Control Plane:
+
+1. Creates an **Application** resource for your service (if it does not already exist)
+2. Creates an **EventExposure** linking your application to the EventType resource
+3. The EventExposure handler verifies that an active **EventType** exists (created in Step 1), then creates a **Publisher** in the PubSub domain and configures **Gateway Routes** for event publishing and SSE delivery
+
+:::caution
+If the EventType does not exist (i.e., the specification was not registered in Step 1), the EventExposure will remain in a pending state until the specification is applied.
+:::
+
+The event type is now discoverable by other teams and ready to receive subscription requests.
+
+## API & Event Features
+
+Beyond the basic event exposure, you can customize your event type with additional features such as publisher scopes and additional publisher IDs.
+
+:::tip
+See [API & Event Features](./features/overview.mdx) for the full list of features and detailed configuration examples.
+:::
+
+| Feature | Description |
+| ------- | ----------- |
+| [Publisher Scopes](./features/event-filtering.mdx#publisher-scopes-event-exposure) | Define named scopes to partition your events and apply publisher-side filters. Subscribers can choose which scopes to receive. |
+| [Additional Publisher IDs](./features/event-filtering.mdx#additional-publisher-ids-event-exposure) | Allow multiple applications to publish events to the same event type. |
+
+## Next Steps
+
+- [Subscribing to Events](./subscribing-to-events.mdx) — Learn how other teams can consume your events
+- [Approvals](./approvals.mdx) — Understand how approval workflows protect your events
+- [Architecture: Event Domain](../architecture/event.mdx) — Deep dive into event routing and meshing

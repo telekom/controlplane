@@ -1,0 +1,24 @@
+---
+sidebar_position: 10
+---
+
+# Identity Domain
+
+The Identity domain manages identity and access management for the Control Plane through Keycloak integration. It provisions identity providers, realms, and service-account clients in a declarative, Kubernetes-native way.
+
+## Custom Resources
+
+<CRDReference domain="identity" />
+
+## Domain Interactions
+
+- **Admin domain** — Zones define which identity provider to use.
+- **Organization domain** — Team creation provisions identity clients.
+- **Application domain** — Application creation provisions identity clients.
+- **Event domain** — EventConfig provisioning creates identity clients for OAuth2 token exchange.
+- **Secret Manager** — Resolves secret references before provisioning clients in Keycloak.
+
+## Related Pages
+
+- [Architecture: Gateway Domain](./gateway.mdx)
+- [Architecture: Organization Domain](./organization.mdx)
