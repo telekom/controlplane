@@ -14,6 +14,7 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
+	"github.com/telekom/controlplane/controlplane-api/internal/service"
 	"github.com/telekom/controlplane/controlplane-api/internal/testutil"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 )
@@ -26,7 +27,7 @@ var _ = Describe("OwnerTeam resolver", func() {
 
 	BeforeEach(func() {
 		client = testutil.NewTestClient(GinkgoT())
-		r = resolvers.NewResolver(client, nil, nil, nil)
+		r = resolvers.NewResolver(client, service.Services{})
 	})
 
 	AfterEach(func() {
@@ -144,7 +145,7 @@ var _ = Describe("OwnerTeam resolver", func() {
 
 var _ = Describe("ApprovalConfig.Strategy resolver", func() {
 	It("should convert string to approval.Strategy", func() {
-		r := resolvers.NewResolver(nil, nil, nil, nil)
+		r := resolvers.NewResolver(nil, service.Services{})
 		s, err := r.ApprovalConfig().Strategy(context.Background(), &model.ApprovalConfig{Strategy: "FOUR_EYES"})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(s).To(Equal(approval.StrategyFourEyes))
@@ -276,7 +277,7 @@ var _ = Describe("ApprovalConfig.TrustedTeams", func() {
 })
 
 var _ = Describe("AvailableTransition resolvers", func() {
-	r := resolvers.NewResolver(nil, nil, nil, nil)
+	r := resolvers.NewResolver(nil, service.Services{})
 
 	It("should convert Action string to ApprovalAction", func() {
 		action, err := r.AvailableTransition().Action(context.Background(), &model.AvailableTransition{Action: "ALLOW"})
@@ -292,7 +293,7 @@ var _ = Describe("AvailableTransition resolvers", func() {
 })
 
 var _ = Describe("Decision.ResultingState resolver", func() {
-	r := resolvers.NewResolver(nil, nil, nil, nil)
+	r := resolvers.NewResolver(nil, service.Services{})
 
 	It("should return the state when ResultingState is set", func() {
 		granted := "GRANTED"

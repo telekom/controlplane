@@ -12,5 +12,5 @@ import (
 
 // ApplicationService defines operations for managing Application resources.
 type ApplicationService interface {
-	RotateApplicationSecret(ctx context.Context, input model.RotateApplicationSecretInput) (*model.ApplicationMutationResult, error)
+	RotateApplicationSecret(ctx context.Context, input model.RotateApplicationSecretInput) (*model.RotateApplicationSecretResult, error)
 }

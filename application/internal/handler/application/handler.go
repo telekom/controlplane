@@ -184,6 +184,10 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 		return errors.Wrapf(err, "failed to create or update Identity Client %s", resourceName)
 	}
 
+	if owner.Status.ClientSecret != "" && owner.Status.ClientSecret != idpClient.Spec.ClientSecret {
+		now := metav1.Now()
+		owner.Status.LastSecretRotation = &now
+	}
 	owner.Status.ClientSecret = idpClient.Spec.ClientSecret
 	owner.Status.Clients = append(owner.Status.Clients, *types.ObjectRefFromObject(idpClient))
 	return nil

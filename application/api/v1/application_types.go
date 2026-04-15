@@ -69,6 +69,10 @@ type ApplicationStatus struct {
 	ClientId     string             `json:"clientId"`
 	ClientSecret string             `json:"clientSecret"`
 
+	// LastSecretRotation is the timestamp of the last secret rotation
+	// +optional
+	LastSecretRotation *metav1.Time `json:"lastSecretRotation,omitempty"`
+
 	Clients   []types.ObjectRef `json:"clients,omitempty"`
 	Consumers []types.ObjectRef `json:"consumers,omitempty"`
 }

@@ -83,7 +83,7 @@ var _ = Describe("ApprovalK8sService", func() {
 
 	decisionInput := model.DecisionInput{
 		Name:    "Alice Decider",
-		Email:   strPtr("alice@decider.com"),
+		Email:   "alice@decider.com",
 		Comment: strPtr("Looks good"),
 	}
 

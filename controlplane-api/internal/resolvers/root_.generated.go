@@ -154,13 +154,6 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
-	ApplicationMutationResult struct {
-		Message      func(childComplexity int) int
-		Namespace    func(childComplexity int) int
-		ResourceName func(childComplexity int) int
-		Success      func(childComplexity int) int
-	}
-
 	Approval struct {
 		APISubscription      func(childComplexity int) int
 		Action               func(childComplexity int) int
@@ -302,6 +295,13 @@ type ComplexityRoot struct {
 		Reason          func(childComplexity int) int
 		TeamEmail       func(childComplexity int) int
 		TeamName        func(childComplexity int) int
+	}
+
+	RotateApplicationSecretResult struct {
+		Message      func(childComplexity int) int
+		Namespace    func(childComplexity int) int
+		ResourceName func(childComplexity int) int
+		Success      func(childComplexity int) int
 	}
 
 	Team struct {
@@ -910,34 +910,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApplicationEdge.Node(childComplexity), true
-
-	case "ApplicationMutationResult.message":
-		if e.ComplexityRoot.ApplicationMutationResult.Message == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApplicationMutationResult.Message(childComplexity), true
-
-	case "ApplicationMutationResult.namespace":
-		if e.ComplexityRoot.ApplicationMutationResult.Namespace == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApplicationMutationResult.Namespace(childComplexity), true
-
-	case "ApplicationMutationResult.resourceName":
-		if e.ComplexityRoot.ApplicationMutationResult.ResourceName == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApplicationMutationResult.ResourceName(childComplexity), true
-
-	case "ApplicationMutationResult.success":
-		if e.ComplexityRoot.ApplicationMutationResult.Success == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ApplicationMutationResult.Success(childComplexity), true
 
 	case "Approval.apiSubscription":
 		if e.ComplexityRoot.Approval.APISubscription == nil {
@@ -1652,6 +1624,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RequesterInfo.TeamName(childComplexity), true
+
+	case "RotateApplicationSecretResult.message":
+		if e.ComplexityRoot.RotateApplicationSecretResult.Message == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RotateApplicationSecretResult.Message(childComplexity), true
+
+	case "RotateApplicationSecretResult.namespace":
+		if e.ComplexityRoot.RotateApplicationSecretResult.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RotateApplicationSecretResult.Namespace(childComplexity), true
+
+	case "RotateApplicationSecretResult.resourceName":
+		if e.ComplexityRoot.RotateApplicationSecretResult.ResourceName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RotateApplicationSecretResult.ResourceName(childComplexity), true
+
+	case "RotateApplicationSecretResult.success":
+		if e.ComplexityRoot.RotateApplicationSecretResult.Success == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RotateApplicationSecretResult.Success(childComplexity), true
 
 	case "Team.applications":
 		if e.ComplexityRoot.Team.Applications == nil {
@@ -4184,8 +4184,6 @@ input CreateTeamInput {
   email: String!
   "Team members (at least one required)"
   members: [MemberInput!]!
-  "Team category"
-  category: TeamCategoryInput! = CUSTOMER
 }
 
 input UpdateTeamInput {
@@ -4199,18 +4197,11 @@ input UpdateTeamInput {
   email: String
   "Updated team members"
   members: [MemberInput!]
-  "Updated team category"
-  category: TeamCategoryInput
 }
 
 input MemberInput {
   name: String!
   email: String!
-}
-
-enum TeamCategoryInput {
-  CUSTOMER
-  INFRASTRUCTURE
 }
 
 "Result of a team mutation. Reports acceptance status - the actual reconciliation happens asynchronously."
@@ -4244,7 +4235,7 @@ input RotateApplicationSecretInput {
 }
 
 "Result of an application mutation. Reports acceptance status - the actual reconciliation happens asynchronously."
-type ApplicationMutationResult {
+type RotateApplicationSecretResult {
   "Whether the K8s API accepted the request"
   success: Boolean!
   "Human-readable message"
@@ -4285,7 +4276,7 @@ input DecisionInput {
   "Name of the person making the decision"
   name: String!
   "Email of the person making the decision"
-  email: String
+  email: String!
   "Optional comment"
   comment: String
 }
@@ -4312,7 +4303,7 @@ type Mutation {
   "Rotate the token for an existing Team. Triggers async secret regeneration via the operator."
   rotateTeamToken(input: RotateTeamTokenInput!): TeamMutationResult!
   "Rotate the client secret for an existing Application. Triggers async secret regeneration via the operator webhook."
-  rotateApplicationSecret(input: RotateApplicationSecretInput!): ApplicationMutationResult!
+  rotateApplicationSecret(input: RotateApplicationSecretInput!): RotateApplicationSecretResult!
   "Decide on an ApprovalRequest (approve or deny initial access)."
   decideApprovalRequest(input: DecideApprovalRequestInput!): ApprovalMutationResult!
   "Decide on an existing Approval (suspend, resume, deny, or re-allow ongoing access)."

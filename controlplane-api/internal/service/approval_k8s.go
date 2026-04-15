@@ -64,9 +64,7 @@ func buildDecision(input model.DecisionInput, resultingState approvalv1.Approval
 		Timestamp:      &now,
 		ResultingState: resultingState,
 	}
-	if input.Email != nil {
-		d.Email = *input.Email
-	}
+	d.Email = input.Email
 	if input.Comment != nil {
 		d.Comment = *input.Comment
 	}

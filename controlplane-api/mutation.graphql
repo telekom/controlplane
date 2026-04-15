@@ -13,8 +13,6 @@ input CreateTeamInput {
   email: String!
   "Team members (at least one required)"
   members: [MemberInput!]!
-  "Team category"
-  category: TeamCategoryInput! = CUSTOMER
 }
 
 input UpdateTeamInput {
@@ -28,18 +26,11 @@ input UpdateTeamInput {
   email: String
   "Updated team members"
   members: [MemberInput!]
-  "Updated team category"
-  category: TeamCategoryInput
 }
 
 input MemberInput {
   name: String!
   email: String!
-}
-
-enum TeamCategoryInput {
-  CUSTOMER
-  INFRASTRUCTURE
 }
 
 "Result of a team mutation. Reports acceptance status - the actual reconciliation happens asynchronously."
@@ -73,7 +64,7 @@ input RotateApplicationSecretInput {
 }
 
 "Result of an application mutation. Reports acceptance status - the actual reconciliation happens asynchronously."
-type ApplicationMutationResult {
+type RotateApplicationSecretResult {
   "Whether the K8s API accepted the request"
   success: Boolean!
   "Human-readable message"
@@ -114,7 +105,7 @@ input DecisionInput {
   "Name of the person making the decision"
   name: String!
   "Email of the person making the decision"
-  email: String
+  email: String!
   "Optional comment"
   comment: String
 }
@@ -141,7 +132,7 @@ type Mutation {
   "Rotate the token for an existing Team. Triggers async secret regeneration via the operator."
   rotateTeamToken(input: RotateTeamTokenInput!): TeamMutationResult!
   "Rotate the client secret for an existing Application. Triggers async secret regeneration via the operator webhook."
-  rotateApplicationSecret(input: RotateApplicationSecretInput!): ApplicationMutationResult!
+  rotateApplicationSecret(input: RotateApplicationSecretInput!): RotateApplicationSecretResult!
   "Decide on an ApprovalRequest (approve or deny initial access)."
   decideApprovalRequest(input: DecideApprovalRequestInput!): ApprovalMutationResult!
   "Decide on an existing Approval (suspend, resume, deny, or re-allow ongoing access)."

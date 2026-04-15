@@ -69,24 +69,24 @@ func main() {
 	}
 	client.Intercept(interceptor.TeamFilterInterceptor())
 
-	var teamService service.TeamService
-	var applicationService service.ApplicationService
-	var approvalService service.ApprovalService
+	var services service.Services
 	if cfg.Kubernetes.Enabled {
 		k8sClient, err := newK8sClient(cfg.Kubernetes)
 		if err != nil {
 			log.Error(err, "failed to create Kubernetes client")
 			os.Exit(1)
 		}
-		teamService = service.NewTeamK8sService(k8sClient)
-		applicationService = service.NewApplicationK8sService(k8sClient)
-		approvalService = service.NewApprovalK8sService(k8sClient)
+		services = service.Services{
+			Team:        service.NewTeamK8sService(k8sClient),
+			Application: service.NewApplicationK8sService(k8sClient),
+			Approval:    service.NewApprovalK8sService(k8sClient),
+		}
 		log.Info("Kubernetes integration enabled")
 	} else {
 		log.Info("Kubernetes integration disabled, mutations will be unavailable")
 	}
 
-	srv := newGraphQLServer(client, teamService, applicationService, approvalService, cfg.Security.Enabled)
+	srv := newGraphQLServer(client, services, cfg.Security.Enabled)
 
 	appCfg := cserver.NewAppConfig()
 	appCfg.CtxLog = log
@@ -176,8 +176,8 @@ func newK8sClient(cfg config.KubernetesConfig) (client.Client, error) {
 	return client.New(restConfig, client.Options{Scheme: scheme})
 }
 
-func newGraphQLServer(entClient *ent.Client, teamService service.TeamService, applicationService service.ApplicationService, approvalService service.ApprovalService, securityEnabled bool) *handler.Server {
-	srv := handler.New(resolvers.NewSchema(entClient, teamService, applicationService, approvalService))
+func newGraphQLServer(entClient *ent.Client, services service.Services, securityEnabled bool) *handler.Server {
+	srv := handler.New(resolvers.NewSchema(entClient, services))
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})
