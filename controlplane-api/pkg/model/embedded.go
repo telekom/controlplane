@@ -2,6 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+// Package model provides shared domain types used by ent schemas and consumed
+// by external modules (e.g. projector). These types were extracted from the
+// internal resolvers package to make them importable across module boundaries.
 package model
 
 // Upstream represents an upstream service endpoint.

@@ -13,9 +13,10 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
+	gqlmodel "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/testutil"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 var _ = Describe("OwnerTeam resolver", func() {
@@ -36,15 +37,15 @@ var _ = Describe("OwnerTeam resolver", func() {
 	It("should return TeamInfo with group name and email", func() {
 		ctx := testutil.AllowContext()
 
-		group, err := client.Group.Create().SetName("group-a").SetDisplayName("Group A").Save(ctx)
+		group, err := client.Group.Create().SetNamespace("default").SetName("group-a").SetDisplayName("Group A").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		team, err := client.Team.Create().
-			SetName("team-alpha").SetEmail("alpha@test.dev").SetGroup(group).Save(ctx)
+			SetNamespace("default").SetName("team-alpha").SetEmail("alpha@test.dev").SetGroup(group).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		app, err := client.Application.Create().
-			SetName("app-alpha").SetClientID("client-alpha").
+			SetNamespace("default").SetName("app-alpha").SetClientID("client-alpha").
 			SetOwnerTeam(team).SetZone(zone).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -64,10 +65,10 @@ var _ = Describe("OwnerTeam resolver", func() {
 		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		team, err := client.Team.Create().
-			SetName("team-orphan").SetEmail("orphan@test.dev").Save(ctx)
+			SetNamespace("default").SetName("team-orphan").SetEmail("orphan@test.dev").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		app, err := client.Application.Create().
-			SetName("app-orphan").SetClientID("client-orphan").
+			SetNamespace("default").SetName("app-orphan").SetClientID("client-orphan").
 			SetOwnerTeam(team).SetZone(zone).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -80,26 +81,26 @@ var _ = Describe("OwnerTeam resolver", func() {
 	It("should resolve the correct owner team when multiple teams exist", func() {
 		ctx := testutil.AllowContext()
 
-		groupA, err := client.Group.Create().SetName("group-a").SetDisplayName("Group A").Save(ctx)
+		groupA, err := client.Group.Create().SetNamespace("default").SetName("group-a").SetDisplayName("Group A").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		groupB, err := client.Group.Create().SetName("group-b").SetDisplayName("Group B").Save(ctx)
+		groupB, err := client.Group.Create().SetNamespace("default").SetName("group-b").SetDisplayName("Group B").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		teamAlpha, err := client.Team.Create().
-			SetName("team-alpha").SetEmail("alpha@test.dev").SetGroup(groupA).Save(ctx)
+			SetNamespace("default").SetName("team-alpha").SetEmail("alpha@test.dev").SetGroup(groupA).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		teamBeta, err := client.Team.Create().
-			SetName("team-beta").SetEmail("beta@test.dev").SetGroup(groupB).Save(ctx)
+			SetNamespace("default").SetName("team-beta").SetEmail("beta@test.dev").SetGroup(groupB).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		appAlpha, err := client.Application.Create().
-			SetName("app-alpha").SetClientID("client-alpha").
+			SetNamespace("default").SetName("app-alpha").SetClientID("client-alpha").
 			SetOwnerTeam(teamAlpha).SetZone(zone).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		appBeta, err := client.Application.Create().
-			SetName("app-beta").SetClientID("client-beta").
+			SetNamespace("default").SetName("app-beta").SetClientID("client-beta").
 			SetOwnerTeam(teamBeta).SetZone(zone).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -127,10 +128,10 @@ var _ = Describe("OwnerTeam resolver", func() {
 		// The schema enforces NotEmpty, so in practice email is always set.
 		// We test that a non-empty email comes back as a pointer.
 		team, err := client.Team.Create().
-			SetName("team-x").SetEmail("x@test.dev").Save(ctx)
+			SetNamespace("default").SetName("team-x").SetEmail("x@test.dev").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		app, err := client.Application.Create().
-			SetName("app-x").SetClientID("client-x").
+			SetNamespace("default").SetName("app-x").SetClientID("client-x").
 			SetOwnerTeam(team).SetZone(zone).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -167,14 +168,15 @@ var _ = Describe("ApprovalConfig.TrustedTeams", func() {
 
 		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
+		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		app, err := client.Application.Create().
-			SetName("app-alpha").SetClientID("cid-alpha").
+			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
 			SetOwnerTeam(team).SetZone(zone).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		exposure, err := client.ApiExposure.Create().
+			SetNamespace("default").
 			SetBasePath("/api/v1").
 			SetOwner(app).
 			SetApprovalConfig(model.ApprovalConfig{
@@ -195,14 +197,15 @@ var _ = Describe("ApprovalConfig.TrustedTeams", func() {
 
 		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
+		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		app, err := client.Application.Create().
-			SetName("app-alpha").SetClientID("cid-alpha").
+			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
 			SetOwnerTeam(team).SetZone(zone).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		exposure, err := client.ApiExposure.Create().
+			SetNamespace("default").
 			SetBasePath("/api/v1").
 			SetOwner(app).
 			Save(ctx)
@@ -219,14 +222,15 @@ var _ = Describe("ApprovalConfig.TrustedTeams", func() {
 
 		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
+		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		app, err := client.Application.Create().
-			SetName("app-alpha").SetClientID("cid-alpha").
+			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
 			SetOwnerTeam(team).SetZone(zone).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		exposure, err := client.ApiExposure.Create().
+			SetNamespace("default").
 			SetBasePath("/api/v1").
 			SetOwner(app).
 			SetApprovalConfig(model.ApprovalConfig{
@@ -247,14 +251,15 @@ var _ = Describe("ApprovalConfig.TrustedTeams", func() {
 
 		zone, err := client.Zone.Create().SetName("zone-eu").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		team, err := client.Team.Create().SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
+		team, err := client.Team.Create().SetNamespace("default").SetName("team-alpha").SetEmail("a@test.dev").Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		app, err := client.Application.Create().
-			SetName("app-alpha").SetClientID("cid-alpha").
+			SetNamespace("default").SetName("app-alpha").SetClientID("cid-alpha").
 			SetOwnerTeam(team).SetZone(zone).Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		exposure, err := client.ApiExposure.Create().
+			SetNamespace("default").
 			SetBasePath("/api/v1").
 			SetOwner(app).
 			SetApprovalConfig(model.ApprovalConfig{
@@ -281,7 +286,7 @@ var _ = Describe("AvailableTransition resolvers", func() {
 	It("should convert Action string to ApprovalAction", func() {
 		action, err := r.AvailableTransition().Action(context.Background(), &model.AvailableTransition{Action: "ALLOW"})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(action).To(Equal(model.ApprovalActionAllow))
+		Expect(action).To(Equal(gqlmodel.ApprovalActionAllow))
 	})
 
 	It("should convert ToState string to approval.State", func() {
