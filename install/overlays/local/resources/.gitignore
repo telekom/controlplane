@@ -1,0 +1,13 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+.local
+**/*.local
+
+# local zone configs copied from *.example.yaml templates (may contain secrets)
+admin/zones/dataplane1.yaml
+admin/zones/dataplane2.yaml
+
+# local event configs copied from *.example.yaml templates (may contain secrets)
+admin/eventconfigs/dataplane*.yaml

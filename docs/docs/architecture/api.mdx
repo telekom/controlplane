@@ -1,0 +1,38 @@
+---
+sidebar_position: 5
+---
+
+# API Domain
+
+The API domain manages the full lifecycle of APIs within the Control Plane — from registration through exposure to subscription. It acts as an abstraction layer above the Gateway domain, handling the business logic of who can access which APIs and under what conditions.
+
+## Custom Resources
+
+<CRDReference domain="api" />
+
+## Reconciliation Flow
+
+```
+Rover file applied
+    │
+    ├──▶ Api created (registered)
+    ├──▶ ApiExposure created (gateway route configured)
+    │
+    └──▶ ApiSubscription created (by subscribing team)
+            │
+            ├──▶ Approval created (if strategy ≠ auto)
+            ├──▶ Approval granted
+            └──▶ Gateway ConsumeRoute created (access granted)
+```
+
+## Domain Interactions
+
+- **Rover domain** — Creates Api, ApiExposure, and ApiSubscription resources.
+- **Gateway domain** — The API operator creates Route and ConsumeRoute resources on the gateway.
+- **Approval domain** — Subscriptions trigger approval workflows.
+- **File Manager** — OpenAPI specifications are stored and retrieved for API metadata.
+
+## Related Pages
+
+- [User Journey: Exposing APIs](../user-journey/exposing-apis.mdx)
+- [User Journey: Subscribing to APIs](../user-journey/subscribing-to-apis.mdx)
