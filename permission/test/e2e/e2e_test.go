@@ -1,6 +1,9 @@
-// Copyright 2025 Deutsche Telekom IT GmbH
+// Copyright 2026 Deutsche Telekom IT GmbH
 //
 // SPDX-License-Identifier: Apache-2.0
+
+//go:build e2e
+// +build e2e
 
 package e2e
 
