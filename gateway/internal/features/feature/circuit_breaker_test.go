@@ -6,6 +6,7 @@ package feature_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -114,7 +115,7 @@ var _ = Describe("CircuitBreakerFeature", func() {
 				Expect(err.Error()).Should(ContainSubstring("cannot find route"))
 			})
 
-			It("should create kong upstream and targets and update feature builder upstream value", func() {
+			It("should create kong upstream and target on first reconciliation (target not found in Kong)", func() {
 				// Setup
 				ctx := context.Background()
 				ctx = contextutil.WithEnv(ctx, "test")
@@ -156,34 +157,40 @@ var _ = Describe("CircuitBreakerFeature", func() {
 				}
 				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(upsertUpstreamWithResponse_func).Times(1)
 
-				// mock UpsertTargetForUpstreamWithResponse
-				var upsertTargetForUpstreamWithResponse_upstreamNameArg string
-				var upsertTargetForUpstreamWithResponse_targetIdArg string
-				var upsertTargetForUpstreamWithResponse_targetBodyArg kong.UpsertTargetForUpstreamJSONRequestBody
+				// mock ListTargetsForUpstreamWithResponse — no targets exist yet
+				mockKongAdminApi.EXPECT().ListTargetsForUpstreamWithResponse(gomock.Any(), gomock.Eq("test-route-name"), gomock.Any(), gomock.Any()).
+					Return(&kong.ListTargetsForUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 200},
+						JSON200: &kong.ListTargetsForUpstream200Response{
+							Data: &[]kong.Target{},
+						},
+					}, nil).Times(1)
 
-				upsertTargetForUpstreamWithResponse_func := func(_ context.Context, upstreamName string, targetIdOrTarget string, targetsBody kong.UpsertTargetForUpstreamJSONRequestBody, _ ...kong.RequestEditorFn) (*kong.UpsertTargetForUpstreamResponse, error) {
-					upsertTargetForUpstreamWithResponse_upstreamNameArg = upstreamName
-					upsertTargetForUpstreamWithResponse_targetIdArg = targetIdOrTarget
-					upsertTargetForUpstreamWithResponse_targetBodyArg = targetsBody
+				// mock CreateTargetForUpstreamWithResponse — target is created
+				var createTargetForUpstreamWithResponse_upstreamNameArg string
+				var createTargetForUpstreamWithResponse_targetBodyArg kong.CreateTargetForUpstreamJSONRequestBody
 
-					upsertTargetForUpstreamResponseId := "kong_target_response_id"
-					return &kong.UpsertTargetForUpstreamResponse{
+				createTargetForUpstreamWithResponse_func := func(_ context.Context, upstreamName string, targetsBody kong.CreateTargetForUpstreamJSONRequestBody, _ ...kong.RequestEditorFn) (*kong.CreateTargetForUpstreamResponse, error) {
+					createTargetForUpstreamWithResponse_upstreamNameArg = upstreamName
+					createTargetForUpstreamWithResponse_targetBodyArg = targetsBody
+
+					createTargetForUpstreamResponseId := "kong_target_response_id"
+					return &kong.CreateTargetForUpstreamResponse{
 						HTTPResponse: &http.Response{
 							StatusCode: 200,
 						},
 						JSON200: &kong.Target{
-							Id: &upsertTargetForUpstreamResponseId,
+							Id: &createTargetForUpstreamResponseId,
 						},
 					}, nil
 				}
-				mockKongAdminApi.EXPECT().UpsertTargetForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(upsertTargetForUpstreamWithResponse_func).Times(1)
+				mockKongAdminApi.EXPECT().CreateTargetForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(createTargetForUpstreamWithResponse_func).Times(1)
 
 				// Execute
 				err := feature.InstanceCircuitBreakerFeature.Apply(ctx, mockFeatureBuilder)
 
 				// Verify
 				Expect(err).Should(Not(HaveOccurred()))
-				// pointer vs non-pointer
 				Expect(*setUpstreamArg).To(BeEquivalentTo(client.CustomUpstream{
 					Scheme: "http",
 					Host:   "test-route-name",
@@ -194,20 +201,186 @@ var _ = Describe("CircuitBreakerFeature", func() {
 				Expect(upsertUpstreamWithResponse_upstreamNameArg).To(Equal("test-route-name"))
 
 				expectedUpstreamBody := createTestCreateUpstreamJSONRequestBody(ctx, "test-route-name")
-				// pointer vs non-pointer
 				Expect(upsertUpstreamWithResponse_upstreamBodyArg).To(Equal(*expectedUpstreamBody))
 				Expect(route.GetUpstreamId()).To(Equal("kong_upstream_response_id"))
 
-				Expect(upsertTargetForUpstreamWithResponse_upstreamNameArg).To(Equal("test-route-name"))
-				Expect(upsertTargetForUpstreamWithResponse_targetIdArg).To(Equal("localhost:8080"))
+				Expect(createTargetForUpstreamWithResponse_upstreamNameArg).To(Equal("test-route-name"))
 				expectedTargetTarget := "localhost:8080"
 				expectedTargetWeight := 100
-				Expect(upsertTargetForUpstreamWithResponse_targetBodyArg).To(Equal(kong.UpsertTargetForUpstreamJSONRequestBody{
+				Expect(createTargetForUpstreamWithResponse_targetBodyArg).To(Equal(kong.CreateTargetForUpstreamJSONRequestBody{
 					Tags:   &[]string{"env--test", "targets--test-route-name", "route--test-route-name"},
 					Target: &expectedTargetTarget,
 					Weight: &expectedTargetWeight,
 				}))
 				Expect(route.GetTargetsId()).To(Equal("kong_target_response_id"))
+			})
+
+			It("should upsert upstream but skip target creation when target already exists in Kong", func() {
+				// Setup
+				ctx := context.Background()
+				ctx = contextutil.WithEnv(ctx, "test")
+				route := &gatewayv1.Route{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-route-name",
+					},
+					Spec: gatewayv1.RouteSpec{
+						Traffic: gatewayv1.Traffic{
+							CircuitBreaker: &gatewayv1.CircuitBreaker{
+								Enabled: true,
+							},
+						},
+					},
+				}
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Times(1)
+				mockFeatureBuilder.EXPECT().GetKongClient().Return(mockKongClient).Times(1)
+				mockKongClient.EXPECT().GetKongAdminApi().Return(mockKongAdminApi).Times(1)
+				mockFeatureBuilder.EXPECT().SetUpstream(gomock.Any())
+
+				// mock UpsertUpstreamWithResponse — still called on every reconciliation
+				upsertUpstreamResponseId := "kong_upstream_response_id"
+				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&kong.UpsertUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 200},
+						JSON200:      &kong.Upstream{Id: &upsertUpstreamResponseId},
+					}, nil).Times(1)
+
+				// mock ListTargetsForUpstreamWithResponse — target already exists in Kong
+				existingTargetId := "existing-kong-target-id"
+				existingTarget := "localhost:8080"
+				mockKongAdminApi.EXPECT().ListTargetsForUpstreamWithResponse(gomock.Any(), gomock.Eq("test-route-name"), gomock.Any(), gomock.Any()).
+					Return(&kong.ListTargetsForUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 200},
+						JSON200: &kong.ListTargetsForUpstream200Response{
+							Data: &[]kong.Target{
+								{Id: &existingTargetId, Target: &existingTarget},
+							},
+						},
+					}, nil).Times(1)
+
+				// CreateTargetForUpstreamWithResponse must NOT be called — target already exists
+				mockKongAdminApi.EXPECT().CreateTargetForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+				// Execute
+				err := feature.InstanceCircuitBreakerFeature.Apply(ctx, mockFeatureBuilder)
+
+				// Verify
+				Expect(err).Should(Not(HaveOccurred()))
+				Expect(route.GetUpstreamId()).To(Equal("kong_upstream_response_id"))
+				Expect(route.GetTargetsId()).To(Equal("existing-kong-target-id"))
+			})
+
+			It("should return error when ListTargetsForUpstream fails", func() {
+				ctx := context.Background()
+				ctx = contextutil.WithEnv(ctx, "test")
+				route := &gatewayv1.Route{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-route-name"},
+					Spec: gatewayv1.RouteSpec{
+						Traffic: gatewayv1.Traffic{
+							CircuitBreaker: &gatewayv1.CircuitBreaker{Enabled: true},
+						},
+					},
+				}
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Times(1)
+				mockFeatureBuilder.EXPECT().GetKongClient().Return(mockKongClient).Times(1)
+				mockKongClient.EXPECT().GetKongAdminApi().Return(mockKongAdminApi).Times(1)
+				mockFeatureBuilder.EXPECT().SetUpstream(gomock.Any())
+
+				upsertUpstreamResponseId := "kong_upstream_response_id"
+				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&kong.UpsertUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 200},
+						JSON200:      &kong.Upstream{Id: &upsertUpstreamResponseId},
+					}, nil).Times(1)
+
+				mockKongAdminApi.EXPECT().ListTargetsForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil, fmt.Errorf("connection refused")).Times(1)
+
+				err := feature.InstanceCircuitBreakerFeature.Apply(ctx, mockFeatureBuilder)
+				Expect(err).Should(HaveOccurred())
+				Expect(err.Error()).Should(ContainSubstring("failed to list targets for upstream"))
+			})
+
+			It("should skip target creation when ListTargetsForUpstream returns 404 (new upstream)", func() {
+				ctx := context.Background()
+				ctx = contextutil.WithEnv(ctx, "test")
+				route := &gatewayv1.Route{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-route-name"},
+					Spec: gatewayv1.RouteSpec{
+						Traffic: gatewayv1.Traffic{
+							CircuitBreaker: &gatewayv1.CircuitBreaker{Enabled: true},
+						},
+					},
+				}
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Times(1)
+				mockFeatureBuilder.EXPECT().GetKongClient().Return(mockKongClient).Times(1)
+				mockKongClient.EXPECT().GetKongAdminApi().Return(mockKongAdminApi).Times(1)
+				mockFeatureBuilder.EXPECT().SetUpstream(gomock.Any())
+
+				upsertUpstreamResponseId := "kong_upstream_response_id"
+				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&kong.UpsertUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 200},
+						JSON200:      &kong.Upstream{Id: &upsertUpstreamResponseId},
+					}, nil).Times(1)
+
+				// ListTargetsForUpstream returns 404 — upstream doesn't have targets yet
+				mockKongAdminApi.EXPECT().ListTargetsForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&kong.ListTargetsForUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 404},
+					}, nil).Times(1)
+
+				// Since 404 means no targets, CreateTargetForUpstream should be called
+				createTargetResponseId := "new-target-id"
+				mockKongAdminApi.EXPECT().CreateTargetForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&kong.CreateTargetForUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 200},
+						JSON200:      &kong.Target{Id: &createTargetResponseId},
+					}, nil).Times(1)
+
+				err := feature.InstanceCircuitBreakerFeature.Apply(ctx, mockFeatureBuilder)
+				Expect(err).Should(Not(HaveOccurred()))
+				Expect(route.GetTargetsId()).To(Equal("new-target-id"))
+			})
+
+			It("should return error when CreateTargetForUpstream fails", func() {
+				ctx := context.Background()
+				ctx = contextutil.WithEnv(ctx, "test")
+				route := &gatewayv1.Route{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-route-name"},
+					Spec: gatewayv1.RouteSpec{
+						Traffic: gatewayv1.Traffic{
+							CircuitBreaker: &gatewayv1.CircuitBreaker{Enabled: true},
+						},
+					},
+				}
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Times(1)
+				mockFeatureBuilder.EXPECT().GetKongClient().Return(mockKongClient).Times(1)
+				mockKongClient.EXPECT().GetKongAdminApi().Return(mockKongAdminApi).Times(1)
+				mockFeatureBuilder.EXPECT().SetUpstream(gomock.Any())
+
+				upsertUpstreamResponseId := "kong_upstream_response_id"
+				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&kong.UpsertUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 200},
+						JSON200:      &kong.Upstream{Id: &upsertUpstreamResponseId},
+					}, nil).Times(1)
+
+				// No targets exist
+				mockKongAdminApi.EXPECT().ListTargetsForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&kong.ListTargetsForUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 200},
+						JSON200: &kong.ListTargetsForUpstream200Response{
+							Data: &[]kong.Target{},
+						},
+					}, nil).Times(1)
+
+				// CreateTargetForUpstream fails
+				mockKongAdminApi.EXPECT().CreateTargetForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil, fmt.Errorf("connection refused")).Times(1)
+
+				err := feature.InstanceCircuitBreakerFeature.Apply(ctx, mockFeatureBuilder)
+				Expect(err).Should(HaveOccurred())
+				Expect(err.Error()).Should(ContainSubstring("failed to create target for upstream"))
 			})
 
 			It("should delete kong upstream and targets if CB is disabled and upstreamId is not empty", func() {

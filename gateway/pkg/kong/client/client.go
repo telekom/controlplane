@@ -52,7 +52,7 @@ type KongAdminApi interface {
 
 	UpsertUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, body kong.UpsertUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertUpstreamResponse, error)
 	CreateTargetForUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, body kong.CreateTargetForUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.CreateTargetForUpstreamResponse, error)
-	UpsertTargetForUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, targetIdOrTarget string, body kong.UpsertTargetForUpstreamJSONRequestBody, reqEditors ...kong.RequestEditorFn) (*kong.UpsertTargetForUpstreamResponse, error)
+	ListTargetsForUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, params *kong.ListTargetsForUpstreamParams, reqEditors ...kong.RequestEditorFn) (*kong.ListTargetsForUpstreamResponse, error)
 	DeleteUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteUpstreamResponse, error)
 	DeleteUpstreamTargetWithResponse(ctx context.Context, upstreamIdOrName string, targetIdOrTarget string, reqEditors ...kong.RequestEditorFn) (*kong.DeleteUpstreamTargetResponse, error)
 

@@ -169,28 +169,81 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 	}
 	route.SetUpstreamId(*upstreamResponse.JSON200.Id)
 
-	targetsName := routeName
+	// The upstream is upserted (PUT) on every reconciliation — this is idempotent.
+	// The target, however, must only be created once. Repeated POST calls to
+	// /upstreams/{name}/targets produce a UNIQUE constraint violation in Kong
+	// ("UNIQUE violation detected on '{target=\"localhost:8080\", upstream={…}}'").
+	// To avoid this, we first check whether the target already exists and only
+	// create it when it is missing.
+	targetId, err := findExistingTargetId(ctx, kongAdminApi, upstreamName, DefaultTargetsTarget)
+	if err != nil {
+		return err
+	}
+	if targetId == "" {
+		targetId, err = createTarget(ctx, kongAdminApi, upstreamName, routeName, route.GetName())
+		if err != nil {
+			return err
+		}
+	}
+	route.SetTargetsId(targetId)
+
+	return nil
+}
+
+// findExistingTargetId lists all targets for the given upstream and returns the
+// ID of the one matching the expected target value.
+func findExistingTargetId(ctx context.Context, kongAdminApi client.KongAdminApi, upstreamName, expectedTarget string) (string, error) {
+	listResponse, err := kongAdminApi.ListTargetsForUpstreamWithResponse(ctx, upstreamName, nil)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to list targets for upstream %s", upstreamName)
+	}
+	// A 404 means the upstream does not exist in Kong yet (first-ever reconciliation),
+	// so there can be no targets — treat the same as "not found".
+	if listResponse.StatusCode() == 404 {
+		return "", nil
+	}
+	if err := client.CheckStatusCode(listResponse, 200); err != nil {
+		return "", errors.Wrap(
+			fmt.Errorf("error body from kong admin api: %s", string(listResponse.Body)),
+			"failed to list targets for upstream")
+	}
+
+	if listResponse.JSON200 != nil && listResponse.JSON200.Data != nil {
+		for _, t := range *listResponse.JSON200.Data {
+			if t.Target != nil && *t.Target == expectedTarget && t.Id != nil {
+				return *t.Id, nil
+			}
+		}
+	}
+
+	return "", nil
+}
+
+// createTarget creates a new target for the given upstream via POST.
+func createTarget(ctx context.Context, kongAdminApi client.KongAdminApi, upstreamName, targetsName, routeName string) (string, error) {
 	targetsTarget := DefaultTargetsTarget
 	targetsWeight := 100
-	targetsBody := kong.UpsertTargetForUpstreamJSONRequestBody{
+	targetsBody := kong.CreateTargetForUpstreamJSONRequestBody{
 		Tags: &[]string{
 			client.BuildTag("env", contextutil.EnvFromContextOrDie(ctx)),
 			client.BuildTag("targets", targetsName),
-			client.BuildTag("route", route.GetName()),
+			client.BuildTag("route", routeName),
 		},
 		Target: &targetsTarget,
 		Weight: &targetsWeight,
 	}
 
-	// Use upsert (PUT) instead of create (POST) to handle re-reconciliation gracefully
-	targetsResponse, err := kongAdminApi.UpsertTargetForUpstreamWithResponse(ctx, upstreamName, targetsTarget, targetsBody)
+	targetsResponse, err := kongAdminApi.CreateTargetForUpstreamWithResponse(ctx, upstreamName, targetsBody)
 	if err != nil {
-		return errors.Wrapf(err, "failed to upsert targets for upstream [PUT /upstreams/%s/targets/%s]", upstreamName, targetsTarget)
+		return "", errors.Wrapf(err, "failed to create target for upstream [POST /upstreams/%s/targets]", upstreamName)
 	}
 	if err := client.CheckStatusCode(targetsResponse, 200); err != nil {
-		return errors.Wrap(fmt.Errorf("error body from kong admin api [%s %s]: %s", targetsResponse.HTTPResponse.Request.Method, targetsResponse.HTTPResponse.Request.URL.Path, string(targetsResponse.Body)), "failed to upsert targets for upstream")
+		return "", errors.Wrap(
+			fmt.Errorf("error body from kong admin api [%s %s]: %s",
+				targetsResponse.HTTPResponse.Request.Method,
+				targetsResponse.HTTPResponse.Request.URL.Path,
+				string(targetsResponse.Body)),
+			"failed to create target for upstream")
 	}
-	route.SetTargetsId(*targetsResponse.JSON200.Id)
-
-	return nil
+	return *targetsResponse.JSON200.Id, nil
 }
