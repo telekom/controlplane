@@ -31,7 +31,7 @@ EOF`,
         ['@semantic-release/git', {
             assets: [
                 'CHANGELOG.md',
-                'install/kustomization.yaml',
+                'install/overlays/default/kustomization.yaml',
                 'common-server/helm/Chart.yaml',
             ],
         }],

@@ -1,0 +1,70 @@
+---
+sidebar_position: 2
+---
+
+# Managing Applications
+
+An Application in the Control Plane is a logical container that groups together all the API exposures, subscriptions, and event configurations for a single service or workload. Applications are created automatically when you apply a Rover file, but understanding the concept helps you structure your configurations.
+
+## What Is an Application?
+
+Each Rover file maps to exactly one Application. When the Rover operator processes your file, it creates an Application resource that:
+
+- Represents your service within the Control Plane
+- Provisions an **Identity Client** so your application can authenticate with the platform
+- Provisions a **Gateway Consumer** so your application can be identified at the API gateway
+- Tracks which **zone** your application is deployed to (and optionally a failover zone)
+
+## Defining an Application in a Rover File
+
+An application is identified by the Rover resource itself (`metadata.name` in your team namespace):
+
+```yaml
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: checkout-service
+spec:
+  zone: dataplane1
+```
+
+### Key Fields
+
+| Field | Description |
+| ----- | ----------- |
+| `zone` | The deployment zone where your application runs. Must match a zone defined by the platform administrator. |
+| `metadata.name` | The logical application identifier used by downstream resources. |
+
+## IP Restrictions
+
+IP restrictions are configured at the **application level** in the Rover resource. This allows you to define which source IP ranges are allowed to access your application through the gateway.
+
+```yaml
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: checkout-service
+spec:
+  zone: dataplane1
+  ipRestrictions:
+    allow:
+      - 10.0.0.0/8
+      - 192.168.1.0/24
+```
+
+### Key Fields
+
+| Field | Description |
+| ----- | ----------- |
+| `ipRestrictions.allow` | List of CIDR ranges that are allowed. |
+
+## Zone and Failover
+
+Rover itself defines the primary `zone`. Failover is configured on individual API exposures/subscriptions (not as `spec.failoverZone` on Rover).
+
+## Next Steps
+
+- [Exposing APIs](./exposing-apis.mdx) — Publish APIs from your application
+- [Exposing Events](./exposing-events.mdx) — Publish events from your application
+- [Subscribing to APIs](./subscribing-to-apis.mdx) — Consume APIs provided by other teams
+- [Subscribing to Events](./subscribing-to-events.mdx) — Consume events published by other teams

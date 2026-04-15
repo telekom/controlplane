@@ -1,0 +1,182 @@
+---
+sidebar_position: 2
+---
+
+# Local Development
+
+This page covers how to set up a local development environment for working on the Control Plane.
+
+## Prerequisites
+
+Make sure the following tools are installed before you begin. For specific version requirements and setup instructions, see the [Contributing guide](./contributing.md) and the repository's [`CONTRIBUTING.md`](https://github.com/telekom/controlplane/blob/main/CONTRIBUTING.md).
+
+- **Go** — the primary language for all operators and services
+- **Kubebuilder** — scaffolding and code generation for Kubernetes operators
+- **A local Kubernetes cluster** — for example [kind](https://kind.sigs.k8s.io/) or [minikube](https://minikube.sigs.k8s.io/)
+- **kubectl** — configured to communicate with your local cluster
+- **Helm** — for installing dependencies such as cert-manager
+- **pip + pre-commit** — for running pre-commit hooks
+
+## Repository Structure
+
+The Control Plane is organised as a monorepo. Each domain lives in its own directory with a dedicated Go module (`go.mod`), `Makefile`, and — for operators — a Kubebuilder `PROJECT` file. Modules reference each other through Go `replace` directives.
+
+### Operators
+
+Each domain has its own Kubebuilder-scaffolded controller in a dedicated directory (for example `gateway/`, `identity/`, `rover/`). See the repository root for the full list of operator directories.
+
+### Services
+
+Backend services that are not Kubernetes operators:
+
+`common-server/` · `controlplane-api/` · `rover-server/` · `secret-manager/` · `file-manager/`
+
+### CLI Tools
+
+`rover-ctl/` — command-line interface for interacting with the Control Plane.
+
+### Libraries
+
+| Directory | Purpose |
+|-----------|---------|
+| `common/` | Shared operator framework (controller, handler, utility types) |
+| `cpapi/`  | Shared API types used across services and operators |
+
+### Installation
+
+| Path | Purpose |
+|------|---------|
+| `install/base/` | Shared Kustomize base (namespace, issuer, controller references) |
+| `install/overlays/default/` | Production overlay (pulls images from GitHub Container Registry) |
+| `install/overlays/local/` | Local development overlay (images at `latest`, eventing enabled) |
+| `install/components/eventing/` | Optional kustomize Component for event and pubsub controllers |
+
+### Tools
+
+| Path | Purpose |
+|------|---------|
+| `tools/e2e-tester/` | End-to-end test runner |
+| `tools/route-tester/` | Route testing utility |
+| `tools/snapshotter/` | Cluster state snapshot tool |
+
+### Code Generation
+
+`hack/` — helper scripts including `local-setup.sh` (full local dev environment) and boilerplate templates for code generation.
+
+## Local Installation
+
+There are two ways to deploy the Control Plane to your local cluster.
+
+### Option A — Full Local Setup (Recommended)
+
+The `hack/local-setup.sh` script creates a Kind cluster, installs all prerequisites, builds every controller image with [ko](https://ko.build/), loads them into Kind, and deploys everything:
+
+```bash
+./hack/local-setup.sh
+```
+
+This is the fastest way to get a complete local environment. The script also supports incremental rebuilds:
+
+```bash
+# Rebuild all images and redeploy
+./hack/local-setup.sh --build-only
+
+# Rebuild a single controller
+./hack/local-setup.sh --build-only --only gateway
+```
+
+### Option B — Manual Kustomize
+
+If you prefer full control, apply the local overlay directly:
+
+```bash
+kubectl apply -k install/overlays/local
+kubectl apply -k install/overlays/local/resources/admin
+kubectl apply -k install/overlays/local/resources/org
+kubectl apply -k install/overlays/local/resources/rover
+```
+
+## Working with a Domain
+
+To develop on a single operator, navigate into its directory and use the provided Make targets:
+
+```bash
+cd <domain>
+
+# Generate CRDs and code
+make manifests
+make generate
+
+# Install CRDs into cluster
+make install
+
+# Run the operator locally (outside the cluster)
+make run
+
+# Build the binary
+make build
+```
+
+Running the operator locally with `make run` starts the controller on your machine and connects it to the cluster configured in your current kubeconfig context. This gives you fast feedback without needing to build a container image.
+
+## Running Tests
+
+### Unit Tests
+
+```bash
+make test
+```
+
+Uses [envtest](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest) with Kubernetes 1.31.0 assets. Output is formatted with [gotestfmt](https://github.com/gotesttools/gotestfmt).
+
+### Linting and Formatting
+
+```bash
+# Run the linter
+make lint
+
+# Run the linter and auto-fix issues
+make lint-fix
+
+# Format code
+make fmt
+
+# Run go vet
+make vet
+```
+
+## Key Make Targets
+
+Every operator directory exposes a consistent set of Make targets:
+
+| Target | Description |
+|--------|-------------|
+| `manifests` | Generate CRDs, RBAC, and webhook manifests |
+| `generate` | Generate DeepCopy methods |
+| `fmt` | Run `go fmt` |
+| `vet` | Run `go vet` |
+| `test` | Run unit tests with envtest |
+| `lint` | Run golangci-lint |
+| `build` | Build the manager binary |
+| `run` | Run the operator locally |
+| `install` | Install CRDs into the cluster |
+| `uninstall` | Remove CRDs from the cluster |
+| `deploy` | Deploy the operator to the cluster |
+| `undeploy` | Remove the operator from the cluster |
+
+## Tool Versions
+
+The project pins the following tool versions to ensure reproducible builds:
+
+| Tool | Version |
+|------|---------|
+| Kustomize | v5.4.3 |
+| controller-gen | v0.20.1 |
+| setup-envtest | release-0.19 |
+| golangci-lint | v2.11.2 |
+| envtest K8s version | 1.31.0 |
+
+## Next Steps
+
+- [Contributing](./contributing.md) — learn about the contribution workflow and code standards
+- [Creating an Operator](./creating-an-operator.md) — scaffold a new operator from scratch

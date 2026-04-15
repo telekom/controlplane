@@ -6,7 +6,7 @@ package resolvers
 
 import (
 	"github.com/telekom/controlplane/controlplane-api/ent"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 func mapTeamInfo(team *ent.Team, group *ent.Group) *model.TeamInfo {

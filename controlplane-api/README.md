@@ -144,7 +144,7 @@ Configuration is loaded from a YAML file via `--configfile`. If omitted, built-i
 controlplane-api --configfile /etc/controlplane/config/config.yaml
 ```
 
-See [`install/local/controlplane-api-config.yaml`](../install/local/controlplane-api-config.yaml) for an example.
+The following fields can be configured:
 
 | Field                       | Default                                                                            | Description                              |
 |-----------------------------|------------------------------------------------------------------------------------|------------------------------------------|

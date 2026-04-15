@@ -1,0 +1,101 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Local development overlay.
+# References controller configs from local filesystem paths and pins images to 'latest'.
+# Includes the eventing subsystem (event + pubsub) by default.
+#
+# Usage:
+#   kubectl apply -k install/overlays/local
+
+resources:
+  - ../../base
+  - ../../../file-manager/config/default
+  - ../../../secret-manager/config/default
+  - ../../../identity/config/default
+  - ../../../gateway/config/default
+  - ../../../approval/config/default
+  - ../../../rover/config/default
+  - ../../../application/config/default
+  - ../../../organization/config/default
+  - ../../../api/config/default
+  - ../../../admin/config/default
+  - ../../../rover-server/config/default
+  - ../../../notification/config/default
+
+components:
+  - ../../components/eventing
+
+configMapGenerator:
+  - name: secret-manager-config
+    behavior: replace
+    files:
+      - config.yaml=secret-manager-config.yaml
+    options:
+      disableNameSuffixHash: true
+  - name: secret-manager-env
+    behavior: merge
+    options:
+      disableNameSuffixHash: true
+    literals: []
+
+  - name: file-manager-config
+    behavior: replace
+    files:
+      - config.yaml=file-manager-config.yaml
+    options:
+      disableNameSuffixHash: true
+
+  - name: file-manager-env
+    behavior: merge
+    options:
+      disableNameSuffixHash: true
+    literals: []
+
+  - name: rover-server-env
+    behavior: merge
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - LOG_LEVEL=info
+      - SECURITY_TRUSTEDISSUERS=""
+      - SECURITY_LMS_BASEPATH=""
+
+patches:
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
+
+images:
+  - name: ghcr.io/telekom/controlplane/approval
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/gateway
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/identity
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/secret-manager
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/file-manager
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/rover
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/application
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/api
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/organization
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/admin
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/rover-server
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/notification
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/event
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/pubsub
+    newTag: latest

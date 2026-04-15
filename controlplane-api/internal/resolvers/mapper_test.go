@@ -12,9 +12,9 @@ import (
 
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/testutil"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 var _ = Describe("Subscriptions resolver (cross-tenant)", func() {
