@@ -65,7 +65,6 @@ var _ = Describe("TeamK8sService", func() {
 		Members: []model.MemberInput{
 			{Name: "Alice", Email: "alice@example.com"},
 		},
-		Category: model.TeamCategoryInputCustomer,
 	}
 
 	updateInput := model.UpdateTeamInput{

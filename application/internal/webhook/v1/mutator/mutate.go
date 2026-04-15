@@ -14,7 +14,6 @@ import (
 	"github.com/telekom/controlplane/application/internal/secret"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
 func wrapCommunicationError(err error, purposeOfCommunication string) error {
@@ -23,7 +22,7 @@ func wrapCommunicationError(err error, purposeOfCommunication string) error {
 
 // MutateSecret intercepts Application secret values and replaces them with
 // secret-manager references. If the secret is already a reference, this is a no-op.
-// If the secret is "rotate" or empty, a new UUID is generated.
+// If the secret is "rotate" or empty, a new secret is generated.
 func MutateSecret(ctx context.Context, env string, app *applicationv1.Application) error {
 	log := logr.FromContextOrDiscard(ctx)
 
@@ -34,7 +33,11 @@ func MutateSecret(ctx context.Context, env string, app *applicationv1.Applicatio
 
 	var clientSecret string
 	if strings.EqualFold(app.Spec.Secret, secret.KeywordRotate) || app.Spec.Secret == "" {
-		clientSecret = string(uuid.NewUUID())
+		generatedSecret, err := secretsapi.GenerateSecret()
+		if err != nil {
+			return errors.NewInternalError(fmt.Errorf("failed to generate secret: %w", err))
+		}
+		clientSecret = generatedSecret
 	} else {
 		clientSecret = app.Spec.Secret
 	}

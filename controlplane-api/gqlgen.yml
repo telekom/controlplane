@@ -44,18 +44,15 @@ models:
   MemberInput:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.MemberInput
-  TeamCategoryInput:
-    model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.TeamCategoryInput
   RotateTeamTokenInput:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateTeamTokenInput
   RotateApplicationSecretInput:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateApplicationSecretInput
-  ApplicationMutationResult:
+  RotateApplicationSecretResult:
     model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApplicationMutationResult
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateApplicationSecretResult
   DecideApprovalRequestInput:
     model:
       - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecideApprovalRequestInput

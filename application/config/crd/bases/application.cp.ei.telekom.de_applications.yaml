@@ -139,6 +139,11 @@ spec:
                 type: string
               clientSecret:
                 type: string
+              lastSecretRotation:
+                description: LastSecretRotation is the timestamp of the last secret
+                  rotation
+                format: date-time
+                type: string
               clients:
                 items:
                   description: |-

@@ -111,6 +111,10 @@ func (in *ApplicationStatus) DeepCopyInto(out *ApplicationStatus) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.LastSecretRotation != nil {
+		in, out := &in.LastSecretRotation, &out.LastSecretRotation
+		*out = (*in).DeepCopy()
+	}
 	if in.Clients != nil {
 		in, out := &in.Clients, &out.Clients
 		*out = make([]types.ObjectRef, len(*in))

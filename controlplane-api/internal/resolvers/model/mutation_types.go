@@ -14,22 +14,20 @@ type TeamMutationResult struct {
 
 // CreateTeamInput is the input for creating a new team.
 type CreateTeamInput struct {
-	Environment string            `json:"environment"`
-	Group       string            `json:"group"`
-	Name        string            `json:"name"`
-	Email       string            `json:"email"`
-	Members     []MemberInput     `json:"members"`
-	Category    TeamCategoryInput `json:"category"`
+	Environment string        `json:"environment"`
+	Group       string        `json:"group"`
+	Name        string        `json:"name"`
+	Email       string        `json:"email"`
+	Members     []MemberInput `json:"members"`
 }
 
 // UpdateTeamInput is the input for updating an existing team.
 type UpdateTeamInput struct {
-	Environment string             `json:"environment"`
-	Group       string             `json:"group"`
-	Name        string             `json:"name"`
-	Email       *string            `json:"email,omitempty"`
-	Members     []MemberInput      `json:"members,omitempty"`
-	Category    *TeamCategoryInput `json:"category,omitempty"`
+	Environment string        `json:"environment"`
+	Group       string        `json:"group"`
+	Name        string        `json:"name"`
+	Email       *string       `json:"email,omitempty"`
+	Members     []MemberInput `json:"members,omitempty"`
 }
 
 // MemberInput represents a team member in mutation inputs.
@@ -45,8 +43,8 @@ type RotateApplicationSecretInput struct {
 	Name        string `json:"name"`
 }
 
-// ApplicationMutationResult is the response type for application mutations.
-type ApplicationMutationResult struct {
+// RotateApplicationSecretResult is the response type for application mutations.
+type RotateApplicationSecretResult struct {
 	Success      bool    `json:"success"`
 	Message      string  `json:"message"`
 	Namespace    *string `json:"namespace,omitempty"`
@@ -63,7 +61,7 @@ type RotateTeamTokenInput struct {
 // DecisionInput represents the decision details for approval mutations.
 type DecisionInput struct {
 	Name    string  `json:"name"`
-	Email   *string `json:"email,omitempty"`
+	Email   string  `json:"email"`
 	Comment *string `json:"comment,omitempty"`
 }
 
@@ -94,10 +92,3 @@ type ApprovalMutationResult struct {
 	ResourceName *string `json:"resourceName,omitempty"`
 }
 
-// TeamCategoryInput represents the team category enum for mutations.
-type TeamCategoryInput string
-
-const (
-	TeamCategoryInputCustomer       TeamCategoryInput = "CUSTOMER"
-	TeamCategoryInputInfrastructure TeamCategoryInput = "INFRASTRUCTURE"
-)

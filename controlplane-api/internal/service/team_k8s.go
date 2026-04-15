@@ -46,7 +46,7 @@ func (s *teamK8sService) CreateTeam(ctx context.Context, input model.CreateTeamI
 			Group:    input.Group,
 			Email:    input.Email,
 			Members:  toK8sMembers(input.Members),
-			Category: toK8sCategory(input.Category),
+			Category: organizationv1.TeamCategoryCustomer,
 		}
 		return nil
 	})
@@ -85,9 +85,6 @@ func (s *teamK8sService) UpdateTeam(ctx context.Context, input model.UpdateTeamI
 		}
 		if input.Members != nil {
 			team.Spec.Members = toK8sMembers(input.Members)
-		}
-		if input.Category != nil {
-			team.Spec.Category = toK8sCategory(*input.Category)
 		}
 		return nil
 	})
@@ -147,11 +144,3 @@ func toK8sMembers(members []model.MemberInput) []organizationv1.Member {
 	return result
 }
 
-func toK8sCategory(category model.TeamCategoryInput) organizationv1.TeamCategory {
-	switch category {
-	case model.TeamCategoryInputInfrastructure:
-		return organizationv1.TeamCategoryInfrastructure
-	default:
-		return organizationv1.TeamCategoryCustomer
-	}
-}

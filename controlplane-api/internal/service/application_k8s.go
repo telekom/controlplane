@@ -27,7 +27,7 @@ func applicationNamespace(environment, team string) string {
 	return environment + "--" + team
 }
 
-func (s *applicationK8sService) RotateApplicationSecret(ctx context.Context, input model.RotateApplicationSecretInput) (*model.ApplicationMutationResult, error) {
+func (s *applicationK8sService) RotateApplicationSecret(ctx context.Context, input model.RotateApplicationSecretInput) (*model.RotateApplicationSecretResult, error) {
 	if err := authorizeApplicationAction(ctx, input.Team); err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (s *applicationK8sService) RotateApplicationSecret(ctx context.Context, inp
 		return nil, mapK8sError(err)
 	}
 
-	return &model.ApplicationMutationResult{
+	return &model.RotateApplicationSecretResult{
 		Success:      true,
 		Message:      "application secret rotation initiated",
 		Namespace:    &namespace,
