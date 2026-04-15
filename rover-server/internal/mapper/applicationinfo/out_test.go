@@ -19,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
@@ -455,6 +456,176 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			Expect(output).To(BeNil())
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(ContainSubstring("failed to fill application info"))
+		})
+	})
+
+	Context("FillChevronInfo", func() {
+		It("must skip when rover has no authorization", func() {
+			appInfo := &api.ApplicationInfo{}
+			err := FillChevronInfo(ctx, rover, appInfo, stores)
+
+			Expect(err).To(BeNil())
+			Expect(appInfo.ChevronUrl).To(BeEmpty())
+			Expect(appInfo.ChevronApplication).To(BeEmpty())
+			Expect(appInfo.Authorization).To(BeNil())
+		})
+
+		It("must populate chevron info when authorization is configured", func() {
+			secCtx := security.ToContext(ctx, &security.BusinessContext{Environment: "poc"})
+
+			localStores := &store.Stores{}
+
+			zone := &adminv1.Zone{
+				Status: adminv1.ZoneStatus{
+					Links: adminv1.Links{
+						ChevronUrl: "https://stargate.example.com/eni/chevron/v2/permission",
+					},
+				},
+			}
+			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
+			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(zone, nil).Maybe()
+			localStores.ZoneStore = zoneMock
+
+			roverWithAuth := rover.DeepCopy()
+			roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+				{
+					Resource: "stargate:myapi:v1",
+					Permissions: []roverv1.AuthorizationPermission{
+						{Role: "admin", Actions: []string{"read", "write"}},
+					},
+				},
+			}
+
+			appInfo := &api.ApplicationInfo{IrisClientId: "test-client-id"}
+			err := FillChevronInfo(secCtx, roverWithAuth, appInfo, localStores)
+
+			Expect(err).To(BeNil())
+			Expect(appInfo.ChevronUrl).To(Equal("https://stargate.example.com/eni/chevron/v2/permission?application=test-client-id"))
+			Expect(appInfo.ChevronApplication).To(Equal("test-client-id"))
+			Expect(appInfo.Authorization).To(HaveLen(1))
+			Expect(appInfo.Authorization[0].Resource).To(Equal("stargate:myapi:v1"))
+			Expect(appInfo.Authorization[0].Permissions).To(HaveLen(1))
+			Expect(appInfo.Authorization[0].Permissions[0].Role).To(Equal("admin"))
+			Expect(appInfo.Authorization[0].Permissions[0].Actions).To(ConsistOf("read", "write"))
+
+			// Verify variables are populated
+			Expect(appInfo.Variables).To(ContainElement(api.Data{
+				Name:  "tardis.chevron.url",
+				Value: "https://stargate.example.com/eni/chevron/v2/permission?application=test-client-id",
+			}))
+			Expect(appInfo.Variables).To(ContainElement(api.Data{
+				Name:  "tardis.chevron.application",
+				Value: "test-client-id",
+			}))
+		})
+
+		It("must skip chevron fields when zone has no chevron URL", func() {
+			secCtx := security.ToContext(ctx, &security.BusinessContext{Environment: "poc"})
+
+			localStores := &store.Stores{}
+
+			zone := &adminv1.Zone{
+				Status: adminv1.ZoneStatus{
+					Links: adminv1.Links{}, // No ChevronUrl
+				},
+			}
+			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
+			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(zone, nil).Maybe()
+			localStores.ZoneStore = zoneMock
+
+			roverWithAuth := rover.DeepCopy()
+			roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+				{Role: "admin", Resource: "res", Actions: []string{"read"}},
+			}
+
+			appInfo := &api.ApplicationInfo{IrisClientId: "test-client-id"}
+			err := FillChevronInfo(secCtx, roverWithAuth, appInfo, localStores)
+
+			Expect(err).To(BeNil())
+			Expect(appInfo.ChevronUrl).To(BeEmpty())
+			Expect(appInfo.ChevronApplication).To(BeEmpty())
+			Expect(appInfo.Authorization).To(BeNil())
+		})
+
+		It("must return error when zone fetch fails", func() {
+			secCtx := security.ToContext(ctx, &security.BusinessContext{Environment: "poc"})
+
+			localStores := &store.Stores{}
+
+			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
+			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("zone not found")).Maybe()
+			localStores.ZoneStore = zoneMock
+
+			roverWithAuth := rover.DeepCopy()
+			roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+				{Role: "admin", Resource: "res", Actions: []string{"read"}},
+			}
+
+			appInfo := &api.ApplicationInfo{}
+			err := FillChevronInfo(secCtx, roverWithAuth, appInfo, localStores)
+
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(ContainSubstring("failed to get zone for chevron info"))
+		})
+
+		It("must map all authorization formats correctly", func() {
+			secCtx := security.ToContext(ctx, &security.BusinessContext{Environment: "poc"})
+
+			localStores := &store.Stores{}
+
+			zone := &adminv1.Zone{
+				Status: adminv1.ZoneStatus{
+					Links: adminv1.Links{
+						ChevronUrl: "https://stargate.example.com/eni/chevron/v2/permission",
+					},
+				},
+			}
+			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
+			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(zone, nil).Maybe()
+			localStores.ZoneStore = zoneMock
+
+			roverWithAuth := rover.DeepCopy()
+			roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+				// Resource-oriented
+				{
+					Resource: "api:v1",
+					Permissions: []roverv1.AuthorizationPermission{
+						{Role: "admin", Actions: []string{"read"}},
+					},
+				},
+				// Role-oriented
+				{
+					Role: "viewer",
+					Permissions: []roverv1.AuthorizationPermission{
+						{Resource: "dashboard", Actions: []string{"view"}},
+					},
+				},
+				// Flat
+				{
+					Role:     "operator",
+					Resource: "cluster",
+					Actions:  []string{"restart"},
+				},
+			}
+
+			appInfo := &api.ApplicationInfo{IrisClientId: "my-app"}
+			err := FillChevronInfo(secCtx, roverWithAuth, appInfo, localStores)
+
+			Expect(err).To(BeNil())
+			Expect(appInfo.Authorization).To(HaveLen(3))
+
+			// Resource-oriented format preserved as-is
+			Expect(appInfo.Authorization[0].Resource).To(Equal("api:v1"))
+			Expect(appInfo.Authorization[0].Permissions).To(HaveLen(1))
+
+			// Role-oriented format preserved as-is
+			Expect(appInfo.Authorization[1].Role).To(Equal("viewer"))
+			Expect(appInfo.Authorization[1].Permissions).To(HaveLen(1))
+
+			// Flat format preserved as-is
+			Expect(appInfo.Authorization[2].Role).To(Equal("operator"))
+			Expect(appInfo.Authorization[2].Resource).To(Equal("cluster"))
+			Expect(appInfo.Authorization[2].Actions).To(ConsistOf("restart"))
 		})
 	})
 

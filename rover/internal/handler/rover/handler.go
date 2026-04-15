@@ -9,21 +9,22 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
-	"github.com/telekom/controlplane/common/pkg/types"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
-	eventv1 "github.com/telekom/controlplane/event/api/v1"
-	"github.com/telekom/controlplane/rover/internal/handler/rover/api"
-	"github.com/telekom/controlplane/rover/internal/handler/rover/application"
-	"github.com/telekom/controlplane/rover/internal/handler/rover/event"
-
 	"github.com/pkg/errors"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
+	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/api"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/application"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/event"
+	"github.com/telekom/controlplane/rover/internal/handler/rover/permission"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 )
 
@@ -39,6 +40,9 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 	if config.FeaturePubSub.IsEnabled() {
 		c.AddKnownTypeToState(&eventv1.EventExposure{})
 		c.AddKnownTypeToState(&eventv1.EventSubscription{})
+	}
+	if config.FeaturePermission.IsEnabled() {
+		c.AddKnownTypeToState(&permissionv1.PermissionSet{})
 	}
 
 	// Create Application from Rover
@@ -107,6 +111,17 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 		default:
 			return errors.New("unknown subscription type: " + sub.Type().String())
 		}
+	}
+
+	// Handle permissions
+	roverObj.Status.PermissionSets = make([]types.ObjectRef, 0)
+	if config.FeaturePermission.IsEnabled() && len(roverObj.Spec.Authorization) > 0 {
+		err := permission.HandlePermission(ctx, c, roverObj)
+		if err != nil {
+			return errors.Wrap(err, "failed to handle permission")
+		}
+	} else if !config.FeaturePermission.IsEnabled() && len(roverObj.Spec.Authorization) > 0 {
+		log.Info("permission handling skipped, feature has not been enabled")
 	}
 
 	// Cleanup all objects owned by Rover

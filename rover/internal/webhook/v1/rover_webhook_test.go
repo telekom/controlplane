@@ -253,6 +253,20 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithDuplicates)
 				assertValidationFailedWith(warnings, err, "duplicate exposure")
 			})
+
+			It("should fail when authorization is configured but permission feature is disabled", func() {
+				roverWithAuth := roverObj.DeepCopy()
+				roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+					{
+						Role:     "admin",
+						Resource: "myresource",
+						Actions:  []string{"read"},
+					},
+				}
+
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithAuth)
+				assertValidationFailedWith(warnings, err, "authorization feature is not enabled")
+			})
 		})
 
 		Context("ResourceMustExist", func() {

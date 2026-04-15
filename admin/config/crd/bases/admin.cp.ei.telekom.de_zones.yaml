@@ -44,6 +44,22 @@ spec:
           spec:
             description: ZoneSpec defines the desired state of Zone
             properties:
+              chevron:
+                description: Chevron configuration for permission service integration
+                properties:
+                  apiUrl:
+                    description: ApiUrl is the backend service URL for the permission
+                      service
+                    format: uri
+                    type: string
+                  consoleUrl:
+                    description: ConsoleUrl is the admin UI for the permission service
+                      (optional)
+                    format: uri
+                    type: string
+                required:
+                - apiUrl
+                type: object
               gateway:
                 properties:
                   admin:
@@ -325,6 +341,13 @@ spec:
                 type: object
               links:
                 properties:
+                  chevronUrl:
+                    description: |-
+                      ChevronUrl for permission queries (dynamically built from gateway URL)
+                      Format: https://<gateway>/eni/chevron/v2/permission
+                      Applications append ?application=<clientId> when querying
+                    format: uri
+                    type: string
                   gatewayIssuer:
                     description: Issuer is the expected issuer of downstream tokens
                       for this zone

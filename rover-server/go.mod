@@ -11,14 +11,17 @@ require (
 	github.com/telekom/controlplane/api/api v0.0.0
 	github.com/telekom/controlplane/application/api v0.0.0
 	github.com/telekom/controlplane/common v0.0.0
-	github.com/telekom/controlplane/common-server v0.0.0
 	github.com/telekom/controlplane/event/api v0.0.0
-	github.com/telekom/controlplane/file-manager v0.0.0
 	github.com/telekom/controlplane/rover/api v0.0.0
-	github.com/telekom/controlplane/secret-manager v0.0.0
 )
 
 replace (
+	// Pin kin-openapi to v0.133.0 - v0.134.0 introduced a breaking openapi3.MappingRef
+	// type change that is incompatible with oapi-codegen v2.6.0.
+	// Also pin oasdiff/yaml* to versions compatible with kin-openapi v0.133.0.
+	github.com/getkin/kin-openapi => github.com/getkin/kin-openapi v0.133.0
+	github.com/oasdiff/yaml => github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037
+	github.com/oasdiff/yaml3 => github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90
 	github.com/telekom/controlplane/admin/api => ../admin/api
 	github.com/telekom/controlplane/api/api => ../api/api
 	github.com/telekom/controlplane/application/api => ../application/api
@@ -37,13 +40,15 @@ require (
 	github.com/go-logr/zapr v1.3.0
 	github.com/gofiber/fiber/v2 v2.52.12
 	github.com/oapi-codegen/fiber-middleware v1.0.2
-	github.com/oapi-codegen/runtime v1.3.1
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
 	github.com/pb33f/libopenapi v0.34.4
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
+	github.com/telekom/controlplane/common-server v0.0.0
+	github.com/telekom/controlplane/file-manager v0.0.0-00010101000000-000000000000
+	github.com/telekom/controlplane/secret-manager v0.0.0
 	go.uber.org/zap v1.27.1
 	go.yaml.in/yaml/v4 v4.0.0-rc.4
 	golang.org/x/text v0.35.0
@@ -120,6 +125,7 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oapi-codegen/oapi-codegen/v2 v2.6.0 // indirect
+	github.com/oapi-codegen/runtime v1.3.1 // indirect
 	github.com/oasdiff/yaml v0.0.0-20260313112342-a3ea61cb4d4c // indirect
 	github.com/oasdiff/yaml3 v0.0.0-20260224194419-61cd415a242b // indirect
 	github.com/pb33f/jsonpath v0.8.2 // indirect

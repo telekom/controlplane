@@ -21,6 +21,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
@@ -162,6 +163,13 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		obj.Status.TeamApiGatewayRealm = nil
 		obj.Status.TeamApiRoutes = nil
 		obj.Status.Links.TeamIssuer = ""
+	}
+
+	// Populate Chevron URL if configured and feature enabled
+	if cconfig.FeaturePermission.IsEnabled() && obj.Spec.Chevron != nil {
+		obj.Status.Links.ChevronUrl = obj.Status.Links.Url + "/eni/chevron/v2/permission"
+	} else {
+		obj.Status.Links.ChevronUrl = ""
 	}
 
 	obj.SetCondition(condition.NewReadyCondition("ZoneProvisioned", "Zone has been provisioned"))

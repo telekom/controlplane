@@ -1,3 +1,9 @@
+<!--
+Copyright 2026 Deutsche Telekom IT GmbH
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # [0.18.0](https://github.com/telekom/controlplane/compare/v0.17.0...v0.18.0) (2026-03-18)
 
 

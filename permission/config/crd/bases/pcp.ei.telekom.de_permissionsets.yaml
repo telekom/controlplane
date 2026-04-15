@@ -1,0 +1,80 @@
+# SPDX-FileCopyrightText: 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.19.0
+  name: permissionsets.pcp.ei.telekom.de
+spec:
+  group: pcp.ei.telekom.de
+  names:
+    kind: PermissionSet
+    listKind: PermissionSetList
+    plural: permissionsets
+    singular: permissionset
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          PermissionSet is the Schema for the permissionsets API consumed by the external permission service.
+          This CRD is created by the internal permission operator and read by the external service.
+          It has no status subresource as no operator reconciles it.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: PermissionSetSpec defines the desired state of PermissionSet.
+            properties:
+              permissions:
+                description: Permissions lists all role-resource-action tuples for
+                  this application.
+                items:
+                  description: |-
+                    Permission defines a single permission entry with role, resource, and actions.
+                    This structure is consumed by the external permission service.
+                  properties:
+                    actions:
+                      description: Actions lists the allowed actions for this role-resource
+                        combination.
+                      items:
+                        type: string
+                      type: array
+                    resource:
+                      description: Resource is the resource identifier being protected.
+                      type: string
+                    role:
+                      description: Role is the role identifier that has access to
+                        the resource.
+                      type: string
+                  required:
+                  - actions
+                  - resource
+                  - role
+                  type: object
+                type: array
+            required:
+            - permissions
+            type: object
+        type: object
+    served: true
+    storage: true
