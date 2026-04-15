@@ -413,24 +413,24 @@ func (mr *MockKongAdminApiMockRecorder) ListPluginWithResponse(ctx, params any, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPluginWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).ListPluginWithResponse), varargs...)
 }
 
-// ListTargetsForUpstreamWithResponse mocks base method.
-func (m *MockKongAdminApi) ListTargetsForUpstreamWithResponse(ctx context.Context, upstreamIdOrName string, params *kong.ListTargetsForUpstreamParams, reqEditors ...kong.RequestEditorFn) (*kong.ListTargetsForUpstreamResponse, error) {
+// FetchTargetForUpstreamWithResponse mocks base method.
+func (m *MockKongAdminApi) FetchTargetForUpstreamWithResponse(ctx context.Context, upstreamIdOrName, targetIdOrTarget string, reqEditors ...kong.RequestEditorFn) (*kong.FetchTargetForUpstreamResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{ctx, upstreamIdOrName, params}
+	varargs := []any{ctx, upstreamIdOrName, targetIdOrTarget}
 	for _, a := range reqEditors {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "ListTargetsForUpstreamWithResponse", varargs...)
-	ret0, _ := ret[0].(*kong.ListTargetsForUpstreamResponse)
+	ret := m.ctrl.Call(m, "FetchTargetForUpstreamWithResponse", varargs...)
+	ret0, _ := ret[0].(*kong.FetchTargetForUpstreamResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListTargetsForUpstreamWithResponse indicates an expected call of ListTargetsForUpstreamWithResponse.
-func (mr *MockKongAdminApiMockRecorder) ListTargetsForUpstreamWithResponse(ctx, upstreamIdOrName, params any, reqEditors ...any) *gomock.Call {
+// FetchTargetForUpstreamWithResponse indicates an expected call of FetchTargetForUpstreamWithResponse.
+func (mr *MockKongAdminApiMockRecorder) FetchTargetForUpstreamWithResponse(ctx, upstreamIdOrName, targetIdOrTarget any, reqEditors ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx, upstreamIdOrName, params}, reqEditors...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTargetsForUpstreamWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).ListTargetsForUpstreamWithResponse), varargs...)
+	varargs := append([]any{ctx, upstreamIdOrName, targetIdOrTarget}, reqEditors...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchTargetForUpstreamWithResponse", reflect.TypeOf((*MockKongAdminApi)(nil).FetchTargetForUpstreamWithResponse), varargs...)
 }
 
 // UpsertConsumerWithResponse mocks base method.

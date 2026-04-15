@@ -169,12 +169,9 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 	}
 	route.SetUpstreamId(*upstreamResponse.JSON200.Id)
 
-	// The upstream is upserted (PUT) on every reconciliation — this is idempotent.
-	// The target, however, must only be created once. Repeated POST calls to
-	// /upstreams/{name}/targets produce a UNIQUE constraint violation in Kong
-	// ("UNIQUE violation detected on '{target=\"localhost:8080\", upstream={…}}'").
-	// To avoid this, we first check whether the target already exists and only
-	// create it when it is missing.
+	// Only create the target when it does not already exist in Kong.
+	// On re-reconciliation the upstream is upserted (PUT, idempotent) but the
+	// target is left untouched — matching the behaviour of the old Java gateway.
 	targetId, err := findExistingTargetId(ctx, kongAdminApi, upstreamName, DefaultTargetsTarget)
 	if err != nil {
 		return err
@@ -190,32 +187,25 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 	return nil
 }
 
-// findExistingTargetId lists all targets for the given upstream and returns the
-// ID of the one matching the expected target value.
-func findExistingTargetId(ctx context.Context, kongAdminApi client.KongAdminApi, upstreamName, expectedTarget string) (string, error) {
-	listResponse, err := kongAdminApi.ListTargetsForUpstreamWithResponse(ctx, upstreamName, nil)
+// findExistingTargetId fetches a single target by its target value from the
+// given upstream and returns its ID. Returns empty string if not found (404).
+func findExistingTargetId(ctx context.Context, kongAdminApi client.KongAdminApi, upstreamName, targetValue string) (string, error) {
+	response, err := kongAdminApi.FetchTargetForUpstreamWithResponse(ctx, upstreamName, targetValue)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to list targets for upstream %s", upstreamName)
+		return "", errors.Wrapf(err, "failed to fetch target for upstream %s", upstreamName)
 	}
-	// A 404 means the upstream does not exist in Kong yet (first-ever reconciliation),
-	// so there can be no targets — treat the same as "not found".
-	if listResponse.StatusCode() == 404 {
+	// 404 means either the upstream or the target does not exist yet
+	if response.StatusCode() == 404 {
 		return "", nil
 	}
-	if err := client.CheckStatusCode(listResponse, 200); err != nil {
+	if err := client.CheckStatusCode(response, 200); err != nil {
 		return "", errors.Wrap(
-			fmt.Errorf("error body from kong admin api: %s", string(listResponse.Body)),
-			"failed to list targets for upstream")
+			fmt.Errorf("error body from kong admin api: %s", string(response.Body)),
+			"failed to fetch target for upstream")
 	}
-
-	if listResponse.JSON200 != nil && listResponse.JSON200.Data != nil {
-		for _, t := range *listResponse.JSON200.Data {
-			if t.Target != nil && *t.Target == expectedTarget && t.Id != nil {
-				return *t.Id, nil
-			}
-		}
+	if response.JSON200 != nil && response.JSON200.Id != nil {
+		return *response.JSON200.Id, nil
 	}
-
 	return "", nil
 }
 

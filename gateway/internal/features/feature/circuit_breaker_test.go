@@ -157,13 +157,10 @@ var _ = Describe("CircuitBreakerFeature", func() {
 				}
 				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(upsertUpstreamWithResponse_func).Times(1)
 
-				// mock ListTargetsForUpstreamWithResponse — no targets exist yet
-				mockKongAdminApi.EXPECT().ListTargetsForUpstreamWithResponse(gomock.Any(), gomock.Eq("test-route-name"), gomock.Any(), gomock.Any()).
-					Return(&kong.ListTargetsForUpstreamResponse{
-						HTTPResponse: &http.Response{StatusCode: 200},
-						JSON200: &kong.ListTargetsForUpstream200Response{
-							Data: &[]kong.Target{},
-						},
+				// mock FetchTargetForUpstreamWithResponse — target does not exist yet (404)
+				mockKongAdminApi.EXPECT().FetchTargetForUpstreamWithResponse(gomock.Any(), gomock.Eq("test-route-name"), gomock.Eq("localhost:8080"), gomock.Any()).
+					Return(&kong.FetchTargetForUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 404},
 					}, nil).Times(1)
 
 				// mock CreateTargetForUpstreamWithResponse — target is created
@@ -244,17 +241,12 @@ var _ = Describe("CircuitBreakerFeature", func() {
 						JSON200:      &kong.Upstream{Id: &upsertUpstreamResponseId},
 					}, nil).Times(1)
 
-				// mock ListTargetsForUpstreamWithResponse — target already exists in Kong
+				// mock FetchTargetForUpstreamWithResponse — target already exists in Kong
 				existingTargetId := "existing-kong-target-id"
-				existingTarget := "localhost:8080"
-				mockKongAdminApi.EXPECT().ListTargetsForUpstreamWithResponse(gomock.Any(), gomock.Eq("test-route-name"), gomock.Any(), gomock.Any()).
-					Return(&kong.ListTargetsForUpstreamResponse{
+				mockKongAdminApi.EXPECT().FetchTargetForUpstreamWithResponse(gomock.Any(), gomock.Eq("test-route-name"), gomock.Eq("localhost:8080"), gomock.Any()).
+					Return(&kong.FetchTargetForUpstreamResponse{
 						HTTPResponse: &http.Response{StatusCode: 200},
-						JSON200: &kong.ListTargetsForUpstream200Response{
-							Data: &[]kong.Target{
-								{Id: &existingTargetId, Target: &existingTarget},
-							},
-						},
+						JSON200:      &kong.Target{Id: &existingTargetId},
 					}, nil).Times(1)
 
 				// CreateTargetForUpstreamWithResponse must NOT be called — target already exists
@@ -269,7 +261,7 @@ var _ = Describe("CircuitBreakerFeature", func() {
 				Expect(route.GetTargetsId()).To(Equal("existing-kong-target-id"))
 			})
 
-			It("should return error when ListTargetsForUpstream fails", func() {
+			It("should return error when FetchTargetForUpstream fails", func() {
 				ctx := context.Background()
 				ctx = contextutil.WithEnv(ctx, "test")
 				route := &gatewayv1.Route{
@@ -292,15 +284,15 @@ var _ = Describe("CircuitBreakerFeature", func() {
 						JSON200:      &kong.Upstream{Id: &upsertUpstreamResponseId},
 					}, nil).Times(1)
 
-				mockKongAdminApi.EXPECT().ListTargetsForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				mockKongAdminApi.EXPECT().FetchTargetForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, fmt.Errorf("connection refused")).Times(1)
 
 				err := feature.InstanceCircuitBreakerFeature.Apply(ctx, mockFeatureBuilder)
 				Expect(err).Should(HaveOccurred())
-				Expect(err.Error()).Should(ContainSubstring("failed to list targets for upstream"))
+				Expect(err.Error()).Should(ContainSubstring("failed to fetch target for upstream"))
 			})
 
-			It("should skip target creation when ListTargetsForUpstream returns 404 (new upstream)", func() {
+			It("should create target when FetchTargetForUpstream returns 404 (new upstream)", func() {
 				ctx := context.Background()
 				ctx = contextutil.WithEnv(ctx, "test")
 				route := &gatewayv1.Route{
@@ -323,13 +315,13 @@ var _ = Describe("CircuitBreakerFeature", func() {
 						JSON200:      &kong.Upstream{Id: &upsertUpstreamResponseId},
 					}, nil).Times(1)
 
-				// ListTargetsForUpstream returns 404 — upstream doesn't have targets yet
-				mockKongAdminApi.EXPECT().ListTargetsForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(&kong.ListTargetsForUpstreamResponse{
+				// FetchTargetForUpstream returns 404 — target doesn't exist yet
+				mockKongAdminApi.EXPECT().FetchTargetForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&kong.FetchTargetForUpstreamResponse{
 						HTTPResponse: &http.Response{StatusCode: 404},
 					}, nil).Times(1)
 
-				// Since 404 means no targets, CreateTargetForUpstream should be called
+				// Since 404 means no target, CreateTargetForUpstream should be called
 				createTargetResponseId := "new-target-id"
 				mockKongAdminApi.EXPECT().CreateTargetForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&kong.CreateTargetForUpstreamResponse{
@@ -365,13 +357,10 @@ var _ = Describe("CircuitBreakerFeature", func() {
 						JSON200:      &kong.Upstream{Id: &upsertUpstreamResponseId},
 					}, nil).Times(1)
 
-				// No targets exist
-				mockKongAdminApi.EXPECT().ListTargetsForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(&kong.ListTargetsForUpstreamResponse{
-						HTTPResponse: &http.Response{StatusCode: 200},
-						JSON200: &kong.ListTargetsForUpstream200Response{
-							Data: &[]kong.Target{},
-						},
+				// Target does not exist
+				mockKongAdminApi.EXPECT().FetchTargetForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&kong.FetchTargetForUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 404},
 					}, nil).Times(1)
 
 				// CreateTargetForUpstream fails
