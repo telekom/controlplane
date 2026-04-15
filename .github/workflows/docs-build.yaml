@@ -8,8 +8,8 @@ on:
   pull_request:
     paths:
       - 'docs/**'
-      - '.github/workflows/docs-build.yml'
-      - '.github/workflows/docs-deploy.yml'
+      - '.github/workflows/docs-build.yaml'
+      - '.github/workflows/docs-deploy.yaml'
 
 jobs:
   build:
@@ -23,9 +23,11 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: docs/pages/package-lock.json
+          cache-dependency-path: docs/package-lock.json
 
       - name: Install dependencies
-        run: cd docs/pages && npm ci
+        run: npm ci
+        working-directory: docs
       - name: Build website
-        run: cd docs/pages && npm run build
+        run: npm run build
+        working-directory: docs

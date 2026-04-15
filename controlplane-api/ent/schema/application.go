@@ -39,6 +39,10 @@ func (Application) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			NotEmpty(),
+		field.Text("client_secret").
+			Optional().
+			Nillable().
+			NotEmpty(),
 		field.Text("issuer_url").
 			Optional().
 			Nillable(),

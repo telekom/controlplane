@@ -23,7 +23,6 @@ func (Zone) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		schemamixin.PrivacyMixin{},
 		schemamixin.EnvironmentMixin{},
-		schemamixin.NamespaceMixin{},
 	}
 }
 

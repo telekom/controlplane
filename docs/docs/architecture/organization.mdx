@@ -1,0 +1,33 @@
+---
+sidebar_position: 3
+---
+
+# Organization Domain
+
+The Organization domain manages teams and groups within the Control Plane. It is responsible for onboarding teams and automatically provisioning the resources they need to start working with the platform.
+
+## Custom Resources
+
+<CRDReference domain="organization" />
+
+### Auto-Provisioning
+
+When a Team is created, the Organization operator automatically provisions:
+
+- A **dedicated namespace** — `{environment}--{group}--{team}`
+- An **Identity Client** — for authenticating with the platform
+- A **Gateway Consumer** — for accessing APIs through the gateway
+- A **Notification Channel** — for receiving platform notifications
+- A **Team Token** — for CLI authentication with Rover-CTL
+
+## Domain Interactions
+
+- **Identity domain** — Creates identity clients for each team.
+- **Gateway domain** — Creates gateway consumers for each team.
+- **Notification domain** — Creates notification channels and sends lifecycle notifications (onboarding, token rotation, member changes).
+- **Secret Manager** — Handles credential storage and rotation for team tokens.
+
+## Related Pages
+
+- [Admin Journey: Organizations & Teams](../admin-journey/organizations-and-teams.md)
+- [User Journey: Onboarding](../user-journey/onboarding.md)

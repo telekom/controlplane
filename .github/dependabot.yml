@@ -46,6 +46,7 @@ updates:
       - tools/snapshotter
       - notification
       - notification/api
+      - projector
     groups:
       minor-patch:
         update-types:

@@ -1,0 +1,9 @@
+{
+  "label": "Developer Journey",
+  "position": 4,
+  "collapsed": true,
+  "link": null,
+  "customProps": {
+    "description": "Contribute code, build operators, and extend the Control Plane."
+  }
+}
