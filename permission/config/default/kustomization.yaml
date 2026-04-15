@@ -16,12 +16,14 @@ namePrefix: permission-
 labels:
 - includeSelectors: true
   pairs:
-    domain: event
+    domain: permission
   fields:
     - path: spec/selector/matchLabels
       create: true
       kind: ServiceMonitor
       group: monitoring.coreos.com
+
+
 resources:
 - ../crd
 - ../rbac
