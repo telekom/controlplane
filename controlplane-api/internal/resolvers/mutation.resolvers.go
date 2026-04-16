@@ -75,50 +75,6 @@ func (r *decideApprovalRequestInputResolver) Action(ctx context.Context, obj *mo
 	return nil
 }
 
-// RotateTeamToken is the resolver for the rotateTeamToken field.
-func (r *mutationResolver) RotateTeamToken(ctx context.Context, input model.RotateTeamTokenInput) (*model.TeamMutationResult, error) {
-	if r.teamService == nil {
-		return nil, fmt.Errorf("mutations are not enabled: Kubernetes integration is disabled")
-	}
-	return r.teamService.RotateTeamToken(ctx, input)
-}
-
-// RotateApplicationSecret is the resolver for the rotateApplicationSecret field.
-func (r *mutationResolver) RotateApplicationSecret(ctx context.Context, input model.RotateApplicationSecretInput) (*model.ApplicationMutationResult, error) {
-	if r.applicationService == nil {
-		return nil, fmt.Errorf("mutations are not enabled: Kubernetes integration is disabled")
-	}
-	return r.applicationService.RotateApplicationSecret(ctx, input)
-}
-
-// DecideApprovalRequest is the resolver for the decideApprovalRequest field.
-func (r *mutationResolver) DecideApprovalRequest(ctx context.Context, input model.DecideApprovalRequestInput) (*model.ApprovalMutationResult, error) {
-	if r.approvalService == nil {
-		return nil, fmt.Errorf("mutations are not enabled: Kubernetes integration is disabled")
-	}
-	return r.approvalService.DecideApprovalRequest(ctx, input)
-}
-
-// DecideApproval is the resolver for the decideApproval field.
-func (r *mutationResolver) DecideApproval(ctx context.Context, input model.DecideApprovalInput) (*model.ApprovalMutationResult, error) {
-	if r.approvalService == nil {
-		return nil, fmt.Errorf("mutations are not enabled: Kubernetes integration is disabled")
-	}
-	return r.approvalService.DecideApproval(ctx, input)
-}
-
-// Action is the resolver for the action field.
-func (r *decideApprovalInputResolver) Action(ctx context.Context, obj *model.DecideApprovalInput, data model.ApprovalAction) error {
-	obj.Action = string(data)
-	return nil
-}
-
-// Action is the resolver for the action field.
-func (r *decideApprovalRequestInputResolver) Action(ctx context.Context, obj *model.DecideApprovalRequestInput, data model.ApprovalAction) error {
-	obj.Action = string(data)
-	return nil
-}
-
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
@@ -135,3 +91,44 @@ func (r *Resolver) DecideApprovalRequestInput() DecideApprovalRequestInputResolv
 type mutationResolver struct{ *Resolver }
 type decideApprovalInputResolver struct{ *Resolver }
 type decideApprovalRequestInputResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *mutationResolver) RotateTeamToken(ctx context.Context, input model.RotateTeamTokenInput) (*model.TeamMutationResult, error) {
+	if r.teamService == nil {
+		return nil, fmt.Errorf("mutations are not enabled: Kubernetes integration is disabled")
+	}
+	return r.teamService.RotateTeamToken(ctx, input)
+}
+func (r *mutationResolver) RotateApplicationSecret(ctx context.Context, input model.RotateApplicationSecretInput) (*model.ApplicationMutationResult, error) {
+	if r.applicationService == nil {
+		return nil, fmt.Errorf("mutations are not enabled: Kubernetes integration is disabled")
+	}
+	return r.applicationService.RotateApplicationSecret(ctx, input)
+}
+func (r *mutationResolver) DecideApprovalRequest(ctx context.Context, input model.DecideApprovalRequestInput) (*model.ApprovalMutationResult, error) {
+	if r.approvalService == nil {
+		return nil, fmt.Errorf("mutations are not enabled: Kubernetes integration is disabled")
+	}
+	return r.approvalService.DecideApprovalRequest(ctx, input)
+}
+func (r *mutationResolver) DecideApproval(ctx context.Context, input model.DecideApprovalInput) (*model.ApprovalMutationResult, error) {
+	if r.approvalService == nil {
+		return nil, fmt.Errorf("mutations are not enabled: Kubernetes integration is disabled")
+	}
+	return r.approvalService.DecideApproval(ctx, input)
+}
+func (r *decideApprovalInputResolver) Action(ctx context.Context, obj *model.DecideApprovalInput, data model.ApprovalAction) error {
+	obj.Action = string(data)
+	return nil
+}
+func (r *decideApprovalRequestInputResolver) Action(ctx context.Context, obj *model.DecideApprovalRequestInput, data model.ApprovalAction) error {
+	obj.Action = string(data)
+	return nil
+}
+*/
