@@ -24,9 +24,13 @@ build: fmt vet ## Run go build against code.
 	mkdir -p bin
 	go build -ldflags="-X 'main.version=$(VERSION)' -X 'main.buildTime=$(BUILD_TIME)' -X 'main.gitCommit=$(GIT_COMMIT)' -X 'main.goVersion=$(shell go version)'" -trimpath -mod=readonly -o bin/snapshotter main.go
 
+# Packages to test and measure coverage for
+TEST_PACKAGES = ./internal/... ./pkg/...
+COVER_PACKAGES = ./internal/... ./pkg/...
+
 .PHONY: test
 test: fmt vet ## Run tests.
-	gotestsum --format pkgname --junitfile junit.xml --jsonfile gotest.log -- $$(go list ./... | grep -v /test) -coverprofile cover.out -mod=readonly -race
+	gotestsum --format pkgname --junitfile junit.xml --jsonfile gotest.log -- $(TEST_PACKAGES) -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -mod=readonly -race
 
 .PHONY: install
 install: build 

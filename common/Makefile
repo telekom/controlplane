@@ -22,9 +22,13 @@ vet: ## Run go vet against code.
 build: fmt vet ## Run go build against code.
 	go build ./...
 
+# Packages to test and measure coverage for
+TEST_PACKAGES = ./pkg/...
+COVER_PACKAGES = ./pkg/...
+
 .PHONY: test
 test: fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" gotestsum --format pkgname --junitfile junit.xml --jsonfile gotest.log -- $$(go list ./... | grep -v /e2e) -coverprofile cover.out -race
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" gotestsum --format pkgname --junitfile junit.xml --jsonfile gotest.log -- $(TEST_PACKAGES) -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -race
 
 
 
