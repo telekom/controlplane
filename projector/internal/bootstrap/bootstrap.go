@@ -105,6 +105,7 @@ func Run() error {
 	// --- Schema Migration ---
 	setupLog.Info("running schema migration")
 	if err = entClient.Schema.Create(ctx,
+		migrate.WithGlobalUniqueID(true),
 		migrate.WithDropIndex(true),
 		migrate.WithDropColumn(true),
 	); err != nil {

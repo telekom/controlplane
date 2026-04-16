@@ -16,6 +16,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
+	"github.com/telekom/controlplane/controlplane-api/ent/member"
 	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	entteam "github.com/telekom/controlplane/controlplane-api/ent/team"
 
@@ -170,7 +171,8 @@ var _ = Describe("Team Repository", func() {
 			Expect(t.StatusMessage).ToNot(BeNil())
 			Expect(*t.StatusMessage).To(Equal("v2"))
 
-			// The new upsert creates fresh members and deletes orphans.
+			// The new upsert handles members by email — Alice's email changed so
+			// the old Alice row is orphaned and a new one is created; Bob is new.
 			members, err := t.QueryMembers().All(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(members).To(HaveLen(2))
@@ -208,11 +210,117 @@ var _ = Describe("Team Repository", func() {
 
 			members, err = t.QueryMembers().All(ctx)
 			Expect(err).NotTo(HaveOccurred())
-			// After sync: 1 new member created, 3 old members deleted as orphans.
-			// (syncMembers creates fresh members each time, then deleteOrphanedMembers
-			// removes those not in the new batch.)
+			// After sync: Alice is upserted (same email → stable ID), Bob and
+			// Charlie are deleted as orphans by deleteOrphanedMembers.
 			Expect(members).To(HaveLen(1))
 			Expect(members[0].Name).To(Equal("Alice"))
+		})
+
+		It("should reuse member IDs when members are unchanged (upsert is stable)", func() {
+			data := &team.TeamData{
+				Meta:          shared.NewMetadata("prod", "grp--stable", nil),
+				StatusPhase:   "READY",
+				StatusMessage: "",
+				Name:          "grp--stable",
+				Email:         "stable@example.com",
+				Category:      "CUSTOMER",
+				GroupName:     "grp",
+				Members: []team.MemberData{
+					{Name: "Alice", Email: "alice@example.com"},
+					{Name: "Bob", Email: "bob@example.com"},
+				},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			// Record member IDs after first upsert.
+			t, err := client.Team.Query().Where(entteam.NameEQ("grp--stable")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			members, err := t.QueryMembers().Order(member.ByEmail()).All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members).To(HaveLen(2))
+			firstAliceID := members[0].ID
+			firstBobID := members[1].ID
+
+			// Upsert again with the same members.
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			members, err = t.QueryMembers().Order(member.ByEmail()).All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members).To(HaveLen(2))
+
+			// IDs should be stable — same rows were updated in place.
+			Expect(members[0].ID).To(Equal(firstAliceID))
+			Expect(members[1].ID).To(Equal(firstBobID))
+		})
+
+		It("should update member name in place when email stays the same", func() {
+			data := &team.TeamData{
+				Meta:          shared.NewMetadata("prod", "grp--rename", nil),
+				StatusPhase:   "READY",
+				StatusMessage: "",
+				Name:          "grp--rename",
+				Email:         "rename@example.com",
+				Category:      "CUSTOMER",
+				GroupName:     "grp",
+				Members: []team.MemberData{
+					{Name: "Alice A.", Email: "alice@example.com"},
+				},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			t, err := client.Team.Query().Where(entteam.NameEQ("grp--rename")).Only(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			members, err := t.QueryMembers().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members).To(HaveLen(1))
+			originalID := members[0].ID
+			Expect(members[0].Name).To(Equal("Alice A."))
+
+			// Update name, keep email the same.
+			data.Members = []team.MemberData{
+				{Name: "Alice Alpha", Email: "alice@example.com"},
+			}
+			Expect(repo.Upsert(ctx, data)).To(Succeed())
+
+			members, err = t.QueryMembers().All(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members).To(HaveLen(1))
+			// ID should be stable — same row updated in place.
+			Expect(members[0].ID).To(Equal(originalID))
+			// Name should be updated.
+			Expect(members[0].Name).To(Equal("Alice Alpha"))
+		})
+
+		It("should allow the same email across different teams", func() {
+			data1 := &team.TeamData{
+				Meta:          shared.NewMetadata("prod", "grp--cross1", nil),
+				StatusPhase:   "READY",
+				StatusMessage: "",
+				Name:          "grp--cross1",
+				Email:         "cross1@example.com",
+				Category:      "CUSTOMER",
+				GroupName:     "grp",
+				Members:       []team.MemberData{{Name: "Alice", Email: "alice@example.com"}},
+			}
+			data2 := &team.TeamData{
+				Meta:          shared.NewMetadata("prod", "grp--cross2", nil),
+				StatusPhase:   "READY",
+				StatusMessage: "",
+				Name:          "grp--cross2",
+				Email:         "cross2@example.com",
+				Category:      "CUSTOMER",
+				GroupName:     "grp",
+				Members:       []team.MemberData{{Name: "Alice", Email: "alice@example.com"}},
+			}
+
+			// Both teams have the same member email — should not conflict.
+			Expect(repo.Upsert(ctx, data1)).To(Succeed())
+			Expect(repo.Upsert(ctx, data2)).To(Succeed())
+
+			// Both teams should have their own member row.
+			totalMembers, err := client.Member.Query().Count(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(totalMembers).To(Equal(2))
 		})
 
 		It("should populate the edge cache after upsert", func() {

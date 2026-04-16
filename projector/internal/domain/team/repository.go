@@ -52,7 +52,7 @@ func NewRepository(client *ent.Client, cache *infrastructure.EdgeCache, deps Tea
 
 // Upsert creates or updates a Team entity in the database within a
 // transaction. It resolves the optional Group FK, upserts the Team row,
-// syncs Members (creating new ones), and deletes orphaned Members.
+// upserts Members (keyed by email + team), and deletes orphaned Members.
 //
 // If the referenced Group does not exist, the Team is created without a
 // Group FK and a warning is logged (non-fatal — Group FK is optional).
@@ -103,7 +103,7 @@ func (r *Repository) Upsert(ctx context.Context, data *TeamData) error {
 			return fmt.Errorf("upsert team %q: %w", data.Name, upsertErr)
 		}
 
-		// 2. Sync members: create all current members and collect their IDs.
+		// 2. Sync members: upsert all current members and collect their IDs.
 		currentMemberIDs, memberErr := syncMembers(ctx, tx, teamID, data.Members)
 		if memberErr != nil {
 			return memberErr
@@ -173,19 +173,26 @@ func (r *Repository) withTx(ctx context.Context, fn func(tx *ent.Tx) error) erro
 	return tx.Commit()
 }
 
-// syncMembers creates all current members for a team and returns their IDs.
+// syncMembers upserts all current members for a team and returns their IDs.
+// Members are keyed by the composite unique index (email, team_members), so
+// an existing member with the same email in the same team is updated in place
+// rather than recreated. This avoids ID churn and sequence-related issues.
 func syncMembers(ctx context.Context, tx *ent.Tx, teamID int, members []MemberData) ([]int, error) {
 	ids := make([]int, 0, len(members))
 	for _, m := range members {
-		memberEntity, err := tx.Member.Create().
+		id, err := tx.Member.Create().
 			SetName(m.Name).
 			SetEmail(m.Email).
 			SetTeamID(teamID).
-			Save(ctx)
+			OnConflictColumns(member.FieldEmail, member.TeamColumn).
+			Update(func(u *ent.MemberUpsert) {
+				u.SetName(m.Name)
+			}).
+			ID(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("create member %q: %w", m.Name, err)
+			return nil, fmt.Errorf("upsert member %q: %w", m.Name, err)
 		}
-		ids = append(ids, memberEntity.ID)
+		ids = append(ids, id)
 	}
 	return ids, nil
 }

@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/identity
 
-go 1.25.8
+go 1.25.9
 
 require (
 	github.com/telekom/controlplane/common v0.0.0
