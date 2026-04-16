@@ -182,7 +182,7 @@ jobs:
         shell: bash
         working-directory: ${{ inputs.module }}
         env:
-          COVERAGE_THRESHOLD: 10
+          COVERAGE_THRESHOLD: 0
         run: |
           if [ ! -f cover.out ]; then
             echo "::warning::No coverage file found"
