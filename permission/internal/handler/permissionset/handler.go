@@ -124,8 +124,26 @@ func (h *PermissionSetHandler) CreateOrUpdate(ctx context.Context, obj *permissi
 }
 
 func (h *PermissionSetHandler) Delete(ctx context.Context, obj *permissionv1.PermissionSet) error {
-	// External PermissionSet cleanup happens automatically via JanitorClient
-	// using the owner.uid label we set during creation
-	// No additional cleanup needed here
+	log := log.FromContext(ctx)
+	c := cclient.ClientFromContextOrDie(ctx)
+
+	// If we have a status reference to the external PermissionSet, delete it
+	if obj.Status.PermissionSet != nil {
+		externalPS := &pcpv1.PermissionSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      obj.Status.PermissionSet.Name,
+				Namespace: obj.Status.PermissionSet.Namespace,
+			},
+		}
+
+		if err := c.Delete(ctx, externalPS); client.IgnoreNotFound(err) != nil {
+			return errors.Wrap(err, "failed to delete external PermissionSet")
+		} else if err == nil {
+			log.Info("🗑️  Deleted external PermissionSet", "name", externalPS.Name, "namespace", externalPS.Namespace)
+		} else {
+			log.V(1).Info("External PermissionSet not found (already deleted)", "name", externalPS.Name, "namespace", externalPS.Namespace)
+		}
+	}
+
 	return nil
 }
