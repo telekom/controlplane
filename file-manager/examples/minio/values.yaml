@@ -18,7 +18,6 @@ rootUser: "placeholder"
 rootPassword: "placeholder"
 ingress:
   enabled: true
-  ingressClassName: nginx
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "0"
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
