@@ -24,9 +24,14 @@ resources:
   - https://github.com/telekom/controlplane//file-manager/config/default/?timeout=120&ref=v0.18.0
   - https://github.com/telekom/controlplane//notification/config/default/?timeout=120&ref=v0.18.0
 
-# Uncomment to enable the eventing subsystem (event + pubsub controllers):
+# Uncomment to enable optional components:
 # components:
 #   - ../../components/eventing
+#   - ../../components/database
+
+# Uncomment to enable the controlplane-api and projector:
+#  - https://github.com/telekom/controlplane//controlplane-api/config/default/?timeout=120&ref=v0.18.0
+#  - https://github.com/telekom/controlplane//projector/config/default/?timeout=120&ref=v0.18.0
 
 images:
   - name: ghcr.io/telekom/controlplane/approval
@@ -57,4 +62,9 @@ images:
   # - name: ghcr.io/telekom/controlplane/event
   #   newTag: v0.18.0
   # - name: ghcr.io/telekom/controlplane/pubsub
+  #   newTag: v0.18.0
+  # Uncomment if controlplane-api and projector are enabled:
+  # - name: ghcr.io/telekom/controlplane/controlplane-api
+  #   newTag: v0.18.0
+  # - name: ghcr.io/telekom/controlplane/projector
   #   newTag: v0.18.0
