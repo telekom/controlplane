@@ -265,7 +265,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				}
 
 				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithAuth)
-				assertValidationFailedWith(warnings, err, "authorization feature is not enabled")
+				assertValidationFailedWith(warnings, err, "does not support permissions")
 			})
 		})
 
