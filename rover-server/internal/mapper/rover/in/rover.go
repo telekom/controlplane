@@ -36,6 +36,7 @@ func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *rove
 
 	apiRover := &api.Rover{
 		Authentication: in.Authentication,
+		Authorization:  in.Authorization,
 		Exposures:      in.Exposures,
 		Icto:           in.Icto,
 		IpRestrictions: in.IpRestrictions,
@@ -58,6 +59,10 @@ func MapRover(in *api.Rover, out *roverv1.Rover) error {
 	}
 
 	if err := mapSubscriptions(in, out); err != nil {
+		return err
+	}
+
+	if err := mapAuthorization(in, out); err != nil {
 		return err
 	}
 
@@ -92,5 +97,49 @@ func mapSubscriptions(in *api.Rover, out *roverv1.Rover) error {
 			return errors.Wrap(err, "failed to map subscription")
 		}
 	}
+	return nil
+}
+
+func mapAuthorization(in *api.Rover, out *roverv1.Rover) error {
+	if len(in.Authorization) == 0 {
+		return nil
+	}
+
+	out.Spec.Authorization = make([]roverv1.Authorization, len(in.Authorization))
+	for i := range in.Authorization {
+		auth := &in.Authorization[i]
+		outAuth := &out.Spec.Authorization[i]
+
+		// Map direct fields (flat format)
+		if auth.Resource != "" {
+			outAuth.Resource = auth.Resource
+		}
+		if auth.Role != "" {
+			outAuth.Role = auth.Role
+		}
+		if len(auth.Actions) > 0 {
+			outAuth.Actions = auth.Actions
+		}
+
+		// Map nested permissions (resource-oriented format)
+		if len(auth.Permissions) > 0 {
+			outAuth.Permissions = make([]roverv1.AuthorizationPermission, len(auth.Permissions))
+			for j := range auth.Permissions {
+				perm := &auth.Permissions[j]
+				outPerm := &outAuth.Permissions[j]
+
+				if perm.Resource != "" {
+					outPerm.Resource = perm.Resource
+				}
+				if perm.Role != "" {
+					outPerm.Role = perm.Role
+				}
+				if len(perm.Actions) > 0 {
+					outPerm.Actions = perm.Actions
+				}
+			}
+		}
+	}
+
 	return nil
 }

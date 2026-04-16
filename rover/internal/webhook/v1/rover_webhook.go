@@ -124,15 +124,13 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 	// Validate authorization: feature must be enabled if authorization is configured
 	if !cconfig.FeaturePermission.IsEnabled() && len(rover.Spec.Authorization) > 0 {
 		valErr.AddInvalidError(
-			field.NewPath("spec").Child("authorization"),
-			"",
-			"authorization feature is not enabled - set FEATURE_PERMISSION_ENABLED=true to use this feature",
-		)
+			field.NewPath("spec").Child("zone"),
+			rover.Spec.Zone,
+			fmt.Sprintf("zone '%s' does not support permissions", rover.Spec.Zone))
 		return nil, valErr.BuildError()
 	}
 
 	// Validate that if the rover subscribes to or exposes events, the zone actually supports it
-
 	subscribesToEvents := slices.ContainsFunc(rover.Spec.Subscriptions, func(sub roverv1.Subscription) bool {
 		return sub.Type() == roverv1.TypeEvent
 	})

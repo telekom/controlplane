@@ -1626,6 +1626,10 @@ components:
           $ref: '#/components/schemas/Authentication'
         ipRestrictions:
           $ref: '#/components/schemas/IpRestrictions'
+        authorization:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizationInfo'
     RoverCreateRequest:
       required:
         - zone

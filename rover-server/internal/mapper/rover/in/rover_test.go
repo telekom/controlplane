@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/viper"
+	"github.com/telekom/controlplane/rover-server/internal/api"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
@@ -56,6 +57,86 @@ var _ = Describe("Rover Mapper", func() {
 
 			Expect(err).To(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), out)
+		})
+	})
+
+	Context("MapAuthorization", func() {
+		It("must map authorization in flat format", func() {
+			input := apiRover
+			input.Authorization = []api.AuthorizationInfo{
+				{
+					Resource: "stargate:payment:v1",
+					Role:     "admin",
+					Actions:  []string{"read", "write"},
+				},
+			}
+			out := &roverv1.Rover{}
+
+			err := mapAuthorization(input, out)
+
+			Expect(err).To(BeNil())
+			snaps.MatchSnapshot(GinkgoT(), out)
+		})
+
+		It("must map authorization in resource-oriented format", func() {
+			input := apiRover
+			input.Authorization = []api.AuthorizationInfo{
+				{
+					Resource: "stargate:payment:v1",
+					Permissions: []api.AuthorizationPermissionInfo{
+						{
+							Role:    "admin",
+							Actions: []string{"read", "write", "delete"},
+						},
+						{
+							Role:    "viewer",
+							Actions: []string{"read"},
+						},
+					},
+				},
+			}
+			out := &roverv1.Rover{}
+
+			err := mapAuthorization(input, out)
+
+			Expect(err).To(BeNil())
+			snaps.MatchSnapshot(GinkgoT(), out)
+		})
+
+		It("must map authorization in role-oriented format", func() {
+			input := apiRover
+			input.Authorization = []api.AuthorizationInfo{
+				{
+					Role: "admin",
+					Permissions: []api.AuthorizationPermissionInfo{
+						{
+							Resource: "stargate:payment:v1",
+							Actions:  []string{"read", "write"},
+						},
+						{
+							Resource: "stargate:billing:v1",
+							Actions:  []string{"read", "write"},
+						},
+					},
+				},
+			}
+			out := &roverv1.Rover{}
+
+			err := mapAuthorization(input, out)
+
+			Expect(err).To(BeNil())
+			snaps.MatchSnapshot(GinkgoT(), out)
+		})
+
+		It("must handle empty authorization", func() {
+			input := apiRover
+			input.Authorization = []api.AuthorizationInfo{}
+			out := &roverv1.Rover{}
+
+			err := mapAuthorization(input, out)
+
+			Expect(err).To(BeNil())
+			Expect(out.Spec.Authorization).To(BeEmpty())
 		})
 	})
 
