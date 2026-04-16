@@ -11,6 +11,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/go-resty/resty/v2"
 )
 
 // Test server helpers
