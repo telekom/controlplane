@@ -28,8 +28,8 @@ func MapResponse(ctx context.Context, obj types.Object) (api.ResourceStatusRespo
 	}
 
 	return api.ResourceStatusResponse{
-		CreatedAt:       obj.GetCreationTimestamp().Time,
-		ProcessedAt:     processedAtTime,
+		CreatedAt:       obj.GetCreationTimestamp().Time.UTC(),
+		ProcessedAt:     processedAtTime.UTC(),
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
 		OverallStatus:   CalculateOverallStatus(status.State, status.ProcessingState),
@@ -65,8 +65,8 @@ func MapAPISpecificationResponse(ctx context.Context, apiSpec *v1.ApiSpecificati
 	finalOverall := CompareAndReturn(parentOverall, result.WorstOverallStatus)
 
 	return api.ResourceStatusResponse{
-		CreatedAt:       apiSpec.GetCreationTimestamp().Time,
-		ProcessedAt:     processedAtTime,
+		CreatedAt:       apiSpec.GetCreationTimestamp().Time.UTC(),
+		ProcessedAt:     processedAtTime.UTC(),
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
 		OverallStatus:   finalOverall,
@@ -103,8 +103,8 @@ func MapRoverResponse(ctx context.Context, rover *v1.Rover, stores *store.Stores
 	finalOverall := CompareAndReturn(parentOverall, result.WorstOverallStatus)
 
 	return api.ResourceStatusResponse{
-		CreatedAt:       rover.GetCreationTimestamp().Time,
-		ProcessedAt:     processedAtTime,
+		CreatedAt:       rover.GetCreationTimestamp().Time.UTC(),
+		ProcessedAt:     processedAtTime.UTC(),
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
 		OverallStatus:   finalOverall,
@@ -141,8 +141,8 @@ func MapEventSpecificationResponse(ctx context.Context, eventSpec *v1.EventSpeci
 	finalOverall := CompareAndReturn(parentOverall, result.WorstOverallStatus)
 
 	return api.ResourceStatusResponse{
-		CreatedAt:       eventSpec.GetCreationTimestamp().Time,
-		ProcessedAt:     processedAtTime,
+		CreatedAt:       eventSpec.GetCreationTimestamp().Time.UTC(),
+		ProcessedAt:     processedAtTime.UTC(),
 		State:           status.State,
 		ProcessingState: status.ProcessingState,
 		OverallStatus:   finalOverall,
