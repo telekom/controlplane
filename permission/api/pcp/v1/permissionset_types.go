@@ -5,6 +5,7 @@
 package v1
 
 import (
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -39,6 +40,18 @@ type PermissionSet struct {
 	Spec PermissionSetSpec `json:"spec,omitempty"`
 }
 
+var _ ctypes.Object = &PermissionSet{}
+
+// GetConditions returns nil as the external PermissionSet has no status conditions.
+func (r *PermissionSet) GetConditions() []metav1.Condition {
+	return nil
+}
+
+// SetCondition is a no-op and returns false as the external PermissionSet has no status conditions.
+func (r *PermissionSet) SetCondition(condition metav1.Condition) bool {
+	return false
+}
+
 // +kubebuilder:object:root=true
 
 // PermissionSetList contains a list of PermissionSet
@@ -46,6 +59,16 @@ type PermissionSetList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []PermissionSet `json:"items"`
+}
+
+var _ ctypes.ObjectList = &PermissionSetList{}
+
+func (r *PermissionSetList) GetItems() []ctypes.Object {
+	items := make([]ctypes.Object, len(r.Items))
+	for i := range r.Items {
+		items[i] = &r.Items[i]
+	}
+	return items
 }
 
 func init() {
