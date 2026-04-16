@@ -6,6 +6,7 @@ dist/
 **/bin/
 charts
 snapshotter-config.yaml
+go.work*
 
 # editor and IDE paraphernalia
 .idea
