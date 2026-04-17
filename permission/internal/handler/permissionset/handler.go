@@ -82,8 +82,6 @@ func (h *PermissionSetHandler) CreateOrUpdate(ctx context.Context, obj *permissi
 		// Set both environment labels for compatibility
 		// Legacy label for external service compatibility
 		externalPS.Labels[LegacyEnvironmentLabelKey] = environment
-		// New system label (also auto-added by ScopedClient, but explicit is clearer)
-		externalPS.Labels[config.EnvironmentLabelKey] = environment
 
 		// Copy permissions directly - spec structures are identical
 		externalPS.Spec.Permissions = make([]pcpv1.Permission, len(obj.Spec.Permissions))
