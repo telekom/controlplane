@@ -6,8 +6,10 @@ package keycloak
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/go-logr/logr"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
@@ -124,8 +126,8 @@ func (k *keycloakService) getClient(ctx context.Context, realmName string, clien
 	if clientRes.StatusCode() == 404 {
 		return nil, nil
 	}
-	if clientRes.StatusCode() != 200 {
-		return nil, fmt.Errorf("unexpected status code %d when fetching client by ClientId", clientRes.StatusCode())
+	if responseErr := CheckHTTPStatus(clientRes.StatusCode(), 200); responseErr != nil {
+		return nil, fmt.Errorf("fetching client by ClientId: %w", responseErr)
 	}
 	if clientRes.JSON2XX == nil {
 		return nil, fmt.Errorf("unexpected empty response body when fetching client by ClientId")
@@ -164,21 +166,38 @@ func (k *keycloakService) createClient(ctx context.Context, realmName string, cl
 	if err != nil {
 		return fmt.Errorf("error creating client: %w", err)
 	}
-	if res.StatusCode() != 201 {
-		return fmt.Errorf("unexpected status code %d when creating client", res.StatusCode())
+	if responseErr := CheckHTTPStatus(res.StatusCode(), 201); responseErr != nil {
+		return fmt.Errorf("creating client: %w", responseErr)
 	}
 
-	var resBody api.ClientRepresentation
-	if err := json.Unmarshal(res.Body, &resBody); err != nil {
-		return fmt.Errorf("client was created but failed to parse response body: %w", err)
-	}
-	if resBody.Id == nil {
-		return fmt.Errorf("client was created but response did not contain an ID")
+	clientUid, err := resourceIDFromResponse(res.HTTPResponse)
+	if err != nil {
+		return fmt.Errorf("client was created but failed to extract ID: %w", err)
 	}
 
-	client.Status.ClientUid = *resBody.Id
+	client.Status.ClientUid = clientUid
 	logger.V(1).Info("created client in keycloak", "clientId", client.Spec.ClientId, "uid", client.Status.ClientUid)
 	return nil
+}
+
+// resourceIDFromResponse extracts the resource UUID from the Location header
+// returned by Keycloak on resource creation (HTTP 201). The UUID is the last
+// path segment of the Location URL.
+func resourceIDFromResponse(resp *http.Response) (string, error) {
+	location := resp.Header.Get("Location")
+	if location == "" {
+		return "", fmt.Errorf("response did not contain a Location header")
+	}
+	locURL, err := url.Parse(location)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse Location header %q: %w", location, err)
+	}
+	segments := strings.Split(strings.TrimRight(locURL.Path, "/"), "/")
+	id := segments[len(segments)-1]
+	if id == "" {
+		return "", fmt.Errorf("Location header %q did not contain a resource ID", location)
+	}
+	return id, nil
 }
 
 // updateClient compares the desired state with the existing Keycloak
@@ -217,7 +236,7 @@ func (k *keycloakService) updateClient(ctx context.Context, realmName string, ex
 			return fmt.Errorf("failed to re-fetch client after rotation: %w", err)
 		}
 		if refreshed.JSON2XX == nil {
-			return fmt.Errorf("failed to re-fetch client after rotation: unexpected status %d", refreshed.StatusCode())
+			return fmt.Errorf("re-fetching client after rotation: %w", CheckHTTPStatus(refreshed.StatusCode(), 200))
 		}
 		existing = refreshed.JSON2XX
 	}
@@ -230,8 +249,8 @@ func (k *keycloakService) updateClient(ctx context.Context, realmName string, ex
 	if err != nil {
 		return fmt.Errorf("error updating client: %w", err)
 	}
-	if res.StatusCode() != 204 && res.StatusCode() != 200 {
-		return fmt.Errorf("unexpected status code %d when updating client", res.StatusCode())
+	if responseErr := CheckHTTPStatus(res.StatusCode(), 200, 204); responseErr != nil {
+		return fmt.Errorf("updating client: %w", responseErr)
 	}
 
 	logger.V(1).Info("updated existing client in keycloak",
@@ -268,8 +287,8 @@ func (k *keycloakService) CreateOrReplaceRealm(ctx context.Context, realm *ident
 		if err != nil {
 			return fmt.Errorf("error updating realm: %w", err)
 		}
-		if res.StatusCode() != 204 {
-			return fmt.Errorf("unexpected status %d when updating realm", res.StatusCode())
+		if responseErr := CheckHTTPStatus(res.StatusCode(), 204); responseErr != nil {
+			return fmt.Errorf("updating realm: %w", responseErr)
 		}
 		logger.V(1).Info("updated existing realm in keycloak", "realm", realm.Name)
 		return nil
@@ -281,8 +300,8 @@ func (k *keycloakService) CreateOrReplaceRealm(ctx context.Context, realm *ident
 	if err != nil {
 		return fmt.Errorf("error creating realm: %w", err)
 	}
-	if res.StatusCode() != 201 {
-		return fmt.Errorf("unexpected status %d when creating realm", res.StatusCode())
+	if responseErr := CheckHTTPStatus(res.StatusCode(), 201); responseErr != nil {
+		return fmt.Errorf("creating realm: %w", responseErr)
 	}
 	logger.V(1).Info("created realm in keycloak", "realm", realm.Name)
 	return nil
@@ -304,8 +323,8 @@ func (k *keycloakService) DeleteClient(ctx context.Context, realmName string, cl
 	if err != nil {
 		return fmt.Errorf("error deleting client: %w", err)
 	}
-	if res.StatusCode() != 204 {
-		return fmt.Errorf("unexpected status code %d when deleting client", res.StatusCode())
+	if responseErr := CheckHTTPStatus(res.StatusCode(), 204); responseErr != nil {
+		return fmt.Errorf("deleting client: %w", responseErr)
 	}
 
 	return nil
@@ -317,8 +336,8 @@ func (k *keycloakService) DeleteRealm(ctx context.Context, realmName string) err
 	if err != nil {
 		return fmt.Errorf("error deleting realm: %w", err)
 	}
-	if res.StatusCode() != 204 && res.StatusCode() != 404 {
-		return fmt.Errorf("unexpected status code %d when deleting realm", res.StatusCode())
+	if responseErr := CheckHTTPStatus(res.StatusCode(), 204, 404); responseErr != nil {
+		return fmt.Errorf("deleting realm: %w", responseErr)
 	}
 
 	return nil

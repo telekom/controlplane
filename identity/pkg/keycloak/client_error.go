@@ -6,6 +6,7 @@ package keycloak
 
 import (
 	stderrors "errors"
+	"fmt"
 	"net/http"
 	"slices"
 	"time"
@@ -62,30 +63,38 @@ func (e *apiError) RetryDelay() time.Duration {
 }
 
 func CheckStatusCode(res ApiResponse, okStatusCodes ...int) ApiError {
-	if slices.Contains(okStatusCodes, res.StatusCode()) {
+	return CheckHTTPStatus(res.StatusCode(), okStatusCodes...)
+}
+
+// CheckHTTPStatus classifies a raw HTTP status code into an ApiError.
+// It returns nil when statusCode is in okStatusCodes.
+// This is the lower-level sibling of CheckStatusCode for callers that do not
+// have an ApiResponse (e.g. oauth2.RetrieveError, inline status checks).
+func CheckHTTPStatus(statusCode int, okStatusCodes ...int) ApiError {
+	if slices.Contains(okStatusCodes, statusCode) {
 		return nil
 	}
 
-	if res.StatusCode() == http.StatusTooManyRequests {
+	if statusCode == http.StatusTooManyRequests {
 		return &apiError{
-			statusCode:   res.StatusCode(),
-			message:      "Keycloak rate limit error",
+			statusCode:   statusCode,
+			message:      fmt.Sprintf("Keycloak rate limit error (%d)", statusCode),
 			retryAllowed: true,
 			retryDelay:   3 * time.Second,
 		}
 	}
 
-	if res.StatusCode() >= http.StatusInternalServerError {
+	if statusCode >= http.StatusInternalServerError {
 		return &apiError{
-			statusCode:   res.StatusCode(),
-			message:      "Keycloak server error",
+			statusCode:   statusCode,
+			message:      fmt.Sprintf("Keycloak server error (%d)", statusCode),
 			retryAllowed: true,
 		}
 	}
 
 	return &apiError{
-		statusCode:   res.StatusCode(),
-		message:      "Keycloak client error",
+		statusCode:   statusCode,
+		message:      fmt.Sprintf("Keycloak client error (%d)", statusCode),
 		retryAllowed: false,
 	}
 }

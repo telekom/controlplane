@@ -31,7 +31,7 @@ func TestStatusCodeIsNotFound(t *testing.T) {
 	response := &MockApiResponse{statusCode: http.StatusNotFound}
 	err := CheckStatusCode(response, http.StatusOK)
 	assert.NotNil(t, err)
-	assert.Equal(t, "Keycloak client error", err.Error())
+	assert.Equal(t, "Keycloak client error (404)", err.Error())
 	assert.False(t, err.Retriable())
 	// ctrlerrors-compatible interface
 	assert.False(t, err.IsRetryable())
@@ -43,7 +43,7 @@ func TestStatusCodeIsInternalServerError(t *testing.T) {
 	response := &MockApiResponse{statusCode: http.StatusInternalServerError}
 	err := CheckStatusCode(response, http.StatusOK)
 	assert.NotNil(t, err)
-	assert.Equal(t, "Keycloak server error", err.Error())
+	assert.Equal(t, "Keycloak server error (500)", err.Error())
 	assert.True(t, err.Retriable())
 	// ctrlerrors-compatible interface
 	assert.True(t, err.IsRetryable())
@@ -55,7 +55,7 @@ func TestStatusCodeIsBadRequest(t *testing.T) {
 	response := &MockApiResponse{statusCode: http.StatusBadRequest}
 	err := CheckStatusCode(response, http.StatusOK)
 	assert.NotNil(t, err)
-	assert.Equal(t, "Keycloak client error", err.Error())
+	assert.Equal(t, "Keycloak client error (400)", err.Error())
 	assert.False(t, err.Retriable())
 	// ctrlerrors-compatible interface
 	assert.False(t, err.IsRetryable())
@@ -67,7 +67,7 @@ func TestStatusCodeIsServiceUnavailable(t *testing.T) {
 	response := &MockApiResponse{statusCode: http.StatusServiceUnavailable}
 	err := CheckStatusCode(response, http.StatusOK)
 	assert.NotNil(t, err)
-	assert.Equal(t, "Keycloak server error", err.Error())
+	assert.Equal(t, "Keycloak server error (503)", err.Error())
 	assert.True(t, err.Retriable())
 	// ctrlerrors-compatible interface
 	assert.True(t, err.IsRetryable())
@@ -79,7 +79,7 @@ func TestStatusCodeIsTooManyRequests(t *testing.T) {
 	response := &MockApiResponse{statusCode: http.StatusTooManyRequests}
 	err := CheckStatusCode(response, http.StatusOK)
 	assert.NotNil(t, err)
-	assert.Equal(t, "Keycloak rate limit error", err.Error())
+	assert.Equal(t, "Keycloak rate limit error (429)", err.Error())
 	assert.True(t, err.Retriable())
 	// ctrlerrors-compatible interface
 	assert.True(t, err.IsRetryable())
@@ -128,4 +128,38 @@ func TestIsNotFound_FalseForNilError(t *testing.T) {
 func TestIsNotFound_FalseForNonApiError(t *testing.T) {
 	err := fmt.Errorf("some random error")
 	assert.False(t, IsNotFound(err))
+}
+
+func TestCheckHTTPStatus_Ok(t *testing.T) {
+	err := CheckHTTPStatus(200, 200)
+	assert.Nil(t, err)
+}
+
+func TestCheckHTTPStatus_ClientError(t *testing.T) {
+	err := CheckHTTPStatus(400, 200)
+	assert.NotNil(t, err)
+	assert.Equal(t, "Keycloak client error (400)", err.Error())
+	assert.True(t, err.IsBlocked())
+	assert.False(t, err.IsRetryable())
+}
+
+func TestCheckHTTPStatus_ServerError(t *testing.T) {
+	err := CheckHTTPStatus(502, 200)
+	assert.NotNil(t, err)
+	assert.Equal(t, "Keycloak server error (502)", err.Error())
+	assert.False(t, err.IsBlocked())
+	assert.True(t, err.IsRetryable())
+}
+
+func TestCheckHTTPStatus_RateLimit(t *testing.T) {
+	err := CheckHTTPStatus(429, 200)
+	assert.NotNil(t, err)
+	assert.Equal(t, "Keycloak rate limit error (429)", err.Error())
+	assert.True(t, err.IsRetryable())
+	assert.Equal(t, 3*time.Second, err.RetryDelay())
+}
+
+func TestCheckHTTPStatus_MultipleOkCodes(t *testing.T) {
+	assert.Nil(t, CheckHTTPStatus(204, 200, 204))
+	assert.NotNil(t, CheckHTTPStatus(201, 200, 204))
 }
