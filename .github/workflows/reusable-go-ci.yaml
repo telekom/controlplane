@@ -233,6 +233,7 @@ jobs:
       - name: Publish test report
         if: ${{ always() && (github.event_name == 'pull_request') }}
         uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
+        continue-on-error: ${{ inputs.allow_tests_failure }}
         with:
           name: "Test Results (${{ inputs.name }})"
           path: "${{ inputs.module }}/junit.xml"
