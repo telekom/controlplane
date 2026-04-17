@@ -13,6 +13,7 @@ snapshotter-config.yaml
 
 # ignore test output
 gotest.log
+cover.out
 snapshots
 allure-report
 allure-results
@@ -20,3 +21,4 @@ debug-results
 
 # ignore Claude AI files
 CLAUDE.md
+.claude/
