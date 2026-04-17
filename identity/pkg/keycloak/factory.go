@@ -113,7 +113,7 @@ func NewKeycloakServiceFor(status identityv1.RealmStatus) (KeycloakService, erro
 		return nil, fmt.Errorf("failed to retrieve token: %w", err)
 	}
 
-	httpClient := oauth2.NewClient(ctx, oauth2Cfg.TokenSource(ctx, token))
+	httpClient := oauth2.NewClient(ctx, newReAuthTokenSource(ctx, &oauth2Cfg, status.AdminUserName, status.AdminPassword, token))
 
 	// 3. Metrics wrapper.
 	metricsClient := metrics.WithMetrics(httpClient,
