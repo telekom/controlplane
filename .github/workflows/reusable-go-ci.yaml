@@ -170,35 +170,8 @@ jobs:
         working-directory: ${{ inputs.module }}
         run: |
           if [ -f cover.out ]; then
-            module_prefix=$(awk '/^module /{print $2}' go.mod)
-            echo "### Coverage for ${{ inputs.name }}" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo '| Package | Coverage |' >> $GITHUB_STEP_SUMMARY
-            echo '|---------|----------|' >> $GITHUB_STEP_SUMMARY
-            awk -v prefix="${module_prefix}/" '
-              NR == 1 { next }
-              {
-                file = $1; sub(/:.*/, "", file)
-                pkg = file; sub(/\/[^/]*$/, "", pkg)
-                n = split($0, f, " ")
-                stmts = f[n-1] + 0; hits = f[n] + 0
-                pkg_stmts[pkg] += stmts
-                if (hits > 0) pkg_covered[pkg] += stmts
-                total_stmts += stmts
-                if (hits > 0) total_covered += stmts
-              }
-              END {
-                n = asorti(pkg_stmts, sorted)
-                for (i = 1; i <= n; i++) {
-                  pkg = sorted[i]
-                  short = pkg; sub(prefix, "", short)
-                  pct = (pkg_stmts[pkg] > 0) ? (pkg_covered[pkg] / pkg_stmts[pkg]) * 100 : 0
-                  printf "| %s | %.1f%% |\n", short, pct
-                }
-                total_pct = (total_stmts > 0) ? (total_covered / total_stmts) * 100 : 0
-                printf "| **Total** | **%.1f%%** |\n", total_pct
-              }
-            ' cover.out >> $GITHUB_STEP_SUMMARY
+            total=$(go tool cover -func=cover.out | awk '/^total:/ {print $NF}')
+            echo "**Coverage for ${{ inputs.name }}:** ${total}" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Check coverage threshold
