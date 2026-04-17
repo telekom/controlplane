@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
+	"github.com/telekom/controlplane/secret-manager/pkg/tracing"
 	"github.com/valyala/fasttemplate"
 )
 
@@ -57,6 +58,7 @@ func (c *ConjurOnboarder) OnboardEnvironment(ctx context.Context, env string, op
 	}
 
 	policyPath := RootPolicyPath
+	c.traceOnboardStart(ctx, "environment", policyPath, env, backend.NoTeam, backend.NoApp)
 	buf := bytes.NewBuffer(nil)
 	_, err := c.templates["env"].Execute(buf, map[string]any{
 		"Environment": env,
@@ -94,6 +96,7 @@ func (c *ConjurOnboarder) OnboardEnvironment(ctx context.Context, env string, op
 		return nil, err
 	}
 	backend.MergeSecretRefs(New, secretRefs, env, backend.NoTeam, backend.NoApp, options.SecretValues)
+	c.traceOnboardEnd(ctx, "environment", policyPath, env, backend.NoTeam, backend.NoApp, secretRefs)
 
 	return backend.NewDefaultOnboardResponse(secretRefs), nil
 }
@@ -107,6 +110,7 @@ func (c *ConjurOnboarder) OnboardTeam(ctx context.Context, env, teamId string, o
 		opt(&options)
 	}
 	policyPath := RootPolicyPath + "/" + env
+	c.traceOnboardStart(ctx, "team", policyPath, env, teamId, backend.NoApp)
 
 	buf := bytes.NewBuffer(nil)
 	_, err := c.templates["team"].Execute(buf, map[string]any{
@@ -145,6 +149,7 @@ func (c *ConjurOnboarder) OnboardTeam(ctx context.Context, env, teamId string, o
 		return nil, err
 	}
 	backend.MergeSecretRefs(New, secretRefs, env, teamId, backend.NoApp, options.SecretValues)
+	c.traceOnboardEnd(ctx, "team", policyPath, env, teamId, backend.NoApp, secretRefs)
 
 	return backend.NewDefaultOnboardResponse(secretRefs), nil
 }
@@ -158,6 +163,7 @@ func (c *ConjurOnboarder) OnboardApplication(ctx context.Context, env, teamId, a
 
 	log.Info("Onboarding application", "env", env, "team", teamId, "app", appId)
 	policyPath := RootPolicyPath + "/" + env + "/" + teamId
+	c.traceOnboardStart(ctx, "application", policyPath, env, teamId, appId)
 
 	buf := bytes.NewBuffer(nil)
 	_, err := c.templates["app"].Execute(buf, map[string]any{
@@ -196,6 +202,7 @@ func (c *ConjurOnboarder) OnboardApplication(ctx context.Context, env, teamId, a
 		return nil, err
 	}
 	backend.MergeSecretRefs(New, secretRefs, env, teamId, appId, options.SecretValues)
+	c.traceOnboardEnd(ctx, "application", policyPath, env, teamId, appId, secretRefs)
 
 	return backend.NewDefaultOnboardResponse(secretRefs), nil
 }
@@ -275,14 +282,73 @@ func (c *ConjurOnboarder) createSecrets(ctx context.Context, env, teamId, appId 
 	for secretPath, secretValue := range secrets {
 		secretId := New(env, teamId, appId, secretPath, backend.MakeChecksum(secretValue.Value()))
 		log.Info("Creating secret", "secretId", secretId.String())
+		if tracing.Enabled() {
+			log.V(1).Info("trace createSecrets input",
+				"traceId", tracing.TraceID(ctx),
+				"scope", "application",
+				"env", env,
+				"team", teamId,
+				"app", appId,
+				"secretPath", secretPath,
+				"requestedSecretId", secretId.String(),
+				"checksum", backend.MakeChecksum(secretValue.Value()),
+			)
+		}
 		secret, err := c.secretWriter.Set(ctx, secretId, secretValue, opts...)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to initialize secret %s", secretId.VariableId())
+		}
+		if tracing.Enabled() {
+			log.V(1).Info("trace createSecrets result",
+				"traceId", tracing.TraceID(ctx),
+				"secretPath", secretPath,
+				"requestedSecretId", secretId.String(),
+				"returnedSecretId", secret.Id().String(),
+			)
 		}
 		secretRefMap[secretPath] = secret.Id()
 	}
 
 	return secretRefMap, nil
+}
+
+func (c *ConjurOnboarder) traceOnboardStart(ctx context.Context, scope, policyPath, env, team, app string) {
+	if !tracing.Enabled() {
+		return
+	}
+	log := logr.FromContextOrDiscard(ctx)
+	log.V(1).Info("trace onboard start",
+		"traceId", tracing.TraceID(ctx),
+		"scope", scope,
+		"policyPath", policyPath,
+		"env", env,
+		"team", team,
+		"app", app,
+	)
+}
+
+func (c *ConjurOnboarder) traceOnboardEnd(ctx context.Context, scope, policyPath, env, team, app string, refs map[string]backend.SecretRef) {
+	if !tracing.Enabled() {
+		return
+	}
+	log := logr.FromContextOrDiscard(ctx)
+	log.V(1).Info("trace onboard end",
+		"traceId", tracing.TraceID(ctx),
+		"scope", scope,
+		"policyPath", policyPath,
+		"env", env,
+		"team", team,
+		"app", app,
+		"secretRefCount", len(refs),
+	)
+	for name, ref := range refs {
+		log.V(1).Info("trace onboard secretRef",
+			"traceId", tracing.TraceID(ctx),
+			"scope", scope,
+			"secretName", name,
+			"secretRef", ref.String(),
+		)
+	}
 }
 
 func (c *ConjurOnboarder) MaybeRunWithBouncer(ctx context.Context, policyPath string, run bouncer.Runnable) error {

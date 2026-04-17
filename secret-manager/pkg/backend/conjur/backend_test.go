@@ -328,6 +328,34 @@ var _ = Describe("Conjur Backend", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res).ToNot(BeNil())
 			})
+
+			It("merge strategy no-op should return checksum of stored value, not input", func() {
+				ctx := context.Background()
+				conjurBackend := conjur.NewBackend(writeAPI, readAPI)
+
+				// The stored value has extra keys from a previous merge
+				existing := `{"key1":"value1","key2":"value2"}`
+				// The incoming value is a subset — merge produces the same as existing
+				incoming := `{"key1":"value1"}`
+
+				readAPI.EXPECT().RetrieveSecret("controlplane/test/my-team/my-app/externalSecrets").Return([]byte(existing), nil).Times(1)
+				// No AddSecret call expected — merged value equals existing
+
+				// Caller's id has checksum from incoming value (wrong after merge)
+				inputChecksum := backend.MakeChecksum(incoming)
+				secretId := conjur.New("test", "my-team", "my-app", "externalSecrets", inputChecksum)
+				secretValue := backend.String(incoming)
+
+				res, err := conjurBackend.Set(ctx, secretId, secretValue, backend.WithWriteStrategy(backend.StrategyMerge))
+				Expect(err).ToNot(HaveOccurred())
+
+				// The returned checksum must reflect the actual stored value, not the input
+				expectedChecksum := backend.MakeChecksum(existing)
+				Expect(res.Id().String()).To(ContainSubstring(expectedChecksum),
+					"checksum should be based on stored value after merge, not input value")
+				Expect(res.Id().String()).ToNot(ContainSubstring(inputChecksum),
+					"checksum must not be based on the pre-merge input value")
+			})
 		})
 
 	})

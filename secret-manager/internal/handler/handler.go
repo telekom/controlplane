@@ -11,6 +11,7 @@ import (
 	"github.com/telekom/controlplane/secret-manager/internal/api"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/controller"
+	"github.com/telekom/controlplane/secret-manager/pkg/tracing"
 )
 
 var _ api.StrictServerInterface = &Handler{}
@@ -26,6 +27,7 @@ func NewHandler(ctrl controller.Controller) *Handler {
 }
 
 func (h *Handler) GetSecret(ctx context.Context, req api.GetSecretRequestObject) (res api.GetSecretResponseObject, err error) {
+	ctx = ensureTraceContext(ctx)
 	secret, err := h.ctrl.GetSecret(ctx, req.SecretId)
 	if err != nil {
 		return res, err
@@ -41,6 +43,7 @@ func (h *Handler) GetSecret(ctx context.Context, req api.GetSecretRequestObject)
 }
 
 func (h *Handler) ListSecrets(ctx context.Context, req api.ListSecretsRequestObject) (api.ListSecretsResponseObject, error) {
+	ctx = ensureTraceContext(ctx)
 	logr.FromContextOrDiscard(ctx).Info("ListSecrets", "request", req)
 	return api.ListSecrets200JSONResponse{
 		SecretListReponseJSONResponse: api.SecretListReponseJSONResponse{
@@ -55,6 +58,7 @@ func (h *Handler) ListSecrets(ctx context.Context, req api.ListSecretsRequestObj
 }
 
 func (h *Handler) PutSecret(ctx context.Context, req api.PutSecretRequestObject) (api.PutSecretResponseObject, error) {
+	ctx = ensureTraceContext(ctx)
 	secret, err := h.ctrl.SetSecret(ctx, req.SecretId, req.Body.Value)
 	if err != nil {
 		return nil, err
@@ -68,6 +72,7 @@ func (h *Handler) PutSecret(ctx context.Context, req api.PutSecretRequestObject)
 }
 
 func (h *Handler) UpsertEnvironment(ctx context.Context, request api.UpsertEnvironmentRequestObject) (api.UpsertEnvironmentResponseObject, error) {
+	ctx = ensureTraceContext(ctx)
 	opts := onboardOpts(request.Body.Strategy, request.Body.Secrets)
 	res, err := h.ctrl.OnboardEnvironment(ctx, request.EnvId, opts...)
 	if err != nil {
@@ -83,6 +88,7 @@ func (h *Handler) UpsertEnvironment(ctx context.Context, request api.UpsertEnvir
 }
 
 func (h *Handler) UpsertTeam(ctx context.Context, request api.UpsertTeamRequestObject) (api.UpsertTeamResponseObject, error) {
+	ctx = ensureTraceContext(ctx)
 	opts := onboardOpts(request.Body.Strategy, request.Body.Secrets)
 	res, err := h.ctrl.OnboardTeam(ctx, request.EnvId, request.TeamId, opts...)
 	if err != nil {
@@ -98,6 +104,7 @@ func (h *Handler) UpsertTeam(ctx context.Context, request api.UpsertTeamRequestO
 }
 
 func (h *Handler) UpsertApp(ctx context.Context, request api.UpsertAppRequestObject) (api.UpsertAppResponseObject, error) {
+	ctx = ensureTraceContext(ctx)
 	opts := onboardOpts(request.Body.Strategy, request.Body.Secrets)
 	res, err := h.ctrl.OnboardApplication(ctx, request.EnvId, request.TeamId, request.AppId, opts...)
 	if err != nil {
@@ -113,6 +120,7 @@ func (h *Handler) UpsertApp(ctx context.Context, request api.UpsertAppRequestObj
 }
 
 func (h *Handler) DeleteEnvironment(ctx context.Context, request api.DeleteEnvironmentRequestObject) (api.DeleteEnvironmentResponseObject, error) {
+	ctx = ensureTraceContext(ctx)
 	err := h.ctrl.DeleteEnvironment(ctx, request.EnvId)
 	if err != nil {
 		return nil, err
@@ -121,6 +129,7 @@ func (h *Handler) DeleteEnvironment(ctx context.Context, request api.DeleteEnvir
 }
 
 func (h *Handler) DeleteTeam(ctx context.Context, request api.DeleteTeamRequestObject) (api.DeleteTeamResponseObject, error) {
+	ctx = ensureTraceContext(ctx)
 	err := h.ctrl.DeleteTeam(ctx, request.EnvId, request.TeamId)
 	if err != nil {
 		return nil, err
@@ -129,12 +138,23 @@ func (h *Handler) DeleteTeam(ctx context.Context, request api.DeleteTeamRequestO
 }
 
 func (h *Handler) DeleteApp(ctx context.Context, request api.DeleteAppRequestObject) (api.DeleteAppResponseObject, error) {
+	ctx = ensureTraceContext(ctx)
 	err := h.ctrl.DeleteApplication(ctx, request.EnvId, request.TeamId, request.AppId)
 	if err != nil {
 		return nil, err
 
 	}
 	return api.DeleteApp204Response{}, nil
+}
+
+func ensureTraceContext(ctx context.Context) context.Context {
+	if !tracing.Enabled() {
+		return ctx
+	}
+	nextCtx, traceID := tracing.EnsureTraceID(ctx)
+	log := logr.FromContextOrDiscard(nextCtx)
+	log.V(1).Info("trace started", "traceId", traceID)
+	return nextCtx
 }
 
 func mapOnboardingResponseItems(items map[string]string) []api.ListSecretItem {

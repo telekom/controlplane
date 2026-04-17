@@ -5,6 +5,7 @@
 package middleware
 
 import (
+	"context"
 	"io"
 	"os"
 	"strconv"
@@ -82,9 +83,33 @@ func NewContextLogger(log logr.Logger) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx := c.UserContext()
 		cid := uuid.NewString()
+		ctx = WithCorrelationID(ctx, cid)
 		ctx = logr.NewContext(ctx, log.WithValues("cid", cid)) // correlation id
 		c.SetUserContext(ctx)
 		c.Locals("cid", cid)
 		return c.Next()
 	}
+}
+
+type correlationIDKey struct{}
+
+func WithCorrelationID(ctx context.Context, cid string) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if cid == "" {
+		return ctx
+	}
+	return context.WithValue(ctx, correlationIDKey{}, cid)
+}
+
+func CorrelationIDFromContext(ctx context.Context) (string, bool) {
+	if ctx == nil {
+		return "", false
+	}
+	cid, ok := ctx.Value(correlationIDKey{}).(string)
+	if !ok || cid == "" {
+		return "", false
+	}
+	return cid, true
 }

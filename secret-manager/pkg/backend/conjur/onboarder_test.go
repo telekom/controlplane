@@ -568,5 +568,179 @@ var _ = Describe("Conjur Onboarder", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 		})
+
+		It("should return well-formed and stable clientSecret secretIds under concurrent OnboardApplication for different apps", func() {
+			const concurrency = 20
+			const env = "test-env"
+			const teamId = "test-team"
+
+			// In-memory store simulating the Conjur variable storage.
+			store := make(map[string]string)
+			var storeMu sync.Mutex
+
+			readAPIConcurrent := mocks.NewMockConjurAPI(GinkgoT())
+			writeAPIConcurrent := mocks.NewMockConjurAPI(GinkgoT())
+
+			readAPIConcurrent.EXPECT().RetrieveSecret(mock.Anything).RunAndReturn(
+				func(variableId string) ([]byte, error) {
+					storeMu.Lock()
+					defer storeMu.Unlock()
+					val, ok := store[variableId]
+					if !ok {
+						return nil, &conjurapi_response.ConjurError{Code: 404, Message: "Not Found"}
+					}
+					return []byte(val), nil
+				},
+			)
+
+			writeAPIConcurrent.EXPECT().AddSecret(mock.Anything, mock.Anything).RunAndReturn(
+				func(variableId, value string) error {
+					storeMu.Lock()
+					defer storeMu.Unlock()
+					store[variableId] = value
+					return nil
+				},
+			)
+
+			writeAPIConcurrent.EXPECT().LoadPolicy(mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+				func(pm conjurapi.PolicyMode, s string, r io.Reader) (*conjurapi.PolicyResponse, error) {
+					_, _ = io.ReadAll(r)
+					return nil, nil
+				},
+			)
+
+			locker := bouncer.NewLocker("test-onboard-app")
+			realBackend := conjur.NewBackend(writeAPIConcurrent, readAPIConcurrent).WithBouncer(locker)
+			conjurOnboarder := conjur.NewOnboarder(writeAPIConcurrent, realBackend).WithBouncer(locker)
+
+			ctx := context.Background()
+			type result struct {
+				appId      string
+				secretRefs map[string]backend.SecretRef
+				err        error
+			}
+			results := make(chan result, concurrency)
+			var wg sync.WaitGroup
+			wg.Add(concurrency)
+
+			for i := 0; i < concurrency; i++ {
+				go func(idx int) {
+					defer wg.Done()
+					defer GinkgoRecover()
+					appId := fmt.Sprintf("app-%d", idx)
+					res, err := conjurOnboarder.OnboardApplication(ctx, env, teamId, appId)
+					if err != nil {
+						results <- result{appId: appId, err: err}
+						return
+					}
+					results <- result{appId: appId, secretRefs: res.SecretRefs()}
+				}(i)
+			}
+
+			wg.Wait()
+			close(results)
+
+			for r := range results {
+				Expect(r.err).ToNot(HaveOccurred(), "app %s failed", r.appId)
+				Expect(r.secretRefs).To(HaveKey("clientSecret"), "app %s missing clientSecret", r.appId)
+
+				csRef := r.secretRefs["clientSecret"].String()
+				// Validate 5-part format: env:team:app:path:checksum
+				parts := regexp.MustCompile(`^(.+):(.+):(.+):(.+):(.+)$`).FindStringSubmatch(csRef)
+				Expect(parts).ToNot(BeNil(), "app %s clientSecret malformed: %q", r.appId, csRef)
+				Expect(parts[1]).To(Equal(env), "wrong env in secretId for app %s: %q", r.appId, csRef)
+				Expect(parts[2]).To(Equal(teamId), "wrong team in secretId for app %s: %q", r.appId, csRef)
+				Expect(parts[3]).To(Equal(r.appId), "wrong app in secretId for app %s: %q", r.appId, csRef)
+				Expect(parts[4]).To(Equal("clientSecret"), "wrong path in secretId for app %s: %q", r.appId, csRef)
+				Expect(parts[5]).ToNot(BeEmpty(), "empty checksum in secretId for app %s: %q", r.appId, csRef)
+			}
+		})
+
+		It("should return stable clientSecret secretIds when the same app is onboarded repeatedly and concurrently", func() {
+			const concurrency = 10
+			const repeats = 3
+			const env = "test-env"
+			const teamId = "test-team"
+			const appId = "test-app"
+
+			store := make(map[string]string)
+			var storeMu sync.Mutex
+
+			readAPIConcurrent := mocks.NewMockConjurAPI(GinkgoT())
+			writeAPIConcurrent := mocks.NewMockConjurAPI(GinkgoT())
+
+			readAPIConcurrent.EXPECT().RetrieveSecret(mock.Anything).RunAndReturn(
+				func(variableId string) ([]byte, error) {
+					storeMu.Lock()
+					defer storeMu.Unlock()
+					val, ok := store[variableId]
+					if !ok {
+						return nil, &conjurapi_response.ConjurError{Code: 404, Message: "Not Found"}
+					}
+					return []byte(val), nil
+				},
+			)
+
+			writeAPIConcurrent.EXPECT().AddSecret(mock.Anything, mock.Anything).RunAndReturn(
+				func(variableId, value string) error {
+					storeMu.Lock()
+					defer storeMu.Unlock()
+					store[variableId] = value
+					return nil
+				},
+			)
+
+			writeAPIConcurrent.EXPECT().LoadPolicy(mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+				func(pm conjurapi.PolicyMode, s string, r io.Reader) (*conjurapi.PolicyResponse, error) {
+					_, _ = io.ReadAll(r)
+					return nil, nil
+				},
+			)
+
+			locker := bouncer.NewLocker("test-stable")
+			realBackend := conjur.NewBackend(writeAPIConcurrent, readAPIConcurrent).WithBouncer(locker)
+			conjurOnboarder := conjur.NewOnboarder(writeAPIConcurrent, realBackend).WithBouncer(locker)
+
+			ctx := context.Background()
+			allSecretIds := make(chan string, concurrency*repeats)
+			var wg sync.WaitGroup
+
+			for r := 0; r < repeats; r++ {
+				wg.Add(concurrency)
+				for i := 0; i < concurrency; i++ {
+					go func() {
+						defer wg.Done()
+						defer GinkgoRecover()
+						res, err := conjurOnboarder.OnboardApplication(ctx, env, teamId, appId)
+						Expect(err).ToNot(HaveOccurred())
+						allSecretIds <- res.SecretRefs()["clientSecret"].String()
+					}()
+				}
+				wg.Wait()
+			}
+			close(allSecretIds)
+
+			// After the first write, ALL subsequent calls should return the same secretId
+			var ids []string
+			for id := range allSecretIds {
+				ids = append(ids, id)
+			}
+			// All should have a non-empty checksum
+			for _, id := range ids {
+				parts := regexp.MustCompile(`^(.+):(.+):(.+):(.+):(.+)$`).FindStringSubmatch(id)
+				Expect(parts).ToNot(BeNil(), "malformed secretId: %q", id)
+				Expect(parts[5]).ToNot(BeEmpty(), "empty checksum: %q", id)
+			}
+			// After the initial write, the checksum should stabilize.
+			// The first call creates the secret; subsequent calls should see the same value.
+			// We check that all IDs from the second repeat onward are identical.
+			secondRepeatStart := concurrency
+			if len(ids) > secondRepeatStart {
+				stableId := ids[secondRepeatStart]
+				for i := secondRepeatStart; i < len(ids); i++ {
+					Expect(ids[i]).To(Equal(stableId), "secretId not stable after initial creation: got %q, expected %q", ids[i], stableId)
+				}
+			}
+		})
 	})
 })

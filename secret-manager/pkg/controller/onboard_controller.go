@@ -7,10 +7,12 @@ package controller
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
+	"github.com/telekom/controlplane/secret-manager/pkg/tracing"
 )
 
 type OnboardResponse struct {
@@ -81,6 +83,7 @@ func NewOnboardController(o backend.Onboarder) OnboardController {
 }
 
 func (c *onboardController) OnboardEnvironment(ctx context.Context, envId string, opts ...OnboardOption) (res OnboardResponse, err error) {
+	traceLogOnboardStart(ctx, "environment", envId, "", "")
 	if envId == "" {
 		return res, problems.BadRequest("envId cannot be empty")
 	}
@@ -100,13 +103,16 @@ func (c *onboardController) OnboardEnvironment(ctx context.Context, envId string
 
 	res.SecretRefs = make(map[string]string, len(o.SecretRefs()))
 	for name, ref := range o.SecretRefs() {
+		traceLogOnboardRef(ctx, "environment", envId, "", "", name, ref.String())
 		res.SecretRefs[name] = ref.String()
 	}
+	traceLogOnboardEnd(ctx, "environment", envId, "", "", len(res.SecretRefs))
 
 	return res, nil
 }
 
 func (c *onboardController) OnboardTeam(ctx context.Context, envId, teamId string, opts ...OnboardOption) (res OnboardResponse, err error) {
+	traceLogOnboardStart(ctx, "team", envId, teamId, "")
 	if envId == "" {
 		return res, problems.BadRequest("envId cannot be empty")
 	}
@@ -130,12 +136,15 @@ func (c *onboardController) OnboardTeam(ctx context.Context, envId, teamId strin
 
 	res.SecretRefs = make(map[string]string, len(o.SecretRefs()))
 	for name, ref := range o.SecretRefs() {
+		traceLogOnboardRef(ctx, "team", envId, teamId, "", name, ref.String())
 		res.SecretRefs[name] = ref.String()
 	}
+	traceLogOnboardEnd(ctx, "team", envId, teamId, "", len(res.SecretRefs))
 	return res, nil
 }
 
 func (c *onboardController) OnboardApplication(ctx context.Context, envId, teamId, appId string, opts ...OnboardOption) (res OnboardResponse, err error) {
+	traceLogOnboardStart(ctx, "application", envId, teamId, appId)
 	if envId == "" {
 		return res, problems.BadRequest("envId cannot be empty")
 	}
@@ -162,10 +171,57 @@ func (c *onboardController) OnboardApplication(ctx context.Context, envId, teamI
 
 	res.SecretRefs = make(map[string]string, len(o.SecretRefs()))
 	for name, ref := range o.SecretRefs() {
+		traceLogOnboardRef(ctx, "application", envId, teamId, appId, name, ref.String())
 		res.SecretRefs[name] = ref.String()
 	}
+	traceLogOnboardEnd(ctx, "application", envId, teamId, appId, len(res.SecretRefs))
 
 	return res, nil
+}
+
+func traceLogOnboardStart(ctx context.Context, scope, envId, teamId, appId string) {
+	if !tracing.Enabled() {
+		return
+	}
+	log := logr.FromContextOrDiscard(ctx)
+	log.V(1).Info("onboard response mapping start",
+		"traceId", tracing.TraceID(ctx),
+		"scope", scope,
+		"env", envId,
+		"team", teamId,
+		"app", appId,
+	)
+}
+
+func traceLogOnboardRef(ctx context.Context, scope, envId, teamId, appId, name, ref string) {
+	if !tracing.Enabled() {
+		return
+	}
+	log := logr.FromContextOrDiscard(ctx)
+	log.V(1).Info("onboard response secretRef",
+		"traceId", tracing.TraceID(ctx),
+		"scope", scope,
+		"env", envId,
+		"team", teamId,
+		"app", appId,
+		"secretName", name,
+		"secretRef", ref,
+	)
+}
+
+func traceLogOnboardEnd(ctx context.Context, scope, envId, teamId, appId string, refCount int) {
+	if !tracing.Enabled() {
+		return
+	}
+	log := logr.FromContextOrDiscard(ctx)
+	log.V(1).Info("onboard response mapping end",
+		"traceId", tracing.TraceID(ctx),
+		"scope", scope,
+		"env", envId,
+		"team", teamId,
+		"app", appId,
+		"secretRefCount", refCount,
+	)
 }
 
 func (c *onboardController) DeleteEnvironment(ctx context.Context, envId string) error {

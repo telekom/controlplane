@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
+	"github.com/telekom/controlplane/secret-manager/pkg/tracing"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
@@ -53,6 +54,9 @@ func (c *ConjurBackend) ParseSecretId(rawId string) (ConjurSecretId, error) {
 func (c *ConjurBackend) Get(ctx context.Context, id ConjurSecretId) (res backend.DefaultSecret[ConjurSecretId], err error) {
 	log := logr.FromContextOrDiscard(ctx)
 	log.Info("Getting secret", "variableID", id.VariableId())
+	if tracing.Enabled() {
+		log.V(1).Info("trace conjur get start", "traceId", tracing.TraceID(ctx), "id", id.String(), "variableID", id.VariableId(), "subPath", id.SubPath())
+	}
 	secret, err := c.readAPI.RetrieveSecret(id.VariableId())
 	if err != nil {
 		return res, handleError(err, id)
@@ -70,6 +74,9 @@ func (c *ConjurBackend) Get(ctx context.Context, id ConjurSecretId) (res backend
 	} else {
 		newId := id.CopyWithChecksum(backend.MakeChecksum(string(secret)))
 		res = backend.NewDefaultSecret(newId, string(secret))
+	}
+	if tracing.Enabled() {
+		log.V(1).Info("trace conjur get result", "traceId", tracing.TraceID(ctx), "requestedId", id.String(), "returnedId", res.Id().String(), "valueChecksum", backend.MakeChecksum(res.Value()))
 	}
 
 	if id.checksum != backend.NoChecksum && id.checksum != res.Id().checksum {
@@ -103,6 +110,9 @@ func (c *ConjurBackend) Set(ctx context.Context, id ConjurSecretId, secretValue 
 func (c *ConjurBackend) doSet(ctx context.Context, id ConjurSecretId, secretValue backend.SecretValue, opts ...backend.WriteOption) (res backend.DefaultSecret[ConjurSecretId], err error) {
 	log := logr.FromContextOrDiscard(ctx)
 	log.Info("Setting secret", "id", id.VariableId())
+	if tracing.Enabled() {
+		log.V(1).Info("trace conjur set start", "traceId", tracing.TraceID(ctx), "id", id.String(), "variableID", id.VariableId(), "subPath", id.SubPath(), "inputChecksum", backend.MakeChecksum(secretValue.Value()), "allowChange", secretValue.AllowChange())
+	}
 
 	options := backend.WriteOptions{}
 	for _, opt := range opts {
@@ -131,6 +141,9 @@ func (c *ConjurBackend) doSet(ctx context.Context, id ConjurSecretId, secretValu
 
 	if currentValue != backend.NoValue && !secretValue.AllowChange() {
 		log.Info("Secret already exists but is not empty. Not updating...", "id", id.String())
+		if tracing.Enabled() {
+			log.V(1).Info("trace conjur set no-change (immutable)", "traceId", tracing.TraceID(ctx), "id", id.String(), "currentChecksum", backend.MakeChecksum(currentValue))
+		}
 		return backend.NewDefaultSecret(id.CopyWithChecksum(backend.MakeChecksum(currentValue)), currentValue), nil
 	}
 
@@ -140,13 +153,19 @@ func (c *ConjurBackend) doSet(ctx context.Context, id ConjurSecretId, secretValu
 		merged, wasMerged := backend.ShallowMergeJSON(currentValue, effectiveValue)
 		if wasMerged {
 			log.Info("Merge strategy: shallow-merged JSON values", "id", id.String())
+			if tracing.Enabled() {
+				log.V(1).Info("trace conjur set merge", "traceId", tracing.TraceID(ctx), "id", id.String(), "currentChecksum", backend.MakeChecksum(currentValue), "inputChecksum", backend.MakeChecksum(secretValue.Value()), "effectiveChecksum", backend.MakeChecksum(merged))
+			}
 			effectiveValue = merged
 		}
 	}
 
 	if effectiveValue == currentValue {
 		log.Info("Secret already exists and is up to date", "id", id.String())
-		return backend.NewDefaultSecret(id, currentValue), nil
+		if tracing.Enabled() {
+			log.V(1).Info("trace conjur set no-op", "traceId", tracing.TraceID(ctx), "id", id.String(), "effectiveChecksum", backend.MakeChecksum(effectiveValue))
+		}
+		return backend.NewDefaultSecret(id.CopyWithChecksum(backend.MakeChecksum(effectiveValue)), currentValue), nil
 	}
 
 	nextValue := effectiveValue
@@ -165,6 +184,9 @@ func (c *ConjurBackend) doSet(ctx context.Context, id ConjurSecretId, secretValu
 		return res, handleError(err, id)
 	}
 	newId := id.CopyWithChecksum(backend.MakeChecksum(effectiveValue))
+	if tracing.Enabled() {
+		log.V(1).Info("trace conjur set updated", "traceId", tracing.TraceID(ctx), "requestedId", id.String(), "returnedId", newId.String(), "effectiveChecksum", backend.MakeChecksum(effectiveValue), "persistedChecksum", backend.MakeChecksum(nextValue))
+	}
 	return backend.NewDefaultSecret(newId, backend.NoValue), nil
 }
 
@@ -192,6 +214,9 @@ func handleError(err error, id ConjurSecretId) error {
 
 func (c *ConjurBackend) initialCreation(ctx context.Context, id ConjurSecretId, value backend.SecretValue) (res backend.DefaultSecret[ConjurSecretId], err error) {
 	log := logr.FromContextOrDiscard(ctx)
+	if tracing.Enabled() {
+		log.V(1).Info("trace conjur initial creation start", "traceId", tracing.TraceID(ctx), "id", id.String(), "variableID", id.VariableId(), "subPath", id.SubPath(), "inputChecksum", backend.MakeChecksum(value.Value()))
+	}
 
 	log.Info("Secret does not exist yet. Initial creation...", "id", id.VariableId())
 	subPath := id.SubPath()
@@ -202,6 +227,9 @@ func (c *ConjurBackend) initialCreation(ctx context.Context, id ConjurSecretId, 
 		}
 		newId := id.CopyWithChecksum(backend.MakeChecksum(value.Value()))
 		log.Info("Successfully created new secret", "id", newId.String())
+		if tracing.Enabled() {
+			log.V(1).Info("trace conjur initial creation end", "traceId", tracing.TraceID(ctx), "requestedId", id.String(), "returnedId", newId.String())
+		}
 		res = backend.NewDefaultSecret(newId, backend.NoValue)
 	} else {
 		log.Info("Subpath found. Using subpath to create secret", "subPath", subPath)
@@ -219,6 +247,9 @@ func (c *ConjurBackend) initialCreation(ctx context.Context, id ConjurSecretId, 
 		}
 		newId := id.CopyWithChecksum(backend.MakeChecksum(value.Value()))
 		log.Info("Successfully created new secret", "id", newId.String())
+		if tracing.Enabled() {
+			log.V(1).Info("trace conjur initial creation end", "traceId", tracing.TraceID(ctx), "requestedId", id.String(), "returnedId", newId.String())
+		}
 		res = backend.NewDefaultSecret(newId, backend.NoValue)
 	}
 
