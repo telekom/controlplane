@@ -86,7 +86,7 @@ var _ = Describe("Conjur Backend", func() {
 			ctx := context.Background()
 			value := "my-secret-value"
 			conjurBackend := conjur.NewBackend(writeAPI, readAPI)
-			conjurBackend.MustMatchChecksum = true
+			conjurBackend.ChecksumMode = conjur.ChecksumModeStrict
 
 			readAPI.EXPECT().RetrieveSecret("controlplane/test/my-team/my-app/clientSecret").Return([]byte(value), nil).Times(1)
 
@@ -95,6 +95,39 @@ var _ = Describe("Conjur Backend", func() {
 			_, err := conjurBackend.Get(ctx, secretId)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("BadChecksum: bad checksum for secret test:my-team:my-app:clientSecret:invalid-checksum"))
+		})
+
+		It("should return secret and not error in observer mode on checksum mismatch", func() {
+			ctx := context.Background()
+			value := "my-secret-value"
+			conjurBackend := conjur.NewBackend(writeAPI, readAPI)
+			conjurBackend.ChecksumMode = conjur.ChecksumModeObserver
+
+			readAPI.EXPECT().RetrieveSecret("controlplane/test/my-team/my-app/clientSecret").Return([]byte(value), nil).Times(1)
+
+			secretId := conjur.New("test", "my-team", "my-app", "clientSecret", "stale-checksum")
+
+			secret, err := conjurBackend.Get(ctx, secretId)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Value()).To(Equal(value))
+			// The returned id should have the correct checksum, not the stale one
+			Expect(secret.Id().String()).To(Equal("test:my-team:my-app:clientSecret:be22cbae9c15"))
+		})
+
+		It("should return secret silently in disabled mode on checksum mismatch", func() {
+			ctx := context.Background()
+			value := "my-secret-value"
+			conjurBackend := conjur.NewBackend(writeAPI, readAPI)
+			// Default is Disabled, but be explicit
+			conjurBackend.ChecksumMode = conjur.ChecksumModeDisabled
+
+			readAPI.EXPECT().RetrieveSecret("controlplane/test/my-team/my-app/clientSecret").Return([]byte(value), nil).Times(1)
+
+			secretId := conjur.New("test", "my-team", "my-app", "clientSecret", "stale-checksum")
+
+			secret, err := conjurBackend.Get(ctx, secretId)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Value()).To(Equal(value))
 		})
 
 		It("should correct the checksum", func() {

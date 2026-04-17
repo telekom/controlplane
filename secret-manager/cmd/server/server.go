@@ -92,11 +92,14 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 	switch cfg.Backend.Type {
 	case "conjur":
 		bouncer.RegisterMetrics(prometheus.DefaultRegisterer)
+		conjur.RegisterChecksumMetrics(prometheus.DefaultRegisterer)
 
 		conjurWriteApi := conjur.NewConjurApiMetrics(conjur.NewWriteApiOrDie())
 		conjurReadApi := conjur.NewConjurApiMetrics(conjur.NewReadOnlyApiOrDie())
 
 		conjurBackend := conjur.NewBackend(conjurWriteApi, conjurReadApi)
+		conjurBackend.ChecksumMode = conjur.ParseChecksumMode(cfg.Backend.GetDefault("checksum_mode", "disabled"))
+		log.Info("Checksum mode configured", "mode", conjurBackend.ChecksumMode)
 		conjurBackend.WithBouncer(bouncer.NewLocker("secret-write"))
 
 		if shouldCache {
