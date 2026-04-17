@@ -317,6 +317,88 @@ var _ = Describe("Rover Controller", Ordered, func() {
 		})
 	})
 
+	Context("Write-once secret preservation", func() {
+
+		It("should not overwrite an existing Application secret on Rover reconcile", func() {
+
+			spec := roverv1.RoverSpec{
+				Zone:         testEnvironment,
+				ClientSecret: "topsecret",
+				Exposures: []roverv1.Exposure{
+					{
+						Api: &roverv1.ApiExposure{
+							BasePath: BasePath,
+							Upstreams: []roverv1.Upstream{
+								{
+									URL: upstream,
+								},
+							},
+							Visibility: roverv1.VisibilityWorld,
+							Approval: roverv1.Approval{
+								Strategy: roverv1.ApprovalStrategyFourEyes,
+							},
+						},
+					},
+				},
+				Subscriptions: []roverv1.Subscription{},
+			}
+
+			rover := createRover(resourceName, teamNamespace, testEnvironment, spec)
+
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			// Wait for initial reconcile — Application should get Rover's secret
+			Eventually(func(g Gomega) {
+				application := &applicationv1.Application{}
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      resourceName,
+					Namespace: teamNamespace,
+				}, application)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(application.Spec.Secret).To(Equal("topsecret"))
+			}, timeout, interval).Should(Succeed())
+
+			// Simulate secret rotation: patch Application secret to a rotated ref
+			rotatedRef := "$<poc:eni--hyperion:test-resource:clientSecret:rotated123>$"
+			Eventually(func(g Gomega) {
+				application := &applicationv1.Application{}
+				g.Expect(k8sClient.Get(ctx, client.ObjectKey{
+					Name:      resourceName,
+					Namespace: teamNamespace,
+				}, application)).To(Succeed())
+				application.Spec.Secret = rotatedRef
+				g.Expect(k8sClient.Update(ctx, application)).To(Succeed())
+			}, timeout, interval).Should(Succeed())
+
+			// Trigger Rover reconcile by updating Rover spec (add a subscription)
+			fetchedRover := &roverv1.Rover{}
+			Expect(k8sClient.Get(ctx, client.ObjectKey{
+				Name:      resourceName,
+				Namespace: teamNamespace,
+			}, fetchedRover)).To(Succeed())
+
+			fetchedRover.Spec.Subscriptions = []roverv1.Subscription{
+				{
+					Api: &roverv1.ApiSubscription{
+						BasePath: BasePath,
+					},
+				},
+			}
+			Expect(k8sClient.Update(ctx, fetchedRover)).To(Succeed())
+
+			// Verify Application secret is preserved (not overwritten by Rover)
+			Eventually(func(g Gomega) {
+				app := &applicationv1.Application{}
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      resourceName,
+					Namespace: teamNamespace,
+				}, app)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(app.Spec.Secret).To(Equal(rotatedRef))
+			}, timeout, interval).Should(Succeed())
+		})
+	})
+
 	Context("Remote Organization subscription", func() {
 
 		It("should successfully handle remote subscription and reconcile the resource", func() {

@@ -85,13 +85,20 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 			return errors.Wrap(err, "failed to set controller reference")
 		}
 
+		// Preserve existing Application secret on updates (write-once);
+		// only bootstrap from Rover on initial creation.
+		secretToApply := application.Spec.Secret
+		if secretToApply == "" {
+			secretToApply = owner.Spec.ClientSecret
+		}
+
 		application.Spec = applicationv1.ApplicationSpec{
 			Team:          team.Name,
 			TeamEmail:     team.Spec.Email,
 			Zone:          zoneRef,
 			NeedsClient:   needsClient,
 			NeedsConsumer: needsClient,
-			Secret:        owner.Spec.ClientSecret,
+			Secret:        secretToApply,
 			FailoverZones: subscriberFailoverZones,
 		}
 
