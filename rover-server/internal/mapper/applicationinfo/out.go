@@ -6,6 +6,7 @@ package applicationinfo
 
 import (
 	"context"
+	"net/url"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -337,7 +338,19 @@ func FillChevronInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.App
 
 	// Chevron URL from zone status links + application query param
 	if zone.Status.Links.ChevronUrl != "" {
-		appInfo.ChevronUrl = zone.Status.Links.ChevronUrl + "?application=" + appInfo.IrisClientId
+		// Parse base URL to properly handle existing query params
+		chevronURL, err := url.Parse(zone.Status.Links.ChevronUrl)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse chevron URL")
+		}
+
+		// Get existing query params or create new
+		queryParams := chevronURL.Query()
+		// Set application param with proper URL encoding
+		queryParams.Set("application", appInfo.IrisClientId)
+		chevronURL.RawQuery = queryParams.Encode()
+
+		appInfo.ChevronUrl = chevronURL.String()
 		appInfo.ChevronApplication = appInfo.IrisClientId
 
 		// Add variables

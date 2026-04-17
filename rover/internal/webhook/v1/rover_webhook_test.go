@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	"github.com/telekom/controlplane/common/pkg/config"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cerrors "github.com/telekom/controlplane/common/pkg/errors"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +32,7 @@ func NewRover(zone *adminv1.Zone) *roverv1.Rover {
 			Name:      "test-rover",
 			Namespace: "default",
 			Labels: map[string]string{
-				config.EnvironmentLabelKey: zone.Namespace,
+				cconfig.EnvironmentLabelKey: zone.Namespace,
 			},
 		},
 		Spec: roverv1.RoverSpec{
@@ -266,6 +266,100 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 
 				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithAuth)
 				assertValidationFailedWith(warnings, err, "does not support permissions")
+			})
+
+			It("should fail when resource-oriented authorization has permission without role", func() {
+				cconfig.FeaturePermission = cconfig.NewFeature("permission", true)
+				defer func() { cconfig.FeaturePermission = cconfig.NewFeature("permission", false) }()
+
+				roverWithAuth := roverObj.DeepCopy()
+				roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+					{
+						Resource: "stargate:myapi:v1",
+						Permissions: []roverv1.AuthorizationPermission{
+							{
+								// Missing role - should fail
+								Actions: []string{"read", "write"},
+							},
+						},
+					},
+				}
+
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithAuth)
+				assertValidationFailedWith(warnings, err, "role is required when parent authorization has resource set")
+			})
+
+			It("should fail when role-oriented authorization has permission without resource", func() {
+				cconfig.FeaturePermission = cconfig.NewFeature("permission", true)
+				defer func() { cconfig.FeaturePermission = cconfig.NewFeature("permission", false) }()
+
+				roverWithAuth := roverObj.DeepCopy()
+				roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+					{
+						Role: "admin",
+						Permissions: []roverv1.AuthorizationPermission{
+							{
+								// Missing resource - should fail
+								Actions: []string{"read", "write"},
+							},
+						},
+					},
+				}
+
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithAuth)
+				assertValidationFailedWith(warnings, err, "resource is required when parent authorization has role set")
+			})
+
+			It("should succeed when resource-oriented authorization has valid role in permissions", func() {
+				cconfig.FeaturePermission = cconfig.NewFeature("permission", true)
+				defer func() { cconfig.FeaturePermission = cconfig.NewFeature("permission", false) }()
+
+				roverWithAuth := roverObj.DeepCopy()
+				roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+					{
+						Resource: "stargate:myapi:v1",
+						Permissions: []roverv1.AuthorizationPermission{
+							{
+								Role:    "admin",
+								Actions: []string{"read", "write"},
+							},
+							{
+								Role:    "viewer",
+								Actions: []string{"read"},
+							},
+						},
+					},
+				}
+
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithAuth)
+				Expect(err).To(BeNil())
+				Expect(warnings).To(BeEmpty())
+			})
+
+			It("should succeed when role-oriented authorization has valid resource in permissions", func() {
+				cconfig.FeaturePermission = cconfig.NewFeature("permission", true)
+				defer func() { cconfig.FeaturePermission = cconfig.NewFeature("permission", false) }()
+
+				roverWithAuth := roverObj.DeepCopy()
+				roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+					{
+						Role: "admin",
+						Permissions: []roverv1.AuthorizationPermission{
+							{
+								Resource: "stargate:myapi:v1",
+								Actions:  []string{"read", "write"},
+							},
+							{
+								Resource: "stargate:another:v1",
+								Actions:  []string{"read"},
+							},
+						},
+					},
+				}
+
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithAuth)
+				Expect(err).To(BeNil())
+				Expect(warnings).To(BeEmpty())
 			})
 		})
 

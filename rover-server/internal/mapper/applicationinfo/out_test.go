@@ -568,6 +568,100 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			Expect(err.Error()).To(ContainSubstring("failed to get zone for chevron info"))
 		})
 
+		It("must properly URL-encode client ID with special characters", func() {
+			secCtx := security.ToContext(ctx, &security.BusinessContext{Environment: "poc"})
+
+			localStores := &store.Stores{}
+
+			zone := &adminv1.Zone{
+				Status: adminv1.ZoneStatus{
+					Links: adminv1.Links{
+						ChevronUrl: "https://stargate.example.com/eni/chevron/v2/permission",
+					},
+				},
+			}
+			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
+			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(zone, nil).Maybe()
+			localStores.ZoneStore = zoneMock
+
+			roverWithAuth := rover.DeepCopy()
+			roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+				{Role: "admin", Resource: "res", Actions: []string{"read"}},
+			}
+
+			// Client ID with special characters that need URL encoding
+			appInfo := &api.ApplicationInfo{IrisClientId: "client&id=test?value"}
+			err := FillChevronInfo(secCtx, roverWithAuth, appInfo, localStores)
+
+			Expect(err).To(BeNil())
+			// The special characters should be URL-encoded
+			Expect(appInfo.ChevronUrl).To(Equal("https://stargate.example.com/eni/chevron/v2/permission?application=client%26id%3Dtest%3Fvalue"))
+			Expect(appInfo.ChevronApplication).To(Equal("client&id=test?value"))
+		})
+
+		It("must handle base URL with existing query params", func() {
+			secCtx := security.ToContext(ctx, &security.BusinessContext{Environment: "poc"})
+
+			localStores := &store.Stores{}
+
+			zone := &adminv1.Zone{
+				Status: adminv1.ZoneStatus{
+					Links: adminv1.Links{
+						// Base URL already has query params
+						ChevronUrl: "https://stargate.example.com/eni/chevron/v2/permission?env=prod&tenant=acme",
+					},
+				},
+			}
+			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
+			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(zone, nil).Maybe()
+			localStores.ZoneStore = zoneMock
+
+			roverWithAuth := rover.DeepCopy()
+			roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+				{Role: "admin", Resource: "res", Actions: []string{"read"}},
+			}
+
+			appInfo := &api.ApplicationInfo{IrisClientId: "test-client"}
+			err := FillChevronInfo(secCtx, roverWithAuth, appInfo, localStores)
+
+			Expect(err).To(BeNil())
+			// Should append application param correctly to existing query params
+			Expect(appInfo.ChevronUrl).To(ContainSubstring("application=test-client"))
+			Expect(appInfo.ChevronUrl).To(ContainSubstring("env=prod"))
+			Expect(appInfo.ChevronUrl).To(ContainSubstring("tenant=acme"))
+			// Should have proper query param separators
+			Expect(appInfo.ChevronUrl).To(MatchRegexp(`\?.*&.*&`))
+		})
+
+		It("must return error when base URL is malformed", func() {
+			secCtx := security.ToContext(ctx, &security.BusinessContext{Environment: "poc"})
+
+			localStores := &store.Stores{}
+
+			zone := &adminv1.Zone{
+				Status: adminv1.ZoneStatus{
+					Links: adminv1.Links{
+						// Invalid URL scheme
+						ChevronUrl: "ht!tp://invalid url with spaces",
+					},
+				},
+			}
+			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
+			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(zone, nil).Maybe()
+			localStores.ZoneStore = zoneMock
+
+			roverWithAuth := rover.DeepCopy()
+			roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+				{Role: "admin", Resource: "res", Actions: []string{"read"}},
+			}
+
+			appInfo := &api.ApplicationInfo{IrisClientId: "test-client"}
+			err := FillChevronInfo(secCtx, roverWithAuth, appInfo, localStores)
+
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(ContainSubstring("failed to parse chevron URL"))
+		})
+
 		It("must map all authorization formats correctly", func() {
 			secCtx := security.ToContext(ctx, &security.BusinessContext{Environment: "poc"})
 

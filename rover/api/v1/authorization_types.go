@@ -11,6 +11,12 @@ package v1
 //
 // +kubebuilder:validation:XValidation:rule="has(self.permissions) || (has(self.resource) && has(self.role) && has(self.actions))", message="Must provide either permissions list or all of (resource, role, actions)"
 // +kubebuilder:validation:XValidation:rule="!has(self.permissions) || !has(self.actions)", message="Cannot specify both permissions and actions"
+//
+// NOTE: Additional validation for nested permissions[] is done in the webhook (rover/internal/webhook/v1/rover_webhook.go)
+// rather than CEL due to cost budget constraints. CEL rules with .all() iteration over permissions arrays would exceed
+// the Kubernetes validation cost budget by over 40x. The webhook validates that:
+// - When resource is set (resource-oriented), all permissions must have non-empty role
+// - When role is set (role-oriented), all permissions must have non-empty resource
 type Authorization struct {
 	// Resource is the resource identifier being protected (used in resource-oriented and flat formats)
 	// +kubebuilder:validation:Optional
@@ -24,11 +30,13 @@ type Authorization struct {
 
 	// Actions lists the allowed actions (used only in flat format)
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=50
 	Actions []string `json:"actions,omitempty"`
 
 	// Permissions lists role-resource-action tuples (used in resource-oriented and role-oriented formats)
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=50
 	Permissions []AuthorizationPermission `json:"permissions,omitempty"`
 }

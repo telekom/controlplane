@@ -58,6 +58,12 @@ spec:
                     1. Resource-oriented: resource + permissions (role/actions list)
                     2. Role-oriented: role + permissions (resource/actions list)
                     3. Flat: role + resource + actions directly
+
+                    NOTE: Additional validation for nested permissions[] is done in the webhook (rover/internal/webhook/v1/rover_webhook.go)
+                    rather than CEL due to cost budget constraints. CEL rules with .all() iteration over permissions arrays would exceed
+                    the Kubernetes validation cost budget by over 40x. The webhook validates that:
+                    - When resource is set (resource-oriented), all permissions must have non-empty role
+                    - When role is set (role-oriented), all permissions must have non-empty resource
                   properties:
                     actions:
                       description: Actions lists the allowed actions (used only in
@@ -65,6 +71,7 @@ spec:
                       items:
                         type: string
                       maxItems: 50
+                      minItems: 1
                       type: array
                     permissions:
                       description: Permissions lists role-resource-action tuples (used
@@ -93,6 +100,7 @@ spec:
                         - actions
                         type: object
                       maxItems: 50
+                      minItems: 1
                       type: array
                     resource:
                       description: Resource is the resource identifier being protected
