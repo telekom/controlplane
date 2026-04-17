@@ -15,6 +15,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	pcpv1 "github.com/telekom/controlplane/permission/api/pcp/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,9 +66,11 @@ func (h *PermissionSetHandler) CreateOrUpdate(ctx context.Context, obj *permissi
 	}
 
 	// Create external PermissionSet in the zone namespace
+	// Use namespace-prefixed name to avoid collisions from different namespaces
+	externalName := labelutil.NormalizeNameValue(obj.Namespace + "-" + obj.Name)
 	externalPS := &pcpv1.PermissionSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      obj.Name, // Same name as internal PermissionSet
+			Name:      externalName,
 			Namespace: zone.Status.Namespace,
 		},
 	}

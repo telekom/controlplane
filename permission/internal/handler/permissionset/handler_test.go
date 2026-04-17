@@ -12,6 +12,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	pcpv1 "github.com/telekom/controlplane/permission/api/pcp/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -75,9 +76,11 @@ var _ = Describe("PermissionSetHandler Delete", func() {
 		Expect(k8sClient.Create(ctx, permissionSet)).To(Succeed())
 
 		// Create external PermissionSet manually (simulating what CreateOrUpdate does)
+		// Use same naming pattern as handler: namespace-prefixed to avoid collisions
+		externalName := labelutil.NormalizeNameValue(testNamespace.Name + "-" + psName)
 		externalPS = &pcpv1.PermissionSet{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      psName,
+				Name:      externalName,
 				Namespace: zoneNs.Name,
 				Labels: map[string]string{
 					// Must match the environment in context (what handler.CreateOrUpdate does at line 86)
@@ -131,7 +134,7 @@ var _ = Describe("PermissionSetHandler Delete", func() {
 		// Verify external PermissionSet exists
 		checkPS := &pcpv1.PermissionSet{}
 		externalKey := ktypes.NamespacedName{
-			Name:      psName,
+			Name:      externalPS.Name, // Use actual external name (namespace-prefixed)
 			Namespace: zoneNs.Name,
 		}
 		Expect(k8sClient.Get(ctx, externalKey, checkPS)).To(Succeed())
@@ -176,9 +179,94 @@ var _ = Describe("PermissionSetHandler Delete", func() {
 		// External PermissionSet should still exist since we didn't track it
 		checkPS := &pcpv1.PermissionSet{}
 		externalKey := ktypes.NamespacedName{
-			Name:      psName,
+			Name:      externalPS.Name, // Use actual external name (namespace-prefixed)
 			Namespace: zoneNs.Name,
 		}
 		Expect(k8sClient.Get(ctx, externalKey, checkPS)).To(Succeed())
+	})
+
+	It("should create unique names for PermissionSets from different namespaces", func() {
+		// This test verifies the fix for namespace collision issue
+		// Two PermissionSets with the same name in different namespaces
+		// should create external PermissionSets with different names
+
+		// Create second namespace
+		testNamespace2 := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "test2-",
+			},
+		}
+		Expect(k8sClient.Create(ctx, testNamespace2)).To(Succeed())
+		defer func() {
+			_ = client.IgnoreNotFound(k8sClient.Delete(ctx, testNamespace2))
+		}()
+
+		// Create second PermissionSet with same name but different namespace
+		permissionSet2 := &permissionv1.PermissionSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      psName, // Same name as first PermissionSet
+				Namespace: testNamespace2.Name,
+			},
+			Spec: permissionv1.PermissionSetSpec{
+				Permissions: []permissionv1.Permission{
+					{
+						Role:     "viewer",
+						Resource: "stargate:another-api:v1",
+						Actions:  []string{"read"},
+					},
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, permissionSet2)).To(Succeed())
+		defer func() {
+			_ = client.IgnoreNotFound(k8sClient.Delete(ctx, permissionSet2))
+		}()
+
+		// Create second external PermissionSet with namespace-prefixed name
+		externalName2 := labelutil.NormalizeNameValue(testNamespace2.Name + "-" + psName)
+		externalPS2 := &pcpv1.PermissionSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      externalName2,
+				Namespace: zoneNs.Name,
+				Labels: map[string]string{
+					"cp.ei.telekom.de/environment": testEnvironment,
+				},
+			},
+			Spec: pcpv1.PermissionSetSpec{
+				Permissions: []pcpv1.Permission{
+					{
+						Role:     "viewer",
+						Resource: "stargate:another-api:v1",
+						Actions:  []string{"read"},
+					},
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, externalPS2)).To(Succeed())
+		defer func() {
+			_ = client.IgnoreNotFound(k8sClient.Delete(ctx, externalPS2))
+		}()
+
+		// Verify both external PermissionSets exist with different names
+		checkPS1 := &pcpv1.PermissionSet{}
+		externalKey1 := ktypes.NamespacedName{
+			Name:      externalPS.Name,
+			Namespace: zoneNs.Name,
+		}
+		Expect(k8sClient.Get(ctx, externalKey1, checkPS1)).To(Succeed())
+
+		checkPS2 := &pcpv1.PermissionSet{}
+		externalKey2 := ktypes.NamespacedName{
+			Name:      externalPS2.Name,
+			Namespace: zoneNs.Name,
+		}
+		Expect(k8sClient.Get(ctx, externalKey2, checkPS2)).To(Succeed())
+
+		// Verify names are different (no collision)
+		Expect(externalPS.Name).NotTo(Equal(externalPS2.Name), "external PermissionSet names should be unique to avoid collision")
+
+		// Verify names contain namespace prefix for traceability
+		Expect(externalPS.Name).To(ContainSubstring(testNamespace.Name))
+		Expect(externalPS2.Name).To(ContainSubstring(testNamespace2.Name))
 	})
 })
