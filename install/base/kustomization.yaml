@@ -1,0 +1,9 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+namespace: controlplane-system
+
+resources:
+  - namespace.yaml
+  - issuer.yaml # currently this creates a self-signed issuer, in future this should be replaced by a proper issuer (e.g. ACME)

@@ -1,0 +1,196 @@
+---
+sidebar_position: 2
+---
+
+# Traffic Management
+
+Traffic management features give you control over how requests are routed, distributed, and protected as they flow through the gateway. These features apply to **API exposures** and, in the case of failover, also to **API subscriptions**.
+
+## Rate Limiting
+
+Rate limiting protects your API from being overwhelmed by too many requests. You can set limits for the API as a whole (provider limits) and for individual consumers (consumer limits).
+
+**Applies to:** API Exposure
+
+### Provider Limits
+
+Provider limits cap the total number of requests your API receives, regardless of which consumer sends them. This protects your backend service from overload.
+
+```yaml
+exposures:
+  - type: api
+    basePath: /checkout/v1
+    upstream: https://checkout.internal:8080
+    approval: SIMPLE
+    visibility: ENTERPRISE
+    rateLimit:
+      provider:
+        second: 100
+        minute: 5000
+        hour: 100000
+```
+
+### Consumer Limits
+
+Consumer limits cap the number of requests each individual consumer can make. You can set a default limit that applies to all consumers, and optionally override it for specific consumers.
+
+```yaml
+exposures:
+  - type: api
+    basePath: /checkout/v1
+    upstream: https://checkout.internal:8080
+    approval: SIMPLE
+    visibility: ENTERPRISE
+    rateLimit:
+      consumerDefault:
+        second: 10
+        minute: 500
+      consumers:
+        - id: hub42--team-priority--premium-app
+          second: 50
+          minute: 2500
+```
+
+### Rate Limit Settings
+
+| Field | Description |
+| ----- | ----------- |
+| `provider.second` | Maximum requests per second for the entire API. |
+| `provider.minute` | Maximum requests per minute for the entire API. |
+| `provider.hour` | Maximum requests per hour for the entire API. |
+| `consumerDefault.second` | Default maximum requests per second per consumer. |
+| `consumerDefault.minute` | Default maximum requests per minute per consumer. |
+| `consumerDefault.hour` | Default maximum requests per hour per consumer. |
+| `consumers[].id` | The client ID of the consumer to override. |
+| `consumers[].second` | Overridden maximum requests per second for this consumer. |
+| `consumers[].minute` | Overridden maximum requests per minute for this consumer. |
+| `consumers[].hour` | Overridden maximum requests per hour for this consumer. |
+
+:::tip
+You can also configure `faultTolerant` (default: `true`) and `hideClientHeaders` (default: `false`) on any rate limit level. When `faultTolerant` is enabled, the gateway continues to allow requests even if it cannot reach the configuration store. When `hideClientHeaders` is enabled, the rate limit response headers are hidden from consumers.
+:::
+
+### Combining Provider and Consumer Limits
+
+You can use provider and consumer limits together. In this case, both limits are enforced independently — a request must pass both checks to be allowed through.
+
+```yaml
+rateLimit:
+  provider:
+    second: 100
+  consumerDefault:
+    second: 10
+  consumers:
+    - id: hub42--team-priority--premium-app
+      second: 50
+```
+
+In this example, the API accepts at most 100 requests per second in total. Each consumer is limited to 10 requests per second by default, except for `premium-app` which is allowed 50 requests per second.
+
+---
+
+## Load Balancing
+
+Load balancing distributes incoming requests across multiple backend servers. This is useful when your service runs on multiple instances or when you want to gradually shift traffic between different versions.
+
+**Applies to:** API Exposure
+
+```yaml
+exposures:
+  - type: api
+    basePath: /checkout/v1
+    approval: SIMPLE
+    visibility: ENTERPRISE
+    loadBalancing:
+      servers:
+        - upstream: https://checkout-v1.internal:8080
+          weight: 80
+        - upstream: https://checkout-v2.internal:8080
+          weight: 20
+```
+
+### Load Balancing Settings
+
+| Field | Description |
+| ----- | ----------- |
+| `servers` | A list of backend servers to distribute traffic to. At least one server is required, and up to 12 are supported. |
+| `servers[].upstream` | The URL of the backend server. |
+| `servers[].weight` | The relative weight for traffic distribution. Higher values receive more traffic. Default: `1`. Range: 1–100. |
+| `health.httpPath` | An optional HTTP path used for health checking the upstream servers. |
+
+:::caution
+You must use **either** `upstream` (single backend) **or** `loadBalancing` (multiple backends) — not both. When you use `loadBalancing`, the `upstream` field must be omitted, and the gateway distributes traffic across the listed servers based on their weights.
+:::
+
+---
+
+## Failover
+
+Failover provides disaster recovery by routing traffic to backup zones when the primary zone is unavailable. This is useful in multi-cloud or multi-zone deployments where you want to ensure high availability.
+
+**Applies to:** API Exposure, API Subscription
+
+### Provider-Side Failover (API Exposure)
+
+As an API provider, you can define failover zones so that consumers are automatically redirected to your API in another zone if the primary zone goes down.
+
+```yaml
+exposures:
+  - type: api
+    basePath: /checkout/v1
+    upstream: https://checkout.internal:8080
+    approval: SIMPLE
+    visibility: ENTERPRISE
+    failover:
+      zones:
+        - dataplane2
+        - dataplane3
+```
+
+### Consumer-Side Failover (API Subscription)
+
+As an API consumer, you can define failover zones to try when your preferred provider zone is unavailable.
+
+```yaml
+subscriptions:
+  - type: api
+    basePath: /checkout/v1
+    failover:
+      zones:
+        - dataplane2
+```
+
+### Failover Settings
+
+| Field | Description |
+| ----- | ----------- |
+| `failover.zones` | A list of zone names to use as fallback destinations. The gateway tries each zone in order until one responds successfully. Maximum: 10 zones. |
+
+:::info
+Provider-side and consumer-side failover work independently. The provider defines where their API is available, and the consumer defines which zones to try. Both can be configured at the same time for maximum resilience.
+:::
+
+---
+
+## Circuit Breaker
+
+The circuit breaker prevents cascading failures by automatically stopping requests to an upstream service that is consistently failing. When enabled, the gateway monitors error rates and temporarily blocks traffic to unhealthy backends, giving them time to recover.
+
+**Applies to:** API Exposure
+
+```yaml
+exposures:
+  - type: api
+    basePath: /checkout/v1
+    upstream: https://checkout.internal:8080
+    approval: SIMPLE
+    visibility: ENTERPRISE
+    circuitBreaker:
+      enabled: true
+```
+
+### Circuit Breaker Settings
+
+| Field | Description |
+| ----- | ----------- |
+| `circuitBreaker.enabled` | Set to `true` to enable the circuit breaker. Default: `false`. |

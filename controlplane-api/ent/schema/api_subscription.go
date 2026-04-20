@@ -26,7 +26,7 @@ func (ApiSubscription) Mixin() []ent.Mixin {
 		schemamixin.TimestampsMixin{},
 		schemamixin.StatusMixin{},
 		schemamixin.EnvironmentMixin{},
-		schemamixin.NamespaceMixin{},
+		schemamixin.MetadataMixin{},
 	}
 }
 
@@ -60,8 +60,7 @@ func (ApiSubscription) Edges() []ent.Edge {
 		edge.To("failover_zones", Zone.Type),
 		edge.To("approval", Approval.Type).
 			Unique(),
-		edge.To("approval_request", ApprovalRequest.Type).
-			Unique(),
+		edge.To("approval_requests", ApprovalRequest.Type),
 	}
 }
 
@@ -74,6 +73,6 @@ func (ApiSubscription) Annotations() []schema.Annotation {
 
 func (ApiSubscription) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Edges("owner", "target").Unique(),
+		index.Fields("base_path").Edges("owner").Unique(),
 	}
 }
