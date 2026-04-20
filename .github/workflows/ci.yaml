@@ -102,6 +102,7 @@ jobs:
       module: gateway
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
+      coverage_threshold: 56
 
   identity:
     name: Identity
