@@ -171,10 +171,13 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 
 	// Only create the target when it does not already exist in Kong.
 	// On re-reconciliation the upstream is upserted (PUT, idempotent) but the
-	// target is left untouched — matching the behaviour of the old Java gateway.
-	targetId, err := findExistingTargetId(ctx, kongAdminApi, upstreamName, DefaultTargetsTarget)
-	if err != nil {
-		return err
+	// target is left untouched
+	targetId := route.GetTargetsId()
+	if targetId == "" {
+		targetId, err = findExistingTargetId(ctx, kongAdminApi, upstreamName, DefaultTargetsTarget)
+		if err != nil {
+			return err
+		}
 	}
 	if targetId == "" {
 		targetId, err = createTarget(ctx, kongAdminApi, upstreamName, routeName, route.GetName())
