@@ -1,0 +1,51 @@
+{
+  "apiVersion": "application.cp.ei.telekom.de/v1",
+  "kind": "Application",
+  "metadata": {
+    "name": "my-app",
+    "namespace": "poc--eni--hyperion",
+    "generation": 1,
+    "creationTimestamp": "2025-01-15T10:00:00Z",
+    "labels": {
+      "cp.ei.telekom.de/application": "my-app"
+    }
+  },
+  "spec": {
+    "team": "hyperion",
+    "teamEmail": "hyperion@telekom.de",
+    "secret": "test-secret",
+    "needsClient": true,
+    "needsConsumer": true,
+    "zone": {
+      "name": "dataplane1",
+      "namespace": "poc"
+    },
+    "security": {
+      "ipRestrictions": {
+        "allow": ["10.0.0.0/8", "172.16.0.0/12"]
+      }
+    }
+  },
+  "status": {
+    "clientId": "hyperion--my-app",
+    "clientSecret": "test-secret",
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "SubResourceProvisioned",
+        "message": "All sub-resources are up to date",
+        "lastTransitionTime": "2025-01-15T10:01:00Z",
+        "observedGeneration": 1
+      },
+      {
+        "type": "Processing",
+        "status": "False",
+        "reason": "Done",
+        "message": "All sub-resources are up to date",
+        "lastTransitionTime": "2025-01-15T10:01:00Z",
+        "observedGeneration": 1
+      }
+    ]
+  }
+}

@@ -200,6 +200,15 @@ jobs:
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
 
+  discovery-server:
+    name: Discovery Server
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      name: discovery-server
+      module: discovery-server
+      run_check_generated_files: false
+      ko_build_path: "cmd/main.go"
+
   pubsub:
     name: PubSub
     uses: ./.github/workflows/reusable-go-ci.yaml
@@ -208,3 +217,12 @@ jobs:
       module: pubsub
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
+
+  projector:
+    name: Projector
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      name: projector
+      module: projector
+      run_check_generated_files: false
+      ko_build_path: "main.go"
