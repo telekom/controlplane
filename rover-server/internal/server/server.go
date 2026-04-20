@@ -50,11 +50,11 @@ type EventSpecificationController interface {
 }
 
 type ApiRoadmapController interface {
-	CreateApiRoadmap(c *fiber.Ctx) error
-	UpdateApiRoadmap(c *fiber.Ctx, apiRoadmapId string) error
-	GetApiRoadmap(c *fiber.Ctx, apiRoadmapId string) error
-	GetAllApiRoadmaps(c *fiber.Ctx, params api.GetAllApiRoadmapsParams) error
-	DeleteApiRoadmap(c *fiber.Ctx, apiRoadmapId string) error
+	Create(ctx context.Context, req api.ApiRoadmapCreateRequest) (api.ApiRoadmapResponse, error)
+	Get(ctx context.Context, resourceId string) (api.ApiRoadmapResponse, error)
+	GetAll(ctx context.Context, params api.GetAllApiRoadmapsParams) (*api.ApiRoadmapListResponse, error)
+	Update(ctx context.Context, resourceId string, req api.ApiRoadmapUpdateRequest) (api.ApiRoadmapResponse, error)
+	Delete(ctx context.Context, resourceId string) error
 }
 
 var securityTemplates = map[security.ClientType]security.ComparisonTemplates{

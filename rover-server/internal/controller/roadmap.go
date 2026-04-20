@@ -11,8 +11,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io"
-	"regexp"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -20,16 +18,14 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
-	"github.com/telekom/controlplane/common/pkg/types"
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
-	statusmapper "github.com/telekom/controlplane/rover-server/internal/mapper/status"
+	"github.com/telekom/controlplane/rover-server/internal/mapper/roadmap/in"
+	"github.com/telekom/controlplane/rover-server/internal/mapper/roadmap/out"
 	s "github.com/telekom/controlplane/rover-server/pkg/store"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type RoadmapController struct {
@@ -44,132 +40,53 @@ func NewRoadmapController(stores *s.Stores) *RoadmapController {
 	}
 }
 
-// CreateApiRoadmap implements the ServerInterface for creating roadmaps (POST)
-// Accepts the old Java API format with basePath
-func (r *RoadmapController) CreateApiRoadmap(c *fiber.Ctx) error {
-	ctx := c.UserContext()
-
-	var req api.ApiRoadmapCreateRequest
-	if err := c.BodyParser(&req); err != nil {
-		return problems.BadRequest("Failed to parse request body: " + err.Error())
-	}
-
-	// Validate request
-	if req.BasePath == "" {
-		return problems.BadRequest("basePath must not be empty")
-	}
-	if len(req.Items) == 0 {
-		return problems.BadRequest("items array must contain at least one item")
-	}
-
-	// Call internal logic to create the roadmap
-	response, err := r.createOrUpdateRoadmap(ctx, req.BasePath, req.Items)
-	if err != nil {
-		return err
-	}
-
-	return c.Status(fiber.StatusAccepted).JSON(response)
+// Create implements ApiRoadmapController.
+func (r *RoadmapController) Create(ctx context.Context, req api.ApiRoadmapCreateRequest) (api.ApiRoadmapResponse, error) {
+	log.Infof("ApiRoadmap: Create not implemented. ApiRoadmap is: %+v", req)
+	return api.ApiRoadmapResponse{},
+		fiber.NewError(fiber.StatusNotImplemented, "Create not implemented")
 }
 
-// UpdateApiRoadmap implements the ServerInterface for updating roadmaps (PUT)
-// Accepts the old Java API format with basePath
-func (r *RoadmapController) UpdateApiRoadmap(c *fiber.Ctx, apiRoadmapId string) error {
-	ctx := c.UserContext()
-
-	var req api.ApiRoadmapUpdateRequest
-	if err := c.BodyParser(&req); err != nil {
-		return problems.BadRequest("Failed to parse request body: " + err.Error())
-	}
-
-	// Validate request
-	if req.BasePath == "" {
-		return problems.BadRequest("basePath must not be empty")
-	}
-	if len(req.Items) == 0 {
-		return problems.BadRequest("items array must contain at least one item")
-	}
-
-	// Call internal logic to update the roadmap
-	response, err := r.createOrUpdateRoadmap(ctx, req.BasePath, req.Items)
-	if err != nil {
-		return err
-	}
-
-	return c.Status(fiber.StatusAccepted).JSON(response)
-}
-
-// createOrUpdateRoadmap is the internal shared logic for creating/updating roadmaps
-// It transforms the old API format (basePath) to the new CRD structure (TypedObjectRef)
-func (r *RoadmapController) createOrUpdateRoadmap(ctx context.Context, basePath string, items []api.ApiRoadmapItem) (api.ApiRoadmapResponse, error) {
+// Update implements ApiRoadmapController.
+func (r *RoadmapController) Update(ctx context.Context, resourceId string, req api.ApiRoadmapUpdateRequest) (api.ApiRoadmapResponse, error) {
 	var res api.ApiRoadmapResponse
 
-	// Get security context for namespace construction
-	secCtx, ok := security.FromContext(ctx)
-	if !ok {
-		return res, problems.InternalServerError("Invalid Context", "Security context not found")
+	id, err := mapper.ParseResourceId(ctx, resourceId)
+	if err != nil {
+		return res, err
 	}
 
-	// Generate roadmap name using the new pattern: api--<specialName>
-	roadmapName := makeRoadmapName(basePath)
+	if req.BasePath == "" {
+		return res, problems.BadRequest("basePath must not be empty")
+	}
+	if len(req.Items) == 0 {
+		return res, problems.BadRequest("items array must contain at least one item")
+	}
 
-	// Construct namespace from environment and team
-	// For now, extract from security context - we need the team from the token
-	// The namespace format is: <environment>--<group>--<team>
-	namespace := secCtx.Environment + "--" + secCtx.Group + "--" + secCtx.Team
+	expectedName := in.MakeRoadmapName(req.BasePath)
+	if expectedName != id.Name {
+		return res, problems.BadRequest("basePath " + req.BasePath + " does not match resource ID " + resourceId)
+	}
 
-	// Marshal items to JSON
+	return r.createOrUpdateRoadmap(ctx, id, req.BasePath, req.Items)
+}
+
+func (r *RoadmapController) createOrUpdateRoadmap(ctx context.Context, id mapper.ResourceIdInfo, basePath string, items []api.ApiRoadmapItem) (api.ApiRoadmapResponse, error) {
+	var res api.ApiRoadmapResponse
+
 	itemsMarshaled, err := json.Marshal(items)
 	if err != nil {
 		return res, problems.BadRequest("failed to marshal items: " + err.Error())
 	}
 
-	// Create a temporary ResourceIdInfo for file operations
-	// We use the roadmap name as the resource identifier
-	tempId := mapper.ResourceIdInfo{
-		ResourceId:  secCtx.Group + "--" + secCtx.Team + "--" + roadmapName,
-		Environment: secCtx.Environment,
-		Namespace:   secCtx.Group + "--" + secCtx.Team,
-		Name:        roadmapName,
-	}
-
-	// Upload to file-manager
-	fileAPIResp, err := r.uploadFile(ctx, itemsMarshaled, tempId)
+	fileAPIResp, err := r.uploadFile(ctx, itemsMarshaled, id)
 	if err != nil {
 		return res, err
 	}
 
-	// Construct TypedObjectRef to specification resource
-	// The ApiSpecification name is derived from basePath (e.g., "/eni/my-api/v1" -> "eni-my-api-v1")
-	apiSpecName := makeApiSpecificationName(basePath)
-	apiSpecRef := types.TypedObjectRef{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ApiSpecification",
-			APIVersion: "rover.cp.ei.telekom.de/v1",
-		},
-		ObjectRef: types.ObjectRef{
-			Name:      apiSpecName,
-			Namespace: namespace,
-		},
-	}
-
-	// Create/Update Roadmap CRD
-	roadmap := &roverv1.Roadmap{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Roadmap",
-			APIVersion: "rover.cp.ei.telekom.de/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      roadmapName,
-			Namespace: namespace,
-			Annotations: map[string]string{
-				"rover.cp.ei.telekom.de/basePath": basePath,
-			},
-		},
-		Spec: roverv1.RoadmapSpec{
-			SpecificationRef: apiSpecRef,
-			Contents:         fileAPIResp.FileId,
-			Hash:             fileAPIResp.FileHash,
-		},
+	roadmap, err := in.MapRequest(basePath, fileAPIResp, id)
+	if err != nil {
+		return res, err
 	}
 	EnsureLabelsOrDie(ctx, roadmap)
 
@@ -178,112 +95,44 @@ func (r *RoadmapController) createOrUpdateRoadmap(ctx context.Context, basePath 
 		return res, err
 	}
 
-	// Remove any duplicate roadmaps pointing to the same specification
-	if err := r.removeDuplicates(ctx, roadmap); err != nil {
-		log.Warnf("Failed to remove duplicate roadmaps for basePath %s: %v", basePath, err)
-	}
-
-	// Download items to return in response
-	reader, err := r.downloadFile(ctx, fileAPIResp.FileId)
-	if err != nil {
-		return res, errors.Wrap(err, "failed to download roadmap items from file-manager")
-	}
-
-	var responseItems []api.ApiRoadmapItem
-	err = json.NewDecoder(reader).Decode(&responseItems)
-	if err != nil {
-		return res, errors.Wrap(err, "failed to decode roadmap items")
-	}
-
-	// Construct response
-	resourceId := secCtx.Group + "--" + secCtx.Team + "--" + roadmapName
-	return api.ApiRoadmapResponse{
-		BasePath: basePath,
-		Id:       resourceId,
-		Name:     roadmapName,
-		Items:    responseItems,
-		Status:   statusmapper.MapStatus(roadmap.GetConditions(), roadmap.GetGeneration()),
-	}, nil
+	return out.MapResponse(roadmap, items), nil
 }
 
-// versionSuffixRe matches a major version suffix like "-v1", "-v2", "-v10"
-var versionSuffixRe = regexp.MustCompile(`-v\d+$`)
+// Get implements ApiRoadmapController.
+func (r *RoadmapController) Get(ctx context.Context, resourceId string) (api.ApiRoadmapResponse, error) {
+	var res api.ApiRoadmapResponse
 
-// makeRoadmapName generates the roadmap name from an API basePath.
-// The name is the normalized basePath with the major version suffix removed.
-// Example: "/eni/my-api/v1" → "eni-my-api"
-// Note: the name must NOT contain "--" since that is used as a separator in resource IDs.
-func makeRoadmapName(basePath string) string {
-	normalized := labelutil.NormalizeValue(basePath)
-	specialName := versionSuffixRe.ReplaceAllString(normalized, "")
-	return labelutil.NormalizeNameValue(specialName)
-}
-
-// makeApiSpecificationName generates the ApiSpecification name from basePath
-// This matches the logic in ApiSpecification's MakeName() function
-func makeApiSpecificationName(basePath string) string {
-	return labelutil.NormalizeValue(basePath)
-}
-
-// GetApiRoadmap retrieves a roadmap by ID
-func (r *RoadmapController) GetApiRoadmap(c *fiber.Ctx, apiRoadmapId string) error {
-	ctx := c.UserContext()
-
-	// Parse the apiRoadmapId to extract namespace and name
-	// The ID format is: group--team--roadmapName (e.g., "eni--hyperion--api--my-api")
-	id, err := mapper.ParseResourceId(ctx, apiRoadmapId)
+	id, err := mapper.ParseResourceId(ctx, resourceId)
 	if err != nil {
-		return err
+		return res, err
 	}
 
 	ns := id.Environment + "--" + id.Namespace
 	roadmap, err := r.Store.Get(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
-			return problems.NotFound(apiRoadmapId)
+			return res, problems.NotFound(resourceId)
 		}
-		return err
+		return res, err
 	}
 
 	// Download items from file-manager
 	reader, err := r.downloadFile(ctx, roadmap.Spec.Contents)
 	if err != nil {
-		return errors.Wrap(err, "failed to download roadmap items from file-manager")
+		return res, errors.Wrap(err, "failed to download roadmap items from file-manager")
 	}
 
 	var items []api.ApiRoadmapItem
 	err = json.NewDecoder(reader).Decode(&items)
 	if err != nil {
-		return errors.Wrap(err, "failed to decode roadmap items")
+		return res, errors.Wrap(err, "failed to decode roadmap items")
 	}
 
-	// Extract basePath from roadmap annotations
-	basePath := ""
-	if roadmap.Annotations != nil {
-		basePath = roadmap.Annotations["rover.cp.ei.telekom.de/basePath"]
-	}
-	if basePath == "" {
-		// Fallback: try to derive from specification name
-		basePath = "/" + strings.ReplaceAll(roadmap.Spec.SpecificationRef.Name, "-", "/")
-	}
-
-	// Construct response
-	response := api.ApiRoadmapResponse{
-		BasePath: basePath,
-		Id:       id.ResourceId,
-		Name:     roadmap.Name,
-		Items:    items,
-		Status:   statusmapper.MapStatus(roadmap.GetConditions(), roadmap.GetGeneration()),
-	}
-
-	return c.JSON(response)
+	return out.MapResponse(roadmap, items), nil
 }
 
-// GetAll lists all roadmaps, optionally filtered by resourceType
-// GetAllApiRoadmaps lists all API roadmaps
-func (r *RoadmapController) GetAllApiRoadmaps(c *fiber.Ctx, params api.GetAllApiRoadmapsParams) error {
-	ctx := c.UserContext()
-
+// GetAll implements ApiRoadmapController.
+func (r *RoadmapController) GetAll(ctx context.Context, params api.GetAllApiRoadmapsParams) (*api.ApiRoadmapListResponse, error) {
 	listOpts := store.NewListOpts()
 	if params.Cursor != "" {
 		listOpts.Cursor = params.Cursor
@@ -292,7 +141,7 @@ func (r *RoadmapController) GetAllApiRoadmaps(c *fiber.Ctx, params api.GetAllApi
 
 	objList, err := r.Store.List(ctx, listOpts)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	list := make([]api.ApiRoadmapResponse, 0, len(objList.Items))
@@ -300,52 +149,30 @@ func (r *RoadmapController) GetAllApiRoadmaps(c *fiber.Ctx, params api.GetAllApi
 		// Download items from file-manager
 		reader, err := r.downloadFile(ctx, roadmap.Spec.Contents)
 		if err != nil {
-			return problems.InternalServerError("Failed to download roadmap items", err.Error())
+			return nil, problems.InternalServerError("Failed to download roadmap items", err.Error())
 		}
 
 		var items []api.ApiRoadmapItem
 		err = json.NewDecoder(reader).Decode(&items)
 		if err != nil {
-			return problems.InternalServerError("Failed to decode roadmap items", err.Error())
+			return nil, problems.InternalServerError("Failed to decode roadmap items", err.Error())
 		}
 
-		// Extract basePath from annotations
-		basePath := ""
-		if roadmap.Annotations != nil {
-			basePath = roadmap.Annotations["rover.cp.ei.telekom.de/basePath"]
-		}
-		if basePath == "" {
-			basePath = "/" + strings.ReplaceAll(roadmap.Spec.SpecificationRef.Name, "-", "/")
-		}
-
-		resourceId := mapper.MakeResourceId(roadmap)
-		resp := api.ApiRoadmapResponse{
-			BasePath: basePath,
-			Id:       resourceId,
-			Name:     roadmap.Name,
-			Items:    items,
-			Status:   statusmapper.MapStatus(roadmap.GetConditions(), roadmap.GetGeneration()),
-		}
-		list = append(list, resp)
+		list = append(list, out.MapResponse(roadmap, items))
 	}
 
-	response := api.ApiRoadmapListResponse{
+	return &api.ApiRoadmapListResponse{
 		Items: list,
 		UnderscoreLinks: api.Links{
 			Self: objList.Links.Self,
 			Next: objList.Links.Next,
 		},
-	}
-
-	return c.JSON(response)
+	}, nil
 }
 
-// DeleteApiRoadmap deletes a roadmap by ID
-func (r *RoadmapController) DeleteApiRoadmap(c *fiber.Ctx, apiRoadmapId string) error {
-	ctx := c.UserContext()
-
-	// Parse the apiRoadmapId to extract namespace and name
-	id, err := mapper.ParseResourceId(ctx, apiRoadmapId)
+// Delete implements ApiRoadmapController.
+func (r *RoadmapController) Delete(ctx context.Context, resourceId string) error {
+	id, err := mapper.ParseResourceId(ctx, resourceId)
 	if err != nil {
 		return err
 	}
@@ -355,7 +182,7 @@ func (r *RoadmapController) DeleteApiRoadmap(c *fiber.Ctx, apiRoadmapId string) 
 	roadmap, err := r.Store.Get(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
-			return problems.NotFound(apiRoadmapId)
+			return problems.NotFound(resourceId)
 		}
 		return err
 	}
@@ -374,12 +201,12 @@ func (r *RoadmapController) DeleteApiRoadmap(c *fiber.Ctx, apiRoadmapId string) 
 	err = r.Store.Delete(ctx, ns, id.Name)
 	if err != nil {
 		if problems.IsNotFound(err) {
-			return problems.NotFound(apiRoadmapId)
+			return problems.NotFound(resourceId)
 		}
 		return err
 	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	return nil
 }
 
 // Helper methods
@@ -437,43 +264,6 @@ func (r *RoadmapController) downloadFile(ctx context.Context, fileId string) (io
 		return nil, err
 	}
 	return &b, nil
-}
-
-// removeDuplicates removes existing roadmaps pointing to the same specification
-// This implements the duplicate removal logic from the Java system
-// It excludes the newly created roadmap (by name) to avoid deleting what we just created
-func (r *RoadmapController) removeDuplicates(ctx context.Context, newRoadmap *roverv1.Roadmap) error {
-	// List all roadmaps in the same namespace
-	listOpts := store.NewListOpts()
-	store.EnforcePrefix(newRoadmap.Namespace+"/", &listOpts)
-
-	objList, err := r.Store.List(ctx, listOpts)
-	if err != nil {
-		return err
-	}
-
-	// Find and delete roadmaps pointing to the same specification (excluding the one we just created)
-	for _, existing := range objList.Items {
-		if existing.Name == newRoadmap.Name {
-			// Skip the roadmap we just created
-			continue
-		}
-		// Compare specification references (Name and Namespace)
-		if existing.Spec.SpecificationRef.Name == newRoadmap.Spec.SpecificationRef.Name &&
-			existing.Spec.SpecificationRef.Namespace == newRoadmap.Spec.SpecificationRef.Namespace {
-			// Delete file from file-manager
-			fileId := existing.Spec.Contents
-			_ = file.GetFileManager().DeleteFile(ctx, fileId) // Ignore errors
-
-			// Delete CRD
-			err = r.Store.Delete(ctx, existing.Namespace, existing.Name)
-			if err != nil && !problems.IsNotFound(err) {
-				return err
-			}
-		}
-	}
-
-	return nil
 }
 
 // generateFileId is defined in apispecification.go and shared across controllers

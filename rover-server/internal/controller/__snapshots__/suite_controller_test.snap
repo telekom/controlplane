@@ -1074,6 +1074,10 @@
 
 [Roadmap Controller GetAll ApiRoadmaps resource should return all ApiRoadmaps successfully - 1]
 {
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apiroadmaps?cursor="
+ },
  "items": [
   {
    "basePath": "/eni/test-api/v1",
@@ -1103,6 +1107,10 @@
 
 [Roadmap Controller GetAll ApiRoadmaps resource should return an empty list if no ApiRoadmaps exist - 1]
 {
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apiroadmaps?cursor="
+ },
  "items": []
 }
 ---
@@ -1117,67 +1125,8 @@
 }
 ---
 
-[Roadmap Controller Create ApiRoadmap resource should create the ApiRoadmap successfully - 1]
-{
- "basePath": "/eni/new-api/v1",
- "id": "eni--hyperion--eni-new-api",
- "items": [
-  {
-   "date": "Q1 2024",
-   "description": "Initial release with core features",
-   "title": "MVP Release",
-   "titleUrl": "https://example.com/mvp"
-  },
-  {
-   "date": "Q2 2024",
-   "description": "Optimize response times",
-   "title": "Performance Improvements"
-  }
- ],
- "name": "eni-new-api",
- "status": {
-  "processingState": "none",
-  "state": "none",
-  "warnings": [
-   {
-    "message": "Processing condition not found"
-   }
-  ]
- }
-}
----
 
 [Roadmap Controller Update ApiRoadmap resource should update the ApiRoadmap successfully - 1]
-{
- "basePath": "/eni/test-api/v1",
- "id": "eni--hyperion--eni-test-api",
- "items": [
-  {
-   "date": "Q1 2024",
-   "description": "Initial release with core features",
-   "title": "MVP Release",
-   "titleUrl": "https://example.com/mvp"
-  },
-  {
-   "date": "Q2 2024",
-   "description": "Optimize response times",
-   "title": "Performance Improvements"
-  }
- ],
- "name": "eni-test-api",
- "status": {
-  "processingState": "none",
-  "state": "none",
-  "warnings": [
-   {
-    "message": "Processing condition not found"
-   }
-  ]
- }
-}
----
-
-[Roadmap Controller Hash optimization should skip file upload if hash is unchanged - 1]
 {
  "basePath": "/eni/test-api/v1",
  "id": "eni--hyperion--eni-test-api",
