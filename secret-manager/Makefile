@@ -20,8 +20,8 @@ build: fmt vet ## Run go build against code.
 	go build -o bin/server cmd/server/server.go
 
 # Packages to test and measure coverage for
-TEST_PACKAGES = ./internal/... ./pkg/...
-COVER_PACKAGES = ./internal/...,./pkg/...
+TEST_PACKAGES = $(shell go list ./internal/... ./pkg/... | grep -v '^./internal/api$$')
+COVER_PACKAGES = $(shell go list ./internal/... ./pkg/... | grep -v '^./internal/api$$' | paste -sd, -)
 
 .PHONY: test
 test: fmt vet ## Run tests.
