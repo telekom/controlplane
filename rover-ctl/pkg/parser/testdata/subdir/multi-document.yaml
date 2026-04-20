@@ -1,7 +1,3 @@
-# Copyright 2026 Deutsche Telekom IT GmbH
-#
-# SPDX-License-Identifier: Apache-2.0
-
 apiVersion: tcp.ei.telekom.de/v1
 kind: Rover
 metadata:

@@ -1,9 +1,3 @@
-<!--
-Copyright 2026 Deutsche Telekom IT GmbH
-
-SPDX-License-Identifier: Apache-2.0
--->
-
 ## roverctl get-info
 
 Get information about a resource
