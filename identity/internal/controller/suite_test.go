@@ -115,9 +115,10 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	By("Setting up the required mocks")
+	realmClientMock := utils.NewRealmClientMock(GinkgoT())
 	keycloak.GetClientFor = func(realmStatus identityv1.RealmStatus) (keycloak.RealmClient, error) {
 		if mockKeycloak {
-			return utils.NewRealmClientMock(GinkgoT()), nil
+			return realmClientMock, nil
 		} else {
 			return keycloak.GetClientForRealm(realmStatus)
 		}
