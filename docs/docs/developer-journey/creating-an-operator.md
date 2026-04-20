@@ -10,7 +10,7 @@ This guide walks you through scaffolding a new operator and wiring it into the f
 
 ## Prerequisites
 
-- **Go 1.25.8**
+- **go 1.25.9**
 - **Kubebuilder 4.9.0** — see the [installation instructions](https://book.kubebuilder.io/quick-start#installation)
 - **A working Control Plane installation** — see [Local Development](./local-development.md)
 - **Familiarity with the architecture** — review the [Architecture Overview](../architecture/overview.md) before continuing
