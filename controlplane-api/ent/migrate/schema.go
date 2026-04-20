@@ -260,6 +260,18 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "member_email_team_members",
+				Unique:  true,
+				Columns: []*schema.Column{MembersColumns[3], MembersColumns[4]},
+			},
+			{
+				Name:    "member_email",
+				Unique:  false,
+				Columns: []*schema.Column{MembersColumns[3]},
+			},
+		},
 	}
 	// TeamsColumns holds the columns for the "teams" table.
 	TeamsColumns = []*schema.Column{

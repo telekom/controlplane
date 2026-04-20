@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 
 	schemamixin "github.com/telekom/controlplane/controlplane-api/ent/schema/mixin"
 )
@@ -38,5 +39,14 @@ func (Member) Edges() []ent.Edge {
 		edge.From("team", Team.Type).
 			Ref("members").
 			Unique(),
+	}
+}
+
+func (Member) Indexes() []ent.Index {
+	return []ent.Index{
+		// Composite unique: a member email must be unique within a team.
+		index.Fields("email").Edges("team").Unique(),
+		// Lookup index: find all teams a user (by email) belongs to.
+		index.Fields("email"),
 	}
 }
