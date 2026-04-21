@@ -6,6 +6,7 @@ dist/
 **/bin/
 charts
 snapshotter-config.yaml
+go.work*
 
 # editor and IDE paraphernalia
 .idea
@@ -13,6 +14,8 @@ snapshotter-config.yaml
 
 # ignore test output
 gotest.log
+junit.xml
+cover.out
 snapshots
 allure-report
 allure-results
@@ -20,3 +23,5 @@ debug-results
 
 # ignore Claude AI files
 CLAUDE.md
+.claude
+REVIEW.md

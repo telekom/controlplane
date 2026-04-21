@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -28,18 +29,18 @@ func newSuccessServer(t *testing.T, statusCode int, responseBody string) *httpte
 }
 
 // newRetryServer creates a test server that fails N times before succeeding
-// Returns the server and a pointer to the attempt counter
+// Returns the server and the attempt counter (use .Load() to read)
 //
 // successCode is always http.StatusOK in current tests, but kept as parameter
 // for flexibility and to make test intent explicit
 //
 //nolint:unparam
-func newRetryServer(t *testing.T, failureCode, successCode, failuresBeforeSuccess int) (*httptest.Server, *int) {
+func newRetryServer(t *testing.T, failureCode, successCode, failuresBeforeSuccess int) (*httptest.Server, *atomic.Int32) {
 	t.Helper()
-	attemptCount := 0
+	var attemptCount atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		attemptCount++
-		if attemptCount <= failuresBeforeSuccess {
+		n := attemptCount.Add(1)
+		if int(n) <= failuresBeforeSuccess {
 			w.WriteHeader(failureCode)
 			return
 		}
@@ -64,11 +65,11 @@ func newDelayedServer(t *testing.T, delay time.Duration, statusCode int) *httpte
 }
 
 // newCountingServer creates a test server that counts requests and returns success
-func newCountingServer(t *testing.T, statusCode int, delay time.Duration) (*httptest.Server, *int) {
+func newCountingServer(t *testing.T, statusCode int, delay time.Duration) (*httptest.Server, *atomic.Int32) {
 	t.Helper()
-	requestCount := 0
+	var requestCount atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestCount++
+		requestCount.Add(1)
 		if delay > 0 {
 			time.Sleep(delay)
 		}
@@ -137,8 +138,9 @@ func assertStatusCode(t *testing.T, resp *resty.Response, expected int) {
 }
 
 // assertAttempts fails the test if the attempt count doesn't match expected
-func assertAttempts(t *testing.T, actual, expected int, context string) {
+func assertAttempts(t *testing.T, counter *atomic.Int32, expected int, context string) {
 	t.Helper()
+	actual := int(counter.Load())
 	if actual != expected {
 		t.Errorf("%s: expected %d attempts, got %d", context, expected, actual)
 	}
