@@ -79,7 +79,7 @@ roverctl:
 
 environments:
   - name: "test-env"
-    token: "env://TEST_TOKEN"  # Use environment variable TEST_TOKEN
+    token: "env:TEST_TOKEN"  # Use environment variable TEST_TOKEN
 
 suites:
   - name: "basic-suite"
@@ -87,7 +87,7 @@ suites:
       - "test-env"
     cases:
       - name: "version-check"
-        run_policy: critical
+        run_policy: FailFast
         command: "--version"
         compare: true
 ```
@@ -128,9 +128,9 @@ roverctl:
 # Test environments
 environments:
   - name: "team-a"    # Unique name for the environment
-    token: "env://TEAM_A_TOKEN"  # Token for authentication, can use env variable with "env:" prefix
+    token: "env:TEAM_A_TOKEN"  # Token for authentication, can use env variable with "env:" prefix
   - name: "team-b"
-    token: "env://TEAM_B_TOKEN"
+    token: "env:TEAM_B_TOKEN"
 
 # Test suites
 suites:
@@ -149,7 +149,7 @@ Each environment represents a separate context with its own authentication:
 ```yaml
 environments:
   - name: "production"    # Environment identifier
-    token: "env://PROD_TOKEN"  # Reference to environment variable
+    token: "env:PROD_TOKEN"  # Reference to environment variable
   - name: "staging"
     token: "direct-token-value"  # Direct token value (not recommended for security)
 ```
@@ -206,7 +206,7 @@ cases:
     command: "apply -f ./examples/test-files"
     compare: true
   - name: "cleanup"
-    run_policy: always
+    run_policy: Always
     command: "delete -f ./examples/test-files"
 ```
 
@@ -221,7 +221,7 @@ cases:
   - name: "version-check"     # Name of the test case
     description: "Verify rover-ctl version"  # Optional description
     type: "roverctl"          # Type of command (default: "roverctl")
-    run_policy: critical      # Execution policy: "normal", "critical", or "always"
+    run_policy: FailFast      # Execution policy: "RunOnSuccess", "FailFast", or "Always"
     command: "--version"      # Command to execute
     compare: true             # Whether to compare with snapshot
     wait_before: 5s           # Optional: Wait before executing
@@ -236,14 +236,14 @@ The `run_policy` field controls test execution behavior relative to prior test f
 
 | Policy | Runs after prior failure? | On ERROR status |
 |--------|---------------------------|-----------------|
-| `normal` | ❌ **Skipped** | Suite continues |
-| `critical` | ✅ Runs | **Aborts suite** |
-| `always` | ✅ Runs | Suite continues |
+| `RunOnSuccess` | ❌ **Skipped** | Suite continues |
+| `FailFast` | ✅ Runs | **Aborts suite** |
+| `Always` | ✅ Runs | Suite continues |
 
 **When to use each policy:**
-- `normal` (default): Regular tests that should be skipped if something already broke
-- `critical`: Important tests that must run AND whose failure should stop everything
-- `always`: Cleanup/teardown that must execute no matter what happened before
+- `RunOnSuccess` (default): Regular tests that should be skipped if something already broke
+- `FailFast`: Important tests that must run AND whose failure should stop everything
+- `Always`: Cleanup/teardown that must execute no matter what happened before
 
 **Examples:**
 
@@ -251,19 +251,19 @@ The `run_policy` field controls test execution behavior relative to prior test f
 cases:
   # Critical test - suite aborts if this fails with an error
   - name: "version-check"
-    run_policy: critical
+    run_policy: FailFast
     command: "--version"
     compare: true
 
   # Normal test - skipped if prior tests failed (default when omitted)
   - name: "get-info"
-    # run_policy: normal (default)
+    # run_policy: RunOnSuccess (default)
     command: "get-info --name test-rover"
     compare: true
 
   # Cleanup test - always runs to clean up resources
   - name: "delete-resources"
-    run_policy: always
+    run_policy: Always
     command: "delete -f ./examples/test-files"
     compare: true
 ```
@@ -346,12 +346,12 @@ Test cases are the building blocks of the E2E-Tester. They define individual com
 Each test case must have:
 1. A unique name within its suite
 2. A command to execute
-3. A run policy defining execution behavior (optional, defaults to `normal`)
+3. A run policy defining execution behavior (optional, defaults to `RunOnSuccess`)
 4. Whether to compare output with a snapshot
 
 ```yaml
 - name: "version-check"
-  run_policy: critical
+  run_policy: FailFast
   command: "--version"
   compare: true
 ```
@@ -380,7 +380,7 @@ You can enhance test cases with additional parameters:
 ```yaml
 - name: "complex-test"
   description: "Tests complex API functionality"
-  run_policy: critical
+  run_policy: FailFast
   command: "apply -f ./config/complex-api.yaml"
   compare: true
   wait_before: 5s     # Wait before execution
@@ -395,7 +395,7 @@ You can enhance test cases with additional parameters:
 #### Basic Version Check
 ```yaml
 - name: "version-check"
-  run_policy: critical
+  run_policy: FailFast
   command: "--version"
   compare: true
 ```
@@ -403,13 +403,13 @@ You can enhance test cases with additional parameters:
 #### Resource Creation and Verification
 ```yaml
 - name: "create-resource"
-  run_policy: critical
+  run_policy: FailFast
   command: "apply -f ./examples/test-files/resource.yaml"
   compare: true
   wait_after: 2s
 
 - name: "verify-resource"
-  run_policy: critical
+  run_policy: FailFast
   command: "get-info --name test-resource"
   compare: true
 ```
@@ -418,7 +418,7 @@ You can enhance test cases with additional parameters:
 ```yaml
 - name: "system-state-snapshot"
   type: "snapshot"
-  # run_policy: normal (default - skipped if prior tests failed)
+  # run_policy: RunOnSuccess (default - skipped if prior tests failed)
   command: "snap --source dataplane1 --route api-route-v1"
   compare: true
   selector: "$.b"
@@ -428,7 +428,7 @@ You can enhance test cases with additional parameters:
 #### Cleanup (Always Runs)
 ```yaml
 - name: "delete-resources"
-  run_policy: always  # Always runs to ensure cleanup happens
+  run_policy: Always  # Always runs to ensure cleanup happens
   command: "delete -f ./examples/test-files"
   compare: true
 ```
@@ -437,7 +437,7 @@ You can enhance test cases with additional parameters:
 ```yaml
 - name: "production-only-test"
   environment: "production"
-  run_policy: critical
+  run_policy: FailFast
   command: "special-command --production-flag"
   compare: true
 ```
@@ -480,7 +480,7 @@ To create a snapshot test case, use the `snapshot` type:
 ```yaml
 - name: "api-route-snapshot"
   type: "snapshot"  # Indicates this is a snapshotter operation
-  run_policy: critical
+  run_policy: FailFast
   command: "snap --source production-gateway --route api-route-v1"
   compare: true
   selector: "$.b"  # Snapshotter puts the new snapshot in $.b
@@ -538,23 +538,23 @@ suites:
       - "team-a"
     cases:
       - name: "version-check"
-        run_policy: critical
+        run_policy: FailFast
         command: "--version"
         compare: true
 
       - name: "apply-config"
-        run_policy: critical
+        run_policy: FailFast
         command: "apply -f ./examples/test-files"
         compare: true
         wait_after: 2s
 
       - name: "get-info"
-        run_policy: critical
+        run_policy: FailFast
         command: "get-info --name test-rover"
         compare: true
 
       - name: "delete"
-        run_policy: always  # Cleanup always runs
+        run_policy: Always  # Cleanup always runs
         command: "delete -f ./examples/test-files"
         compare: true
 ```
@@ -566,9 +566,9 @@ This workflow tests the same operations across multiple environments:
 ```yaml
 environments:
   - name: "development"
-    token: "env://DEV_TOKEN"
+    token: "env:DEV_TOKEN"
   - name: "staging"
-    token: "env://STAGING_TOKEN"
+    token: "env:STAGING_TOKEN"
 
 suites:
   - name: "cross-environment-validation"
@@ -577,18 +577,18 @@ suites:
       - "staging"
     cases:
       - name: "apply-config"
-        run_policy: critical
+        run_policy: FailFast
         command: "apply -f ./examples/test-files"
         compare: true
         wait_after: 2s
 
       - name: "get-info"
-        run_policy: critical
+        run_policy: FailFast
         command: "get-info --name test-rover"
         compare: true
 
       - name: "delete"
-        run_policy: always  # Cleanup always runs
+        run_policy: Always  # Cleanup always runs
         command: "delete -f ./examples/test-files"
         compare: true
 ```
@@ -604,32 +604,32 @@ suites:
       - "production"
     cases:
       - name: "apply-route"
-        run_policy: critical
+        run_policy: FailFast
         command: "apply -f ./examples/gateway/route.yaml"
         compare: true
         wait_after: 5s
 
       - name: "snapshot-route-state"
         type: "snapshot"
-        run_policy: critical
+        run_policy: FailFast
         command: "snap --source prod-gateway --route my-api-route"
         compare: true
         selector: "$.b"
         wait_before: 2s
 
       - name: "verify-route-exists"
-        run_policy: critical
+        run_policy: FailFast
         command: "get-info --name my-api-route"
         compare: true
 
       - name: "delete-route"
-        run_policy: always  # Cleanup always runs
+        run_policy: Always  # Cleanup always runs
         command: "delete -f ./examples/gateway/route.yaml"
         compare: true
 
       - name: "verify-route-deleted"
         type: "snapshot"
-        run_policy: always  # Verification after cleanup
+        run_policy: Always  # Verification after cleanup
         command: "snap --source prod-gateway --route my-api-route"
         compare: true
         selector: "$.b"
