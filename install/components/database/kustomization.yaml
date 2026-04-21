@@ -19,6 +19,9 @@ secretGenerator:
   - name: controlplane-db
     options:
       disableNameSuffixHash: true
+    # WARNING: These credentials are for local development and testing only.
+    # Do NOT use these values in production. Replace with your own secure
+    # credentials or point DATABASE_URL at a managed database service.
     literals:
       - url=postgres://controlplane:controlplane@controlplane-postgres:5432/controlplane?sslmode=disable
       - username=controlplane
