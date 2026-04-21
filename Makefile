@@ -14,8 +14,8 @@
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
-# Discover all Go modules (excluding docs and tools)
-MODULES ?= $(shell find . -name 'go.mod' -not -path './docs/*' -not -path '*/node_modules/*' -not -path './tools/*' -exec dirname {} \; | sed 's|^\./||' | sort)
+# Discover Go modules that have a Makefile (excluding docs and tools)
+MODULES ?= $(shell find . -name 'go.mod' -not -path './docs/*' -not -path '*/node_modules/*' -not -path './tools/*' -exec dirname {} \; | while read d; do [ -f "$$d/Makefile" ] && echo "$$d"; done | sed 's|^\./||' | sort)
 
 ##@ Verification
 

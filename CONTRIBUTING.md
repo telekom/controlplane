@@ -19,7 +19,7 @@ Checks are split into two tiers to keep commits fast while catching everything b
 | When                         | What                                                             | Why                                                 |
 |------------------------------|------------------------------------------------------------------|-----------------------------------------------------|
 | **Pre-commit**               | REUSE license headers, gitleaks, conventional commit format      | Fast (<2s), runs on every commit                    |
-| **Pre-push / `make verify`** | `go mod tidy`, `make build`, `golangci-lint` per affected module | Thorough but slow — only needed before sharing code |
+| **Pre-push / `make verify`** | `go mod tidy`, `make build`, `golangci-lint` per module | Thorough but slow — only needed before sharing code |
 
 Always use Makefile targets instead of running Go tooling directly. The per-module Makefiles ensure correct flags, code generation, envtest setup, and coverage configuration.
 
@@ -30,7 +30,7 @@ make test           # test (includes envtest + coverage)
 make lint           # golangci-lint
 
 # From the repo root
-make verify         # all pre-push checks on all modules
+make verify         # all pre-push checks on every module with a Makefile
 make verify MODULES="gateway identity"  # check specific modules only
 make build-all      # build every module
 make test-all       # test every module
