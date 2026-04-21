@@ -55,7 +55,7 @@ func ValidateConfig(c *Config) error {
 func validateRunPolicy(fl validator.FieldLevel) bool {
 	policy := RunPolicy(fl.Field().String())
 	if policy == "" {
-		return true // Empty defaults to "normal" at runtime
+		return true // Empty defaults to "RunOnSuccess" at runtime
 	}
 	return policy.IsValid()
 }
@@ -160,6 +160,11 @@ func validateSuite(sl validator.StructLevel) {
 	if hasFilepath && hasCases {
 		sl.ReportError(suite.Filepath, "filepath", "Filepath",
 			"filepath_cases_exclusive", "")
+	}
+
+	if !hasFilepath && !hasCases {
+		sl.ReportError(suite.Cases, "cases", "Cases",
+			"min", "1")
 	}
 }
 

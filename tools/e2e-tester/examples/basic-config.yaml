@@ -20,9 +20,9 @@ roverctl:
 # Test environments
 environments:
   - name: "team-a"
-    token: "env://TEAM_A_TOKEN"
+    token: "env:TEAM_A_TOKEN"
   - name: "team-b"
-    token: "env://TEAM_B_TOKEN"
+    token: "env:TEAM_B_TOKEN"
 
 # Test suites
 suites:
@@ -35,7 +35,7 @@ suites:
       - "team-b"
     cases:
       - name: "version-check"
-        run_policy: critical
+        run_policy: FailFast
         command: "--version"
         compare: true
 
@@ -47,13 +47,13 @@ suites:
     cases:
       - name: "apply-config"
         environment: team-a
-        # run_policy: normal (default)
+        # run_policy: RunOnSuccess (default)
         command: "apply -f ./examples/super-long-test-files"
         compare: true
 
       - name: "get-info"
         environment: team-a
-        # run_policy: normal (default)
+        # run_policy: RunOnSuccess (default)
         command: "get-info --name test-rover"
         compare: true
 
@@ -62,7 +62,7 @@ suites:
         description: |
           Applying this will result in a blocked API as the same API path
           is already exposed by team-a
-        # run_policy: normal (default)
+        # run_policy: RunOnSuccess (default)
         command: "apply -f ./examples/super-long-test-files"
         compare: true
 
@@ -70,7 +70,7 @@ suites:
         environment: team-b
         description: |
           This must include an error message indicating the API is blocked
-        # run_policy: normal (default)
+        # run_policy: RunOnSuccess (default)
         command: "get-info --name test-rover"
         compare: true
 
@@ -78,7 +78,7 @@ suites:
         environment: team-a
         description: |
           Remove the exposure from team-a so that team-b becomes active
-        run_policy: always  # Cleanup always runs
+        run_policy: Always  # Cleanup always runs
         command: "delete -f ./examples/super-long-test-files"
         compare: true
         wait_after: 1s
@@ -87,12 +87,12 @@ suites:
         environment: team-b
         description: |
           This must now succeed as team-b is active
-        # run_policy: normal (default)
+        # run_policy: RunOnSuccess (default)
         command: "get-info --name test-rover"
         compare: true
 
       - name: "delete"
         environment: team-b
-        run_policy: always  # Cleanup always runs
+        run_policy: Always  # Cleanup always runs
         command: "delete -f ./examples/super-long-test-files"
         compare: true

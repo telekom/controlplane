@@ -257,16 +257,16 @@ func (r *SuiteRunner) Run(ctx context.Context) *report.SuiteResult {
 		policy := testCase.GetRunPolicy()
 
 		// Determine if this test should be skipped based on run_policy
-		if r.hasFailure && policy == config.RunPolicyNormal {
-			// Skip normal tests when suite has prior failures
+		if r.hasFailure && policy == config.RunPolicyRunOnSuccess {
+			// Skip RunOnSuccess tests when suite has prior failures
 			caseResult := &report.TestCaseResult{
 				Name:        testCase.Name,
 				Description: testCase.Description,
 				Command:     testCase.Command,
 				Environment: testCase.Environment,
-				RunPolicy:   string(policy),
+				RunPolicy:   policy,
 				Status:      report.StatusSkipped,
-				SkipReason:  "Skipped due to prior test failure (run_policy: normal)",
+				SkipReason:  "Skipped due to prior test failure (run_policy: RunOnSuccess)",
 			}
 			suiteResult.Cases = append(suiteResult.Cases, caseResult)
 			r.reporter.ReportTestCase(caseResult)
@@ -290,7 +290,7 @@ func (r *SuiteRunner) Run(ctx context.Context) *report.SuiteResult {
 		}
 
 		// Check if we should abort suite (critical policy + ERROR status)
-		if !r.continueOnFail && policy == config.RunPolicyCritical && caseResult.Status == report.StatusError {
+		if !r.continueOnFail && policy == config.RunPolicyFailFast && caseResult.Status == report.StatusError {
 			zap.L().Warn("Aborting suite execution due to critical test failure",
 				zap.String("case", testCase.Name),
 				zap.String("suite", r.suite.Name),
@@ -320,7 +320,7 @@ func (r *SuiteRunner) runCase(ctx context.Context, c config.Case, caseIndex int)
 		Description: c.Description,
 		Command:     c.Command,
 		Environment: c.Environment,
-		RunPolicy:   string(c.GetRunPolicy()),
+		RunPolicy:   c.GetRunPolicy(),
 	}
 
 	// Determine the command type - default to "roverctl" if not specified

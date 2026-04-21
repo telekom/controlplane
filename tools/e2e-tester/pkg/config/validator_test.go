@@ -190,7 +190,7 @@ func TestInvalidRunPolicy(t *testing.T) {
 }
 
 func TestValidRunPolicies(t *testing.T) {
-	policies := []RunPolicy{RunPolicyNormal, RunPolicyCritical, RunPolicyAlways, ""}
+	policies := []RunPolicy{RunPolicyRunOnSuccess, RunPolicyFailFast, RunPolicyAlways, ""}
 
 	for _, policy := range policies {
 		cfg := &Config{
@@ -651,7 +651,7 @@ func TestValidConfigWithAllFields(t *testing.T) {
 						Name:        "case-1",
 						Description: "Test case 1",
 						Type:        "roverctl",
-						RunPolicy:   RunPolicyCritical,
+						RunPolicy:   RunPolicyFailFast,
 						Command:     "--version",
 						Compare:     true,
 						WaitBefore:  5 * time.Second,

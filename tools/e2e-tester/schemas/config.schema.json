@@ -99,12 +99,7 @@
                 },
                 "run_policy": {
                   "type": "string",
-                  "enum": [
-                    "normal",
-                    "critical",
-                    "always"
-                  ],
-                  "description": "Execution policy: \"normal\" (default), \"critical\", \"always\""
+                  "description": "Execution policy: \"RunOnSuccess\" (default), \"FailFast\", \"Always\" (case-insensitive)"
                 },
                 "command": {
                   "type": "string"
@@ -142,8 +137,7 @@
                 "command"
               ]
             },
-            "type": "array",
-            "description": "Test cases in this suite"
+            "type": "array"
           },
           "environments": {
             "items": {
@@ -151,6 +145,10 @@
             },
             "type": "array",
             "description": "Required list of environments to run this suite in"
+          },
+          "snapshots_dir": {
+            "type": "string",
+            "description": "Optional per-suite snapshot directory"
           }
         },
         "type": "object",

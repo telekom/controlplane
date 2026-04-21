@@ -25,12 +25,7 @@
           },
           "run_policy": {
             "type": "string",
-            "enum": [
-              "normal",
-              "critical",
-              "always"
-            ],
-            "description": "Execution policy: \"normal\" (default), \"critical\", \"always\""
+            "description": "Execution policy: \"RunOnSuccess\" (default), \"FailFast\", \"Always\" (case-insensitive)"
           },
           "command": {
             "type": "string"

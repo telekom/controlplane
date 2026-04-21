@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/telekom/controlplane/tools/e2e-tester/pkg/config"
 	"go.uber.org/zap"
 )
 
@@ -35,7 +36,7 @@ type TestCaseResult struct {
 	Error          error
 	ComparisonDiff string
 	Environment    string
-	RunPolicy      string // Execution policy: "normal", "critical", "always"
+	RunPolicy      config.RunPolicy
 	SkipReason     string // Reason for skipping this test case
 }
 
@@ -128,22 +129,22 @@ func (r *ConsoleReporter) ReportTestCase(result *TestCaseResult) {
 
 		// Handle run_policy-specific messaging
 		switch result.RunPolicy {
-		case "critical":
+		case config.RunPolicyFailFast:
 			if result.Status == StatusError {
 				fmt.Fprintln(r.output, "  "+color.RedString("Critical Error:"))
-				fmt.Fprintf(r.output, "    %s\n", color.RedString("This test case has run_policy: critical"))
+				fmt.Fprintf(r.output, "    %s\n", color.RedString("This test case has run_policy: FailFast")) //nolint:errcheck
 				fmt.Fprintf(r.output, "    %s\n", color.RedString("Suite execution will be aborted"))
 			} else if result.Status == StatusFailed {
 				fmt.Fprintln(r.output, "  "+color.YellowString("Critical Test Failed:"))
-				fmt.Fprintf(r.output, "    %s\n", color.YellowString("This test case has run_policy: critical"))
+				fmt.Fprintf(r.output, "    %s\n", color.YellowString("This test case has run_policy: FailFast")) //nolint:errcheck
 				fmt.Fprintf(r.output, "    %s\n", color.YellowString("Test continues but result is marked as failed"))
 			}
-		case "always":
+		case config.RunPolicyAlways:
 			if result.Status == StatusSkipped {
 				// This shouldn't happen for always policy, but handle gracefully
-				fmt.Fprintln(r.output, "  "+color.YellowString("Note: This test has run_policy: always"))
+				fmt.Fprintln(r.output, "  "+color.YellowString("Note: This test has run_policy: Always")) //nolint:errcheck
 			}
-		case "normal":
+		case config.RunPolicyRunOnSuccess:
 			if result.Status == StatusSkipped && result.SkipReason != "" {
 				fmt.Fprintf(r.output, "  "+color.YellowString("Skipped: %s\n"), result.SkipReason)
 			}
@@ -408,10 +409,10 @@ func (r *ConsoleReporter) ReportFinal(report *FinalReport) {
 
 					// Add run_policy indicator if relevant
 					switch c.RunPolicy {
-					case "critical":
-						fmt.Fprintln(r.output, "    "+color.RedString("⚠ Critical Test (run_policy: critical)"))
-					case "always":
-						fmt.Fprintln(r.output, "    "+color.CyanString("◆ Always-run Test (run_policy: always)"))
+					case config.RunPolicyFailFast:
+						fmt.Fprintln(r.output, "    "+color.RedString("⚠ Critical Test (run_policy: FailFast)")) //nolint:errcheck
+					case config.RunPolicyAlways:
+						fmt.Fprintln(r.output, "    "+color.CyanString("◆ Always-run Test (run_policy: Always)")) //nolint:errcheck
 					}
 
 					// Add a separator between test entries

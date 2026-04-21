@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	envPrefix = "env://"
+	envPrefix = "env:"
 )
 
 type EnvironmentManager interface {

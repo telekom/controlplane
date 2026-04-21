@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"slices"
-
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -20,29 +18,45 @@ import (
 type RunPolicy string
 
 const (
-	// RunPolicyNormal - test runs when prior tests passed, skipped when prior failed.
-	RunPolicyNormal RunPolicy = "normal"
+	// RunPolicyRunOnSuccess - test runs when prior tests passed, skipped when prior failed.
+	RunPolicyRunOnSuccess RunPolicy = "RunOnSuccess"
 
-	// RunPolicyCritical - test runs when prior passed, aborts suite on ERROR status.
-	RunPolicyCritical RunPolicy = "critical"
+	// RunPolicyFailFast - test runs when prior passed, aborts suite on ERROR status.
+	RunPolicyFailFast RunPolicy = "FailFast"
 
 	// RunPolicyAlways - test always runs regardless of prior failures (for cleanup).
-	RunPolicyAlways RunPolicy = "always"
+	RunPolicyAlways RunPolicy = "Always"
 )
 
 // ValidRunPolicies contains all valid RunPolicy values for validation.
-var ValidRunPolicies = []RunPolicy{RunPolicyNormal, RunPolicyCritical, RunPolicyAlways}
+var ValidRunPolicies = []RunPolicy{RunPolicyRunOnSuccess, RunPolicyFailFast, RunPolicyAlways}
 
-// IsValid checks if a RunPolicy value is valid.
+// IsValid checks if a RunPolicy value is valid (case-insensitive).
 func (p RunPolicy) IsValid() bool {
-	return slices.Contains(ValidRunPolicies, p)
+	for _, valid := range ValidRunPolicies {
+		if strings.EqualFold(string(p), string(valid)) {
+			return true
+		}
+	}
+	return false
+}
+
+// Normalize returns the canonical PascalCase form of the policy.
+// Returns the input unchanged if it doesn't match any valid policy.
+func (p RunPolicy) Normalize() RunPolicy {
+	for _, valid := range ValidRunPolicies {
+		if strings.EqualFold(string(p), string(valid)) {
+			return valid
+		}
+	}
+	return p
 }
 
 type Case struct {
 	Name        string         `mapstructure:"name" validate:"required"`
-	Description string         `mapstructure:"description"`                                                             // Optional description of the test case purpose
-	Type        string         `mapstructure:"type" validate:"omitempty,oneof=roverctl snapshot"`                       // Command type: "roverctl" (default) or "snapshot"
-	RunPolicy   RunPolicy      `mapstructure:"run_policy" validate:"omitempty,run_policy,oneof=normal critical always"` // Execution policy: "normal" (default), "critical", "always"
+	Description string         `mapstructure:"description"`                                       // Optional description of the test case purpose
+	Type        string         `mapstructure:"type" validate:"omitempty,oneof=roverctl snapshot"` // Command type: "roverctl" (default) or "snapshot"
+	RunPolicy   RunPolicy      `mapstructure:"run_policy" validate:"omitempty,run_policy"`        // Execution policy: "RunOnSuccess" (default), "FailFast", "Always" (case-insensitive)
 	Command     string         `mapstructure:"command" validate:"required"`
 	Compare     bool           `mapstructure:"compare"`
 	Environment string         `mapstructure:"environment"`                            // Optional environment to run this case in
@@ -52,17 +66,18 @@ type Case struct {
 	Selector    string         `mapstructure:"selector"`                               // YAML path selector for output processing
 }
 
-// GetRunPolicy returns the effective run policy, defaulting to "normal" if not set.
+// GetRunPolicy returns the effective run policy, defaulting to RunOnSuccess if not set.
+// The returned value is always normalized to canonical PascalCase.
 func (c *Case) GetRunPolicy() RunPolicy {
 	if c.RunPolicy == "" {
-		return RunPolicyNormal
+		return RunPolicyRunOnSuccess
 	}
-	return c.RunPolicy
+	return c.RunPolicy.Normalize()
 }
 
 // IsCritical returns true if this case should abort the suite on ERROR.
 func (c *Case) IsCritical() bool {
-	return c.GetRunPolicy() == RunPolicyCritical
+	return c.GetRunPolicy() == RunPolicyFailFast
 }
 
 // ShouldAlwaysRun returns true if this case should run regardless of prior failures.
@@ -82,7 +97,7 @@ type Suite struct {
 	Name         string   `mapstructure:"name" validate:"required"`
 	Filepath     string   `mapstructure:"filepath"`    // The path to the file where the suite is defined. Mutually exclusive with all other fields
 	Description  string   `mapstructure:"description"` // Optional description of the test suite purpose
-	Cases        []*Case  `mapstructure:"cases"`
+	Cases        []*Case  `mapstructure:"cases" validate:"omitempty,dive"`
 	Environments []string `mapstructure:"environments"`  // Required list of environments to run this suite in
 	SnapshotsDir string   `mapstructure:"snapshots_dir"` // Optional per-suite snapshot directory
 }
