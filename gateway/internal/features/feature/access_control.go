@@ -10,6 +10,7 @@ import (
 
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
+	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
 )
 
 var _ features.Feature = &AccessControlFeature{}
@@ -58,9 +59,14 @@ func (f *AccessControlFeature) Apply(ctx context.Context, builder features.Featu
 	}
 
 	aclPlugin := builder.AclPlugin()
-	aclPlugin.Config.Allow.Add("gateway")
 	for _, defaultConsumer := range builder.GetRealm().Spec.DefaultConsumers {
 		aclPlugin.Config.Allow.Add(defaultConsumer)
+	}
+
+	if route.Spec.Security != nil {
+		for _, defaultConsumer := range route.Spec.Security.DefaultConsumers {
+			aclPlugin.Config.Allow.Add(defaultConsumer)
+		}
 	}
 
 	for _, consumer := range builder.GetAllowedConsumers() {
@@ -68,6 +74,13 @@ func (f *AccessControlFeature) Apply(ctx context.Context, builder features.Featu
 			// Only add allowed consumers that actually belong to this specific route
 			aclPlugin.Config.Allow.Add(consumer.Spec.ConsumerName)
 		}
+	}
+
+	// If no consumers were added, use a sentinel group to deny all traffic.
+	// Kong requires the ACL allow list to be non-empty; this placeholder ensures
+	// the plugin is accepted while no real consumer can match it.
+	if aclPlugin.Config.Allow.Empty() {
+		aclPlugin.Config.Allow.Add(plugin.DenyAllGroup)
 	}
 
 	return nil

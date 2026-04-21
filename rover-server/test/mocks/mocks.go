@@ -12,6 +12,7 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"gopkg.in/yaml.v3"
 
@@ -19,13 +20,16 @@ import (
 )
 
 const (
-	ApiSpecificationFileName = "apiSpecification.json"
-	OpenApiFileName          = "openapi.yaml"
-	apiSubscriptionFileName  = "apiSubscription.json"
-	apiExposureFileName      = "apiExposure.json"
-	applicationFileName      = "application.json"
-	RoverFileName            = "rover.json"
-	zoneFileName             = "zone.json"
+	ApiSpecificationFileName   = "apiSpecification.json"
+	EventSpecificationFileName = "eventSpecification.json"
+	EventSubscriptionFileName  = "eventSubscription.json"
+	OpenApiFileName            = "openapi.yaml"
+	apiSubscriptionFileName    = "apiSubscription.json"
+	apiExposureFileName        = "apiExposure.json"
+	apiFileName                = "api.json"
+	applicationFileName        = "application.json"
+	RoverFileName              = "rover.json"
+	zoneFileName               = "zone.json"
 )
 
 func GetRover(testing ginkgo.FullGinkgoTInterface, filePath string) *roverv1.Rover {
@@ -44,6 +48,24 @@ func GetApiSubscription(testing ginkgo.FullGinkgoTInterface, filePath string) *a
 	require.NoError(testing, err)
 
 	return &apiSubscription
+}
+
+func GetApi(testing ginkgo.FullGinkgoTInterface, filePath string) *apiv1.Api {
+	file := data.ReadFile(testing, filePath)
+	var api apiv1.Api
+	err := json.Unmarshal(file, &api)
+	require.NoError(testing, err)
+
+	return &api
+}
+
+func GetEventSubscription(testing ginkgo.FullGinkgoTInterface, filePath string) *eventv1.EventSubscription {
+	file := data.ReadFile(testing, filePath)
+	var eventSubscription eventv1.EventSubscription
+	err := json.Unmarshal(file, &eventSubscription)
+	require.NoError(testing, err)
+
+	return &eventSubscription
 }
 
 func GetApiExposure(testing ginkgo.FullGinkgoTInterface, filePath string) *apiv1.ApiExposure {
@@ -80,6 +102,15 @@ func GetApiSpecification(testing ginkgo.FullGinkgoTInterface, filePath string) *
 	require.NoError(testing, err)
 
 	return &apiSpecification
+}
+
+func GetEventSpecification(testing ginkgo.FullGinkgoTInterface, filePath string) *roverv1.EventSpecification {
+	file := data.ReadFile(testing, filePath)
+	var eventSpecification roverv1.EventSpecification
+	err := json.Unmarshal(file, &eventSpecification)
+	require.NoError(testing, err)
+
+	return &eventSpecification
 }
 
 func GetOpenApi(testing ginkgo.FullGinkgoTInterface, filePath string) *map[string]any {

@@ -15,6 +15,7 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
@@ -33,12 +34,14 @@ import (
 var _ server.ApiSpecificationController = &ApiSpecificationController{}
 
 type ApiSpecificationController struct {
-	Store store.ObjectStore[*roverv1.ApiSpecification]
+	stores *s.Stores
+	Store  store.ObjectStore[*roverv1.ApiSpecification]
 }
 
-func NewApiSpecificationController() *ApiSpecificationController {
+func NewApiSpecificationController(stores *s.Stores) *ApiSpecificationController {
 	return &ApiSpecificationController{
-		Store: s.ApiSpecificationStore,
+		stores: stores,
+		Store:  stores.APISpecificationStore,
 	}
 }
 
@@ -115,13 +118,14 @@ func (a *ApiSpecificationController) Get(ctx context.Context, resourceId string)
 		return res, err
 	}
 
-	return out.MapResponse(apiSpec, m)
+	return out.MapResponse(ctx, apiSpec, m, a.stores)
 }
 
 // GetAll implements server.ApiSpecificationController.
 func (a *ApiSpecificationController) GetAll(ctx context.Context, params api.GetAllApiSpecificationsParams) (*api.ApiSpecificationListResponse, error) {
 	listOpts := store.NewListOpts()
 	listOpts.Cursor = params.Cursor
+	store.EnforcePrefix(security.PrefixFromContext(ctx), &listOpts)
 
 	objList, err := a.Store.List(ctx, listOpts)
 	if err != nil {
@@ -149,7 +153,7 @@ func (a *ApiSpecificationController) GetAll(ctx context.Context, params api.GetA
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to marshal resource", err.Error())
 		}
-		resp, err := out.MapResponse(apiSpec, m)
+		resp, err := out.MapResponse(ctx, apiSpec, m, a.stores)
 		if err != nil {
 			return nil, problems.InternalServerError("Failed to map resource", err.Error())
 		}
@@ -220,7 +224,7 @@ func (a *ApiSpecificationController) GetStatus(ctx context.Context, resourceId s
 		return res, err
 	}
 
-	return status.MapApiSpecificationResponse(ctx, apiSpec)
+	return status.MapAPISpecificationResponse(ctx, apiSpec, a.stores)
 }
 
 func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {

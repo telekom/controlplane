@@ -1,0 +1,86 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+namespace: controlplane-system
+
+# Labels to add to all resources and selectors.
+labels:
+  - includeSelectors: true
+    pairs:
+      domain: controlplane-api
+      app.kubernetes.io/instance: controlplane-api
+      app.kubernetes.io/managed-by: kustomize
+      app.kubernetes.io/name: controlplane-api
+      app.kubernetes.io/part-of: controlplane
+    fields:
+      - path: spec/selector/matchLabels
+        create: true
+        kind: ServiceMonitor
+        group: monitoring.coreos.com
+
+resources:
+  - ../manager
+  - ../rbac
+  - ../certmanager
+  - ../network-policy
+  - ../prometheus
+  - ../database
+  - ../ingress
+
+# Default configuration
+# Use your own kustomization file to override the default configuration.
+configMapGenerator:
+  - name: controlplane-api-config
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - config.yaml= # the server will use its default configuration if this is empty.
+  - name: controlplane-api-env
+    options:
+      disableNameSuffixHash: true
+    literals: []
+
+patches:
+  # This is only needed when using the cert-manager to issue certificates.
+  - path: deployment_patch.yaml
+    target:
+      kind: Deployment
+      name: controlplane-api
+
+# This is only needed when using the cert-manager to issue certificates.
+replacements:
+  - source:
+      kind: Service
+      version: v1
+      name: controlplane-api
+      fieldPath: .metadata.name
+    targets:
+      - select:
+          kind: Certificate
+          group: cert-manager.io
+          version: v1
+        fieldPaths:
+          - .spec.dnsNames.0
+          - .spec.dnsNames.1
+        options:
+          delimiter: "."
+          index: 0
+          create: true
+  - source:
+      kind: Service
+      version: v1
+      name: controlplane-api
+      fieldPath: .metadata.namespace
+    targets:
+      - select:
+          kind: Certificate
+          group: cert-manager.io
+          version: v1
+        fieldPaths:
+          - .spec.dnsNames.0
+          - .spec.dnsNames.1
+        options:
+          delimiter: "."
+          index: 1
+          create: true

@@ -114,6 +114,15 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: controlplane-api
+    dir: controlplane-api
+    main: cmd/main.go
+    binary: controlplane-api
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
   - id: rover-server
     dir: rover-server
     main: cmd/main.go
@@ -136,6 +145,51 @@ builds:
       - windows # only for rover-ctl
     goarch:
       - amd64
+  - id: event
+    dir: event
+    main: cmd/main.go
+    binary: event
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+  - id: pubsub
+    dir: pubsub
+    main: cmd/main.go
+    binary: pubsub
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+  - id: discovery-server
+    dir: discovery-server
+    main: cmd/main.go
+    binary: discovery-server
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+  - id: notification
+    dir: notification
+    main: cmd/main.go
+    binary: notification
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+  - id: projector
+    dir: projector
+    main: main.go
+    binary: projector
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
 archives:
   - id: rover-ctl
     ids: [rover-ctl]
@@ -368,6 +422,25 @@ kos:
       - "{{.Tag}}"
       - "{{if not .Prerelease}}stable{{end}}"
     bare: true
+  - id: discovery-server
+    build: discovery-server
+    main: .
+    working_dir: discovery-server/cmd
+    repositories:
+      - ghcr.io/telekom/controlplane/discovery-server
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
   - id: rover
     build: rover
     main: .
@@ -382,6 +455,26 @@ kos:
       org.opencontainers.image.revision: "{{.FullCommit}}"
       org.opencontainers.image.licenses: "Apache-2.0"
     user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: controlplane-api
+    build: controlplane-api
+    main: .
+    working_dir: controlplane-api/cmd
+    repositories:
+      - ghcr.io/telekom/controlplane/controlplane-api
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    base_image: gcr.io/distroless/static:nonroot
     tags:
       - latest
       - "{{.Tag}}"
@@ -412,6 +505,25 @@ kos:
     working_dir: rover-ctl
     repositories:
       - ghcr.io/telekom/controlplane/rover-ctl
+    labels:
+      org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
+      org.opencontainers.image.url: "https://developer.telekom.de/"
+      org.opencontainers.image.source: https://github.com/telekom/controlplane
+      org.opencontainers.image.version: "{{.Version}}"
+      org.opencontainers.image.revision: "{{.FullCommit}}"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    user: 65532:65532
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
+    bare: true
+  - id: projector
+    build: projector
+    main: .
+    working_dir: projector
+    repositories:
+      - ghcr.io/telekom/controlplane/projector
     labels:
       org.opencontainers.image.authors: "Deutsche Telekom IT GmbH <opensource@telekom.de>"
       org.opencontainers.image.url: "https://developer.telekom.de/"

@@ -9,8 +9,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
 	"github.com/telekom/controlplane/common-server/pkg/util"
 
@@ -23,7 +25,7 @@ import (
 	"github.com/telekom/controlplane/secret-manager/internal/api"
 	"github.com/telekom/controlplane/secret-manager/internal/handler"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache"
-	v2 "github.com/telekom/controlplane/secret-manager/pkg/backend/cache/v2"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache/metrics"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/kubernetes"
@@ -81,37 +83,48 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 	if cfg.Backend.Type == "" {
 		cfg.Backend.Type = "kubernetes"
 	}
-	cacheDuration, err := time.ParseDuration(cfg.Backend.GetDefault("cache_duration", "10s"))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse cache duration")
-	}
 
 	shouldCache := cfg.Backend.GetDefault("disable_cache", "false") != trueStr
-	if shouldCache {
-		log.V(1).Info("enabling cache", "duration", cacheDuration.String())
-	} else {
+	if !shouldCache {
 		log.V(1).Info("cache is disabled")
 	}
 
-	cacheV2 := cfg.Backend.GetDefault("use_cache_v2", "false") == trueStr
-
 	switch cfg.Backend.Type {
 	case "conjur":
+		bouncer.RegisterMetrics(prometheus.DefaultRegisterer)
+
 		conjurWriteApi := conjur.NewConjurApiMetrics(conjur.NewWriteApiOrDie())
 		conjurReadApi := conjur.NewConjurApiMetrics(conjur.NewReadOnlyApiOrDie())
 
-		backend := conjur.NewBackend(conjurWriteApi, conjurReadApi)
+		conjurBackend := conjur.NewBackend(conjurWriteApi, conjurReadApi)
+		conjurBackend.WithBouncer(bouncer.NewLocker("secret-write"))
+
 		if shouldCache {
-			if cacheV2 {
-				log.V(1).Info("using v2 cache implementation")
-				backend = v2.NewCachedBackend(backend, cacheDuration)
-			} else {
-				backend = cache.NewCachedBackend(backend, cacheDuration)
+			cacheDuration, err := time.ParseDuration(cfg.Backend.GetDefault("cache_duration", "10s"))
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse cache duration")
 			}
+			cacheMaxCostStr := cfg.Backend.GetDefault("cache_max_cost_mb", "100")
+			cacheMaxCostMb, err := strconv.ParseInt(cacheMaxCostStr, 10, 0)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse cache max cost")
+			}
+			cacheMaxCostBytes := cacheMaxCostMb << 20 // convert MB to bytes
+			log.V(1).Info("cache is enabled", "duration", cacheDuration.String(), "max_cost_mb", cacheMaxCostMb)
+
+			cachedBackend := cache.NewCachedBackend(conjurBackend,
+				cache.WithTTL(cacheDuration),
+				cache.WithMaxCost(cacheMaxCostBytes),
+			)
+			metrics.RegisterMetrics(prometheus.DefaultRegisterer, cachedBackend.CacheSizeBytes)
+			onboarder := conjur.NewOnboarder(conjurWriteApi, cachedBackend)
+			onboarder.WithBouncer(bouncer.NewLocker("secret-onboard"))
+			c = controller.NewController(cachedBackend, onboarder)
+		} else {
+			onboarder := conjur.NewOnboarder(conjurWriteApi, conjurBackend)
+			onboarder.WithBouncer(bouncer.NewLocker("secret-onboard"))
+			c = controller.NewController(conjurBackend, onboarder)
 		}
-		onboarder := conjur.NewOnboarder(conjurWriteApi, backend)
-		onboarder.WithBouncer(bouncer.NewDefaultLocker())
-		c = controller.NewController(backend, onboarder)
 
 	case "kubernetes":
 		k8sClient, err := kubernetes.NewCachedClient(ctx, ctrlr.GetConfigOrDie())
@@ -119,9 +132,6 @@ func newController(ctx context.Context, cfg *config.ServerConfig) (c controller.
 			return nil, errors.Wrap(err, "failed to create kubernetes client")
 		}
 		backend := kubernetes.NewBackend(k8sClient)
-		if shouldCache {
-			backend = cache.NewCachedBackend(backend, cacheDuration)
-		}
 		onboarder := kubernetes.NewOnboarder(k8sClient)
 		c = controller.NewController(backend, onboarder)
 
@@ -148,7 +158,7 @@ func main() {
 	}
 
 	appCfg := cs.NewAppConfig()
-	appCfg.CtxLog = &log
+	appCfg.CtxLog = log
 	appCfg.ErrorHandler = handler.ErrorHandler
 	app := cs.NewAppWithConfig(appCfg)
 

@@ -1,0 +1,24 @@
+
+[Response Mapper MapApiSpecificationResponse must map ApiSpecification response correctly - 1]
+{
+ "overallStatus": "complete",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[Response Mapper MapEventSpecificationResponse must map EventSpecification response correctly - 1]
+{
+ "overallStatus": "complete",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[Response Mapper MapAPISpecificationResponse must map ApiSpecification response correctly - 1]
+{
+ "overallStatus": "complete",
+ "processingState": "done",
+ "state": "complete"
+}
+---

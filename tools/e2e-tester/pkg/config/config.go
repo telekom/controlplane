@@ -80,10 +80,11 @@ type SuiteContent struct {
 
 type Suite struct {
 	Name         string   `mapstructure:"name" validate:"required"`
-	Filepath     string   `mapstructure:"filepath"`                                                                 // The path to the file where the suite is defined. Mutually exclusive with all other fields
-	Description  string   `mapstructure:"description"`                                                              // Optional description of the test suite purpose
-	Cases        []*Case  `mapstructure:"cases" validate:"required_without=Filepath,omitempty,min=1,dive,required"` // Test cases in this suite
-	Environments []string `mapstructure:"environments"`                                                             // Required list of environments to run this suite in
+	Filepath     string   `mapstructure:"filepath"`    // The path to the file where the suite is defined. Mutually exclusive with all other fields
+	Description  string   `mapstructure:"description"` // Optional description of the test suite purpose
+	Cases        []*Case  `mapstructure:"cases"`
+	Environments []string `mapstructure:"environments"`  // Required list of environments to run this suite in
+	SnapshotsDir string   `mapstructure:"snapshots_dir"` // Optional per-suite snapshot directory
 }
 
 // DeepCopy creates a deep copy of the Suite.
@@ -104,6 +105,7 @@ func (s *Suite) DeepCopy() *Suite {
 		Description:  s.Description,
 		Cases:        newCases,
 		Environments: newEnvs,
+		SnapshotsDir: s.SnapshotsDir,
 	}
 }
 

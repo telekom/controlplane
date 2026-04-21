@@ -17,12 +17,15 @@ import (
 	. "github.com/onsi/gomega"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	securitymock "github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
+	cstore "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/file-manager/api"
 	filefake "github.com/telekom/controlplane/file-manager/api/fake"
 	"github.com/telekom/controlplane/rover-server/internal/file"
 	"k8s.io/client-go/rest"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 
+	"github.com/stretchr/testify/mock"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/rover-server/internal/config"
 	"github.com/telekom/controlplane/rover-server/internal/server"
 	"github.com/telekom/controlplane/rover-server/pkg/log"
@@ -38,8 +41,10 @@ var ctx context.Context
 var cancel context.CancelFunc
 var teamToken string
 var groupToken string
+var teamNoResources string
 var app *fiber.App
 var mockFileManager *filefake.MockFileManager
+var stores *store.Stores
 
 func TestController(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -48,14 +53,29 @@ func TestController(t *testing.T) {
 
 var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 	if mockObjectStore {
-		store.RoverStore = mocks.NewRoverStoreMock(GinkgoT())
-		store.RoverSecretStore = store.RoverStore
-		store.ApiSpecificationStore = mocks.NewApiSpecificationStoreMock(GinkgoT())
-		store.ApiSubscriptionStore = mocks.NewApiSubscriptionStoreMock(GinkgoT())
-		store.ApiExposureStore = mocks.NewApiExposureStoreMock(GinkgoT())
-		store.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
-		store.ApplicationSecretStore = store.ApplicationStore
-		store.ZoneStore = mocks.NewZoneStoreMock(GinkgoT())
+		stores = &store.Stores{}
+
+		stores.RoverStore = mocks.NewRoverStoreMock(GinkgoT())
+		stores.RoverSecretStore = stores.RoverStore
+		stores.APISpecificationStore = mocks.NewAPISpecificationStoreMock(GinkgoT())
+		stores.APISubscriptionStore = mocks.NewAPISubscriptionStoreMock(GinkgoT())
+		stores.APIExposureStore = mocks.NewAPIExposureStoreMock(GinkgoT())
+		stores.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
+		stores.ApplicationSecretStore = stores.ApplicationStore
+		stores.ZoneStore = mocks.NewZoneStoreMock(GinkgoT())
+		stores.EventSpecificationStore = mocks.NewEventSpecificationStoreMock(GinkgoT())
+
+		eventExposureMock := mocks.NewMockObjectStore[*eventv1.EventExposure](GinkgoT())
+		eventExposureMock.EXPECT().List(mock.Anything, mock.Anything).Return(
+			&cstore.ListResponse[*eventv1.EventExposure]{Items: []*eventv1.EventExposure{}}, nil).Maybe()
+		stores.EventExposureStore = eventExposureMock
+
+		stores.EventSubscriptionStore = mocks.NewEventSubscriptionStoreMock(GinkgoT())
+
+		eventConfigMock := mocks.NewMockObjectStore[*eventv1.EventConfig](GinkgoT())
+		eventConfigMock.EXPECT().List(mock.Anything, mock.Anything).Return(
+			&cstore.ListResponse[*eventv1.EventConfig]{Items: []*eventv1.EventConfig{}}, nil).Maybe()
+		stores.EventConfigStore = eventConfigMock
 	}
 
 	mockFileManager = filefake.NewMockFileManager(GinkgoT())
@@ -78,6 +98,7 @@ var _ = BeforeSuite(func() {
 	// Can be done once the issue with the team token is fixed in common-server
 	teamToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:team:all"})
 	groupToken = securitymock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:group:all"})
+	teamNoResources = securitymock.NewMockAccessToken("poc", "eni", "nohyper", []string{"tardis:team:all"})
 
 	// Create a new Fiber app
 	app = cserver.NewApp()
@@ -86,9 +107,9 @@ var _ = BeforeSuite(func() {
 	s := server.Server{
 		Config:              &config.ServerConfig{},
 		Log:                 log.Log,
-		ApiSpecifications:   NewApiSpecificationController(),
-		Rovers:              NewRoverController(),
-		EventSpecifications: NewEventSpecificationController(),
+		ApiSpecifications:   NewApiSpecificationController(stores),
+		Rovers:              NewRoverController(stores),
+		EventSpecifications: NewEventSpecificationController(stores),
 	}
 
 	s.RegisterRoutes(app)

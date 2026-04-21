@@ -1,0 +1,62 @@
+{
+  "apiVersion": "event.cp.ei.telekom.de/v1",
+  "kind": "EventSubscription",
+  "metadata": {
+    "name": "rover-local-sub--de-telekom-eni-quickstart-v1",
+    "namespace": "poc--eni--hyperion",
+    "ownerReferences": [
+      {
+        "apiVersion": "rover.cp.ei.telekom.de/v1",
+        "kind": "Rover",
+        "name": "rover-local-sub",
+        "uid": "549badcc-18b6-48ac-a8ce-b3242523d827"
+      }
+    ]
+  },
+  "spec": {
+    "eventType": "de.telekom.eni.quickstart.v1",
+    "zone": {
+      "name": "dataplane1",
+      "namespace": "poc--eni--hyperion"
+    },
+    "requestor": {
+      "kind": "Application",
+      "name": "rover-local-sub",
+      "namespace": "poc--eni--hyperion"
+    },
+    "delivery": {
+      "type": "ServerSentEvent",
+      "payload": "Data"
+    }
+  },
+  "status": {
+    "subscriber": {
+      "name": "rover-local-sub--de-telekom-eni-quickstart-v1",
+      "namespace": "poc--eni--hyperion"
+    },
+    "approval": {
+      "name": "eventsubscription--rover-local-sub--de-telekom-eni-quickstart-v1",
+      "namespace": "poc--eni--hyperion"
+    },
+    "approvalRequest": {
+      "name": "rover-local-sub--de-telekom-eni-quickstart-v1--abc123",
+      "namespace": "poc--eni--hyperion"
+    },
+    "url": "https://sse.example.com/events/horizon-sub-456",
+    "subscriptionID": "horizon-sub-456",
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": "True",
+        "reason": "EventSubscriptionProvisioned",
+        "message": "All sub-resources are ready"
+      },
+      {
+        "type": "Processing",
+        "status": "False",
+        "reason": "Done",
+        "message": "Provisioned all sub-resources"
+      }
+    ]
+  }
+}

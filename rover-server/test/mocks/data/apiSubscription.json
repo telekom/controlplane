@@ -13,6 +13,19 @@
       }
     ]
   },
+  "spec": {
+    "apiBasePath": "/eni/distr/v1",
+    "requestor": {
+      "kind": "Application",
+      "name": "rover-local-sub",
+      "namespace": "poc--eni--hyperion"
+    },
+    "zone": {
+      "name": "dataplane1",
+      "namespace": "poc--eni--hyperion"
+    },
+    "traffic": {}
+  },
   "status": {
     "approval": {
       "name": "apisubscription--rover-local-sub--eni-distr-v1",

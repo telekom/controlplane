@@ -268,4 +268,38 @@ var _ = Describe("Parser", func() {
 			}
 		})
 	})
+
+	Context("Placeholder Substitution", func() {
+		It("should resolve placeholders when parsing a YAML file", func() {
+			os.Setenv("ROVERCTL_TEST_NAME", "placeholder-rover")
+			os.Setenv("ROVERCTL_TEST_REPO", "https://github.com/placeholder/repo")
+			defer os.Unsetenv("ROVERCTL_TEST_NAME")
+			defer os.Unsetenv("ROVERCTL_TEST_REPO")
+
+			phParser := parser.NewObjectParser()
+			err := phParser.Parse(filepath.Join(testdataDir, "placeholder-resource.yaml"))
+			Expect(err).NotTo(HaveOccurred())
+
+			objects := phParser.Objects()
+			Expect(objects).To(HaveLen(1))
+			Expect(objects[0].GetName()).To(Equal("placeholder-rover"))
+			Expect(objects[0].GetKind()).To(Equal("Rover"))
+
+			spec, ok := objects[0].GetContent()["spec"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(spec["repository"]).To(Equal("https://github.com/placeholder/repo"))
+			Expect(spec["branch"]).To(Equal("main"))
+		})
+
+		It("should return an error when a placeholder references an unset variable", func() {
+			os.Unsetenv("ROVERCTL_TEST_NAME")
+			os.Unsetenv("ROVERCTL_TEST_REPO")
+
+			phParser := parser.NewObjectParser()
+			err := phParser.Parse(filepath.Join(testdataDir, "placeholder-resource.yaml"))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("failed to substitute placeholders"))
+			Expect(err.Error()).To(ContainSubstring("ROVERCTL_TEST_NAME"))
+		})
+	})
 })

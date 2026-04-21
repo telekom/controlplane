@@ -5,8 +5,11 @@
 package in
 
 import (
+	"encoding/json"
+
 	"github.com/pkg/errors"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
@@ -30,9 +33,7 @@ func mapSubscription(in *api.Subscription, out *roverv1.Subscription) error {
 			return errors.Wrap(err, "failed to convert to EventSubscription")
 		}
 
-		out.Event = &roverv1.EventSubscription{
-			EventType: eventSub.EventType,
-		}
+		out.Event = mapEventSubscription(eventSub)
 
 	default:
 		return errors.Errorf("unknown subscription type: %s", subType)
@@ -109,4 +110,73 @@ func mapSubscriptionTraffic(in api.ApiSubscription, out *roverv1.ApiSubscription
 			Zones: in.Failover.Zones,
 		}
 	}
+}
+
+func mapEventSubscription(in api.EventSubscription) *roverv1.EventSubscription {
+	out := &roverv1.EventSubscription{
+		EventType: in.EventType,
+	}
+
+	// Map delivery configuration
+	out.Delivery = roverv1.EventDelivery{
+		Type:    FuzzyMatchEventDeliveryType(in.DeliveryType),
+		Payload: FuzzyMatchEventPayloadType(in.PayloadType),
+	}
+	if in.Callback != "" {
+		out.Delivery.Callback = in.Callback
+	}
+	if in.EventRetentionTime != "" {
+		out.Delivery.EventRetentionTime = in.EventRetentionTime
+	}
+	if in.CircuitBreakerOptOut {
+		out.Delivery.CircuitBreakerOptOut = in.CircuitBreakerOptOut
+	}
+	if in.RetryableStatusCodes != nil {
+		out.Delivery.RetryableStatusCodes = in.RetryableStatusCodes
+	}
+	if in.RedeliveriesPerSecond != 0 {
+		redeliveries := in.RedeliveriesPerSecond
+		out.Delivery.RedeliveriesPerSecond = &redeliveries
+	}
+	if in.EnforceGetHttpRequestMethodForHealthCheck {
+		out.Delivery.EnforceGetHttpRequestMethodForHealthCheck = in.EnforceGetHttpRequestMethodForHealthCheck
+	}
+
+	// Map trigger
+	if in.Trigger.ResponseFilter != nil || in.Trigger.SelectionFilter != nil || in.Trigger.AdvancedSelectionFilter != nil {
+		out.Trigger = mapEventTriggerForSubscription(in.Trigger)
+	}
+
+	// Map scopes
+	if in.Scopes != nil {
+		out.Scopes = in.Scopes
+	}
+
+	return out
+}
+
+func mapEventTriggerForSubscription(in api.EventTrigger) *roverv1.EventTrigger {
+	out := &roverv1.EventTrigger{}
+
+	if in.ResponseFilter != nil {
+		out.ResponseFilter = &roverv1.EventResponseFilter{
+			Paths: in.ResponseFilter,
+			Mode:  FuzzyMatchEventResponseFilterMode(string(in.ResponseFilterMode)),
+		}
+	}
+
+	if in.SelectionFilter != nil || in.AdvancedSelectionFilter != nil {
+		out.SelectionFilter = &roverv1.EventSelectionFilter{}
+		if in.SelectionFilter != nil {
+			out.SelectionFilter.Attributes = in.SelectionFilter
+		}
+		if in.AdvancedSelectionFilter != nil {
+			jsonBytes, err := json.Marshal(in.AdvancedSelectionFilter)
+			if err == nil {
+				out.SelectionFilter.Expression = &apiextensionsv1.JSON{Raw: jsonBytes}
+			}
+		}
+	}
+
+	return out
 }

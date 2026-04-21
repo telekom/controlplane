@@ -6,6 +6,7 @@ package approvalrequest
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
@@ -64,6 +65,12 @@ func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq
 			return errors.Wrap(err, "failed to handle granted approval")
 		}
 
+	case approvalv1.ApprovalStateSemigranted:
+		log.Info("ApprovalRequest has been partially approved")
+		approvalReq.SetCondition(approval_condition.NewSemigrantedCondition())
+		approvalReq.SetCondition(condition.NewProcessingCondition("Semigranted", "Request partially approved, awaiting second approval"))
+		approvalReq.SetCondition(condition.NewNotReadyCondition("Semigranted", "Request has been partially approved"))
+
 	case approvalv1.ApprovalStateRejected:
 		log.Info("ApprovalRequest has been rejected")
 		approvalReq.SetCondition(approval_condition.NewRejectedCondition())
@@ -92,6 +99,10 @@ func (h *ApprovalRequestHandler) Delete(ctx context.Context, approvalReq *approv
 func shouldNotifyRequester(approvalRequest *approvalv1.ApprovalRequest) bool {
 	// currently only the decider is notified about this
 	if approvalRequest.Spec.State == approvalv1.ApprovalStatePending {
+		return false
+	}
+	// Semigranted is an intermediate state; only deciders need to know
+	if approvalRequest.Spec.State == approvalv1.ApprovalStateSemigranted {
 		return false
 	}
 
@@ -125,6 +136,7 @@ func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRe
 		Decider:                &approvalReq.Spec.Decider,
 		Scenario:               scenario,
 		Actor:                  util.ActorDecider,
+		Action:                 approvalReq.Spec.Action,
 	})
 
 	if err != nil {
@@ -143,6 +155,7 @@ func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRe
 			Decider:                &approvalReq.Spec.Decider,
 			Scenario:               scenario,
 			Actor:                  util.ActorRequester,
+			Action:                 approvalReq.Spec.Action,
 		})
 		if err != nil {
 			return errors.Wrapf(err, "Failed to send notification to requester %q while handling approval request %+v", approvalReq.Spec.Requester.TeamName, approvalReq)
@@ -179,6 +192,12 @@ func handleGranted(ctx context.Context, approvalReq *approvalv1.ApprovalRequest)
 
 			ApprovedRequest: types.ObjectRefFromObject(approvalReq),
 		}
+
+		approvalv1.SetApprovalLabels(approvalObj, approvalReq.Spec.Target,
+			approvalReq.Spec.Requester.TeamName,
+			approvalReq.Spec.Decider.TeamName,
+			approvalReq.Spec.Action,
+			string(approvalReq.Spec.Strategy))
 
 		return nil
 	}

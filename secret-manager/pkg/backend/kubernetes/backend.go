@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -45,7 +46,7 @@ func (k *KubernetesBackend) Get(ctx context.Context, secretId Id) (res backend.D
 	}
 
 	if k.MatchResourceVersion {
-		if secretId.checksum != "" && secretId.checksum != obj.GetResourceVersion() {
+		if secretId.checksum != backend.NoChecksum && secretId.checksum != obj.GetResourceVersion() {
 			return res, backend.ErrBadChecksum(secretId)
 		}
 	}
@@ -53,7 +54,7 @@ func (k *KubernetesBackend) Get(ctx context.Context, secretId Id) (res backend.D
 	subPath := secretId.SubPath()
 	path := secretId.Path()
 	log.Info("get secret", "path", path, "subPath", subPath)
-	if subPath != "" {
+	if subPath != backend.NoSubPath {
 		data, ok := obj.Data[path]
 		if !ok {
 			return res, backend.ErrSecretNotFound(secretId)
@@ -71,7 +72,7 @@ func (k *KubernetesBackend) Get(ctx context.Context, secretId Id) (res backend.D
 	return backend.NewDefaultSecret(secretId, string(data)), nil
 }
 
-func (k *KubernetesBackend) Set(ctx context.Context, secretId Id, secretValue backend.SecretValue) (res backend.DefaultSecret[Id], err error) {
+func (k *KubernetesBackend) Set(ctx context.Context, secretId Id, secretValue backend.SecretValue, _ ...backend.WriteOption) (res backend.DefaultSecret[Id], err error) {
 	log := logr.FromContextOrDiscard(ctx)
 	secret, err := k.Get(ctx, secretId)
 	if err != nil {
@@ -82,7 +83,7 @@ func (k *KubernetesBackend) Set(ctx context.Context, secretId Id, secretValue ba
 		}
 	}
 
-	if secret.Value() != "" && !secretValue.AllowChange() {
+	if secret.Value() != backend.NoValue && !secretValue.AllowChange() {
 		return secret, nil
 	}
 
@@ -104,12 +105,12 @@ func (k *KubernetesBackend) Set(ctx context.Context, secretId Id, secretValue ba
 
 	mutate := func() error {
 		if k.MatchResourceVersion {
-			if secretId.checksum != "" && secretId.checksum != obj.GetResourceVersion() {
+			if secretId.checksum != backend.NoChecksum && secretId.checksum != obj.GetResourceVersion() {
 				return backend.ErrBadChecksum(secretId)
 			}
 		}
 
-		if subPath != "" {
+		if subPath != backend.NoSubPath {
 			data, ok := obj.Data[path]
 			if !ok {
 				return backend.ErrSecretNotFound(secretId)
@@ -130,13 +131,16 @@ func (k *KubernetesBackend) Set(ctx context.Context, secretId Id, secretValue ba
 		obj.Data[path] = []byte(secretValue.Value())
 		return nil
 	}
-	_, err = controllerutil.CreateOrUpdate(ctx, k.client, obj, mutate)
+	err = retry.OnError(retry.DefaultRetry, isRetryableConflict, func() error {
+		_, err := controllerutil.CreateOrUpdate(ctx, k.client, obj, mutate)
+		return err
+	})
 	if err != nil {
 		return res, handleError(err, secretId)
 	}
 
 	newId := secretId.CopyWithChecksum(obj.GetResourceVersion())
-	return backend.NewDefaultSecret(newId, ""), nil
+	return backend.NewDefaultSecret(newId, backend.NoValue), nil
 }
 
 func (k *KubernetesBackend) Delete(ctx context.Context, secretId Id) error {
@@ -145,7 +149,7 @@ func (k *KubernetesBackend) Delete(ctx context.Context, secretId Id) error {
 
 	mutate := func() error {
 		if k.MatchResourceVersion {
-			if secretId.checksum != "" && secretId.checksum != obj.GetResourceVersion() {
+			if secretId.checksum != backend.NoChecksum && secretId.checksum != obj.GetResourceVersion() {
 				return backend.ErrBadChecksum(secretId)
 			}
 		}
@@ -157,7 +161,7 @@ func (k *KubernetesBackend) Delete(ctx context.Context, secretId Id) error {
 		subPath := secretId.SubPath()
 		path := secretId.Path()
 		log.Info("delete secret", "path", path, "subPath", subPath)
-		if subPath != "" {
+		if subPath != backend.NoSubPath {
 			data, ok := obj.Data[path]
 			if !ok {
 				return backend.ErrSecretNotFound(secretId)
@@ -176,12 +180,15 @@ func (k *KubernetesBackend) Delete(ctx context.Context, secretId Id) error {
 		return nil
 	}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, k.client, obj, mutate)
+	err := retry.OnError(retry.DefaultRetry, isRetryableConflict, func() error {
+		_, err := controllerutil.CreateOrUpdate(ctx, k.client, obj, mutate)
+		return err
+	})
 	if err != nil {
 		return handleError(err, secretId)
 	}
 
-	return err
+	return nil
 }
 
 func handleError(err error, id Id) error {

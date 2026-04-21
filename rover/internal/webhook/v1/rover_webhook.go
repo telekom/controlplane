@@ -7,24 +7,24 @@ package v1
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller"
 	cerrors "github.com/telekom/controlplane/common/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/types"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
@@ -35,8 +35,7 @@ var roverlog = logf.Log.WithName("rover-webhook")
 
 // SetupWebhookWithManager will setup the manager to manage the webhooks
 func SetupWebhookWithManager(mgr ctrl.Manager, secretManager secretsapi.SecretManager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&roverv1.Rover{}).
+	return ctrl.NewWebhookManagedBy(mgr, &roverv1.Rover{}).
 		WithDefaulter(&RoverDefaulter{mgr.GetClient(), secretManager}).
 		WithValidator(&RoverValidator{mgr.GetClient()}).
 		Complete()
@@ -49,14 +48,10 @@ type RoverDefaulter struct {
 	secretManager secretsapi.SecretManager
 }
 
-var _ webhook.CustomDefaulter = &RoverDefaulter{}
+var _ admission.Defaulter[*roverv1.Rover] = &RoverDefaulter{}
 
-func (r *RoverDefaulter) Default(ctx context.Context, obj runtime.Object) error {
-	roverlog.Info("default")
-	rover, ok := obj.(*roverv1.Rover)
-	if !ok {
-		return apierrors.NewBadRequest("not a rover")
-	}
+func (r *RoverDefaulter) Default(ctx context.Context, rover *roverv1.Rover) error {
+	roverlog.V(2).Info("default")
 	// No need to default if the object is being deleted
 	if controller.IsBeingDeleted(rover) {
 		return nil
@@ -72,41 +67,38 @@ func (r *RoverDefaulter) Default(ctx context.Context, obj runtime.Object) error 
 
 // +kubebuilder:webhook:path=/validate-rover-cp-ei-telekom-de-v1-rover,mutating=false,failurePolicy=fail,sideEffects=None,groups=rover.cp.ei.telekom.de,resources=rovers,verbs=create;update,versions=v1,name=vrover.kb.io,admissionReviewVersions=v1
 // +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
+// +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventconfigs,verbs=get;list;watch
 
 type RoverValidator struct {
 	client client.Client
 }
 
-var _ webhook.CustomValidator = &RoverValidator{}
+var _ admission.Validator[*roverv1.Rover] = &RoverValidator{}
 
-func (r *RoverValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	roverlog.Info("validate create")
+func (r *RoverValidator) ValidateCreate(ctx context.Context, rover *roverv1.Rover) (admission.Warnings, error) {
+	roverlog.V(2).Info("validate create")
 
-	return r.ValidateCreateOrUpdate(ctx, obj)
+	return r.ValidateCreateOrUpdate(ctx, rover)
 }
 
-func (r *RoverValidator) ValidateUpdate(ctx context.Context, oldObj, obj runtime.Object) (admission.Warnings, error) {
-	roverlog.Info("validate update")
+func (r *RoverValidator) ValidateUpdate(ctx context.Context, _ *roverv1.Rover, rover *roverv1.Rover) (admission.Warnings, error) {
+	roverlog.V(2).Info("validate update")
 
-	return r.ValidateCreateOrUpdate(ctx, obj)
+	return r.ValidateCreateOrUpdate(ctx, rover)
 }
 
-func (r *RoverValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	roverlog.Info("validate delete")
+func (r *RoverValidator) ValidateDelete(ctx context.Context, rover *roverv1.Rover) (admission.Warnings, error) {
+	roverlog.V(2).Info("validate delete")
 
 	return nil, nil // No validation needed on delete
 }
 
-func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	rover, ok := obj.(*roverv1.Rover)
-	if !ok {
-		return nil, apierrors.NewBadRequest("not a rover")
-	}
+func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *roverv1.Rover) (admission.Warnings, error) {
 
 	log := roverlog.WithValues("name", rover.GetName(), "namespace", rover.GetNamespace())
 	ctx = logr.NewContext(ctx, log)
 
-	log.Info("validate create or update")
+	log.V(2).Info("validate create or update")
 
 	valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("Rover").GroupKind(), rover)
 
@@ -120,7 +112,8 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime
 		Name:      rover.Spec.Zone,
 		Namespace: environment,
 	}
-	if exists, err := r.ResourceMustExist(ctx, zoneRef, &adminv1.Zone{}); !exists {
+	zone := &adminv1.Zone{}
+	if exists, err := r.ResourceMustExist(ctx, zoneRef, zone); !exists {
 		if err != nil {
 			return nil, err
 		}
@@ -128,19 +121,42 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime
 		return nil, valErr.BuildError()
 	}
 
+	// Validate that if the rover subscribes to or exposes events, the zone actually supports it
+
+	subscribesToEvents := slices.ContainsFunc(rover.Spec.Subscriptions, func(sub roverv1.Subscription) bool {
+		return sub.Type() == roverv1.TypeEvent
+	})
+	exposesEvents := slices.ContainsFunc(rover.Spec.Exposures, func(exp roverv1.Exposure) bool {
+		return exp.Type() == roverv1.TypeEvent
+	})
+
+	if cconfig.FeaturePubSub.IsEnabled() && (subscribesToEvents || exposesEvents) {
+		eventConfigRef := client.ObjectKey{
+			Name:      environment,
+			Namespace: zone.Status.Namespace,
+		}
+		eventConfig := eventv1.EventConfig{}
+		if exists, err := r.ResourceMustExist(ctx, eventConfigRef, &eventConfig); !exists {
+			if err != nil {
+				return nil, err
+			}
+			valErr.AddInvalidError(field.NewPath("spec").Child("zone"), rover.Spec.Zone, fmt.Sprintf("zone '%s' does not support event subscriptions or exposures", rover.Spec.Zone))
+		}
+	}
+
 	if err := MustNotHaveDuplicates(valErr, rover.Spec.Subscriptions, rover.Spec.Exposures); err != nil {
 		return nil, err
 	}
 
 	for i, sub := range rover.Spec.Subscriptions {
-		log.Info("validate subscription", "index", i, "subscription", sub)
+		log.V(2).Info("validate subscription", "index", i, "subscription", sub)
 		if err := r.ValidateSubscription(ctx, valErr, environment, sub, i); err != nil {
 			return nil, err
 		}
 	}
 
 	for i, exposure := range rover.Spec.Exposures {
-		log.Info("validate exposure", "index", i, "exposure", exposure)
+		log.V(2).Info("validate exposure", "index", i, "exposure", exposure)
 		if err := r.ValidateExposure(ctx, valErr, environment, exposure, zoneRef, i); err != nil {
 			return nil, err
 		}
@@ -160,79 +176,20 @@ func (r *RoverValidator) ResourceMustExist(ctx context.Context, objRef client.Ob
 	return true, nil
 }
 
-func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *cerrors.ValidationError, environment string, sub roverv1.Subscription, idx int) error {
-	logr.FromContextOrDiscard(ctx).Info("validate subscription")
-
-	if sub.Api != nil && sub.Api.Organization != "" {
-		remoteOrgRef := client.ObjectKey{
-			Name:      sub.Api.Organization,
-			Namespace: environment,
-		}
-		if found, err := r.ResourceMustExist(ctx, remoteOrgRef, &adminv1.RemoteOrganization{}); !found {
-			if err != nil {
-				return err
-			}
-			valErr.AddInvalidError(
-				field.NewPath("spec").Child("subscriptions").Index(idx).Child("api").Child("organization"),
-				sub.Api.Organization, fmt.Sprintf("remote organization '%s' not found", sub.Api.Organization),
-			)
-		}
-	}
-
-	return nil
-}
-
 func (r *RoverValidator) ValidateExposure(ctx context.Context, valErr *cerrors.ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
-	if exposure.Api != nil {
-		for _, upstream := range exposure.Api.Upstreams {
-			if upstream.URL == "" {
-				valErr.AddRequiredError(
-					field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams").Index(0).Child("url"),
-					"upstream URL must not be empty",
-				)
-				// Skip further URL validation if it's empty
-				continue
-			}
-			if !strings.HasPrefix(upstream.URL, "http://") && !strings.HasPrefix(upstream.URL, "https://") {
-				valErr.AddInvalidError(
-					field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams").Index(0).Child("url"),
-					upstream.URL, "upstream URL must start with http:// or https://",
-				)
-			}
-			if strings.Contains(upstream.URL, "localhost") {
-				valErr.AddInvalidError(
-					field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams").Index(0).Child("url"),
-					upstream.URL, "upstream URL must not contain 'localhost'",
-				)
-			}
-		}
 
-		// Validate rate limits if they are set
-		if err := r.validateExposureRateLimit(ctx, valErr, exposure, idx); err != nil {
-			return errors.Wrap(err, "failed to validate exposure rate limits")
-		}
-
-		// Check if all upstreams have a weight set or none
-		all, none := CheckWeightSetOnAllOrNone(exposure.Api.Upstreams)
-		if !all && !none {
-			valErr.AddInvalidError(
-				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams"),
-				exposure.Api.Upstreams, "all upstreams must have a weight set or none must have a weight set",
-			)
-		}
-
-		if err := r.validateApproval(ctx, valErr, environment, exposure.Api.Approval); err != nil {
-			return errors.Wrap(err, "failed to validate approval")
-		}
-
+	switch exposure.Type() {
+	case roverv1.TypeApi:
+		return r.ValidateApiExposure(ctx, valErr, environment, exposure, zoneRef, idx)
+	case roverv1.TypeEvent:
+		return r.ValidateEventExposure(ctx, valErr, environment, exposure, zoneRef, idx)
+	default:
+		valErr.AddInvalidError(
+			field.NewPath("spec").Child("exposures").Index(idx).Child("type"),
+			exposure.Type(), fmt.Sprintf("unknown exposure type %q", exposure.Type()),
+		)
+		return nil
 	}
-
-	// Header removal is generally allowed everywhere, except the "Authorization" header, which is only allowed to be configured for removal on external zones - currently space/canis
-	if err := r.validateRemoveHeaders(ctx, valErr, exposure, zoneRef, idx); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (r *RoverValidator) validateExposureRateLimit(ctx context.Context, valErr *cerrors.ValidationError, exposure roverv1.Exposure, idx int) error {
@@ -455,4 +412,103 @@ func (r *RoverValidator) GetTeam(ctx context.Context, teamRef client.ObjectKey) 
 	err := r.client.Get(ctx, teamRef, team)
 	return team, err
 
+}
+
+func (r *RoverValidator) ValidateEventExposure(ctx context.Context, valErr *cerrors.ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
+	if exposure.Event == nil {
+		return nil
+	}
+
+	if !cconfig.FeaturePubSub.IsEnabled() {
+		return nil
+	}
+
+	if err := r.validateApproval(ctx, valErr, environment, exposure.Event.Approval); err != nil {
+		return errors.Wrap(err, "failed to validate approval")
+	}
+
+	return nil
+}
+
+func (r *RoverValidator) ValidateApiExposure(ctx context.Context, valErr *cerrors.ValidationError, environment string, exposure roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
+	if exposure.Api == nil {
+		return nil
+	}
+
+	for i, upstream := range exposure.Api.Upstreams {
+		if upstream.URL == "" {
+			valErr.AddRequiredError(
+				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams").Index(i).Child("url"),
+				"upstream URL must not be empty",
+			)
+			// Skip further URL validation if it's empty
+			continue
+		}
+		if !strings.HasPrefix(upstream.URL, "http://") && !strings.HasPrefix(upstream.URL, "https://") {
+			valErr.AddInvalidError(
+				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams").Index(i).Child("url"),
+				upstream.URL, "upstream URL must start with http:// or https://",
+			)
+		}
+		if strings.Contains(upstream.URL, "localhost") {
+			valErr.AddInvalidError(
+				field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams").Index(i).Child("url"),
+				upstream.URL, "upstream URL must not contain 'localhost'",
+			)
+		}
+	}
+
+	// Validate rate limits if they are set
+	if err := r.validateExposureRateLimit(ctx, valErr, exposure, idx); err != nil {
+		return errors.Wrap(err, "failed to validate exposure rate limits")
+	}
+
+	// Check if all upstreams have a weight set or none
+	all, none := CheckWeightSetOnAllOrNone(exposure.Api.Upstreams)
+	if !all && !none {
+		valErr.AddInvalidError(
+			field.NewPath("spec").Child("exposures").Index(idx).Child("api").Child("upstreams"),
+			exposure.Api.Upstreams, "all upstreams must have a weight set or none must have a weight set",
+		)
+	}
+
+	if err := r.validateApproval(ctx, valErr, environment, exposure.Api.Approval); err != nil {
+		return errors.Wrap(err, "failed to validate approval")
+	}
+
+	// Header removal is generally allowed everywhere, except the "Authorization" header, which is only allowed to be configured for removal on external zones - currently space/canis
+	if err := r.validateRemoveHeaders(ctx, valErr, exposure, zoneRef, idx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *cerrors.ValidationError, environment string, sub roverv1.Subscription, idx int) error {
+	switch sub.Type() {
+	case roverv1.TypeApi:
+		// TODO: in the future this might also be relevant for event
+		if sub.Api.Organization != "" {
+			remoteOrgRef := client.ObjectKey{
+				Name:      sub.Api.Organization,
+				Namespace: environment,
+			}
+			if found, err := r.ResourceMustExist(ctx, remoteOrgRef, &adminv1.RemoteOrganization{}); !found {
+				if err != nil {
+					return err
+				}
+				valErr.AddInvalidError(
+					field.NewPath("spec").Child("subscriptions").Index(idx).Child("api").Child("organization"),
+					sub.Api.Organization, fmt.Sprintf("remote organization '%s' not found", sub.Api.Organization),
+				)
+			}
+		}
+		return nil
+
+	case roverv1.TypeEvent:
+		// There is no special validation needed at this time.
+		return nil
+	}
+
+	return nil
 }

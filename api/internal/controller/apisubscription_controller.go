@@ -13,7 +13,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -87,11 +86,11 @@ func (r *ApiSubscriptionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		).
 		Watches(&gatewayv1.Route{},
 			handler.EnqueueRequestsFromMapFunc(r.MapRouteToApiSubscription),
-			builder.WithPredicates(DeleteOnlyPredicate{}),
+			builder.WithPredicates(cc.DeleteOnlyPredicate{}),
 		).
 		Watches(&gatewayv1.ConsumeRoute{},
 			handler.EnqueueRequestsFromMapFunc(r.MapConsumeRouteToApiSubscription),
-			builder.WithPredicates(DeleteOnlyPredicate{}),
+			builder.WithPredicates(cc.DeleteOnlyPredicate{}),
 		).
 		Watches(&adminv1.Zone{},
 			handler.EnqueueRequestsFromMapFunc(r.MapZoneToApiSubscription),
@@ -200,27 +199,4 @@ func (r *ApiSubscriptionReconciler) MapConsumeRouteToApiSubscription(ctx context
 
 func (r *ApiSubscriptionReconciler) MapZoneToApiSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
 	return nil
-}
-
-var _ predicate.Predicate = DeleteOnlyPredicate{}
-
-// DeleteOnlyPredicate implements a predicate that only processes DELETE events
-type DeleteOnlyPredicate struct {
-	predicate.Funcs
-}
-
-func (DeleteOnlyPredicate) Create(e event.CreateEvent) bool {
-	return false
-}
-
-func (DeleteOnlyPredicate) Delete(e event.DeleteEvent) bool {
-	return true
-}
-
-func (DeleteOnlyPredicate) Update(e event.UpdateEvent) bool {
-	return false
-}
-
-func (DeleteOnlyPredicate) Generic(e event.GenericEvent) bool {
-	return false
 }

@@ -23,7 +23,11 @@ updates:
       - approval/api
       - common
       - common-server
+      - controlplane-api
       - cpapi/api
+      - discovery-server
+      - event
+      - event/api
       - file-manager
       - gateway
       - gateway/api
@@ -31,6 +35,8 @@ updates:
       - identity/api
       - organization
       - organization/api
+      - pubsub
+      - pubsub/api
       - rover
       - rover/api
       - rover-ctl
@@ -40,6 +46,7 @@ updates:
       - tools/snapshotter
       - notification
       - notification/api
+      - projector
     groups:
       minor-patch:
         update-types:

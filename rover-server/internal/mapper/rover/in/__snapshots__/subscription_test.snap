@@ -29,7 +29,12 @@
 [Subscription Mapper mapSubscription must map an EventSubscription correctly - 1]
 &v1.Subscription{
     Api:   (*v1.ApiSubscription)(nil),
-    Event: &v1.EventSubscription{EventType:"test-event"},
+    Event: &v1.EventSubscription{
+        EventType: "test-event",
+        Delivery:  v1.EventDelivery{},
+        Trigger:   (*v1.EventTrigger)(nil),
+        Scopes:    nil,
+    },
 }
 ---
 

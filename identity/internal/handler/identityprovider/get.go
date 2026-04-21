@@ -22,7 +22,7 @@ func GetIdentityProviderByName(
 	clientFromContext := client.ClientFromContextOrDie(ctx)
 
 	identityProvider := &identityv1.IdentityProvider{}
-	err := clientFromContext.Get(context.Background(), identityProviderRef.K8s(), identityProvider)
+	err := clientFromContext.Get(ctx, identityProviderRef.K8s(), identityProvider)
 	if err != nil {
 		return nil,
 			errors.Wrapf(err, "failed to get identityProvider %s", identityProviderRef.String())

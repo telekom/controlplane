@@ -9,10 +9,8 @@ import (
 	"fmt"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/telekom/controlplane/common/pkg/controller"
@@ -30,7 +28,7 @@ import (
 
 // SetupApiSpecificationWebhookWithManager registers the webhook for ApiSpecification in the manager.
 func SetupApiSpecificationWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).For(&roverv1.ApiSpecification{}).
+	return ctrl.NewWebhookManagedBy(mgr, &roverv1.ApiSpecification{}).
 		WithValidator(&ApiSpecificationCustomValidator{
 			client:   mgr.GetClient(),
 			FindTeam: organizationv1.FindTeamForObject,
@@ -52,27 +50,27 @@ type ApiSpecificationCustomValidator struct {
 	ListApiCategories func(ctx context.Context) (*apiv1.ApiCategoryList, error)
 }
 
-var _ webhook.CustomValidator = &ApiSpecificationCustomValidator{}
+var _ admission.Validator[*roverv1.ApiSpecification] = &ApiSpecificationCustomValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type ApiSpecification.
-func (v *ApiSpecificationCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	return v.ValidateCreateOrUpdate(ctx, obj)
+func (v *ApiSpecificationCustomValidator) ValidateCreate(ctx context.Context, apispecification *roverv1.ApiSpecification) (admission.Warnings, error) {
+	return v.ValidateCreateOrUpdate(ctx, apispecification)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type ApiSpecification.
-func (v *ApiSpecificationCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	return v.ValidateCreateOrUpdate(ctx, newObj)
+func (v *ApiSpecificationCustomValidator) ValidateUpdate(ctx context.Context, _ *roverv1.ApiSpecification, apispecification *roverv1.ApiSpecification) (admission.Warnings, error) {
+	return v.ValidateCreateOrUpdate(ctx, apispecification)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type ApiSpecification.
-func (v *ApiSpecificationCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *ApiSpecificationCustomValidator) ValidateDelete(ctx context.Context, apispecification *roverv1.ApiSpecification) (admission.Warnings, error) {
 	return nil, nil
 }
 
-func (v *ApiSpecificationCustomValidator) ValidateCreateOrUpdate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	apispecification, ok := obj.(*roverv1.ApiSpecification)
-	if !ok {
-		return nil, apierrors.NewBadRequest("not an apispecification")
+func (v *ApiSpecificationCustomValidator) ValidateCreateOrUpdate(ctx context.Context, apispecification *roverv1.ApiSpecification) (admission.Warnings, error) {
+
+	if controller.IsBeingDeleted(apispecification) {
+		return nil, nil
 	}
 
 	valErr := cerrors.NewValidationError(roverv1.GroupVersion.WithKind("ApiSpecification").GroupKind(), apispecification)
