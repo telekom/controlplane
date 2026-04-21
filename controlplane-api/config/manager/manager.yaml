@@ -51,7 +51,7 @@ spec:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: controlplane-api-db
+                  name: controlplane-db
                   key: url
           envFrom:
             - configMapRef:
