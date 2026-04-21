@@ -13,13 +13,12 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-func TestMapToClientRepresentation_SetsAttributeWhenSecretRotationTrue(t *testing.T) {
+func TestMapToClientRepresentation_SetsAttributeByDefault(t *testing.T) {
 	client := &identityv1.Client{
 		ObjectMeta: metav1.ObjectMeta{Name: "test"},
 		Spec: identityv1.ClientSpec{
-			ClientId:       "my-app",
-			ClientSecret:   "secret",
-			SecretRotation: ptr.To(true),
+			ClientId:     "my-app",
+			ClientSecret: "secret",
 		},
 	}
 
@@ -37,36 +36,17 @@ func TestMapToClientRepresentation_SetsAttributeWhenSecretRotationTrue(t *testin
 	}
 }
 
-func TestMapToClientRepresentation_SetsAttributeWhenSecretRotationNil(t *testing.T) {
+func TestMapToClientRepresentation_NoAttributeWhenDisabledViaAnnotation(t *testing.T) {
 	client := &identityv1.Client{
-		ObjectMeta: metav1.ObjectMeta{Name: "test"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test",
+			Annotations: map[string]string{
+				identityv1.DisableSecretRotationAnnotation: "true",
+			},
+		},
 		Spec: identityv1.ClientSpec{
 			ClientId:     "my-app",
 			ClientSecret: "secret",
-		},
-	}
-
-	rep := MapToClientRepresentation(client)
-
-	if rep.Attributes == nil {
-		t.Fatal("expected Attributes to be non-nil when SecretRotation is nil (defaults to true)")
-	}
-	v, ok := (*rep.Attributes)[SecretRotationClientAttribute]
-	if !ok {
-		t.Fatalf("expected attribute %q to be present", SecretRotationClientAttribute)
-	}
-	if v != "true" {
-		t.Fatalf("expected attribute value %q, got %v", "true", v)
-	}
-}
-
-func TestMapToClientRepresentation_NoAttributeWhenSecretRotationFalse(t *testing.T) {
-	client := &identityv1.Client{
-		ObjectMeta: metav1.ObjectMeta{Name: "test"},
-		Spec: identityv1.ClientSpec{
-			ClientId:       "my-app",
-			ClientSecret:   "secret",
-			SecretRotation: ptr.To(false),
 		},
 	}
 

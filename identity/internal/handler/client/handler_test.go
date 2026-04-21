@@ -28,7 +28,6 @@ import (
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
 	"github.com/telekom/controlplane/identity/test/mocks"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
-	"k8s.io/utils/ptr"
 )
 
 // notFoundError implements the apierrors.APIStatus interface for testing.
@@ -261,7 +260,9 @@ var _ = Describe("HandlerClient", func() {
 
 		It("should set Ready condition and status on success", func() {
 			cl := newValidClient()
-			cl.Spec.SecretRotation = ptr.To(false)
+			cl.Annotations = map[string]string{
+				identityv1.DisableSecretRotationAnnotation: "true",
+			}
 			realm := newValidRealm()
 
 			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
@@ -623,7 +624,9 @@ var _ = Describe("HandlerClient", func() {
 
 		It("should clear stale rotation fields when SecretRotation is disabled", func() {
 			cl := newValidClient()
-			cl.Spec.SecretRotation = ptr.To(false)
+			cl.Annotations = map[string]string{
+				identityv1.DisableSecretRotationAnnotation: "true",
+			}
 			// Simulate a client that previously had rotation enabled and has stale status fields.
 			cl.Status.RotatedClientSecret = "stale-old-secret"
 			cl.Status.RotatedSecretExpiresAt = &metav1.Time{Time: time.Now()}

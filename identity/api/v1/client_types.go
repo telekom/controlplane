@@ -10,19 +10,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// DisableSecretRotationAnnotation is the annotation key used to opt a Client
+// out of graceful secret rotation. When set to "true", rotation is disabled.
+// By default (annotation absent or any other value), rotation is enabled.
+const DisableSecretRotationAnnotation = "identity.cp.ei.telekom.de/disable-secret-rotation"
+
 // ClientSpec defines the desired state of Client
 type ClientSpec struct {
 	Realm        *types.ObjectRef `json:"realm"`
 	ClientId     string           `json:"clientId"`
 	ClientSecret string           `json:"clientSecret"`
-
-	// SecretRotation controls whether this client participates in graceful secret rotation.
-	// When true (and the referenced Realm has a SecretRotation config),
-	// changing the client secret will preserve the old secret for the
-	// configured grace period. Defaults to true (opt-out by setting to false).
-	// +optional
-	// +kubebuilder:default=true
-	SecretRotation *bool `json:"secretRotation,omitempty"`
 }
 
 // ClientStatus defines the observed state of Client
@@ -72,9 +69,10 @@ type Client struct {
 var _ types.Object = &Client{}
 
 // SupportsSecretRotation returns true when the client supports graceful secret
-// rotation. This is the default (nil or true); only an explicit false disables it.
+// rotation. Rotation is enabled by default; it is disabled only when the
+// DisableSecretRotationAnnotation annotation is set to "true".
 func (c *Client) SupportsSecretRotation() bool {
-	return c.Spec.SecretRotation == nil || *c.Spec.SecretRotation
+	return c.Annotations[DisableSecretRotationAnnotation] != "true"
 }
 
 func (e *Client) GetConditions() []metav1.Condition {

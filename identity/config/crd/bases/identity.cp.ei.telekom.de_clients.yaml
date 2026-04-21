@@ -65,14 +65,6 @@ spec:
                 - name
                 - namespace
                 type: object
-              secretRotation:
-                default: true
-                description: |-
-                  SecretRotation controls whether this client participates in graceful secret rotation.
-                  When true (and the referenced Realm has a SecretRotation config),
-                  changing the client secret will preserve the old secret for the
-                  configured grace period. Defaults to true (opt-out by setting to false).
-                type: boolean
             required:
             - clientId
             - clientSecret
