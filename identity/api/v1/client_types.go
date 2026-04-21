@@ -15,6 +15,14 @@ type ClientSpec struct {
 	Realm        *types.ObjectRef `json:"realm"`
 	ClientId     string           `json:"clientId"`
 	ClientSecret string           `json:"clientSecret"`
+
+	// SecretRotation controls whether this client participates in graceful secret rotation.
+	// When true (and the referenced Realm has a SecretRotation config),
+	// changing the client secret will preserve the old secret for the
+	// configured grace period. Defaults to true (opt-out by setting to false).
+	// +optional
+	// +kubebuilder:default=true
+	SecretRotation *bool `json:"secretRotation,omitempty"`
 }
 
 // ClientStatus defines the observed state of Client
@@ -33,6 +41,14 @@ type ClientStatus struct {
 	// stop being accepted. Nil when no rotation is in progress.
 	// +optional
 	RotatedSecretExpiresAt *metav1.Time `json:"rotatedSecretExpiresAt,omitempty"`
+
+	// SecretExpiresAt indicates when the current client secret will be
+	// auto-expired by Keycloak's secret-rotation executor. Only populated
+	// when secretRotation is enabled and the referenced Realm has a
+	// SecretRotation config. Nil if the creation timestamp is unavailable
+	// or the Realm has no SecretRotation configuration.
+	// +optional
+	SecretExpiresAt *metav1.Time `json:"secretExpiresAt,omitempty"`
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge
@@ -54,6 +70,12 @@ type Client struct {
 }
 
 var _ types.Object = &Client{}
+
+// SupportsSecretRotation returns true when the client supports graceful secret
+// rotation. This is the default (nil or true); only an explicit false disables it.
+func (c *Client) SupportsSecretRotation() bool {
+	return c.Spec.SecretRotation == nil || *c.Spec.SecretRotation
+}
 
 func (e *Client) GetConditions() []metav1.Condition {
 	return e.Status.Conditions

@@ -26,8 +26,13 @@ func GetClient(getRealmClients api.GetRealmClientsResponse) (*api.ClientRepresen
 	}
 }
 
+// SecretRotationClientAttribute is the Keycloak client attribute key used by
+// the client-attributes policy condition to identify clients that opted into
+// graceful secret rotation.
+const SecretRotationClientAttribute = "controlplane.secret-rotation"
+
 func MapToClientRepresentation(client *identityv1.Client) api.ClientRepresentation {
-	return api.ClientRepresentation{
+	rep := api.ClientRepresentation{
 		ClientId:               ptr.To(client.Spec.ClientId),
 		Name:                   ptr.To(client.Spec.ClientId),
 		Enabled:                ptr.To(true),
@@ -37,6 +42,14 @@ func MapToClientRepresentation(client *identityv1.Client) api.ClientRepresentati
 		Secret:                 ptr.To(client.Spec.ClientSecret),
 		ProtocolMappers:        &[]api.ProtocolMapperRepresentation{protocolmappers.NewClientIdProtocolMapper()},
 	}
+
+	if client.SupportsSecretRotation() {
+		rep.Attributes = &map[string]interface{}{
+			SecretRotationClientAttribute: "true",
+		}
+	}
+
+	return rep
 }
 
 // HasSecretChanged returns true when the new client representation carries a
@@ -59,7 +72,31 @@ func CompareClientRepresentation(existingClient, newClient *api.ClientRepresenta
 		ptrEqual(existingClient.ServiceAccountsEnabled, newClient.ServiceAccountsEnabled) &&
 		ptrEqual(existingClient.StandardFlowEnabled, newClient.StandardFlowEnabled) &&
 		ptrEqual(existingClient.Secret, newClient.Secret) &&
-		containsAllProtocolMappers(existingClient.ProtocolMappers, newClient.ProtocolMappers)
+		containsAllProtocolMappers(existingClient.ProtocolMappers, newClient.ProtocolMappers) &&
+		compareSecretRotationAttribute(existingClient, newClient)
+}
+
+// compareSecretRotationAttribute returns true when both representations agree
+// on the controlplane.secret-rotation attribute value. The attribute is
+// considered "set" only when its value is the string "true".
+func compareSecretRotationAttribute(a, b *api.ClientRepresentation) bool {
+	return getSecretRotationAttr(a) == getSecretRotationAttr(b)
+}
+
+// getSecretRotationAttr returns "true" when the secret-rotation attribute is
+// present and set to "true", otherwise "".
+func getSecretRotationAttr(c *api.ClientRepresentation) string {
+	if c.Attributes == nil {
+		return ""
+	}
+	v, ok := (*c.Attributes)[SecretRotationClientAttribute]
+	if !ok {
+		return ""
+	}
+	if s, ok := v.(string); ok && s == "true" {
+		return "true"
+	}
+	return ""
 }
 
 // ptrEqual returns true if both pointers are nil, or both are non-nil and
@@ -80,6 +117,20 @@ func MergeClientRepresentation(existingClient, newClient *api.ClientRepresentati
 	existingClient.StandardFlowEnabled = newClient.StandardFlowEnabled
 	existingClient.Secret = newClient.Secret
 	existingClient.ProtocolMappers = MergeProtocolMappers(existingClient.ProtocolMappers, newClient.ProtocolMappers)
+
+	// Merge the secret-rotation attribute into the existing attributes map,
+	// preserving any Keycloak-managed attributes already present.
+	if newClient.Attributes != nil {
+		if existingClient.Attributes == nil {
+			existingClient.Attributes = &map[string]interface{}{}
+		}
+		(*existingClient.Attributes)[SecretRotationClientAttribute] = (*newClient.Attributes)[SecretRotationClientAttribute]
+	} else {
+		// New client doesn't set the attribute — remove it from existing if present.
+		if existingClient.Attributes != nil {
+			delete(*existingClient.Attributes, SecretRotationClientAttribute)
+		}
+	}
 
 	return existingClient
 }

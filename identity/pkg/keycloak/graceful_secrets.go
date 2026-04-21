@@ -6,6 +6,7 @@ package keycloak
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"github.com/go-logr/logr"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/pkg/api"
+	"github.com/telekom/controlplane/identity/pkg/keycloak/util"
 	"k8s.io/utils/ptr"
 )
 
@@ -41,33 +43,49 @@ type SecretRotationParams struct {
 }
 
 const (
+	attrSecretCreationTime    = "client.secret.creation.time"
 	attrRotatedCreationTime   = "client.secret.rotated.creation.time"
 	attrRotatedExpirationTime = "client.secret.rotated.expiration.time"
 )
 
-// RotatedSecretInfo holds the rotated (old) client secret and the
-// Keycloak-managed timestamps from the secret-rotation executor.
-type RotatedSecretInfo struct {
-	// Secret is the plaintext value of the rotated (old) client secret.
-	Secret string
-	// CreatedAt is when the rotation happened (epoch seconds). Nil if unavailable.
-	CreatedAt *int64
-	// ExpiresAt is when the rotated secret stops being accepted (epoch seconds). Nil if unavailable.
-	ExpiresAt *int64
+// GetSecretCreationTime extracts the epoch-seconds timestamp of the current
+// client secret from Keycloak's client attributes. Returns nil when the
+// attribute is missing or cannot be parsed.
+func GetSecretCreationTime(attrs map[string]interface{}) *int64 {
+	if attrs == nil {
+		return nil
+	}
+	return epochSecondsFromAttr(attrs, attrSecretCreationTime)
 }
 
-// NewRotatedSecretInfo builds a RotatedSecretInfo from the rotated credential
-// response and the full client representation. The secret value comes from
-// cred.Value; the rotation timestamps come from client.Attributes where
-// Keycloak's secret-rotation executor stores them as epoch-second strings.
-func NewRotatedSecretInfo(cred *api.CredentialRepresentation, client *api.ClientRepresentation) *RotatedSecretInfo {
-	info := &RotatedSecretInfo{}
+// ClientSecretRotationInfo holds the secret rotation state for a Keycloak
+// client: the rotated (old) secret (if any) and the creation timestamp of
+// the current secret.
+type ClientSecretRotationInfo struct {
+	// RotatedSecret is the plaintext value of the rotated (old) client secret.
+	// Empty when no rotation is in progress.
+	RotatedSecret string
+	// RotatedCreatedAt is when the rotation happened (epoch seconds). Nil if unavailable.
+	RotatedCreatedAt *int64
+	// RotatedExpiresAt is when the rotated secret stops being accepted (epoch seconds). Nil if unavailable.
+	RotatedExpiresAt *int64
+	// SecretCreationTime is when the current secret was created (epoch seconds),
+	// as tracked by Keycloak's secret-rotation executor. Nil if unavailable.
+	SecretCreationTime *int64
+}
+
+// NewClientSecretRotationInfo builds a ClientSecretRotationInfo from the
+// rotated credential response and the full client representation. The rotated
+// secret value comes from cred.Value; timestamps come from client.Attributes.
+func NewClientSecretRotationInfo(cred *api.CredentialRepresentation, client *api.ClientRepresentation) *ClientSecretRotationInfo {
+	info := &ClientSecretRotationInfo{}
 	if cred != nil && cred.Value != nil {
-		info.Secret = *cred.Value
+		info.RotatedSecret = *cred.Value
 	}
 	if client != nil && client.Attributes != nil {
-		info.CreatedAt = epochSecondsFromAttr(*client.Attributes, attrRotatedCreationTime)
-		info.ExpiresAt = epochSecondsFromAttr(*client.Attributes, attrRotatedExpirationTime)
+		info.RotatedCreatedAt = epochSecondsFromAttr(*client.Attributes, attrRotatedCreationTime)
+		info.RotatedExpiresAt = epochSecondsFromAttr(*client.Attributes, attrRotatedExpirationTime)
+		info.SecretCreationTime = epochSecondsFromAttr(*client.Attributes, attrSecretCreationTime)
 	}
 	return info
 }
@@ -223,13 +241,19 @@ func (k *keycloakService) ensureSecretRotationPolicyEntry(ctx context.Context, r
 
 	desiredPolicy := api.ClientPolicyRepresentation{
 		Name:        ptr.To(secretRotationPolicyName),
-		Description: ptr.To("Managed by controlplane: applies secret-rotation profile to all clients"),
+		Description: ptr.To("Managed by controlplane: applies secret-rotation profile to opted-in clients"),
 		Enabled:     ptr.To(true),
 		Profiles:    &[]string{secretRotationProfileName},
 		Conditions: &[]api.ClientPolicyConditionRepresentation{
 			{
-				Condition:     ptr.To("any-client"),
-				Configuration: &map[string]interface{}{},
+				Condition: ptr.To("client-attributes"),
+				Configuration: &map[string]interface{}{
+					"is.negative.logic": false,
+					// Keycloak's client-attributes condition deserialises the "attributes"
+					// value with MapperTypeSerializer which expects a JSON-encoded array
+					// of {key, value} pairs – NOT a plain map.
+					"attributes": marshalPolicyAttributes(util.SecretRotationClientAttribute, "true"),
+				},
 			},
 		},
 	}
@@ -268,10 +292,12 @@ func (k *keycloakService) ensureSecretRotationPolicyEntry(ctx context.Context, r
 	return nil
 }
 
-// GetRotatedClientSecret checks whether a rotated (old) client secret exists
-// for the given Keycloak client. During a graceful rotation, the previous
-// secret is kept alive for a grace period; this method returns it.
-func (k *keycloakService) GetRotatedClientSecret(ctx context.Context, realmName string, client *identityv1.Client) (*RotatedSecretInfo, error) {
+// GetClientSecretRotationInfo fetches the secret rotation state for a Keycloak
+// client in a single getClient call. It always returns a non-nil
+// *ClientSecretRotationInfo (when the client exists), populated with whatever
+// data is available: the rotated secret (if a grace period is active) and the
+// current secret's creation timestamp.
+func (k *keycloakService) GetClientSecretRotationInfo(ctx context.Context, realmName string, client *identityv1.Client) (*ClientSecretRotationInfo, error) {
 	logger := logr.FromContextOrDiscard(ctx)
 
 	// Resolve the Keycloak-internal UUID for this client.
@@ -284,6 +310,13 @@ func (k *keycloakService) GetRotatedClientSecret(ctx context.Context, realmName 
 	}
 	keycloakId := *existing.Id
 
+	// Start with creation time from the existing client representation.
+	info := &ClientSecretRotationInfo{}
+	if existing.Attributes != nil {
+		info.SecretCreationTime = epochSecondsFromAttr(*existing.Attributes, attrSecretCreationTime)
+	}
+
+	// Check for a rotated (old) secret.
 	resp, err := k.Client.GetRealmClientsIdClientSecretRotatedWithResponse(ctx, realmName, keycloakId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get rotated secret for client %q: %w", client.Spec.ClientId, err)
@@ -294,7 +327,7 @@ func (k *keycloakService) GetRotatedClientSecret(ctx context.Context, realmName 
 	// 404 means no rotated secret exists — rotation not in progress or grace period expired.
 	if resp.StatusCode() == http.StatusNotFound {
 		logger.V(1).Info("no rotated secret found", "clientId", client.Spec.ClientId)
-		return nil, nil
+		return info, nil
 	}
 
 	if responseErr := CheckStatusCode(resp, http.StatusOK); responseErr != nil {
@@ -304,11 +337,25 @@ func (k *keycloakService) GetRotatedClientSecret(ctx context.Context, realmName 
 
 	if resp.JSON2XX == nil || resp.JSON2XX.Value == nil || *resp.JSON2XX.Value == "" {
 		logger.V(1).Info("rotated secret response has no value", "clientId", client.Spec.ClientId)
-		return nil, nil
+		return info, nil
 	}
 
 	logger.V(1).Info("rotated secret found", "clientId", client.Spec.ClientId)
-	return NewRotatedSecretInfo(resp.JSON2XX, existing), nil
+	rotated := NewClientSecretRotationInfo(resp.JSON2XX, existing)
+	// Preserve SecretCreationTime already extracted above.
+	rotated.SecretCreationTime = info.SecretCreationTime
+	return rotated, nil
+}
+
+// marshalPolicyAttributes produces the JSON-encoded array of {key, value} pairs
+// expected by Keycloak's client-attributes condition (MapperTypeSerializer).
+func marshalPolicyAttributes(key, value string) string {
+	type kvPair struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+	}
+	b, _ := json.Marshal([]kvPair{{Key: key, Value: value}})
+	return string(b)
 }
 
 // forceSecretRotation triggers Keycloak's secret-rotation executor by POSTing

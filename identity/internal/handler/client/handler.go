@@ -72,45 +72,61 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 	clientCopy := client.DeepCopy()
 	clientCopy.Spec.ClientSecret = resolvedSecret
 
-	err = realmClient.CreateOrReplaceClient(ctx, realm.Name, clientCopy, realm.SupportsGracefulSecretRotation())
+	err = realmClient.CreateOrReplaceClient(ctx, realm.Name, clientCopy, realm.SupportsGracefulSecretRotation() && client.SupportsSecretRotation())
 	if err != nil {
 		return fmt.Errorf("failed to create or update client: %w", err)
 	}
 
 	// --- Graceful rotation: check for a rotated (old) secret ---
-	// After ensuring the primary client is up-to-date in Keycloak, check
-	// whether a rotated secret exists (indicating a grace period is active).
-	rotatedInfo, rotErr := realmClient.GetRotatedClientSecret(ctx, realm.Name, clientCopy)
-	if rotErr != nil {
-		return fmt.Errorf("failed to check rotated client secret: %w", rotErr)
-	}
-
-	if rotatedInfo != nil {
-		// if the original client secret was a reference, we should not expose the rotated secret in the status, as it may be sensitive.
-		if !secrets.IsRef(client.Spec.ClientSecret) {
-			client.Status.RotatedClientSecret = rotatedInfo.Secret
-		} else {
-			client.Status.RotatedClientSecret = ""
+	// Only query rotation state when both the realm and client support it.
+	supportsRotation := realm.SupportsGracefulSecretRotation() && client.SupportsSecretRotation()
+	if supportsRotation {
+		rotationInfo, rotErr := realmClient.GetClientSecretRotationInfo(ctx, realm.Name, clientCopy)
+		if rotErr != nil {
+			return fmt.Errorf("failed to check client secret rotation info: %w", rotErr)
 		}
 
-		// Use the expiration timestamp directly from Keycloak's client
-		// attributes (epoch seconds). This is the final expiry — no grace
-		// period arithmetic is needed on our side.
-		if rotatedInfo.ExpiresAt != nil {
-			expiresAt := time.Unix(*rotatedInfo.ExpiresAt, 0)
-			client.Status.RotatedSecretExpiresAt = &metav1.Time{Time: expiresAt.UTC()}
+		if rotationInfo.RotatedSecret != "" {
+			// if the original client secret was a reference, we should not expose the rotated secret in the status, as it may be sensitive.
+			if !secrets.IsRef(client.Spec.ClientSecret) {
+				client.Status.RotatedClientSecret = rotationInfo.RotatedSecret
+			} else {
+				client.Status.RotatedClientSecret = ""
+			}
+
+			// Use the expiration timestamp directly from Keycloak's client
+			// attributes (epoch seconds). This is the final expiry — no grace
+			// period arithmetic is needed on our side.
+			if rotationInfo.RotatedExpiresAt != nil {
+				expiresAt := time.Unix(*rotationInfo.RotatedExpiresAt, 0)
+				client.Status.RotatedSecretExpiresAt = &metav1.Time{Time: expiresAt.UTC()}
+			} else {
+				client.Status.RotatedSecretExpiresAt = nil
+			}
+			if rotationInfo.RotatedCreatedAt != nil {
+				createdAt := time.Unix(*rotationInfo.RotatedCreatedAt, 0)
+				client.SetCondition(identityv1.NewSecretRotatedCondition(createdAt))
+			}
+
 		} else {
+			// No rotation in progress — clear the status fields.
+			client.Status.RotatedClientSecret = ""
 			client.Status.RotatedSecretExpiresAt = nil
 		}
-		if rotatedInfo.CreatedAt != nil {
-			createdAt := time.Unix(*rotatedInfo.CreatedAt, 0)
-			client.SetCondition(identityv1.NewSecretRotatedCondition(createdAt))
-		}
 
+		// --- Current secret expiry: compute when Keycloak will auto-expire it ---
+		if rotationInfo.SecretCreationTime != nil && realm.Spec.SecretRotation != nil {
+			expiresAt := time.Unix(*rotationInfo.SecretCreationTime, 0).Add(realm.Spec.SecretRotation.ExpirationPeriod.Duration)
+			client.Status.SecretExpiresAt = &metav1.Time{Time: expiresAt.UTC()}
+		} else {
+			client.Status.SecretExpiresAt = nil
+		}
 	} else {
-		// No rotation in progress — clear the status fields.
+		// Rotation not supported (or was just disabled) — clear any stale
+		// rotation status fields from a previous opt-in.
 		client.Status.RotatedClientSecret = ""
 		client.Status.RotatedSecretExpiresAt = nil
+		client.Status.SecretExpiresAt = nil
 	}
 
 	client.Status.ClientUid = clientCopy.Status.ClientUid

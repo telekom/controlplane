@@ -65,6 +65,14 @@ spec:
                 - name
                 - namespace
                 type: object
+              secretRotation:
+                default: true
+                description: |-
+                  SecretRotation controls whether this client participates in graceful secret rotation.
+                  When true (and the referenced Realm has a SecretRotation config),
+                  changing the client secret will preserve the old secret for the
+                  configured grace period. Defaults to true (opt-out by setting to false).
+                type: boolean
             required:
             - clientId
             - clientSecret
@@ -149,6 +157,15 @@ spec:
                 description: |-
                   RotatedSecretExpiresAt indicates when the rotated (old) secret will
                   stop being accepted. Nil when no rotation is in progress.
+                format: date-time
+                type: string
+              secretExpiresAt:
+                description: |-
+                  SecretExpiresAt indicates when the current client secret will be
+                  auto-expired by Keycloak's secret-rotation executor. Only populated
+                  when secretRotation is enabled and the referenced Realm has a
+                  SecretRotation config. Nil if the creation timestamp is unavailable
+                  or the Realm has no SecretRotation configuration.
                 format: date-time
                 type: string
             required:

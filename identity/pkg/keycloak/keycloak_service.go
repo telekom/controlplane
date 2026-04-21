@@ -77,15 +77,15 @@ type KeycloakService interface {
 	DeleteClient(ctx context.Context, realmName string, client *identityv1.Client) error
 
 	// Secret rotation
-	// GetRotatedClientSecret returns the rotated (old) client secret for a
-	// Keycloak client during a graceful rotation grace period.
-	// Returns:
-	//   - (*RotatedSecretInfo, nil) when a rotated secret exists (rotation in progress).
-	//     Secret is the plaintext value; CreatedAt and ExpiresAt are epoch-second
-	//     timestamps from Keycloak's client attributes (may be nil if unavailable).
-	//   - (nil, nil) when no rotated secret exists (no rotation / grace period expired)
-	//   - (nil, err) on communication or unexpected errors
-	GetRotatedClientSecret(ctx context.Context, realmName string, client *identityv1.Client) (*RotatedSecretInfo, error)
+	// GetClientSecretRotationInfo returns the secret rotation state for a
+	// Keycloak client. It always returns a non-nil *ClientSecretRotationInfo
+	// when the client exists. The struct contains:
+	//   - RotatedSecret / RotatedCreatedAt / RotatedExpiresAt when a rotation
+	//     grace period is active (empty/nil otherwise).
+	//   - SecretCreationTime: epoch-seconds of the current secret's creation
+	//     (nil when the attribute is missing).
+	// Returns (nil, err) on communication or unexpected errors.
+	GetClientSecretRotationInfo(ctx context.Context, realmName string, client *identityv1.Client) (*ClientSecretRotationInfo, error)
 }
 
 var _ KeycloakService = (*keycloakService)(nil)
@@ -106,7 +106,7 @@ func (k *keycloakService) getClient(ctx context.Context, realmName string, clien
 			return nil, fmt.Errorf("unexpected error when fetching client by UID: %w", err)
 		}
 		if clientRes.StatusCode() == 200 && clientRes.JSON2XX != nil {
-			log.V(1).Info("client found by uuid", "response", string(clientRes.Body))
+			log.V(2).Info("client found by uuid", "response", string(clientRes.Body))
 			return clientRes.JSON2XX, nil
 		}
 		// UID lookup returned 404 or unexpected status — fall through to clientId search

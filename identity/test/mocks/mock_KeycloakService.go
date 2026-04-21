@@ -267,24 +267,24 @@ func (_c *MockKeycloakService_DeleteRealm_Call) RunAndReturn(run func(context.Co
 	return _c
 }
 
-// GetRotatedClientSecret provides a mock function with given fields: ctx, realmName, client
-func (_m *MockKeycloakService) GetRotatedClientSecret(ctx context.Context, realmName string, client *v1.Client) (*keycloak.RotatedSecretInfo, error) {
+// GetClientSecretRotationInfo provides a mock function with given fields: ctx, realmName, client
+func (_m *MockKeycloakService) GetClientSecretRotationInfo(ctx context.Context, realmName string, client *v1.Client) (*keycloak.ClientSecretRotationInfo, error) {
 	ret := _m.Called(ctx, realmName, client)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetRotatedClientSecret")
+		panic("no return value specified for GetClientSecretRotationInfo")
 	}
 
-	var r0 *keycloak.RotatedSecretInfo
+	var r0 *keycloak.ClientSecretRotationInfo
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *v1.Client) (*keycloak.RotatedSecretInfo, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, *v1.Client) (*keycloak.ClientSecretRotationInfo, error)); ok {
 		return rf(ctx, realmName, client)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, *v1.Client) *keycloak.RotatedSecretInfo); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, *v1.Client) *keycloak.ClientSecretRotationInfo); ok {
 		r0 = rf(ctx, realmName, client)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*keycloak.RotatedSecretInfo)
+			r0 = ret.Get(0).(*keycloak.ClientSecretRotationInfo)
 		}
 	}
 
@@ -297,32 +297,32 @@ func (_m *MockKeycloakService) GetRotatedClientSecret(ctx context.Context, realm
 	return r0, r1
 }
 
-// MockKeycloakService_GetRotatedClientSecret_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRotatedClientSecret'
-type MockKeycloakService_GetRotatedClientSecret_Call struct {
+// MockKeycloakService_GetClientSecretRotationInfo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetClientSecretRotationInfo'
+type MockKeycloakService_GetClientSecretRotationInfo_Call struct {
 	*mock.Call
 }
 
-// GetRotatedClientSecret is a helper method to define mock.On call
+// GetClientSecretRotationInfo is a helper method to define mock.On call
 //   - ctx context.Context
 //   - realmName string
 //   - client *v1.Client
-func (_e *MockKeycloakService_Expecter) GetRotatedClientSecret(ctx interface{}, realmName interface{}, client interface{}) *MockKeycloakService_GetRotatedClientSecret_Call {
-	return &MockKeycloakService_GetRotatedClientSecret_Call{Call: _e.mock.On("GetRotatedClientSecret", ctx, realmName, client)}
+func (_e *MockKeycloakService_Expecter) GetClientSecretRotationInfo(ctx interface{}, realmName interface{}, client interface{}) *MockKeycloakService_GetClientSecretRotationInfo_Call {
+	return &MockKeycloakService_GetClientSecretRotationInfo_Call{Call: _e.mock.On("GetClientSecretRotationInfo", ctx, realmName, client)}
 }
 
-func (_c *MockKeycloakService_GetRotatedClientSecret_Call) Run(run func(ctx context.Context, realmName string, client *v1.Client)) *MockKeycloakService_GetRotatedClientSecret_Call {
+func (_c *MockKeycloakService_GetClientSecretRotationInfo_Call) Run(run func(ctx context.Context, realmName string, client *v1.Client)) *MockKeycloakService_GetClientSecretRotationInfo_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].(*v1.Client))
 	})
 	return _c
 }
 
-func (_c *MockKeycloakService_GetRotatedClientSecret_Call) Return(_a0 *keycloak.RotatedSecretInfo, _a1 error) *MockKeycloakService_GetRotatedClientSecret_Call {
+func (_c *MockKeycloakService_GetClientSecretRotationInfo_Call) Return(_a0 *keycloak.ClientSecretRotationInfo, _a1 error) *MockKeycloakService_GetClientSecretRotationInfo_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockKeycloakService_GetRotatedClientSecret_Call) RunAndReturn(run func(context.Context, string, *v1.Client) (*keycloak.RotatedSecretInfo, error)) *MockKeycloakService_GetRotatedClientSecret_Call {
+func (_c *MockKeycloakService_GetClientSecretRotationInfo_Call) RunAndReturn(run func(context.Context, string, *v1.Client) (*keycloak.ClientSecretRotationInfo, error)) *MockKeycloakService_GetClientSecretRotationInfo_Call {
 	_c.Call.Return(run)
 	return _c
 }
