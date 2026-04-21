@@ -65,9 +65,11 @@ vet: ## Run go vet against code.
 TEST_PACKAGES = ./internal/...
 COVER_PACKAGES = ./internal/...
 
+GOTESTSUM_JUNIT_FLAGS = --junitfile junit.xml --junitfile-testsuite-name relative --junitfile-testcase-classname relative --jsonfile gotest.log
+
 .PHONY: test
 test: manifests generate fmt vet setup-envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell "$(ENVTEST)" use $(ENVTEST_K8S_VERSION) --bin-dir "$(LOCALBIN)" -p path)" gotestsum --format pkgname --junitfile junit.xml --jsonfile gotest.log -- $(TEST_PACKAGES) -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -race
+	KUBEBUILDER_ASSETS="$(shell "$(ENVTEST)" use $(ENVTEST_K8S_VERSION) --bin-dir "$(LOCALBIN)" -p path)" gotestsum --format pkgname $(GOTESTSUM_JUNIT_FLAGS) -- $(TEST_PACKAGES) -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -race
 
 # TODO(user): To use a different vendor for e2e tests, modify the setup under 'tests/e2e'.
 # The default setup assumes Kind is pre-installed and builds/loads the Manager Docker image locally.

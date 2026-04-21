@@ -29,9 +29,10 @@ build: generate
 # Packages to test and measure coverage for
 TEST_PACKAGES = ./internal/...
 COVER_PACKAGES = ./internal/...
+GOTESTSUM_JUNIT_FLAGS = --junitfile junit.xml --junitfile-testsuite-name relative --junitfile-testcase-classname relative --jsonfile gotest.log
 
 test:
-	gotestsum --format pkgname --junitfile junit.xml --jsonfile gotest.log -- $(TEST_PACKAGES) -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -race
+	gotestsum --format pkgname $(GOTESTSUM_JUNIT_FLAGS) -- $(TEST_PACKAGES) -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -race
 
 fmt:
 	go fmt ./...

@@ -27,10 +27,11 @@ build: fmt vet ## Run go build against code.
 # Packages to test and measure coverage for
 TEST_PACKAGES = ./internal/... ./pkg/...
 COVER_PACKAGES = ./internal/...,./pkg/...
+GOTESTSUM_JUNIT_FLAGS = --junitfile junit.xml --junitfile-testsuite-name relative --junitfile-testcase-classname relative --jsonfile gotest.log
 
 .PHONY: test
 test: fmt vet ## Run tests.
-	gotestsum --format pkgname --junitfile junit.xml --jsonfile gotest.log -- $(TEST_PACKAGES) -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -mod=readonly -race
+	gotestsum --format pkgname $(GOTESTSUM_JUNIT_FLAGS) -- $(TEST_PACKAGES) -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -mod=readonly -race
 
 .PHONY: install
 install: build 
