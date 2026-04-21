@@ -8,8 +8,35 @@ SPDX-License-Identifier: CC0-1.0
 
 ## Table of contents
 
+  - [Verification Workflow](#verification-workflow)
   - [Pre-commit Hooks](#pre-commit-hooks)
   - [Kubebuilder](#kubebuilder)
+
+## Verification workflow
+
+Checks are split into two tiers to keep commits fast while catching everything before code reaches the remote:
+
+| When                         | What                                                             | Why                                                 |
+|------------------------------|------------------------------------------------------------------|-----------------------------------------------------|
+| **Pre-commit**               | REUSE license headers, gitleaks, conventional commit format      | Fast (<2s), runs on every commit                    |
+| **Pre-push / `make verify`** | `go mod tidy`, `make build`, `golangci-lint` per affected module | Thorough but slow — only needed before sharing code |
+
+Always use Makefile targets instead of running Go tooling directly. The per-module Makefiles ensure correct flags, code generation, envtest setup, and coverage configuration.
+
+```bash
+# From a module directory
+make build          # build (includes generate, fmt, vet)
+make test           # test (includes envtest + coverage)
+make lint           # golangci-lint
+
+# From the repo root
+make verify         # all pre-push checks on all modules
+make verify MODULES="gateway identity"  # check specific modules only
+make build-all      # build every module
+make test-all       # test every module
+```
+
+The `make verify` target delegates to `hack/verify.sh`, which is the single source of truth for pre-push validation. It can be called from CI, git hooks, or AI agent hooks without any tool-specific setup.
 
 ## Pre-commit hooks
 
