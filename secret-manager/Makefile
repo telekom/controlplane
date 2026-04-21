@@ -19,6 +19,10 @@ vet: ## Run go vet against code.
 build: fmt vet ## Run go build against code.
 	go build -o bin/server cmd/server/server.go
 
+# Packages to test and measure coverage for
+TEST_PACKAGES = $(shell go list ./internal/... ./pkg/... | grep -v '^./internal/api$$')
+COVER_PACKAGES = $(shell go list ./internal/... ./pkg/... | grep -v '^./internal/api$$' | paste -sd, -)
+
 .PHONY: test
 test: fmt vet ## Run tests.
-	go test $$(go list ./... | grep -v /test |grep -v /internal/api) -coverprofile cover.out -mod=readonly -race -json 2>&1 | tee gotest.log | gotestfmt
+	gotestsum --format pkgname --junitfile junit.xml --jsonfile gotest.log -- $(TEST_PACKAGES) -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -mod=readonly -race

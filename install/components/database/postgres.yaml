@@ -5,10 +5,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: controlplane-api-postgres
+  name: controlplane-postgres
   namespace: system
   labels:
-    app.kubernetes.io/name: controlplane-api-postgres
+    app.kubernetes.io/name: controlplane-postgres
     app.kubernetes.io/component: database
 spec:
   ports:
@@ -21,10 +21,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: controlplane-api-postgres-data
+  name: controlplane-postgres-data
   namespace: system
   labels:
-    app.kubernetes.io/name: controlplane-api-postgres
+    app.kubernetes.io/name: controlplane-postgres
     app.kubernetes.io/component: database
 spec:
   accessModes:
@@ -36,10 +36,10 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controlplane-api-postgres
+  name: controlplane-postgres
   namespace: system
   labels:
-    app.kubernetes.io/name: controlplane-api-postgres
+    app.kubernetes.io/name: controlplane-postgres
     app.kubernetes.io/component: database
 spec:
   replicas: 1
@@ -51,7 +51,7 @@ spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: controlplane-api-postgres
+        app.kubernetes.io/name: controlplane-postgres
         app.kubernetes.io/component: database
     spec:
       securityContext:
@@ -67,12 +67,12 @@ spec:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: controlplane-api-db
+                  name: controlplane-db
                   key: username
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: controlplane-api-db
+                  name: controlplane-db
                   key: password
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
@@ -109,4 +109,4 @@ spec:
       volumes:
         - name: postgres-data
           persistentVolumeClaim:
-            claimName: controlplane-api-postgres-data
+            claimName: controlplane-postgres-data

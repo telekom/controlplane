@@ -101,8 +101,10 @@ var _ = Describe("Consumer Controller", Ordered, func() {
 
 		It("should delete the Consumer", func() {
 			By("Setting up the mocks")
+			consumerKey := client.ObjectKeyFromObject(consumer)
+			expectedName := consumer.Name
 			GetMockClientFor(gateway).EXPECT().DeleteConsumer(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, actual *gatewayv1.Consumer) error {
-				Expect(actual.Name).To(Equal(consumer.Name))
+				Expect(actual.Name).To(Equal(expectedName))
 				return nil
 			}).MinTimes(1)
 
@@ -112,7 +114,7 @@ var _ = Describe("Consumer Controller", Ordered, func() {
 
 			By("Checking the status")
 			Eventually(func(g Gomega) {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(consumer), consumer)
+				err := k8sClient.Get(ctx, consumerKey, &gatewayv1.Consumer{})
 				g.Expect(err).To(HaveOccurred())
 
 			}, timeout, interval).Should(Succeed())
