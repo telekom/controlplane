@@ -144,12 +144,12 @@ var _ = BeforeSuite(func() {
 
 	By("Setting up the required mocks")
 	mockCtrl := gomock.NewController(GinkgoT())
-	clientCacheMutex := sync.Mutex{}
+	mockMutex := sync.Mutex{}
 	kongClientMockCache := make(map[string]*kong_clientmock.MockKongClient)
 
 	kongutil.GetClientFor = func(gwCfg kongutil.GatewayAdminConfig) (kong_client.KongClient, error) {
-		clientCacheMutex.Lock()
-		defer clientCacheMutex.Unlock()
+		mockMutex.Lock()
+		defer mockMutex.Unlock()
 		if client, found := kongClientMockCache[gwCfg.AdminUrl()]; found {
 			return client, nil
 		}
@@ -159,6 +159,8 @@ var _ = BeforeSuite(func() {
 	}
 
 	features.NewFeatureBuilder = func(kc kong_client.KongClient, route *gatewayv1.Route, consumer *gatewayv1.Consumer, realm *gatewayv1.Realm, gateway *gatewayv1.Gateway) features.FeaturesBuilder {
+		mockMutex.Lock()
+		defer mockMutex.Unlock()
 		mockBuilder := features_mock.NewMockFeaturesBuilder(mockCtrl)
 		mockBuilder.EXPECT().EnableFeature(gomock.Any()).MinTimes(1)
 		mockBuilder.EXPECT().AddAllowedConsumers(gomock.Any()).AnyTimes()

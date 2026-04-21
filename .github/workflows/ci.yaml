@@ -36,6 +36,7 @@ jobs:
       module: common
       run_check_generated_files: false
       run_build_image: false
+      coverage_threshold: 55
 
   common-server:
     name: Common Server
@@ -62,6 +63,7 @@ jobs:
       module: controlplane-api
       run_check_generated_files: false
       ko_build_path: "cmd/main.go"
+      coverage_threshold: 1
 
   secret-manager:
     name: Secret Manager
@@ -71,6 +73,7 @@ jobs:
       module: secret-manager
       run_check_generated_files: false
       ko_build_path: "cmd/server/server.go"
+      coverage_threshold: 50
 
   approval:
     name: Approval
@@ -89,6 +92,7 @@ jobs:
       module: file-manager
       run_check_generated_files: false
       ko_build_path: "cmd/server/server.go"
+      coverage_threshold: 61
 
   gateway:
     name: Gateway
@@ -98,6 +102,7 @@ jobs:
       module: gateway
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
+      coverage_threshold: 56
 
   identity:
     name: Identity
@@ -152,6 +157,7 @@ jobs:
       module: rover
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
+      coverage_threshold: 66
 
   rover-server:
     name: Rover-Server
@@ -162,6 +168,7 @@ jobs:
       run_check_generated_files: false
       allow_tests_failure: true
       ko_build_path: "cmd/main.go"
+      coverage_threshold: 41
 
   rover-ctl:
     name: Rover-CTL
@@ -181,6 +188,7 @@ jobs:
       run_check_generated_files: false
       run_lint: false
       ko_build_path: "main.go"
+      coverage_threshold: 3
 
   notification:
     name: Notification

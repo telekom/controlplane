@@ -6,6 +6,8 @@ package msteams
 
 import (
 	"net/http"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -136,7 +138,7 @@ func TestNewRestyClient_WithRetryCondition(t *testing.T) {
 	resp, err := client.R().Get(server.URL)
 	assertNoError(t, err, "Request")
 	assertStatusCode(t, resp, 200)
-	assertAttempts(t, *attemptCount, 3, "Custom retry condition")
+	assertAttempts(t, attemptCount, 3, "Custom retry condition")
 }
 
 func TestNewRestyClient_WithHooks(t *testing.T) {
@@ -384,7 +386,7 @@ func TestNewRestyClient_RetryBehavior(t *testing.T) {
 			resp, err := client.R().Get(server.URL)
 			assertNoError(t, err, "Request")
 			assertStatusCode(t, resp, tt.expectedFinalStatus)
-			assertAttempts(t, *attemptCount, tt.expectedAttempts, tt.name)
+			assertAttempts(t, attemptCount, tt.expectedAttempts, tt.name)
 		})
 	}
 }
@@ -401,7 +403,7 @@ func TestNewRestyClient_NoRetryOn4xx(t *testing.T) {
 	assertStatusCode(t, resp, 400)
 
 	// Should only attempt once (no retry on 4xx except 408, 429)
-	assertAttempts(t, *attemptCount, 1, "No retry on 400")
+	assertAttempts(t, attemptCount, 1, "No retry on 400")
 }
 
 func TestNewRestyClient_HTTPVersions(t *testing.T) {
@@ -441,21 +443,23 @@ func TestNewRestyClient_ConcurrentRequests(t *testing.T) {
 	})
 
 	// Make concurrent requests
-	done := make(chan bool)
+	var wg sync.WaitGroup
+	var errCount atomic.Int32
 	for i := 0; i < 10; i++ {
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			_, err := client.R().Get(server.URL)
 			if err != nil {
-				t.Errorf("Concurrent request failed: %v", err)
+				errCount.Add(1)
 			}
-			done <- true
 		}()
 	}
 
-	// Wait for all requests to complete
-	for i := 0; i < 10; i++ {
-		<-done
-	}
+	wg.Wait()
 
-	assertAttempts(t, *requestCount, 10, "Concurrent requests")
+	if n := errCount.Load(); n > 0 {
+		t.Errorf("Concurrent requests: %d out of 10 failed", n)
+	}
+	assertAttempts(t, requestCount, 10, "Concurrent requests")
 }

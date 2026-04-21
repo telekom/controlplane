@@ -296,7 +296,7 @@ func TestSend_RetryOnServerError(t *testing.T) {
 	err := adapter.Send(context.Background(), config, "", body)
 
 	assertNoError(t, err, "Send() after retries")
-	assertAttempts(t, *attemptCount, 3, "Retry on server error")
+	assertAttempts(t, attemptCount, 3, "Retry on server error")
 }
 
 func TestParseError_StructuredError(t *testing.T) {
