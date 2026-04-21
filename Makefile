@@ -11,8 +11,8 @@
 #   make lint-all            Lint all modules
 #   make tidy-all            Run go mod tidy on all modules
 
-SHELL = /usr/bin/env bash -o pipefail
-.SHELLFLAGS = -ec
+SHELL := /usr/bin/env bash
+.SHELLFLAGS := -e -o pipefail -c
 
 # Discover Go modules that have a Makefile (excluding docs and tools)
 MODULES ?= $(shell find . -name 'go.mod' -not -path './docs/*' -not -path '*/node_modules/*' -not -path './tools/*' -exec dirname {} \; | while read d; do [ -f "$$d/Makefile" ] && echo "$$d"; done | sed 's|^\./||' | sort)

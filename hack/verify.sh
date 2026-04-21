@@ -5,7 +5,8 @@
 
 # Repo-level verification: runs all checks that must pass before pushing.
 # Usage: hack/verify.sh [module...]
-# Without arguments, checks all Go modules (excluding docs/ and tools/).
+# Without arguments, checks discovered Go modules that have a Makefile
+# (excluding docs/ and tools/).
 
 set -euo pipefail
 
