@@ -23,9 +23,12 @@ resources:
   - ../../../admin/config/default
   - ../../../rover-server/config/default
   - ../../../notification/config/default
+  - ../../../controlplane-api/config/default
+  - ../../../projector/config/default
 
 components:
   - ../../components/eventing
+  - ../../components/database
 
 configMapGenerator:
   - name: secret-manager-config
@@ -62,7 +65,15 @@ configMapGenerator:
       - SECURITY_TRUSTEDISSUERS=""
       - SECURITY_LMS_BASEPATH=""
 
+  - name: controlplane-api-config
+    behavior: replace
+    files:
+      - config.yaml=controlplane-api-config.yaml
+    options:
+      disableNameSuffixHash: true
+
 patches:
+  # All deployments: use IfNotPresent for local images.
   - target:
       kind: Deployment
     patch: |-
@@ -95,7 +106,11 @@ images:
     newTag: latest
   - name: ghcr.io/telekom/controlplane/notification
     newTag: latest
+  - name: ghcr.io/telekom/controlplane/projector
+    newTag: latest
   - name: ghcr.io/telekom/controlplane/event
     newTag: latest
   - name: ghcr.io/telekom/controlplane/pubsub
+    newTag: latest
+  - name: ghcr.io/telekom/controlplane/controlplane-api
     newTag: latest

@@ -5,13 +5,8 @@
 database:
   url: ${DATABASE_URL}
 
-server:
-  address: ":8080"
-  tls:
-    enabled: false
-
 security:
-  enabled: true
+  enabled: false
 
 graphql:
   playgroundEnabled: true
