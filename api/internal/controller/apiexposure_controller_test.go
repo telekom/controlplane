@@ -6,6 +6,7 @@ package controller
 
 import (
 	"fmt"
+
 	"github.com/telekom/controlplane/api/internal/handler/util"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 
@@ -155,9 +156,9 @@ func NewApiExposure(apiBasePath, zoneName string, appName string) *apiv1.ApiExpo
 			Security: &apiapi.Security{
 				M2M: &apiapi.Machine2MachineAuthentication{
 					ExternalIDP: &apiapi.ExternalIdentityProvider{
-						TokenEndpoint: "https://example.com/token",
-						TokenRequest:  "header",
-						GrantType:     "client_credentials",
+						TokenEndpoint:    "https://example.com/token",
+						ClientAuthMethod: "header",
+						GrantType:        "client_credentials",
 						Client: &apiapi.OAuth2ClientCredentials{
 							ClientId:  "client-id",
 							ClientKey: "******",
@@ -392,7 +393,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 			By("Creating the second APIExposure resource")
 			thirdApiExposure.Spec.Security.M2M = &apiv1.Machine2MachineAuthentication{
 				ExternalIDP: &apiv1.ExternalIdentityProvider{
-					TokenRequest: "sky",
+					ClientAuthMethod: "sky",
 				},
 				Scopes: []string{"team:scope", "api:scope"},
 			}
@@ -412,9 +413,9 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 			By("Creating the second APIExposure resource")
 			thirdApiExposure.Spec.Security.M2M = &apiv1.Machine2MachineAuthentication{
 				ExternalIDP: &apiv1.ExternalIdentityProvider{
-					TokenEndpoint: "https://example.com/token",
-					TokenRequest:  "header",
-					GrantType:     "client_credentials",
+					TokenEndpoint:    "https://example.com/token",
+					ClientAuthMethod: "header",
+					GrantType:        "client_credentials",
 					Client: &apiv1.OAuth2ClientCredentials{
 						ClientId:     "team",
 						ClientSecret: "******",
@@ -439,7 +440,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				g.Expect(route.Spec.Security.M2M.Scopes).To(Equal([]string{"team:scope", "api:scope"}))
 
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://example.com/token"))
-				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal("header"))
+				g.Expect(route.Spec.Security.M2M.ExternalIDP.ClientAuthMethod).To(Equal("header"))
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
 			}, timeout, interval).Should(Succeed())
 		})
