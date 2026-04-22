@@ -26,7 +26,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
-	"github.com/telekom/controlplane/identity/test/mocks"
+	"github.com/telekom/controlplane/identity/test/mocks/keycloakservice"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
 )
 
@@ -235,7 +235,7 @@ var _ = Describe("HandlerRealm", func() {
 				return "resolved-password", nil
 			})
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
 				Return(fmt.Errorf("keycloak 503: service unavailable"))
@@ -267,7 +267,7 @@ var _ = Describe("HandlerRealm", func() {
 				return "resolved-password", nil
 			})
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
 				Return(nil)
@@ -317,7 +317,7 @@ var _ = Describe("HandlerRealm", func() {
 				return "resolved-password", nil
 			})
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
 				Return(nil)
@@ -354,7 +354,7 @@ var _ = Describe("HandlerRealm", func() {
 				return "resolved-password", nil
 			})
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
 				Return(nil)
@@ -401,7 +401,7 @@ var _ = Describe("HandlerRealm", func() {
 				return "resolved-password", nil
 			})
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceRealm(mock.Anything, mock.Anything).
 				Return(nil)
@@ -439,7 +439,7 @@ var _ = Describe("HandlerRealm", func() {
 				return "resolved-password", nil
 			})
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				DeleteRealm(mock.Anything, "test-realm").
 				Return(nil)
@@ -516,7 +516,7 @@ var _ = Describe("HandlerRealm", func() {
 				return ref, nil
 			})
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				DeleteRealm(mock.Anything, "test-realm").
 				Return(fmt.Errorf("keycloak 500: internal server error"))

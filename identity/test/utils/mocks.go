@@ -15,7 +15,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/telekom/controlplane/identity/pkg/api"
-	"github.com/telekom/controlplane/identity/test/mocks"
+	"github.com/telekom/controlplane/identity/test/mocks/keycloakclient"
 )
 
 const (
@@ -25,17 +25,17 @@ const (
 	ClientSecret   = "test-secret"
 )
 
-func NewKeycloakClientMock(testing ginkgo.FullGinkgoTInterface) *mocks.MockKeycloakClient {
-	// Construct manually instead of using mocks.NewMockKeycloakClient(testing),
+func NewKeycloakClientMock(testing ginkgo.FullGinkgoTInterface) *keycloakclient.MockKeycloakClient {
+	// Construct manually instead of using keycloakclient.NewMockKeycloakClient(testing),
 	// because the generated constructor calls t.Cleanup() which maps to
 	// DeferCleanup() in Ginkgo. When called from BeforeSuite, this creates a
 	// nested DeferCleanup-inside-DeferCleanup which Ginkgo forbids.
-	mockKeycloakClient := &mocks.MockKeycloakClient{}
+	mockKeycloakClient := &keycloakclient.MockKeycloakClient{}
 	mockKeycloakClient.Mock.Test(testing)
 	return mockKeycloakClient
 }
 
-func ConfigureKeycloakClientMock(mockedClient *mocks.MockKeycloakClient) {
+func ConfigureKeycloakClientMock(mockedClient *keycloakclient.MockKeycloakClient) {
 	var mockedBody, _ = io.ReadAll(io.NopCloser(strings.NewReader(fmt.Sprintf(`{"realm":"%s"}`, Realm))))
 
 	// The parameter "reqEditors ...RequestEditorFn" is not used in the implementation and therefore omitted

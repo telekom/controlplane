@@ -4,19 +4,17 @@
 
 with-expecter: True
 mockname: "Mock{{.InterfaceName}}"
-dir: "../test/mocks"
-outpkg: "mocks"
 filename: "mock_{{.InterfaceName}}.go"
 boilerplate-file: ../../hack/boilerplate.go.txt
 packages:
   github.com/telekom/controlplane/identity/pkg/keycloak:
-    # place your package-specific config here
     config:
     interfaces:
-      # select the interfaces you want mocked
       KeycloakService:
-        # Modify package-level config for this specific interface (if applicable)
         config:
+          dir: "../test/mocks/keycloakservice"
+          outpkg: "keycloakservice"
       KeycloakClient:
-        # Modify package-level config for this specific interface (if applicable)
         config:
+          dir: "../test/mocks/keycloakclient"
+          outpkg: "keycloakclient"

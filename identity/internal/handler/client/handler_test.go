@@ -26,7 +26,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
-	"github.com/telekom/controlplane/identity/test/mocks"
+	"github.com/telekom/controlplane/identity/test/mocks/keycloakservice"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
 )
 
@@ -241,7 +241,7 @@ var _ = Describe("HandlerClient", func() {
 			})
 			mockRealmGet(mockK8s, realm)
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(fmt.Errorf("keycloak 503: service unavailable"))
@@ -270,7 +270,7 @@ var _ = Describe("HandlerClient", func() {
 			})
 			mockRealmGet(mockK8s, realm)
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
@@ -320,7 +320,7 @@ var _ = Describe("HandlerClient", func() {
 			})
 			mockRealmGet(mockK8s, realm)
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
@@ -356,7 +356,7 @@ var _ = Describe("HandlerClient", func() {
 			})
 			mockRealmGet(mockK8s, realm)
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
@@ -407,7 +407,7 @@ var _ = Describe("HandlerClient", func() {
 			// = 1750075500 epoch seconds
 			var expiresAt int64 = 1750075500
 			var createdAt int64 = 1750075200
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
@@ -452,7 +452,7 @@ var _ = Describe("HandlerClient", func() {
 
 			// ExpiresAt is nil — only CreatedAt is set
 			var createdAt int64 = 1750075200
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
@@ -492,7 +492,7 @@ var _ = Describe("HandlerClient", func() {
 			})
 			mockRealmGet(mockK8s, realm)
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
@@ -534,7 +534,7 @@ var _ = Describe("HandlerClient", func() {
 
 			// Secret created at 2025-06-16T12:00:00Z = 1750075200
 			var creationEpoch int64 = 1750075200
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
@@ -574,7 +574,7 @@ var _ = Describe("HandlerClient", func() {
 			})
 			mockRealmGet(mockK8s, realm)
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
@@ -605,7 +605,7 @@ var _ = Describe("HandlerClient", func() {
 			})
 			mockRealmGet(mockK8s, realm)
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
@@ -637,7 +637,7 @@ var _ = Describe("HandlerClient", func() {
 			})
 			mockRealmGet(mockK8s, realm)
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil)
@@ -724,7 +724,7 @@ var _ = Describe("HandlerClient", func() {
 			realm := newValidRealm()
 			mockRealmGet(mockK8s, realm)
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				DeleteClient(mock.Anything, "test-realm", cl).
 				Return(fmt.Errorf("keycloak 500: internal server error"))
@@ -745,7 +745,7 @@ var _ = Describe("HandlerClient", func() {
 			realm := newValidRealm()
 			mockRealmGet(mockK8s, realm)
 
-			mockSvc := mocks.NewMockKeycloakService(GinkgoT())
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
 			mockSvc.EXPECT().
 				DeleteClient(mock.Anything, "test-realm", cl).
 				Return(nil)
