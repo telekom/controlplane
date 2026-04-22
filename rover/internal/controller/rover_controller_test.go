@@ -136,6 +136,7 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				g.Expect(application.Spec.Team).To(Equal(team.Name))
 				g.Expect(application.Spec.TeamEmail).To(Equal(team.Spec.Email))
 				g.Expect(application.Spec.Secret).To(Equal("topsecret"))
+				g.Expect(application.Spec.Security.M2M.ClientAuthMethod).To(Equal("header")) // default value
 
 				apiExposure := &apiapi.ApiExposure{}
 				err = k8sClient.Get(ctx, client.ObjectKey{
@@ -529,6 +530,160 @@ var _ = Describe("Rover Controller", Ordered, func() {
 				g.Expect(apiExposure.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
 			}, timeout, interval).Should(Succeed())
 
+		})
+	})
+
+	Context("Rover with ClientAuthMethod", func() {
+		It("should successfully map client auth configuration from rover to application", func() {
+			// Create a rover with rate limit configuration
+			spec := roverv1.RoverSpec{
+				Zone:         testEnvironment,
+				ClientSecret: "topsecret",
+				Exposures: []roverv1.Exposure{
+					{
+						Api: &roverv1.ApiExposure{
+							BasePath: BasePath,
+							Upstreams: []roverv1.Upstream{
+								{
+									URL: upstream,
+								},
+							},
+							Visibility: roverv1.VisibilityWorld,
+							Approval: roverv1.Approval{
+								Strategy: roverv1.ApprovalStrategyAuto,
+							},
+						},
+					},
+				},
+				Subscriptions: []roverv1.Subscription{
+					{
+						Api: &roverv1.ApiSubscription{
+							BasePath: BasePath,
+							Security: &roverv1.SubscriberSecurity{
+								M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+									ClientAuthMethod: "body",
+								},
+							},
+						},
+					},
+				},
+			}
+
+			rover := createRover(resourceName, teamNamespace, testEnvironment, spec)
+
+			By("creating the custom resource with rate limit configuration")
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      resourceName,
+					Namespace: teamNamespace,
+				}, rover)
+
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(rover.Status.ApiExposures).To(HaveLen(1))
+				g.Expect(rover.Status.ApiSubscriptions).To(HaveLen(1))
+
+				application := &applicationv1.Application{}
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Name:      "test-resource",
+					Namespace: teamNamespace,
+				}, application)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(application.Spec.NeedsClient).To(BeTrue())
+				g.Expect(application.Spec.Security.M2M.ClientAuthMethod).To(Equal("body"))
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should default ClientAuthMethod to header when M2M is present but ClientAuthMethod is not set", func() {
+			spec := roverv1.RoverSpec{
+				Zone:         testEnvironment,
+				ClientSecret: "topsecret",
+				Subscriptions: []roverv1.Subscription{
+					{
+						Api: &roverv1.ApiSubscription{
+							BasePath: BasePath,
+							Security: &roverv1.SubscriberSecurity{
+								M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+									Scopes: []string{"tardis:user:read"},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			rover := createRover(resourceName, teamNamespace, testEnvironment, spec)
+
+			By("creating the custom resource with M2M but no ClientAuthMethod")
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      resourceName,
+					Namespace: teamNamespace,
+				}, rover)
+
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(rover.Status.ApiSubscriptions).To(HaveLen(1))
+
+				application := &applicationv1.Application{}
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Name:      "test-resource",
+					Namespace: teamNamespace,
+				}, application)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(application.Spec.NeedsClient).To(BeTrue())
+				g.Expect(application.Spec.Security.M2M.ClientAuthMethod).To(Equal("header")) // handler default,
+			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should use body ClientAuthMethod when only the second of two subscriptions sets it", func() {
+			spec := roverv1.RoverSpec{
+				Zone:         testEnvironment,
+				ClientSecret: "topsecret",
+				Subscriptions: []roverv1.Subscription{
+					{
+						Api: &roverv1.ApiSubscription{
+							BasePath: BasePath,
+						},
+					},
+					{
+						Api: &roverv1.ApiSubscription{
+							BasePath: "/eni/api/v2",
+							Security: &roverv1.SubscriberSecurity{
+								M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+									ClientAuthMethod: "body",
+								},
+							},
+						},
+					},
+				},
+			}
+
+			rover := createRover(resourceName, teamNamespace, testEnvironment, spec)
+
+			By("creating the custom resource with two subscriptions where only the second has ClientAuthMethod=body")
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      resourceName,
+					Namespace: teamNamespace,
+				}, rover)
+
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(rover.Status.ApiSubscriptions).To(HaveLen(2))
+
+				application := &applicationv1.Application{}
+				err = k8sClient.Get(ctx, client.ObjectKey{
+					Name:      "test-resource",
+					Namespace: teamNamespace,
+				}, application)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(application.Spec.NeedsClient).To(BeTrue())
+				g.Expect(application.Spec.Security.M2M.ClientAuthMethod).To(Equal("body"))
+			}, timeout, interval).Should(Succeed())
 		})
 	})
 

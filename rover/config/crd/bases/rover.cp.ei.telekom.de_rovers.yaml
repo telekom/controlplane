@@ -693,7 +693,6 @@ spec:
                                     rule: self == null || has(self.clientSecret) ||
                                       has(self.clientKey)
                                 clientAuthMethod:
-                                  default: header
                                   description: ClientAuthMethod is the type of token
                                     request, "body" or "header" for internal IDP
                                   enum:
@@ -713,10 +712,10 @@ spec:
                                   used together
                                 rule: 'self == null || (has(self.client) ? (!has(self.basic))
                                   : true)'
-                              - message: At least one of client, basic, or scopes
-                                  must be provided
+                              - message: At least one of client, basic, clientAuthMethod,
+                                  or scopes must be provided
                                 rule: self == null || has(self.client) || has(self.basic)
-                                  || has(self.scopes)
+                                  || has(self.scopes)  || has(self.clientAuthMethod)
                           type: object
                         traffic:
                           description: Traffic defines optional traffic management

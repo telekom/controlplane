@@ -95,7 +95,7 @@ func mapSubscriberSecurityToApiSecurity(roverSecurity *rover.SubscriberSecurity)
 
 	security := &apiapi.SubscriberSecurity{}
 
-	if roverSecurity.M2M != nil {
+	if roverSecurity.M2M.Client != nil || roverSecurity.M2M.Basic != nil || len(roverSecurity.M2M.Scopes) > 0 {
 		security.M2M = &apiapi.SubscriberMachine2MachineAuthentication{
 			Client: toApiClient(roverSecurity.M2M.Client),
 			Basic:  toApiBasic(roverSecurity.M2M.Basic),

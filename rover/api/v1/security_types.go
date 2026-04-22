@@ -4,6 +4,8 @@
 
 package v1
 
+const DefaultClientAuthMethod string = "header"
+
 // Security defines the security configuration for the Rover
 // Security is optional, but if provided, exactly one of m2m or h2m must be set
 type Security struct {
@@ -41,7 +43,7 @@ type Machine2MachineAuthentication struct {
 // SubscriberMachine2MachineAuthentication defines the authentication methods for machine-to-machine communication for subscribers
 // Either client, basic, or only scopes can be provided
 // +kubebuilder:validation:XValidation:rule="self == null || (has(self.client) ? (!has(self.basic)) : true)", message="Client and basic authentication cannot be used together"
-// +kubebuilder:validation:XValidation:rule="self == null || has(self.client) || has(self.basic) || has(self.scopes)", message="At least one of client, basic, or scopes must be provided"
+// +kubebuilder:validation:XValidation:rule="self == null || has(self.client) || has(self.basic) || has(self.scopes)  || has(self.clientAuthMethod)", message="At least one of client, basic, clientAuthMethod, or scopes must be provided"
 type SubscriberMachine2MachineAuthentication struct {
 	// Client defines client credentials for OAuth2
 	// +kubebuilder:validation:Optional
@@ -52,7 +54,6 @@ type SubscriberMachine2MachineAuthentication struct {
 	// ClientAuthMethod is the type of token request, "body" or "header" for internal IDP
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum=header;body
-	// +kubebuilder:default=header
 	ClientAuthMethod string `json:"clientAuthMethod,omitempty"`
 	// Scopes defines additional OAuth2 scopes that are added to the LMS token
 	// +kubebuilder:validation:Optional

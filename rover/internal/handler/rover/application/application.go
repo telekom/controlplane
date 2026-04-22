@@ -56,6 +56,7 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 
 	needsClient := len(owner.Spec.Subscriptions) > 0 || hasAnyEventExposures
 	var subscriberFailoverZones []types.ObjectRef
+	clientAuthMethod := roverv1.DefaultClientAuthMethod
 	if needsClient {
 		for _, subscription := range owner.Spec.Subscriptions {
 			switch subscription.Type() {
@@ -67,6 +68,12 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 							Namespace: environment,
 						}
 						subscriberFailoverZones = append(subscriberFailoverZones, zoneRef)
+					}
+				}
+				if subscription.Api.HasM2M() {
+					// rover webhooks ensures that clientAuthMethod is the same for all subscriptions
+					if subscription.Api.Security.M2M.ClientAuthMethod != "" {
+						clientAuthMethod = subscription.Api.Security.M2M.ClientAuthMethod
 					}
 				}
 			}
@@ -93,14 +100,17 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 			NeedsConsumer: needsClient,
 			Secret:        owner.Spec.ClientSecret,
 			FailoverZones: subscriberFailoverZones,
+			Security: applicationv1.Security{
+				M2M: applicationv1.Machine2MachineAuthentication{
+					ClientAuthMethod: clientAuthMethod,
+				},
+			},
 		}
 
 		if owner.Spec.IpRestrictions != nil {
-			application.Spec.Security = &applicationv1.Security{
-				IpRestrictions: &applicationv1.IpRestrictions{
-					Allow: owner.Spec.IpRestrictions.Allow,
-					Deny:  owner.Spec.IpRestrictions.Deny,
-				},
+			application.Spec.Security.IpRestrictions = &applicationv1.IpRestrictions{
+				Allow: owner.Spec.IpRestrictions.Allow,
+				Deny:  owner.Spec.IpRestrictions.Deny,
 			}
 		}
 
