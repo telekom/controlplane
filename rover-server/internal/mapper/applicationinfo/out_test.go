@@ -478,7 +478,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			zone := &adminv1.Zone{
 				Status: adminv1.ZoneStatus{
 					Links: adminv1.Links{
-						ChevronUrl: "https://stargate.example.com/eni/chevron/v2/permission",
+						PermissionsUrl: "https://stargate.example.com/eni/chevron/v2/permission",
 					},
 				},
 			}
@@ -526,7 +526,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 
 			zone := &adminv1.Zone{
 				Status: adminv1.ZoneStatus{
-					Links: adminv1.Links{}, // No ChevronUrl
+					Links: adminv1.Links{}, // No PermissionsUrl
 				},
 			}
 			zoneMock := mocks.NewMockObjectStore[*adminv1.Zone](GinkgoT())
@@ -576,7 +576,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			zone := &adminv1.Zone{
 				Status: adminv1.ZoneStatus{
 					Links: adminv1.Links{
-						ChevronUrl: "https://stargate.example.com/eni/chevron/v2/permission",
+						PermissionsUrl: "https://stargate.example.com/eni/chevron/v2/permission",
 					},
 				},
 			}
@@ -608,7 +608,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 				Status: adminv1.ZoneStatus{
 					Links: adminv1.Links{
 						// Base URL already has query params
-						ChevronUrl: "https://stargate.example.com/eni/chevron/v2/permission?env=prod&tenant=acme",
+						PermissionsUrl: "https://stargate.example.com/eni/chevron/v2/permission?env=prod&tenant=acme",
 					},
 				},
 			}
@@ -642,7 +642,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 				Status: adminv1.ZoneStatus{
 					Links: adminv1.Links{
 						// Invalid URL scheme
-						ChevronUrl: "ht!tp://invalid url with spaces",
+						PermissionsUrl: "ht!tp://invalid url with spaces",
 					},
 				},
 			}
@@ -670,7 +670,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			zone := &adminv1.Zone{
 				Status: adminv1.ZoneStatus{
 					Links: adminv1.Links{
-						ChevronUrl: "https://stargate.example.com/eni/chevron/v2/permission",
+						PermissionsUrl: "https://stargate.example.com/eni/chevron/v2/permission",
 					},
 				},
 			}

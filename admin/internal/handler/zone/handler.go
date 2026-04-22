@@ -165,11 +165,16 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		obj.Status.Links.TeamIssuer = ""
 	}
 
-	// Populate Chevron URL if configured and feature enabled
-	if cconfig.FeaturePermission.IsEnabled() && obj.Spec.Chevron != nil {
-		obj.Status.Links.ChevronUrl = obj.Status.Links.Url + "/eni/chevron/v2/permission"
+	// Populate Permissions URL if configured and feature enabled
+	if cconfig.FeaturePermission.IsEnabled() && obj.Spec.Permissions != nil {
+		// Use url.JoinPath to properly handle slashes when combining gateway URL with ApiBasePath
+		permissionsUrl, err := url.JoinPath(obj.Status.Links.Url, obj.Spec.Permissions.ApiBasePath)
+		if err != nil {
+			return errors.Wrap(err, "failed to build permissions URL")
+		}
+		obj.Status.Links.PermissionsUrl = permissionsUrl
 	} else {
-		obj.Status.Links.ChevronUrl = ""
+		obj.Status.Links.PermissionsUrl = ""
 	}
 
 	obj.SetCondition(condition.NewReadyCondition("ZoneProvisioned", "Zone has been provisioned"))

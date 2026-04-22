@@ -113,7 +113,7 @@ func (h *PermissionSetHandler) CreateOrUpdate(ctx context.Context, obj *permissi
 	obj.SetCondition(condition.NewReadyCondition("Provisioned", "External PermissionSet created successfully"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("External PermissionSet provisioned"))
 
-	log.Info("✅ PermissionSet provisioned", "external", externalPS.Namespace+"/"+externalPS.Name)
+	log.Info("PermissionSet provisioned", "external", externalPS.Namespace+"/"+externalPS.Name)
 
 	// Cleanup orphaned external PermissionSets
 	// Use OwnedByLabel since external PS is in a different namespace
@@ -140,7 +140,7 @@ func (h *PermissionSetHandler) Delete(ctx context.Context, obj *permissionv1.Per
 		if err := c.Delete(ctx, externalPS); client.IgnoreNotFound(err) != nil {
 			return errors.Wrap(err, "failed to delete external PermissionSet")
 		} else if err == nil {
-			log.Info("🗑️  Deleted external PermissionSet", "name", externalPS.Name, "namespace", externalPS.Namespace)
+			log.Info("Deleted external PermissionSet", "name", externalPS.Name, "namespace", externalPS.Namespace)
 		} else {
 			log.V(1).Info("External PermissionSet not found (already deleted)", "name", externalPS.Name, "namespace", externalPS.Namespace)
 		}

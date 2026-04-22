@@ -83,7 +83,7 @@ var _ = Describe("PermissionSetHandler Delete", func() {
 				Name:      externalName,
 				Namespace: zoneNs.Name,
 				Labels: map[string]string{
-					// Must match the environment in context (what handler.CreateOrUpdate does at line 86)
+					// Must match the environment in context
 					"cp.ei.telekom.de/environment": testEnvironment,
 				},
 			},

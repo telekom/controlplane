@@ -20,6 +20,8 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	pcpv1 "github.com/telekom/controlplane/permission/api/pcp/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	// +kubebuilder:scaffold:imports
 )
@@ -46,12 +48,19 @@ var _ = BeforeSuite(func() {
 	var err error
 	err = permissionv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
+	err = pcpv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+	err = adminv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		CRDDirectoryPaths: []string{
+			filepath.Join("..", "..", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "admin", "config", "crd", "bases"),
+		},
 		ErrorIfCRDPathMissing: true,
 	}
 

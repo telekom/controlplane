@@ -337,11 +337,11 @@ func FillChevronInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.App
 	}
 
 	// Chevron URL from zone status links + application query param
-	if zone.Status.Links.ChevronUrl != "" {
+	if zone.Status.Links.PermissionsUrl != "" {
 		// Parse base URL to properly handle existing query params
-		chevronURL, err := url.Parse(zone.Status.Links.ChevronUrl)
+		chevronURL, err := url.Parse(zone.Status.Links.PermissionsUrl)
 		if err != nil {
-			return errors.Wrap(err, "failed to parse chevron URL")
+			return errors.Wrap(err, "failed to parse permissions URL")
 		}
 
 		// Get existing query params or create new
