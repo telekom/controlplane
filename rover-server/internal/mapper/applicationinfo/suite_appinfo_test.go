@@ -66,7 +66,11 @@ var _ = BeforeSuite(func() {
 	// This is where you would set up any necessary test data or configurations
 	// For example, you might want to create a mock store or set up a test database connection
 
-	InitOrDie(ctx, config.GetConfigOrDie())
+	var cfg *rest.Config
+	if !mockObjectStore {
+		cfg = config.GetConfigOrDie()
+	}
+	InitOrDie(ctx, cfg)
 
 	rover = mocks.GetRover(GinkgoT(), mocks.RoverFileName)
 })
