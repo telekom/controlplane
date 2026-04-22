@@ -44,11 +44,20 @@ type ApplicationSpec struct {
 	NeedsConsumer bool `json:"needsConsumer"`
 
 	// Security defines the security configuration for the application
-	Security *Security `json:"security,omitempty"`
+	Security Security `json:"security"`
 }
 
 type Security struct {
-	IpRestrictions *IpRestrictions `json:"ipRestrictions,omitempty"`
+	IpRestrictions *IpRestrictions               `json:"ipRestrictions,omitempty"`
+	M2M            Machine2MachineAuthentication `json:"m2m"`
+}
+
+type Machine2MachineAuthentication struct {
+	// ClientAuthMethod is the type of token request, "body" or "header" for internal IDP
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=header;body
+	// +kubebuilder:default=header
+	ClientAuthMethod string `json:"clientAuthMethod,omitempty"`
 }
 
 type IpRestrictions struct {

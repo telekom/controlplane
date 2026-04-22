@@ -94,6 +94,19 @@ spec:
                           type: string
                         type: array
                     type: object
+                  m2m:
+                    properties:
+                      clientAuthMethod:
+                        default: header
+                        description: ClientAuthMethod is the type of token request,
+                          "body" or "header" for internal IDP
+                        enum:
+                        - header
+                        - body
+                        type: string
+                    type: object
+                required:
+                - m2m
                 type: object
               team:
                 description: Team is the name of the team responsible for the application
@@ -128,6 +141,7 @@ spec:
             - needsClient
             - needsConsumer
             - secret
+            - security
             - team
             - teamEmail
             - zone
