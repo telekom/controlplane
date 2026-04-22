@@ -171,9 +171,10 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 		}
 
 		idpClient.Spec = identity.ClientSpec{
-			ClientId:     clientId,
-			Realm:        realmRef,
-			ClientSecret: owner.Spec.Secret,
+			ClientId:         clientId,
+			Realm:            realmRef,
+			ClientSecret:     owner.Spec.Secret,
+			ClientAuthMethod: owner.Spec.Security.M2M.ClientAuthMethod,
 		}
 
 		return nil
@@ -232,7 +233,7 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 			Name:  clientId,
 		}
 
-		if owner.Spec.Security != nil && owner.Spec.Security.IpRestrictions != nil {
+		if owner.Spec.Security.IpRestrictions != nil {
 			consumer.Spec.Security = &gateway.ConsumerSecurity{
 				IpRestrictions: &gateway.IpRestrictions{
 					Allow: owner.Spec.Security.IpRestrictions.Allow,

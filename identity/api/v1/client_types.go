@@ -15,6 +15,8 @@ type ClientSpec struct {
 	Realm        *types.ObjectRef `json:"realm"`
 	ClientId     string           `json:"clientId"`
 	ClientSecret string           `json:"clientSecret"`
+	// +kubebuilder:validation:Enum=header;body
+	ClientAuthMethod string `json:"clientAuthMethod"`
 }
 
 // ClientStatus defines the observed state of Client

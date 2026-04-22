@@ -92,7 +92,12 @@ var _ = Describe("Application Controller", func() {
 					Secret:        "c6283fd0-77f2-452c-8437-4882cffde8e1",
 					NeedsClient:   true,
 					NeedsConsumer: true,
-					Zone:          *ctypes.ObjectRefFromObject(zoneA),
+					Security: applicationv1.Security{
+						M2M: applicationv1.Machine2MachineAuthentication{
+							ClientAuthMethod: "body",
+						},
+					},
+					Zone: *ctypes.ObjectRefFromObject(zoneA),
 				},
 			}
 
@@ -117,7 +122,7 @@ var _ = Describe("Application Controller", func() {
 				expectedResourceName := expectedClientId + "--zone-a"
 
 				By("Checking if the Identity-Client is created")
-				CheckStatusOfClient(ctx, g, expectedClientId, expectedResourceName, testNamespace)
+				CheckStatusOfClient(ctx, g, expectedClientId, "body", expectedResourceName, testNamespace)
 
 				By("Checking if the Gateway-Consumer is created")
 				CheckStatusOfConsumer(ctx, g, expectedClientId, expectedResourceName, testNamespace)
@@ -170,7 +175,7 @@ var _ = Describe("Application Controller", func() {
 				expectedResourceName := expectedClientId + "--zone-a"
 
 				By("Checking if the Identity-Client is created")
-				CheckStatusOfClient(ctx, g, expectedClientId, expectedResourceName, testNamespace)
+				CheckStatusOfClient(ctx, g, expectedClientId, "header", expectedResourceName, testNamespace)
 
 				By("Checking if the Gateway-Consumer is created")
 				CheckStatusOfConsumer(ctx, g, expectedClientId, expectedResourceName, testNamespace)
@@ -178,7 +183,7 @@ var _ = Describe("Application Controller", func() {
 				expectedResourceName = expectedClientId + "--zone-b"
 
 				By("Checking if the failover Identity-Client is created")
-				CheckStatusOfClient(ctx, g, expectedClientId, expectedResourceName, testNamespace)
+				CheckStatusOfClient(ctx, g, expectedClientId, "header", expectedResourceName, testNamespace)
 
 				By("Checking if the failover Gateway-Consumer is created")
 				CheckStatusOfConsumer(ctx, g, expectedClientId, expectedResourceName, testNamespace)
@@ -189,7 +194,7 @@ var _ = Describe("Application Controller", func() {
 	})
 })
 
-func CheckStatusOfClient(ctx context.Context, g Gomega, clientId, name, namespace string) {
+func CheckStatusOfClient(ctx context.Context, g Gomega, clientId, clientAuthMethod, name, namespace string) {
 	idpClient := &identityv1.Client{}
 	err := k8sClient.Get(ctx, client.ObjectKey{
 		Name:      name,
@@ -197,6 +202,7 @@ func CheckStatusOfClient(ctx context.Context, g Gomega, clientId, name, namespac
 	}, idpClient)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(idpClient.Spec.ClientId).To(Equal(clientId))
+	g.Expect(idpClient.Spec.ClientAuthMethod).To(Equal(clientAuthMethod))
 }
 
 func CheckStatusOfConsumer(ctx context.Context, g Gomega, clientId, name string, namespace string) {

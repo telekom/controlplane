@@ -42,6 +42,11 @@ spec:
           spec:
             description: ClientSpec defines the desired state of Client
             properties:
+              clientAuthMethod:
+                enum:
+                - header
+                - body
+                type: string
               clientId:
                 type: string
               clientSecret:
@@ -66,6 +71,7 @@ spec:
                 - namespace
                 type: object
             required:
+            - clientAuthMethod
             - clientId
             - clientSecret
             - realm
