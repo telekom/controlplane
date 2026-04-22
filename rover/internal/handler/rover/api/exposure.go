@@ -141,11 +141,11 @@ func mapSecurityToApiSecurity(roverSecurity *rover.Security) *apiapi.Security {
 
 		if roverSecurity.M2M.ExternalIDP != nil {
 			security.M2M.ExternalIDP = &apiapi.ExternalIdentityProvider{
-				TokenEndpoint: roverSecurity.M2M.ExternalIDP.TokenEndpoint,
-				TokenRequest:  roverSecurity.M2M.ExternalIDP.TokenRequest,
-				GrantType:     roverSecurity.M2M.ExternalIDP.GrantType,
-				Client:        toApiClient(roverSecurity.M2M.ExternalIDP.Client),
-				Basic:         toApiBasic(roverSecurity.M2M.ExternalIDP.Basic),
+				TokenEndpoint:    roverSecurity.M2M.ExternalIDP.TokenEndpoint,
+				ClientAuthMethod: roverSecurity.M2M.ExternalIDP.ClientAuthMethod,
+				GrantType:        roverSecurity.M2M.ExternalIDP.GrantType,
+				Client:           toApiClient(roverSecurity.M2M.ExternalIDP.Client),
+				Basic:            toApiBasic(roverSecurity.M2M.ExternalIDP.Basic),
 			}
 		}
 
