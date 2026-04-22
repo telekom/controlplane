@@ -226,6 +226,99 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				assertValidationFailedWith(warnings, err, "duplicate subscription")
 			})
 
+			It("should fail with multiple ClientAuthMethods", func() {
+				roverWithDuplicates := roverObj.DeepCopy()
+				roverWithDuplicates.Spec.Subscriptions = []roverv1.Subscription{
+					{
+						Api: &roverv1.ApiSubscription{
+							BasePath: "/alpha",
+							Security: &roverv1.SubscriberSecurity{
+								M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+									ClientAuthMethod: "header",
+								},
+							},
+						},
+					},
+					{
+						Api: &roverv1.ApiSubscription{
+							BasePath: "/beta",
+							Security: &roverv1.SubscriberSecurity{
+								M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+									ClientAuthMethod: "body",
+								},
+							},
+						},
+					},
+				}
+
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithDuplicates)
+				assertValidationFailedWith(warnings, err, "multiple subscriptions with different client authentication methods are not allowed")
+			})
+
+			It("should validate with single ClientAuthMethods", func() {
+				roverWithClientAuthMethods := roverObj.DeepCopy()
+				roverWithClientAuthMethods.Spec.Subscriptions = []roverv1.Subscription{
+					{
+						Api: &roverv1.ApiSubscription{
+							BasePath: "/alpha",
+						},
+					},
+					{
+						Api: &roverv1.ApiSubscription{
+							BasePath: "/beta",
+							Security: &roverv1.SubscriberSecurity{
+								M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+									ClientAuthMethod: "body",
+								},
+							},
+						},
+					},
+				}
+
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithClientAuthMethods)
+				Expect(warnings).To(BeNil())
+				Expect(err).To(BeNil())
+			})
+
+			It("should validate with same ClientAuthMethods multiple times", func() {
+				roverWithClientAuthMethods := roverObj.DeepCopy()
+				roverWithClientAuthMethods.Spec.Subscriptions = []roverv1.Subscription{
+					{
+						Api: &roverv1.ApiSubscription{
+							BasePath: "/alpha",
+							Security: &roverv1.SubscriberSecurity{
+								M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+									ClientAuthMethod: "body",
+								},
+							},
+						},
+					},
+					{
+						Api: &roverv1.ApiSubscription{
+							BasePath: "/beta",
+							Security: &roverv1.SubscriberSecurity{
+								M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+									ClientAuthMethod: "body",
+								},
+							},
+						},
+					}, {
+						Api: &roverv1.ApiSubscription{
+							BasePath: "/gamma",
+							Security: &roverv1.SubscriberSecurity{
+								M2M: &roverv1.SubscriberMachine2MachineAuthentication{
+									ClientAuthMethod: "body",
+								},
+							},
+						},
+					},
+				}
+
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithClientAuthMethods)
+				Expect(warnings).To(BeNil())
+				Expect(err).To(BeNil())
+			})
+
 			It("should fail with duplicate exposures", func() {
 				roverWithDuplicates := roverObj.DeepCopy()
 				// Add duplicate API exposures

@@ -49,6 +49,11 @@ type SubscriberMachine2MachineAuthentication struct {
 	// Basic defines basic authentication configuration
 	// +kubebuilder:validation:Optional
 	Basic *BasicAuthCredentials `json:"basic,omitempty"`
+	// ClientAuthMethod is the type of token request, "body" or "header" for internal IDP
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=header;body
+	// +kubebuilder:default=header
+	ClientAuthMethod string `json:"clientAuthMethod,omitempty"`
 	// Scopes defines additional OAuth2 scopes that are added to the LMS token
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MaxItems=10

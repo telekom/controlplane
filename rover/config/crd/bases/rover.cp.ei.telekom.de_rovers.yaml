@@ -692,6 +692,14 @@ spec:
                                       must be provided
                                     rule: self == null || has(self.clientSecret) ||
                                       has(self.clientKey)
+                                clientAuthMethod:
+                                  default: header
+                                  description: ClientAuthMethod is the type of token
+                                    request, "body" or "header" for internal IDP
+                                  enum:
+                                  - header
+                                  - body
+                                  type: string
                                 scopes:
                                   description: Scopes defines additional OAuth2 scopes
                                     that are added to the LMS token

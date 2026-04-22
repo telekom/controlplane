@@ -317,6 +317,7 @@ func MustNotHaveDuplicates(valErr *cerrors.ValidationError, subs []roverv1.Subsc
 		return nil // No subscriptions or exposures, no duplicates to check
 	}
 	existingSubs := make(map[string]bool)
+	existingClientAuthMethod := make(map[string]bool)
 	for idx, sub := range subs {
 		if sub.Api != nil {
 			if _, exists := existingSubs[sub.Api.BasePath]; exists {
@@ -326,6 +327,8 @@ func MustNotHaveDuplicates(valErr *cerrors.ValidationError, subs []roverv1.Subsc
 				)
 			}
 			existingSubs[sub.Api.BasePath] = true
+
+			mustNotHaveMultipleClientAuthMethods(&sub, existingClientAuthMethod, valErr, idx)
 		}
 
 		if sub.Event != nil {
@@ -363,6 +366,23 @@ func MustNotHaveDuplicates(valErr *cerrors.ValidationError, subs []roverv1.Subsc
 	}
 
 	return nil
+}
+
+func mustNotHaveMultipleClientAuthMethods(sub *roverv1.Subscription, existingClientAuthMethod map[string]bool, valErr *cerrors.ValidationError, idx int) {
+	if sub.Api.HasM2M() {
+		if sub.Api.Security.M2M.ClientAuthMethod != "" {
+			if !existingClientAuthMethod[sub.Api.Security.M2M.ClientAuthMethod] && len(existingClientAuthMethod) >= 1 {
+				valErr.AddInvalidError(
+					field.NewPath("spec").Child("subscriptions").Index(idx).Child("api").Child("security").Child("m2m").Child("clientAuthMethod"),
+					sub.Api.BasePath, fmt.Sprintf("multiple subscriptions with different client authentication methods are not allowed, already registered: %v", existingClientAuthMethod),
+				)
+			} else {
+				existingClientAuthMethod[sub.Api.Security.M2M.ClientAuthMethod] = true
+			}
+
+		}
+
+	}
 }
 
 func (r *RoverValidator) validateRemoveHeaders(ctx context.Context, valErr *cerrors.ValidationError, exp roverv1.Exposure, zoneRef client.ObjectKey, idx int) error {
@@ -501,6 +521,12 @@ func (r *RoverValidator) ValidateSubscription(ctx context.Context, valErr *cerro
 					field.NewPath("spec").Child("subscriptions").Index(idx).Child("api").Child("organization"),
 					sub.Api.Organization, fmt.Sprintf("remote organization '%s' not found", sub.Api.Organization),
 				)
+			}
+		}
+
+		if sub.Api.HasM2M() {
+			if sub.Api.Security.M2M.ClientAuthMethod != "" {
+
 			}
 		}
 		return nil
