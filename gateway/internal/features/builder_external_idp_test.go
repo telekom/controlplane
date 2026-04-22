@@ -214,9 +214,9 @@ func externalIDPProviderRouteOAuth() *gatewayv1.Route {
 	eIDPRoute.Spec.Security = &gatewayv1.Security{
 		M2M: &gatewayv1.Machine2MachineAuthentication{
 			ExternalIDP: &gatewayv1.ExternalIdentityProvider{
-				TokenEndpoint: "https://example.com/tokenEndpoint",
-				TokenRequest:  "header",
-				GrantType:     "client_credentials",
+				TokenEndpoint:    "https://example.com/tokenEndpoint",
+				ClientAuthMethod: "header",
+				GrantType:        "client_credentials",
 				Client: &gatewayv1.OAuth2ClientCredentials{
 					ClientId:     "gateway",
 					ClientSecret: "topsecret",
@@ -242,9 +242,9 @@ func externalIDPProviderRouteBasic() *gatewayv1.Route {
 	eIDPRoute.Spec.Security = &gatewayv1.Security{
 		M2M: &gatewayv1.Machine2MachineAuthentication{
 			ExternalIDP: &gatewayv1.ExternalIdentityProvider{
-				TokenEndpoint: "https://example.com/tokenEndpoint",
-				TokenRequest:  "header",
-				GrantType:     "password",
+				TokenEndpoint:    "https://example.com/tokenEndpoint",
+				ClientAuthMethod: "header",
+				GrantType:        "password",
 				Basic: &gatewayv1.BasicAuthCredentials{
 					Username: "user",
 					Password: "*** ***",
@@ -270,9 +270,9 @@ func externalIDPProviderRouteOAuthJwt() *gatewayv1.Route {
 	eIDPRoute.Spec.Security = &gatewayv1.Security{
 		M2M: &gatewayv1.Machine2MachineAuthentication{
 			ExternalIDP: &gatewayv1.ExternalIdentityProvider{
-				TokenEndpoint: "https://example.com/tokenEndpoint",
-				TokenRequest:  "header",
-				GrantType:     "client_credentials",
+				TokenEndpoint:    "https://example.com/tokenEndpoint",
+				ClientAuthMethod: "header",
+				GrantType:        "client_credentials",
 				Client: &gatewayv1.OAuth2ClientCredentials{
 					ClientId:     "ClientId",
 					ClientSecret: "topsecret",

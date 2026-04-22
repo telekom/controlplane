@@ -183,6 +183,13 @@ spec:
                             - message: At least one of clientSecret or clientKey must
                                 be provided
                               rule: self == null || has(self.clientSecret) || has(self.clientKey)
+                          clientAuthMethod:
+                            description: ClientAuthMethod is the type of token request,
+                              "body" or "header"
+                            enum:
+                            - body
+                            - header
+                            type: string
                           grantType:
                             description: GrantType is the grant type for the external
                               IDP authentication
@@ -195,13 +202,6 @@ spec:
                             description: TokenEndpoint is the URL for the OAuth2 token
                               endpoint
                             format: uri
-                            type: string
-                          tokenRequest:
-                            description: TokenRequest is the type of token request,
-                              "body" or "header"
-                            enum:
-                            - body
-                            - header
                             type: string
                         required:
                         - tokenEndpoint
@@ -340,6 +340,13 @@ spec:
                                         must be provided
                                       rule: self == null || has(self.clientSecret)
                                         || has(self.clientKey)
+                                  clientAuthMethod:
+                                    description: ClientAuthMethod is the type of token
+                                      request, "body" or "header"
+                                    enum:
+                                    - body
+                                    - header
+                                    type: string
                                   grantType:
                                     description: GrantType is the grant type for the
                                       external IDP authentication
@@ -352,13 +359,6 @@ spec:
                                     description: TokenEndpoint is the URL for the
                                       OAuth2 token endpoint
                                     format: uri
-                                    type: string
-                                  tokenRequest:
-                                    description: TokenRequest is the type of token
-                                      request, "body" or "header"
-                                    enum:
-                                    - body
-                                    - header
                                     type: string
                                 required:
                                 - tokenEndpoint

@@ -142,13 +142,13 @@ var _ = Describe("Route Controller", Ordered, func() {
 					},
 				}
 			})
-			It("should not accept a Route with TokenRequest=\"sky\"", func() {
-				By("Creating the Route with TokenRequest=\"sky\"")
-				route.Spec.Security.M2M.ExternalIDP.TokenRequest = "sky"
+			It("should not accept a Route with ClientAuthMethod=\"sky\"", func() {
+				By("Creating the Route with ClientAuthMethod=\"sky\"")
+				route.Spec.Security.M2M.ExternalIDP.ClientAuthMethod = "sky"
 				err := k8sClient.Create(ctx, route)
 				Expect(err).To(HaveOccurred())
 				Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				Expect(err.Error()).To(ContainSubstring("spec.security.m2m.externalIDP.tokenRequest: Unsupported value: \"sky\": supported values: \"body\", \"header\""))
+				Expect(err.Error()).To(ContainSubstring("spec.security.m2m.externalIDP.clientAuthMethod: Unsupported value: \"sky\": supported values: \"body\", \"header\""))
 			})
 
 			It("should not accept a Route with GrantType=\"not_required\"", func() {

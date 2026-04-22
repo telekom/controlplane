@@ -112,10 +112,10 @@ type ExternalIdentityProvider struct {
 	// +kubebuilder:validation:Format=uri
 	TokenEndpoint string `json:"tokenEndpoint"`
 
-	// TokenRequest is the type of token request, "body" or "header"
+	// ClientAuthMethod is the type of token request, "body" or "header"
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum=body;header
-	TokenRequest string `json:"tokenRequest,omitempty"`
+	ClientAuthMethod string `json:"clientAuthMethod,omitempty"`
 	// GrantType is the grant type for the external IDP authentication
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum=client_credentials;authorization_code;password

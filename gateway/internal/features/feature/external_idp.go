@@ -146,7 +146,7 @@ func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettin
 		in.Scopes = strings.Join(scopes, " ")
 	}
 
-	in.TokenRequest = providerSettings.TokenRequest
+	in.TokenRequest = providerSettings.ClientAuthMethod
 	in.GrantType = providerSettings.GrantType
 
 	return in, nil
