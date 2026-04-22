@@ -8,6 +8,7 @@ import (
 	"regexp"
 
 	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
@@ -29,12 +30,6 @@ func MakeRoadmapName(basePath string) string {
 	return labelutil.NormalizeNameValue(specialName)
 }
 
-// makeApiSpecificationName generates the ApiSpecification name from basePath.
-// This matches the logic in ApiSpecification's MakeName() function.
-func makeApiSpecificationName(basePath string) string {
-	return labelutil.NormalizeValue(basePath)
-}
-
 // MapRequest maps the input parameters to a Roadmap CRD.
 func MapRequest(basePath string, fileAPIResp *filesapi.FileUploadResponse, id mapper.ResourceIdInfo) (*roverv1.Roadmap, error) {
 	if fileAPIResp == nil {
@@ -42,7 +37,7 @@ func MapRequest(basePath string, fileAPIResp *filesapi.FileUploadResponse, id ma
 	}
 
 	ns := id.Environment + "--" + id.Namespace
-	apiSpecName := makeApiSpecificationName(basePath)
+	apiSpecName := labelutil.NormalizeValue(basePath)
 	apiSpecRef := types.TypedObjectRef{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ApiSpecification",
@@ -63,7 +58,7 @@ func MapRequest(basePath string, fileAPIResp *filesapi.FileUploadResponse, id ma
 			Name:      id.Name,
 			Namespace: ns,
 			Annotations: map[string]string{
-				"rover.cp.ei.telekom.de/basePath": basePath,
+				config.BuildLabelKey("basePath"): labelutil.NormalizeValue(basePath),
 			},
 		},
 		Spec: roverv1.RoadmapSpec{

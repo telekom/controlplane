@@ -1039,7 +1039,7 @@
 
 [Roadmap Controller Get ApiRoadmap resource should return the ApiRoadmap successfully - 1]
 {
- "basePath": "/eni/test-api/v1",
+ "basePath": "/eni/test/api/v1",
  "id": "eni--hyperion--eni-test-api",
  "items": [
   {
@@ -1080,7 +1080,7 @@
  },
  "items": [
   {
-   "basePath": "/eni/test-api/v1",
+   "basePath": "/eni/test/api/v1",
    "id": "eni--hyperion--eni-test-api",
    "items": [
     {

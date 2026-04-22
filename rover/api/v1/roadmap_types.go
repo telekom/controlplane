@@ -28,6 +28,8 @@ type RoadmapItem struct {
 }
 
 // RoadmapSpec defines the desired state of Roadmap
+// +kubebuilder:validation:XValidation:rule="self.contents != ''",message="contents must not be empty"
+// +kubebuilder:validation:XValidation:rule="self.hash != ''",message="hash must not be empty"
 type RoadmapSpec struct {
 	// SpecificationRef is a reference to the specification (ApiSpecification or EventSpecification) this roadmap describes
 	// The referenced specification may or may not exist yet

@@ -93,6 +93,11 @@ spec:
             - hash
             - specificationRef
             type: object
+            x-kubernetes-validations:
+            - message: contents must not be empty
+              rule: self.contents != ''
+            - message: hash must not be empty
+              rule: self.hash != ''
           status:
             description: RoadmapStatus defines the observed state of Roadmap
             properties:

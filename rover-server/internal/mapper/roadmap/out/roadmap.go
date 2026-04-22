@@ -7,6 +7,7 @@ package out
 import (
 	"strings"
 
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	statusmapper "github.com/telekom/controlplane/rover-server/internal/mapper/status"
@@ -17,7 +18,7 @@ import (
 func MapResponse(roadmap *roverv1.Roadmap, items []api.ApiRoadmapItem) api.ApiRoadmapResponse {
 	basePath := ""
 	if roadmap.Annotations != nil {
-		basePath = roadmap.Annotations["rover.cp.ei.telekom.de/basePath"]
+		basePath = roadmap.Annotations[config.BuildLabelKey("basePath")]
 	}
 	if basePath == "" {
 		// Fallback: try to derive from specification name
