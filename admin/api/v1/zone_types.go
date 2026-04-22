@@ -31,9 +31,28 @@ type IdentityProviderAdminConfig struct {
 	Password string  `json:"password"`
 }
 
+type SecretRotationConfig struct {
+	// Enabled controls whether secret rotation is enabled for this zone.
+	//  If false, secrets will not be rotated and the grace period and expiration period will be ignored.
+	Enabled bool `json:"enabled"`
+	// GracePeriod is the duration that a rotated secret is valid for.
+	// This allows to have a smooth transition when rotating secrets, as the old secret is still valid for a certain period of time after rotation.
+	// +kubebuilder:validation:Required
+	GracePeriod metav1.Duration `json:"gracePeriod"`
+
+	// RotationInterval is the duration after which secrets should be rotated.
+	// This is the interval at which the rotation process will be triggered.
+	// +kubebuilder:validation:Required
+	RotationInterval metav1.Duration `json:"rotationInterval"`
+}
+
 type IdentityProviderConfig struct {
 	Admin IdentityProviderAdminConfig `json:"admin"`
 	Url   string                      `json:"url"`
+
+	// SecretRotation contains the config for rotating secrets related to the default identity provider realm of this zone.
+	// If not set, secret rotation will be disabled.
+	SecretRotation *SecretRotationConfig `json:"secretRotation,omitempty"`
 }
 
 type GatewayAdminConfig struct {
@@ -117,6 +136,15 @@ type ZoneStatus struct {
 	TeamApiGatewayRealm  *types.ObjectRef  `json:"teamApiGatewayRealm,omitempty"`
 	TeamApiRoutes        []types.ObjectRef `json:"teamApiRoutes,omitempty"`
 	Links                Links             `json:"links,omitempty"`
+
+	// Features is a list of features that are enabled or disabled for this zone.
+	// This can be used to control the availability of certain features in the zone
+	// +listType=map
+	// +listMapKey=name
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	// +optional
+	Features []Feature `json:"features,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -164,4 +192,41 @@ func (l *ZoneList) GetItems() []types.Object {
 
 func init() {
 	SchemeBuilder.Register(&Zone{}, &ZoneList{})
+}
+
+// Feature Management
+
+type FeatureName string
+
+const (
+	// FeatureSecretRotation indicates that secret rotation is enabled for the zone.
+	FeatureSecretRotation FeatureName = "SecretRotation"
+)
+
+type Feature struct {
+	Name    FeatureName `json:"name"`
+	Enabled bool        `json:"enabled"`
+}
+
+func (z *Zone) IsFeatureEnabled(featureName FeatureName) bool {
+	for _, feature := range z.Status.Features {
+		if feature.Name == featureName {
+			return feature.Enabled
+		}
+	}
+	return false
+}
+
+func (z *Zone) EnableFeature(featureName FeatureName) {
+	z.ManageFeature(featureName, true)
+}
+
+func (z *Zone) ManageFeature(featureName FeatureName, enabled bool) {
+	for i, feature := range z.Status.Features {
+		if feature.Name == featureName {
+			z.Status.Features[i].Enabled = enabled
+			return
+		}
+	}
+	z.Status.Features = append(z.Status.Features, Feature{Name: featureName, Enabled: enabled})
 }

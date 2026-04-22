@@ -84,6 +84,31 @@ spec:
                     - password
                     - userName
                     type: object
+                  secretRotation:
+                    description: |-
+                      SecretRotation contains the config for rotating secrets related to the default identity provider realm of this zone.
+                      If not set, secret rotation will be disabled.
+                    properties:
+                      enabled:
+                        description: |-
+                          Enabled controls whether secret rotation is enabled for this zone.
+                           If false, secrets will not be rotated and the grace period and expiration period will be ignored.
+                        type: boolean
+                      gracePeriod:
+                        description: |-
+                          GracePeriod is the duration that a rotated secret is valid for.
+                          This allows to have a smooth transition when rotating secrets, as the old secret is still valid for a certain period of time after rotation.
+                        type: string
+                      rotationInterval:
+                        description: |-
+                          RotationInterval is the duration after which secrets should be rotated.
+                          This is the interval at which the rotation process will be triggered.
+                        type: string
+                    required:
+                    - enabled
+                    - gracePeriod
+                    - rotationInterval
+                    type: object
                   url:
                     type: string
                 required:
@@ -208,6 +233,24 @@ spec:
                 type: array
                 x-kubernetes-list-map-keys:
                 - type
+                x-kubernetes-list-type: map
+              features:
+                description: |-
+                  Features is a list of features that are enabled or disabled for this zone.
+                  This can be used to control the availability of certain features in the zone
+                items:
+                  properties:
+                    enabled:
+                      type: boolean
+                    name:
+                      type: string
+                  required:
+                  - enabled
+                  - name
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - name
                 x-kubernetes-list-type: map
               gateway:
                 description: |-

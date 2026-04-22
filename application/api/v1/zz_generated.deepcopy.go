@@ -111,6 +111,14 @@ func (in *ApplicationStatus) DeepCopyInto(out *ApplicationStatus) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.RotatedExpiresAt != nil {
+		in, out := &in.RotatedExpiresAt, &out.RotatedExpiresAt
+		*out = (*in).DeepCopy()
+	}
+	if in.CurrentExpiresAt != nil {
+		in, out := &in.CurrentExpiresAt, &out.CurrentExpiresAt
+		*out = (*in).DeepCopy()
+	}
 	if in.Clients != nil {
 		in, out := &in.Clients, &out.Clients
 		*out = make([]types.ObjectRef, len(*in))

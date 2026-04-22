@@ -34,8 +34,9 @@ var (
 	NewApplicationSecrets = func() *Secrets {
 		return &Secrets{
 			secrets: map[string]SecretValue{
-				"clientSecret":    InitialString(api.GenerateSecretOrDie()),
-				"externalSecrets": InitialString("{}"),
+				"clientSecret":        InitialString(api.GenerateSecretOrDie()),
+				"rotatedClientSecret": InitialString(""),
+				"externalSecrets":     InitialString("{}"),
 			},
 		}
 	}

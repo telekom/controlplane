@@ -344,6 +344,27 @@ step_deploy() {
     kubectl --context "${ctx}" apply -k "${REPO_ROOT}/install/overlays/local" 2>&1
     success "Kustomization applied."
 
+    # After loading new images into kind the deployment spec is unchanged
+    # (same "latest" tag), so Kubernetes won't trigger a rollout by itself.
+    # Restart the affected deployments so pods pick up the freshly built images.
+    if [ "${DEPLOY_ONLY}" = false ] && [ "${#CONTROLLERS[@]}" -gt 0 ]; then
+        info "Restarting deployments to pick up new images..."
+        for entry in "${CONTROLLERS[@]}"; do
+            IFS=':' read -r name _ image_name <<< "${entry}"
+            # Find deployments using this controller's image and restart them.
+            local deps
+            deps=$(kubectl --context "${ctx}" -n "${CONTROLPLANE_NAMESPACE}" \
+                get deployments -o jsonpath="{range .items[*]}{.metadata.name}{' '}{.spec.template.spec.containers[0].image}{'\n'}{end}" 2>/dev/null \
+                | grep "${image_name}" | awk '{print $1}' || true)
+            for dep in ${deps}; do
+                kubectl --context "${ctx}" -n "${CONTROLPLANE_NAMESPACE}" \
+                    rollout restart deployment/"${dep}" 2>&1
+                info "Restarted deployment/${dep}"
+            done
+        done
+        success "Rollout restart triggered for rebuilt controllers."
+    fi
+
     # cert-manager must issue Certificates before trust-manager can create
     # the trust-bundle ConfigMaps that most controllers mount as volumes.
     # Without this wait, pods fail with "configmap not found" on the

@@ -7,9 +7,11 @@ package application
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	admin "github.com/telekom/controlplane/admin/api/v1"
 	application "github.com/telekom/controlplane/application/api/v1"
+	"github.com/telekom/controlplane/application/internal/secret"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -20,6 +22,7 @@ import (
 	gateway "github.com/telekom/controlplane/gateway/api/v1"
 	identity "github.com/telekom/controlplane/identity/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
@@ -95,14 +98,64 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 		return err
 	}
 
+	// --- Secret rotation condition lifecycle ---
+	rotationRequested := app.Spec.RotatedSecret != ""
+	rotationCond := meta.FindStatusCondition(app.Status.Conditions, secret.SecretRotationConditionType)
+	rotationInProgress := rotationCond != nil && rotationCond.Reason == secret.SecretRotationReasonInProgress
+	// A rotation is considered already handled when it completed successfully
+	rotationAlreadyHandled := rotationCond != nil && rotationCond.Reason == secret.SecretRotationReasonSuccess
+
+	if rotationRequested && !rotationInProgress && !rotationAlreadyHandled {
+		// New rotation detected: set InProgress condition only (status fields are set after convergence)
+		app.SetCondition(metav1.Condition{
+			Type:    secret.SecretRotationConditionType,
+			Status:  metav1.ConditionFalse,
+			Reason:  secret.SecretRotationReasonInProgress,
+			Message: "Secret rotation initiated, waiting for sub-resources to converge",
+		})
+		rotationInProgress = true
+	}
+
 	if c.AnyChanged() {
 		app.SetCondition(
-			condition.NewProcessingCondition("SubResourceProvising", "Atleast one sub-resource has been created or updated"))
+			condition.NewProcessingCondition("SubResourceProvisioning", "At least one sub-resource has been created or updated"))
 		app.SetCondition(
-			condition.NewNotReadyCondition("SubResourceProvising", "Atleast one sub-resource has been created or updated"))
+			condition.NewNotReadyCondition("SubResourceProvisioning", "At least one sub-resource has been created or updated"))
 	} else {
 		app.SetCondition(condition.NewDoneProcessingCondition("All sub-resources are up to date"))
 		app.SetCondition(condition.NewReadyCondition("SubResourceProvisioned", "All sub-resources are up to date"))
+
+		// Set ClientSecret only after sub-resources have converged
+		if app.Spec.NeedsClient {
+			app.Status.ClientSecret = app.Spec.Secret
+		}
+
+		// Complete rotation when all sub-resources have settled
+		if rotationInProgress {
+			log := logr.FromContextOrDiscard(ctx)
+
+			// Propagate expiry timestamps from the primary identity client
+			if propagateRotationStatus(ctx, app, c) {
+				// Set rotation status fields only after successful convergence
+				app.Status.RotatedClientSecret = app.Spec.RotatedSecret
+
+				app.SetCondition(metav1.Condition{
+					Type:    secret.SecretRotationConditionType,
+					Status:  metav1.ConditionTrue,
+					Reason:  secret.SecretRotationReasonSuccess,
+					Message: "Secret rotation completed successfully",
+				})
+
+				log.Info("Secret rotation completed successfully",
+					"application", app.Name,
+					"team", app.Spec.Team,
+				)
+			} else {
+				log.Info("Secret rotation: could not propagate expiry timestamps from identity client, staying InProgress",
+					"application", app.Name,
+				)
+			}
+		}
 	}
 
 	app.Status.ClientId = MakeClientName(app)
@@ -184,7 +237,6 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 		return errors.Wrapf(err, "failed to create or update Identity Client %s", resourceName)
 	}
 
-	owner.Status.ClientSecret = idpClient.Spec.ClientSecret
 	owner.Status.Clients = append(owner.Status.Clients, *types.ObjectRefFromObject(idpClient))
 	return nil
 }

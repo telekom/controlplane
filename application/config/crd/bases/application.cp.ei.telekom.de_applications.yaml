@@ -76,6 +76,12 @@ spec:
                   NeedsConsumer is a flag to indicate if the application needs a Gateway consumer
                   If NeedsClient is true, the consumer will be created for the client
                 type: boolean
+              rotatedSecret:
+                description: |-
+                  RotatedSecret holds the secret-manager reference to the previous (rotated) client secret
+                  during a graceful secret rotation. This field is only set by the webhook during rotation
+                  and should not be set manually.
+                type: string
               secret:
                 description: Secret is the secret used to authenticate the application
                 minLength: 1
@@ -240,6 +246,23 @@ spec:
                   - namespace
                   type: object
                 type: array
+              currentExpiresAt:
+                description: |-
+                  CurrentExpiresAt indicates when the current secret will be auto-expired.
+                  Nil when secret rotation is not configured.
+                format: date-time
+                type: string
+              rotatedClientSecret:
+                description: |-
+                  RotatedClientSecret holds the secret-manager reference to the previous client secret
+                  during a graceful secret rotation grace period. Empty when no rotation is in progress.
+                type: string
+              rotatedExpiresAt:
+                description: |-
+                  RotatedExpiresAt indicates when the rotated (old) secret stops being accepted.
+                  Nil when no rotation is in progress.
+                format: date-time
+                type: string
             required:
             - clientId
             - clientSecret
