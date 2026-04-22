@@ -5,11 +5,150 @@
 package permission
 
 import (
+	"context"
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
+	cclient "github.com/telekom/controlplane/common/pkg/client"
+	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
+	"github.com/telekom/controlplane/common/pkg/config"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
+
+var _ = Describe("HandlePermission", func() {
+	var (
+		ctx        context.Context
+		fakeClient *fakeclient.MockJanitorClient
+		testScheme *runtime.Scheme
+		owner      *roverv1.Rover
+	)
+
+	BeforeEach(func() {
+		ctx = context.Background()
+		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
+		ctx = cclient.WithClient(ctx, fakeClient)
+
+		testScheme = runtime.NewScheme()
+		_ = roverv1.AddToScheme(testScheme)
+		_ = permissionv1.AddToScheme(testScheme)
+
+		owner = &roverv1.Rover{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-app",
+				Namespace: "poc--eni--hyperion",
+				UID:       "rover-uid-1234",
+			},
+			Spec: roverv1.RoverSpec{
+				Zone: "dataplane1",
+				Permissions: []roverv1.Permission{
+					{
+						Resource: "stargate:myapi:v1",
+						Entries: []roverv1.PermissionEntry{
+							{Role: "admin", Actions: []string{"read", "write"}},
+						},
+					},
+				},
+			},
+		}
+	})
+
+	It("must create a PermissionSet with normalized permissions", func() {
+		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.PermissionSet"), mock.AnythingOfType("controllerutil.MutateFn")).
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+			}).
+			Return(controllerutil.OperationResultCreated, nil).Once()
+
+		err := HandlePermission(ctx, fakeClient, owner)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(owner.Status.PermissionSets).To(HaveLen(1))
+		Expect(owner.Status.PermissionSets[0].Name).To(Equal("my-app"))
+		Expect(owner.Status.PermissionSets[0].Namespace).To(Equal("poc--eni--hyperion"))
+	})
+
+	It("must set application and zone labels on the PermissionSet", func() {
+		var capturedPS *permissionv1.PermissionSet
+
+		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.PermissionSet"), mock.AnythingOfType("controllerutil.MutateFn")).
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+				capturedPS = obj.(*permissionv1.PermissionSet)
+			}).
+			Return(controllerutil.OperationResultCreated, nil).Once()
+
+		err := HandlePermission(ctx, fakeClient, owner)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(capturedPS.Labels).To(HaveKeyWithValue(config.BuildLabelKey("application"), "my-app"))
+		Expect(capturedPS.Labels).To(HaveKeyWithValue(config.BuildLabelKey("zone"), "dataplane1"))
+	})
+
+	It("must set normalized permissions in spec", func() {
+		var capturedPS *permissionv1.PermissionSet
+
+		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.PermissionSet"), mock.AnythingOfType("controllerutil.MutateFn")).
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+				capturedPS = obj.(*permissionv1.PermissionSet)
+			}).
+			Return(controllerutil.OperationResultCreated, nil).Once()
+
+		err := HandlePermission(ctx, fakeClient, owner)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(capturedPS.Spec.Permissions).To(HaveLen(1))
+		Expect(capturedPS.Spec.Permissions[0]).To(Equal(permissionv1.Permission{
+			Resource: "stargate:myapi:v1",
+			Role:     "admin",
+			Actions:  []string{"read", "write"},
+		}))
+	})
+
+	It("must not set zone label when zone is empty", func() {
+		owner.Spec.Zone = ""
+		var capturedPS *permissionv1.PermissionSet
+
+		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.PermissionSet"), mock.AnythingOfType("controllerutil.MutateFn")).
+			Run(func(_ context.Context, obj client.Object, mutate controllerutil.MutateFn) {
+				_ = mutate()
+				capturedPS = obj.(*permissionv1.PermissionSet)
+			}).
+			Return(controllerutil.OperationResultCreated, nil).Once()
+
+		err := HandlePermission(ctx, fakeClient, owner)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(capturedPS.Labels).ToNot(HaveKey(config.BuildLabelKey("zone")))
+	})
+
+	It("must return error when CreateOrUpdate fails", func() {
+		fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
+		fakeClient.EXPECT().
+			CreateOrUpdate(ctx, mock.AnythingOfType("*v1.PermissionSet"), mock.AnythingOfType("controllerutil.MutateFn")).
+			Return(controllerutil.OperationResultNone, fmt.Errorf("api server error")).Once()
+
+		err := HandlePermission(ctx, fakeClient, owner)
+
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("failed to create or update PermissionSet"))
+	})
+})
 
 var _ = Describe("normalizePermissions", func() {
 
