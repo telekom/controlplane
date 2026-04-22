@@ -49,78 +49,6 @@ spec:
           spec:
             description: Spec defines the desired state of the Rover resource
             properties:
-              authorization:
-                description: Authorization defines role-based access control permissions
-                  for this application
-                items:
-                  description: |-
-                    Authorization defines a permission rule. Supports 3 formats:
-                    1. Resource-oriented: resource + permissions (role/actions list)
-                    2. Role-oriented: role + permissions (resource/actions list)
-                    3. Flat: role + resource + actions directly
-
-                    NOTE: Additional validation for nested permissions[] is done in the webhook (rover/internal/webhook/v1/rover_webhook.go)
-                    rather than CEL due to cost budget constraints. CEL rules with .all() iteration over permissions arrays would exceed
-                    the Kubernetes validation cost budget by over 40x. The webhook validates that:
-                    - When resource is set (resource-oriented), all permissions must have non-empty role
-                    - When role is set (role-oriented), all permissions must have non-empty resource
-                  properties:
-                    actions:
-                      description: Actions lists the allowed actions (used only in
-                        flat format)
-                      items:
-                        type: string
-                      maxItems: 50
-                      minItems: 1
-                      type: array
-                    permissions:
-                      description: Permissions lists role-resource-action tuples (used
-                        in resource-oriented and role-oriented formats)
-                      items:
-                        description: AuthorizationPermission defines a single permission
-                          entry within an Authorization
-                        properties:
-                          actions:
-                            description: Actions lists the allowed actions for this
-                              role-resource combination
-                            items:
-                              type: string
-                            maxItems: 50
-                            minItems: 1
-                            type: array
-                          resource:
-                            description: Resource is the resource identifier (used
-                              when parent Authorization has role set)
-                            type: string
-                          role:
-                            description: Role is the role identifier (used when parent
-                              Authorization has resource set)
-                            type: string
-                        required:
-                        - actions
-                        type: object
-                      maxItems: 50
-                      minItems: 1
-                      type: array
-                    resource:
-                      description: Resource is the resource identifier being protected
-                        (used in resource-oriented and flat formats)
-                      maxLength: 256
-                      type: string
-                    role:
-                      description: Role is the role identifier (used in role-oriented
-                        and flat formats)
-                      maxLength: 256
-                      type: string
-                  type: object
-                  x-kubernetes-validations:
-                  - message: Must provide either permissions list or all of (resource,
-                      role, actions)
-                    rule: has(self.permissions) || (has(self.resource) && has(self.role)
-                      && has(self.actions))
-                  - message: Cannot specify both permissions and actions
-                    rule: '!has(self.permissions) || !has(self.actions)'
-                type: array
               clientSecret:
                 description: |-
                   ClientSecret is the secret used for client authentication
@@ -695,6 +623,78 @@ spec:
                     - message: All items must be valid IP addresses or CIDR notations
                       rule: self.all(x, isCIDR(x) || isIP(x))
                 type: object
+              permissions:
+                description: Permissions defines role-based access control permissions
+                  for this application
+                items:
+                  description: |-
+                    Permission defines a permission rule. Supports 3 formats:
+                    1. Resource-oriented: resource + entries (role/actions list)
+                    2. Role-oriented: role + entries (resource/actions list)
+                    3. Flat: role + resource + actions directly
+
+                    NOTE: Additional validation for nested entries[] is done in the webhook (rover/internal/webhook/v1/rover_webhook.go)
+                    rather than CEL due to cost budget constraints. CEL rules with .all() iteration over entries arrays would exceed
+                    the Kubernetes validation cost budget by over 40x. The webhook validates that:
+                    - When resource is set (resource-oriented), all entries must have non-empty role
+                    - When role is set (role-oriented), all entries must have non-empty resource
+                  properties:
+                    actions:
+                      description: Actions lists the allowed actions (used only in
+                        flat format)
+                      items:
+                        type: string
+                      maxItems: 50
+                      minItems: 1
+                      type: array
+                    entries:
+                      description: Entries lists role-resource-action tuples (used
+                        in resource-oriented and role-oriented formats)
+                      items:
+                        description: PermissionEntry defines a single permission entry
+                          within a Permission
+                        properties:
+                          actions:
+                            description: Actions lists the allowed actions for this
+                              role-resource combination
+                            items:
+                              type: string
+                            maxItems: 50
+                            minItems: 1
+                            type: array
+                          resource:
+                            description: Resource is the resource identifier (used
+                              when parent Permission has role set)
+                            type: string
+                          role:
+                            description: Role is the role identifier (used when parent
+                              Permission has resource set)
+                            type: string
+                        required:
+                        - actions
+                        type: object
+                      maxItems: 50
+                      minItems: 1
+                      type: array
+                    resource:
+                      description: Resource is the resource identifier being protected
+                        (used in resource-oriented and flat formats)
+                      maxLength: 256
+                      type: string
+                    role:
+                      description: Role is the role identifier (used in role-oriented
+                        and flat formats)
+                      maxLength: 256
+                      type: string
+                  type: object
+                  x-kubernetes-validations:
+                  - message: Must provide either entries list or all of (resource,
+                      role, actions)
+                    rule: has(self.entries) || (has(self.resource) && has(self.role)
+                      && has(self.actions))
+                  - message: Cannot specify both entries and actions
+                    rule: '!has(self.entries) || !has(self.actions)'
+                type: array
               subscriptions:
                 description: Subscriptions is a list of APIs and Events that this
                   Rover consumes from providers

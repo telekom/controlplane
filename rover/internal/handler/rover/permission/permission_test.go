@@ -11,21 +11,21 @@ import (
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
-var _ = Describe("normalizeAuthorization", func() {
+var _ = Describe("normalizePermissions", func() {
 
 	Context("resource-oriented format", func() {
-		It("must expand resource with multiple role permissions", func() {
-			input := []roverv1.Authorization{
+		It("must expand resource with multiple role entries", func() {
+			input := []roverv1.Permission{
 				{
 					Resource: "stargate:myapi:v1",
-					Permissions: []roverv1.AuthorizationPermission{
+					Entries: []roverv1.PermissionEntry{
 						{Role: "admin", Actions: []string{"read", "write"}},
 						{Role: "viewer", Actions: []string{"read"}},
 					},
 				},
 			}
 
-			result := normalizeAuthorization(input)
+			result := normalizePermissions(input)
 
 			Expect(result).To(HaveLen(2))
 			Expect(result[0]).To(Equal(permissionv1.Permission{
@@ -40,17 +40,17 @@ var _ = Describe("normalizeAuthorization", func() {
 			}))
 		})
 
-		It("must handle single permission entry", func() {
-			input := []roverv1.Authorization{
+		It("must handle single entry", func() {
+			input := []roverv1.Permission{
 				{
 					Resource: "myresource",
-					Permissions: []roverv1.AuthorizationPermission{
+					Entries: []roverv1.PermissionEntry{
 						{Role: "editor", Actions: []string{"edit"}},
 					},
 				},
 			}
 
-			result := normalizeAuthorization(input)
+			result := normalizePermissions(input)
 
 			Expect(result).To(HaveLen(1))
 			Expect(result[0]).To(Equal(permissionv1.Permission{
@@ -62,18 +62,18 @@ var _ = Describe("normalizeAuthorization", func() {
 	})
 
 	Context("role-oriented format", func() {
-		It("must expand role with multiple resource permissions", func() {
-			input := []roverv1.Authorization{
+		It("must expand role with multiple resource entries", func() {
+			input := []roverv1.Permission{
 				{
 					Role: "admin",
-					Permissions: []roverv1.AuthorizationPermission{
+					Entries: []roverv1.PermissionEntry{
 						{Resource: "users", Actions: []string{"read", "write", "delete"}},
 						{Resource: "orders", Actions: []string{"read"}},
 					},
 				},
 			}
 
-			result := normalizeAuthorization(input)
+			result := normalizePermissions(input)
 
 			Expect(result).To(HaveLen(2))
 			Expect(result[0]).To(Equal(permissionv1.Permission{
@@ -91,7 +91,7 @@ var _ = Describe("normalizeAuthorization", func() {
 
 	Context("flat format", func() {
 		It("must pass through role + resource + actions directly", func() {
-			input := []roverv1.Authorization{
+			input := []roverv1.Permission{
 				{
 					Role:     "viewer",
 					Resource: "dashboard",
@@ -99,7 +99,7 @@ var _ = Describe("normalizeAuthorization", func() {
 				},
 			}
 
-			result := normalizeAuthorization(input)
+			result := normalizePermissions(input)
 
 			Expect(result).To(HaveLen(1))
 			Expect(result[0]).To(Equal(permissionv1.Permission{
@@ -112,18 +112,18 @@ var _ = Describe("normalizeAuthorization", func() {
 
 	Context("mixed formats", func() {
 		It("must handle all three formats in a single list", func() {
-			input := []roverv1.Authorization{
+			input := []roverv1.Permission{
 				// Resource-oriented
 				{
 					Resource: "api:users:v1",
-					Permissions: []roverv1.AuthorizationPermission{
+					Entries: []roverv1.PermissionEntry{
 						{Role: "admin", Actions: []string{"read", "write"}},
 					},
 				},
 				// Role-oriented
 				{
 					Role: "auditor",
-					Permissions: []roverv1.AuthorizationPermission{
+					Entries: []roverv1.PermissionEntry{
 						{Resource: "logs", Actions: []string{"read"}},
 					},
 				},
@@ -135,7 +135,7 @@ var _ = Describe("normalizeAuthorization", func() {
 				},
 			}
 
-			result := normalizeAuthorization(input)
+			result := normalizePermissions(input)
 
 			Expect(result).To(HaveLen(3))
 			Expect(result[0]).To(Equal(permissionv1.Permission{
@@ -158,26 +158,26 @@ var _ = Describe("normalizeAuthorization", func() {
 
 	Context("edge cases", func() {
 		It("must return nil for empty input", func() {
-			result := normalizeAuthorization(nil)
+			result := normalizePermissions(nil)
 			Expect(result).To(BeNil())
 		})
 
 		It("must return nil for empty slice", func() {
-			result := normalizeAuthorization([]roverv1.Authorization{})
+			result := normalizePermissions([]roverv1.Permission{})
 			Expect(result).To(BeNil())
 		})
 
 		It("must skip entries that match no format", func() {
-			input := []roverv1.Authorization{
-				// Resource but no permissions and no role+actions = no match
+			input := []roverv1.Permission{
+				// Resource but no entries and no role+actions = no match
 				{Resource: "orphan"},
-				// Role but no permissions and no resource+actions = no match
+				// Role but no entries and no resource+actions = no match
 				{Role: "lonely"},
 				// Valid flat entry
 				{Role: "valid", Resource: "res", Actions: []string{"act"}},
 			}
 
-			result := normalizeAuthorization(input)
+			result := normalizePermissions(input)
 
 			Expect(result).To(HaveLen(1))
 			Expect(result[0].Role).To(Equal("valid"))

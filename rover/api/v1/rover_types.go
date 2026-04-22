@@ -112,9 +112,9 @@ type RoverSpec struct {
 	// +kubebuilder:validation:Optional
 	Subscriptions []Subscription `json:"subscriptions,omitempty"`
 
-	// Authorization defines role-based access control permissions for this application
+	// Permissions defines role-based access control permissions for this application
 	// +kubebuilder:validation:Optional
-	Authorization []Authorization `json:"authorization,omitempty"`
+	Permissions []Permission `json:"permissions,omitempty"`
 }
 
 // Visibility defines the access scope for an API

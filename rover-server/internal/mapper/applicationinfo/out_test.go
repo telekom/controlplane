@@ -460,7 +460,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 	})
 
 	Context("FillChevronInfo", func() {
-		It("must skip when rover has no authorization", func() {
+		It("must skip when rover has no permissions", func() {
 			appInfo := &api.ApplicationInfo{}
 			err := FillChevronInfo(ctx, rover, appInfo, stores)
 
@@ -470,7 +470,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			Expect(appInfo.Authorization).To(BeNil())
 		})
 
-		It("must populate chevron info when authorization is configured", func() {
+		It("must populate chevron info when permissions are configured", func() {
 			secCtx := security.ToContext(ctx, &security.BusinessContext{Environment: "poc"})
 
 			localStores := &store.Stores{}
@@ -486,18 +486,18 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(zone, nil).Maybe()
 			localStores.ZoneStore = zoneMock
 
-			roverWithAuth := rover.DeepCopy()
-			roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+			roverWithPerms := rover.DeepCopy()
+			roverWithPerms.Spec.Permissions = []roverv1.Permission{
 				{
 					Resource: "stargate:myapi:v1",
-					Permissions: []roverv1.AuthorizationPermission{
+					Entries: []roverv1.PermissionEntry{
 						{Role: "admin", Actions: []string{"read", "write"}},
 					},
 				},
 			}
 
 			appInfo := &api.ApplicationInfo{IrisClientId: "test-client-id"}
-			err := FillChevronInfo(secCtx, roverWithAuth, appInfo, localStores)
+			err := FillChevronInfo(secCtx, roverWithPerms, appInfo, localStores)
 
 			Expect(err).To(BeNil())
 			Expect(appInfo.ChevronUrl).To(Equal("https://stargate.example.com/eni/chevron/v2/permission?application=test-client-id"))
@@ -533,13 +533,13 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(zone, nil).Maybe()
 			localStores.ZoneStore = zoneMock
 
-			roverWithAuth := rover.DeepCopy()
-			roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+			roverWithPerms := rover.DeepCopy()
+			roverWithPerms.Spec.Permissions = []roverv1.Permission{
 				{Role: "admin", Resource: "res", Actions: []string{"read"}},
 			}
 
 			appInfo := &api.ApplicationInfo{IrisClientId: "test-client-id"}
-			err := FillChevronInfo(secCtx, roverWithAuth, appInfo, localStores)
+			err := FillChevronInfo(secCtx, roverWithPerms, appInfo, localStores)
 
 			Expect(err).To(BeNil())
 			Expect(appInfo.ChevronUrl).To(BeEmpty())
@@ -556,13 +556,13 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("zone not found")).Maybe()
 			localStores.ZoneStore = zoneMock
 
-			roverWithAuth := rover.DeepCopy()
-			roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+			roverWithPerms := rover.DeepCopy()
+			roverWithPerms.Spec.Permissions = []roverv1.Permission{
 				{Role: "admin", Resource: "res", Actions: []string{"read"}},
 			}
 
 			appInfo := &api.ApplicationInfo{}
-			err := FillChevronInfo(secCtx, roverWithAuth, appInfo, localStores)
+			err := FillChevronInfo(secCtx, roverWithPerms, appInfo, localStores)
 
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(ContainSubstring("failed to get zone for chevron info"))
@@ -584,14 +584,14 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(zone, nil).Maybe()
 			localStores.ZoneStore = zoneMock
 
-			roverWithAuth := rover.DeepCopy()
-			roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+			roverWithPerms := rover.DeepCopy()
+			roverWithPerms.Spec.Permissions = []roverv1.Permission{
 				{Role: "admin", Resource: "res", Actions: []string{"read"}},
 			}
 
 			// Client ID with special characters that need URL encoding
 			appInfo := &api.ApplicationInfo{IrisClientId: "client&id=test?value"}
-			err := FillChevronInfo(secCtx, roverWithAuth, appInfo, localStores)
+			err := FillChevronInfo(secCtx, roverWithPerms, appInfo, localStores)
 
 			Expect(err).To(BeNil())
 			// The special characters should be URL-encoded
@@ -616,13 +616,13 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(zone, nil).Maybe()
 			localStores.ZoneStore = zoneMock
 
-			roverWithAuth := rover.DeepCopy()
-			roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+			roverWithPerms := rover.DeepCopy()
+			roverWithPerms.Spec.Permissions = []roverv1.Permission{
 				{Role: "admin", Resource: "res", Actions: []string{"read"}},
 			}
 
 			appInfo := &api.ApplicationInfo{IrisClientId: "test-client"}
-			err := FillChevronInfo(secCtx, roverWithAuth, appInfo, localStores)
+			err := FillChevronInfo(secCtx, roverWithPerms, appInfo, localStores)
 
 			Expect(err).To(BeNil())
 			// Should append application param correctly to existing query params
@@ -650,19 +650,19 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(zone, nil).Maybe()
 			localStores.ZoneStore = zoneMock
 
-			roverWithAuth := rover.DeepCopy()
-			roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+			roverWithPerms := rover.DeepCopy()
+			roverWithPerms.Spec.Permissions = []roverv1.Permission{
 				{Role: "admin", Resource: "res", Actions: []string{"read"}},
 			}
 
 			appInfo := &api.ApplicationInfo{IrisClientId: "test-client"}
-			err := FillChevronInfo(secCtx, roverWithAuth, appInfo, localStores)
+			err := FillChevronInfo(secCtx, roverWithPerms, appInfo, localStores)
 
 			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(ContainSubstring("failed to parse chevron URL"))
+			Expect(err.Error()).To(ContainSubstring("failed to parse permissions URL"))
 		})
 
-		It("must map all authorization formats correctly", func() {
+		It("must map all permission formats correctly", func() {
 			secCtx := security.ToContext(ctx, &security.BusinessContext{Environment: "poc"})
 
 			localStores := &store.Stores{}
@@ -678,19 +678,19 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			zoneMock.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(zone, nil).Maybe()
 			localStores.ZoneStore = zoneMock
 
-			roverWithAuth := rover.DeepCopy()
-			roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+			roverWithPerms := rover.DeepCopy()
+			roverWithPerms.Spec.Permissions = []roverv1.Permission{
 				// Resource-oriented
 				{
 					Resource: "api:v1",
-					Permissions: []roverv1.AuthorizationPermission{
+					Entries: []roverv1.PermissionEntry{
 						{Role: "admin", Actions: []string{"read"}},
 					},
 				},
 				// Role-oriented
 				{
 					Role: "viewer",
-					Permissions: []roverv1.AuthorizationPermission{
+					Entries: []roverv1.PermissionEntry{
 						{Resource: "dashboard", Actions: []string{"view"}},
 					},
 				},
@@ -703,7 +703,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			}
 
 			appInfo := &api.ApplicationInfo{IrisClientId: "my-app"}
-			err := FillChevronInfo(secCtx, roverWithAuth, appInfo, localStores)
+			err := FillChevronInfo(secCtx, roverWithPerms, appInfo, localStores)
 
 			Expect(err).To(BeNil())
 			Expect(appInfo.Authorization).To(HaveLen(3))

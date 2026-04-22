@@ -254,9 +254,9 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 				assertValidationFailedWith(warnings, err, "duplicate exposure")
 			})
 
-			It("should fail when authorization is configured but permission feature is disabled", func() {
-				roverWithAuth := roverObj.DeepCopy()
-				roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+			It("should fail when permissions are configured but permission feature is disabled", func() {
+				roverWithPerms := roverObj.DeepCopy()
+				roverWithPerms.Spec.Permissions = []roverv1.Permission{
 					{
 						Role:     "admin",
 						Resource: "myresource",
@@ -264,19 +264,19 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithAuth)
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithPerms)
 				assertValidationFailedWith(warnings, err, "does not support permissions")
 			})
 
-			It("should fail when resource-oriented authorization has permission without role", func() {
+			It("should fail when resource-oriented permission has entry without role", func() {
 				cconfig.FeaturePermission = cconfig.NewFeature("permission", true)
 				defer func() { cconfig.FeaturePermission = cconfig.NewFeature("permission", false) }()
 
-				roverWithAuth := roverObj.DeepCopy()
-				roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+				roverWithPerms := roverObj.DeepCopy()
+				roverWithPerms.Spec.Permissions = []roverv1.Permission{
 					{
 						Resource: "stargate:myapi:v1",
-						Permissions: []roverv1.AuthorizationPermission{
+						Entries: []roverv1.PermissionEntry{
 							{
 								// Missing role - should fail
 								Actions: []string{"read", "write"},
@@ -285,19 +285,19 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithAuth)
-				assertValidationFailedWith(warnings, err, "role is required when parent authorization has resource set")
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithPerms)
+				assertValidationFailedWith(warnings, err, "role is required when parent permission has resource set")
 			})
 
-			It("should fail when role-oriented authorization has permission without resource", func() {
+			It("should fail when role-oriented permission has entry without resource", func() {
 				cconfig.FeaturePermission = cconfig.NewFeature("permission", true)
 				defer func() { cconfig.FeaturePermission = cconfig.NewFeature("permission", false) }()
 
-				roverWithAuth := roverObj.DeepCopy()
-				roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+				roverWithPerms := roverObj.DeepCopy()
+				roverWithPerms.Spec.Permissions = []roverv1.Permission{
 					{
 						Role: "admin",
-						Permissions: []roverv1.AuthorizationPermission{
+						Entries: []roverv1.PermissionEntry{
 							{
 								// Missing resource - should fail
 								Actions: []string{"read", "write"},
@@ -306,19 +306,19 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithAuth)
-				assertValidationFailedWith(warnings, err, "resource is required when parent authorization has role set")
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithPerms)
+				assertValidationFailedWith(warnings, err, "resource is required when parent permission has role set")
 			})
 
-			It("should succeed when resource-oriented authorization has valid role in permissions", func() {
+			It("should succeed when resource-oriented permission has valid role in entries", func() {
 				cconfig.FeaturePermission = cconfig.NewFeature("permission", true)
 				defer func() { cconfig.FeaturePermission = cconfig.NewFeature("permission", false) }()
 
-				roverWithAuth := roverObj.DeepCopy()
-				roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+				roverWithPerms := roverObj.DeepCopy()
+				roverWithPerms.Spec.Permissions = []roverv1.Permission{
 					{
 						Resource: "stargate:myapi:v1",
-						Permissions: []roverv1.AuthorizationPermission{
+						Entries: []roverv1.PermissionEntry{
 							{
 								Role:    "admin",
 								Actions: []string{"read", "write"},
@@ -331,20 +331,20 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithAuth)
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithPerms)
 				Expect(err).To(BeNil())
 				Expect(warnings).To(BeEmpty())
 			})
 
-			It("should succeed when role-oriented authorization has valid resource in permissions", func() {
+			It("should succeed when role-oriented permission has valid resource in entries", func() {
 				cconfig.FeaturePermission = cconfig.NewFeature("permission", true)
 				defer func() { cconfig.FeaturePermission = cconfig.NewFeature("permission", false) }()
 
-				roverWithAuth := roverObj.DeepCopy()
-				roverWithAuth.Spec.Authorization = []roverv1.Authorization{
+				roverWithPerms := roverObj.DeepCopy()
+				roverWithPerms.Spec.Permissions = []roverv1.Permission{
 					{
 						Role: "admin",
-						Permissions: []roverv1.AuthorizationPermission{
+						Entries: []roverv1.PermissionEntry{
 							{
 								Resource: "stargate:myapi:v1",
 								Actions:  []string{"read", "write"},
@@ -357,7 +357,7 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 					},
 				}
 
-				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithAuth)
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithPerms)
 				Expect(err).To(BeNil())
 				Expect(warnings).To(BeEmpty())
 			})

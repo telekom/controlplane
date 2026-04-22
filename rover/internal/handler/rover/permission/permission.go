@@ -18,10 +18,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-// HandlePermission creates or updates PermissionSet resources based on Rover authorization configuration
+// HandlePermission creates or updates PermissionSet resources based on Rover permission configuration
 func HandlePermission(ctx context.Context, c client.JanitorClient, owner *roverv1.Rover) error {
-	// Normalize all authorization formats into flat permissions
-	permissions := normalizeAuthorization(owner.Spec.Authorization)
+	// Normalize all permission formats into flat permissions
+	permissions := normalizePermissions(owner.Spec.Permissions)
 
 	// Create internal PermissionSet
 	ps := &permissionv1.PermissionSet{
@@ -63,39 +63,39 @@ func HandlePermission(ctx context.Context, c client.JanitorClient, owner *roverv
 	return nil
 }
 
-// normalizeAuthorization converts all 3 authorization formats into a flat list of permissions
+// normalizePermissions converts all 3 permission formats into a flat list of permissions
 // Formats supported:
-// 1. Resource-oriented: resource + permissions (role/actions list)
-// 2. Role-oriented: role + permissions (resource/actions list)
+// 1. Resource-oriented: resource + entries (role/actions list)
+// 2. Role-oriented: role + entries (resource/actions list)
 // 3. Flat: role + resource + actions directly
-func normalizeAuthorization(authorizations []roverv1.Authorization) []permissionv1.Permission {
+func normalizePermissions(perms []roverv1.Permission) []permissionv1.Permission {
 	var permissions []permissionv1.Permission
 
-	for _, auth := range authorizations {
-		if auth.Resource != "" && auth.Role == "" && len(auth.Permissions) > 0 {
-			// Resource-oriented format: resource + permissions (with roles)
-			for _, perm := range auth.Permissions {
+	for _, p := range perms {
+		if p.Resource != "" && p.Role == "" && len(p.Entries) > 0 {
+			// Resource-oriented format: resource + entries (with roles)
+			for _, entry := range p.Entries {
 				permissions = append(permissions, permissionv1.Permission{
-					Resource: auth.Resource,
-					Role:     perm.Role,
-					Actions:  perm.Actions,
+					Resource: p.Resource,
+					Role:     entry.Role,
+					Actions:  entry.Actions,
 				})
 			}
-		} else if auth.Role != "" && auth.Resource == "" && len(auth.Permissions) > 0 {
-			// Role-oriented format: role + permissions (with resources)
-			for _, perm := range auth.Permissions {
+		} else if p.Role != "" && p.Resource == "" && len(p.Entries) > 0 {
+			// Role-oriented format: role + entries (with resources)
+			for _, entry := range p.Entries {
 				permissions = append(permissions, permissionv1.Permission{
-					Role:     auth.Role,
-					Resource: perm.Resource,
-					Actions:  perm.Actions,
+					Role:     p.Role,
+					Resource: entry.Resource,
+					Actions:  entry.Actions,
 				})
 			}
-		} else if auth.Resource != "" && auth.Role != "" && len(auth.Actions) > 0 {
+		} else if p.Resource != "" && p.Role != "" && len(p.Actions) > 0 {
 			// Flat format: role + resource + actions directly
 			permissions = append(permissions, permissionv1.Permission{
-				Role:     auth.Role,
-				Resource: auth.Resource,
-				Actions:  auth.Actions,
+				Role:     p.Role,
+				Resource: p.Resource,
+				Actions:  p.Actions,
 			})
 		}
 	}

@@ -319,10 +319,10 @@ func toApiApprovalStrategyFromEvent(strategy eventv1.ApprovalStrategy) api.Appro
 }
 
 // FillChevronInfo populates Chevron permission-related fields in ApplicationInfo
-// when the Rover has authorization configured.
+// when the Rover has permissions configured.
 func FillChevronInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
-	// Only populate chevron info if authorization is configured
-	if len(rover.Spec.Authorization) == 0 {
+	// Only populate chevron info if permissions are configured
+	if len(rover.Spec.Permissions) == 0 {
 		return nil
 	}
 
@@ -363,21 +363,21 @@ func FillChevronInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.App
 			Value: appInfo.ChevronApplication,
 		})
 
-		// Copy authorization rules
-		appInfo.Authorization = make([]api.AuthorizationInfo, 0, len(rover.Spec.Authorization))
-		for _, auth := range rover.Spec.Authorization {
+		// Copy permission rules to external authorization format
+		appInfo.Authorization = make([]api.AuthorizationInfo, 0, len(rover.Spec.Permissions))
+		for _, perm := range rover.Spec.Permissions {
 			authInfo := api.AuthorizationInfo{
-				Resource: auth.Resource,
-				Role:     auth.Role,
-				Actions:  auth.Actions,
+				Resource: perm.Resource,
+				Role:     perm.Role,
+				Actions:  perm.Actions,
 			}
-			if len(auth.Permissions) > 0 {
-				perms := make([]api.AuthorizationPermissionInfo, 0, len(auth.Permissions))
-				for _, perm := range auth.Permissions {
+			if len(perm.Entries) > 0 {
+				perms := make([]api.AuthorizationPermissionInfo, 0, len(perm.Entries))
+				for _, entry := range perm.Entries {
 					perms = append(perms, api.AuthorizationPermissionInfo{
-						Resource: perm.Resource,
-						Role:     perm.Role,
-						Actions:  perm.Actions,
+						Resource: entry.Resource,
+						Role:     entry.Role,
+						Actions:  entry.Actions,
 					})
 				}
 				authInfo.Permissions = perms

@@ -121,8 +121,8 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 		return nil, valErr.BuildError()
 	}
 
-	// Validate authorization: feature must be enabled if authorization is configured
-	if !cconfig.FeaturePermission.IsEnabled() && len(rover.Spec.Authorization) > 0 {
+	// Validate permissions: feature must be enabled if permissions are configured
+	if !cconfig.FeaturePermission.IsEnabled() && len(rover.Spec.Permissions) > 0 {
 		valErr.AddInvalidError(
 			field.NewPath("spec").Child("zone"),
 			rover.Spec.Zone,
@@ -130,42 +130,42 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 		return nil, valErr.BuildError()
 	}
 
-	// Validate authorization structure: nested permissions must have required fields based on parent format
+	// Validate permission structure: nested entries must have required fields based on parent format
 	// This validation is done here in the webhook rather than via CEL in the CRD because CEL rules with
-	// .all() iteration over the permissions array would exceed the Kubernetes validation cost budget by
+	// .all() iteration over the entries array would exceed the Kubernetes validation cost budget by
 	// over 40x (even with MaxItems=50). Webhook validation has no such budget constraints.
 	//
-	// The validation ensures that authorization entries will normalize into valid PermissionSet specs where
+	// The validation ensures that permission entries will normalize into valid PermissionSet specs where
 	// both role and resource are required fields:
-	// - Resource-oriented format (resource + permissions): each permission must have a non-empty role
-	// - Role-oriented format (role + permissions): each permission must have a non-empty resource
-	// - Flat format (role + resource + actions): validated by existing CEL rules, no nested permissions
+	// - Resource-oriented format (resource + entries): each entry must have a non-empty role
+	// - Role-oriented format (role + entries): each entry must have a non-empty resource
+	// - Flat format (role + resource + actions): validated by existing CEL rules, no nested entries
 	//
-	// Without this validation, entries like {resource: "api", permissions: [{actions: ["read"]}]} would
+	// Without this validation, entries like {resource: "api", entries: [{actions: ["read"]}]} would
 	// pass CRD validation but fail when the permission operator tries to create the PermissionSet CR.
-	for i, auth := range rover.Spec.Authorization {
-		authPath := field.NewPath("spec").Child("authorization").Index(i)
+	for i, perm := range rover.Spec.Permissions {
+		permPath := field.NewPath("spec").Child("permissions").Index(i)
 
-		// Resource-oriented: if resource is set, all permissions must have role
-		if auth.Resource != "" && len(auth.Permissions) > 0 {
-			for j, perm := range auth.Permissions {
-				if perm.Role == "" {
+		// Resource-oriented: if resource is set, all entries must have role
+		if perm.Resource != "" && len(perm.Entries) > 0 {
+			for j, entry := range perm.Entries {
+				if entry.Role == "" {
 					valErr.AddInvalidError(
-						authPath.Child("permissions").Index(j).Child("role"),
+						permPath.Child("entries").Index(j).Child("role"),
 						"",
-						"role is required when parent authorization has resource set (resource-oriented format)")
+						"role is required when parent permission has resource set (resource-oriented format)")
 				}
 			}
 		}
 
-		// Role-oriented: if role is set, all permissions must have resource
-		if auth.Role != "" && len(auth.Permissions) > 0 {
-			for j, perm := range auth.Permissions {
-				if perm.Resource == "" {
+		// Role-oriented: if role is set, all entries must have resource
+		if perm.Role != "" && len(perm.Entries) > 0 {
+			for j, entry := range perm.Entries {
+				if entry.Resource == "" {
 					valErr.AddInvalidError(
-						authPath.Child("permissions").Index(j).Child("resource"),
+						permPath.Child("entries").Index(j).Child("resource"),
 						"",
-						"resource is required when parent authorization has role set (role-oriented format)")
+						"resource is required when parent permission has role set (role-oriented format)")
 				}
 			}
 		}

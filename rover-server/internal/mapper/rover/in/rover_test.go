@@ -60,8 +60,8 @@ var _ = Describe("Rover Mapper", func() {
 		})
 	})
 
-	Context("MapAuthorization", func() {
-		It("must map authorization in flat format", func() {
+	Context("MapPermissions", func() {
+		It("must map permissions in flat format", func() {
 			input := apiRover
 			input.Authorization = []api.AuthorizationInfo{
 				{
@@ -72,13 +72,13 @@ var _ = Describe("Rover Mapper", func() {
 			}
 			out := &roverv1.Rover{}
 
-			err := mapAuthorization(input, out)
+			err := mapPermissions(input, out)
 
 			Expect(err).To(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), out)
 		})
 
-		It("must map authorization in resource-oriented format", func() {
+		It("must map permissions in resource-oriented format", func() {
 			input := apiRover
 			input.Authorization = []api.AuthorizationInfo{
 				{
@@ -97,13 +97,13 @@ var _ = Describe("Rover Mapper", func() {
 			}
 			out := &roverv1.Rover{}
 
-			err := mapAuthorization(input, out)
+			err := mapPermissions(input, out)
 
 			Expect(err).To(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), out)
 		})
 
-		It("must map authorization in role-oriented format", func() {
+		It("must map permissions in role-oriented format", func() {
 			input := apiRover
 			input.Authorization = []api.AuthorizationInfo{
 				{
@@ -122,21 +122,21 @@ var _ = Describe("Rover Mapper", func() {
 			}
 			out := &roverv1.Rover{}
 
-			err := mapAuthorization(input, out)
+			err := mapPermissions(input, out)
 
 			Expect(err).To(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), out)
 		})
 
-		It("must handle empty authorization", func() {
+		It("must handle empty permissions", func() {
 			input := apiRover
 			input.Authorization = []api.AuthorizationInfo{}
 			out := &roverv1.Rover{}
 
-			err := mapAuthorization(input, out)
+			err := mapPermissions(input, out)
 
 			Expect(err).To(BeNil())
-			Expect(out.Spec.Authorization).To(BeEmpty())
+			Expect(out.Spec.Permissions).To(BeEmpty())
 		})
 	})
 

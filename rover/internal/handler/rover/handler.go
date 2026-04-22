@@ -115,12 +115,12 @@ func (h *RoverHandler) CreateOrUpdate(ctx context.Context, roverObj *roverv1.Rov
 
 	// Handle permissions
 	roverObj.Status.PermissionSets = make([]types.ObjectRef, 0)
-	if config.FeaturePermission.IsEnabled() && len(roverObj.Spec.Authorization) > 0 {
+	if config.FeaturePermission.IsEnabled() && len(roverObj.Spec.Permissions) > 0 {
 		err := permission.HandlePermission(ctx, c, roverObj)
 		if err != nil {
 			return errors.Wrap(err, "failed to handle permission")
 		}
-	} else if !config.FeaturePermission.IsEnabled() && len(roverObj.Spec.Authorization) > 0 {
+	} else if !config.FeaturePermission.IsEnabled() && len(roverObj.Spec.Permissions) > 0 {
 		log.Info("permission handling skipped, feature has not been enabled")
 	}
 
