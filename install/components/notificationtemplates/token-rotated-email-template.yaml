@@ -11,7 +11,7 @@ metadata:
 spec:
   purpose: token-rotated
   channelType: Email
-  subjectTemplate: "Team token updated for team {{.team}} on environment {{.environment}}"
+  subjectTemplate: "[{{.environment}}] Team token updated for team {{.team}}"
   template: |
     <!DOCTYPE html>
     <html lang="en">
