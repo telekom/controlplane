@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - admin.cp.ei.telekom.de
+  resources:
+  - zones
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - admin.cp.ei.telekom.de
+  resources:
+  - zones/status
+  verbs:
+  - get
+- apiGroups:
+  - pcp.ei.telekom.de
+  - permission.cp.ei.telekom.de
+  resources:
+  - permissionsets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - permission.cp.ei.telekom.de
+  resources:
+  - permissionsets/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - permission.cp.ei.telekom.de
+  resources:
+  - permissionsets/status
+  verbs:
+  - get
+  - patch
+  - update

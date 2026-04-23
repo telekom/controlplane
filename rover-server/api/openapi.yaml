@@ -1352,6 +1352,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Problem'
+        chevronUrl:
+          type: string
+          format: uri
+          description: URL to query permissions for this application
+        chevronApplication:
+          type: string
+          description: Application identifier for permission queries (equals irisClientId)
+        authorization:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizationInfo'
+          description: Permission rules configured for this application
     Data:
       type: object
       properties:
@@ -1614,6 +1626,10 @@ components:
           $ref: '#/components/schemas/Authentication'
         ipRestrictions:
           $ref: '#/components/schemas/IpRestrictions'
+        authorization:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizationInfo'
     RoverCreateRequest:
       required:
         - zone
@@ -2104,3 +2120,29 @@ components:
       properties:
         httpPath:
           type: string
+    AuthorizationInfo:
+      type: object
+      properties:
+        resource:
+          type: string
+        role:
+          type: string
+        actions:
+          type: array
+          items:
+            type: string
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizationPermissionInfo'
+    AuthorizationPermissionInfo:
+      type: object
+      properties:
+        resource:
+          type: string
+        role:
+          type: string
+        actions:
+          type: array
+          items:
+            type: string
