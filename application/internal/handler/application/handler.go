@@ -105,7 +105,7 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	rotationCond := meta.FindStatusCondition(app.Status.Conditions, secret.SecretRotationConditionType)
 	rotationInProgress := rotationCond != nil && rotationCond.Reason == secret.SecretRotationReasonInProgress
 	// A rotation is considered already handled when it completed successfully
-	rotationAlreadyHandled := rotationCond != nil && rotationCond.Reason == secret.SecretRotationReasonSuccess
+	rotationAlreadyHandled := app.Spec.RotatedSecret == app.Status.RotatedClientSecret
 
 	if rotationRequested && !rotationInProgress && !rotationAlreadyHandled {
 		// New rotation detected: set InProgress condition only (status fields are set after convergence)
@@ -150,8 +150,10 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 				})
 
 				// Send rotation-completed notification (non-blocking)
-				if err := sendRotationCompletedNotification(ctx, app); err != nil {
+				if notificationRef, err := sendRotationCompletedNotification(ctx, app); err != nil {
 					log.Error(err, "Failed to send secret-rotation-completed notification")
+				} else if notificationRef != nil {
+					upsertNotificationRef(app, *notificationRef)
 				}
 
 				log.Info("Secret rotation completed successfully",
@@ -168,8 +170,10 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 		// Send secret-expiring notification if within the notification threshold (non-blocking)
 		if app.Spec.NeedsClient && app.Status.CurrentExpiresAt != nil {
 			log := logr.FromContextOrDiscard(ctx)
-			if err := sendSecretExpiringNotification(ctx, app, zone); err != nil {
+			if notificationRef, err := sendSecretExpiringNotification(ctx, app, zone); err != nil {
 				log.Error(err, "Failed to send secret-rotation-expiring notification")
+			} else if notificationRef != nil {
+				upsertNotificationRef(app, *notificationRef)
 			}
 		}
 	}
@@ -331,4 +335,16 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 	owner.Status.Consumers = append(owner.Status.Consumers, *types.ObjectRefFromObject(consumer))
 
 	return nil
+}
+
+// upsertNotificationRef inserts or updates a notification reference in the
+// application's NotificationRefs set, using Name as the key.
+func upsertNotificationRef(app *application.Application, ref types.ObjectRef) {
+	for i, existing := range app.Status.NotificationRefs {
+		if existing.Name == ref.Name {
+			app.Status.NotificationRefs[i] = ref
+			return
+		}
+	}
+	app.Status.NotificationRefs = append(app.Status.NotificationRefs, ref)
 }

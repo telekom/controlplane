@@ -8,8 +8,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-logr/logr"
 	admin "github.com/telekom/controlplane/admin/api/v1"
 	application "github.com/telekom/controlplane/application/api/v1"
+	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/api/v1/builder"
@@ -25,7 +27,15 @@ const (
 // sendRotationCompletedNotification sends a notification informing the owning team
 // that their application's secret has been successfully rotated and that the old
 // secret remains valid for the grace period.
-func sendRotationCompletedNotification(ctx context.Context, app *application.Application) error {
+func sendRotationCompletedNotification(ctx context.Context, app *application.Application) (*types.ObjectRef, error) {
+	log := logr.FromContextOrDiscard(ctx)
+	log.V(1).Info("Sending rotation-completed notification",
+		"application", app.Name,
+		"team", app.Spec.Team,
+		"rotatedExpiresAt", app.Status.RotatedExpiresAt,
+		"currentExpiresAt", app.Status.CurrentExpiresAt,
+	)
+
 	env := contextutil.EnvFromContextOrDie(ctx)
 
 	properties := map[string]any{
@@ -42,7 +52,7 @@ func sendRotationCompletedNotification(ctx context.Context, app *application.App
 		properties["currentExpiresAt"] = app.Status.CurrentExpiresAt.Format(time.RFC3339)
 	}
 
-	_, err := builder.New().
+	notification, err := builder.New().
 		WithNamespace(app.Namespace).
 		WithOwner(app).
 		WithSender(notificationv1.SenderTypeSystem, "ApplicationService").
@@ -51,20 +61,31 @@ func sendRotationCompletedNotification(ctx context.Context, app *application.App
 		WithDefaultChannels(ctx, app.Namespace).
 		WithProperties(properties).
 		Send(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	return err
+	return types.ObjectRefFromObject(notification), nil
 }
 
 // sendSecretExpiringNotification sends a notification urging the owning team to
 // rotate their secret before it expires. It only sends when the time until expiry
 // is within the configured NotificationThreshold on the zone.
-func sendSecretExpiringNotification(ctx context.Context, app *application.Application, zone *admin.Zone) error {
+func sendSecretExpiringNotification(ctx context.Context, app *application.Application, zone *admin.Zone) (*types.ObjectRef, error) {
+	log := logr.FromContextOrDiscard(ctx)
+	log.V(1).Info("Evaluating secret-expiring notification",
+		"application", app.Name,
+		"currentExpiresAt", app.Status.CurrentExpiresAt,
+	)
+
 	if app.Status.CurrentExpiresAt == nil {
-		return nil
+		log.V(1).Info("Skipping secret-expiring notification: currentExpiresAt is nil", "application", app.Name)
+		return nil, nil
 	}
 
 	if zone.Spec.IdentityProvider.SecretRotation == nil || !zone.Spec.IdentityProvider.SecretRotation.Enabled {
-		return nil
+		log.V(1).Info("Skipping secret-expiring notification: secret rotation not enabled on zone", "application", app.Name, "zone", zone.Name)
+		return nil, nil
 	}
 
 	threshold := zone.Spec.IdentityProvider.SecretRotation.NotificationThreshold.Duration
@@ -72,7 +93,12 @@ func sendSecretExpiringNotification(ctx context.Context, app *application.Applic
 
 	// Only send if within the notification threshold and not already expired
 	if timeUntilExpiry > threshold || timeUntilExpiry <= 0 {
-		return nil
+		log.V(1).Info("Skipping secret-expiring notification: outside threshold window",
+			"application", app.Name,
+			"timeUntilExpiry", timeUntilExpiry,
+			"threshold", threshold,
+		)
+		return nil, nil
 	}
 
 	env := contextutil.EnvFromContextOrDie(ctx)
@@ -85,7 +111,7 @@ func sendSecretExpiringNotification(ctx context.Context, app *application.Applic
 		"currentExpiresAt": app.Status.CurrentExpiresAt.Format(time.RFC3339),
 	}
 
-	_, err := builder.New().
+	notification, err := builder.New().
 		WithNamespace(app.Namespace).
 		WithOwner(app).
 		WithSender(notificationv1.SenderTypeSystem, "ApplicationService").
@@ -94,6 +120,9 @@ func sendSecretExpiringNotification(ctx context.Context, app *application.Applic
 		WithDefaultChannels(ctx, app.Namespace).
 		WithProperties(properties).
 		Send(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	return err
+	return types.ObjectRefFromObject(notification), nil
 }

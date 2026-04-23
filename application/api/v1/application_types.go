@@ -86,6 +86,12 @@ type ApplicationStatus struct {
 
 	Clients   []types.ObjectRef `json:"clients,omitempty"`
 	Consumers []types.ObjectRef `json:"consumers,omitempty"`
+
+	// NotificationRefs is a set of references to notifications sent for this application.
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=10
+	NotificationRefs []types.ObjectRef `json:"notificationRefs,omitempty"`
 }
 
 // +kubebuilder:object:root=true

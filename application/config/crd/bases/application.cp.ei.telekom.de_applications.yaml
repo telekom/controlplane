@@ -252,6 +252,33 @@ spec:
                   Nil when secret rotation is not configured.
                 format: date-time
                 type: string
+              notificationRefs:
+                description: NotificationRefs is a set of references to notifications
+                  sent for this application.
+                items:
+                  description: |-
+                    ObjectRef is a reference to a Kubernetes object
+                    It is similar to types.NamespacedName but has the required json tags for serialization
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    uid:
+                      description: |-
+                        UID is a type that holds unique ID values, including UUIDs.  Because we
+                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                        intent and helps make sure that UIDs and names do not get conflated.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                maxItems: 10
+                type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
               rotatedClientSecret:
                 description: |-
                   RotatedClientSecret holds the secret-manager reference to the previous client secret

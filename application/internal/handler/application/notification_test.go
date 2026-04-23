@@ -82,8 +82,9 @@ var _ = Describe("Notification Helpers", func() {
 			app.Status.RotatedExpiresAt = &rotatedExpires
 			app.Status.CurrentExpiresAt = &currentExpires
 
-			err := sendRotationCompletedNotification(ctx, app)
+			ref, err := sendRotationCompletedNotification(ctx, app)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(ref).ToNot(BeNil())
 		})
 
 		It("should send a notification without expiry timestamps", func() {
@@ -91,8 +92,9 @@ var _ = Describe("Notification Helpers", func() {
 			ctx = client.WithClient(ctx, mockClient)
 			setupNotificationMocks(mockClient)
 
-			err := sendRotationCompletedNotification(ctx, app)
+			ref, err := sendRotationCompletedNotification(ctx, app)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(ref).ToNot(BeNil())
 		})
 	})
 
@@ -120,8 +122,9 @@ var _ = Describe("Notification Helpers", func() {
 
 		It("should return nil when CurrentExpiresAt is nil", func() {
 			app.Status.CurrentExpiresAt = nil
-			err := sendSecretExpiringNotification(ctx, app, zone)
+			ref, err := sendSecretExpiringNotification(ctx, app, zone)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(ref).To(BeNil())
 		})
 
 		It("should return nil when secret rotation is not configured", func() {
@@ -129,8 +132,9 @@ var _ = Describe("Notification Helpers", func() {
 			expiresAt := metav1.NewTime(time.Now().Add(1 * time.Hour))
 			app.Status.CurrentExpiresAt = &expiresAt
 
-			err := sendSecretExpiringNotification(ctx, app, zone)
+			ref, err := sendSecretExpiringNotification(ctx, app, zone)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(ref).To(BeNil())
 		})
 
 		It("should return nil when secret rotation is disabled", func() {
@@ -138,24 +142,27 @@ var _ = Describe("Notification Helpers", func() {
 			expiresAt := metav1.NewTime(time.Now().Add(1 * time.Hour))
 			app.Status.CurrentExpiresAt = &expiresAt
 
-			err := sendSecretExpiringNotification(ctx, app, zone)
+			ref, err := sendSecretExpiringNotification(ctx, app, zone)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(ref).To(BeNil())
 		})
 
 		It("should return nil when expiry is far in the future (beyond threshold)", func() {
 			expiresAt := metav1.NewTime(time.Now().Add(20 * 24 * time.Hour)) // 20 days out, threshold is 7 days
 			app.Status.CurrentExpiresAt = &expiresAt
 
-			err := sendSecretExpiringNotification(ctx, app, zone)
+			ref, err := sendSecretExpiringNotification(ctx, app, zone)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(ref).To(BeNil())
 		})
 
 		It("should return nil when secret has already expired", func() {
 			expiresAt := metav1.NewTime(time.Now().Add(-1 * time.Hour))
 			app.Status.CurrentExpiresAt = &expiresAt
 
-			err := sendSecretExpiringNotification(ctx, app, zone)
+			ref, err := sendSecretExpiringNotification(ctx, app, zone)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(ref).To(BeNil())
 		})
 
 		It("should send notification when within the threshold", func() {
@@ -166,8 +173,9 @@ var _ = Describe("Notification Helpers", func() {
 			expiresAt := metav1.NewTime(time.Now().Add(3 * 24 * time.Hour)) // 3 days out, threshold is 7 days
 			app.Status.CurrentExpiresAt = &expiresAt
 
-			err := sendSecretExpiringNotification(ctx, app, zone)
+			ref, err := sendSecretExpiringNotification(ctx, app, zone)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(ref).ToNot(BeNil())
 		})
 
 		It("should send notification when expiry is exactly at the threshold boundary", func() {
@@ -179,8 +187,9 @@ var _ = Describe("Notification Helpers", func() {
 			expiresAt := metav1.NewTime(time.Now().Add(7*24*time.Hour - time.Minute))
 			app.Status.CurrentExpiresAt = &expiresAt
 
-			err := sendSecretExpiringNotification(ctx, app, zone)
+			ref, err := sendSecretExpiringNotification(ctx, app, zone)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(ref).ToNot(BeNil())
 		})
 	})
 })
