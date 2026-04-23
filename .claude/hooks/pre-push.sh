@@ -31,7 +31,7 @@ fi
 if [ -n "$CHANGED_FILES" ]; then
   AFFECTED=()
   while IFS= read -r mod_dir; do
-    if echo "$CHANGED_FILES" | grep -q "^${mod_dir}/"; then
+    if [ -f "$mod_dir/Makefile" ] && echo "$CHANGED_FILES" | grep -q "^${mod_dir}/"; then
       AFFECTED+=("$mod_dir")
     fi
   done < <(find . -name 'go.mod' -not -path './docs/*' -not -path '*/node_modules/*' -not -path './tools/*' -exec dirname {} \; | sed 's|^\./||' | sort)
