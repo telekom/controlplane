@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# Run `golangci-lint linters` to see all enabled/disabled linters with descriptions.
+
 version: "2"
 run:
   allow-parallel-runners: true
