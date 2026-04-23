@@ -7,17 +7,16 @@ package interceptor_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	entgen "github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/internal/interceptor"
 	"github.com/telekom/controlplane/controlplane-api/internal/testutil"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("TeamFilterInterceptor", func() {
-
 	var client *entgen.Client
 
 	BeforeEach(func() {
@@ -195,7 +194,6 @@ var _ = Describe("TeamFilterInterceptor", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(groups).To(HaveLen(2))
 		})
-
 	})
 
 	Context("when an unsupported query type is encountered", func() {

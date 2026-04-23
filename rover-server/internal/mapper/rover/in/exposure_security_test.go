@@ -6,11 +6,12 @@ package in
 
 import (
 	"github.com/gkampitakis/go-snaps/snaps"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Exposure Security Mapper", func() {
@@ -26,7 +27,7 @@ var _ = Describe("Exposure Security Mapper", func() {
 			}
 			input.Security = api.Security{}
 			err := input.Security.FromBasicAuth(basicAuth)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			output := &roverv1.ApiExposure{}
 
@@ -57,7 +58,7 @@ var _ = Describe("Exposure Security Mapper", func() {
 			}
 			input.Security = api.Security{}
 			err := input.Security.FromOauth2(oauth2)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			output := &roverv1.ApiExposure{}
 
@@ -90,7 +91,7 @@ var _ = Describe("Exposure Security Mapper", func() {
 			}
 			input.Security = api.Security{}
 			err := input.Security.FromOauth2(oauth2)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			output := &roverv1.ApiExposure{}
 
@@ -117,7 +118,7 @@ var _ = Describe("Exposure Security Mapper", func() {
 			}
 			input.Security = api.Security{}
 			err := input.Security.FromOauth2(oauth2)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			output := &roverv1.ApiExposure{}
 

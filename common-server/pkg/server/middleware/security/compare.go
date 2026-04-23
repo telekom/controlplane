@@ -31,7 +31,6 @@ type Matcher struct {
 }
 
 func NewMatcher(expectedTemplate, userInputTemplate string) *Matcher {
-
 	funcs := map[string]any{
 		"contains": strings.Contains,
 		"split":    strings.Split,

@@ -12,13 +12,15 @@ import (
 	"net/http"
 	"strings"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 	"github.com/telekom/controlplane/rover-ctl/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("BaseHandler", func() {
@@ -158,7 +160,7 @@ var _ = Describe("BaseHandler", func() {
 				Expect(err).To(HaveOccurred())
 				apiErr, ok := common.AsApiError(err)
 				Expect(ok).To(BeTrue())
-				Expect(apiErr).NotTo(BeNil())
+				Expect(apiErr).To(HaveOccurred())
 				// The error message comes from the mock response we defined above
 				Expect(apiErr.Title).To(Equal("Validation failed"))
 			})
@@ -444,7 +446,7 @@ var _ = Describe("BaseHandler", func() {
 				Expect(err).To(HaveOccurred())
 				apiErr, ok := common.AsApiError(err)
 				Expect(ok).To(BeTrue())
-				Expect(apiErr).NotTo(BeNil())
+				Expect(apiErr).To(HaveOccurred())
 				Expect(apiErr.Title).To(Equal("Delete failed"))
 			})
 		})

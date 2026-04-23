@@ -5,10 +5,11 @@
 package v1
 
 import (
-	"github.com/telekom/controlplane/common/pkg/types"
-	"github.com/telekom/controlplane/common/pkg/util/hash"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/hash"
 )
 
 // ApprovalRequestSpec defines the desired state of ApprovalRequest

@@ -5,8 +5,9 @@
 package tree
 
 import (
-	"github.com/telekom/controlplane/common-server/pkg/store"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/telekom/controlplane/common-server/pkg/store"
 )
 
 var LookupStores = &Stores{
@@ -32,7 +33,7 @@ func (s *Stores) AddStore(store store.ObjectStore[*unstructured.Unstructured]) {
 func GetControllerOf(obj *unstructured.Unstructured) (ref OwnerReference, ok bool) {
 	owners := obj.GetOwnerReferences()
 	if len(owners) == 0 {
-		return
+		return ref, ok
 	}
 	for _, owner := range owners {
 		if owner.Controller != nil && *owner.Controller {
@@ -46,5 +47,5 @@ func GetControllerOf(obj *unstructured.Unstructured) (ref OwnerReference, ok boo
 		}
 	}
 
-	return
+	return ref, ok
 }

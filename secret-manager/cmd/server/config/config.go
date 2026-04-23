@@ -8,9 +8,9 @@ import (
 	"io"
 	"os"
 
-	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
-
 	"gopkg.in/yaml.v3"
+
+	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
 )
 
 type BackendConfig struct {
@@ -25,7 +25,7 @@ func (c BackendConfig) Get(key string) string {
 	return c.Config[key]
 }
 
-func (c BackendConfig) GetDefault(key string, defaultValue string) string {
+func (c BackendConfig) GetDefault(key, defaultValue string) string {
 	if c.Config == nil {
 		return defaultValue
 	}

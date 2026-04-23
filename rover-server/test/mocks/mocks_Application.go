@@ -7,6 +7,7 @@ package mocks
 import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/mock"
+
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 )
@@ -31,7 +32,8 @@ func ConfigureApplicationStoreMock(testing ginkgo.FullGinkgoTInterface, mockedSt
 		mock.Anything,
 	).Return(
 		&store.ListResponse[*applicationv1.Application]{
-			Items: []*applicationv1.Application{application}}, nil).Maybe()
+			Items: []*applicationv1.Application{application},
+		}, nil).Maybe()
 
 	mockedStore.EXPECT().CreateOrReplace(
 		mock.AnythingOfType("*context.valueCtx"),

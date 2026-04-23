@@ -8,10 +8,6 @@
 package module
 
 import (
-	"github.com/telekom/controlplane/controlplane-api/ent"
-	"github.com/telekom/controlplane/projector/internal/config"
-	"github.com/telekom/controlplane/projector/internal/infrastructure"
-	"github.com/telekom/controlplane/projector/internal/runtime"
 	"golang.org/x/time/rate"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -20,6 +16,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/projector/internal/config"
+	"github.com/telekom/controlplane/projector/internal/infrastructure"
+	"github.com/telekom/controlplane/projector/internal/runtime"
 )
 
 // Module is the type-erased registration boundary for a resource module.

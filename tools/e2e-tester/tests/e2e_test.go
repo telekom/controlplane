@@ -31,7 +31,7 @@ func TestEndToEnd(t *testing.T) {
 echo "Command: $@"
 echo "Environment: $ROVER_TOKEN"
 exit 0
-`), 0755)
+`), 0o755)
 	if err != nil {
 		t.Fatalf("Failed to create mock rover-ctl: %v", err)
 	}
@@ -61,14 +61,14 @@ suites:
         must_pass: false
         command: "get resources"
         compare: true
-`), 0644)
+`), 0o644)
 	if err != nil {
 		t.Fatalf("Failed to create test config: %v", err)
 	}
 
 	// Create snapshot directory
 	snapshotDir := filepath.Join(testDir, "snapshots")
-	err = os.MkdirAll(snapshotDir, 0755)
+	err = os.MkdirAll(snapshotDir, 0o755)
 	if err != nil {
 		t.Fatalf("Failed to create snapshot dir: %v", err)
 	}

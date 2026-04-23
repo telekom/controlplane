@@ -12,13 +12,12 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var (
-	global logr.Logger
-)
+var global logr.Logger
 
 func SetGlobalLogger(logger logr.Logger) {
 	global = logger
 }
+
 func L() logr.Logger {
 	if global.IsZero() {
 		global = NewLogger()

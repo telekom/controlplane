@@ -9,10 +9,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/telekom/controlplane/common-server/pkg/store"
-
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
+
+	"github.com/telekom/controlplane/common-server/pkg/store"
 )
 
 type PatchFunc func([]byte) ([]byte, error)

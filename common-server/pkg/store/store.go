@@ -12,11 +12,12 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common-server/pkg/problems"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/telekom/controlplane/common-server/pkg/problems"
 )
 
 const DefaultPageSize = 100
@@ -53,9 +54,7 @@ type Patch struct {
 
 type FilterOp string
 
-var (
-	filterRegex = regexp.MustCompile(`^(.+)(==|!=|=~|~~)([\^\$a-zA-Z0-9-_.*+]+)$`)
-)
+var filterRegex = regexp.MustCompile(`^(.+)(==|!=|=~|~~)([\^\$a-zA-Z0-9-_.*+]+)$`)
 
 const (
 	OpEqual    FilterOp = "=="

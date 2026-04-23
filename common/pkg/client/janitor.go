@@ -9,12 +9,13 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 type JanitorClient interface {

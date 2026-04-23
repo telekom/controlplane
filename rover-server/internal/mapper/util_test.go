@@ -10,9 +10,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestCopyFromTo_InvalidSource_ReturnsError(t *testing.T) {

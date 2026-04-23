@@ -18,6 +18,7 @@ import (
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 )
 
@@ -29,14 +30,12 @@ const (
 	AccessTypeWrite AccessType = "write"
 )
 
-var (
-	// A list of known paths that Kubernetes uses to expose JWKS.
-	// The order is important, as first available path will be used.
-	KubernetesJwksPaths = []string{
-		"/keys",
-		"/openid/v1/jwks",
-	}
-)
+// A list of known paths that Kubernetes uses to expose JWKS.
+// The order is important, as first available path will be used.
+var KubernetesJwksPaths = []string{
+	"/keys",
+	"/openid/v1/jwks",
+}
 
 type AccessTypeSet map[AccessType]struct{}
 

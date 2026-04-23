@@ -6,6 +6,7 @@ package base
 
 import (
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/parser"
 )
 

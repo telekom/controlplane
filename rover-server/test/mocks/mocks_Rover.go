@@ -9,6 +9,7 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/mock"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
@@ -44,7 +45,8 @@ func configureRover(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObject
 		}),
 	).Return(
 		&store.ListResponse[*roverv1.Rover]{
-			Items: []*roverv1.Rover{rover}}, nil).Maybe()
+			Items: []*roverv1.Rover{rover},
+		}, nil).Maybe()
 
 	// List with a prefix that does NOT match our test data (e.g., different team)
 	mockedStore.EXPECT().List(
@@ -54,7 +56,8 @@ func configureRover(testing ginkgo.FullGinkgoTInterface, mockedStore *MockObject
 		}),
 	).Return(
 		&store.ListResponse[*roverv1.Rover]{
-			Items: []*roverv1.Rover{}}, nil).Maybe()
+			Items: []*roverv1.Rover{},
+		}, nil).Maybe()
 
 	mockedStore.EXPECT().Delete(
 		mock.AnythingOfType("*context.valueCtx"),

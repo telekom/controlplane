@@ -6,6 +6,7 @@ package openapi
 
 import (
 	"github.com/gofiber/fiber/v2"
+
 	"github.com/telekom/controlplane/common-server/pkg/server"
 )
 

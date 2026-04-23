@@ -10,11 +10,10 @@ import (
 	"os"
 	"path/filepath"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/mock"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/apply"
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
@@ -22,6 +21,9 @@ import (
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 	"github.com/telekom/controlplane/rover-ctl/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Apply Command", func() {
@@ -78,7 +80,7 @@ spec:
         username: testuser
         password: testpass
 `
-		err = os.WriteFile(yamlFile, []byte(yamlContent), 0644)
+		err = os.WriteFile(yamlFile, []byte(yamlContent), 0o644)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Register a mock handler for Rover

@@ -9,10 +9,11 @@ import (
 	"net/url"
 
 	"github.com/gofiber/fiber/v2"
+	"go.uber.org/zap"
+
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/diffmatcher"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/store"
-	"go.uber.org/zap"
 )
 
 // /compare?a={snapshotA}&b={snapshotB}

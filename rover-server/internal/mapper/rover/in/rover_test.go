@@ -6,10 +6,12 @@ package in
 
 import (
 	"github.com/gkampitakis/go-snaps/snaps"
+	"github.com/spf13/viper"
+
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/spf13/viper"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 var _ = Describe("Rover Mapper", func() {
@@ -20,7 +22,7 @@ var _ = Describe("Rover Mapper", func() {
 
 			err := MapRover(input, output)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			snaps.MatchSnapshot(GinkgoT(), output)
 		})
 
@@ -29,10 +31,9 @@ var _ = Describe("Rover Mapper", func() {
 
 			err := MapRover(nil, output)
 
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("input rover is nil"))
 		})
-
 	})
 
 	Context("MapExposures", func() {
@@ -42,7 +43,7 @@ var _ = Describe("Rover Mapper", func() {
 
 			err := mapExposures(input, output)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			snaps.MatchSnapshot(GinkgoT(), output)
 		})
 	})
@@ -54,7 +55,7 @@ var _ = Describe("Rover Mapper", func() {
 
 			err := mapSubscriptions(input, out)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			snaps.MatchSnapshot(GinkgoT(), out)
 		})
 	})
@@ -63,7 +64,7 @@ var _ = Describe("Rover Mapper", func() {
 		It("must map a RoverUpdateRequest to a Rover correctly", func() {
 			output, err := MapRequest(roverUpdateRequest, resourceIdInfo)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)
@@ -75,7 +76,7 @@ var _ = Describe("Rover Mapper", func() {
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)
 
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("input rover update request is nil"))
 		})
 
@@ -85,7 +86,7 @@ var _ = Describe("Rover Mapper", func() {
 
 			output, err := MapRequest(input, resourceIdInfo)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)
@@ -94,11 +95,10 @@ var _ = Describe("Rover Mapper", func() {
 
 			output, err = MapRequest(input, resourceIdInfo)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)
 		})
-
 	})
 })

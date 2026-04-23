@@ -75,7 +75,7 @@ var validator *ObjectMetadataValidator
 
 // ValidateObjectMetadata delegates to the ObjectMetadataValidator
 // This method maintains backwards compatibility with existing code
-func (w *MinioWrapper) ValidateObjectMetadata(ctx context.Context, path string, expectedContentType string, expectedChecksum string, uploadedCRC64 string) error {
+func (w *MinioWrapper) ValidateObjectMetadata(ctx context.Context, path, expectedContentType, expectedChecksum, uploadedCRC64 string) error {
 	// Create the validator if it doesn't exist yet
 	if validator == nil {
 		validator = NewObjectMetadataValidator(w)

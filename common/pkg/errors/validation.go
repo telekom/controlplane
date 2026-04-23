@@ -7,17 +7,16 @@ package errors
 import (
 	"fmt"
 
-	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/types"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
-var (
-	MetadataEnvPath = field.NewPath("metadata").Child("labels").Child(config.EnvironmentLabelKey)
-)
+var MetadataEnvPath = field.NewPath("metadata").Child("labels").Child(config.EnvironmentLabelKey)
 
 type ValidationError struct {
 	Errors   field.ErrorList

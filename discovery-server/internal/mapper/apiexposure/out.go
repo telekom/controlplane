@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
-
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper/status"

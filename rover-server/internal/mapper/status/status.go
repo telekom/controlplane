@@ -7,13 +7,13 @@ package status
 import (
 	"context"
 
-	"github.com/telekom/controlplane/common/pkg/condition"
-	v1 "github.com/telekom/controlplane/rover/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
+	v1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 // Condition reason values. These must stay in sync with the factory functions

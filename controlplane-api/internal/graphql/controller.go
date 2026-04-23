@@ -11,9 +11,10 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
+	"github.com/valyala/fasthttp/fasthttpadaptor"
+
 	"github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
-	"github.com/valyala/fasthttp/fasthttpadaptor"
 )
 
 // Controller is a Fiber controller that wraps a gqlgen handler.

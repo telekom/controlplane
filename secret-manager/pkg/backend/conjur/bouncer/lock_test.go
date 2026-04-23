@@ -9,18 +9,17 @@ import (
 	"errors"
 	"time"
 
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
 )
 
 var _ = Describe("Locker", func() {
 	BeforeEach(func() {
-
 	})
 
 	Context("Handling the lock lifecycle", func() {
-
 		var ctx context.Context
 
 		BeforeEach(func() {
@@ -123,6 +122,5 @@ var _ = Describe("Locker", func() {
 
 			Expect(completedAt1).To(BeTemporally("~", completedAt2, 1*time.Second))
 		})
-
 	})
 })

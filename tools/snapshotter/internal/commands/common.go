@@ -9,9 +9,7 @@ import (
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/store"
 )
 
-var (
-	noStore bool
-)
+var noStore bool
 
 func NewStore(path string, noStore bool) store.SnapshotStore[*snapshot.Snapshot] {
 	if noStore {

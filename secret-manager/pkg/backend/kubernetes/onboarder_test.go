@@ -10,12 +10,14 @@ import (
 	"fmt"
 	"sync"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/secret-manager/pkg/backend"
-	"github.com/telekom/controlplane/secret-manager/pkg/backend/kubernetes"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/telekom/controlplane/secret-manager/pkg/backend"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/kubernetes"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Kubernetes Onboarder", func() {
@@ -32,7 +34,6 @@ var _ = Describe("Kubernetes Onboarder", func() {
 	})
 
 	Context("Concurrent Onboarding", func() {
-
 		It("should handle concurrent OnboardTeam calls without errors", func() {
 			onboarder := kubernetes.NewOnboarder(mockK8sClient)
 			const concurrency = 10
@@ -145,7 +146,6 @@ var _ = Describe("Kubernetes Onboarder", func() {
 	})
 
 	Context("Onboard Environment", func() {
-
 		It("should onboard an environment", func() {
 			onboarder := kubernetes.NewOnboarder(mockK8sClient)
 
@@ -252,7 +252,6 @@ var _ = Describe("Kubernetes Onboarder", func() {
 	})
 
 	Context("Onboard Team", func() {
-
 		It("should onboard a team", func() {
 			onboarder := kubernetes.NewOnboarder(mockK8sClient)
 

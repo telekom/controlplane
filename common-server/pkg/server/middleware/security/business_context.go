@@ -13,14 +13,17 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/util"
 )
 
-var invalidCtx = problems.Forbidden("Invalid Context", "Invalid authorization context")
-var invalidCtxField = func(field string) problems.Problem {
-	return problems.Forbidden("Invalid Context", fmt.Sprintf("Missing field '%s'", field))
-}
+var (
+	invalidCtx      = problems.Forbidden("Invalid Context", "Invalid authorization context")
+	invalidCtxField = func(field string) problems.Problem {
+		return problems.Forbidden("Invalid Context", fmt.Sprintf("Missing field '%s'", field))
+	}
+)
 
 type BusinessContextOpts struct {
 	Log            logr.Logger
@@ -133,10 +136,8 @@ func NewBusinessCtxMiddleware(mwOpts BusinessContextOpts) fiber.Handler {
 		var scopes []string
 		if scopesClaim, pErr := DecodeValue(mwOpts.ValuesDecoders, claims, "scopes"); pErr == nil {
 			scopes = strings.Split(scopesClaim, " ")
-
 		} else if mwOpts.DefaultScope != "" {
 			scopes = defaultScopes
-
 		} else {
 			return c.Status(invalidCtx.Code()).JSON(invalidCtxField("scopes"), "application/problem+json")
 		}

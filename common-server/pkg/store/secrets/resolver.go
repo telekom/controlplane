@@ -12,10 +12,11 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	secrets "github.com/telekom/controlplane/secret-manager/api"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	secrets "github.com/telekom/controlplane/secret-manager/api"
 )
 
 var _ Replacer = &SecretManagerResolver{}

@@ -10,6 +10,8 @@ import (
 	"slices"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/config"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/decoder"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/diffmatcher"
@@ -17,7 +19,6 @@ import (
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/source"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/store"
-	"go.uber.org/zap"
 )
 
 type Orchestrator struct {
@@ -75,12 +76,12 @@ func (o *Orchestrator) MakeId(resourceId string) string {
 func (o *Orchestrator) SetObfuscationTargets(targets ...obfuscator.ObfuscationTarget) {
 	o.obfuscationTargets = targets
 }
+
 func (o *Orchestrator) SetDecoderTargets(targets ...decoder.DecoderTarget) {
 	o.decoderTargets = targets
 }
 
 func (o *Orchestrator) Run(ctx context.Context, opts RunOptions) (snaps []*snapshot.Snapshot, err error) {
-
 	if opts.ResourceType != "" && len(opts.Resources) > 0 {
 		for _, resID := range opts.Resources {
 			if snap, err := o.Do(ctx, opts.ResourceType, resID); err != nil {

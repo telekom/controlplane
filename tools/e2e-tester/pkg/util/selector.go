@@ -13,8 +13,7 @@ import (
 
 // ApplySelector applies a simple YAML path selector to YAML content
 // and returns the selected portion
-func ApplySelector(content string, selector string) (string, error) {
-
+func ApplySelector(content, selector string) (string, error) {
 	path, err := yaml.PathString(selector)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse selector")

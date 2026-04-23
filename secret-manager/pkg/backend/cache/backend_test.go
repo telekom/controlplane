@@ -12,18 +12,18 @@ import (
 	"sync/atomic"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	cache "github.com/telekom/controlplane/secret-manager/pkg/backend/cache"
 	"github.com/telekom/controlplane/secret-manager/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Cached Backend cache", func() {
-
 	Context("Cached Backend cache Implementation", func() {
-
 		var mockBackend *mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]
 		var cachedBackend *cache.CachedBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]
 
@@ -155,7 +155,6 @@ var _ = Describe("Cached Backend cache", func() {
 	})
 
 	Context("Singleflight deduplication", func() {
-
 		It("should deduplicate concurrent Get requests for the same key", func() {
 			ctx := context.Background()
 			const numGoroutines = 10
@@ -374,7 +373,6 @@ var _ = Describe("Cached Backend cache", func() {
 	})
 
 	Context("Sub-secret cache invalidation", func() {
-
 		It("should invalidate parent cache entry when setting a sub-secret", func() {
 			ctx := context.Background()
 

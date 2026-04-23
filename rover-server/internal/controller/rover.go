@@ -10,12 +10,11 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common/pkg/config"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/applicationinfo"
@@ -24,7 +23,7 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
 	"github.com/telekom/controlplane/rover-server/internal/server"
 	s "github.com/telekom/controlplane/rover-server/pkg/store"
-
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
 )
 
@@ -196,7 +195,6 @@ func (r *RoverController) GetApplicationInfo(ctx context.Context, resourceId str
 		Team:         bCtx.Team,
 		Applications: []api.ApplicationInfo{*appInfo},
 	}, nil
-
 }
 
 // GetApplicationsInfo implements server.RoverController.
@@ -246,7 +244,6 @@ func (r *RoverController) GetApplicationsInfo(ctx context.Context, params api.Ge
 		Hub:          bCtx.Group,
 		Team:         bCtx.Team,
 	}, nil
-
 }
 
 func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId string) (res api.RoverSecretResponse, err error) {
@@ -285,7 +282,6 @@ func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId strin
 		Id:     app.Status.ClientId,
 		Secret: newClientSecret,
 	}, nil
-
 }
 
 func (r *RoverController) guardPubSubFeature(ctx context.Context, res api.RoverUpdateRequest, isEnabled bool) problems.Problem {

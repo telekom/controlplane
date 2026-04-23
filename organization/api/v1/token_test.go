@@ -7,14 +7,13 @@ package v1_test
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
 
-	. "github.com/onsi/gomega"
+	v1 "github.com/telekom/controlplane/organization/api/v1"
 
-	"github.com/telekom/controlplane/organization/api/v1"
+	. "github.com/onsi/gomega"
 )
 
 func TestEncodeTeamToken(t *testing.T) {
@@ -55,7 +54,7 @@ func TestDecodeToken(t *testing.T) {
 	given := "eyJjbGllbnRfaWQiOiJjbGllbnRfaWQiLCJjbGllbnRfc2VjcmV0IjoiY2xpZW50X3NlY3JldCIsImVudmlyb25tZW50IjoiZW52IiwiZ2VuZXJhdGVkX2F0IjoxNzQ0MDk4NjEyLCJzZXJ2ZXJfdXJsIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9zZXJ2ZXIiLCJ0b2tlbl91cmwiOiJodHRwczovL2V4YW1wbGUuY29tL3Rva2VuIn0="
 	decodedToken, err := v1.DecodeTeamToken(given)
 	Expect(err).To(HaveOccurred())
-	Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("failed to decode token. `env--group--team.` prefix is not present")))
+	Expect(err.Error()).To(ContainSubstring("failed to decode token. `env--group--team.` prefix is not present"))
 
 	given = "env--group--team." + given
 

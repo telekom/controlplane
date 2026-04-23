@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/goccy/go-yaml"
+
 	"github.com/telekom/controlplane/tools/e2e-tester/pkg/obfuscator"
 )
 

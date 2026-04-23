@@ -8,23 +8,24 @@ import (
 	"context"
 
 	"entgo.io/ent/privacy"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl_runtime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	_ "github.com/mattn/go-sqlite3"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
-	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
-
 	"github.com/telekom/controlplane/projector/internal/domain/zone"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	runtime "github.com/telekom/controlplane/projector/internal/runtime"
+
+	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Zone Integration", func() {

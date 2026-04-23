@@ -7,14 +7,15 @@ package secrets_test
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var _ = Describe("Secrets Obfuscator", func() {
-
 	var ctx context.Context
 	var obfuscator secrets.Replacer
 
@@ -24,7 +25,6 @@ var _ = Describe("Secrets Obfuscator", func() {
 	})
 
 	Context("Obfuscate from Bytes", func() {
-
 		b := []byte(`{"root": "mySecretValue", "sub": {"key": "mySecretValue"}}`)
 
 		It("should obfuscate all secrets in a byte array", func() {
@@ -45,7 +45,6 @@ var _ = Describe("Secrets Obfuscator", func() {
 	})
 
 	Context("Obfuscate from Map", func() {
-
 		It("should obfuscate all secrets in a map", func() {
 			m := map[string]any{
 				"root": "mySecretValue",
@@ -62,7 +61,6 @@ var _ = Describe("Secrets Obfuscator", func() {
 	})
 
 	Context("Obfuscate from Unstructured", func() {
-
 		It("should obfuscate all secrets in an unstructured object", func() {
 			u := &unstructured.Unstructured{
 				Object: map[string]any{
@@ -84,7 +82,6 @@ var _ = Describe("Secrets Obfuscator", func() {
 	})
 
 	Context("Obfuscate from typed struct (JSON fallback)", func() {
-
 		type Security struct {
 			ClientId     string `json:"clientId"`
 			ClientSecret string `json:"clientSecret"`

@@ -118,7 +118,7 @@ func (r *resolver) ResolveCrds(gvr schema.GroupVersionResource, limit int) (crds
 
 				crds = append(crds, crd)
 				if limit > 0 && len(crds) >= limit {
-					return
+					return crds, err
 				}
 			}
 		}

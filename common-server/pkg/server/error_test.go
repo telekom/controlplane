@@ -7,19 +7,20 @@ package server_test
 import (
 	"errors"
 	"io"
+	"net/http"
 	"net/http/httptest"
 
 	"github.com/gofiber/fiber/v2"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Error", func() {
-
 	Context("ReturnWithProblem", func() {
-
 		var app *fiber.App
 
 		BeforeEach(func() {
@@ -32,7 +33,7 @@ var _ = Describe("Error", func() {
 				return server.ReturnWithProblem(c, problem, nil)
 			})
 
-			req := httptest.NewRequest("GET", "/", nil)
+			req := httptest.NewRequest("GET", "/", http.NoBody)
 			res, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.StatusCode).To(Equal(problem.Code()))
@@ -45,7 +46,7 @@ var _ = Describe("Error", func() {
 				return server.ReturnWithProblem(c, nil, errors.New("unknown error"))
 			})
 
-			req := httptest.NewRequest("GET", "/", nil)
+			req := httptest.NewRequest("GET", "/", http.NoBody)
 			res, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.StatusCode).To(Equal(500))
@@ -58,7 +59,7 @@ var _ = Describe("Error", func() {
 				return server.ReturnWithProblem(c, nil, fiber.ErrMethodNotAllowed)
 			})
 
-			req := httptest.NewRequest("GET", "/", nil)
+			req := httptest.NewRequest("GET", "/", http.NoBody)
 			res, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.StatusCode).To(Equal(405))
@@ -67,7 +68,7 @@ var _ = Describe("Error", func() {
 		})
 
 		It("should return a 404 error", func() {
-			req := httptest.NewRequest("GET", "/", nil)
+			req := httptest.NewRequest("GET", "/", http.NoBody)
 			res, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.StatusCode).To(Equal(404))
@@ -81,13 +82,12 @@ var _ = Describe("Error", func() {
 				return server.ReturnWithProblem(c, nil, problem)
 			})
 
-			req := httptest.NewRequest("GET", "/", nil)
+			req := httptest.NewRequest("GET", "/", http.NoBody)
 			res, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.StatusCode).To(Equal(problem.Code()))
 			b, _ := io.ReadAll(res.Body)
 			Expect(b).To(MatchJSON(`{"type": "BadRequest", "status": 400, "title": "Bad Request", "detail": "test", "instance": ""}`))
 		})
-
 	})
 })

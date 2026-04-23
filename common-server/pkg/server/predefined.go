@@ -7,16 +7,16 @@ package server
 import (
 	"fmt"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/bytedance/sonic"
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/exp/slices"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/server/template"
 	"github.com/telekom/controlplane/common-server/pkg/store"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var _ Controller = &PredefinedController{}
@@ -118,12 +118,12 @@ func mergeWithPredefinedFilters(opts *store.ListOpts, predefinedFilters []store.
 	filtersToAppend := make([]store.Filter, len(predefinedFilters)+len(opts.Filters))
 	copy(filtersToAppend, predefinedFilters)
 
-	var isPredefinedFilter = func(filter store.Filter) bool {
+	isPredefinedFilter := func(filter store.Filter) bool {
 		return slices.ContainsFunc(predefinedFilters, func(predFilter store.Filter) bool {
 			return predFilter.Path == filter.Path
 		})
 	}
-	var index = len(predefinedFilters)
+	index := len(predefinedFilters)
 	for _, optsFilter := range opts.Filters {
 		if !isPredefinedFilter(optsFilter) {
 			filtersToAppend[index] = optsFilter

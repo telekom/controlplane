@@ -102,7 +102,6 @@ func main() {
 	url := route.Spec.Downstreams[0].Url() + "/anything"
 
 	makeRequest(ctx, url, tokenUrl, clientId, clientSecret)
-
 }
 
 func newClient(cfg *rest.Config) (client.Client, error) {
@@ -147,7 +146,7 @@ func makeRequest(ctx context.Context, url, tokenUrl, clientId, clientSecret stri
 		panic(errors.Wrap(err, "failed to create HTTP client"))
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		panic(errors.Wrapf(err, "failed to create HTTP request to %s", url))
 	}

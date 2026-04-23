@@ -38,7 +38,7 @@ func ensureLabels(notification *notificationv1.Notification) {
 // ExtractApplicationInformation extract values from the target structure based on conventions
 func ExtractApplicationInformation(target types.TypedObjectRef) (kind, application, basepath, group, team string) {
 	kind = target.Kind                            // k8s kind
-	splitName := strings.Split(target.Name, "--") //target.Name: application--basepath
+	splitName := strings.Split(target.Name, "--") // target.Name: application--basepath
 	if len(splitName) >= 2 {
 		application = splitName[0]
 		basepath = splitName[1]
@@ -46,7 +46,7 @@ func ExtractApplicationInformation(target types.TypedObjectRef) (kind, applicati
 		application = target.Name
 	}
 
-	splitNamespace := strings.Split(target.Namespace, "--") //target.Namespace: env--group--team
+	splitNamespace := strings.Split(target.Namespace, "--") // target.Namespace: env--group--team
 	if len(splitNamespace) >= 3 {
 		group = splitNamespace[1]
 		team = splitNamespace[2]
@@ -54,5 +54,5 @@ func ExtractApplicationInformation(target types.TypedObjectRef) (kind, applicati
 		group = target.Namespace
 		team = target.Namespace
 	}
-	return
+	return kind, application, basepath, group, team
 }

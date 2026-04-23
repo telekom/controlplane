@@ -12,9 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"github.com/telekom/controlplane/tools/e2e-tester/pkg/config"
 	"github.com/telekom/controlplane/tools/e2e-tester/pkg/snapshot"
-	"go.uber.org/zap"
 )
 
 // ExecuteResult contains the result of a command execution
@@ -69,7 +71,8 @@ func (e *RoverCtlExecutor) Execute(ctx context.Context, cmdStr string, params ma
 	// Check for errors
 	exitCode := 0
 	if err != nil {
-		if exitError, ok := err.(*exec.ExitError); ok {
+		exitError := &exec.ExitError{}
+		if errors.As(err, &exitError) {
 			exitCode = exitError.ExitCode()
 		} else {
 			return nil, fmt.Errorf("failed to execute command: %w", err)
@@ -88,8 +91,7 @@ func (e *RoverCtlExecutor) Execute(ctx context.Context, cmdStr string, params ma
 }
 
 // CreateSnapshot creates a CommandSnapshot from a command execution
-func (e *RoverCtlExecutor) CreateSnapshot(cmdStr string, result *ExecuteResult, envName string, suiteName string, caseIndex string, caseName string) *snapshot.CommandSnapshot {
-
+func (e *RoverCtlExecutor) CreateSnapshot(cmdStr string, result *ExecuteResult, envName, suiteName, caseIndex, caseName string) *snapshot.CommandSnapshot {
 	if envName == "" {
 		envName = e.environment.Name
 	}

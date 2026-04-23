@@ -7,8 +7,9 @@ package filter
 import (
 	"bytes"
 
-	"github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/tidwall/gjson"
+
+	"github.com/telekom/controlplane/common-server/pkg/store"
 )
 
 type FilterFunc func([]byte) bool

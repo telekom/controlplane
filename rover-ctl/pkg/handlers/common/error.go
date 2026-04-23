@@ -10,6 +10,7 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
 

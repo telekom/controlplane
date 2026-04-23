@@ -38,6 +38,7 @@ func NewRegex(pattern string) *Regex {
 		pattern: regexp.MustCompile(pattern),
 	}
 }
+
 func (r *Regex) Equal(value any) bool {
 	switch value := value.(type) {
 	case string:

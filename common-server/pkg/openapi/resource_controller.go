@@ -13,7 +13,6 @@ import (
 )
 
 func AddResourceController(builder *DocumentBuilder, ctrl *server.ResourceController, opts server.ControllerOpts) {
-
 	gvr, _ := ctrl.Store.Info()
 	crd, err := crd.Instance.ResolveCrd(gvr)
 	if err != nil {
@@ -183,5 +182,4 @@ func AddResourceController(builder *DocumentBuilder, ctrl *server.ResourceContro
 	}
 
 	builder.AddPath(opts.Prefix+"/{namespace}/{name}", singlePath.Build())
-
 }

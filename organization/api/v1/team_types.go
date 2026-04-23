@@ -9,11 +9,12 @@ import (
 	"fmt"
 	"strings"
 
-	cclient "github.com/telekom/controlplane/common/pkg/client"
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	cclient "github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 type Member struct {
@@ -95,8 +96,10 @@ type TeamStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
-var _ types.Object = &Team{}
-var _ types.ObjectList = &TeamList{}
+var (
+	_ types.Object     = &Team{}
+	_ types.ObjectList = &TeamList{}
+)
 
 func (t *Team) GetConditions() []metav1.Condition {
 	return t.Status.Conditions
@@ -104,7 +107,6 @@ func (t *Team) GetConditions() []metav1.Condition {
 
 func (t *Team) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&t.Status.Conditions, condition)
-
 }
 
 func (t *Team) GetTeamToken() string {

@@ -388,7 +388,6 @@ func (i *NoCacheInformer) startWatcher() (err error) {
 		ResourceVersion:     i.resourceVersion,
 		AllowWatchBookmarks: true,
 	})
-
 	if err != nil {
 		i.setResourceVersion("0")
 		return errors.Wrap(err, "failed to start watcher")

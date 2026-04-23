@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
@@ -52,7 +53,6 @@ func NewStatusPoller(handler StatusHandler, evalFunc StatusEvalFunc, timeout, in
 }
 
 func (p *StatusPoller) Start(ctx context.Context, name string) (types.ObjectStatus, error) {
-
 	ctx, cancel := context.WithTimeout(ctx, p.timeout)
 	defer cancel()
 

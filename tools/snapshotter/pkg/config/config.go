@@ -7,9 +7,10 @@ package config
 import (
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
+	"k8s.io/client-go/util/homedir"
+
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/decoder"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/obfuscator"
-	"k8s.io/client-go/util/homedir"
 )
 
 type SourceConfig struct {
@@ -75,7 +76,6 @@ func (c *Config) GetSourceConfigs() map[string]SourceConfig {
 }
 
 func LoadConfig(path string) (Config, error) {
-
 	viper.AutomaticEnv()
 
 	if path != "" {

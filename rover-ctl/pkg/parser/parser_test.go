@@ -8,10 +8,11 @@ import (
 	"os"
 	"path/filepath"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/rover-ctl/pkg/parser"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Parser", func() {
@@ -145,7 +146,7 @@ var _ = Describe("Parser", func() {
 
 			objects := dirParser.Objects()
 			Expect(objects).NotTo(BeEmpty())
-			Expect(len(objects)).To(Equal(4), "Should find exactly 4 valid objects in the directory")
+			Expect(objects).To(HaveLen(4), "Should find exactly 4 valid objects in the directory")
 		})
 
 		It("should return an error when parsing a directory with no valid files", func() {
@@ -194,7 +195,7 @@ var _ = Describe("Parser", func() {
 			Expect(hookCalled).To(BeTrue())
 			Objects := hookParser.Objects()
 			Expect(Objects).To(HaveLen(1))
-			Expect(Objects[0].GetProperty("hook-applied")).To(Equal(true))
+			Expect(Objects[0].GetProperty("hook-applied")).To(BeTrue())
 		})
 	})
 

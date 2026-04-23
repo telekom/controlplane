@@ -13,22 +13,21 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	security "github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
-	"github.com/telekom/controlplane/rover-server/internal/file"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	"github.com/telekom/controlplane/rover-server/internal/file"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/eventspecification/in"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/eventspecification/out"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
 	"github.com/telekom/controlplane/rover-server/internal/server"
 	s "github.com/telekom/controlplane/rover-server/pkg/store"
-
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 var _ server.EventSpecificationController = &EventSpecificationController{}

@@ -6,8 +6,9 @@ package api
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 	"go.uber.org/zap"
+
+	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 )
 
 // GET /snapshots?id={snapshotID}

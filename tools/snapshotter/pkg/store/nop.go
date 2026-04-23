@@ -8,8 +8,7 @@ import "context"
 
 var _ SnapshotStore[Snapshot] = &NopStore[Snapshot]{}
 
-type NopStore[T Snapshot] struct {
-}
+type NopStore[T Snapshot] struct{}
 
 func NewNopStore[T Snapshot]() *NopStore[T] {
 	return &NopStore[T]{}

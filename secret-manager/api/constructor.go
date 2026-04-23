@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/common-server/pkg/client"
 	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 	"github.com/telekom/controlplane/common-server/pkg/util"
@@ -101,7 +102,6 @@ func New(opts ...Option) SecretManager {
 	),
 		gen.WithRequestEditorFn(options.accessTokenReqEditor),
 	)
-
 	if err != nil {
 		log.Fatalf("Failed to create HTTP client: %v", err)
 	}

@@ -32,7 +32,6 @@ func EncodeTeamToken(token TeamToken, group, team string) (string, error) {
 }
 
 func DecodeTeamToken(stringToken string) (TeamToken, error) {
-
 	split := strings.SplitN(stringToken, ".", 2)
 	if len(split) != 2 {
 		return TeamToken{}, fmt.Errorf("failed to decode token. `env--group--team.` prefix is not present")

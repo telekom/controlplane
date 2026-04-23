@@ -22,6 +22,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/mock"
+
 	cs "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/secret-manager/internal/api"
 	"github.com/telekom/controlplane/secret-manager/internal/handler"
@@ -39,7 +40,6 @@ var (
 )
 
 func BenchmarkOnboardTeam(b *testing.B) {
-
 	conjur.RootPolicyPath = "controlplane"
 	initOnce.Do(func() {
 		mockWriter = mocks.NewMockConjurAPI(b)

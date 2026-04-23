@@ -7,9 +7,11 @@ package security_test
 import (
 	"testing"
 
-	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
+
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+
+	. "github.com/onsi/gomega"
 )
 
 type testEnvironment struct {
@@ -27,7 +29,7 @@ type testCase struct {
 func TestMatcher_StartsWith(t *testing.T) {
 	RegisterTestingT(t)
 
-	var NewCtxInfo = func(pathParams ...string) security.CompareCtxInfo {
+	NewCtxInfo := func(pathParams ...string) security.CompareCtxInfo {
 		b := security.BusinessContext{
 			Environment: "test",
 			Group:       "eni",
@@ -177,14 +179,13 @@ func TestMatcher_StartsWith(t *testing.T) {
 				})
 			}
 		})
-
 	}
 }
 
 func TestMatcher_FullMatch(t *testing.T) {
 	RegisterTestingT(t)
 
-	var NewCtxInfo = func(pathParams ...string) security.CompareCtxInfo {
+	NewCtxInfo := func(pathParams ...string) security.CompareCtxInfo {
 		b := security.BusinessContext{
 			Environment: "test",
 			Group:       "eni",
@@ -367,6 +368,5 @@ func TestMatcher_FullMatch(t *testing.T) {
 				})
 			}
 		})
-
 	}
 }

@@ -5,17 +5,15 @@
 package metrics
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 var _ = Describe("Cache Metrics", Ordered, func() {
-
 	Context("Register Metrics", Ordered, func() {
-
 		It("should record cache hits", func() {
-
 			RegisterMetrics(prometheus.DefaultRegisterer, func() float64 {
 				return 0
 			})
@@ -85,10 +83,11 @@ var _ = Describe("Cache Metrics", Ordered, func() {
 						}
 
 						if isMiss {
-							if reason == "expired" {
+							switch reason {
+							case "expired":
 								expiredFound = true
 								Expect(metric.GetCounter().GetValue()).To(BeNumerically(">", 0))
-							} else if reason == "not_found" {
+							case "not_found":
 								notFoundFound = true
 								Expect(metric.GetCounter().GetValue()).To(BeNumerically(">", 0))
 							}
@@ -100,6 +99,5 @@ var _ = Describe("Cache Metrics", Ordered, func() {
 			Expect(expiredFound).To(BeTrue(), "Expected miss metric with 'expired' reason not found")
 			Expect(notFoundFound).To(BeTrue(), "Expected miss metric with 'not_found' reason not found")
 		})
-
 	})
 })

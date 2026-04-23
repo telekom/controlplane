@@ -6,6 +6,7 @@ package resolvers
 
 import (
 	"github.com/99designs/gqlgen/graphql"
+
 	"github.com/telekom/controlplane/controlplane-api/ent"
 )
 

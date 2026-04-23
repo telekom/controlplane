@@ -8,14 +8,15 @@ import (
 	"context"
 
 	"github.com/99designs/gqlgen/graphql"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	cpgraphql "github.com/telekom/controlplane/controlplane-api/internal/graphql"
 	"github.com/telekom/controlplane/controlplane-api/internal/testutil"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ViewerFromBusinessContext", func() {

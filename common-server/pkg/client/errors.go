@@ -67,9 +67,7 @@ func RetryableWithDelayErrorf(delay time.Duration, format string, a ...any) *Htt
 	}
 }
 
-var (
-	RetryDelay = 3 * time.Second
-)
+var RetryDelay = 3 * time.Second
 
 func HandleError(httpStatus int, msg string, okStatusCodes ...int) error {
 	if len(okStatusCodes) == 0 {

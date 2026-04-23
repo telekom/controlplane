@@ -8,13 +8,14 @@ import (
 	"context"
 	"net/http"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
+
 	"github.com/telekom/controlplane/secret-manager/api"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
 	"github.com/telekom/controlplane/secret-manager/api/gen"
 
-	"github.com/stretchr/testify/mock"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("API Wrapper", func() {
@@ -96,7 +97,7 @@ var _ = Describe("API Wrapper", func() {
 			var capturedBody gen.TeamWriteRequest
 			mockClient.EXPECT().
 				UpsertTeamWithResponse(mock.Anything, "env-1", "team-1", mock.Anything).
-				Run(func(_ context.Context, _ string, _ string, body gen.TeamWriteRequest, _ ...gen.RequestEditorFn) {
+				Run(func(_ context.Context, _, _ string, body gen.TeamWriteRequest, _ ...gen.RequestEditorFn) {
 					capturedBody = body
 				}).
 				Return(&gen.UpsertTeamResponse{
@@ -114,7 +115,7 @@ var _ = Describe("API Wrapper", func() {
 			var capturedBody gen.TeamWriteRequest
 			mockClient.EXPECT().
 				UpsertTeamWithResponse(mock.Anything, "env-1", "team-1", mock.Anything).
-				Run(func(_ context.Context, _ string, _ string, body gen.TeamWriteRequest, _ ...gen.RequestEditorFn) {
+				Run(func(_ context.Context, _, _ string, body gen.TeamWriteRequest, _ ...gen.RequestEditorFn) {
 					capturedBody = body
 				}).
 				Return(&gen.UpsertTeamResponse{
@@ -133,7 +134,7 @@ var _ = Describe("API Wrapper", func() {
 			var capturedBody gen.ApplicationWriteRequest
 			mockClient.EXPECT().
 				UpsertAppWithResponse(mock.Anything, "env-1", "team-1", "app-1", mock.Anything).
-				Run(func(_ context.Context, _ string, _ string, _ string, body gen.ApplicationWriteRequest, _ ...gen.RequestEditorFn) {
+				Run(func(_ context.Context, _, _, _ string, body gen.ApplicationWriteRequest, _ ...gen.RequestEditorFn) {
 					capturedBody = body
 				}).
 				Return(&gen.UpsertAppResponse{
@@ -151,7 +152,7 @@ var _ = Describe("API Wrapper", func() {
 			var capturedBody gen.ApplicationWriteRequest
 			mockClient.EXPECT().
 				UpsertAppWithResponse(mock.Anything, "env-1", "team-1", "app-1", mock.Anything).
-				Run(func(_ context.Context, _ string, _ string, _ string, body gen.ApplicationWriteRequest, _ ...gen.RequestEditorFn) {
+				Run(func(_ context.Context, _, _, _ string, body gen.ApplicationWriteRequest, _ ...gen.RequestEditorFn) {
 					capturedBody = body
 				}).
 				Return(&gen.UpsertAppResponse{

@@ -5,10 +5,11 @@
 package v1
 
 import (
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 // NotificationTemplateSpec defines the desired state of NotificationTemplate

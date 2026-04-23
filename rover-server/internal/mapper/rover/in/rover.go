@@ -7,12 +7,12 @@ package in
 import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"github.com/telekom/controlplane/common/pkg/config"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *roverv1.Rover, err error) {
@@ -49,7 +49,7 @@ func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *rove
 	if viper.GetBool("migration.active") {
 		res.Spec.ClientSecret = in.ClientSecret
 	}
-	return
+	return res, err
 }
 
 func MapRover(in *api.Rover, out *roverv1.Rover) error {

@@ -11,9 +11,10 @@ import (
 	"github.com/cyberark/conjur-api-go/conjurapi"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"github.com/valyala/fasttemplate"
+
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
-	"github.com/valyala/fasttemplate"
 )
 
 var _ backend.Onboarder = &ConjurOnboarder{}
@@ -229,6 +230,7 @@ func (c *ConjurOnboarder) DeleteTeam(ctx context.Context, env, teamId string) er
 	}
 	return nil
 }
+
 func (c *ConjurOnboarder) DeleteApplication(ctx context.Context, env, teamId, appId string) error {
 	log := logr.FromContextOrDiscard(ctx)
 	policyPath := RootPolicyPath + "/" + env + "/" + teamId

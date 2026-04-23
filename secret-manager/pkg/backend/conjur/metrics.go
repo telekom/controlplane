@@ -50,7 +50,7 @@ func NewConjurApiMetrics(client ConjurAPI) *ConjurApiMetrics {
 }
 
 // AddSecret implements ConjurAPI.
-func (c *ConjurApiMetrics) AddSecret(variableID string, value string) error {
+func (c *ConjurApiMetrics) AddSecret(variableID, value string) error {
 	start := time.Now()
 	err := c.Client.AddSecret(variableID, value)
 	status := "ok"

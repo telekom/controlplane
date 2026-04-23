@@ -9,17 +9,17 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
-
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 const (

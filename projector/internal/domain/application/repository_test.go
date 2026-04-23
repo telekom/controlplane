@@ -10,20 +10,21 @@ import (
 	"fmt"
 
 	"entgo.io/ent/privacy"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	entapp "github.com/telekom/controlplane/controlplane-api/ent/application"
 	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
-	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
-
 	"github.com/telekom/controlplane/projector/internal/domain/application"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/runtime"
+
+	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // mockAppDeps implements application.ApplicationDeps for testing.

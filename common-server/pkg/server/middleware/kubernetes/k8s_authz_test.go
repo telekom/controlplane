@@ -11,10 +11,12 @@ import (
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+
 	"github.com/telekom/controlplane/common-server/pkg/server"
 	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // Test constants
@@ -60,7 +62,6 @@ func createServiceAccountToken(audience []string, serviceAccountName, namespace,
 }
 
 var _ = Describe("Kubernetes Authentication Middleware", func() {
-
 	Describe("IsReadOnly", func() {
 		DescribeTable("should correctly identify read-only and write methods",
 			func(method string, expectedReadOnly bool) {
@@ -155,8 +156,8 @@ var _ = Describe("Kubernetes Authentication Middleware", func() {
 		// Note: Using the global createServiceAccountToken helper function
 
 		// Helper function to create and test a request
-		testRequest := func(method, path string, token string) *http.Response {
-			req := httptest.NewRequest(method, path, nil)
+		testRequest := func(method, path, token string) *http.Response {
+			req := httptest.NewRequest(method, path, http.NoBody)
 			if token != "" {
 				req.Header.Set("Authorization", "Bearer "+token)
 			}
@@ -165,7 +166,7 @@ var _ = Describe("Kubernetes Authentication Middleware", func() {
 			nextCalled = false
 
 			res, err := app.Test(req)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			return res
 		}
 

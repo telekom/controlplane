@@ -16,7 +16,7 @@ type CommandExecutor interface {
 	Execute(ctx context.Context, cmdStr string, params map[string]interface{}) (*ExecuteResult, error)
 
 	// CreateSnapshot creates a CommandSnapshot from a command execution
-	CreateSnapshot(cmdStr string, result *ExecuteResult, envName string, suiteName string, caseIndex string, caseName string) *snapshot.CommandSnapshot
+	CreateSnapshot(cmdStr string, result *ExecuteResult, envName, suiteName, caseIndex, caseName string) *snapshot.CommandSnapshot
 }
 
 // CommandType defines the supported command executor types

@@ -11,19 +11,20 @@ import (
 	"net/http"
 
 	"github.com/go-logr/logr"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common-server/pkg/problems"
-	"github.com/telekom/controlplane/common-server/pkg/store"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/testing"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/telekom/controlplane/common-server/pkg/problems"
+	"github.com/telekom/controlplane/common-server/pkg/store"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func GenerateUnstructured(n int) []*unstructured.Unstructured {
@@ -60,7 +61,6 @@ func NewUnstructured(name string) *unstructured.Unstructured {
 }
 
 var _ = Describe("Inmemory ObjectStore", func() {
-
 	ctx := context.Background()
 	ctx = logr.NewContext(ctx, GinkgoLogr)
 	scheme := runtime.NewScheme()
@@ -77,7 +77,6 @@ var _ = Describe("Inmemory ObjectStore", func() {
 	}
 
 	Context("Basic Store Functionalities", func() {
-
 		fakeClient := fake.NewSimpleDynamicClient(scheme, NewUnstructured("foo"))
 		objStore := NewOrDie[*unstructured.Unstructured](ctx, StoreOpts{
 			Client:       fakeClient,
@@ -168,7 +167,6 @@ var _ = Describe("Inmemory ObjectStore", func() {
 			Expect(problems.IsNotFound(err)).To(BeTrue())
 			Expect(obj).To(BeNil())
 		})
-
 	})
 
 	Context("List", Ordered, func() {
@@ -228,7 +226,6 @@ var _ = Describe("Inmemory ObjectStore", func() {
 			list, err := objStore.List(ctx, listOpts)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(list.Items).To(HaveLen(10)) // app90 to app99
-
 		})
 
 		It("should limit the result", func() {
@@ -253,7 +250,6 @@ var _ = Describe("Inmemory ObjectStore", func() {
 			// foo107, foo108, foo109, foo11, foo110, foo111, foo112, foo113, foo114, foo115
 			Expect(list.Links.Next).To(Equal("default/foo116/"))
 		})
-
 	})
 
 	Context("EventHandler", func() {
@@ -288,7 +284,6 @@ var _ = Describe("Inmemory ObjectStore", func() {
 	})
 
 	Context("Kubernetes error mapping", func() {
-
 		It("should handle nil errors", func() {
 			err := mapErrorToProblem(nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -359,7 +354,8 @@ var _ = Describe("Inmemory ObjectStore", func() {
 			obj := NewUnstructured("foo")
 			err := objStore.CreateOrReplace(ctx, obj)
 			Expect(err).To(HaveOccurred())
-			probErr, ok := errors.Cause(err).(problems.Problem)
+			var probErr problems.Problem
+			ok := errors.As(errors.Cause(err), &probErr)
 			Expect(ok).To(BeTrue())
 			Expect(probErr.Code()).To(Equal(http.StatusConflict))
 

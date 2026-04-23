@@ -7,10 +7,12 @@ package condition
 import (
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/telekom/controlplane/common/pkg/test"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common/pkg/test"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestCondition(t *testing.T) {
@@ -19,7 +21,6 @@ func TestCondition(t *testing.T) {
 }
 
 var _ = Describe("Condition Tests", func() {
-
 	Context("EnsureReady function", func() {
 		It("should return an error", func() {
 			obj := test.NewObject("fake", "default")
@@ -39,7 +40,6 @@ var _ = Describe("Condition Tests", func() {
 	})
 
 	Context("Constructor functions", func() {
-
 		It("should return a new BlockedCondition", func() {
 			condition := NewBlockedCondition("Blocked")
 			Expect(condition.Type).To(Equal(ConditionTypeProcessing))
@@ -87,6 +87,5 @@ var _ = Describe("Condition Tests", func() {
 			Expect(condition.Reason).To(Equal("Unknown"))
 			Expect(condition.Message).To(Equal(""))
 		})
-
 	})
 })

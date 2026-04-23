@@ -10,14 +10,14 @@ import (
 	"os"
 	"path/filepath"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	v0 "github.com/telekom/controlplane/rover-ctl/pkg/handlers/v0"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("EventSpec Handler", func() {
-
 	Describe("PatchEventSpecificationRequest", func() {
 		Context("when spec has a JSON string specification", func() {
 			It("should parse the JSON string into a map", func() {

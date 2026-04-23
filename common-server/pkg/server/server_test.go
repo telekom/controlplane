@@ -6,14 +6,17 @@ package server_test
 
 import (
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/telekom/controlplane/common-server/pkg/server"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/pkg/server"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type MockController struct {
@@ -25,9 +28,7 @@ func (c *MockController) Register(router fiber.Router, opts server.ControllerOpt
 }
 
 var _ = Describe("Server", func() {
-
 	Context("ControllerOpts", func() {
-
 		It("should return default options", func() {
 			opts := server.Default()
 			Expect(opts.AllowedMethods).To(Equal([]string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE"}))
@@ -55,7 +56,6 @@ var _ = Describe("Server", func() {
 	})
 
 	Context("CalculatePrefix", func() {
-
 		gvr := schema.GroupVersionResource{
 			Group:    "testgroup",
 			Version:  "v1",
@@ -74,7 +74,6 @@ var _ = Describe("Server", func() {
 	})
 
 	Context("Server", func() {
-
 		It("should register controller", func() {
 			s := server.Server{
 				App: server.NewApp(),
@@ -123,7 +122,7 @@ var _ = Describe("Server", func() {
 		})
 
 		It("should return 202 with JSON", func() {
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := httptest.NewRequest("GET", "/test", http.NoBody)
 			req.Header.Set("Accept", "application/json")
 			res, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
@@ -134,7 +133,7 @@ var _ = Describe("Server", func() {
 		})
 
 		It("should return 202 with the fallback", func() {
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := httptest.NewRequest("GET", "/test", http.NoBody)
 			req.Header.Set("Accept", "application/xml")
 			res, err := app.Test(req)
 
@@ -144,12 +143,10 @@ var _ = Describe("Server", func() {
 			b, _ := io.ReadAll(res.Body)
 			Expect(b).To(MatchJSON(`{"message": "test"}`))
 		})
-
 	})
 
 	Context("Timeout", func() {
 		It("should timeout a long request", func() {
-
 			cfg := server.NewAppConfig()
 			cfg.ReadTimeout = 1 * time.Second
 			cfg.WriteTimeout = 1 * time.Second
@@ -164,7 +161,7 @@ var _ = Describe("Server", func() {
 				return c.SendString("done")
 			})
 
-			req := httptest.NewRequest("GET", "/long", nil)
+			req := httptest.NewRequest("GET", "/long", http.NoBody)
 			res, err := app.Test(req, -1)
 			Expect(err).ToNot(HaveOccurred())
 			b, _ := io.ReadAll(res.Body)

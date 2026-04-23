@@ -6,18 +6,19 @@ package server_test
 
 import (
 	"io"
+	"net/http"
 	"net/http/httptest"
 
 	"github.com/gofiber/fiber/v2"
+
+	"github.com/telekom/controlplane/common-server/pkg/server"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/pkg/server"
 )
 
 var _ = Describe("Probes Controller", func() {
-
 	Context("Controller Config", func() {
-
 		ctrl := server.NewProbesController()
 
 		It("should have a default nop check", func() {
@@ -41,7 +42,6 @@ var _ = Describe("Probes Controller", func() {
 	})
 
 	Context("Http", func() {
-
 		It("should return a healthy response", func() {
 			ctrl := server.NewProbesController()
 			ctrl.AddHealthyCheck(server.CustomCheck(func() bool {
@@ -50,7 +50,7 @@ var _ = Describe("Probes Controller", func() {
 			router := fiber.New()
 			ctrl.Register(router, server.ControllerOpts{})
 
-			req := httptest.NewRequest("GET", "/healthz", nil)
+			req := httptest.NewRequest("GET", "/healthz", http.NoBody)
 			res, err := router.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.StatusCode).To(Equal(200))
@@ -65,7 +65,7 @@ var _ = Describe("Probes Controller", func() {
 			router := fiber.New()
 			ctrl.Register(router, server.ControllerOpts{})
 
-			req := httptest.NewRequest("GET", "/readyz", nil)
+			req := httptest.NewRequest("GET", "/readyz", http.NoBody)
 			res, err := router.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.StatusCode).To(Equal(200))
@@ -79,7 +79,7 @@ var _ = Describe("Probes Controller", func() {
 			router := fiber.New()
 			ctrl.Register(router, server.ControllerOpts{})
 
-			req := httptest.NewRequest("GET", "/readyz", nil)
+			req := httptest.NewRequest("GET", "/readyz", http.NoBody)
 			res, err := router.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.StatusCode).To(Equal(503))
@@ -96,7 +96,7 @@ var _ = Describe("Probes Controller", func() {
 			router := fiber.New()
 			ctrl.Register(router, server.ControllerOpts{})
 
-			req := httptest.NewRequest("GET", "/healthz", nil)
+			req := httptest.NewRequest("GET", "/healthz", http.NoBody)
 			res, err := router.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.StatusCode).To(Equal(503))
@@ -104,6 +104,5 @@ var _ = Describe("Probes Controller", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(b).To(MatchJSON(`{"type":"","status":503,"title":"Service Unavailable","detail":"","instance":""}`))
 		})
-
 	})
 })

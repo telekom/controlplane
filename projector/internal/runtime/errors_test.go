@@ -15,7 +15,6 @@ import (
 )
 
 var _ = Describe("Error sentinels", func() {
-
 	Describe("ErrSkipSync", func() {
 		It("is detectable via errors.Is", func() {
 			Expect(errors.Is(runtime.ErrSkipSync, runtime.ErrSkipSync)).To(BeTrue())

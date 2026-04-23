@@ -8,12 +8,12 @@ import (
 	"context"
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 	"github.com/telekom/controlplane/rover-server/test/mocks"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var (

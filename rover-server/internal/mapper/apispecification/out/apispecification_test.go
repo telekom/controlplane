@@ -6,6 +6,7 @@ package out
 
 import (
 	"github.com/gkampitakis/go-snaps/snaps"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -15,7 +16,7 @@ var _ = Describe("ApiSpecificationResponse Mapper", func() {
 		It("must map a ApiSpecification to an ApiSpecificationResponse correctly", func() {
 			output, err := MapResponse(ctx, apiSpecification, *openapi, stores)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			Expect(output).ToNot(BeNil())
 			snaps.MatchJSON(GinkgoT(), output)
@@ -27,9 +28,8 @@ var _ = Describe("ApiSpecificationResponse Mapper", func() {
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)
 
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("input api specification crd is nil"))
 		})
-
 	})
 })

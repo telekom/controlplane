@@ -7,14 +7,15 @@ package common_test
 import (
 	"strings"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ValidateObjectName", func() {
-	var createTestObject = func(name string, filename ...string) types.Object {
+	createTestObject := func(name string, filename ...string) types.Object {
 		obj := &types.UnstructuredObject{
 			Content: map[string]any{
 				"apiVersion": "v1",

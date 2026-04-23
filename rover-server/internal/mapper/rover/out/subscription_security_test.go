@@ -6,11 +6,12 @@ package out
 
 import (
 	"github.com/gkampitakis/go-snaps/snaps"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Subscription Security Mapper (Out)", func() {
@@ -37,7 +38,7 @@ var _ = Describe("Subscription Security Mapper (Out)", func() {
 			// Then
 			Expect(output.Security).ToNot(BeZero())
 			basicAuth, err := output.Security.AsBasicAuth()
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(basicAuth.Username).To(Equal("testuser"))
 			Expect(basicAuth.Password).To(Equal("testpass"))
 			snaps.MatchSnapshot(GinkgoT(), basicAuth)
@@ -66,7 +67,7 @@ var _ = Describe("Subscription Security Mapper (Out)", func() {
 			// Then
 			Expect(output.Security).ToNot(BeZero())
 			oauth2, err := output.Security.AsOauth2()
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(oauth2.ClientId).To(Equal("client-id"))
 			Expect(oauth2.ClientSecret).To(Equal("client-secret"))
 			Expect(oauth2.ClientKey).To(Equal("client-key"))
@@ -92,7 +93,7 @@ var _ = Describe("Subscription Security Mapper (Out)", func() {
 			// Then
 			Expect(output.Security).ToNot(BeZero())
 			oauth2, err := output.Security.AsOauth2()
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(oauth2.Scopes).To(ContainElements("read", "write"))
 			snaps.MatchSnapshot(GinkgoT(), oauth2)
 		})
@@ -154,7 +155,7 @@ var _ = Describe("Subscription Security Mapper (Out)", func() {
 			// Then
 			Expect(output.Security).ToNot(BeZero())
 			oauth2, err := output.Security.AsOauth2()
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(oauth2.ClientId).To(Equal("client-id"))
 			Expect(oauth2.Scopes).To(ContainElements("read", "write"))
 			snaps.MatchSnapshot(GinkgoT(), oauth2)

@@ -12,14 +12,6 @@ import (
 	"runtime"
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common/pkg/controller/index"
-	"github.com/telekom/controlplane/common/pkg/handler"
-	"github.com/telekom/controlplane/common/pkg/test"
-	"github.com/telekom/controlplane/common/pkg/test/mock"
-	"github.com/telekom/controlplane/common/pkg/types"
-
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -33,6 +25,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	crscheme "sigs.k8s.io/controller-runtime/pkg/scheme"
+
+	"github.com/telekom/controlplane/common/pkg/controller/index"
+	"github.com/telekom/controlplane/common/pkg/handler"
+	"github.com/telekom/controlplane/common/pkg/test"
+	"github.com/telekom/controlplane/common/pkg/test/mock"
+	"github.com/telekom/controlplane/common/pkg/types"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -141,7 +142,6 @@ var _ = BeforeSuite(func() {
 		err = k8sManager.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
-
 })
 
 var _ = AfterSuite(func() {

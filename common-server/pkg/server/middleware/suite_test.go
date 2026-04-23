@@ -7,13 +7,16 @@ package middleware_test
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
+
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/pkg/server/middleware"
 )
 
 func TestMiddleware(t *testing.T) {
@@ -22,15 +25,14 @@ func TestMiddleware(t *testing.T) {
 }
 
 var _ = Describe("Middleware", func() {
-
 	Context("Logging", Ordered, func() {
 		It("should log the request in valid JSON format", func() {
-			var buffer = bytes.NewBuffer(nil)
+			buffer := bytes.NewBuffer(nil)
 
 			app := fiber.New()
 			app.Use(middleware.NewContextLogger(GinkgoLogr))
 			app.Use(middleware.NewLogger(middleware.WithOutput(buffer)))
-			req := httptest.NewRequest("GET", "/", nil)
+			req := httptest.NewRequest("GET", "/", http.NoBody)
 			res, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).ToNot(BeNil())

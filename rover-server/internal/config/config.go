@@ -40,7 +40,6 @@ type FileManagerConfig struct {
 }
 
 func LoadConfig() (*ServerConfig, error) {
-
 	setDefaults()
 
 	viper.AutomaticEnv()

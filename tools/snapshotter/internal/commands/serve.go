@@ -10,10 +10,11 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/api"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/config"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/orchestrator"
-	"go.uber.org/zap"
 )
 
 var (

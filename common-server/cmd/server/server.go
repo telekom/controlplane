@@ -10,13 +10,14 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
-	"github.com/telekom/controlplane/common-server/internal/config"
-	"github.com/telekom/controlplane/common-server/internal/crd"
-	"github.com/telekom/controlplane/common-server/pkg/server"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/client-go/dynamic"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
+
+	"github.com/telekom/controlplane/common-server/internal/config"
+	"github.com/telekom/controlplane/common-server/internal/crd"
+	"github.com/telekom/controlplane/common-server/pkg/server"
 )
 
 var (

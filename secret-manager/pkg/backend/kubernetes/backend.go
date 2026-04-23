@@ -8,7 +8,6 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	corev1 "k8s.io/api/core/v1"
@@ -17,6 +16,8 @@ import (
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 )
 
 var _ backend.Backend[Id, backend.DefaultSecret[Id]] = &KubernetesBackend{}

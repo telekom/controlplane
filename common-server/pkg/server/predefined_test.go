@@ -5,25 +5,24 @@
 package server_test
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/mock"
-	"github.com/telekom/controlplane/common-server/pkg/server"
-	"github.com/telekom/controlplane/common-server/test/mocks"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"fmt"
+	"github.com/telekom/controlplane/common-server/pkg/server"
+	"github.com/telekom/controlplane/common-server/pkg/store"
+	"github.com/telekom/controlplane/common-server/test/mocks"
 
-	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/pkg/store"
 )
 
 var _ = Describe("Predefined controller test with placeholder filter", func() {
-
 	var (
 		mockStore            *mocks.MockObjectStore[*unstructured.Unstructured]
 		app                  *fiber.App
@@ -68,11 +67,9 @@ var _ = Describe("Predefined controller test with placeholder filter", func() {
 				}
 			}
 		})
-
 	})
 
 	Context("List objects", func() {
-
 		BeforeEach(func() {
 			By("Letting the store accept any arguments for listing (checked in later stages)")
 			mockStore.EXPECT().List(mock.Anything, mock.Anything).Return(&store.ListResponse[*unstructured.Unstructured]{
@@ -85,9 +82,8 @@ var _ = Describe("Predefined controller test with placeholder filter", func() {
 		})
 
 		It("should construct store.ListOpts properly - replace placeholder", func() {
-
 			By("Calling the predefined controller endpoint")
-			req := httptest.NewRequest(http.MethodGet, "/tests/byKey1Placeholder?key1=value1_2", nil)
+			req := httptest.NewRequest(http.MethodGet, "/tests/byKey1Placeholder?key1=value1_2", http.NoBody)
 			resp, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -97,7 +93,7 @@ var _ = Describe("Predefined controller test with placeholder filter", func() {
 			Expect(mockStore.Calls[0].Arguments).To(HaveLen(2))
 
 			By("Checking the arguments of the store list call")
-			var arg = mockStore.Calls[0].Arguments.Get(1)
+			arg := mockStore.Calls[0].Arguments.Get(1)
 			realOpts, ok := arg.(store.ListOpts)
 			Expect(ok).To(BeTrue())
 
@@ -114,9 +110,8 @@ var _ = Describe("Predefined controller test with placeholder filter", func() {
 		})
 
 		It("should construct store.ListOpts properly - replace placeholder properly after multiple calls", func() {
-
 			By("Calling the predefined controller endpoint - first call")
-			req := httptest.NewRequest(http.MethodGet, "/tests/byKey1Placeholder?key1=value1_2", nil)
+			req := httptest.NewRequest(http.MethodGet, "/tests/byKey1Placeholder?key1=value1_2", http.NoBody)
 			resp, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -126,7 +121,7 @@ var _ = Describe("Predefined controller test with placeholder filter", func() {
 			Expect(mockStore.Calls[0].Arguments).To(HaveLen(2))
 
 			By("Checking the arguments of the store list call - first call")
-			var arg = mockStore.Calls[0].Arguments.Get(1)
+			arg := mockStore.Calls[0].Arguments.Get(1)
 			realOpts, ok := arg.(store.ListOpts)
 			Expect(ok).To(BeTrue())
 
@@ -142,7 +137,7 @@ var _ = Describe("Predefined controller test with placeholder filter", func() {
 			Expect(realOpts.Sorters).To(BeEmpty())
 
 			By("Calling the predefined controller endpoint - second call")
-			req = httptest.NewRequest(http.MethodGet, "/tests/byKey1Placeholder?key1=value5_6", nil)
+			req = httptest.NewRequest(http.MethodGet, "/tests/byKey1Placeholder?key1=value5_6", http.NoBody)
 			resp, err = app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -168,7 +163,7 @@ var _ = Describe("Predefined controller test with placeholder filter", func() {
 			Expect(realOpts.Sorters).To(BeEmpty())
 
 			By("Calling the predefined controller endpoint - third call")
-			req = httptest.NewRequest(http.MethodGet, "/tests/byKey1Placeholder?key1=bla", nil)
+			req = httptest.NewRequest(http.MethodGet, "/tests/byKey1Placeholder?key1=bla", http.NoBody)
 			resp, err = app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -195,9 +190,8 @@ var _ = Describe("Predefined controller test with placeholder filter", func() {
 		})
 
 		It("should construct store.ListOpts properly - accept custom filter", func() {
-
 			By("Calling the predefined controller endpoint")
-			req := httptest.NewRequest(http.MethodGet, "/tests/byKey1Placeholder?key1=value1_2&filter=spec.key2=~value2_2&limit=22", nil)
+			req := httptest.NewRequest(http.MethodGet, "/tests/byKey1Placeholder?key1=value1_2&filter=spec.key2=~value2_2&limit=22", http.NoBody)
 			resp, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -207,7 +201,7 @@ var _ = Describe("Predefined controller test with placeholder filter", func() {
 			Expect(mockStore.Calls[0].Arguments).To(HaveLen(2))
 
 			By("Checking the arguments of the store list call")
-			var arg = mockStore.Calls[0].Arguments.Get(1)
+			arg := mockStore.Calls[0].Arguments.Get(1)
 			realOpts, ok := arg.(store.ListOpts)
 			Expect(ok).To(BeTrue())
 
@@ -228,11 +222,9 @@ var _ = Describe("Predefined controller test with placeholder filter", func() {
 			Expect(realOpts.Sorters).To(BeEmpty())
 		})
 	})
-
 })
 
 var _ = Describe("Predefined controller test with hardcoded filter", func() {
-
 	var (
 		mockStore            *mocks.MockObjectStore[*unstructured.Unstructured]
 		app                  *fiber.App
@@ -277,11 +269,9 @@ var _ = Describe("Predefined controller test with hardcoded filter", func() {
 				}
 			}
 		})
-
 	})
 
 	Context("List objects", func() {
-
 		BeforeEach(func() {
 			By("Letting the store accept any arguments for listing (checked in later stages)")
 			mockStore.EXPECT().List(mock.Anything, mock.Anything).Return(&store.ListResponse[*unstructured.Unstructured]{
@@ -293,7 +283,7 @@ var _ = Describe("Predefined controller test with hardcoded filter", func() {
 			}, nil)
 		})
 
-		var verifyListOpts = func(realOpts store.ListOpts) {
+		verifyListOpts := func(realOpts store.ListOpts) {
 			Expect(realOpts.Filters).To(HaveLen(1))
 			Expect(realOpts.Filters).To(ConsistOf(store.Filter{
 				Path:  "spec.key1",
@@ -309,7 +299,7 @@ var _ = Describe("Predefined controller test with hardcoded filter", func() {
 
 		It("should construct store.ListOpts properly - use hardcoded value", func() {
 			By("Calling the predefined controller endpoint")
-			req := httptest.NewRequest(http.MethodGet, "/tests/byKey1Hardcoded", nil)
+			req := httptest.NewRequest(http.MethodGet, "/tests/byKey1Hardcoded", http.NoBody)
 			resp, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -319,7 +309,7 @@ var _ = Describe("Predefined controller test with hardcoded filter", func() {
 			Expect(mockStore.Calls[0].Arguments).To(HaveLen(2))
 
 			By("Checking the arguments of the store list call")
-			var arg = mockStore.Calls[0].Arguments.Get(1)
+			arg := mockStore.Calls[0].Arguments.Get(1)
 			realOpts, ok := arg.(store.ListOpts)
 			Expect(ok).To(BeTrue())
 			verifyListOpts(realOpts)
@@ -327,7 +317,7 @@ var _ = Describe("Predefined controller test with hardcoded filter", func() {
 
 		It("should construct store.ListOpts properly - dont replace hardcoded filter", func() {
 			By("Calling the predefined controller endpoint + custom query params")
-			req := httptest.NewRequest(http.MethodGet, "/tests/byKey1Hardcoded?filter=spec.key1==value9_9", nil)
+			req := httptest.NewRequest(http.MethodGet, "/tests/byKey1Hardcoded?filter=spec.key1==value9_9", http.NoBody)
 			resp, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -337,11 +327,10 @@ var _ = Describe("Predefined controller test with hardcoded filter", func() {
 			Expect(mockStore.Calls[0].Arguments).To(HaveLen(2))
 
 			By("Checking the arguments of the store list call")
-			var arg = mockStore.Calls[0].Arguments.Get(1)
+			arg := mockStore.Calls[0].Arguments.Get(1)
 			realOpts, ok := arg.(store.ListOpts)
 			Expect(ok).To(BeTrue())
 			verifyListOpts(realOpts)
 		})
 	})
-
 })

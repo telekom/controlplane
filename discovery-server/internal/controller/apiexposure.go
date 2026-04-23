@@ -10,7 +10,6 @@ import (
 
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
-
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper"
 	exposuremapper "github.com/telekom/controlplane/discovery-server/internal/mapper/apiexposure"

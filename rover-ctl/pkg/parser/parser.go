@@ -16,6 +16,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/cmderrors"
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
@@ -176,7 +177,6 @@ func (p *ObjectParser) parseYAML(r io.Reader, filename string) error {
 		p.objects = append(p.objects, obj)
 	}
 	return nil
-
 }
 
 func (p *ObjectParser) parseJSON(r io.Reader, filename string) error {

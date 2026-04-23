@@ -8,11 +8,12 @@ import (
 	"context"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 // applicationLabelKey is the label key used by the Rover controller to

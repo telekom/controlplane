@@ -5,15 +5,14 @@
 package backend_test
 
 import (
+	"github.com/telekom/controlplane/secret-manager/pkg/backend"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 )
 
 var _ = Describe("Secret Value", func() {
-
 	Context("Default Secret Value Implementation", func() {
-
 		It("should return the correct String value", func() {
 			secretVal := backend.String("test")
 			Expect(secretVal.Value()).To(Equal("test"))

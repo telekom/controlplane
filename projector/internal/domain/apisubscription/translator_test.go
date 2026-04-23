@@ -7,15 +7,15 @@ package apisubscription_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
-	apiv1 "github.com/telekom/controlplane/api/api/v1"
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/projector/internal/domain/apisubscription"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ApiSubscription Translator", func() {

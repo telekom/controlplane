@@ -14,13 +14,13 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	cserver "github.com/telekom/controlplane/common-server/pkg/server"
-	filesapi "github.com/telekom/controlplane/file-manager/api"
-	"github.com/telekom/controlplane/rover-server/internal/file"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 
+	cserver "github.com/telekom/controlplane/common-server/pkg/server"
+	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/config"
 	"github.com/telekom/controlplane/rover-server/internal/controller"
+	"github.com/telekom/controlplane/rover-server/internal/file"
 	"github.com/telekom/controlplane/rover-server/internal/server"
 	"github.com/telekom/controlplane/rover-server/pkg/log"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
@@ -62,7 +62,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		err := app.Listen(cfg.Address)
-		if err != nil && err != http.ErrServerClosed {
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Log.Error(err, "Failed to start server")
 		}
 	}()

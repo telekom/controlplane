@@ -5,15 +5,14 @@
 package types_test
 
 import (
+	"github.com/telekom/controlplane/rover-ctl/pkg/types"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
 
 var _ = Describe("Util", func() {
-
 	Context("Removing Nil Fields", func() {
-
 		It("should not modify an empty object", func() {
 			// given
 			obj := map[string]any{}
@@ -45,7 +44,6 @@ var _ = Describe("Util", func() {
 		})
 
 		It("should remove all nil fields from an object", func() {
-
 			// given
 			obj := map[string]any{
 				"field1": "value1",
@@ -107,5 +105,4 @@ var _ = Describe("Util", func() {
 			}))
 		})
 	})
-
 })

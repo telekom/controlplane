@@ -5,11 +5,10 @@
 package builder
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
@@ -17,7 +16,9 @@ import (
 	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func CreateApproval(name string, arr *ctypes.ObjectRef) *approvalv1.Approval {
@@ -55,8 +56,7 @@ func ProgressApproval(appr *approvalv1.Approval, newState approvalv1.ApprovalSta
 }
 
 var _ = Describe("Approval Builder", Ordered, func() {
-
-	var approvalName = "testresource--apisub"
+	approvalName := "testresource--apisub"
 	var approval *approvalv1.Approval
 
 	requester := &approvalv1.Requester{
@@ -78,9 +78,7 @@ var _ = Describe("Approval Builder", Ordered, func() {
 	})
 
 	Context("Approval does not exist", func() {
-
 		It("should successfully create approvalRequest and set Owner conditions", func() {
-
 			By("building the Approval")
 
 			err := requester.SetProperties(properties)
@@ -140,14 +138,11 @@ var _ = Describe("Approval Builder", Ordered, func() {
 				}, appr)
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(Equal("approvals.approval.cp.ei.telekom.de \"testresource--apisub\" not found"))
-
 			}, timeout, interval).Should(Succeed())
-
 		})
 	})
 
 	Context("Spec fields update on granted ApprovalRequest", func() {
-
 		It("should update spec fields while preserving state and decisions", func() {
 			By("creating the initial ApprovalRequest via the builder")
 
@@ -223,9 +218,7 @@ var _ = Describe("Approval Builder", Ordered, func() {
 	})
 
 	Context("Required Requester missing", func() {
-
 		It("should fail creating the resources", func() {
-
 			By("building the Approval without requester")
 
 			err := requester.SetProperties(properties)
@@ -249,7 +242,6 @@ var _ = Describe("Approval Builder", Ordered, func() {
 			Expect(err).To(HaveOccurred())
 
 			Expect(res).To(BeEquivalentTo("None"))
-
 		})
 	})
 
@@ -319,7 +311,6 @@ var _ = Describe("Approval Builder", Ordered, func() {
 	})
 
 	Context("Approval exists", func() {
-
 		AfterEach(func() {
 			By("Deleting the Approval")
 			approval := &approvalv1.Approval{
@@ -408,7 +399,6 @@ var _ = Describe("Approval Builder", Ordered, func() {
 			res, err := builder.Build(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).To(Equal(ApprovalResultDenied)) // There were no changes and Approval is granted
-
 		})
 
 		It("should ignore approvals for a different state", func() {
@@ -448,5 +438,4 @@ var _ = Describe("Approval Builder", Ordered, func() {
 			testutil.ExpectConditionToBeFalse(NewGomegaWithT(GinkgoT()), meta.FindStatusCondition(builder.GetOwner().GetConditions(), ConditionTypeApprovalGranted), "Pending")
 		})
 	})
-
 })

@@ -8,16 +8,18 @@ import (
 	"bytes"
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/mock"
+
 	resetsecret "github.com/telekom/controlplane/rover-ctl/pkg/commands/reset-secret"
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 	"github.com/telekom/controlplane/rover-ctl/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Reset-Secret Command", func() {

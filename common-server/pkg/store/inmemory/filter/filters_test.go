@@ -7,10 +7,11 @@ package filter_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common-server/pkg/store/inmemory/filter"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func TestFilter(t *testing.T) {
@@ -19,9 +20,7 @@ func TestFilter(t *testing.T) {
 }
 
 var _ = Describe("Filters", func() {
-
 	Context("Building filter funcs", func() {
-
 		It("should build the filter funcs from the store filters", func() {
 			filters := []store.Filter{
 				{
@@ -77,7 +76,6 @@ var _ = Describe("Filters", func() {
 	})
 
 	Context("FullTextFilter", func() {
-
 		It("should return true if the text is contained in the data", func() {
 			filterFunc := filter.FullTextFilter("bar")
 			Expect(filterFunc([]byte(`{"foo": "bar"}`))).To(BeTrue())
@@ -90,7 +88,6 @@ var _ = Describe("Filters", func() {
 	})
 
 	Context("JsonPathFilterValue", func() {
-
 		It("should return false if the path does not exist", func() {
 			filterFunc := filter.JsonPathFilterValue("foo", nil)
 			Expect(filterFunc([]byte(`{"bar": "baz"}`))).To(BeFalse())
@@ -118,7 +115,6 @@ var _ = Describe("Filters", func() {
 	})
 
 	Context("Or", func() {
-
 		It("should return true if any of the filters return true", func() {
 			filterFunc := filter.Or(
 				filter.JsonPathFilter("foo"),
@@ -137,7 +133,6 @@ var _ = Describe("Filters", func() {
 	})
 
 	Context("And", func() {
-
 		It("should return true if all of the filters return true", func() {
 			filterFunc := filter.And(
 				filter.JsonPathFilter("foo"),
@@ -156,7 +151,6 @@ var _ = Describe("Filters", func() {
 	})
 
 	Context("Not", func() {
-
 		It("should return true if the filter returns false", func() {
 			filterFunc := filter.Not(filter.JsonPathFilter("foo"))
 			Expect(filterFunc([]byte(`{"bar": "baz"}`))).To(BeTrue())
@@ -167,5 +161,4 @@ var _ = Describe("Filters", func() {
 			Expect(filterFunc([]byte(`{"foo": "bar"}`))).To(BeFalse())
 		})
 	})
-
 })

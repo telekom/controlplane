@@ -6,11 +6,12 @@ package in
 
 import (
 	"github.com/gkampitakis/go-snaps/snaps"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Exposure Transformation Mapper", func() {

@@ -7,11 +7,13 @@ package store_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/store"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func TestStore(t *testing.T) {
@@ -20,11 +22,8 @@ func TestStore(t *testing.T) {
 }
 
 var _ = Describe("Store", func() {
-
 	Context("Enforce Prefix", func() {
-
 		It("should overwrite the selected prefix if it does not match the prefix", func() {
-
 			listOpts := store.NewListOpts()
 			listOpts.Prefix = "my-cursor-foo"
 			store.EnforcePrefix("my-prefix-foo", &listOpts)
@@ -33,7 +32,6 @@ var _ = Describe("Store", func() {
 		})
 
 		It("should not overwrite the selected prefix if it matches the prefix", func() {
-
 			listOpts := store.NewListOpts()
 			listOpts.Prefix = "my-prefix-foo-bar"
 			store.EnforcePrefix("my-prefix-foo", &listOpts)
@@ -60,7 +58,6 @@ var _ = Describe("Store", func() {
 	})
 
 	Context("Parse Limit", func() {
-
 		It("should return the default limit if the limit is not set", func() {
 			Expect(store.ParseLimit("")).To(Equal(store.DefaultPageSize))
 		})
@@ -76,7 +73,6 @@ var _ = Describe("Store", func() {
 	})
 
 	Context("Equal GVK", func() {
-
 		It("should return true if the GVKs are equal", func() {
 			a := schema.GroupVersionKind{
 				Group:   "foo",
@@ -124,7 +120,6 @@ var _ = Describe("Store", func() {
 	})
 
 	Context("UrlEncoded", func() {
-
 		It("should encode the ListOptions", func() {
 			opts := store.NewListOpts()
 			Expect(opts.UrlEncoded()).To(Equal("prefix=&cursor=&limit=100"))
@@ -172,7 +167,6 @@ var _ = Describe("Store", func() {
 	})
 
 	Context("ParseSorter", func() {
-
 		It("should return a string representation of the sorter", func() {
 			sorter := store.Sorter{
 				Path:  "foo",
@@ -205,11 +199,9 @@ var _ = Describe("Store", func() {
 			Expect(sorter.Path).To(Equal("foo"))
 			Expect(sorter.Order).To(Equal(store.SortOrderDesc))
 		})
-
 	})
 
 	Context("ParseFilter", func() {
-
 		It("should return a string representation of the filter", func() {
 			filter := store.Filter{
 				Path:  "foo",
@@ -260,7 +252,6 @@ var _ = Describe("Store", func() {
 			Expect(filter.Op).To(Equal(store.OpFullText))
 			Expect(filter.Value).To(Equal("bar"))
 		})
-
 	})
 
 	Context("Patch", func() {

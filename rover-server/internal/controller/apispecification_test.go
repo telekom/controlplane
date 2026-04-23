@@ -12,17 +12,18 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	. "github.com/onsi/ginkgo/v2"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
+
 	fileApi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/api"
+
+	. "github.com/onsi/ginkgo/v2"
 )
 
 // TODO: fix the unit-tests. Use Once() or Twice() for mocks
 
 var _ = Describe("ApiSpecification Controller", func() {
-
 	specV3 := `
 openapi: "3.0.0"
 info:
@@ -36,7 +37,6 @@ servers:
 		It("should return the ApiSpecification successfully", func() {
 			mockFileManager.EXPECT().DownloadFile(mock.Anything, "randomId", mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
-
 					w.Write([]byte(specV3))
 
 					return &fileApi.FileDownloadResponse{
@@ -45,19 +45,19 @@ servers:
 					}, nil
 				})
 
-			req := httptest.NewRequest(http.MethodGet, "/apispecifications/eni--hyperion--eni-distr-v1", nil)
+			req := httptest.NewRequest(http.MethodGet, "/apispecifications/eni--hyperion--eni-distr-v1", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
 		})
 
 		It("should fail to get a non-existent ApiSpecification", func() {
-			req := httptest.NewRequest(http.MethodGet, "/apispecifications/eni--hyperion--blabla", nil)
+			req := httptest.NewRequest(http.MethodGet, "/apispecifications/eni--hyperion--blabla", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
 		})
 
 		It("should fail to get an ApiSpecification from a different team", func() {
-			req := httptest.NewRequest(http.MethodGet, "/apispecifications/other--team--eni-distr-v1", nil)
+			req := httptest.NewRequest(http.MethodGet, "/apispecifications/other--team--eni-distr-v1", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
@@ -67,7 +67,6 @@ servers:
 		It("should return all ApiSpecifications successfully", func() {
 			mockFileManager.EXPECT().DownloadFile(mock.Anything, "randomId", mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
-
 					w.Write([]byte(specV3))
 
 					return &fileApi.FileDownloadResponse{
@@ -76,7 +75,7 @@ servers:
 					}, nil
 				})
 
-			req := httptest.NewRequest(http.MethodGet, "/apispecifications", nil)
+			req := httptest.NewRequest(http.MethodGet, "/apispecifications", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
 
@@ -85,7 +84,7 @@ servers:
 		})
 
 		It("should return an empty list if no ApiSpecifications exist", func() {
-			req := httptest.NewRequest(http.MethodGet, "/apispecifications", nil)
+			req := httptest.NewRequest(http.MethodGet, "/apispecifications", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, teamNoResources)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
 		})
@@ -94,20 +93,20 @@ servers:
 	Context("Delete ApiSpecification resource", func() {
 		It("should delete the ApiSpecification successfully", func() {
 			mockFileManager.EXPECT().DeleteFile(mock.Anything, mock.Anything).Return(nil)
-			req := httptest.NewRequest(http.MethodDelete, "/apispecifications/eni--hyperion--eni-distr-v1", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/apispecifications/eni--hyperion--eni-distr-v1", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatus(responseGroup, err, http.StatusNoContent, "")
 		})
 
 		It("should fail to delete a non-existent ApiSpecification", func() {
 			mockFileManager.EXPECT().DeleteFile(mock.Anything, mock.Anything).Return(errors.Errorf("resource not found"))
-			req := httptest.NewRequest(http.MethodDelete, "/apispecifications/eni--hyperion--blabla", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/apispecifications/eni--hyperion--blabla", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
 		})
 
 		It("should fail to delete an ApiSpecification from a different team", func() {
-			req := httptest.NewRequest(http.MethodDelete, "/apispecifications/other--team--eni-distr-v1", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/apispecifications/other--team--eni-distr-v1", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
@@ -115,19 +114,19 @@ servers:
 
 	Context("GetStatus ApiSpecification resource", func() {
 		It("should return the status of the ApiSpecification successfully", func() {
-			req := httptest.NewRequest(http.MethodGet, "/apispecifications/eni--hyperion--eni-distr-v1/status", nil)
+			req := httptest.NewRequest(http.MethodGet, "/apispecifications/eni--hyperion--eni-distr-v1/status", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
 		})
 
 		It("should fail to get the status of a non-existent ApiSpecification", func() {
-			req := httptest.NewRequest(http.MethodGet, "/apispecifications/eni--hyperion--blabla/status", nil)
+			req := httptest.NewRequest(http.MethodGet, "/apispecifications/eni--hyperion--blabla/status", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
 		})
 
 		It("should fail to get the status of an ApiSpecification from a different team", func() {
-			req := httptest.NewRequest(http.MethodGet, "/apispecifications/other--team--eni-distr-v1/status", nil)
+			req := httptest.NewRequest(http.MethodGet, "/apispecifications/other--team--eni-distr-v1/status", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
@@ -136,7 +135,7 @@ servers:
 	Context("Create ApiSpecification resource", func() {
 		It("should return StatusNotImplemented", func() {
 			// Create a request with a JSON body
-			var apiSpecification, _ = json.Marshal(api.ApiSpecificationCreateRequest{
+			apiSpecification, _ := json.Marshal(api.ApiSpecificationCreateRequest{
 				Specification: map[string]interface{}{},
 			})
 			req := httptest.NewRequest(http.MethodPost, "/apispecifications", bytes.NewReader(apiSpecification))
@@ -147,7 +146,7 @@ servers:
 
 	Context("Update ApiSpecification resource", func() {
 		It("should update the ApiSpecification successfully", func() {
-			var apiSpecification, _ = json.Marshal(api.ApiSpecificationCreateRequest{
+			apiSpecification, _ := json.Marshal(api.ApiSpecificationCreateRequest{
 				Specification: map[string]interface{}{
 					"openapi": "3.0.0",
 					"info": map[string]interface{}{
@@ -172,7 +171,6 @@ servers:
 				}, nil)
 			mockFileManager.EXPECT().DownloadFile(mock.Anything, "randomId", mock.Anything).
 				RunAndReturn(func(_ context.Context, _ string, w io.Writer) (*fileApi.FileDownloadResponse, error) {
-
 					w.Write([]byte(specV3))
 
 					return &fileApi.FileDownloadResponse{
@@ -188,7 +186,7 @@ servers:
 		})
 
 		It("should fail to update an ApiSpecification from a different team", func() {
-			var apiSpecification, _ = json.Marshal(api.ApiSpecificationCreateRequest{
+			apiSpecification, _ := json.Marshal(api.ApiSpecificationCreateRequest{
 				Specification: map[string]interface{}{
 					"openapi": "3.0.0",
 					"info": map[string]interface{}{
@@ -210,5 +208,4 @@ servers:
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
 	})
-
 })

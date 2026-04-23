@@ -19,7 +19,6 @@ type testCase struct {
 }
 
 func TestSetupSuiteEnvironments(t *testing.T) {
-
 	testCases := []testCase{
 		{
 			name:   "Env must be set on each case",
@@ -191,9 +190,7 @@ func TestSetupSuiteEnvironments(t *testing.T) {
 						t.Errorf("expected case %q with env %q", expectedCase.Name, expectedCase.Environment)
 					}
 				}
-
 			})
 		}
 	})
-
 }

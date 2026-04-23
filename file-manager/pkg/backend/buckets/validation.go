@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
+
 	"github.com/telekom/controlplane/file-manager/api/constants"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
 )
@@ -33,7 +34,7 @@ func NewObjectMetadataValidator(wrapper BucketClientValidator) *ObjectMetadataVa
 }
 
 // ValidateObjectMetadata validates that the uploaded object metadata matches expectations
-func (v *ObjectMetadataValidator) ValidateObjectMetadata(ctx context.Context, path string, expectedContentType string, expectedChecksum string, uploadedCRC64 string) error {
+func (v *ObjectMetadataValidator) ValidateObjectMetadata(ctx context.Context, path, expectedContentType, expectedChecksum, uploadedCRC64 string) error {
 	log := logr.FromContextOrDiscard(ctx)
 
 	// First validate the client
@@ -83,7 +84,7 @@ func (v *ObjectMetadataValidator) validateContentType(ctx context.Context, actua
 }
 
 // validateChecksum checks if the stored checksum matches the expected checksum
-func (v *ObjectMetadataValidator) validateChecksum(ctx context.Context, objInfo interface{}, expectedChecksum string, uploadedCRC64 string) error {
+func (v *ObjectMetadataValidator) validateChecksum(ctx context.Context, objInfo interface{}, expectedChecksum, uploadedCRC64 string) error {
 	log := logr.FromContextOrDiscard(ctx)
 
 	// Skip validation if no checksum was expected

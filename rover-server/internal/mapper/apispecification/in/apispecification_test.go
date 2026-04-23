@@ -8,11 +8,13 @@ import (
 	"context"
 
 	"github.com/gkampitakis/go-snaps/snaps"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"gopkg.in/yaml.v3"
+
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
-	"gopkg.in/yaml.v3"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ApiSpecification Mapper", func() {
@@ -33,13 +35,13 @@ var _ = Describe("ApiSpecification Mapper", func() {
 			}
 
 			marshalled, err := yaml.Marshal(apiSpecification.Specification)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			apiSpec, err := ParseSpecification(ctx, string(marshalled))
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			err = MapRequest(apiSpec, fileAPIResp, resourceIdInfo)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			Expect(apiSpec).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), apiSpec)
@@ -54,9 +56,8 @@ var _ = Describe("ApiSpecification Mapper", func() {
 			}
 
 			err := MapRequest(nil, fileAPIResp, resourceIdInfo)
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("input api specification is nil"))
 		})
-
 	})
 })

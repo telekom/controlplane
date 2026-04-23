@@ -15,12 +15,11 @@ import (
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"go.yaml.in/yaml/v4"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-
-	"go.yaml.in/yaml/v4"
 )
 
 func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecification, error) {
@@ -54,7 +53,7 @@ func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecifica
 			setSecurityDefinitionsValues(&apiSpecification.Spec, model.Model.SecurityDefinitions.Definitions)
 		}
 
-		apiSpecification.ObjectMeta.Name = roverv1.MakeName(apiSpecification)
+		apiSpecification.Name = roverv1.MakeName(apiSpecification)
 
 		return apiSpecification, nil
 	}
@@ -93,7 +92,7 @@ func ParseSpecification(ctx context.Context, spec string) (*roverv1.ApiSpecifica
 			setSecuritySchemeValues(&apiSpecification.Spec, model.Model.Components.SecuritySchemes)
 		}
 
-		apiSpecification.ObjectMeta.Name = roverv1.MakeName(apiSpecification)
+		apiSpecification.Name = roverv1.MakeName(apiSpecification)
 		return apiSpecification, nil
 	}
 
@@ -132,10 +131,8 @@ func setSecurityDefinitionsValues(apiSpecificationSpec *roverv1.ApiSpecification
 	for defPair := Definitions.First(); defPair != nil; defPair = defPair.Next() {
 		definition := defPair.Value()
 		if definition.Type == "oauth2" && definition.Scopes != nil {
-
 			for scopePair := definition.Scopes.Values.First(); scopePair != nil; scopePair = scopePair.Next() {
-
-				//append scope to the api security authentication oauth2 scopes
+				// append scope to the api security authentication oauth2 scopes
 				apiSpecificationSpec.Oauth2Scopes = append(apiSpecificationSpec.Oauth2Scopes, scopePair.Key())
 			}
 		}
@@ -151,13 +148,10 @@ func setSecuritySchemeValues(apiSpecificationSpec *roverv1.ApiSpecificationSpec,
 	for schemePair := SecuritySchemes.First(); schemePair != nil; schemePair = schemePair.Next() {
 		scheme := schemePair.Value()
 		if scheme.Type == "oauth2" && scheme.Flows != nil {
-
 			for scopePair := scheme.Flows.ClientCredentials.Scopes.First(); scopePair != nil; scopePair = scopePair.Next() {
-
-				//append scope to the api security authentication oauth2 scopes
+				// append scope to the api security authentication oauth2 scopes
 				apiSpecificationSpec.Oauth2Scopes = append(apiSpecificationSpec.Oauth2Scopes, scopePair.Key())
 			}
-
 		}
 	}
 }

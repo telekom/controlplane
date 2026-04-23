@@ -6,6 +6,7 @@ package out
 
 import (
 	"github.com/gkampitakis/go-snaps/snaps"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -24,7 +25,7 @@ var _ = Describe("EventSpecificationResponse Mapper", func() {
 
 			output, err := MapResponse(ctx, eventSpecification, specContent, stores)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(output).ToNot(BeNil())
 			snaps.MatchJSON(GinkgoT(), output)
 		})
@@ -35,14 +36,14 @@ var _ = Describe("EventSpecificationResponse Mapper", func() {
 			Expect(output).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)
 
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("input event specification crd is nil"))
 		})
 
 		It("must omit specification from response when specContent is nil", func() {
 			output, err := MapResponse(ctx, eventSpecification, nil, stores)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(output).ToNot(BeNil())
 			Expect(output.Specification).To(BeNil())
 			snaps.MatchJSON(GinkgoT(), output)

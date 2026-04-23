@@ -9,6 +9,7 @@ import (
 	"maps"
 
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/secret-manager/api"
 )
 
@@ -104,7 +105,7 @@ func (a *Secrets) TrySetSecret(secretPath string, value SecretValue) bool {
 
 // SecretIdConstructor is a function type that constructs a SecretId instance.
 // It must be implemented by all backends to allow generic creation of SecretId instances.
-type SecretIdConstructor[T SecretId] func(env, team, app, path string, checksum string) T
+type SecretIdConstructor[T SecretId] func(env, team, app, path, checksum string) T
 
 // TryAddSecrets adds the provided secrets to the allowed secrets using the provided new-function to create SecretId instances.
 func TryAddSecrets[T SecretId](newFunc SecretIdConstructor[T], allowedSecrets *Secrets, env, teamId, appId string, secrets map[string]SecretValue) error {

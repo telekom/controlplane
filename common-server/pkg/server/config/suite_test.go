@@ -5,15 +5,17 @@
 package config_test
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/config"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/pkg/server"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func TestConfig(t *testing.T) {
@@ -33,9 +35,7 @@ func (s *storeInfo) Info() (schema.GroupVersionResource, schema.GroupVersionKind
 }
 
 var _ = Describe("Config", func() {
-
 	Context("Configs Builder", func() {
-
 		It("should return a list of GroupedItems", func() {
 			gvr := schema.GroupVersionResource{
 				Group:    "group",
@@ -61,7 +61,6 @@ var _ = Describe("Config", func() {
 	})
 
 	Context("Config Controller", func() {
-
 		It("should return a new ConfigController", func() {
 			gvr := schema.GroupVersionResource{
 				Group:    "group",
@@ -83,13 +82,11 @@ var _ = Describe("Config", func() {
 			s := server.NewServer()
 			s.RegisterController(controller, server.ControllerOpts{})
 
-			req := httptest.NewRequest("GET", "/config", nil)
+			req := httptest.NewRequest("GET", "/config", http.NoBody)
 			res, err := s.App.Test(req)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
 			Expect(res.StatusCode).To(Equal(200))
-
 		})
-
 	})
 })

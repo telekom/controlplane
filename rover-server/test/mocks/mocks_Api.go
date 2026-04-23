@@ -7,6 +7,7 @@ package mocks
 import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/mock"
+
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 )
@@ -24,7 +25,8 @@ func ConfigureAPIStoreMock(testing ginkgo.FullGinkgoTInterface, mockedStore *Moc
 		mock.Anything,
 	).Return(
 		&store.ListResponse[*apiv1.Api]{
-			Items: []*apiv1.Api{api}}, nil).Maybe()
+			Items: []*apiv1.Api{api},
+		}, nil).Maybe()
 
 	mockedStore.EXPECT().Get(
 		mock.AnythingOfType("*context.valueCtx"),

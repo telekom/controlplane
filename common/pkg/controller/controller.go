@@ -7,11 +7,6 @@ package controller
 import (
 	"context"
 
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
-	"github.com/telekom/controlplane/common/pkg/handler"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,9 +18,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	common_types "github.com/telekom/controlplane/common/pkg/types"
-
 	cc "github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	"github.com/telekom/controlplane/common/pkg/handler"
+	common_types "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 )
 
 type Controller[T common_types.Object] interface {

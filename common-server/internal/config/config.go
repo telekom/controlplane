@@ -7,6 +7,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"slices"
 	"strings"
@@ -14,6 +15,11 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"gopkg.in/yaml.v3"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+
 	"github.com/telekom/controlplane/common-server/internal/crd"
 	"github.com/telekom/controlplane/common-server/internal/informer"
 	"github.com/telekom/controlplane/common-server/pkg/openapi"
@@ -24,12 +30,7 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common-server/pkg/store/inmemory"
 	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
-	"gopkg.in/yaml.v3"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
 
-	"net/http"
 	_ "net/http/pprof"
 )
 

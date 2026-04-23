@@ -31,9 +31,7 @@ import (
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/migrate"
-	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	orgv1 "github.com/telekom/controlplane/organization/api/v1"
-
 	"github.com/telekom/controlplane/projector/internal/config"
 	"github.com/telekom/controlplane/projector/internal/domain/apiexposure"
 	"github.com/telekom/controlplane/projector/internal/domain/apisubscription"
@@ -45,6 +43,8 @@ import (
 	"github.com/telekom/controlplane/projector/internal/domain/zone"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/module"
+
+	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 )
 
 var (

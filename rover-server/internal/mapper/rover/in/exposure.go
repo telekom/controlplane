@@ -9,12 +9,12 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 func mapExposure(in *api.Exposure, out *roverv1.Exposure) error {
@@ -175,7 +175,6 @@ func mapExposureTransformation(in api.ApiExposure, out *roverv1.ApiExposure) {
 			},
 		},
 	}
-
 }
 
 func mapTrustedTeams(in api.ApiExposure, out *roverv1.ApiExposure) {

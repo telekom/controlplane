@@ -7,13 +7,13 @@ package parser_test
 import (
 	"os"
 
+	"github.com/telekom/controlplane/rover-ctl/pkg/parser"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/rover-ctl/pkg/parser"
 )
 
 var _ = Describe("SubstitutePlaceholders", func() {
-
 	Context("when content has no placeholders", func() {
 		It("should return the content unchanged", func() {
 			input := []byte("plain text without any variables")

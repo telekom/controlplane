@@ -9,6 +9,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
+
 	"github.com/telekom/controlplane/projector/internal/metrics"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -16,7 +17,6 @@ import (
 )
 
 var _ = Describe("Metrics", func() {
-
 	// ---------------------------------------------------------------
 	// Registration: all five collectors must be registered and resolve
 	// to the expected fully-qualified metric name.

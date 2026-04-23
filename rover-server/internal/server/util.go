@@ -6,6 +6,6 @@ package server
 
 import "fmt"
 
-func buildCursorUrl(baseURL string, path string, cursor string) string {
+func buildCursorUrl(baseURL, path, cursor string) string {
 	return fmt.Sprintf("%s?cursor=%s", baseURL+path, cursor)
 }

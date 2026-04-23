@@ -87,10 +87,11 @@ func (o *Obfuscator) ReplaceAllFromBytes(ctx context.Context, b []byte, jsonPath
 	}
 	return b, nil
 }
+
 func (o *Obfuscator) ReplaceAllFromMap(ctx context.Context, m map[string]any, jsonPaths []string) (map[string]any, error) {
 	for _, jsonPath := range jsonPaths {
 		parts := strings.Split(jsonPath, ".")
-		var err = unstructured.SetNestedField(m, o.placeholder, parts...)
+		err := unstructured.SetNestedField(m, o.placeholder, parts...)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to set secret value")
 		}

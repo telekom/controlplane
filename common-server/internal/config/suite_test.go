@@ -11,17 +11,19 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/internal/config"
-	"github.com/telekom/controlplane/common-server/internal/crd"
-	"github.com/telekom/controlplane/common-server/pkg/store"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	dynamic "k8s.io/client-go/dynamic/fake"
+
+	"github.com/telekom/controlplane/common-server/internal/config"
+	"github.com/telekom/controlplane/common-server/internal/crd"
+	"github.com/telekom/controlplane/common-server/pkg/store"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func TestConfig(t *testing.T) {
@@ -56,8 +58,7 @@ func NewCRD(group, version, resource string) *apiextensionsv1.CustomResourceDefi
 }
 
 var _ = Describe("Config Test", func() {
-
-	var gvr = schema.GroupVersionResource{
+	gvr := schema.GroupVersionResource{
 		Group:    "testgroup",
 		Version:  "v1",
 		Resource: "testresources",
@@ -81,7 +82,6 @@ var _ = Describe("Config Test", func() {
 		crd.InitCrdResolverWithClient(apiextension.NewSimpleClientset(NewCRD(gvr.Group, gvr.Version, gvr.Resource)))
 
 		It("should correctly build a server from a config", func() {
-
 			cfg := &config.ServerConfig{
 				Address:        ":8080",
 				BasePath:       "/api",

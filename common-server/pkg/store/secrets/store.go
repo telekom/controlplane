@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 )

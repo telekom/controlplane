@@ -14,6 +14,7 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/dgraph-io/badger/v4"
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/common-server/internal/informer"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/store"
@@ -24,8 +25,10 @@ type SortableStore[T store.Object] struct {
 	expectedSize int
 }
 
-var _ store.ObjectStore[store.Object] = &InmemoryObjectStore[store.Object]{}
-var _ informer.EventHandler = &InmemoryObjectStore[store.Object]{}
+var (
+	_ store.ObjectStore[store.Object] = &InmemoryObjectStore[store.Object]{}
+	_ informer.EventHandler           = &InmemoryObjectStore[store.Object]{}
+)
 
 func Sortable[T store.Object](ios *InmemoryObjectStore[T], storeOpts StoreOpts) store.ObjectStore[T] {
 	ss := &SortableStore[T]{

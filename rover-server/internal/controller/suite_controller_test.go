@@ -13,38 +13,41 @@ import (
 	"github.com/gkampitakis/go-snaps/match"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/gofiber/fiber/v2"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	cserver "github.com/telekom/controlplane/common-server/pkg/server"
-	securitymock "github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
-	cstore "github.com/telekom/controlplane/common-server/pkg/store"
-	"github.com/telekom/controlplane/file-manager/api"
-	filefake "github.com/telekom/controlplane/file-manager/api/fake"
-	"github.com/telekom/controlplane/rover-server/internal/file"
+	"github.com/stretchr/testify/mock"
 	"k8s.io/client-go/rest"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 
-	"github.com/stretchr/testify/mock"
+	cserver "github.com/telekom/controlplane/common-server/pkg/server"
+	securitymock "github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
+	cstore "github.com/telekom/controlplane/common-server/pkg/store"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	"github.com/telekom/controlplane/file-manager/api"
+	filefake "github.com/telekom/controlplane/file-manager/api/fake"
 	"github.com/telekom/controlplane/rover-server/internal/config"
+	"github.com/telekom/controlplane/rover-server/internal/file"
 	"github.com/telekom/controlplane/rover-server/internal/server"
 	"github.com/telekom/controlplane/rover-server/pkg/log"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 	"github.com/telekom/controlplane/rover-server/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 const (
 	mockObjectStore = true
 )
 
-var ctx context.Context
-var cancel context.CancelFunc
-var teamToken string
-var groupToken string
-var teamNoResources string
-var app *fiber.App
-var mockFileManager *filefake.MockFileManager
-var stores *store.Stores
+var (
+	ctx             context.Context
+	cancel          context.CancelFunc
+	teamToken       string
+	groupToken      string
+	teamNoResources string
+	app             *fiber.App
+	mockFileManager *filefake.MockFileManager
+	stores          *store.Stores
+)
 
 func TestController(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -113,7 +116,6 @@ var _ = BeforeSuite(func() {
 	}
 
 	s.RegisterRoutes(app)
-
 })
 
 var _ = AfterSuite(func() {
@@ -153,7 +155,7 @@ func ExpectStatusOk(response *http.Response, err error, matchers ...match.JSONMa
 }
 
 func expectNoError(err error) {
-	Expect(err).To(BeNil())
+	Expect(err).ToNot(HaveOccurred())
 	Expect(err).ToNot(HaveOccurred())
 }
 

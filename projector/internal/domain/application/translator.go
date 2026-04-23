@@ -7,10 +7,11 @@ package application
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	appv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 // Translator maps an Application CR to an ApplicationData DTO and derives

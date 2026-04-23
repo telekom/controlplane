@@ -6,13 +6,16 @@ package server
 
 import (
 	"github.com/gofiber/fiber/v2"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 )
 
 var _ Controller = &ProbesController{}
 
-var ErrServiceUnavailable = problems.Builder().Status(fiber.StatusServiceUnavailable).Title("Service Unavailable").Build()
-var OkResponse = map[string]string{"status": "ok"}
+var (
+	ErrServiceUnavailable = problems.Builder().Status(fiber.StatusServiceUnavailable).Title("Service Unavailable").Build()
+	OkResponse            = map[string]string{"status": "ok"}
+)
 
 type CheckerFunc func(c *fiber.Ctx) error
 
@@ -54,7 +57,6 @@ func (h *ProbesController) AddHealthyCheck(checker CheckerFunc) {
 func (h *ProbesController) Register(router fiber.Router, opts ControllerOpts) {
 	router.Get("/healthz", h.HealthyCheck)
 	router.Get("/readyz", h.ReadyCheck)
-
 }
 
 func (h *ProbesController) ReadyCheck(c *fiber.Ctx) error {

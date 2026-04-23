@@ -7,9 +7,10 @@ package config
 import (
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type Item struct {

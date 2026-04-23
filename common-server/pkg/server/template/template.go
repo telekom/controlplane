@@ -73,7 +73,7 @@ func (t Template) Apply(lookUp map[string]any) (any, error) {
 	return nil, problems.BadRequest("invalid template")
 }
 
-func applyMapTemplate(m map[string]any, lookUp map[string]any) (map[string]any, error) {
+func applyMapTemplate(m, lookUp map[string]any) (map[string]any, error) {
 	res := map[string]any{}
 	for k, v := range m {
 		switch v := v.(type) {

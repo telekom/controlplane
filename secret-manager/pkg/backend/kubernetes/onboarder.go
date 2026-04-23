@@ -9,13 +9,14 @@ import (
 	"maps"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 )
 
 const FinalizerName = "secret-manager/finalizer"
@@ -77,7 +78,7 @@ func (k *KubernetesOnboarder) OnboardEnvironment(ctx context.Context, env string
 	return backend.NewDefaultOnboardResponse(secretRefs), nil
 }
 
-func (k *KubernetesOnboarder) OnboardTeam(ctx context.Context, env string, teamId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
+func (k *KubernetesOnboarder) OnboardTeam(ctx context.Context, env, teamId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
 	options := backend.OnboardOptions{}
 	for _, opt := range opts {
 		opt(&options)
@@ -114,7 +115,7 @@ func (k *KubernetesOnboarder) OnboardTeam(ctx context.Context, env string, teamI
 	return backend.NewDefaultOnboardResponse(secretRefs), nil
 }
 
-func (k *KubernetesOnboarder) OnboardApplication(ctx context.Context, env string, teamId string, appId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
+func (k *KubernetesOnboarder) OnboardApplication(ctx context.Context, env, teamId, appId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
 	options := backend.OnboardOptions{}
 	for _, opt := range opts {
 		opt(&options)
@@ -171,7 +172,7 @@ func (k *KubernetesOnboarder) DeleteEnvironment(ctx context.Context, env string)
 	return nil
 }
 
-func (k *KubernetesOnboarder) DeleteTeam(ctx context.Context, env string, id string) error {
+func (k *KubernetesOnboarder) DeleteTeam(ctx context.Context, env, id string) error {
 	obj := NewSecretObj(env, id, backend.NoApp)
 
 	err := RemoveFinalizer(ctx, k.client, obj)
@@ -191,7 +192,7 @@ func (k *KubernetesOnboarder) DeleteTeam(ctx context.Context, env string, id str
 	return nil
 }
 
-func (k *KubernetesOnboarder) DeleteApplication(ctx context.Context, env string, teamId string, appId string) error {
+func (k *KubernetesOnboarder) DeleteApplication(ctx context.Context, env, teamId, appId string) error {
 	obj := NewSecretObj(env, teamId, appId)
 
 	err := RemoveFinalizer(ctx, k.client, obj)

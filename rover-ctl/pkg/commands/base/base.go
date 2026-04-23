@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
@@ -69,6 +70,7 @@ func (c *BaseCommand) SetupToken() error {
 	c.Cmd.SetContext(ctx)
 	return nil
 }
+
 func SetupTokenInContext(ctx context.Context) (context.Context, error) {
 	token, err := config.GetToken()
 	if err != nil {

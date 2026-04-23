@@ -9,15 +9,14 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
 )
 
 var _ = Describe("ApiError", func() {
-	var (
-		apiErr *common.ApiError
-	)
+	var apiErr *common.ApiError
 
 	BeforeEach(func() {
 		apiErr = &common.ApiError{
@@ -75,7 +74,7 @@ var _ = Describe("ApiError", func() {
 			err := errors.New("generic error")
 			result, ok := common.AsApiError(err)
 			Expect(ok).To(BeFalse())
-			Expect(result).To(BeNil())
+			Expect(result).ToNot(HaveOccurred())
 		})
 
 		It("should extract ApiError from wrapped error", func() {

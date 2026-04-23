@@ -12,13 +12,15 @@ import (
 	"time"
 
 	"github.com/cyberark/conjur-api-go/conjurapi/response"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
 	"github.com/telekom/controlplane/secret-manager/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var ErrNotFound = &response.ConjurError{
@@ -27,7 +29,6 @@ var ErrNotFound = &response.ConjurError{
 }
 
 var _ = Describe("Conjur Backend", func() {
-
 	var writeAPI *mocks.MockConjurAPI
 	var readAPI *mocks.MockConjurAPI
 
@@ -37,7 +38,6 @@ var _ = Describe("Conjur Backend", func() {
 	})
 
 	Context("Parse ID", func() {
-
 		It("should create a new Conjur backend", func() {
 			conjurBackend := conjur.NewBackend(writeAPI, readAPI)
 			Expect(conjurBackend).ToNot(BeNil())
@@ -65,7 +65,6 @@ var _ = Describe("Conjur Backend", func() {
 	})
 
 	Context("Get", func() {
-
 		It("should return a secret with correct checksum", func() {
 			ctx := context.Background()
 			const value = "my-secret-value"
@@ -142,11 +141,9 @@ var _ = Describe("Conjur Backend", func() {
 			Expect(secretValue).ToNot(BeNil())
 			Expect(secretValue.Value()).To(Equal("value2"))
 		})
-
 	})
 
 	Context("Set", func() {
-
 		It("should not set a secret if it did not change", func() {
 			ctx := context.Background()
 			const value = "my-value"
@@ -211,11 +208,9 @@ var _ = Describe("Conjur Backend", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).ToNot(BeNil())
 			Expect(res.Value()).To(Equal(value))
-
 		})
 
 		Context("Strategy", func() {
-
 			It("replace strategy should overwrite JSON value entirely", func() {
 				ctx := context.Background()
 				conjurBackend := conjur.NewBackend(writeAPI, readAPI)
@@ -329,11 +324,9 @@ var _ = Describe("Conjur Backend", func() {
 				Expect(res).ToNot(BeNil())
 			})
 		})
-
 	})
 
 	Context("Delete", func() {
-
 		It("should delete a secret", func() {
 			ctx := context.Background()
 			conjurBackend := conjur.NewBackend(writeAPI, readAPI)
@@ -347,7 +340,6 @@ var _ = Describe("Conjur Backend", func() {
 	})
 
 	Context("Concurrent Set with Bouncer", func() {
-
 		It("should serialize concurrent Set calls on the same variable", func() {
 			ctx := context.Background()
 			const concurrency = 10
@@ -375,7 +367,7 @@ var _ = Describe("Conjur Backend", func() {
 			)
 
 			writeAPIConcurrent.EXPECT().AddSecret(variableId, mock.Anything).RunAndReturn(
-				func(id string, value string) error {
+				func(id, value string) error {
 					// Small delay to widen the race window
 					time.Sleep(time.Millisecond)
 					storedValue.Store(value)

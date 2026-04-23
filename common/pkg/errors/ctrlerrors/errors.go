@@ -10,12 +10,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 type BlockedError interface {
@@ -40,7 +41,8 @@ type RetryableWithDelayError interface {
 func HandleError(ctx context.Context, obj types.Object, err error, recorder record.EventRecorder) (bool, reconcile.Result) {
 	rootCauseErr := errors.Cause(err)
 
-	if be, ok := rootCauseErr.(BlockedError); ok && be.IsBlocked() {
+	var be BlockedError
+	if errors.As(rootCauseErr, &be) {
 		recordError(ctx, obj, rootCauseErr, "Blocked", recorder)
 		updatd := obj.SetCondition(condition.NewBlockedCondition(rootCauseErr.Error()))
 		return updatd, reconcile.Result{
@@ -50,7 +52,8 @@ func HandleError(ctx context.Context, obj types.Object, err error, recorder reco
 		}
 	}
 
-	if re, ok := rootCauseErr.(RetryableWithDelayError); ok {
+	var re RetryableWithDelayError
+	if errors.As(rootCauseErr, &re) {
 		recordError(ctx, obj, rootCauseErr, "Retryable", recorder)
 		if re.IsRetryable() {
 			deley := re.RetryDelay()
@@ -63,7 +66,8 @@ func HandleError(ctx context.Context, obj types.Object, err error, recorder reco
 		}
 	}
 
-	if re, ok := rootCauseErr.(RetryableError); ok {
+	var re RetryableError
+	if errors.As(rootCauseErr, &re) {
 		recordError(ctx, obj, rootCauseErr, "Retryable", recorder)
 		if re.IsRetryable() {
 			return false, reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
@@ -89,10 +93,12 @@ func recordError(ctx context.Context, obj types.Object, err error, reason string
 	}
 }
 
-var _ error = &CtrlError{}
-var _ BlockedError = &CtrlError{}
-var _ RetryableError = &CtrlError{}
-var _ RetryableWithDelayError = &CtrlError{}
+var (
+	_ error                   = &CtrlError{}
+	_ BlockedError            = &CtrlError{}
+	_ RetryableError          = &CtrlError{}
+	_ RetryableWithDelayError = &CtrlError{}
+)
 
 type CtrlError struct {
 	msg        string

@@ -14,17 +14,18 @@ import (
 
 	"github.com/cyberark/conjur-api-go/conjurapi"
 	conjurapi_response "github.com/cyberark/conjur-api-go/conjurapi/response"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
 	"github.com/telekom/controlplane/secret-manager/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Conjur Onboarder", func() {
-
 	var writeAPI *mocks.MockConjurAPI
 	var writerBackend *mocks.MockBackend[conjur.ConjurSecretId, backend.DefaultSecret[conjur.ConjurSecretId]]
 
@@ -34,7 +35,6 @@ var _ = Describe("Conjur Onboarder", func() {
 	})
 
 	Context("Onboarder Implementation", func() {
-
 		It("should create a new Conjur Onboarder", func() {
 			conjurOnboarder := conjur.NewOnboarder(writeAPI, writerBackend)
 			Expect(conjurOnboarder).ToNot(BeNil())
@@ -42,7 +42,6 @@ var _ = Describe("Conjur Onboarder", func() {
 	})
 
 	Context("Onboard Environment", func() {
-
 		It("should onboard an environment", func() {
 			ctx := context.Background()
 			conjurOnboarder := conjur.NewOnboarder(writeAPI, writerBackend)
@@ -88,11 +87,9 @@ var _ = Describe("Conjur Onboarder", func() {
 			err := conjurOnboarder.DeleteEnvironment(ctx, env)
 			Expect(err).ToNot(HaveOccurred())
 		})
-
 	})
 
 	Context("Onboard Team", func() {
-
 		It("should onboard a team", func() {
 			ctx := context.Background()
 			conjurOnboarder := conjur.NewOnboarder(writeAPI, writerBackend)
@@ -129,7 +126,6 @@ var _ = Describe("Conjur Onboarder", func() {
 
 			err := conjurOnboarder.DeleteTeam(ctx, "test-env", "test-team")
 			Expect(err).ToNot(HaveOccurred())
-
 		})
 
 		It("should onboard a team with defined secret", func() {
@@ -179,12 +175,10 @@ var _ = Describe("Conjur Onboarder", func() {
 			Expect(res.SecretRefs()).To(HaveKeyWithValue("clientSecret", MatchRegexp("test-env:test-team::clientSecret:.+")))
 			Expect(res.SecretRefs()).To(HaveKeyWithValue("teamToken", MatchRegexp("test-env:test-team::teamToken:.+")))
 			Expect(res.SecretRefs()).To(HaveLen(2))
-
 		})
 	})
 
 	Context("Onboard Application", func() {
-
 		It("should onboard an application", func() {
 			ctx := context.Background()
 			conjurOnboarder := conjur.NewOnboarder(writeAPI, writerBackend)
@@ -224,7 +218,6 @@ var _ = Describe("Conjur Onboarder", func() {
 
 			err := conjurOnboarder.DeleteApplication(ctx, env, teamId, appId)
 			Expect(err).ToNot(HaveOccurred())
-
 		})
 
 		It("should fail on unknown onboarding secret", func() {
@@ -303,7 +296,6 @@ var _ = Describe("Conjur Onboarder", func() {
 	})
 
 	Context("Strategy Support", func() {
-
 		It("merge strategy should set ALL allowed secrets with merge write option (team)", func() {
 			ctx := context.Background()
 			conjurOnboarder := conjur.NewOnboarder(writeAPI, writerBackend)
@@ -430,7 +422,6 @@ var _ = Describe("Conjur Onboarder", func() {
 	})
 
 	Context("Concurrent Onboarding with Bouncer", func() {
-
 		It("should preserve all zones sub-keys when concurrent OnboardEnvironment calls use merge strategy", func() {
 			const concurrency = 10
 			const env = "test-env"

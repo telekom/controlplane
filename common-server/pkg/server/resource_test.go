@@ -11,14 +11,16 @@ import (
 	"net/http/httptest"
 
 	"github.com/gofiber/fiber/v2"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common-server/test/mocks"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ResourceController", func() {
@@ -76,7 +78,7 @@ var _ = Describe("ResourceController", func() {
 		It("should read an object successfully", func() {
 			mockStore.EXPECT().Get(mock.Anything, testNamespace, testName).Return(&unstructured.Unstructured{}, nil)
 
-			req := httptest.NewRequest(http.MethodGet, "/tests/default/test-name", nil)
+			req := httptest.NewRequest(http.MethodGet, "/tests/default/test-name", http.NoBody)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -86,7 +88,7 @@ var _ = Describe("ResourceController", func() {
 		It("should return an error if the object is not found", func() {
 			mockStore.EXPECT().Get(mock.Anything, testNamespace, testName).Return(nil, errors.New("not found"))
 
-			req := httptest.NewRequest(http.MethodGet, "/tests/default/test-name", nil)
+			req := httptest.NewRequest(http.MethodGet, "/tests/default/test-name", http.NoBody)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -98,7 +100,7 @@ var _ = Describe("ResourceController", func() {
 		It("should delete an object successfully", func() {
 			mockStore.EXPECT().Delete(mock.Anything, testNamespace, testName).Return(nil)
 
-			req := httptest.NewRequest(http.MethodDelete, "/tests/default/test-name", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/tests/default/test-name", http.NoBody)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -108,7 +110,7 @@ var _ = Describe("ResourceController", func() {
 		It("should return an error if the object cannot be deleted", func() {
 			mockStore.EXPECT().Delete(mock.Anything, testNamespace, testName).Return(errors.New("delete error"))
 
-			req := httptest.NewRequest(http.MethodDelete, "/tests/default/test-name", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/tests/default/test-name", http.NoBody)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -126,7 +128,7 @@ var _ = Describe("ResourceController", func() {
 				},
 			}, nil)
 
-			req := httptest.NewRequest(http.MethodGet, "/tests", nil)
+			req := httptest.NewRequest(http.MethodGet, "/tests", http.NoBody)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -138,7 +140,7 @@ var _ = Describe("ResourceController", func() {
 		It("should return an error if listing fails", func() {
 			mockStore.EXPECT().List(mock.Anything, mock.Anything).Return(nil, errors.New("list error"))
 
-			req := httptest.NewRequest(http.MethodGet, "/tests", nil)
+			req := httptest.NewRequest(http.MethodGet, "/tests", http.NoBody)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -199,7 +201,7 @@ var _ = Describe("ResourceController", func() {
 				return nil
 			})
 
-			req := httptest.NewRequest(http.MethodGet, "/queryargs?prefix=test-prefix&cursor=test-cursor&limit=10&filter=key==value&sort=key:asc", nil)
+			req := httptest.NewRequest(http.MethodGet, "/queryargs?prefix=test-prefix&cursor=test-cursor&limit=10&filter=key==value&sort=key:asc", http.NoBody)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -214,7 +216,7 @@ var _ = Describe("ResourceController", func() {
 				return nil
 			})
 
-			req := httptest.NewRequest(http.MethodGet, "/queryargs?filter=invalid-filter", nil)
+			req := httptest.NewRequest(http.MethodGet, "/queryargs?filter=invalid-filter", http.NoBody)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -229,7 +231,7 @@ var _ = Describe("ResourceController", func() {
 				return nil
 			})
 
-			req := httptest.NewRequest(http.MethodGet, "/queryargs?sort=invalid-sort", nil)
+			req := httptest.NewRequest(http.MethodGet, "/queryargs?sort=invalid-sort", http.NoBody)
 			resp, err := app.Test(req)
 
 			Expect(err).ToNot(HaveOccurred())

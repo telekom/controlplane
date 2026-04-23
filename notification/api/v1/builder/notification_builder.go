@@ -7,14 +7,15 @@ package builder
 import (
 	"context"
 	"encoding/json"
+	"maps"
+
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"maps"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/pkg/errors"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/types"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
@@ -41,7 +42,6 @@ import (
 //		}).
 //		Send(ctx)
 type NotificationBuilder interface {
-
 	// WithNamespace sets the namespace of the notification.
 	// This is a required field and must be set before building the object.
 	// It is recommended to use the namespace of the resource that is triggering the notification.

@@ -17,11 +17,8 @@ func TestLabelutil(t *testing.T) {
 }
 
 var _ = Describe("Labelutil", func() {
-
 	Context("NormalizeValue", func() {
-
 		It("should normalize value", func() {
-
 			value := " foo/bar_baz/ "
 			Expect(NormalizeValue(value)).To(Equal("foo-bar-baz"))
 
@@ -44,7 +41,7 @@ var _ = Describe("Labelutil", func() {
 		It("should not shorten names", func() {
 			value := "This is a very long value/with some_unwanted\\characters that needs to be normalized and shortened"
 			shortenedValue := NormalizeNameValue(value)
-			Expect(len(shortenedValue)).To(Equal(len(value)))
+			Expect(shortenedValue).To(HaveLen(len(value)))
 			Expect(shortenedValue).To(Equal("this-is-a-very-long-value-with-some-unwanted-characters-that-needs-to-be-normalized-and-shortened"))
 		})
 
@@ -60,6 +57,5 @@ var _ = Describe("Labelutil", func() {
 			shortenedValue := NormalizeLabelValue(value)
 			Expect(shortenedValue).To(Equal("short-value"))
 		})
-
 	})
 })

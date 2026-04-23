@@ -8,11 +8,12 @@ import (
 	"context"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 // Translator maps an ApprovalRequest CR to an ApprovalRequestData DTO and
@@ -40,7 +41,7 @@ func (t *Translator) ShouldSkip(obj *approvalv1.ApprovalRequest) (bool, string) 
 		return true, "spec.action is empty"
 	}
 	// TODO: This filter should be removed in the future when other target kinds are supported.
-	if obj.Spec.Target.TypeMeta.Kind != "ApiSubscription" {
+	if obj.Spec.Target.Kind != "ApiSubscription" {
 		return true, "spec.target.kind is not ApiSubscription"
 	}
 

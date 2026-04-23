@@ -9,8 +9,10 @@ import (
 	"net/http"
 )
 
-var _ error = &problem{}
-var _ Problem = &problem{}
+var (
+	_ error   = &problem{}
+	_ Problem = &problem{}
+)
 
 type Problem interface {
 	error
@@ -80,7 +82,6 @@ func (pb *problemBuilder) Title(t string) ProblemBuilder {
 }
 
 func (pb *problemBuilder) Detail(d string) ProblemBuilder {
-
 	pb.problem.Detail = d
 	return pb
 }

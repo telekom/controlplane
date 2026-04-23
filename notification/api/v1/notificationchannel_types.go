@@ -5,9 +5,10 @@
 package v1
 
 import (
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 // NoneAuth represents no authentication
@@ -149,7 +150,6 @@ const (
 
 // EmailConfig defines configuration for Email channel
 type EmailConfig struct {
-
 	// Recipients of this email
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:items:Format=email

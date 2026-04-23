@@ -6,11 +6,12 @@ package out
 
 import (
 	"github.com/gkampitakis/go-snaps/snaps"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Exposure Security Mapper (Out)", func() {
@@ -37,7 +38,7 @@ var _ = Describe("Exposure Security Mapper (Out)", func() {
 			// Then
 			Expect(output.Security).ToNot(BeZero())
 			basicAuth, err := output.Security.AsBasicAuth()
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(basicAuth.Username).To(Equal("testuser"))
 			Expect(basicAuth.Password).To(Equal("testpass"))
 			snaps.MatchSnapshot(GinkgoT(), basicAuth)
@@ -71,7 +72,7 @@ var _ = Describe("Exposure Security Mapper (Out)", func() {
 			// Then
 			Expect(output.Security).ToNot(BeZero())
 			oauth2, err := output.Security.AsOauth2()
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(oauth2.TokenEndpoint).To(Equal("https://test.com/token"))
 			Expect(oauth2.TokenRequest).To(Equal(api.Oauth2TokenRequest("basic")))
 			Expect(oauth2.GrantType).To(Equal(api.GrantType("client_credentials")))
@@ -105,7 +106,7 @@ var _ = Describe("Exposure Security Mapper (Out)", func() {
 			// Then
 			Expect(output.Security).ToNot(BeZero())
 			oauth2, err := output.Security.AsOauth2()
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(oauth2.TokenEndpoint).To(Equal("https://test.com/token"))
 			Expect(oauth2.GrantType).To(Equal(api.GrantType("password")))
 			Expect(oauth2.Username).To(Equal("testuser"))
@@ -132,7 +133,7 @@ var _ = Describe("Exposure Security Mapper (Out)", func() {
 			// Then
 			Expect(output.Security).ToNot(BeZero())
 			oauth2, err := output.Security.AsOauth2()
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(oauth2.Scopes).To(ContainElements("read", "write"))
 			snaps.MatchSnapshot(GinkgoT(), oauth2)
 		})
@@ -193,7 +194,7 @@ var _ = Describe("Exposure Security Mapper (Out)", func() {
 			// Then
 			Expect(output.Security).ToNot(BeZero())
 			oauth2, err := output.Security.AsOauth2()
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(oauth2.TokenEndpoint).To(Equal("https://test.com/token"))
 			Expect(oauth2.Scopes).To(ContainElements("read", "write"))
 			snaps.MatchSnapshot(GinkgoT(), oauth2)

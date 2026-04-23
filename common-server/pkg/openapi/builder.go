@@ -163,7 +163,6 @@ func (b *OperationBuilder) SetJsonResponse(statusCode string, SchemaItem SchemaI
 		contentType = "application/problem+json"
 	}
 	return b.SetCustomResponse(statusCode, contentType, SchemaItem)
-
 }
 
 func (b *OperationBuilder) SetCustomResponse(statusCode, contentType string, SchemaItem SchemaItem) *OperationBuilder {
@@ -447,5 +446,5 @@ func (d *Document) Write(path string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, b, 0600)
+	return os.WriteFile(path, b, 0o600)
 }

@@ -5,15 +5,18 @@
 package test
 
 import (
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
-var _ types.Object = &TestResource{}
-var _ types.ObjectList = &TestResourceList{}
+var (
+	_ types.Object     = &TestResource{}
+	_ types.ObjectList = &TestResourceList{}
+)
 
 type TestResource struct {
 	metav1.TypeMeta   `json:",inline"`

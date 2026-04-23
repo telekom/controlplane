@@ -9,15 +9,17 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/internal/crd"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8s_testing "k8s.io/client-go/testing"
+
+	"github.com/telekom/controlplane/common-server/internal/crd"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func NewCRD(group, version, resource string) *apiextensionsv1.CustomResourceDefinition {
@@ -54,9 +56,7 @@ func TestCrd(t *testing.T) {
 }
 
 var _ = Describe("CRD", func() {
-
 	Context("Resolver", func() {
-
 		var resolver crd.Resolver
 
 		BeforeEach(func() {
@@ -64,7 +64,6 @@ var _ = Describe("CRD", func() {
 		})
 
 		It("should return an error when it cannot find the CRD", func() {
-
 			crd, err := resolver.ResolveCrd(schema.GroupVersionResource{
 				Group:    "testgroup",
 				Version:  "v1",
@@ -89,7 +88,6 @@ var _ = Describe("CRD", func() {
 		})
 
 		It("should return multiple CRDs when it matches the pattern", func() {
-
 			crds, err := resolver.ResolveCrds(schema.GroupVersionResource{
 				Group:    "testgroup",
 				Version:  "v1",
@@ -156,6 +154,5 @@ var _ = Describe("CRD", func() {
 			Expect(crds).To(BeNil())
 			Expect(err.Error()).To(ContainSubstring("MOCK_ERROR"))
 		})
-
 	})
 })

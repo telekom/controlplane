@@ -8,9 +8,10 @@ import (
 	"net/http"
 	"testing"
 
+	client "github.com/telekom/controlplane/common-server/pkg/client/metrics"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	client "github.com/telekom/controlplane/common-server/pkg/client/metrics"
 )
 
 var _ client.HttpRequestDoer = &mockClient{}

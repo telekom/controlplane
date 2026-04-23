@@ -7,10 +7,11 @@ package patch_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common-server/pkg/store/inmemory/patch"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func TestPatch(t *testing.T) {
@@ -19,9 +20,7 @@ func TestPatch(t *testing.T) {
 }
 
 var _ = Describe("Patches", func() {
-
 	Context("Building patch funcs", func() {
-
 		It("should build the patch funcs from the store patches", func() {
 			patches := []store.Patch{
 				{
@@ -48,7 +47,6 @@ var _ = Describe("Patches", func() {
 		})
 
 		It("should return an error if the patch operation is not supported", func() {
-
 			patchFunc := patch.NewPatchFuncs([]store.Patch{
 				{
 					Op: store.OpMove,
@@ -61,7 +59,6 @@ var _ = Describe("Patches", func() {
 	})
 
 	Context("NopPatch", func() {
-
 		It("should return the data unchanged", func() {
 			patchFunc := patch.NopPatch
 
@@ -73,7 +70,6 @@ var _ = Describe("Patches", func() {
 	})
 
 	Context("AddPatch", func() {
-
 		It("should add a value to an array", func() {
 			patchFunc := patch.AddPatch("foo", "baz")
 
@@ -99,7 +95,6 @@ var _ = Describe("Patches", func() {
 	})
 
 	Context("RemovePatch", func() {
-
 		It("should remove a value", func() {
 			patchFunc := patch.RemovePatch("foo")
 
@@ -118,7 +113,6 @@ var _ = Describe("Patches", func() {
 	})
 
 	Context("ReplacePatch", func() {
-
 		It("should replace a value", func() {
 			patchFunc := patch.ReplacePatch("foo", "baz")
 
@@ -166,5 +160,4 @@ var _ = Describe("Patches", func() {
 			Expect(err).To(HaveOccurred())
 		})
 	})
-
 })

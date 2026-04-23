@@ -8,11 +8,12 @@ import (
 	"context"
 
 	"entgo.io/ent/privacy"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
 	"github.com/telekom/controlplane/controlplane-api/internal/rule"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("DenyIfNoViewer", func() {

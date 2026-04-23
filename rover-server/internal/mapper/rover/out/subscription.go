@@ -9,9 +9,9 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 func mapSubscription(in *roverv1.Subscription, out *api.Subscription) error {
@@ -19,7 +19,6 @@ func mapSubscription(in *roverv1.Subscription, out *api.Subscription) error {
 		if err := out.FromApiSubscription(mapApiSubscription(in.Api)); err != nil {
 			return errors.Wrap(err, "failed to map api subscription")
 		}
-
 	} else if in.Event != nil {
 		if err := out.FromEventSubscription(mapEventSubscription(in.Event)); err != nil {
 			return errors.Wrap(err, "failed to map event subscription")

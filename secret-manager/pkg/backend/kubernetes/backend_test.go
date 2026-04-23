@@ -7,13 +7,15 @@ package kubernetes_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/secret-manager/pkg/backend"
-	"github.com/telekom/controlplane/secret-manager/pkg/backend/kubernetes"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/telekom/controlplane/secret-manager/pkg/backend"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/kubernetes"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func NewSecret(name, namespace string, data map[string]string) *corev1.Secret {
@@ -35,7 +37,6 @@ func NewSecret(name, namespace string, data map[string]string) *corev1.Secret {
 }
 
 var _ = Describe("Kubernetes Backend", func() {
-
 	var ctx context.Context
 	var mockK8sClient client.Client
 
@@ -164,7 +165,6 @@ var _ = Describe("Kubernetes Backend", func() {
 	})
 
 	Context("Set Secret", func() {
-
 		It("should return an error when the secret does not exist", func() {
 			k8sBackend := kubernetes.NewBackend(mockK8sClient)
 
@@ -260,7 +260,6 @@ var _ = Describe("Kubernetes Backend", func() {
 	})
 
 	Context("Delete Secret", func() {
-
 		It("should return an error when the secret does not exist", func() {
 			k8sBackend := kubernetes.NewBackend(mockK8sClient)
 
@@ -288,7 +287,6 @@ var _ = Describe("Kubernetes Backend", func() {
 			err = k8sClient.Get(ctx, secretId.ObjectKey(), existingSecret)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(string(existingSecret.Data["externalSecrets"])).To(Equal("{}"))
-
 		})
 
 		It("should delete an existing team secret", func() {
@@ -304,6 +302,5 @@ var _ = Describe("Kubernetes Backend", func() {
 			err := k8sBackend.Delete(ctx, secretId)
 			Expect(err).ToNot(HaveOccurred())
 		})
-
 	})
 })

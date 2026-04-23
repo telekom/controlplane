@@ -5,9 +5,10 @@
 package v1
 
 import (
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -51,8 +52,10 @@ type Group struct {
 	Status GroupStatus `json:"status,omitempty"`
 }
 
-var _ types.Object = &Group{}
-var _ types.ObjectList = &GroupList{}
+var (
+	_ types.Object     = &Group{}
+	_ types.ObjectList = &GroupList{}
+)
 
 func (g *Group) GetConditions() []metav1.Condition {
 	return g.Status.Conditions

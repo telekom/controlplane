@@ -9,11 +9,11 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/stretchr/testify/assert"
+
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/util"
 )
 
 func TestDeepSort(t *testing.T) {
-
 	type testStruct struct {
 		Slice     []string
 		Map       map[string]any

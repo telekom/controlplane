@@ -46,7 +46,7 @@ type DownloadApi interface {
 }
 
 type UploadApi interface {
-	UploadFile(ctx context.Context, fileId string, fileContentType string, r io.Reader) (*FileUploadResponse, error)
+	UploadFile(ctx context.Context, fileId, fileContentType string, r io.Reader) (*FileUploadResponse, error)
 }
 
 type DeleteApi interface {
@@ -106,6 +106,7 @@ func WithURL(url string) Option {
 		o.URL = url
 	}
 }
+
 func WithAccessToken(token accesstoken.AccessToken) Option {
 	return func(o *Options) {
 		o.Token = token
@@ -143,7 +144,6 @@ func New(opts ...Option) FileManager {
 			client.WithCaFilepath(CaFilePath),
 		)),
 		gen.WithRequestEditorFn(options.accessTokenReqEditor))
-
 	if err != nil {
 		log.Fatalf("Failed to create file manager client: %v", err)
 	}
@@ -162,7 +162,7 @@ func GetFileManager(opts ...Option) FileManager {
 	return api
 }
 
-func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileContentType string, r io.Reader) (*FileUploadResponse, error) {
+func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId, fileContentType string, r io.Reader) (*FileUploadResponse, error) {
 	log := logr.FromContextOrDiscard(ctx)
 
 	buf := bytes.NewBuffer(nil)
@@ -180,7 +180,6 @@ func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 	}
 	// use generated client code to call the file manager server
 	response, err := f.Client.UploadFileWithBody(ctx, fileId, params, uploadRequestContentType, buf)
-
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to upload file")
 	}

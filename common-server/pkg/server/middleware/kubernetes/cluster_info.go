@@ -12,9 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	KubernetesWellKnownConfig = "https://kubernetes.default.svc/.well-known/openid-configuration"
-)
+var KubernetesWellKnownConfig = "https://kubernetes.default.svc/.well-known/openid-configuration"
 
 type clusterInfo struct {
 	Issuer  string `json:"issuer"`

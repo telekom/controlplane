@@ -14,21 +14,21 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
-	"github.com/telekom/controlplane/rover-server/internal/file"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-	"gopkg.in/yaml.v3"
-
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	"github.com/telekom/controlplane/rover-server/internal/file"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/apispecification/in"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/apispecification/out"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
 	"github.com/telekom/controlplane/rover-server/internal/server"
 	s "github.com/telekom/controlplane/rover-server/pkg/store"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 var _ server.ApiSpecificationController = &ApiSpecificationController{}
@@ -281,6 +281,6 @@ func (a *ApiSpecificationController) downloadFile(ctx context.Context, fileId st
 }
 
 func generateFileId(id mapper.ResourceIdInfo) string {
-	fileId := id.Environment + "--" + id.ResourceId //<env>--<group>--<team>--<apiSpecName>
+	fileId := id.Environment + "--" + id.ResourceId // <env>--<group>--<team>--<apiSpecName>
 	return fileId
 }

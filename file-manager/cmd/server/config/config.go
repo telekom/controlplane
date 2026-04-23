@@ -25,7 +25,7 @@ func (c BackendConfig) Get(key string) string {
 	return c.Config[key]
 }
 
-func (c BackendConfig) GetDefault(key string, defaultValue string) string {
+func (c BackendConfig) GetDefault(key, defaultValue string) string {
 	if c.Config == nil {
 		return defaultValue
 	}

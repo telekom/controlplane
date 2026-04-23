@@ -7,22 +7,22 @@ package controller_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/controller"
 	"github.com/telekom/controlplane/secret-manager/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Controller", func() {
 	BeforeEach(func() {
-
 	})
 
 	Context("Secrets Controller", func() {
-
 		var mockedBackend *mocks.MockBackend[*mocks.MockSecretId, backend.DefaultSecret[*mocks.MockSecretId]]
 
 		BeforeEach(func() {
@@ -76,11 +76,9 @@ var _ = Describe("Controller", func() {
 			err := ctrl.DeleteSecret(ctx, "my-secret-id")
 			Expect(err).ToNot(HaveOccurred())
 		})
-
 	})
 
 	Context("Onboard Controller", func() {
-
 		var mockedOnboarder *mocks.MockOnboarder
 
 		BeforeEach(func() {
@@ -161,7 +159,6 @@ var _ = Describe("Controller", func() {
 			mockedOnboarder.EXPECT().OnboardApplication(ctx, "env-id", "team-id", "app-id",
 				mock.AnythingOfType("backend.OnboardOption"), mock.AnythingOfType("backend.OnboardOption"),
 			).RunAndReturn(func(ctx context.Context, envId, teamId, appId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
-
 				Expect(opts).To(HaveLen(2))
 				options := &backend.OnboardOptions{}
 				for _, opt := range opts {
@@ -205,7 +202,6 @@ var _ = Describe("Controller", func() {
 			mockedOnboarder.EXPECT().OnboardTeam(ctx, "env-id", "team-id",
 				mock.AnythingOfType("backend.OnboardOption"), mock.AnythingOfType("backend.OnboardOption"),
 			).RunAndReturn(func(ctx context.Context, envId, teamId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
-
 				Expect(opts).To(HaveLen(2))
 				options := &backend.OnboardOptions{}
 				for _, opt := range opts {
@@ -233,7 +229,6 @@ var _ = Describe("Controller", func() {
 			mockedOnboarder.EXPECT().OnboardEnvironment(ctx, "env-id",
 				mock.AnythingOfType("backend.OnboardOption"),
 			).RunAndReturn(func(ctx context.Context, envId string, opts ...backend.OnboardOption) (backend.OnboardResponse, error) {
-
 				Expect(opts).To(HaveLen(1))
 				options := &backend.OnboardOptions{}
 				for _, opt := range opts {

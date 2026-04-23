@@ -7,11 +7,11 @@ package in
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var (
@@ -69,27 +69,27 @@ var _ = BeforeSuite(func() {
 func GetApiExposure(apiExposure api.ApiExposure) api.Exposure {
 	var exp api.Exposure
 	err := (&exp).FromApiExposure(apiExposure)
-	Expect(err).To(BeNil())
+	Expect(err).ToNot(HaveOccurred())
 	return exp
 }
 
 func GetApiSubscription(apiSubscription api.ApiSubscription) api.Subscription {
 	var sub api.Subscription
 	err := (&sub).FromApiSubscription(apiSubscription)
-	Expect(err).To(BeNil())
+	Expect(err).ToNot(HaveOccurred())
 	return sub
 }
 
 func GetEventExposure(eventExposure api.EventExposure) api.Exposure {
 	var exp api.Exposure
 	err := (&exp).FromEventExposure(eventExposure)
-	Expect(err).To(BeNil())
+	Expect(err).ToNot(HaveOccurred())
 	return exp
 }
 
 func GetEventSubscription(eventSubscription api.EventSubscription) api.Subscription {
 	var sub api.Subscription
 	err := (&sub).FromEventSubscription(eventSubscription)
-	Expect(err).To(BeNil())
+	Expect(err).ToNot(HaveOccurred())
 	return sub
 }

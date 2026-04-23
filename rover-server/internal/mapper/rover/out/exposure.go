@@ -9,9 +9,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 func mapExposure(in *roverv1.Exposure, out *api.Exposure) error {
@@ -19,12 +19,10 @@ func mapExposure(in *roverv1.Exposure, out *api.Exposure) error {
 		if err := out.FromApiExposure(mapApiExposure(in.Api)); err != nil {
 			return errors.Wrap(err, "failed to map api exposure")
 		}
-
 	} else if in.Event != nil {
 		if err := out.FromEventExposure(mapEventExposure(in.Event)); err != nil {
 			return errors.Wrap(err, "failed to map event exposure")
 		}
-
 	} else {
 		return errors.Errorf("unknown exposure type: %s", in.Type())
 	}

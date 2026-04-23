@@ -13,26 +13,25 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	crscheme "sigs.k8s.io/controller-runtime/pkg/scheme"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/controller/index"
 	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
-	ctrl "sigs.k8s.io/controller-runtime"
-	crscheme "sigs.k8s.io/controller-runtime/pkg/scheme"
-	// +kubebuilder:scaffold:imports
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -45,12 +44,14 @@ const (
 	testEnvironment = "test"
 )
 
-var cfg *rest.Config
-var k8sClient client.Client
-var testEnv *envtest.Environment
-var ctx context.Context
-var cancel context.CancelFunc
-var k8sm manager.Manager
+var (
+	cfg       *rest.Config
+	k8sClient client.Client
+	testEnv   *envtest.Environment
+	ctx       context.Context
+	cancel    context.CancelFunc
+	k8sm      manager.Manager
+)
 
 func TestBuilder(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -79,7 +80,8 @@ var _ = BeforeSuite(func() {
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "..", "..", "..", "common", "pkg", "test", "testdata", "crds"),
-			filepath.Join("..", "..", "..", "config", "crd", "bases")},
+			filepath.Join("..", "..", "..", "config", "crd", "bases"),
+		},
 		ErrorIfCRDPathMissing: true,
 
 		// The BinaryAssetsDirectory is only required if you want to run the tests directly
@@ -126,7 +128,6 @@ var _ = BeforeSuite(func() {
 	}()
 
 	Expect(k8sm.GetCache().WaitForCacheSync(ctx)).To(BeTrue(), "cache sync error")
-
 })
 
 var _ = AfterSuite(func() {

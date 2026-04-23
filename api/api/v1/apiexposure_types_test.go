@@ -5,15 +5,15 @@
 package v1_test
 
 import (
+	apiapi "github.com/telekom/controlplane/api/api/v1"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	apiapi "github.com/telekom/controlplane/api/api/v1"
 )
 
 var _ = Describe("Gateway Util", func() {
 	Context("HasExternalIDP", func() {
 		It("should return true if ExternalIDPConfig exists", func() {
-
 			exposure := &apiapi.ApiExposure{}
 			Expect(exposure.HasExternalIdp()).To(BeFalse())
 

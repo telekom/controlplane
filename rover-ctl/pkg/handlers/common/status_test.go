@@ -5,16 +5,15 @@
 package common_test
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ObjectStatusResponse", func() {
-	var (
-		status *common.ObjectStatusResponse
-	)
+	var status *common.ObjectStatusResponse
 
 	BeforeEach(func() {
 		status = &common.ObjectStatusResponse{

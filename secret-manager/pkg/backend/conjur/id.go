@@ -35,7 +35,7 @@ func Copy(c ConjurSecretId) ConjurSecretId {
 	return c
 }
 
-func New(env, team, app, path string, checksum string) ConjurSecretId {
+func New(env, team, app, path, checksum string) ConjurSecretId {
 	raw := strings.Join([]string{env, team, app, path, checksum}, backend.Separator)
 	return ConjurSecretId{
 		Raw:      raw,

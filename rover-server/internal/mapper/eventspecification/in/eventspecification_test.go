@@ -6,9 +6,11 @@ package in
 
 import (
 	"github.com/gkampitakis/go-snaps/snaps"
+
+	"github.com/telekom/controlplane/rover-server/internal/mapper"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/rover-server/internal/mapper"
 )
 
 var _ = Describe("EventSpecification Mapper", func() {
@@ -17,7 +19,7 @@ var _ = Describe("EventSpecification Mapper", func() {
 			specOrFileId := "test-file-id"
 
 			result, err := MapRequest(eventSpecification, specOrFileId, resourceIdInfo)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(result).ToNot(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), result)
 		})
@@ -31,7 +33,7 @@ var _ = Describe("EventSpecification Mapper", func() {
 
 			result, err := MapRequest(eventSpecification, "test-file-id", mismatchedId)
 			Expect(result).To(BeNil())
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("does not match expected name"))
 		})
 	})

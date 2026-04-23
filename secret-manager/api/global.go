@@ -12,8 +12,10 @@ import (
 	"github.com/go-logr/logr"
 )
 
-var once sync.Once
-var api SecretManager
+var (
+	once sync.Once
+	api  SecretManager
+)
 
 // Get retrieves the secret value from the secret manager.
 // The difference to the Get function in the api package is that this function
@@ -39,7 +41,7 @@ var Get = func(ctx context.Context, secretRef string) (value string, err error) 
 // The difference to the Set function in the api package is that this function
 // will check if this is a secret placeholder and if so, it will call the secret manager API.
 // If the secret is not a placeholder, it will return the secretRef as is.
-var Set = func(ctx context.Context, secretRef string, value string) (newRef string, err error) {
+var Set = func(ctx context.Context, secretRef, value string) (newRef string, err error) {
 	log := logr.FromContextOrDiscard(ctx)
 	secretId, ok := FromRef(secretRef)
 	if !ok {

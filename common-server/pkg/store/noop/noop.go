@@ -8,9 +8,10 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/store"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // noopStore is a no-operation implementation of ObjectStore that returns

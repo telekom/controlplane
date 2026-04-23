@@ -8,19 +8,20 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
-	apiv1 "github.com/telekom/controlplane/api/api/v1"
-	commonStore "github.com/telekom/controlplane/common-server/pkg/store"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/types"
-	v1 "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	commonStore "github.com/telekom/controlplane/common-server/pkg/store"
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	v1 "github.com/telekom/controlplane/rover/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // MockObjectStore is a mock implementation of the ObjectStore interface.
@@ -38,7 +39,7 @@ func (m *MockObjectStore[T]) Info() (schema.GroupVersionResource, schema.GroupVe
 	return args.Get(0).(schema.GroupVersionResource), args.Get(1).(schema.GroupVersionKind)
 }
 
-func (m *MockObjectStore[T]) Get(ctx context.Context, namespace string, name string) (T, error) {
+func (m *MockObjectStore[T]) Get(ctx context.Context, namespace, name string) (T, error) {
 	args := m.Called(ctx, namespace, name)
 	return args.Get(0).(T), args.Error(1)
 }
@@ -53,7 +54,7 @@ func (m *MockObjectStore[T]) Patch(ctx context.Context, namespace, name string, 
 	return args.Get(0).(T), args.Error(1)
 }
 
-func (m *MockObjectStore[T]) Delete(ctx context.Context, namespace string, name string) error {
+func (m *MockObjectStore[T]) Delete(ctx context.Context, namespace, name string) error {
 	args := m.Called(ctx, namespace, name)
 	return args.Error(0)
 }
@@ -125,7 +126,8 @@ var _ = Describe("getAllProblemsInSubResource", func() {
 			mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
 			mockStore.On("List", ctx, mock.Anything).Return(
 				&commonStore.ListResponse[*apiv1.ApiSubscription]{
-					Items: []*apiv1.ApiSubscription{apiSubscription}}, nil).Once()
+					Items: []*apiv1.ApiSubscription{apiSubscription},
+				}, nil).Once()
 
 			result, err := getAllProblemsInSubResource(ctx, rover, mockStore)
 
@@ -171,7 +173,8 @@ var _ = Describe("getAllProblemsInSubResource", func() {
 			mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
 			mockStore.On("List", ctx, mock.Anything).Return(
 				&commonStore.ListResponse[*apiv1.ApiSubscription]{
-					Items: []*apiv1.ApiSubscription{blockedSub}}, nil).Once()
+					Items: []*apiv1.ApiSubscription{blockedSub},
+				}, nil).Once()
 
 			result, err := getAllProblemsInSubResource(ctx, rover, mockStore)
 
@@ -188,7 +191,8 @@ var _ = Describe("getAllProblemsInSubResource", func() {
 			mockStore := new(MockObjectStore[*apiv1.ApiSubscription])
 			mockStore.On("List", ctx, mock.Anything).Return(
 				&commonStore.ListResponse[*apiv1.ApiSubscription]{
-					Items: []*apiv1.ApiSubscription{}}, nil).Once()
+					Items: []*apiv1.ApiSubscription{},
+				}, nil).Once()
 
 			result, err := getAllProblemsInSubResource(ctx, rover, mockStore)
 
@@ -360,7 +364,8 @@ var _ = Describe("getAllProblemsInSubResource HasStale", func() {
 
 			mockStore.On("List", ctx, mock.Anything).Return(
 				&commonStore.ListResponse[*apiv1.ApiSubscription]{
-					Items: []*apiv1.ApiSubscription{staleAPISubscription}}, nil).Once()
+					Items: []*apiv1.ApiSubscription{staleAPISubscription},
+				}, nil).Once()
 
 			result, err := getAllProblemsInSubResource(ctx, rover, mockStore)
 
@@ -404,7 +409,8 @@ var _ = Describe("getAllProblemsInSubResource HasStale", func() {
 
 			mockStore.On("List", ctx, mock.Anything).Return(
 				&commonStore.ListResponse[*apiv1.ApiSubscription]{
-					Items: []*apiv1.ApiSubscription{currentAPISubscription}}, nil).Once()
+					Items: []*apiv1.ApiSubscription{currentAPISubscription},
+				}, nil).Once()
 
 			result, err := getAllProblemsInSubResource(ctx, rover, mockStore)
 
@@ -421,7 +427,8 @@ var _ = Describe("getAllProblemsInSubResource HasStale", func() {
 
 			mockStore.On("List", ctx, mock.Anything).Return(
 				&commonStore.ListResponse[*apiv1.ApiSubscription]{
-					Items: []*apiv1.ApiSubscription{}}, nil).Once()
+					Items: []*apiv1.ApiSubscription{},
+				}, nil).Once()
 
 			result, err := getAllProblemsInSubResource(ctx, rover, mockStore)
 
@@ -465,7 +472,8 @@ var _ = Describe("getAllProblemsInSubResource HasStale", func() {
 
 			mockStore.On("List", ctx, mock.Anything).Return(
 				&commonStore.ListResponse[*apiv1.ApiSubscription]{
-					Items: []*apiv1.ApiSubscription{legacyAPISubscription}}, nil).Once()
+					Items: []*apiv1.ApiSubscription{legacyAPISubscription},
+				}, nil).Once()
 
 			result, err := getAllProblemsInSubResource(ctx, rover, mockStore)
 

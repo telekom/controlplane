@@ -16,6 +16,7 @@ import (
 	"github.com/gofiber/fiber/v2/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 )
 
@@ -82,7 +83,6 @@ func NewForApp(app *fiber.App, reg prometheus.Registerer, skipper Skipper) {
 		Timeout:           1 * time.Second,
 		EnableOpenMetrics: true,
 	})))
-
 }
 
 // StatusCoder is an interface that allows us to extract a status code from an error.

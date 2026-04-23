@@ -5,16 +5,17 @@
 package builder_test
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/notification/api/v1/builder"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("NotificationBuilder Util", func() {
 	It("ExtractApplicationInformation with successful target", func() {
-
 		target := types.TypedObjectRef{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "ApiSubscription",
@@ -33,11 +34,9 @@ var _ = Describe("NotificationBuilder Util", func() {
 		Expect(basepath).To(Equal("foo-bar-permissions-v1"))
 		Expect(group).To(Equal("group"))
 		Expect(team).To(Equal("team"))
-
 	})
 
 	It("ExtractApplicationInformation with empty target", func() {
-
 		target := types.TypedObjectRef{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "ApiSubscription",
@@ -56,11 +55,9 @@ var _ = Describe("NotificationBuilder Util", func() {
 		Expect(basepath).To(Equal(""))
 		Expect(group).To(Equal(""))
 		Expect(team).To(Equal(""))
-
 	})
 
 	It("ExtractApplicationInformation with partial target", func() {
-
 		target := types.TypedObjectRef{}
 
 		kind, application, basepath, group, team := builder.ExtractApplicationInformation(target)
@@ -69,7 +66,5 @@ var _ = Describe("NotificationBuilder Util", func() {
 		Expect(basepath).To(Equal(""))
 		Expect(group).To(Equal(""))
 		Expect(team).To(Equal(""))
-
 	})
-
 })

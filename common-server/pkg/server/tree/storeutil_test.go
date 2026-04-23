@@ -7,13 +7,15 @@ package tree_test
 import (
 	"strings"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/pkg/server/tree"
-	"github.com/telekom/controlplane/common-server/test/mocks"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/telekom/controlplane/common-server/pkg/server/tree"
+	"github.com/telekom/controlplane/common-server/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func NewMockStore(kind string) *mocks.MockObjectStore[*unstructured.Unstructured] {
@@ -35,11 +37,8 @@ func NewMockStore(kind string) *mocks.MockObjectStore[*unstructured.Unstructured
 }
 
 var _ = Describe("Storeutil", func() {
-
 	Context("LookupStores", func() {
-
 		It("should add a store", func() {
-
 			fooStore := NewMockStore("Foo")
 			tree.LookupStores.AddStore(fooStore)
 
@@ -57,7 +56,6 @@ var _ = Describe("Storeutil", func() {
 	})
 
 	Context("GetControllerOf", func() {
-
 		It("should returns false if the object has no owner reference", func() {
 			obj := &unstructured.Unstructured{}
 			ref, ok := tree.GetControllerOf(obj)

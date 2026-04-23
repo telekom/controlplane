@@ -7,14 +7,14 @@ package in
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Apispecification Parser", func() {
-
 	ctx := context.Background()
 	specV2 := `
 swagger: "2.0"
@@ -117,7 +117,6 @@ servers:
 `
 
 	Context("When parsing a specification", func() {
-
 		It("should correctly calculate them name", func() {
 			expected := "ecc-pi-product-inventory-management-service-tmf-api-productinventory-v4"
 			apiSpecification := &roverv1.ApiSpecification{
@@ -186,8 +185,7 @@ servers:
 			Expect(api.Spec.Version).To(Equal("1.0.0"))
 			Expect(api.Spec.Category).To(Equal(""))
 			Expect(api.Spec.XVendor).To(BeFalse())
-			Expect(api.Spec.Oauth2Scopes).To(HaveLen(0))
+			Expect(api.Spec.Oauth2Scopes).To(BeEmpty())
 		})
-
 	})
 })

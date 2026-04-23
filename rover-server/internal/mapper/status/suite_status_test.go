@@ -8,24 +8,27 @@ import (
 	"context"
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
-	"github.com/stretchr/testify/mock"
 	storeLib "github.com/telekom/controlplane/common-server/pkg/store"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 	"github.com/telekom/controlplane/rover-server/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 const (
 	mockObjectStore = true
 )
 
-var ctx context.Context
-var stores *store.Stores
+var (
+	ctx    context.Context
+	stores *store.Stores
+)
 
 var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 	if mockObjectStore {

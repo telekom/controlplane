@@ -8,9 +8,10 @@ import (
 	"context"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type parseIDResult struct {

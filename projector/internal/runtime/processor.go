@@ -24,7 +24,7 @@ type Processor[T client.Object, D any, K any] struct {
 }
 
 // NewProcessor creates a Processor wired with the given translator and repository.
-func NewProcessor[T client.Object, D any, K any](
+func NewProcessor[T client.Object, D, K any](
 	translator Translator[T, D, K],
 	repository Repository[K, D],
 ) *Processor[T, D, K] {

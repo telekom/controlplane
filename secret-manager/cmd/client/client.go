@@ -9,13 +9,13 @@ import (
 	"flag"
 	"fmt"
 
-	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
-
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
+	"go.uber.org/zap"
+
+	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 	"github.com/telekom/controlplane/secret-manager/api"
 	"github.com/telekom/controlplane/secret-manager/api/gen"
-	"go.uber.org/zap"
 )
 
 var (

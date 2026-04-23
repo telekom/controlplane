@@ -5,10 +5,11 @@
 package team
 
 import (
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	orgv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/projector/internal/module"
 	"github.com/telekom/controlplane/projector/internal/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 // Module is the Team module registration variable. It wires the Team

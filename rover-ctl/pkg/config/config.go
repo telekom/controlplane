@@ -17,7 +17,6 @@ const (
 
 // Initialize sets up viper for configuration management
 func Initialize() {
-
 	// Set default values
 	setDefaults()
 

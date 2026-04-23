@@ -8,8 +8,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 )
 
 var _ backend.SecretId = Id{}
@@ -27,7 +28,7 @@ type Id struct {
 	checksum string
 }
 
-func New(env, team, app, path string, checksum string) Id {
+func New(env, team, app, path, checksum string) Id {
 	raw := strings.Join([]string{env, team, app, path, checksum}, backend.Separator)
 	return Id{
 		Raw:      raw,
@@ -91,7 +92,6 @@ func (id Id) ObjectKey() client.ObjectKey {
 		// name == app-name
 		// namespace == env--team
 		name = id.app
-
 	} else if id.team != backend.NoTeam {
 		// team secrets
 		// name == team-name

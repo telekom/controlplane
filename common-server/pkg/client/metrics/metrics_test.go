@@ -14,15 +14,16 @@ import (
 	"os"
 	"regexp"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/prometheus/client_golang/prometheus"
 	prometheusdto "github.com/prometheus/client_model/go"
+
 	client "github.com/telekom/controlplane/common-server/pkg/client/metrics"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Client Metrics", func() {
-
 	Context("Setup", func() {
 		It("should register the client wrapper", func() {
 			httpClient := http.DefaultClient
@@ -41,7 +42,7 @@ var _ = Describe("Client Metrics", func() {
 			httpDoer := client.WithMetrics(httpClient, client.WithClientName("testClient"))
 			Expect(httpDoer).ToNot(BeNil())
 
-			req := httptest.NewRequest("GET", "/test/path", nil)
+			req := httptest.NewRequest("GET", "/test/path", http.NoBody)
 			res, err := httpDoer.Do(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).ToNot(BeNil())
@@ -77,12 +78,10 @@ var _ = Describe("Client Metrics", func() {
 			}
 			Expect(foundMetric).To(BeTrue(), "Expected metric %s not found", ExpectedMetricName)
 		})
-
 	})
 })
 
 var _ = Describe("ReplacePath", func() {
-
 	It("should replace the path with the placeholder", func() {
 		pattern := `\/api\/v1\/users\/(?P<redacted>.*)`
 		path := "/api/v1/users/123"
@@ -128,7 +127,6 @@ var _ = Describe("ReplacePath", func() {
 		replacedPath := client.NewReplacePath(re)(path)
 		Expect(replacedPath).To(Equal("/api/v1/redacted/users/123"))
 	})
-
 })
 
 var _ = Describe("Error Categorization", func() {
@@ -139,9 +137,9 @@ var _ = Describe("Error Categorization", func() {
 		},
 	}
 
-	testErrorCategorization := func(clientName string, expectedStatus string) {
+	testErrorCategorization := func(clientName, expectedStatus string) {
 		httpDoer := client.WithMetrics(httpClient, client.WithClientName(clientName))
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		_, err := httpDoer.Do(req)
 
 		if errorReturn != nil {

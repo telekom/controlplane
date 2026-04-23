@@ -18,6 +18,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
@@ -380,7 +381,6 @@ func (h *BaseHandler) RunHooks(stage HandlerHookStage, ctx context.Context, obj 
 
 // SendRequest handles common request operations including running hooks
 func (h *BaseHandler) SendRequest(ctx context.Context, obj types.Object, method, url string) (*http.Response, error) {
-
 	if err := h.RunHooks(PreRequestHook, ctx, obj); err != nil {
 		return nil, err
 	}

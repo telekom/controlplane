@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/apply"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/delete"
 	getinfo "github.com/telekom/controlplane/rover-ctl/pkg/commands/get-info"
@@ -81,7 +82,7 @@ This tool allows you to apply, delete, and manage resources in the Rover Control
 
 		outputFile := viper.GetString("output.file")
 		if outputFile != "stdout" {
-			file, err := os.OpenFile(outputFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+			file, err := os.OpenFile(outputFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 			if err != nil {
 				return errors.Wrapf(err, "failed to open output file %s", outputFile)
 			}

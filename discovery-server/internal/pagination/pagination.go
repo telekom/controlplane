@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"github.com/telekom/controlplane/common-server/pkg/store"
-
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 )
 

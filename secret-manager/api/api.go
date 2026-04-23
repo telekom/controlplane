@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/common-server/pkg/client"
 	"github.com/telekom/controlplane/secret-manager/api/gen"
 )
@@ -29,10 +30,8 @@ const (
 	KeywordRotate = "rotate"
 )
 
-var (
-	// ErrNotFound is returned when a secret is not found in the secret manager.
-	ErrNotFound = client.BlockedErrorf("resource not found")
-)
+// ErrNotFound is returned when a secret is not found in the secret manager.
+var ErrNotFound = client.BlockedErrorf("resource not found")
 
 type OnboardingOptions struct {
 	SecretValues map[string]any
@@ -77,7 +76,7 @@ func WithReplaceStrategy() OnboardingOption {
 
 type SecretsApi interface {
 	Get(ctx context.Context, secretID string) (value string, err error)
-	Set(ctx context.Context, secretID string, secretValue string) (newID string, err error)
+	Set(ctx context.Context, secretID, secretValue string) (newID string, err error)
 	Rotate(ctx context.Context, secretID string) (newID string, err error)
 }
 
@@ -125,7 +124,8 @@ func (s *secretManagerAPI) Get(ctx context.Context, secretID string) (value stri
 		return "", client.HandleError(res.StatusCode(), string(res.Body))
 	}
 }
-func (s *secretManagerAPI) Set(ctx context.Context, secretID string, secretValue string) (newID string, err error) {
+
+func (s *secretManagerAPI) Set(ctx context.Context, secretID, secretValue string) (newID string, err error) {
 	// Remove the tags from the secret ID if it is a placeholder.
 	// If it is not a placeholder, we just assume that it is a valid secret ID.
 	secretID, _ = FromRef(secretID)

@@ -25,7 +25,6 @@ func NewCachedClient(ctx context.Context, restCfg *rest.Config) (client.Client, 
 	err := (&crscheme.Builder{
 		GroupVersion: corev1.SchemeGroupVersion,
 	}).Register(&corev1.Secret{}, &corev1.SecretList{}).AddToScheme(scheme)
-
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to register scheme")
 	}

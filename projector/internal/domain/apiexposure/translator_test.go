@@ -7,14 +7,14 @@ package apiexposure_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
-	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/projector/internal/domain/apiexposure"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ApiExposure Translator", func() {

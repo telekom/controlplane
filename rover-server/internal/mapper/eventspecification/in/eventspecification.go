@@ -8,12 +8,12 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common/pkg/config"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 // MapRequest maps an API EventSpecification request to the CRD representation.

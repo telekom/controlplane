@@ -12,8 +12,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var timeout = 5 * time.Second
-var interval = 500 * time.Millisecond
+var (
+	timeout  = 5 * time.Second
+	interval = 500 * time.Millisecond
+)
 
 func TestInformer(t *testing.T) {
 	RegisterFailHandler(Fail)

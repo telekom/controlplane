@@ -8,11 +8,12 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/config"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/diffmatcher"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/orchestrator"
-	"go.uber.org/zap"
-	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
 var (

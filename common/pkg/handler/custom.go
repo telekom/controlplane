@@ -10,8 +10,10 @@ import (
 	"github.com/telekom/controlplane/common/pkg/types"
 )
 
-type CreateOrUpdateFunc[T types.Object] func(ctx context.Context, object T) error
-type DeleteFunc[T types.Object] func(ctx context.Context, obj T) error
+type (
+	CreateOrUpdateFunc[T types.Object] func(ctx context.Context, object T) error
+	DeleteFunc[T types.Object]         func(ctx context.Context, obj T) error
+)
 
 type CustomHandler[T types.Object] struct {
 	createOrUpdate CreateOrUpdateFunc[T]

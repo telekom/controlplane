@@ -11,10 +11,11 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"go.uber.org/zap"
+
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/diffmatcher"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/store"
-	"go.uber.org/zap"
 )
 
 // DiffViewerData represents the data passed to the HTML template
@@ -58,7 +59,7 @@ func (a *API) DiffViewer(ctx *fiber.Ctx) error {
 	result := diffmatcher.Compare(snap, otherSnap)
 
 	// Prepare template data
-	var snapAContent, snapBContent = snap.String(), otherSnap.String()
+	snapAContent, snapBContent := snap.String(), otherSnap.String()
 
 	// Safety escape JSON values
 	snapAEscaped := template.JS(strings.ReplaceAll(strings.ReplaceAll(string(snapAContent), "\\", "\\\\"), "`", "\\`"))

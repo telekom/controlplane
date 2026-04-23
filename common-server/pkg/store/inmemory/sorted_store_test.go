@@ -9,20 +9,19 @@ import (
 	"fmt"
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/common-server/pkg/store"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Sorted Store", func() {
-
 	ctx := context.Background()
 
 	Context("List sorted results", Ordered, func() {
-
 		sortedStore := Sortable(
 			&InmemoryObjectStore[*unstructured.Unstructured]{
 				ctx: ctx,
@@ -80,7 +79,6 @@ var _ = Describe("Sorted Store", func() {
 				currApp, _, _ := unstructured.NestedString(orderedList.Items[i].Object, "metadata", "labels", "app")
 				Expect(prevApp >= currApp).To(BeTrue(), fmt.Sprintf("List is not sorted: %s < %s", prevApp, currApp))
 			}
-
 		})
 
 		It("Should order asc (int)", func() {
@@ -102,7 +100,6 @@ var _ = Describe("Sorted Store", func() {
 				currReplicas, _, _ := unstructured.NestedInt64(orderedList.Items[i].Object, "spec", "replicas")
 				Expect(prevReplicas >= currReplicas).To(BeTrue(), fmt.Sprintf("List is not sorted: %d > %d", prevReplicas, currReplicas))
 			}
-
 		})
 
 		It("Should order asc (float)", func() {
@@ -124,9 +121,7 @@ var _ = Describe("Sorted Store", func() {
 				currTimeout, _, _ := unstructured.NestedFloat64(orderedList.Items[i].Object, "spec", "timeout")
 				Expect(prevTimeout >= currTimeout).To(BeTrue(), fmt.Sprintf("List is not sorted: %f < %f", prevTimeout, currTimeout))
 			}
-
 		})
-
 	})
 })
 
@@ -160,5 +155,4 @@ func BenchmarkStore(b *testing.B) {
 			},
 		})
 	}
-
 }

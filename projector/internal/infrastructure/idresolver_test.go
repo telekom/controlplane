@@ -11,18 +11,19 @@ import (
 	"time"
 
 	"entgo.io/ent/privacy"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
-	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
-
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/metrics"
+
+	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // idResolverCase describes a single entity type's IDResolver test parameters.

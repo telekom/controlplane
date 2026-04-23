@@ -5,13 +5,12 @@
 package builder
 
 import (
-	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 )
 
-var (
-	ConditionTypeApprovalGranted = "ApprovalGranted"
-)
+var ConditionTypeApprovalGranted = "ApprovalGranted"
 
 func newApprovalGrantedCondition(state approvalv1.ApprovalState, msg string) metav1.Condition {
 	cond := metav1.Condition{

@@ -7,9 +7,10 @@ package conjur_test
 import (
 	"testing"
 
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur"
 )
 
 func TestConjur(t *testing.T) {

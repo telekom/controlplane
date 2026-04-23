@@ -10,9 +10,11 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
+
+	"github.com/telekom/controlplane/common-server/pkg/problems"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/pkg/problems"
 )
 
 // statusCoderErr is a test error that implements the StatusCoder interface.
@@ -25,7 +27,6 @@ func (e *statusCoderErr) Error() string { return e.msg }
 func (e *statusCoderErr) Code() int     { return e.code }
 
 var _ = Describe("getStatusCodeOnErr", func() {
-
 	It("should return empty string and false for nil error", func() {
 		status, ok := getStatusCodeOnErr(nil)
 		Expect(ok).To(BeFalse())

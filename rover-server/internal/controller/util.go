@@ -7,9 +7,10 @@ package controller
 import (
 	"context"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common/pkg/config"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func EnsureLabelsOrDie(ctx context.Context, obj client.Object) {

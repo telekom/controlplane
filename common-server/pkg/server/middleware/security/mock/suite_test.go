@@ -5,14 +5,17 @@
 package mock_test
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
 )
 
 func TestMock(t *testing.T) {
@@ -21,9 +24,7 @@ func TestMock(t *testing.T) {
 }
 
 var _ = Describe("JWT Mock Middleware", func() {
-
 	Context("Mock Token", func() {
-
 		It("should return a valid mock token", func() {
 			token := mock.NewMockAccessToken("test", "group", "team", nil)
 			Expect(token).NotTo(BeEmpty())
@@ -37,12 +38,11 @@ var _ = Describe("JWT Mock Middleware", func() {
 	})
 
 	Context("Mock Middleware", func() {
-
 		app := fiber.New()
 		app.Use(mock.NewJWTMock())
 
 		It("should return unauthorized if not auth header is provided", func() {
-			req := httptest.NewRequest("GET", "/", nil)
+			req := httptest.NewRequest("GET", "/", http.NoBody)
 
 			res, err := app.Test(req)
 			Expect(err).ToNot(HaveOccurred())
@@ -51,7 +51,7 @@ var _ = Describe("JWT Mock Middleware", func() {
 		})
 
 		It("should return unauthorized if invalid auth header is provided", func() {
-			req := httptest.NewRequest("GET", "/", nil)
+			req := httptest.NewRequest("GET", "/", http.NoBody)
 			req.Header.Set("Authorization", "Bearer")
 
 			res, err := app.Test(req)
@@ -61,7 +61,7 @@ var _ = Describe("JWT Mock Middleware", func() {
 		})
 
 		It("should return unauthorized if invalid token is provided", func() {
-			req := httptest.NewRequest("GET", "/", nil)
+			req := httptest.NewRequest("GET", "/", http.NoBody)
 			req.Header.Set("Authorization", "Bearer invalid")
 
 			res, err := app.Test(req)
@@ -71,7 +71,7 @@ var _ = Describe("JWT Mock Middleware", func() {
 		})
 
 		It("should return success if valid token is provided", func() {
-			req := httptest.NewRequest("GET", "/", nil)
+			req := httptest.NewRequest("GET", "/", http.NoBody)
 			req.Header.Set("Authorization", "Bearer "+mock.NewMockAccessToken("test", "group", "team", nil))
 
 			res, err := app.Test(req)
@@ -79,6 +79,5 @@ var _ = Describe("JWT Mock Middleware", func() {
 			Expect(res).NotTo(BeNil())
 			Expect(res.StatusCode).To(Equal(404))
 		})
-
 	})
 })

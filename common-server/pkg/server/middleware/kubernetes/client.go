@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+
 	accesstoken "github.com/telekom/controlplane/common-server/pkg/client/token"
 	"github.com/telekom/controlplane/common-server/pkg/util"
-
-	"github.com/pkg/errors"
 )
 
 var (
@@ -38,8 +38,10 @@ func (ct *AccessTokenTransport) RoundTrip(req *http.Request) (*http.Response, er
 	return ct.Transport.RoundTrip(req)
 }
 
-var initOnce sync.Once
-var k8sHttpClient *http.Client
+var (
+	initOnce      sync.Once
+	k8sHttpClient *http.Client
+)
 
 // GetKubernetesHttpClient initializes and returns a Kubernetes HTTP client
 // using the service account token and CA certificate from the Kubernetes environment.

@@ -22,7 +22,7 @@ type DebugReporter struct {
 // NewDebugReporter creates a new debug reporter
 func NewDebugReporter(outDir string) Reporter {
 	// Create output directory
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		zap.L().Error("Failed to create debug output directory", zap.Error(err))
 	}
 
@@ -44,7 +44,7 @@ func (r *DebugReporter) ReportTestCase(result *TestCaseResult) {
 	filename := fmt.Sprintf("test-%s-%s.json", result.Environment, result.Name)
 	filepath := filepath.Join(r.outDir, filename)
 
-	if err := os.WriteFile(filepath, jsonData, 0644); err != nil {
+	if err := os.WriteFile(filepath, jsonData, 0o644); err != nil {
 		zap.L().Error("Failed to write debug test result", zap.Error(err))
 	} else {
 		zap.L().Debug("Wrote debug test result", zap.String("file", filepath))
@@ -64,7 +64,7 @@ func (r *DebugReporter) ReportSuiteResult(result *SuiteResult) {
 	filename := fmt.Sprintf("suite-%s-%s.json", result.Environment, result.Name)
 	filepath := filepath.Join(r.outDir, filename)
 
-	if err := os.WriteFile(filepath, jsonData, 0644); err != nil {
+	if err := os.WriteFile(filepath, jsonData, 0o644); err != nil {
 		zap.L().Error("Failed to write debug suite result", zap.Error(err))
 	} else {
 		zap.L().Debug("Wrote debug suite result", zap.String("file", filepath))
@@ -84,7 +84,7 @@ func (r *DebugReporter) ReportFinal(report *FinalReport) {
 	filename := fmt.Sprintf("final-report-%s.json", time.Now().Format("20060102-150405"))
 	filepath := filepath.Join(r.outDir, filename)
 
-	if err := os.WriteFile(filepath, jsonData, 0644); err != nil {
+	if err := os.WriteFile(filepath, jsonData, 0o644); err != nil {
 		zap.L().Error("Failed to write debug final report", zap.Error(err))
 	} else {
 		zap.L().Debug("Wrote debug final report", zap.String("file", filepath))

@@ -8,9 +8,10 @@ import (
 	"context"
 	"path/filepath"
 
+	"go.uber.org/zap"
+
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/diffmatcher"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/store"
-	"go.uber.org/zap"
 )
 
 // SnapshotList implements the store.SnapshotList interface for CommandSnapshots
@@ -94,7 +95,6 @@ type ComparisonResult struct {
 
 // CompareSnapshots compares two command snapshots and returns the differences
 func (m *Manager) CompareSnapshots(expected, actual *CommandSnapshot) *ComparisonResult {
-
 	zap.L().Debug("Comparing snapshots", zap.String("spected", expected.ID()), zap.String("actual", actual.ID()))
 	// Use the diffmatcher to compare snapshots
 	result := diffmatcher.Compare(expected, actual)

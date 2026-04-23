@@ -5,15 +5,14 @@
 package filter_test
 
 import (
+	"github.com/telekom/controlplane/common-server/pkg/store/inmemory/filter"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/pkg/store/inmemory/filter"
 )
 
 var _ = Describe("Matchers", func() {
-
 	Context("Simple", func() {
-
 		It("should return true if the value is equal", func() {
 			simple := filter.NewSimple("foo")
 			Expect(simple.Equal("foo")).To(BeTrue())
@@ -53,11 +52,9 @@ var _ = Describe("Matchers", func() {
 			simple := filter.NewSimple(`{"foo":"bar"}`)
 			Expect(simple.Equal(map[string]string{"foo": "bar"})).To(BeTrue())
 		})
-
 	})
 
 	Context("NotEq", func() {
-
 		It("should return true if the value is not equal", func() {
 			simple := filter.NewSimple("foo")
 			not := filter.NotEq(simple)
@@ -69,11 +66,9 @@ var _ = Describe("Matchers", func() {
 			not := filter.NotEq(simple)
 			Expect(not.Equal("foo")).To(BeFalse())
 		})
-
 	})
 
 	Context("Regex", func() {
-
 		It("should return true if the value matches the regex", func() {
 			regex := filter.NewRegex(`^foo$`)
 			Expect(regex.Equal("foo")).To(BeTrue())
@@ -93,6 +88,5 @@ var _ = Describe("Matchers", func() {
 			regex := filter.NewRegex(`^\d+$`)
 			Expect(regex.Equal(42)).To(BeTrue())
 		})
-
 	})
 })

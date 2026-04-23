@@ -9,14 +9,14 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 // RealmSpec defines the desired state of Realm
 type RealmSpec struct {
-
 	// Gateway is the Gateway that is associated with the Realm
 	// If empty, the realm considered a virtual realm
 	Gateway *types.ObjectRef `json:"gateway,omitempty"`
@@ -93,7 +93,7 @@ func (r *Realm) AsUpstream(apiBasePath string) (ups Upstream, err error) {
 		Port:   GetPortOrDefaultFromScheme(url),
 		Path:   path.Join(url.Path, apiBasePath),
 	}
-	return
+	return ups, err
 }
 
 func (r *Realm) AsDownstream(apiBasePath string) (dws Downstream, err error) {
@@ -116,7 +116,7 @@ func (r *Realm) AsDownstream(apiBasePath string) (dws Downstream, err error) {
 		Path:      path.Join(url.Path, apiBasePath),
 		IssuerUrl: issuerUrl,
 	}
-	return
+	return dws, err
 }
 
 // +kubebuilder:object:root=true

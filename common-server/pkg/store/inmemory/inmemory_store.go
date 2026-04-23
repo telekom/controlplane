@@ -16,23 +16,25 @@ import (
 	"github.com/dgraph-io/badger/v4/options"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common-server/internal/informer"
-	"github.com/telekom/controlplane/common-server/pkg/problems"
-	"github.com/telekom/controlplane/common-server/pkg/store"
-	"github.com/telekom/controlplane/common-server/pkg/store/inmemory/filter"
-	"github.com/telekom/controlplane/common-server/pkg/store/inmemory/patch"
 	"github.com/tidwall/gjson"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"github.com/telekom/controlplane/common-server/internal/informer"
+	"github.com/telekom/controlplane/common-server/pkg/problems"
+	"github.com/telekom/controlplane/common-server/pkg/store"
+	"github.com/telekom/controlplane/common-server/pkg/store/inmemory/filter"
+	"github.com/telekom/controlplane/common-server/pkg/store/inmemory/patch"
 )
 
-var _ store.ObjectStore[store.Object] = &InmemoryObjectStore[store.Object]{}
-var _ informer.EventHandler = &InmemoryObjectStore[store.Object]{}
+var (
+	_ store.ObjectStore[store.Object] = &InmemoryObjectStore[store.Object]{}
+	_ informer.EventHandler           = &InmemoryObjectStore[store.Object]{}
+)
 
 type StoreOpts struct {
 	Client       dynamic.Interface
@@ -181,7 +183,7 @@ func (s *InmemoryObjectStore[T]) Get(ctx context.Context, namespace, name string
 	err = s.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(key))
 		if err != nil {
-			if err == badger.ErrKeyNotFound {
+			if errors.Is(err, badger.ErrKeyNotFound) {
 				return problems.NotFound(key)
 			}
 			return errors.Wrapf(err, "failed to get item %s", key)
@@ -371,7 +373,6 @@ func (s *InmemoryObjectStore[T]) CreateOrReplace(ctx context.Context, in T) erro
 }
 
 func (s *InmemoryObjectStore[T]) Patch(ctx context.Context, namespace, name string, ops ...store.Patch) (obj T, err error) {
-
 	if len(ops) == 0 {
 		return obj, errors.New("no patch operations provided")
 	}
@@ -383,7 +384,7 @@ func (s *InmemoryObjectStore[T]) Patch(ctx context.Context, namespace, name stri
 		key := newKey(namespace, name)
 		item, err := txn.Get([]byte(key))
 		if err != nil {
-			if err == badger.ErrKeyNotFound {
+			if errors.Is(err, badger.ErrKeyNotFound) {
 				return nil
 			}
 			return err
@@ -396,14 +397,12 @@ func (s *InmemoryObjectStore[T]) Patch(ctx context.Context, namespace, name stri
 			value = val
 			return nil
 		})
-
 		if err != nil {
 			return errors.Wrap(err, "failed to get value")
 		}
 
 		return nil
 	})
-
 	if err != nil {
 		return obj, errors.Wrap(err, "failed to get value")
 	}

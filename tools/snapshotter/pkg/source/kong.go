@@ -12,13 +12,14 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
+	"golang.org/x/time/rate"
+
 	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
 	"github.com/telekom/controlplane/gateway/pkg/kongutil"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/config"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/util"
-	"go.uber.org/zap"
-	"golang.org/x/time/rate"
 )
 
 var _ Source = &KongSource{}

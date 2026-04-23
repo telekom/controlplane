@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("CacheKeys", func() {
-
 	// --- Zone ---
 
 	Describe("Zone", func() {

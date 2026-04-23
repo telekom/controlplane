@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+
 	"github.com/telekom/controlplane/secret-manager/internal/api"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/controller"
@@ -132,7 +133,6 @@ func (h *Handler) DeleteApp(ctx context.Context, request api.DeleteAppRequestObj
 	err := h.ctrl.DeleteApplication(ctx, request.EnvId, request.TeamId, request.AppId)
 	if err != nil {
 		return nil, err
-
 	}
 	return api.DeleteApp204Response{}, nil
 }

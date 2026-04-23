@@ -10,6 +10,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 )
 

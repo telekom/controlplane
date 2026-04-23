@@ -25,7 +25,6 @@ var spec = map[string]any{
 }
 
 var _ = Describe("Hash", func() {
-
 	Context("ComputeHash", func() {
 		It("should return a hash", func() {
 			var i uint32 = 42
@@ -35,8 +34,7 @@ var _ = Describe("Hash", func() {
 	})
 
 	Context("Collision", func() {
-
-		var seenHashes = make(map[string]bool)
+		seenHashes := make(map[string]bool)
 
 		It("should not have collisions", func() {
 			for i := 0; i < 1000; i++ {

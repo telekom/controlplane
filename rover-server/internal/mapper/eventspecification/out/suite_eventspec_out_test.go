@@ -8,15 +8,16 @@ import (
 	"context"
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+
 	storeLib "github.com/telekom/controlplane/common-server/pkg/store"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 	"github.com/telekom/controlplane/rover-server/test/mocks"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 type ContextKey string

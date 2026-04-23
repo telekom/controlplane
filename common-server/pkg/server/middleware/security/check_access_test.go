@@ -7,11 +7,13 @@ package security
 import (
 	"context"
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
+
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/util"
 )
@@ -48,7 +50,7 @@ type TestCase struct {
 var env = "test"
 
 func TestCheckAccess(t *testing.T) {
-	var testEnvironments = []TestEnvironment{
+	testEnvironments := []TestEnvironment{
 		{
 			Description:     "Team-Resource in <env>--<group>--<team>/<resourceName> (default)",
 			PathParameters:  ":namespace/:name",
@@ -1098,7 +1100,7 @@ func TestCheckAccess(t *testing.T) {
 					if testCase.ResourcePath != "" {
 						path += "/" + testCase.ResourcePath + testEnvironments[i].RequestResource
 					}
-					req := httptest.NewRequest(testCase.Method, path, nil)
+					req := httptest.NewRequest(testCase.Method, path, http.NoBody)
 					req.Header.Set("Authorization", "Bearer "+testCase.AccessToken)
 
 					res, err := app.Test(req, -1)
@@ -1124,11 +1126,10 @@ func TestCheckAccess(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestCheckAccessOpts(t *testing.T) {
-	var TestCases = []TestCase{
+	TestCases := []TestCase{
 		{
 			Method:         "GET",
 			AccessToken:    mock.NewMockAccessToken("test", "group", "team", nil),
@@ -1154,7 +1155,8 @@ func TestCheckAccessOpts(t *testing.T) {
 			ExpectedTemplate:  "foo--{{ .B.Group }}--{{ .B.Team }}",
 			UserInputTemplate: "{{ .P.Custompathparam }}",
 			MatchType:         MatchTypePrefix,
-		}}
+		},
+	}
 
 	app.Use(mock.NewJWTMock())
 	app.Use(NewBusinessCtxMiddlewareWithOpts(WithScopePrefix(""), WithDefaultScope("team:read")))
@@ -1172,7 +1174,7 @@ func TestCheckAccessOpts(t *testing.T) {
 	for _, testCase := range TestCases {
 		t.Run(testCase.Description, func(t *testing.T) {
 			path := "/testauth/" + testCase.ResourcePath
-			req := httptest.NewRequest(testCase.Method, path, nil)
+			req := httptest.NewRequest(testCase.Method, path, http.NoBody)
 			req.Header.Set("Authorization", "Bearer "+testCase.AccessToken)
 
 			res, err := app.Test(req, -1)
@@ -1243,7 +1245,6 @@ func TestPrefixFromContext(t *testing.T) {
 }
 
 func BenchmarkCheckAccess(b *testing.B) {
-
 	app := fiber.New()
 
 	app.Use(mock.NewJWTMock())
@@ -1253,7 +1254,7 @@ func BenchmarkCheckAccess(b *testing.B) {
 	app.All("/testauth/:namespace/:name", checkAccess, handlerMock)
 	app.All("/testauth", checkAccess, handlerMock)
 
-	req := httptest.NewRequest("GET", "/testauth", nil)
+	req := httptest.NewRequest("GET", "/testauth", http.NoBody)
 	req.Header.Set("Authorization", "Bearer "+mock.NewMockAccessToken("test", "group", "team", nil))
 
 	b.ResetTimer()
@@ -1268,5 +1269,4 @@ func BenchmarkCheckAccess(b *testing.B) {
 			b.Fatalf("Expected status 200, got %d", res.StatusCode)
 		}
 	}
-
 }

@@ -13,9 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var (
-	globalClient *fakeclient.MockJanitorClient
-)
+var globalClient *fakeclient.MockJanitorClient
 
 func TestBuilder(t *testing.T) {
 	RegisterFailHandler(Fail)

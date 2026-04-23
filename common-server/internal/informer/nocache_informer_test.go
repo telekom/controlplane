@@ -8,18 +8,19 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common-server/internal/informer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	dynamic "k8s.io/client-go/dynamic/fake"
+
+	"github.com/telekom/controlplane/common-server/internal/informer"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("NoCacheInformer", func() {
-
 	var ctx context.Context
 	var cancel context.CancelFunc
 	gvr := schema.GroupVersionResource{
@@ -31,7 +32,6 @@ var _ = Describe("NoCacheInformer", func() {
 	var mockClient *dynamic.FakeDynamicClient
 
 	Context("Informer", Ordered, func() {
-
 		BeforeEach(func() {
 			ctx = logr.NewContext(context.Background(), GinkgoLogr)
 			ctx, cancel = context.WithCancel(ctx)
@@ -39,7 +39,6 @@ var _ = Describe("NoCacheInformer", func() {
 				gvr: "TestObjectList",
 			})
 			eventHandler = &mockEventHandler{}
-
 		})
 
 		It("should initialize a new Informer instance", func() {
@@ -63,7 +62,6 @@ var _ = Describe("NoCacheInformer", func() {
 			err := inf.Start()
 			Expect(err).ToNot(HaveOccurred())
 			cancel()
-
 		})
 
 		It("should handle events", func() {
@@ -104,7 +102,6 @@ var _ = Describe("NoCacheInformer", func() {
 				g.Expect(eventHandler.Events()).To(HaveLen(1))
 				g.Expect(eventHandler.Events()[0].Action).To(Equal("delete"))
 			}, timeout, interval).Should(Succeed())
-
 		})
 
 		It("should handle errors", func() {
@@ -118,7 +115,6 @@ var _ = Describe("NoCacheInformer", func() {
 			obj := NewUnstructured("test")
 			_, err = resourceClient.Create(ctx, obj, metav1.CreateOptions{})
 			Expect(err).ToNot(HaveOccurred())
-
 		})
 
 		It("should reload on resource version expiration", func() {
@@ -130,7 +126,6 @@ var _ = Describe("NoCacheInformer", func() {
 			// simulate resource version expiration by directly calling Reload
 			err = inf.Reload()
 			Expect(err).ToNot(HaveOccurred())
-
 		})
 
 		It("should stop gracefully", func() {
@@ -144,9 +139,6 @@ var _ = Describe("NoCacheInformer", func() {
 			}, timeout, interval).Should(Succeed())
 
 			inf.Stop()
-
 		})
-
 	})
-
 })

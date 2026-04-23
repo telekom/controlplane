@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
@@ -110,5 +111,4 @@ func resolveJsonSchemaReference(jsonSchema map[string]any, baseDir string) (map[
 
 	}
 	return jsonSchema, nil
-
 }

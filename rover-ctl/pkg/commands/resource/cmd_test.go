@@ -8,11 +8,10 @@ import (
 	"bytes"
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/mock"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/base"
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/resource"
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
@@ -20,6 +19,9 @@ import (
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 	"github.com/telekom/controlplane/rover-ctl/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Resource Command", func() {
@@ -105,7 +107,6 @@ var _ = Describe("Resource Command", func() {
 	})
 
 	Describe("Get Command", func() {
-
 		Context("when getting a resource", func() {
 			BeforeEach(func() {
 				// Set up mock behavior
@@ -172,7 +173,6 @@ var _ = Describe("Resource Command", func() {
 	})
 
 	Describe("List Command", func() {
-
 		Context("when listing resources", func() {
 			BeforeEach(func() {
 				// Set up mock behavior

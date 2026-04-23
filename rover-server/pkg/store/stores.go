@@ -8,6 +8,10 @@ import (
 	"context"
 
 	"github.com/spf13/viper"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
@@ -19,9 +23,6 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/rest"
 )
 
 // Stores is the dependency container holding all ObjectStore instances

@@ -7,10 +7,11 @@ package tree
 import (
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var _ server.Controller = &ResourceTreeController{}

@@ -9,10 +9,11 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/secret-manager/pkg/backend"
-	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
+
+	"github.com/telekom/controlplane/secret-manager/pkg/backend"
+	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
 )
 
 var _ backend.Backend[ConjurSecretId, backend.DefaultSecret[ConjurSecretId]] = &ConjurBackend{}

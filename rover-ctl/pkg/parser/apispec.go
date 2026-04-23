@@ -12,6 +12,7 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel"
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
 

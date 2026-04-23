@@ -10,22 +10,23 @@ import (
 	"fmt"
 
 	"entgo.io/ent/privacy"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	entapiexposure "github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	entapproval "github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
-	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	"github.com/telekom/controlplane/controlplane-api/ent/zone"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
-
 	"github.com/telekom/controlplane/projector/internal/domain/approval"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
 	"github.com/telekom/controlplane/projector/internal/runtime"
+
+	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // mockApprovalDeps implements approval.ApprovalDeps for testing.

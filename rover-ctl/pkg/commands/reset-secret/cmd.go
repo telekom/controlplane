@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/commands/base"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
 	"github.com/telekom/controlplane/rover-ctl/pkg/util"
@@ -47,7 +48,6 @@ func NewCommand() *cobra.Command {
 }
 
 func (c *Command) Run(cmd *cobra.Command, args []string) error {
-
 	handler, err := handlers.GetHandler("Rover", "tcp.ei.telekom.de/v1")
 	if err != nil {
 		return errors.Wrap(err, "failed to get rover handler")
@@ -69,7 +69,6 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 		"clientId":     clientId,
 		"clientSecret": clientSecret,
 	}, viper.GetString("output.format"))
-
 	if err != nil {
 		return errors.Wrap(err, "failed to format output")
 	}

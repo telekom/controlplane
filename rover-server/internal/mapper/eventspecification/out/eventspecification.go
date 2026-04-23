@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
@@ -35,5 +36,5 @@ func MapResponse(ctx context.Context, in *roverv1.EventSpecification, specConten
 
 	res.Status, err = status.MapEventSpecificationStatus(ctx, in, stores)
 
-	return
+	return res, err
 }

@@ -7,8 +7,9 @@ package command
 import (
 	"fmt"
 
-	"github.com/telekom/controlplane/tools/e2e-tester/pkg/config"
 	"go.uber.org/zap"
+
+	"github.com/telekom/controlplane/tools/e2e-tester/pkg/config"
 )
 
 // ExecutorFactory creates command executors based on type

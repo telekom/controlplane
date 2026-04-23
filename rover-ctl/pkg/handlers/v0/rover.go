@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
 )
@@ -24,7 +25,7 @@ func NewRoverHandlerInstance() *RoverHandler {
 	handler := &RoverHandler{
 		BaseHandler: common.NewBaseHandler("tcp.ei.telekom.de/v1", "Rover", "rovers", 100).WithValidation(common.ValidateObjectName),
 	}
-	handler.BaseHandler.SupportsInfo = true
+	handler.SupportsInfo = true
 
 	handler.AddHook(common.PreRequestHook, PatchRoverRequest)
 
@@ -123,7 +124,6 @@ func PatchSubscriptions(subscriptions []any) []map[string]any {
 	}
 
 	return subscriptionsMaps
-
 }
 
 func PatchSecurity(security any) {
@@ -163,7 +163,7 @@ func PatchSecurity(security any) {
 	}
 }
 
-func (h *RoverHandler) ResetSecret(ctx context.Context, name string) (clientId string, clientSecret string, err error) {
+func (h *RoverHandler) ResetSecret(ctx context.Context, name string) (clientId, clientSecret string, err error) {
 	token := h.Setup(ctx)
 	url := h.GetRequestUrl(token.Group, token.Team, name, "secret")
 

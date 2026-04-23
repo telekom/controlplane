@@ -7,10 +7,11 @@ package v0_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	v0 "github.com/telekom/controlplane/rover-ctl/pkg/handlers/v0"
 	"github.com/telekom/controlplane/rover-ctl/pkg/types"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ApiSpec Handler", func() {

@@ -7,18 +7,17 @@ package openapi_test
 import (
 	"encoding/json"
 
+	"github.com/telekom/controlplane/common-server/pkg/openapi"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/pkg/openapi"
 )
 
 var _ = Describe("Builder Test", func() {
 	BeforeEach(func() {
-
 	})
 
 	Context("Builder", func() {
-
 		It("should return a valid OpenAPI document", func() {
 			docBytes, err := openapi.NewDocumentBuilder().NewInfo("title", "description", "1.0.0").BuildBytes()
 			Expect(err).ToNot(HaveOccurred())
@@ -89,7 +88,6 @@ var _ = Describe("Builder Test", func() {
 	})
 
 	Context("OperationBuilder", func() {
-
 		It("should return a valid operation", func() {
 			op := openapi.NewOperationBuilder().
 				SetMeta("test", "testId").
@@ -125,12 +123,10 @@ var _ = Describe("Builder Test", func() {
 		})
 
 		It("should add a parmeter to the operation", func() {
-
 		})
 	})
 
 	Context("ParameterBuilder", func() {
-
 		It("should return a valid parameter", func() {
 			param := openapi.NewParameterBuilder().
 				SetName("test").
@@ -144,6 +140,5 @@ var _ = Describe("Builder Test", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(b).To(MatchJSON(`{"name":"test","in":"query","description":"test description","required":true,"schema":{"type":"string"}}`))
 		})
-
 	})
 })

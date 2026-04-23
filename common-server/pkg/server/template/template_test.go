@@ -7,7 +7,6 @@ package template
 import "testing"
 
 func TestTemplate(t *testing.T) {
-
 	template := New(map[string]any{
 		"key0": "value0",
 		"key1": "$<myValue1>",
@@ -77,5 +76,4 @@ func TestTemplate(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-
 }

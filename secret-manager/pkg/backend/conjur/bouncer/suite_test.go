@@ -12,7 +12,6 @@ import (
 )
 
 func TestBouncer(t *testing.T) {
-
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Bouncer Suite")
 }

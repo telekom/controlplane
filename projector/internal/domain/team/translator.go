@@ -8,10 +8,11 @@ import (
 	"context"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	orgv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/runtime"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 // Translator maps a Team CR to a TeamData DTO and derives identity keys.

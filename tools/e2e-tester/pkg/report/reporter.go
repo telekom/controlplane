@@ -433,7 +433,7 @@ func (r *ConsoleReporter) ReportFinal(report *FinalReport) {
 // Helper function to indent text
 func indent(text string, spaces int) string {
 	pad := strings.Repeat(" ", spaces)
-	return pad + strings.Replace(text, "\n", "\n"+pad, -1)
+	return pad + strings.ReplaceAll(text, "\n", "\n"+pad)
 }
 
 // Helper function to get status icon

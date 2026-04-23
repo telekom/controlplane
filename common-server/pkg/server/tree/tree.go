@@ -8,9 +8,10 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/store"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func GetTree(ctx context.Context, startStore store.ObjectStore[*unstructured.Unstructured], namespace, name string, maxDepth int) (*ResourceTree, error) {

@@ -9,12 +9,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 	v1 "github.com/telekom/controlplane/rover/api/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 )
 
 // MapResponse maps the status of a generic resource to a ResourceStatusResponse.

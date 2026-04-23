@@ -6,6 +6,7 @@ package api
 
 import (
 	"github.com/gofiber/fiber/v2"
+
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/orchestrator"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/store"

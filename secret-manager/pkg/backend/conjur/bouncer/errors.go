@@ -6,6 +6,4 @@ package bouncer
 
 import "fmt"
 
-var (
-	ErrLockNotAcquired = fmt.Errorf("lock not acquired")
-)
+var ErrLockNotAcquired = fmt.Errorf("lock not acquired")

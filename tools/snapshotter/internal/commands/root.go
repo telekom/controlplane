@@ -11,8 +11,9 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/spf13/cobra"
-	"github.com/telekom/controlplane/tools/snapshotter/pkg/diffmatcher"
 	"go.uber.org/zap"
+
+	"github.com/telekom/controlplane/tools/snapshotter/pkg/diffmatcher"
 )
 
 type OutputFormat string

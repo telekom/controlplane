@@ -7,16 +7,17 @@ package secrets_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
 	"github.com/telekom/controlplane/secret-manager/api"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Secrets Resolver", func() {
-
 	var ctx context.Context
 	var mockedSecretManager *fake.MockSecretManager
 	var resolver secrets.Replacer
@@ -28,7 +29,6 @@ var _ = Describe("Secrets Resolver", func() {
 	})
 
 	Context("Resolve from Bytes", func() {
-
 		b := []byte(`{"root": "$<test:::mySecret:>", "sub": {"key": "$<test:::mySecret:>"}}`)
 
 		It("should replace all secrets", func() {
@@ -67,11 +67,9 @@ var _ = Describe("Secrets Resolver", func() {
 			Expect(ok).To(BeTrue())
 			Expect(string(b)).To(Equal(`{"root": [{"key": "mySecretValue"}, {"key": "mySecretValue"}]}`))
 		})
-
 	})
 
 	Context("Resolve from Map", func() {
-
 		It("should replace all secrets in a map", func() {
 			m := map[string]any{
 				"root": "$<test:::mySecret:>",
@@ -102,7 +100,6 @@ var _ = Describe("Secrets Resolver", func() {
 	})
 
 	Context("Resolve from Unstructured", func() {
-
 		It("should replace all secrets in an unstructured object", func() {
 			u := &unstructured.Unstructured{
 				Object: map[string]any{

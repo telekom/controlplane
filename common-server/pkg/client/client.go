@@ -18,9 +18,7 @@ import (
 	client "github.com/telekom/controlplane/common-server/pkg/client/metrics"
 )
 
-var (
-	EnvClientTimeout = os.Getenv("CLIENT_TIMEOUT")
-)
+var EnvClientTimeout = os.Getenv("CLIENT_TIMEOUT")
 
 func NewHttpClientOrDie(opts ...Option) client.HttpRequestDoer {
 	options := &Options{

@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 )
 

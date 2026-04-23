@@ -8,9 +8,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/telekom/controlplane/rover-ctl/pkg/commands/base"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/rover-ctl/pkg/commands/base"
 )
 
 var _ = Describe("FileCommand", func() {
@@ -40,7 +41,7 @@ spec:
         password: testpass
 `
 
-		err = os.WriteFile(yamlFile, []byte(yamlContent), 0644)
+		err = os.WriteFile(yamlFile, []byte(yamlContent), 0o644)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Create a new file command

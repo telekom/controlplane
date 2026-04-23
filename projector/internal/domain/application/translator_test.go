@@ -7,15 +7,15 @@ package application_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
-	appv1 "github.com/telekom/controlplane/application/api/v1"
-	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 
+	appv1 "github.com/telekom/controlplane/application/api/v1"
+	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/projector/internal/domain/application"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Application Translator", func() {

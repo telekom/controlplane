@@ -11,17 +11,18 @@ import (
 	"net/http/httptest"
 
 	"github.com/gkampitakis/go-snaps/match"
+
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
+	"github.com/telekom/controlplane/rover-server/internal/api"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
-
-	"github.com/telekom/controlplane/rover-server/internal/api"
 )
 
 var _ = Describe("Rover Controller", func() {
 	Context("GetAll rover resources", func() {
 		It("should return all rovers successfully", func() {
-			req := httptest.NewRequest(http.MethodGet, "/rovers", nil)
+			req := httptest.NewRequest(http.MethodGet, "/rovers", http.NoBody)
 
 			responseTeam, err := ExecuteRequest(req, teamToken)
 			ExpectStatusOk(responseTeam, err)
@@ -30,7 +31,7 @@ var _ = Describe("Rover Controller", func() {
 		})
 
 		It("should return an empty list if no rovers exist", func() {
-			req := httptest.NewRequest(http.MethodGet, "/rovers", nil)
+			req := httptest.NewRequest(http.MethodGet, "/rovers", http.NoBody)
 
 			responseTeam, err := ExecuteRequest(req, teamToken)
 			ExpectStatusWithBody(responseTeam, err, http.StatusOK, "application/json")
@@ -41,19 +42,19 @@ var _ = Describe("Rover Controller", func() {
 
 	Context("Get rover resource", func() {
 		It("should get a rover successfully", func() {
-			req := httptest.NewRequest(http.MethodGet, "/rovers/eni--hyperion--rover-local-sub", nil)
+			req := httptest.NewRequest(http.MethodGet, "/rovers/eni--hyperion--rover-local-sub", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusOk(responseGroup, err)
 		})
 
 		It("should fail to get a non-existent rover", func() {
-			req := httptest.NewRequest(http.MethodGet, "/rovers/eni--hyperion--blabla", nil)
+			req := httptest.NewRequest(http.MethodGet, "/rovers/eni--hyperion--blabla", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
 		})
 
 		It("should fail to get a rover from a different team", func() {
-			req := httptest.NewRequest(http.MethodDelete, "/rovers/other--team--rover", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/rovers/other--team--rover", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatus(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
@@ -61,19 +62,19 @@ var _ = Describe("Rover Controller", func() {
 
 	Context("Get rover application info", func() {
 		It("should return application info successfully", func() {
-			req := httptest.NewRequest(http.MethodGet, "/rovers/eni--hyperion--rover-local-sub/info", nil)
+			req := httptest.NewRequest(http.MethodGet, "/rovers/eni--hyperion--rover-local-sub/info", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
 		})
 
 		It("should fail to get application info for a non-existent rover", func() {
-			req := httptest.NewRequest(http.MethodGet, "/rovers/eni--hyperion--blabla/info", nil)
+			req := httptest.NewRequest(http.MethodGet, "/rovers/eni--hyperion--blabla/info", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
 		})
 
 		It("should fail to get application info from a different team", func() {
-			req := httptest.NewRequest(http.MethodGet, "/rovers/other--team--rover/info", nil)
+			req := httptest.NewRequest(http.MethodGet, "/rovers/other--team--rover/info", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
@@ -82,27 +83,27 @@ var _ = Describe("Rover Controller", func() {
 	Context("Get all rover applications info", func() {
 		teamToken := mock.NewMockAccessToken("poc", "eni", "hyperion", []string{"tardis:team:all"})
 		It("should return all applications info successfully", func() {
-			req := httptest.NewRequest(http.MethodGet, "/rovers/info", nil)
+			req := httptest.NewRequest(http.MethodGet, "/rovers/info", http.NoBody)
 			responseTeam, err := ExecuteRequestWithToken(req, teamToken)
 			ExpectStatusOk(responseTeam, err)
 		})
 
 		It("should fail to get applications info for unauthorized client type", func() {
-			req := httptest.NewRequest(http.MethodGet, "/rovers/info", nil)
+			req := httptest.NewRequest(http.MethodGet, "/rovers/info", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusBadRequest, "application/problem+json")
 		})
 
 		It("should filter applications by names query parameter", func() {
-			req := httptest.NewRequest(http.MethodGet, "/rovers/info?names=rover-local-sub", nil)
+			req := httptest.NewRequest(http.MethodGet, "/rovers/info?names=rover-local-sub", http.NoBody)
 			responseTeam, err := ExecuteRequestWithToken(req, teamToken)
 			ExpectStatusOk(responseTeam, err)
 		})
 
 		It("should return empty list when names filter matches no rovers", func() {
-			req := httptest.NewRequest(http.MethodGet, "/rovers/info?names=nonexistent", nil)
+			req := httptest.NewRequest(http.MethodGet, "/rovers/info?names=nonexistent", http.NoBody)
 			responseTeam, err := ExecuteRequestWithToken(req, teamToken)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(responseTeam.StatusCode).To(Equal(http.StatusOK))
 
 			var resp api.RoverInfoResponse
@@ -114,19 +115,19 @@ var _ = Describe("Rover Controller", func() {
 
 	Context("Get rover status", func() {
 		It("should return the status of a rover successfully", func() {
-			req := httptest.NewRequest(http.MethodGet, "/rovers/eni--hyperion--rover-local-sub/status", nil)
+			req := httptest.NewRequest(http.MethodGet, "/rovers/eni--hyperion--rover-local-sub/status", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
 		})
 
 		It("should fail to get the status of a non-existent rover", func() {
-			req := httptest.NewRequest(http.MethodGet, "/rovers/eni--hyperion--blabla/status", nil)
+			req := httptest.NewRequest(http.MethodGet, "/rovers/eni--hyperion--blabla/status", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
 		})
 
 		It("should fail to get the status from a different team", func() {
-			req := httptest.NewRequest(http.MethodGet, "/rovers/other--team--rover/status", nil)
+			req := httptest.NewRequest(http.MethodGet, "/rovers/other--team--rover/status", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
@@ -134,20 +135,20 @@ var _ = Describe("Rover Controller", func() {
 
 	Context("Delete rover resource", func() {
 		It("should delete a rover successfully", func() {
-			req := httptest.NewRequest(http.MethodDelete, "/rovers/eni--hyperion--rover-local-sub", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/rovers/eni--hyperion--rover-local-sub", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			// Hint: The expected content-type is empty, because there is no response body for DELETE
 			ExpectStatus(responseGroup, err, http.StatusNoContent, "")
 		})
 
 		It("should fail to delete a non-existent rover", func() {
-			req := httptest.NewRequest(http.MethodDelete, "/rovers/eni--hyperion--blabla", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/rovers/eni--hyperion--blabla", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
 		})
 
 		It("should fail to delete a rover from a different team", func() {
-			req := httptest.NewRequest(http.MethodDelete, "/rovers/other--team--rover", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/rovers/other--team--rover", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatus(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
@@ -225,22 +226,21 @@ var _ = Describe("Rover Controller", func() {
 
 	Context("Reset rover secret", func() {
 		It("should reset the rover secret successfully", func() {
-			req := httptest.NewRequest(http.MethodPatch, "/rovers/eni--hyperion--rover-local-sub/secret", nil)
+			req := httptest.NewRequest(http.MethodPatch, "/rovers/eni--hyperion--rover-local-sub/secret", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json", match.Any("secret"))
 		})
 
 		It("should fail to reset the secret for a non-existent rover", func() {
-			req := httptest.NewRequest(http.MethodPatch, "/rovers/eni--hyperion--blabla/secret", nil)
+			req := httptest.NewRequest(http.MethodPatch, "/rovers/eni--hyperion--blabla/secret", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
 		})
 
 		It("should fail to reset the secret from a different team", func() {
-			req := httptest.NewRequest(http.MethodPatch, "/rovers/other--team--rover/secret", nil)
+			req := httptest.NewRequest(http.MethodPatch, "/rovers/other--team--rover/secret", http.NoBody)
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
 	})
-
 })

@@ -10,9 +10,10 @@ import (
 
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/go-logr/logr"
+	"golang.org/x/sync/singleflight"
+
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/cache/metrics"
-	"golang.org/x/sync/singleflight"
 )
 
 var _ backend.Backend[backend.SecretId, backend.Secret[backend.SecretId]] = (*CachedBackend[backend.SecretId, backend.Secret[backend.SecretId]])(nil)
@@ -191,7 +192,7 @@ func (c *CachedBackend[T, S]) Set(ctx context.Context, id T, value backend.Secre
 	if err != nil {
 		return item, err
 	}
-	var copy = item.Copy().(S)
+	copy := item.Copy().(S)
 
 	cost := int64(len(value.Value())) + int64(len(cacheKey))
 	added := c.Cache.SetWithTTL(copy.Id().CacheKey(), copy, cost, c.ttl)

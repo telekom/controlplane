@@ -6,12 +6,13 @@ package out
 
 import (
 	"github.com/gkampitakis/go-snaps/snaps"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Subscription Mapper", func() {
@@ -42,7 +43,7 @@ var _ = Describe("Subscription Mapper", func() {
 
 			err := mapSubscription(&input, output)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			snaps.MatchSnapshot(GinkgoT(), output)
 		})
 
@@ -52,7 +53,7 @@ var _ = Describe("Subscription Mapper", func() {
 
 			err := mapSubscription(&input, output)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			snaps.MatchSnapshot(GinkgoT(), output)
 		})
 
@@ -62,7 +63,7 @@ var _ = Describe("Subscription Mapper", func() {
 
 			err := mapSubscription(input, output)
 
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("unknown subscription type"))
 			snaps.MatchSnapshot(GinkgoT(), output)
 		})

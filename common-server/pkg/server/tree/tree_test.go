@@ -7,18 +7,19 @@ package tree_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/pkg/server/tree"
-	"github.com/telekom/controlplane/common-server/pkg/store"
-	"github.com/telekom/controlplane/common-server/test/mocks"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/telekom/controlplane/common-server/pkg/server/tree"
+	"github.com/telekom/controlplane/common-server/pkg/store"
+	"github.com/telekom/controlplane/common-server/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Tree", Ordered, func() {
-
 	True := true
 	ctx := context.Background()
 	var fooStore *mocks.MockObjectStore[*unstructured.Unstructured]
@@ -46,7 +47,6 @@ var _ = Describe("Tree", Ordered, func() {
 		})
 
 		It("should return a tree with the root object and its children", func() {
-
 			// Given
 
 			fooObject := NewUnstructured("foo0")
@@ -95,11 +95,9 @@ var _ = Describe("Tree", Ordered, func() {
 			Expect(rt.Root).NotTo(BeNil())
 			Expect(rt.Root.Children).To(HaveLen(1))
 			Expect(rt.Root.Children[0].Children).To(BeEmpty())
-
 		})
 
 		It("should return a tree with the root object and its children and grandchildren", func() {
-
 			// Given
 
 			// -- Foo

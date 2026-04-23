@@ -5,10 +5,12 @@
 package tree_test
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/telekom/controlplane/common-server/pkg/server/tree"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/pkg/server/tree"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func NewUnstructured(name string) *unstructured.Unstructured {
@@ -19,9 +21,7 @@ func NewUnstructured(name string) *unstructured.Unstructured {
 }
 
 var _ = Describe("Tree Types", func() {
-
 	Context("ResourceTree", func() {
-
 		It("should create a new ResourceTree", func() {
 			rt := tree.NewResourceTree()
 			Expect(rt).ToNot(BeNil())

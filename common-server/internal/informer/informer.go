@@ -13,14 +13,12 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/tools/cache"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/tools/cache"
 )
 
 type Informer interface {
@@ -126,7 +124,6 @@ func (i *KubeInformer) wrapEventHandler(ctx context.Context, log logr.Logger, eh
 			} else {
 				counter.WithLabelValues(i.name, "ADDED", "0").Inc()
 			}
-
 		},
 		UpdateFunc: func(oldObj, newObj any) {
 			o, ok := newObj.(*unstructured.Unstructured)
@@ -140,7 +137,6 @@ func (i *KubeInformer) wrapEventHandler(ctx context.Context, log logr.Logger, eh
 			} else {
 				counter.WithLabelValues(i.name, "MODIFIED", "0").Inc()
 			}
-
 		},
 		DeleteFunc: func(obj any) {
 			o, ok := obj.(*unstructured.Unstructured)

@@ -8,15 +8,15 @@ import (
 	"context"
 	"fmt"
 
-	commonStore "github.com/telekom/controlplane/common-server/pkg/store"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/types"
-	roverStore "github.com/telekom/controlplane/rover-server/pkg/store"
-	v1 "github.com/telekom/controlplane/rover/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	commonStore "github.com/telekom/controlplane/common-server/pkg/store"
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	roverStore "github.com/telekom/controlplane/rover-server/pkg/store"
+	v1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 // SubResource constrains the types that can serve as sub-resources of a parent resource.

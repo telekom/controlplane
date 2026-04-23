@@ -8,10 +8,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
-
 	"github.com/cyberark/conjur-api-go/conjurapi"
 	"github.com/cyberark/conjur-api-go/conjurapi/authn"
+	"github.com/pkg/errors"
 )
 
 type ConjurAPI interface {

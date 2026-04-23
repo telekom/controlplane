@@ -10,11 +10,12 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewResourceController(store store.ObjectStore[*unstructured.Unstructured], log logr.Logger) *ResourceController {

@@ -7,14 +7,16 @@ package secrets_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
 	"github.com/telekom/controlplane/common-server/test/mocks"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func NewObject(namespace, name string) *unstructured.Unstructured {
@@ -32,7 +34,6 @@ func NewObject(namespace, name string) *unstructured.Unstructured {
 }
 
 var _ = Describe("Secrets Store", func() {
-
 	var ctx context.Context
 	var mockStore *mocks.MockObjectStore[*unstructured.Unstructured]
 	var secretManager *fake.MockSecretManager
@@ -57,11 +58,9 @@ var _ = Describe("Secrets Store", func() {
 			// Check if the wrapped store is of the correct type
 			Expect(wrappedStore).To(BeAssignableToTypeOf(&secrets.SecretStore[*unstructured.Unstructured]{}))
 		})
-
 	})
 
 	Context("Get", func() {
-
 		It("should replace secret values", func() {
 			obj := NewObject("default", "foo")
 
@@ -107,13 +106,10 @@ var _ = Describe("Secrets Store", func() {
 				},
 			}))
 		})
-
 	})
 
 	Context("List", func() {
-
 		It("should replace secret values", func() {
-
 			items := []*unstructured.Unstructured{
 				NewObject("default", "foo"),
 				NewObject("default", "bar"),
@@ -149,7 +145,6 @@ var _ = Describe("Secrets Store", func() {
 					"secret": "topsecret",
 				},
 			}))
-
 		})
 
 		It("should not replace secret values when the business-ctx is obfuscated", func() {

@@ -8,6 +8,7 @@ import (
 	"log"
 
 	"github.com/spf13/cobra/doc"
+
 	"github.com/telekom/controlplane/rover-ctl/cmd"
 )
 

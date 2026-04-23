@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+
 	v0 "github.com/telekom/controlplane/rover-ctl/pkg/handlers/v0"
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 )

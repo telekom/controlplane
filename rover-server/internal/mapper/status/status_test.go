@@ -8,19 +8,20 @@ import (
 	"fmt"
 
 	"github.com/gkampitakis/go-snaps/snaps"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	commonStore "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 	v1 "github.com/telekom/controlplane/rover/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/telekom/controlplane/rover-server/internal/api"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Rover Status Mapper", func() {
@@ -28,7 +29,7 @@ var _ = Describe("Rover Status Mapper", func() {
 		It("must map rover status correctly", func() {
 			status, err := MapRoverStatus(ctx, rover, stores)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(status).ToNot(BeNil())
 
 			snaps.MatchJSON(GinkgoT(), status)
@@ -65,7 +66,7 @@ var _ = Describe("Rover Status Mapper", func() {
 
 			status, err := MapRoverStatus(ctx, completeRover, stores)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(status.State).To(Equal(api.Complete))
 			Expect(status.ProcessingState).To(Equal(api.ProcessingStateDone))
 		})
@@ -78,7 +79,7 @@ var _ = Describe("Rover Status Mapper", func() {
 			Expect(response).ToNot(BeNil())
 			snaps.MatchJSON(GinkgoT(), response)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("must return an error if the input rover is nil", func() {
@@ -86,7 +87,7 @@ var _ = Describe("Rover Status Mapper", func() {
 
 			Expect(response).ToNot(BeNil())
 
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("input rover is nil"))
 		})
 
@@ -107,7 +108,7 @@ var _ = Describe("Rover Status Mapper", func() {
 			Expect(response).ToNot(BeNil())
 			snaps.MatchJSON(GinkgoT(), response)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 
@@ -407,7 +408,6 @@ var _ = Describe("Rover Status Mapper", func() {
 			Expect(status.State).To(Equal(api.Complete))
 			Expect(status.ProcessingState).To(Equal(api.ProcessingStateDone))
 		})
-
 	})
 })
 

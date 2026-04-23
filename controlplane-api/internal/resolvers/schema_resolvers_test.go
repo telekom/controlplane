@@ -7,9 +7,6 @@ package resolvers_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
@@ -17,6 +14,9 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/internal/testutil"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
 	"github.com/telekom/controlplane/controlplane-api/pkg/model"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("OwnerTeam resolver", func() {

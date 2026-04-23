@@ -13,11 +13,12 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
+
 	"github.com/telekom/controlplane/tools/e2e-tester/pkg/config"
 	"github.com/telekom/controlplane/tools/e2e-tester/pkg/logger"
 	"github.com/telekom/controlplane/tools/e2e-tester/pkg/report"
 	"github.com/telekom/controlplane/tools/e2e-tester/pkg/runner"
-	"go.uber.org/zap"
 )
 
 var (
@@ -71,7 +72,7 @@ commands, captures outputs, and compares them with expected snapshots.`,
 
 			// Set verbose mode from flag
 			cfg.Verbose = verboseMode
-			var reporter report.Reporter = report.NewConsoleReporter(os.Stderr, verboseMode)
+			reporter := report.NewConsoleReporter(os.Stderr, verboseMode)
 
 			// Create and run the test runner
 			r := runner.NewRunner(&cfg, runner.RunnerOptions{

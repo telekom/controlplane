@@ -10,6 +10,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 )
 
@@ -32,7 +33,7 @@ func getBearerToken(c *fiber.Ctx) (string, error) {
 	}
 
 	parts := strings.Split(header, " ")
-	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+	if len(parts) != 2 || !strings.EqualFold(parts[0], "bearer") {
 		return "", fmt.Errorf("invalid Authorization header")
 	}
 
@@ -44,7 +45,6 @@ func getBearerToken(c *fiber.Ctx) (string, error) {
 // However, it will not perform any validation on it
 func NewJWTMock() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-
 		bearerToken, err := getBearerToken(c)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(problems.Unauthorized("Invalid token", err.Error()))

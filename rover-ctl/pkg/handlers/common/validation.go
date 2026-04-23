@@ -22,9 +22,7 @@ const (
 	MinLength = 2
 )
 
-var (
-	nameRegex = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
-)
+var nameRegex = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
 
 // ValidateObjectName checks if the name follows the naming convention of Kubernetes resources, see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names
 // This is the generic version that can be used by all handlers

@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/gkampitakis/go-snaps/snaps"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	commonStore "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -21,7 +21,9 @@ import (
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 	"github.com/telekom/controlplane/rover-server/test/mocks"
 	v1 "github.com/telekom/controlplane/rover/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // --- helpers ---

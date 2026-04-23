@@ -5,15 +5,15 @@
 package v1_test
 
 import (
+	apiapi "github.com/telekom/controlplane/api/api/v1"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	apiapi "github.com/telekom/controlplane/api/api/v1"
 )
 
 var _ = Describe("RemoteSubscription Util", func() {
 	Context("HasM2M", func() {
 		It("should return true if SubscriberMachine2MachineAuthentication exists", func() {
-
 			subscription := &apiapi.RemoteApiSubscription{}
 			Expect(subscription.HasM2M()).To(BeFalse())
 

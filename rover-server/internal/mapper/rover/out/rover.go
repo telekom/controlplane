@@ -8,12 +8,12 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 func MapResponse(ctx context.Context, in *roverv1.Rover, stores *store.Stores) (res api.RoverResponse, err error) {
@@ -30,7 +30,7 @@ func MapResponse(ctx context.Context, in *roverv1.Rover, stores *store.Stores) (
 	res.Id = mapper.MakeResourceId(in)
 	res.Status, err = status.MapRoverStatus(ctx, in, stores)
 
-	return
+	return res, err
 }
 
 func MapRover(in *roverv1.Rover, out *api.Rover) error {

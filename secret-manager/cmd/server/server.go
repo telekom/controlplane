@@ -12,15 +12,18 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
-	"github.com/telekom/controlplane/common-server/pkg/util"
-
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	ctrlr "sigs.k8s.io/controller-runtime"
+
 	cs "github.com/telekom/controlplane/common-server/pkg/server"
+	k8s "github.com/telekom/controlplane/common-server/pkg/server/middleware/kubernetes"
 	"github.com/telekom/controlplane/common-server/pkg/server/serve"
+	"github.com/telekom/controlplane/common-server/pkg/util"
 	"github.com/telekom/controlplane/secret-manager/cmd/server/config"
 	"github.com/telekom/controlplane/secret-manager/internal/api"
 	"github.com/telekom/controlplane/secret-manager/internal/handler"
@@ -30,9 +33,6 @@ import (
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/conjur/bouncer"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend/kubernetes"
 	"github.com/telekom/controlplane/secret-manager/pkg/controller"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	ctrlr "sigs.k8s.io/controller-runtime"
 )
 
 const (

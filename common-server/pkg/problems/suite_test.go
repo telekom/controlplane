@@ -9,9 +9,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/telekom/controlplane/common-server/pkg/problems"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common-server/pkg/problems"
 )
 
 func TestProblems(t *testing.T) {
@@ -21,12 +22,10 @@ func TestProblems(t *testing.T) {
 
 var _ = Describe("Problems", func() {
 	BeforeEach(func() {
-
 	})
 
 	Context("Problem Builder", func() {
 		It("should build a problem", func() {
-
 			problem := problems.Builder().
 				Title("Title").
 				Detail("Detail").
@@ -45,7 +44,6 @@ var _ = Describe("Problems", func() {
 		})
 
 		It("should create a problem from an exisiting errror", func() {
-
 			err := errors.New("error message")
 			problem := problems.NewProblemOfError(err)
 
@@ -97,7 +95,6 @@ var _ = Describe("Problems", func() {
 					"fields": [{"field":"field","detail":"detail"}]
 				}
 			`))
-
 		})
 
 		It("should create a bad request problem", func() {

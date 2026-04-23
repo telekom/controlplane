@@ -7,14 +7,14 @@ package backend_test
 import (
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/secret-manager/pkg/backend"
 	"github.com/telekom/controlplane/secret-manager/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Errors", func() {
-
 	Context("BackendError", func() {
 		It("should create a new BackendError", func() {
 			err := fmt.Errorf("some error")

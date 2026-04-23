@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/util"
 )
@@ -79,7 +80,6 @@ func WithPathParamKey(keys ...string) Option[*CheckAccessOpts] {
 }
 
 func WithTemplates(templates map[ClientType]ComparisonTemplates) Option[*CheckAccessOpts] {
-
 	return func(o *CheckAccessOpts) {
 		ts := make(map[ClientType]ComparisonTemplates)
 
@@ -293,7 +293,6 @@ func CheckNamespacedRequest(c *fiber.Ctx, params map[string]string, templates ma
 		}
 	}
 	return allow, nil
-
 }
 
 func shouldAllow(template ComparisonTemplates, compareCtxInfo CompareCtxInfo) (bool, error) {

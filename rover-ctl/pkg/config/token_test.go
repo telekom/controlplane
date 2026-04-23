@@ -5,14 +5,15 @@
 package config_test
 
 import (
+	"github.com/spf13/viper"
+
+	"github.com/telekom/controlplane/rover-ctl/pkg/config"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/spf13/viper"
-	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 )
 
 var _ = Describe("Token", Ordered, func() {
-
 	BeforeAll(func() {
 		config.Initialize()
 	})
@@ -119,5 +120,4 @@ var _ = Describe("Token", Ordered, func() {
 		Expect(token.ServerUrl).To(Equal("http://viper-server:9090/prefix/rover/api")) // It must have the base path appended
 		Expect(token.TokenUrl).To(Equal("https://viper-auth.example.com/token"))
 	})
-
 })

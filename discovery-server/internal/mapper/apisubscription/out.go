@@ -9,12 +9,12 @@ import (
 	"strings"
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/store"
-
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper/status"

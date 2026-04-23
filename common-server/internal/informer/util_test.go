@@ -8,9 +8,10 @@ import (
 	"context"
 	"sync"
 
-	"github.com/telekom/controlplane/common-server/internal/informer"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/telekom/controlplane/common-server/internal/informer"
 )
 
 var _ informer.EventHandler = &mockEventHandler{}

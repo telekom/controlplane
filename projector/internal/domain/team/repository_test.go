@@ -10,19 +10,20 @@ import (
 
 	"entgo.io/ent/privacy"
 	"github.com/go-logr/logr"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	"github.com/telekom/controlplane/controlplane-api/ent/enttest"
 	"github.com/telekom/controlplane/controlplane-api/ent/member"
-	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	entteam "github.com/telekom/controlplane/controlplane-api/ent/team"
-
 	"github.com/telekom/controlplane/projector/internal/domain/shared"
 	"github.com/telekom/controlplane/projector/internal/domain/team"
 	"github.com/telekom/controlplane/projector/internal/infrastructure"
+
+	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // mockTeamDeps is a test double for team.TeamDeps that allows controlling

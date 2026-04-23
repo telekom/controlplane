@@ -8,16 +8,16 @@ import (
 	"fmt"
 	"strings"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"github.com/telekom/controlplane/common-server/internal/crd"
 	"github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/common-server/pkg/server/template"
 	"github.com/telekom/controlplane/common-server/pkg/store"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 func AddPredefinedController(builder *DocumentBuilder, ctrl *server.PredefinedController, opts server.ControllerOpts) {
-
 	gvr, _ := ctrl.Store.Info()
 	crd, err := crd.Instance.ResolveCrd(gvr)
 	if err != nil {

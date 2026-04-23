@@ -16,10 +16,11 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/metrics"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type ControllerOpts struct {

@@ -4,8 +4,10 @@
 
 package conjur
 
-const startTag = "{{"
-const endTag = "}}"
+const (
+	startTag = "{{"
+	endTag   = "}}"
+)
 
 const EnvironmentPolicyTemplate = `
 - !policy

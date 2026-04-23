@@ -17,21 +17,22 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
-	cserver "github.com/telekom/controlplane/common-server/pkg/server"
-	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
-	"github.com/telekom/controlplane/common-server/pkg/server/serve"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	cserver "github.com/telekom/controlplane/common-server/pkg/server"
+	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
+	"github.com/telekom/controlplane/common-server/pkg/server/serve"
 	"github.com/telekom/controlplane/controlplane-api/cmd/config"
 	"github.com/telekom/controlplane/controlplane-api/ent"
-	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 	"github.com/telekom/controlplane/controlplane-api/internal/database"
 	gqlcontroller "github.com/telekom/controlplane/controlplane-api/internal/graphql"
 	"github.com/telekom/controlplane/controlplane-api/internal/interceptor"
 	"github.com/telekom/controlplane/controlplane-api/internal/resolvers"
+
+	_ "github.com/telekom/controlplane/controlplane-api/ent/runtime"
 )
 
 var configFile string

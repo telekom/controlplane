@@ -9,11 +9,12 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common/pkg/types"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 func cleanupState(ctx context.Context, c ScopedClient, listOpts []client.ListOption, objectList types.ObjectList, desiredStateSet map[client.ObjectKey]bool) (int, error) {

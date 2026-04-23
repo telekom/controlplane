@@ -9,11 +9,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/config"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/diffmatcher"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/snapshot"
 	"github.com/telekom/controlplane/tools/snapshotter/pkg/store"
-	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
 var (
@@ -24,7 +25,6 @@ var (
 		Short: "Compare snapshots",
 		Long:  `Compare two snapshots from the snapshot store.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			cfg, err := config.LoadConfig(configPath)
 			if err != nil {
 				return fmt.Errorf("failed to load config: %w", err)

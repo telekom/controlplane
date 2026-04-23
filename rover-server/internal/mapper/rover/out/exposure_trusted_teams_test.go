@@ -5,12 +5,11 @@
 package out
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
+	"github.com/telekom/controlplane/rover-server/internal/api"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
-	"github.com/telekom/controlplane/rover-server/internal/api"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Trusted Teams Mapper", func() {
@@ -49,7 +48,7 @@ var _ = Describe("Trusted Teams Mapper", func() {
 
 			mapTrustedTeams(input, output)
 
-			Expect(output.TrustedTeams).To(HaveLen(0))
+			Expect(output.TrustedTeams).To(BeEmpty())
 		})
 
 		It("must handle nil trusted teams correctly", func() {

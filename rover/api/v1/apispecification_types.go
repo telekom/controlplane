@@ -7,9 +7,10 @@ package v1
 import (
 	"strings"
 
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 // Major extracts the major version from a semantic version string formatted as "major.minor.patch".

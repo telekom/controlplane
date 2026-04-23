@@ -9,6 +9,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/go-logr/logr"
+
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/controlplane-api/ent"
 	entgroup "github.com/telekom/controlplane/controlplane-api/ent/group"

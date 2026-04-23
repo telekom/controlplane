@@ -5,21 +5,21 @@
 package v1_test
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	v1 "github.com/telekom/controlplane/rover/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	v1 "github.com/telekom/controlplane/rover/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Rover V1 Test Suite", func() {
 	BeforeEach(func() {
-
 	})
 
 	Context("Rover Types", func() {
 		It("should accept a minimal Rover", func() {
-
 			rover := new(v1.Rover)
 			rover.Name = "test-rover"
 			rover.Namespace = "default"
@@ -37,7 +37,6 @@ var _ = Describe("Rover V1 Test Suite", func() {
 		})
 
 		It("should accept an advanced Rover", func() {
-
 			rover := new(v1.Rover)
 			rover.Name = "test-rover"
 			rover.Namespace = "default"
@@ -127,11 +126,10 @@ var _ = Describe("Rover V1 Test Suite", func() {
 				Field:   "spec.zone",
 			}))
 
-			Expect(len(statusErr.Status().Details.Causes)).To(Equal(1))
-
+			Expect(statusErr.Status().Details.Causes).To(HaveLen(1))
 		})
 
-		It("should reject a Rover with mutliple exposure types", func() {
+		It("should reject a Rover with multiple exposure types", func() {
 			rover := new(v1.Rover)
 			rover.Name = "invalid-rover"
 			rover.Namespace = "default"
@@ -165,7 +163,7 @@ var _ = Describe("Rover V1 Test Suite", func() {
 			Expect(ok).To(BeTrue())
 
 			Expect(statusErr.Status().Reason).To(Equal(metav1.StatusReasonInvalid))
-			Expect(len(statusErr.Status().Details.Causes)).To(Equal(2))
+			Expect(statusErr.Status().Details.Causes).To(HaveLen(2))
 			Expect(statusErr.Status().Details.Causes).To(ContainElement(metav1.StatusCause{
 				Type:    metav1.CauseTypeFieldValueInvalid,
 				Message: "Invalid value: \"object\": Only one of api or event can be specified (XOR relationship)",
@@ -177,7 +175,6 @@ var _ = Describe("Rover V1 Test Suite", func() {
 				Message: "Invalid value: \"\": spec.exposures[0].event.eventType in body should be at least 1 chars long",
 				Field:   "spec.exposures[0].event.eventType",
 			}))
-
 		})
 
 		It("should reject a Rover with multiple security configs", func() {
@@ -228,13 +225,12 @@ var _ = Describe("Rover V1 Test Suite", func() {
 			Expect(ok).To(BeTrue())
 
 			Expect(statusErr.Status().Reason).To(Equal(metav1.StatusReasonInvalid))
-			Expect(len(statusErr.Status().Details.Causes)).To(Equal(1))
+			Expect(statusErr.Status().Details.Causes).To(HaveLen(1))
 			Expect(statusErr.Status().Details.Causes).To(ContainElement(metav1.StatusCause{
 				Type:    metav1.CauseTypeFieldValueInvalid,
 				Message: "Invalid value: \"object\": ExternalIDP and basic authentication cannot be used together",
 				Field:   "spec.exposures[0].api.security.m2m",
 			}))
-
 		})
 
 		It("should reject a Rover with oauth2 clientSecret and clientKey configured", func() {
@@ -282,13 +278,12 @@ var _ = Describe("Rover V1 Test Suite", func() {
 			Expect(ok).To(BeTrue())
 
 			Expect(statusErr.Status().Reason).To(Equal(metav1.StatusReasonInvalid))
-			Expect(len(statusErr.Status().Details.Causes)).To(Equal(1))
+			Expect(statusErr.Status().Details.Causes).To(HaveLen(1))
 			Expect(statusErr.Status().Details.Causes).To(ContainElement(metav1.StatusCause{
 				Type:    metav1.CauseTypeFieldValueInvalid,
 				Message: "Invalid value: \"object\": ClientSecret and ClientKey cannot be used together",
 				Field:   "spec.exposures[0].api.security.m2m.externalIDP.client",
 			}))
-
 		})
 
 		It("should reject a Rover with no oauth2 clientSecret or clientKey configured", func() {
@@ -334,13 +329,12 @@ var _ = Describe("Rover V1 Test Suite", func() {
 			Expect(ok).To(BeTrue())
 
 			Expect(statusErr.Status().Reason).To(Equal(metav1.StatusReasonInvalid))
-			Expect(len(statusErr.Status().Details.Causes)).To(Equal(1))
+			Expect(statusErr.Status().Details.Causes).To(HaveLen(1))
 			Expect(statusErr.Status().Details.Causes).To(ContainElement(metav1.StatusCause{
 				Type:    metav1.CauseTypeFieldValueInvalid,
 				Message: "Invalid value: \"object\": At least one of clientSecret or clientKey must be provided",
 				Field:   "spec.exposures[0].api.security.m2m.externalIDP.client",
 			}))
-
 		})
 
 		It("should reject a Rover with invalid URL", func() {
@@ -387,7 +381,7 @@ var _ = Describe("Rover V1 Test Suite", func() {
 				Field:   "<nil>",
 			}))
 
-			Expect(len(statusErr.Status().Details.Causes)).To(Equal(2))
+			Expect(statusErr.Status().Details.Causes).To(HaveLen(2))
 		})
 	})
 })

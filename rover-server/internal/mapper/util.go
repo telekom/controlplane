@@ -10,9 +10,10 @@ import (
 	"regexp"
 
 	"github.com/pkg/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -26,7 +27,7 @@ var nsRE = regexp.MustCompile(`^([a-z0-9-]+)--([a-z0-9-]+)--([a-z0-9-]+)$`)
 // <namespace>(<group>--<team>)--<resourceName>
 var idRE = regexp.MustCompile(`^([a-z0-9-]+--[a-z0-9-]+)--([a-z0-9-]+)$`)
 
-func CopyFromTo[S any, T any](from S, to T) error {
+func CopyFromTo[S, T any](from S, to T) error {
 	jsonBytes, err := json.Marshal(from)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal")

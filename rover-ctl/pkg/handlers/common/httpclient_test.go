@@ -9,19 +9,19 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
 	"github.com/telekom/controlplane/rover-ctl/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // We'll use the mockery-generated mock for the HttpDoer interface
 
 var _ = Describe("HttpClient", func() {
-	var (
-		originalNewHttpClient func(ctx context.Context, tokenUrl, clientId, clientSecret string) common.HttpDoer
-	)
+	var originalNewHttpClient func(ctx context.Context, tokenUrl, clientId, clientSecret string) common.HttpDoer
 
 	BeforeEach(func() {
 		originalNewHttpClient = common.NewAuthorizedHttpClient
@@ -128,7 +128,7 @@ var _ = Describe("HttpClient", func() {
 		)
 
 		// Make a request to verify the client properly sets Authorization headers
-		req, err := http.NewRequest("GET", tokenServer.URL, nil)
+		req, err := http.NewRequest("GET", tokenServer.URL, http.NoBody)
 		Expect(err).NotTo(HaveOccurred())
 
 		resp, err := client.Do(req)
@@ -159,7 +159,7 @@ var _ = Describe("WithStaticHeaders", func() {
 			"User-Agent":      []string{"test-agent/1.0"},
 		})
 
-		req, err := http.NewRequest("GET", "http://example.com", nil)
+		req, err := http.NewRequest("GET", "http://example.com", http.NoBody)
 		Expect(err).NotTo(HaveOccurred())
 
 		resp, err := client.Do(req)
@@ -182,7 +182,7 @@ var _ = Describe("WithStaticHeaders", func() {
 			"Authorization": []string{"Bearer static-token"},
 		})
 
-		req, err := http.NewRequest("GET", "http://example.com", nil)
+		req, err := http.NewRequest("GET", "http://example.com", http.NoBody)
 		Expect(err).NotTo(HaveOccurred())
 		// Pre-set a header that should be overwritten
 		req.Header.Set("Authorization", "Bearer old-token")
@@ -213,7 +213,7 @@ var _ = Describe("WithStaticHeaders", func() {
 			"User-Agent": []string{"test-agent/2.0"},
 		})
 
-		req, err := http.NewRequest("GET", "http://example.com", nil)
+		req, err := http.NewRequest("GET", "http://example.com", http.NoBody)
 		Expect(err).NotTo(HaveOccurred())
 
 		resp, err := outerClient.Do(req)
@@ -230,7 +230,7 @@ var _ = Describe("WithStaticHeaders", func() {
 			"User-Agent": []string{"test-agent/1.0"},
 		})
 
-		req, err := http.NewRequest("GET", "http://example.com", nil)
+		req, err := http.NewRequest("GET", "http://example.com", http.NoBody)
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = client.Do(req)

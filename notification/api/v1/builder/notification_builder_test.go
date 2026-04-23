@@ -10,10 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,15 +17,16 @@ import (
 
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
-	"github.com/telekom/controlplane/common/pkg/types"
-
 	"github.com/telekom/controlplane/common/pkg/test"
+	"github.com/telekom/controlplane/common/pkg/types"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/api/v1/builder"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("NotificationBuilder", func() {
-
 	var k8sScheme *runtime.Scheme
 	var ctx context.Context
 	var fakeClient *fakeclient.MockJanitorClient
@@ -181,7 +178,7 @@ var _ = Describe("NotificationBuilder", func() {
 				types.ObjectRef{Name: "channel2", Namespace: "default"},
 				types.ObjectRef{Name: "channel3", Namespace: "default"},
 			))
-			Expect(len(notification.Spec.Channels)).To(Equal(3))
+			Expect(notification.Spec.Channels).To(HaveLen(3))
 		})
 	})
 
@@ -225,7 +222,7 @@ var _ = Describe("NotificationBuilder", func() {
 			// Verify results
 			Expect(err).NotTo(HaveOccurred())
 			Expect(notification.Spec.Channels).To(ContainElements(types.ObjectRef{Name: "channel1", Namespace: "test-namespace"}, types.ObjectRef{Name: "channel2", Namespace: "test-namespace"}))
-			Expect(len(notification.Spec.Channels)).To(Equal(2))
+			Expect(notification.Spec.Channels).To(HaveLen(2))
 
 			// Verify mock expectations were met
 			fakeClient.AssertExpectations(GinkgoT())
@@ -377,7 +374,6 @@ var _ = Describe("NotificationBuilder", func() {
 	})
 
 	Context("Send", func() {
-
 		It("creates a notification resource via the k8s client", func() {
 			// Setup the expected notification
 			notificationBuilder := builder.New().
@@ -439,5 +435,4 @@ var _ = Describe("NotificationBuilder", func() {
 			fakeClient.AssertExpectations(GinkgoT())
 		})
 	})
-
 })

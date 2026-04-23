@@ -7,14 +7,14 @@ package types
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
-
 	crscheme "sigs.k8s.io/controller-runtime/pkg/scheme"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func TestTypes(t *testing.T) {
@@ -23,10 +23,8 @@ func TestTypes(t *testing.T) {
 }
 
 var _ = Describe("ObjectRef", func() {
-
 	Context("ObjectRef", func() {
-
-		var ref = &ObjectRef{
+		ref := &ObjectRef{
 			Name:      "test",
 			Namespace: "test",
 		}
@@ -87,14 +85,11 @@ var _ = Describe("ObjectRef", func() {
 			valueRef.Name = "test"
 			Expect(valueRef.IsEmpty()).To(BeFalse())
 			Expect(ptrRef.IsEmpty()).To(BeTrue())
-
 		})
-
 	})
 
 	Context("TypedObjectRef", func() {
-
-		var ref = &TypedObjectRef{
+		ref := &TypedObjectRef{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Object",
 				APIVersion: "testgroup.cp.ei.telekom.de/v1",
@@ -123,7 +118,6 @@ var _ = Describe("ObjectRef", func() {
 		})
 
 		It("should successfully return string", func() {
-
 			Expect(ref.String()).To(Equal("testgroup.cp.ei.telekom.de/v1/Object:test/test"))
 		})
 
@@ -168,13 +162,10 @@ var _ = Describe("ObjectRef", func() {
 			obj.SetKind("test2")
 
 			Expect(ref.Equals(obj)).To(BeFalse())
-
 		})
-
 	})
 
 	Context("Equals", func() {
-
 		It("should successfully compare", func() {
 			obj1 := &unstructured.Unstructured{}
 			obj1.SetName("test")
@@ -231,7 +222,6 @@ var _ = Describe("ObjectRef", func() {
 			Expect(Equals(nil, obj2)).To(BeFalse())
 			Expect(Equals(obj1, nil)).To(BeFalse())
 			Expect(Equals(nil, nil)).To(BeTrue())
-
 		})
 	})
 })

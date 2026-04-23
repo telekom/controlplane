@@ -8,10 +8,10 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 func mapSubscription(in *api.Subscription, out *roverv1.Subscription) error {

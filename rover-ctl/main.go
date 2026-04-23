@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/spf13/viper"
+
 	"github.com/telekom/controlplane/rover-ctl/cmd"
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 )

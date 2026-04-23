@@ -19,7 +19,6 @@ func TestUtil(t *testing.T) {
 }
 
 var _ = Describe("Middleware Util", func() {
-
 	Context("GetValue", func() {
 		It("should get a string value", func() {
 			val, ok := util.GetValue[string](map[string]any{"key": "value"}, "key")

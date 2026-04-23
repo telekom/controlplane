@@ -12,12 +12,13 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/telekom/controlplane/tools/e2e-tester/pkg/command"
 	"github.com/telekom/controlplane/tools/e2e-tester/pkg/config"
 	"github.com/telekom/controlplane/tools/e2e-tester/pkg/environment"
 	"github.com/telekom/controlplane/tools/e2e-tester/pkg/report"
 	"github.com/telekom/controlplane/tools/e2e-tester/pkg/snapshot"
-	"go.uber.org/zap"
 )
 
 // SuiteRunner handles the execution of a test suite

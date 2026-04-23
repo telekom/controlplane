@@ -9,9 +9,7 @@ import (
 
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/mock"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
@@ -19,36 +17,37 @@ import (
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 	"github.com/telekom/controlplane/rover-server/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ApplicationInfo Mapper", func() {
 	Context("FillExposureInfo", func() {
 		It("must fill exposure info correctly", func() {
-			var applicationInfo = &api.ApplicationInfo{}
+			applicationInfo := &api.ApplicationInfo{}
 			err := FillExposureInfo(ctx, rover, applicationInfo, stores)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			snaps.MatchJSON(GinkgoT(), applicationInfo)
 		})
 
 		It("must return an error if the input rover is nil", func() {
-			var applicationInfo = &api.ApplicationInfo{}
+			applicationInfo := &api.ApplicationInfo{}
 			err := FillExposureInfo(ctx, nil, applicationInfo, stores)
 
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("input rover is nil"))
 		})
 
 		It("must return an error if the input application info is nil", func() {
 			err := FillExposureInfo(ctx, rover, nil, stores)
 
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("input applicationInfo is nil"))
 		})
 
@@ -80,7 +79,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			appInfo := &api.ApplicationInfo{}
 			err := FillExposureInfo(ctx, roverWithExp, appInfo, errStores)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(appInfo.Errors).To(HaveLen(1))
 			Expect(appInfo.Errors[0].Message).To(Equal("store error"))
 		})
@@ -145,7 +144,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			appInfo := &api.ApplicationInfo{}
 			err := FillExposureInfo(secCtx, roverWithEventExp, appInfo, localStores)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(appInfo.Exposures).To(HaveLen(1))
 			Expect(appInfo.StargatePublishEventUrl).To(Equal("https://horizon.example.com/events/v1"))
 		})
@@ -189,7 +188,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			appInfo := &api.ApplicationInfo{}
 			err := FillExposureInfo(secCtx, roverWithEventExp, appInfo, localStores)
 
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to get zone"))
 		})
 
@@ -221,7 +220,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			appInfo := &api.ApplicationInfo{}
 			err := FillExposureInfo(ctx, roverWithEventExp, appInfo, localStores)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(appInfo.Errors).To(HaveLen(1))
 			Expect(appInfo.Errors[0].Message).To(Equal("event store error"))
 		})
@@ -229,42 +228,42 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 
 	Context("FillSubscriptionInfo", func() {
 		It("must fill subscription info correctly", func() {
-			var applicationInfo = &api.ApplicationInfo{}
+			applicationInfo := &api.ApplicationInfo{}
 			err := FillSubscriptionInfo(ctx, rover, applicationInfo, stores)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			snaps.MatchJSON(GinkgoT(), applicationInfo)
 		})
 
 		It("must populate HorizonSubscriptionId and HorizonSubscriptionUrl for event subscriptions", func() {
-			var applicationInfo = &api.ApplicationInfo{}
+			applicationInfo := &api.ApplicationInfo{}
 			err := FillSubscriptionInfo(ctx, rover, applicationInfo, stores)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			// rover fixture has 1 API subscription + 1 event subscription
 			Expect(applicationInfo.Subscriptions).To(HaveLen(2))
 
 			// The event subscription is the second one (after the API subscription)
 			eventSubInfo, err := applicationInfo.Subscriptions[1].AsEventSubscriptionInfo()
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(eventSubInfo.HorizonSubscriptionId).To(Equal("horizon-sub-456"))
 			Expect(eventSubInfo.HorizonSubscriptionUrl).To(Equal("https://sse.example.com/events/horizon-sub-456"))
 		})
 
 		It("must return an error if the input rover is nil", func() {
-			var applicationInfo = &api.ApplicationInfo{}
+			applicationInfo := &api.ApplicationInfo{}
 			err := FillSubscriptionInfo(ctx, nil, applicationInfo, stores)
 
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("input rover is nil"))
 		})
 
 		It("must return an error if the input application info is nil", func() {
 			err := FillSubscriptionInfo(ctx, rover, nil, stores)
 
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("input applicationInfo is nil"))
 		})
 
@@ -297,7 +296,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			appInfo := &api.ApplicationInfo{}
 			err := FillSubscriptionInfo(ctx, roverWithSub, appInfo, localStores)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(appInfo.Errors).To(HaveLen(1))
 			Expect(appInfo.Errors[0].Message).To(Equal("api sub error"))
 		})
@@ -330,7 +329,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			appInfo := &api.ApplicationInfo{}
 			err := FillSubscriptionInfo(ctx, roverWithSub, appInfo, localStores)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(appInfo.Errors).To(HaveLen(1))
 			Expect(appInfo.Errors[0].Message).To(Equal("event sub error"))
 		})
@@ -338,26 +337,26 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 
 	Context("FillApplicationInfo", func() {
 		It("must fill application info correctly", func() {
-			var applicationInfo = &api.ApplicationInfo{}
+			applicationInfo := &api.ApplicationInfo{}
 			err := FillApplicationInfo(ctx, rover, applicationInfo, stores)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			snaps.MatchJSON(GinkgoT(), applicationInfo)
 		})
 
 		It("must return an error if the input rover is nil", func() {
-			var applicationInfo = &api.ApplicationInfo{}
+			applicationInfo := &api.ApplicationInfo{}
 			err := FillApplicationInfo(ctx, nil, applicationInfo, stores)
 
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("rover resource is not processed and does not contain an application"))
 		})
 
 		It("must return an error if the input application info is nil", func() {
 			err := FillApplicationInfo(ctx, rover, nil, stores)
 
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("input applicationInfo is nil"))
 		})
 
@@ -380,7 +379,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			appInfo := &api.ApplicationInfo{}
 			err := FillApplicationInfo(ctx, rover, appInfo, localStores)
 
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to get application"))
 		})
 
@@ -411,7 +410,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			appInfo := &api.ApplicationInfo{}
 			err := FillApplicationInfo(ctx, rover, appInfo, localStores)
 
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to get zone"))
 		})
 	})
@@ -420,7 +419,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 		It("must map application info correctly", func() {
 			output, err := MapApplicationInfo(ctx, rover, stores)
 
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			snaps.MatchJSON(GinkgoT(), output)
 		})
@@ -430,7 +429,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 
 			Expect(output).To(BeNil())
 
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("input rover is nil"))
 		})
 
@@ -453,7 +452,7 @@ var _ = Describe("ApplicationInfo Mapper", func() {
 			output, err := MapApplicationInfo(ctx, rover, localStores)
 
 			Expect(output).To(BeNil())
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to fill application info"))
 		})
 	})

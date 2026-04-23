@@ -7,11 +7,11 @@ package v1
 import (
 	"encoding/json"
 
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
-
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 )
 
 type ApprovalStrategy string
@@ -70,7 +70,6 @@ type AvailableTransition struct {
 }
 
 type Requester struct {
-
 	// TeamName is the name of the team requesting access
 	TeamName string `json:"teamName"`
 
@@ -108,7 +107,6 @@ func (r *Requester) GetProperties() (map[string]any, error) {
 }
 
 type Decider struct {
-
 	// TeamName is the name of the team that decides on the approval request
 	TeamName string `json:"teamName,omitempty"`
 
