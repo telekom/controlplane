@@ -12,6 +12,7 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/application/internal/webhook/v1/mutator"
 	"github.com/telekom/controlplane/common/pkg/controller"
+	"k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -49,5 +50,12 @@ func (d *ApplicationCustomDefaulter) Default(ctx context.Context, app *applicati
 		return fmt.Errorf("application %s does not have an environment label", app.GetName())
 	}
 
-	return mutator.MutateSecret(ctx, env, app, d.Reader)
+	if err := mutator.MutateSecret(ctx, env, app, d.Reader); err != nil {
+		if errors.IsInternalError(err) {
+			log.Error(err, "failed to default application")
+			return fmt.Errorf("failed to default application")
+		}
+		return err
+	}
+	return nil
 }
