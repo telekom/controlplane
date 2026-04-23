@@ -195,7 +195,7 @@ var _ = Describe("Conjur Onboarder", func() {
 			runAndReturn := func(pm conjurapi.PolicyMode, s string, r io.Reader) (*conjurapi.PolicyResponse, error) {
 				buf, err := io.ReadAll(r)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(buf)).To(Equal("\n- !policy\n  id: test-app\n  body:\n  - !variable clientSecret\n  - !variable externalSecrets\n"))
+				Expect(string(buf)).To(Equal("\n- !policy\n  id: test-app\n  body:\n  - !variable clientSecret\n  - !variable rotatedClientSecret\n  - !variable externalSecrets\n"))
 				return nil, nil
 			}
 			writeAPI.EXPECT().LoadPolicy(conjurapi.PolicyModePost, "controlplane/test-env/test-team", mock.Anything).RunAndReturn(runAndReturn)
@@ -237,7 +237,7 @@ var _ = Describe("Conjur Onboarder", func() {
 			runAndReturn := func(pm conjurapi.PolicyMode, s string, r io.Reader) (*conjurapi.PolicyResponse, error) {
 				buf, err := io.ReadAll(r)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(buf)).To(Equal("\n- !policy\n  id: test-app\n  body:\n  - !variable clientSecret\n  - !variable externalSecrets\n"))
+				Expect(string(buf)).To(Equal("\n- !policy\n  id: test-app\n  body:\n  - !variable clientSecret\n  - !variable rotatedClientSecret\n  - !variable externalSecrets\n"))
 				return nil, nil
 			}
 			writeAPI.EXPECT().LoadPolicy(conjurapi.PolicyModePost, "controlplane/test-env/test-team", mock.Anything).RunAndReturn(runAndReturn)
@@ -259,7 +259,7 @@ var _ = Describe("Conjur Onboarder", func() {
 		runAndReturn := func(pm conjurapi.PolicyMode, s string, r io.Reader) (*conjurapi.PolicyResponse, error) {
 			buf, err := io.ReadAll(r)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(string(buf)).To(Equal("\n- !policy\n  id: test-app\n  body:\n  - !variable clientSecret\n  - !variable externalSecrets\n"))
+			Expect(string(buf)).To(Equal("\n- !policy\n  id: test-app\n  body:\n  - !variable clientSecret\n  - !variable rotatedClientSecret\n  - !variable externalSecrets\n"))
 			return nil, nil
 		}
 		writeAPI.EXPECT().LoadPolicy(conjurapi.PolicyModePost, "controlplane/test-env/test-team", mock.Anything).RunAndReturn(runAndReturn)
