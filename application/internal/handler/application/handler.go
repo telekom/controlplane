@@ -40,6 +40,7 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 
 	app.Status.Clients = []types.ObjectRef{}
 	app.Status.Consumers = []types.ObjectRef{}
+	app.Status.ClientId = MakeClientName(app)
 
 	zone, err := GetZone(ctx, c, app.Spec.Zone)
 	if err != nil {
@@ -65,13 +66,14 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	}
 
 	// Create Client only if subscription present
+	var primaryClient *identity.Client
 	if app.Spec.NeedsClient {
-		err = CreateIdentityClient(ctx, zone, app)
+		primaryClient, err = CreateIdentityClient(ctx, zone, app)
 		if err != nil {
 			return errors.Wrap(err, "failed to create Identity client when creating application")
 		}
 		for _, failoverZone := range failoverZones {
-			err = CreateIdentityClient(ctx, failoverZone, app, WithFailover())
+			_, err = CreateIdentityClient(ctx, failoverZone, app, WithFailover())
 			if err != nil {
 				return errors.Wrapf(err, "failed to create Identity client for failover zone %s when creating application", failoverZone.Name)
 			}
@@ -119,66 +121,77 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	}
 
 	if c.AnyChanged() {
-		app.SetCondition(
-			condition.NewProcessingCondition("SubResourceProvisioning", "At least one sub-resource has been created or updated"))
+		// A change occurred during provisioning of any sub-resource.
 		app.SetCondition(
 			condition.NewNotReadyCondition("SubResourceProvisioning", "At least one sub-resource has been created or updated"))
-	} else {
-		app.SetCondition(condition.NewDoneProcessingCondition("All sub-resources are up to date"))
-		app.SetCondition(condition.NewReadyCondition("SubResourceProvisioned", "All sub-resources are up to date"))
 
-		// Set ClientSecret only after sub-resources have converged
-		if app.Spec.NeedsClient {
-			app.Status.ClientSecret = app.Spec.Secret
+		return nil
+	}
+
+	// Only needed if client is required, otherwise there are no sub-resources to wait for and the application can be marked as ready immediately.
+	if primaryClient != nil {
+		isReady := meta.IsStatusConditionTrue(primaryClient.GetConditions(), condition.ConditionTypeReady)
+		if !isReady {
+			app.SetCondition(condition.NewNotReadyCondition("SubResourceProvisioned", "Waiting for primary identity client to be ready"))
+			return nil
 		}
+	}
 
-		// Complete rotation when all sub-resources have settled
-		if rotationInProgress {
-			log := logr.FromContextOrDiscard(ctx)
+	// All sub-resources are up to date and primary client (if applicable) is ready, mark application as ready.
 
-			// Expiry timestamps are already propagated by CreateIdentityClient.
-			// Check that they are available (identity controller has reconciled).
-			if app.Status.RotatedExpiresAt != nil {
-				// Set rotation status fields only after successful convergence
-				app.Status.RotatedClientSecret = app.Spec.RotatedSecret
+	app.SetCondition(condition.NewReadyCondition("SubResourceProvisioned", "All sub-resources are up to date"))
 
-				app.SetCondition(metav1.Condition{
-					Type:    secret.SecretRotationConditionType,
-					Status:  metav1.ConditionTrue,
-					Reason:  secret.SecretRotationReasonSuccess,
-					Message: "Secret rotation completed successfully",
-				})
+	if app.Spec.NeedsClient {
+		app.Status.ClientSecret = app.Spec.Secret
+	}
 
-				// Send rotation-completed notification (non-blocking)
-				if notificationRef, err := sendRotationCompletedNotification(ctx, app); err != nil {
-					log.Error(err, "Failed to send secret-rotation-completed notification")
-				} else if notificationRef != nil {
-					upsertNotificationRef(app, *notificationRef)
-				}
+	// Complete rotation when all sub-resources have settled
+	if rotationInProgress {
+		log := logr.FromContextOrDiscard(ctx)
 
-				log.Info("Secret rotation completed successfully",
-					"application", app.Name,
-					"team", app.Spec.Team,
-				)
-			} else {
-				log.Info("Secret rotation: expiry timestamps not yet available from identity client, staying InProgress",
-					"application", app.Name,
-				)
+		// Expiry timestamps are already propagated by CreateIdentityClient.
+		// Check that they are available (identity controller has reconciled).
+		if app.Status.RotatedExpiresAt != nil {
+			// Set rotation status fields only after successful convergence
+			app.Status.RotatedClientSecret = app.Spec.RotatedSecret
+
+			app.SetCondition(metav1.Condition{
+				Type:    secret.SecretRotationConditionType,
+				Status:  metav1.ConditionTrue,
+				Reason:  secret.SecretRotationReasonSuccess,
+				Message: "Secret rotation completed successfully",
+			})
+
+			// Send rotation-completed notification (non-blocking)
+			if notificationRef, err := sendRotationCompletedNotification(ctx, app); err != nil {
+				log.Error(err, "Failed to send secret-rotation-completed notification")
+			} else if notificationRef != nil {
+				upsertNotificationRef(app, *notificationRef)
 			}
+
+			log.Info("Secret rotation completed successfully",
+				"application", app.Name,
+				"team", app.Spec.Team,
+			)
+		} else {
+			log.Info("Secret rotation: expiry timestamps not yet available from identity client, staying InProgress",
+				"application", app.Name,
+			)
 		}
 
+	} else {
 		// Send secret-expiring notification if within the notification threshold (non-blocking)
 		if app.Spec.NeedsClient && app.Status.CurrentExpiresAt != nil {
 			log := logr.FromContextOrDiscard(ctx)
-			if notificationRef, err := sendSecretExpiringNotification(ctx, app, zone); err != nil {
+			notificationRef, err := sendSecretExpiringNotification(ctx, app, zone)
+			if err != nil {
 				log.Error(err, "Failed to send secret-rotation-expiring notification")
-			} else if notificationRef != nil {
+			}
+			if notificationRef != nil {
 				upsertNotificationRef(app, *notificationRef)
 			}
 		}
 	}
-
-	app.Status.ClientId = MakeClientName(app)
 
 	return nil
 }
@@ -200,7 +213,7 @@ func WithFailover() CreateOption {
 	}
 }
 
-func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *application.Application, opts ...CreateOption) error {
+func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *application.Application, opts ...CreateOption) (*identity.Client, error) {
 	options := &CreateOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -254,7 +267,7 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 
 	result, err := client.CreateOrUpdate(ctx, idpClient, mutator)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create or update Identity Client %s", resourceName)
+		return nil, errors.Wrapf(err, "failed to create or update Identity Client %s", resourceName)
 	}
 
 	owner.Status.Clients = append(owner.Status.Clients, *types.ObjectRefFromObject(idpClient))
@@ -269,7 +282,7 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 		}
 	}
 
-	return nil
+	return idpClient, nil
 }
 
 func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *application.Application, opts ...CreateOption) error {

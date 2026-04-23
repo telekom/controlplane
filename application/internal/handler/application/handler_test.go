@@ -109,8 +109,17 @@ func setupHappyPath(mockClient *fake.MockJanitorClient, zone *adminv1.Zone, anyC
 		CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Client"), mock.Anything).
 		Run(func(_ context.Context, obj pkgclient.Object, fn controllerutil.MutateFn) {
 			_ = fn()
-			// Apply optional identity client status mutators (simulates converged identity client)
 			if idpClient, ok := obj.(*identityv1.Client); ok {
+				// When converged (anyChanged=false), simulate a ready identity client
+				// so the readiness gate in the handler is satisfied.
+				if !anyChanged {
+					idpClient.SetCondition(metav1.Condition{
+						Type:   condition.ConditionTypeReady,
+						Status: metav1.ConditionTrue,
+						Reason: "Ready",
+					})
+				}
+				// Apply optional identity client status mutators (simulates converged identity client)
 				for _, m := range idpMutators {
 					m(idpClient)
 				}
@@ -216,7 +225,7 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 					"Status.ClientSecret should retain its previous value until sub-resources converge")
 			})
 
-			It("should set Processing condition when sub-resources changed", func() {
+			It("should set NotReady condition when sub-resources changed", func() {
 				mockClient := fake.NewMockJanitorClient(GinkgoT())
 				ctx = client.WithClient(ctx, mockClient)
 				setupHappyPath(mockClient, zone, true)
@@ -224,9 +233,9 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 				err := handler.CreateOrUpdate(ctx, app)
 				Expect(err).ToNot(HaveOccurred())
 
-				processingCond := meta.FindStatusCondition(app.Status.Conditions, condition.ConditionTypeProcessing)
-				Expect(processingCond).ToNot(BeNil())
-				Expect(processingCond.Status).To(Equal(metav1.ConditionTrue))
+				readyCond := meta.FindStatusCondition(app.Status.Conditions, condition.ConditionTypeReady)
+				Expect(readyCond).ToNot(BeNil())
+				Expect(readyCond.Status).To(Equal(metav1.ConditionFalse))
 			})
 		})
 

@@ -72,7 +72,7 @@ func sendRotationCompletedNotification(ctx context.Context, app *application.App
 // rotate their secret before it expires. It only sends when the time until expiry
 // is within the configured NotificationThreshold on the zone.
 func sendSecretExpiringNotification(ctx context.Context, app *application.Application, zone *admin.Zone) (*types.ObjectRef, error) {
-	log := logr.FromContextOrDiscard(ctx)
+	log := logr.FromContextOrDiscard(ctx).WithName("secret-expiring-notification")
 	log.V(1).Info("Evaluating secret-expiring notification",
 		"application", app.Name,
 		"currentExpiresAt", app.Status.CurrentExpiresAt,
@@ -124,5 +124,9 @@ func sendSecretExpiringNotification(ctx context.Context, app *application.Applic
 		return nil, err
 	}
 
-	return types.ObjectRefFromObject(notification), nil
+	ref := types.ObjectRefFromObject(notification)
+
+	log.V(1).Info("Successfully sent secret-expiring notification", "ref", ref)
+
+	return ref, nil
 }
