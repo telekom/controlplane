@@ -13,7 +13,7 @@ import (
 	"entgo.io/ent/schema/index"
 
 	schemamixin "github.com/telekom/controlplane/controlplane-api/ent/schema/mixin"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // ApiExposure holds the schema definition for an exposed API.
@@ -26,6 +26,8 @@ func (ApiExposure) Mixin() []ent.Mixin {
 		schemamixin.PrivacyMixin{},
 		schemamixin.TimestampsMixin{},
 		schemamixin.StatusMixin{},
+		schemamixin.EnvironmentMixin{},
+		schemamixin.NamespaceMixin{},
 	}
 }
 
@@ -41,6 +43,8 @@ func (ApiExposure) Fields() []ent.Field {
 			).
 			Default("ENTERPRISE"),
 		field.Bool("active").
+			Optional().
+			Nillable().
 			Default(false),
 		field.JSON("features", []string{}).
 			Default([]string{}).

@@ -10,7 +10,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/mixin"
 
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // ApprovalFieldsMixin provides the shared fields for Approval and ApprovalRequest entities.
@@ -33,11 +33,13 @@ func (ApprovalFieldsMixin) Fields() []ent.Field {
 			Annotations(entgql.Type("RequesterInfo"), entgql.Skip(entgql.SkipWhereInput)),
 		field.JSON("decider", model.DeciderInfo{}).
 			Annotations(entgql.Type("DeciderInfo"), entgql.Skip(entgql.SkipWhereInput)),
+		field.Text("decider_team_name").
+			NotEmpty(),
 		field.JSON("decisions", []model.Decision{}).
 			Default([]model.Decision{}).
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 		field.JSON("available_transitions", []model.AvailableTransition{}).
-			Default([]model.AvailableTransition{}).
+			Optional().
 			Annotations(entgql.Skip(entgql.SkipWhereInput)),
 	}
 }

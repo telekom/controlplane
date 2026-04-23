@@ -133,8 +133,8 @@ var _ = Describe("FeatureBuilder RateLimiting", Ordered, func() {
 				Namespace: "default",
 			},
 			Spec: gatewayv1.RealmSpec{
-				Url:       "https://realm.url",
-				IssuerUrl: "https://issuer.url",
+				Urls:       []string{"https://realm.url"},
+				IssuerUrls: []string{"https://issuer.url"},
 			},
 		}
 	})

@@ -1,17 +1,20 @@
-# SPDX-FileCopyrightText: 2025 Deutsche Telekom IT GmbH
+# Copyright 2026 Deutsche Telekom IT GmbH
 #
 # SPDX-License-Identifier: Apache-2.0
+
 directive @goField(forceResolver: Boolean, name: String, omittable: Boolean) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 directive @goModel(model: String, models: [String!], forceGenerate: Boolean) on OBJECT | INPUT_OBJECT | SCALAR | ENUM | INTERFACE | UNION
 type ApiExposure implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: ApiExposureStatusPhase!
+  statusPhase: ApiExposureStatusPhase
   statusMessage: String
+  environment: String
+  namespace: String!
   basePath: String!
   visibility: ApiExposureVisibility!
-  active: Boolean!
+  active: Boolean
   features: [ApiExposureFeature!]!
   upstreams: [Upstream!]!
   approvalConfig: ApprovalConfig!
@@ -133,6 +136,8 @@ input ApiExposureWhereInput {
   statusPhaseNEQ: ApiExposureStatusPhase
   statusPhaseIn: [ApiExposureStatusPhase!]
   statusPhaseNotIn: [ApiExposureStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -151,6 +156,40 @@ input ApiExposureWhereInput {
   statusMessageNotNil: Boolean
   statusMessageEqualFold: String
   statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
   """
   base_path field predicates
   """
@@ -179,6 +218,8 @@ input ApiExposureWhereInput {
   """
   active: Boolean
   activeNEQ: Boolean
+  activeIsNil: Boolean
+  activeNotNil: Boolean
   """
   api_version field predicates
   """
@@ -212,15 +253,18 @@ type ApiSubscription implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: ApiSubscriptionStatusPhase!
+  statusPhase: ApiSubscriptionStatusPhase
   statusMessage: String
+  environment: String
+  namespace: String!
+  name: String!
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
   approvedScopes: [String!]!
   owner: Application!
   failoverZones: [Zone!]
   approval: Approval
-  approvalRequest: ApprovalRequest
+  approvalRequests: [ApprovalRequest!]
 }
 """
 A connection to a list of items.
@@ -338,6 +382,8 @@ input ApiSubscriptionWhereInput {
   statusPhaseNEQ: ApiSubscriptionStatusPhase
   statusPhaseIn: [ApiSubscriptionStatusPhase!]
   statusPhaseNotIn: [ApiSubscriptionStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -356,6 +402,56 @@ input ApiSubscriptionWhereInput {
   statusMessageNotNil: Boolean
   statusMessageEqualFold: String
   statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  """
+  name field predicates
+  """
+  name: String
+  nameNEQ: String
+  nameIn: [String!]
+  nameNotIn: [String!]
+  nameGT: String
+  nameGTE: String
+  nameLT: String
+  nameLTE: String
+  nameContains: String
+  nameHasPrefix: String
+  nameHasSuffix: String
+  nameEqualFold: String
+  nameContainsFold: String
   """
   base_path field predicates
   """
@@ -400,19 +496,22 @@ input ApiSubscriptionWhereInput {
   hasApproval: Boolean
   hasApprovalWith: [ApprovalWhereInput!]
   """
-  approval_request edge predicates
+  approval_requests edge predicates
   """
-  hasApprovalRequest: Boolean
-  hasApprovalRequestWith: [ApprovalRequestWhereInput!]
+  hasApprovalRequests: Boolean
+  hasApprovalRequestsWith: [ApprovalRequestWhereInput!]
 }
 type Application implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: ApplicationStatusPhase!
+  statusPhase: ApplicationStatusPhase
   statusMessage: String
+  environment: String
+  namespace: String!
   name: String!
-  clientID: String!
+  clientID: String
+  clientSecret: String
   issuerURL: String
   zone: Zone!
   exposedApis(
@@ -586,6 +685,8 @@ input ApplicationWhereInput {
   statusPhaseNEQ: ApplicationStatusPhase
   statusPhaseIn: [ApplicationStatusPhase!]
   statusPhaseNotIn: [ApplicationStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -604,6 +705,40 @@ input ApplicationWhereInput {
   statusMessageNotNil: Boolean
   statusMessageEqualFold: String
   statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
   """
   name field predicates
   """
@@ -634,8 +769,28 @@ input ApplicationWhereInput {
   clientIDContains: String
   clientIDHasPrefix: String
   clientIDHasSuffix: String
+  clientIDIsNil: Boolean
+  clientIDNotNil: Boolean
   clientIDEqualFold: String
   clientIDContainsFold: String
+  """
+  client_secret field predicates
+  """
+  clientSecret: String
+  clientSecretNEQ: String
+  clientSecretIn: [String!]
+  clientSecretNotIn: [String!]
+  clientSecretGT: String
+  clientSecretGTE: String
+  clientSecretLT: String
+  clientSecretLTE: String
+  clientSecretContains: String
+  clientSecretHasPrefix: String
+  clientSecretHasSuffix: String
+  clientSecretIsNil: Boolean
+  clientSecretNotNil: Boolean
+  clientSecretEqualFold: String
+  clientSecretContainsFold: String
   """
   issuer_url field predicates
   """
@@ -679,14 +834,18 @@ type Approval implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: ApprovalStatusPhase!
+  statusPhase: ApprovalStatusPhase
   statusMessage: String
+  environment: String
+  namespace: String!
   action: String!
   strategy: ApprovalStrategy!
   requester: RequesterInfo!
   decider: DeciderInfo!
+  deciderTeamName: String!
   decisions: [Decision!]!
-  availableTransitions: [AvailableTransition!]!
+  availableTransitions: [AvailableTransition!]
+  name: String!
   state: ApprovalState!
 }
 """
@@ -743,14 +902,18 @@ type ApprovalRequest implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: ApprovalRequestStatusPhase!
+  statusPhase: ApprovalRequestStatusPhase
   statusMessage: String
+  environment: String
+  namespace: String!
   action: String!
   strategy: ApprovalRequestStrategy!
   requester: RequesterInfo!
   decider: DeciderInfo!
+  deciderTeamName: String!
   decisions: [Decision!]!
-  availableTransitions: [AvailableTransition!]!
+  availableTransitions: [AvailableTransition!]
+  name: String!
   state: ApprovalRequestState!
 }
 """
@@ -877,6 +1040,8 @@ input ApprovalRequestWhereInput {
   statusPhaseNEQ: ApprovalRequestStatusPhase
   statusPhaseIn: [ApprovalRequestStatusPhase!]
   statusPhaseNotIn: [ApprovalRequestStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -895,6 +1060,40 @@ input ApprovalRequestWhereInput {
   statusMessageNotNil: Boolean
   statusMessageEqualFold: String
   statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
   """
   action field predicates
   """
@@ -918,6 +1117,38 @@ input ApprovalRequestWhereInput {
   strategyNEQ: ApprovalRequestStrategy
   strategyIn: [ApprovalRequestStrategy!]
   strategyNotIn: [ApprovalRequestStrategy!]
+  """
+  decider_team_name field predicates
+  """
+  deciderTeamName: String
+  deciderTeamNameNEQ: String
+  deciderTeamNameIn: [String!]
+  deciderTeamNameNotIn: [String!]
+  deciderTeamNameGT: String
+  deciderTeamNameGTE: String
+  deciderTeamNameLT: String
+  deciderTeamNameLTE: String
+  deciderTeamNameContains: String
+  deciderTeamNameHasPrefix: String
+  deciderTeamNameHasSuffix: String
+  deciderTeamNameEqualFold: String
+  deciderTeamNameContainsFold: String
+  """
+  name field predicates
+  """
+  name: String
+  nameNEQ: String
+  nameIn: [String!]
+  nameNotIn: [String!]
+  nameGT: String
+  nameGTE: String
+  nameLT: String
+  nameLTE: String
+  nameContains: String
+  nameHasPrefix: String
+  nameHasSuffix: String
+  nameEqualFold: String
+  nameContainsFold: String
   """
   state field predicates
   """
@@ -1007,6 +1238,8 @@ input ApprovalWhereInput {
   statusPhaseNEQ: ApprovalStatusPhase
   statusPhaseIn: [ApprovalStatusPhase!]
   statusPhaseNotIn: [ApprovalStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -1025,6 +1258,40 @@ input ApprovalWhereInput {
   statusMessageNotNil: Boolean
   statusMessageEqualFold: String
   statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
   """
   action field predicates
   """
@@ -1049,47 +1316,21 @@ input ApprovalWhereInput {
   strategyIn: [ApprovalStrategy!]
   strategyNotIn: [ApprovalStrategy!]
   """
-  state field predicates
+  decider_team_name field predicates
   """
-  state: ApprovalState
-  stateNEQ: ApprovalState
-  stateIn: [ApprovalState!]
-  stateNotIn: [ApprovalState!]
-  """
-  api_subscription edge predicates
-  """
-  hasAPISubscription: Boolean
-  hasAPISubscriptionWith: [ApiSubscriptionWhereInput!]
-}
-"""
-Define a Relay Cursor type:
-https://relay.dev/graphql/connections.htm#sec-Cursor
-"""
-scalar Cursor
-type Environment implements Node {
-  id: ID!
-  name: String!
-  teamEnvironments: [TeamEnvironment!]
-}
-"""
-EnvironmentWhereInput is used for filtering Environment objects.
-Input was generated by ent.
-"""
-input EnvironmentWhereInput {
-  not: EnvironmentWhereInput
-  and: [EnvironmentWhereInput!]
-  or: [EnvironmentWhereInput!]
-  """
-  id field predicates
-  """
-  id: ID
-  idNEQ: ID
-  idIn: [ID!]
-  idNotIn: [ID!]
-  idGT: ID
-  idGTE: ID
-  idLT: ID
-  idLTE: ID
+  deciderTeamName: String
+  deciderTeamNameNEQ: String
+  deciderTeamNameIn: [String!]
+  deciderTeamNameNotIn: [String!]
+  deciderTeamNameGT: String
+  deciderTeamNameGTE: String
+  deciderTeamNameLT: String
+  deciderTeamNameLTE: String
+  deciderTeamNameContains: String
+  deciderTeamNameHasPrefix: String
+  deciderTeamNameHasSuffix: String
+  deciderTeamNameEqualFold: String
+  deciderTeamNameContainsFold: String
   """
   name field predicates
   """
@@ -1107,13 +1348,27 @@ input EnvironmentWhereInput {
   nameEqualFold: String
   nameContainsFold: String
   """
-  team_environments edge predicates
+  state field predicates
   """
-  hasTeamEnvironments: Boolean
-  hasTeamEnvironmentsWith: [TeamEnvironmentWhereInput!]
+  state: ApprovalState
+  stateNEQ: ApprovalState
+  stateIn: [ApprovalState!]
+  stateNotIn: [ApprovalState!]
+  """
+  api_subscription edge predicates
+  """
+  hasAPISubscription: Boolean
+  hasAPISubscriptionWith: [ApiSubscriptionWhereInput!]
 }
+"""
+Define a Relay Cursor type:
+https://relay.dev/graphql/connections.htm#sec-Cursor
+"""
+scalar Cursor
 type Group implements Node {
   id: ID!
+  environment: String
+  namespace: String!
   name: String!
   displayName: String!
   description: String!
@@ -1138,6 +1393,40 @@ input GroupWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
   """
   name field predicates
   """
@@ -1194,6 +1483,7 @@ input GroupWhereInput {
 }
 type Member implements Node {
   id: ID!
+  environment: String
   name: String!
   email: String!
   team: Team
@@ -1217,6 +1507,24 @@ input MemberWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
   """
   name field predicates
   """
@@ -1511,14 +1819,16 @@ type Team implements Node {
   id: ID!
   createdAt: Time!
   lastModifiedAt: Time!
-  statusPhase: TeamStatusPhase!
+  statusPhase: TeamStatusPhase
   statusMessage: String
+  environment: String
+  namespace: String!
   name: String!
   email: String!
   category: TeamCategory!
+  roverTokenRef: String
   group: Group
   members: [Member!]
-  teamEnvironments: [TeamEnvironment!]
   applications(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -1587,60 +1897,6 @@ type TeamEdge {
   A cursor for use in pagination.
   """
   cursor: Cursor!
-}
-type TeamEnvironment implements Node {
-  id: ID!
-  roverTokenRef: String
-  team: Team!
-  environment: Environment!
-}
-"""
-TeamEnvironmentWhereInput is used for filtering TeamEnvironment objects.
-Input was generated by ent.
-"""
-input TeamEnvironmentWhereInput {
-  not: TeamEnvironmentWhereInput
-  and: [TeamEnvironmentWhereInput!]
-  or: [TeamEnvironmentWhereInput!]
-  """
-  id field predicates
-  """
-  id: ID
-  idNEQ: ID
-  idIn: [ID!]
-  idNotIn: [ID!]
-  idGT: ID
-  idGTE: ID
-  idLT: ID
-  idLTE: ID
-  """
-  rover_token_ref field predicates
-  """
-  roverTokenRef: String
-  roverTokenRefNEQ: String
-  roverTokenRefIn: [String!]
-  roverTokenRefNotIn: [String!]
-  roverTokenRefGT: String
-  roverTokenRefGTE: String
-  roverTokenRefLT: String
-  roverTokenRefLTE: String
-  roverTokenRefContains: String
-  roverTokenRefHasPrefix: String
-  roverTokenRefHasSuffix: String
-  roverTokenRefIsNil: Boolean
-  roverTokenRefNotNil: Boolean
-  roverTokenRefEqualFold: String
-  roverTokenRefContainsFold: String
-  """
-  team edge predicates
-  """
-  hasTeam: Boolean
-  hasTeamWith: [TeamWhereInput!]
-  """
-  environment edge predicates
-  """
-  hasEnvironment: Boolean
-  hasEnvironmentWith: [EnvironmentWhereInput!]
 }
 """
 Ordering options for Team connections
@@ -1720,6 +1976,8 @@ input TeamWhereInput {
   statusPhaseNEQ: TeamStatusPhase
   statusPhaseIn: [TeamStatusPhase!]
   statusPhaseNotIn: [TeamStatusPhase!]
+  statusPhaseIsNil: Boolean
+  statusPhaseNotNil: Boolean
   """
   status_message field predicates
   """
@@ -1738,6 +1996,40 @@ input TeamWhereInput {
   statusMessageNotNil: Boolean
   statusMessageEqualFold: String
   statusMessageContainsFold: String
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
+  """
+  namespace field predicates
+  """
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
   """
   name field predicates
   """
@@ -1778,6 +2070,24 @@ input TeamWhereInput {
   categoryIn: [TeamCategory!]
   categoryNotIn: [TeamCategory!]
   """
+  rover_token_ref field predicates
+  """
+  roverTokenRef: String
+  roverTokenRefNEQ: String
+  roverTokenRefIn: [String!]
+  roverTokenRefNotIn: [String!]
+  roverTokenRefGT: String
+  roverTokenRefGTE: String
+  roverTokenRefLT: String
+  roverTokenRefLTE: String
+  roverTokenRefContains: String
+  roverTokenRefHasPrefix: String
+  roverTokenRefHasSuffix: String
+  roverTokenRefIsNil: Boolean
+  roverTokenRefNotNil: Boolean
+  roverTokenRefEqualFold: String
+  roverTokenRefContainsFold: String
+  """
   group edge predicates
   """
   hasGroup: Boolean
@@ -1787,11 +2097,6 @@ input TeamWhereInput {
   """
   hasMembers: Boolean
   hasMembersWith: [MemberWhereInput!]
-  """
-  team_environments edge predicates
-  """
-  hasTeamEnvironments: Boolean
-  hasTeamEnvironmentsWith: [TeamEnvironmentWhereInput!]
   """
   applications edge predicates
   """
@@ -1804,6 +2109,7 @@ The builtin Time type
 scalar Time
 type Zone implements Node {
   id: ID!
+  environment: String
   name: String!
   gatewayURL: String
   visibility: ZoneVisibility!
@@ -1835,6 +2141,24 @@ input ZoneWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
+  """
+  environment field predicates
+  """
+  environment: String
+  environmentNEQ: String
+  environmentIn: [String!]
+  environmentNotIn: [String!]
+  environmentGT: String
+  environmentGTE: String
+  environmentLT: String
+  environmentLTE: String
+  environmentContains: String
+  environmentHasPrefix: String
+  environmentHasSuffix: String
+  environmentIsNil: Boolean
+  environmentNotNil: Boolean
+  environmentEqualFold: String
+  environmentContainsFold: String
   """
   name field predicates
   """

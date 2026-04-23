@@ -793,6 +793,16 @@ func (in *RealmSpec) DeepCopyInto(out *RealmSpec) {
 		in, out := &in.Gateway, &out.Gateway
 		*out = (*in).DeepCopy()
 	}
+	if in.Urls != nil {
+		in, out := &in.Urls, &out.Urls
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.IssuerUrls != nil {
+		in, out := &in.IssuerUrls, &out.IssuerUrls
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.DefaultConsumers != nil {
 		in, out := &in.DefaultConsumers, &out.DefaultConsumers
 		*out = make([]string, len(*in))

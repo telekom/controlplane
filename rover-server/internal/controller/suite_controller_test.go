@@ -93,7 +93,11 @@ var _ = BeforeSuite(func() {
 	// This is where you would set up any necessary test data or configurations
 	// For example, you might want to create a mock store or set up a test database connection
 
-	InitOrDie(ctx, kconfig.GetConfigOrDie())
+	var cfg *rest.Config
+	if !mockObjectStore {
+		cfg = kconfig.GetConfigOrDie()
+	}
+	InitOrDie(ctx, cfg)
 
 	// TODO Add more tests with teamToken in apispecification, eventspecification, rover
 	// Can be done once the issue with the team token is fixed in common-server

@@ -1,0 +1,30 @@
+---
+sidebar_position: 4
+---
+
+# Application Domain
+
+The Application domain provides a Kubernetes-native abstraction for managing applications within the Control Plane. An Application logically groups together all the API exposures, subscriptions, and event configurations for a single service.
+
+## Custom Resources
+
+<CRDReference domain="application" />
+
+### Provisioning
+
+When an Application is created with `needsClient: true` and `needsConsumer: true`, the operator:
+
+1. Creates an **Identity Client** with the client ID `{team}--{application-name}`
+2. Creates a **Gateway Consumer** so the application can be identified at the API gateway
+
+## Domain Interactions
+
+- **Rover domain** — Rover files create Application resources as part of the reconciliation process.
+- **Identity domain** — The Application operator creates identity clients.
+- **Gateway domain** — The Application operator creates gateway consumers.
+- **Secret Manager** — Handles credential storage for application clients.
+
+## Related Pages
+
+- [User Journey: Managing Applications](../user-journey/applications.mdx)
+- [Architecture: Rover Domain](./rover.mdx)

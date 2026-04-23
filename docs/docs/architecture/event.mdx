@@ -1,0 +1,43 @@
+---
+sidebar_position: 11
+---
+
+# Event Domain
+
+:::info Optional Feature
+The Event domain is an optional feature that must be explicitly enabled by a platform administrator through an EventConfig resource.
+:::
+
+The Event domain handles event publishing and subscribing within the Control Plane. It serves as the business-logic layer between the **Rover** domain (user configuration) and the **PubSub** domain (runtime configuration). Its core responsibilities include managing event types, handling approval for event subscriptions, and orchestrating cross-zone event meshing.
+
+## Custom Resources
+
+<CRDReference domain="event" />
+
+## Cross-Zone Meshing
+
+When event publishers and subscribers are in different zones, the Event domain automatically creates **proxy routes** to deliver events across zone boundaries. This enables:
+
+- Events published in one cloud environment to be consumed in another
+- SSE streams to be proxied across zones
+- Callback deliveries to reach subscribers in remote zones
+
+The mesh topology is configured through the EventConfig resource. With `fullMesh: true`, every zone can communicate with every other zone. Alternatively, you can list specific zone names for selective meshing.
+
+## Domain Interactions
+
+The Event domain has the broadest cross-domain interaction surface in the platform:
+
+- **Rover domain** — Rover files create EventExposure and EventSubscription resources.
+- **PubSub domain** — The Event domain creates EventStore, Publisher, and Subscriber resources.
+- **Gateway domain** — Creates routes for publishing, SSE delivery, and cross-zone proxy communication.
+- **Identity domain** — Creates clients for OAuth2 token exchange between zones.
+- **Application domain** — Reads Application resources for publisher and subscriber metadata.
+- **Approval domain** — Creates Approval and ApprovalRequest resources for event subscriptions.
+- **Admin domain** — Watches Zone resources for configuration changes.
+
+## Related Pages
+
+- [User Journey: Exposing Events](../user-journey/exposing-events.mdx)
+- [User Journey: Subscribing to Events](../user-journey/subscribing-to-events.mdx)
+- [Architecture: PubSub Domain](./pubsub.mdx)

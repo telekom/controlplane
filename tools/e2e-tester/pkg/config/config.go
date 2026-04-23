@@ -31,7 +31,8 @@ type Suite struct {
 	Name         string   `mapstructure:"name"`
 	Description  string   `mapstructure:"description"` // Optional description of the test suite purpose
 	Cases        []*Case  `mapstructure:"cases"`
-	Environments []string `mapstructure:"environments"` // Required list of environments to run this suite in
+	Environments []string `mapstructure:"environments"`  // Required list of environments to run this suite in
+	SnapshotsDir string   `mapstructure:"snapshots_dir"` // Optional per-suite snapshot directory
 }
 
 func (s *Suite) DeepCopy() *Suite {
@@ -49,6 +50,7 @@ func (s *Suite) DeepCopy() *Suite {
 		Description:  s.Description,
 		Cases:        newCases,
 		Environments: newEnvs,
+		SnapshotsDir: s.SnapshotsDir,
 	}
 }
 

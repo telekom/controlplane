@@ -87,6 +87,18 @@ rules:
   - list
   - watch
 - apiGroups:
+  - permission.cp.ei.telekom.de
+  resources:
+  - permissionsets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - rover.cp.ei.telekom.de
   resources:
   - apispecifications

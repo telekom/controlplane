@@ -6,7 +6,7 @@ package resolvers
 
 import (
 	"github.com/telekom/controlplane/controlplane-api/ent"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 func mapTeamInfo(team *ent.Team, group *ent.Group) *model.TeamInfo {
@@ -44,10 +44,15 @@ func mapApiExposureInfo(exposure *ent.ApiExposure, app *ent.Application, team *e
 }
 
 func mapApiSubscriptionInfo(sub *ent.ApiSubscription, app *ent.Application, team *ent.Team, group *ent.Group) *model.ApiSubscriptionInfo {
+	var statusPhase *string
+	if sub.StatusPhase != nil {
+		s := string(*sub.StatusPhase)
+		statusPhase = &s
+	}
 	return &model.ApiSubscriptionInfo{
 		ID:                   sub.ID,
 		BasePath:             sub.BasePath,
-		StatusPhase:          string(sub.StatusPhase),
+		StatusPhase:          statusPhase,
 		StatusMessage:        sub.StatusMessage,
 		OwnerApplicationName: app.Name,
 		OwnerTeam:            mapTeamInfo(team, group),

@@ -6,13 +6,12 @@ package testutil
 
 import (
 	"github.com/telekom/controlplane/controlplane-api/ent"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // SeedData holds references to all entities created by SeedStandard.
 type SeedData struct {
 	ZoneEU *ent.Zone
-	EnvDev *ent.Environment
 
 	GroupA *ent.Group
 	GroupB *ent.Group
@@ -33,9 +32,6 @@ type SeedData struct {
 
 	MemberAlpha *ent.Member
 	MemberBeta  *ent.Member
-
-	TeamEnvAlpha *ent.TeamEnvironment
-	TeamEnvBeta  *ent.TeamEnvironment
 }
 
 // SeedStandard creates a standard set of test data covering all entity types.
@@ -46,15 +42,14 @@ func SeedStandard(client *ent.Client) *SeedData {
 
 	// Public reference data
 	s.ZoneEU = must(client.Zone.Create().SetName("zone-eu").Save(ctx))
-	s.EnvDev = must(client.Environment.Create().SetName("env-dev").Save(ctx))
-	s.GroupA = must(client.Group.Create().SetName("group-a").SetDisplayName("Group A").Save(ctx))
-	s.GroupB = must(client.Group.Create().SetName("group-b").SetDisplayName("Group B").Save(ctx))
+	s.GroupA = must(client.Group.Create().SetNamespace("default").SetName("group-a").SetDisplayName("Group A").Save(ctx))
+	s.GroupB = must(client.Group.Create().SetNamespace("default").SetName("group-b").SetDisplayName("Group B").Save(ctx))
 
 	// Teams
 	s.TeamAlpha = must(client.Team.Create().
-		SetName("team-alpha").SetEmail("alpha@test.dev").SetGroup(s.GroupA).Save(ctx))
+		SetNamespace("default").SetName("team-alpha").SetEmail("alpha@test.dev").SetGroup(s.GroupA).Save(ctx))
 	s.TeamBeta = must(client.Team.Create().
-		SetName("team-beta").SetEmail("beta@test.dev").SetGroup(s.GroupB).Save(ctx))
+		SetNamespace("default").SetName("team-beta").SetEmail("beta@test.dev").SetGroup(s.GroupB).Save(ctx))
 
 	// Members
 	s.MemberAlpha = must(client.Member.Create().
@@ -62,28 +57,24 @@ func SeedStandard(client *ent.Client) *SeedData {
 	s.MemberBeta = must(client.Member.Create().
 		SetName("Bob Beta").SetEmail("bob@test.dev").SetTeam(s.TeamBeta).Save(ctx))
 
-	// TeamEnvironments
-	s.TeamEnvAlpha = must(client.TeamEnvironment.Create().
-		SetTeam(s.TeamAlpha).SetEnvironment(s.EnvDev).Save(ctx))
-	s.TeamEnvBeta = must(client.TeamEnvironment.Create().
-		SetTeam(s.TeamBeta).SetEnvironment(s.EnvDev).Save(ctx))
-
 	// Applications
 	s.AppAlpha = must(client.Application.Create().
-		SetName("app-alpha").SetClientID("client-alpha").
+		SetNamespace("default").SetName("app-alpha").SetClientID("client-alpha").
 		SetOwnerTeam(s.TeamAlpha).SetZone(s.ZoneEU).Save(ctx))
 	s.AppBeta = must(client.Application.Create().
-		SetName("app-beta").SetClientID("client-beta").
+		SetNamespace("default").SetName("app-beta").SetClientID("client-beta").
 		SetOwnerTeam(s.TeamBeta).SetZone(s.ZoneEU).Save(ctx))
 
 	// API Exposures
 	s.ExposureAlpha = must(client.ApiExposure.Create().
-		SetBasePath("/alpha").SetOwner(s.AppAlpha).Save(ctx))
+		SetNamespace("default").SetBasePath("/alpha").SetOwner(s.AppAlpha).Save(ctx))
 	s.ExposureBeta = must(client.ApiExposure.Create().
-		SetBasePath("/beta").SetOwner(s.AppBeta).Save(ctx))
+		SetNamespace("default").SetBasePath("/beta").SetOwner(s.AppBeta).Save(ctx))
 
 	// Subscription: app-beta subscribes to exposure-alpha (cross-team)
 	s.Subscription = must(client.ApiSubscription.Create().
+		SetNamespace("default").
+		SetName("sub-alpha").
 		SetBasePath("/alpha").
 		SetOwner(s.AppBeta).
 		SetTarget(s.ExposureAlpha).
@@ -91,15 +82,21 @@ func SeedStandard(client *ent.Client) *SeedData {
 
 	// Approval + ApprovalRequest on that subscription
 	s.Approval = must(client.Approval.Create().
+		SetNamespace("prod").
+		SetName("apisubscription--sub-alpha").
 		SetAction("ALLOW").
 		SetRequester(model.RequesterInfo{TeamName: "team-beta"}).
 		SetDecider(model.DeciderInfo{TeamName: "team-alpha"}).
+		SetDeciderTeamName("team-alpha").
 		SetAPISubscription(s.Subscription).
 		Save(ctx))
 	s.ApprovalRequest = must(client.ApprovalRequest.Create().
+		SetNamespace("prod").
+		SetName("apisubscription--sub-alpha--req-1").
 		SetAction("ALLOW").
 		SetRequester(model.RequesterInfo{TeamName: "team-beta"}).
 		SetDecider(model.DeciderInfo{TeamName: "team-alpha"}).
+		SetDeciderTeamName("team-alpha").
 		SetAPISubscription(s.Subscription).
 		Save(ctx))
 

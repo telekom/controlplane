@@ -35,7 +35,7 @@ spec:
                     "items": [
                       {
                         "type": "Image",
-                        "url": "https://raw.githubusercontent.com/telekom/controlplane/main/docs/pages/static/img/eni-tardis-small.png",
+                        "url": "https://raw.githubusercontent.com/telekom/controlplane/main/docs/static/img/eni-tardis-small.png",
                         "altText": "TARDIS Logo",
                         "size": "Medium",
                         "style": "Default",

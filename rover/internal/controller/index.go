@@ -13,6 +13,7 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller/index"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 )
@@ -55,6 +56,14 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &eventv1.EventType{})
 		if err != nil {
 			ctrl.Log.Error(err, "unable to create ownerIndex for EventType")
+			os.Exit(1)
+		}
+	}
+
+	if cconfig.FeaturePermission.IsEnabled() {
+		err = index.SetOwnerIndex(ctx, mgr.GetFieldIndexer(), &permissionv1.PermissionSet{})
+		if err != nil {
+			ctrl.Log.Error(err, "unable to create ownerIndex for PermissionSet")
 			os.Exit(1)
 		}
 	}

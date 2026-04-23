@@ -144,14 +144,22 @@ func (r *Runner) buildSuites() ([]*SuiteRunner, error) {
 		// Create a SuiteRunner for each processed suite
 		for _, s := range processedSuites {
 
+			// Use per-suite snapshots dir if configured, otherwise fall back to global
+			suiteSnapshotsDir := r.snapshotsDir
+			suiteSnapshotMgr := r.snapshotMgr
+			if s.SnapshotsDir != "" {
+				suiteSnapshotsDir = s.SnapshotsDir
+				suiteSnapshotMgr = snapshot.NewManager(suiteSnapshotsDir)
+			}
+
 			// Create a new SuiteRunner
 			sr := NewSuiteRunner(
 				s,
-				r.snapshotMgr,
+				suiteSnapshotMgr,
 				r.reporter,
 				r.updateMode,
 				r.continueOnFail,
-				r.snapshotsDir,
+				suiteSnapshotsDir,
 				r.envManager,
 				r.config.RoverCtl,
 				r.config, // Pass full config

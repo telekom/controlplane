@@ -54,6 +54,6 @@ var _ = Describe("SystemContext", func() {
 		ctx := viewer.SystemContext(context.Background())
 		decision, ok := privacy.DecisionFromContext(ctx)
 		Expect(ok).To(BeTrue())
-		Expect(decision).To(BeNil())
+		Expect(decision).ToNot(HaveOccurred())
 	})
 })

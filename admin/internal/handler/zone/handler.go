@@ -21,6 +21,7 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
@@ -143,7 +144,9 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 			return err
 		}
 		obj.Status.TeamApiGatewayRealm = types.ObjectRefFromObject(teamApisGatewayRealm)
-		obj.Status.Links.TeamIssuer = teamApisGatewayRealm.Spec.IssuerUrl
+		if len(teamApisGatewayRealm.Spec.IssuerUrls) > 0 {
+			obj.Status.Links.TeamIssuer = teamApisGatewayRealm.Spec.IssuerUrls[0]
+		}
 
 		// Team api routes
 		var teamApiRouteRefs []types.ObjectRef
@@ -160,6 +163,18 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 		obj.Status.TeamApiGatewayRealm = nil
 		obj.Status.TeamApiRoutes = nil
 		obj.Status.Links.TeamIssuer = ""
+	}
+
+	// Populate Permissions URL if configured and feature enabled
+	if cconfig.FeaturePermission.IsEnabled() && obj.Spec.Permissions != nil {
+		// Use url.JoinPath to properly handle slashes when combining gateway URL with ApiBasePath
+		permissionsUrl, err := url.JoinPath(obj.Status.Links.Url, obj.Spec.Permissions.ApiBasePath)
+		if err != nil {
+			return errors.Wrap(err, "failed to build permissions URL")
+		}
+		obj.Status.Links.PermissionsUrl = permissionsUrl
+	} else {
+		obj.Status.Links.PermissionsUrl = ""
 	}
 
 	obj.SetCondition(condition.NewReadyCondition("ZoneProvisioned", "Zone has been provisioned"))
@@ -198,11 +213,15 @@ func createTeamApiRoute(ctx context.Context, handlingContext HandlingContext, te
 		if err != nil {
 			return err
 		}
+		issuerUrl := ""
+		if len(gatewayRealm.Spec.IssuerUrls) > 0 {
+			issuerUrl = gatewayRealm.Spec.IssuerUrls[0]
+		}
 		downstream := gatewayapi.Downstream{
 			Host:      downstreamUrl.Host,
 			Port:      0,
 			Path:      downstreamUrl.Path,
-			IssuerUrl: gatewayRealm.Spec.IssuerUrl,
+			IssuerUrl: issuerUrl,
 		}
 
 		teamRoute.Spec = gatewayapi.RouteSpec{
@@ -272,8 +291,8 @@ func createGatewayRealm(ctx context.Context, handlingContext HandlingContext, ga
 
 		gatewayRealm.Spec = gatewayapi.RealmSpec{
 			Gateway:          types.ObjectRefFromObject(gateway),
-			Url:              handlingContext.Zone.Spec.Gateway.Url,
-			IssuerUrl:        urls.ForGatewayRealm(handlingContext.Zone.Spec.IdentityProvider.Url, realmName),
+			Urls:             []string{handlingContext.Zone.Spec.Gateway.Url},
+			IssuerUrls:       []string{urls.ForGatewayRealm(handlingContext.Zone.Spec.IdentityProvider.Url, realmName)},
 			DefaultConsumers: []string{},
 		}
 		return nil
