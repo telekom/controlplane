@@ -27,6 +27,7 @@ import (
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 )
 
 func newTestApp() *applicationv1.Application {
@@ -67,11 +68,22 @@ func newScheme() *runtime.Scheme {
 	_ = applicationv1.AddToScheme(s)
 	_ = identityv1.AddToScheme(s)
 	_ = adminv1.AddToScheme(s)
+	_ = notificationv1.AddToScheme(s)
 	return s
 }
 
-// setupHappyPath configures the mock for a full CreateOrUpdate without rotation.
-func setupHappyPath(mockClient *fake.MockJanitorClient, app *applicationv1.Application, zone *adminv1.Zone, anyChanged bool) {
+// identityClientMutator is an optional function that populates identity client
+// status fields during CreateOrUpdate. Used to simulate a converged identity client
+// that has been reconciled by the identity controller.
+type identityClientMutator func(idpClient *identityv1.Client)
+
+// setupHappyPath configures the mock for a full CreateOrUpdate.
+// The optional idpMutator is called during the identity client CreateOrUpdate to
+// populate status fields (e.g., expiry timestamps) on the idpClient object.
+// When idpMutators are provided, the identity client CreateOrUpdate returns
+// OperationResultNone (simulating a converged, unchanged client whose status is
+// up to date). Otherwise it returns OperationResultCreated.
+func setupHappyPath(mockClient *fake.MockJanitorClient, zone *adminv1.Zone, anyChanged bool, idpMutators ...identityClientMutator) {
 	scheme := newScheme()
 
 	// AddKnownTypeToState calls
@@ -89,12 +101,22 @@ func setupHappyPath(mockClient *fake.MockJanitorClient, app *applicationv1.Appli
 	mockClient.EXPECT().Scheme().Return(scheme).Maybe()
 
 	// CreateOrUpdate for identity client
+	idpResult := controllerutil.OperationResultCreated
+	if len(idpMutators) > 0 {
+		idpResult = controllerutil.OperationResultNone
+	}
 	mockClient.EXPECT().
 		CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Client"), mock.Anything).
 		Run(func(_ context.Context, obj pkgclient.Object, fn controllerutil.MutateFn) {
 			_ = fn()
+			// Apply optional identity client status mutators (simulates converged identity client)
+			if idpClient, ok := obj.(*identityv1.Client); ok {
+				for _, m := range idpMutators {
+					m(idpClient)
+				}
+			}
 		}).
-		Return(controllerutil.OperationResultCreated, nil)
+		Return(idpResult, nil)
 
 	// CreateOrUpdate for gateway consumer
 	mockClient.EXPECT().
@@ -111,6 +133,19 @@ func setupHappyPath(mockClient *fake.MockJanitorClient, app *applicationv1.Appli
 
 	// AnyChanged
 	mockClient.EXPECT().AnyChanged().Return(anyChanged)
+
+	// When converged (anyChanged=false), notifications may be sent
+	if !anyChanged {
+		// List notification channels (called by builder.WithDefaultChannels)
+		mockClient.EXPECT().
+			List(mock.Anything, mock.AnythingOfType("*v1.NotificationChannelList"), mock.Anything).
+			Return(nil).Maybe()
+
+		// CreateOrUpdate for notification (called by builder.Send)
+		mockClient.EXPECT().
+			CreateOrUpdate(mock.Anything, mock.AnythingOfType("*v1.Notification"), mock.Anything).
+			Return(controllerutil.OperationResultCreated, nil).Maybe()
+	}
 }
 
 var _ = Describe("ApplicationHandler - Secret Rotation", func() {
@@ -134,7 +169,7 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 			It("should not set SecretRotation condition when no rotation requested", func() {
 				mockClient := fake.NewMockJanitorClient(GinkgoT())
 				ctx = client.WithClient(ctx, mockClient)
-				setupHappyPath(mockClient, app, zone, false)
+				setupHappyPath(mockClient, zone, false)
 
 				err := handler.CreateOrUpdate(ctx, app)
 				Expect(err).ToNot(HaveOccurred())
@@ -146,7 +181,7 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 			It("should set Ready condition when sub-resources are up to date", func() {
 				mockClient := fake.NewMockJanitorClient(GinkgoT())
 				ctx = client.WithClient(ctx, mockClient)
-				setupHappyPath(mockClient, app, zone, false)
+				setupHappyPath(mockClient, zone, false)
 
 				err := handler.CreateOrUpdate(ctx, app)
 				Expect(err).ToNot(HaveOccurred())
@@ -159,7 +194,7 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 			It("should set Status.ClientSecret only after convergence", func() {
 				mockClient := fake.NewMockJanitorClient(GinkgoT())
 				ctx = client.WithClient(ctx, mockClient)
-				setupHappyPath(mockClient, app, zone, false)
+				setupHappyPath(mockClient, zone, false)
 
 				err := handler.CreateOrUpdate(ctx, app)
 				Expect(err).ToNot(HaveOccurred())
@@ -170,7 +205,7 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 			It("should not update Status.ClientSecret before convergence", func() {
 				mockClient := fake.NewMockJanitorClient(GinkgoT())
 				ctx = client.WithClient(ctx, mockClient)
-				setupHappyPath(mockClient, app, zone, true)
+				setupHappyPath(mockClient, zone, true)
 
 				app.Status.ClientSecret = "$<previous-ref>"
 
@@ -184,7 +219,7 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 			It("should set Processing condition when sub-resources changed", func() {
 				mockClient := fake.NewMockJanitorClient(GinkgoT())
 				ctx = client.WithClient(ctx, mockClient)
-				setupHappyPath(mockClient, app, zone, true)
+				setupHappyPath(mockClient, zone, true)
 
 				err := handler.CreateOrUpdate(ctx, app)
 				Expect(err).ToNot(HaveOccurred())
@@ -203,7 +238,7 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 			It("should set SecretRotation condition to InProgress on first reconcile", func() {
 				mockClient := fake.NewMockJanitorClient(GinkgoT())
 				ctx = client.WithClient(ctx, mockClient)
-				setupHappyPath(mockClient, app, zone, true) // changed=true on first reconcile
+				setupHappyPath(mockClient, zone, true) // changed=true on first reconcile
 
 				err := handler.CreateOrUpdate(ctx, app)
 				Expect(err).ToNot(HaveOccurred())
@@ -217,7 +252,7 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 			It("should not copy spec.rotatedSecret to status during InProgress (before convergence)", func() {
 				mockClient := fake.NewMockJanitorClient(GinkgoT())
 				ctx = client.WithClient(ctx, mockClient)
-				setupHappyPath(mockClient, app, zone, true)
+				setupHappyPath(mockClient, zone, true)
 
 				err := handler.CreateOrUpdate(ctx, app)
 				Expect(err).ToNot(HaveOccurred())
@@ -229,7 +264,15 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 			It("should transition to Success when sub-resources settle (AnyChanged=false)", func() {
 				mockClient := fake.NewMockJanitorClient(GinkgoT())
 				ctx = client.WithClient(ctx, mockClient)
-				setupHappyPath(mockClient, app, zone, false)
+
+				rotatedExpires := metav1.NewTime(time.Now().Add(24 * time.Hour))
+				currentExpires := metav1.NewTime(time.Now().Add(48 * time.Hour))
+
+				// Identity client CreateOrUpdate populates expiry timestamps
+				setupHappyPath(mockClient, zone, false, func(idpClient *identityv1.Client) {
+					idpClient.Status.RotatedSecretExpiresAt = &rotatedExpires
+					idpClient.Status.SecretExpiresAt = &currentExpires
+				})
 
 				// Simulate: condition already InProgress from previous reconcile
 				app.SetCondition(metav1.Condition{
@@ -238,18 +281,6 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 					Reason:  secret.SecretRotationReasonInProgress,
 					Message: "Secret rotation initiated",
 				})
-
-				// Mock Get for identity client status propagation
-				mockClient.EXPECT().
-					Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Client"), mock.Anything).
-					Run(func(_ context.Context, _ types.NamespacedName, obj pkgclient.Object, _ ...pkgclient.GetOption) {
-						idpClient := obj.(*identityv1.Client)
-						now := metav1.NewTime(time.Now().Add(24 * time.Hour))
-						expires := metav1.NewTime(time.Now().Add(48 * time.Hour))
-						idpClient.Status.RotatedSecretExpiresAt = &now
-						idpClient.Status.SecretExpiresAt = &expires
-					}).
-					Return(nil).Maybe()
 
 				err := handler.CreateOrUpdate(ctx, app)
 				Expect(err).ToNot(HaveOccurred())
@@ -266,7 +297,7 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 			It("should not re-set InProgress if already InProgress", func() {
 				mockClient := fake.NewMockJanitorClient(GinkgoT())
 				ctx = client.WithClient(ctx, mockClient)
-				setupHappyPath(mockClient, app, zone, true) // still changing
+				setupHappyPath(mockClient, zone, true) // still changing
 
 				// Already InProgress
 				app.SetCondition(metav1.Condition{
@@ -288,7 +319,15 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 			It("should propagate expiry timestamps from identity client on Success", func() {
 				mockClient := fake.NewMockJanitorClient(GinkgoT())
 				ctx = client.WithClient(ctx, mockClient)
-				setupHappyPath(mockClient, app, zone, false)
+
+				rotatedExpires := metav1.NewTime(time.Now().Add(24 * time.Hour))
+				currentExpires := metav1.NewTime(time.Now().Add(48 * time.Hour))
+
+				// Identity client CreateOrUpdate populates expiry timestamps
+				setupHappyPath(mockClient, zone, false, func(idpClient *identityv1.Client) {
+					idpClient.Status.RotatedSecretExpiresAt = &rotatedExpires
+					idpClient.Status.SecretExpiresAt = &currentExpires
+				})
 
 				// Simulate InProgress
 				app.SetCondition(metav1.Condition{
@@ -297,20 +336,6 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 					Reason:  secret.SecretRotationReasonInProgress,
 					Message: "Secret rotation initiated",
 				})
-
-				// The identity client ref was set during CreateIdentityClient
-				// propagateRotationStatus will Get the client refs from status
-				rotatedExpires := metav1.NewTime(time.Now().Add(24 * time.Hour))
-				currentExpires := metav1.NewTime(time.Now().Add(48 * time.Hour))
-
-				mockClient.EXPECT().
-					Get(mock.Anything, mock.Anything, mock.AnythingOfType("*v1.Client"), mock.Anything).
-					Run(func(_ context.Context, _ types.NamespacedName, obj pkgclient.Object, _ ...pkgclient.GetOption) {
-						idpClient := obj.(*identityv1.Client)
-						idpClient.Status.RotatedSecretExpiresAt = &rotatedExpires
-						idpClient.Status.SecretExpiresAt = &currentExpires
-					}).
-					Return(nil).Maybe()
 
 				err := handler.CreateOrUpdate(ctx, app)
 				Expect(err).ToNot(HaveOccurred())
@@ -324,7 +349,7 @@ var _ = Describe("ApplicationHandler - Secret Rotation", func() {
 			It("should not re-initiate rotation after Success when spec.rotatedSecret matches status", func() {
 				mockClient := fake.NewMockJanitorClient(GinkgoT())
 				ctx = client.WithClient(ctx, mockClient)
-				setupHappyPath(mockClient, app, zone, false)
+				setupHappyPath(mockClient, zone, false)
 
 				// Simulate completed rotation: condition=Success, spec and status match
 				app.Status.RotatedClientSecret = app.Spec.RotatedSecret

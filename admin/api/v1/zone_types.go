@@ -44,6 +44,13 @@ type SecretRotationConfig struct {
 	// This is the interval at which the rotation process will be triggered.
 	// +kubebuilder:validation:Required
 	RotationInterval metav1.Duration `json:"rotationInterval"`
+
+	// NotificationThreshold is the duration before secret expiry at which a
+	// notification is sent to the owning team, urging them to rotate their secret.
+	// For example, if RotationInterval is 30 days and NotificationThreshold is
+	// 7 days, the team will be notified 7 days before their secret expires.
+	// +kubebuilder:validation:Required
+	NotificationThreshold metav1.Duration `json:"notificationThreshold"`
 }
 
 type IdentityProviderConfig struct {

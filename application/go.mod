@@ -23,6 +23,7 @@ replace (
 	github.com/telekom/controlplane/common-server => ../common-server
 	github.com/telekom/controlplane/gateway/api => ../gateway/api
 	github.com/telekom/controlplane/identity/api => ../identity/api
+	github.com/telekom/controlplane/notification/api => ../notification/api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
 )
 
@@ -30,6 +31,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
 	github.com/stretchr/testify v1.11.1
+	github.com/telekom/controlplane/notification/api v0.0.0-20260421114335-9df837421c84
 	k8s.io/apimachinery v0.35.3
 	k8s.io/client-go v0.35.3
 	sigs.k8s.io/controller-runtime v0.23.3

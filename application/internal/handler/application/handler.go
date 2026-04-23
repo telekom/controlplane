@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+// Package application implements the handler for the Application resource.
 package application
 
 import (
@@ -25,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 var _ handler.Handler[*application.Application] = &ApplicationHandler{}
@@ -134,8 +136,9 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 		if rotationInProgress {
 			log := logr.FromContextOrDiscard(ctx)
 
-			// Propagate expiry timestamps from the primary identity client
-			if propagateRotationStatus(ctx, app, c) {
+			// Expiry timestamps are already propagated by CreateIdentityClient.
+			// Check that they are available (identity controller has reconciled).
+			if app.Status.RotatedExpiresAt != nil {
 				// Set rotation status fields only after successful convergence
 				app.Status.RotatedClientSecret = app.Spec.RotatedSecret
 
@@ -146,14 +149,27 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 					Message: "Secret rotation completed successfully",
 				})
 
+				// Send rotation-completed notification (non-blocking)
+				if err := sendRotationCompletedNotification(ctx, app); err != nil {
+					log.Error(err, "Failed to send secret-rotation-completed notification")
+				}
+
 				log.Info("Secret rotation completed successfully",
 					"application", app.Name,
 					"team", app.Spec.Team,
 				)
 			} else {
-				log.Info("Secret rotation: could not propagate expiry timestamps from identity client, staying InProgress",
+				log.Info("Secret rotation: expiry timestamps not yet available from identity client, staying InProgress",
 					"application", app.Name,
 				)
+			}
+		}
+
+		// Send secret-expiring notification if within the notification threshold (non-blocking)
+		if app.Spec.NeedsClient && app.Status.CurrentExpiresAt != nil {
+			log := logr.FromContextOrDiscard(ctx)
+			if err := sendSecretExpiringNotification(ctx, app, zone); err != nil {
+				log.Error(err, "Failed to send secret-rotation-expiring notification")
 			}
 		}
 	}
@@ -232,12 +248,23 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 		return nil
 	}
 
-	_, err := client.CreateOrUpdate(ctx, idpClient, mutator)
+	result, err := client.CreateOrUpdate(ctx, idpClient, mutator)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create or update Identity Client %s", resourceName)
 	}
 
 	owner.Status.Clients = append(owner.Status.Clients, *types.ObjectRefFromObject(idpClient))
+
+	// Only propagate expiry timestamps from a converged (unchanged) primary identity client.
+	// When the client was created or updated, the identity controller has not yet reconciled
+	// and the status fields would be stale.
+	if result == controllerutil.OperationResultNone && !options.Failover {
+		owner.Status.CurrentExpiresAt = idpClient.Status.SecretExpiresAt
+		if owner.Spec.RotatedSecret != "" {
+			owner.Status.RotatedExpiresAt = idpClient.Status.RotatedSecretExpiresAt
+		}
+	}
+
 	return nil
 }
 

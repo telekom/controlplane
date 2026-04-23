@@ -99,6 +99,13 @@ spec:
                           GracePeriod is the duration that a rotated secret is valid for.
                           This allows to have a smooth transition when rotating secrets, as the old secret is still valid for a certain period of time after rotation.
                         type: string
+                      notificationThreshold:
+                        description: |-
+                          NotificationThreshold is the duration before secret expiry at which a
+                          notification is sent to the owning team, urging them to rotate their secret.
+                          For example, if RotationInterval is 30 days and NotificationThreshold is
+                          7 days, the team will be notified 7 days before their secret expires.
+                        type: string
                       rotationInterval:
                         description: |-
                           RotationInterval is the duration after which secrets should be rotated.
@@ -107,6 +114,7 @@ spec:
                     required:
                     - enabled
                     - gracePeriod
+                    - notificationThreshold
                     - rotationInterval
                     type: object
                   url:
