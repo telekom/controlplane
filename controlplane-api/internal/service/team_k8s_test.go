@@ -208,6 +208,27 @@ var _ = Describe("TeamK8sService", func() {
 				Expect(team.Spec.Members[0].Name).To(Equal("Alice"))
 			})
 		})
+
+		Describe("Not found", func() {
+			It("should return NOT_FOUND when the team does not exist", func() {
+				_, err := svc.UpdateTeam(adminCtx(), model.UpdateTeamInput{
+					Environment: "dev",
+					Group:       "group-a",
+					Name:        "team-missing",
+					Email:       strPtr("x@example.com"),
+				})
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("not found"))
+
+				// Verify no team was created
+				team := &organizationv1.Team{}
+				err = k8sClient.Get(context.Background(), client.ObjectKey{
+					Namespace: "dev",
+					Name:      "group-a--team-missing",
+				}, team)
+				Expect(err).To(HaveOccurred())
+			})
+		})
 	})
 
 	Describe("RotateTeamToken", func() {
@@ -278,6 +299,26 @@ var _ = Describe("TeamK8sService", func() {
 				}, team)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(team.Spec.Secret).To(Equal("rotate"))
+			})
+		})
+
+		Describe("Not found", func() {
+			It("should return NOT_FOUND when the team does not exist", func() {
+				_, err := svc.RotateTeamToken(adminCtx(), model.RotateTeamTokenInput{
+					Environment: "dev",
+					Group:       "group-a",
+					Name:        "team-missing",
+				})
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("not found"))
+
+				// Verify no team was created
+				team := &organizationv1.Team{}
+				err = k8sClient.Get(context.Background(), client.ObjectKey{
+					Namespace: "dev",
+					Name:      "group-a--team-missing",
+				}, team)
+				Expect(err).To(HaveOccurred())
 			})
 		})
 	})

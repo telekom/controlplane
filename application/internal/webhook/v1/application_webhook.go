@@ -11,6 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/application/internal/webhook/v1/mutator"
+	"github.com/telekom/controlplane/application/internal/webhook/v1/validator"
 	"github.com/telekom/controlplane/common/pkg/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -24,6 +25,7 @@ var applicationLog = logf.Log.WithName("application-resource").WithValues("apiVe
 func SetupApplicationWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr, &applicationv1.Application{}).
 		WithDefaulter(&ApplicationCustomDefaulter{}).
+		WithValidator(&ApplicationCustomValidator{}).
 		Complete()
 }
 
@@ -48,4 +50,33 @@ func (d *ApplicationCustomDefaulter) Default(ctx context.Context, app *applicati
 	}
 
 	return mutator.MutateSecret(ctx, env, app)
+}
+
+// +kubebuilder:webhook:path=/validate-application-cp-ei-telekom-de-v1-application,mutating=false,failurePolicy=fail,sideEffects=None,groups=application.cp.ei.telekom.de,resources=applications,verbs=create;update,versions=v1,name=vapplication-v1.kb.io,admissionReviewVersions=v1
+
+var _ admission.Validator[*applicationv1.Application] = &ApplicationCustomValidator{}
+
+type ApplicationCustomValidator struct{}
+
+func (v *ApplicationCustomValidator) ValidateCreate(ctx context.Context, app *applicationv1.Application) (admission.Warnings, error) {
+	return v.validateCreateOrUpdate(ctx, app)
+}
+
+func (v *ApplicationCustomValidator) ValidateUpdate(ctx context.Context, _ *applicationv1.Application, app *applicationv1.Application) (admission.Warnings, error) {
+	return v.validateCreateOrUpdate(ctx, app)
+}
+
+func (v *ApplicationCustomValidator) ValidateDelete(_ context.Context, _ *applicationv1.Application) (admission.Warnings, error) {
+	return nil, nil
+}
+
+func (v *ApplicationCustomValidator) validateCreateOrUpdate(ctx context.Context, app *applicationv1.Application) (admission.Warnings, error) {
+	_, log := setupLog(ctx, app)
+	log.Info("validating application")
+
+	if _, err := validator.ValidateAndGetEnv(app); err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }

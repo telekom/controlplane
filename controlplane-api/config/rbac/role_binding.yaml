@@ -8,11 +8,11 @@ metadata:
   labels:
     app.kubernetes.io/name: controlplane-api
     app.kubernetes.io/managed-by: kustomize
-  name: manager-rolebinding
+  name: controlplane-api-manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: manager-role
+  name: controlplane-api-manager-role
 subjects:
 - kind: ServiceAccount
   name: controlplane-api

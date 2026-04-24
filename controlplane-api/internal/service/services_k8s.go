@@ -18,11 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// teamScopedNamespace returns the K8s namespace for resources scoped to a team: <environment>--<team>.
-func teamScopedNamespace(environment, team string) string {
-	return environment + "--" + team
-}
-
 // ----- Team -----
 
 type teamK8sService struct {
@@ -39,7 +34,7 @@ func (s *teamK8sService) CreateTeam(ctx context.Context, input model.CreateTeamI
 		return nil, err
 	}
 
-	resourceName := teamResourceName(input.Group, input.Name)
+	resourceName := organizationv1.TeamResourceName(input.Group, input.Name)
 	namespace := input.Environment
 
 	scopedClient := cc.NewScopedClient(s.client, input.Environment)
@@ -78,16 +73,14 @@ func (s *teamK8sService) UpdateTeam(ctx context.Context, input model.UpdateTeamI
 		return nil, err
 	}
 
-	resourceName := teamResourceName(input.Group, input.Name)
+	resourceName := organizationv1.TeamResourceName(input.Group, input.Name)
 	namespace := input.Environment
 
 	scopedClient := cc.NewScopedClient(s.client, input.Environment)
 
-	team := &organizationv1.Team{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      resourceName,
-			Namespace: namespace,
-		},
+	team := &organizationv1.Team{}
+	if err := scopedClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: resourceName}, team); err != nil {
+		return nil, mapK8sError(err)
 	}
 
 	_, err := scopedClient.CreateOrUpdate(ctx, team, func() error {
@@ -116,16 +109,14 @@ func (s *teamK8sService) RotateTeamToken(ctx context.Context, input model.Rotate
 		return nil, err
 	}
 
-	resourceName := teamResourceName(input.Group, input.Name)
+	resourceName := organizationv1.TeamResourceName(input.Group, input.Name)
 	namespace := input.Environment
 
 	scopedClient := cc.NewScopedClient(s.client, input.Environment)
 
-	team := &organizationv1.Team{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      resourceName,
-			Namespace: namespace,
-		},
+	team := &organizationv1.Team{}
+	if err := scopedClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: resourceName}, team); err != nil {
+		return nil, mapK8sError(err)
 	}
 
 	_, err := scopedClient.CreateOrUpdate(ctx, team, func() error {
@@ -171,7 +162,7 @@ func (s *applicationK8sService) RotateApplicationSecret(ctx context.Context, inp
 		return nil, err
 	}
 
-	namespace := teamScopedNamespace(input.Environment, input.Team)
+	namespace := organizationv1.TeamNamespace(input.Environment, input.Team)
 	resourceName := input.Name
 
 	scopedClient := cc.NewScopedClient(s.client, input.Environment)
@@ -251,7 +242,7 @@ func buildDecision(input model.DecisionInput, resultingState approvalv1.Approval
 }
 
 func (s *approvalK8sService) DecideApprovalRequest(ctx context.Context, input model.DecideApprovalRequestInput) (*model.ApprovalMutationResult, error) {
-	namespace := teamScopedNamespace(input.Environment, input.Team)
+	namespace := organizationv1.TeamNamespace(input.Environment, input.Team)
 	resourceName := input.Name
 
 	scopedClient := cc.NewScopedClient(s.client, input.Environment)
@@ -296,7 +287,7 @@ func (s *approvalK8sService) DecideApprovalRequest(ctx context.Context, input mo
 }
 
 func (s *approvalK8sService) DecideApproval(ctx context.Context, input model.DecideApprovalInput) (*model.ApprovalMutationResult, error) {
-	namespace := teamScopedNamespace(input.Environment, input.Team)
+	namespace := organizationv1.TeamNamespace(input.Environment, input.Team)
 	resourceName := input.Name
 
 	scopedClient := cc.NewScopedClient(s.client, input.Environment)

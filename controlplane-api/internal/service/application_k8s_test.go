@@ -100,6 +100,7 @@ var _ = Describe("ApplicationK8sService", func() {
 			It("should return error when application does not exist", func() {
 				_, err := svc.RotateApplicationSecret(adminCtx(), model.RotateApplicationSecretInput{
 					Environment: "dev",
+					Team:        "team-alpha",
 					Name:        "nonexistent-app",
 				})
 				Expect(err).To(HaveOccurred())

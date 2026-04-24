@@ -80,11 +80,6 @@ func authorizeApprovalAction(ctx context.Context, deciderTeam string) error {
 	return fmt.Errorf("forbidden: insufficient permissions — only the decider team %q can decide on this approval", deciderTeam)
 }
 
-// teamResourceName returns the K8s resource name for a team: <group>--<team>.
-func teamResourceName(group, team string) string {
-	return group + "--" + team
-}
-
 // mapK8sError converts a Kubernetes API error to a GraphQL error with an appropriate error code.
 func mapK8sError(err error) *gqlerror.Error {
 	if err == nil {
