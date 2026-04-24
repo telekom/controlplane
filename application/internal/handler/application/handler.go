@@ -209,12 +209,21 @@ func handleSecretExpiringNotifications(ctx context.Context, app *application.App
 	// wake up in time rather than waiting for the default requeue interval.
 	rotCfg := zone.Spec.IdentityProvider.SecretRotation
 	if rotCfg != nil && rotCfg.Enabled && len(rotCfg.NotificationThresholds) > 0 {
+		now := time.Now()
+		deadline := app.Status.CurrentExpiresAt.Time
+		timeUntilDeadline := deadline.Sub(now)
+
 		if nextRequeue := reminder.NextRequeue(
-			app.Status.CurrentExpiresAt.Time,
+			deadline,
 			rotCfg.NotificationThresholds,
 			app.Status.SentNotifications,
-			time.Now(),
+			now,
 		); nextRequeue > 0 {
+			// Cap at timeUntilDeadline so that jitter applied by the controller
+			// cannot push the next reconcile past the secret expiry.
+			if timeUntilDeadline > 0 && nextRequeue > timeUntilDeadline {
+				nextRequeue = timeUntilDeadline
+			}
 			contextutil.SetRequeueAfter(ctx, nextRequeue)
 		}
 	}

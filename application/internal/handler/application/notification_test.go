@@ -159,13 +159,32 @@ var _ = Describe("Notification Helpers", func() {
 			Expect(app.Status.SentNotifications).To(BeEmpty())
 		})
 
-		It("should not send when secret has already expired", func() {
+		It("should send when secret has already expired but notification was never sent", func() {
+			mockClient := fake.NewMockJanitorClient(GinkgoT())
+			ctx = client.WithClient(ctx, mockClient)
+			setupNotificationMocks(mockClient)
+
 			expiresAt := metav1.NewTime(time.Now().Add(-1 * time.Hour))
 			app.Status.CurrentExpiresAt = &expiresAt
 
 			err := sendSecretExpiringNotifications(ctx, app, zone)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(app.Status.SentNotifications).To(BeEmpty())
+			Expect(app.Status.SentNotifications).To(HaveLen(1))
+			Expect(app.Status.SentNotifications[0].Threshold).To(Equal((7 * 24 * time.Hour).String()))
+		})
+
+		It("should not send when secret has already expired and notification was already sent", func() {
+			expiresAt := metav1.NewTime(time.Now().Add(-1 * time.Hour))
+			app.Status.CurrentExpiresAt = &expiresAt
+			app.Status.SentNotifications = []reminder.SentReminder{{
+				Threshold: (7 * 24 * time.Hour).String(),
+				Ref:       commontypes.ObjectRef{Name: "n1", Namespace: "ns"},
+				SentAt:    metav1.NewTime(time.Now().Add(-2 * time.Hour)),
+			}}
+
+			err := sendSecretExpiringNotifications(ctx, app, zone)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(app.Status.SentNotifications).To(HaveLen(1))
 		})
 
 		It("should send notification when within the threshold", func() {

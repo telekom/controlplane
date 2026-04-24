@@ -31,11 +31,25 @@ type PendingReminder struct {
 // Returns at most one PendingReminder per call.
 func Evaluate(deadline time.Time, thresholds []Threshold, sent []SentReminder, now time.Time) []PendingReminder {
 	timeUntilDeadline := deadline.Sub(now)
+	sentIndex := indexSent(sent)
+
+	// If the deadline has already passed, fire the widest unsent threshold
+	// so the user is informed even if the reconciler woke up too late
+	// (e.g. due to jitter or controller downtime).
 	if timeUntilDeadline <= 0 {
-		return nil // already past the deadline
+		descSorted := SortDesc(thresholds)
+		for _, t := range descSorted {
+			key := t.Before.Duration.String()
+			if _, ok := sentIndex[key]; !ok {
+				return []PendingReminder{{
+					Threshold: t,
+					Key:       key,
+				}}
+			}
+		}
+		return nil // all thresholds already sent
 	}
 
-	sentIndex := indexSent(sent)
 	sorted := sortAsc(thresholds)
 
 	// Find the tightest threshold whose window we are in.

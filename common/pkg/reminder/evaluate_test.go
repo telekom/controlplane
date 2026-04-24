@@ -58,12 +58,50 @@ func TestEvaluate_OutsideWindow(t *testing.T) {
 	assert.Empty(t, pending)
 }
 
-func TestEvaluate_PastDeadline(t *testing.T) {
-	deadline := time.Now().Add(-1 * time.Hour)
-	thresholds := []Threshold{{Before: d(168)}}
+func TestEvaluate_PastDeadline_NeverSent_FiresLargestThreshold(t *testing.T) {
+	now := time.Now()
+	deadline := now.Add(-1 * time.Hour)
+	thresholds := []Threshold{
+		{Before: d(24)},
+		{Before: d(168)},
+	}
 
-	pending := Evaluate(deadline, thresholds, nil, time.Now())
+	pending := Evaluate(deadline, thresholds, nil, now)
+	assert.Len(t, pending, 1)
+	assert.Equal(t, d(168).Duration.String(), pending[0].Key)
+}
+
+func TestEvaluate_PastDeadline_AllSent_NothingFires(t *testing.T) {
+	now := time.Now()
+	deadline := now.Add(-1 * time.Hour)
+	thresholds := []Threshold{
+		{Before: d(24)},
+		{Before: d(168)},
+	}
+	sent := []SentReminder{
+		{Threshold: d(24).Duration.String(), Ref: ref("n1"), SentAt: metav1.NewTime(now.Add(-2 * time.Hour))},
+		{Threshold: d(168).Duration.String(), Ref: ref("n2"), SentAt: metav1.NewTime(now.Add(-48 * time.Hour))},
+	}
+
+	pending := Evaluate(deadline, thresholds, sent, now)
 	assert.Empty(t, pending)
+}
+
+func TestEvaluate_PastDeadline_PartiallySent_FiresLargestUnsent(t *testing.T) {
+	now := time.Now()
+	deadline := now.Add(-1 * time.Hour)
+	thresholds := []Threshold{
+		{Before: d(24)},
+		{Before: d(168)},
+	}
+	// 168h was sent, but 24h was never sent
+	sent := []SentReminder{
+		{Threshold: d(168).Duration.String(), Ref: ref("n1"), SentAt: metav1.NewTime(now.Add(-48 * time.Hour))},
+	}
+
+	pending := Evaluate(deadline, thresholds, sent, now)
+	assert.Len(t, pending, 1)
+	assert.Equal(t, d(24).Duration.String(), pending[0].Key)
 }
 
 func TestEvaluate_MultipleThresholds_OnlyTightestFires(t *testing.T) {
