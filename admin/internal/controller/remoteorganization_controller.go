@@ -7,8 +7,6 @@ package controller
 import (
 	"context"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -17,6 +15,8 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	remoteorg_handler "github.com/telekom/controlplane/admin/internal/handler/remoteorganization"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 )
 
 // RemoteOrganizationReconciler reconciles a RemoteOrganization object
