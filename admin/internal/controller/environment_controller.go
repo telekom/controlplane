@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+//nolint:dupl // kubebuilder controller scaffolding is structurally identical across CRD types
 package controller
 
 import (

@@ -13,11 +13,11 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 )
 
-func ensureSuffix(url string) string {
-	if !strings.HasSuffix(url, "/") {
-		return url + "/"
+func ensureSuffix(rawURL string) string {
+	if !strings.HasSuffix(rawURL, "/") {
+		return rawURL + "/"
 	}
-	return url
+	return rawURL
 }
 
 func ForIdentityProviderAdminUrl(baseUrl string) string {

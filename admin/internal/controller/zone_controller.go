@@ -86,8 +86,8 @@ func (r *ZoneReconciler) mapEnvironmentToZone(ctx context.Context, obj client.Ob
 	}
 
 	requests := make([]reconcile.Request, 0, len(list.Items))
-	for _, zone := range list.Items {
-		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&zone)})
+	for i := range list.Items {
+		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
 	}
 
 	return requests

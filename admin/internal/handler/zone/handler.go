@@ -130,33 +130,9 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 
 	// Team apis configuration
 	if obj.Spec.TeamApis != nil {
-		// Team apis identity realm
-		teamApiIdentityRealm, err := createIdentityRealm(ctx, handlingContext, identityProvider, naming.ForTeamApiIdentityRealm(handlingContext.Environment))
-		if err != nil {
+		if err := reconcileTeamApis(ctx, obj, handlingContext, identityProvider, gateway); err != nil {
 			return err
 		}
-		obj.Status.TeamApiIdentityRealm = types.ObjectRefFromObject(teamApiIdentityRealm)
-
-		// Team apis gateway realm
-		teamApisGatewayRealm, err := createGatewayRealm(ctx, handlingContext, gateway, naming.ForTeamApiGatewayRealm(handlingContext.Environment))
-		if err != nil {
-			return err
-		}
-		obj.Status.TeamApiGatewayRealm = types.ObjectRefFromObject(teamApisGatewayRealm)
-		if len(teamApisGatewayRealm.Spec.IssuerUrls) > 0 {
-			obj.Status.Links.TeamIssuer = teamApisGatewayRealm.Spec.IssuerUrls[0]
-		}
-
-		// Team api routes
-		var teamApiRouteRefs []types.ObjectRef
-		for _, teamApiRoute := range obj.Spec.TeamApis.Apis {
-			route, err := createTeamApiRoute(ctx, handlingContext, teamApiRoute, *teamApisGatewayRealm)
-			if err != nil {
-				return err
-			}
-			teamApiRouteRefs = append(teamApiRouteRefs, *types.ObjectRefFromObject(route))
-		}
-		obj.Status.TeamApiRoutes = teamApiRouteRefs
 	} else {
 		obj.Status.TeamApiIdentityRealm = nil
 		obj.Status.TeamApiGatewayRealm = nil
@@ -182,7 +158,35 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 	return nil
 }
 
-func createTeamApiRoute(ctx context.Context, handlingContext HandlingContext, teamRouteConfig adminv1.ApiConfig, gatewayRealm gatewayapi.Realm) (*gatewayapi.Route, error) {
+func reconcileTeamApis(ctx context.Context, obj *adminv1.Zone, handlingContext HandlingContext, identityProvider *identityapi.IdentityProvider, gateway *gatewayapi.Gateway) error {
+	teamApiIdentityRealm, err := createIdentityRealm(ctx, handlingContext, identityProvider, naming.ForTeamApiIdentityRealm(handlingContext.Environment))
+	if err != nil {
+		return err
+	}
+	obj.Status.TeamApiIdentityRealm = types.ObjectRefFromObject(teamApiIdentityRealm)
+
+	teamApisGatewayRealm, err := createGatewayRealm(ctx, handlingContext, gateway, naming.ForTeamApiGatewayRealm(handlingContext.Environment))
+	if err != nil {
+		return err
+	}
+	obj.Status.TeamApiGatewayRealm = types.ObjectRefFromObject(teamApisGatewayRealm)
+	if len(teamApisGatewayRealm.Spec.IssuerUrls) > 0 {
+		obj.Status.Links.TeamIssuer = teamApisGatewayRealm.Spec.IssuerUrls[0]
+	}
+
+	teamApiRouteRefs := make([]types.ObjectRef, 0, len(obj.Spec.TeamApis.Apis))
+	for _, teamApiRoute := range obj.Spec.TeamApis.Apis {
+		route, err := createTeamApiRoute(ctx, handlingContext, teamApiRoute, teamApisGatewayRealm)
+		if err != nil {
+			return err
+		}
+		teamApiRouteRefs = append(teamApiRouteRefs, *types.ObjectRefFromObject(route))
+	}
+	obj.Status.TeamApiRoutes = teamApiRouteRefs
+	return nil
+}
+
+func createTeamApiRoute(ctx context.Context, handlingContext HandlingContext, teamRouteConfig adminv1.ApiConfig, gatewayRealm *gatewayapi.Realm) (*gatewayapi.Route, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 	teamRoute := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
@@ -224,7 +228,7 @@ func createTeamApiRoute(ctx context.Context, handlingContext HandlingContext, te
 		}
 
 		teamRoute.Spec = gatewayapi.RouteSpec{
-			Realm:       *types.ObjectRefFromObject(&gatewayRealm),
+			Realm:       *types.ObjectRefFromObject(gatewayRealm),
 			PassThrough: false,
 			Upstreams:   []gatewayapi.Upstream{upstream},
 			Downstreams: []gatewayapi.Downstream{downstream},
