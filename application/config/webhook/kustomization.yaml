@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 resources:
-  - service_account.yaml
-  - role.yaml
-  - role_binding.yaml
+- manifests.yaml
+- service.yaml
+
+configurations:
+- kustomizeconfig.yaml
