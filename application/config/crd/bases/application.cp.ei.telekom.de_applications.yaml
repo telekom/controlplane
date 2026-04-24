@@ -252,33 +252,6 @@ spec:
                   Nil when secret rotation is not configured.
                 format: date-time
                 type: string
-              notificationRefs:
-                description: NotificationRefs is a set of references to notifications
-                  sent for this application.
-                items:
-                  description: |-
-                    ObjectRef is a reference to a Kubernetes object
-                    It is similar to types.NamespacedName but has the required json tags for serialization
-                  properties:
-                    name:
-                      type: string
-                    namespace:
-                      type: string
-                    uid:
-                      description: |-
-                        UID is a type that holds unique ID values, including UUIDs.  Because we
-                        don't ONLY use UUIDs, this is an alias to string.  Being a type captures
-                        intent and helps make sure that UIDs and names do not get conflated.
-                      type: string
-                  required:
-                  - name
-                  - namespace
-                  type: object
-                maxItems: 10
-                type: array
-                x-kubernetes-list-map-keys:
-                - name
-                x-kubernetes-list-type: map
               rotatedClientSecret:
                 description: |-
                   RotatedClientSecret holds the secret-manager reference to the previous client secret
@@ -290,6 +263,49 @@ spec:
                   Nil when no rotation is in progress.
                 format: date-time
                 type: string
+              sentNotifications:
+                description: |-
+                  SentNotifications tracks all reminder notifications that have been sent for
+                  this application's secret expiry, keyed by threshold. This is used to prevent
+                  duplicate notifications and to track repeat intervals.
+                items:
+                  description: SentReminder tracks a reminder that was sent for a
+                    specific threshold.
+                  properties:
+                    ref:
+                      description: Ref is the reference to the created notification
+                        or other resource.
+                      properties:
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        uid:
+                          description: |-
+                            UID is a type that holds unique ID values, including UUIDs.  Because we
+                            don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                            intent and helps make sure that UIDs and names do not get conflated.
+                          type: string
+                      required:
+                      - name
+                      - namespace
+                      type: object
+                    sentAt:
+                      description: SentAt is when this reminder was last sent for
+                        this threshold.
+                      format: date-time
+                      type: string
+                    threshold:
+                      description: |-
+                        Threshold is the key identifying which threshold triggered this reminder.
+                        It is the string representation of the Threshold.Before duration (e.g. "720h0m0s").
+                      type: string
+                  required:
+                  - ref
+                  - sentAt
+                  - threshold
+                  type: object
+                type: array
             required:
             - clientId
             - clientSecret

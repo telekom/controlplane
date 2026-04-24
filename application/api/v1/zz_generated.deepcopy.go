@@ -9,6 +9,7 @@
 package v1
 
 import (
+	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -133,9 +134,9 @@ func (in *ApplicationStatus) DeepCopyInto(out *ApplicationStatus) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	if in.NotificationRefs != nil {
-		in, out := &in.NotificationRefs, &out.NotificationRefs
-		*out = make([]types.ObjectRef, len(*in))
+	if in.SentNotifications != nil {
+		in, out := &in.SentNotifications, &out.SentNotifications
+		*out = make([]reminder.SentReminder, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}

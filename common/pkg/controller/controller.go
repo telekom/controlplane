@@ -89,6 +89,9 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	ctx = cc.WithClient(ctx, cc.NewJanitorClient(cc.NewScopedClient(c.Client, env)))
 	ctx = contextutil.WithRecorder(ctx, c.Recorder)
 
+	hint := &contextutil.ReconcileHint{}
+	ctx = contextutil.WithReconcileHint(ctx, hint)
+
 	// Handle the deletion
 	if IsBeingDeleted(object) {
 		c.Event(ctx, object, "Normal", "Processing", "Processing resource deletion")
@@ -143,9 +146,9 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	// Success
 
 	log.V(1).Info("Created or updated", "resource", object)
-	// Enforce that atleast the processing condition is set in the handler. If not, log a warning.
-	if meta.IsStatusConditionPresentAndEqual(object.GetConditions(), condition.ConditionTypeProcessing, metav1.ConditionUnknown) {
-		c.Event(ctx, object, "Warning", "Processing", "Resource has an unknown processing status")
+	// Enforce that atleast the ready condition is set in the handler. If not, log a warning.
+	if meta.IsStatusConditionPresentAndEqual(object.GetConditions(), condition.ConditionTypeReady, metav1.ConditionUnknown) {
+		c.Event(ctx, object, "Warning", "Processing", "Resource has an unknown ready status")
 	}
 
 	// Always update the status after successful reconciliation to clear any error conditions
@@ -155,8 +158,15 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 		return HandleError(ctx, err, object, c.Recorder), nil
 	}
 
+	requeueAfter := config.RequeueWithJitter()
+	if hint.RequeueAfter != nil {
+		if hintWithJitter := config.Jitter(*hint.RequeueAfter); hintWithJitter < requeueAfter {
+			requeueAfter = hintWithJitter
+		}
+	}
+
 	return reconcile.Result{
-		RequeueAfter: config.RequeueWithJitter(),
+		RequeueAfter: requeueAfter,
 	}, nil
 }
 
@@ -203,7 +213,6 @@ func FirstSetup(ctx context.Context, client client.Client, object common_types.O
 	// see https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
 	if len(object.GetConditions()) == 0 {
 		object.SetCondition(condition.SetToUnknown(condition.ReadyCondition))
-		object.SetCondition(condition.SetToUnknown(condition.ProcessingCondition))
 	}
 
 	return false, nil

@@ -94,28 +94,51 @@ spec:
                           Enabled controls whether secret rotation is enabled for this zone.
                            If false, secrets will not be rotated and the grace period and expiration period will be ignored.
                         type: boolean
+                      expirationPeriod:
+                        description: |-
+                          ExpirationPeriod is the duration that the current secret is valid for.
+                          Once this period has elapsed, the secret is considered expired and should be rotated.
+                        type: string
                       gracePeriod:
                         description: |-
                           GracePeriod is the duration that a rotated secret is valid for.
                           This allows to have a smooth transition when rotating secrets, as the old secret is still valid for a certain period of time after rotation.
                         type: string
-                      notificationThreshold:
+                      notificationThresholds:
                         description: |-
-                          NotificationThreshold is the duration before secret expiry at which a
-                          notification is sent to the owning team, urging them to rotate their secret.
-                          For example, if RotationInterval is 30 days and NotificationThreshold is
-                          7 days, the team will be notified 7 days before their secret expires.
-                        type: string
-                      rotationInterval:
-                        description: |-
-                          RotationInterval is the duration after which secrets should be rotated.
-                          This is the interval at which the rotation process will be triggered.
-                        type: string
+                          NotificationThresholds defines the schedule of reminder notifications before
+                          secret expiry. Each entry triggers a notification when the remaining time-to-expiry
+                          crosses that threshold. Only the tightest (smallest) matching threshold is evaluated
+                          per reconciliation cycle to avoid spamming.
+
+                          Example: [{before: "720h"}, {before: "168h", repeat: "24h"}]
+                          → single reminder at 30 days, then daily reminders starting at 7 days.
+                        items:
+                          description: Threshold defines when a reminder should fire
+                            relative to a deadline.
+                          properties:
+                            before:
+                              description: |-
+                                Before is how long before the deadline this reminder fires.
+                                For example, "720h" means 30 days before the deadline.
+                              type: string
+                            repeat:
+                              description: |-
+                                Repeat optionally re-sends the reminder at this interval once the
+                                "Before" window is entered. For example, Before=168h + Repeat=24h
+                                sends a reminder at 7d, 6d, 5d, … , 1d before the deadline.
+                                If omitted, the reminder fires exactly once for this threshold.
+                              type: string
+                          required:
+                          - before
+                          type: object
+                        minItems: 1
+                        type: array
                     required:
                     - enabled
+                    - expirationPeriod
                     - gracePeriod
-                    - notificationThreshold
-                    - rotationInterval
+                    - notificationThresholds
                     type: object
                   url:
                     type: string

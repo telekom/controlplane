@@ -45,7 +45,9 @@ func MutateSecret(ctx context.Context, env string, app *applicationv1.Applicatio
 		return nil
 	}
 
-	isRotation := strings.EqualFold(app.Spec.Secret, secret.KeywordRotate)
+	// Determine if this is a rotation request. Can only be a rotation if there is an older generation,
+	// otherwise it would be the initial creation of the secret.
+	isRotation := strings.EqualFold(app.Spec.Secret, secret.KeywordRotate) && app.GetGeneration() > 1
 
 	// Guard: deny rotation if one is already in progress
 	if isRotation && isRotationInProgress(app) {
@@ -71,7 +73,8 @@ func MutateSecret(ctx context.Context, env string, app *applicationv1.Applicatio
 	}
 
 	var clientSecret string
-	if isRotation || app.Spec.Secret == "" {
+	// On initial creation, or when the secret value is explicitly set to "rotate", generate a new secret value.
+	if strings.EqualFold(app.Spec.Secret, secret.KeywordRotate) || app.Spec.Secret == "" {
 		generatedSecret, err := secretsapi.GenerateSecret()
 		if err != nil {
 			return errors.NewInternalError(fmt.Errorf("failed to generate secret: %w", err))

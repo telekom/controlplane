@@ -5,6 +5,7 @@
 package v1
 
 import (
+	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -87,11 +88,11 @@ type ApplicationStatus struct {
 	Clients   []types.ObjectRef `json:"clients,omitempty"`
 	Consumers []types.ObjectRef `json:"consumers,omitempty"`
 
-	// NotificationRefs is a set of references to notifications sent for this application.
-	// +listType=map
-	// +listMapKey=name
-	// +kubebuilder:validation:MaxItems=10
-	NotificationRefs []types.ObjectRef `json:"notificationRefs,omitempty"`
+	// SentNotifications tracks all reminder notifications that have been sent for
+	// this application's secret expiry, keyed by threshold. This is used to prevent
+	// duplicate notifications and to track repeat intervals.
+	// +optional
+	SentNotifications []reminder.SentReminder `json:"sentNotifications,omitempty"`
 }
 
 // +kubebuilder:object:root=true

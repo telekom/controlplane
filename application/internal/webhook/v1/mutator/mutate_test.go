@@ -82,6 +82,7 @@ func TestMutateSecret(t *testing.T) {
 		{
 			name: "Rotate keyword with graceful rotation stores rotated secret",
 			app: &applicationv1.Application{
+				ObjectMeta: metav1.ObjectMeta{Generation: 2},
 				Spec: applicationv1.ApplicationSpec{
 					Team:   "my-team",
 					Secret: "rotate",
@@ -140,6 +141,7 @@ func TestMutateSecret(t *testing.T) {
 		{
 			name: "Rotate without existing status.clientSecret only sets new secret",
 			app: &applicationv1.Application{
+				ObjectMeta: metav1.ObjectMeta{Generation: 2},
 				Spec: applicationv1.ApplicationSpec{
 					Team:   "my-team",
 					Secret: "rotate",
@@ -169,6 +171,7 @@ func TestMutateSecret(t *testing.T) {
 		{
 			name: "Rotate denied when rotation already in progress (heavy-clicker guard)",
 			app: &applicationv1.Application{
+				ObjectMeta: metav1.ObjectMeta{Generation: 2},
 				Spec: applicationv1.ApplicationSpec{
 					Team:          "my-team",
 					Secret:        "rotate",
@@ -232,6 +235,7 @@ func TestMutateSecret(t *testing.T) {
 		{
 			name: "Secret-manager error is propagated",
 			app: &applicationv1.Application{
+				ObjectMeta: metav1.ObjectMeta{Generation: 2},
 				Spec: applicationv1.ApplicationSpec{
 					Team:   "my-team",
 					Secret: "rotate",
@@ -259,6 +263,7 @@ func TestMutateSecret(t *testing.T) {
 		{
 			name: "Secret-manager Get error during rotation is propagated",
 			app: &applicationv1.Application{
+				ObjectMeta: metav1.ObjectMeta{Generation: 2},
 				Spec: applicationv1.ApplicationSpec{
 					Team:   "my-team",
 					Secret: "rotate",
@@ -283,6 +288,7 @@ func TestMutateSecret(t *testing.T) {
 		{
 			name: "Missing client secret in response is an error",
 			app: &applicationv1.Application{
+				ObjectMeta: metav1.ObjectMeta{Generation: 2},
 				Spec: applicationv1.ApplicationSpec{
 					Team:   "my-team",
 					Secret: "rotate",

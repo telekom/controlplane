@@ -19,6 +19,7 @@ import (
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/client/fake"
+	"github.com/telekom/controlplane/common/pkg/reminder"
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 )
@@ -98,7 +99,7 @@ var _ = Describe("Notification Helpers", func() {
 		})
 	})
 
-	Describe("sendSecretExpiringNotification", func() {
+	Describe("sendSecretExpiringNotifications", func() {
 		var zone *adminv1.Zone
 
 		BeforeEach(func() {
@@ -110,10 +111,12 @@ var _ = Describe("Notification Helpers", func() {
 				Spec: adminv1.ZoneSpec{
 					IdentityProvider: adminv1.IdentityProviderConfig{
 						SecretRotation: &adminv1.SecretRotationConfig{
-							Enabled:               true,
-							RotationInterval:      metav1.Duration{Duration: 30 * 24 * time.Hour},
-							GracePeriod:           metav1.Duration{Duration: 24 * time.Hour},
-							NotificationThreshold: metav1.Duration{Duration: 7 * 24 * time.Hour},
+							Enabled:          true,
+							ExpirationPeriod: metav1.Duration{Duration: 30 * 24 * time.Hour},
+							GracePeriod:      metav1.Duration{Duration: 24 * time.Hour},
+							NotificationThresholds: []reminder.Threshold{
+								{Before: metav1.Duration{Duration: 7 * 24 * time.Hour}},
+							},
 						},
 					},
 				},
@@ -122,9 +125,9 @@ var _ = Describe("Notification Helpers", func() {
 
 		It("should return nil when CurrentExpiresAt is nil", func() {
 			app.Status.CurrentExpiresAt = nil
-			ref, err := sendSecretExpiringNotification(ctx, app, zone)
+			err := sendSecretExpiringNotifications(ctx, app, zone)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(ref).To(BeNil())
+			Expect(app.Status.SentNotifications).To(BeEmpty())
 		})
 
 		It("should return nil when secret rotation is not configured", func() {
@@ -132,9 +135,9 @@ var _ = Describe("Notification Helpers", func() {
 			expiresAt := metav1.NewTime(time.Now().Add(1 * time.Hour))
 			app.Status.CurrentExpiresAt = &expiresAt
 
-			ref, err := sendSecretExpiringNotification(ctx, app, zone)
+			err := sendSecretExpiringNotifications(ctx, app, zone)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(ref).To(BeNil())
+			Expect(app.Status.SentNotifications).To(BeEmpty())
 		})
 
 		It("should return nil when secret rotation is disabled", func() {
@@ -142,27 +145,27 @@ var _ = Describe("Notification Helpers", func() {
 			expiresAt := metav1.NewTime(time.Now().Add(1 * time.Hour))
 			app.Status.CurrentExpiresAt = &expiresAt
 
-			ref, err := sendSecretExpiringNotification(ctx, app, zone)
+			err := sendSecretExpiringNotifications(ctx, app, zone)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(ref).To(BeNil())
+			Expect(app.Status.SentNotifications).To(BeEmpty())
 		})
 
-		It("should return nil when expiry is far in the future (beyond threshold)", func() {
+		It("should not send when expiry is far in the future (beyond threshold)", func() {
 			expiresAt := metav1.NewTime(time.Now().Add(20 * 24 * time.Hour)) // 20 days out, threshold is 7 days
 			app.Status.CurrentExpiresAt = &expiresAt
 
-			ref, err := sendSecretExpiringNotification(ctx, app, zone)
+			err := sendSecretExpiringNotifications(ctx, app, zone)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(ref).To(BeNil())
+			Expect(app.Status.SentNotifications).To(BeEmpty())
 		})
 
-		It("should return nil when secret has already expired", func() {
+		It("should not send when secret has already expired", func() {
 			expiresAt := metav1.NewTime(time.Now().Add(-1 * time.Hour))
 			app.Status.CurrentExpiresAt = &expiresAt
 
-			ref, err := sendSecretExpiringNotification(ctx, app, zone)
+			err := sendSecretExpiringNotifications(ctx, app, zone)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(ref).To(BeNil())
+			Expect(app.Status.SentNotifications).To(BeEmpty())
 		})
 
 		It("should send notification when within the threshold", func() {
@@ -173,23 +176,111 @@ var _ = Describe("Notification Helpers", func() {
 			expiresAt := metav1.NewTime(time.Now().Add(3 * 24 * time.Hour)) // 3 days out, threshold is 7 days
 			app.Status.CurrentExpiresAt = &expiresAt
 
-			ref, err := sendSecretExpiringNotification(ctx, app, zone)
+			err := sendSecretExpiringNotifications(ctx, app, zone)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(ref).ToNot(BeNil())
+			Expect(app.Status.SentNotifications).To(HaveLen(1))
+			Expect(app.Status.SentNotifications[0].Threshold).To(Equal((7 * 24 * time.Hour).String()))
 		})
 
-		It("should send notification when expiry is exactly at the threshold boundary", func() {
+		It("should send notification when expiry is just inside the threshold boundary", func() {
 			mockClient := fake.NewMockJanitorClient(GinkgoT())
 			ctx = client.WithClient(ctx, mockClient)
 			setupNotificationMocks(mockClient)
 
-			// Just inside the threshold (slightly less than 7 days)
 			expiresAt := metav1.NewTime(time.Now().Add(7*24*time.Hour - time.Minute))
 			app.Status.CurrentExpiresAt = &expiresAt
 
-			ref, err := sendSecretExpiringNotification(ctx, app, zone)
+			err := sendSecretExpiringNotifications(ctx, app, zone)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(ref).ToNot(BeNil())
+			Expect(app.Status.SentNotifications).To(HaveLen(1))
+		})
+
+		It("should not send duplicate one-shot notification", func() {
+			expiresAt := metav1.NewTime(time.Now().Add(3 * 24 * time.Hour))
+			app.Status.CurrentExpiresAt = &expiresAt
+
+			// Mark as already sent
+			app.Status.SentNotifications = []reminder.SentReminder{{
+				Threshold: (7 * 24 * time.Hour).String(),
+				Ref:       commontypes.ObjectRef{Name: "prev", Namespace: "test-ns"},
+				SentAt:    metav1.NewTime(time.Now().Add(-1 * time.Hour)),
+			}}
+
+			err := sendSecretExpiringNotifications(ctx, app, zone)
+			Expect(err).ToNot(HaveOccurred())
+			// Should still have exactly 1 entry (not updated since it's one-shot)
+			Expect(app.Status.SentNotifications).To(HaveLen(1))
+			Expect(app.Status.SentNotifications[0].Ref.Name).To(Equal("prev"))
+		})
+
+		It("should only fire tightest threshold when multiple are in window", func() {
+			mockClient := fake.NewMockJanitorClient(GinkgoT())
+			ctx = client.WithClient(ctx, mockClient)
+			setupNotificationMocks(mockClient)
+
+			zone.Spec.IdentityProvider.SecretRotation.NotificationThresholds = []reminder.Threshold{
+				{Before: metav1.Duration{Duration: 30 * 24 * time.Hour}}, // 30d
+				{Before: metav1.Duration{Duration: 7 * 24 * time.Hour}},  // 7d
+				{Before: metav1.Duration{Duration: 24 * time.Hour}},      // 1d
+			}
+
+			expiresAt := metav1.NewTime(time.Now().Add(3 * 24 * time.Hour)) // 3 days out
+			app.Status.CurrentExpiresAt = &expiresAt
+
+			err := sendSecretExpiringNotifications(ctx, app, zone)
+			Expect(err).ToNot(HaveOccurred())
+			// Only the 7d threshold should fire (tightest in window), not 30d
+			Expect(app.Status.SentNotifications).To(HaveLen(1))
+			Expect(app.Status.SentNotifications[0].Threshold).To(Equal((7 * 24 * time.Hour).String()))
+		})
+
+		It("should repeat notification when repeat interval has elapsed", func() {
+			mockClient := fake.NewMockJanitorClient(GinkgoT())
+			ctx = client.WithClient(ctx, mockClient)
+			setupNotificationMocks(mockClient)
+
+			repeatInterval := metav1.Duration{Duration: 24 * time.Hour}
+			zone.Spec.IdentityProvider.SecretRotation.NotificationThresholds = []reminder.Threshold{
+				{Before: metav1.Duration{Duration: 7 * 24 * time.Hour}, Repeat: &repeatInterval},
+			}
+
+			expiresAt := metav1.NewTime(time.Now().Add(3 * 24 * time.Hour))
+			app.Status.CurrentExpiresAt = &expiresAt
+
+			// Last sent 25 hours ago (> 24h repeat interval)
+			app.Status.SentNotifications = []reminder.SentReminder{{
+				Threshold: (7 * 24 * time.Hour).String(),
+				Ref:       commontypes.ObjectRef{Name: "prev", Namespace: "test-ns"},
+				SentAt:    metav1.NewTime(time.Now().Add(-25 * time.Hour)),
+			}}
+
+			err := sendSecretExpiringNotifications(ctx, app, zone)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(app.Status.SentNotifications).To(HaveLen(1))
+			// Ref should be updated (upserted)
+			Expect(app.Status.SentNotifications[0].Ref.Name).ToNot(Equal("prev"))
+		})
+
+		It("should not repeat notification when repeat interval has not elapsed", func() {
+			repeatInterval := metav1.Duration{Duration: 24 * time.Hour}
+			zone.Spec.IdentityProvider.SecretRotation.NotificationThresholds = []reminder.Threshold{
+				{Before: metav1.Duration{Duration: 7 * 24 * time.Hour}, Repeat: &repeatInterval},
+			}
+
+			expiresAt := metav1.NewTime(time.Now().Add(3 * 24 * time.Hour))
+			app.Status.CurrentExpiresAt = &expiresAt
+
+			// Last sent 12 hours ago (< 24h repeat interval)
+			app.Status.SentNotifications = []reminder.SentReminder{{
+				Threshold: (7 * 24 * time.Hour).String(),
+				Ref:       commontypes.ObjectRef{Name: "prev", Namespace: "test-ns"},
+				SentAt:    metav1.NewTime(time.Now().Add(-12 * time.Hour)),
+			}}
+
+			err := sendSecretExpiringNotifications(ctx, app, zone)
+			Expect(err).ToNot(HaveOccurred())
+			// Should not have been updated
+			Expect(app.Status.SentNotifications[0].Ref.Name).To(Equal("prev"))
 		})
 	})
 })

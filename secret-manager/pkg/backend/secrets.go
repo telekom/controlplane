@@ -35,7 +35,7 @@ var (
 		return &Secrets{
 			secrets: map[string]SecretValue{
 				"clientSecret":        InitialString(api.GenerateSecretOrDie()),
-				"rotatedClientSecret": InitialString(""),
+				"rotatedClientSecret": InitialString("NOT_USED"),
 				"externalSecrets":     InitialString("{}"),
 			},
 		}

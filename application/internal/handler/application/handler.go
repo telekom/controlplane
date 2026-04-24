@@ -7,6 +7,7 @@ package application
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -18,6 +19,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
+	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gateway "github.com/telekom/controlplane/gateway/api/v1"
@@ -147,53 +149,75 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 
 	// Complete rotation when all sub-resources have settled
 	if rotationInProgress {
-		log := logr.FromContextOrDiscard(ctx)
-
-		// Expiry timestamps are already propagated by CreateIdentityClient.
-		// Check that they are available (identity controller has reconciled).
-		if app.Status.RotatedExpiresAt != nil {
-			// Set rotation status fields only after successful convergence
-			app.Status.RotatedClientSecret = app.Spec.RotatedSecret
-
-			app.SetCondition(metav1.Condition{
-				Type:    secret.SecretRotationConditionType,
-				Status:  metav1.ConditionTrue,
-				Reason:  secret.SecretRotationReasonSuccess,
-				Message: "Secret rotation completed successfully",
-			})
-
-			// Send rotation-completed notification (non-blocking)
-			if notificationRef, err := sendRotationCompletedNotification(ctx, app); err != nil {
-				log.Error(err, "Failed to send secret-rotation-completed notification")
-			} else if notificationRef != nil {
-				upsertNotificationRef(app, *notificationRef)
-			}
-
-			log.Info("Secret rotation completed successfully",
-				"application", app.Name,
-				"team", app.Spec.Team,
-			)
-		} else {
-			log.Info("Secret rotation: expiry timestamps not yet available from identity client, staying InProgress",
-				"application", app.Name,
-			)
-		}
-
-	} else {
-		// Send secret-expiring notification if within the notification threshold (non-blocking)
-		if app.Spec.NeedsClient && app.Status.CurrentExpiresAt != nil {
-			log := logr.FromContextOrDiscard(ctx)
-			notificationRef, err := sendSecretExpiringNotification(ctx, app, zone)
-			if err != nil {
-				log.Error(err, "Failed to send secret-rotation-expiring notification")
-			}
-			if notificationRef != nil {
-				upsertNotificationRef(app, *notificationRef)
-			}
-		}
+		completeRotation(ctx, app)
+	} else if app.Spec.NeedsClient && app.Status.CurrentExpiresAt != nil {
+		handleSecretExpiringNotifications(ctx, app, zone)
 	}
 
 	return nil
+}
+
+func completeRotation(ctx context.Context, app *application.Application) {
+	log := logr.FromContextOrDiscard(ctx)
+
+	// Expiry timestamps are already propagated by CreateIdentityClient.
+	// Check that they are available (identity controller has reconciled).
+	if app.Status.RotatedExpiresAt == nil {
+		log.Info("Secret rotation: expiry timestamps not yet available from identity client, staying InProgress",
+			"application", app.Name,
+		)
+		return
+	}
+
+	// Set rotation status fields only after successful convergence
+	app.Status.RotatedClientSecret = app.Spec.RotatedSecret
+
+	app.SetCondition(metav1.Condition{
+		Type:    secret.SecretRotationConditionType,
+		Status:  metav1.ConditionTrue,
+		Reason:  secret.SecretRotationReasonSuccess,
+		Message: "Secret rotation completed successfully",
+	})
+
+	// Reset expiry reminders from the previous rotation cycle
+	app.Status.SentNotifications = nil
+
+	// Send rotation-completed notification (non-blocking)
+	if notificationRef, err := sendRotationCompletedNotification(ctx, app); err != nil {
+		log.Error(err, "Failed to send secret-rotation-completed notification")
+	} else if notificationRef != nil {
+		app.Status.SentNotifications = reminder.UpsertSent(app.Status.SentNotifications, &reminder.SentReminder{
+			Threshold: PurposeRotationCompleted,
+			Ref:       *notificationRef,
+			SentAt:    metav1.Now(),
+		})
+	}
+
+	log.Info("Secret rotation completed successfully",
+		"application", app.Name,
+		"team", app.Spec.Team,
+	)
+}
+
+func handleSecretExpiringNotifications(ctx context.Context, app *application.Application, zone *admin.Zone) {
+	log := logr.FromContextOrDiscard(ctx)
+	if err := sendSecretExpiringNotifications(ctx, app, zone); err != nil {
+		log.Error(err, "Failed to send secret-rotation-expiring notification")
+	}
+
+	// Schedule next reconciliation for the next reminder event so we
+	// wake up in time rather than waiting for the default requeue interval.
+	rotCfg := zone.Spec.IdentityProvider.SecretRotation
+	if rotCfg != nil && rotCfg.Enabled && len(rotCfg.NotificationThresholds) > 0 {
+		if nextRequeue := reminder.NextRequeue(
+			app.Status.CurrentExpiresAt.Time,
+			rotCfg.NotificationThresholds,
+			app.Status.SentNotifications,
+			time.Now(),
+		); nextRequeue > 0 {
+			contextutil.SetRequeueAfter(ctx, nextRequeue)
+		}
+	}
 }
 
 func (h *ApplicationHandler) Delete(ctx context.Context, app *application.Application) error {
@@ -348,16 +372,4 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 	owner.Status.Consumers = append(owner.Status.Consumers, *types.ObjectRefFromObject(consumer))
 
 	return nil
-}
-
-// upsertNotificationRef inserts or updates a notification reference in the
-// application's NotificationRefs set, using Name as the key.
-func upsertNotificationRef(app *application.Application, ref types.ObjectRef) {
-	for i, existing := range app.Status.NotificationRefs {
-		if existing.Name == ref.Name {
-			app.Status.NotificationRefs[i] = ref
-			return
-		}
-	}
-	app.Status.NotificationRefs = append(app.Status.NotificationRefs, ref)
 }

@@ -5,6 +5,7 @@
 package v1
 
 import (
+	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,17 +41,20 @@ type SecretRotationConfig struct {
 	// +kubebuilder:validation:Required
 	GracePeriod metav1.Duration `json:"gracePeriod"`
 
-	// RotationInterval is the duration after which secrets should be rotated.
-	// This is the interval at which the rotation process will be triggered.
+	// ExpirationPeriod is the duration that the current secret is valid for.
+	// Once this period has elapsed, the secret is considered expired and should be rotated.
 	// +kubebuilder:validation:Required
-	RotationInterval metav1.Duration `json:"rotationInterval"`
+	ExpirationPeriod metav1.Duration `json:"expirationPeriod"`
 
-	// NotificationThreshold is the duration before secret expiry at which a
-	// notification is sent to the owning team, urging them to rotate their secret.
-	// For example, if RotationInterval is 30 days and NotificationThreshold is
-	// 7 days, the team will be notified 7 days before their secret expires.
-	// +kubebuilder:validation:Required
-	NotificationThreshold metav1.Duration `json:"notificationThreshold"`
+	// NotificationThresholds defines the schedule of reminder notifications before
+	// secret expiry. Each entry triggers a notification when the remaining time-to-expiry
+	// crosses that threshold. Only the tightest (smallest) matching threshold is evaluated
+	// per reconciliation cycle to avoid spamming.
+	//
+	// Example: [{before: "720h"}, {before: "168h", repeat: "24h"}]
+	// → single reminder at 30 days, then daily reminders starting at 7 days.
+	// +kubebuilder:validation:MinItems=1
+	NotificationThresholds []reminder.Threshold `json:"notificationThresholds"`
 }
 
 type IdentityProviderConfig struct {

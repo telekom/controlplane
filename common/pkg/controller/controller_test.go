@@ -16,6 +16,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -153,8 +154,7 @@ var _ = Describe("Controller", func() {
 
 			var obj test.TestResource
 			Expect(k8sClient.Get(ctx, req.NamespacedName, &obj)).To(Succeed())
-			Expect(obj.GetConditions()).To(HaveLen(2))
-			Expect(meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing).Status).To(Equal(metav1.ConditionUnknown))
+			Expect(obj.GetConditions()).To(HaveLen(1))
 			Expect(meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady).Status).To(Equal(metav1.ConditionUnknown))
 		})
 
@@ -167,9 +167,29 @@ var _ = Describe("Controller", func() {
 
 			var obj test.TestResource
 			Expect(k8sClient.Get(ctx, req.NamespacedName, &obj)).To(Succeed())
-			Expect(obj.GetConditions()).To(HaveLen(2))
-			Expect(meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeProcessing).Status).To(Equal(metav1.ConditionUnknown))
+			Expect(obj.GetConditions()).To(HaveLen(1))
 			Expect(meta.FindStatusCondition(obj.GetConditions(), condition.ConditionTypeReady).Status).To(Equal(metav1.ConditionFalse))
+		})
+
+		It("should use custom RequeueAfter when handler sets it via ReconcileHint", func() {
+			customRequeue := 10 * time.Second
+			customHandler := handler.NewCustomHandler(
+				func(ctx context.Context, object *test.TestResource) error {
+					contextutil.SetRequeueAfter(ctx, customRequeue)
+					return nil
+				},
+				func(ctx context.Context, obj *test.TestResource) error {
+					return nil
+				},
+			)
+			controller := NewController(customHandler, k8sClient, &recorder)
+
+			res, err := controller.Reconcile(ctx, req, &test.TestResource{})
+			Expect(err).ToNot(HaveOccurred())
+			// The hint value (10s + jitter) should be much lower than the default (~30min).
+			// Jitter multiplies by [1.0, 1.7], so expect 10s <= result <= 17s.
+			Expect(res.RequeueAfter).To(BeNumerically(">=", customRequeue))
+			Expect(res.RequeueAfter).To(BeNumerically("<=", time.Duration(float64(customRequeue)*1.8)))
 		})
 	})
 

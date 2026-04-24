@@ -416,8 +416,8 @@ func createIdentityRealm(ctx context.Context, handlingContext HandlingContext, i
 		if secretRotationConfig != nil && secretRotationConfig.Enabled {
 			identityRealm.Spec.SecretRotation = &identityapi.SecretRotationConfig{
 				GracePeriod:             secretRotationConfig.GracePeriod,
-				ExpirationPeriod:        secretRotationConfig.RotationInterval,
-				RemainingRotationPeriod: secretRotationConfig.RotationInterval, // same as expiration to allow rotation immediately after creation if needed
+				ExpirationPeriod:        secretRotationConfig.ExpirationPeriod,
+				RemainingRotationPeriod: secretRotationConfig.ExpirationPeriod, // same as expiration to allow rotation immediately after creation if needed
 			}
 
 			handlingContext.Zone.EnableFeature(adminv1.FeatureSecretRotation)
