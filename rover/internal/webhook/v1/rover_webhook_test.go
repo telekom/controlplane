@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	"github.com/telekom/controlplane/common/pkg/config"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cerrors "github.com/telekom/controlplane/common/pkg/errors"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +32,7 @@ func NewRover(zone *adminv1.Zone) *roverv1.Rover {
 			Name:      "test-rover",
 			Namespace: "default",
 			Labels: map[string]string{
-				config.EnvironmentLabelKey: zone.Namespace,
+				cconfig.EnvironmentLabelKey: zone.Namespace,
 			},
 		},
 		Spec: roverv1.RoverSpec{
@@ -252,6 +252,114 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 
 				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithDuplicates)
 				assertValidationFailedWith(warnings, err, "duplicate exposure")
+			})
+
+			It("should fail when permissions are configured but permission feature is disabled", func() {
+				roverWithPerms := roverObj.DeepCopy()
+				roverWithPerms.Spec.Permissions = []roverv1.Permission{
+					{
+						Role:     "admin",
+						Resource: "myresource",
+						Actions:  []string{"read"},
+					},
+				}
+
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithPerms)
+				assertValidationFailedWith(warnings, err, "does not support permissions")
+			})
+
+			It("should fail when resource-oriented permission has entry without role", func() {
+				cconfig.FeaturePermission = cconfig.NewFeature("permission", true)
+				defer func() { cconfig.FeaturePermission = cconfig.NewFeature("permission", false) }()
+
+				roverWithPerms := roverObj.DeepCopy()
+				roverWithPerms.Spec.Permissions = []roverv1.Permission{
+					{
+						Resource: "stargate:myapi:v1",
+						Entries: []roverv1.PermissionEntry{
+							{
+								// Missing role - should fail
+								Actions: []string{"read", "write"},
+							},
+						},
+					},
+				}
+
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithPerms)
+				assertValidationFailedWith(warnings, err, "role is required when parent permission has resource set")
+			})
+
+			It("should fail when role-oriented permission has entry without resource", func() {
+				cconfig.FeaturePermission = cconfig.NewFeature("permission", true)
+				defer func() { cconfig.FeaturePermission = cconfig.NewFeature("permission", false) }()
+
+				roverWithPerms := roverObj.DeepCopy()
+				roverWithPerms.Spec.Permissions = []roverv1.Permission{
+					{
+						Role: "admin",
+						Entries: []roverv1.PermissionEntry{
+							{
+								// Missing resource - should fail
+								Actions: []string{"read", "write"},
+							},
+						},
+					},
+				}
+
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithPerms)
+				assertValidationFailedWith(warnings, err, "resource is required when parent permission has role set")
+			})
+
+			It("should succeed when resource-oriented permission has valid role in entries", func() {
+				cconfig.FeaturePermission = cconfig.NewFeature("permission", true)
+				defer func() { cconfig.FeaturePermission = cconfig.NewFeature("permission", false) }()
+
+				roverWithPerms := roverObj.DeepCopy()
+				roverWithPerms.Spec.Permissions = []roverv1.Permission{
+					{
+						Resource: "stargate:myapi:v1",
+						Entries: []roverv1.PermissionEntry{
+							{
+								Role:    "admin",
+								Actions: []string{"read", "write"},
+							},
+							{
+								Role:    "viewer",
+								Actions: []string{"read"},
+							},
+						},
+					},
+				}
+
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithPerms)
+				Expect(err).To(BeNil())
+				Expect(warnings).To(BeEmpty())
+			})
+
+			It("should succeed when role-oriented permission has valid resource in entries", func() {
+				cconfig.FeaturePermission = cconfig.NewFeature("permission", true)
+				defer func() { cconfig.FeaturePermission = cconfig.NewFeature("permission", false) }()
+
+				roverWithPerms := roverObj.DeepCopy()
+				roverWithPerms.Spec.Permissions = []roverv1.Permission{
+					{
+						Role: "admin",
+						Entries: []roverv1.PermissionEntry{
+							{
+								Resource: "stargate:myapi:v1",
+								Actions:  []string{"read", "write"},
+							},
+							{
+								Resource: "stargate:another:v1",
+								Actions:  []string{"read"},
+							},
+						},
+					},
+				}
+
+				warnings, err := validator.ValidateCreateOrUpdate(ctx, roverWithPerms)
+				Expect(err).To(BeNil())
+				Expect(warnings).To(BeEmpty())
 			})
 		})
 

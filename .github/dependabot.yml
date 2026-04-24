@@ -47,6 +47,8 @@ updates:
       - notification
       - notification/api
       - projector
+      - permission
+      - permission/api
     groups:
       minor-patch:
         update-types:

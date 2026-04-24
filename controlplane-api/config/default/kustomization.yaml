@@ -25,7 +25,6 @@ resources:
   - ../certmanager
   - ../network-policy
   - ../prometheus
-  - ../database
   - ../ingress
 
 # Default configuration

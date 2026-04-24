@@ -9,7 +9,6 @@ metadata:
   namespace: system
   annotations:
 spec:
-  ingressClassName: nginx
   rules:
   - host: rover-server.example.com  # Example host that can be overridden via kustomize
     http:

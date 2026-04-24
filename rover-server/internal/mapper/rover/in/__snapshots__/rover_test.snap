@@ -38,6 +38,7 @@
                 Event: (*v1.EventSubscription)(nil),
             },
         },
+        Permissions: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -71,6 +72,7 @@
             },
         },
         Subscriptions: nil,
+        Permissions:   nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -97,6 +99,7 @@
                 Event: (*v1.EventSubscription)(nil),
             },
         },
+        Permissions: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -157,6 +160,7 @@
                 Event: (*v1.EventSubscription)(nil),
             },
         },
+        Permissions: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -242,6 +246,7 @@
                 Event: (*v1.EventSubscription)(nil),
             },
         },
+        Permissions: nil,
     },
     Status: v1.RoverStatus{},
 }
@@ -300,6 +305,98 @@
                     Security:       (*v1.SubscriberSecurity)(nil),
                 },
                 Event: (*v1.EventSubscription)(nil),
+            },
+        },
+        Permissions: nil,
+    },
+    Status: v1.RoverStatus{},
+}
+---
+
+[Rover Mapper MapPermissions must map permissions in flat format - 1]
+&v1.Rover{
+    TypeMeta:   v1.TypeMeta{},
+    ObjectMeta: v1.ObjectMeta{},
+    Spec:       v1.RoverSpec{
+        Zone:           "",
+        IpRestrictions: (*v1.IpRestrictions)(nil),
+        ClientSecret:   "",
+        Exposures:      nil,
+        Subscriptions:  nil,
+        Permissions:    {
+            {
+                Resource: "stargate:payment:v1",
+                Role:     "admin",
+                Actions:  {"read", "write"},
+                Entries:  nil,
+            },
+        },
+    },
+    Status: v1.RoverStatus{},
+}
+---
+
+[Rover Mapper MapPermissions must map permissions in resource-oriented format - 1]
+&v1.Rover{
+    TypeMeta:   v1.TypeMeta{},
+    ObjectMeta: v1.ObjectMeta{},
+    Spec:       v1.RoverSpec{
+        Zone:           "",
+        IpRestrictions: (*v1.IpRestrictions)(nil),
+        ClientSecret:   "",
+        Exposures:      nil,
+        Subscriptions:  nil,
+        Permissions:    {
+            {
+                Resource: "stargate:payment:v1",
+                Role:     "",
+                Actions:  nil,
+                Entries:  {
+                    {
+                        Role:     "admin",
+                        Resource: "",
+                        Actions:  {"read", "write", "delete"},
+                    },
+                    {
+                        Role:     "viewer",
+                        Resource: "",
+                        Actions:  {"read"},
+                    },
+                },
+            },
+        },
+    },
+    Status: v1.RoverStatus{},
+}
+---
+
+[Rover Mapper MapPermissions must map permissions in role-oriented format - 1]
+&v1.Rover{
+    TypeMeta:   v1.TypeMeta{},
+    ObjectMeta: v1.ObjectMeta{},
+    Spec:       v1.RoverSpec{
+        Zone:           "",
+        IpRestrictions: (*v1.IpRestrictions)(nil),
+        ClientSecret:   "",
+        Exposures:      nil,
+        Subscriptions:  nil,
+        Permissions:    {
+            {
+                Resource: "",
+                Role:     "admin",
+                Actions:  nil,
+                Entries:  {
+                    {
+                        Role:     "",
+                        Resource: "stargate:payment:v1",
+                        Actions:  {"read", "write"},
+                    },
+                    {
+                        Role:     "",
+                        Resource: "stargate:billing:v1",
+                        Actions:  {"read", "write"},
+                    },
+                },
             },
         },
     },

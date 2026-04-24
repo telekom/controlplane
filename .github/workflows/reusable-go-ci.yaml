@@ -75,6 +75,11 @@ on:
         required: false
         type: string
         default: ${{ github.event_name == 'schedule' && 'nightly' || '' }}
+      coverage_threshold:
+        description: "Minimum coverage percentage required. Set to 0 to disable."
+        required: false
+        type: number
+        default: 70
 
     outputs:
       image_digest:
@@ -99,7 +104,7 @@ jobs:
           cache: false # Using a separate cache step
 
       - name: Restore Go Cache
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.cache/go-build
@@ -144,7 +149,7 @@ jobs:
           cache: false # Using a separate cache step
 
       - name: Restore Go Cache
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.cache/go-build
@@ -153,10 +158,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-${{ inputs.module }}-
 
-      - name: Set up gotestfmt
-        uses: gotesttools/gotestfmt-action@8b4478c7019be847373babde9300210e7de34bfb # v2.2.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@v1.13.0 # h1:+Lh454O9mu9AMG1APV4o0y7oDYKyik/3kBOiCqiEpRo=
 
       - name: Build and test module
         shell: bash
@@ -166,46 +169,53 @@ jobs:
         run: make test
         continue-on-error: ${{ inputs.allow_tests_failure }}
 
-      - name: Generate HTML coverage report
-        shell: bash
-        working-directory: ${{ inputs.module }}
-        run: go tool cover -html=cover.out -o coverage.html
-
-      - name: Generate Cobertura coverage report
+      - name: Coverage summary
+        if: ${{ always() }}
         shell: bash
         working-directory: ${{ inputs.module }}
         run: |
-          go install github.com/boumenot/gocover-cobertura@latest
-          gocover-cobertura < cover.out > cobertura.xml
+          if [ -f cover.out ]; then
+            total=$(go tool cover -func=cover.out | awk '/^total:/ {print $NF}')
+            echo "**Coverage for ${{ inputs.name }}:** ${total}" >> $GITHUB_STEP_SUMMARY
+          fi
 
-      - name: Upload go test log
-        if: ${{ always() }} # Upload even if previous steps fail
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-        with:
-          name: ${{ inputs.name }}-gotest.log
-          path: ${{ inputs.module }}/gotest.log
-          if-no-files-found: error
+      - name: Check coverage threshold
+        if: ${{ always() }}
+        shell: bash
+        working-directory: ${{ inputs.module }}
+        env:
+          COVERAGE_THRESHOLD: ${{ inputs.coverage_threshold }}
+        run: |
+          if [ ! -f cover.out ]; then
+            echo "::warning::No coverage file found"
+            exit 0
+          fi
+          total=$(go tool cover -func=cover.out | awk '/^total:/ {print $NF}' | tr -d '%')
+          echo "Total coverage: ${total}% (threshold: ${COVERAGE_THRESHOLD}%)"
+          if [ "$(echo "${total} < ${COVERAGE_THRESHOLD}" | bc -l)" -eq 1 ]; then
+            echo "::error::Coverage ${total}% is below threshold ${COVERAGE_THRESHOLD}%"
+            exit 1
+          fi
 
-      - name: Upload test reports artifact
+      - name: Upload test reports
         id: upload_test_reports_artifact_step
-        if: ${{ always() }} # Upload even if previous steps fail
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ inputs.name }}-test-report
           path: |
             ${{ inputs.module }}/cover.out
-            ${{ inputs.module }}/coverage.html
-            ${{ inputs.module }}/cobertura.xml
             ${{ inputs.module }}/junit.xml
+            ${{ inputs.module }}/gotest.log
 
-      - name: Publish test report as Check
+      - name: Publish test report
         if: ${{ always() && (github.event_name == 'pull_request') }}
-        uses: mikepenz/action-junit-report@49b2ca06f62aa7ef83ae6769a2179271e160d8e4 # v6.3.1
+        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
+        continue-on-error: ${{ inputs.allow_tests_failure }}
         with:
-          report_paths: "${{ inputs.module }}/junit.xml"
-          check_name: "Test Report (${{ inputs.name }})"
-          comment: false
-          include_passed: true
+          name: "Test Results (${{ inputs.name }})"
+          path: "${{ inputs.module }}/junit.xml"
+          reporter: java-junit
 
   source_scan:
     name: "Source Vulnerability Scan for ${{ inputs.name }}"
@@ -225,7 +235,7 @@ jobs:
           cache: false
 
       - name: Restore Go Cache
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.cache/go-build
@@ -257,7 +267,7 @@ jobs:
           cache: false
 
       - name: Restore Go Cache
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.cache/go-build
@@ -267,7 +277,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        uses: github/codeql-action/init@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
         with:
           languages: go
           build-mode: manual # Set to manual as we provide a build step
@@ -288,7 +298,7 @@ jobs:
           fi
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        uses: github/codeql-action/analyze@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
         with:
           category: "/language:go/${{ inputs.name }}"
 
@@ -312,7 +322,7 @@ jobs:
           cache: false
 
       - name: Restore Go Cache
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.cache/go-build
@@ -325,7 +335,7 @@ jobs:
         uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d # v0.9
 
       - name: Inject slug vars
-        uses: rlespinasse/github-slug-action@9e7def61550737ba68c62d34a32dd31792e3f429 # v5.5.0
+        uses: rlespinasse/github-slug-action@e6f261660910b273384c5c42b17a0217881b217a # v5.6.0
 
       - name: Build and Push Image with Ko
         id: build_image_ko_step
@@ -364,7 +374,7 @@ jobs:
     steps:
       # No checkout or Go setup needed if only running Trivy on a remote image
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ inputs.container_registry }}/${{ inputs.github_repository }}/${{ inputs.name }}@${{ needs.build.outputs.image_digest }}
           exit-code: "1"
