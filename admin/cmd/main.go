@@ -22,11 +22,8 @@ import (
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	// +kubebuilder:scaffold:imports
 )
-
-// NOTE: the +kubebuilder:scaffold:imports marker was removed because gci (import formatting)
-// does not allow non-import comments inside the import block. If you need to scaffold new
-// CRD types with kubebuilder, re-add it as the last line inside the import parentheses.
 
 var (
 	scheme   = runtime.NewScheme()
