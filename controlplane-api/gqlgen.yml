@@ -32,6 +32,39 @@ models:
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.IntID
+  TeamMutationResult:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.TeamMutationResult
+  CreateTeamInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.CreateTeamInput
+  UpdateTeamInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.UpdateTeamInput
+  MemberInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.MemberInput
+  RotateTeamTokenInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateTeamTokenInput
+  RotateApplicationSecretInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateApplicationSecretInput
+  RotateApplicationSecretResult:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateApplicationSecretResult
+  DecideApprovalRequestInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecideApprovalRequestInput
+  DecideApprovalInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecideApprovalInput
+  DecisionInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecisionInput
+  ApprovalMutationResult:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApprovalMutationResult
   Node:
     model:
       - github.com/telekom/controlplane/controlplane-api/ent.Noder

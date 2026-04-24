@@ -97,6 +97,20 @@ type TeamApiConfig struct {
 	Apis []ApiConfig `json:"apis"`
 }
 
+type PermissionsConfig struct {
+	// ApiBasePath is the base path for the permission service API endpoint
+	// Format: /eni/chevron/v2/permission
+	// This will be appended to the gateway URL to build the full permissions URL
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^/.*`
+	ApiBasePath string `json:"apiBasePath"`
+
+	// ConsoleUrl is the admin UI for the permission service (optional)
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Format=uri
+	ConsoleUrl *string `json:"consoleUrl,omitempty"`
+}
+
 // ZoneSpec defines the desired state of Zone
 type ZoneSpec struct {
 	IdentityProvider IdentityProviderConfig `json:"identityProvider"`
@@ -106,6 +120,10 @@ type ZoneSpec struct {
 	// +kubebuilder:validation:Enum=World;Enterprise
 	// Visibility controls what subscriptions are allowed from and to this zone. It's also relevant for features like failover
 	Visibility ZoneVisibility `json:"visibility"`
+
+	// Permissions configuration for permission service integration
+	// +kubebuilder:validation:Optional
+	Permissions *PermissionsConfig `json:"permissions,omitempty"`
 }
 
 type Links struct {
@@ -123,6 +141,13 @@ type Links struct {
 	// +kubebuilder:validation:Format=uri
 	// +optional
 	LmsIssuer string `json:"gatewayLmsIssuer"`
+
+	// PermissionsUrl for permission queries (dynamically built from gateway URL)
+	// Format: https://<gateway>/eni/chevron/v2/permission
+	// Applications append ?application=<clientId> when querying
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Format=uri
+	PermissionsUrl string `json:"permissionsUrl,omitempty"`
 }
 
 // ZoneStatus defines the observed state of Zone

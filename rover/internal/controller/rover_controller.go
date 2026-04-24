@@ -20,6 +20,7 @@ import (
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	application "github.com/telekom/controlplane/application/api/v1"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	rover "github.com/telekom/controlplane/rover/api/v1"
 )
 
@@ -47,6 +48,8 @@ type RoverReconciler struct {
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventexposures,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=event.cp.ei.telekom.de,resources=eventsubscriptions,verbs=get;list;watch;create;update;patch;delete
 
+// +kubebuilder:rbac:groups=permission.cp.ei.telekom.de,resources=permissionsets,verbs=get;list;watch;create;update;patch;delete
+
 // +kubebuilder:rbac:groups=application.cp.ei.telekom.de,resources=applications,verbs=get;list;watch;create;update;patch;delete
 
 func (r *RoverReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -67,6 +70,10 @@ func (r *RoverReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if cconfig.FeaturePubSub.IsEnabled() {
 		b = b.Owns(&eventv1.EventExposure{}).
 			Owns(&eventv1.EventSubscription{})
+	}
+
+	if cconfig.FeaturePermission.IsEnabled() {
+		b = b.Owns(&permissionv1.PermissionSet{})
 	}
 
 	return b.WithOptions(controller.Options{
