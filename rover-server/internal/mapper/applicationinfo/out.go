@@ -6,6 +6,7 @@ package applicationinfo
 
 import (
 	"context"
+	"net/url"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -62,7 +63,9 @@ func MapApplicationInfo(ctx context.Context, rover *roverv1.Rover, stores *store
 	if err := FillExposureInfo(ctx, rover, appInfo, stores); err != nil {
 		return nil, errors.Wrap(err, "failed to fill exposure info")
 	}
-	// ... fill other info
+	if err := FillChevronInfo(ctx, rover, appInfo, stores); err != nil {
+		return nil, errors.Wrap(err, "failed to fill chevron info")
+	}
 
 	return appInfo, nil
 }
@@ -313,4 +316,75 @@ func toApiApprovalStrategyFromEvent(strategy eventv1.ApprovalStrategy) api.Appro
 	default:
 		return api.ApprovalStrategy(strings.ToUpper(string(strategy)))
 	}
+}
+
+// FillChevronInfo populates Chevron permission-related fields in ApplicationInfo
+// when the Rover has permissions configured.
+func FillChevronInfo(ctx context.Context, rover *roverv1.Rover, appInfo *api.ApplicationInfo, stores *store.Stores) error {
+	// Only populate chevron info if permissions are configured
+	if len(rover.Spec.Permissions) == 0 {
+		return nil
+	}
+
+	bCtx, ok := security.FromContext(ctx)
+	if !ok {
+		return nil
+	}
+
+	zone, err := stores.ZoneStore.Get(ctx, bCtx.Environment, rover.Spec.Zone)
+	if err != nil {
+		return errors.Wrap(err, "failed to get zone for chevron info")
+	}
+
+	// Chevron URL from zone status links + application query param
+	if zone.Status.Links.PermissionsUrl != "" {
+		// Parse base URL to properly handle existing query params
+		chevronURL, err := url.Parse(zone.Status.Links.PermissionsUrl)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse permissions URL")
+		}
+
+		// Get existing query params or create new
+		queryParams := chevronURL.Query()
+		// Set application param with proper URL encoding
+		queryParams.Set("application", appInfo.IrisClientId)
+		chevronURL.RawQuery = queryParams.Encode()
+
+		appInfo.ChevronUrl = chevronURL.String()
+		appInfo.ChevronApplication = appInfo.IrisClientId
+
+		// Add variables
+		appInfo.Variables = append(appInfo.Variables, api.Data{
+			Name:  "tardis.chevron.url",
+			Value: appInfo.ChevronUrl,
+		})
+		appInfo.Variables = append(appInfo.Variables, api.Data{
+			Name:  "tardis.chevron.application",
+			Value: appInfo.ChevronApplication,
+		})
+
+		// Copy permission rules to external authorization format
+		appInfo.Authorization = make([]api.AuthorizationInfo, 0, len(rover.Spec.Permissions))
+		for _, perm := range rover.Spec.Permissions {
+			authInfo := api.AuthorizationInfo{
+				Resource: perm.Resource,
+				Role:     perm.Role,
+				Actions:  perm.Actions,
+			}
+			if len(perm.Entries) > 0 {
+				perms := make([]api.AuthorizationPermissionInfo, 0, len(perm.Entries))
+				for _, entry := range perm.Entries {
+					perms = append(perms, api.AuthorizationPermissionInfo{
+						Resource: entry.Resource,
+						Role:     entry.Role,
+						Actions:  entry.Actions,
+					})
+				}
+				authInfo.Permissions = perms
+			}
+			appInfo.Authorization = append(appInfo.Authorization, authInfo)
+		}
+	}
+
+	return nil
 }
