@@ -22,7 +22,6 @@ import (
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
@@ -141,7 +140,7 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 	}
 
 	// Populate Permissions URL if configured and feature enabled
-	if cconfig.FeaturePermission.IsEnabled() && obj.Spec.Permissions != nil {
+	if config.FeaturePermission.IsEnabled() && obj.Spec.Permissions != nil {
 		// Use url.JoinPath to properly handle slashes when combining gateway URL with ApiBasePath
 		permissionsUrl, err := url.JoinPath(obj.Status.Links.Url, obj.Spec.Permissions.ApiBasePath)
 		if err != nil {
