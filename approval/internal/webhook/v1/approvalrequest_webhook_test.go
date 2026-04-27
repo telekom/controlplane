@@ -83,7 +83,7 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 		var validator ApprovalRequestCustomValidator
 
 		// helper to build an ApprovalRequest with the given strategy, spec state, and last state
-		makeAR := func(strategy approvalv1.ApprovalStrategy, specState, lastState approvalv1.ApprovalState, decisions []approvalv1.Decision) *approvalv1.ApprovalRequest {
+		makeAR := func(strategy approvalv1.ApprovalStrategy, specState approvalv1.ApprovalState, decisions []approvalv1.Decision) *approvalv1.ApprovalRequest {
 			return &approvalv1.ApprovalRequest{
 				Spec: approvalv1.ApprovalRequestSpec{
 					Strategy:  strategy,
@@ -91,7 +91,7 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 					Decisions: decisions,
 				},
 				Status: approvalv1.ApprovalRequestStatus{
-					LastState: lastState,
+					LastState: approvalv1.ApprovalStatePending,
 				},
 			}
 		}
@@ -101,53 +101,53 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 		}
 
 		It("should reject Simple Pending->Granted with zero decisions", func() {
-			oldObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStatePending, approvalv1.ApprovalStatePending, nil)
-			newObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted, approvalv1.ApprovalStatePending, nil)
+			oldObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStatePending, nil)
+			newObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted, nil)
 			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("at least one decision"))
 		})
 
 		It("should reject Simple Pending->Rejected with zero decisions", func() {
-			oldObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStatePending, approvalv1.ApprovalStatePending, nil)
-			newObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateRejected, approvalv1.ApprovalStatePending, nil)
+			oldObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStatePending, nil)
+			newObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateRejected, nil)
 			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("at least one decision"))
 		})
 
 		It("should accept Simple Pending->Granted with one decision", func() {
-			oldObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStatePending, approvalv1.ApprovalStatePending, nil)
-			newObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted, approvalv1.ApprovalStatePending, oneDecision)
+			oldObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStatePending, nil)
+			newObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateGranted, oneDecision)
 			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should accept Simple Pending->Rejected with one decision", func() {
-			oldObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStatePending, approvalv1.ApprovalStatePending, nil)
-			newObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateRejected, approvalv1.ApprovalStatePending, oneDecision)
+			oldObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStatePending, nil)
+			newObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStateRejected, oneDecision)
 			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should reject FourEyes Pending->Semigranted with zero decisions", func() {
-			oldObj := makeAR(approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStatePending, approvalv1.ApprovalStatePending, nil)
-			newObj := makeAR(approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStateSemigranted, approvalv1.ApprovalStatePending, nil)
+			oldObj := makeAR(approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStatePending, nil)
+			newObj := makeAR(approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStateSemigranted, nil)
 			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("at least one decision"))
 		})
 
 		It("should accept FourEyes Pending->Semigranted with one decision", func() {
-			oldObj := makeAR(approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStatePending, approvalv1.ApprovalStatePending, nil)
-			newObj := makeAR(approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStateSemigranted, approvalv1.ApprovalStatePending, oneDecision)
+			oldObj := makeAR(approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStatePending, nil)
+			newObj := makeAR(approvalv1.ApprovalStrategyFourEyes, approvalv1.ApprovalStateSemigranted, oneDecision)
 			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should not require decisions for Auto strategy state changes", func() {
-			oldObj := makeAR(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStatePending, approvalv1.ApprovalStatePending, nil)
-			newObj := makeAR(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, approvalv1.ApprovalStatePending, nil)
+			oldObj := makeAR(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStatePending, nil)
+			newObj := makeAR(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, nil)
 			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -156,15 +156,15 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 			autoDecision := []approvalv1.Decision{
 				{Name: "System", Comment: approvalv1.AutoApprovedComment, ResultingState: approvalv1.ApprovalStateGranted},
 			}
-			oldObj := makeAR(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStatePending, approvalv1.ApprovalStatePending, nil)
-			newObj := makeAR(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, approvalv1.ApprovalStatePending, autoDecision)
+			oldObj := makeAR(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStatePending, nil)
+			newObj := makeAR(approvalv1.ApprovalStrategyAuto, approvalv1.ApprovalStateGranted, autoDecision)
 			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should not require decisions when state has not changed", func() {
-			oldObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStatePending, approvalv1.ApprovalStatePending, nil)
-			newObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStatePending, approvalv1.ApprovalStatePending, nil)
+			oldObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStatePending, nil)
+			newObj := makeAR(approvalv1.ApprovalStrategySimple, approvalv1.ApprovalStatePending, nil)
 			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
 			Expect(err).NotTo(HaveOccurred())
 		})

@@ -63,7 +63,7 @@ func isTerminalApprovalRequestState(state approvalv1.ApprovalState) bool {
 
 // hasRelevantGrantedARSpecChanges returns true if update attempts to modify
 // approval-outcome fields on an already granted ApprovalRequest.
-func hasRelevantGrantedARSpecChanges(oldSpec, newSpec approvalv1.ApprovalRequestSpec) bool {
+func hasRelevantGrantedARSpecChanges(oldSpec, newSpec *approvalv1.ApprovalRequestSpec) bool {
 	if oldSpec.State != newSpec.State {
 		return true
 	}

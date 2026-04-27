@@ -5,8 +5,6 @@
 package controller
 
 import (
-	"context"
-
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -24,8 +22,6 @@ import (
 )
 
 var _ = Describe("ApprovalRequest Controller", func() {
-	ctx := context.Background()
-
 	sourceResource := test.NewObject("my-test-resource", testNamespace)
 	sourceResource.SetLabels(map[string]string{
 		config.EnvironmentLabelKey: testEnvironment,

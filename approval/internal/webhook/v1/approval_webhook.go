@@ -109,8 +109,8 @@ func (a *ApprovalCustomValidator) ValidateUpdate(_ context.Context, oldObj, newO
 	// Enforce distinct deciders for FourEyes strategy on ANY transition to Granted
 	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyFourEyes {
 		if stateChanged && newObj.Spec.State == approvalv1.ApprovalStateGranted {
-			if err := validateDistinctDeciders(newObj.Spec.Decisions); err != nil {
-				return warnings, err
+			if distinctErr := validateDistinctDeciders(newObj.Spec.Decisions); distinctErr != nil {
+				return warnings, distinctErr
 			}
 		}
 	}

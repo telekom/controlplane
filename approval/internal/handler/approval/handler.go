@@ -120,8 +120,8 @@ func handleNotifications(ctx context.Context, approval *approvalv1.Approval) err
 }
 
 func (h *ApprovalHandler) Delete(ctx context.Context, approval *approvalv1.Approval) error {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
-	log.Info("Approval deleted")
+	logger.Info("Approval deleted")
 	return nil
 }

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package controller //nolint: dupl
+package controller //nolint:dupl // approval and approvalrequest controllers are intentionally similar
 
 import (
 	"context"
