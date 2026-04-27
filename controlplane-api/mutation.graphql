@@ -1,0 +1,140 @@
+# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+input CreateTeamInput {
+  "Target environment (used for namespace derivation)"
+  environment: String!
+  "Group this team belongs to"
+  group: String!
+  "Team name"
+  name: String!
+  "Team contact email"
+  email: String!
+  "Team members (at least one required)"
+  members: [MemberInput!]!
+}
+
+input UpdateTeamInput {
+  "Target environment"
+  environment: String!
+  "Group this team belongs to"
+  group: String!
+  "Team name (identifies which team to update)"
+  name: String!
+  "Updated team contact email"
+  email: String
+  "Updated team members"
+  members: [MemberInput!]
+}
+
+input MemberInput {
+  name: String!
+  email: String!
+}
+
+"Result of a team mutation. Reports acceptance status - the actual reconciliation happens asynchronously."
+type TeamMutationResult {
+  "Whether the K8s API accepted the request"
+  success: Boolean!
+  "Human-readable message"
+  message: String!
+  "The namespace where the Team CRD was created/updated"
+  namespace: String
+  "The Team CRD resource name"
+  resourceName: String
+}
+
+input RotateTeamTokenInput {
+  "Target environment"
+  environment: String!
+  "Group this team belongs to"
+  group: String!
+  "Team name"
+  name: String!
+}
+
+input RotateApplicationSecretInput {
+  "Target environment"
+  environment: String!
+  "Team that owns this application"
+  team: String!
+  "Application resource name"
+  name: String!
+}
+
+"Result of an application mutation. Reports acceptance status - the actual reconciliation happens asynchronously."
+type RotateApplicationSecretResult {
+  "Whether the K8s API accepted the request"
+  success: Boolean!
+  "Human-readable message"
+  message: String!
+  "The namespace where the Application CRD was updated"
+  namespace: String
+  "The Application CRD resource name"
+  resourceName: String
+}
+
+input DecideApprovalRequestInput {
+  "Target environment"
+  environment: String!
+  "Requester team that owns the namespace where the ApprovalRequest lives"
+  team: String!
+  "ApprovalRequest resource name"
+  name: String!
+  "Action to take"
+  action: ApprovalAction!
+  "Decision details"
+  decision: DecisionInput!
+}
+
+input DecideApprovalInput {
+  "Target environment"
+  environment: String!
+  "Requester team that owns the namespace where the Approval lives"
+  team: String!
+  "Approval resource name"
+  name: String!
+  "Action to take (Allow, Deny, Suspend, Resume)"
+  action: ApprovalAction!
+  "Decision details"
+  decision: DecisionInput!
+}
+
+input DecisionInput {
+  "Name of the person making the decision"
+  name: String!
+  "Email of the person making the decision"
+  email: String!
+  "Optional comment"
+  comment: String
+}
+
+"Result of an approval mutation."
+type ApprovalMutationResult {
+  "Whether the K8s API accepted the request"
+  success: Boolean!
+  "Human-readable message"
+  message: String!
+  "The new state after the transition"
+  newState: String
+  "The namespace of the resource"
+  namespace: String
+  "The resource name"
+  resourceName: String
+}
+
+type Mutation {
+  "Create a new Team in Kubernetes"
+  createTeam(input: CreateTeamInput!): TeamMutationResult!
+  "Update an existing Team in Kubernetes"
+  updateTeam(input: UpdateTeamInput!): TeamMutationResult!
+  "Rotate the token for an existing Team. Triggers async secret regeneration via the operator."
+  rotateTeamToken(input: RotateTeamTokenInput!): TeamMutationResult!
+  "Rotate the client secret for an existing Application. Triggers async secret regeneration via the operator webhook."
+  rotateApplicationSecret(input: RotateApplicationSecretInput!): RotateApplicationSecretResult!
+  "Decide on an ApprovalRequest (approve or deny initial access)."
+  decideApprovalRequest(input: DecideApprovalRequestInput!): ApprovalMutationResult!
+  "Decide on an existing Approval (suspend, resume, deny, or re-allow ongoing access)."
+  decideApproval(input: DecideApprovalInput!): ApprovalMutationResult!
+}
