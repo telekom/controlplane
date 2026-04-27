@@ -15,6 +15,7 @@ type viewerKey struct{}
 // Viewer represents the authenticated user and their accessible teams.
 type Viewer struct {
 	Teams []string
+	Group string // Group name from BusinessContext (set for group-level viewers)
 	Admin bool
 }
 
