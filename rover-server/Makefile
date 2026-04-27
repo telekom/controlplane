@@ -25,4 +25,4 @@ COVER_PACKAGES := $(shell go list ./internal/... ./pkg/... | grep -v '^./interna
 
 .PHONY: test
 test: fmt vet ## Run tests.
-	gotestsum --format pkgname --jsonfile gotest.log -- $(TEST_PACKAGES) -ginkgo.junit-report=ginkgo-junit.xml -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -mod=readonly -race
+	gotestsum --format pkgname --junitfile junit.xml --jsonfile gotest.log -- $(TEST_PACKAGES) -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -mod=readonly -race
