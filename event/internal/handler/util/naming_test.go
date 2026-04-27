@@ -7,8 +7,9 @@ package util
 import (
 	"testing"
 
-	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 )
 
 func TestNamingConstants(t *testing.T) {
