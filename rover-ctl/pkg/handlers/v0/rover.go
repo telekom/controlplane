@@ -90,35 +90,29 @@ func PatchAuthentication(spec map[string]any) {
 	}
 	authMap, ok := auth.(map[string]any)
 	if !ok {
-		delete(spec, "authentication")
 		return
 	}
 
 	m2m, exists := authMap["m2m"]
 	if !exists {
-		delete(spec, "authentication")
 		return
 	}
 	m2mMap, ok := m2m.(map[string]any)
 	if !ok {
-		delete(spec, "authentication")
 		return
 	}
 
 	clientAuthMethod, exists := m2mMap["clientAuthMethod"]
 	if !exists {
-		delete(spec, "authentication")
 		return
 	}
 	clientAuthMethodStr, ok := clientAuthMethod.(string)
 	if !ok {
-		delete(spec, "authentication")
 		return
 	}
 
 	apiValue, valid := clientAuthMethodMapping[strings.ToLower(clientAuthMethodStr)]
 	if !valid {
-		delete(spec, "authentication")
 		return
 	}
 

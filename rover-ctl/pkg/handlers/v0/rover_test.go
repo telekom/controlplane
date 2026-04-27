@@ -440,7 +440,7 @@ var _ = Describe("Rover Handler", func() {
 			Expect(content).NotTo(HaveKey("authentication"))
 		})
 
-		It("should drop authentication when clientAuthMethod has invalid value", func() {
+		It("should leave authentication untouched when clientAuthMethod has invalid value", func() {
 			obj := &types.UnstructuredObject{
 				Content: map[string]any{
 					"spec": map[string]any{
@@ -457,10 +457,10 @@ var _ = Describe("Rover Handler", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			content := obj.GetContent()
-			Expect(content).NotTo(HaveKey("authentication"))
+			Expect(content).To(HaveKey("authentication"))
 		})
 
-		It("should drop authentication when authentication format is invalid", func() {
+		It("should leave authentication untouched when format is not a map", func() {
 			obj := &types.UnstructuredObject{
 				Content: map[string]any{
 					"spec": map[string]any{
@@ -473,7 +473,27 @@ var _ = Describe("Rover Handler", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			content := obj.GetContent()
-			Expect(content).NotTo(HaveKey("authentication"))
+			Expect(content).To(HaveKey("authentication"))
+		})
+
+		It("should leave authentication untouched when already in rover-server format", func() {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{
+						"authentication": map[string]any{
+							"clientAuthMethod": "BASIC",
+						},
+					},
+				},
+			}
+
+			err := v0.PatchRoverRequest(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			content := obj.GetContent()
+			auth, ok := content["authentication"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(auth["clientAuthMethod"]).To(Equal("BASIC"))
 		})
 	})
 
