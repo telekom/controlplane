@@ -7,17 +7,17 @@ package gateway_consumer
 import (
 	"context"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	organisationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler"
 	"github.com/telekom/controlplane/organization/internal/handler/util"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type GatewayConsumerHandler struct {
-}
+type GatewayConsumerHandler struct{}
 
 var _ handler.ObjectHandler = &GatewayConsumerHandler{}
 

@@ -8,13 +8,6 @@ import (
 	"context"
 	"strings"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
-	identityv1 "github.com/telekom/controlplane/identity/api/v1"
-	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
-	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
-	teamhandler "github.com/telekom/controlplane/organization/internal/handler/team"
-	"github.com/telekom/controlplane/organization/internal/index"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -25,6 +18,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
+	teamhandler "github.com/telekom/controlplane/organization/internal/handler/team"
+	"github.com/telekom/controlplane/organization/internal/index"
 )
 
 // TeamReconciler reconciles a Team object
@@ -97,9 +98,9 @@ func (r *TeamReconciler) mapGroupToTeam(ctx context.Context, obj client.Object) 
 	}
 
 	requests := make([]reconcile.Request, 0, len(teamList.Items))
-	for _, team := range teamList.Items {
-		if team.Spec.Group == groupObj.Name {
-			requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&team)})
+	for i := range teamList.Items {
+		if teamList.Items[i].Spec.Group == groupObj.Name {
+			requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&teamList.Items[i])})
 		}
 	}
 
@@ -127,9 +128,9 @@ func (r *TeamReconciler) mapClientToTeam(ctx context.Context, obj client.Object)
 	}
 
 	requests := make([]reconcile.Request, 0, len(teamList.Items))
-	for _, team := range teamList.Items {
-		if team.Status.Namespace == identityClient.GetNamespace() && strings.HasSuffix(identityClient.GetName(), "--team-user") {
-			requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&team)})
+	for i := range teamList.Items {
+		if teamList.Items[i].Status.Namespace == identityClient.GetNamespace() && strings.HasSuffix(identityClient.GetName(), "--team-user") {
+			requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&teamList.Items[i])})
 		}
 	}
 
@@ -157,9 +158,9 @@ func (r *TeamReconciler) mapNotificationChannelToTeam(ctx context.Context, obj c
 	}
 
 	requests := make([]reconcile.Request, 0, len(teamList.Items))
-	for _, team := range teamList.Items {
-		if team.Status.Namespace == notificationChannel.GetNamespace() {
-			requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&team)})
+	for i := range teamList.Items {
+		if teamList.Items[i].Status.Namespace == notificationChannel.GetNamespace() {
+			requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&teamList.Items[i])})
 		}
 	}
 
