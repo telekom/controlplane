@@ -76,17 +76,17 @@ func (_c *MockKeycloakService_ConfigureSecretRotationPolicy_Call) RunAndReturn(r
 	return _c
 }
 
-// CreateOrReplaceClient provides a mock function with given fields: ctx, realmName, client, supportsGracefulRotation
-func (_m *MockKeycloakService) CreateOrReplaceClient(ctx context.Context, realmName string, client *v1.Client, supportsGracefulRotation bool) error {
-	ret := _m.Called(ctx, realmName, client, supportsGracefulRotation)
+// CreateOrReplaceClient provides a mock function with given fields: ctx, realmName, client, opts
+func (_m *MockKeycloakService) CreateOrReplaceClient(ctx context.Context, realmName string, client *v1.Client, opts keycloak.ClientUpdateOptions) error {
+	ret := _m.Called(ctx, realmName, client, opts)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateOrReplaceClient")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *v1.Client, bool) error); ok {
-		r0 = rf(ctx, realmName, client, supportsGracefulRotation)
+	if rf, ok := ret.Get(0).(func(context.Context, string, *v1.Client, keycloak.ClientUpdateOptions) error); ok {
+		r0 = rf(ctx, realmName, client, opts)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -103,14 +103,14 @@ type MockKeycloakService_CreateOrReplaceClient_Call struct {
 //   - ctx context.Context
 //   - realmName string
 //   - client *v1.Client
-//   - supportsGracefulRotation bool
-func (_e *MockKeycloakService_Expecter) CreateOrReplaceClient(ctx interface{}, realmName interface{}, client interface{}, supportsGracefulRotation interface{}) *MockKeycloakService_CreateOrReplaceClient_Call {
-	return &MockKeycloakService_CreateOrReplaceClient_Call{Call: _e.mock.On("CreateOrReplaceClient", ctx, realmName, client, supportsGracefulRotation)}
+//   - opts keycloak.ClientUpdateOptions
+func (_e *MockKeycloakService_Expecter) CreateOrReplaceClient(ctx interface{}, realmName interface{}, client interface{}, opts interface{}) *MockKeycloakService_CreateOrReplaceClient_Call {
+	return &MockKeycloakService_CreateOrReplaceClient_Call{Call: _e.mock.On("CreateOrReplaceClient", ctx, realmName, client, opts)}
 }
 
-func (_c *MockKeycloakService_CreateOrReplaceClient_Call) Run(run func(ctx context.Context, realmName string, client *v1.Client, supportsGracefulRotation bool)) *MockKeycloakService_CreateOrReplaceClient_Call {
+func (_c *MockKeycloakService_CreateOrReplaceClient_Call) Run(run func(ctx context.Context, realmName string, client *v1.Client, opts keycloak.ClientUpdateOptions)) *MockKeycloakService_CreateOrReplaceClient_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(*v1.Client), args[3].(bool))
+		run(args[0].(context.Context), args[1].(string), args[2].(*v1.Client), args[3].(keycloak.ClientUpdateOptions))
 	})
 	return _c
 }
@@ -120,7 +120,7 @@ func (_c *MockKeycloakService_CreateOrReplaceClient_Call) Return(_a0 error) *Moc
 	return _c
 }
 
-func (_c *MockKeycloakService_CreateOrReplaceClient_Call) RunAndReturn(run func(context.Context, string, *v1.Client, bool) error) *MockKeycloakService_CreateOrReplaceClient_Call {
+func (_c *MockKeycloakService_CreateOrReplaceClient_Call) RunAndReturn(run func(context.Context, string, *v1.Client, keycloak.ClientUpdateOptions) error) *MockKeycloakService_CreateOrReplaceClient_Call {
 	_c.Call.Return(run)
 	return _c
 }

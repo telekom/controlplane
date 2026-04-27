@@ -121,7 +121,7 @@ var _ = Describe("HandlerRealm", func() {
 			Expect(err.Error()).To(ContainSubstring("not found"))
 		})
 
-		It("should panic when the IdP is not ready (known latent bug)", func() {
+		It("should return an error when the IdP is not ready", func() {
 			realm := newValidRealm()
 
 			By("returning an IdP without Ready condition")
@@ -141,10 +141,10 @@ var _ = Describe("HandlerRealm", func() {
 				Return(nil)
 
 			handler := NewHandlerRealm(keycloak.NewServiceFactory())
+			err := handler.CreateOrUpdate(ctx, realm)
 
-			Expect(func() {
-				_ = handler.CreateOrUpdate(ctx, realm)
-			}).To(Panic(), "expected panic when IdP is not ready (nil dereference in mapToRealmStatus)")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("not ready"))
 		})
 
 		It("should return a BlockedError when IdP validation fails", func() {

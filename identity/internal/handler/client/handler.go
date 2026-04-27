@@ -6,6 +6,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -43,16 +45,12 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		return fmt.Errorf("failed to get client secret from secret-manager: %w", err)
 	}
 
-	ready, realm, err := realmHandler.GetRealmByName(ctx, client.Spec.Realm, true)
+	_, realm, err := realmHandler.GetRealmByName(ctx, client.Spec.Realm, true)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrlerrors.BlockedErrorf("Realm %q not found", client.Spec.Realm.String())
 		}
 		return err
-	}
-
-	if !ready {
-		return ctrlerrors.BlockedErrorf("Realm %q is not ready", client.Spec.Realm.String())
 	}
 
 	mapToClientStatus(&realm.Status, &client.Status)
@@ -72,14 +70,40 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 	clientCopy := client.DeepCopy()
 	clientCopy.Spec.ClientSecret = resolvedSecret
 
-	err = realmClient.CreateOrReplaceClient(ctx, realm.Name, clientCopy, realm.SupportsGracefulSecretRotation() && client.SupportsSecretRotation())
+	supportsRotation := realm.SupportsGracefulSecretRotation() && client.SupportsSecretRotation()
+
+	// Determine whether forceSecretRotation was already triggered for this
+	// generation. If the SecretRotation condition is True with reason
+	// "Accepted" and its ObservedGeneration matches the current generation,
+	// a previous reconciliation already called forceSecretRotation but the
+	// subsequent PUT failed. In that case we skip the force-rotation to
+	// avoid evicting the original secret from Keycloak's rotated slot.
+	skipForceRotation := false
+	if supportsRotation {
+		if cond := meta.FindStatusCondition(client.GetConditions(), identityv1.SecretRotationConditionType); cond != nil {
+			if cond.Reason == identityv1.SecretRotationReasonAccepted && cond.ObservedGeneration == client.Generation {
+				skipForceRotation = true
+			}
+		}
+		// Mark rotation as accepted before calling CreateOrReplaceClient.
+		// If the handler returns an error after forceSecretRotation, the
+		// controller persists this condition so that the next reconciliation
+		// can detect the retry and skip the destructive rotation step.
+		if !skipForceRotation {
+			client.SetCondition(identityv1.NewSecretRotationAcceptedCondition())
+		}
+	}
+
+	err = realmClient.CreateOrReplaceClient(ctx, realm.Name, clientCopy, keycloak.ClientUpdateOptions{
+		SupportsGracefulRotation: supportsRotation,
+		SkipForceRotation:        skipForceRotation,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to create or update client: %w", err)
 	}
 
 	// --- Graceful rotation: check for a rotated (old) secret ---
 	// Only query rotation state when both the realm and client support it.
-	supportsRotation := realm.SupportsGracefulSecretRotation() && client.SupportsSecretRotation()
 	if supportsRotation {
 		rotationInfo, rotErr := realmClient.GetClientSecretRotationInfo(ctx, realm.Name, clientCopy)
 		if rotErr != nil {
@@ -112,6 +136,13 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 			// No rotation in progress — clear the status fields.
 			client.Status.RotatedClientSecret = ""
 			client.Status.RotatedSecretExpiresAt = nil
+			// Only mark as Completed if a rotation was previously active
+			// (Accepted or Rotated). Avoid setting a misleading condition
+			// on clients that were never rotated.
+			existing := meta.FindStatusCondition(client.Status.Conditions, identityv1.SecretRotationConditionType)
+			if existing != nil && (existing.Reason == identityv1.SecretRotationReasonAccepted || existing.Reason == identityv1.SecretRotationReasonRotated) {
+				client.SetCondition(identityv1.NewSecretRotationCompletedCondition())
+			}
 		}
 
 		// --- Current secret expiry: compute when Keycloak will auto-expire it ---
@@ -144,6 +175,14 @@ func (h *HandlerClient) Delete(ctx context.Context, obj *identityv1.Client) erro
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Info("Realm not found, skipping Keycloak client deletion", "realm", obj.Spec.Realm.String())
+			return nil
+		}
+		// If the realm exists but is not ready (BlockedError), skip deletion
+		// rather than blocking the finalizer — the Keycloak client will be
+		// orphaned but the CR can be cleaned up.
+		var be ctrlerrors.BlockedError
+		if errors.As(err, &be) {
+			logger.Info("Realm not ready, skipping Keycloak client deletion", "realm", obj.Spec.Realm.String())
 			return nil
 		}
 		return err

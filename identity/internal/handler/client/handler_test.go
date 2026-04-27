@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -620,6 +621,437 @@ var _ = Describe("HandlerClient", func() {
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cl.Status.SecretExpiresAt).To(BeNil())
+		})
+
+		// --- SecretRotation lifecycle: condition handling & idempotency ---
+
+		It("should set Accepted condition and pass correct ClientUpdateOptions", func() {
+			cl := newValidClient()
+			cl.Spec.ClientSecret = "plain-secret"
+
+			realm := newValidRealm()
+			realm.Spec.SecretRotation = &identityv1.SecretRotationConfig{
+				ExpirationPeriod:        metav1.Duration{Duration: 29 * 24 * time.Hour},
+				GracePeriod:             metav1.Duration{Duration: 1 * time.Hour},
+				RemainingRotationPeriod: metav1.Duration{Duration: 10 * 24 * time.Hour},
+			}
+
+			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
+				return "resolved-secret", nil
+			})
+			mockRealmGet(mockK8s, realm)
+
+			var capturedOpts keycloak.ClientUpdateOptions
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
+				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				Run(func(_ context.Context, _ string, _ *identityv1.Client, opts keycloak.ClientUpdateOptions) {
+					capturedOpts = opts
+				}).
+				Return(nil)
+			mockSvc.EXPECT().
+				GetClientSecretRotationInfo(mock.Anything, mock.Anything, mock.Anything).
+				Return(&keycloak.ClientSecretRotationInfo{}, nil)
+
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
+			})
+
+			handler := NewHandlerClient(factory)
+			err := handler.CreateOrUpdate(ctx, cl)
+
+			Expect(err).ToNot(HaveOccurred())
+
+			By("verifying ClientUpdateOptions flags")
+			Expect(capturedOpts.SupportsGracefulRotation).To(BeTrue())
+			Expect(capturedOpts.SkipForceRotation).To(BeFalse())
+
+			By("verifying SecretRotation condition was set")
+			cond := meta.FindStatusCondition(cl.GetConditions(), identityv1.SecretRotationConditionType)
+			Expect(cond).ToNot(BeNil())
+			// The handler sets Accepted before CreateOrReplaceClient (line 93).
+			// Because GetClientSecretRotationInfo returns no rotated secret and the
+			// existing condition has reason Accepted, the handler transitions it to
+			// Completed (line 143-144).
+			Expect(cond.Reason).To(Equal(identityv1.SecretRotationReasonCompleted))
+		})
+
+		It("should skip force rotation when Accepted condition matches current generation", func() {
+			cl := newValidClient()
+			cl.Spec.ClientSecret = "plain-secret"
+			cl.Generation = 3
+
+			// Pre-set Accepted condition with matching ObservedGeneration.
+			meta.SetStatusCondition(&cl.Status.Conditions, metav1.Condition{
+				Type:               identityv1.SecretRotationConditionType,
+				Status:             metav1.ConditionTrue,
+				Reason:             identityv1.SecretRotationReasonAccepted,
+				Message:            "Secret change detected, rotation accepted",
+				LastTransitionTime: metav1.Now(),
+				ObservedGeneration: 3,
+			})
+
+			realm := newValidRealm()
+			realm.Spec.SecretRotation = &identityv1.SecretRotationConfig{
+				ExpirationPeriod:        metav1.Duration{Duration: 29 * 24 * time.Hour},
+				GracePeriod:             metav1.Duration{Duration: 1 * time.Hour},
+				RemainingRotationPeriod: metav1.Duration{Duration: 10 * 24 * time.Hour},
+			}
+
+			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
+				return "resolved-secret", nil
+			})
+			mockRealmGet(mockK8s, realm)
+
+			var capturedOpts keycloak.ClientUpdateOptions
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
+				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				Run(func(_ context.Context, _ string, _ *identityv1.Client, opts keycloak.ClientUpdateOptions) {
+					capturedOpts = opts
+				}).
+				Return(nil)
+			mockSvc.EXPECT().
+				GetClientSecretRotationInfo(mock.Anything, mock.Anything, mock.Anything).
+				Return(&keycloak.ClientSecretRotationInfo{}, nil)
+
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
+			})
+
+			handler := NewHandlerClient(factory)
+			err := handler.CreateOrUpdate(ctx, cl)
+
+			Expect(err).ToNot(HaveOccurred())
+
+			By("verifying SkipForceRotation is true")
+			Expect(capturedOpts.SkipForceRotation).To(BeTrue())
+			Expect(capturedOpts.SupportsGracefulRotation).To(BeTrue())
+		})
+
+		It("should not skip force rotation when Accepted condition has stale generation", func() {
+			cl := newValidClient()
+			cl.Spec.ClientSecret = "plain-secret"
+			cl.Generation = 5
+
+			// Pre-set Accepted condition with stale ObservedGeneration.
+			meta.SetStatusCondition(&cl.Status.Conditions, metav1.Condition{
+				Type:               identityv1.SecretRotationConditionType,
+				Status:             metav1.ConditionTrue,
+				Reason:             identityv1.SecretRotationReasonAccepted,
+				Message:            "Secret change detected, rotation accepted",
+				LastTransitionTime: metav1.Now(),
+				ObservedGeneration: 4, // stale
+			})
+
+			realm := newValidRealm()
+			realm.Spec.SecretRotation = &identityv1.SecretRotationConfig{
+				ExpirationPeriod:        metav1.Duration{Duration: 29 * 24 * time.Hour},
+				GracePeriod:             metav1.Duration{Duration: 1 * time.Hour},
+				RemainingRotationPeriod: metav1.Duration{Duration: 10 * 24 * time.Hour},
+			}
+
+			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
+				return "resolved-secret", nil
+			})
+			mockRealmGet(mockK8s, realm)
+
+			var capturedOpts keycloak.ClientUpdateOptions
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
+				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				Run(func(_ context.Context, _ string, _ *identityv1.Client, opts keycloak.ClientUpdateOptions) {
+					capturedOpts = opts
+				}).
+				Return(nil)
+			mockSvc.EXPECT().
+				GetClientSecretRotationInfo(mock.Anything, mock.Anything, mock.Anything).
+				Return(&keycloak.ClientSecretRotationInfo{}, nil)
+
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
+			})
+
+			handler := NewHandlerClient(factory)
+			err := handler.CreateOrUpdate(ctx, cl)
+
+			Expect(err).ToNot(HaveOccurred())
+
+			By("verifying SkipForceRotation is false (stale generation)")
+			Expect(capturedOpts.SkipForceRotation).To(BeFalse())
+		})
+
+		It("should preserve Accepted condition when CreateOrReplaceClient fails", func() {
+			cl := newValidClient()
+			cl.Spec.ClientSecret = "plain-secret"
+
+			realm := newValidRealm()
+			realm.Spec.SecretRotation = &identityv1.SecretRotationConfig{
+				ExpirationPeriod:        metav1.Duration{Duration: 29 * 24 * time.Hour},
+				GracePeriod:             metav1.Duration{Duration: 1 * time.Hour},
+				RemainingRotationPeriod: metav1.Duration{Duration: 10 * 24 * time.Hour},
+			}
+
+			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
+				return "resolved-secret", nil
+			})
+			mockRealmGet(mockK8s, realm)
+
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
+				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				Return(fmt.Errorf("keycloak 503: service unavailable"))
+
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
+			})
+
+			handler := NewHandlerClient(factory)
+			err := handler.CreateOrUpdate(ctx, cl)
+
+			Expect(err).To(HaveOccurred())
+
+			By("verifying Accepted condition is still present for retry idempotency")
+			cond := meta.FindStatusCondition(cl.GetConditions(), identityv1.SecretRotationConditionType)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Reason).To(Equal(identityv1.SecretRotationReasonAccepted))
+			Expect(cond.Status).To(Equal(metav1.ConditionTrue))
+		})
+
+		It("should set Completed condition when rotated secret disappears after Rotated state", func() {
+			cl := newValidClient()
+			cl.Spec.ClientSecret = "plain-secret"
+
+			// Pre-set Rotated condition (simulating active grace period that has now expired).
+			meta.SetStatusCondition(&cl.Status.Conditions, metav1.Condition{
+				Type:               identityv1.SecretRotationConditionType,
+				Status:             metav1.ConditionTrue,
+				Reason:             identityv1.SecretRotationReasonRotated,
+				Message:            "Client secret was rotated at 2025-06-16T12:00:00Z",
+				LastTransitionTime: metav1.Now(),
+			})
+
+			realm := newValidRealm()
+			realm.Spec.SecretRotation = &identityv1.SecretRotationConfig{
+				ExpirationPeriod:        metav1.Duration{Duration: 29 * 24 * time.Hour},
+				GracePeriod:             metav1.Duration{Duration: 1 * time.Hour},
+				RemainingRotationPeriod: metav1.Duration{Duration: 10 * 24 * time.Hour},
+			}
+
+			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
+				return "resolved-secret", nil
+			})
+			mockRealmGet(mockK8s, realm)
+
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
+				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				Return(nil)
+			mockSvc.EXPECT().
+				GetClientSecretRotationInfo(mock.Anything, mock.Anything, mock.Anything).
+				Return(&keycloak.ClientSecretRotationInfo{}, nil) // no rotated secret
+
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
+			})
+
+			handler := NewHandlerClient(factory)
+			err := handler.CreateOrUpdate(ctx, cl)
+
+			Expect(err).ToNot(HaveOccurred())
+
+			By("verifying condition transitioned to Completed")
+			cond := meta.FindStatusCondition(cl.GetConditions(), identityv1.SecretRotationConditionType)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Reason).To(Equal(identityv1.SecretRotationReasonCompleted))
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+
+			By("verifying rotation status fields are cleared")
+			Expect(cl.Status.RotatedClientSecret).To(BeEmpty())
+			Expect(cl.Status.RotatedSecretExpiresAt).To(BeNil())
+		})
+
+		It("should set Completed condition when rotated secret disappears after Accepted state", func() {
+			cl := newValidClient()
+			cl.Spec.ClientSecret = "plain-secret"
+			cl.Generation = 2
+
+			// Pre-set Accepted condition with matching generation (simulating retry).
+			meta.SetStatusCondition(&cl.Status.Conditions, metav1.Condition{
+				Type:               identityv1.SecretRotationConditionType,
+				Status:             metav1.ConditionTrue,
+				Reason:             identityv1.SecretRotationReasonAccepted,
+				Message:            "Secret change detected, rotation accepted",
+				LastTransitionTime: metav1.Now(),
+				ObservedGeneration: 2,
+			})
+
+			realm := newValidRealm()
+			realm.Spec.SecretRotation = &identityv1.SecretRotationConfig{
+				ExpirationPeriod:        metav1.Duration{Duration: 29 * 24 * time.Hour},
+				GracePeriod:             metav1.Duration{Duration: 1 * time.Hour},
+				RemainingRotationPeriod: metav1.Duration{Duration: 10 * 24 * time.Hour},
+			}
+
+			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
+				return "resolved-secret", nil
+			})
+			mockRealmGet(mockK8s, realm)
+
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
+				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				Return(nil)
+			mockSvc.EXPECT().
+				GetClientSecretRotationInfo(mock.Anything, mock.Anything, mock.Anything).
+				Return(&keycloak.ClientSecretRotationInfo{}, nil)
+
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
+			})
+
+			handler := NewHandlerClient(factory)
+			err := handler.CreateOrUpdate(ctx, cl)
+
+			Expect(err).ToNot(HaveOccurred())
+
+			By("verifying condition transitioned to Completed from Accepted")
+			cond := meta.FindStatusCondition(cl.GetConditions(), identityv1.SecretRotationConditionType)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Reason).To(Equal(identityv1.SecretRotationReasonCompleted))
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+		})
+
+		It("should transition to Completed when first rotation produces no rotated secret", func() {
+			cl := newValidClient()
+			cl.Spec.ClientSecret = "plain-secret"
+
+			realm := newValidRealm()
+			realm.Spec.SecretRotation = &identityv1.SecretRotationConfig{
+				ExpirationPeriod:        metav1.Duration{Duration: 29 * 24 * time.Hour},
+				GracePeriod:             metav1.Duration{Duration: 1 * time.Hour},
+				RemainingRotationPeriod: metav1.Duration{Duration: 10 * 24 * time.Hour},
+			}
+
+			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
+				return "resolved-secret", nil
+			})
+			mockRealmGet(mockK8s, realm)
+
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
+				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				Return(nil)
+			mockSvc.EXPECT().
+				GetClientSecretRotationInfo(mock.Anything, mock.Anything, mock.Anything).
+				Return(&keycloak.ClientSecretRotationInfo{}, nil)
+
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
+			})
+
+			handler := NewHandlerClient(factory)
+			err := handler.CreateOrUpdate(ctx, cl)
+
+			Expect(err).ToNot(HaveOccurred())
+
+			By("verifying condition transitions from Accepted (set before CreateOrReplaceClient) to Completed")
+			// The handler sets Accepted at line 93. When GetClientSecretRotationInfo
+			// returns no rotated secret and the existing condition has reason Accepted,
+			// line 143-144 transitions it to Completed. This is correct for a rotation
+			// where the old and new secret happen to be the same.
+			cond := meta.FindStatusCondition(cl.GetConditions(), identityv1.SecretRotationConditionType)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Reason).To(Equal(identityv1.SecretRotationReasonCompleted))
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+		})
+
+		It("should not expose rotated secret in status when clientSecret is a secret-manager reference", func() {
+			cl := newValidClient()
+			// cl.Spec.ClientSecret is "$<client-secret>" by default (a secret-manager ref)
+			Expect(secrets.IsRef(cl.Spec.ClientSecret)).To(BeTrue(), "precondition: default client uses secret-manager ref")
+
+			realm := newValidRealm()
+			realm.Spec.SecretRotation = &identityv1.SecretRotationConfig{
+				ExpirationPeriod:        metav1.Duration{Duration: 29 * 24 * time.Hour},
+				GracePeriod:             metav1.Duration{Duration: 1 * time.Hour},
+				RemainingRotationPeriod: metav1.Duration{Duration: 10 * 24 * time.Hour},
+			}
+
+			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
+				return "resolved-secret", nil
+			})
+			mockRealmGet(mockK8s, realm)
+
+			var expiresAt int64 = 1750078800
+			var createdAt int64 = 1750075200
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
+				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				Return(nil)
+			mockSvc.EXPECT().
+				GetClientSecretRotationInfo(mock.Anything, mock.Anything, mock.Anything).
+				Return(&keycloak.ClientSecretRotationInfo{
+					RotatedSecret:    "old-secret-value",
+					RotatedCreatedAt: &createdAt,
+					RotatedExpiresAt: &expiresAt,
+				}, nil)
+
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
+			})
+
+			handler := NewHandlerClient(factory)
+			err := handler.CreateOrUpdate(ctx, cl)
+
+			Expect(err).ToNot(HaveOccurred())
+
+			By("verifying rotated secret is suppressed in status")
+			Expect(cl.Status.RotatedClientSecret).To(BeEmpty(),
+				"rotated secret should not be exposed when clientSecret is a secret-manager reference")
+
+			By("verifying metadata (expiry) is still set")
+			Expect(cl.Status.RotatedSecretExpiresAt).ToNot(BeNil(),
+				"rotation metadata should still be populated")
+		})
+
+		It("should preserve Accepted condition when GetClientSecretRotationInfo fails", func() {
+			cl := newValidClient()
+			cl.Spec.ClientSecret = "plain-secret"
+
+			realm := newValidRealm()
+			realm.Spec.SecretRotation = &identityv1.SecretRotationConfig{
+				ExpirationPeriod:        metav1.Duration{Duration: 29 * 24 * time.Hour},
+				GracePeriod:             metav1.Duration{Duration: 1 * time.Hour},
+				RemainingRotationPeriod: metav1.Duration{Duration: 10 * 24 * time.Hour},
+			}
+
+			overrideSecretsGet(func(_ context.Context, _ string) (string, error) {
+				return "resolved-secret", nil
+			})
+			mockRealmGet(mockK8s, realm)
+
+			mockSvc := keycloakservice.NewMockKeycloakService(GinkgoT())
+			mockSvc.EXPECT().
+				CreateOrReplaceClient(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+				Return(nil)
+			mockSvc.EXPECT().
+				GetClientSecretRotationInfo(mock.Anything, mock.Anything, mock.Anything).
+				Return((*keycloak.ClientSecretRotationInfo)(nil), fmt.Errorf("keycloak 500"))
+
+			factory := keycloak.ServiceFactoryFunc(func(_ identityv1.RealmStatus) (keycloak.KeycloakService, error) {
+				return mockSvc, nil
+			})
+
+			handler := NewHandlerClient(factory)
+			err := handler.CreateOrUpdate(ctx, cl)
+
+			Expect(err).To(HaveOccurred())
+
+			By("verifying Accepted condition survives for retry")
+			cond := meta.FindStatusCondition(cl.GetConditions(), identityv1.SecretRotationConditionType)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Reason).To(Equal(identityv1.SecretRotationReasonAccepted))
 		})
 
 		It("should clear stale rotation fields when SecretRotation is disabled", func() {

@@ -11,9 +11,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	common "github.com/telekom/controlplane/common/pkg/types"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
-	"k8s.io/apimachinery/pkg/api/meta"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 )
@@ -26,8 +26,9 @@ func GetRealmByName(ctx context.Context, realmRef *common.ObjectRef, resolveSecr
 	if err != nil {
 		return false, nil, errors.Wrapf(err, "failed to get realm %s", realmRef.String())
 	}
-	if !meta.IsStatusConditionTrue(realm.GetConditions(), condition.ConditionTypeReady) {
-		return false, nil, nil
+
+	if err := condition.EnsureReady(realm); err != nil {
+		return false, nil, ctrlerrors.BlockedErrorf("realm %q is not ready", realmRef.String())
 	}
 
 	if resolveSecret {

@@ -5,10 +5,7 @@
 package v1
 
 import (
-	"fmt"
-	"time"
-
-	"github.com/telekom/controlplane/common/pkg/types"
+	types "github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -118,16 +115,4 @@ func (el *RealmList) GetItems() []types.Object {
 
 func init() {
 	SchemeBuilder.Register(&Realm{}, &RealmList{})
-}
-
-var SecretRotationConditionType = "SecretRotation"
-
-func NewSecretRotatedCondition(rotatedAt time.Time) metav1.Condition {
-	return metav1.Condition{
-		Type:               SecretRotationConditionType,
-		Status:             metav1.ConditionTrue,
-		Reason:             "SecretRotated",
-		Message:            fmt.Sprintf("Client secret was rotated at %s", rotatedAt.UTC().Format(time.RFC3339)),
-		LastTransitionTime: metav1.Now(),
-	}
 }
