@@ -15,6 +15,7 @@ go.work*
 # ignore test output
 gotest.log
 junit.xml
+ginkgo-junit.xml
 cover.out
 snapshots
 allure-report
