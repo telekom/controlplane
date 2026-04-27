@@ -20,8 +20,3 @@ snapshots
 allure-report
 allure-results
 debug-results
-
-# ignore Claude AI files
-CLAUDE.md
-REVIEW.md
-.claude
