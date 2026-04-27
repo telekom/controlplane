@@ -40,6 +40,7 @@ func ViewerFromBusinessContext(client *ent.Client, securityEnabled ...bool) grap
 		case security.ClientTypeAdmin:
 			v.Admin = true
 		case security.ClientTypeGroup:
+			v.Group = bCtx.Group
 			// Look up all teams in the group
 			sysCtx := viewer.SystemContext(ctx)
 			teams, err := client.Team.Query().
