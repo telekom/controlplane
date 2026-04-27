@@ -43,6 +43,36 @@ spec:
           spec:
             description: spec defines the desired state of NotificationTemplate
             properties:
+              attachments:
+                description: |-
+                  Attachments defines file attachments to include when sending this notification.
+                  Each attachment is rendered as a Go template against the notification properties.
+                items:
+                  description: AttachmentTemplate defines a single templated file
+                    attachment.
+                  properties:
+                    contentType:
+                      description: ContentType is the MIME type (e.g. "text/calendar;
+                        charset=utf-8").
+                      minLength: 1
+                      type: string
+                    filename:
+                      description: Filename is the name of the attached file (e.g.
+                        "invite.ics").
+                      minLength: 1
+                      type: string
+                    template:
+                      description: |-
+                        Template is the Go text/template for the file content,
+                        rendered against the notification's properties.
+                      minLength: 1
+                      type: string
+                  required:
+                  - contentType
+                  - filename
+                  - template
+                  type: object
+                type: array
               channelType:
                 description: ChannelType defines which notification channel type this
                   template is for

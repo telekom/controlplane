@@ -9,9 +9,17 @@ import (
 	"text/template"
 )
 
+// ParsedAttachment holds a parsed attachment template ready for rendering.
+type ParsedAttachment struct {
+	Filename        string
+	ContentType     string
+	ContentTemplate *template.Template
+}
+
 type TemplateWrapper struct {
 	BodyTemplate    *template.Template
 	SubjectTemplate *template.Template
+	Attachments     []ParsedAttachment
 }
 
 type TemplateCache struct {
