@@ -10,11 +10,6 @@ import (
 	"os"
 	"path/filepath"
 
-	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -29,6 +24,11 @@ import (
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/approval/internal/controller"
 	webhookv1 "github.com/telekom/controlplane/approval/internal/webhook/v1"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	// +kubebuilder:scaffold:imports
 )
 

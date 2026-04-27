@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -18,7 +19,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/api/v1/builder"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type NotificationScenario string
@@ -96,7 +96,6 @@ func extractDecider(decider *approvalv1.Decider) (map[string]any, error) {
 }
 
 func extractRequester(requester *approvalv1.Requester) (map[string]any, error) {
-
 	requesterPropertiesMap := map[string]any{}
 
 	if requester.Properties.Size() != 0 {

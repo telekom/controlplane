@@ -8,20 +8,18 @@ import (
 	"context"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("ApprovalRequest Webhook", func() {
-
 	Context("When creating ApprovalRequest under Defaulting Webhook", func() {
 		It("Should fill in the default value if a required field is empty", func() {
-
 			// TODO(user): Add your logic here
-
 		})
 
 		It("Should add an AUTO-approved decision for Auto strategy", func() {
@@ -73,15 +71,11 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 
 	Context("When creating ApprovalRequest under Validating Webhook", func() {
 		It("Should deny if a required field is empty", func() {
-
 			// TODO(user): Add your logic here
-
 		})
 
 		It("Should admit if all required fields are provided", func() {
-
 			// TODO(user): Add your logic here
-
 		})
 	})
 
@@ -89,7 +83,7 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 		var validator ApprovalRequestCustomValidator
 
 		// helper to build an ApprovalRequest with the given strategy, spec state, and last state
-		makeAR := func(strategy approvalv1.ApprovalStrategy, specState approvalv1.ApprovalState, lastState approvalv1.ApprovalState, decisions []approvalv1.Decision) *approvalv1.ApprovalRequest {
+		makeAR := func(strategy approvalv1.ApprovalStrategy, specState, lastState approvalv1.ApprovalState, decisions []approvalv1.Decision) *approvalv1.ApprovalRequest {
 			return &approvalv1.ApprovalRequest{
 				Spec: approvalv1.ApprovalRequestSpec{
 					Strategy:  strategy,
@@ -177,7 +171,6 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 	})
 
 	Context("validateDistinctDeciders", func() {
-
 		It("should accept two decisions from distinct deciders", func() {
 			decisions := []approvalv1.Decision{
 				{Name: "Alice", Email: "alice@telekom.de", Comment: "Looks good", ResultingState: approvalv1.ApprovalStateSemigranted},
@@ -312,7 +305,6 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 	})
 
 	Context("defaultDecisionFields via ApprovalRequest defaulter", func() {
-
 		It("should populate Timestamp and ResultingState on new decisions", func() {
 			defaulter := ApprovalRequestCustomDefaulter{}
 			before := time.Now()
@@ -700,5 +692,4 @@ var _ = Describe("ApprovalRequest Webhook", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
-
 })

@@ -8,25 +8,23 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
 	"github.com/telekom/controlplane/approval/internal/handler/util"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 )
 
 var _ handler.Handler[*approvalv1.ApprovalRequest] = &ApprovalRequestHandler{}
 
-type ApprovalRequestHandler struct {
-}
+type ApprovalRequestHandler struct{}
 
 func (h *ApprovalRequestHandler) CreateOrUpdate(ctx context.Context, approvalReq *approvalv1.ApprovalRequest) error {
 	log := log.FromContext(ctx)
@@ -120,7 +118,7 @@ func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRe
 	)
 
 	var scenario util.NotificationScenario
-	if approvalReq.ObjectMeta.GetGeneration() == 1 {
+	if approvalReq.GetGeneration() == 1 {
 		scenario = util.NotificationScenarioCreated
 	} else {
 		scenario = util.NotificationScenarioUpdated
@@ -138,7 +136,6 @@ func handleNotifications(ctx context.Context, approvalReq *approvalv1.ApprovalRe
 		Actor:                  util.ActorDecider,
 		Action:                 approvalReq.Spec.Action,
 	})
-
 	if err != nil {
 		return errors.Wrapf(err, "Failed to send notification to decider %q while handling approval request %+v", approvalReq.Spec.Decider.TeamName, approvalReq)
 	}

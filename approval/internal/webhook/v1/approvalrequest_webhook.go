@@ -7,12 +7,13 @@ package v1
 import (
 	"context"
 
-	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
-	arhandler "github.com/telekom/controlplane/approval/internal/handler/approvalrequest"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	arhandler "github.com/telekom/controlplane/approval/internal/handler/approvalrequest"
 )
 
 // log is for logging in this package.
@@ -87,7 +88,7 @@ func (ar *ApprovalRequestCustomValidator) ValidateCreate(_ context.Context, obj 
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, oldObj *approvalv1.ApprovalRequest, newObj *approvalv1.ApprovalRequest) (warnings admission.Warnings, err error) {
+func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj *approvalv1.ApprovalRequest) (warnings admission.Warnings, err error) {
 	approvalrequestlog.Info("validate update", "name", newObj.Name)
 
 	// Block relevant approval-outcome changes on terminal-state ApprovalRequests.

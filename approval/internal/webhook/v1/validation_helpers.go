@@ -7,10 +7,11 @@ package v1
 import (
 	"strings"
 
-	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 )
 
 // defaultDecisionFields fills in Timestamp and ResultingState on decisions
@@ -62,7 +63,7 @@ func isTerminalApprovalRequestState(state approvalv1.ApprovalState) bool {
 
 // hasRelevantGrantedARSpecChanges returns true if update attempts to modify
 // approval-outcome fields on an already granted ApprovalRequest.
-func hasRelevantGrantedARSpecChanges(oldSpec approvalv1.ApprovalRequestSpec, newSpec approvalv1.ApprovalRequestSpec) bool {
+func hasRelevantGrantedARSpecChanges(oldSpec, newSpec approvalv1.ApprovalRequestSpec) bool {
 	if oldSpec.State != newSpec.State {
 		return true
 	}

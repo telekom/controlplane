@@ -8,23 +8,21 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/approval/internal/handler/util"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	approval_condition "github.com/telekom/controlplane/approval/internal/condition"
+	"github.com/telekom/controlplane/approval/internal/handler/util"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 )
 
 var _ handler.Handler[*approvalv1.Approval] = &ApprovalHandler{}
 
-type ApprovalHandler struct {
-}
+type ApprovalHandler struct{}
 
 func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approvalv1.Approval) error {
-
 	// handle the notifications first
 	err := handleNotifications(ctx, approval)
 	if err != nil {
@@ -68,7 +66,6 @@ func (h *ApprovalHandler) CreateOrUpdate(ctx context.Context, approval *approval
 }
 
 func handleNotifications(ctx context.Context, approval *approvalv1.Approval) error {
-
 	// initial notification (approvalRequest granted) is handled by the approval request handler
 
 	if (approval.Spec.State != approval.Status.LastState) && approval.Status.LastState != "" {
@@ -91,7 +88,6 @@ func handleNotifications(ctx context.Context, approval *approvalv1.Approval) err
 			Actor:                  util.ActorDecider,
 			Action:                 approval.Spec.Action,
 		})
-
 		if err != nil {
 			return errors.Wrapf(err, "Failed to send notification to decider %q while handling approval %+v", approval.Spec.Decider.TeamName, approval)
 		}
@@ -113,7 +109,6 @@ func handleNotifications(ctx context.Context, approval *approvalv1.Approval) err
 				Actor:                  util.ActorRequester,
 				Action:                 approval.Spec.Action,
 			})
-
 			if err != nil {
 				return errors.Wrapf(err, "Failed to send notification to requester %q while handling approval %+v", approval.Spec.Requester.TeamName, approval)
 			}

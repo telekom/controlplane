@@ -7,24 +7,23 @@ package controller
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/test"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ApprovalRequest Controller", func() {
-
 	ctx := context.Background()
 
 	sourceResource := test.NewObject("my-test-resource", testNamespace)
@@ -65,14 +64,12 @@ var _ = Describe("ApprovalRequest Controller", func() {
 	})
 
 	Context("When reconciling a resource", func() {
-
 		BeforeEach(func() {
 			By("Creating the test resource")
 			Expect(k8sClient.Create(ctx, sourceResource)).To(Succeed())
 		})
 
 		It("should automatically accept auto-approved approval-requests", func() {
-
 			By("defining the ApprovalRequest with auto strategy and granted state")
 			ar := arTempl.DeepCopy()
 
@@ -145,7 +142,7 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				By("Checking notification was created for granted state")
 				Expect(ar.Status.NotificationRefs).NotTo(BeNil())
 				Expect(ar.Status.NotificationRefs).NotTo(BeEmpty())
-				var notification = &notificationv1.Notification{}
+				notification := &notificationv1.Notification{}
 				Expect(k8sClient.Get(ctx, ar.Status.NotificationRefs[0].K8s(), notification)).NotTo(HaveOccurred())
 				Expect(notification.Spec.Purpose).To(ContainSubstring("approvalrequest--subscribe--created--decider"))
 
@@ -170,14 +167,11 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				g.Expect(readyCondition).ToNot(BeNil())
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionFalse))
 				g.Expect(readyCondition.Message).To(Equal("Request has been rejected"))
-
 			}, timeout, interval).Should(Succeed())
 		})
-
 	})
 
 	Context("Simple strategy", func() {
-
 		It("should handle Pending -> Granted transition and carry decisions to Approval", func() {
 			By("Creating a separate source resource for this test")
 			simpleResource := test.NewObject("simple-granted-src", testNamespace)
@@ -320,7 +314,6 @@ var _ = Describe("ApprovalRequest Controller", func() {
 	})
 
 	Context("FourEyes strategy", func() {
-
 		It("should handle Pending -> Semigranted transition with correct conditions", func() {
 			By("Creating a separate source resource for this test")
 			fourEyesResource := test.NewObject("foureyes-semigranted-src", testNamespace)
@@ -376,7 +369,6 @@ var _ = Describe("ApprovalRequest Controller", func() {
 				g.Expect(ar.Status.AvailableTransitions).NotTo(BeNil())
 				g.Expect(ar.Status.AvailableTransitions.HasState(approvalv1.ApprovalStateGranted)).To(BeTrue())
 				g.Expect(ar.Status.AvailableTransitions.HasState(approvalv1.ApprovalStateRejected)).To(BeTrue())
-
 			}, timeout, interval).Should(Succeed())
 		})
 
