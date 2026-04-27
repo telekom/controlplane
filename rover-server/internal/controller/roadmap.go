@@ -24,9 +24,13 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/roadmap/in"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/roadmap/out"
+	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
+	"github.com/telekom/controlplane/rover-server/internal/server"
 	s "github.com/telekom/controlplane/rover-server/pkg/store"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
+
+var _ server.ApiRoadmapController = &RoadmapController{}
 
 type RoadmapController struct {
 	stores *s.Stores
@@ -207,6 +211,25 @@ func (r *RoadmapController) Delete(ctx context.Context, resourceId string) error
 	}
 
 	return nil
+}
+
+// GetStatus implements ApiRoadmapController.
+func (r *RoadmapController) GetStatus(ctx context.Context, resourceId string) (res api.ResourceStatusResponse, err error) {
+	id, err := mapper.ParseResourceId(ctx, resourceId)
+	if err != nil {
+		return res, err
+	}
+
+	ns := id.Environment + "--" + id.Namespace
+	roadmap, err := r.Store.Get(ctx, ns, id.Name)
+	if err != nil {
+		if problems.IsNotFound(err) {
+			return res, problems.NotFound(resourceId)
+		}
+		return res, err
+	}
+
+	return status.MapResponse(ctx, roadmap)
 }
 
 // Helper methods

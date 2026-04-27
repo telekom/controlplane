@@ -1185,3 +1185,31 @@
  "type": "Forbidden"
 }
 ---
+
+[Roadmap Controller GetStatus ApiRoadmap resource should return the status of the ApiRoadmap successfully - 1]
+{
+ "overallStatus": "complete",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[Roadmap Controller GetStatus ApiRoadmap resource should fail to get the status of a non-existent ApiRoadmap - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Roadmap Controller GetStatus ApiRoadmap resource should fail to get the status of an ApiRoadmap from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---

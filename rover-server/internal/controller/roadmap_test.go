@@ -186,6 +186,26 @@ var _ = Describe("Roadmap Controller", func() {
 		})
 	})
 
+	Context("GetStatus ApiRoadmap resource", func() {
+		It("should return the status of the ApiRoadmap successfully", func() {
+			req := httptest.NewRequest(http.MethodGet, "/apiroadmaps/eni--hyperion--eni-test-api/status", nil)
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusOK, "application/json")
+		})
+
+		It("should fail to get the status of a non-existent ApiRoadmap", func() {
+			req := httptest.NewRequest(http.MethodGet, "/apiroadmaps/eni--hyperion--nonexistent/status", nil)
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusNotFound, "application/problem+json")
+		})
+
+		It("should fail to get the status of an ApiRoadmap from a different team", func() {
+			req := httptest.NewRequest(http.MethodGet, "/apiroadmaps/other--team--eni-test-api/status", nil)
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
+		})
+	})
+
 	// TODO: To properly test hash optimization, the store mock would need to return
 	// the actual SHA256 hash of roadmapItemsJSON. Currently the stored hash is
 	// "roadmapRandomHash" which never matches, so UploadFile is always called.

@@ -55,6 +55,7 @@ type ApiRoadmapController interface {
 	GetAll(ctx context.Context, params api.GetAllApiRoadmapsParams) (*api.ApiRoadmapListResponse, error)
 	Update(ctx context.Context, resourceId string, req api.ApiRoadmapUpdateRequest) (api.ApiRoadmapResponse, error)
 	Delete(ctx context.Context, resourceId string) error
+	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
 }
 
 var securityTemplates = map[security.ClientType]security.ComparisonTemplates{
@@ -160,6 +161,7 @@ func (s *Server) RegisterRoutes(router fiber.Router) {
 
 	router.Get("/apiroadmaps", checkAccess, s.GetAllApiRoadmaps)
 	router.Post("/apiroadmaps", checkAccess, s.CreateApiRoadmap)
+	router.Get("/apiroadmaps/:resourceId/status", checkAccess, s.GetApiRoadmapStatus)
 
 	router.Get("/apiroadmaps/:resourceId", checkAccess, s.GetApiRoadmap)
 	router.Put("/apiroadmaps/:resourceId", checkAccess, s.UpdateApiRoadmap)

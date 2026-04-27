@@ -1085,12 +1085,7 @@ paths:
       description: Find an existing ApiRoadmap
       operationId: getApiRoadmap
       parameters:
-        - name: apiRoadmapId
-          description: The unique id of this resource following the pattern group--team--basePath
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/ApiRoadmapId'
       responses:
         '200':
           description: OK
@@ -1125,12 +1120,7 @@ paths:
       description: Update an existing ApiRoadmap
       operationId: updateApiRoadmap
       parameters:
-        - name: apiRoadmapId
-          description: The unique id of this resource following the pattern group--team--basePath
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/ApiRoadmapId'
       requestBody:
         content:
           application/json:
@@ -1167,12 +1157,7 @@ paths:
       description: Delete an ApiRoadmap
       operationId: deleteApiRoadmap
       parameters:
-        - name: apiRoadmapId
-          description: The unique id of this resource following the pattern group--team--basePath
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/ApiRoadmapId'
       responses:
         '204':
           description: DELETED
@@ -1193,6 +1178,42 @@ paths:
             - tardis:admin:all
             - tardis:hub:all
             - tardis:team:all
+  /apiroadmaps/{apiRoadmapId}/status:
+    get:
+      tags:
+        - ApiRoadmap
+      summary: Find an existing ApiRoadmap and return its status
+      description: Find an existing ApiRoadmap and return its status
+      operationId: getApiRoadmapStatus
+      parameters:
+        - $ref: '#/components/parameters/ApiRoadmapId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceStatusResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:team:all
+            - tardis:team:read
 components:
   securitySchemes:
     OAuth2:
@@ -1226,6 +1247,13 @@ components:
     ApiSpecificationId:
       name: apiSpecificationId
       description: The unique id of this resource following the pattern group--team--resourceName
+      in: path
+      required: true
+      schema:
+        type: string
+    ApiRoadmapId:
+      name: apiRoadmapId
+      description: The unique id of this resource following the pattern group--team--basePath
       in: path
       required: true
       schema:

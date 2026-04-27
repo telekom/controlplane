@@ -79,3 +79,13 @@ func (s *Server) DeleteApiRoadmap(c *fiber.Ctx) error {
 
 	return c.SendStatus(http.StatusNoContent)
 }
+
+func (s *Server) GetApiRoadmapStatus(c *fiber.Ctx) error {
+	resourceId := c.Params("resourceId")
+	res, err := s.Roadmaps.GetStatus(c.UserContext(), resourceId)
+	if err != nil {
+		return server.ReturnWithProblem(c, nil, err)
+	}
+
+	return c.JSON(res)
+}
