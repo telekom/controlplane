@@ -72,6 +72,7 @@ func MapRover(in *api.Rover, out *roverv1.Rover) error {
 			Allow: in.IpRestrictions.Allow,
 		}
 	}
+	mapAuthentication(in, out)
 	return nil
 }
 
@@ -142,4 +143,16 @@ func mapPermissions(in *api.Rover, out *roverv1.Rover) error {
 	}
 
 	return nil
+}
+
+func mapAuthentication(in *api.Rover, out *roverv1.Rover) {
+	method := string(in.Authentication.ClientAuthMethod)
+	if method == "" {
+		return
+	}
+	out.Spec.Authentication = &roverv1.RoverAuthentication{
+		M2M: &roverv1.RoverM2MAuthentication{
+			ClientAuthMethod: method,
+		},
+	}
 }

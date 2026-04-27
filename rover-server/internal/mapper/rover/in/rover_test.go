@@ -140,6 +140,54 @@ var _ = Describe("Rover Mapper", func() {
 		})
 	})
 
+	Context("MapAuthentication", func() {
+		It("must map BASIC to CRD", func() {
+			input := &api.Rover{
+				Zone: "zone",
+				Authentication: api.Authentication{
+					ClientAuthMethod: api.BASIC,
+				},
+			}
+			output := &roverv1.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Spec.Authentication).ToNot(BeNil())
+			Expect(output.Spec.Authentication.M2M).ToNot(BeNil())
+			Expect(output.Spec.Authentication.M2M.ClientAuthMethod).To(Equal("BASIC"))
+		})
+
+		It("must map POST to CRD", func() {
+			input := &api.Rover{
+				Zone: "zone",
+				Authentication: api.Authentication{
+					ClientAuthMethod: api.POST,
+				},
+			}
+			output := &roverv1.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Spec.Authentication).ToNot(BeNil())
+			Expect(output.Spec.Authentication.M2M).ToNot(BeNil())
+			Expect(output.Spec.Authentication.M2M.ClientAuthMethod).To(Equal("POST"))
+		})
+
+		It("must not set authentication when clientAuthMethod is empty", func() {
+			input := &api.Rover{
+				Zone: "zone",
+			}
+			output := &roverv1.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Spec.Authentication).To(BeNil())
+		})
+	})
+
 	Context("MapRequest", func() {
 		It("must map a RoverUpdateRequest to a Rover correctly", func() {
 			output, err := MapRequest(roverUpdateRequest, resourceIdInfo)

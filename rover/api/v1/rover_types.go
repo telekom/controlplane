@@ -100,6 +100,10 @@ type RoverSpec struct {
 	// +kubebuilder:validation:Optional
 	IpRestrictions *IpRestrictions `json:"ipRestrictions,omitempty"`
 
+	// Authentication defines the authentication configuration for this application
+	// +kubebuilder:validation:Optional
+	Authentication *RoverAuthentication `json:"authentication,omitempty"`
+
 	// ClientSecret is the secret used for client authentication
 	// If not specified, a randomly generated secret will be used
 	// +kubebuilder:validation:Optional
@@ -174,6 +178,24 @@ type IpRestrictions struct {
 	// +kubebuilder:validation:Type=array
 	// +kubebuilder:validation:XValidation:rule="self.all(x, isCIDR(x) || isIP(x))", message="All items must be valid IP addresses or CIDR notations"
 	Deny []string `json:"deny,omitempty"`
+}
+
+// RoverAuthentication defines the top-level authentication configuration for a Rover application
+type RoverAuthentication struct {
+	// M2M defines machine-to-machine authentication settings for the application
+	// +kubebuilder:validation:Optional
+	M2M *RoverM2MAuthentication `json:"m2m,omitempty"`
+}
+
+// RoverM2MAuthentication defines the M2M authentication settings
+type RoverM2MAuthentication struct {
+	// ClientAuthMethod configures the client authentication method, according to RFC 6749
+	// This feature is currently only documented but not parsed towards the application and identity domain as it is still in discussion whether
+	// this should will be enforced for IDPs.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=NONE;POST;BASIC
+	// +kubebuilder:default=BASIC
+	ClientAuthMethod string `json:"clientAuthMethod,omitempty"`
 }
 
 // Exposure defines a service that is exposed by this Rover

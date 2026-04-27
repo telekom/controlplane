@@ -43,7 +43,21 @@ func MapRover(in *roverv1.Rover, out *api.Rover) error {
 	}
 
 	out.Zone = in.Spec.Zone
+	mapAuthentication(in, out)
 	return nil
+}
+
+func mapAuthentication(in *roverv1.Rover, out *api.Rover) {
+	if in.Spec.Authentication == nil || in.Spec.Authentication.M2M == nil {
+		return
+	}
+	method := in.Spec.Authentication.M2M.ClientAuthMethod
+	if method == "" {
+		return
+	}
+	out.Authentication = api.Authentication{
+		ClientAuthMethod: api.AuthenticationClientAuthMethod(method),
+	}
 }
 
 func mapExposures(in *roverv1.Rover, out *api.Rover) error {
