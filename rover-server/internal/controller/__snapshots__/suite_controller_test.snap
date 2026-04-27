@@ -1035,3 +1035,79 @@
  "team": "hyperion"
 }
 ---
+
+[Rover Controller Update rover resource should accept clientAuthMethod BASIC as produced by rover-ctl - 1]
+{
+ "exposures": [
+  {
+   "approval": "SIMPLE",
+   "basePath": "/eni/distr/v1",
+   "type": "api",
+   "upstream": "https://httpbin.org/anything",
+   "visibility": "WORLD"
+  }
+ ],
+ "id": "eni--hyperion--rover-local-sub",
+ "name": "rover-local-sub",
+ "status": {
+  "errors": [
+   {
+    "cause": "NoApproval",
+    "message": "Approval is either rejected or suspended"
+   }
+  ],
+  "processingState": "done",
+  "state": "blocked",
+  "warnings": [
+   {
+    "message": "Atleast one sub-resource is being processed"
+   }
+  ]
+ },
+ "subscriptions": [
+  {
+   "basePath": "/eni/distr/v1",
+   "type": "api"
+  }
+ ],
+ "zone": "dataplane1"
+}
+---
+
+[Rover Controller Update rover resource should accept clientAuthMethod POST as produced by rover-ctl - 1]
+{
+ "exposures": [
+  {
+   "approval": "SIMPLE",
+   "basePath": "/eni/distr/v1",
+   "type": "api",
+   "upstream": "https://httpbin.org/anything",
+   "visibility": "WORLD"
+  }
+ ],
+ "id": "eni--hyperion--rover-local-sub",
+ "name": "rover-local-sub",
+ "status": {
+  "errors": [
+   {
+    "cause": "NoApproval",
+    "message": "Approval is either rejected or suspended"
+   }
+  ],
+  "processingState": "done",
+  "state": "blocked",
+  "warnings": [
+   {
+    "message": "Atleast one sub-resource is being processed"
+   }
+  ]
+ },
+ "subscriptions": [
+  {
+   "basePath": "/eni/distr/v1",
+   "type": "api"
+  }
+ ],
+ "zone": "dataplane1"
+}
+---
