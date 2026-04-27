@@ -121,8 +121,57 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 		return nil, valErr.BuildError()
 	}
 
-	// Validate that if the rover subscribes to or exposes events, the zone actually supports it
+	// Validate permissions: feature must be enabled if permissions are configured
+	if !cconfig.FeaturePermission.IsEnabled() && len(rover.Spec.Permissions) > 0 {
+		valErr.AddInvalidError(
+			field.NewPath("spec").Child("zone"),
+			rover.Spec.Zone,
+			fmt.Sprintf("zone '%s' does not support permissions", rover.Spec.Zone))
+		return nil, valErr.BuildError()
+	}
 
+	// Validate permission structure: nested entries must have required fields based on parent format
+	// This validation is done here in the webhook rather than via CEL in the CRD because CEL rules with
+	// .all() iteration over the entries array would exceed the Kubernetes validation cost budget by
+	// over 40x (even with MaxItems=50). Webhook validation has no such budget constraints.
+	//
+	// The validation ensures that permission entries will normalize into valid PermissionSet specs where
+	// both role and resource are required fields:
+	// - Resource-oriented format (resource + entries): each entry must have a non-empty role
+	// - Role-oriented format (role + entries): each entry must have a non-empty resource
+	// - Flat format (role + resource + actions): validated by existing CEL rules, no nested entries
+	//
+	// Without this validation, entries like {resource: "api", entries: [{actions: ["read"]}]} would
+	// pass CRD validation but fail when the permission operator tries to create the PermissionSet CR.
+	for i, perm := range rover.Spec.Permissions {
+		permPath := field.NewPath("spec").Child("permissions").Index(i)
+
+		// Resource-oriented: if resource is set, all entries must have role
+		if perm.Resource != "" && len(perm.Entries) > 0 {
+			for j, entry := range perm.Entries {
+				if entry.Role == "" {
+					valErr.AddInvalidError(
+						permPath.Child("entries").Index(j).Child("role"),
+						"",
+						"role is required when parent permission has resource set (resource-oriented format)")
+				}
+			}
+		}
+
+		// Role-oriented: if role is set, all entries must have resource
+		if perm.Role != "" && len(perm.Entries) > 0 {
+			for j, entry := range perm.Entries {
+				if entry.Resource == "" {
+					valErr.AddInvalidError(
+						permPath.Child("entries").Index(j).Child("resource"),
+						"",
+						"resource is required when parent permission has role set (role-oriented format)")
+				}
+			}
+		}
+	}
+
+	// Validate that if the rover subscribes to or exposes events, the zone actually supports it
 	subscribesToEvents := slices.ContainsFunc(rover.Spec.Subscriptions, func(sub roverv1.Subscription) bool {
 		return sub.Type() == roverv1.TypeEvent
 	})

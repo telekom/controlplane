@@ -34,6 +34,7 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
+	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
@@ -59,6 +60,9 @@ func init() {
 	utilruntime.Must(organizationv1.AddToScheme(scheme))
 	if cconfig.FeaturePubSub.IsEnabled() {
 		utilruntime.Must(eventv1.AddToScheme(scheme))
+	}
+	if cconfig.FeaturePermission.IsEnabled() {
+		utilruntime.Must(permissionv1.AddToScheme(scheme))
 	}
 	//+kubebuilder:scaffold:scheme
 }
