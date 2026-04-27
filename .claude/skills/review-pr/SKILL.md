@@ -28,7 +28,7 @@ Perform a thorough review covering **both technical and business dimensions**. R
 2. If `$ARGUMENTS` is set, fetch PR metadata: `gh pr view $ARGUMENTS --json title,body,labels,author,baseRefName,headRefName,commits,url`. If `$ARGUMENTS` is empty, identify the branch context with `git branch --show-current` and compare against `origin/main`.
 3. If `$ARGUMENTS` is set, fetch commit messages: `gh pr view $ARGUMENTS --json commits --jq '.commits[].messageHeadline'`. If `$ARGUMENTS` is empty, list commit messages with `git log --format=%s origin/main..HEAD`.
 4. If `$ARGUMENTS` is set, fetch diff stat: `gh pr diff $ARGUMENTS --stat`. If `$ARGUMENTS` is empty, use `git diff --stat origin/main...HEAD`.
-5. If `$ARGUMENTS` is set, fetch CI status: `gh pr checks $ARGUMENTS`. If `$ARGUMENTS` is empty, skip PR checks unless you first confirm a PR exists for the current branch; otherwise note that no PR-specific CI status is available.
+5. If `$ARGUMENTS` is set, fetch CI status: `gh pr checks $ARGUMENTS 2>/dev/null || echo "CI status unavailable"`. If `$ARGUMENTS` is empty, skip PR checks unless you first confirm a PR exists for the current branch; otherwise note that no PR-specific CI status is available.
 6. Get the full diff: if `$ARGUMENTS` is set, run `gh pr diff $ARGUMENTS`; if `$ARGUMENTS` is empty, run `git diff origin/main...HEAD`. For large PRs or large branch diffs (>20k lines), prefer `git diff` with the branch ref instead.
 7. Read each changed file in full (not just the diff hunks). Skip generated files per REVIEW.md.
 8. If the PR description links to an issue, fetch the issue body for acceptance criteria.
