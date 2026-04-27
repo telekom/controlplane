@@ -225,9 +225,10 @@ func markIdentityClientReady(ctx context.Context, name, namespace string) {
 			return err
 		}
 		idpClient.SetCondition(metav1.Condition{
-			Type:   condition.ConditionTypeReady,
-			Status: metav1.ConditionTrue,
-			Reason: "Ready",
+			Type:               condition.ConditionTypeReady,
+			Status:             metav1.ConditionTrue,
+			Reason:             "Ready",
+			ObservedGeneration: idpClient.GetGeneration(),
 		})
 		return k8sClient.Status().Update(ctx, idpClient)
 	}, timeout, interval).Should(Succeed())

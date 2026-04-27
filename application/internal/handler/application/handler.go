@@ -132,7 +132,7 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 
 	// Only needed if client is required, otherwise there are no sub-resources to wait for and the application can be marked as ready immediately.
 	if primaryClient != nil {
-		isReady := meta.IsStatusConditionTrue(primaryClient.GetConditions(), condition.ConditionTypeReady)
+		isReady := condition.IsReady(primaryClient)
 		if !isReady {
 			app.SetCondition(condition.NewNotReadyCondition("SubResourceProvisioned", "Waiting for primary identity client to be ready"))
 			return nil
