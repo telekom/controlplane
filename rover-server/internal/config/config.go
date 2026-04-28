@@ -16,6 +16,14 @@ type ServerConfig struct {
 	Security    SecurityConfig    `json:"security"`
 	Log         LogConfig         `json:"log"`
 	FileManager FileManagerConfig `json:"fileManager"`
+	OasLinting  OasLintingConfig  `json:"oasLinting"`
+}
+
+type OasLintingConfig struct {
+	URL                   string `json:"url"`
+	ErrorMessage          string `json:"errorMessage"`
+	WhitelistedBasepaths  string `json:"whitelistedBasepaths"`
+	WhitelistedCategories string `json:"whitelistedCategories"`
 }
 
 type SecurityConfig struct {
@@ -71,6 +79,12 @@ func setDefaults() {
 
 	// FileManager
 	viper.SetDefault("fileManager.skipTLS", true)
+
+	// OAS Linting
+	viper.SetDefault("oasLinting.url", "")
+	viper.SetDefault("oasLinting.errorMessage", "Linter scan result contains errors. Please visit the linter UI for details on the RULESET_NAME_PLACEHOLDER ruleset.")
+	viper.SetDefault("oasLinting.whitelistedBasepaths", "")
+	viper.SetDefault("oasLinting.whitelistedCategories", "")
 
 	// Database
 	viper.SetDefault("database.filepath", "")        // empty string means in-memory only

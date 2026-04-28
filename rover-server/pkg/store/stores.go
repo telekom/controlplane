@@ -37,6 +37,7 @@ type Stores struct {
 	APIStore              store.ObjectStore[*apiv1.Api]
 	APISubscriptionStore  store.ObjectStore[*apiv1.ApiSubscription]
 	APIExposureStore      store.ObjectStore[*apiv1.ApiExposure]
+	APICategoryStore      store.ObjectStore[*apiv1.ApiCategory]
 
 	EventSpecificationStore store.ObjectStore[*roverv1.EventSpecification]
 	EventTypeStore          store.ObjectStore[*eventv1.EventType]
@@ -73,6 +74,7 @@ func NewStores(ctx context.Context, cfg *rest.Config) *Stores {
 	s.ApplicationStore = NewOrDie[*applicationv1.Application](ctx, dynamicClient, applicationv1.GroupVersion.WithResource("applications"), applicationv1.GroupVersion.WithKind("Application"))
 	s.APISubscriptionStore = NewOrDie[*apiv1.ApiSubscription](ctx, dynamicClient, apiv1.GroupVersion.WithResource("apisubscriptions"), apiv1.GroupVersion.WithKind("ApiSubscription"))
 	s.APIExposureStore = NewOrDie[*apiv1.ApiExposure](ctx, dynamicClient, apiv1.GroupVersion.WithResource("apiexposures"), apiv1.GroupVersion.WithKind("ApiExposure"))
+	s.APICategoryStore = NewOrDie[*apiv1.ApiCategory](ctx, dynamicClient, apiv1.GroupVersion.WithResource("apicategories"), apiv1.GroupVersion.WithKind("ApiCategory"))
 
 	if cconfig.FeaturePubSub.IsEnabled() {
 		s.EventSpecificationStore = NewOrDie[*roverv1.EventSpecification](ctx, dynamicClient, roverv1.GroupVersion.WithResource("eventspecifications"), roverv1.GroupVersion.WithKind("EventSpecification"))

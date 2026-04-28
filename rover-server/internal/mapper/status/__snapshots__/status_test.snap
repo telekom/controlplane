@@ -19,7 +19,7 @@
 
 [Rover Status Mapper MapRoverResponse must map rover response correctly - 1]
 {
- "createdAt": "2025-09-18T08:39:44Z",
+ "createdAt": "2025-09-18T10:39:44+02:00",
  "errors": [
   {
    "cause": "NoApproval",
@@ -34,7 +34,7 @@
   }
  ],
  "overallStatus": "blocked",
- "processedAt": "2025-10-08T07:16:40Z",
+ "processedAt": "2025-10-08T09:16:40+02:00",
  "processingState": "done",
  "state": "blocked"
 }
