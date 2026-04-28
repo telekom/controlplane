@@ -17,6 +17,7 @@ import (
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/internal/rendering"
 	"github.com/telekom/controlplane/notification/internal/sender"
+	"github.com/telekom/controlplane/notification/internal/sender/adapter"
 	"github.com/telekom/controlplane/notification/internal/templatecache"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,20 +73,33 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 		// todo later
 
 		// render
-		renderedSubject, err := rendering.RenderMessage(templateWrapper.SubjectTemplate, notification.Spec.Properties)
+		properties, err := rendering.UnmarshalProperties(notification.Spec.Properties.Raw)
 		if err != nil {
 			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
 
-		renderedBody, err := rendering.RenderMessage(templateWrapper.BodyTemplate, notification.Spec.Properties)
+		renderedSubject, err := rendering.RenderMessage(templateWrapper.SubjectTemplate, properties)
+		if err != nil {
+			addResultToStatus(notification, channelKey, false, err.Error())
+			continue
+		}
+
+		renderedBody, err := rendering.RenderMessage(templateWrapper.BodyTemplate, properties)
+		if err != nil {
+			addResultToStatus(notification, channelKey, false, err.Error())
+			continue
+		}
+
+		// render attachments
+		renderedAttachments, err := rendering.RenderAttachments(templateWrapper.Attachments, properties)
 		if err != nil {
 			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
 		}
 
 		// better pass to sender service
-		err = n.NotificationSender.ProcessNotification(ctx, channel, renderedSubject, renderedBody)
+		err = n.NotificationSender.ProcessNotification(ctx, channel, renderedSubject, renderedBody, toAdapterAttachments(renderedAttachments))
 		if err != nil {
 			addResultToStatus(notification, channelKey, false, err.Error())
 			continue
@@ -243,6 +257,21 @@ func getChannelByRef(ctx context.Context, ref types.ObjectRef) (*notificationv1.
 
 func (n *NotificationHandler) Delete(ctx context.Context, notification *notificationv1.Notification) error {
 	return nil
+}
+
+func toAdapterAttachments(rendered []rendering.RenderedAttachment) []adapter.Attachment {
+	if len(rendered) == 0 {
+		return nil
+	}
+	result := make([]adapter.Attachment, len(rendered))
+	for i, r := range rendered {
+		result[i] = adapter.Attachment{
+			Filename:    r.Filename,
+			ContentType: r.ContentType,
+			Content:     r.Content,
+		}
+	}
+	return result
 }
 
 func isNotificationComplete(n *notificationv1.Notification) bool {

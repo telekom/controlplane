@@ -5,14 +5,51 @@
 package v1
 
 import (
-	"github.com/telekom/controlplane/common/pkg/types"
+	types "github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// SecretRotationConfig holds configuration for Keycloak's graceful
+// client-secret rotation policy applied at realm level.
+type SecretRotationConfig struct {
+	// GracePeriod is how long the old client secret remains valid after
+	// rotation, specified as a duration string (e.g. "1h", "300s", "30m").
+	// Maps to Keycloak's "rotated-expiration-period".
+	// +kubebuilder:validation:Required
+	GracePeriod metav1.Duration `json:"gracePeriod"`
+
+	// ExpirationPeriod is how long a client secret is valid before it must
+	// be rotated, specified as a duration string (e.g. "696h", "2505600s").
+	// Maps to Keycloak's "expiration-period".
+	// +kubebuilder:validation:Required
+	ExpirationPeriod metav1.Duration `json:"expirationPeriod"`
+
+	// RemainingRotationPeriod is the window before secret expiry during
+	// which rotation is allowed, specified as a duration string (e.g. "240h", "864000s").
+	// Maps to Keycloak's "remaining-rotation-period".
+	//
+	// Keycloak blocks rotation attempts that fall outside this window. For
+	// example, if ExpirationPeriod is 29 days and RemainingRotationPeriod
+	// is 10 days, rotation is only permitted in the last 10 days before
+	// expiry. Setting RemainingRotationPeriod equal to ExpirationPeriod
+	// allows rotation at any time (recommended, since the controller
+	// drives rotation externally rather than relying on Keycloak's
+	// expiration timer).
+	// +kubebuilder:validation:Required
+	RemainingRotationPeriod metav1.Duration `json:"remainingRotationPeriod"`
+}
+
 // RealmSpec defines the desired state of Realm
 type RealmSpec struct {
 	IdentityProvider *types.ObjectRef `json:"identityProvider"`
+
+	// SecretRotation configures the Keycloak client-secret rotation policy
+	// for this realm. When set, the controller ensures a client-policy
+	// profile + policy with the given grace period exists in Keycloak.
+	// When nil, the controller does not manage rotation policy.
+	// +optional
+	SecretRotation *SecretRotationConfig `json:"secretRotation,omitempty"`
 }
 
 // RealmStatus defines the observed state of Realm
@@ -51,6 +88,10 @@ func (e *Realm) GetConditions() []metav1.Condition {
 
 func (e *Realm) SetCondition(condition metav1.Condition) bool {
 	return meta.SetStatusCondition(&e.Status.Conditions, condition)
+}
+
+func (e *Realm) SupportsGracefulSecretRotation() bool {
+	return e.Spec.SecretRotation != nil
 }
 
 // +kubebuilder:object:root=true

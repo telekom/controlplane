@@ -84,6 +84,11 @@ linters:
           - goconst
           - errcheck
         path: _test\.go
+      # GetEventRecorderFor is deprecated (SA1019) in favor of GetEventRecorder (events API).
+      # Migrating requires switching common pkg from record.EventRecorder to events.EventRecorder.
+      - linters:
+          - staticcheck
+        text: "SA1019: .*GetEventRecorderFor"
     paths:
       - third_party$
       - builtin$
@@ -114,6 +119,9 @@ formatters:
       - third_party$
       - builtin$
       - examples$
+      # Files with kubebuilder scaffold markers in import blocks (gci would strip them)
+      - cmd/main\.go
+      - suite_test\.go
 output:
   sort-order:
     - linter
