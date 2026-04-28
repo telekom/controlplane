@@ -10,10 +10,11 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/api/errors"
+
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/application/internal/secret"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
-	"k8s.io/apimachinery/pkg/api/errors"
 )
 
 func wrapCommunicationError(err error, purposeOfCommunication string) error {
