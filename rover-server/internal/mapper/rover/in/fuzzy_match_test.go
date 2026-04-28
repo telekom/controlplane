@@ -7,6 +7,7 @@ package in
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/telekom/controlplane/rover-server/internal/api"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
@@ -62,4 +63,28 @@ var _ = DescribeTable("FuzzyMatchEventResponseFilterMode",
 	// Default passthrough
 	Entry("unknown passthrough", "filter", roverv1.EventResponseFilterMode("filter")),
 	Entry("empty passthrough", "", roverv1.EventResponseFilterMode("")),
+)
+
+var _ = DescribeTable("FuzzyMatchClientAuthMethod",
+	func(input string, expected api.AuthenticationClientAuthMethod) {
+		Expect(FuzzyMatchClientAuthMethod(input)).To(Equal(expected))
+	},
+	// BASIC variants
+	Entry("basic", "basic", api.BASIC),
+	Entry("Basic", "Basic", api.BASIC),
+	Entry("BASIC", "BASIC", api.BASIC),
+	// POST variants
+	Entry("body", "body", api.POST),
+	Entry("Body", "Body", api.POST),
+	Entry("BODY", "BODY", api.POST),
+	Entry("post", "post", api.POST),
+	Entry("Post", "Post", api.POST),
+	Entry("POST", "POST", api.POST),
+	// NONE variants
+	Entry("none", "none", api.NONE),
+	Entry("None", "None", api.NONE),
+	Entry("NONE", "NONE", api.NONE),
+	// Default passthrough
+	Entry("unknown passthrough", "unknown", api.AuthenticationClientAuthMethod("unknown")),
+	Entry("empty passthrough", "", api.AuthenticationClientAuthMethod("")),
 )

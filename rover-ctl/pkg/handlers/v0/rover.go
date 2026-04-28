@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"maps"
 	"net/http"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
@@ -74,15 +73,10 @@ func PatchRoverRequest(ctx context.Context, obj types.Object) error {
 	return nil
 }
 
-// clientAuthMethodMapping maps rover-ctl YAML values to rover-server API enum values.
-var clientAuthMethodMapping = map[string]string{
-	"basic": "BASIC",
-	"body":  "POST", // Configures client authentication method, according to RFC 6749
-}
-
-// PatchAuthentication maps spec.authentication.m2m.clientAuthMethod from the rover-ctl
-// YAML format (basic/body) to the rover-server API format (BASIC/POST) and restructures
-// it into spec.authentication.clientAuthMethod.
+// PatchAuthentication restructures spec.authentication.m2m.clientAuthMethod
+// into spec.authentication.clientAuthMethod for the rover-server API format.
+// Value normalization (e.g. basic→BASIC, body→POST) is handled server-side
+// by FuzzyMatchClientAuthMethod.
 func PatchAuthentication(spec map[string]any) {
 	auth, exists := spec["authentication"]
 	if !exists {
@@ -106,18 +100,9 @@ func PatchAuthentication(spec map[string]any) {
 	if !exists {
 		return
 	}
-	clientAuthMethodStr, ok := clientAuthMethod.(string)
-	if !ok {
-		return
-	}
-
-	apiValue, valid := clientAuthMethodMapping[strings.ToLower(clientAuthMethodStr)]
-	if !valid {
-		return
-	}
 
 	spec["authentication"] = map[string]any{
-		"clientAuthMethod": apiValue,
+		"clientAuthMethod": clientAuthMethod,
 	}
 }
 

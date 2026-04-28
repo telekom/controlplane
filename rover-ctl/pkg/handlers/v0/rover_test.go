@@ -382,7 +382,7 @@ var _ = Describe("Rover Handler", func() {
 	})
 
 	Describe("PatchAuthentication", func() {
-		It("should map 'basic' to 'BASIC' in authentication.clientAuthMethod", func() {
+		It("should pass through 'basic' as-is in authentication.clientAuthMethod", func() {
 			obj := &types.UnstructuredObject{
 				Content: map[string]any{
 					"spec": map[string]any{
@@ -401,10 +401,10 @@ var _ = Describe("Rover Handler", func() {
 			content := obj.GetContent()
 			auth, ok := content["authentication"].(map[string]any)
 			Expect(ok).To(BeTrue())
-			Expect(auth["clientAuthMethod"]).To(Equal("BASIC"))
+			Expect(auth["clientAuthMethod"]).To(Equal("basic"))
 		})
 
-		It("should map 'body' to 'POST' in authentication.clientAuthMethod", func() {
+		It("should pass through 'body' as-is in authentication.clientAuthMethod", func() {
 			obj := &types.UnstructuredObject{
 				Content: map[string]any{
 					"spec": map[string]any{
@@ -423,7 +423,7 @@ var _ = Describe("Rover Handler", func() {
 			content := obj.GetContent()
 			auth, ok := content["authentication"].(map[string]any)
 			Expect(ok).To(BeTrue())
-			Expect(auth["clientAuthMethod"]).To(Equal("POST"))
+			Expect(auth["clientAuthMethod"]).To(Equal("body"))
 		})
 
 		It("should not add authentication when it is missing", func() {
@@ -457,7 +457,9 @@ var _ = Describe("Rover Handler", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			content := obj.GetContent()
-			Expect(content).To(HaveKey("authentication"))
+			auth, ok := content["authentication"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(auth["clientAuthMethod"]).To(Equal("invalid"))
 		})
 
 		It("should leave authentication untouched when format is not a map", func() {

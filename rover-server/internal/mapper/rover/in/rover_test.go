@@ -186,6 +186,40 @@ var _ = Describe("Rover Mapper", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(output.Spec.Authentication).To(BeNil())
 		})
+
+		It("must fuzzy-match 'basic' to header in CRD", func() {
+			input := &api.Rover{
+				Zone: "zone",
+				Authentication: api.Authentication{
+					ClientAuthMethod: "basic",
+				},
+			}
+			output := &roverv1.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Spec.Authentication).ToNot(BeNil())
+			Expect(output.Spec.Authentication.M2M).ToNot(BeNil())
+			Expect(output.Spec.Authentication.M2M.TokenRequest).To(Equal("header"))
+		})
+
+		It("must fuzzy-match 'body' to body in CRD", func() {
+			input := &api.Rover{
+				Zone: "zone",
+				Authentication: api.Authentication{
+					ClientAuthMethod: "body",
+				},
+			}
+			output := &roverv1.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Spec.Authentication).ToNot(BeNil())
+			Expect(output.Spec.Authentication.M2M).ToNot(BeNil())
+			Expect(output.Spec.Authentication.M2M.TokenRequest).To(Equal("body"))
+		})
 	})
 
 	Context("MapRequest", func() {

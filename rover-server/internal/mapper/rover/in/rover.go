@@ -152,7 +152,7 @@ var clientAuthMethodToCRD = map[api.AuthenticationClientAuthMethod]string{
 }
 
 func mapAuthentication(in *api.Rover, out *roverv1.Rover) {
-	method := in.Authentication.ClientAuthMethod
+	method := FuzzyMatchClientAuthMethod(string(in.Authentication.ClientAuthMethod))
 	if method == "" {
 		return
 	}
