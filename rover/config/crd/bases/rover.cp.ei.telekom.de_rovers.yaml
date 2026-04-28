@@ -57,16 +57,15 @@ spec:
                     description: M2M defines machine-to-machine authentication settings
                       for the application
                     properties:
-                      clientAuthMethod:
-                        default: BASIC
+                      tokenRequest:
+                        default: header
                         description: |-
-                          ClientAuthMethod configures the client authentication method, according to RFC 6749
+                          TokenRequest configures the client authentication method, according to RFC 6749
                           This feature is currently only documented but not parsed towards the application and identity domain as it is still in discussion whether
                           this should will be enforced for IDPs.
                         enum:
-                        - NONE
-                        - POST
-                        - BASIC
+                        - body
+                        - header
                         type: string
                     type: object
                 type: object
