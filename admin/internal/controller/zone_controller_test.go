@@ -7,24 +7,23 @@ package controller
 import (
 	"context"
 
-	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-
-	"github.com/telekom/controlplane/common/pkg/types"
-	identityapi "github.com/telekom/controlplane/identity/api/v1"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/telekom/controlplane/common/pkg/types"
+	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+	identityapi "github.com/telekom/controlplane/identity/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func NewZone(name string, namespace string) *adminv1.Zone {
+func NewZone(name, namespace string) *adminv1.Zone {
 	idpAdminUrl := "https://test-iris.de/auth/admin/realms"
 	gatewayAdminUrl := "https://test-stargate.de/admin-api"
 
@@ -128,7 +127,6 @@ var _ = Describe("Zone Controller", func() {
 
 				expectedNamespaceName := "test--test-zone"
 				VerifyNamespace(ctx, g, expectedNamespaceName)
-
 			}, timeout, interval).Should(Succeed())
 		})
 	})
