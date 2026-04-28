@@ -14,9 +14,6 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -28,6 +25,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	// +kubebuilder:scaffold:imports
 )
 
