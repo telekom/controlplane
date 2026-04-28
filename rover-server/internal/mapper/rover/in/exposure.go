@@ -15,13 +15,14 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	rovermapper "github.com/telekom/controlplane/rover-server/internal/mapper/rover"
 )
 
 // oauth2TokenRequestToCRD maps API tokenRequest values to CRD tokenRequest values.
 var oauth2TokenRequestToCRD = map[string]string{
-	"body":   "client_secret_post",
-	"header": "client_secret_basic",
-	"basic":  "client_secret_basic",
+	"body":   rovermapper.TokenRequestClientSecretPost,
+	"header": rovermapper.TokenRequestClientSecretBasic,
+	"basic":  rovermapper.TokenRequestClientSecretBasic,
 }
 
 func tokenRequestAPIToCRD(value string) string {

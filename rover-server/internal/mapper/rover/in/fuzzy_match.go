@@ -5,6 +5,8 @@
 package in
 
 import (
+	"strings"
+
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
@@ -47,12 +49,12 @@ func FuzzyMatchEventResponseFilterMode(in string) roverv1.EventResponseFilterMod
 
 // FuzzyMatchClientAuthMethod performs a fuzzy match on the input string to determine the AuthenticationClientAuthMethod.
 func FuzzyMatchClientAuthMethod(in string) api.AuthenticationClientAuthMethod {
-	switch in {
-	case "basic", "Basic", "BASIC":
+	switch strings.ToLower(in) {
+	case "basic":
 		return api.BASIC
-	case "body", "Body", "BODY", "post", "Post", "POST":
+	case "body", "post":
 		return api.POST
-	case "none", "None", "NONE":
+	case "none":
 		return api.NONE
 	default:
 		return api.AuthenticationClientAuthMethod(in)

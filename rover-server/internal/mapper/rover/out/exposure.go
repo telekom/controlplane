@@ -12,12 +12,13 @@ import (
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	rovermapper "github.com/telekom/controlplane/rover-server/internal/mapper/rover"
 )
 
 // oauth2TokenRequestCRDToAPI maps CRD tokenRequest values to API Oauth2TokenRequest values.
 var oauth2TokenRequestCRDToAPI = map[string]api.Oauth2TokenRequest{
-	"client_secret_basic": api.Header,
-	"client_secret_post":  api.Body,
+	rovermapper.TokenRequestClientSecretBasic: api.Header,
+	rovermapper.TokenRequestClientSecretPost:  api.Body,
 }
 
 func tokenRequestCRDToAPI(value string) api.Oauth2TokenRequest {
