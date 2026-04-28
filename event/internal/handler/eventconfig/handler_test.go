@@ -6,20 +6,12 @@ package eventconfig_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	pkgerrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	k8stypes "k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
@@ -30,21 +22,27 @@ import (
 	"github.com/telekom/controlplane/event/internal/handler/eventconfig"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	k8stypes "k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 func isBlockedError(err error) bool {
 	for e := err; e != nil; e = pkgerrors.Unwrap(e) {
-		var be ctrlerrors.BlockedError
-		if errors.As(e, &be) {
+		if be, ok := e.(ctrlerrors.BlockedError); ok && be.IsBlocked() {
 			return true
 		}
 	}
 	cause := pkgerrors.Cause(err)
-	var be ctrlerrors.BlockedError
-	return errors.As(cause, &be)
+	if be, ok := cause.(ctrlerrors.BlockedError); ok && be.IsBlocked() {
+		return true
+	}
+	return false
 }
 
 func newEventConfig() *eventv1.EventConfig {
@@ -310,6 +308,7 @@ var _ = Describe("EventConfigHandler", func() {
 	}
 
 	Describe("CreateOrUpdate", func() {
+
 		It("should return BlockedError when Realm is not found", func() {
 			notFoundErr := apierrors.NewNotFound(
 				schema.GroupResource{Group: "identity.cp.ei.telekom.de", Resource: "realms"},

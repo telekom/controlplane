@@ -7,6 +7,14 @@ package controller
 import (
 	"context"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	"github.com/telekom/controlplane/event/internal/handler/eventsubscription"
+	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -17,16 +25,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	applicationv1 "github.com/telekom/controlplane/application/api/v1"
-	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-	eventv1 "github.com/telekom/controlplane/event/api/v1"
-	"github.com/telekom/controlplane/event/internal/handler/eventsubscription"
-	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
+
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 )
 
 // EventSubscriptionReconciler reconciles a EventSubscription object
@@ -97,7 +98,7 @@ func (r *EventSubscriptionReconciler) MapEventExposureToEventSubscription(ctx co
 	}
 
 	list := &eventv1.EventSubscriptionList{}
-	if err := r.List(ctx, list, client.MatchingLabels{
+	if err := r.Client.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey: eventExposure.Labels[cconfig.EnvironmentLabelKey],
 		eventv1.EventTypeLabelKey:   labelutil.NormalizeLabelValue(eventExposure.Spec.EventType),
 	}); err != nil {
@@ -105,10 +106,10 @@ func (r *EventSubscriptionReconciler) MapEventExposureToEventSubscription(ctx co
 	}
 
 	var reqs []reconcile.Request
-	for i := range list.Items {
-		if list.Items[i].Spec.EventType == eventExposure.Spec.EventType {
+	for _, item := range list.Items {
+		if item.Spec.EventType == eventExposure.Spec.EventType {
 			reqs = append(reqs, reconcile.Request{
-				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+				NamespacedName: client.ObjectKeyFromObject(&item),
 			})
 		}
 	}
@@ -124,7 +125,7 @@ func (r *EventSubscriptionReconciler) MapEventConfigToEventSubscription(ctx cont
 	}
 
 	list := &eventv1.EventSubscriptionList{}
-	if err := r.List(ctx, list, client.MatchingLabels{
+	if err := r.Client.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey:   eventConfig.Labels[cconfig.EnvironmentLabelKey],
 		cconfig.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(eventConfig.Spec.Zone.Name),
 	}); err != nil {
@@ -132,12 +133,12 @@ func (r *EventSubscriptionReconciler) MapEventConfigToEventSubscription(ctx cont
 	}
 
 	var reqs []reconcile.Request
-	for i := range list.Items {
-		if !list.Items[i].Spec.Zone.Equals(&eventConfig.Spec.Zone) {
+	for _, item := range list.Items {
+		if !item.Spec.Zone.Equals(&eventConfig.Spec.Zone) {
 			continue
 		}
 		reqs = append(reqs, reconcile.Request{
-			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+			NamespacedName: client.ObjectKeyFromObject(&item),
 		})
 	}
 	return reqs
@@ -152,7 +153,7 @@ func (r *EventSubscriptionReconciler) MapApplicationToEventSubscription(ctx cont
 	}
 
 	list := &eventv1.EventSubscriptionList{}
-	if err := r.List(ctx, list, client.MatchingLabels{
+	if err := r.Client.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey:          application.Labels[cconfig.EnvironmentLabelKey],
 		cconfig.BuildLabelKey("application"): labelutil.NormalizeLabelValue(application.Name),
 	}); err != nil {
@@ -160,16 +161,17 @@ func (r *EventSubscriptionReconciler) MapApplicationToEventSubscription(ctx cont
 	}
 
 	var reqs []reconcile.Request
-	for i := range list.Items {
-		if !ctypes.ObjectRefFromObject(application).Equals(&list.Items[i].Spec.Requestor) {
+	for _, item := range list.Items {
+		if !ctypes.ObjectRefFromObject(application).Equals(&item.Spec.Requestor) {
 			continue
 		}
 
 		reqs = append(reqs, reconcile.Request{
-			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+			NamespacedName: client.ObjectKeyFromObject(&item),
 		})
 	}
 	return reqs
+
 }
 
 func (r *EventSubscriptionReconciler) MapZoneToEventSubscription(ctx context.Context, obj client.Object) []reconcile.Request {
@@ -179,7 +181,7 @@ func (r *EventSubscriptionReconciler) MapZoneToEventSubscription(ctx context.Con
 	}
 
 	list := &eventv1.EventSubscriptionList{}
-	if err := r.List(ctx, list, client.MatchingLabels{
+	if err := r.Client.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey:   zone.Labels[cconfig.EnvironmentLabelKey],
 		cconfig.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
 	}); err != nil {
@@ -187,13 +189,13 @@ func (r *EventSubscriptionReconciler) MapZoneToEventSubscription(ctx context.Con
 	}
 
 	var reqs []reconcile.Request
-	for i := range list.Items {
-		if !list.Items[i].Spec.Zone.Equals(zone) {
+	for _, item := range list.Items {
+		if !item.Spec.Zone.Equals(zone) {
 			continue
 		}
 
 		reqs = append(reqs, reconcile.Request{
-			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+			NamespacedName: client.ObjectKeyFromObject(&item),
 		})
 	}
 	return reqs

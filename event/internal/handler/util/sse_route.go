@@ -9,10 +9,6 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -23,6 +19,9 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityapi "github.com/telekom/controlplane/identity/api/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // CreateSSERoute creates a gateway Route for the SSE endpoint of an event type.
@@ -196,7 +195,7 @@ func CreateSSEProxyRoute(
 
 	// 4. Build upstream from provider realm with OAuth2 gateway credentials
 	identityClient := &identityapi.Client{}
-	if err = c.Get(ctx, eventConfig.Status.MeshClient.K8s(), identityClient); err != nil {
+	if err := c.Get(ctx, eventConfig.Status.MeshClient.K8s(), identityClient); err != nil {
 		return nil, errors.Wrapf(err, "failed to get gateway identity client for provider realm %s/%s",
 			providerRealm.Name, providerRealm.Namespace)
 	}

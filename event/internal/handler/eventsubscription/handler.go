@@ -10,10 +10,6 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/approval/api/v1/builder"
@@ -28,20 +24,22 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/util"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var _ handler.Handler[*eventv1.EventSubscription] = &EventSubscriptionHandler{}
 
 type EventSubscriptionHandler struct{}
 
-//nolint:gocyclo // reconciler with sequential validation, approval, and provisioning steps
 func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.EventSubscription) error {
 	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 
-	found, _, findErr := util.FindActiveEventType(ctx, obj.Spec.EventType)
-	if findErr != nil {
-		return findErr
+	found, _, err := util.FindActiveEventType(ctx, obj.Spec.EventType)
+	if err != nil {
+		return err
 	}
 	if !found {
 		obj.SetCondition(condition.NewNotReadyCondition("EventTypeNotFound",
@@ -58,9 +56,10 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 	}
 
 	if len(exposures) == 0 {
-		deleted, cleanupErr := c.Cleanup(ctx, &pubsubv1.SubscriberList{}, cclient.OwnedBy(obj))
-		if cleanupErr != nil {
-			return errors.Wrapf(cleanupErr, "unable to cleanup Subscriber for EventSubscription %q in namespace %q",
+		// no exposure found, cleanup
+		deleted, err := c.Cleanup(ctx, &pubsubv1.SubscriberList{}, cclient.OwnedBy(obj))
+		if err != nil {
+			return errors.Wrapf(err, "unable to cleanup Subscriber for EventSubscription %q in namespace %q",
 				obj.Name, obj.Namespace)
 		}
 		logger.Info("No EventExposure found for event type — cleaned up Subscriber resources", "deleted", deleted)
@@ -80,7 +79,8 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 		return nil
 	}
 
-	if err = condition.EnsureReady(exposure); err != nil {
+	// Ensure the EventExposure is ready before proceeding with subscription provisioning
+	if err := condition.EnsureReady(exposure); err != nil {
 		obj.SetCondition(condition.NewNotReadyCondition("EventExposureNotReady",
 			fmt.Sprintf("EventExposure %q is not ready", exposure.Name)))
 
@@ -133,7 +133,7 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 		return errors.Wrapf(err, "failed to get EventConfig for subscription zone %q", obj.Spec.Zone.Name)
 	}
 
-	if err = updateCallbackURL(ctx, exposure, obj, subscriberEventConfig); err != nil {
+	if err := updateCallbackURL(ctx, exposure, obj, subscriberEventConfig); err != nil {
 		return errors.Wrap(err, "failed to update callback URL for EventSubscription")
 	}
 
@@ -167,7 +167,7 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 		"eventType": obj.Spec.EventType,
 		"scopes":    obj.Spec.Scopes,
 	}
-	if err = requester.SetProperties(properties); err != nil {
+	if err := requester.SetProperties(properties); err != nil {
 		return errors.Wrapf(err, "unable to set approvalRequest properties for EventSubscription %q in namespace %q",
 			obj.Name, obj.Namespace)
 	}
@@ -214,9 +214,9 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 		obj.SetCondition(condition.NewNotReadyCondition("ApprovalDenied", "Approval has been denied"))
 		obj.SetCondition(condition.NewDoneProcessingCondition("Approval has been denied"))
 
-		deleted, cleanupErr := c.Cleanup(ctx, &pubsubv1.SubscriberList{}, cclient.OwnedBy(obj))
-		if cleanupErr != nil {
-			return errors.Wrapf(cleanupErr, "unable to cleanup Subscriber for EventSubscription %q in namespace %q",
+		deleted, err := c.Cleanup(ctx, &pubsubv1.SubscriberList{}, cclient.OwnedBy(obj))
+		if err != nil {
+			return errors.Wrapf(err, "unable to cleanup Subscriber for EventSubscription %q in namespace %q",
 				obj.Name, obj.Namespace)
 		}
 		logger.Info("Cleaned up Subscriber resources", "deleted", deleted)
@@ -245,9 +245,25 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 	obj.Status.Subscriber = types.ObjectRefFromObject(subscriber)
 
 	if obj.Spec.Delivery.Type == eventv1.DeliveryTypeServerSentEvent {
-		if sseErr := h.resolveSSEUrl(ctx, obj, exposure, subscriber); sseErr != nil {
-			return sseErr
+		baseUrl, ok := exposure.Status.SseURLs[obj.Spec.Zone.Name]
+		if !ok {
+			return ctrlerrors.BlockedErrorf("no SSE URL found in EventExposure status for zone %q", obj.Spec.Zone.Name)
 		}
+		hasSubId := len(subscriber.Status.SubscriptionId) > 0
+		if !hasSubId {
+			contextutil.RecorderFromContextOrDie(ctx).Event(obj, "Warning", "WaitingForSubscriptionId",
+				fmt.Sprintf("Waiting for subscription ID to be available in Subscriber status for zone %q", obj.Spec.Zone.Name))
+		}
+
+		if ok && hasSubId {
+			obj.Status.URL, err = url.JoinPath(baseUrl, subscriber.Status.SubscriptionId)
+			if err != nil {
+				return errors.Wrap(err, "failed to construct subscription URL for EventSubscription with SSE delivery")
+			}
+		} else {
+			return ctrlerrors.BlockedErrorf("Waiting for SSE URL for zone %q to be available", obj.Spec.Zone.Name)
+		}
+
 	}
 
 	logger.V(1).Info("Subscriber created/updated", "subscriber", subscriber.Name)
@@ -263,27 +279,6 @@ func (h *EventSubscriptionHandler) CreateOrUpdate(ctx context.Context, obj *even
 		"EventSubscription has been provisioned"))
 	obj.SetCondition(condition.NewDoneProcessingCondition(
 		"EventSubscription has been provisioned"))
-
-	return nil
-}
-
-func (h *EventSubscriptionHandler) resolveSSEUrl(ctx context.Context, obj *eventv1.EventSubscription, exposure *eventv1.EventExposure, subscriber *pubsubv1.Subscriber) error {
-	baseUrl, ok := exposure.Status.SseURLs[obj.Spec.Zone.Name]
-	if !ok {
-		return ctrlerrors.BlockedErrorf("no SSE URL found in EventExposure status for zone %q", obj.Spec.Zone.Name)
-	}
-
-	if subscriber.Status.SubscriptionId == "" {
-		contextutil.RecorderFromContextOrDie(ctx).Event(obj, "Warning", "WaitingForSubscriptionId",
-			fmt.Sprintf("Waiting for subscription ID to be available in Subscriber status for zone %q", obj.Spec.Zone.Name))
-		return ctrlerrors.BlockedErrorf("Waiting for SSE URL for zone %q to be available", obj.Spec.Zone.Name)
-	}
-
-	var err error
-	obj.Status.URL, err = url.JoinPath(baseUrl, subscriber.Status.SubscriptionId)
-	if err != nil {
-		return errors.Wrap(err, "failed to construct subscription URL for EventSubscription with SSE delivery")
-	}
 
 	return nil
 }
@@ -324,7 +319,7 @@ func (h *EventSubscriptionHandler) createSubscriber(
 		subscriber.Spec = pubsubv1.SubscriberSpec{
 			Publisher:        *exposure.Status.Publisher,
 			SubscriberId:     application.Status.ClientId,
-			Delivery:         mapDelivery(&obj.Spec.Delivery),
+			Delivery:         mapDelivery(obj.Spec.Delivery),
 			Trigger:          mapTrigger(obj.Spec.Trigger),
 			PublisherTrigger: mapTrigger(createPublisherTrigger(exposure, obj.Spec.Scopes)),
 			AppliedScopes:    obj.Spec.Scopes,
@@ -337,7 +332,7 @@ func (h *EventSubscriptionHandler) createSubscriber(
 		return nil, errors.Wrapf(err, "failed to create or update Subscriber %s", obj.Name)
 	}
 
-	if subscriber.Status.SubscriptionId != "" {
+	if len(subscriber.Status.SubscriptionId) > 0 {
 		obj.Status.SubscriptionId = subscriber.Status.SubscriptionId
 	}
 
@@ -345,7 +340,7 @@ func (h *EventSubscriptionHandler) createSubscriber(
 }
 
 // mapDelivery maps event domain Delivery to pubsub domain SubscriptionDelivery.
-func mapDelivery(d *eventv1.Delivery) pubsubv1.SubscriptionDelivery {
+func mapDelivery(d eventv1.Delivery) pubsubv1.SubscriptionDelivery {
 	return pubsubv1.SubscriptionDelivery{
 		Type:                  pubsubv1.DeliveryType(d.Type),
 		Payload:               pubsubv1.PayloadType(d.Payload),

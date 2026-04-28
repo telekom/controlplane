@@ -9,9 +9,8 @@ import (
 	"slices"
 	"sort"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 // createPublisherTrigger merges publisher-defined triggers from all matching
@@ -110,8 +109,7 @@ func attributesToExpression(attrs map[string]string) map[string]any {
 	}
 
 	if len(eqExprs) == 1 {
-		m, _ := eqExprs[0].(map[string]any) //nolint:errcheck // eqExprs elements are always map[string]any
-		return m
+		return eqExprs[0].(map[string]any)
 	}
 	return map[string]any{"and": eqExprs}
 }

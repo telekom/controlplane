@@ -6,20 +6,12 @@ package eventsubscription_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	pkgerrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	k8stypes "k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
@@ -31,18 +23,24 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/eventsubscription"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	k8stypes "k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 func isBlockedError(err error) bool {
-	var be ctrlerrors.BlockedError
-	if errors.As(err, &be) && be.IsBlocked() {
-		return true
+	for e := err; e != nil; e = pkgerrors.Unwrap(e) {
+		if be, ok := e.(ctrlerrors.BlockedError); ok && be.IsBlocked() {
+			return true
+		}
 	}
 	cause := pkgerrors.Cause(err)
-	if errors.As(cause, &be) && be.IsBlocked() {
+	if be, ok := cause.(ctrlerrors.BlockedError); ok && be.IsBlocked() {
 		return true
 	}
 	return false
@@ -106,7 +104,7 @@ func makeReadyEventType(eventType string) eventv1.EventType {
 	return et
 }
 
-func makeReadyEventExposure(eventType string) eventv1.EventExposure {
+func makeReadyEventExposure(eventType, zoneName string) eventv1.EventExposure {
 	exp := eventv1.EventExposure{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-exposure",
@@ -116,7 +114,7 @@ func makeReadyEventExposure(eventType string) eventv1.EventExposure {
 		Spec: eventv1.EventExposureSpec{
 			EventType:  eventType,
 			Visibility: eventv1.VisibilityEnterprise,
-			Zone:       ctypes.ObjectRef{Name: "expo-zone", Namespace: "default"},
+			Zone:       ctypes.ObjectRef{Name: zoneName, Namespace: "default"},
 			Provider:   ctypes.TypedObjectRef{ObjectRef: ctypes.ObjectRef{Name: "provider-app", Namespace: "default"}},
 			Approval: eventv1.Approval{
 				Strategy: eventv1.ApprovalStrategyAuto,
@@ -186,14 +184,14 @@ func makeReadyApplication(name, team, teamEmail, clientId string) *applicationv1
 	return app
 }
 
-func makeReadyZone(name, namespace string) *adminv1.Zone {
+func makeReadyZone(name, namespace string, visibility adminv1.ZoneVisibility) *adminv1.Zone {
 	zone := &adminv1.Zone{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
 		Spec: adminv1.ZoneSpec{
-			Visibility: adminv1.ZoneVisibilityEnterprise,
+			Visibility: visibility,
 		},
 	}
 	meta.SetStatusCondition(&zone.Status.Conditions, metav1.Condition{
@@ -422,7 +420,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 		mockListEventTypes([]eventv1.EventType{et})
 		mockListEventExposures([]eventv1.EventExposure{exposure})
 		// Visibility validation requires Zone lookup for the subscription's zone
-		mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
+		mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 		mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 2) // exposure zone + subscription zone (same zone)
 
 		requestorApp := makeReadyApplication("requestor-app", "requester-team", "req@example.com", "req-client-id")
@@ -434,7 +432,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 	// setupFullHappyPath sets up all mocks for a complete successful CreateOrUpdate (same-zone).
 	setupFullHappyPath := func() {
-		exposure := makeReadyEventExposure(testEventType)
+		exposure := makeReadyEventExposure(testEventType, "expo-zone")
 		setupUpToApproval(exposure)
 		mockApprovalBuilderGranted()
 		mockCreateOrUpdateSubscriber(controllerutil.OperationResultCreated, nil)
@@ -445,6 +443,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 	// =====================================================================
 
 	Describe("CreateOrUpdate", func() {
+
 		It("should return error when FindActiveEventType fails", func() {
 			mockListEventTypesError(fmt.Errorf("connection refused"))
 
@@ -521,7 +520,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			mockListEventTypes([]eventv1.EventType{et})
 
 			// Inactive exposure
-			exp := makeReadyEventExposure(testEventType)
+			exp := makeReadyEventExposure(testEventType, "expo-zone")
 			exp.Status.Active = false
 			mockListEventExposures([]eventv1.EventExposure{exp})
 
@@ -537,11 +536,11 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 		It("should return error when GetEventConfigForZone fails for exposure zone", func() {
 			et := makeReadyEventType(testEventType)
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
-			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 			mockListEventConfigsError(fmt.Errorf("config list failed"))
 
 			err := h.CreateOrUpdate(ctx, obj)
@@ -552,7 +551,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 		It("should set NotReady when subscription zone is not supported", func() {
 			et := makeReadyEventType(testEventType)
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 			// Subscription is in a different zone
 			obj.Spec.Zone.Name = "other-zone"
 
@@ -560,7 +559,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			expoConfig := makeReadyEventConfig("expo-zone", false, nil)
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
-			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 			mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 1)
 
 			err := h.CreateOrUpdate(ctx, obj)
@@ -580,7 +579,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 		It("should return error when GetEventConfigForZone fails for subscription zone", func() {
 			et := makeReadyEventType(testEventType)
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 			obj.Spec.Zone.Name = "sub-zone"
 
 			// Exposure zone config supports sub-zone via mesh
@@ -588,7 +587,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
-			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 
 			// First EventConfigList call (exposure zone) succeeds
 			fakeClient.EXPECT().
@@ -611,7 +610,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 		It("should return blocked error when cross-zone callback proxy URL is missing", func() {
 			et := makeReadyEventType(testEventType)
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 			obj.Spec.Zone.Name = "sub-zone"
 			obj.Spec.Delivery.Callback = "https://my-callback.example.com"
 
@@ -621,7 +620,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
-			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 
 			fakeClient.EXPECT().
 				List(ctx, mock.AnythingOfType("*v1.EventConfigList"), mock.Anything).
@@ -646,7 +645,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 		It("should update callback URL in cross-zone callback proxy scenario", func() {
 			et := makeReadyEventType(testEventType)
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 			obj.Spec.Zone.Name = "sub-zone"
 			obj.Spec.Delivery.Callback = "https://my-callback.example.com"
 
@@ -658,7 +657,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
-			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 
 			fakeClient.EXPECT().
 				List(ctx, mock.AnythingOfType("*v1.EventConfigList"), mock.Anything).
@@ -695,7 +694,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 		It("should not modify callback URL for SSE delivery in cross-zone scenario", func() {
 			et := makeReadyEventType(testEventType)
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 			exposure.Status.SseURLs = map[string]string{"sub-zone": "https://sse.example.com/sub-zone"}
 			obj.Spec.Zone.Name = "sub-zone"
 			obj.Spec.Delivery.Type = eventv1.DeliveryTypeServerSentEvent
@@ -706,7 +705,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
-			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 
 			fakeClient.EXPECT().
 				List(ctx, mock.AnythingOfType("*v1.EventConfigList"), mock.Anything).
@@ -740,14 +739,14 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 		It("should set NotReady when requestor kind is not Application", func() {
 			et := makeReadyEventType(testEventType)
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 			obj.Spec.Requestor.Kind = "ServiceAccount" // unsupported
 
 			expoConfig := makeReadyEventConfig("expo-zone", true, nil)
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
-			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 			mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 2) // exposure zone + subscription zone (same)
 
 			err := h.CreateOrUpdate(ctx, obj)
@@ -767,12 +766,12 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 		It("should return error when GetApplication for requestor fails", func() {
 			et := makeReadyEventType(testEventType)
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 			expoConfig := makeReadyEventConfig("expo-zone", true, nil)
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
-			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 			mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 2)
 			mockGetApplicationError(requestorAppKey, fmt.Errorf("not found"))
 
@@ -784,14 +783,14 @@ var _ = Describe("EventSubscriptionHandler", func() {
 
 		It("should return error when GetApplication for provider fails", func() {
 			et := makeReadyEventType(testEventType)
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 			expoConfig := makeReadyEventConfig("expo-zone", true, nil)
 
 			requestorApp := makeReadyApplication("requestor-app", "requester-team", "req@example.com", "req-client-id")
 
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{exposure})
-			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace))
+			mockGetZone(obj.Spec.Zone.K8s(), makeReadyZone(obj.Spec.Zone.Name, obj.Spec.Zone.Namespace, adminv1.ZoneVisibilityEnterprise))
 			mockListEventConfigs([]eventv1.EventConfig{expoConfig}, 2)
 			mockGetApplication(requestorAppKey, requestorApp)
 			mockGetApplicationError(providerAppKey, fmt.Errorf("provider not found"))
@@ -803,7 +802,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 		})
 
 		It("should set NotReady when approval is pending", func() {
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 			setupUpToApproval(exposure)
 			mockApprovalBuilderPending()
 
@@ -823,7 +822,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 		})
 
 		It("should set NotReady and cleanup when approval is denied", func() {
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 			setupUpToApproval(exposure)
 			mockApprovalBuilderDenied()
 
@@ -846,7 +845,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 		})
 
 		It("should set NotReady when approval request is denied", func() {
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 			setupUpToApproval(exposure)
 			mockApprovalBuilderRequestDenied()
 
@@ -866,7 +865,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 		})
 
 		It("should set NotReady when exposure has no Publisher reference yet", func() {
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 			exposure.Status.Publisher = nil // Publisher not yet created
 			setupUpToApproval(exposure)
 			mockApprovalBuilderGranted()
@@ -887,7 +886,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 		})
 
 		It("should return error when createSubscriber fails", func() {
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 			setupUpToApproval(exposure)
 			mockApprovalBuilderGranted()
 			mockCreateOrUpdateSubscriber(controllerutil.OperationResultNone, fmt.Errorf("subscriber create failed"))
@@ -942,7 +941,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 		})
 
 		It("should copy SubscriptionId from Subscriber status to EventSubscription status", func() {
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 			setupUpToApproval(exposure)
 			mockApprovalBuilderGranted()
 			mockCreateOrUpdateSubscriberWithSubscriptionId("sub-123", controllerutil.OperationResultCreated, nil)
@@ -965,7 +964,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 		})
 
 		It("should return error when approval cleanup of subscribers fails on denial", func() {
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 			setupUpToApproval(exposure)
 			mockApprovalBuilderDenied()
 			mockCleanupSubscribers(0, fmt.Errorf("cleanup failed"))
@@ -1010,7 +1009,7 @@ var _ = Describe("EventSubscriptionHandler", func() {
 			obj.Spec.Scopes = []string{"scope-a", "scope-b"}
 
 			// Build exposure with scopes that match the subscription's requested scopes
-			exposure := makeReadyEventExposure(testEventType)
+			exposure := makeReadyEventExposure(testEventType, "expo-zone")
 			exposure.Status.SseURLs = map[string]string{"expo-zone": "https://sse.example.com/expo-zone"}
 			exposure.Spec.Scopes = []eventv1.EventScope{
 				{Name: "scope-a", Trigger: eventv1.EventTrigger{}},

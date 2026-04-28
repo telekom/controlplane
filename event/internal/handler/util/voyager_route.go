@@ -9,11 +9,6 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -23,6 +18,10 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // CreateVoyagerRoute creates a gateway Route for the Voyager API endpoint.
@@ -34,6 +33,7 @@ func CreateVoyagerRoute(
 	eventConfig *eventv1.EventConfig,
 	opts ...Option,
 ) (*gatewayapi.Route, error) {
+
 	options := &Options{}
 	for _, opt := range opts {
 		opt(options)
@@ -50,7 +50,7 @@ func CreateVoyagerRoute(
 		}
 		return nil, errors.Wrapf(err, "failed to get realm %q", zone.Status.GatewayRealm.String())
 	}
-	if err = condition.EnsureReady(gatewayRealm); err != nil {
+	if err := condition.EnsureReady(gatewayRealm); err != nil {
 		return nil, ctrlerrors.BlockedErrorf("realm %q is not ready", gatewayRealm.Name)
 	}
 
@@ -84,8 +84,9 @@ func CreateVoyagerRoute(
 	}
 
 	mutator := func() error {
-		if applyErr := options.apply(ctx, route); applyErr != nil {
-			return errors.Wrap(applyErr, "failed to apply options to voyager Route")
+		err := options.apply(ctx, route)
+		if err != nil {
+			return errors.Wrap(err, "failed to apply options to voyager Route")
 		}
 
 		route.Labels = map[string]string{
@@ -127,8 +128,6 @@ func CreateVoyagerRoute(
 // CreateProxyVoyagerRoute creates a single cross-zone proxy Route for the Voyager API.
 // The Route is created in the source zone's namespace and points upstream
 // to the target zone's gateway with OAuth2 credentials from the mesh client.
-//
-//nolint:dupl // parallel structure with CreateProxyCallbackRoute; differs in naming, labels, and security
 func CreateProxyVoyagerRoute(
 	ctx context.Context,
 	sourceZone *adminv1.Zone,
@@ -136,6 +135,7 @@ func CreateProxyVoyagerRoute(
 	meshClient *identityv1.Client,
 	opts ...Option,
 ) (*gatewayapi.Route, error) {
+
 	options := &Options{}
 	for _, opt := range opts {
 		opt(options)
@@ -151,7 +151,7 @@ func CreateProxyVoyagerRoute(
 		}
 		return nil, errors.Wrapf(err, "failed to get realm %q", sourceZone.Status.GatewayRealm.String())
 	}
-	if err = condition.EnsureReady(downstreamRealm); err != nil {
+	if err := condition.EnsureReady(downstreamRealm); err != nil {
 		return nil, ctrlerrors.BlockedErrorf("realm %q is not ready", downstreamRealm.Name)
 	}
 
@@ -163,7 +163,7 @@ func CreateProxyVoyagerRoute(
 		}
 		return nil, errors.Wrapf(err, "failed to get realm %q", targetZone.Status.GatewayRealm.String())
 	}
-	if err = condition.EnsureReady(upstreamRealm); err != nil {
+	if err := condition.EnsureReady(upstreamRealm); err != nil {
 		return nil, ctrlerrors.BlockedErrorf("realm %q is not ready", upstreamRealm.Name)
 	}
 
@@ -188,8 +188,9 @@ func CreateProxyVoyagerRoute(
 	upstream.IssuerUrl = meshClient.Status.IssuerUrl
 
 	mutator := func() error {
-		if applyErr := options.apply(ctx, route); applyErr != nil {
-			return errors.Wrap(applyErr, "failed to apply options to proxy voyager Route")
+		err := options.apply(ctx, route)
+		if err != nil {
+			return errors.Wrap(err, "failed to apply options to proxy voyager Route")
 		}
 
 		route.Labels = map[string]string{
@@ -224,15 +225,14 @@ func CreateProxyVoyagerRoute(
 // CreateVoyagerProxyRoutes creates cross-zone proxy Routes for the Voyager API.
 // For each target zone, a Route is created in the source zone that points to
 // the target zone's Voyager Route via the target zone's gateway with OAuth2 credentials.
-//
-//nolint:dupl // parallel structure with CreateCallbackProxyRoutes; differs in route type and security
 func CreateVoyagerProxyRoutes(
 	ctx context.Context,
-	meshConfig *eventv1.MeshConfig,
+	meshConfig eventv1.MeshConfig,
 	sourceZone *adminv1.Zone,
 	targetZones []*adminv1.Zone,
 	opts ...Option,
 ) (map[string]*gatewayapi.Route, error) {
+
 	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 

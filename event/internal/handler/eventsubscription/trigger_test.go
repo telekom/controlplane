@@ -8,9 +8,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 // helper: build a JSON expression from a Go map.

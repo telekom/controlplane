@@ -10,23 +10,21 @@ import (
 	"os"
 	"strings"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/mock"
-	admissionv1 "k8s.io/api/admission/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
 	"github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/util"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	admissionv1 "k8s.io/api/admission/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // disableSecretManager disables the FeatureSecretManager feature flag
@@ -114,6 +112,7 @@ func updateContextWithOldObject(parent context.Context, oldObj *eventv1.EventCon
 }
 
 var _ = Describe("EventConfig Webhook", func() {
+
 	// ─────────────────────────────────────────────────────────────────────────
 	// Validation Tests
 	// ─────────────────────────────────────────────────────────────────────────

@@ -7,6 +7,14 @@ package controller
 import (
 	"context"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	"github.com/telekom/controlplane/event/internal/handler/eventexposure"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -16,15 +24,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-	eventv1 "github.com/telekom/controlplane/event/api/v1"
-	"github.com/telekom/controlplane/event/internal/handler/eventexposure"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 )
 
 // EventExposureReconciler reconciles a EventExposure object
@@ -104,7 +103,7 @@ func (r *EventExposureReconciler) MapEventTypeToEventExposure(ctx context.Contex
 	}
 
 	list := &eventv1.EventExposureList{}
-	if err := r.List(ctx, list, client.MatchingLabels{
+	if err := r.Client.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey: eventType.Labels[cconfig.EnvironmentLabelKey],
 		eventv1.EventTypeLabelKey:   labelutil.NormalizeLabelValue(eventType.Spec.Type),
 	}); err != nil {
@@ -112,10 +111,10 @@ func (r *EventExposureReconciler) MapEventTypeToEventExposure(ctx context.Contex
 	}
 
 	var reqs []reconcile.Request
-	for i := range list.Items {
-		if list.Items[i].Spec.EventType == eventType.Spec.Type {
+	for _, item := range list.Items {
+		if item.Spec.EventType == eventType.Spec.Type {
 			reqs = append(reqs, reconcile.Request{
-				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+				NamespacedName: client.ObjectKeyFromObject(&item),
 			})
 		}
 	}
@@ -132,7 +131,7 @@ func (r *EventExposureReconciler) MapEventExposureToEventExposure(ctx context.Co
 	}
 
 	list := &eventv1.EventExposureList{}
-	if err := r.List(ctx, list, client.MatchingLabels{
+	if err := r.Client.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey: exposure.Labels[cconfig.EnvironmentLabelKey],
 		eventv1.EventTypeLabelKey:   labelutil.NormalizeLabelValue(exposure.Spec.EventType),
 	}); err != nil {
@@ -140,13 +139,13 @@ func (r *EventExposureReconciler) MapEventExposureToEventExposure(ctx context.Co
 	}
 
 	var reqs []reconcile.Request
-	for i := range list.Items {
-		if list.Items[i].UID == exposure.UID {
+	for _, item := range list.Items {
+		if item.UID == exposure.UID {
 			continue
 		}
-		if list.Items[i].Spec.EventType == exposure.Spec.EventType {
+		if item.Spec.EventType == exposure.Spec.EventType {
 			reqs = append(reqs, reconcile.Request{
-				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+				NamespacedName: client.ObjectKeyFromObject(&item),
 			})
 		}
 	}
@@ -169,7 +168,7 @@ func (r *EventExposureReconciler) MapRouteToEventExposure(ctx context.Context, o
 	}
 
 	list := &eventv1.EventExposureList{}
-	if err := r.List(ctx, list, client.MatchingLabels{
+	if err := r.Client.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey: route.Labels[cconfig.EnvironmentLabelKey],
 		eventv1.EventTypeLabelKey:   eventTypeLabel,
 	}); err != nil {
@@ -177,11 +176,11 @@ func (r *EventExposureReconciler) MapRouteToEventExposure(ctx context.Context, o
 	}
 
 	var reqs []reconcile.Request
-	for i := range list.Items {
-		normalized := labelutil.NormalizeLabelValue(list.Items[i].Spec.EventType)
+	for _, item := range list.Items {
+		normalized := labelutil.NormalizeLabelValue(item.Spec.EventType)
 		if normalized == eventTypeLabel {
 			reqs = append(reqs, reconcile.Request{
-				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+				NamespacedName: client.ObjectKeyFromObject(&item),
 			})
 		}
 	}
@@ -197,7 +196,7 @@ func (r *EventExposureReconciler) MapZoneToEventExposure(ctx context.Context, ob
 	}
 
 	list := &eventv1.EventExposureList{}
-	if err := r.List(ctx, list, client.MatchingLabels{
+	if err := r.Client.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey:   zone.Labels[cconfig.EnvironmentLabelKey],
 		cconfig.BuildLabelKey("zone"): labelutil.NormalizeLabelValue(zone.Name),
 	}); err != nil {
@@ -205,10 +204,10 @@ func (r *EventExposureReconciler) MapZoneToEventExposure(ctx context.Context, ob
 	}
 
 	var reqs []reconcile.Request
-	for i := range list.Items {
-		if list.Items[i].Spec.Zone.Name == zone.Name {
+	for _, item := range list.Items {
+		if item.Spec.Zone.Name == zone.Name {
 			reqs = append(reqs, reconcile.Request{
-				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+				NamespacedName: client.ObjectKeyFromObject(&item),
 			})
 		}
 	}
@@ -224,7 +223,7 @@ func (r *EventExposureReconciler) MapEventConfigToEventExposure(ctx context.Cont
 	}
 
 	list := &eventv1.EventExposureList{}
-	err := r.List(ctx, list, client.MatchingLabels{
+	err := r.Client.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey:   eventConfig.Labels[cconfig.EnvironmentLabelKey],
 		cconfig.BuildLabelKey("zone"): eventConfig.Spec.Zone.Name,
 	})
@@ -233,10 +232,10 @@ func (r *EventExposureReconciler) MapEventConfigToEventExposure(ctx context.Cont
 	}
 
 	var reqs []reconcile.Request
-	for i := range list.Items {
-		if list.Items[i].Spec.Zone.Equals(&eventConfig.Spec.Zone) {
+	for _, item := range list.Items {
+		if item.Spec.Zone.Equals(&eventConfig.Spec.Zone) {
 			reqs = append(reqs, reconcile.Request{
-				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+				NamespacedName: client.ObjectKeyFromObject(&item),
 			})
 		}
 	}
@@ -258,7 +257,7 @@ func (r *EventExposureReconciler) MapEventSubscriptionToEventExposure(ctx contex
 	}
 
 	list := &eventv1.EventExposureList{}
-	if err := r.List(ctx, list, client.MatchingLabels{
+	if err := r.Client.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey: sub.Labels[cconfig.EnvironmentLabelKey],
 		eventv1.EventTypeLabelKey:   labelutil.NormalizeLabelValue(sub.Spec.EventType),
 	}); err != nil {
@@ -266,10 +265,10 @@ func (r *EventExposureReconciler) MapEventSubscriptionToEventExposure(ctx contex
 	}
 
 	var reqs []reconcile.Request
-	for i := range list.Items {
-		if list.Items[i].Spec.EventType == sub.Spec.EventType {
+	for _, item := range list.Items {
+		if item.Spec.EventType == sub.Spec.EventType {
 			reqs = append(reqs, reconcile.Request{
-				NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
+				NamespacedName: client.ObjectKeyFromObject(&item),
 			})
 		}
 	}

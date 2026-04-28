@@ -5,10 +5,9 @@
 package controller
 
 import (
+	"github.com/telekom/controlplane/common/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-
-	"github.com/telekom/controlplane/common/pkg/config"
 )
 
 // LabelPredicate is a predicate that filters objects based on the presence of the label.

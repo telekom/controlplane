@@ -8,15 +8,9 @@ import (
 	"context"
 	"fmt"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	mock "github.com/stretchr/testify/mock"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	k8stypes "k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
@@ -25,9 +19,13 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/util"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	k8stypes "k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // ---------- CreatePublishRoute ----------
@@ -45,7 +43,7 @@ var _ = Describe("CreatePublishRoute", func() {
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
 
-		zone = makeZone("zone-a", "zone-a-ns", "gw-realm-a")
+		zone = makeZone("zone-a", "default", "zone-a-ns", "gw-realm-a", "default")
 		eventConfig = &eventv1.EventConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ec-zone-a",
@@ -84,7 +82,7 @@ var _ = Describe("CreatePublishRoute", func() {
 	})
 
 	It("should return BlockedError when realm is not ready", func() {
-		notReadyRealm := makeNotReadyGatewayRealm("gw-realm-a")
+		notReadyRealm := makeNotReadyGatewayRealm("gw-realm-a", "default")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
@@ -102,7 +100,7 @@ var _ = Describe("CreatePublishRoute", func() {
 	})
 
 	It("should return error when publishEventUrl is invalid", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a")
+		readyRealm := makeReadyGatewayRealm("gw-realm-a", "default")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
@@ -125,7 +123,7 @@ var _ = Describe("CreatePublishRoute", func() {
 	})
 
 	It("should create publish route successfully", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a")
+		readyRealm := makeReadyGatewayRealm("gw-realm-a", "default")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
@@ -190,7 +188,7 @@ var _ = Describe("CreatePublishRoute", func() {
 	})
 
 	It("should create publish route with HTTPS upstream URL", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a")
+		readyRealm := makeReadyGatewayRealm("gw-realm-a", "default")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
@@ -235,7 +233,7 @@ var _ = Describe("CreatePublishRoute", func() {
 	})
 
 	It("should return error when CreateOrUpdate fails", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a")
+		readyRealm := makeReadyGatewayRealm("gw-realm-a", "default")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
@@ -256,7 +254,7 @@ var _ = Describe("CreatePublishRoute", func() {
 	})
 
 	It("should use correct ObjectRef for realm in route spec", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a")
+		readyRealm := makeReadyGatewayRealm("gw-realm-a", "default")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).

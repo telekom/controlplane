@@ -8,15 +8,14 @@ import (
 	"context"
 	"os"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	approvalapi "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/controller/index"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -70,4 +69,5 @@ func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
 		ctrl.Log.Error(err, "unable to create field-indexer")
 		os.Exit(1)
 	}
+
 }

@@ -8,12 +8,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	"github.com/telekom/controlplane/common/pkg/client"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -24,6 +19,12 @@ import (
 	"github.com/telekom/controlplane/event/internal/handler/util"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 )
 
 const tokenUrlSuffix = "/protocol/openid-connect/token"
@@ -54,7 +55,7 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 		return ctrlerrors.BlockedErrorf("identity Realm %s has no issuerUrl yet", adminRealm.Name)
 	}
 
-	adminClient, err := h.createIdentityClient(ctx, obj, &obj.Spec.Admin.Client)
+	adminClient, err := h.createIdentityClient(ctx, obj, obj.Spec.Admin.Client)
 	if err != nil {
 		return errors.Wrap(err, "failed to create identity Client")
 	}
@@ -72,7 +73,7 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 		return errors.Wrapf(err, "failed to get identity Realm %q", obj.Spec.Mesh.Client.Realm.String())
 	}
 
-	meshClient, err := h.createIdentityClient(ctx, obj, &obj.Spec.Mesh.Client)
+	meshClient, err := h.createIdentityClient(ctx, obj, obj.Spec.Mesh.Client)
 	if err != nil {
 		return errors.Wrap(err, "failed to create identity Client")
 	}
@@ -90,19 +91,19 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 
 	// --- Routes ---
 
-	if err = h.createCallbackRoutes(ctx, obj); err != nil {
+	if err := h.createCallbackRoutes(ctx, obj); err != nil {
 		return errors.Wrap(err, "failed to create callback Routes")
 	}
 	logger.V(1).Info("Callback Routes created/updated", "count", len(obj.Status.ProxyCallbackRoutes))
 
 	if obj.Spec.VoyagerApiUrl != "" {
-		if err = h.createVoyagerRoutes(ctx, obj); err != nil {
+		if err := h.createVoyagerRoutes(ctx, obj); err != nil {
 			return errors.Wrap(err, "failed to create voyager Routes")
 		}
 		logger.V(1).Info("Voyager Routes created/updated", "count", len(obj.Status.ProxyVoyagerRoutes))
 	}
 
-	if err = h.createPublishRoute(ctx, obj); err != nil {
+	if err := h.createPublishRoute(ctx, obj); err != nil {
 		return errors.Wrap(err, "failed to create publish Route")
 	}
 	logger.V(1).Info("Publish Route created/updated")
@@ -118,7 +119,7 @@ func (h *EventConfigHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Ev
 
 	// --- Cleanup old child resources that are no longer referenced
 
-	deleted, err := c.CleanupAll(ctx, cclient.OwnedBy(obj))
+	deleted, err := c.CleanupAll(ctx, client.OwnedBy(obj))
 	if err != nil {
 		return errors.Wrap(err, "failed to cleanup old child resources")
 	}
@@ -141,7 +142,7 @@ func (h *EventConfigHandler) Delete(ctx context.Context, obj *eventv1.EventConfi
 }
 
 // createIdentityClient creates an identity.Client for the event operator to authenticate with configuration backend.
-func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *eventv1.EventConfig, clientCfg *eventv1.ClientConfig) (*identityv1.Client, error) {
+func (h *EventConfigHandler) createIdentityClient(ctx context.Context, obj *eventv1.EventConfig, clientCfg eventv1.ClientConfig) (*identityv1.Client, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	identityClient := &identityv1.Client{
@@ -197,20 +198,19 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 	logger.V(1).Info("Fetched other EventConfigs", "count", len(otherEventConfigs.Items))
 	otherZones := make([]*adminv1.Zone, 0, len(otherEventConfigs.Items))
 
-	for i := range otherEventConfigs.Items {
-		other := &otherEventConfigs.Items[i]
-		if types.Equals(other, obj) {
+	for _, other := range otherEventConfigs.Items {
+		if types.Equals(&other, obj) {
 			continue
 		}
-		otherZone, zoneErr := util.GetZone(ctx, other.Spec.Zone.K8s())
-		if zoneErr != nil {
-			return errors.Wrapf(zoneErr, "failed to get zone for other EventConfig %q", other.Name)
+		zone, err := util.GetZone(ctx, other.Spec.Zone.K8s())
+		if err != nil {
+			return errors.Wrapf(err, "failed to get zone for other EventConfig %q", other.Name)
 		}
-		otherZones = append(otherZones, otherZone)
+		otherZones = append(otherZones, zone)
 	}
 
 	logger.V(1).Info("Creating proxy callback Routes for other zones", "count", len(otherZones))
-	routes, err := util.CreateCallbackProxyRoutes(ctx, &obj.Spec.Mesh, myZone, otherZones, util.WithOwner(obj))
+	routes, err := util.CreateCallbackProxyRoutes(ctx, obj.Spec.Mesh, myZone, otherZones, util.WithOwner(obj))
 	if err != nil {
 		return errors.Wrap(err, "failed to create callback proxy Routes")
 	}
@@ -235,6 +235,7 @@ func (h *EventConfigHandler) createCallbackRoutes(ctx context.Context, obj *even
 }
 
 func (h *EventConfigHandler) createPublishRoute(ctx context.Context, obj *eventv1.EventConfig) error {
+
 	myZone, err := util.GetZone(ctx, obj.Spec.Zone.K8s())
 	if err != nil {
 		return errors.Wrapf(err, "failed to get zone for EventConfig's zone reference %q", obj.Spec.Zone.String())
@@ -267,20 +268,19 @@ func (h *EventConfigHandler) createVoyagerRoutes(ctx context.Context, obj *event
 	logger.V(1).Info("Fetched other EventConfigs for voyager Routes", "count", len(otherEventConfigs.Items))
 	otherZones := make([]*adminv1.Zone, 0, len(otherEventConfigs.Items))
 
-	for i := range otherEventConfigs.Items {
-		other := &otherEventConfigs.Items[i]
-		if types.Equals(other, obj) {
+	for _, other := range otherEventConfigs.Items {
+		if types.Equals(&other, obj) {
 			continue
 		}
-		otherZone, zoneErr := util.GetZone(ctx, other.Spec.Zone.K8s())
-		if zoneErr != nil {
-			return errors.Wrapf(zoneErr, "failed to get zone for other EventConfig %q", other.Name)
+		zone, err := util.GetZone(ctx, other.Spec.Zone.K8s())
+		if err != nil {
+			return errors.Wrapf(err, "failed to get zone for other EventConfig %q", other.Name)
 		}
-		otherZones = append(otherZones, otherZone)
+		otherZones = append(otherZones, zone)
 	}
 
 	logger.V(1).Info("Creating proxy voyager Routes for other zones", "count", len(otherZones))
-	routes, err := util.CreateVoyagerProxyRoutes(ctx, &obj.Spec.Mesh, myZone, otherZones, util.WithOwner(obj))
+	routes, err := util.CreateVoyagerProxyRoutes(ctx, obj.Spec.Mesh, myZone, otherZones, util.WithOwner(obj))
 	if err != nil {
 		return errors.Wrap(err, "failed to create voyager proxy Routes")
 	}

@@ -8,15 +8,14 @@ import (
 	"context"
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 func TestCollectZones(t *testing.T) {
@@ -193,8 +192,10 @@ func TestOptionsApply(t *testing.T) {
 				if ownerRefs[0].UID != tc.options.Owner.GetUID() {
 					t.Errorf("owner reference UID = %q, want %q", ownerRefs[0].UID, tc.options.Owner.GetUID())
 				}
-			} else if len(ownerRefs) != 0 {
-				t.Errorf("apply() expected no owner references, got %d", len(ownerRefs))
+			} else {
+				if len(ownerRefs) != 0 {
+					t.Errorf("apply() expected no owner references, got %d", len(ownerRefs))
+				}
 			}
 		})
 	}

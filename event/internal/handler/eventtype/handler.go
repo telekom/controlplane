@@ -9,12 +9,11 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var _ handler.Handler[*eventv1.EventType] = &EventTypeHandler{}
@@ -33,9 +32,9 @@ func (h *EventTypeHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.Even
 
 	// Filter to only those matching our spec.type
 	var candidates []eventv1.EventType
-	for i := range eventTypeList.Items {
-		if eventTypeList.Items[i].Spec.Type == obj.Spec.Type {
-			candidates = append(candidates, eventTypeList.Items[i])
+	for _, et := range eventTypeList.Items {
+		if et.Spec.Type == obj.Spec.Type {
+			candidates = append(candidates, et)
 		}
 	}
 

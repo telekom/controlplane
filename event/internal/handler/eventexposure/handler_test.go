@@ -8,7 +8,21 @@ import (
 	"context"
 	"fmt"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	pkgerrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	cclient "github.com/telekom/controlplane/common/pkg/client"
+	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	"github.com/telekom/controlplane/event/internal/handler/eventexposure"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,21 +30,20 @@ import (
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	applicationv1 "github.com/telekom/controlplane/application/api/v1"
-	cclient "github.com/telekom/controlplane/common/pkg/client"
-	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
-	eventv1 "github.com/telekom/controlplane/event/api/v1"
-	"github.com/telekom/controlplane/event/internal/handler/eventexposure"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
+
+func isBlockedError(err error) bool {
+	for e := err; e != nil; e = pkgerrors.Unwrap(e) {
+		if be, ok := e.(ctrlerrors.BlockedError); ok && be.IsBlocked() {
+			return true
+		}
+	}
+	cause := pkgerrors.Cause(err)
+	if be, ok := cause.(ctrlerrors.BlockedError); ok && be.IsBlocked() {
+		return true
+	}
+	return false
+}
 
 func newEventExposure(name, eventType string) *eventv1.EventExposure {
 	return &eventv1.EventExposure{
@@ -48,8 +61,7 @@ func newEventExposure(name, eventType string) *eventv1.EventExposure {
 	}
 }
 
-func makeReadyEventType() eventv1.EventType {
-	const eventType = "de.telekom.eni.quickstart.v1"
+func makeReadyEventType(eventType string) eventv1.EventType {
 	et := eventv1.EventType{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      eventv1.MakeEventTypeName(eventType),
@@ -370,7 +382,7 @@ var _ = Describe("EventExposureHandler", func() {
 	// setupFullHappyPath sets up all mocks needed for a full successful CreateOrUpdate
 	// run with no cross-zone SSE subscriptions.
 	setupFullHappyPath := func() {
-		et := makeReadyEventType()
+		et := makeReadyEventType("de.telekom.eni.quickstart.v1")
 		zone := makeReadyZone()
 		ec := makeReadyEventConfig()
 		es := makeReadyEventStore()
@@ -391,6 +403,7 @@ var _ = Describe("EventExposureHandler", func() {
 	}
 
 	Describe("CreateOrUpdate", func() {
+
 		It("should return error when FindActiveEventType fails", func() {
 			mockListEventTypesError(fmt.Errorf("connection refused"))
 
@@ -420,7 +433,7 @@ var _ = Describe("EventExposureHandler", func() {
 		})
 
 		It("should return error when FindEventExposures fails", func() {
-			et := makeReadyEventType()
+			et := makeReadyEventType("de.telekom.eni.quickstart.v1")
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposuresError(fmt.Errorf("list failed"))
 
@@ -431,7 +444,7 @@ var _ = Describe("EventExposureHandler", func() {
 		})
 
 		It("should set NotReady when another active EventExposure already exists", func() {
-			et := makeReadyEventType()
+			et := makeReadyEventType("de.telekom.eni.quickstart.v1")
 			mockListEventTypes([]eventv1.EventType{et})
 
 			existingExposure := eventv1.EventExposure{
@@ -466,7 +479,7 @@ var _ = Describe("EventExposureHandler", func() {
 		})
 
 		It("should return error when GetZone fails", func() {
-			et := makeReadyEventType()
+			et := makeReadyEventType("de.telekom.eni.quickstart.v1")
 			mockListEventTypes([]eventv1.EventType{et})
 			mockListEventExposures([]eventv1.EventExposure{})
 			mockGetZoneError(fmt.Errorf("zone fetch failed"))
@@ -478,7 +491,7 @@ var _ = Describe("EventExposureHandler", func() {
 		})
 
 		It("should return error when GetEventConfigForZone fails", func() {
-			et := makeReadyEventType()
+			et := makeReadyEventType("de.telekom.eni.quickstart.v1")
 			zone := makeReadyZone()
 
 			mockListEventTypes([]eventv1.EventType{et})
@@ -493,7 +506,7 @@ var _ = Describe("EventExposureHandler", func() {
 		})
 
 		It("should return error when GetEventStoreForZone fails", func() {
-			et := makeReadyEventType()
+			et := makeReadyEventType("de.telekom.eni.quickstart.v1")
 			zone := makeReadyZone()
 			ec := makeReadyEventConfig()
 
@@ -512,7 +525,7 @@ var _ = Describe("EventExposureHandler", func() {
 		})
 
 		It("should return error when GetApplication fails", func() {
-			et := makeReadyEventType()
+			et := makeReadyEventType("de.telekom.eni.quickstart.v1")
 			zone := makeReadyZone()
 			ec := makeReadyEventConfig()
 			es := makeReadyEventStore()
@@ -531,7 +544,7 @@ var _ = Describe("EventExposureHandler", func() {
 		})
 
 		It("should return error when createPublisher fails", func() {
-			et := makeReadyEventType()
+			et := makeReadyEventType("de.telekom.eni.quickstart.v1")
 			zone := makeReadyZone()
 			ec := makeReadyEventConfig()
 			es := makeReadyEventStore()
@@ -552,7 +565,7 @@ var _ = Describe("EventExposureHandler", func() {
 		})
 
 		It("should return error when FindCrossZoneSSESubscriptionZones fails", func() {
-			et := makeReadyEventType()
+			et := makeReadyEventType("de.telekom.eni.quickstart.v1")
 			zone := makeReadyZone()
 			ec := makeReadyEventConfig()
 			es := makeReadyEventStore()
@@ -574,7 +587,7 @@ var _ = Describe("EventExposureHandler", func() {
 		})
 
 		It("should return error when CreateSSERoute fails", func() {
-			et := makeReadyEventType()
+			et := makeReadyEventType("de.telekom.eni.quickstart.v1")
 			zone := makeReadyZone()
 			ec := makeReadyEventConfig()
 			es := makeReadyEventStore()
@@ -636,6 +649,7 @@ var _ = Describe("EventExposureHandler", func() {
 	})
 
 	Describe("Delete", func() {
+
 		It("should return error when AnyOtherEventExposureExists fails", func() {
 			mockListEventExposuresError(fmt.Errorf("list failed"))
 
