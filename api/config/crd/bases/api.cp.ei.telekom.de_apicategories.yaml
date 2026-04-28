@@ -79,16 +79,6 @@ spec:
                 maxLength: 20
                 minLength: 1
                 type: string
-              linting:
-                properties:
-                  enabled:
-                    description: Enabled indicates whether linting is enabled for
-                      this API category.
-                    type: boolean
-                  ruleset:
-                    description: Ruleset specifies the ruleset to use for linting.
-                    type: string
-                type: object
               mustHaveGroupPrefix:
                 default: true
                 description: |-

@@ -38,15 +38,6 @@ type ApiCategorySpec struct {
 	// the name of the group in the basePath.
 	// +kubebuilder:default:=true
 	MustHaveGroupPrefix bool `json:"mustHaveGroupPrefix,omitempty"`
-
-	Linting *LintingConfig `json:"linting,omitempty"`
-}
-
-type LintingConfig struct {
-	// Enabled indicates whether linting is enabled for this API category.
-	Enabled bool `json:"enabled,omitempty"`
-	// Ruleset specifies the ruleset to use for linting.
-	Ruleset string `json:"ruleset,omitempty"`
 }
 
 type AllowTeamsConfig struct {
