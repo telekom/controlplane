@@ -5,20 +5,24 @@
 package mail
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
+	"time"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/notification/internal/config"
+	"github.com/telekom/controlplane/notification/internal/sender/adapter"
 	"gopkg.in/gomail.v2"
-	"time"
 )
 
 var _ EmailSender = SMTPEmailSender{}
 
 type EmailSender interface {
-	Send(ctx context.Context, from string, senderName string, bcc []string, subject, body string) error
+	Send(ctx context.Context, from, senderName string, bcc []string, subject, body string, attachments []adapter.Attachment) error
 }
 
 type SMTPEmailSender struct {
@@ -29,7 +33,8 @@ var NewSMTPSender = func(config *config.EmailAdapterConfig) EmailSender {
 	return &SMTPEmailSender{config: config}
 }
 
-func (s SMTPEmailSender) Send(ctx context.Context, from string, senderName string, bcc []string, subject, body string) error {
+// Send delivers an email via SMTP with optional file attachments.
+func (s SMTPEmailSender) Send(ctx context.Context, from, senderName string, bcc []string, subject, body string, attachments []adapter.Attachment) error {
 	log := logr.FromContextOrDiscard(ctx)
 
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -44,10 +49,20 @@ func (s SMTPEmailSender) Send(ctx context.Context, from string, senderName strin
 	m.SetHeader("From", fmt.Sprintf("%s <%s>", senderName, from))
 	m.SetHeader("Bcc", bcc...)
 	m.SetHeader("Subject", subject)
-	m.SetHeader("MIME-Version", "1.0")
-	m.SetHeader("Content-Type", "text/html; charset=UTF-8")
 	m.SetHeader("X-Mailer", "Hyperion Notifier")
 	m.SetBody("text/html", body)
+
+	for _, att := range attachments {
+		m.Attach(att.Filename,
+			gomail.SetCopyFunc(func(w io.Writer) error {
+				_, err := io.Copy(w, bytes.NewReader(att.Content))
+				return err
+			}),
+			gomail.SetHeader(map[string][]string{
+				"Content-Type": {att.ContentType},
+			}),
+		)
+	}
 
 	if err := d.DialAndSend(m); err != nil {
 		return errors.Wrap(err, "Failed to send email")
