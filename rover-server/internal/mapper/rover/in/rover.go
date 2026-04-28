@@ -145,14 +145,24 @@ func mapPermissions(in *api.Rover, out *roverv1.Rover) error {
 	return nil
 }
 
+// clientAuthMethodToCRD maps rover-server API enum values to rover CRD tokenRequest values.
+var clientAuthMethodToCRD = map[api.AuthenticationClientAuthMethod]string{
+	api.BASIC: "header",
+	api.POST:  "body",
+}
+
 func mapAuthentication(in *api.Rover, out *roverv1.Rover) {
-	method := string(in.Authentication.ClientAuthMethod)
+	method := in.Authentication.ClientAuthMethod
 	if method == "" {
+		return
+	}
+	tokenRequest, ok := clientAuthMethodToCRD[method]
+	if !ok {
 		return
 	}
 	out.Spec.Authentication = &roverv1.RoverAuthentication{
 		M2M: &roverv1.RoverM2MAuthentication{
-			ClientAuthMethod: method,
+			TokenRequest: tokenRequest,
 		},
 	}
 }

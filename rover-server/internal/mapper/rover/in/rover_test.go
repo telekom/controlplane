@@ -141,7 +141,7 @@ var _ = Describe("Rover Mapper", func() {
 	})
 
 	Context("MapAuthentication", func() {
-		It("must map BASIC to CRD", func() {
+		It("must map BASIC to header in CRD", func() {
 			input := &api.Rover{
 				Zone: "zone",
 				Authentication: api.Authentication{
@@ -155,10 +155,10 @@ var _ = Describe("Rover Mapper", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(output.Spec.Authentication).ToNot(BeNil())
 			Expect(output.Spec.Authentication.M2M).ToNot(BeNil())
-			Expect(output.Spec.Authentication.M2M.ClientAuthMethod).To(Equal("BASIC"))
+			Expect(output.Spec.Authentication.M2M.TokenRequest).To(Equal("header"))
 		})
 
-		It("must map POST to CRD", func() {
+		It("must map POST to body in CRD", func() {
 			input := &api.Rover{
 				Zone: "zone",
 				Authentication: api.Authentication{
@@ -172,7 +172,7 @@ var _ = Describe("Rover Mapper", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(output.Spec.Authentication).ToNot(BeNil())
 			Expect(output.Spec.Authentication.M2M).ToNot(BeNil())
-			Expect(output.Spec.Authentication.M2M.ClientAuthMethod).To(Equal("POST"))
+			Expect(output.Spec.Authentication.M2M.TokenRequest).To(Equal("body"))
 		})
 
 		It("must not set authentication when clientAuthMethod is empty", func() {

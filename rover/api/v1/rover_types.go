@@ -189,13 +189,13 @@ type RoverAuthentication struct {
 
 // RoverM2MAuthentication defines the M2M authentication settings
 type RoverM2MAuthentication struct {
-	// ClientAuthMethod configures the client authentication method, according to RFC 6749
+	// TokenRequest configures the client authentication method, according to RFC 6749
 	// This feature is currently only documented but not parsed towards the application and identity domain as it is still in discussion whether
 	// this should will be enforced for IDPs.
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=NONE;POST;BASIC
-	// +kubebuilder:default=BASIC
-	ClientAuthMethod string `json:"clientAuthMethod,omitempty"`
+	// +kubebuilder:validation:Enum=body;header
+	// +kubebuilder:default=header
+	TokenRequest string `json:"tokenRequest,omitempty"`
 }
 
 // Exposure defines a service that is exposed by this Rover
