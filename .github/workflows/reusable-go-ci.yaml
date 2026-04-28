@@ -256,6 +256,43 @@ jobs:
           go-package: ./...
           work-dir: ${{ inputs.module }}
 
+  check_license_symlink:
+    name: "Check if go module ${{ inputs.name }} has linked proper LICENSE file"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+
+      - name: Check license file
+        shell: bash
+        working-directory: ${{ inputs.module }}
+        run: |
+          declare -r LICENSE_SOURCE_FILE="LICENSES/Apache-2.0.txt"
+          declare -r EXPECTED_SYMLINK_FILE="LICENSE.txt"
+          declare -r HELP_MESSAGE="Please create symlink to license file: ln -s LICENSES/Apache-2.0.txt ${{ inputs.module }}/LICENSE.txt"
+          if [ ! -f go.mod ]; then
+            echo "WARNING: No go.mod found in ${{ inputs.name }}. Check license is skipped."
+            exit 0
+          fi
+
+          echo "Found go.mod. Checking ${EXPECTED_SYMLINK_FILE}"
+          if [ ! -L "${EXPECTED_SYMLINK_FILE}" ]; then
+            echo "${EXPECTED_SYMLINK_FILE} doesn't exist or it isn't symlink"
+            echo "${HELP_MESSAGE}"
+            ls -lh "${EXPECTED_SYMLINK_FILE}"
+            exit 1
+          fi
+
+          if [ "$(readlink -n "${EXPECTED_SYMLINK_FILE}")" != "${LICENSE_SOURCE_FILE}" ]; then
+            echo "${EXPECTED_SYMLINK_FILE} is missing or it isn't valid symlink to ${LICENSE_SOURCE_FILE}"
+            echo "${HELP_MESSAGE}"
+            exit 1
+          fi
+
+          echo "${EXPECTED_SYMLINK_FILE} symlink exists and it is pointing to ${LICENSE_SOURCE_FILE}"
+
   codeql:
     name: "CodeQL Analysis for ${{ inputs.name }}"
     if: ${{ inputs.run_code_analysis }}
