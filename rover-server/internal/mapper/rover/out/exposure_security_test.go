@@ -51,7 +51,7 @@ var _ = Describe("Exposure Security Mapper (Out)", func() {
 					M2M: &roverv1.Machine2MachineAuthentication{
 						ExternalIDP: &roverv1.ExternalIdentityProvider{
 							TokenEndpoint: "https://test.com/token",
-							TokenRequest:  "basic",
+							TokenRequest:  "client_secret_basic",
 							GrantType:     "client_credentials",
 							Client: &roverv1.OAuth2ClientCredentials{
 								ClientId:     "client-id",
@@ -73,7 +73,7 @@ var _ = Describe("Exposure Security Mapper (Out)", func() {
 			oauth2, err := output.Security.AsOauth2()
 			Expect(err).To(BeNil())
 			Expect(oauth2.TokenEndpoint).To(Equal("https://test.com/token"))
-			Expect(oauth2.TokenRequest).To(Equal(api.Oauth2TokenRequest("basic")))
+			Expect(oauth2.TokenRequest).To(Equal(api.Oauth2TokenRequest("header")))
 			Expect(oauth2.GrantType).To(Equal(api.GrantType("client_credentials")))
 			Expect(oauth2.ClientId).To(Equal("client-id"))
 			snaps.MatchSnapshot(GinkgoT(), oauth2)

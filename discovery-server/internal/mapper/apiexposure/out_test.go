@@ -141,7 +141,7 @@ func TestMapSecurity(t *testing.T) {
 		{
 			name: "external idp oauth2",
 			setup: func(in *apiv1.ApiExposure) {
-				in.Spec.Security = &apiv1.Security{M2M: &apiv1.Machine2MachineAuthentication{ExternalIDP: &apiv1.ExternalIdentityProvider{TokenEndpoint: "https://idp/token", TokenRequest: "body", GrantType: "client_credentials", Client: &apiv1.OAuth2ClientCredentials{ClientId: "cid", ClientSecret: "sec"}}, Scopes: []string{"s1"}}}
+				in.Spec.Security = &apiv1.Security{M2M: &apiv1.Machine2MachineAuthentication{ExternalIDP: &apiv1.ExternalIdentityProvider{TokenEndpoint: "https://idp/token", TokenRequest: "client_secret_post", GrantType: "client_credentials", Client: &apiv1.OAuth2ClientCredentials{ClientId: "cid", ClientSecret: "sec"}}, Scopes: []string{"s1"}}}
 			},
 			assert: func(t *testing.T, out api.ApiExposureResponse) {
 				t.Helper()
@@ -157,7 +157,7 @@ func TestMapSecurity(t *testing.T) {
 		{
 			name: "external idp oauth2 with basic credentials",
 			setup: func(in *apiv1.ApiExposure) {
-				in.Spec.Security = &apiv1.Security{M2M: &apiv1.Machine2MachineAuthentication{ExternalIDP: &apiv1.ExternalIdentityProvider{TokenEndpoint: "https://idp/token", TokenRequest: "header", GrantType: "password", Basic: &apiv1.BasicAuthCredentials{Username: "bu", Password: "bp"}}}}
+				in.Spec.Security = &apiv1.Security{M2M: &apiv1.Machine2MachineAuthentication{ExternalIDP: &apiv1.ExternalIdentityProvider{TokenEndpoint: "https://idp/token", TokenRequest: "client_secret_basic", GrantType: "password", Basic: &apiv1.BasicAuthCredentials{Username: "bu", Password: "bp"}}}}
 			},
 			assert: func(t *testing.T, out api.ApiExposureResponse) {
 				t.Helper()

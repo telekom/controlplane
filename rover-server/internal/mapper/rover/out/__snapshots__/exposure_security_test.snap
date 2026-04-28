@@ -13,7 +13,7 @@ api.Oauth2{
     RefreshToken:  "",
     Scopes:        nil,
     TokenEndpoint: "https://test.com/token",
-    TokenRequest:  "basic",
+    TokenRequest:  "header",
     Type:          "oauth2",
     Username:      "",
 }

@@ -156,7 +156,7 @@ func NewApiExposure(apiBasePath, zoneName string, appName string) *apiv1.ApiExpo
 				M2M: &apiapi.Machine2MachineAuthentication{
 					ExternalIDP: &apiapi.ExternalIdentityProvider{
 						TokenEndpoint: "https://example.com/token",
-						TokenRequest:  "header",
+						TokenRequest:  "client_secret_basic",
 						GrantType:     "client_credentials",
 						Client: &apiapi.OAuth2ClientCredentials{
 							ClientId:  "client-id",
@@ -399,7 +399,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 			err := k8sClient.Create(ctx, thirdApiExposure)
 			Expect(err).To(HaveOccurred())
 			Expect(apierrors.IsInvalid(err)).To(BeTrue())
-			Expect(err.Error()).To(ContainSubstring("Unsupported value: \"sky\": supported values: \"body\", \"header\""))
+			Expect(err.Error()).To(ContainSubstring("Unsupported value: \"sky\": supported values: \"client_secret_basic\", \"client_secret_post\""))
 
 			thirdApiExposure.Spec.Security.M2M.ExternalIDP.GrantType = "not_a_valid_grant_type"
 			err = k8sClient.Create(ctx, thirdApiExposure)
@@ -413,7 +413,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 			thirdApiExposure.Spec.Security.M2M = &apiv1.Machine2MachineAuthentication{
 				ExternalIDP: &apiv1.ExternalIdentityProvider{
 					TokenEndpoint: "https://example.com/token",
-					TokenRequest:  "header",
+					TokenRequest:  "client_secret_basic",
 					GrantType:     "client_credentials",
 					Client: &apiv1.OAuth2ClientCredentials{
 						ClientId:     "team",
@@ -439,7 +439,7 @@ var _ = Describe("ApiExposure Controller", Ordered, func() {
 				g.Expect(route.Spec.Security.M2M.Scopes).To(Equal([]string{"team:scope", "api:scope"}))
 
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://example.com/token"))
-				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal("header"))
+				g.Expect(route.Spec.Security.M2M.ExternalIDP.TokenRequest).To(Equal("client_secret_basic"))
 				g.Expect(route.Spec.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
 			}, timeout, interval).Should(Succeed())
 		})

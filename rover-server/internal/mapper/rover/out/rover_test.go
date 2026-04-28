@@ -61,11 +61,11 @@ var _ = Describe("Rover Mapper", func() {
 	})
 
 	Context("MapAuthentication", func() {
-		It("must map header from CRD to BASIC in API", func() {
+		It("must map client_secret_basic from CRD to BASIC in API", func() {
 			input := rover.DeepCopy()
 			input.Spec.Authentication = &roverv1.RoverAuthentication{
 				M2M: &roverv1.RoverM2MAuthentication{
-					TokenRequest: "header",
+					TokenRequest: "client_secret_basic",
 				},
 			}
 			output := &api.Rover{}
@@ -76,11 +76,11 @@ var _ = Describe("Rover Mapper", func() {
 			Expect(output.Authentication.ClientAuthMethod).To(Equal(api.BASIC))
 		})
 
-		It("must map body from CRD to POST in API", func() {
+		It("must map client_secret_post from CRD to POST in API", func() {
 			input := rover.DeepCopy()
 			input.Spec.Authentication = &roverv1.RoverAuthentication{
 				M2M: &roverv1.RoverM2MAuthentication{
-					TokenRequest: "body",
+					TokenRequest: "client_secret_post",
 				},
 			}
 			output := &api.Rover{}

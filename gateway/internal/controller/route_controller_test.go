@@ -148,7 +148,7 @@ var _ = Describe("Route Controller", Ordered, func() {
 				err := k8sClient.Create(ctx, route)
 				Expect(err).To(HaveOccurred())
 				Expect(apierrors.IsInvalid(err)).To(BeTrue())
-				Expect(err.Error()).To(ContainSubstring("spec.security.m2m.externalIDP.tokenRequest: Unsupported value: \"sky\": supported values: \"body\", \"header\""))
+				Expect(err.Error()).To(ContainSubstring("spec.security.m2m.externalIDP.tokenRequest: Unsupported value: \"sky\": supported values: \"client_secret_basic\", \"client_secret_post\""))
 			})
 
 			It("should not accept a Route with GrantType=\"not_required\"", func() {
