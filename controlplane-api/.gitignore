@@ -38,4 +38,5 @@ go.work.*
 *~
 .jfrog
 test/load/*
+.claude
 
