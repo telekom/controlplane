@@ -22,7 +22,10 @@ var (
 	EnvClientTimeout = os.Getenv("CLIENT_TIMEOUT")
 )
 
-func NewHttpClientOrDie(opts ...Option) client.HttpRequestDoer {
+// NewBaseHttpClient creates an *http.Client with TLS configuration and timeout
+// but without metrics wrapping. This is useful when callers need to compose
+// additional transports (e.g. OAuth2) before applying metrics.
+func NewBaseHttpClient(opts ...Option) *http.Client {
 	options := &Options{
 		ClientName:    "http-client",
 		ClientTimeout: 5 * time.Second,
@@ -63,10 +66,22 @@ func NewHttpClientOrDie(opts ...Option) client.HttpRequestDoer {
 		}
 	}
 
-	httpClient := &http.Client{
+	return &http.Client{
 		Transport: transport,
 		Timeout:   timeout,
 	}
+}
+
+func NewHttpClientOrDie(opts ...Option) client.HttpRequestDoer {
+	options := &Options{
+		ClientName:    "http-client",
+		ClientTimeout: 5 * time.Second,
+	}
+	for _, o := range opts {
+		o(options)
+	}
+
+	httpClient := NewBaseHttpClient(opts...)
 
 	var replaceFunc client.ReplaceFunc
 	if options.ReplacePattern != "" {

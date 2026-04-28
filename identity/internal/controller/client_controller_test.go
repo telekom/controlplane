@@ -15,9 +15,9 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
-	clientModel "github.com/telekom/controlplane/identity/internal/model/client"
-	identityproviderModel "github.com/telekom/controlplane/identity/internal/model/identityprovider"
-	realmModel "github.com/telekom/controlplane/identity/internal/model/realm"
+	clientModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/client"
+	identityproviderModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/identityprovider"
+	realmModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/realm"
 )
 
 var _ = Describe("Client Controller", func() {
