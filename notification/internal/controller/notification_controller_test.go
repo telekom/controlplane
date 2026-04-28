@@ -17,6 +17,7 @@ import (
 	commontypes "github.com/telekom/controlplane/common/pkg/types"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	notificationconfig "github.com/telekom/controlplane/notification/internal/config"
+	"github.com/telekom/controlplane/notification/internal/sender/adapter"
 	mailsender "github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
 	mailsendermock "github.com/telekom/controlplane/notification/internal/sender/adapter/mail/mock"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -55,7 +56,7 @@ var _ = Describe("Notification Controller", Ordered, func() {
 
 			By("Mocking the actual email sender")
 			mockMailSender := &mailsendermock.MockEmailSender{}
-			mockMailSender.EXPECT().Send(mock.Anything, "test.from@somewhere.test", "Team Tardis", []string{"john.doe@example.com"}, "Subject: awesomeSubject\n", "Body: awesomeBody\n", nil).Return(nil)
+			mockMailSender.EXPECT().Send(mock.Anything, "test.from@somewhere.test", "Team Tardis", []string{"john.doe@example.com"}, "Subject: awesomeSubject\n", "Body: awesomeBody\n", []adapter.Attachment(nil)).Return(nil)
 
 			mailsender.NewSMTPSender = func(config *notificationconfig.EmailAdapterConfig) mailsender.EmailSender {
 				return mockMailSender
