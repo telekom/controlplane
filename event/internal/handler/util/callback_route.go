@@ -222,6 +222,10 @@ func CreateCallbackProxyRoutes(
 	targetZones []*adminv1.Zone,
 	opts ...Option,
 ) (map[string]*gatewayapi.Route, error) {
+	if meshConfig == nil {
+		return nil, ctrlerrors.BlockedErrorf("meshConfig must not be nil")
+	}
+
 	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 

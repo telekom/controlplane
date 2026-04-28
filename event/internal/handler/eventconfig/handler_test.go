@@ -38,13 +38,13 @@ import (
 func isBlockedError(err error) bool {
 	for e := err; e != nil; e = pkgerrors.Unwrap(e) {
 		var be ctrlerrors.BlockedError
-		if errors.As(e, &be) {
+		if errors.As(e, &be) && be.IsBlocked() {
 			return true
 		}
 	}
 	cause := pkgerrors.Cause(err)
 	var be ctrlerrors.BlockedError
-	return errors.As(cause, &be)
+	return errors.As(cause, &be) && be.IsBlocked()
 }
 
 func newEventConfig() *eventv1.EventConfig {
