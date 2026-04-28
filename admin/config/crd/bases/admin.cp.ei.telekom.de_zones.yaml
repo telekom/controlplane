@@ -90,6 +90,42 @@ spec:
                 - admin
                 - url
                 type: object
+              linting:
+                description: Linting configuration for OAS specification linting in
+                  this zone
+                properties:
+                  dashboardUrlTemplate:
+                    description: |-
+                      DashboardURLTemplate is a URL template for the linter dashboard.
+                      Use {linterId} as a placeholder for the scan ID.
+                      Example: "https://linter.example.com/scans/{linterId}"
+                    type: string
+                  enabled:
+                    description: Enabled indicates whether linting is enabled for
+                      this zone.
+                    type: boolean
+                  mode:
+                    allOf:
+                    - enum:
+                      - block
+                      - warn
+                    - enum:
+                      - block
+                      - warn
+                    default: block
+                    description: |-
+                      Mode controls how linting failures affect API creation.
+                      "block" (default) prevents Api creation on failure; "warn" allows it but surfaces issues.
+                    type: string
+                  whitelistedCategories:
+                    description: |-
+                      WhitelistedCategories is the list of API categories that are exempt from linting.
+                      Categories are matched case-insensitively against the x-api-category value in the OpenAPI spec.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                type: object
               permissions:
                 description: Permissions configuration for permission service integration
                 properties:
