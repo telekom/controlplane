@@ -12,8 +12,15 @@ type NotificationConfig interface {
 	IsNotificationConfig()
 }
 
+// Attachment is a rendered file ready to attach to a notification.
+type Attachment struct {
+	Filename    string
+	ContentType string
+	Content     []byte
+}
+
 type NotificationAdapter[C NotificationConfig] interface {
-	Send(ctx context.Context, config C, title string, body string) error
+	Send(ctx context.Context, config C, title string, body string, attachments []Attachment) error
 }
 
 type MailChannelConfiguration interface {

@@ -29,7 +29,7 @@ COVER_PACKAGES = ./pkg/...
 
 .PHONY: test
 test: fmt vet ## Run tests.
-	gotestsum --format pkgname --junitfile junit.xml --jsonfile gotest.log -- $(TEST_PACKAGES) -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -mod=readonly -race
+	gotestsum --format pkgname --jsonfile gotest.log -- $(TEST_PACKAGES) -ginkgo.junit-report=ginkgo-junit.xml -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -mod=readonly -race
 
 .PHONY: install
 install: build ## Install roverctl binary.

@@ -379,8 +379,8 @@ func (k *keycloakService) forceSecretRotation(ctx context.Context, realmName, ke
 	if err != nil {
 		return fmt.Errorf("error forcing secret rotation: %w", err)
 	}
-	if res.StatusCode() != 200 {
-		return fmt.Errorf("unexpected status %d when forcing secret rotation", res.StatusCode())
+	if responseErr := CheckStatusCode(res, http.StatusOK); responseErr != nil {
+		return fmt.Errorf("forcing secret rotation: %w", responseErr)
 	}
 	log.V(1).Info("forced client secret rotation in keycloak", "realm", realmName, "keycloakId", keycloakId)
 

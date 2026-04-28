@@ -7,8 +7,7 @@ package controller
 import (
 	"context"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -21,7 +20,8 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	zone_handler "github.com/telekom/controlplane/admin/internal/handler/zone"
-	corev1 "k8s.io/api/core/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 )
 
 // ZoneReconciler reconciles a Zone object
@@ -86,8 +86,8 @@ func (r *ZoneReconciler) mapEnvironmentToZone(ctx context.Context, obj client.Ob
 	}
 
 	requests := make([]reconcile.Request, 0, len(list.Items))
-	for _, zone := range list.Items {
-		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&zone)})
+	for i := range list.Items {
+		requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&list.Items[i])})
 	}
 
 	return requests

@@ -66,6 +66,19 @@ type KeycloakClient interface {
 		reqEditors ...api.RequestEditorFn) (*api.PutRealmClientPoliciesProfilesResponse, error)
 }
 
+// ClientUpdateOptions controls the behavior of CreateOrReplaceClient.
+type ClientUpdateOptions struct {
+	// SupportsGracefulRotation enables graceful secret rotation. When true
+	// and the secret changed, forceSecretRotation is called before the PUT
+	// to move the current secret into the rotated slot.
+	SupportsGracefulRotation bool
+
+	// SkipForceRotation should be set on retries (detected via the
+	// SecretRotation condition) to avoid calling forceSecretRotation again,
+	// which would evict the original secret from the rotated slot.
+	SkipForceRotation bool
+}
+
 type KeycloakService interface {
 	// Realm operations
 	CreateOrReplaceRealm(ctx context.Context, realm *identityv1.Realm) error
@@ -73,7 +86,7 @@ type KeycloakService interface {
 	ConfigureSecretRotationPolicy(ctx context.Context, realmName string, policy *identityv1.SecretRotationConfig) error
 
 	// Client operations
-	CreateOrReplaceClient(ctx context.Context, realmName string, client *identityv1.Client, supportsGracefulRotation bool) error
+	CreateOrReplaceClient(ctx context.Context, realmName string, client *identityv1.Client, opts ClientUpdateOptions) error
 	DeleteClient(ctx context.Context, realmName string, client *identityv1.Client) error
 
 	// Secret rotation
@@ -105,8 +118,8 @@ func (k *keycloakService) getClient(ctx context.Context, realmName string, clien
 		if err != nil {
 			return nil, fmt.Errorf("unexpected error when fetching client by UID: %w", err)
 		}
-		if clientRes.StatusCode() == 200 && clientRes.JSON2XX != nil {
-			log.V(2).Info("client found by uuid", "response", string(clientRes.Body))
+		if clientRes.StatusCode() == http.StatusOK && clientRes.JSON2XX != nil {
+			log.V(1).Info("client found by uuid", "clientId", clientId, "status", clientRes.StatusCode())
 			return clientRes.JSON2XX, nil
 		}
 		// UID lookup returned 404 or unexpected status — fall through to clientId search
@@ -123,7 +136,7 @@ func (k *keycloakService) getClient(ctx context.Context, realmName string, clien
 	if err != nil {
 		return nil, fmt.Errorf("unexpected error when fetching client by ClientId: %w", err)
 	}
-	if clientRes.StatusCode() == 404 {
+	if clientRes.StatusCode() == http.StatusNotFound {
 		return nil, nil
 	}
 	if responseErr := CheckHTTPStatus(clientRes.StatusCode(), 200); responseErr != nil {
@@ -137,7 +150,7 @@ func (k *keycloakService) getClient(ctx context.Context, realmName string, clien
 	case 0:
 		return nil, nil
 	case 1:
-		log.V(1).Info("client found by clientId", "response", string(clientRes.Body))
+		log.V(1).Info("client found by clientId", "clientId", clientId, "status", clientRes.StatusCode())
 		return &(*clientRes.JSON2XX)[0], nil
 	default:
 		return nil, fmt.Errorf("multiple clients found with ClientId %s", clientId)
@@ -145,7 +158,7 @@ func (k *keycloakService) getClient(ctx context.Context, realmName string, clien
 }
 
 // CreateOrReplaceClient implements [KeycloakService].
-func (k *keycloakService) CreateOrReplaceClient(ctx context.Context, realmName string, client *identityv1.Client, supportsGracefulRotation bool) error {
+func (k *keycloakService) CreateOrReplaceClient(ctx context.Context, realmName string, client *identityv1.Client, opts ClientUpdateOptions) error {
 	existing, err := k.getClient(ctx, realmName, client)
 	if err != nil {
 		return fmt.Errorf("error checking for existing client: %w", err)
@@ -155,7 +168,7 @@ func (k *keycloakService) CreateOrReplaceClient(ctx context.Context, realmName s
 		return k.createClient(ctx, realmName, client)
 	}
 
-	return k.updateClient(ctx, realmName, existing, client, supportsGracefulRotation)
+	return k.updateClient(ctx, realmName, existing, client, opts)
 }
 
 func (k *keycloakService) createClient(ctx context.Context, realmName string, client *identityv1.Client) error {
@@ -207,7 +220,7 @@ func resourceIDFromResponse(resp *http.Response) (string, error) {
 // changed and the realm supports graceful rotation, a forced secret rotation is
 // triggered first so that Keycloak's rotation executor preserves the old secret
 // in the "rotated" slot.
-func (k *keycloakService) updateClient(ctx context.Context, realmName string, existing *api.ClientRepresentation, client *identityv1.Client, supportsGracefulRotation bool) error {
+func (k *keycloakService) updateClient(ctx context.Context, realmName string, existing *api.ClientRepresentation, client *identityv1.Client, opts ClientUpdateOptions) error {
 	logger := logr.FromContextOrDiscard(ctx)
 	clientUUID := *existing.Id
 	client.Status.ClientUid = clientUUID
@@ -224,7 +237,10 @@ func (k *keycloakService) updateClient(ctx context.Context, realmName string, ex
 	// If the secret changed and the realm supports graceful rotation, force
 	// rotation before PUT so Keycloak moves the current secret into the
 	// "rotated" slot with the configured grace period.
-	if util.HasSecretChanged(existing, &desired) && supportsGracefulRotation {
+	// skipForceRotation is set on retries (detected by the handler via the
+	// SecretRotation condition) to avoid evicting the original secret from
+	// the rotated slot when only the PUT needs to be retried.
+	if util.HasSecretChanged(existing, &desired) && opts.SupportsGracefulRotation && !opts.SkipForceRotation {
 		logger.V(1).Info("secret change detected, forcing rotation before update",
 			"clientId", client.Spec.ClientId, "keycloakId", clientUUID)
 		if err := k.forceSecretRotation(ctx, realmName, clientUUID); err != nil {
@@ -273,7 +289,7 @@ func (k *keycloakService) CreateOrReplaceRealm(ctx context.Context, realm *ident
 		return fmt.Errorf("error checking for existing realm: %w", err)
 	}
 
-	if getRealm.StatusCode() == 200 && getRealm.JSON2XX != nil {
+	if getRealm.StatusCode() == http.StatusOK && getRealm.JSON2XX != nil {
 		// Realm exists — compare and merge before PUT.
 		existing := getRealm.JSON2XX
 		desired := util.MapToRealmRepresentation(realm)

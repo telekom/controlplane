@@ -55,6 +55,11 @@ on:
         required: false
         type: boolean
         default: ${{ github.event_name == 'pull_request' || github.ref_name == 'main' }}
+      lint_fail_on_issues:
+        description: "Set to true to fail the build when golangci-lint finds issues"
+        required: false
+        type: boolean
+        default: false
       github_repository:
         description: "GitHub repository (owner/repo), e.g., github.repository. Required if run_build_image is true."
         required: false
@@ -128,7 +133,7 @@ jobs:
         with:
           version: v2.11
           working-directory: ${{ inputs.module }}
-          args: --timeout 5m --issues-exit-code=0 --config ../.golangci.yml 
+          args: --timeout 5m --issues-exit-code=${{ inputs.lint_fail_on_issues && '1' || '0' }} --config ../.golangci.yml
 
   tests:
     name: "Tests & Coverage for ${{ inputs.module }}"
@@ -206,6 +211,7 @@ jobs:
           path: |
             ${{ inputs.module }}/cover.out
             ${{ inputs.module }}/junit.xml
+            ${{ inputs.module }}/**/ginkgo-junit.xml
             ${{ inputs.module }}/gotest.log
 
       - name: Publish test report
@@ -214,7 +220,7 @@ jobs:
         continue-on-error: ${{ inputs.allow_tests_failure }}
         with:
           name: "Test Results (${{ inputs.name }})"
-          path: "${{ inputs.module }}/junit.xml"
+          path: "${{ inputs.module }}/**/ginkgo-junit.xml,${{ inputs.module }}/junit.xml"
           reporter: java-junit
 
   source_scan:

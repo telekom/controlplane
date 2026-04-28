@@ -11,6 +11,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
@@ -18,7 +19,6 @@ import (
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
 
 	secrets "github.com/telekom/controlplane/secret-manager/api"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var _ handler.Handler[*identityv1.Realm] = &HandlerRealm{}
@@ -93,7 +93,7 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 func (h *HandlerRealm) Delete(ctx context.Context, realm *identityv1.Realm) error {
 
 	logger := log.FromContext(ctx)
-	logger.Info("RealmHandler Delete", "realm", realm)
+	logger.Info("RealmHandler Delete", "realm", realm.Name, "namespace", realm.Namespace)
 
 	adminPassword, err := secrets.Get(ctx, realm.Status.AdminPassword)
 	if err != nil {

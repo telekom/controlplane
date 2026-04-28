@@ -96,7 +96,7 @@ var _ = Describe("KeycloakService", func() {
 						HTTPResponse: httpRespWithLocation(201, "https://kc/admin/realms/realm1/clients/new-uid"),
 					}, nil)
 
-				err := svc.CreateOrReplaceClient(ctx, "realm1", client, false)
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(client.Status.ClientUid).To(Equal("new-uid"))
 			})
@@ -106,7 +106,7 @@ var _ = Describe("KeycloakService", func() {
 				mockClient.EXPECT().PostRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
 					Return(nil, fmt.Errorf("connection refused"))
 
-				err := svc.CreateOrReplaceClient(ctx, "realm1", client, false)
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("error creating client"))
 			})
@@ -116,7 +116,7 @@ var _ = Describe("KeycloakService", func() {
 				mockClient.EXPECT().PostRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
 					Return(&api.PostRealmClientsResponse{HTTPResponse: httpResp(409)}, nil)
 
-				err := svc.CreateOrReplaceClient(ctx, "realm1", client, false)
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("creating client"))
 			})
@@ -128,7 +128,7 @@ var _ = Describe("KeycloakService", func() {
 						HTTPResponse: &http.Response{StatusCode: 201, Header: http.Header{}},
 					}, nil)
 
-				err := svc.CreateOrReplaceClient(ctx, "realm1", client, false)
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failed to extract ID"))
 			})
@@ -151,7 +151,7 @@ var _ = Describe("KeycloakService", func() {
 				mockClient.EXPECT().PutRealmClientsIdWithResponse(mock.Anything, "realm1", "existing-uid", mock.Anything).
 					Return(&api.PutRealmClientsIdResponse{HTTPResponse: httpResp(204)}, nil)
 
-				err := svc.CreateOrReplaceClient(ctx, "realm1", client, false)
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(client.Status.ClientUid).To(Equal("existing-uid"))
 			})
@@ -171,7 +171,7 @@ var _ = Describe("KeycloakService", func() {
 				mockClient.EXPECT().PutRealmClientsIdWithResponse(mock.Anything, "realm1", "uid", mock.Anything).
 					Return(nil, fmt.Errorf("timeout"))
 
-				err := svc.CreateOrReplaceClient(ctx, "realm1", client, false)
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("error updating client"))
 			})
@@ -204,7 +204,7 @@ var _ = Describe("KeycloakService", func() {
 				mockClient.EXPECT().PutRealmClientsIdWithResponse(mock.Anything, "realm1", "existing-uid", mock.Anything).
 					Return(&api.PutRealmClientsIdResponse{HTTPResponse: httpResp(204)}, nil)
 
-				err := svc.CreateOrReplaceClient(ctx, "realm1", client, true)
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{SupportsGracefulRotation: true})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -225,7 +225,7 @@ var _ = Describe("KeycloakService", func() {
 				mockClient.EXPECT().PostRealmClientsIdClientSecretWithResponse(mock.Anything, "realm1", "uid").
 					Return(nil, fmt.Errorf("rotation failed"))
 
-				err := svc.CreateOrReplaceClient(ctx, "realm1", client, true)
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{SupportsGracefulRotation: true})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failed to force secret rotation"))
 			})
@@ -252,9 +252,85 @@ var _ = Describe("KeycloakService", func() {
 						JSON2XX:      nil,
 					}, nil)
 
-				err := svc.CreateOrReplaceClient(ctx, "realm1", client, true)
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{SupportsGracefulRotation: true})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("re-fetching client after rotation"))
+			})
+
+			It("should return error when PUT fails after successful force rotation", func() {
+				client := newIdentityClient("my-app", "new-secret")
+				existing := api.ClientRepresentation{
+					Id:       ptr.To("uid"),
+					ClientId: ptr.To("my-app"),
+					Name:     ptr.To("my-app"),
+					Secret:   ptr.To("old-secret"),
+				}
+				mockClient.EXPECT().GetRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientsResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX:      &[]api.ClientRepresentation{existing},
+					}, nil)
+				mockClient.EXPECT().DeleteRealmClientsIdClientSecretRotatedWithResponse(mock.Anything, "realm1", "uid").
+					Return(&api.DeleteRealmClientsIdClientSecretRotatedResponse{HTTPResponse: httpResp(204)}, nil)
+				mockClient.EXPECT().PostRealmClientsIdClientSecretWithResponse(mock.Anything, "realm1", "uid").
+					Return(&api.PostRealmClientsIdClientSecretResponse{HTTPResponse: httpResp(200)}, nil)
+				mockClient.EXPECT().GetRealmClientsIdWithResponse(mock.Anything, "realm1", "uid").
+					Return(&api.GetRealmClientsIdResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX:      &api.ClientRepresentation{Id: ptr.To("uid"), ClientId: ptr.To("my-app"), Secret: ptr.To("rotated-random")},
+					}, nil)
+				mockClient.EXPECT().PutRealmClientsIdWithResponse(mock.Anything, "realm1", "uid", mock.Anything).
+					Return(nil, fmt.Errorf("connection reset"))
+
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{SupportsGracefulRotation: true})
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("error updating client"))
+			})
+
+			It("should return error when forceSecretRotation POST returns unexpected status", func() {
+				client := newIdentityClient("my-app", "new-secret")
+				existing := api.ClientRepresentation{
+					Id:       ptr.To("uid"),
+					ClientId: ptr.To("my-app"),
+					Secret:   ptr.To("old-secret"),
+				}
+				mockClient.EXPECT().GetRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientsResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX:      &[]api.ClientRepresentation{existing},
+					}, nil)
+				mockClient.EXPECT().DeleteRealmClientsIdClientSecretRotatedWithResponse(mock.Anything, "realm1", "uid").
+					Return(&api.DeleteRealmClientsIdClientSecretRotatedResponse{HTTPResponse: httpResp(204)}, nil)
+				mockClient.EXPECT().PostRealmClientsIdClientSecretWithResponse(mock.Anything, "realm1", "uid").
+					Return(&api.PostRealmClientsIdClientSecretResponse{HTTPResponse: httpResp(500)}, nil)
+
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{SupportsGracefulRotation: true})
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("forcing secret rotation"))
+			})
+
+			It("should skip rotation calls when SkipForceRotation is true", func() {
+				client := newIdentityClient("my-app", "new-secret")
+				existing := api.ClientRepresentation{
+					Id:       ptr.To("uid"),
+					ClientId: ptr.To("my-app"),
+					Name:     ptr.To("my-app"),
+					Secret:   ptr.To("old-secret"),
+				}
+				mockClient.EXPECT().GetRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
+					Return(&api.GetRealmClientsResponse{
+						HTTPResponse: httpResp(200),
+						JSON2XX:      &[]api.ClientRepresentation{existing},
+					}, nil)
+				// No DELETE, POST, or re-fetch GET expected — only the final PUT.
+				mockClient.EXPECT().PutRealmClientsIdWithResponse(mock.Anything, "realm1", "uid", mock.Anything).
+					Return(&api.PutRealmClientsIdResponse{HTTPResponse: httpResp(204)}, nil)
+
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{
+					SupportsGracefulRotation: true,
+					SkipForceRotation:        true,
+				})
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
@@ -270,7 +346,7 @@ var _ = Describe("KeycloakService", func() {
 				mockClient.EXPECT().PutRealmClientsIdWithResponse(mock.Anything, "realm1", "uuid-123", mock.Anything).
 					Return(&api.PutRealmClientsIdResponse{HTTPResponse: httpResp(204)}, nil)
 
-				err := svc.CreateOrReplaceClient(ctx, "realm1", client, false)
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -288,7 +364,7 @@ var _ = Describe("KeycloakService", func() {
 						HTTPResponse: httpRespWithLocation(201, "https://kc/clients/new-uid"),
 					}, nil)
 
-				err := svc.CreateOrReplaceClient(ctx, "realm1", client, false)
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(client.Status.ClientUid).To(Equal("new-uid"))
 			})
@@ -302,7 +378,7 @@ var _ = Describe("KeycloakService", func() {
 					mockClient.EXPECT().GetRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
 						Return(nil, networkErr)
 
-					err := svc.CreateOrReplaceClient(ctx, "realm1", client, false)
+					err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(expectedSubstring))
 				},
@@ -321,7 +397,7 @@ var _ = Describe("KeycloakService", func() {
 						},
 					}, nil)
 
-				err := svc.CreateOrReplaceClient(ctx, "realm1", client, false)
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("multiple clients found"))
 			})
@@ -331,7 +407,7 @@ var _ = Describe("KeycloakService", func() {
 				mockClient.EXPECT().GetRealmClientsWithResponse(mock.Anything, "realm1", mock.Anything).
 					Return(&api.GetRealmClientsResponse{HTTPResponse: httpResp(500)}, nil)
 
-				err := svc.CreateOrReplaceClient(ctx, "realm1", client, false)
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -343,7 +419,7 @@ var _ = Describe("KeycloakService", func() {
 						JSON2XX:      nil,
 					}, nil)
 
-				err := svc.CreateOrReplaceClient(ctx, "realm1", client, false)
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("unexpected empty response body"))
 			})
@@ -353,7 +429,7 @@ var _ = Describe("KeycloakService", func() {
 				mockClient.EXPECT().GetRealmClientsIdWithResponse(mock.Anything, "realm1", "uuid-123").
 					Return(nil, fmt.Errorf("connection refused"))
 
-				err := svc.CreateOrReplaceClient(ctx, "realm1", client, false)
+				err := svc.CreateOrReplaceClient(ctx, "realm1", client, keycloak.ClientUpdateOptions{})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("error checking for existing client"))
 			})

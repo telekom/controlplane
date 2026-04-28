@@ -5,8 +5,9 @@
 package zone
 
 import (
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	corev1 "k8s.io/api/core/v1"
+
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 )
 
 type HandlingContext struct {
