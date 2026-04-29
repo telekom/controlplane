@@ -14,13 +14,10 @@ type Linter interface {
 
 // LintResult contains the outcome of a linting operation.
 type LintResult struct {
-	Passed        bool
-	Reason        string
-	Ruleset       string
-	LinterVersion string
-	LinterId      string
-	Errors        int
-	Warnings      int
-	Hints         int
-	Infos         int
+	Passed   bool
+	Reason   string
+	Ruleset  string
+	LinterId string
+	Errors   int
+	Warnings int
 }

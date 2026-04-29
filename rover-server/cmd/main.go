@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -22,7 +21,6 @@ import (
 
 	"github.com/telekom/controlplane/rover-server/internal/config"
 	"github.com/telekom/controlplane/rover-server/internal/controller"
-	"github.com/telekom/controlplane/rover-server/internal/oaslint"
 	"github.com/telekom/controlplane/rover-server/internal/server"
 	"github.com/telekom/controlplane/rover-server/pkg/log"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
@@ -50,19 +48,10 @@ func main() {
 		filesapi.WithSkipTLSVerify(cfg.FileManager.SkipTLS),
 	)
 
-	var linter oaslint.Linter
-	if cfg.OasLinting.URL != "" {
-		log.Log.Info("OAS linting enabled", "url", cfg.OasLinting.URL)
-		linter = oaslint.NewExternalLinter(cfg.OasLinting.URL)
-	}
-
-	whitelistedBasepaths := parseDelimitedSet(cfg.OasLinting.WhitelistedBasepaths, ";")
-	whitelistedCategories := parseDelimitedSet(cfg.OasLinting.WhitelistedCategories, ";")
-
 	s := server.Server{
 		Config:              cfg,
 		Log:                 log.Log,
-		ApiSpecifications:   controller.NewApiSpecificationController(stores, linter, whitelistedBasepaths, whitelistedCategories, cfg.OasLinting.ErrorMessage),
+		ApiSpecifications:   controller.NewApiSpecificationController(stores, cfg.OasLinting.ErrorMessage, cfg.OasLinting.Timeout),
 		Rovers:              controller.NewRoverController(stores),
 		EventSpecifications: controller.NewEventSpecificationController(stores),
 	}
@@ -89,17 +78,4 @@ func main() {
 	}
 
 	log.Log.Info("Server gracefully stopped")
-}
-
-// parseDelimitedSet parses a delimited string into a set.
-// Empty entries are ignored. Categories are lowercased for case-insensitive matching.
-func parseDelimitedSet(s, delimiter string) map[string]struct{} {
-	result := make(map[string]struct{})
-	for _, v := range strings.Split(s, delimiter) {
-		v = strings.TrimSpace(v)
-		if v != "" {
-			result[strings.ToLower(v)] = struct{}{}
-		}
-	}
-	return result
 }

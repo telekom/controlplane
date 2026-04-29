@@ -27,6 +27,7 @@
         XVendor:       false,
         Version:       "1.0.0",
         Oauth2Scopes:  {},
+        Lint:          (*v1.LintResult)(nil),
     },
     Status: v1.ApiSpecificationStatus{},
 }

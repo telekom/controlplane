@@ -6,6 +6,7 @@ package config
 
 import (
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -20,10 +21,8 @@ type ServerConfig struct {
 }
 
 type OasLintingConfig struct {
-	URL                   string `json:"url"`
-	ErrorMessage          string `json:"errorMessage"`
-	WhitelistedBasepaths  string `json:"whitelistedBasepaths"`
-	WhitelistedCategories string `json:"whitelistedCategories"`
+	ErrorMessage string        `json:"errorMessage"`
+	Timeout      time.Duration `json:"timeout"`
 }
 
 type SecurityConfig struct {
@@ -81,10 +80,8 @@ func setDefaults() {
 	viper.SetDefault("fileManager.skipTLS", true)
 
 	// OAS Linting
-	viper.SetDefault("oasLinting.url", "")
 	viper.SetDefault("oasLinting.errorMessage", "Linter scan result contains errors. Please visit the linter UI for details on the RULESET_NAME_PLACEHOLDER ruleset.")
-	viper.SetDefault("oasLinting.whitelistedBasepaths", "")
-	viper.SetDefault("oasLinting.whitelistedCategories", "")
+	viper.SetDefault("oasLinting.timeout", 55*time.Second)
 
 	// Database
 	viper.SetDefault("database.filepath", "")        // empty string means in-memory only

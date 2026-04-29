@@ -15,10 +15,8 @@ import (
 )
 
 const (
-	defaultConnectTimeout = 5 * time.Second
-	defaultReadTimeout    = 50 * time.Second
-	scanEndpoint          = "api/linter/scans"
-	yamlContentType       = "application/yaml; charset=UTF-8"
+	scanEndpoint    = "api/linter/scans"
+	yamlContentType = "application/yaml; charset=UTF-8"
 )
 
 var _ Linter = (*ExternalLinter)(nil)
@@ -27,6 +25,7 @@ var _ Linter = (*ExternalLinter)(nil)
 // POST {baseURL}/api/linter/scans with the OAS spec as YAML body.
 type ExternalLinter struct {
 	baseURL string
+	ruleset string
 	client  *http.Client
 }
 
@@ -40,13 +39,25 @@ func WithHTTPClient(c *http.Client) ExternalLinterOption {
 	}
 }
 
+// WithRuleset sets the ruleset query parameter for linter scan requests.
+func WithRuleset(ruleset string) ExternalLinterOption {
+	return func(l *ExternalLinter) {
+		l.ruleset = ruleset
+	}
+}
+
+// WithTimeout overrides the default HTTP client timeout.
+func WithTimeout(d time.Duration) ExternalLinterOption {
+	return func(l *ExternalLinter) {
+		l.client.Timeout = d
+	}
+}
+
 // NewExternalLinter creates a new ExternalLinter targeting the given base URL.
 func NewExternalLinter(baseURL string, opts ...ExternalLinterOption) *ExternalLinter {
 	l := &ExternalLinter{
 		baseURL: baseURL,
-		client: &http.Client{
-			Timeout: defaultConnectTimeout + defaultReadTimeout,
-		},
+		client:  &http.Client{},
 	}
 	for _, o := range opts {
 		o(l)
@@ -77,9 +88,12 @@ type violationsInfo struct {
 }
 
 func (l *ExternalLinter) Lint(ctx context.Context, spec []byte) (*LintResult, error) {
-	url := fmt.Sprintf("%s/%s", l.baseURL, scanEndpoint)
+	scanURL := fmt.Sprintf("%s/%s", l.baseURL, scanEndpoint)
+	if l.ruleset != "" {
+		scanURL = fmt.Sprintf("%s?ruleset=%s", scanURL, l.ruleset)
+	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(spec))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, scanURL, bytes.NewReader(spec))
 	if err != nil {
 		return nil, fmt.Errorf("creating linter request: %w", err)
 	}
@@ -120,14 +134,11 @@ func (l *ExternalLinter) Lint(ctx context.Context, spec []byte) (*LintResult, er
 	}
 
 	return &LintResult{
-		Passed:        passed,
-		Reason:        reason,
-		Ruleset:       scan.Ruleset.Name,
-		LinterVersion: scan.LinterVersion,
-		LinterId:      scan.ID,
-		Errors:        scan.Info.Errors,
-		Warnings:      scan.Info.Warnings,
-		Hints:         scan.Info.Hints,
-		Infos:         scan.Info.Infos,
+		Passed:   passed,
+		Reason:   reason,
+		Ruleset:  scan.Ruleset.Name,
+		LinterId: scan.ID,
+		Errors:   scan.Info.Errors,
+		Warnings: scan.Info.Warnings,
 	}, nil
 }
