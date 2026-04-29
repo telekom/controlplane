@@ -10,11 +10,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
@@ -29,41 +27,44 @@ var _ handler.Handler[*roverv1.ApiSpecification] = (*ApiSpecificationHandler)(ni
 // Linting is performed by rover-server at upload time and stored in the CRD status fields.
 // This handler reads the lint result and gates Api resource creation accordingly.
 type ApiSpecificationHandler struct {
-	ListZones func(ctx context.Context, environment string) (*adminv1.ZoneList, error)
+	GetApiCategory func(ctx context.Context, category string) (*apiapi.ApiCategory, error)
 }
 
 func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *roverv1.ApiSpecification) error {
 	log := logr.FromContextOrDiscard(ctx)
 
-	// Linting is pending (async) — set processing condition and wait for the result.
-	if apiSpec.Status.LintPassed == nil && apiSpec.Status.LintReason == "Linting in progress" {
-		apiSpec.SetCondition(condition.NewProcessingCondition("LintingPending",
-			"OAS linting is in progress, waiting for result"))
-		apiSpec.SetCondition(condition.NewNotReadyCondition("LintingPending",
-			"API specification is being linted"))
-		log.V(0).Info("Linting in progress, waiting for result")
-		return nil
+	// Linting is pending (async) — Spec.Lint is nil, wait for rover-server to fill it in.
+	if apiSpec.Spec.Lint == nil {
+		mode := h.lookupLintingMode(ctx, apiSpec.Spec.Category)
+		if mode == apiapi.LintingModeNone {
+			// No linting configured for this category — proceed normally.
+			return h.createOrUpdateApi(ctx, apiSpec)
+		}
+		if mode == apiapi.LintingModeBlock {
+			apiSpec.SetCondition(condition.NewProcessingCondition("LintingPending",
+				"OAS linting is in progress, waiting for result"))
+			apiSpec.SetCondition(condition.NewNotReadyCondition("LintingPending",
+				"API specification is being linted"))
+			return nil
+		}
+		// warn mode: proceed without waiting for lint result
+		log.V(0).Info("Linting pending in warn mode, proceeding with Api creation")
+		return h.createOrUpdateApi(ctx, apiSpec)
 	}
 
-	// Check if linting failed and the zone config blocks on failure
-	if apiSpec.Status.LintPassed != nil && !*apiSpec.Status.LintPassed {
-		environment := apiSpec.Labels[config.EnvironmentLabelKey]
-		mode := h.lookupLintingMode(ctx, environment)
-		if mode == adminv1.LintingModeBlock {
-			msg := fmt.Sprintf("OAS linting failed: %s", apiSpec.Status.LintReason)
-			if apiSpec.Status.LintDashboardURL != "" {
-				msg = fmt.Sprintf("%s. View details: %s", msg, apiSpec.Status.LintDashboardURL)
+	// Check if linting failed and the category config blocks on failure
+	if !apiSpec.Spec.Lint.Passed {
+		mode := h.lookupLintingMode(ctx, apiSpec.Spec.Category)
+		if mode == apiapi.LintingModeBlock {
+			msg := fmt.Sprintf("OAS linting failed: %s", apiSpec.Spec.Lint.Message)
+			if apiSpec.Spec.Lint.DashboardURL != "" {
+				msg = fmt.Sprintf("%s. View details: %s", msg, apiSpec.Spec.Lint.DashboardURL)
 			}
 			apiSpec.SetCondition(condition.NewBlockedCondition(msg))
 			apiSpec.SetCondition(condition.NewNotReadyCondition("LintingFailed",
 				"API specification did not pass linting"))
-			log.V(0).Info("Linting failed in block mode, skipping Api creation",
-				"reason", apiSpec.Status.LintReason, "errors", apiSpec.Status.LintErrors)
 			return nil
 		}
-		// warn mode: log and continue
-		log.V(0).Info("Linting failed in warn mode, proceeding with Api creation",
-			"reason", apiSpec.Status.LintReason, "errors", apiSpec.Status.LintErrors)
 	}
 
 	return h.createOrUpdateApi(ctx, apiSpec)
@@ -73,27 +74,20 @@ func (h *ApiSpecificationHandler) Delete(_ context.Context, _ *roverv1.ApiSpecif
 	return nil
 }
 
-// lookupLintingMode finds the Zone in the environment and returns the effective linting mode.
-// Defaults to LintingModeBlock if any zone has linting enabled but no explicit mode.
-func (h *ApiSpecificationHandler) lookupLintingMode(ctx context.Context, environment string) adminv1.LintingMode {
-	if h.ListZones == nil {
-		return adminv1.LintingModeBlock
+// lookupLintingMode finds the ApiCategory and returns the effective linting mode.
+func (h *ApiSpecificationHandler) lookupLintingMode(ctx context.Context, category string) apiapi.LintingMode {
+	if h.GetApiCategory == nil {
+		return apiapi.LintingModeNone
 	}
-	zones, err := h.ListZones(ctx, environment)
-	if err != nil || zones == nil {
-		return adminv1.LintingModeBlock
+	cat, err := h.GetApiCategory(ctx, category)
+	if err != nil || cat == nil || cat.Spec.Linting == nil {
+		return apiapi.LintingModeNone
 	}
-	for i := range zones.Items {
-		zone := &zones.Items[i]
-		if zone.Spec.Linting != nil && zone.Spec.Linting.Enabled {
-			mode := zone.Spec.Linting.Mode
-			if mode == "" {
-				mode = adminv1.LintingModeBlock
-			}
-			return mode
-		}
+	mode := cat.Spec.Linting.Mode
+	if mode == "" {
+		mode = apiapi.LintingModeBlock
 	}
-	return adminv1.LintingModeBlock
+	return mode
 }
 
 // createOrUpdateApi contains the Api resource creation logic.

@@ -63,6 +63,24 @@ type ApiSpecificationSpec struct {
 	// Oauth2Scopes contains the OAuth2 scopes extracted from security definitions/schemes
 	// +kubebuilder:validation:Optional
 	Oauth2Scopes []string `json:"scopes,omitempty"`
+
+	// Lint contains the result of the OAS linting performed by rover-server.
+	// +kubebuilder:validation:Optional
+	Lint *LintResult `json:"lint,omitempty"`
+}
+
+// LintResult holds the outcome of an external OAS linting scan.
+type LintResult struct {
+	// Passed indicates whether the spec passed linting.
+	Passed bool `json:"passed"`
+
+	// Message is a human-readable description of the lint outcome.
+	// +optional
+	Message string `json:"message,omitempty"`
+
+	// DashboardURL is a direct link to the linter dashboard for this scan.
+	// +optional
+	DashboardURL string `json:"dashboardUrl,omitempty"`
 }
 
 type ApiSpecificationStatus struct {
@@ -75,43 +93,6 @@ type ApiSpecificationStatus struct {
 
 	// API reference
 	Api types.ObjectRef `json:"api,omitempty"`
-
-	// LintedHash is the spec hash that was last linted. Compared with Spec.Hash to avoid re-linting.
-	// +optional
-	LintedHash string `json:"lintedHash,omitempty"`
-
-	// LintPassed indicates whether the last lint passed. nil means not yet linted.
-	// +optional
-	LintPassed *bool `json:"lintPassed,omitempty"`
-
-	// LintReason is a human-readable message describing the lint outcome.
-	// +optional
-	LintReason string `json:"lintReason,omitempty"`
-
-	// LinterId is the scan ID returned by the external linter API.
-	// +optional
-	LinterId string `json:"linterId,omitempty"`
-
-	// LintRuleset is the name of the ruleset used for linting.
-	// +optional
-	LintRuleset string `json:"lintRuleset,omitempty"`
-
-	// LintLinterVersion is the version of the linter engine.
-	// +optional
-	LintLinterVersion string `json:"lintLinterVersion,omitempty"`
-
-	// LintErrors is the number of errors found during linting.
-	// +optional
-	LintErrors int `json:"lintErrors,omitempty"`
-
-	// LintWarnings is the number of warnings found during linting.
-	// +optional
-	LintWarnings int `json:"lintWarnings,omitempty"`
-
-	// LintDashboardURL is a direct link to the linter dashboard for this scan.
-	// Populated from the zone's DashboardURLTemplate with the scan ID substituted.
-	// +optional
-	LintDashboardURL string `json:"lintDashboardUrl,omitempty"`
 }
 
 //+kubebuilder:object:root=true

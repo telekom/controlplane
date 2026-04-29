@@ -57,6 +57,24 @@ spec:
                 description: Hash is the SHA-256 hash of the specification content
                   for integrity verification
                 type: string
+              lint:
+                description: Lint contains the result of the OAS linting performed
+                  by rover-server.
+                properties:
+                  dashboardUrl:
+                    description: DashboardURL is a direct link to the linter dashboard
+                      for this scan.
+                    type: string
+                  message:
+                    description: Message is a human-readable description of the lint
+                      outcome.
+                    type: string
+                  passed:
+                    description: Passed indicates whether the spec passed linting.
+                    type: boolean
+                required:
+                - passed
+                type: object
               scopes:
                 description: Oauth2Scopes contains the OAuth2 scopes extracted from
                   security definitions/schemes
@@ -162,39 +180,6 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
-              lintDashboardUrl:
-                description: |-
-                  LintDashboardURL is a direct link to the linter dashboard for this scan.
-                  Populated from the zone's DashboardURLTemplate with the scan ID substituted.
-                type: string
-              lintErrors:
-                description: LintErrors is the number of errors found during linting.
-                type: integer
-              lintLinterVersion:
-                description: LintLinterVersion is the version of the linter engine.
-                type: string
-              lintPassed:
-                description: LintPassed indicates whether the last lint passed. nil
-                  means not yet linted.
-                type: boolean
-              lintReason:
-                description: LintReason is a human-readable message describing the
-                  lint outcome.
-                type: string
-              lintRuleset:
-                description: LintRuleset is the name of the ruleset used for linting.
-                type: string
-              lintWarnings:
-                description: LintWarnings is the number of warnings found during linting.
-                type: integer
-              lintedHash:
-                description: LintedHash is the spec hash that was last linted. Compared
-                  with Spec.Hash to avoid re-linting.
-                type: string
-              linterId:
-                description: LinterId is the scan ID returned by the external linter
-                  API.
-                type: string
             type: object
         type: object
         x-kubernetes-preserve-unknown-fields: true

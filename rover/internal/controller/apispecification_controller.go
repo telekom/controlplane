@@ -17,7 +17,6 @@ import (
 
 	apispec_handler "github.com/telekom/controlplane/rover/internal/handler/apispecification"
 
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	rover "github.com/telekom/controlplane/rover/api/v1"
@@ -49,11 +48,17 @@ func (r *ApiSpecificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("apispecification-controller")
 
 	h := &apispec_handler.ApiSpecificationHandler{
-		ListZones: func(ctx context.Context, environment string) (*adminv1.ZoneList, error) {
+		GetApiCategory: func(ctx context.Context, category string) (*apiapi.ApiCategory, error) {
 			c := cclient.ClientFromContextOrDie(ctx)
-			list := &adminv1.ZoneList{}
-			err := c.List(ctx, list, client.InNamespace(environment))
-			return list, err
+			list := &apiapi.ApiCategoryList{}
+			if err := c.List(ctx, list); err != nil {
+				return nil, err
+			}
+			found, ok := list.FindByLabelValue(category)
+			if !ok {
+				return nil, nil
+			}
+			return found, nil
 		},
 	}
 
