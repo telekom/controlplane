@@ -13,6 +13,44 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// LintingMode controls how linting failures affect API creation.
+// +kubebuilder:validation:Enum=block;warn
+type LintingMode string
+
+const (
+	// LintingModeBlock prevents Api creation when linting fails.
+	LintingModeBlock LintingMode = "block"
+	// LintingModeWarn allows Api creation but surfaces linting issues in status.
+	LintingModeWarn LintingMode = "warn"
+)
+
+// LintingConfig configures OAS specification linting for APIs in this category.
+type LintingConfig struct {
+	// URL is the base URL of the external linter service.
+	// When set, linting is enabled for this category.
+	// +kubebuilder:validation:Format=uri
+	// +optional
+	URL string `json:"url,omitempty"`
+
+	// Ruleset is the name of the linter ruleset to apply.
+	// If set, it is passed as a query parameter to the linter API.
+	// +optional
+	Ruleset string `json:"ruleset,omitempty"`
+
+	// Mode controls how linting failures affect API creation.
+	// "block" (default) prevents Api creation on failure; "warn" allows it but surfaces issues.
+	// +kubebuilder:validation:Enum=block;warn
+	// +kubebuilder:default:=block
+	// +optional
+	Mode LintingMode `json:"mode,omitempty"`
+
+	// WhitelistedBasepaths is a list of API basepaths that are exempt from linting.
+	// APIs whose basePath matches an entry here will skip linting even when a linter URL is configured.
+	// +optional
+	// +listType=set
+	WhitelistedBasepaths []string `json:"whitelistedBasepaths,omitempty"`
+}
+
 // ApiCategorySpec defines the desired state of ApiCategory
 type ApiCategorySpec struct {
 	// LabelValue is the name of the API category in the specification.
@@ -38,6 +76,11 @@ type ApiCategorySpec struct {
 	// the name of the group in the basePath.
 	// +kubebuilder:default:=true
 	MustHaveGroupPrefix bool `json:"mustHaveGroupPrefix,omitempty"`
+
+	// Linting configures OAS specification linting for APIs in this category.
+	// If set with a URL, linting is enabled for this category.
+	// +optional
+	Linting *LintingConfig `json:"linting,omitempty"`
 }
 
 type AllowTeamsConfig struct {
