@@ -58,7 +58,7 @@ func MapRequest(basePath string, fileAPIResp *filesapi.FileUploadResponse, id ma
 			Name:      id.Name,
 			Namespace: ns,
 			Annotations: map[string]string{
-				config.BuildLabelKey("basePath"): labelutil.NormalizeValue(basePath),
+				config.BuildLabelKey("basePath"): basePath,
 			},
 		},
 		Spec: roverv1.ApiChangelogSpec{

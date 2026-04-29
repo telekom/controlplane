@@ -1518,7 +1518,7 @@
 
 [ApiChangelog Controller Update ApiChangelog resource should update the ApiChangelog successfully - 1]
 {
- "basePath": "eni-test-api-v1",
+ "basePath": "/eni/test-api/v1",
  "id": "eni--hyperion--eni-test-api",
  "items": [
   {
