@@ -13,6 +13,7 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/application/internal/secret"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -42,6 +43,7 @@ func MutateSecret(ctx context.Context, env string, app *applicationv1.Applicatio
 
 	if secretsapi.IsRef(app.Spec.Secret) {
 		log.V(1).Info("spec.secret is already a reference, nothing to do")
+		contextutil.EventRecorderFromContextOrDiscard(ctx).Eventf(app, nil, "Normal", "SecretMutationSkipped", "spec.secret is already a reference, skipping mutation", "")
 		return nil
 	}
 
@@ -51,12 +53,16 @@ func MutateSecret(ctx context.Context, env string, app *applicationv1.Applicatio
 
 	// Guard: deny rotation if one is already in progress
 	if isRotation && isRotationInProgress(app) {
+		contextutil.EventRecorderFromContextOrDiscard(ctx).Eventf(app, nil, "Warning", "SecretRotationBlocked", "a secret rotation is already in progress, blocking new rotation request", "")
+
 		return errors.NewForbidden(
 			schema.GroupResource{Group: "application.cp.ei.telekom.de", Resource: "applications"},
 			app.GetName(),
 			fmt.Errorf("a secret rotation is already in progress, please wait for it to complete"),
 		)
 	}
+
+	contextutil.EventRecorderFromContextOrDiscard(ctx).Eventf(app, nil, "Normal", "SecretMutationStarted", "starting mutation of application secret", "")
 
 	// Determine if the rotation should be graceful (zone has SecretRotation feature enabled)
 	isGracefulRotation := false
@@ -69,6 +75,8 @@ func MutateSecret(ctx context.Context, env string, app *applicationv1.Applicatio
 		if !isGracefulRotation {
 			log.Info("zone does not have SecretRotation feature enabled, performing non-graceful rotation (no grace period)",
 				"zone", app.Spec.Zone.Name)
+
+			contextutil.EventRecorderFromContextOrDiscard(ctx).Eventf(app, nil, "Normal", "NonGracefulRotation", "zone does not have SecretRotation feature enabled, performing non-graceful rotation (no grace period)", "")
 		}
 	}
 
@@ -80,6 +88,7 @@ func MutateSecret(ctx context.Context, env string, app *applicationv1.Applicatio
 			return errors.NewInternalError(fmt.Errorf("failed to generate secret: %w", err))
 		}
 		clientSecret = generatedSecret
+		contextutil.EventRecorderFromContextOrDiscard(ctx).Eventf(app, nil, "Normal", "SecretGenerated", "generated new client secret for application", "")
 	} else {
 		clientSecret = app.Spec.Secret
 	}
