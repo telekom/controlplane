@@ -26,8 +26,12 @@ generate:
 build: generate
 	go build -o bin/controlplane-api ./cmd/main.go
 
+# Packages to test and measure coverage for
+TEST_PACKAGES = ./internal/...
+COVER_PACKAGES = ./internal/...
+
 test:
-	go test ./... -coverprofile cover.out -json 2>&1 | tee gotest.log | gotestfmt
+	gotestsum --format pkgname --jsonfile gotest.log -- $(TEST_PACKAGES) -ginkgo.junit-report=ginkgo-junit.xml -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -race
 
 fmt:
 	go fmt ./...

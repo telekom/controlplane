@@ -219,17 +219,19 @@ var _ = Describe("ApiSubscription Controller with Trusted Teams", Ordered, func(
 					updatedExposure.Spec.Approval.TrustedTeams[1],
 				}
 				g.Expect(teamNames).To(ConsistOf("group1--team1", "group3--team3"))
+
+				By("Checking that subscriptions were reprocessed after trusted teams update")
+				// Team1 should remain auto-approved
+				verifyApprovalStrategy(team1Sub, approvalapi.ApprovalStrategyAuto)
+
+				// Team2 should stay approved
+				verifyApprovalStrategy(team2Sub, approvalapi.ApprovalStrategyAuto)
+
+				// Team3 should now be auto-approved
+				verifyApprovalStrategy(team3Sub, approvalapi.ApprovalStrategyAuto)
+
 			}, timeout*3, interval).Should(Succeed())
 
-			By("Checking that subscriptions were reprocessed after trusted teams update")
-			// Team1 should remain auto-approved
-			verifyApprovalStrategy(team1Sub, approvalapi.ApprovalStrategyAuto)
-
-			// Team2 should stay approved
-			verifyApprovalStrategy(team2Sub, approvalapi.ApprovalStrategyAuto)
-
-			// Team3 should now be auto-approved
-			verifyApprovalStrategy(team3Sub, approvalapi.ApprovalStrategyAuto)
 		})
 	})
 })

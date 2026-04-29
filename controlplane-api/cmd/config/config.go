@@ -12,11 +12,17 @@ import (
 )
 
 type ServerConfig struct {
-	Database DatabaseConfig   `yaml:"database"`
-	Server   HTTPServerConfig `yaml:"server"`
-	Security SecurityConfig   `yaml:"security"`
-	GraphQL  GraphQLConfig    `yaml:"graphql"`
-	Log      LogConfig        `yaml:"log"`
+	Database   DatabaseConfig   `yaml:"database"`
+	Server     HTTPServerConfig `yaml:"server"`
+	Security   SecurityConfig   `yaml:"security"`
+	GraphQL    GraphQLConfig    `yaml:"graphql"`
+	Log        LogConfig        `yaml:"log"`
+	Kubernetes KubernetesConfig `yaml:"kubernetes"`
+}
+
+type KubernetesConfig struct {
+	Enabled    bool   `yaml:"enabled"`
+	Kubeconfig string `yaml:"kubeconfig"` // optional, defaults to in-cluster config
 }
 
 type DatabaseConfig struct {

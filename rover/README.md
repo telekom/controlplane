@@ -34,6 +34,7 @@ A Rover resource represents a complete application configuration, including:
 
 - **Declarative API Management**: Define API exposures and subscriptions in a single Rover file
 - **Specification File Management**: Extend API information with APISpecification
+- **Roadmap Management**: Track timeline information for APIs and Events using the Roadmap CRD
 - **Approval Workflows**: Integrate with the approval domain for subscription requests
 - **Traffic Management**: Configure circuit breakers, timeouts, and retry policies
 
@@ -48,13 +49,13 @@ All CRDs can be found here: [CRDs](./config/crd/bases/).
 <summary>
 <strong>Rover</strong>
 This CRD represents a complete application configuration including API exposures and subscriptions.
-</summary>  
+</summary>
 
 - The Rover CR SHOULD be created in the namespace that corresponds to the team's environment.
 - The Rover CR name SHOULD match the application name.
 - The Rover CR MUST specify a zone where the application will be deployed.
 - The Rover CR can define multiple API exposures
-- The Rover CR can define multiple API subscriptions 
+- The Rover CR can define multiple API subscriptions
 - The Rover status tracks references to all created resources
 - The Rover controller translates the Rover CR into resources in other domains (API, Application,...).
 
@@ -65,12 +66,27 @@ This CRD represents a complete application configuration including API exposures
 <summary>
 <strong>ApiSpecification</strong>
 This CRD represents an OpenAPI specification for an API exposed through a Rover.
-</summary>  
+</summary>
 
 - The ApiSpecification CR SHOULD be created in the same namespace as the Rover that exposes the API.
 - The ApiSpecification name is generated from the BasePath by removing leading/trailing slashes and replacing slashes with hyphens.
 - The ApiSpecification status tracks a reference to the created API resource.
 - The ApiSpecification controller extracts metadata from the OpenAPI document to enhance the API resource.
+
+</details>
+<br />
+
+<details>
+<summary>
+<strong>Roadmap</strong>
+This CRD represents timeline and roadmap information for various resource types (APIs, Events, etc.).
+</summary>
+
+- The Roadmap CR SHOULD be created in the namespace of the team that owns the resource.
+- The Roadmap name is generated from the resourceName by removing leading/trailing slashes, replacing slashes with hyphens, and lowercasing.
+- Roadmap items are stored as JSON in file-manager, with only metadata in the CRD.
+- The Roadmap controller ensures only one roadmap exists per resourceName+resourceType combination.
+- The OpenAPI specification content is stored in file-manager, while metadata is kept in the CRD.
 
 </details>
 <br />

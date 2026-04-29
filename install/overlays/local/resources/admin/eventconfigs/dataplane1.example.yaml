@@ -1,0 +1,46 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: event.cp.ei.telekom.de/v1
+kind: EventConfig
+metadata:
+  name: controlplane
+  namespace: controlplane--dataplane1
+  labels:
+    app.kubernetes.io/name: event
+    app.kubernetes.io/managed-by: kustomize
+    cp.ei.telekom.de/environment: controlplane
+spec:
+  # Zone reference — must match an existing Zone CR (1:1 relationship).
+  zone:
+    name: dataplane1
+    namespace: controlplane
+
+  mesh:
+    fullMesh: true
+
+    client:
+      # Realm reference — must match an existing Realm CR (1:1 relationship).
+      realm:
+        name: controlplane
+        namespace: controlplane--dataplane1
+
+  # Admin backend (quasar configuration API).
+  admin:
+    url: https://my-quasar-admin.example.com/
+
+    client:
+      clientId: horizon-quasar
+      # Realm reference — must match an existing Realm CR (1:1 relationship).
+      realm:
+        name: controlplane
+        namespace: controlplane--dataplane1
+
+  # Used as the upstream for the SSE gateway Route created by EventExposure.
+  serverSendEventUrl: "https://my-tasse.example.com/v1/poc/events"
+
+  # Used as the upstream for the publish gateway Route.
+  publishEventUrl: "https://my-producer.example.com/v1/poc/events"
+ 
+  voyagerApiUrl: https://my-voyager-api.example.com/

@@ -220,7 +220,11 @@ func HandleError(ctx context.Context, err error, obj common_types.Object, record
 		return reconcile.Result{RequeueAfter: config.RetryWithJitterOnError()}
 	}
 
-	_, result := ctrlerrors.HandleError(ctx, obj, err, recorder)
+	conditionsUpdated, result := ctrlerrors.HandleError(ctx, obj, err, recorder)
+	if conditionsUpdated {
+		log := log.FromContext(ctx).WithName("controller.error-handler")
+		log.V(1).Info("Object conditions updated after error handling", "error", err)
+	}
 	return result
 }
 

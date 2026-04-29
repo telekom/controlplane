@@ -15,9 +15,10 @@ var _ adapter.NotificationAdapter[adapter.CallbackChannelConfiguration] = &Webho
 type WebhookAdapter struct {
 }
 
-func (e WebhookAdapter) Send(ctx context.Context, config adapter.CallbackChannelConfiguration, title string, body string) error {
+// Send delivers a notification via the configured webhook callback URL.
+func (e WebhookAdapter) Send(ctx context.Context, config adapter.CallbackChannelConfiguration, title, body string, _ []adapter.Attachment) error {
 	log := logr.FromContextOrDiscard(ctx)
-	log.Info("Sending via webhook ", title, " ", body)
+	log.Info("Sending via webhook", "title", title, "body", body)
 
 	return nil
 }

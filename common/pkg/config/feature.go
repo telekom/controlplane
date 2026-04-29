@@ -45,6 +45,7 @@ func (f feature) Path() string {
 var (
 	features                     = map[Feature]bool{}
 	FeaturePubSub        Feature = NewFeature("pubsub", false)        // Pub/Sub feature disabled by default
+	FeaturePermission    Feature = NewFeature("permission", false)    // Permission feature disabled by default
 	FeatureSecretManager Feature = NewFeature("secret_manager", true) // Secret Manager feature enabled by default
 	FeatureFileManager   Feature = NewFeature("file_manager", true)   // File Manager feature enabled by default
 )

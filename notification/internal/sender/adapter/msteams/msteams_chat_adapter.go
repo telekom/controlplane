@@ -87,7 +87,7 @@ type TeamsErrorResponse struct {
 
 // Send sends a notification to Microsoft Teams with retry logic and proper error handling.
 // The title parameter is ignored as MS Teams determines the title from the card content.
-func (e MsTeamsAdapter) Send(ctx context.Context, config adapter.ChatChannelConfiguration, title string, body string) error {
+func (e MsTeamsAdapter) Send(ctx context.Context, config adapter.ChatChannelConfiguration, title, body string, _ []adapter.Attachment) error {
 	log := logr.FromContextOrDiscard(ctx)
 
 	// Validate required parameters

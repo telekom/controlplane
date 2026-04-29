@@ -30,6 +30,8 @@ type RoverStatus struct {
 	EventExposures []types.ObjectRef `json:"eventExposures,omitempty"`
 	// EventSubscriptions are references to EventSubscription resources created by this Rover
 	EventSubscriptions []types.ObjectRef `json:"eventSubscriptions,omitempty"`
+	// PermissionSets are references to PermissionSet resources created by this Rover
+	PermissionSets []types.ObjectRef `json:"permissionSets,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -109,6 +111,10 @@ type RoverSpec struct {
 	// Subscriptions is a list of APIs and Events that this Rover consumes from providers
 	// +kubebuilder:validation:Optional
 	Subscriptions []Subscription `json:"subscriptions,omitempty"`
+
+	// Permissions defines role-based access control permissions for this application
+	// +kubebuilder:validation:Optional
+	Permissions []Permission `json:"permissions,omitempty"`
 }
 
 // Visibility defines the access scope for an API

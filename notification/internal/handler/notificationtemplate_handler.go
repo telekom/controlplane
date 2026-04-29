@@ -7,6 +7,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/notification/internal/rendering"
@@ -28,7 +29,10 @@ func (n *NotificationTemplateHandler) CreateOrUpdate(ctx context.Context, templa
 	// Validate template content based on channel type
 	if err := n.validateTemplate(template); err != nil {
 		template.SetCondition(condition.NewReadyCondition("ValidationFailed", err.Error()))
-		return err
+		// Return BlockedError to use longer retry interval instead of aggressive error retries.
+		// Template validation errors can't be fixed by retrying - they require template changes
+		// which will trigger reconciliation via watches anyway.
+		return ctrlerrors.BlockedErrorf("Template validation failed: %v", err)
 	}
 
 	// parse them in advance - save repeated operation for each notification
@@ -49,10 +53,14 @@ func (n *NotificationTemplateHandler) CreateOrUpdate(ctx context.Context, templa
 func (n *NotificationTemplateHandler) validateTemplate(template *notificationv1.NotificationTemplate) error {
 	switch template.Spec.ChannelType {
 	case "MsTeams":
-		// MS Teams templates must be valid JSON (Adaptive Cards or MessageCard format)
-		if !json.Valid([]byte(template.Spec.Template)) {
-			return errors.New("invalid JSON template for MsTeams channel: template must be valid JSON")
-		}
+		// TODO: MS Teams templates contain Go template syntax ({{.variable}}) and must produce valid JSON after rendering.
+		// Current validation checks raw template string before rendering, which incorrectly rejects valid templates
+		// with structural conditionals (e.g., }{{if .condition}},{"field": "value"}{{end}}).
+		// We skip JSON validation here because:
+		// - Template syntax validation happens during parsing (line 35)
+		// - JSON validation with real data happens at notification send time
+		// Future improvement: Implement test rendering with sample data or add external validation tooling.
+		// For now, the system is self-healing: broken templates fail at send time, watches trigger auto-retry when fixed.
 	case "Email":
 		// Email templates can be plain text or HTML, no strict validation needed
 	case "Webhook":

@@ -36,6 +36,7 @@ jobs:
       module: common
       run_check_generated_files: false
       run_build_image: false
+      coverage_threshold: 55
 
   common-server:
     name: Common Server
@@ -62,6 +63,7 @@ jobs:
       module: controlplane-api
       run_check_generated_files: false
       ko_build_path: "cmd/main.go"
+      coverage_threshold: 1
 
   secret-manager:
     name: Secret Manager
@@ -71,6 +73,7 @@ jobs:
       module: secret-manager
       run_check_generated_files: false
       ko_build_path: "cmd/server/server.go"
+      coverage_threshold: 50
 
   approval:
     name: Approval
@@ -89,6 +92,7 @@ jobs:
       module: file-manager
       run_check_generated_files: false
       ko_build_path: "cmd/server/server.go"
+      coverage_threshold: 61
 
   gateway:
     name: Gateway
@@ -98,6 +102,7 @@ jobs:
       module: gateway
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
+      coverage_threshold: 56
 
   identity:
     name: Identity
@@ -125,6 +130,7 @@ jobs:
       module: admin
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
+      lint_fail_on_issues: true
 
   application:
     name: Application
@@ -152,6 +158,7 @@ jobs:
       module: rover
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
+      coverage_threshold: 66
 
   rover-server:
     name: Rover-Server
@@ -162,6 +169,7 @@ jobs:
       run_check_generated_files: false
       allow_tests_failure: true
       ko_build_path: "cmd/main.go"
+      coverage_threshold: 41
 
   rover-ctl:
     name: Rover-CTL
@@ -181,6 +189,7 @@ jobs:
       run_check_generated_files: false
       run_lint: false
       ko_build_path: "main.go"
+      coverage_threshold: 3
 
   notification:
     name: Notification
@@ -200,6 +209,15 @@ jobs:
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
 
+  discovery-server:
+    name: Discovery Server
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      name: discovery-server
+      module: discovery-server
+      run_check_generated_files: false
+      ko_build_path: "cmd/main.go"
+
   pubsub:
     name: PubSub
     uses: ./.github/workflows/reusable-go-ci.yaml
@@ -208,3 +226,22 @@ jobs:
       module: pubsub
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
+
+  projector:
+    name: Projector
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      name: projector
+      module: projector
+      run_check_generated_files: false
+      ko_build_path: "main.go"
+
+  permission:
+    name: Permission
+    uses: ./.github/workflows/reusable-go-ci.yaml
+    with:
+      name: permission
+      module: permission
+      run_check_generated_files: true
+      ko_build_path: "cmd/main.go"
+      coverage_threshold: 66

@@ -25,6 +25,7 @@ updates:
       - common-server
       - controlplane-api
       - cpapi/api
+      - discovery-server
       - event
       - event/api
       - file-manager
@@ -45,6 +46,9 @@ updates:
       - tools/snapshotter
       - notification
       - notification/api
+      - projector
+      - permission
+      - permission/api
     groups:
       minor-patch:
         update-types:

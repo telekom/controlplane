@@ -13,6 +13,7 @@ import (
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/telekom/controlplane/controlplane-api/ent"
+	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -35,7 +36,10 @@ type ResolverRoot interface {
 	ApprovalRequest() ApprovalRequestResolver
 	AvailableTransition() AvailableTransitionResolver
 	Decision() DecisionResolver
+	Mutation() MutationResolver
 	Query() QueryResolver
+	DecideApprovalInput() DecideApprovalInputResolver
+	DecideApprovalRequestInput() DecideApprovalRequestInputResolver
 }
 
 type DirectiveRoot struct {
@@ -85,21 +89,22 @@ type ComplexityRoot struct {
 	}
 
 	ApiSubscription struct {
-		Approval        func(childComplexity int) int
-		ApprovalRequest func(childComplexity int) int
-		ApprovedScopes  func(childComplexity int) int
-		BasePath        func(childComplexity int) int
-		CreatedAt       func(childComplexity int) int
-		Environment     func(childComplexity int) int
-		FailoverZones   func(childComplexity int) int
-		ID              func(childComplexity int) int
-		LastModifiedAt  func(childComplexity int) int
-		M2mAuthMethod   func(childComplexity int) int
-		Namespace       func(childComplexity int) int
-		Owner           func(childComplexity int) int
-		StatusMessage   func(childComplexity int) int
-		StatusPhase     func(childComplexity int) int
-		Target          func(childComplexity int) int
+		Approval         func(childComplexity int) int
+		ApprovalRequests func(childComplexity int) int
+		ApprovedScopes   func(childComplexity int) int
+		BasePath         func(childComplexity int) int
+		CreatedAt        func(childComplexity int) int
+		Environment      func(childComplexity int) int
+		FailoverZones    func(childComplexity int) int
+		ID               func(childComplexity int) int
+		LastModifiedAt   func(childComplexity int) int
+		M2mAuthMethod    func(childComplexity int) int
+		Name             func(childComplexity int) int
+		Namespace        func(childComplexity int) int
+		Owner            func(childComplexity int) int
+		StatusMessage    func(childComplexity int) int
+		StatusPhase      func(childComplexity int) int
+		Target           func(childComplexity int) int
 	}
 
 	ApiSubscriptionConnection struct {
@@ -124,6 +129,7 @@ type ComplexityRoot struct {
 
 	Application struct {
 		ClientID       func(childComplexity int) int
+		ClientSecret   func(childComplexity int) int
 		CreatedAt      func(childComplexity int) int
 		Environment    func(childComplexity int) int
 		ExposedApis    func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy *ent.ApiExposureOrder, where *ent.ApiExposureWhereInput) int
@@ -156,10 +162,12 @@ type ComplexityRoot struct {
 		AvailableTransitions func(childComplexity int) int
 		CreatedAt            func(childComplexity int) int
 		Decider              func(childComplexity int) int
+		DeciderTeamName      func(childComplexity int) int
 		Decisions            func(childComplexity int) int
 		Environment          func(childComplexity int) int
 		ID                   func(childComplexity int) int
 		LastModifiedAt       func(childComplexity int) int
+		Name                 func(childComplexity int) int
 		Namespace            func(childComplexity int) int
 		Requester            func(childComplexity int) int
 		State                func(childComplexity int) int
@@ -184,16 +192,27 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	ApprovalMutationResult struct {
+		Message      func(childComplexity int) int
+		Namespace    func(childComplexity int) int
+		NewState     func(childComplexity int) int
+		ResourceName func(childComplexity int) int
+		Success      func(childComplexity int) int
+	}
+
 	ApprovalRequest struct {
 		APISubscription      func(childComplexity int) int
 		Action               func(childComplexity int) int
+		Approval             func(childComplexity int) int
 		AvailableTransitions func(childComplexity int) int
 		CreatedAt            func(childComplexity int) int
 		Decider              func(childComplexity int) int
+		DeciderTeamName      func(childComplexity int) int
 		Decisions            func(childComplexity int) int
 		Environment          func(childComplexity int) int
 		ID                   func(childComplexity int) int
 		LastModifiedAt       func(childComplexity int) int
+		Name                 func(childComplexity int) int
 		Namespace            func(childComplexity int) int
 		Requester            func(childComplexity int) int
 		State                func(childComplexity int) int
@@ -246,8 +265,16 @@ type ComplexityRoot struct {
 		Environment func(childComplexity int) int
 		ID          func(childComplexity int) int
 		Name        func(childComplexity int) int
-		Namespace   func(childComplexity int) int
 		Team        func(childComplexity int) int
+	}
+
+	Mutation struct {
+		CreateTeam              func(childComplexity int, input model.CreateTeamInput) int
+		DecideApproval          func(childComplexity int, input model.DecideApprovalInput) int
+		DecideApprovalRequest   func(childComplexity int, input model.DecideApprovalRequestInput) int
+		RotateApplicationSecret func(childComplexity int, input model.RotateApplicationSecretInput) int
+		RotateTeamToken         func(childComplexity int, input model.RotateTeamTokenInput) int
+		UpdateTeam              func(childComplexity int, input model.UpdateTeamInput) int
 	}
 
 	PageInfo struct {
@@ -274,6 +301,13 @@ type ComplexityRoot struct {
 		Reason          func(childComplexity int) int
 		TeamEmail       func(childComplexity int) int
 		TeamName        func(childComplexity int) int
+	}
+
+	RotateApplicationSecretResult struct {
+		Message      func(childComplexity int) int
+		Namespace    func(childComplexity int) int
+		ResourceName func(childComplexity int) int
+		Success      func(childComplexity int) int
 	}
 
 	Team struct {
@@ -311,6 +345,13 @@ type ComplexityRoot struct {
 		Name      func(childComplexity int) int
 	}
 
+	TeamMutationResult struct {
+		Message      func(childComplexity int) int
+		Namespace    func(childComplexity int) int
+		ResourceName func(childComplexity int) int
+		Success      func(childComplexity int) int
+	}
+
 	Upstream struct {
 		URL    func(childComplexity int) int
 		Weight func(childComplexity int) int
@@ -322,7 +363,6 @@ type ComplexityRoot struct {
 		GatewayURL   func(childComplexity int) int
 		ID           func(childComplexity int) int
 		Name         func(childComplexity int) int
-		Namespace    func(childComplexity int) int
 		Visibility   func(childComplexity int) int
 	}
 }
@@ -558,12 +598,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApiSubscription.Approval(childComplexity), true
 
-	case "ApiSubscription.approvalRequest":
-		if e.ComplexityRoot.ApiSubscription.ApprovalRequest == nil {
+	case "ApiSubscription.approvalRequests":
+		if e.ComplexityRoot.ApiSubscription.ApprovalRequests == nil {
 			break
 		}
 
-		return e.ComplexityRoot.ApiSubscription.ApprovalRequest(childComplexity), true
+		return e.ComplexityRoot.ApiSubscription.ApprovalRequests(childComplexity), true
 
 	case "ApiSubscription.approvedScopes":
 		if e.ComplexityRoot.ApiSubscription.ApprovedScopes == nil {
@@ -620,6 +660,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApiSubscription.M2mAuthMethod(childComplexity), true
+
+	case "ApiSubscription.name":
+		if e.ComplexityRoot.ApiSubscription.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApiSubscription.Name(childComplexity), true
 
 	case "ApiSubscription.namespace":
 		if e.ComplexityRoot.ApiSubscription.Namespace == nil {
@@ -739,6 +786,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Application.ClientID(childComplexity), true
+
+	case "Application.clientSecret":
+		if e.ComplexityRoot.Application.ClientSecret == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Application.ClientSecret(childComplexity), true
 
 	case "Application.createdAt":
 		if e.ComplexityRoot.Application.CreatedAt == nil {
@@ -911,6 +965,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Approval.Decider(childComplexity), true
 
+	case "Approval.deciderTeamName":
+		if e.ComplexityRoot.Approval.DeciderTeamName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Approval.DeciderTeamName(childComplexity), true
+
 	case "Approval.decisions":
 		if e.ComplexityRoot.Approval.Decisions == nil {
 			break
@@ -938,6 +999,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Approval.LastModifiedAt(childComplexity), true
+
+	case "Approval.name":
+		if e.ComplexityRoot.Approval.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Approval.Name(childComplexity), true
 
 	case "Approval.namespace":
 		if e.ComplexityRoot.Approval.Namespace == nil {
@@ -1030,6 +1098,41 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ApprovalEdge.Node(childComplexity), true
 
+	case "ApprovalMutationResult.message":
+		if e.ComplexityRoot.ApprovalMutationResult.Message == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalMutationResult.Message(childComplexity), true
+
+	case "ApprovalMutationResult.namespace":
+		if e.ComplexityRoot.ApprovalMutationResult.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalMutationResult.Namespace(childComplexity), true
+
+	case "ApprovalMutationResult.newState":
+		if e.ComplexityRoot.ApprovalMutationResult.NewState == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalMutationResult.NewState(childComplexity), true
+
+	case "ApprovalMutationResult.resourceName":
+		if e.ComplexityRoot.ApprovalMutationResult.ResourceName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalMutationResult.ResourceName(childComplexity), true
+
+	case "ApprovalMutationResult.success":
+		if e.ComplexityRoot.ApprovalMutationResult.Success == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalMutationResult.Success(childComplexity), true
+
 	case "ApprovalRequest.apiSubscription":
 		if e.ComplexityRoot.ApprovalRequest.APISubscription == nil {
 			break
@@ -1043,6 +1146,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Action(childComplexity), true
+
+	case "ApprovalRequest.approval":
+		if e.ComplexityRoot.ApprovalRequest.Approval == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalRequest.Approval(childComplexity), true
 
 	case "ApprovalRequest.availableTransitions":
 		if e.ComplexityRoot.ApprovalRequest.AvailableTransitions == nil {
@@ -1064,6 +1174,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.Decider(childComplexity), true
+
+	case "ApprovalRequest.deciderTeamName":
+		if e.ComplexityRoot.ApprovalRequest.DeciderTeamName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalRequest.DeciderTeamName(childComplexity), true
 
 	case "ApprovalRequest.decisions":
 		if e.ComplexityRoot.ApprovalRequest.Decisions == nil {
@@ -1092,6 +1209,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ApprovalRequest.LastModifiedAt(childComplexity), true
+
+	case "ApprovalRequest.name":
+		if e.ComplexityRoot.ApprovalRequest.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ApprovalRequest.Name(childComplexity), true
 
 	case "ApprovalRequest.namespace":
 		if e.ComplexityRoot.ApprovalRequest.Namespace == nil {
@@ -1310,19 +1434,84 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Member.Name(childComplexity), true
 
-	case "Member.namespace":
-		if e.ComplexityRoot.Member.Namespace == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Member.Namespace(childComplexity), true
-
 	case "Member.team":
 		if e.ComplexityRoot.Member.Team == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Member.Team(childComplexity), true
+
+	case "Mutation.createTeam":
+		if e.ComplexityRoot.Mutation.CreateTeam == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createTeam_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CreateTeam(childComplexity, args["input"].(model.CreateTeamInput)), true
+
+	case "Mutation.decideApproval":
+		if e.ComplexityRoot.Mutation.DecideApproval == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_decideApproval_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DecideApproval(childComplexity, args["input"].(model.DecideApprovalInput)), true
+
+	case "Mutation.decideApprovalRequest":
+		if e.ComplexityRoot.Mutation.DecideApprovalRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_decideApprovalRequest_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DecideApprovalRequest(childComplexity, args["input"].(model.DecideApprovalRequestInput)), true
+
+	case "Mutation.rotateApplicationSecret":
+		if e.ComplexityRoot.Mutation.RotateApplicationSecret == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_rotateApplicationSecret_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.RotateApplicationSecret(childComplexity, args["input"].(model.RotateApplicationSecretInput)), true
+
+	case "Mutation.rotateTeamToken":
+		if e.ComplexityRoot.Mutation.RotateTeamToken == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_rotateTeamToken_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.RotateTeamToken(childComplexity, args["input"].(model.RotateTeamTokenInput)), true
+
+	case "Mutation.updateTeam":
+		if e.ComplexityRoot.Mutation.UpdateTeam == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateTeam_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateTeam(childComplexity, args["input"].(model.UpdateTeamInput)), true
 
 	case "PageInfo.endCursor":
 		if e.ComplexityRoot.PageInfo.EndCursor == nil {
@@ -1482,6 +1671,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RequesterInfo.TeamName(childComplexity), true
+
+	case "RotateApplicationSecretResult.message":
+		if e.ComplexityRoot.RotateApplicationSecretResult.Message == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RotateApplicationSecretResult.Message(childComplexity), true
+
+	case "RotateApplicationSecretResult.namespace":
+		if e.ComplexityRoot.RotateApplicationSecretResult.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RotateApplicationSecretResult.Namespace(childComplexity), true
+
+	case "RotateApplicationSecretResult.resourceName":
+		if e.ComplexityRoot.RotateApplicationSecretResult.ResourceName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RotateApplicationSecretResult.ResourceName(childComplexity), true
+
+	case "RotateApplicationSecretResult.success":
+		if e.ComplexityRoot.RotateApplicationSecretResult.Success == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RotateApplicationSecretResult.Success(childComplexity), true
 
 	case "Team.applications":
 		if e.ComplexityRoot.Team.Applications == nil {
@@ -1649,6 +1866,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.TeamInfo.Name(childComplexity), true
 
+	case "TeamMutationResult.message":
+		if e.ComplexityRoot.TeamMutationResult.Message == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TeamMutationResult.Message(childComplexity), true
+
+	case "TeamMutationResult.namespace":
+		if e.ComplexityRoot.TeamMutationResult.Namespace == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TeamMutationResult.Namespace(childComplexity), true
+
+	case "TeamMutationResult.resourceName":
+		if e.ComplexityRoot.TeamMutationResult.ResourceName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TeamMutationResult.ResourceName(childComplexity), true
+
+	case "TeamMutationResult.success":
+		if e.ComplexityRoot.TeamMutationResult.Success == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TeamMutationResult.Success(childComplexity), true
+
 	case "Upstream.url":
 		if e.ComplexityRoot.Upstream.URL == nil {
 			break
@@ -1698,13 +1943,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Zone.Name(childComplexity), true
 
-	case "Zone.namespace":
-		if e.ComplexityRoot.Zone.Namespace == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Zone.Namespace(childComplexity), true
-
 	case "Zone.visibility":
 		if e.ComplexityRoot.Zone.Visibility == nil {
 			break
@@ -1730,10 +1968,18 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputApprovalRequestOrder,
 		ec.unmarshalInputApprovalRequestWhereInput,
 		ec.unmarshalInputApprovalWhereInput,
+		ec.unmarshalInputCreateTeamInput,
+		ec.unmarshalInputDecideApprovalInput,
+		ec.unmarshalInputDecideApprovalRequestInput,
+		ec.unmarshalInputDecisionInput,
 		ec.unmarshalInputGroupWhereInput,
+		ec.unmarshalInputMemberInput,
 		ec.unmarshalInputMemberWhereInput,
+		ec.unmarshalInputRotateApplicationSecretInput,
+		ec.unmarshalInputRotateTeamTokenInput,
 		ec.unmarshalInputTeamOrder,
 		ec.unmarshalInputTeamWhereInput,
+		ec.unmarshalInputUpdateTeamInput,
 		ec.unmarshalInputZoneWhereInput,
 	)
 	first := true
@@ -1768,6 +2014,21 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			}
 
 			return &response
+		}
+	case ast.Mutation:
+		return func(ctx context.Context) *graphql.Response {
+			if !first {
+				return nil
+			}
+			first = false
+			ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
+			data := ec._Mutation(ctx, opCtx.Operation.SelectionSet)
+			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
 		}
 
 	default:
@@ -1804,7 +2065,7 @@ type ApiExposure implements Node {
   statusPhase: ApiExposureStatusPhase
   statusMessage: String
   environment: String
-  namespace: String
+  namespace: String!
   basePath: String!
   visibility: ApiExposureVisibility!
   active: Boolean
@@ -1981,8 +2242,6 @@ input ApiExposureWhereInput {
   namespaceContains: String
   namespaceHasPrefix: String
   namespaceHasSuffix: String
-  namespaceIsNil: Boolean
-  namespaceNotNil: Boolean
   namespaceEqualFold: String
   namespaceContainsFold: String
   """
@@ -2051,14 +2310,15 @@ type ApiSubscription implements Node {
   statusPhase: ApiSubscriptionStatusPhase
   statusMessage: String
   environment: String
-  namespace: String
+  namespace: String!
+  name: String!
   basePath: String!
   m2mAuthMethod: ApiSubscriptionM2mAuthMethod!
   approvedScopes: [String!]!
   owner: Application!
   failoverZones: [Zone!]
   approval: Approval
-  approvalRequest: ApprovalRequest
+  approvalRequests: [ApprovalRequest!]
 }
 """
 A connection to a list of items.
@@ -2228,10 +2488,24 @@ input ApiSubscriptionWhereInput {
   namespaceContains: String
   namespaceHasPrefix: String
   namespaceHasSuffix: String
-  namespaceIsNil: Boolean
-  namespaceNotNil: Boolean
   namespaceEqualFold: String
   namespaceContainsFold: String
+  """
+  name field predicates
+  """
+  name: String
+  nameNEQ: String
+  nameIn: [String!]
+  nameNotIn: [String!]
+  nameGT: String
+  nameGTE: String
+  nameLT: String
+  nameLTE: String
+  nameContains: String
+  nameHasPrefix: String
+  nameHasSuffix: String
+  nameEqualFold: String
+  nameContainsFold: String
   """
   base_path field predicates
   """
@@ -2276,10 +2550,10 @@ input ApiSubscriptionWhereInput {
   hasApproval: Boolean
   hasApprovalWith: [ApprovalWhereInput!]
   """
-  approval_request edge predicates
+  approval_requests edge predicates
   """
-  hasApprovalRequest: Boolean
-  hasApprovalRequestWith: [ApprovalRequestWhereInput!]
+  hasApprovalRequests: Boolean
+  hasApprovalRequestsWith: [ApprovalRequestWhereInput!]
 }
 type Application implements Node {
   id: ID!
@@ -2288,9 +2562,10 @@ type Application implements Node {
   statusPhase: ApplicationStatusPhase
   statusMessage: String
   environment: String
-  namespace: String
+  namespace: String!
   name: String!
   clientID: String
+  clientSecret: String
   issuerURL: String
   zone: Zone!
   exposedApis(
@@ -2516,8 +2791,6 @@ input ApplicationWhereInput {
   namespaceContains: String
   namespaceHasPrefix: String
   namespaceHasSuffix: String
-  namespaceIsNil: Boolean
-  namespaceNotNil: Boolean
   namespaceEqualFold: String
   namespaceContainsFold: String
   """
@@ -2554,6 +2827,24 @@ input ApplicationWhereInput {
   clientIDNotNil: Boolean
   clientIDEqualFold: String
   clientIDContainsFold: String
+  """
+  client_secret field predicates
+  """
+  clientSecret: String
+  clientSecretNEQ: String
+  clientSecretIn: [String!]
+  clientSecretNotIn: [String!]
+  clientSecretGT: String
+  clientSecretGTE: String
+  clientSecretLT: String
+  clientSecretLTE: String
+  clientSecretContains: String
+  clientSecretHasPrefix: String
+  clientSecretHasSuffix: String
+  clientSecretIsNil: Boolean
+  clientSecretNotNil: Boolean
+  clientSecretEqualFold: String
+  clientSecretContainsFold: String
   """
   issuer_url field predicates
   """
@@ -2600,13 +2891,15 @@ type Approval implements Node {
   statusPhase: ApprovalStatusPhase
   statusMessage: String
   environment: String
-  namespace: String
+  namespace: String!
   action: String!
   strategy: ApprovalStrategy!
   requester: RequesterInfo!
   decider: DeciderInfo!
+  deciderTeamName: String!
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]
+  name: String!
   state: ApprovalState!
 }
 """
@@ -2666,13 +2959,15 @@ type ApprovalRequest implements Node {
   statusPhase: ApprovalRequestStatusPhase
   statusMessage: String
   environment: String
-  namespace: String
+  namespace: String!
   action: String!
   strategy: ApprovalRequestStrategy!
   requester: RequesterInfo!
   decider: DeciderInfo!
+  deciderTeamName: String!
   decisions: [Decision!]!
   availableTransitions: [AvailableTransition!]
+  name: String!
   state: ApprovalRequestState!
 }
 """
@@ -2851,8 +3146,6 @@ input ApprovalRequestWhereInput {
   namespaceContains: String
   namespaceHasPrefix: String
   namespaceHasSuffix: String
-  namespaceIsNil: Boolean
-  namespaceNotNil: Boolean
   namespaceEqualFold: String
   namespaceContainsFold: String
   """
@@ -2878,6 +3171,38 @@ input ApprovalRequestWhereInput {
   strategyNEQ: ApprovalRequestStrategy
   strategyIn: [ApprovalRequestStrategy!]
   strategyNotIn: [ApprovalRequestStrategy!]
+  """
+  decider_team_name field predicates
+  """
+  deciderTeamName: String
+  deciderTeamNameNEQ: String
+  deciderTeamNameIn: [String!]
+  deciderTeamNameNotIn: [String!]
+  deciderTeamNameGT: String
+  deciderTeamNameGTE: String
+  deciderTeamNameLT: String
+  deciderTeamNameLTE: String
+  deciderTeamNameContains: String
+  deciderTeamNameHasPrefix: String
+  deciderTeamNameHasSuffix: String
+  deciderTeamNameEqualFold: String
+  deciderTeamNameContainsFold: String
+  """
+  name field predicates
+  """
+  name: String
+  nameNEQ: String
+  nameIn: [String!]
+  nameNotIn: [String!]
+  nameGT: String
+  nameGTE: String
+  nameLT: String
+  nameLTE: String
+  nameContains: String
+  nameHasPrefix: String
+  nameHasSuffix: String
+  nameEqualFold: String
+  nameContainsFold: String
   """
   state field predicates
   """
@@ -3019,8 +3344,6 @@ input ApprovalWhereInput {
   namespaceContains: String
   namespaceHasPrefix: String
   namespaceHasSuffix: String
-  namespaceIsNil: Boolean
-  namespaceNotNil: Boolean
   namespaceEqualFold: String
   namespaceContainsFold: String
   """
@@ -3047,6 +3370,38 @@ input ApprovalWhereInput {
   strategyIn: [ApprovalStrategy!]
   strategyNotIn: [ApprovalStrategy!]
   """
+  decider_team_name field predicates
+  """
+  deciderTeamName: String
+  deciderTeamNameNEQ: String
+  deciderTeamNameIn: [String!]
+  deciderTeamNameNotIn: [String!]
+  deciderTeamNameGT: String
+  deciderTeamNameGTE: String
+  deciderTeamNameLT: String
+  deciderTeamNameLTE: String
+  deciderTeamNameContains: String
+  deciderTeamNameHasPrefix: String
+  deciderTeamNameHasSuffix: String
+  deciderTeamNameEqualFold: String
+  deciderTeamNameContainsFold: String
+  """
+  name field predicates
+  """
+  name: String
+  nameNEQ: String
+  nameIn: [String!]
+  nameNotIn: [String!]
+  nameGT: String
+  nameGTE: String
+  nameLT: String
+  nameLTE: String
+  nameContains: String
+  nameHasPrefix: String
+  nameHasSuffix: String
+  nameEqualFold: String
+  nameContainsFold: String
+  """
   state field predicates
   """
   state: ApprovalState
@@ -3067,7 +3422,7 @@ scalar Cursor
 type Group implements Node {
   id: ID!
   environment: String
-  namespace: String
+  namespace: String!
   name: String!
   displayName: String!
   description: String!
@@ -3124,8 +3479,6 @@ input GroupWhereInput {
   namespaceContains: String
   namespaceHasPrefix: String
   namespaceHasSuffix: String
-  namespaceIsNil: Boolean
-  namespaceNotNil: Boolean
   namespaceEqualFold: String
   namespaceContainsFold: String
   """
@@ -3185,7 +3538,6 @@ input GroupWhereInput {
 type Member implements Node {
   id: ID!
   environment: String
-  namespace: String
   name: String!
   email: String!
   team: Team
@@ -3227,24 +3579,6 @@ input MemberWhereInput {
   environmentNotNil: Boolean
   environmentEqualFold: String
   environmentContainsFold: String
-  """
-  namespace field predicates
-  """
-  namespace: String
-  namespaceNEQ: String
-  namespaceIn: [String!]
-  namespaceNotIn: [String!]
-  namespaceGT: String
-  namespaceGTE: String
-  namespaceLT: String
-  namespaceLTE: String
-  namespaceContains: String
-  namespaceHasPrefix: String
-  namespaceHasSuffix: String
-  namespaceIsNil: Boolean
-  namespaceNotNil: Boolean
-  namespaceEqualFold: String
-  namespaceContainsFold: String
   """
   name field predicates
   """
@@ -3542,7 +3876,7 @@ type Team implements Node {
   statusPhase: TeamStatusPhase
   statusMessage: String
   environment: String
-  namespace: String
+  namespace: String!
   name: String!
   email: String!
   category: TeamCategory!
@@ -3748,8 +4082,6 @@ input TeamWhereInput {
   namespaceContains: String
   namespaceHasPrefix: String
   namespaceHasSuffix: String
-  namespaceIsNil: Boolean
-  namespaceNotNil: Boolean
   namespaceEqualFold: String
   namespaceContainsFold: String
   """
@@ -3832,7 +4164,6 @@ scalar Time
 type Zone implements Node {
   id: ID!
   environment: String
-  namespace: String
   name: String!
   gatewayURL: String
   visibility: ZoneVisibility!
@@ -3883,24 +4214,6 @@ input ZoneWhereInput {
   environmentEqualFold: String
   environmentContainsFold: String
   """
-  namespace field predicates
-  """
-  namespace: String
-  namespaceNEQ: String
-  namespaceIn: [String!]
-  namespaceNotIn: [String!]
-  namespaceGT: String
-  namespaceGTE: String
-  namespaceLT: String
-  namespaceLTE: String
-  namespaceContains: String
-  namespaceHasPrefix: String
-  namespaceHasSuffix: String
-  namespaceIsNil: Boolean
-  namespaceNotNil: Boolean
-  namespaceEqualFold: String
-  namespaceContainsFold: String
-  """
   name field predicates
   """
   name: String
@@ -3946,6 +4259,147 @@ input ZoneWhereInput {
   """
   hasApplications: Boolean
   hasApplicationsWith: [ApplicationWhereInput!]
+}
+`, BuiltIn: false},
+	{Name: "../../mutation.graphql", Input: `# Copyright 2025 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+input CreateTeamInput {
+  "Target environment (used for namespace derivation)"
+  environment: String!
+  "Group this team belongs to"
+  group: String!
+  "Team name"
+  name: String!
+  "Team contact email"
+  email: String!
+  "Team members (at least one required)"
+  members: [MemberInput!]!
+}
+
+input UpdateTeamInput {
+  "Target environment"
+  environment: String!
+  "Group this team belongs to"
+  group: String!
+  "Team name (identifies which team to update)"
+  name: String!
+  "Updated team contact email"
+  email: String
+  "Updated team members"
+  members: [MemberInput!]
+}
+
+input MemberInput {
+  name: String!
+  email: String!
+}
+
+"Result of a team mutation. Reports acceptance status - the actual reconciliation happens asynchronously."
+type TeamMutationResult {
+  "Whether the K8s API accepted the request"
+  success: Boolean!
+  "Human-readable message"
+  message: String!
+  "The namespace where the Team CRD was created/updated"
+  namespace: String
+  "The Team CRD resource name"
+  resourceName: String
+}
+
+input RotateTeamTokenInput {
+  "Target environment"
+  environment: String!
+  "Group this team belongs to"
+  group: String!
+  "Team name"
+  name: String!
+}
+
+input RotateApplicationSecretInput {
+  "Target environment"
+  environment: String!
+  "Team that owns this application"
+  team: String!
+  "Application resource name"
+  name: String!
+}
+
+"Result of an application mutation. Reports acceptance status - the actual reconciliation happens asynchronously."
+type RotateApplicationSecretResult {
+  "Whether the K8s API accepted the request"
+  success: Boolean!
+  "Human-readable message"
+  message: String!
+  "The namespace where the Application CRD was updated"
+  namespace: String
+  "The Application CRD resource name"
+  resourceName: String
+}
+
+input DecideApprovalRequestInput {
+  "Target environment"
+  environment: String!
+  "Requester team that owns the namespace where the ApprovalRequest lives"
+  team: String!
+  "ApprovalRequest resource name"
+  name: String!
+  "Action to take"
+  action: ApprovalAction!
+  "Decision details"
+  decision: DecisionInput!
+}
+
+input DecideApprovalInput {
+  "Target environment"
+  environment: String!
+  "Requester team that owns the namespace where the Approval lives"
+  team: String!
+  "Approval resource name"
+  name: String!
+  "Action to take (Allow, Deny, Suspend, Resume)"
+  action: ApprovalAction!
+  "Decision details"
+  decision: DecisionInput!
+}
+
+input DecisionInput {
+  "Name of the person making the decision"
+  name: String!
+  "Email of the person making the decision"
+  email: String!
+  "Optional comment"
+  comment: String
+}
+
+"Result of an approval mutation."
+type ApprovalMutationResult {
+  "Whether the K8s API accepted the request"
+  success: Boolean!
+  "Human-readable message"
+  message: String!
+  "The new state after the transition"
+  newState: String
+  "The namespace of the resource"
+  namespace: String
+  "The resource name"
+  resourceName: String
+}
+
+type Mutation {
+  "Create a new Team in Kubernetes"
+  createTeam(input: CreateTeamInput!): TeamMutationResult!
+  "Update an existing Team in Kubernetes"
+  updateTeam(input: UpdateTeamInput!): TeamMutationResult!
+  "Rotate the token for an existing Team. Triggers async secret regeneration via the operator."
+  rotateTeamToken(input: RotateTeamTokenInput!): TeamMutationResult!
+  "Rotate the client secret for an existing Application. Triggers async secret regeneration via the operator webhook."
+  rotateApplicationSecret(input: RotateApplicationSecretInput!): RotateApplicationSecretResult!
+  "Decide on an ApprovalRequest (approve or deny initial access)."
+  decideApprovalRequest(input: DecideApprovalRequestInput!): ApprovalMutationResult!
+  "Decide on an existing Approval (suspend, resume, deny, or re-allow ongoing access)."
+  decideApproval(input: DecideApprovalInput!): ApprovalMutationResult!
 }
 `, BuiltIn: false},
 	{Name: "../../schema.graphql", Input: `# Copyright 2025 Deutsche Telekom IT GmbH
@@ -4078,6 +4532,8 @@ extend type Approval {
 extend type ApprovalRequest {
   "Related subscription (reduced view — cross-tenant boundary)"
   apiSubscription: ApiSubscriptionInfo @goField(forceResolver: true)
+  "The corresponding approval, if one exists (traverses via ApiSubscription)"
+  approval: Approval @goField(forceResolver: true)
 }
 
 `, BuiltIn: false},

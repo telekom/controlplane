@@ -2,20 +2,30 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# Run `golangci-lint linters` to see all enabled/disabled linters with descriptions.
+
 version: "2"
 run:
   allow-parallel-runners: true
+  modules-download-mode: readonly
+  relative-path-mode: gomod
 linters:
   default: none
   enable:
     - copyloopvar
     - dupl
     - errcheck
+    - errorlint
     - ginkgolinter
+    - goconst
+    - gocritic
     - gocyclo
+    - gosec
     - govet
     - ineffassign
     - misspell
+    - nestif
+    - nolintlint
     - prealloc
     - revive
     - staticcheck
@@ -23,22 +33,98 @@ linters:
     - unparam
     - unused
   settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    errorlint:
+      errorf: true
+      asserts: true
+      comparison: true
+    goconst:
+      numbers: true
+    gocritic:
+      disabled-checks:
+        - unnamedResult
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+        - experimental
+        - opinionated
+    gocyclo:
+      min-complexity: 20
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+    nestif:
+      min-complexity: 5
+    nolintlint:
+      require-explanation: true
+      require-specific: true
     revive:
+      confidence: 0.8
       rules:
         - name: comment-spacings
+    staticcheck:
+      checks:
+        - all
+        - -ST1000
+        - -ST1020
+        - -ST1021
+        - -ST1003
+        - -ST1022
   exclusions:
     generated: lax
+    rules:
+      - linters:
+          - dupl
+          - gocyclo
+          - gosec
+          - goconst
+          - errcheck
+        path: _test\.go
+      # GetEventRecorderFor is deprecated (SA1019) in favor of GetEventRecorder (events API).
+      # Migrating requires switching common pkg from record.EventRecorder to events.EventRecorder.
+      - linters:
+          - staticcheck
+        text: "SA1019: .*GetEventRecorderFor"
     paths:
       - third_party$
       - builtin$
       - examples$
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
 formatters:
   enable:
     - gofmt
+    - gofumpt
     - goimports
+    - gci
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/telekom/controlplane/)
+        - blank
+        - dot
+      custom-order: true
+    gofumpt:
+      extra-rules: true
   exclusions:
     generated: lax
     paths:
       - third_party$
       - builtin$
       - examples$
+      # Files with kubebuilder scaffold markers in import blocks (gci would strip them)
+      - cmd/main\.go
+      - suite_test\.go
+output:
+  sort-order:
+    - linter
+    - severity
+    - file
+  show-stats: true

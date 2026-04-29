@@ -32,33 +32,66 @@ models:
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.IntID
+  TeamMutationResult:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.TeamMutationResult
+  CreateTeamInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.CreateTeamInput
+  UpdateTeamInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.UpdateTeamInput
+  MemberInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.MemberInput
+  RotateTeamTokenInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateTeamTokenInput
+  RotateApplicationSecretInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateApplicationSecretInput
+  RotateApplicationSecretResult:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RotateApplicationSecretResult
+  DecideApprovalRequestInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecideApprovalRequestInput
+  DecideApprovalInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecideApprovalInput
+  DecisionInput:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DecisionInput
+  ApprovalMutationResult:
+    model:
+      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApprovalMutationResult
   Node:
     model:
       - github.com/telekom/controlplane/controlplane-api/ent.Noder
   TeamInfo:
     model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.TeamInfo
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.TeamInfo
   Upstream:
     model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.Upstream
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.Upstream
   ApprovalConfig:
     model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApprovalConfig
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApprovalConfig
   RequesterInfo:
     model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.RequesterInfo
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.RequesterInfo
   DeciderInfo:
     model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.DeciderInfo
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.DeciderInfo
   Decision:
     model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.Decision
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.Decision
   AvailableTransition:
     model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.AvailableTransition
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.AvailableTransition
   ApiExposureInfo:
     model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApiExposureInfo
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiExposureInfo
   ApiSubscriptionInfo:
     model:
-      - github.com/telekom/controlplane/controlplane-api/internal/resolvers/model.ApiSubscriptionInfo
+      - github.com/telekom/controlplane/controlplane-api/pkg/model.ApiSubscriptionInfo

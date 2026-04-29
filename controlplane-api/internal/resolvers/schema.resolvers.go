@@ -1,6 +1,7 @@
-// SPDX-FileCopyrightText: 2025 Deutsche Telekom IT GmbH
+// Copyright 2026 Deutsche Telekom IT GmbH
 //
 // SPDX-License-Identifier: Apache-2.0
+
 package resolvers
 
 // This file will be automatically regenerated based on the schema, any resolver
@@ -15,8 +16,9 @@ import (
 	"github.com/telekom/controlplane/controlplane-api/ent/apiexposure"
 	"github.com/telekom/controlplane/controlplane-api/ent/apisubscription"
 	"github.com/telekom/controlplane/controlplane-api/ent/approval"
-	"github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
+	gqlmodel "github.com/telekom/controlplane/controlplane-api/internal/resolvers/model"
 	"github.com/telekom/controlplane/controlplane-api/internal/viewer"
+	"github.com/telekom/controlplane/controlplane-api/pkg/model"
 )
 
 // Subscriptions is the resolver for the subscriptions field.
@@ -49,10 +51,10 @@ func (r *apiExposureInfoResolver) Visibility(ctx context.Context, obj *model.Api
 }
 
 // Features is the resolver for the features field.
-func (r *apiExposureInfoResolver) Features(ctx context.Context, obj *model.ApiExposureInfo) ([]model.APIExposureFeature, error) {
-	result := make([]model.APIExposureFeature, len(obj.Features))
+func (r *apiExposureInfoResolver) Features(ctx context.Context, obj *model.ApiExposureInfo) ([]gqlmodel.APIExposureFeature, error) {
+	result := make([]gqlmodel.APIExposureFeature, len(obj.Features))
 	for i, f := range obj.Features {
-		result[i] = model.APIExposureFeature(f)
+		result[i] = gqlmodel.APIExposureFeature(f)
 	}
 	return result, nil
 }
@@ -178,9 +180,34 @@ func (r *approvalRequestResolver) APISubscription(ctx context.Context, obj *ent.
 	return mapApiSubscriptionInfo(sub, app, team, group), nil
 }
 
+// Approval is the resolver for the approval field.
+// Traverses ApprovalRequest → ApiSubscription → Approval.
+// Returns nil if no Approval exists yet (request not decided).
+func (r *approvalRequestResolver) Approval(ctx context.Context, obj *ent.ApprovalRequest) (*ent.Approval, error) {
+	sub, err := obj.Edges.APISubscriptionOrErr()
+	if ent.IsNotLoaded(err) {
+		sub, err = obj.QueryAPISubscription().Only(ctx)
+	}
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	appr, err := sub.QueryApproval().Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return appr, nil
+}
+
 // Action is the resolver for the action field.
-func (r *availableTransitionResolver) Action(ctx context.Context, obj *model.AvailableTransition) (model.ApprovalAction, error) {
-	return model.ApprovalAction(obj.Action), nil
+func (r *availableTransitionResolver) Action(ctx context.Context, obj *model.AvailableTransition) (gqlmodel.ApprovalAction, error) {
+	return gqlmodel.ApprovalAction(obj.Action), nil
 }
 
 // ToState is the resolver for the toState field.

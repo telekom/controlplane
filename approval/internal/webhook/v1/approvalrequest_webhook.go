@@ -9,7 +9,6 @@ import (
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	arhandler "github.com/telekom/controlplane/approval/internal/handler/approvalrequest"
-	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -48,7 +47,7 @@ func (ar *ApprovalRequestCustomDefaulter) Default(_ context.Context, obj *approv
 	if obj.Spec.Strategy == "" {
 		obj.Spec.Strategy = approvalv1.ApprovalStrategySimple
 	}
-	if obj.Spec.Strategy == approvalv1.ApprovalStrategyAuto {
+	if obj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && !isTerminalApprovalRequestState(obj.Spec.State) {
 		obj.Spec.State = approvalv1.ApprovalStateGranted
 		if len(obj.Spec.Decisions) == 0 {
 			obj.Spec.Decisions = append(obj.Spec.Decisions, approvalv1.Decision{
@@ -91,11 +90,11 @@ func (ar *ApprovalRequestCustomValidator) ValidateCreate(_ context.Context, obj 
 func (ar *ApprovalRequestCustomValidator) ValidateUpdate(_ context.Context, oldObj *approvalv1.ApprovalRequest, newObj *approvalv1.ApprovalRequest) (warnings admission.Warnings, err error) {
 	approvalrequestlog.Info("validate update", "name", newObj.Name)
 
-	// Block ALL spec changes on terminal-state ApprovalRequests.
-	// Once an AR reaches Granted or Rejected, its spec is frozen and
-	// all further lifecycle management happens on the Approval object.
+	// Block relevant approval-outcome changes on terminal-state ApprovalRequests.
+	// Granted ARs may still receive non-critical spec refreshes (for stale
+	// reconciliation), but outcome-defining fields stay immutable.
 	if isTerminalApprovalRequestState(oldObj.Spec.State) {
-		if !apiequality.Semantic.DeepEqual(oldObj.Spec, newObj.Spec) {
+		if hasRelevantGrantedARSpecChanges(oldObj.Spec, newObj.Spec) {
 			err = apierrors.NewBadRequest("ApprovalRequest is in a terminal state and cannot be modified")
 			return warnings, err
 		}

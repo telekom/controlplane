@@ -87,11 +87,24 @@ rules:
   - list
   - watch
 - apiGroups:
+  - permission.cp.ei.telekom.de
+  resources:
+  - permissionsets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - rover.cp.ei.telekom.de
   resources:
   - apispecifications
   - changelogs
   - eventspecifications
+  - roadmaps
   - rovers
   verbs:
   - create
@@ -107,6 +120,7 @@ rules:
   - apispecifications/finalizers
   - changelogs/finalizers
   - eventspecifications/finalizers
+  - roadmaps/finalizers
   - rovers/finalizers
   verbs:
   - update
@@ -116,6 +130,7 @@ rules:
   - apispecifications/status
   - changelogs/status
   - eventspecifications/status
+  - roadmaps/status
   - rovers/status
   verbs:
   - get

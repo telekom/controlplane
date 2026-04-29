@@ -1,0 +1,86 @@
+
+[EventType Controller GET /eventtypes should list event types with team token - 1]
+{
+ "_links": {
+  "first": "/eventtypes?offset=0&limit=20",
+  "last": "/eventtypes?offset=0&limit=20",
+  "self": "/eventtypes?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "active": true,
+   "description": "Quickstart event type for testing",
+   "id": "eni--hyperion--de-telekom-eni-quickstart-v1",
+   "name": "de-telekom-eni-quickstart-v1",
+   "status": "<Any value>",
+   "type": "de.telekom.eni.quickstart.v1",
+   "version": "1.0.0"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[EventType Controller GET /eventtypes should list event types with admin token - 1]
+{
+ "_links": {
+  "first": "/eventtypes?offset=0&limit=20",
+  "last": "/eventtypes?offset=0&limit=20",
+  "self": "/eventtypes?offset=0&limit=20"
+ },
+ "items": [
+  {
+   "active": true,
+   "description": "Quickstart event type for testing",
+   "id": "eni--hyperion--de-telekom-eni-quickstart-v1",
+   "name": "de-telekom-eni-quickstart-v1",
+   "status": "<Any value>",
+   "type": "de.telekom.eni.quickstart.v1",
+   "version": "1.0.0"
+  }
+ ],
+ "paging": {
+  "last_page": 1,
+  "page": 1,
+  "total": 1
+ }
+}
+---
+
+[EventType Controller GET /eventtypes/:eventTypeId should return a single event type - 1]
+{
+ "active": true,
+ "description": "Quickstart event type for testing",
+ "id": "eni--hyperion--de-telekom-eni-quickstart-v1",
+ "name": "de-telekom-eni-quickstart-v1",
+ "status": "<Any value>",
+ "type": "de.telekom.eni.quickstart.v1",
+ "version": "1.0.0"
+}
+---
+
+[EventType Controller GET /eventtypes/:eventTypeId/status should return event type status - 1]
+{
+ "createdAt": "<Any value>",
+ "overallStatus": "complete",
+ "processedAt": "<Any value>",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[EventType Controller GET /eventtypes/:eventTypeName/active should return the active event type - 1]
+{
+ "active": true,
+ "description": "Quickstart event type for testing",
+ "id": "eni--hyperion--de-telekom-eni-quickstart-v1",
+ "name": "de-telekom-eni-quickstart-v1",
+ "status": "<Any value>",
+ "type": "de.telekom.eni.quickstart.v1",
+ "version": "1.0.0"
+}
+---

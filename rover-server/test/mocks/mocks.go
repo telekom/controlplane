@@ -24,6 +24,7 @@ const (
 	ChangelogFileName          = "changelog.json"
 	EventSpecificationFileName = "eventSpecification.json"
 	EventSubscriptionFileName  = "eventSubscription.json"
+	RoadmapFileName            = "roadmap.json"
 	OpenApiFileName            = "openapi.yaml"
 	apiSubscriptionFileName    = "apiSubscription.json"
 	apiExposureFileName        = "apiExposure.json"
@@ -121,6 +122,15 @@ func GetEventSpecification(testing ginkgo.FullGinkgoTInterface, filePath string)
 	require.NoError(testing, err)
 
 	return &eventSpecification
+}
+
+func GetRoadmap(testing ginkgo.FullGinkgoTInterface, filePath string) *roverv1.Roadmap {
+	file := data.ReadFile(testing, filePath)
+	var roadmap roverv1.Roadmap
+	err := json.Unmarshal(file, &roadmap)
+	require.NoError(testing, err)
+
+	return &roadmap
 }
 
 func GetOpenApi(testing ginkgo.FullGinkgoTInterface, filePath string) *map[string]any {
