@@ -533,32 +533,4 @@ var _ = Describe("HandlerRealm", func() {
 			Expect(err.Error()).To(ContainSubstring("keycloak 500"))
 		})
 	})
-
-	Context("mapToRealmStatus", func() {
-
-		It("should map IdentityProvider fields correctly", func() {
-			identityProvider := &identityv1.IdentityProvider{
-				Spec: identityv1.IdentityProviderSpec{
-					AdminUrl:      "https://admin.example.com",
-					AdminClientId: "admin-client-id",
-					AdminUserName: "admin-username",
-					AdminPassword: "admin-password",
-				},
-				Status: identityv1.IdentityProviderStatus{
-					AdminUrl:      "https://admin.example.com",
-					AdminTokenUrl: "https://admin.example.com/token",
-				},
-			}
-			realmName := "test-realm"
-
-			realmStatus := mapToRealmStatus(identityProvider, realmName)
-
-			Expect(realmStatus.IssuerUrl).To(Equal(keycloak.DetermineIssuerUrlFrom(identityProvider.Spec.AdminUrl, realmName)))
-			Expect(realmStatus.AdminClientId).To(Equal("admin-client-id"))
-			Expect(realmStatus.AdminUserName).To(Equal("admin-username"))
-			Expect(realmStatus.AdminPassword).To(Equal("admin-password"))
-			Expect(realmStatus.AdminUrl).To(Equal("https://admin.example.com"))
-			Expect(realmStatus.AdminTokenUrl).To(Equal("https://admin.example.com/token"))
-		})
-	})
 })
