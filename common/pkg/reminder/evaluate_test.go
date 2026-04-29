@@ -5,10 +5,10 @@
 package reminder
 
 import (
-	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -27,244 +27,373 @@ func ref(name string) types.ObjectRef {
 	return types.ObjectRef{Name: name, Namespace: "ns"}
 }
 
-func TestEvaluate_SingleOneShot(t *testing.T) {
-	deadline := time.Now().Add(5 * 24 * time.Hour) // 5 days out
-	thresholds := []Threshold{{Before: d(168)}}    // 7 days
+var _ = Describe("Evaluate", func() {
 
-	pending := Evaluate(deadline, thresholds, nil, time.Now())
-	assert.Len(t, pending, 1)
-	assert.Equal(t, d(168).Duration.String(), pending[0].Key)
-}
+	Context("single one-shot threshold", func() {
+		It("should fire when inside the window and never sent", func() {
+			deadline := time.Now().Add(5 * 24 * time.Hour) // 5 days out
+			thresholds := []Threshold{{Before: d(168)}}    // 7 days
 
-func TestEvaluate_OneShotAlreadySent(t *testing.T) {
-	now := time.Now()
-	deadline := now.Add(5 * 24 * time.Hour)
-	thresholds := []Threshold{{Before: d(168)}}
-	sent := []SentReminder{{
-		Threshold: d(168).Duration.String(),
-		Ref:       ref("n1"),
-		SentAt:    metav1.NewTime(now.Add(-1 * time.Hour)),
-	}}
+			pending := Evaluate(deadline, thresholds, nil, time.Now())
+			Expect(pending).To(HaveLen(1))
+			Expect(pending[0].Key).To(Equal(d(168).Duration.String()))
+		})
 
-	pending := Evaluate(deadline, thresholds, sent, now)
-	assert.Empty(t, pending)
-}
+		It("should not fire when already sent", func() {
+			now := time.Now()
+			deadline := now.Add(5 * 24 * time.Hour)
+			thresholds := []Threshold{{Before: d(168)}}
+			sent := []SentReminder{{
+				Threshold: d(168).Duration.String(),
+				Ref:       ref("n1"),
+				SentAt:    metav1.NewTime(now.Add(-1 * time.Hour)),
+			}}
 
-func TestEvaluate_OutsideWindow(t *testing.T) {
-	deadline := time.Now().Add(30 * 24 * time.Hour) // 30 days out
-	thresholds := []Threshold{{Before: d(168)}}     // 7 day window
+			pending := Evaluate(deadline, thresholds, sent, now)
+			Expect(pending).To(BeEmpty())
+		})
 
-	pending := Evaluate(deadline, thresholds, nil, time.Now())
-	assert.Empty(t, pending)
-}
+		It("should not fire when outside the window", func() {
+			deadline := time.Now().Add(30 * 24 * time.Hour) // 30 days out
+			thresholds := []Threshold{{Before: d(168)}}     // 7 day window
 
-func TestEvaluate_PastDeadline_NeverSent_FiresLargestThreshold(t *testing.T) {
-	now := time.Now()
-	deadline := now.Add(-1 * time.Hour)
-	thresholds := []Threshold{
-		{Before: d(24)},
-		{Before: d(168)},
-	}
+			pending := Evaluate(deadline, thresholds, nil, time.Now())
+			Expect(pending).To(BeEmpty())
+		})
+	})
 
-	pending := Evaluate(deadline, thresholds, nil, now)
-	assert.Len(t, pending, 1)
-	assert.Equal(t, d(168).Duration.String(), pending[0].Key)
-}
+	Context("past deadline", func() {
+		It("should fire the largest threshold when never sent", func() {
+			now := time.Now()
+			deadline := now.Add(-1 * time.Hour)
+			thresholds := []Threshold{
+				{Before: d(24)},
+				{Before: d(168)},
+			}
 
-func TestEvaluate_PastDeadline_AllSent_NothingFires(t *testing.T) {
-	now := time.Now()
-	deadline := now.Add(-1 * time.Hour)
-	thresholds := []Threshold{
-		{Before: d(24)},
-		{Before: d(168)},
-	}
-	sent := []SentReminder{
-		{Threshold: d(24).Duration.String(), Ref: ref("n1"), SentAt: metav1.NewTime(now.Add(-2 * time.Hour))},
-		{Threshold: d(168).Duration.String(), Ref: ref("n2"), SentAt: metav1.NewTime(now.Add(-48 * time.Hour))},
-	}
+			pending := Evaluate(deadline, thresholds, nil, now)
+			Expect(pending).To(HaveLen(1))
+			Expect(pending[0].Key).To(Equal(d(168).Duration.String()))
+		})
 
-	pending := Evaluate(deadline, thresholds, sent, now)
-	assert.Empty(t, pending)
-}
+		It("should not fire when all thresholds already sent", func() {
+			now := time.Now()
+			deadline := now.Add(-1 * time.Hour)
+			thresholds := []Threshold{
+				{Before: d(24)},
+				{Before: d(168)},
+			}
+			sent := []SentReminder{
+				{Threshold: d(24).Duration.String(), Ref: ref("n1"), SentAt: metav1.NewTime(now.Add(-2 * time.Hour))},
+				{Threshold: d(168).Duration.String(), Ref: ref("n2"), SentAt: metav1.NewTime(now.Add(-48 * time.Hour))},
+			}
 
-func TestEvaluate_PastDeadline_PartiallySent_FiresLargestUnsent(t *testing.T) {
-	now := time.Now()
-	deadline := now.Add(-1 * time.Hour)
-	thresholds := []Threshold{
-		{Before: d(24)},
-		{Before: d(168)},
-	}
-	// 168h was sent, but 24h was never sent
-	sent := []SentReminder{
-		{Threshold: d(168).Duration.String(), Ref: ref("n1"), SentAt: metav1.NewTime(now.Add(-48 * time.Hour))},
-	}
+			pending := Evaluate(deadline, thresholds, sent, now)
+			Expect(pending).To(BeEmpty())
+		})
 
-	pending := Evaluate(deadline, thresholds, sent, now)
-	assert.Len(t, pending, 1)
-	assert.Equal(t, d(24).Duration.String(), pending[0].Key)
-}
+		It("should fire the largest unsent threshold when partially sent", func() {
+			now := time.Now()
+			deadline := now.Add(-1 * time.Hour)
+			thresholds := []Threshold{
+				{Before: d(24)},
+				{Before: d(168)},
+			}
+			sent := []SentReminder{
+				{Threshold: d(168).Duration.String(), Ref: ref("n1"), SentAt: metav1.NewTime(now.Add(-48 * time.Hour))},
+			}
 
-func TestEvaluate_MultipleThresholds_OnlyTightestFires(t *testing.T) {
-	now := time.Now()
-	deadline := now.Add(3 * 24 * time.Hour) // 3 days out
+			pending := Evaluate(deadline, thresholds, sent, now)
+			Expect(pending).To(HaveLen(1))
+			Expect(pending[0].Key).To(Equal(d(24).Duration.String()))
+		})
+	})
 
-	thresholds := []Threshold{
-		{Before: d(720)}, // 30 days — in window
-		{Before: d(168)}, // 7 days — in window (tightest)
-		{Before: d(24)},  // 1 day — NOT in window (3 days > 1 day)
-	}
+	Context("multiple thresholds", func() {
+		It("should only fire the tightest matching threshold", func() {
+			now := time.Now()
+			deadline := now.Add(3 * 24 * time.Hour) // 3 days out
 
-	// Nothing sent yet — only tightest (7d) should fire, not 30d
-	pending := Evaluate(deadline, thresholds, nil, now)
-	assert.Len(t, pending, 1)
-	assert.Equal(t, d(168).Duration.String(), pending[0].Key)
-}
+			thresholds := []Threshold{
+				{Before: d(720)}, // 30 days — in window
+				{Before: d(168)}, // 7 days — in window (tightest)
+				{Before: d(24)},  // 1 day — NOT in window
+			}
 
-func TestEvaluate_TightestOneShotSent_NothingFires(t *testing.T) {
-	now := time.Now()
-	deadline := now.Add(3 * 24 * time.Hour) // 3 days out
+			pending := Evaluate(deadline, thresholds, nil, now)
+			Expect(pending).To(HaveLen(1))
+			Expect(pending[0].Key).To(Equal(d(168).Duration.String()))
+		})
 
-	thresholds := []Threshold{
-		{Before: d(720)}, // 30 days — in window
-		{Before: d(168)}, // 7 days — in window (tightest), already sent
-		{Before: d(24)},  // 1 day — NOT in window
-	}
+		It("should not fire when the tightest one-shot is already sent", func() {
+			now := time.Now()
+			deadline := now.Add(3 * 24 * time.Hour)
 
-	sent := []SentReminder{{
-		Threshold: d(168).Duration.String(),
-		Ref:       ref("n1"),
-		SentAt:    metav1.NewTime(now.Add(-2 * 24 * time.Hour)),
-	}}
+			thresholds := []Threshold{
+				{Before: d(720)},
+				{Before: d(168)},
+				{Before: d(24)},
+			}
 
-	// Tightest is 7d, already sent (one-shot) → nothing fires
-	// 30d is NOT evaluated because it's a larger threshold
-	pending := Evaluate(deadline, thresholds, sent, now)
-	assert.Empty(t, pending)
-}
+			sent := []SentReminder{{
+				Threshold: d(168).Duration.String(),
+				Ref:       ref("n1"),
+				SentAt:    metav1.NewTime(now.Add(-2 * 24 * time.Hour)),
+			}}
 
-func TestEvaluate_RepeatNotYetDue(t *testing.T) {
-	now := time.Now()
-	deadline := now.Add(3 * 24 * time.Hour)
-	thresholds := []Threshold{
-		{Before: d(168), Repeat: dp(24)},
-	}
-	sent := []SentReminder{{
-		Threshold: d(168).Duration.String(),
-		Ref:       ref("n1"),
-		SentAt:    metav1.NewTime(now.Add(-12 * time.Hour)), // 12h ago, repeat is 24h
-	}}
+			pending := Evaluate(deadline, thresholds, sent, now)
+			Expect(pending).To(BeEmpty())
+		})
+	})
 
-	pending := Evaluate(deadline, thresholds, sent, now)
-	assert.Empty(t, pending)
-}
+	Context("repeating thresholds", func() {
+		It("should not fire when the repeat interval has not elapsed", func() {
+			now := time.Now()
+			deadline := now.Add(3 * 24 * time.Hour)
+			thresholds := []Threshold{
+				{Before: d(168), Repeat: dp(24)},
+			}
+			sent := []SentReminder{{
+				Threshold: d(168).Duration.String(),
+				Ref:       ref("n1"),
+				SentAt:    metav1.NewTime(now.Add(-12 * time.Hour)),
+			}}
 
-func TestEvaluate_RepeatDue(t *testing.T) {
-	now := time.Now()
-	deadline := now.Add(3 * 24 * time.Hour)
-	thresholds := []Threshold{
-		{Before: d(168), Repeat: dp(24)},
-	}
-	sent := []SentReminder{{
-		Threshold: d(168).Duration.String(),
-		Ref:       ref("n1"),
-		SentAt:    metav1.NewTime(now.Add(-25 * time.Hour)), // 25h ago, repeat is 24h
-	}}
+			pending := Evaluate(deadline, thresholds, sent, now)
+			Expect(pending).To(BeEmpty())
+		})
 
-	pending := Evaluate(deadline, thresholds, sent, now)
-	assert.Len(t, pending, 1)
-}
+		It("should fire when the repeat interval has elapsed", func() {
+			now := time.Now()
+			deadline := now.Add(3 * 24 * time.Hour)
+			thresholds := []Threshold{
+				{Before: d(168), Repeat: dp(24)},
+			}
+			sent := []SentReminder{{
+				Threshold: d(168).Duration.String(),
+				Ref:       ref("n1"),
+				SentAt:    metav1.NewTime(now.Add(-25 * time.Hour)),
+			}}
 
-func TestNextRequeue_NotYetInWindow(t *testing.T) {
-	now := time.Now()
-	deadline := now.Add(10 * 24 * time.Hour)    // 10 days out
-	thresholds := []Threshold{{Before: d(168)}} // 7 day window
+			pending := Evaluate(deadline, thresholds, sent, now)
+			Expect(pending).To(HaveLen(1))
+		})
+	})
+})
 
-	requeue := NextRequeue(deadline, thresholds, nil, now)
-	// Should requeue in ~3 days (when we enter the 7-day window)
-	expected := 10*24*time.Hour - 168*time.Hour
-	assert.InDelta(t, expected.Seconds(), requeue.Seconds(), 1)
-}
+var _ = Describe("NextRequeue", func() {
 
-func TestNextRequeue_ShouldFireNow(t *testing.T) {
-	now := time.Now()
-	deadline := now.Add(5 * 24 * time.Hour)
-	thresholds := []Threshold{{Before: d(168)}} // in window, never sent
+	It("should return time until entering the window when not yet in window", func() {
+		now := time.Now()
+		deadline := now.Add(10 * 24 * time.Hour)
+		thresholds := []Threshold{{Before: d(168)}}
 
-	requeue := NextRequeue(deadline, thresholds, nil, now)
-	assert.Equal(t, time.Duration(0), requeue)
-}
+		requeue := NextRequeue(deadline, thresholds, nil, now)
+		expected := 10*24*time.Hour - 168*time.Hour
+		Expect(requeue.Seconds()).To(BeNumerically("~", expected.Seconds(), 1))
+	})
 
-func TestNextRequeue_RepeatScheduled(t *testing.T) {
-	now := time.Now()
-	deadline := now.Add(3 * 24 * time.Hour)
-	thresholds := []Threshold{
-		{Before: d(168), Repeat: dp(24)},
-	}
-	sent := []SentReminder{{
-		Threshold: d(168).Duration.String(),
-		Ref:       ref("n1"),
-		SentAt:    metav1.NewTime(now.Add(-10 * time.Hour)), // 10h ago
-	}}
+	It("should return 0 when a reminder should fire now", func() {
+		now := time.Now()
+		deadline := now.Add(5 * 24 * time.Hour)
+		thresholds := []Threshold{{Before: d(168)}}
 
-	requeue := NextRequeue(deadline, thresholds, sent, now)
-	// Next repeat in 24h - 10h = 14h
-	assert.InDelta(t, 14*time.Hour.Seconds(), requeue.Seconds(), 1)
-}
+		requeue := NextRequeue(deadline, thresholds, nil, now)
+		Expect(requeue).To(Equal(time.Duration(0)))
+	})
 
-func TestNextRequeue_OneShotSent_WaitsForNextThreshold(t *testing.T) {
-	now := time.Now()
-	deadline := now.Add(3 * 24 * time.Hour) // 3 days out
+	It("should return remaining repeat interval when repeat is scheduled", func() {
+		now := time.Now()
+		deadline := now.Add(3 * 24 * time.Hour)
+		thresholds := []Threshold{
+			{Before: d(168), Repeat: dp(24)},
+		}
+		sent := []SentReminder{{
+			Threshold: d(168).Duration.String(),
+			Ref:       ref("n1"),
+			SentAt:    metav1.NewTime(now.Add(-10 * time.Hour)),
+		}}
 
-	thresholds := []Threshold{
-		{Before: d(168)}, // 7 days — in window, one-shot, sent
-		{Before: d(24)},  // 1 day — not yet in window
-	}
-	sent := []SentReminder{{
-		Threshold: d(168).Duration.String(),
-		Ref:       ref("n1"),
-		SentAt:    metav1.NewTime(now.Add(-1 * 24 * time.Hour)),
-	}}
+		requeue := NextRequeue(deadline, thresholds, sent, now)
+		Expect(requeue.Seconds()).To(BeNumerically("~", (14 * time.Hour).Seconds(), 1))
+	})
 
-	requeue := NextRequeue(deadline, thresholds, sent, now)
-	// Tightest active (168h) is sent. Next is 24h, which we enter in 3d - 1d = 2d.
-	expected := 3*24*time.Hour - 24*time.Hour
-	assert.InDelta(t, expected.Seconds(), requeue.Seconds(), 1)
-}
+	It("should wait for next threshold when one-shot is already sent", func() {
+		now := time.Now()
+		deadline := now.Add(3 * 24 * time.Hour)
 
-func TestNextRequeue_PastDeadline(t *testing.T) {
-	requeue := NextRequeue(time.Now().Add(-1*time.Hour), []Threshold{{Before: d(168)}}, nil, time.Now())
-	assert.Equal(t, time.Duration(0), requeue)
-}
+		thresholds := []Threshold{
+			{Before: d(168)},
+			{Before: d(24)},
+		}
+		sent := []SentReminder{{
+			Threshold: d(168).Duration.String(),
+			Ref:       ref("n1"),
+			SentAt:    metav1.NewTime(now.Add(-1 * 24 * time.Hour)),
+		}}
 
-func TestUpsertSent_Insert(t *testing.T) {
-	entry := &SentReminder{Threshold: "168h0m0s", Ref: ref("n1"), SentAt: metav1.Now()}
-	result := UpsertSent(nil, entry)
-	assert.Len(t, result, 1)
-	assert.Equal(t, "168h0m0s", result[0].Threshold)
-}
+		requeue := NextRequeue(deadline, thresholds, sent, now)
+		expected := 3*24*time.Hour - 24*time.Hour
+		Expect(requeue.Seconds()).To(BeNumerically("~", expected.Seconds(), 1))
+	})
 
-func TestUpsertSent_Update(t *testing.T) {
-	existing := []SentReminder{
-		{Threshold: "168h0m0s", Ref: ref("n1"), SentAt: metav1.NewTime(time.Now().Add(-1 * time.Hour))},
-	}
-	updated := &SentReminder{Threshold: "168h0m0s", Ref: ref("n2"), SentAt: metav1.Now()}
+	It("should return 0 when past deadline", func() {
+		requeue := NextRequeue(time.Now().Add(-1*time.Hour), []Threshold{{Before: d(168)}}, nil, time.Now())
+		Expect(requeue).To(Equal(time.Duration(0)))
+	})
+})
 
-	result := UpsertSent(existing, updated)
-	assert.Len(t, result, 1)
-	assert.Equal(t, "n2", result[0].Ref.Name)
-}
+var _ = Describe("UpsertSent", func() {
 
-func TestSortDesc(t *testing.T) {
-	thresholds := []Threshold{
-		{Before: d(24)},
-		{Before: d(720)},
-		{Before: d(168)},
-	}
-	sorted := SortDesc(thresholds)
-	assert.Equal(t, d(720).Duration, sorted[0].Before.Duration)
-	assert.Equal(t, d(168).Duration, sorted[1].Before.Duration)
-	assert.Equal(t, d(24).Duration, sorted[2].Before.Duration)
+	It("should insert a new entry", func() {
+		entry := &SentReminder{Threshold: "168h0m0s", Ref: ref("n1"), SentAt: metav1.Now()}
+		result := UpsertSent(nil, entry)
+		Expect(result).To(HaveLen(1))
+		Expect(result[0].Threshold).To(Equal("168h0m0s"))
+	})
 
-	// Original unchanged
-	assert.Equal(t, d(24).Duration, thresholds[0].Before.Duration)
-}
+	It("should update an existing entry", func() {
+		existing := []SentReminder{
+			{Threshold: "168h0m0s", Ref: ref("n1"), SentAt: metav1.NewTime(time.Now().Add(-1 * time.Hour))},
+		}
+		updated := &SentReminder{Threshold: "168h0m0s", Ref: ref("n2"), SentAt: metav1.Now()}
+
+		result := UpsertSent(existing, updated)
+		Expect(result).To(HaveLen(1))
+		Expect(result[0].Ref.Name).To(Equal("n2"))
+	})
+})
+
+var _ = Describe("NextRequeue edge cases", func() {
+
+	It("should return 0 for a repeating threshold that was never sent and is in window", func() {
+		now := time.Now()
+		deadline := now.Add(3 * 24 * time.Hour)
+		thresholds := []Threshold{
+			{Before: d(168), Repeat: dp(24)},
+		}
+
+		requeue := NextRequeue(deadline, thresholds, nil, now)
+		Expect(requeue).To(Equal(time.Duration(0)))
+	})
+
+	It("should return 0 for a repeating threshold that is overdue", func() {
+		now := time.Now()
+		deadline := now.Add(3 * 24 * time.Hour)
+		thresholds := []Threshold{
+			{Before: d(168), Repeat: dp(24)},
+		}
+		sent := []SentReminder{{
+			Threshold: d(168).Duration.String(),
+			Ref:       ref("n1"),
+			SentAt:    metav1.NewTime(now.Add(-48 * time.Hour)), // 48h ago, repeat is 24h
+		}}
+
+		requeue := NextRequeue(deadline, thresholds, sent, now)
+		Expect(requeue).To(Equal(time.Duration(0)))
+	})
+
+	It("should return timeUntilDeadline when no threshold windows exist", func() {
+		now := time.Now()
+		deadline := now.Add(1 * time.Hour)
+		// All thresholds have Before smaller than timeUntilDeadline — none match
+		thresholds := []Threshold{
+			{Before: d(0)}, // 0h window — never matches
+		}
+
+		requeue := NextRequeue(deadline, thresholds, nil, now)
+		Expect(requeue.Seconds()).To(BeNumerically("~", (1 * time.Hour).Seconds(), 1))
+	})
+})
+
+var _ = Describe("SortDesc", func() {
+
+	It("should sort thresholds descending without modifying the original", func() {
+		thresholds := []Threshold{
+			{Before: d(24)},
+			{Before: d(720)},
+			{Before: d(168)},
+		}
+		sorted := SortDesc(thresholds)
+		Expect(sorted[0].Before.Duration).To(Equal(d(720).Duration))
+		Expect(sorted[1].Before.Duration).To(Equal(d(168).Duration))
+		Expect(sorted[2].Before.Duration).To(Equal(d(24).Duration))
+
+		// Original unchanged
+		Expect(thresholds[0].Before.Duration).To(Equal(d(24).Duration))
+	})
+})
+
+var _ = Describe("Threshold DeepCopy", func() {
+
+	It("should deep copy a Threshold without Repeat", func() {
+		original := &Threshold{Before: d(168)}
+		copied := original.DeepCopy()
+
+		Expect(copied.Before.Duration).To(Equal(original.Before.Duration))
+		Expect(copied.Repeat).To(BeNil())
+		Expect(copied).ToNot(BeIdenticalTo(original))
+	})
+
+	It("should deep copy a Threshold with Repeat", func() {
+		original := &Threshold{Before: d(168), Repeat: dp(24)}
+		copied := original.DeepCopy()
+
+		Expect(copied.Before.Duration).To(Equal(original.Before.Duration))
+		Expect(copied.Repeat).ToNot(BeNil())
+		Expect(copied.Repeat.Duration).To(Equal(original.Repeat.Duration))
+		// Ensure it's a different pointer
+		Expect(copied.Repeat).ToNot(BeIdenticalTo(original.Repeat))
+	})
+
+	It("should return nil when copying a nil Threshold", func() {
+		var original *Threshold
+		Expect(original.DeepCopy()).To(BeNil())
+	})
+
+	It("should deep copy into an existing Threshold", func() {
+		original := Threshold{Before: d(168), Repeat: dp(24)}
+		out := Threshold{}
+		original.DeepCopyInto(&out)
+
+		Expect(out.Before.Duration).To(Equal(original.Before.Duration))
+		Expect(out.Repeat).ToNot(BeNil())
+		Expect(out.Repeat.Duration).To(Equal(original.Repeat.Duration))
+		Expect(out.Repeat).ToNot(BeIdenticalTo(original.Repeat))
+	})
+})
+
+var _ = Describe("SentReminder DeepCopy", func() {
+
+	It("should deep copy a SentReminder", func() {
+		original := &SentReminder{
+			Threshold: "168h0m0s",
+			Ref:       ref("n1"),
+			SentAt:    metav1.Now(),
+		}
+		copied := original.DeepCopy()
+
+		Expect(copied.Threshold).To(Equal(original.Threshold))
+		Expect(copied.Ref.Name).To(Equal(original.Ref.Name))
+		Expect(copied.Ref.Namespace).To(Equal(original.Ref.Namespace))
+		Expect(copied).ToNot(BeIdenticalTo(original))
+	})
+
+	It("should return nil when copying a nil SentReminder", func() {
+		var original *SentReminder
+		Expect(original.DeepCopy()).To(BeNil())
+	})
+
+	It("should deep copy into an existing SentReminder", func() {
+		original := SentReminder{
+			Threshold: "168h0m0s",
+			Ref:       ref("n1"),
+			SentAt:    metav1.Now(),
+		}
+		out := SentReminder{}
+		original.DeepCopyInto(&out)
+
+		Expect(out.Threshold).To(Equal(original.Threshold))
+		Expect(out.Ref.Name).To(Equal(original.Ref.Name))
+	})
+})
