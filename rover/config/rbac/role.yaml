@@ -103,6 +103,7 @@ rules:
   resources:
   - apispecifications
   - eventspecifications
+  - roadmaps
   - rovers
   verbs:
   - create
@@ -117,6 +118,7 @@ rules:
   resources:
   - apispecifications/finalizers
   - eventspecifications/finalizers
+  - roadmaps/finalizers
   - rovers/finalizers
   verbs:
   - update
@@ -125,6 +127,7 @@ rules:
   resources:
   - apispecifications/status
   - eventspecifications/status
+  - roadmaps/status
   - rovers/status
   verbs:
   - get

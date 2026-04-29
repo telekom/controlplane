@@ -1035,3 +1035,181 @@
  "team": "hyperion"
 }
 ---
+
+
+[Roadmap Controller Get ApiRoadmap resource should return the ApiRoadmap successfully - 1]
+{
+ "basePath": "/eni/test/api/v1",
+ "id": "eni--hyperion--eni-test-api",
+ "items": [
+  {
+   "date": "Q1 2024",
+   "description": "Initial release with core features",
+   "title": "MVP Release",
+   "titleUrl": "https://example.com/mvp"
+  },
+  {
+   "date": "Q2 2024",
+   "description": "Optimize response times",
+   "title": "Performance Improvements"
+  }
+ ],
+ "name": "eni-test-api",
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ }
+}
+---
+
+[Roadmap Controller Get ApiRoadmap resource should fail to get a non-existent ApiRoadmap - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Roadmap Controller GetAll ApiRoadmaps resource should return all ApiRoadmaps successfully - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apiroadmaps?cursor="
+ },
+ "items": [
+  {
+   "basePath": "/eni/test/api/v1",
+   "id": "eni--hyperion--eni-test-api",
+   "items": [
+    {
+     "date": "Q1 2024",
+     "description": "Initial release with core features",
+     "title": "MVP Release",
+     "titleUrl": "https://example.com/mvp"
+    },
+    {
+     "date": "Q2 2024",
+     "description": "Optimize response times",
+     "title": "Performance Improvements"
+    }
+   ],
+   "name": "eni-test-api",
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   }
+  }
+ ]
+}
+---
+
+[Roadmap Controller GetAll ApiRoadmaps resource should return an empty list if no ApiRoadmaps exist - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apiroadmaps?cursor="
+ },
+ "items": []
+}
+---
+
+[Roadmap Controller Delete ApiRoadmap resource should fail to delete a non-existent ApiRoadmap - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+
+[Roadmap Controller Update ApiRoadmap resource should update the ApiRoadmap successfully - 1]
+{
+ "basePath": "/eni/test-api/v1",
+ "id": "eni--hyperion--eni-test-api",
+ "items": [
+  {
+   "date": "Q1 2024",
+   "description": "Initial release with core features",
+   "title": "MVP Release",
+   "titleUrl": "https://example.com/mvp"
+  },
+  {
+   "date": "Q2 2024",
+   "description": "Optimize response times",
+   "title": "Performance Improvements"
+  }
+ ],
+ "name": "eni-test-api",
+ "status": {
+  "processingState": "none",
+  "state": "none",
+  "warnings": [
+   {
+    "message": "Processing condition not found"
+   }
+  ]
+ }
+}
+---
+
+[Roadmap Controller Get ApiRoadmap resource should fail to get an ApiRoadmap from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Roadmap Controller Update ApiRoadmap resource should fail to update an ApiRoadmap from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Roadmap Controller Delete ApiRoadmap resource should fail to delete an ApiRoadmap from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Roadmap Controller GetStatus ApiRoadmap resource should return the status of the ApiRoadmap successfully - 1]
+{
+ "overallStatus": "complete",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[Roadmap Controller GetStatus ApiRoadmap resource should fail to get the status of a non-existent ApiRoadmap - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Roadmap Controller GetStatus ApiRoadmap resource should fail to get the status of an ApiRoadmap from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---

@@ -140,6 +140,13 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
+	err = (&RoadmapReconciler{
+		Client:   k8sManager.GetClient(),
+		Scheme:   k8sManager.GetScheme(),
+		Recorder: &mock.EventRecorder{},
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
 	// Mock SecretManager
 	secretManagerMock = secretsapifake.NewMockSecretManager(GinkgoT())
 	secretsapi.API = func() secretsapi.SecretManager {

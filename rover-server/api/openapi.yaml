@@ -43,6 +43,8 @@ tags:
     description: Manage EventSpecifications
   - name: Rover
     description: Manage Rovers
+  - name: ApiRoadmap
+    description: Manage ApiRoadmaps
 paths:
   /rovers:
     get:
@@ -999,6 +1001,219 @@ paths:
             - tardis:user:all
             - tardis:user:read
             - tardis:user:obfuscated
+  /apiroadmaps:
+    get:
+      tags:
+        - ApiRoadmap
+      summary: Find all ApiRoadmaps
+      description: Find all ApiRoadmaps of a Team
+      operationId: getAllApiRoadmaps
+      parameters:
+        - name: cursor
+          in: query
+          description: cursor for pagination
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiRoadmapListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:team:all
+            - tardis:team:read
+    post:
+      tags:
+        - ApiRoadmap
+      summary: Create an ApiRoadmap
+      description: Create an ApiRoadmap resource
+      operationId: createApiRoadmap
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiRoadmapCreateRequest'
+      responses:
+        '202':
+          description: ACCEPTED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiRoadmapResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+  /apiroadmaps/{apiRoadmapId}:
+    get:
+      tags:
+        - ApiRoadmap
+      summary: Find an existing ApiRoadmap
+      description: Find an existing ApiRoadmap
+      operationId: getApiRoadmap
+      parameters:
+        - $ref: '#/components/parameters/ApiRoadmapId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiRoadmapResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:team:all
+            - tardis:team:read
+    put:
+      tags:
+        - ApiRoadmap
+      summary: Update an existing ApiRoadmap
+      description: Update an existing ApiRoadmap
+      operationId: updateApiRoadmap
+      parameters:
+        - $ref: '#/components/parameters/ApiRoadmapId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiRoadmapUpdateRequest'
+      responses:
+        '202':
+          description: ACCEPTED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiRoadmapResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+    delete:
+      tags:
+        - ApiRoadmap
+      summary: Delete an ApiRoadmap
+      description: Delete an ApiRoadmap
+      operationId: deleteApiRoadmap
+      parameters:
+        - $ref: '#/components/parameters/ApiRoadmapId'
+      responses:
+        '204':
+          description: DELETED
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+  /apiroadmaps/{apiRoadmapId}/status:
+    get:
+      tags:
+        - ApiRoadmap
+      summary: Find an existing ApiRoadmap and return its status
+      description: Find an existing ApiRoadmap and return its status
+      operationId: getApiRoadmapStatus
+      parameters:
+        - $ref: '#/components/parameters/ApiRoadmapId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceStatusResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:team:all
+            - tardis:team:read
 components:
   securitySchemes:
     OAuth2:
@@ -1032,6 +1247,13 @@ components:
     ApiSpecificationId:
       name: apiSpecificationId
       description: The unique id of this resource following the pattern group--team--resourceName
+      in: path
+      required: true
+      schema:
+        type: string
+    ApiRoadmapId:
+      name: apiRoadmapId
+      description: The unique id of this resource following the pattern group--team--basePath
       in: path
       required: true
       schema:
@@ -1565,7 +1787,7 @@ components:
         - state
         - processingState
         - overallStatus
-      types: object
+      type: object
       properties:
         createdAt:
           type: string
@@ -2069,6 +2291,89 @@ components:
                 This field is only used for hub-scoped access to control the
                 target team of the resource. For everything else, it can be
                 ignored
+    ApiRoadmap:
+      type: object
+      required:
+        - basePath
+        - items
+      properties:
+        basePath:
+          description: The API basePath
+          type: string
+          example: /eni/test-api/v1
+        items:
+          description: List of roadmap timeline entries
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ApiRoadmapItem'
+    ApiRoadmapItem:
+      type: object
+      required:
+        - date
+        - title
+        - description
+      properties:
+        date:
+          description: Timeline date or period
+          type: string
+          example: Q1 2024
+        title:
+          description: Milestone title
+          type: string
+          example: MVP Release
+        description:
+          description: Detailed description of the milestone
+          type: string
+          example: Initial release with core features
+        titleUrl:
+          description: Optional URL for more information
+          type: string
+          format: uri
+          example: https://example.com/mvp
+    ApiRoadmapCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/ApiRoadmap'
+        - type: object
+          properties:
+            team:
+              type: string
+              example: hyperion
+              description: >-
+                This field is only used for hub-scoped access to control the
+                target team of the resource. For everything else, it can be
+                ignored
+    ApiRoadmapUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/ApiRoadmap'
+    ApiRoadmapResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiRoadmap'
+        - type: object
+          properties:
+            id:
+              description: Unique id of this resource
+              type: string
+              readOnly: true
+              example: my-hub--my-team--my-roadmap
+            name:
+              description: Name of the roadmap
+              type: string
+              readOnly: true
+              example: my-roadmap
+            status:
+              $ref: '#/components/schemas/Status'
+    ApiRoadmapListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        _links:
+          $ref: '#/components/schemas/Links'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiRoadmapResponse'
     Failover:
       type: object
       required:
