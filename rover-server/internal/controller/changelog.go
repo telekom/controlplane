@@ -10,11 +10,12 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
-	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
@@ -123,13 +124,13 @@ func (c *ApiChangelogController) Get(ctx context.Context, resourceId string) (ap
 	// Download items from file-manager
 	reader, err := c.downloadFile(ctx, changelog.Spec.Contents)
 	if err != nil {
-		return res, errors.Wrap(err, "failed to download changelog items from file-manager")
+		return res, fmt.Errorf("failed to download changelog items from file-manager: %w", err)
 	}
 
 	var items []api.ApiChangelogItem
 	err = json.NewDecoder(reader).Decode(&items)
 	if err != nil {
-		return res, errors.Wrap(err, "failed to decode changelog items")
+		return res, fmt.Errorf("failed to decode changelog items: %w", err)
 	}
 
 	return out.MapResponse(changelog, items), nil
