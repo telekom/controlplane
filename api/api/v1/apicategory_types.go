@@ -22,6 +22,8 @@ const (
 	LintingModeBlock LintingMode = "block"
 	// LintingModeWarn allows Api creation but surfaces linting issues in status.
 	LintingModeWarn LintingMode = "warn"
+	// LintingModeNone indicates that no linting is configured for this category.
+	LintingModeNone LintingMode = "none"
 )
 
 // LintingConfig configures OAS specification linting for APIs in this category.

@@ -97,6 +97,11 @@ spec:
                       Mode controls how linting failures affect API creation.
                       "block" (default) prevents Api creation on failure; "warn" allows it but surfaces issues.
                     type: string
+                  ruleset:
+                    description: |-
+                      Ruleset is the name of the linter ruleset to apply.
+                      If set, it is passed as a query parameter to the linter API.
+                    type: string
                   url:
                     description: |-
                       URL is the base URL of the external linter service.
