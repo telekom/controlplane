@@ -58,11 +58,13 @@ type ApiRoadmapController interface {
 	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
 }
 
-type ChangelogController interface {
-	Get(ctx context.Context, resourceId string) (api.ChangelogResponse, error)
-	GetAll(ctx context.Context, params api.GetAllChangelogsParams) (*api.ChangelogListResponse, error)
-	Update(ctx context.Context, resourceId string, req api.ChangelogRequest) (api.ChangelogResponse, error)
+type ApiChangelogController interface {
+	Create(ctx context.Context, req api.ApiChangelogCreateRequest) (api.ApiChangelogResponse, error)
+	Get(ctx context.Context, resourceId string) (api.ApiChangelogResponse, error)
+	GetAll(ctx context.Context, params api.GetAllApiChangelogsParams) (*api.ApiChangelogListResponse, error)
+	Update(ctx context.Context, resourceId string, req api.ApiChangelogUpdateRequest) (api.ApiChangelogResponse, error)
 	Delete(ctx context.Context, resourceId string) error
+	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
 }
 
 var securityTemplates = map[security.ClientType]security.ComparisonTemplates{
@@ -90,7 +92,7 @@ type Server struct {
 	Rovers              RoverController
 	Roadmaps            ApiRoadmapController
 	EventSpecifications EventSpecificationController
-	Changelogs          ChangelogController
+	ApiChangelogs       ApiChangelogController
 }
 
 func (s *Server) RegisterRoutes(router fiber.Router) {
@@ -175,11 +177,14 @@ func (s *Server) RegisterRoutes(router fiber.Router) {
 	router.Put("/apiroadmaps/:resourceId", checkAccess, s.UpdateApiRoadmap)
 	router.Delete("/apiroadmaps/:resourceId", checkAccess, s.DeleteApiRoadmap)
 
-	s.Log.Info("Registering changelogs routes")
+	s.Log.Info("Registering apichangelogs routes")
 
-	router.Get("/changelogs", checkAccess, s.GetAllChangelogs)
-	router.Get("/changelogs/:resourceId", checkAccess, s.GetChangelog)
-	router.Put("/changelogs/:resourceId", checkAccess, s.UpdateChangelog)
-	router.Delete("/changelogs/:resourceId", checkAccess, s.DeleteChangelog)
+	router.Get("/apichangelogs", checkAccess, s.GetAllApiChangelogs)
+	router.Post("/apichangelogs", checkAccess, s.CreateApiChangelog)
+	router.Get("/apichangelogs/:resourceId/status", checkAccess, s.GetApiChangelogStatus)
+
+	router.Get("/apichangelogs/:resourceId", checkAccess, s.GetApiChangelog)
+	router.Put("/apichangelogs/:resourceId", checkAccess, s.UpdateApiChangelog)
+	router.Delete("/apichangelogs/:resourceId", checkAccess, s.DeleteApiChangelog)
 
 }

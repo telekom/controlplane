@@ -55,7 +55,7 @@ func main() {
 		Rovers:              controller.NewRoverController(stores),
 		Roadmaps:            controller.NewRoadmapController(stores),
 		EventSpecifications: controller.NewEventSpecificationController(stores),
-		Changelogs:          controller.NewChangelogController(stores),
+		ApiChangelogs:       controller.NewApiChangelogController(stores),
 	}
 
 	s.RegisterRoutes(app)

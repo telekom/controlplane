@@ -209,11 +209,11 @@ func main() {
 		}
 	}
 
-	if err = (&controller.ChangelogReconciler{
+	if err = (&controller.ApiChangelogReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Changelog")
+		setupLog.Error(err, "unable to create controller", "controller", "ApiChangelog")
 		os.Exit(1)
 	}
 
@@ -232,8 +232,8 @@ func main() {
 	}
 	// nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err := webhookv1.SetupChangelogWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "Changelog")
+		if err := webhookv1.SetupApiChangelogWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "ApiChangelog")
 			os.Exit(1)
 		}
 	}

@@ -1428,3 +1428,208 @@
  "resourceType": "API"
 }
 ---
+
+[ApiChangelog Controller Get ApiChangelog resource should return the ApiChangelog successfully - 1]
+{
+ "basePath": "/eni/test/api/v1",
+ "id": "eni--hyperion--eni-test-api",
+ "items": [
+  {
+   "date": "2024-03-15",
+   "description": "Security fixes and performance improvements",
+   "version": "1.2.3"
+  },
+  {
+   "date": "2024-01-10",
+   "description": "Initial release",
+   "version": "1.0.0",
+   "versionUrl": "https://example.com/releases/v1.0.0"
+  }
+ ],
+ "name": "eni-test-api",
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ }
+}
+---
+
+[ApiChangelog Controller Get ApiChangelog resource should fail to get a non-existent ApiChangelog - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[ApiChangelog Controller Get ApiChangelog resource should fail to get an ApiChangelog from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[ApiChangelog Controller GetAll ApiChangelogs resource should return all ApiChangelogs successfully - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apichangelogs?cursor="
+ },
+ "items": [
+  {
+   "basePath": "/eni/test/api/v1",
+   "id": "eni--hyperion--eni-test-api",
+   "items": [
+    {
+     "date": "2024-03-15",
+     "description": "Security fixes and performance improvements",
+     "version": "1.2.3"
+    },
+    {
+     "date": "2024-01-10",
+     "description": "Initial release",
+     "version": "1.0.0",
+     "versionUrl": "https://example.com/releases/v1.0.0"
+    }
+   ],
+   "name": "eni-test-api",
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   }
+  }
+ ]
+}
+---
+
+[ApiChangelog Controller GetAll ApiChangelogs resource should return an empty list if no ApiChangelogs exist - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apichangelogs?cursor="
+ }
+}
+---
+
+[ApiChangelog Controller Update ApiChangelog resource should update the ApiChangelog successfully - 1]
+{
+ "basePath": "eni-test-api-v1",
+ "id": "eni--hyperion--eni-test-api",
+ "items": [
+  {
+   "date": "2024-03-15",
+   "description": "Security fixes and performance improvements",
+   "version": "1.2.3"
+  },
+  {
+   "date": "2024-01-10",
+   "description": "Initial release",
+   "version": "1.0.0",
+   "versionUrl": "https://example.com/releases/v1.0.0"
+  }
+ ],
+ "name": "eni-test-api",
+ "status": {
+  "processingState": "none",
+  "state": "none",
+  "warnings": [
+   {
+    "message": "Processing condition not found"
+   }
+  ]
+ }
+}
+---
+
+[ApiChangelog Controller Update ApiChangelog resource should fail to update an ApiChangelog from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[ApiChangelog Controller Update ApiChangelog resource should reject empty basePath - 1]
+{
+ "detail": "basePath must not be empty",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[ApiChangelog Controller Update ApiChangelog resource should reject empty items array - 1]
+{
+ "detail": "multiple errors encountered: Error at \"/items\": minimum number of items is 1\nSchema:\n  {\n    \"description\": \"List of changelog version entries\",\n    \"items\": {\n      \"$ref\": \"#/components/schemas/ApiChangelogItem\"\n    },\n    \"minItems\": 1,\n    \"type\": \"array\"\n  }\n\nValue:\n  []\n",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[ApiChangelog Controller Update ApiChangelog resource should reject mismatched basePath and resourceId - 1]
+{
+ "detail": "basePath /eni/different-api/v1 does not match resource ID eni--hyperion--eni-test-api",
+ "instance": "",
+ "status": 400,
+ "title": "Bad Request",
+ "type": "BadRequest"
+}
+---
+
+[ApiChangelog Controller Delete ApiChangelog resource should fail to delete a non-existent ApiChangelog - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[ApiChangelog Controller Delete ApiChangelog resource should fail to delete an ApiChangelog from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[ApiChangelog Controller GetStatus ApiChangelog resource should return the status of the ApiChangelog successfully - 1]
+{
+ "overallStatus": "complete",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[ApiChangelog Controller GetStatus ApiChangelog resource should fail to get the status of a non-existent ApiChangelog - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[ApiChangelog Controller GetStatus ApiChangelog resource should fail to get the status of an ApiChangelog from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---

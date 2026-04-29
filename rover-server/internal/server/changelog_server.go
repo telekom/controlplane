@@ -14,12 +14,12 @@ import (
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
 
-func (s *Server) GetAllChangelogs(c *fiber.Ctx) error {
-	var params api.GetAllChangelogsParams
+func (s *Server) GetAllApiChangelogs(c *fiber.Ctx) error {
+	var params api.GetAllApiChangelogsParams
 	if err := c.QueryParser(&params); err != nil {
 		return server.ReturnWithProblem(c, problems.BadRequest("invalid query parameters"), err)
 	}
-	res, err := s.Changelogs.GetAll(c.UserContext(), params)
+	res, err := s.ApiChangelogs.GetAll(c.UserContext(), params)
 	if err != nil {
 		return server.ReturnWithProblem(c, nil, err)
 	}
@@ -32,9 +32,9 @@ func (s *Server) GetAllChangelogs(c *fiber.Ctx) error {
 	return c.JSON(res)
 }
 
-func (s *Server) GetChangelog(c *fiber.Ctx) error {
+func (s *Server) GetApiChangelog(c *fiber.Ctx) error {
 	resourceId := c.Params("resourceId")
-	res, err := s.Changelogs.Get(c.UserContext(), resourceId)
+	res, err := s.ApiChangelogs.Get(c.UserContext(), resourceId)
 	if err != nil {
 		return server.ReturnWithProblem(c, nil, err)
 	}
@@ -42,26 +42,50 @@ func (s *Server) GetChangelog(c *fiber.Ctx) error {
 	return c.JSON(res)
 }
 
-func (s *Server) UpdateChangelog(c *fiber.Ctx) error {
-	resourceId := c.Params("resourceId")
-	var req api.ChangelogRequest
+func (s *Server) CreateApiChangelog(c *fiber.Ctx) error {
+	var req api.ApiChangelogCreateRequest
 	if err := c.BodyParser(&req); err != nil {
 		return server.ReturnWithProblem(c, problems.BadRequest("invalid request body"), err)
 	}
 
-	res, err := s.Changelogs.Update(c.UserContext(), resourceId, req)
+	res, err := s.ApiChangelogs.Create(c.UserContext(), req)
 	if err != nil {
 		return server.ReturnWithProblem(c, nil, err)
 	}
 
-	return c.Status(http.StatusOK).JSON(res)
+	return c.Status(http.StatusAccepted).JSON(res)
 }
 
-func (s *Server) DeleteChangelog(c *fiber.Ctx) error {
+func (s *Server) UpdateApiChangelog(c *fiber.Ctx) error {
 	resourceId := c.Params("resourceId")
-	if err := s.Changelogs.Delete(c.UserContext(), resourceId); err != nil {
+	var req api.ApiChangelogUpdateRequest
+	if err := c.BodyParser(&req); err != nil {
+		return server.ReturnWithProblem(c, problems.BadRequest("invalid request body"), err)
+	}
+
+	res, err := s.ApiChangelogs.Update(c.UserContext(), resourceId, req)
+	if err != nil {
+		return server.ReturnWithProblem(c, nil, err)
+	}
+
+	return c.Status(http.StatusAccepted).JSON(res)
+}
+
+func (s *Server) DeleteApiChangelog(c *fiber.Ctx) error {
+	resourceId := c.Params("resourceId")
+	if err := s.ApiChangelogs.Delete(c.UserContext(), resourceId); err != nil {
 		return server.ReturnWithProblem(c, nil, err)
 	}
 
 	return c.SendStatus(http.StatusNoContent)
+}
+
+func (s *Server) GetApiChangelogStatus(c *fiber.Ctx) error {
+	resourceId := c.Params("resourceId")
+	res, err := s.ApiChangelogs.GetStatus(c.UserContext(), resourceId)
+	if err != nil {
+		return server.ReturnWithProblem(c, nil, err)
+	}
+
+	return c.JSON(res)
 }

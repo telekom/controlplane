@@ -39,6 +39,26 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /validate-rover-cp-ei-telekom-de-v1-apichangelog
+  failurePolicy: Fail
+  name: vapichangelog-v1.kb.io
+  rules:
+  - apiGroups:
+    - rover.cp.ei.telekom.de
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - apichangelogs
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /validate-rover-cp-ei-telekom-de-v1-apispecification
   failurePolicy: Fail
   name: vapispecification-v1.kb.io
@@ -52,26 +72,6 @@ webhooks:
     - UPDATE
     resources:
     - apispecifications
-  sideEffects: None
-- admissionReviewVersions:
-  - v1
-  clientConfig:
-    service:
-      name: webhook-service
-      namespace: system
-      path: /validate-rover-cp-ei-telekom-de-v1-changelog
-  failurePolicy: Fail
-  name: vchangelog-v1.kb.io
-  rules:
-  - apiGroups:
-    - rover.cp.ei.telekom.de
-    apiVersions:
-    - v1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - changelogs
   sideEffects: None
 - admissionReviewVersions:
   - v1

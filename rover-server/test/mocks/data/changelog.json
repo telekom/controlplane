@@ -1,14 +1,21 @@
 {
   "apiVersion": "rover.cp.ei.telekom.de/v1",
-  "kind": "Changelog",
+  "kind": "ApiChangelog",
   "metadata": {
-    "name": "eni-test-api-v1",
-    "namespace": "poc--eni--hyperion"
+    "name": "eni-test-api",
+    "namespace": "poc--eni--hyperion",
+    "annotations": {
+      "rover.cp.ei.telekom.de/basePath": "/eni/test-api/v1"
+    }
   },
   "spec": {
-    "resourceName": "/eni/test-api/v1",
-    "resourceType": "API",
-    "changelog": "poc--eni--hyperion--eni-test-api-v1",
+    "specificationRef": {
+      "kind": "ApiSpecification",
+      "apiVersion": "rover.cp.ei.telekom.de/v1",
+      "name": "eni-test-api-v1",
+      "namespace": "poc--eni--hyperion"
+    },
+    "contents": "poc--eni--hyperion--eni-test-api",
     "hash": "changelogRandomHash"
   },
   "status": {
@@ -17,13 +24,13 @@
         "type": "Ready",
         "status": "True",
         "reason": "Ready",
-        "message": "Changelog is ready"
+        "message": "ApiChangelog is ready"
       },
       {
         "type": "Processing",
         "status": "False",
         "reason": "Done",
-        "message": "Changelog processed"
+        "message": "ApiChangelog processed"
       }
     ]
   }

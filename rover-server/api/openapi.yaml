@@ -1216,31 +1216,27 @@ paths:
             - tardis:hub:read
             - tardis:team:all
             - tardis:team:read
-  /changelogs:
+  /apichangelogs:
     get:
       tags:
-        - Changelog
-      summary: Find all Changelogs
-      description: Find all Changelogs of a Team
-      operationId: getAllChangelogs
+        - ApiChangelog
+      summary: Find all ApiChangelogs
+      description: Find all ApiChangelogs of a Team
+      operationId: getAllApiChangelogs
       parameters:
-        - $ref: '#/components/parameters/Cursor'
-        - name: resourceType
+        - name: cursor
           in: query
-          description: Filter changelogs by resource type
+          description: cursor for pagination
           required: false
           schema:
             type: string
-            enum:
-              - API
-              - Event
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChangelogListResponse'
+                $ref: '#/components/schemas/ApiChangelogListResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1257,91 +1253,28 @@ paths:
         - OAuth2:
             - tardis:admin:all
             - tardis:admin:read
-            - tardis:admin:obfuscated
-            - tardis:supervisor:read
             - tardis:hub:all
             - tardis:hub:read
-            - tardis:hub:obfuscated
             - tardis:team:all
             - tardis:team:read
-            - tardis:team:obfuscated
-            - tardis:user:all
-            - tardis:user:read
-            - tardis:user:obfuscated
-  /changelogs/{changelogId}:
-    get:
+    post:
       tags:
-        - Changelog
-      summary: Find an existing Changelog
-      description: Find an existing Changelog
-      operationId: getChangelog
-      parameters:
-        - name: changelogId
-          description: The unique id of this resource
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChangelogResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '415':
-          $ref: '#/components/responses/UnsupportedMediaType'
-        '500':
-          $ref: '#/components/responses/ServerError'
-      security:
-        - OAuth2:
-            - tardis:admin:all
-            - tardis:admin:read
-            - tardis:admin:obfuscated
-            - tardis:supervisor:read
-            - tardis:hub:all
-            - tardis:hub:read
-            - tardis:hub:obfuscated
-            - tardis:team:all
-            - tardis:team:read
-            - tardis:team:obfuscated
-            - tardis:user:all
-            - tardis:user:read
-            - tardis:user:obfuscated
-    put:
-      tags:
-        - Changelog
-      summary: Create or update a Changelog
-      description: >-
-        Create or update a Changelog using declarative PUT.
-      operationId: updateChangelog
-      parameters:
-        - name: changelogId
-          description: The unique id of this resource
-          in: path
-          required: true
-          schema:
-            type: string
+        - ApiChangelog
+      summary: Create a new ApiChangelog
+      description: Create a new ApiChangelog
+      operationId: createApiChangelog
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChangelogRequest'
+              $ref: '#/components/schemas/ApiChangelogCreateRequest'
       responses:
-        '200':
-          description: OK
+        '202':
+          description: ACCEPTED
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChangelogResponse'
+                $ref: '#/components/schemas/ApiChangelogResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1359,20 +1292,88 @@ paths:
             - tardis:admin:all
             - tardis:hub:all
             - tardis:team:all
-            - tardis:user:all
+  /apichangelogs/{apiChangelogId}:
+    get:
+      tags:
+        - ApiChangelog
+      summary: Find an existing ApiChangelog
+      description: Find an existing ApiChangelog
+      operationId: getApiChangelog
+      parameters:
+        - $ref: '#/components/parameters/ApiChangelogId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiChangelogResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:team:all
+            - tardis:team:read
+    put:
+      tags:
+        - ApiChangelog
+      summary: Create or update an ApiChangelog
+      description: >-
+        Create or update an ApiChangelog using declarative PUT.
+      operationId: updateApiChangelog
+      parameters:
+        - $ref: '#/components/parameters/ApiChangelogId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiChangelogUpdateRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiChangelogResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
     delete:
       tags:
-        - Changelog
-      summary: Delete a Changelog
-      description: Delete a Changelog
-      operationId: deleteChangelog
+        - ApiChangelog
+      summary: Delete an ApiChangelog
+      description: Delete an ApiChangelog
+      operationId: deleteApiChangelog
       parameters:
-        - name: changelogId
-          description: The unique id of this resource
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/ApiChangelogId'
       responses:
         '204':
           description: DELETED
@@ -1393,7 +1394,42 @@ paths:
             - tardis:admin:all
             - tardis:hub:all
             - tardis:team:all
-            - tardis:user:all
+  /apichangelogs/{apiChangelogId}/status:
+    get:
+      tags:
+        - ApiChangelog
+      summary: Find an existing ApiChangelog and return its status
+      description: Find an existing ApiChangelog and return its status
+      operationId: getApiChangelogStatus
+      parameters:
+        - $ref: '#/components/parameters/ApiChangelogId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceStatusResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:admin:read
+            - tardis:hub:all
+            - tardis:hub:read
+            - tardis:team:all
+            - tardis:team:read
 components:
   securitySchemes:
     OAuth2:
@@ -1433,6 +1469,13 @@ components:
         type: string
     ApiRoadmapId:
       name: apiRoadmapId
+      description: The unique id of this resource following the pattern group--team--basePath
+      in: path
+      required: true
+      schema:
+        type: string
+    ApiChangelogId:
+      name: apiChangelogId
       description: The unique id of this resource following the pattern group--team--basePath
       in: path
       required: true
@@ -2554,31 +2597,23 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ApiRoadmapResponse'
-    Changelog:
+    ApiChangelog:
       type: object
       required:
-        - resourceName
-        - resourceType
+        - basePath
         - items
       properties:
-        resourceName:
-          description: The resource identifier (API basePath or Event type name)
+        basePath:
+          description: The API basePath
           type: string
           example: /eni/test-api/v1
-        resourceType:
-          description: The type of resource this changelog is for
-          type: string
-          enum:
-            - API
-            - Event
-          example: API
         items:
           description: List of changelog version entries
           type: array
           minItems: 1
           items:
-            $ref: '#/components/schemas/ChangelogItem'
-    ChangelogItem:
+            $ref: '#/components/schemas/ApiChangelogItem'
+    ApiChangelogItem:
       type: object
       required:
         - date
@@ -2586,9 +2621,8 @@ components:
         - description
       properties:
         date:
-          description: Release date in yyyy-MM-dd format
+          description: Release date or period
           type: string
-          format: date
           example: "2024-03-15"
         version:
           description: Semantic version number
@@ -2604,18 +2638,25 @@ components:
           type: string
           format: uri
           example: https://example.com/releases/v1.2.3
-    ChangelogRequest:
+    ApiChangelogCreateRequest:
       allOf:
-        - $ref: '#/components/schemas/Changelog'
-    ChangelogResponse:
+        - $ref: '#/components/schemas/ApiChangelog'
+        - type: object
+          properties:
+            team:
+              description: This field is only used for hub-scoped access to control the target team of the resource. For everything else, it can be ignored
+              type: string
+    ApiChangelogUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/ApiChangelog'
+    ApiChangelogResponse:
       required:
         - id
         - name
-        - resourceName
-        - resourceType
+        - basePath
         - items
       allOf:
-        - $ref: '#/components/schemas/Changelog'
+        - $ref: '#/components/schemas/ApiChangelog'
         - type: object
           properties:
             id:
@@ -2628,7 +2669,10 @@ components:
               description: Name of the changelog
               type: string
               example: api-name
-    ChangelogListResponse:
+            status:
+              readOnly: true
+              $ref: '#/components/schemas/Status'
+    ApiChangelogListResponse:
       type: object
       properties:
         _links:
@@ -2636,7 +2680,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/ChangelogResponse'
+            $ref: '#/components/schemas/ApiChangelogResponse'
     Failover:
       type: object
       required:

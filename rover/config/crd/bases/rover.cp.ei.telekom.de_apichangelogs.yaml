@@ -7,19 +7,23 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.20.1
-  name: changelogs.rover.cp.ei.telekom.de
+  name: apichangelogs.rover.cp.ei.telekom.de
 spec:
   group: rover.cp.ei.telekom.de
   names:
-    kind: Changelog
-    listKind: ChangelogList
-    plural: changelogs
-    singular: changelog
+    kind: ApiChangelog
+    listKind: ApiChangelogList
+    plural: apichangelogs
+    singular: apichangelog
   scope: Namespaced
   versions:
   - name: v1
     schema:
       openAPIV3Schema:
+        description: |-
+          ApiChangelog is the Schema for the apichangelogs API
+          The ApiChangelog name is the normalized basePath with major version removed
+          Example: basePath "/eni/my-api/v1" → changelog name "eni-my-api"
         properties:
           apiVersion:
             description: |-
@@ -39,32 +43,63 @@ spec:
           metadata:
             type: object
           spec:
+            description: ApiChangelogSpec defines the desired state of ApiChangelog
             properties:
-              changelog:
-                description: File ID reference in file-manager
+              contents:
+                description: |-
+                  Contents contains the file ID reference from the file manager
+                  The actual changelog items array is stored in file-manager as JSON
                 type: string
               hash:
+                description: Hash is the SHA-256 hash of the changelog content for
+                  integrity verification
                 type: string
-              resourceName:
-                maxLength: 253
-                minLength: 1
-                type: string
-              resourceType:
-                allOf:
-                - enum:
-                  - API
-                  - Event
-                - enum:
-                  - API
-                  - Event
-                type: string
+              specificationRef:
+                description: |-
+                  SpecificationRef is a reference to the ApiSpecification this changelog describes
+                  The referenced specification may or may not exist yet
+                properties:
+                  apiVersion:
+                    description: |-
+                      APIVersion defines the versioned schema of this representation of an object.
+                      Servers should convert recognized schemas to the latest internal value, and
+                      may reject unrecognized values.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+                    type: string
+                  kind:
+                    description: |-
+                      Kind is a string value representing the REST resource this object represents.
+                      Servers may infer this from the endpoint the client submits requests to.
+                      Cannot be updated.
+                      In CamelCase.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                    type: string
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  uid:
+                    description: |-
+                      UID is a type that holds unique ID values, including UUIDs.  Because we
+                      don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                      intent and helps make sure that UIDs and names do not get conflated.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
             required:
-            - changelog
+            - contents
             - hash
-            - resourceName
-            - resourceType
+            - specificationRef
             type: object
+            x-kubernetes-validations:
+            - message: contents must not be empty
+              rule: self.contents != ''
+            - message: hash must not be empty
+              rule: self.hash != ''
           status:
+            description: ApiChangelogStatus defines the observed state of ApiChangelog
             properties:
               conditions:
                 items:
