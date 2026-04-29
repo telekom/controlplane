@@ -147,7 +147,7 @@ func sendSingleExpiringNotification(ctx context.Context, app *application.Applic
 		"environment":      env,
 		"currentExpiresAt": app.Status.CurrentExpiresAt.Format(time.RFC3339),
 		"thresholdBefore":  thresholdKey,
-		"timeUntilExpiry":  timeUntilExpiry.String(),
+		"timeUntilExpiry":  formatTimeUntilExpiry(timeUntilExpiry),
 		"sentAt":           now.Format(time.RFC3339),
 	}
 
@@ -165,4 +165,11 @@ func sendSingleExpiringNotification(ctx context.Context, app *application.Applic
 	}
 
 	return types.ObjectRefFromObject(notification), nil
+}
+
+func formatTimeUntilExpiry(d time.Duration) string {
+	if d < 0 {
+		return "expired"
+	}
+	return d.String()
 }
