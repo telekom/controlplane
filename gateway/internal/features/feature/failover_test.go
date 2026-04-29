@@ -7,8 +7,8 @@ package feature_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	testifymock "github.com/stretchr/testify/mock"
+
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
@@ -17,7 +17,9 @@ import (
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
-	"go.uber.org/mock/gomock"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Failover", func() {
@@ -26,12 +28,11 @@ var _ = Describe("Failover", func() {
 	})
 
 	Context("Correctly configure failover", func() {
-
 		var ctx context.Context
-		var mockCtrl *gomock.Controller
+		mockCtrl := GinkgoT()
 
 		BeforeEach(func() {
-			mockCtrl = gomock.NewController(GinkgoT())
+			mockCtrl = GinkgoT()
 			ctx = context.Background()
 			ctx = contextutil.WithEnv(ctx, "test")
 		})
@@ -82,7 +83,7 @@ var _ = Describe("Failover", func() {
 				Expect(upstream.GetPath()).To(Equal("/proxy"))
 				return nil
 			}
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, gomock.Any(), gomock.Any()).DoAndReturn(mockCreateOrReplaceRoute).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, testifymock.Anything, testifymock.Anything).RunAndReturn(mockCreateOrReplaceRoute).Times(1)
 
 			mockCreateOrReplacePlugin := func(ctx context.Context, customPlugin client.CustomPlugin) (kongPlugin *kong.Plugin, err error) {
 				switch p := customPlugin.(type) {
@@ -112,9 +113,9 @@ var _ = Describe("Failover", func() {
 
 				return nil, nil
 			}
-			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).DoAndReturn(mockCreateOrReplacePlugin).Times(1)
+			mockKc.EXPECT().CreateOrReplacePlugin(ctx, testifymock.Anything).RunAndReturn(mockCreateOrReplacePlugin).Times(1)
 
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, testifymock.Anything, testifymock.Anything, testifymock.Anything).Return(nil).Times(1)
 
 			builder := features.NewFeatureBuilder(mockKc, route, nil, realm, gateway)
 			builder.EnableFeature(feature.InstanceFailoverFeature)
@@ -125,12 +126,11 @@ var _ = Describe("Failover", func() {
 	})
 
 	Context("Correctly configure failover with loadbalancing", func() {
-
 		var ctx context.Context
-		var mockCtrl *gomock.Controller
+		mockCtrl := GinkgoT()
 
 		BeforeEach(func() {
-			mockCtrl = gomock.NewController(GinkgoT())
+			mockCtrl = GinkgoT()
 			ctx = context.Background()
 			ctx = contextutil.WithEnv(ctx, "test")
 		})
@@ -193,7 +193,7 @@ var _ = Describe("Failover", func() {
 				Expect(upstream.GetPath()).To(Equal("/proxy"))
 				return nil
 			}
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, gomock.Any(), gomock.Any()).DoAndReturn(mockCreateOrReplaceRoute).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, testifymock.Anything, testifymock.Anything).RunAndReturn(mockCreateOrReplaceRoute).Times(1)
 
 			mockCreateOrReplacePlugin := func(ctx context.Context, customPlugin client.CustomPlugin) (kongPlugin *kong.Plugin, err error) {
 				switch p := customPlugin.(type) {
@@ -229,9 +229,9 @@ var _ = Describe("Failover", func() {
 
 				return nil, nil
 			}
-			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).DoAndReturn(mockCreateOrReplacePlugin).Times(1)
+			mockKc.EXPECT().CreateOrReplacePlugin(ctx, testifymock.Anything).RunAndReturn(mockCreateOrReplacePlugin).Times(1)
 
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, testifymock.Anything, testifymock.Anything, testifymock.Anything).Return(nil).Times(1)
 
 			builder := features.NewFeatureBuilder(mockKc, route, nil, realm, gateway)
 			builder.EnableFeature(feature.InstanceFailoverFeature)
@@ -242,12 +242,11 @@ var _ = Describe("Failover", func() {
 	})
 
 	Context("Correctly configure failover as proxy-route", func() {
-
 		var ctx context.Context
-		var mockCtrl *gomock.Controller
+		mockCtrl := GinkgoT()
 
 		BeforeEach(func() {
-			mockCtrl = gomock.NewController(GinkgoT())
+			mockCtrl = GinkgoT()
 			ctx = context.Background()
 			ctx = contextutil.WithEnv(ctx, "test")
 		})
@@ -303,7 +302,7 @@ var _ = Describe("Failover", func() {
 				Expect(upstream.GetPath()).To(Equal("/proxy"))
 				return nil
 			}
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, gomock.Any(), gomock.Any()).DoAndReturn(mockCreateOrReplaceRoute).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, testifymock.Anything, testifymock.Anything).RunAndReturn(mockCreateOrReplaceRoute).Times(1)
 
 			mockCreateOrReplacePlugin := func(ctx context.Context, customPlugin client.CustomPlugin) (kongPlugin *kong.Plugin, err error) {
 				switch p := customPlugin.(type) {
@@ -333,9 +332,9 @@ var _ = Describe("Failover", func() {
 
 				return nil, nil
 			}
-			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).DoAndReturn(mockCreateOrReplacePlugin).Times(1)
+			mockKc.EXPECT().CreateOrReplacePlugin(ctx, testifymock.Anything).RunAndReturn(mockCreateOrReplacePlugin).Times(1)
 
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, testifymock.Anything, testifymock.Anything, testifymock.Anything).Return(nil).Times(1)
 
 			builder := features.NewFeatureBuilder(mockKc, route, nil, realm, gateway)
 			builder.EnableFeature(feature.InstanceFailoverFeature)

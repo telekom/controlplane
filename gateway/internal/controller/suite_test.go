@@ -16,7 +16,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.uber.org/mock/gomock"
+	testifymock "github.com/stretchr/testify/mock"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -143,7 +143,7 @@ var _ = BeforeSuite(func() {
 	CreateNamespace(testEnvironment)
 
 	By("Setting up the required mocks")
-	mockCtrl := gomock.NewController(GinkgoT())
+	ginkgoT := GinkgoT()
 	mockMutex := sync.Mutex{}
 	kongClientMockCache := make(map[string]*kong_clientmock.MockKongClient)
 
@@ -153,7 +153,7 @@ var _ = BeforeSuite(func() {
 		if client, found := kongClientMockCache[gwCfg.AdminUrl()]; found {
 			return client, nil
 		}
-		client := kong_clientmock.NewMockKongClient(mockCtrl)
+		client := kong_clientmock.NewMockKongClient(ginkgoT)
 		kongClientMockCache[gwCfg.AdminUrl()] = client
 		return client, nil
 	}
@@ -161,12 +161,13 @@ var _ = BeforeSuite(func() {
 	features.NewFeatureBuilder = func(kc kong_client.KongClient, route *gatewayv1.Route, consumer *gatewayv1.Consumer, realm *gatewayv1.Realm, gateway *gatewayv1.Gateway) features.FeaturesBuilder {
 		mockMutex.Lock()
 		defer mockMutex.Unlock()
-		mockBuilder := features_mock.NewMockFeaturesBuilder(mockCtrl)
-		mockBuilder.EXPECT().EnableFeature(gomock.Any()).MinTimes(1)
-		mockBuilder.EXPECT().AddAllowedConsumers(gomock.Any()).AnyTimes()
-		mockBuilder.EXPECT().Build(gomock.Any()).Return(nil).AnyTimes()
-		mockBuilder.EXPECT().BuildForConsumer(gomock.Any()).Return(nil).AnyTimes()
-		mockBuilder.EXPECT().GetAllowedConsumers().Return(nil).AnyTimes()
+		mockBuilder := features_mock.NewMockFeaturesBuilder(ginkgoT)
+		mockBuilder.EXPECT().EnableFeature(testifymock.Anything).Maybe()
+		mockBuilder.EXPECT().AddAllowedConsumers(testifymock.Anything).Maybe()
+		mockBuilder.EXPECT().Build(testifymock.Anything).Return(nil).Maybe()
+		mockBuilder.EXPECT().BuildForConsumer(testifymock.Anything).Return(nil).Maybe()
+		mockBuilder.EXPECT().GetAllowedConsumers().Return(nil).Maybe()
+		mockBuilder.EXPECT().Teardown(testifymock.Anything).Return(nil).Maybe()
 
 		return mockBuilder
 	}

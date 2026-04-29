@@ -6,8 +6,8 @@ package features_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	testifymock "github.com/stretchr/testify/mock"
+
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -15,20 +15,21 @@ import (
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
-	"go.uber.org/mock/gomock"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("FeatureBuilder externalIDP", Ordered, func() {
-	var ctx = context.Background()
+	ctx := context.Background()
 	ctx = contextutil.WithEnv(ctx, "test")
 	BeforeEach(func() {
-		mockKc = mock.NewMockKongClient(mockCtrl)
+		mockKc = mock.NewMockKongClient(GinkgoT())
 	})
 
 	Context("Applying and Creating", Ordered, func() {
-
 		BeforeEach(func() {
-			mockKc = mock.NewMockKongClient(mockCtrl)
+			mockKc = mock.NewMockKongClient(GinkgoT())
 		})
 
 		It("should apply the ExternalIDPConfig with Oauth", func() {
@@ -83,7 +84,6 @@ var _ = Describe("FeatureBuilder externalIDP", Ordered, func() {
 				GrantType:    "client_credentials",
 				TokenRequest: "header",
 			}))
-
 		})
 
 		It("should apply the ExternalIDPConfig with Basic", func() {
@@ -136,7 +136,6 @@ var _ = Describe("FeatureBuilder externalIDP", Ordered, func() {
 				GrantType: "password",
 				Scopes:    "idp:group",
 			}))
-
 		})
 
 		It("should apply the ExternalIDPConfig with Private Key JWT", func() {
@@ -194,11 +193,8 @@ var _ = Describe("FeatureBuilder externalIDP", Ordered, func() {
 				TokenRequest: "header",
 				Scopes:       "idp:group",
 			}))
-
 		})
-
 	})
-
 })
 
 func externalIDPProviderRouteOAuth() *gatewayv1.Route {
@@ -287,7 +283,7 @@ func externalIDPProviderRouteOAuthJwt() *gatewayv1.Route {
 }
 
 func configureExternalIDPMocks(ctx context.Context, externalIDPRoute *gatewayv1.Route) {
-	mockKc.EXPECT().CreateOrReplaceRoute(ctx, externalIDPRoute, gomock.Any()).Return(nil).Times(1)
-	mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
-	mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+	mockKc.EXPECT().CreateOrReplaceRoute(ctx, externalIDPRoute, testifymock.Anything).Return(nil).Times(1)
+	mockKc.EXPECT().CreateOrReplacePlugin(ctx, testifymock.Anything).Return(nil, nil).Times(1)
+	mockKc.EXPECT().CleanupPlugins(ctx, testifymock.Anything, testifymock.Anything, testifymock.Anything).Return(nil).Times(1)
 }

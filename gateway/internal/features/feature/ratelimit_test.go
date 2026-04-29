@@ -12,7 +12,6 @@ import (
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	featuresmock "github.com/telekom/controlplane/gateway/internal/features/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
-	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("RateLimitFeature", func() {
@@ -26,15 +25,13 @@ var _ = Describe("RateLimitFeature", func() {
 	})
 
 	Context("with mocked feature builder", func() {
-		var ctrl *gomock.Controller
 		var mockFeatureBuilder *featuresmock.MockFeaturesBuilder
 		var feature RateLimitFeature
 
 		BeforeEach(func() {
 			feature = RateLimitFeature{priority: 10}
 
-			ctrl = gomock.NewController(GinkgoT())
-			mockFeatureBuilder = featuresmock.NewMockFeaturesBuilder(ctrl)
+			mockFeatureBuilder = featuresmock.NewMockFeaturesBuilder(GinkgoT())
 		})
 
 		Context("check IsUsed", func() {

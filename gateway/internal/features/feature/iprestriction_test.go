@@ -8,8 +8,9 @@ import (
 	"context"
 
 	"github.com/emirpasic/gods/sets/hashset"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	testifymock "github.com/stretchr/testify/mock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
@@ -18,8 +19,9 @@ import (
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
-	"go.uber.org/mock/gomock"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func NewConsumer() *gatewayv1.Consumer {
@@ -49,14 +51,12 @@ var _ = Describe("IpRestrictionFeature", func() {
 	})
 
 	Context("with mocked feature builder", func() {
-		var ctrl *gomock.Controller
 		var mockFeatureBuilder *featuresmock.MockFeaturesBuilder
 		var ipRestrictionFeature feature.IpRestrictionFeature
 
 		BeforeEach(func() {
 			ipRestrictionFeature = feature.IpRestrictionFeature{}
-			ctrl = gomock.NewController(GinkgoT())
-			mockFeatureBuilder = featuresmock.NewMockFeaturesBuilder(ctrl)
+			mockFeatureBuilder = featuresmock.NewMockFeaturesBuilder(GinkgoT())
 		})
 
 		Context("check IsUsed", func() {
@@ -172,15 +172,13 @@ var _ = Describe("IpRestrictionFeature", func() {
 
 	Context("correctly configure IP restriction", func() {
 		var ctx context.Context
-		var mockCtrl *gomock.Controller
 
 		BeforeEach(func() {
-			mockCtrl = gomock.NewController(GinkgoT())
 			ctx = context.Background()
 		})
 
 		It("should apply IP restriction feature for a consumer with allow list", func() {
-			mockKc := mock.NewMockKongClient(mockCtrl)
+			mockKc := mock.NewMockKongClient(GinkgoT())
 
 			consumer := NewConsumer()
 			consumer.Spec.Security = &gatewayv1.ConsumerSecurity{
@@ -190,10 +188,10 @@ var _ = Describe("IpRestrictionFeature", func() {
 			}
 
 			// Mock CreateOrReplaceConsumer which will be called by the builder
-			mockKc.EXPECT().CreateOrReplaceConsumer(ctx, gomock.Any()).Return(&kong.Consumer{Id: stringPtr("test-consumer-id")}, nil).Times(1)
+			mockKc.EXPECT().CreateOrReplaceConsumer(ctx, testifymock.Anything).Return(&kong.Consumer{Id: stringPtr("test-consumer-id")}, nil).Times(1)
 
 			// Mock CreateOrReplacePlugin for the IP restriction plugin
-			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).DoAndReturn(
+			mockKc.EXPECT().CreateOrReplacePlugin(ctx, testifymock.Anything).RunAndReturn(
 				func(ctx context.Context, customPlugin client.CustomPlugin) (*kong.Plugin, error) {
 					ipPlugin, ok := customPlugin.(*plugin.IpRestrictionPlugin)
 					Expect(ok).To(BeTrue())
@@ -206,7 +204,7 @@ var _ = Describe("IpRestrictionFeature", func() {
 				}).Times(1)
 
 			// Mock CleanupPlugins which will be called by the builder
-			mockKc.EXPECT().CleanupPlugins(ctx, nil, gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, nil, testifymock.Anything, testifymock.Anything).Return(nil).Times(1)
 
 			builder := features.NewFeatureBuilder(mockKc, nil, consumer, nil, nil)
 			builder.EnableFeature(feature.InstanceIpRestrictionFeature)
@@ -216,7 +214,7 @@ var _ = Describe("IpRestrictionFeature", func() {
 		})
 
 		It("should apply IP restriction feature for a consumer with deny list", func() {
-			mockKc := mock.NewMockKongClient(mockCtrl)
+			mockKc := mock.NewMockKongClient(GinkgoT())
 
 			consumer := NewConsumer()
 			consumer.Spec.Security = &gatewayv1.ConsumerSecurity{
@@ -226,10 +224,10 @@ var _ = Describe("IpRestrictionFeature", func() {
 			}
 
 			// Mock CreateOrReplaceConsumer which will be called by the builder
-			mockKc.EXPECT().CreateOrReplaceConsumer(ctx, gomock.Any()).Return(&kong.Consumer{Id: stringPtr("test-consumer-id")}, nil).Times(1)
+			mockKc.EXPECT().CreateOrReplaceConsumer(ctx, testifymock.Anything).Return(&kong.Consumer{Id: stringPtr("test-consumer-id")}, nil).Times(1)
 
 			// Mock CreateOrReplacePlugin for the IP restriction plugin
-			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).DoAndReturn(
+			mockKc.EXPECT().CreateOrReplacePlugin(ctx, testifymock.Anything).RunAndReturn(
 				func(ctx context.Context, customPlugin client.CustomPlugin) (*kong.Plugin, error) {
 					ipPlugin, ok := customPlugin.(*plugin.IpRestrictionPlugin)
 					Expect(ok).To(BeTrue())
@@ -242,7 +240,7 @@ var _ = Describe("IpRestrictionFeature", func() {
 				}).Times(1)
 
 			// Mock CleanupPlugins which will be called by the builder
-			mockKc.EXPECT().CleanupPlugins(ctx, nil, gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, nil, testifymock.Anything, testifymock.Anything).Return(nil).Times(1)
 
 			builder := features.NewFeatureBuilder(mockKc, nil, consumer, nil, nil)
 			builder.EnableFeature(feature.InstanceIpRestrictionFeature)

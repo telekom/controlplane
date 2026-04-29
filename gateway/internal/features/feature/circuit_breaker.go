@@ -19,7 +19,7 @@ import (
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
 )
 
-var _ features.Feature = &CircuitBreakerFeature{}
+var _ features.TeardownFeature = &CircuitBreakerFeature{}
 
 // CircuitBreakerPriority The priority is the highest of all features as it modifies the Kong service host and to make sure it will not interfere with any other feature.
 const CircuitBreakerPriority = 110
@@ -109,6 +109,18 @@ func isDeleteScenario(route *gatewayv1.Route) bool {
 	}
 }
 
+func (c CircuitBreakerFeature) Teardown(ctx context.Context, builder features.FeaturesBuilder) error {
+	log := logr.FromContextOrDiscard(ctx)
+	log.V(1).Info("Tearing down CircuitBreaker", "name", c.Name())
+
+	route, ok := builder.GetRoute()
+	if !ok {
+		return fmt.Errorf("cannot find route")
+	}
+
+	return handleDeletion(ctx, builder, route)
+}
+
 func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *gatewayv1.Route) error {
 	routeName := route.GetName()
 	kongClient := builder.GetKongClient()
@@ -165,7 +177,12 @@ func handleApply(ctx context.Context, builder features.FeaturesBuilder, route *g
 		return errors.Wrapf(err, "failed to create upstream [PUT /upstreams/%s]", upstreamName)
 	}
 	if err := client.CheckStatusCode(upstreamResponse, 200); err != nil {
-		return errors.Wrap(fmt.Errorf("error body from kong admin api [%s %s]: %s", upstreamResponse.HTTPResponse.Request.Method, upstreamResponse.HTTPResponse.Request.URL.Path, string(upstreamResponse.Body)), "failed to create upstream")
+		return errors.Wrap(fmt.Errorf("error body from kong admin api [%s %s]: %s",
+			upstreamResponse.HTTPResponse.Request.Method,
+			upstreamResponse.HTTPResponse.Request.URL.Path,
+			string(upstreamResponse.Body)),
+			"failed to create upstream",
+		)
 	}
 	route.SetUpstreamId(*upstreamResponse.JSON200.Id)
 

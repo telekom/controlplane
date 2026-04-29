@@ -13,7 +13,6 @@ import (
 	"github.com/telekom/controlplane/gateway/internal/features"
 	featuresmock "github.com/telekom/controlplane/gateway/internal/features/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
-	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("DynamicUpstreamFeature", func() {
@@ -28,15 +27,13 @@ var _ = Describe("DynamicUpstreamFeature", func() {
 
 	Context("with mocked feature builder", func() {
 
-		var ctrl *gomock.Controller
 		var mockFeatureBuilder *featuresmock.MockFeaturesBuilder
 		var feature DynamicUpstreamFeature
 
 		BeforeEach(func() {
 			feature = *InstanceDynamicUpstreamFeature
 
-			ctrl = gomock.NewController(GinkgoT())
-			mockFeatureBuilder = featuresmock.NewMockFeaturesBuilder(ctrl)
+			mockFeatureBuilder = featuresmock.NewMockFeaturesBuilder(GinkgoT())
 		})
 
 		Context("check IsUsed", func() {

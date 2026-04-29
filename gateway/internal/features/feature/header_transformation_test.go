@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	featuresmock "github.com/telekom/controlplane/gateway/internal/features/mock"
-	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("RemoveHeadersFeature", func() {
@@ -22,15 +21,13 @@ var _ = Describe("RemoveHeadersFeature", func() {
 
 	Context("with mocked feature builder", func() {
 
-		var ctrl *gomock.Controller
 		var mockFeatureBuilder *featuresmock.MockFeaturesBuilder
 		var feature HeaderTransformationFeature
 
 		BeforeEach(func() {
 			feature = HeaderTransformationFeature{}
 
-			ctrl = gomock.NewController(GinkgoT())
-			mockFeatureBuilder = featuresmock.NewMockFeaturesBuilder(ctrl)
+			mockFeatureBuilder = featuresmock.NewMockFeaturesBuilder(GinkgoT())
 		})
 
 		Context("check IsUsed", func() {

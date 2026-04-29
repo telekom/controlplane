@@ -7,8 +7,6 @@ package features_test
 import (
 	"testing"
 
-	"go.uber.org/mock/gomock"
-
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
@@ -114,16 +112,14 @@ func NewMockGateway() *gatewayv1.Gateway {
 }
 
 var (
-	mockKc   *mock.MockKongClient
-	mockCtrl *gomock.Controller
-	route    *gatewayv1.Route
-	realm    *gatewayv1.Realm
-	gateway  *gatewayv1.Gateway
+	mockKc  *mock.MockKongClient
+	route   *gatewayv1.Route
+	realm   *gatewayv1.Realm
+	gateway *gatewayv1.Gateway
 )
 
 var _ = BeforeSuite(func() {
-	mockKc = mock.NewMockKongClient(mockCtrl)
-	mockCtrl = gomock.NewController(GinkgoT())
+	mockKc = mock.NewMockKongClient(GinkgoT())
 	route = NewMockRoute()
 	realm = NewMockRealm()
 	gateway = NewMockGateway()

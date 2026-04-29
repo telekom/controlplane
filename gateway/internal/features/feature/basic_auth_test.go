@@ -13,7 +13,6 @@ import (
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	featuresmock "github.com/telekom/controlplane/gateway/internal/features/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
-	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("BasicAuthFeature", func() {
@@ -27,13 +26,11 @@ var _ = Describe("BasicAuthFeature", func() {
 	})
 
 	Context("with mocked feature builder", func() {
-		var ctrl *gomock.Controller
 		var mockFeatureBuilder *featuresmock.MockFeaturesBuilder
 
 		BeforeEach(func() {
 
-			ctrl = gomock.NewController(GinkgoT())
-			mockFeatureBuilder = featuresmock.NewMockFeaturesBuilder(ctrl)
+			mockFeatureBuilder = featuresmock.NewMockFeaturesBuilder(GinkgoT())
 		})
 
 		Context("IsUsed", func() {
@@ -51,7 +48,7 @@ var _ = Describe("BasicAuthFeature", func() {
 						},
 					},
 				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Maybe()
 				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
 			})
 
@@ -74,7 +71,7 @@ var _ = Describe("BasicAuthFeature", func() {
 						},
 					},
 				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Maybe()
 				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
 			})
 
@@ -92,7 +89,7 @@ var _ = Describe("BasicAuthFeature", func() {
 						},
 					},
 				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Maybe()
 				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeTrue())
 			})
 
@@ -114,7 +111,7 @@ var _ = Describe("BasicAuthFeature", func() {
 						},
 					},
 				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Maybe()
 				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeTrue())
 			})
 
@@ -130,7 +127,7 @@ var _ = Describe("BasicAuthFeature", func() {
 						},
 					},
 				}
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Maybe()
 				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return(nil).Times(1)
 				Expect(feature.InstanceBasicAuthFeature.IsUsed(context.Background(), mockFeatureBuilder)).To(BeFalse())
 			})
@@ -181,7 +178,7 @@ var _ = Describe("BasicAuthFeature", func() {
 				}
 
 				mockFeatureBuilder.EXPECT().JumperConfig().Return(jumperConfig)
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Maybe()
 				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
 				// Execute
@@ -216,7 +213,7 @@ var _ = Describe("BasicAuthFeature", func() {
 				}
 
 				mockFeatureBuilder.EXPECT().JumperConfig().Return(jumperConfig)
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Maybe()
 				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{})
 
 				// Execute
@@ -272,7 +269,7 @@ var _ = Describe("BasicAuthFeature", func() {
 				}
 
 				mockFeatureBuilder.EXPECT().JumperConfig().Return(jumperConfig)
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Maybe()
 				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{consumer1, consumer2})
 
 				// Execute
@@ -321,7 +318,7 @@ var _ = Describe("BasicAuthFeature", func() {
 				}
 
 				mockFeatureBuilder.EXPECT().JumperConfig().Return(jumperConfig)
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Maybe()
 				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{consumer})
 
 				// Execute
@@ -365,7 +362,7 @@ var _ = Describe("BasicAuthFeature", func() {
 				}
 
 				mockFeatureBuilder.EXPECT().JumperConfig().Return(jumperConfig)
-				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).AnyTimes()
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Maybe()
 				mockFeatureBuilder.EXPECT().GetAllowedConsumers().Return([]*gatewayv1.ConsumeRoute{consumer1})
 
 				// Execute
