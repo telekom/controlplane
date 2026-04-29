@@ -81,42 +81,6 @@ type PermissionsConfig struct {
 	ConsoleUrl *string `json:"consoleUrl,omitempty"`
 }
 
-// LintingMode controls how linting failures affect API creation.
-// +kubebuilder:validation:Enum=block;warn
-type LintingMode string
-
-const (
-	// LintingModeBlock prevents Api creation when linting fails.
-	LintingModeBlock LintingMode = "block"
-	// LintingModeWarn allows Api creation but surfaces linting issues in status.
-	LintingModeWarn LintingMode = "warn"
-)
-
-// LintingConfig configures OAS specification linting for this zone.
-// The external linter server manages rulesets; the zone only controls enabled/mode.
-type LintingConfig struct {
-	// Enabled indicates whether linting is enabled for this zone.
-	Enabled bool `json:"enabled,omitempty"`
-	// Mode controls how linting failures affect API creation.
-	// "block" (default) prevents Api creation on failure; "warn" allows it but surfaces issues.
-	// +kubebuilder:validation:Enum=block;warn
-	// +kubebuilder:default:=block
-	// +optional
-	Mode LintingMode `json:"mode,omitempty"`
-
-	// WhitelistedCategories is the list of API categories that are exempt from linting.
-	// Categories are matched case-insensitively against the x-api-category value in the OpenAPI spec.
-	// +optional
-	// +listType=set
-	WhitelistedCategories []string `json:"whitelistedCategories,omitempty"`
-
-	// DashboardURLTemplate is a URL template for the linter dashboard.
-	// Use {linterId} as a placeholder for the scan ID.
-	// Example: "https://linter.example.com/scans/{linterId}"
-	// +optional
-	DashboardURLTemplate string `json:"dashboardUrlTemplate,omitempty"`
-}
-
 // ZoneSpec defines the desired state of Zone
 type ZoneSpec struct {
 	IdentityProvider IdentityProviderConfig `json:"identityProvider"`
@@ -130,10 +94,6 @@ type ZoneSpec struct {
 	// Permissions configuration for permission service integration
 	// +kubebuilder:validation:Optional
 	Permissions *PermissionsConfig `json:"permissions,omitempty"`
-
-	// Linting configuration for OAS specification linting in this zone
-	// +kubebuilder:validation:Optional
-	Linting *LintingConfig `json:"linting,omitempty"`
 }
 
 type Links struct {
