@@ -11,24 +11,23 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
-	"github.com/telekom/controlplane/admin/internal/handler/util/urls"
-	"github.com/telekom/controlplane/common/pkg/types"
-	"github.com/telekom/controlplane/common/pkg/util/labelutil"
-
 	"github.com/pkg/errors"
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	cclient "github.com/telekom/controlplane/common/pkg/client"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/handler"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
-	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
-	identityapi "github.com/telekom/controlplane/identity/api/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	corev1 "k8s.io/api/core/v1"
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	"github.com/telekom/controlplane/admin/internal/handler/util/naming"
+	"github.com/telekom/controlplane/admin/internal/handler/util/urls"
+	cclient "github.com/telekom/controlplane/common/pkg/client"
+	"github.com/telekom/controlplane/common/pkg/condition"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/handler"
+	"github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
+	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+	identityapi "github.com/telekom/controlplane/identity/api/v1"
 )
 
 const (
@@ -58,8 +57,8 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 
 	mutator := func() error {
 		namespace.Labels = map[string]string{
-			config.EnvironmentLabelKey:          environment.Name,
-			config.BuildLabelKey(zoneLabelName): obj.Name,
+			cconfig.EnvironmentLabelKey:          environment.Name,
+			cconfig.BuildLabelKey(zoneLabelName): obj.Name,
 		}
 		return nil
 	}
@@ -130,38 +129,26 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 
 	// Team apis configuration
 	if obj.Spec.TeamApis != nil {
-		// Team apis identity realm
-		teamApiIdentityRealm, err := createIdentityRealm(ctx, handlingContext, identityProvider, naming.ForTeamApiIdentityRealm(handlingContext.Environment))
-		if err != nil {
+		if err := reconcileTeamApis(ctx, handlingContext, obj, identityProvider, gateway); err != nil {
 			return err
 		}
-		obj.Status.TeamApiIdentityRealm = types.ObjectRefFromObject(teamApiIdentityRealm)
-
-		// Team apis gateway realm
-		teamApisGatewayRealm, err := createGatewayRealm(ctx, handlingContext, gateway, naming.ForTeamApiGatewayRealm(handlingContext.Environment))
-		if err != nil {
-			return err
-		}
-		obj.Status.TeamApiGatewayRealm = types.ObjectRefFromObject(teamApisGatewayRealm)
-		if len(teamApisGatewayRealm.Spec.IssuerUrls) > 0 {
-			obj.Status.Links.TeamIssuer = teamApisGatewayRealm.Spec.IssuerUrls[0]
-		}
-
-		// Team api routes
-		var teamApiRouteRefs []types.ObjectRef
-		for _, teamApiRoute := range obj.Spec.TeamApis.Apis {
-			route, err := createTeamApiRoute(ctx, handlingContext, teamApiRoute, *teamApisGatewayRealm)
-			if err != nil {
-				return err
-			}
-			teamApiRouteRefs = append(teamApiRouteRefs, *types.ObjectRefFromObject(route))
-		}
-		obj.Status.TeamApiRoutes = teamApiRouteRefs
 	} else {
 		obj.Status.TeamApiIdentityRealm = nil
 		obj.Status.TeamApiGatewayRealm = nil
 		obj.Status.TeamApiRoutes = nil
 		obj.Status.Links.TeamIssuer = ""
+	}
+
+	// Populate Permissions URL if configured and feature enabled
+	if cconfig.FeaturePermission.IsEnabled() && obj.Spec.Permissions != nil {
+		// Use url.JoinPath to properly handle slashes when combining gateway URL with ApiBasePath
+		permissionsUrl, err := url.JoinPath(obj.Status.Links.Url, obj.Spec.Permissions.ApiBasePath)
+		if err != nil {
+			return errors.Wrap(err, "failed to build permissions URL")
+		}
+		obj.Status.Links.PermissionsUrl = permissionsUrl
+	} else {
+		obj.Status.Links.PermissionsUrl = ""
 	}
 
 	obj.SetCondition(condition.NewReadyCondition("ZoneProvisioned", "Zone has been provisioned"))
@@ -170,7 +157,35 @@ func (h *ZoneHandler) CreateOrUpdate(ctx context.Context, obj *adminv1.Zone) err
 	return nil
 }
 
-func createTeamApiRoute(ctx context.Context, handlingContext HandlingContext, teamRouteConfig adminv1.ApiConfig, gatewayRealm gatewayapi.Realm) (*gatewayapi.Route, error) {
+func reconcileTeamApis(ctx context.Context, handlingContext HandlingContext, zone *adminv1.Zone, identityProvider *identityapi.IdentityProvider, gateway *gatewayapi.Gateway) error {
+	teamApiIdentityRealm, err := createIdentityRealm(ctx, handlingContext, identityProvider, naming.ForTeamApiIdentityRealm(handlingContext.Environment))
+	if err != nil {
+		return err
+	}
+	zone.Status.TeamApiIdentityRealm = types.ObjectRefFromObject(teamApiIdentityRealm)
+
+	teamApisGatewayRealm, err := createGatewayRealm(ctx, handlingContext, gateway, naming.ForTeamApiGatewayRealm(handlingContext.Environment))
+	if err != nil {
+		return err
+	}
+	zone.Status.TeamApiGatewayRealm = types.ObjectRefFromObject(teamApisGatewayRealm)
+	if len(teamApisGatewayRealm.Spec.IssuerUrls) > 0 {
+		zone.Status.Links.TeamIssuer = teamApisGatewayRealm.Spec.IssuerUrls[0]
+	}
+
+	teamApiRouteRefs := make([]types.ObjectRef, 0, len(zone.Spec.TeamApis.Apis))
+	for _, teamApiRoute := range zone.Spec.TeamApis.Apis {
+		route, err := createTeamApiRoute(ctx, handlingContext, teamApiRoute, teamApisGatewayRealm)
+		if err != nil {
+			return err
+		}
+		teamApiRouteRefs = append(teamApiRouteRefs, *types.ObjectRefFromObject(route))
+	}
+	zone.Status.TeamApiRoutes = teamApiRouteRefs
+	return nil
+}
+
+func createTeamApiRoute(ctx context.Context, handlingContext HandlingContext, teamRouteConfig adminv1.ApiConfig, gatewayRealm *gatewayapi.Realm) (*gatewayapi.Route, error) {
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 	teamRoute := &gatewayapi.Route{
 		ObjectMeta: metav1.ObjectMeta{
@@ -181,8 +196,8 @@ func createTeamApiRoute(ctx context.Context, handlingContext HandlingContext, te
 
 	mutator := func() error {
 		teamRoute.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
-			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
+			cconfig.EnvironmentLabelKey:          handlingContext.Environment.Name,
+			cconfig.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
 		upstreamUrl, err := url.Parse(teamRouteConfig.Url)
@@ -212,7 +227,7 @@ func createTeamApiRoute(ctx context.Context, handlingContext HandlingContext, te
 		}
 
 		teamRoute.Spec = gatewayapi.RouteSpec{
-			Realm:       *types.ObjectRefFromObject(&gatewayRealm),
+			Realm:       *types.ObjectRefFromObject(gatewayRealm),
 			PassThrough: false,
 			Upstreams:   []gatewayapi.Upstream{upstream},
 			Downstreams: []gatewayapi.Downstream{downstream},
@@ -243,8 +258,8 @@ func createGatewayConsumer(ctx context.Context, handlingContext HandlingContext,
 
 	mutator := func() error {
 		gatewayConsumer.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
-			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
+			cconfig.EnvironmentLabelKey:          handlingContext.Environment.Name,
+			cconfig.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
 		gatewayConsumer.Spec = gatewayapi.ConsumerSpec{
@@ -272,8 +287,8 @@ func createGatewayRealm(ctx context.Context, handlingContext HandlingContext, ga
 
 	mutator := func() error {
 		gatewayRealm.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
-			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
+			cconfig.EnvironmentLabelKey:          handlingContext.Environment.Name,
+			cconfig.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
 		gatewayRealm.Spec = gatewayapi.RealmSpec{
@@ -303,8 +318,8 @@ func createGateway(ctx context.Context, handlingContext HandlingContext) (*gatew
 
 	mutator := func() error {
 		gateway.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
-			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
+			cconfig.EnvironmentLabelKey:          handlingContext.Environment.Name,
+			cconfig.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
 		var adminUrl string
@@ -336,7 +351,6 @@ func createGateway(ctx context.Context, handlingContext HandlingContext) (*gatew
 		return nil, errors.Wrapf(err, "failed to create or update Gateway: %s in zone: %s", gateway.Name, handlingContext.Zone.Name)
 	}
 	return gateway, nil
-
 }
 
 func createIdentityClient(ctx context.Context, handlingContext HandlingContext, identityRealm *identityapi.Realm) (*identityapi.Client, error) {
@@ -351,8 +365,8 @@ func createIdentityClient(ctx context.Context, handlingContext HandlingContext, 
 
 	mutator := func() error {
 		identityClient.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
-			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
+			cconfig.EnvironmentLabelKey:          handlingContext.Environment.Name,
+			cconfig.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
 		var clientSecret string
@@ -401,8 +415,8 @@ func createIdentityRealm(ctx context.Context, handlingContext HandlingContext, i
 
 	mutator := func() error {
 		identityRealm.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
-			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
+			cconfig.EnvironmentLabelKey:          handlingContext.Environment.Name,
+			cconfig.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
 		identityRealm.Spec = identityapi.RealmSpec{
@@ -432,8 +446,8 @@ func createIdentityProvider(ctx context.Context, handlingContext HandlingContext
 
 	mutator := func() error {
 		identityProvider.Labels = map[string]string{
-			config.EnvironmentLabelKey:          handlingContext.Environment.Name,
-			config.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
+			cconfig.EnvironmentLabelKey:          handlingContext.Environment.Name,
+			cconfig.BuildLabelKey(zoneLabelName): handlingContext.Zone.Name,
 		}
 
 		var adminUrl string

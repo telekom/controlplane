@@ -617,7 +617,7 @@
 
 [Rover Controller Get rover status should return the status of a rover successfully - 1]
 {
- "createdAt": "2025-09-18T10:39:44+02:00",
+ "createdAt": "2025-09-18T08:39:44Z",
  "errors": [
   {
    "cause": "NoApproval",
@@ -632,7 +632,7 @@
   }
  ],
  "overallStatus": "blocked",
- "processedAt": "2025-10-08T09:16:40+02:00",
+ "processedAt": "2025-10-08T07:16:40Z",
  "processingState": "done",
  "state": "blocked"
 }
@@ -670,7 +670,7 @@
 
 [Rover Controller Create rover resource should fail to create a rover with invalid input - 1]
 {
- "detail": "multiple errors encountered: Error at \"/zone\": property \"zone\" is missing\nSchema:\n  {\n    \"properties\": {\n      \"authentication\": {\n        \"$ref\": \"#/components/schemas/Authentication\"\n      },\n      \"exposures\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/Exposure\"\n        },\n        \"type\": \"array\"\n      },\n      \"icto\": {\n        \"example\": \"icto-12345\",\n        \"pattern\": \"^icto-[0-9]+$\",\n        \"type\": \"string\"\n      },\n      \"id\": {\n        \"example\": \"hub42--team2--myapp\",\n        \"readOnly\": true,\n        \"type\": \"string\"\n      },\n      \"ipRestrictions\": {\n        \"$ref\": \"#/components/schemas/IpRestrictions\"\n      },\n      \"status\": {\n        \"$ref\": \"#/components/schemas/Status\"\n      },\n      \"subscriptions\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/Subscription\"\n        },\n        \"type\": \"array\"\n      },\n      \"zone\": {\n        \"example\": \"aws\",\n        \"type\": \"string\"\n      }\n    },\n    \"required\": [\n      \"zone\"\n    ],\n    \"type\": \"object\"\n  }\n\nValue:\n  {\n    \"invalidField\": \"invalidValue\"\n  }\n",
+ "detail": "multiple errors encountered: Error at \"/zone\": property \"zone\" is missing\nSchema:\n  {\n    \"properties\": {\n      \"authentication\": {\n        \"$ref\": \"#/components/schemas/Authentication\"\n      },\n      \"authorization\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/AuthorizationInfo\"\n        },\n        \"type\": \"array\"\n      },\n      \"exposures\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/Exposure\"\n        },\n        \"type\": \"array\"\n      },\n      \"icto\": {\n        \"example\": \"icto-12345\",\n        \"pattern\": \"^icto-[0-9]+$\",\n        \"type\": \"string\"\n      },\n      \"id\": {\n        \"example\": \"hub42--team2--myapp\",\n        \"readOnly\": true,\n        \"type\": \"string\"\n      },\n      \"ipRestrictions\": {\n        \"$ref\": \"#/components/schemas/IpRestrictions\"\n      },\n      \"status\": {\n        \"$ref\": \"#/components/schemas/Status\"\n      },\n      \"subscriptions\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/Subscription\"\n        },\n        \"type\": \"array\"\n      },\n      \"zone\": {\n        \"example\": \"aws\",\n        \"type\": \"string\"\n      }\n    },\n    \"required\": [\n      \"zone\"\n    ],\n    \"type\": \"object\"\n  }\n\nValue:\n  {\n    \"invalidField\": \"invalidValue\"\n  }\n",
  "instance": "",
  "status": 400,
  "title": "Bad Request",
@@ -1033,5 +1033,183 @@
  "environment": "poc",
  "hub": "eni",
  "team": "hyperion"
+}
+---
+
+
+[Roadmap Controller Get ApiRoadmap resource should return the ApiRoadmap successfully - 1]
+{
+ "basePath": "/eni/test/api/v1",
+ "id": "eni--hyperion--eni-test-api",
+ "items": [
+  {
+   "date": "Q1 2024",
+   "description": "Initial release with core features",
+   "title": "MVP Release",
+   "titleUrl": "https://example.com/mvp"
+  },
+  {
+   "date": "Q2 2024",
+   "description": "Optimize response times",
+   "title": "Performance Improvements"
+  }
+ ],
+ "name": "eni-test-api",
+ "status": {
+  "processingState": "done",
+  "state": "complete"
+ }
+}
+---
+
+[Roadmap Controller Get ApiRoadmap resource should fail to get a non-existent ApiRoadmap - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Roadmap Controller GetAll ApiRoadmaps resource should return all ApiRoadmaps successfully - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apiroadmaps?cursor="
+ },
+ "items": [
+  {
+   "basePath": "/eni/test/api/v1",
+   "id": "eni--hyperion--eni-test-api",
+   "items": [
+    {
+     "date": "Q1 2024",
+     "description": "Initial release with core features",
+     "title": "MVP Release",
+     "titleUrl": "https://example.com/mvp"
+    },
+    {
+     "date": "Q2 2024",
+     "description": "Optimize response times",
+     "title": "Performance Improvements"
+    }
+   ],
+   "name": "eni-test-api",
+   "status": {
+    "processingState": "done",
+    "state": "complete"
+   }
+  }
+ ]
+}
+---
+
+[Roadmap Controller GetAll ApiRoadmaps resource should return an empty list if no ApiRoadmaps exist - 1]
+{
+ "_links": {
+  "next": "",
+  "self": "http://example.com/apiroadmaps?cursor="
+ },
+ "items": []
+}
+---
+
+[Roadmap Controller Delete ApiRoadmap resource should fail to delete a non-existent ApiRoadmap - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+
+[Roadmap Controller Update ApiRoadmap resource should update the ApiRoadmap successfully - 1]
+{
+ "basePath": "/eni/test-api/v1",
+ "id": "eni--hyperion--eni-test-api",
+ "items": [
+  {
+   "date": "Q1 2024",
+   "description": "Initial release with core features",
+   "title": "MVP Release",
+   "titleUrl": "https://example.com/mvp"
+  },
+  {
+   "date": "Q2 2024",
+   "description": "Optimize response times",
+   "title": "Performance Improvements"
+  }
+ ],
+ "name": "eni-test-api",
+ "status": {
+  "processingState": "none",
+  "state": "none",
+  "warnings": [
+   {
+    "message": "Processing condition not found"
+   }
+  ]
+ }
+}
+---
+
+[Roadmap Controller Get ApiRoadmap resource should fail to get an ApiRoadmap from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Roadmap Controller Update ApiRoadmap resource should fail to update an ApiRoadmap from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Roadmap Controller Delete ApiRoadmap resource should fail to delete an ApiRoadmap from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
+}
+---
+
+[Roadmap Controller GetStatus ApiRoadmap resource should return the status of the ApiRoadmap successfully - 1]
+{
+ "overallStatus": "complete",
+ "processingState": "done",
+ "state": "complete"
+}
+---
+
+[Roadmap Controller GetStatus ApiRoadmap resource should fail to get the status of a non-existent ApiRoadmap - 1]
+{
+ "detail": "Resource eni--hyperion--nonexistent not found",
+ "instance": "",
+ "status": 404,
+ "title": "Not found",
+ "type": "NotFound"
+}
+---
+
+[Roadmap Controller GetStatus ApiRoadmap resource should fail to get the status of an ApiRoadmap from a different team - 1]
+{
+ "detail": "Access to requested resource not allowed",
+ "instance": "",
+ "status": 403,
+ "title": "Access Denied",
+ "type": "Forbidden"
 }
 ---

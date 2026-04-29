@@ -1,0 +1,37 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Adds namespace to all resources.
+namespace: controlplane-system
+
+# Labels to add to all resources and selectors.
+labels:
+- includeSelectors: true
+  pairs:
+    domain: projector
+  fields:
+    - path: spec/selector/matchLabels
+      create: true
+      kind: ServiceMonitor
+      group: monitoring.coreos.com
+
+resources:
+- ../rbac
+- ../manager
+# [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
+- ../prometheus
+# [METRICS] Expose the controller manager metrics service.
+- metrics_service.yaml
+# [NETWORK POLICY] Protect the /metrics endpoint with NetworkPolicy.
+# Only Pod(s) running a namespace labeled with 'metrics: enabled' will be able to gather the metrics.
+#- ../network-policy
+
+# Default environment configuration for the projector.
+# Use your own kustomization overlay to override these values.
+configMapGenerator:
+  - name: projector-env
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - LEADER_ELECTION=false

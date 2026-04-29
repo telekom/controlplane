@@ -1,0 +1,21 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    control-plane: controller-manager
+    app.kubernetes.io/name: projector
+    app.kubernetes.io/managed-by: kustomize
+  name: projector-controller-manager-metrics-service
+  namespace: system
+spec:
+  ports:
+  - name: http-metrics
+    port: 8090
+    protocol: TCP
+    targetPort: 8090
+  selector:
+    control-plane: controller-manager

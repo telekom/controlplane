@@ -195,5 +195,39 @@ var _ = Describe("Test Suite", func() {
 			Expect(events[0].Message).To(Equal("This is a blocked error"))
 		})
 
+		It("must unwrap fmt.Errorf %%w wrapped blocked errors", func() {
+			blockedErr := ctrlerrors.BlockedErrorf("blocked via fmt wrap")
+			wrappedErr := fmt.Errorf("outer context: %w", blockedErr)
+
+			obj := test.NewObject("fmtwrap-blocked-obj", "default")
+			updated, result := ctrlerrors.HandleError(ctx, obj, wrappedErr, recorder)
+			Expect(updated).To(BeTrue())
+			Expect(result.RequeueAfter).To(BeNumerically(">", 30*time.Minute))
+			condition := obj.GetConditions()[0]
+			Expect(condition.Type).To(Equal("Processing"))
+			Expect(condition.Status).To(Equal(metav1.ConditionFalse))
+			Expect(condition.Reason).To(Equal("Blocked"))
+			Expect(condition.Message).To(Equal("blocked via fmt wrap"))
+		})
+
+		It("must unwrap fmt.Errorf %%w wrapped retryable errors", func() {
+			retryableErr := ctrlerrors.RetryableErrorf("retryable via fmt wrap")
+			wrappedErr := fmt.Errorf("layer1: %w", fmt.Errorf("layer2: %w", retryableErr))
+
+			obj := test.NewObject("fmtwrap-retryable-obj", "default")
+			_, result := ctrlerrors.HandleError(ctx, obj, wrappedErr, recorder)
+			Expect(result.RequeueAfter).NotTo(Equal(time.Duration(0)))
+		})
+
+		It("must unwrap fmt.Errorf %%w wrapped retryable-with-delay errors", func() {
+			specificDelay := 5 * time.Second
+			delayErr := ctrlerrors.RetryableWithDelayErrorf(specificDelay, "delay via fmt wrap")
+			wrappedErr := fmt.Errorf("outer: %w", delayErr)
+
+			obj := test.NewObject("fmtwrap-delay-obj", "default")
+			_, result := ctrlerrors.HandleError(ctx, obj, wrappedErr, recorder)
+			Expect(result.RequeueAfter).To(BeNumerically(">", specificDelay))
+		})
+
 	})
 })

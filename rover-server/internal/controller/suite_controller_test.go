@@ -58,6 +58,7 @@ var InitOrDie = func(ctx context.Context, cfg *rest.Config) {
 		stores.RoverStore = mocks.NewRoverStoreMock(GinkgoT())
 		stores.RoverSecretStore = stores.RoverStore
 		stores.APISpecificationStore = mocks.NewAPISpecificationStoreMock(GinkgoT())
+		stores.RoadmapStore = mocks.NewRoadmapStoreMock(GinkgoT())
 		stores.APISubscriptionStore = mocks.NewAPISubscriptionStoreMock(GinkgoT())
 		stores.APIExposureStore = mocks.NewAPIExposureStoreMock(GinkgoT())
 		stores.ApplicationStore = mocks.NewApplicationStoreMock(GinkgoT())
@@ -92,7 +93,11 @@ var _ = BeforeSuite(func() {
 	// This is where you would set up any necessary test data or configurations
 	// For example, you might want to create a mock store or set up a test database connection
 
-	InitOrDie(ctx, kconfig.GetConfigOrDie())
+	var cfg *rest.Config
+	if !mockObjectStore {
+		cfg = kconfig.GetConfigOrDie()
+	}
+	InitOrDie(ctx, cfg)
 
 	// TODO Add more tests with teamToken in apispecification, eventspecification, rover
 	// Can be done once the issue with the team token is fixed in common-server
@@ -109,6 +114,7 @@ var _ = BeforeSuite(func() {
 		Log:                 log.Log,
 		ApiSpecifications:   NewApiSpecificationController(stores),
 		Rovers:              NewRoverController(stores),
+		Roadmaps:            NewRoadmapController(stores),
 		EventSpecifications: NewEventSpecificationController(stores),
 	}
 

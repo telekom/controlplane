@@ -23,6 +23,10 @@ vet: ## Run go vet against code.
 build: fmt vet ## Run go build against code.
 	go build -ldflags="-X 'main.version=$(VERSION)' -X 'main.buildTime=$(BUILD_TIME)' -X 'main.gitCommit=$(GIT_COMMIT)' -X 'main.goVersion=$(shell go version)'" -trimpath -mod=readonly -o bin/projector main.go
 
+# Packages to test and measure coverage for
+TEST_PACKAGES = ./internal/...
+COVER_PACKAGES = ./internal/...
+
 .PHONY: test
 test: fmt vet ## Run tests.
-	go test $$(go list ./... | grep -v /test) -coverprofile cover.out -mod=readonly -race -json 2>&1 | tee gotest.log | gotestfmt
+	gotestsum --format pkgname --jsonfile gotest.log -- $(TEST_PACKAGES) -ginkgo.junit-report=ginkgo-junit.xml -coverprofile cover.out --coverpkg $(COVER_PACKAGES) -mod=readonly -race

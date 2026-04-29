@@ -47,7 +47,7 @@ func TestObfuscation(t *testing.T) {
 		{
 			name:     "Token generation",
 			input:    "Token: 1761134582 (generated 3 day(s) ago)",
-			expected: "Token: 1761134582 (generated X day(s) ago)",
+			expected: "Token: 1761134582 (generated X ago)",
 		},
 		{
 			name:     "Multiple patterns",

@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
-	identityproviderModel "github.com/telekom/controlplane/identity/internal/model/identityprovider"
+	identityproviderModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/identityprovider"
 )
 
 var _ = Describe("IdentityProvider Controller", func() {
