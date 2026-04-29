@@ -39,7 +39,7 @@ func setupLog(ctx context.Context, obj client.Object) (context.Context, logr.Log
 }
 
 // +kubebuilder:webhook:path=/mutate-application-cp-ei-telekom-de-v1-application,mutating=true,failurePolicy=fail,sideEffects=None,groups=application.cp.ei.telekom.de,resources=applications,verbs=create;update,versions=v1,name=mapplication-v1.kb.io,admissionReviewVersions=v1
-// +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups=events.k8s.io,resources=events,verbs=create;patch
 
 var _ admission.Defaulter[*applicationv1.Application] = &ApplicationCustomDefaulter{}
 
@@ -52,7 +52,9 @@ func (d *ApplicationCustomDefaulter) Default(ctx context.Context, app *applicati
 	ctx, log := setupLog(ctx, app)
 	log.Info("defaulting application")
 
-	ctx = contextutil.WithEventRecorder(ctx, d.Recorder)
+	if d.Recorder != nil {
+		ctx = contextutil.WithEventRecorder(ctx, d.Recorder)
+	}
 
 	env, ok := controller.GetEnvironment(app)
 	if !ok {
