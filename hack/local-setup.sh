@@ -11,8 +11,8 @@
 #
 # Usage:
 #   ./hack/local-setup.sh                              # full setup
-#   ./hack/local-setup.sh --build-only                 # rebuild all images and redeploy
-#   ./hack/local-setup.sh --build-only --only gateway  # rebuild one controller and redeploy
+#   ./hack/local-setup.sh --build-only                 # rebuild all images, load into kind, restart deployments
+#   ./hack/local-setup.sh --build-only --only gateway  # rebuild one controller, restart its deployment
 #   ./hack/local-setup.sh --build-only --only gateway,rover  # rebuild specific controllers
 #   ./hack/local-setup.sh --deploy-only                # redeploy kustomization only
 #   ./hack/local-setup.sh --jobs 2                     # limit parallel builds (default: nproc)
@@ -78,9 +78,9 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --build-only          Skip cluster creation and prereqs; rebuild images and redeploy"
+            echo "  --build-only          Skip cluster creation and prereqs; rebuild images and restart deployments"
             echo "  --deploy-only         Skip cluster creation, prereqs, and image build; redeploy only"
-            echo "  --only name[,name]    Only build the specified controllers (comma-separated)"
+            echo "  --only name[,name]    Only build/deploy the specified controllers (comma-separated)"
             echo "                        Available: admin, api, application, approval, event, file-manager,"
             echo "                        gateway, identity, notification, organization, pubsub, rover,"
             echo "                        rover-server, secret-manager"
@@ -89,10 +89,12 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Examples:"
             echo "  $0                                    # full setup from scratch"
-            echo "  $0 --build-only                       # rebuild all + redeploy"
-            echo "  $0 --build-only --only gateway        # rebuild gateway only + redeploy"
-            echo "  $0 --build-only --only gateway,rover  # rebuild two controllers + redeploy"
+            echo "  $0 --build-only                       # rebuild all + restart deployments"
+            echo "  $0 --build-only --only gateway        # rebuild gateway + restart its deployment"
+            echo "  $0 --build-only --only gateway,rover  # rebuild two controllers + restart"
             echo "  $0 --build-only --jobs 2              # limit to 2 parallel builds"
+            echo "  $0 --only gateway                     # full setup, but only build/deploy gateway"
+            echo "  $0 --deploy-only --only gateway       # restart gateway deployment only"
             exit 0
             ;;
         *)
@@ -336,34 +338,33 @@ step_build_and_load_images() {
     success "All ${total} controller images built and loaded."
 }
 
-# ── Step 5: Deploy with kustomize ─────────────────────────────────────
+# ── Step 5: Restart deployments (used by --build-only and --only) ─────
+step_restart_deployments() {
+    local ctx="kind-${CLUSTER_NAME}"
+
+    for entry in "${CONTROLLERS[@]}"; do
+        IFS=':' read -r name _ _ <<< "${entry}"
+        local deploy_name="${name}-controller-manager"
+        if kubectl --context "${ctx}" -n "${CONTROLPLANE_NAMESPACE}" \
+            get deployment "${deploy_name}" &>/dev/null 2>&1; then
+            info "Restarting deployment/${deploy_name}..."
+            kubectl --context "${ctx}" -n "${CONTROLPLANE_NAMESPACE}" \
+                rollout restart deployment/"${deploy_name}"
+        else
+            warn "Deployment '${deploy_name}' not found, skipping restart."
+        fi
+    done
+
+    success "Rollout restart triggered for selected controllers."
+}
+
+# ── Step 6: Deploy with kustomize ─────────────────────────────────────
 step_deploy() {
     local ctx="kind-${CLUSTER_NAME}"
 
     info "Deploying Control Plane from install/overlays/local/..."
     kubectl --context "${ctx}" apply -k "${REPO_ROOT}/install/overlays/local" 2>&1
     success "Kustomization applied."
-
-    # After loading new images into kind the deployment spec is unchanged
-    # (same "latest" tag), so Kubernetes won't trigger a rollout by itself.
-    # Restart the affected deployments so pods pick up the freshly built images.
-    if [ "${DEPLOY_ONLY}" = false ] && [ "${#CONTROLLERS[@]}" -gt 0 ]; then
-        info "Restarting deployments to pick up new images..."
-        for entry in "${CONTROLLERS[@]}"; do
-            IFS=':' read -r name _ image_name <<< "${entry}"
-            # Find deployments using this controller's image and restart them.
-            local deps
-            deps=$(kubectl --context "${ctx}" -n "${CONTROLPLANE_NAMESPACE}" \
-                get deployments -o jsonpath="{range .items[*]}{.metadata.name}{' '}{.spec.template.spec.containers[0].image}{'\n'}{end}" 2>/dev/null \
-                | grep "${image_name}" | awk '{print $1}' || true)
-            for dep in ${deps}; do
-                kubectl --context "${ctx}" -n "${CONTROLPLANE_NAMESPACE}" \
-                    rollout restart deployment/"${dep}" 2>&1
-                info "Restarted deployment/${dep}"
-            done
-        done
-        success "Rollout restart triggered for rebuilt controllers."
-    fi
 
     # cert-manager must issue Certificates before trust-manager can create
     # the trust-bundle ConfigMaps that most controllers mount as volumes.
@@ -400,7 +401,7 @@ step_deploy() {
     success "Deployment complete."
 }
 
-# ── Step 6: Print summary ─────────────────────────────────────────────
+# ── Step 7: Print summary ─────────────────────────────────────────────
 step_summary() {
     echo ""
     echo "============================================================"
@@ -445,18 +446,31 @@ main() {
     resolve_controllers
 
     if [ "${DEPLOY_ONLY}" = true ]; then
-        step_deploy
+        if [ -n "${ONLY_CONTROLLERS}" ]; then
+            step_restart_deployments
+        else
+            step_deploy
+        fi
         step_summary
         return
     fi
 
-    if [ "${BUILD_ONLY}" = false ]; then
-        step_create_cluster
-        step_install_prereqs
+    if [ "${BUILD_ONLY}" = true ]; then
+        step_build_and_load_images
+        step_restart_deployments
+        return
     fi
 
+    # Full setup
+    step_create_cluster
+    step_install_prereqs
     step_build_and_load_images
-    step_deploy
+
+    if [ -n "${ONLY_CONTROLLERS}" ]; then
+        step_restart_deployments
+    else
+        step_deploy
+    fi
     step_summary
 }
 

@@ -84,6 +84,47 @@ Common examples:
 
 You can also use basic Go-template logic such as `if` and `range`.
 
+### Attachments
+
+Notification templates can include **file attachments** that are generated from their own templates. This is useful for attaching calendar invites, structured data files, or any other content that should accompany the notification.
+
+Add an `attachments` array to your template spec:
+
+```yaml
+spec:
+  purpose: secret-rotation-expiring
+  channelType: Email
+  subjectTemplate: "[{{.environment}}] Action required: Secret expiring"
+  template: |
+    ...
+  attachments:
+    - filename: "reminder.ics"
+      contentType: "text/calendar; charset=utf-8"
+      template: |
+        BEGIN:VCALENDAR
+        VERSION:2.0
+        PRODID:-//Control Plane//EN
+        BEGIN:VEVENT
+        DTSTART:{{ icsTime .currentExpiresAt }}
+        SUMMARY:Secret expiring for {{ .application }}
+        END:VEVENT
+        END:VCALENDAR
+```
+
+Each attachment has three fields:
+
+| Field | Description |
+| ----- | ----------- |
+| `filename` | The file name recipients see (e.g. `reminder.ics`). |
+| `contentType` | MIME type of the attachment (e.g. `text/calendar; charset=utf-8`). |
+| `template` | A Go template that produces the attachment content. The same placeholders available to the main template body are available here. |
+
+Attachments are rendered at delivery time, just like the main template body. You can include multiple attachments per template.
+
+:::tip
+The built-in secret rotation templates use attachments to send `.ics` calendar invites so teams can add expiration deadlines to their calendars.
+:::
+
 ### Built-in purposes (default templates)
 
 The installation component `install/components/notificationtemplates` ships templates for these built-in purposes:
@@ -98,6 +139,8 @@ The installation component `install/components/notificationtemplates` ships temp
 | `onboarded` | Team created |
 | `token-rotated` | Team token rotated |
 | `team-members-changed` | Team members updated |
+| `secret-rotation-expiring` | Application secret approaching expiration |
+| `secret-rotation-completed` | Application secret successfully rotated |
 
 ## Enabling default templates
 

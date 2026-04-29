@@ -17,6 +17,17 @@ When an Application is created with `needsClient: true` and `needsConsumer: true
 1. Creates an **Identity Client** with the client ID `{team}--{application-name}`
 2. Creates a **Gateway Consumer** so the application can be identified at the API gateway
 
+### Secret Rotation
+
+When graceful secret rotation is enabled for the zone, the Application operator manages the rotation lifecycle:
+
+1. Detects that a rotated (old) secret exists after a rotation is triggered
+2. Tracks the `SecretRotation` condition through `InProgress` → `Success`
+3. Sends **notification emails** at configured thresholds before expiry and upon completion
+4. Manages reminder state to avoid duplicate notifications
+
+See [Graceful Secret Rotation (User Guide)](../user-journey/features/secret-rotation.mdx) and [Secret Rotation (Admin Guide)](../admin-journey/features/secret-rotation.md) for details.
+
 ## Domain Interactions
 
 - **Rover domain** — Rover files create Application resources as part of the reconciliation process.
