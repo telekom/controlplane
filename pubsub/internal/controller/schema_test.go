@@ -7,9 +7,10 @@ package controller_test
 import (
 	"testing"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	"github.com/telekom/controlplane/pubsub/internal/controller"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func TestRegisterSchemesOrDie(t *testing.T) {

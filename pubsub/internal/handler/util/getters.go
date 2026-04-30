@@ -8,6 +8,8 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
@@ -15,7 +17,6 @@ import (
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	secrets "github.com/telekom/controlplane/secret-manager/api"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 func GetPublisher(ctx context.Context, objRef ctypes.ObjectRef) (*pubsubv1.Publisher, error) {
