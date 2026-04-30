@@ -108,28 +108,12 @@ func (h *RouteHandler) CreateOrUpdate(ctx context.Context, route *gatewayv1.Rout
 }
 
 func (h *RouteHandler) Delete(ctx context.Context, route *gatewayv1.Route) error {
-
-	_, realm, err := realm.GetRealmByRef(ctx, route.Spec.Realm)
+	builder, err := NewFeatureBuilder(ctx, route)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to create feature builder")
 	}
 
-	_, gateway, err := gateway.GetGatewayByRef(ctx, *realm.Spec.Gateway, true)
-	if err != nil {
-		return err
-	}
-
-	kc, err := kongutil.GetClientFor(gateway)
-	if err != nil {
-		return errors.Wrap(err, "failed to get kong client")
-	}
-
-	err = kc.DeleteRoute(ctx, route)
-	if err != nil {
-		return errors.Wrap(err, "failed to delete route")
-	}
-
-	return nil
+	return builder.Teardown(ctx)
 }
 
 func NewFeatureBuilder(ctx context.Context, route *gatewayv1.Route) (features.FeaturesBuilder, error) {

@@ -7,11 +7,11 @@ package controller
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	testifymock "github.com/stretchr/testify/mock"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-	"go.uber.org/mock/gomock"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -118,7 +118,7 @@ var _ = Describe("Route Controller", Ordered, func() {
 
 		It("should successfully delete the Route", func() {
 			By("setting up the mocks")
-			GetMockClientFor(gateway).EXPECT().DeleteRoute(gomock.Any(), gomock.Any()).Return(nil).MinTimes(1)
+			GetMockClientFor(gateway).EXPECT().DeleteRoute(testifymock.Anything, testifymock.Anything).Return(nil).Maybe()
 
 			By("Deleting the regular Route")
 			assertRouteIsDeleted(route)

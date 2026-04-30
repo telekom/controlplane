@@ -7,15 +7,17 @@ package features_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	testifymock "github.com/stretchr/testify/mock"
+
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	"github.com/telekom/controlplane/gateway/internal/features"
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
-	"go.uber.org/mock/gomock"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func NewLoadBalancingUpstreams(isProxyRoute bool) []gatewayv1.Upstream {
@@ -47,10 +49,10 @@ func NewLoadBalancingUpstreams(isProxyRoute bool) []gatewayv1.Upstream {
 }
 
 var _ = Describe("FeatureBuilder LoadBalancing", Ordered, func() {
-	var ctx = context.Background()
+	ctx := context.Background()
 	ctx = contextutil.WithEnv(ctx, "test")
 	BeforeEach(func() {
-		mockKc = mock.NewMockKongClient(mockCtrl)
+		mockKc = mock.NewMockKongClient(GinkgoT())
 	})
 
 	Context("Applying and Creating", Ordered, func() {
@@ -96,7 +98,6 @@ var _ = Describe("FeatureBuilder LoadBalancing", Ordered, func() {
 			verifyRequestTransformerPluginProxyRoute(builder)
 		})
 	})
-
 })
 
 func verifyRequestTransformerPluginIsolated(builder *features.Builder) {
@@ -168,7 +169,7 @@ func enableLoadBalancing(isProxyRoute bool) *gatewayv1.Route {
 }
 
 func configureMocks(ctx context.Context, loadBalancingRoute *gatewayv1.Route) {
-	mockKc.EXPECT().CreateOrReplaceRoute(ctx, loadBalancingRoute, gomock.Any()).Return(nil).Times(1)
-	mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
-	mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+	mockKc.EXPECT().CreateOrReplaceRoute(ctx, loadBalancingRoute, testifymock.Anything).Return(nil).Times(1)
+	mockKc.EXPECT().CreateOrReplacePlugin(ctx, testifymock.Anything).Return(nil, nil).Times(1)
+	mockKc.EXPECT().CleanupPlugins(ctx, testifymock.Anything, testifymock.Anything, testifymock.Anything).Return(nil).Times(1)
 }

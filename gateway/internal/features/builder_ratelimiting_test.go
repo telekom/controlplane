@@ -7,8 +7,9 @@ package features_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	testifymock "github.com/stretchr/testify/mock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -16,8 +17,9 @@ import (
 	"github.com/telekom/controlplane/gateway/internal/features/feature"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
-	"go.uber.org/mock/gomock"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func NewRateLimitRoute(isProxyRoute bool) *gatewayv1.Route {
@@ -110,7 +112,7 @@ var _ = Describe("FeatureBuilder RateLimiting", Ordered, func() {
 	ctx = contextutil.WithEnv(ctx, "test")
 
 	BeforeEach(func() {
-		mockKc = mock.NewMockKongClient(mockCtrl)
+		mockKc = mock.NewMockKongClient(GinkgoT())
 
 		// Setup gateway with Redis configuration
 		gateway = &gatewayv1.Gateway{
@@ -185,12 +187,10 @@ var _ = Describe("FeatureBuilder RateLimiting", Ordered, func() {
 			By("checking the rate limit plugin for consumer")
 			verifyRateLimitPluginConsumer(builder, consumeRoute, gateway, false)
 		})
-
 	})
 })
 
 func buildRateLimitFeature(ctx context.Context, route *gatewayv1.Route, isProxyRoute bool, consumeRoutes []*gatewayv1.ConsumeRoute, gateway *gatewayv1.Gateway, realm *gatewayv1.Realm) *features.Builder {
-
 	builder := features.NewFeatureBuilder(mockKc, route, nil, realm, gateway)
 
 	if consumeRoutes != nil {
@@ -248,7 +248,7 @@ func verifyRateLimitPluginConsumer(builder *features.Builder, consumeRoute *gate
 }
 
 func configureRouteLimitingMocks(ctx context.Context, route *gatewayv1.Route) {
-	mockKc.EXPECT().CreateOrReplaceRoute(ctx, route, gomock.Any()).Return(nil).Times(1)
-	mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
-	mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+	mockKc.EXPECT().CreateOrReplaceRoute(ctx, route, testifymock.Anything).Return(nil).Times(1)
+	mockKc.EXPECT().CreateOrReplacePlugin(ctx, testifymock.Anything).Return(nil, nil).Times(1)
+	mockKc.EXPECT().CleanupPlugins(ctx, testifymock.Anything, testifymock.Anything, testifymock.Anything).Return(nil).Times(1)
 }

@@ -35,7 +35,12 @@ type Feature interface {
 	Apply(ctx context.Context, builder FeaturesBuilder) error
 }
 
-//go:generate mockgen -source=builder.go -destination=mock/builder.gen.go -package=mock
+type TeardownFeature interface {
+	Feature
+	// Teardown is used to teardown the feature in case it is not used anymore. This can be used to clean up any resources that were created by the feature.
+	Teardown(ctx context.Context, builder FeaturesBuilder) error
+}
+
 type FeaturesBuilder interface {
 	EnableFeature(f Feature)
 	GetRoute() (*gatewayv1.Route, bool)
@@ -57,6 +62,8 @@ type FeaturesBuilder interface {
 
 	Build(context.Context) error
 	BuildForConsumer(context.Context) error
+
+	Teardown(ctx context.Context) error
 
 	GetKongClient() client.KongClient
 }
@@ -351,6 +358,25 @@ func (b *Builder) BuildForConsumer(ctx context.Context) error {
 
 	return nil
 
+}
+
+func (b *Builder) Teardown(ctx context.Context) error {
+	log := logr.FromContextOrDiscard(ctx).WithName("features.builder").WithValues("route", b.Route.Name)
+	for _, f := range sortFeatures(toSlice(b.Features)) {
+		if tf, ok := f.(TeardownFeature); ok {
+			if !f.IsUsed(ctx, b) {
+				log.V(1).Info("Feature is not used, skipping teardown", "name", tf.Name())
+				continue
+			}
+			log.V(1).Info("Tearing down feature", "name", tf.Name())
+			err := tf.Teardown(ctx, b)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return b.kc.DeleteRoute(ctx, b.Route)
 }
 
 // sort features based on their priority

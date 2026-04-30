@@ -6,24 +6,26 @@ package feature_test
 
 import (
 	"context"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
-	"github.com/telekom/controlplane/gateway/internal/features/feature/config"
-	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
-	"github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"fmt"
 	"net/http"
+
+	testifymock "github.com/stretchr/testify/mock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	"github.com/telekom/controlplane/gateway/internal/features/feature"
+	"github.com/telekom/controlplane/gateway/internal/features/feature/config"
+	featuresmock "github.com/telekom/controlplane/gateway/internal/features/mock"
+	kong "github.com/telekom/controlplane/gateway/pkg/kong/api"
+	"github.com/telekom/controlplane/gateway/pkg/kong/client"
+	"github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-	"github.com/telekom/controlplane/gateway/internal/features/feature"
-	featuresmock "github.com/telekom/controlplane/gateway/internal/features/mock"
-	"github.com/telekom/controlplane/gateway/pkg/kong/client"
-	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("CircuitBreakerFeature", func() {
-
 	It("should return the correct feature type", func() {
 		Expect(feature.InstanceCircuitBreakerFeature.Name()).To(Equal(gatewayv1.FeatureTypeCircuitBreaker))
 	})
@@ -33,12 +35,10 @@ var _ = Describe("CircuitBreakerFeature", func() {
 	})
 
 	Context("with mocked feature builder", func() {
-		var ctrl *gomock.Controller
 		var mockFeatureBuilder *featuresmock.MockFeaturesBuilder
 
 		BeforeEach(func() {
-			ctrl = gomock.NewController(GinkgoT())
-			mockFeatureBuilder = featuresmock.NewMockFeaturesBuilder(ctrl)
+			mockFeatureBuilder = featuresmock.NewMockFeaturesBuilder(GinkgoT())
 		})
 
 		Context("test IsUsed", func() {
@@ -96,13 +96,12 @@ var _ = Describe("CircuitBreakerFeature", func() {
 		})
 
 		Context("test Apply", func() {
-
 			var mockKongClient *mock.MockKongClient
 			var mockKongAdminApi *mock.MockKongAdminApi
 
 			BeforeEach(func() {
-				mockKongClient = mock.NewMockKongClient(ctrl)
-				mockKongAdminApi = mock.NewMockKongAdminApi(ctrl)
+				mockKongClient = mock.NewMockKongClient(GinkgoT())
+				mockKongAdminApi = mock.NewMockKongAdminApi(GinkgoT())
 			})
 
 			It("should return error if route is missing from feature builder", func() {
@@ -113,7 +112,7 @@ var _ = Describe("CircuitBreakerFeature", func() {
 				Expect(err.Error()).Should(ContainSubstring("cannot find route"))
 			})
 
-			It("should create kong upstream and targets and update feature builder upstream value", func() {
+			It("should create kong upstream and target on first reconciliation (target not found in Kong)", func() {
 				// Setup
 				ctx := context.Background()
 				ctx = contextutil.WithEnv(ctx, "test")
@@ -134,8 +133,10 @@ var _ = Describe("CircuitBreakerFeature", func() {
 				mockKongClient.EXPECT().GetKongAdminApi().Return(mockKongAdminApi).Times(1)
 
 				var setUpstreamArg *client.CustomUpstream
-				mockFeatureBuilder.EXPECT().SetUpstream(gomock.Any()).Do(func(upstream *client.CustomUpstream) {
-					setUpstreamArg = upstream
+				mockFeatureBuilder.EXPECT().SetUpstream(testifymock.Anything).Run(func(upstream client.Upstream) {
+					if cu, ok := upstream.(*client.CustomUpstream); ok {
+						setUpstreamArg = cu
+					}
 				})
 
 				// mock UpsertUpstreamWithResponse
@@ -153,9 +154,15 @@ var _ = Describe("CircuitBreakerFeature", func() {
 						},
 					}, nil
 				}
-				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(upsertUpstreamWithResponse_func).Times(1)
+				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(testifymock.Anything, testifymock.Anything, testifymock.Anything, testifymock.Anything).RunAndReturn(upsertUpstreamWithResponse_func).Times(1)
 
-				// mock CreateTargetForUpstreamWithResponse
+				// mock FetchTargetForUpstreamWithResponse — target does not exist yet (404)
+				mockKongAdminApi.EXPECT().FetchTargetForUpstreamWithResponse(testifymock.Anything, "test-route-name", "localhost:8080", testifymock.Anything).
+					Return(&kong.FetchTargetForUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 404},
+					}, nil).Times(1)
+
+				// mock CreateTargetForUpstreamWithResponse — target is created
 				var createTargetForUpstreamWithResponse_upstreamNameArg string
 				var createTargetForUpstreamWithResponse_targetBodyArg kong.CreateTargetForUpstreamJSONRequestBody
 
@@ -173,14 +180,13 @@ var _ = Describe("CircuitBreakerFeature", func() {
 						},
 					}, nil
 				}
-				mockKongAdminApi.EXPECT().CreateTargetForUpstreamWithResponse(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(createTargetForUpstreamWithResponse_func).Times(1)
+				mockKongAdminApi.EXPECT().CreateTargetForUpstreamWithResponse(testifymock.Anything, testifymock.Anything, testifymock.Anything, testifymock.Anything).RunAndReturn(createTargetForUpstreamWithResponse_func).Times(1)
 
 				// Execute
 				err := feature.InstanceCircuitBreakerFeature.Apply(ctx, mockFeatureBuilder)
 
 				// Verify
 				Expect(err).Should(Not(HaveOccurred()))
-				// pointer vs non-pointer
 				Expect(*setUpstreamArg).To(BeEquivalentTo(client.CustomUpstream{
 					Scheme: "http",
 					Host:   "test-route-name",
@@ -191,7 +197,6 @@ var _ = Describe("CircuitBreakerFeature", func() {
 				Expect(upsertUpstreamWithResponse_upstreamNameArg).To(Equal("test-route-name"))
 
 				expectedUpstreamBody := createTestCreateUpstreamJSONRequestBody(ctx, "test-route-name")
-				// pointer vs non-pointer
 				Expect(upsertUpstreamWithResponse_upstreamBodyArg).To(Equal(*expectedUpstreamBody))
 				Expect(route.GetUpstreamId()).To(Equal("kong_upstream_response_id"))
 
@@ -204,6 +209,166 @@ var _ = Describe("CircuitBreakerFeature", func() {
 					Weight: &expectedTargetWeight,
 				}))
 				Expect(route.GetTargetsId()).To(Equal("kong_target_response_id"))
+			})
+
+			It("should upsert upstream but skip target creation when target already exists in Kong", func() {
+				// Setup
+				ctx := context.Background()
+				ctx = contextutil.WithEnv(ctx, "test")
+				route := &gatewayv1.Route{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-route-name",
+					},
+					Spec: gatewayv1.RouteSpec{
+						Traffic: gatewayv1.Traffic{
+							CircuitBreaker: &gatewayv1.CircuitBreaker{
+								Enabled: true,
+							},
+						},
+					},
+				}
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Times(1)
+				mockFeatureBuilder.EXPECT().GetKongClient().Return(mockKongClient).Times(1)
+				mockKongClient.EXPECT().GetKongAdminApi().Return(mockKongAdminApi).Times(1)
+				mockFeatureBuilder.EXPECT().SetUpstream(testifymock.Anything)
+
+				// mock UpsertUpstreamWithResponse — still called on every reconciliation
+				upsertUpstreamResponseId := "kong_upstream_response_id"
+				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(testifymock.Anything, testifymock.Anything, testifymock.Anything, testifymock.Anything).
+					Return(&kong.UpsertUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 200},
+						JSON200:      &kong.Upstream{Id: &upsertUpstreamResponseId},
+					}, nil).Times(1)
+
+				// mock FetchTargetForUpstreamWithResponse — target already exists in Kong
+				existingTargetId := "existing-kong-target-id"
+				mockKongAdminApi.EXPECT().FetchTargetForUpstreamWithResponse(testifymock.Anything, "test-route-name", "localhost:8080", testifymock.Anything).
+					Return(&kong.FetchTargetForUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 200},
+						JSON200:      &kong.Target{Id: &existingTargetId},
+					}, nil).Times(1)
+
+				// CreateTargetForUpstreamWithResponse must NOT be called — target already exists
+				mockKongAdminApi.EXPECT().CreateTargetForUpstreamWithResponse(testifymock.Anything, testifymock.Anything, testifymock.Anything, testifymock.Anything).Maybe()
+
+				// Execute
+				err := feature.InstanceCircuitBreakerFeature.Apply(ctx, mockFeatureBuilder)
+
+				// Verify
+				Expect(err).Should(Not(HaveOccurred()))
+				Expect(route.GetUpstreamId()).To(Equal("kong_upstream_response_id"))
+				Expect(route.GetTargetsId()).To(Equal("existing-kong-target-id"))
+			})
+
+			It("should return error when FetchTargetForUpstream fails", func() {
+				ctx := context.Background()
+				ctx = contextutil.WithEnv(ctx, "test")
+				route := &gatewayv1.Route{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-route-name"},
+					Spec: gatewayv1.RouteSpec{
+						Traffic: gatewayv1.Traffic{
+							CircuitBreaker: &gatewayv1.CircuitBreaker{Enabled: true},
+						},
+					},
+				}
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Times(1)
+				mockFeatureBuilder.EXPECT().GetKongClient().Return(mockKongClient).Times(1)
+				mockKongClient.EXPECT().GetKongAdminApi().Return(mockKongAdminApi).Times(1)
+				mockFeatureBuilder.EXPECT().SetUpstream(testifymock.Anything)
+
+				upsertUpstreamResponseId := "kong_upstream_response_id"
+				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(testifymock.Anything, testifymock.Anything, testifymock.Anything, testifymock.Anything).
+					Return(&kong.UpsertUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 200},
+						JSON200:      &kong.Upstream{Id: &upsertUpstreamResponseId},
+					}, nil).Times(1)
+
+				mockKongAdminApi.EXPECT().FetchTargetForUpstreamWithResponse(testifymock.Anything, testifymock.Anything, testifymock.Anything, testifymock.Anything).
+					Return(nil, fmt.Errorf("connection refused")).Times(1)
+
+				err := feature.InstanceCircuitBreakerFeature.Apply(ctx, mockFeatureBuilder)
+				Expect(err).Should(HaveOccurred())
+				Expect(err.Error()).Should(ContainSubstring("failed to fetch target for upstream"))
+			})
+
+			It("should create target when FetchTargetForUpstream returns 404 (new upstream)", func() {
+				ctx := context.Background()
+				ctx = contextutil.WithEnv(ctx, "test")
+				route := &gatewayv1.Route{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-route-name"},
+					Spec: gatewayv1.RouteSpec{
+						Traffic: gatewayv1.Traffic{
+							CircuitBreaker: &gatewayv1.CircuitBreaker{Enabled: true},
+						},
+					},
+				}
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Times(1)
+				mockFeatureBuilder.EXPECT().GetKongClient().Return(mockKongClient).Times(1)
+				mockKongClient.EXPECT().GetKongAdminApi().Return(mockKongAdminApi).Times(1)
+				mockFeatureBuilder.EXPECT().SetUpstream(testifymock.Anything)
+
+				upsertUpstreamResponseId := "kong_upstream_response_id"
+				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(testifymock.Anything, testifymock.Anything, testifymock.Anything, testifymock.Anything).
+					Return(&kong.UpsertUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 200},
+						JSON200:      &kong.Upstream{Id: &upsertUpstreamResponseId},
+					}, nil).Times(1)
+
+				// FetchTargetForUpstream returns 404 — target doesn't exist yet
+				mockKongAdminApi.EXPECT().FetchTargetForUpstreamWithResponse(testifymock.Anything, testifymock.Anything, testifymock.Anything, testifymock.Anything).
+					Return(&kong.FetchTargetForUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 404},
+					}, nil).Times(1)
+
+				// Since 404 means no target, CreateTargetForUpstream should be called
+				createTargetResponseId := "new-target-id"
+				mockKongAdminApi.EXPECT().CreateTargetForUpstreamWithResponse(testifymock.Anything, testifymock.Anything, testifymock.Anything, testifymock.Anything).
+					Return(&kong.CreateTargetForUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 200},
+						JSON200:      &kong.Target{Id: &createTargetResponseId},
+					}, nil).Times(1)
+
+				err := feature.InstanceCircuitBreakerFeature.Apply(ctx, mockFeatureBuilder)
+				Expect(err).Should(Not(HaveOccurred()))
+				Expect(route.GetTargetsId()).To(Equal("new-target-id"))
+			})
+
+			It("should return error when CreateTargetForUpstream fails", func() {
+				ctx := context.Background()
+				ctx = contextutil.WithEnv(ctx, "test")
+				route := &gatewayv1.Route{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-route-name"},
+					Spec: gatewayv1.RouteSpec{
+						Traffic: gatewayv1.Traffic{
+							CircuitBreaker: &gatewayv1.CircuitBreaker{Enabled: true},
+						},
+					},
+				}
+				mockFeatureBuilder.EXPECT().GetRoute().Return(route, true).Times(1)
+				mockFeatureBuilder.EXPECT().GetKongClient().Return(mockKongClient).Times(1)
+				mockKongClient.EXPECT().GetKongAdminApi().Return(mockKongAdminApi).Times(1)
+				mockFeatureBuilder.EXPECT().SetUpstream(testifymock.Anything)
+
+				upsertUpstreamResponseId := "kong_upstream_response_id"
+				mockKongAdminApi.EXPECT().UpsertUpstreamWithResponse(testifymock.Anything, testifymock.Anything, testifymock.Anything, testifymock.Anything).
+					Return(&kong.UpsertUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 200},
+						JSON200:      &kong.Upstream{Id: &upsertUpstreamResponseId},
+					}, nil).Times(1)
+
+				// Target does not exist
+				mockKongAdminApi.EXPECT().FetchTargetForUpstreamWithResponse(testifymock.Anything, testifymock.Anything, testifymock.Anything, testifymock.Anything).
+					Return(&kong.FetchTargetForUpstreamResponse{
+						HTTPResponse: &http.Response{StatusCode: 404},
+					}, nil).Times(1)
+
+				// CreateTargetForUpstream fails
+				mockKongAdminApi.EXPECT().CreateTargetForUpstreamWithResponse(testifymock.Anything, testifymock.Anything, testifymock.Anything, testifymock.Anything).
+					Return(nil, fmt.Errorf("connection refused")).Times(1)
+
+				err := feature.InstanceCircuitBreakerFeature.Apply(ctx, mockFeatureBuilder)
+				Expect(err).Should(HaveOccurred())
+				Expect(err.Error()).Should(ContainSubstring("failed to create target for upstream"))
 			})
 
 			It("should delete kong upstream and targets if CB is disabled and upstreamId is not empty", func() {
@@ -229,8 +394,10 @@ var _ = Describe("CircuitBreakerFeature", func() {
 				mockFeatureBuilder.EXPECT().GetKongClient().Return(mockKongClient).Times(1)
 
 				var setUpstreamArg *client.CustomUpstream
-				mockFeatureBuilder.EXPECT().SetUpstream(gomock.Any()).Do(func(upstream *client.CustomUpstream) {
-					setUpstreamArg = upstream
+				mockFeatureBuilder.EXPECT().SetUpstream(testifymock.Anything).Run(func(upstream client.Upstream) {
+					if cu, ok := upstream.(*client.CustomUpstream); ok {
+						setUpstreamArg = cu
+					}
 				})
 
 				// mock UpsertUpstreamWithResponse
@@ -240,9 +407,8 @@ var _ = Describe("CircuitBreakerFeature", func() {
 
 					// happy path
 					return nil
-
 				}
-				mockKongClient.EXPECT().DeleteUpstream(gomock.Any(), gomock.Any()).DoAndReturn(deleteUpstream_func).Times(1)
+				mockKongClient.EXPECT().DeleteUpstream(testifymock.Anything, testifymock.Anything).RunAndReturn(deleteUpstream_func).Times(1)
 
 				// Execute
 				err := feature.InstanceCircuitBreakerFeature.Apply(ctx, mockFeatureBuilder)
@@ -261,7 +427,6 @@ var _ = Describe("CircuitBreakerFeature", func() {
 				gwRoute, ok := routeArg.(*gatewayv1.Route)
 				Expect(ok).To(BeTrue())
 				Expect(gwRoute.GetUpstreamId()).To(Equal(""))
-
 			})
 		})
 	})

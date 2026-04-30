@@ -8,16 +8,19 @@ import (
 	"context"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	testifymock "github.com/stretchr/testify/mock"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-	"go.uber.org/mock/gomock"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	kong_client "github.com/telekom/controlplane/gateway/pkg/kong/client"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func NewConsumer(name string, realmRef types.ObjectRef) *gatewayv1.Consumer {
@@ -38,7 +41,6 @@ func NewConsumer(name string, realmRef types.ObjectRef) *gatewayv1.Consumer {
 }
 
 var _ = Describe("Consumer Controller", Ordered, func() {
-
 	var gateway *gatewayv1.Gateway
 	var realm *gatewayv1.Realm
 
@@ -57,7 +59,6 @@ var _ = Describe("Consumer Controller", Ordered, func() {
 
 		By("Initializing the Consumer")
 		consumer = NewConsumer("test-consumer", *types.ObjectRefFromObject(realm))
-
 	})
 
 	AfterAll(func() {
@@ -70,9 +71,7 @@ var _ = Describe("Consumer Controller", Ordered, func() {
 	})
 
 	Context("When creating a Consumer", func() {
-
 		It("should successfully provision the Consumer", func() {
-
 			By("Creating the Consumer")
 			err := k8sClient.Create(ctx, consumer)
 			Expect(err).NotTo(HaveOccurred())
@@ -94,19 +93,19 @@ var _ = Describe("Consumer Controller", Ordered, func() {
 				g.Expect(readyCondition).NotTo(BeNil())
 				g.Expect(readyCondition.Reason).To(Equal("ConsumerReady"))
 				g.Expect(readyCondition.Status).To(Equal(metav1.ConditionTrue))
-
 			}, 5*time.Second, interval).Should(Succeed())
-
 		})
 
 		It("should delete the Consumer", func() {
 			By("Setting up the mocks")
 			consumerKey := client.ObjectKeyFromObject(consumer)
 			expectedName := consumer.Name
-			GetMockClientFor(gateway).EXPECT().DeleteConsumer(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, actual *gatewayv1.Consumer) error {
-				Expect(actual.Name).To(Equal(expectedName))
+			GetMockClientFor(gateway).EXPECT().DeleteConsumer(testifymock.Anything, testifymock.Anything).RunAndReturn(func(_ context.Context, actual kong_client.CustomConsumer) error {
+				actualConsumer, ok := actual.(*gatewayv1.Consumer)
+				Expect(ok).To(BeTrue())
+				Expect(actualConsumer.Name).To(Equal(expectedName))
 				return nil
-			}).MinTimes(1)
+			}).Times(1)
 
 			By("Deleting the Consumer")
 			err := k8sClient.Delete(ctx, consumer)
@@ -116,7 +115,6 @@ var _ = Describe("Consumer Controller", Ordered, func() {
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, consumerKey, &gatewayv1.Consumer{})
 				g.Expect(err).To(HaveOccurred())
-
 			}, timeout, interval).Should(Succeed())
 		})
 	})

@@ -6,9 +6,10 @@ package features_test
 
 import (
 	"context"
+	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	testifymock "github.com/stretchr/testify/mock"
+
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -17,13 +18,15 @@ import (
 	"github.com/telekom/controlplane/gateway/pkg/kong/client"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/mock"
 	"github.com/telekom/controlplane/gateway/pkg/kong/client/plugin"
-	"go.uber.org/mock/gomock"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("FeatureBuilder", Ordered, func() {
 	Context("Registering", Ordered, func() {
 		It("should be registered", func() {
-			kc := mock.NewMockKongClient(mockCtrl)
+			kc := mock.NewMockKongClient(GinkgoT())
 
 			builder := features.NewFeatureBuilder(kc, route, nil, realm, gateway)
 
@@ -38,14 +41,13 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			Expect(ok).To(BeTrue())
 			Expect(b.Features).To(HaveLen(6))
 		})
-
 	})
 
 	Context("Applying and Creating", Ordered, func() {
-		var ctx = context.Background()
+		ctx := context.Background()
 		ctx = contextutil.WithEnv(ctx, "test")
 		BeforeEach(func() {
-			mockKc = mock.NewMockKongClient(mockCtrl)
+			mockKc = mock.NewMockKongClient(GinkgoT())
 		})
 
 		It("should fail if no upstream is set", func() {
@@ -65,8 +67,8 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			builder := features.NewFeatureBuilder(mockKc, passThroughRoute, nil, realm, gateway)
 			builder.EnableFeature(feature.InstancePassThroughFeature)
 
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, passThroughRoute, gomock.Any()).Return(nil).Times(1)
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, passThroughRoute, testifymock.Anything).Return(nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, testifymock.Anything, testifymock.Anything, testifymock.Anything).Return(nil).Times(1)
 
 			By("building the features")
 			err := builder.Build(ctx)
@@ -98,9 +100,9 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			builder.EnableFeature(feature.InstancePassThroughFeature)
 			builder.EnableFeature(feature.InstanceAccessControlFeature)
 
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, acRoute, gomock.Any()).Return(nil).Times(1)
-			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(2)
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, acRoute, testifymock.Anything).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplacePlugin(ctx, testifymock.Anything).Return(nil, nil).Times(2)
+			mockKc.EXPECT().CleanupPlugins(ctx, testifymock.Anything, testifymock.Anything, testifymock.Anything).Return(nil).Times(1)
 
 			By("building the features")
 			err := builder.Build(ctx)
@@ -143,9 +145,9 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			builder.EnableFeature(feature.InstancePassThroughFeature)
 			builder.EnableFeature(feature.InstanceAccessControlFeature)
 
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, acRoute, gomock.Any()).Return(nil).Times(1)
-			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(2)
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, acRoute, testifymock.Anything).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplacePlugin(ctx, testifymock.Anything).Return(nil, nil).Times(2)
+			mockKc.EXPECT().CleanupPlugins(ctx, testifymock.Anything, testifymock.Anything, testifymock.Anything).Return(nil).Times(1)
 
 			By("building the features")
 			err := builder.Build(ctx)
@@ -172,9 +174,9 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 
 			builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
 
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, lmsRoute, gomock.Any()).Return(nil).Times(1)
-			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, lmsRoute, testifymock.Anything).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplacePlugin(ctx, testifymock.Anything).Return(nil, nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, testifymock.Anything, testifymock.Anything, testifymock.Anything).Return(nil).Times(1)
 
 			By("building the features")
 			err := builder.Build(ctx)
@@ -223,9 +225,9 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 
 			builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
 
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, lmsRoute, gomock.Any()).Return(nil).Times(1)
-			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, lmsRoute, testifymock.Anything).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplacePlugin(ctx, testifymock.Anything).Return(nil, nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, testifymock.Anything, testifymock.Anything, testifymock.Anything).Return(nil).Times(1)
 
 			By("building the features")
 			err := builder.Build(ctx)
@@ -261,9 +263,9 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 			builder.EnableFeature(feature.InstanceCustomScopesFeature)
 			builder.EnableFeature(feature.InstanceLastMileSecurityFeature)
 
-			mockKc.EXPECT().CreateOrReplaceRoute(ctx, scopesRoute, gomock.Any()).Return(nil).Times(1)
-			mockKc.EXPECT().CreateOrReplacePlugin(ctx, gomock.Any()).Return(nil, nil).Times(1)
-			mockKc.EXPECT().CleanupPlugins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplaceRoute(ctx, scopesRoute, testifymock.Anything).Return(nil).Times(1)
+			mockKc.EXPECT().CreateOrReplacePlugin(ctx, testifymock.Anything).Return(nil, nil).Times(1)
+			mockKc.EXPECT().CleanupPlugins(ctx, testifymock.Anything, testifymock.Anything, testifymock.Anything).Return(nil).Times(1)
 
 			By("building the features")
 			err := builder.Build(ctx)
@@ -284,7 +286,65 @@ var _ = Describe("FeatureBuilder", Ordered, func() {
 		})
 
 		// TBD other features
-
 	})
 
+	Context("Teardown", Ordered, func() {
+		ctx := context.Background()
+
+		BeforeEach(func() {
+			mockKc = mock.NewMockKongClient(GinkgoT())
+		})
+
+		It("should call DeleteRoute when no TeardownFeature is enabled", func() {
+			builder := features.NewFeatureBuilder(mockKc, route, nil, realm, gateway)
+			builder.EnableFeature(feature.InstancePassThroughFeature)
+
+			mockKc.EXPECT().DeleteRoute(ctx, route).Return(nil).Times(1)
+
+			err := builder.Teardown(ctx)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should call Teardown on TeardownFeatures before DeleteRoute", func() {
+			cbRoute := NewMockRoute()
+			cbRoute.SetUpstreamId("existing-upstream-id")
+			builder := features.NewFeatureBuilder(mockKc, cbRoute, nil, realm, gateway)
+			builder.EnableFeature(feature.InstanceCircuitBreakerFeature)
+
+			// CircuitBreakerFeature.Teardown calls handleDeletion which calls DeleteUpstream
+			mockKc.EXPECT().DeleteUpstream(testifymock.Anything, testifymock.Anything).Return(nil).Times(1)
+			mockKc.EXPECT().DeleteRoute(ctx, cbRoute).Return(nil).Times(1)
+
+			err := builder.Teardown(ctx)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should return error if a TeardownFeature fails", func() {
+			cbRoute := NewMockRoute()
+			cbRoute.SetUpstreamId("existing-upstream-id")
+			builder := features.NewFeatureBuilder(mockKc, cbRoute, nil, realm, gateway)
+			builder.EnableFeature(feature.InstanceCircuitBreakerFeature)
+
+			mockKc.EXPECT().DeleteUpstream(testifymock.Anything, testifymock.Anything).
+				Return(fmt.Errorf("upstream deletion failed")).Times(1)
+
+			err := builder.Teardown(ctx)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("upstream deletion failed"))
+		})
+
+		It("should not call DeleteRoute if a TeardownFeature fails", func() {
+			cbRoute := NewMockRoute()
+			cbRoute.SetUpstreamId("existing-upstream-id")
+			builder := features.NewFeatureBuilder(mockKc, cbRoute, nil, realm, gateway)
+			builder.EnableFeature(feature.InstanceCircuitBreakerFeature)
+
+			mockKc.EXPECT().DeleteUpstream(testifymock.Anything, testifymock.Anything).
+				Return(fmt.Errorf("fail")).Times(1)
+
+			// DeleteRoute should NOT be called
+			err := builder.Teardown(ctx)
+			Expect(err).To(HaveOccurred())
+		})
+	})
 })

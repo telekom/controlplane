@@ -121,6 +121,55 @@ var _ = Describe("Plugin", func() {
 			Expect(m.Get("key1")).To(Equal("value1"))
 			Expect(m.Get("key2")).To(Equal("value2"))
 		})
+
+		It("should add a key-value pair via Add", func() {
+			m := New()
+			m.Add("foo:bar")
+			Expect(m.Contains("foo")).To(BeTrue())
+			Expect(m.Get("foo")).To(Equal("bar"))
+		})
+
+		It("should remove a key via RemoveK", func() {
+			m := New()
+			m.AddKV("key1", "value1")
+			m.RemoveK("key1", "value1")
+			Expect(m.Contains("key1")).To(BeFalse())
+		})
+
+		It("should remove a key via Remove", func() {
+			m := New()
+			m.AddKV("key1", "value1")
+			m.Remove("key1:value1")
+			Expect(m.Contains("key1")).To(BeFalse())
+		})
+
+		It("should clear the map", func() {
+			m := New()
+			m.AddKV("key1", "value1")
+			m.AddKV("key2", "value2")
+			m.Clear()
+			Expect(m.Contains("key1")).To(BeFalse())
+			Expect(m.Contains("key2")).To(BeFalse())
+		})
+
+		It("should return empty string for missing key", func() {
+			m := New()
+			Expect(m.Get("nonexistent")).To(Equal(""))
+		})
+
+		It("should encode an empty map as empty array", func() {
+			m := New()
+			encoded, err := m.MarshalJSON()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(encoded)).To(Equal("[]"))
+		})
+
+		It("should decode an empty array", func() {
+			m := New()
+			err := json.Unmarshal([]byte(`[]`), m)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(m.items).To(BeEmpty())
+		})
 	})
 
 })
