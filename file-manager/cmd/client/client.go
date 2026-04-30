@@ -112,7 +112,7 @@ func main() {
 		return
 	}
 
-	if fileId != "" {
+	if fileId != "" { //nolint:nestif // CLI command flow with necessary nesting
 		// download file
 		w := os.Stdout
 		if outputFile != "" {
@@ -120,7 +120,11 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			defer file.Close() //nolint:errcheck // best-effort close
+			defer func() {
+				if err := file.Close(); err != nil {
+					panic(err)
+				}
+			}()
 			w = file
 		}
 		fileInfo, err := fileManager.DownloadFile(ctx, fileId, w)
