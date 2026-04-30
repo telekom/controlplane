@@ -11,11 +11,12 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
-	. "github.com/onsi/gomega"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/application/internal/secret"
 	"github.com/telekom/controlplane/secret-manager/api"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
+
+	. "github.com/onsi/gomega"
 )
 
 func TestMutateSecret(t *testing.T) {

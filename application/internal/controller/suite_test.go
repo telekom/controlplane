@@ -13,9 +13,6 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -30,6 +27,9 @@ import (
 	"github.com/telekom/controlplane/common/pkg/test/mock"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -44,11 +44,13 @@ const (
 	mockKeycloak    = true
 )
 
-var cfg *rest.Config
-var k8sClient client.Client
-var testEnv *envtest.Environment
-var ctx context.Context
-var cancel context.CancelFunc
+var (
+	cfg       *rest.Config
+	k8sClient client.Client
+	testEnv   *envtest.Environment
+	ctx       context.Context
+	cancel    context.CancelFunc
+)
 
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -122,7 +124,6 @@ var _ = BeforeSuite(func() {
 		err = k8sManager.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
-
 })
 
 var _ = AfterSuite(func() {

@@ -22,9 +22,7 @@ var GetSecretManager = func() api.SecretManager {
 	return secretManager
 }
 
-var WithSecretValue = func(name string, value any) api.OnboardingOption {
-	return api.WithSecretValue(name, value)
-}
+var WithSecretValue = api.WithSecretValue
 
 const (
 	ClientSecret = "clientSecret"

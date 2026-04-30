@@ -8,6 +8,10 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	admin "github.com/telekom/controlplane/admin/api/v1"
 	application "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
@@ -19,9 +23,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gateway "github.com/telekom/controlplane/gateway/api/v1"
 	identity "github.com/telekom/controlplane/identity/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var _ handler.Handler[*application.Application] = &ApplicationHandler{}
@@ -47,7 +48,8 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	failoverZones := make([]*admin.Zone, 0, len(app.Spec.FailoverZones))
 	if app.Spec.NeedsClient || app.Spec.NeedsConsumer {
 		for _, zoneRef := range app.Spec.FailoverZones {
-			zone, err := GetZone(ctx, c, zoneRef)
+			var foZone *admin.Zone
+			foZone, err = GetZone(ctx, c, zoneRef)
 			if err != nil {
 				if apierrors.IsNotFound(errors.Cause(err)) {
 					return ctrlerrors.BlockedErrorf("Zone %s not found", zoneRef.Name)
@@ -55,7 +57,7 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 					return ctrlerrors.RetryableErrorf("failed to get Zone when creating application: %s", err.Error())
 				}
 			}
-			failoverZones = append(failoverZones, zone)
+			failoverZones = append(failoverZones, foZone)
 		}
 	}
 
@@ -133,7 +135,7 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 		opt(options)
 	}
 
-	client := client.ClientFromContextOrDie(ctx)
+	c := client.ClientFromContextOrDie(ctx)
 	clientId := MakeClientName(owner)
 	resourceName := clientId + "--" + zone.Name
 	realmName := contextutil.EnvFromContextOrDie(ctx)
@@ -165,7 +167,7 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 			idpClient.Labels[config.BuildLabelKey("failover")] = "true"
 		}
 
-		err := ctrl.SetControllerReference(owner, idpClient, client.Scheme())
+		err := ctrl.SetControllerReference(owner, idpClient, c.Scheme())
 		if err != nil {
 			return errors.Wrapf(err, "failed to set controller reference for identity client %s", resourceName)
 		}
@@ -179,7 +181,7 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 		return nil
 	}
 
-	_, err := client.CreateOrUpdate(ctx, idpClient, mutator)
+	_, err := c.CreateOrUpdate(ctx, idpClient, mutator)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create or update Identity Client %s", resourceName)
 	}
@@ -195,7 +197,7 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 		opt(options)
 	}
 
-	client := client.ClientFromContextOrDie(ctx)
+	c := client.ClientFromContextOrDie(ctx)
 	clientId := MakeClientName(owner)
 	resourceName := clientId + "--" + zone.Name
 	realmName := contextutil.EnvFromContextOrDie(ctx)
@@ -223,7 +225,7 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 			consumer.Labels[config.BuildLabelKey("failover")] = "true"
 		}
 
-		err := ctrl.SetControllerReference(owner, consumer, client.Scheme())
+		err := ctrl.SetControllerReference(owner, consumer, c.Scheme())
 		if err != nil {
 			return errors.Wrapf(err, "failed to set controller reference for gateway consumer %s", resourceName)
 		}
@@ -244,7 +246,7 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 		return nil
 	}
 
-	_, err := client.CreateOrUpdate(ctx, consumer, mutator)
+	_, err := c.CreateOrUpdate(ctx, consumer, mutator)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create or update Gateway Consumer %s", resourceName)
 	}
