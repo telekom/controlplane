@@ -34,7 +34,8 @@ A Rover resource represents a complete application configuration, including:
 
 - **Declarative API Management**: Define API exposures and subscriptions in a single Rover file
 - **Specification File Management**: Extend API information with APISpecification
-- **Roadmap Management**: Track timeline information for APIs and Events using the Roadmap CRD
+- **Roadmap Management**: Track future timeline and milestone information for APIs using the Roadmap CRD
+- **Changelog Management**: Track version history and release information for APIs using the ApiChangelog CRD
 - **Approval Workflows**: Integrate with the approval domain for subscription requests
 - **Traffic Management**: Configure circuit breakers, timeouts, and retry policies
 
@@ -79,14 +80,15 @@ This CRD represents an OpenAPI specification for an API exposed through a Rover.
 <details>
 <summary>
 <strong>Roadmap</strong>
-This CRD represents timeline and roadmap information for various resource types (APIs, Events, etc.).
+This CRD represents timeline and future milestone information for APIs.
 </summary>
 
-- The Roadmap CR SHOULD be created in the namespace of the team that owns the resource.
-- The Roadmap name is generated from the resourceName by removing leading/trailing slashes, replacing slashes with hyphens, and lowercasing.
-- Roadmap items are stored as JSON in file-manager, with only metadata in the CRD.
-- The Roadmap controller ensures only one roadmap exists per resourceName+resourceType combination.
-- The OpenAPI specification content is stored in file-manager, while metadata is kept in the CRD.
+- The Roadmap CR SHOULD be created in the namespace of the team that owns the API.
+- The Roadmap CR references an ApiSpecification via specificationRef.
+- The Roadmap name is generated from the API basePath with the version suffix removed (e.g., `/eni/payment-service/v1` → `eni-payment-service`).
+- Only one Roadmap can exist per API (across all versions), enforced by the name generation logic.
+- Roadmap items (date, title, description, optional URL) are stored as JSON in file-manager.
+- The CRD stores only a reference to the file-manager content along with a hash for change detection.
 
 </details>
 <br />
@@ -107,15 +109,17 @@ This CRD represents an AsyncAPI specification for an event exposed through a Rov
 
 <details>
 <summary>
-<strong>Changelog</strong>
-This CRD represents a version history changelog for APIs or Events.
+<strong>ApiChangelog</strong>
+This CRD represents version history and release information for APIs.
 </summary>
 
-- The Changelog CR SHOULD be created in the same namespace as the API or Event it documents.
-- The Changelog name matches the resource name (e.g., API basePath or Event type).
-- The Changelog stores version history items as JSON in the file-manager.
-- Each changelog item includes a date (yyyy-MM-dd), semantic version, description, and optional release URL.
-- The Changelog supports both API and Event resource types via the resourceType field.
+- The ApiChangelog CR SHOULD be created in the namespace of the team that owns the API.
+- The ApiChangelog CR references an ApiSpecification via specificationRef.
+- The ApiChangelog name is generated from the API basePath with the version suffix removed (e.g., `/eni/payment-service/v1` → `eni-payment-service`).
+- Only one ApiChangelog can exist per API (across all versions), enforced by the name generation logic.
+- Changelog items (date, version, description, optional versionUrl) are stored as JSON in file-manager.
+- The date field supports flexible formats like "2024-03-15" or "Q1 2024" for past releases and planned releases.
+- The CRD stores only a reference to the file-manager content along with a hash for change detection.
 
 </details>
 <br />
