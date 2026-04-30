@@ -123,6 +123,6 @@ This is typically done by the platform team, not by application developers.
 
 ## Related Pages
 
-- [User Guide: Graceful Secret Rotation](../../../user-journey/features/secret-rotation.mdx) — End-user perspective
+- [User Guide: Graceful Secret Rotation](../../user-journey/features/secret-rotation.mdx) — End-user perspective
 - [Notification Templates](../notification-templates.md) — Template authoring and customization
 - [Environments and Zones](../environments-and-zones.md) — Zone configuration
