@@ -110,13 +110,11 @@ var _ = Describe("ValidationError", func() {
 			valErr.AddInvalidError(field.NewPath("spec").Child("field1"), "invalid-value", "field1 is invalid")
 			valErr.AddInvalidError(field.NewPath("spec").Child("field2"), "/invalid", "field2 is invalid")
 
-			// Build the error
-			statusErr := func() *apierrors.StatusError {
-				target := &apierrors.StatusError{}
-				_ = errors.As(valErr.BuildError(), &target)
-				return target
-			}()
-			Expect(statusErr).To(HaveOccurred())
+			// Build the error and unwrap
+			err := valErr.BuildError()
+			Expect(err).To(HaveOccurred())
+			var statusErr *apierrors.StatusError
+			Expect(errors.As(err, &statusErr)).To(BeTrue())
 
 			// Verify error details
 			Expect(statusErr.ErrStatus.Status).To(Equal(metav1.StatusFailure))
@@ -145,13 +143,11 @@ var _ = Describe("ValidationError", func() {
 			path2 := field.NewPath("spec").Child("duplicate")
 			valErr.Errors = append(valErr.Errors, field.Duplicate(path2, "duplicate value"))
 
-			// Build the error
-			statusErr := func() *apierrors.StatusError {
-				target := &apierrors.StatusError{}
-				_ = errors.As(valErr.BuildError(), &target)
-				return target
-			}()
-			Expect(statusErr).To(HaveOccurred())
+			// Build the error and unwrap
+			err := valErr.BuildError()
+			Expect(err).To(HaveOccurred())
+			var statusErr *apierrors.StatusError
+			Expect(errors.As(err, &statusErr)).To(BeTrue())
 
 			// Verify types are preserved
 			Expect(statusErr.ErrStatus.Details.Causes).To(HaveLen(2))
@@ -221,13 +217,11 @@ var _ = Describe("ValidationError", func() {
 			// Add some errors
 			valErr.AddInvalidError(field.NewPath("spec").Child("zone"), "", "zone is required")
 
-			// Build error and verify
-			statusErr := func() *apierrors.StatusError {
-				target := &apierrors.StatusError{}
-				_ = errors.As(valErr.BuildError(), &target)
-				return target
-			}()
-			Expect(statusErr).To(HaveOccurred())
+			// Build error and unwrap
+			err := valErr.BuildError()
+			Expect(err).To(HaveOccurred())
+			var statusErr *apierrors.StatusError
+			Expect(errors.As(err, &statusErr)).To(BeTrue())
 
 			Expect(statusErr.ErrStatus.Details.Name).To(Equal("test-object"))
 			Expect(statusErr.ErrStatus.Details.Kind).To(Equal("TestResource"))
