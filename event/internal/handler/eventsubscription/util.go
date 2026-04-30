@@ -43,7 +43,7 @@ func EventVisibilityMustBeValid(ctx context.Context, exposure *eventv1.EventExpo
 // EventScopesMustBeValid checks if all scopes configured by the subscribers are actually supported by the exposure.
 func EventScopesMustBeValid(ctx context.Context, apiExposure *eventv1.EventExposure, apiSubscription *eventv1.EventSubscription) (bool, error) {
 	requestedScopes := apiSubscription.Spec.Scopes
-	var supportedScopes []string
+	supportedScopes := make([]string, 0, len(apiExposure.Spec.Scopes))
 	for _, scope := range apiExposure.Spec.Scopes {
 		supportedScopes = append(supportedScopes, scope.Name)
 	}

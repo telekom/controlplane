@@ -11,6 +11,12 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	admin "github.com/telekom/controlplane/admin/api/v1"
 	application "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/application/internal/secret"
@@ -24,11 +30,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	gateway "github.com/telekom/controlplane/gateway/api/v1"
 	identity "github.com/telekom/controlplane/identity/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 var _ handler.Handler[*application.Application] = &ApplicationHandler{}
@@ -44,110 +45,44 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	app.Status.Consumers = []types.ObjectRef{}
 	app.Status.ClientId = MakeClientName(app)
 
-	zone, err := GetZone(ctx, c, app.Spec.Zone)
-	if err != nil {
-		if apierrors.IsNotFound(errors.Cause(err)) {
-			return ctrlerrors.BlockedErrorf("Zone %s not found", app.Spec.Zone.Name)
-		} else {
-			return ctrlerrors.RetryableErrorf("failed to get Zone when creating application: %s", err.Error())
-		}
-	}
-	failoverZones := make([]*admin.Zone, 0, len(app.Spec.FailoverZones))
-	if app.Spec.NeedsClient || app.Spec.NeedsConsumer {
-		for _, zoneRef := range app.Spec.FailoverZones {
-			zone, err := GetZone(ctx, c, zoneRef)
-			if err != nil {
-				if apierrors.IsNotFound(errors.Cause(err)) {
-					return ctrlerrors.BlockedErrorf("Zone %s not found", zoneRef.Name)
-				} else {
-					return ctrlerrors.RetryableErrorf("failed to get Zone when creating application: %s", err.Error())
-				}
-			}
-			failoverZones = append(failoverZones, zone)
-		}
-	}
-
-	// Create Client only if subscription present
-	var primaryClient *identity.Client
-	if app.Spec.NeedsClient {
-		primaryClient, err = CreateIdentityClient(ctx, zone, app)
-		if err != nil {
-			return errors.Wrap(err, "failed to create Identity client when creating application")
-		}
-		for _, failoverZone := range failoverZones {
-			_, err = CreateIdentityClient(ctx, failoverZone, app, WithFailover())
-			if err != nil {
-				return errors.Wrapf(err, "failed to create Identity client for failover zone %s when creating application", failoverZone.Name)
-			}
-		}
-
-	} else {
-		app.Status.ClientSecret = "NOT_NEEDED"
-	}
-
-	if app.Spec.NeedsConsumer {
-		err = CreateGatewayConsumer(ctx, zone, app)
-		if err != nil {
-			return errors.Wrap(err, "failed to create Gateway consumer when creating application")
-		}
-
-		for _, failoverZone := range failoverZones {
-			err = CreateGatewayConsumer(ctx, failoverZone, app, WithFailover())
-			if err != nil {
-				return errors.Wrapf(err, "failed to create Gateway consumer for failover zone %s when creating application", failoverZone.Name)
-			}
-		}
-	}
-
-	_, err = c.CleanupAll(ctx, client.OwnedBy(app))
+	zone, failoverZones, err := h.resolveZones(ctx, c, app)
 	if err != nil {
 		return err
 	}
 
-	// --- Secret rotation condition lifecycle ---
-	rotationRequested := app.Spec.RotatedSecret != ""
-	rotationCond := meta.FindStatusCondition(app.Status.Conditions, secret.SecretRotationConditionType)
-	rotationInProgress := rotationCond != nil && rotationCond.Reason == secret.SecretRotationReasonInProgress
-	// A rotation is considered already handled when it completed successfully
-	rotationAlreadyHandled := app.Spec.RotatedSecret == app.Status.RotatedClientSecret
-
-	if rotationRequested && !rotationInProgress && !rotationAlreadyHandled {
-		// New rotation detected: set InProgress condition only (status fields are set after convergence)
-		app.SetCondition(metav1.Condition{
-			Type:    secret.SecretRotationConditionType,
-			Status:  metav1.ConditionFalse,
-			Reason:  secret.SecretRotationReasonInProgress,
-			Message: "Secret rotation initiated, waiting for sub-resources to converge",
-		})
-		rotationInProgress = true
+	primaryClient, err := h.ensureIdentityClients(ctx, zone, failoverZones, app)
+	if err != nil {
+		return err
 	}
 
+	if err := h.ensureGatewayConsumers(ctx, zone, failoverZones, app); err != nil {
+		return err
+	}
+
+	if _, err := c.CleanupAll(ctx, client.OwnedBy(app)); err != nil {
+		return err
+	}
+
+	rotationInProgress := h.initiateRotationIfNeeded(app)
+
 	if c.AnyChanged() {
-		// A change occurred during provisioning of any sub-resource.
 		app.SetCondition(
 			condition.NewNotReadyCondition("SubResourceProvisioning", "At least one sub-resource has been created or updated"))
-
 		return nil
 	}
 
-	// Only needed if client is required, otherwise there are no sub-resources to wait for and the application can be marked as ready immediately.
-	if primaryClient != nil {
-		isReady := condition.IsReady(primaryClient)
-		if !isReady {
-			app.SetCondition(condition.NewNotReadyCondition("SubResourceProvisioned", "Waiting for primary identity client to be ready"))
-			return nil
-		}
+	if primaryClient != nil && !condition.IsReady(primaryClient) {
+		app.SetCondition(condition.NewNotReadyCondition("SubResourceProvisioned", "Waiting for primary identity client to be ready"))
+		return nil
 	}
 
-	// All sub-resources are up to date and primary client (if applicable) is ready, mark application as ready.
-
+	// All sub-resources are up to date and primary client (if applicable) is ready.
 	app.SetCondition(condition.NewReadyCondition("SubResourceProvisioned", "All sub-resources are up to date"))
 
 	if app.Spec.NeedsClient {
 		app.Status.ClientSecret = app.Spec.Secret
 	}
 
-	// Complete rotation when all sub-resources have settled
 	if rotationInProgress {
 		completeRotation(ctx, app)
 	} else if app.Spec.NeedsClient && app.Status.CurrentExpiresAt != nil {
@@ -155,6 +90,90 @@ func (h *ApplicationHandler) CreateOrUpdate(ctx context.Context, app *applicatio
 	}
 
 	return nil
+}
+
+func (h *ApplicationHandler) resolveZones(ctx context.Context, c client.ScopedClient, app *application.Application) (*admin.Zone, []*admin.Zone, error) {
+	zone, err := GetZone(ctx, c, app.Spec.Zone)
+	if err != nil {
+		if apierrors.IsNotFound(errors.Cause(err)) {
+			return nil, nil, ctrlerrors.BlockedErrorf("Zone %s not found", app.Spec.Zone.Name)
+		}
+		return nil, nil, ctrlerrors.RetryableErrorf("failed to get Zone when creating application: %s", err.Error())
+	}
+
+	failoverZones := make([]*admin.Zone, 0, len(app.Spec.FailoverZones))
+	if app.Spec.NeedsClient || app.Spec.NeedsConsumer {
+		for _, zoneRef := range app.Spec.FailoverZones {
+			foZone, err := GetZone(ctx, c, zoneRef)
+			if err != nil {
+				if apierrors.IsNotFound(errors.Cause(err)) {
+					return nil, nil, ctrlerrors.BlockedErrorf("Zone %s not found", zoneRef.Name)
+				}
+				return nil, nil, ctrlerrors.RetryableErrorf("failed to get Zone when creating application: %s", err.Error())
+			}
+			failoverZones = append(failoverZones, foZone)
+		}
+	}
+
+	return zone, failoverZones, nil
+}
+
+func (h *ApplicationHandler) ensureIdentityClients(ctx context.Context, zone *admin.Zone, failoverZones []*admin.Zone, app *application.Application) (*identity.Client, error) {
+	if !app.Spec.NeedsClient {
+		app.Status.ClientSecret = "NOT_NEEDED"
+		return nil, nil
+	}
+
+	primaryClient, err := CreateIdentityClient(ctx, zone, app)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create Identity client when creating application")
+	}
+
+	for _, failoverZone := range failoverZones {
+		if _, err := CreateIdentityClient(ctx, failoverZone, app, WithFailover()); err != nil {
+			return nil, errors.Wrapf(err, "failed to create Identity client for failover zone %s when creating application", failoverZone.Name)
+		}
+	}
+
+	return primaryClient, nil
+}
+
+func (h *ApplicationHandler) ensureGatewayConsumers(ctx context.Context, zone *admin.Zone, failoverZones []*admin.Zone, app *application.Application) error {
+	if !app.Spec.NeedsConsumer {
+		return nil
+	}
+
+	if err := CreateGatewayConsumer(ctx, zone, app); err != nil {
+		return errors.Wrap(err, "failed to create Gateway consumer when creating application")
+	}
+
+	for _, failoverZone := range failoverZones {
+		if err := CreateGatewayConsumer(ctx, failoverZone, app, WithFailover()); err != nil {
+			return errors.Wrapf(err, "failed to create Gateway consumer for failover zone %s when creating application", failoverZone.Name)
+		}
+	}
+
+	return nil
+}
+
+// initiateRotationIfNeeded checks if a new secret rotation should be started and returns whether rotation is in progress.
+func (h *ApplicationHandler) initiateRotationIfNeeded(app *application.Application) bool {
+	rotationRequested := app.Spec.RotatedSecret != ""
+	rotationCond := meta.FindStatusCondition(app.Status.Conditions, secret.SecretRotationConditionType)
+	rotationInProgress := rotationCond != nil && rotationCond.Reason == secret.SecretRotationReasonInProgress
+	rotationAlreadyHandled := app.Spec.RotatedSecret == app.Status.RotatedClientSecret
+
+	if rotationRequested && !rotationInProgress && !rotationAlreadyHandled {
+		app.SetCondition(metav1.Condition{
+			Type:    secret.SecretRotationConditionType,
+			Status:  metav1.ConditionFalse,
+			Reason:  secret.SecretRotationReasonInProgress,
+			Message: "Secret rotation initiated, waiting for sub-resources to converge",
+		})
+		return true
+	}
+
+	return rotationInProgress
 }
 
 func completeRotation(ctx context.Context, app *application.Application) {
@@ -252,7 +271,7 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 		opt(options)
 	}
 
-	client := client.ClientFromContextOrDie(ctx)
+	c := client.ClientFromContextOrDie(ctx)
 	clientId := MakeClientName(owner)
 	resourceName := clientId + "--" + zone.Name
 	realmName := contextutil.EnvFromContextOrDie(ctx)
@@ -284,7 +303,7 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 			idpClient.Labels[config.BuildLabelKey("failover")] = "true"
 		}
 
-		err := ctrl.SetControllerReference(owner, idpClient, client.Scheme())
+		err := ctrl.SetControllerReference(owner, idpClient, c.Scheme())
 		if err != nil {
 			return errors.Wrapf(err, "failed to set controller reference for identity client %s", resourceName)
 		}
@@ -298,7 +317,7 @@ func CreateIdentityClient(ctx context.Context, zone *admin.Zone, owner *applicat
 		return nil
 	}
 
-	result, err := client.CreateOrUpdate(ctx, idpClient, mutator)
+	result, err := c.CreateOrUpdate(ctx, idpClient, mutator)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create or update Identity Client %s", resourceName)
 	}
@@ -324,7 +343,7 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 		opt(options)
 	}
 
-	client := client.ClientFromContextOrDie(ctx)
+	c := client.ClientFromContextOrDie(ctx)
 	clientId := MakeClientName(owner)
 	resourceName := clientId + "--" + zone.Name
 	realmName := contextutil.EnvFromContextOrDie(ctx)
@@ -352,7 +371,7 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 			consumer.Labels[config.BuildLabelKey("failover")] = "true"
 		}
 
-		err := ctrl.SetControllerReference(owner, consumer, client.Scheme())
+		err := ctrl.SetControllerReference(owner, consumer, c.Scheme())
 		if err != nil {
 			return errors.Wrapf(err, "failed to set controller reference for gateway consumer %s", resourceName)
 		}
@@ -373,7 +392,7 @@ func CreateGatewayConsumer(ctx context.Context, zone *admin.Zone, owner *applica
 		return nil
 	}
 
-	_, err := client.CreateOrUpdate(ctx, consumer, mutator)
+	_, err := c.CreateOrUpdate(ctx, consumer, mutator)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create or update Gateway Consumer %s", resourceName)
 	}

@@ -8,8 +8,6 @@ import (
 	"context"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,6 +26,9 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func newTestApp() *applicationv1.Application {

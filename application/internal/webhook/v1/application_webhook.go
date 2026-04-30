@@ -9,16 +9,17 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	applicationv1 "github.com/telekom/controlplane/application/api/v1"
-	"github.com/telekom/controlplane/application/internal/webhook/v1/mutator"
-	"github.com/telekom/controlplane/common/pkg/controller"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	"github.com/telekom/controlplane/application/internal/webhook/v1/mutator"
+	"github.com/telekom/controlplane/common/pkg/controller"
+	"github.com/telekom/controlplane/common/pkg/util/contextutil"
 )
 
 var applicationLog = logf.Log.WithName("application-resource").WithValues("apiVersion", "application.cp.ei.telekom.de/v1", "kind", "Application")

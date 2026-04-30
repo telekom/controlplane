@@ -13,8 +13,7 @@ import (
 	handler "github.com/telekom/controlplane/organization/internal/handler/team/handler"
 )
 
-type NamespaceHandler struct {
-}
+type NamespaceHandler struct{}
 
 var _ handler.ObjectHandler = &NamespaceHandler{}
 

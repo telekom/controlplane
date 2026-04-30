@@ -9,6 +9,10 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -19,9 +23,6 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/util"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var _ handler.Handler[*eventv1.EventExposure] = &EventExposureHandler{}
@@ -112,14 +113,14 @@ func (h *EventExposureHandler) CreateOrUpdate(ctx context.Context, obj *eventv1.
 	}
 
 	for _, subscriberZoneRef := range crossZones {
-		subscriberZone, err := util.GetZone(ctx, subscriberZoneRef.K8s())
-		if err != nil {
-			return errors.Wrapf(err, "failed to get subscriber zone %q", subscriberZoneRef.Name)
+		subscriberZone, zoneErr := util.GetZone(ctx, subscriberZoneRef.K8s())
+		if zoneErr != nil {
+			return errors.Wrapf(zoneErr, "failed to get subscriber zone %q", subscriberZoneRef.Name)
 		}
 
-		proxyRoute, err := util.CreateSSEProxyRoute(ctx, obj.Spec.EventType, eventConfig, subscriberZone, zone)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create SSE proxy Route for zone %q", subscriberZoneRef.Name)
+		proxyRoute, routeErr := util.CreateSSEProxyRoute(ctx, obj.Spec.EventType, eventConfig, subscriberZone, zone)
+		if routeErr != nil {
+			return errors.Wrapf(routeErr, "failed to create SSE proxy Route for zone %q", subscriberZoneRef.Name)
 		}
 		obj.Status.ProxyRoutes = append(obj.Status.ProxyRoutes, *types.ObjectRefFromObject(proxyRoute))
 		obj.Status.SseURLs[subscriberZoneRef.Name] = proxyRoute.Spec.Downstreams[0].Url()
