@@ -94,6 +94,7 @@ jobs:
       run_check_generated_files: false
       ko_build_path: "cmd/server/server.go"
       coverage_threshold: 61
+      lint_fail_on_issues: true
 
   gateway:
     name: Gateway
