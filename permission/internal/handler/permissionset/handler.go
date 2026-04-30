@@ -8,6 +8,10 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -18,9 +22,6 @@ import (
 	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	pcpv1 "github.com/telekom/controlplane/permission/api/pcp/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -34,7 +35,7 @@ var _ handler.Handler[*permissionv1.PermissionSet] = (*PermissionSetHandler)(nil
 type PermissionSetHandler struct{}
 
 func (h *PermissionSetHandler) CreateOrUpdate(ctx context.Context, obj *permissionv1.PermissionSet) error {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 	environment := contextutil.EnvFromContextOrDie(ctx)
 
@@ -113,7 +114,7 @@ func (h *PermissionSetHandler) CreateOrUpdate(ctx context.Context, obj *permissi
 	obj.SetCondition(condition.NewReadyCondition("Provisioned", "External PermissionSet created successfully"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("External PermissionSet provisioned"))
 
-	log.Info("PermissionSet provisioned", "external", externalPS.Namespace+"/"+externalPS.Name)
+	logger.Info("PermissionSet provisioned", "external", externalPS.Namespace+"/"+externalPS.Name)
 
 	// Cleanup orphaned external PermissionSets
 	// Use OwnedByLabel since external PS is in a different namespace
@@ -125,7 +126,7 @@ func (h *PermissionSetHandler) CreateOrUpdate(ctx context.Context, obj *permissi
 }
 
 func (h *PermissionSetHandler) Delete(ctx context.Context, obj *permissionv1.PermissionSet) error {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)
 
 	// If we have a status reference to the external PermissionSet, delete it
@@ -140,9 +141,9 @@ func (h *PermissionSetHandler) Delete(ctx context.Context, obj *permissionv1.Per
 		if err := c.Delete(ctx, externalPS); client.IgnoreNotFound(err) != nil {
 			return errors.Wrap(err, "failed to delete external PermissionSet")
 		} else if err == nil {
-			log.Info("Deleted external PermissionSet", "name", externalPS.Name, "namespace", externalPS.Namespace)
+			logger.Info("Deleted external PermissionSet", "name", externalPS.Name, "namespace", externalPS.Namespace)
 		} else {
-			log.V(1).Info("External PermissionSet not found (already deleted)", "name", externalPS.Name, "namespace", externalPS.Namespace)
+			logger.V(1).Info("External PermissionSet not found (already deleted)", "name", externalPS.Name, "namespace", externalPS.Namespace)
 		}
 	}
 

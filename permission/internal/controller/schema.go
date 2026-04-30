@@ -5,12 +5,13 @@
 package controller
 
 import (
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	pcpv1 "github.com/telekom/controlplane/permission/api/pcp/v1"
-	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	pcpv1 "github.com/telekom/controlplane/permission/api/pcp/v1"
+	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 )
 
 func RegisterSchemesOrDie(scheme *runtime.Scheme) {
