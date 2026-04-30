@@ -14,9 +14,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 
+	cserver "github.com/telekom/controlplane/common-server/pkg/server"
 	"github.com/telekom/controlplane/discovery-server/internal/config"
 	"github.com/telekom/controlplane/discovery-server/internal/controller"
 	"github.com/telekom/controlplane/discovery-server/internal/server"
@@ -59,7 +59,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		err := app.Listen(cfg.Address)
-		if err != nil && err != http.ErrServerClosed {
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Log.Error(err, "Failed to start server")
 		}
 	}()

@@ -7,6 +7,7 @@ package mocks
 import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/mock"
+
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	csmocks "github.com/telekom/controlplane/common-server/test/mocks"
@@ -32,5 +33,6 @@ func ConfigureAPIExposureStoreMock(testing ginkgo.FullGinkgoTInterface, mockedSt
 		mock.Anything,
 	).Return(
 		&store.ListResponse[*apiv1.ApiExposure]{
-			Items: []*apiv1.ApiExposure{apiExposure}}, nil).Maybe()
+			Items: []*apiv1.ApiExposure{apiExposure},
+		}, nil).Maybe()
 }

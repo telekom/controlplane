@@ -220,6 +220,7 @@ jobs:
       module: discovery-server
       run_check_generated_files: false
       ko_build_path: "cmd/main.go"
+      lint_fail_on_issues: true
 
   pubsub:
     name: PubSub
