@@ -7,21 +7,21 @@ package identity_client
 import (
 	"context"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/types"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
 	organisationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler"
 	"github.com/telekom/controlplane/organization/internal/handler/util"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func MakeClientId(owner *organisationv1.Team) string {
 	return owner.Spec.Group + handler.Separator + owner.Spec.Name + handler.Separator + TeamNameSuffix
 }
 
-type IdentityClientHandler struct {
-}
+type IdentityClientHandler struct{}
 
 var _ handler.ObjectHandler = &IdentityClientHandler{}
 
