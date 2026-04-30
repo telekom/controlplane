@@ -9,12 +9,13 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 type JanitorClient interface {
@@ -123,10 +124,10 @@ func (c *janitorClient) Delete(ctx context.Context, obj client.Object, opts ...c
 }
 
 func (c *janitorClient) CleanupAll(ctx context.Context, listOpts []client.ListOption) (int, error) {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 	deleted := 0
 	for gvk, keys := range c.state {
-		log.V(1).Info("Cleaning up state", "gvk", gvk)
+		logger.V(1).Info("Cleaning up state", "gvk", gvk)
 
 		n, _, err := cleanupStateUnstructured(ctx, c, listOpts, gvk, keys)
 		if err != nil {

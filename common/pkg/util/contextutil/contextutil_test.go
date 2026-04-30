@@ -12,9 +12,7 @@ import (
 )
 
 var _ = Describe("Contextutil", func() {
-
 	Context("Env", func() {
-
 		It("should manage the environment in the context", func() {
 			ctx := context.Background()
 
@@ -36,6 +34,5 @@ var _ = Describe("Contextutil", func() {
 				EnvFromContextOrDie(ctx)
 			}).To(Panic())
 		})
-
 	})
 })

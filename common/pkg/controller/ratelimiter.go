@@ -5,9 +5,10 @@
 package controller
 
 import (
-	"github.com/telekom/controlplane/common/pkg/config"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/telekom/controlplane/common/pkg/config"
 )
 
 func NewRateLimiter[T reconcile.Request]() workqueue.TypedRateLimiter[T] {

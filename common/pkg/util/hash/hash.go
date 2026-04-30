@@ -27,7 +27,7 @@ func ComputeHash(content any, collisionCount *uint32) string {
 	if collisionCount != nil {
 		collisionCountBytes := make([]byte, 8)
 		binary.LittleEndian.PutUint32(collisionCountBytes, *collisionCount)
-		hasher.Write(collisionCountBytes)
+		_, _ = hasher.Write(collisionCountBytes)
 	}
 
 	return rand.SafeEncodeString(fmt.Sprint(hasher.Sum32()))
