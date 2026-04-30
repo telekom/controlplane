@@ -7,15 +7,6 @@ package controller
 import (
 	"context"
 
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
-	eventv1 "github.com/telekom/controlplane/event/api/v1"
-	"github.com/telekom/controlplane/event/internal/handler/eventconfig"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-	identityv1 "github.com/telekom/controlplane/identity/api/v1"
-	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -25,6 +16,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
+	"github.com/telekom/controlplane/event/internal/handler/eventconfig"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 )
 
 // EventConfigReconciler reconciles a EventConfig object
@@ -85,19 +86,19 @@ func (r *EventConfigReconciler) MapZoneToEventConfig(ctx context.Context, obj cl
 	}
 
 	list := &eventv1.EventConfigList{}
-	if err := r.Client.List(ctx, list, client.MatchingLabels{
+	if err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey: zone.Labels[cconfig.EnvironmentLabelKey],
 	}); err != nil {
 		return nil
 	}
 
 	var reqs []reconcile.Request
-	for _, item := range list.Items {
-		if !item.Spec.Zone.Equals(zone) {
+	for i := range list.Items {
+		if !list.Items[i].Spec.Zone.Equals(zone) {
 			continue
 		}
 		reqs = append(reqs, reconcile.Request{
-			NamespacedName: client.ObjectKeyFromObject(&item),
+			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
 		})
 	}
 	return reqs
@@ -112,21 +113,20 @@ func (r *EventConfigReconciler) MapEventConfigToEventConfig(ctx context.Context,
 	}
 
 	list := &eventv1.EventConfigList{}
-	if err := r.Client.List(ctx, list, client.MatchingLabels{
+	if err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey: eventConfig.Labels[cconfig.EnvironmentLabelKey],
 	}); err != nil {
 		return nil
 	}
 
 	var reqs []reconcile.Request
-	for _, item := range list.Items {
-		if ctypes.Equals(&item, eventConfig) {
+	for i := range list.Items {
+		if ctypes.Equals(&list.Items[i], eventConfig) {
 			continue
 		}
 		reqs = append(reqs, reconcile.Request{
-			NamespacedName: client.ObjectKeyFromObject(&item),
+			NamespacedName: client.ObjectKeyFromObject(&list.Items[i]),
 		})
-
 	}
 	return reqs
 }

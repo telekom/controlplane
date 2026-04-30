@@ -8,9 +8,14 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	mock "github.com/stretchr/testify/mock"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	k8stypes "k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
@@ -20,12 +25,9 @@ import (
 	"github.com/telekom/controlplane/event/internal/handler/util"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	k8stypes "k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // ---------- CreateSSERoute ----------
@@ -43,7 +45,7 @@ var _ = Describe("CreateSSERoute", func() {
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
 
-		zone = makeZone("zone-a", "default", "zone-a-ns", "gw-realm-a", "default")
+		zone = makeZone("zone-a", "zone-a-ns", "gw-realm-a")
 		eventConfig = &eventv1.EventConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: "ec-zone-a", Namespace: "default"},
 			Spec: eventv1.EventConfigSpec{
@@ -95,7 +97,7 @@ var _ = Describe("CreateSSERoute", func() {
 	})
 
 	It("should return BlockedError when realm is not ready", func() {
-		notReadyRealm := makeNotReadyGatewayRealm("gw-realm-a", "default")
+		notReadyRealm := makeNotReadyGatewayRealm("gw-realm-a")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
@@ -113,7 +115,7 @@ var _ = Describe("CreateSSERoute", func() {
 	})
 
 	It("should return error when ServerSendEventUrl is invalid", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a", "default")
+		readyRealm := makeReadyGatewayRealm("gw-realm-a")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
@@ -136,7 +138,7 @@ var _ = Describe("CreateSSERoute", func() {
 	})
 
 	It("should create SSE route successfully", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a", "default")
+		readyRealm := makeReadyGatewayRealm("gw-realm-a")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
@@ -197,7 +199,7 @@ var _ = Describe("CreateSSERoute", func() {
 	})
 
 	It("should add MeshClientName to DefaultConsumers when isTargetOfProxy is true", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a", "default")
+		readyRealm := makeReadyGatewayRealm("gw-realm-a")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
@@ -221,7 +223,7 @@ var _ = Describe("CreateSSERoute", func() {
 	})
 
 	It("should NOT add MeshClientName to DefaultConsumers when isTargetOfProxy is false", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a", "default")
+		readyRealm := makeReadyGatewayRealm("gw-realm-a")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
@@ -245,7 +247,7 @@ var _ = Describe("CreateSSERoute", func() {
 	})
 
 	It("should return error when CreateOrUpdate fails", func() {
-		readyRealm := makeReadyGatewayRealm("gw-realm-a", "default")
+		readyRealm := makeReadyGatewayRealm("gw-realm-a")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-a", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
@@ -340,8 +342,8 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 		fakeClient = fakeclient.NewMockJanitorClient(GinkgoT())
 		ctx = cclient.WithClient(ctx, fakeClient)
 
-		subscriberZone = makeZone("zone-sub", "default", "zone-sub-ns", "gw-realm-sub", "default")
-		providerZone = makeZone("zone-prov", "default", "zone-prov-ns", "gw-realm-prov", "default")
+		subscriberZone = makeZone("zone-sub", "zone-sub-ns", "gw-realm-sub")
+		providerZone = makeZone("zone-prov", "zone-prov-ns", "gw-realm-prov")
 		eventConfig = &eventv1.EventConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: "ec-zone-prov", Namespace: "default"},
 			Status: eventv1.EventConfigStatus{
@@ -397,7 +399,7 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 	})
 
 	It("should return BlockedError when subscriber realm is not ready", func() {
-		notReadyRealm := makeNotReadyGatewayRealm("gw-realm-sub", "default")
+		notReadyRealm := makeNotReadyGatewayRealm("gw-realm-sub")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-sub", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
@@ -416,7 +418,7 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 	})
 
 	It("should return BlockedError when provider zone has no GatewayRealm", func() {
-		readySubRealm := makeReadyGatewayRealm("gw-realm-sub", "default")
+		readySubRealm := makeReadyGatewayRealm("gw-realm-sub")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-sub", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
@@ -443,7 +445,7 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 	})
 
 	It("should return BlockedError when provider realm is not found", func() {
-		readySubRealm := makeReadyGatewayRealm("gw-realm-sub", "default")
+		readySubRealm := makeReadyGatewayRealm("gw-realm-sub")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-sub", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
@@ -466,8 +468,8 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 	})
 
 	It("should return BlockedError when provider realm is not ready", func() {
-		readySubRealm := makeReadyGatewayRealm("gw-realm-sub", "default")
-		notReadyProvRealm := makeNotReadyGatewayRealm("gw-realm-prov", "default")
+		readySubRealm := makeReadyGatewayRealm("gw-realm-sub")
+		notReadyProvRealm := makeNotReadyGatewayRealm("gw-realm-prov")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-sub", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
@@ -493,8 +495,8 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 	})
 
 	It("should return error when mesh client Get fails", func() {
-		readySubRealm := makeReadyGatewayRealm("gw-realm-sub", "default")
-		readyProvRealm := makeReadyGatewayRealm("gw-realm-prov", "default")
+		readySubRealm := makeReadyGatewayRealm("gw-realm-sub")
+		readyProvRealm := makeReadyGatewayRealm("gw-realm-prov")
 
 		fakeClient.EXPECT().
 			Get(ctx, k8stypes.NamespacedName{Name: "gw-realm-sub", Namespace: "default"}, mock.AnythingOfType("*v1.Realm")).
@@ -522,8 +524,8 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 	})
 
 	It("should create SSE proxy route successfully", func() {
-		readySubRealm := makeReadyGatewayRealm("gw-realm-sub", "default")
-		readyProvRealm := makeReadyGatewayRealm("gw-realm-prov", "default")
+		readySubRealm := makeReadyGatewayRealm("gw-realm-sub")
+		readyProvRealm := makeReadyGatewayRealm("gw-realm-prov")
 
 		meshClient := &identityv1.Client{
 			ObjectMeta: metav1.ObjectMeta{Name: "mesh-client", Namespace: "zone-prov-ns"},
@@ -610,8 +612,8 @@ var _ = Describe("CreateSSEProxyRoute", func() {
 	})
 
 	It("should return error when CreateOrUpdate fails", func() {
-		readySubRealm := makeReadyGatewayRealm("gw-realm-sub", "default")
-		readyProvRealm := makeReadyGatewayRealm("gw-realm-prov", "default")
+		readySubRealm := makeReadyGatewayRealm("gw-realm-sub")
+		readyProvRealm := makeReadyGatewayRealm("gw-realm-prov")
 
 		meshClient := &identityv1.Client{
 			ObjectMeta: metav1.ObjectMeta{Name: "mesh-client", Namespace: "zone-prov-ns"},
