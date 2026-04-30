@@ -2,13 +2,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package controller // nolint: dupl
+package controller //nolint:dupl // approval and approvalrequest controllers are intentionally similar
 
 import (
 	"context"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -16,8 +14,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
-
 	approval_handler "github.com/telekom/controlplane/approval/internal/handler/approval"
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
 )
 
 // ApprovalReconciler reconciles a Approval object

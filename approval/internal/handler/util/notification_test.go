@@ -8,13 +8,14 @@ import (
 	"encoding/json"
 	"testing"
 
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func TestNotification(t *testing.T) {
@@ -190,7 +191,6 @@ var _ = Describe("Notification Utilities", func() {
 
 		Context("when requester has event subscription", func() {
 			It("should still extract group and team", func() {
-
 				requesterProperties := map[string]any{
 					"eventType": "some-event-type",
 					"scopes":    []string{"read", "write", "delete"},
@@ -232,5 +232,4 @@ var _ = Describe("Notification Utilities", func() {
 			})
 		})
 	})
-
 })
