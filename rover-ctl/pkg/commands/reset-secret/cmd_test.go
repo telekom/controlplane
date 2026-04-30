@@ -16,6 +16,7 @@ import (
 	resetsecret "github.com/telekom/controlplane/rover-ctl/pkg/commands/reset-secret"
 	"github.com/telekom/controlplane/rover-ctl/pkg/config"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers"
+	v0 "github.com/telekom/controlplane/rover-ctl/pkg/handlers/v0"
 	"github.com/telekom/controlplane/rover-ctl/pkg/log"
 	"github.com/telekom/controlplane/rover-ctl/test/mocks"
 )
@@ -105,7 +106,12 @@ var _ = Describe("Reset-Secret Command", func() {
 				handlers.RegisterHandler("Rover", "tcp.ei.telekom.de/v1", mockResetHandler)
 
 				// Set up mock expectations
-				mockResetHandler.EXPECT().ResetSecret(mock.AnythingOfType("*context.valueCtx"), "test-app").Return("new-client-id", "new-client-secret", nil).Once()
+				mockResetHandler.EXPECT().ResetSecret(mock.AnythingOfType("*context.valueCtx"), "test-app").Return(&v0.SecretRotationStatusResponse{
+					ClientId:           "new-client-id",
+					CurrentSecretValue: "new-client-secret",
+					ProcessingState:    "done",
+					OverallStatus:      "complete",
+				}, nil).Once()
 
 				// We also need to implement the Priority method since it's used by the handler registry
 				mockResetHandler.On("Priority").Return(100).Maybe()

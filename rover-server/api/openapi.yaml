@@ -374,18 +374,22 @@ paths:
     patch:
       tags:
         - Rover
-      summary: Generate new clientSecret for an Application
-      description: Generate new clientSecret for an Application
+      summary: Rotate the clientSecret for an Application
+      description: >
+        Initiates a secret rotation for the Application. The rotation is
+        handled by the admission webhook which decides whether to perform a
+        graceful rotation (old secret remains valid during a grace period) or a
+        non-graceful rotation based on the zone configuration.
       operationId: resetRoverSecret
       parameters:
         - $ref: '#/components/parameters/RoverId'
       responses:
-        '200':
-          description: OK
+        '202':
+          description: Accepted - secret rotation initiated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoverSecretResponse'
+                $ref: '#/components/schemas/RoverSecretRotationAcceptedResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -394,6 +398,12 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflict - a secret rotation is already in progress
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '415':
           $ref: '#/components/responses/UnsupportedMediaType'
         '500':
@@ -404,6 +414,42 @@ paths:
             - tardis:hub:all
             - tardis:team:all
             - tardis:user:all
+  /rovers/{roverId}/secret/status:
+    get:
+      tags:
+        - Rover
+      summary: Get the secret rotation status for an Application
+      description: >
+        Returns the current secret rotation status for an Application,
+        including whether a graceful rotation is in progress, whether it has
+        converged, and the relevant expiry timestamps.
+      operationId: getRoverSecretRotationStatus
+      parameters:
+        - $ref: '#/components/parameters/RoverId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoverSecretRotationStatusResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - OAuth2:
+            - tardis:admin:all
+            - tardis:hub:all
+            - tardis:team:all
+            - tardis:user:all
+            - tardis:user:read
   /rovers/{roverId}/status:
     get:
       tags:
@@ -1917,17 +1963,58 @@ components:
             name:
               type: string
               example: myapp
-    RoverSecretResponse:
+    RoverSecretRotationAcceptedResponse:
       type: object
       readOnly: true
       required:
-        - secret
-        - id
+        - clientId
+        - message
+        - _links
       properties:
-        secret:
+        clientId:
           type: string
-        id:
+          description: The clientId of the application
+        message:
           type: string
+          description: Human-readable message about the initiated rotation
+        _links:
+          type: object
+          required:
+            - status
+          properties:
+            status:
+              type: string
+              format: uri
+              description: URL to poll for the rotation status
+    RoverSecretRotationStatusResponse:
+      type: object
+      readOnly: true
+      required:
+        - clientId
+        - processingState
+        - overallStatus
+      properties:
+        clientId:
+          type: string
+          description: The clientId of the application
+        processingState:
+          $ref: '#/components/schemas/ProcessingState'
+        overallStatus:
+          $ref: '#/components/schemas/OverallStatus'
+        rotatedExpiresAt:
+          type: string
+          format: date-time
+          description: When the rotated (old) secret stops being accepted
+        currentExpiresAt:
+          type: string
+          format: date-time
+          description: When the current secret will expire and should be rotated
+        currentSecretValue:
+          type: string
+          description: The current (new) client secret value
+        rotatedSecretValue:
+          type: string
+          description: The previous (rotated) client secret value, valid until rotatedExpiresAt
     EventScope:
       type: object
       properties:

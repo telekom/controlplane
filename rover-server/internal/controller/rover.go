@@ -10,11 +10,14 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
@@ -249,7 +252,67 @@ func (r *RoverController) GetApplicationsInfo(ctx context.Context, params api.Ge
 
 }
 
-func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId string) (res api.RoverSecretResponse, err error) {
+func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId string) (res api.RoverSecretRotationAcceptedResponse, err error) {
+	id, err := mapper.ParseResourceId(ctx, resourceId)
+	if err != nil {
+		return res, err
+	}
+	logger := logr.FromContextOrDiscard(ctx).WithName("reset-secret").WithValues("namespace", id.Namespace, "name", id.Name)
+
+	ns := id.Environment + "--" + id.Namespace
+	rover, err := r.Store.Get(ctx, ns, id.Name)
+	if err != nil {
+		if problems.IsNotFound(err) {
+			return res, problems.NotFound(resourceId)
+		}
+	}
+
+	if rover.Status.Application == nil {
+		return res, problems.BadRequest("Application not found or not fully processed. Try again later.")
+	}
+	app, err := r.stores.ApplicationStore.Get(ctx, rover.Status.Application.Namespace, rover.Status.Application.Name)
+	if err != nil {
+		if problems.IsNotFound(err) {
+			return res, problems.NotFound(resourceId)
+		}
+	}
+
+	// Check if a rotation is already in progress for the current generation
+	rotationCond := meta.FindStatusCondition(app.Status.Conditions, applicationv1.SecretRotationConditionType)
+	rotationInProgress := rotationCond != nil && rotationCond.Reason == applicationv1.SecretRotationReasonInProgress
+	isStale := rotationCond != nil && rotationCond.ObservedGeneration < app.GetGeneration()
+	if rotationInProgress && !isStale {
+		return res, problems.Builder().
+			Title("Secret rotation already in progress").
+			Detail("A secret rotation is already in progress for this application. Please wait for it to complete before initiating a new one.").
+			Status(409).
+			Build()
+	}
+
+	logger.Info("Initiating secret rotation")
+
+	// Set spec.secret to the rotate keyword; the admission webhook handles
+	// graceful vs non-graceful based on zone configuration.
+	rover.Spec.ClientSecret = secrets.KeywordRotate
+	if err := r.Store.CreateOrReplace(ctx, rover); err != nil {
+		return res, err
+	}
+
+	logger.Info("Secret rotation initiated")
+
+	return api.RoverSecretRotationAcceptedResponse{
+		ClientId: app.Status.ClientId,
+		Message:  "Secret rotation initiated. Use the status link to track convergence.",
+		UnderscoreLinks: struct {
+			Status string `json:"status"`
+		}{
+			Status: fmt.Sprintf("/rovers/%s/secret/status", resourceId),
+		},
+	}, nil
+}
+
+// GetSecretRotationStatus returns the current secret rotation status for an application.
+func (r *RoverController) GetSecretRotationStatus(ctx context.Context, resourceId string) (res api.RoverSecretRotationStatusResponse, err error) {
 	id, err := mapper.ParseResourceId(ctx, resourceId)
 	if err != nil {
 		return res, err
@@ -264,28 +327,60 @@ func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId strin
 		return res, err
 	}
 
-	newClientSecret, err := secrets.GenerateSecret()
-	if err != nil {
-		return res, problems.InternalServerError("Failed to generate new client secret", err.Error())
-	}
-	rover.Spec.ClientSecret = newClientSecret
-	if err := r.Store.CreateOrReplace(ctx, rover); err != nil {
-		return res, err
-	}
-
 	if rover.Status.Application == nil {
 		return res, problems.BadRequest("Application not found or not fully processed. Try again later.")
 	}
-	app, err := r.stores.ApplicationStore.Get(ctx, rover.Status.Application.Namespace, rover.Status.Application.Name)
+	app, err := r.stores.ApplicationSecretStore.Get(ctx, rover.Status.Application.Namespace, rover.Status.Application.Name)
 	if err != nil {
-		return res, err
+		if problems.IsNotFound(err) {
+			return res, problems.NotFound(resourceId)
+		}
 	}
 
-	return api.RoverSecretResponse{
-		Id:     app.Status.ClientId,
-		Secret: newClientSecret,
-	}, nil
+	if !condition.IsReady(app) {
+		return api.RoverSecretRotationStatusResponse{
+			ProcessingState: api.ProcessingStateProcessing,
+			OverallStatus:   api.OverallStatusProcessing,
+		}, nil
+	}
 
+	rotationCond := meta.FindStatusCondition(app.Status.Conditions, applicationv1.SecretRotationConditionType)
+
+	processingState := api.ProcessingStateDone
+	overallStatus := api.OverallStatusComplete
+	if rotationCond != nil {
+		conditionIsCurrent := rotationCond.ObservedGeneration >= app.GetGeneration()
+
+		switch {
+		case !conditionIsCurrent:
+			// Condition is stale — controller hasn't reconciled the current generation yet
+			processingState = api.ProcessingStatePending
+			overallStatus = api.OverallStatusPending
+		case rotationCond.Reason == applicationv1.SecretRotationReasonInProgress:
+			processingState = api.ProcessingStateProcessing
+			overallStatus = api.OverallStatusProcessing
+		case rotationCond.Reason == applicationv1.SecretRotationReasonSuccess:
+			processingState = api.ProcessingStateDone
+			overallStatus = api.OverallStatusComplete
+		}
+	}
+
+	res = api.RoverSecretRotationStatusResponse{
+		ClientId:           app.Status.ClientId,
+		ProcessingState:    processingState,
+		OverallStatus:      overallStatus,
+		CurrentSecretValue: app.Status.ClientSecret,
+		RotatedSecretValue: app.Status.RotatedClientSecret,
+	}
+
+	if app.Status.RotatedExpiresAt != nil {
+		res.RotatedExpiresAt = app.Status.RotatedExpiresAt.Time
+	}
+	if app.Status.CurrentExpiresAt != nil {
+		res.CurrentExpiresAt = app.Status.CurrentExpiresAt.Time
+	}
+
+	return res, nil
 }
 
 func (r *RoverController) guardPubSubFeature(ctx context.Context, res api.RoverUpdateRequest, isEnabled bool) problems.Problem {

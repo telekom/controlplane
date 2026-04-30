@@ -382,33 +382,47 @@ var _ = Describe("Rover Handler", func() {
 	})
 
 	Describe("ResetSecret", func() {
-		It("should send a reset secret request and return new credentials", func() {
-			// Configure mock to return successful response
+		It("should send a reset secret request and return converged status", func() {
+			callCount := 0
+			// Configure mock to handle PATCH (reset) then GET (status poll)
 			mockClient.EXPECT().Do(mock.AnythingOfType("*http.Request")).RunAndReturn(func(req *http.Request) (*http.Response, error) {
-				// Verify request details
-				Expect(req.Method).To(Equal(http.MethodPatch))
-				Expect(req.URL.String()).To(Equal("https://api.example.com/rovers/test-group--test-team--test-rover/secret"))
+				callCount++
+				if callCount == 1 {
+					// First call: PATCH to trigger rotation
+					Expect(req.Method).To(Equal(http.MethodPatch))
+					Expect(req.URL.String()).To(Equal("https://api.example.com/rovers/test-group--test-team--test-rover/secret"))
 
-				// Return a successful response with credentials
-				responseBody := `{"clientId":"new-client-id","secret":"new-secret-value"}`
+					responseBody := `{"clientId":"new-client-id","message":"Secret rotation initiated"}`
+					return &http.Response{
+						StatusCode: http.StatusAccepted,
+						Body:       io.NopCloser(strings.NewReader(responseBody)),
+						Header:     make(http.Header),
+					}, nil
+				}
+				// Second call: GET status — return converged
+				Expect(req.Method).To(Equal(http.MethodGet))
+				Expect(req.URL.String()).To(Equal("https://api.example.com/rovers/test-group--test-team--test-rover/secret/status"))
+
+				responseBody := `{"clientId":"new-client-id","processingState":"done","overallStatus":"complete","currentSecretValue":"new-secret-value"}`
 				return &http.Response{
 					StatusCode: http.StatusOK,
 					Body:       io.NopCloser(strings.NewReader(responseBody)),
 					Header:     make(http.Header),
 				}, nil
-			})
+			}).Times(2)
 
 			// Create the rover handler
 			handler := v0.NewRoverHandlerInstance()
 			handler.Setup(testCtx)
 
 			// Call ResetSecret
-			clientId, clientSecret, err := handler.ResetSecret(testCtx, "test-rover")
+			status, err := handler.ResetSecret(testCtx, "test-rover")
 
 			// Verify the results
 			Expect(err).NotTo(HaveOccurred())
-			Expect(clientId).To(Equal("new-client-id"))
-			Expect(clientSecret).To(Equal("new-secret-value"))
+			Expect(status.ClientId).To(Equal("new-client-id"))
+			Expect(status.CurrentSecretValue).To(Equal("new-secret-value"))
+			Expect(status.OverallStatus).To(Equal("complete"))
 
 			// Verify mock expectations
 			mockClient.AssertExpectations(GinkgoT())
@@ -431,7 +445,7 @@ var _ = Describe("Rover Handler", func() {
 			handler.Setup(testCtx)
 
 			// Call ResetSecret
-			_, _, err := handler.ResetSecret(testCtx, "invalid-rover")
+			_, err := handler.ResetSecret(testCtx, "invalid-rover")
 
 			// Verify error
 			Expect(err).To(HaveOccurred())

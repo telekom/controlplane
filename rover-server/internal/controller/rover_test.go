@@ -227,7 +227,7 @@ var _ = Describe("Rover Controller", func() {
 		It("should reset the rover secret successfully", func() {
 			req := httptest.NewRequest(http.MethodPatch, "/rovers/eni--hyperion--rover-local-sub/secret", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
-			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json", match.Any("secret"))
+			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json", match.Any("clientId"), match.Any("message"))
 		})
 
 		It("should fail to reset the secret for a non-existent rover", func() {

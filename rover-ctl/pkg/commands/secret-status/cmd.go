@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package resetsecret
+package secretstatus
 
 import (
 	"context"
@@ -16,9 +16,9 @@ import (
 	"github.com/telekom/controlplane/rover-ctl/pkg/util"
 )
 
-type ResetSecretHandler interface {
+type SecretStatusHandler interface {
 	handlers.ResourceHandler
-	ResetSecret(ctx context.Context, name string) (*v0.SecretRotationStatusResponse, error)
+	WaitForSecretConvergence(ctx context.Context, name string) (*v0.SecretRotationStatusResponse, error)
 }
 
 type Command struct {
@@ -26,19 +26,19 @@ type Command struct {
 	Name string
 }
 
-// NewCommand creates a new reset-secret command
+// NewCommand creates a new secret-status command
 func NewCommand() *cobra.Command {
 	baseCmd := base.NewCommand(
-		"reset-secret",
-		"Reset a secret",
-		"Reset a secret for an application and wait until the new secret has converged.",
+		"secret-status",
+		"Get secret rotation status",
+		"Get the current secret rotation status for an application. Waits until the rotation has converged before returning.",
 	)
 	cmd := &Command{
 		BaseCommand: baseCmd,
 	}
 
-	cmd.Cmd.Flags().StringVarP(&cmd.Name, "application", "a", "", "Name of the application to reset the secret for")
-	cmd.Cmd.Flags().StringVarP(&cmd.Name, "name", "n", "", "Name of the application to reset the secret for")
+	cmd.Cmd.Flags().StringVarP(&cmd.Name, "application", "a", "", "Name of the application to check secret rotation status for")
+	cmd.Cmd.Flags().StringVarP(&cmd.Name, "name", "n", "", "Name of the application to check secret rotation status for")
 	cmd.Cmd.MarkFlagsMutuallyExclusive("application", "name")
 	cmd.Cmd.MarkFlagsOneRequired("application", "name")
 
@@ -53,16 +53,16 @@ func (c *Command) Run(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "failed to get rover handler")
 	}
 
-	roverHandler, ok := handler.(ResetSecretHandler)
+	roverHandler, ok := handler.(SecretStatusHandler)
 	if !ok {
 		return errors.New("invalid rover handler type")
 	}
 
-	c.Logger().Info("Resetting secret", "name", c.Name)
+	c.Logger().Info("Waiting for secret rotation to converge", "name", c.Name)
 
-	status, err := roverHandler.ResetSecret(cmd.Context(), c.Name)
+	status, err := roverHandler.WaitForSecretConvergence(cmd.Context(), c.Name)
 	if err != nil {
-		return c.HandleError(err, "reset secret")
+		return c.HandleError(err, "get secret rotation status")
 	}
 
 	prettyString, err := util.FormatOutput(status, viper.GetString("output.format"))

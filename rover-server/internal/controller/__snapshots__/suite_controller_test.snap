@@ -748,8 +748,11 @@
 
 [Rover Controller Reset rover secret should reset the rover secret successfully - 1]
 {
- "id": "hyperion--rover-local-sub",
- "secret": "<Any value>"
+ "_links": {
+  "status": "/rovers/eni--hyperion--rover-local-sub/secret/status"
+ },
+ "clientId": "<Any value>",
+ "message": "<Any value>"
 }
 ---
 
@@ -1211,5 +1214,14 @@
  "status": 403,
  "title": "Access Denied",
  "type": "Forbidden"
+}
+---
+
+[GetSecretRotationStatus HTTP endpoint integration should return 200 with correct response for a ready application - 1]
+{
+ "clientId": "hyperion--rover-local-sub",
+ "currentSecretValue": "abcdefghijklmnop",
+ "overallStatus": "complete",
+ "processingState": "done"
 }
 ---
