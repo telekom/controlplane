@@ -192,7 +192,7 @@ func (n *NotificationHandler) resolveTemplate(ctx context.Context, channel *noti
 	parsedTemplateWrapper, ok := n.TemplateCache.Get(templateName)
 	if !ok {
 		logger.V(1).Info("No template found in cache for channel and purpose", "channel", channel, "purpose", purpose)
-		return nil, errors.New(fmt.Sprintf("No template found in cache for channel %q and purpose %q", purpose, channel.Name))
+		return nil, errors.New(fmt.Sprintf("No template found in cache for channel %q and purpose %q", channel.Name, purpose))
 	} else {
 
 		// there is a chance that when the operator starts, the templates will not be ready before the
