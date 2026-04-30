@@ -146,9 +146,9 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	// Success
 
 	log.V(1).Info("Created or updated", "resource", object)
-	// Enforce that atleast the ready condition is set in the handler. If not, log a warning.
+	// Enforce that at least the ready condition is set in the handler. If not, log a warning.
 	if meta.IsStatusConditionPresentAndEqual(object.GetConditions(), condition.ConditionTypeReady, metav1.ConditionUnknown) {
-		c.Event(ctx, object, "Warning", "Processing", "Resource has an unknown ready status")
+		c.Event(ctx, object, "Warning", "UnknownReady", "Resource has an unknown ready status")
 	}
 
 	// Always update the status after successful reconciliation to clear any error conditions
@@ -159,10 +159,8 @@ func (c *ControllerImpl[T]) Reconcile(ctx context.Context, req reconcile.Request
 	}
 
 	requeueAfter := config.RequeueWithJitter()
-	if hint.RequeueAfter != nil {
-		if hintWithJitter := config.Jitter(*hint.RequeueAfter); hintWithJitter < requeueAfter {
-			requeueAfter = hintWithJitter
-		}
+	if hint.RequeueAfter != nil && *hint.RequeueAfter < requeueAfter {
+		requeueAfter = *hint.RequeueAfter
 	}
 
 	return reconcile.Result{

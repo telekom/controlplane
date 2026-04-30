@@ -186,10 +186,8 @@ var _ = Describe("Controller", func() {
 
 			res, err := controller.Reconcile(ctx, req, &test.TestResource{})
 			Expect(err).ToNot(HaveOccurred())
-			// The hint value (10s + jitter) should be much lower than the default (~30min).
-			// Jitter multiplies by [1.0, 1.7], so expect 10s <= result <= 17s.
-			Expect(res.RequeueAfter).To(BeNumerically(">=", customRequeue))
-			Expect(res.RequeueAfter).To(BeNumerically("<=", time.Duration(float64(customRequeue)*1.8)))
+			// The hint value is used directly (no jitter) so the result should equal the hint.
+			Expect(res.RequeueAfter).To(Equal(customRequeue))
 		})
 	})
 

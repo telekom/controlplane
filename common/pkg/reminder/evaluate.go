@@ -105,11 +105,10 @@ func NextRequeue(deadline time.Time, thresholds []Threshold, sent []SentReminder
 			return 0 // never sent, fire now
 		}
 
-		// One-shot
+		// One-shot already sent — no tighter threshold exists (we iterate
+		// ascending), so break out and compute time until the next event.
 		if _, ok := sentIndex[key]; ok {
-			// Already sent. Look for the next smaller threshold to enter.
-			// Fall through to check if there's a tighter threshold below.
-			continue
+			break
 		}
 		return 0 // never sent, fire now
 	}
