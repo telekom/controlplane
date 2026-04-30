@@ -69,7 +69,7 @@ func (q *configService) DeleteSubscription(ctx context.Context, subscriptionID s
 
 	body, err := json.Marshal(resource)
 	if err != nil {
-		return errors.Wrap(err, "failed to serialize resource for PutSubscription")
+		return errors.Wrap(err, "failed to serialize resource for DeleteSubscription")
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, reqURL.String(), bytes.NewReader(body))
