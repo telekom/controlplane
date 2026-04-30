@@ -6,27 +6,26 @@ package controller
 
 import (
 	"context"
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
-	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
-	"github.com/telekom/controlplane/notification/internal/sender"
-	"github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
-	"github.com/telekom/controlplane/notification/internal/sender/adapter/msteams"
-	"github.com/telekom/controlplane/notification/internal/sender/adapter/webhook"
-	"github.com/telekom/controlplane/notification/internal/templatecache"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-
-	notificationhandler "github.com/telekom/controlplane/notification/internal/handler"
-
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	notificationsconfig "github.com/telekom/controlplane/notification/internal/config"
+	notificationhandler "github.com/telekom/controlplane/notification/internal/handler"
+	"github.com/telekom/controlplane/notification/internal/sender"
+	"github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
+	"github.com/telekom/controlplane/notification/internal/sender/adapter/msteams"
+	"github.com/telekom/controlplane/notification/internal/sender/adapter/webhook"
+	"github.com/telekom/controlplane/notification/internal/templatecache"
 )
 
 // NotificationReconciler reconciles a Notification object
@@ -43,12 +42,11 @@ type NotificationReconciler struct {
 }
 
 func NewNotificationReconcilerWithConfig(
-	client client.Client,
+	c client.Client,
 	scheme *runtime.Scheme,
 	emailConfig *notificationsconfig.EmailAdapterConfig,
-	TemplateCache *templatecache.TemplateCache,
+	tmplCache *templatecache.TemplateCache,
 ) *NotificationReconciler {
-
 	// initialize the notification sender with all adapters so they can be reused
 	notificationSender := &sender.AdapterSender{
 		MailAdapter: &mail.EmailAdapter{
@@ -59,10 +57,10 @@ func NewNotificationReconcilerWithConfig(
 	}
 
 	return &NotificationReconciler{
-		Client:             client,
+		Client:             c,
 		Scheme:             scheme,
 		NotificationSender: notificationSender,
-		TemplateCache:      TemplateCache,
+		TemplateCache:      tmplCache,
 	}
 }
 

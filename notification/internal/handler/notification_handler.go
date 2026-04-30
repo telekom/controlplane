@@ -7,8 +7,15 @@ package handler
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	"github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
@@ -19,11 +26,6 @@ import (
 	"github.com/telekom/controlplane/notification/internal/sender"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter"
 	"github.com/telekom/controlplane/notification/internal/templatecache"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-	"strings"
 )
 
 var _ handler.Handler[*notificationv1.Notification] = &NotificationHandler{}
@@ -35,12 +37,12 @@ type NotificationHandler struct {
 }
 
 func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *notificationv1.Notification) error {
-	var shouldBlock = false
+	shouldBlock := false
 
-	var channels = notification.Spec.Channels
+	channels := notification.Spec.Channels
 	// if there are no channels in the notification, we will use all channels form the notifications namespace
 	// this handles the case when a team is onboarded and channels are not yet cached, thus not listed by the client
-	if channels == nil || len(channels) == 0 {
+	if len(channels) == 0 {
 		channels = findChannelsForNotification(ctx, notification)
 	}
 
@@ -125,28 +127,28 @@ func (n *NotificationHandler) CreateOrUpdate(ctx context.Context, notification *
 }
 
 func findChannelsForNotification(ctx context.Context, notification *notificationv1.Notification) []types.ObjectRef {
-	log := logr.FromContextOrDiscard(ctx)
+	logger := logr.FromContextOrDiscard(ctx)
 	cclient, _ := client.ClientFromContext(ctx)
 
-	var notificationChannels = &notificationv1.NotificationChannelList{}
+	notificationChannels := &notificationv1.NotificationChannelList{}
 	var channelRefs []types.ObjectRef
 
 	err := cclient.List(ctx, notificationChannels, k8sclient.InNamespace(notification.Namespace))
 	if err != nil {
-		log.Error(err, "Failed to list channels in namespace", "namespace", notification.Namespace)
+		logger.Error(err, "Failed to list channels in namespace", "namespace", notification.Namespace)
 		return nil
 	}
 
-	for _, channel := range notificationChannels.Items {
-		channelRefs = append(channelRefs, *types.ObjectRefFromObject(&channel))
+	for i := range notificationChannels.Items {
+		channelRefs = append(channelRefs, *types.ObjectRefFromObject(&notificationChannels.Items[i]))
 	}
 
-	log.V(1).Info("Found channels in namespace. Returning refs", "namespace", notification.Namespace, "channels", channelRefs)
+	logger.V(1).Info("Found channels in namespace. Returning refs", "namespace", notification.Namespace, "channels", channelRefs)
 	return channelRefs
 }
 
 func alreadySent(key string, notification *notificationv1.Notification) bool {
-	if notification.Status.States == nil || len(notification.Status.States) == 0 {
+	if len(notification.Status.States) == 0 {
 		return false
 	}
 
@@ -181,7 +183,7 @@ func (n *NotificationHandler) resolveTemplate(ctx context.Context, channel *noti
 	// channel name - <teamname>--<type> - example: eni--hyperion--mail
 	// template name - <purpose>--<type> - example: api-subscription-approved--chat
 
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	// build the template name first
 	templateName := buildTemplateName(channel, purpose)
@@ -189,7 +191,7 @@ func (n *NotificationHandler) resolveTemplate(ctx context.Context, channel *noti
 	// look for a cached value
 	parsedTemplateWrapper, ok := n.TemplateCache.Get(templateName)
 	if !ok {
-		log.V(1).Info("No template found in cache for channel and purpose", "channel", channel, "purpose", purpose)
+		logger.V(1).Info("No template found in cache for channel and purpose", "channel", channel, "purpose", purpose)
 		return nil, errors.New(fmt.Sprintf("No template found in cache for channel %q and purpose %q", purpose, channel.Name))
 	} else {
 
@@ -225,7 +227,7 @@ func (n *NotificationHandler) resolveTemplate(ctx context.Context, channel *noti
 		n.TemplateCache.Set(templateName, parsedTemplate)
 	}
 
-	log.V(1).Info("Resolved template found in cache", "channel", channel, "purpose", purpose)
+	logger.V(1).Info("Resolved template found in cache", "channel", channel, "purpose", purpose)
 	return parsedTemplateWrapper, nil
 }
 
@@ -252,7 +254,6 @@ func getChannelByRef(ctx context.Context, ref types.ObjectRef) (*notificationv1.
 		return nil, errors.Wrapf(err, "Channel %q found but its not ready", ref)
 	}
 	return &channel, nil
-
 }
 
 func (n *NotificationHandler) Delete(ctx context.Context, notification *notificationv1.Notification) error {

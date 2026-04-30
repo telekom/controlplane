@@ -86,7 +86,7 @@ func NewRestyClient(config *HTTPClientConfig) *resty.Client {
 
 	// Configure custom transport with connection pooling and timeouts
 	// Start with http.DefaultTransport settings to preserve proxy and TLS config
-	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport := http.DefaultTransport.(*http.Transport).Clone() //nolint:errcheck // DefaultTransport is always *http.Transport
 
 	// Override with custom settings
 	transport.MaxIdleConns = config.MaxIdleConns
