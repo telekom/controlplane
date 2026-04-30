@@ -161,7 +161,6 @@ func ExpectStatus(response *http.Response, err error, statusCode int, contentTyp
 
 func expectNoError(err error) {
 	Expect(err).ToNot(HaveOccurred())
-	Expect(err).ToNot(HaveOccurred())
 }
 
 func expectResponseWithStatus(response *http.Response, statusCode int, contentType string) {
