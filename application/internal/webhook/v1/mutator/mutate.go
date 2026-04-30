@@ -144,7 +144,7 @@ func MutateSecret(ctx context.Context, env string, app *applicationv1.Applicatio
 			"application", app.GetName(),
 			"zone", app.Spec.Zone.Name,
 		)
-	} else {
+	} else if isRotation {
 		log.Info("non-graceful secret rotation - old secret will be immediately replaced",
 			"application", app.GetName(),
 			"zone", app.Spec.Zone.Name,
