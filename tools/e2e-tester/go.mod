@@ -4,7 +4,7 @@
 
 module github.com/telekom/controlplane/tools/e2e-tester
 
-go 1.25.9
+go 1.26.0
 
 require (
 	github.com/fatih/color v1.18.0
@@ -13,7 +13,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/telekom/controlplane/tools/snapshotter v0.0.0-00010101000000-000000000000
-	go.uber.org/zap v1.27.1
+	go.uber.org/zap v1.28.0
 )
 
 require (
