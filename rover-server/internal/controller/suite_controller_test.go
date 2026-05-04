@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/gkampitakis/go-snaps/match"
 	"github.com/gkampitakis/go-snaps/snaps"
@@ -45,6 +46,12 @@ var teamNoResources string
 var app *fiber.App
 var mockFileManager *filefake.MockFileManager
 var stores *store.Stores
+
+// Pin the local time zone to UTC so JSON snapshots that contain metav1.Time
+// values render consistently across developer machines and CI.
+func init() {
+	time.Local = time.UTC
+}
 
 func TestController(t *testing.T) {
 	RegisterFailHandler(Fail)
