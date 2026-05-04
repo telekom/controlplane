@@ -9,6 +9,10 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -17,9 +21,6 @@ import (
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // CreatePublishRoute creates a Route for the publishing events
@@ -30,7 +31,6 @@ func CreatePublishRoute(
 	zone *adminv1.Zone,
 	eventConfig *eventv1.EventConfig,
 ) (*gatewayv1.Route, error) {
-
 	c := cclient.ClientFromContextOrDie(ctx)
 	name := makePublishRouteName(eventConfig)
 
@@ -42,7 +42,7 @@ func CreatePublishRoute(
 		}
 		return nil, errors.Wrapf(err, "failed to get realm %q", zone.Status.GatewayRealm.String())
 	}
-	if err := condition.EnsureReady(gatewayRealm); err != nil {
+	if err = condition.EnsureReady(gatewayRealm); err != nil {
 		return nil, ctrlerrors.BlockedErrorf("realm %q is not ready", gatewayRealm.Name)
 	}
 
@@ -70,8 +70,8 @@ func CreatePublishRoute(
 		return nil, errors.Wrap(err, "failed to create downstream for publish Route")
 	}
 	mutator := func() error {
-		if err := controllerutil.SetControllerReference(eventConfig, route, c.Scheme()); err != nil {
-			return errors.Wrap(err, "failed to set controller reference to EventConfig")
+		if refErr := controllerutil.SetControllerReference(eventConfig, route, c.Scheme()); refErr != nil {
+			return errors.Wrap(refErr, "failed to set controller reference to EventConfig")
 		}
 
 		route.Labels = map[string]string{

@@ -49,6 +49,15 @@ type EventSpecificationController interface {
 	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
 }
 
+type ApiRoadmapController interface {
+	Create(ctx context.Context, req api.ApiRoadmapCreateRequest) (api.ApiRoadmapResponse, error)
+	Get(ctx context.Context, resourceId string) (api.ApiRoadmapResponse, error)
+	GetAll(ctx context.Context, params api.GetAllApiRoadmapsParams) (*api.ApiRoadmapListResponse, error)
+	Update(ctx context.Context, resourceId string, req api.ApiRoadmapUpdateRequest) (api.ApiRoadmapResponse, error)
+	Delete(ctx context.Context, resourceId string) error
+	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
+}
+
 var securityTemplates = map[security.ClientType]security.ComparisonTemplates{
 	security.ClientTypeTeam: {
 		ExpectedTemplate:  "{{ .B.Environment }}--{{ .B.Group }}--{{ .B.Team }}--",
@@ -72,6 +81,7 @@ type Server struct {
 	Log                 logr.Logger
 	ApiSpecifications   ApiSpecificationController
 	Rovers              RoverController
+	Roadmaps            ApiRoadmapController
 	EventSpecifications EventSpecificationController
 }
 
@@ -146,5 +156,15 @@ func (s *Server) RegisterRoutes(router fiber.Router) {
 	router.Get("/eventspecifications/:resourceId", checkAccess, s.GetEventSpecification)
 	router.Put("/eventspecifications/:resourceId", checkAccess, s.UpdateEventSpecification)
 	router.Delete("/eventspecifications/:resourceId", checkAccess, s.DeleteEventSpecification)
+
+	s.Log.Info("Registering apiroadmaps routes")
+
+	router.Get("/apiroadmaps", checkAccess, s.GetAllApiRoadmaps)
+	router.Post("/apiroadmaps", checkAccess, s.CreateApiRoadmap)
+	router.Get("/apiroadmaps/:resourceId/status", checkAccess, s.GetApiRoadmapStatus)
+
+	router.Get("/apiroadmaps/:resourceId", checkAccess, s.GetApiRoadmap)
+	router.Put("/apiroadmaps/:resourceId", checkAccess, s.UpdateApiRoadmap)
+	router.Delete("/apiroadmaps/:resourceId", checkAccess, s.DeleteApiRoadmap)
 
 }

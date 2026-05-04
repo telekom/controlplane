@@ -8,10 +8,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	"github.com/telekom/controlplane/identity/pkg/keycloak"
 )
 
 var _ handler.Handler[*identityv1.IdentityProvider] = &HandlerIdentityProvider{}
@@ -24,10 +26,15 @@ func (h *HandlerIdentityProvider) CreateOrUpdate(ctx context.Context, idp *ident
 		return fmt.Errorf("IdentityProvider is nil")
 	}
 
-	var idpStatus = MapToIdpStatus(&idp.Spec)
-	SetStatusReady(&idpStatus, idp)
+	idp.Status.AdminUrl = idp.Spec.AdminUrl
+	idp.Status.AdminTokenUrl = keycloak.DetermineAdminTokenUrlFrom(idp.Spec.AdminUrl, keycloak.MasterRealm)
+	idp.Status.AdminConsoleUrl = keycloak.DetermineAdminConsoleUrlFrom(idp.Spec.AdminUrl, keycloak.MasterRealm)
+
+	idp.SetCondition(condition.NewDoneProcessingCondition("Created IdentityProvider"))
+	idp.SetCondition(condition.NewReadyCondition("Ready", "IdentityProvider is ready"))
+
 	var message = fmt.Sprintf("IdentityProvider %s is ready", idp.Name)
-	logger.V(1).Info(message, "IdentityProviderStatus", idpStatus)
+	logger.V(1).Info(message, "IdentityProviderStatus", idp.Status)
 
 	return nil
 }

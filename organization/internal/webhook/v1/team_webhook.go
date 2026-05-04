@@ -8,17 +8,16 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/telekom/controlplane/organization/internal/webhook/v1/mutator"
-	"github.com/telekom/controlplane/organization/internal/webhook/v1/validator"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
+	"github.com/telekom/controlplane/organization/internal/webhook/v1/mutator"
+	"github.com/telekom/controlplane/organization/internal/webhook/v1/validator"
 )
 
-// nolint:unused
 // log is for logging in this package.
 var teamLog = logf.Log.WithName("team-resource").WithValues("apiVersion", "organization.cp.ei.telekom.de/v1", "kind", "Team")
 
@@ -86,7 +85,7 @@ func (v *TeamCustomValidator) ValidateCreate(ctx context.Context, teamObj *organ
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Team.
-func (v *TeamCustomValidator) ValidateUpdate(ctx context.Context, _ *organizationv1.Team, teamObj *organizationv1.Team) (admission.Warnings, error) {
+func (v *TeamCustomValidator) ValidateUpdate(ctx context.Context, _, teamObj *organizationv1.Team) (admission.Warnings, error) {
 	return v.validateCreateOrUpdate(ctx, teamObj)
 }
 
@@ -96,7 +95,7 @@ func (v *TeamCustomValidator) ValidateDelete(ctx context.Context, teamObj *organ
 }
 
 func (v *TeamCustomValidator) validateCreateOrUpdate(ctx context.Context, teamObj *organizationv1.Team) (admission.Warnings, error) {
-	ctx, log := setupLog(ctx, teamObj)
+	_, log := setupLog(ctx, teamObj)
 	log.Info("validating team")
 
 	err := validator.ValidateTeamName(teamObj)

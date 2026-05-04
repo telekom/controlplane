@@ -13,16 +13,16 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/telekom/controlplane/organization/internal/handler/team/handler/identity_client"
-	"github.com/telekom/controlplane/organization/internal/index"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	organisationv1 "github.com/telekom/controlplane/organization/api/v1"
+	"github.com/telekom/controlplane/organization/internal/handler/team/handler/identity_client"
+	"github.com/telekom/controlplane/organization/internal/index"
 	"github.com/telekom/controlplane/organization/internal/secret"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
-	"k8s.io/apimachinery/pkg/api/errors"
 )
 
 func wrapCommunicationError(err error, purposeOfCommunication string) error {
@@ -97,7 +97,6 @@ func generateNewToken(env string, teamObj *organisationv1.Team, zoneObj *adminv1
 		}, teamObj.Spec.Group, teamObj.Spec.Name)
 
 	return clientSecret, teamToken, err
-
 }
 
 func GetZoneObjWithTeamInfo(ctx context.Context, k8sClient client.Client) (*adminv1.Zone, error) {

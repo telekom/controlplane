@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+
 	admin "github.com/telekom/controlplane/admin/api/v1"
 	application "github.com/telekom/controlplane/application/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
@@ -19,18 +20,16 @@ func MakeClientName(obj *application.Application) string {
 	return obj.Spec.Team + "--" + obj.Name
 }
 
-func GetZone(ctx context.Context, client client.ScopedClient, zoneRef types.ObjectRef) (*admin.Zone, error) {
+func GetZone(ctx context.Context, c client.ScopedClient, zoneRef types.ObjectRef) (*admin.Zone, error) {
 	zone := &admin.Zone{}
-	err := client.Get(ctx, zoneRef.K8s(), zone)
+	err := c.Get(ctx, zoneRef.K8s(), zone)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get zone %s", zoneRef.Name)
 	}
 	return zone, nil
-
 }
 
-func GetIdpClient(ctx context.Context, client client.ScopedClient, obj *application.Application, clientName string, namespace string) (*identity.Client, error) {
-
+func GetIdpClient(ctx context.Context, c client.ScopedClient, obj *application.Application, clientName, namespace string) (*identity.Client, error) {
 	clientRef := &types.ObjectRef{
 		Name:      clientName,
 		Namespace: namespace,
@@ -38,10 +37,9 @@ func GetIdpClient(ctx context.Context, client client.ScopedClient, obj *applicat
 
 	idpClient := &identity.Client{}
 
-	err := client.Get(ctx, clientRef.K8s(), idpClient)
+	err := c.Get(ctx, clientRef.K8s(), idpClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get zone")
 	}
 	return idpClient, nil
-
 }

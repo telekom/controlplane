@@ -53,6 +53,7 @@ func main() {
 		Log:                 log.Log,
 		ApiSpecifications:   controller.NewApiSpecificationController(stores),
 		Rovers:              controller.NewRoverController(stores),
+		Roadmaps:            controller.NewRoadmapController(stores),
 		EventSpecifications: controller.NewEventSpecificationController(stores),
 	}
 

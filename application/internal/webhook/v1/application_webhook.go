@@ -21,6 +21,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	"github.com/telekom/controlplane/application/internal/webhook/v1/mutator"
+	"github.com/telekom/controlplane/application/internal/webhook/v1/validator"
+	"github.com/telekom/controlplane/common/pkg/controller"
 )
 
 var applicationLog = logf.Log.WithName("application-resource").WithValues("apiVersion", "application.cp.ei.telekom.de/v1", "kind", "Application")
@@ -69,7 +74,7 @@ func (v *ApplicationCustomValidator) ValidateCreate(ctx context.Context, app *ap
 	return v.validateCreateOrUpdate(ctx, app)
 }
 
-func (v *ApplicationCustomValidator) ValidateUpdate(ctx context.Context, _ *applicationv1.Application, app *applicationv1.Application) (admission.Warnings, error) {
+func (v *ApplicationCustomValidator) ValidateUpdate(ctx context.Context, _, app *applicationv1.Application) (admission.Warnings, error) {
 	return v.validateCreateOrUpdate(ctx, app)
 }
 

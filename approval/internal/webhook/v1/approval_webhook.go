@@ -7,12 +7,13 @@ package v1
 import (
 	"context"
 
-	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
-	approvalhandler "github.com/telekom/controlplane/approval/internal/handler/approval"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	approvalhandler "github.com/telekom/controlplane/approval/internal/handler/approval"
 )
 
 // log is for logging in this package.
@@ -33,8 +34,7 @@ func SetupApprovalWebhookWithManager(mgr ctrl.Manager) error {
 //
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as it is used only for temporary operations and does not need to be deeply copied.
-type ApprovalCustomDefaulter struct {
-}
+type ApprovalCustomDefaulter struct{}
 
 var _ admission.Defaulter[*approvalv1.Approval] = &ApprovalCustomDefaulter{}
 
@@ -58,8 +58,7 @@ func (a *ApprovalCustomDefaulter) Default(_ context.Context, obj *approvalv1.App
 //
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as this struct is used only for temporary operations and does not need to be deeply copied.
-type ApprovalCustomValidator struct {
-}
+type ApprovalCustomValidator struct{}
 
 var _ admission.Validator[*approvalv1.Approval] = &ApprovalCustomValidator{}
 
@@ -74,7 +73,7 @@ func (a *ApprovalCustomValidator) ValidateCreate(_ context.Context, obj *approva
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (a *ApprovalCustomValidator) ValidateUpdate(_ context.Context, oldObj *approvalv1.Approval, newObj *approvalv1.Approval) (warnings admission.Warnings, err error) {
+func (a *ApprovalCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj *approvalv1.Approval) (warnings admission.Warnings, err error) {
 	approvallog.Info("validate update", "name", newObj.Name)
 
 	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyAuto && newObj.Spec.State != approvalv1.ApprovalStateGranted {
@@ -110,8 +109,8 @@ func (a *ApprovalCustomValidator) ValidateUpdate(_ context.Context, oldObj *appr
 	// Enforce distinct deciders for FourEyes strategy on ANY transition to Granted
 	if newObj.Spec.Strategy == approvalv1.ApprovalStrategyFourEyes {
 		if stateChanged && newObj.Spec.State == approvalv1.ApprovalStateGranted {
-			if err := validateDistinctDeciders(newObj.Spec.Decisions); err != nil {
-				return warnings, err
+			if distinctErr := validateDistinctDeciders(newObj.Spec.Decisions); distinctErr != nil {
+				return warnings, distinctErr
 			}
 		}
 	}

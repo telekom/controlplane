@@ -38,6 +38,8 @@ type Stores struct {
 	APISubscriptionStore  store.ObjectStore[*apiv1.ApiSubscription]
 	APIExposureStore      store.ObjectStore[*apiv1.ApiExposure]
 
+	RoadmapStore store.ObjectStore[*roverv1.Roadmap]
+
 	EventSpecificationStore store.ObjectStore[*roverv1.EventSpecification]
 	EventTypeStore          store.ObjectStore[*eventv1.EventType]
 	EventExposureStore      store.ObjectStore[*eventv1.EventExposure]
@@ -69,6 +71,7 @@ func NewStores(ctx context.Context, cfg *rest.Config) *Stores {
 
 	s.RoverStore = NewOrDie[*roverv1.Rover](ctx, dynamicClient, roverv1.GroupVersion.WithResource("rovers"), roverv1.GroupVersion.WithKind("Rover"))
 	s.APISpecificationStore = NewOrDie[*roverv1.ApiSpecification](ctx, dynamicClient, roverv1.GroupVersion.WithResource("apispecifications"), roverv1.GroupVersion.WithKind("ApiSpecification"))
+	s.RoadmapStore = NewOrDie[*roverv1.Roadmap](ctx, dynamicClient, roverv1.GroupVersion.WithResource("roadmaps"), roverv1.GroupVersion.WithKind("Roadmap"))
 	s.APIStore = NewOrDie[*apiv1.Api](ctx, dynamicClient, apiv1.GroupVersion.WithResource("apis"), apiv1.GroupVersion.WithKind("Api"))
 	s.ApplicationStore = NewOrDie[*applicationv1.Application](ctx, dynamicClient, applicationv1.GroupVersion.WithResource("applications"), applicationv1.GroupVersion.WithKind("Application"))
 	s.APISubscriptionStore = NewOrDie[*apiv1.ApiSubscription](ctx, dynamicClient, apiv1.GroupVersion.WithResource("apisubscriptions"), apiv1.GroupVersion.WithKind("ApiSubscription"))

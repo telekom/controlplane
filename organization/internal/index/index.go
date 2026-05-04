@@ -8,10 +8,11 @@ import (
 	"context"
 	"os"
 
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
 )
 
 const (
@@ -20,7 +21,6 @@ const (
 )
 
 func RegisterIndicesOrDie(ctx context.Context, mgr ctrl.Manager) {
-
 	// Index the team by the group it refers to
 	filterTeamGroup := func(obj client.Object) []string {
 		team, ok := obj.(*organizationv1.Team)

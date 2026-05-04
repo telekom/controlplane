@@ -5,10 +5,11 @@
 package notification_channel
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	organisationv1 "github.com/telekom/controlplane/organization/api/v1"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func buildNotificationChannelObj(owner *organisationv1.Team) *notificationv1.NotificationChannel {
