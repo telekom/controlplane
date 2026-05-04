@@ -55,6 +55,7 @@ func doNotificationsHousekeeping(ctx context.Context, channel *notificationv1.No
 	}
 
 	for i := range notifications.Items {
+		// let's check if the notification is eligible for housekeeping
 		if eligibleForHousekeeping(ctx, &notifications.Items[i], housekeepingConfig.TTLMonthsAfterFinished) {
 			err := scopedClient.Delete(ctx, &notifications.Items[i])
 			if err != nil {

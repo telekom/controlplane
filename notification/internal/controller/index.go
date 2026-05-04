@@ -38,6 +38,7 @@ func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 			// index key is "namespace/name"
 			keys := make([]string, 0, len(n.Spec.Channels))
 			for _, ch := range n.Spec.Channels {
+				// We'll use "namespace/name" as the key
 				keys = append(keys, fmt.Sprintf("%s/%s", ch.Namespace, ch.Name))
 			}
 			return keys
@@ -62,6 +63,7 @@ func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 			for _, ch := range n.Spec.Channels {
 				parts := strings.Split(ch.Name, "--")
 				channelType := parts[len(parts)-1]
+				// We'll construct the template name as the key
 				keys = append(keys, fmt.Sprintf("%s--%s", n.Spec.Purpose, channelType))
 			}
 			return keys
