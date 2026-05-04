@@ -9,9 +9,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	"github.com/telekom/controlplane/pubsub/internal/service"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 func TestBuildSubscriptionResource_Envelope(t *testing.T) {

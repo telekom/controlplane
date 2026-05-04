@@ -17,7 +17,6 @@ var _ handler.Handler[*pubsubv1.EventStore] = &EventStoreHandler{}
 type EventStoreHandler struct{}
 
 func (h *EventStoreHandler) CreateOrUpdate(ctx context.Context, obj *pubsubv1.EventStore) error {
-
 	obj.SetCondition(condition.NewReadyCondition("EventStoreReady", "EventStore configuration is valid"))
 	obj.SetCondition(condition.NewDoneProcessingCondition("EventStore is ready"))
 

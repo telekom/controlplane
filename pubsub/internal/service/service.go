@@ -61,18 +61,18 @@ func (q *configService) buildURL(subscriptionID string) (*url.URL, error) {
 	return url.Parse(rawUrl)
 }
 
-func (q *configService) DeleteSubscription(ctx context.Context, subscriptionID string, resource SubscriptionResource) error {
-	url, err := q.buildURL(subscriptionID)
+func (q *configService) DeleteSubscription(ctx context.Context, subscriptionID string, resource SubscriptionResource) error { //nolint:gocritic // hugeParam: kept as value to match interface
+	reqURL, err := q.buildURL(subscriptionID)
 	if err != nil {
 		return errors.Wrap(err, "failed to build URL for DeleteSubscription")
 	}
 
 	body, err := json.Marshal(resource)
 	if err != nil {
-		return errors.Wrap(err, "failed to serialize resource for PutSubscription")
+		return errors.Wrap(err, "failed to serialize resource for DeleteSubscription")
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, url.String(), bytes.NewReader(body))
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, reqURL.String(), bytes.NewReader(body))
 	if err != nil {
 		return errors.Wrap(err, "failed to create HTTP request for DeleteSubscription")
 	}
@@ -80,13 +80,13 @@ func (q *configService) DeleteSubscription(ctx context.Context, subscriptionID s
 	if err != nil {
 		return errors.Wrap(err, "HTTP request failed for DeleteSubscription")
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // best-effort close on HTTP response body
 
 	return checkResponse(resp, "DeleteSubscription", http.StatusOK, http.StatusNoContent)
 }
 
-func (q *configService) PutSubscription(ctx context.Context, subscriptionID string, resource SubscriptionResource) error {
-	url, err := q.buildURL(subscriptionID)
+func (q *configService) PutSubscription(ctx context.Context, subscriptionID string, resource SubscriptionResource) error { //nolint:gocritic // hugeParam: kept as value to match interface
+	reqURL, err := q.buildURL(subscriptionID)
 	if err != nil {
 		return errors.Wrap(err, "failed to build URL for PutSubscription")
 	}
@@ -96,7 +96,7 @@ func (q *configService) PutSubscription(ctx context.Context, subscriptionID stri
 		return errors.Wrap(err, "failed to serialize resource for PutSubscription")
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPut, url.String(), bytes.NewReader(body))
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPut, reqURL.String(), bytes.NewReader(body))
 	if err != nil {
 		return errors.Wrap(err, "failed to create HTTP request for PutSubscription")
 	}
@@ -106,7 +106,7 @@ func (q *configService) PutSubscription(ctx context.Context, subscriptionID stri
 	if err != nil {
 		return errors.Wrap(err, "HTTP request failed for PutSubscription")
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // best-effort close on HTTP response body
 
 	return checkResponse(resp, "PutSubscription", http.StatusOK, http.StatusCreated)
 }
