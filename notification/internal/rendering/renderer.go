@@ -12,13 +12,13 @@ import (
 	"time"
 
 	sprig "github.com/go-task/slim-sprig/v3"
+
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/internal/templatecache"
 )
 
 // parseTemplate parses both the subject and body templates, returns an error if the attempt fails
 func ParseTemplate(template *notificationv1.NotificationTemplate) (*templatecache.TemplateWrapper, error) {
-
 	// merge sprig + custom funcs
 	funcs := sprig.FuncMap()
 	for k, v := range getCustomTemplateFunctions() {

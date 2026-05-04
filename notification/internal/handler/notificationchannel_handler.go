@@ -7,15 +7,17 @@ package handler
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"k8s.io/apimachinery/pkg/api/meta"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/internal/config"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-	"time"
 )
 
 const (
@@ -29,7 +31,6 @@ type NotificationChannelHandler struct {
 }
 
 func (n *NotificationChannelHandler) CreateOrUpdate(ctx context.Context, channel *notificationv1.NotificationChannel) error {
-
 	doNotificationsHousekeeping(ctx, channel, n.HousekeepingConfig)
 
 	channel.SetCondition(condition.NewReadyCondition("Provisioned", "Notification channel is provisioned"))
@@ -42,33 +43,32 @@ func (n *NotificationChannelHandler) Delete(ctx context.Context, channel *notifi
 }
 
 func doNotificationsHousekeeping(ctx context.Context, channel *notificationv1.NotificationChannel, housekeepingConfig *config.NotificationHousekeepingConfig) {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	var notifications notificationv1.NotificationList
 	channelKey := fmt.Sprintf("%s/%s", channel.Namespace, channel.Name)
 
 	scopedClient := cclient.ClientFromContextOrDie(ctx)
 	if err := scopedClient.List(ctx, &notifications, client.MatchingFields{IndexFieldSpecChannelRefs: channelKey}); err != nil {
-		log.Error(err, fmt.Sprintf("Failed to list notifications for channel %q ", channelKey))
+		logger.Error(err, fmt.Sprintf("Failed to list notifications for channel %q ", channelKey))
 		return
 	}
 
-	for _, notification := range notifications.Items {
-
+	for i := range notifications.Items {
 		// let's check if the notification is eligible for housekeeping
-		if eligibleForHousekeeping(ctx, &notification, housekeepingConfig.TTLMonthsAfterFinished) {
-			err := scopedClient.Delete(ctx, &notification)
+		if eligibleForHousekeeping(ctx, &notifications.Items[i], housekeepingConfig.TTLMonthsAfterFinished) {
+			err := scopedClient.Delete(ctx, &notifications.Items[i])
 			if err != nil {
-				log.V(0).Error(err, "Failed to delete expired notification", "name", notification.Name)
+				logger.V(0).Error(err, "Failed to delete expired notification", "name", notifications.Items[i].Name)
 			} else {
-				log.V(0).Info("Deleted expired notification", "name", notification.Name)
+				logger.V(0).Info("Deleted expired notification", "name", notifications.Items[i].Name)
 			}
 		}
 	}
 }
 
 func eligibleForHousekeeping(ctx context.Context, notification *notificationv1.Notification, ttlMonthsAfterFinished int32) bool {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	// check if it's ready
 	ready := meta.IsStatusConditionTrue(notification.GetConditions(), condition.ConditionTypeReady)
@@ -93,7 +93,7 @@ func eligibleForHousekeeping(ctx context.Context, notification *notificationv1.N
 	ttl := time.Duration(ttlMonthsAfterFinished) * time.Hour * 24 * 7 * 4
 	expiry := readyTimestamp.Add(ttl)
 	if time.Now().After(expiry) {
-		log.V(1).Info("Notification is expired and eligible for housekeeping")
+		logger.V(1).Info("Notification is expired and eligible for housekeeping")
 		return true
 	} else {
 		return false

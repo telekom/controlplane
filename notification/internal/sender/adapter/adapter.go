@@ -20,7 +20,7 @@ type Attachment struct {
 }
 
 type NotificationAdapter[C NotificationConfig] interface {
-	Send(ctx context.Context, config C, title string, body string, attachments []Attachment) error
+	Send(ctx context.Context, config C, title, body string, attachments []Attachment) error
 }
 
 type MailChannelConfiguration interface {
