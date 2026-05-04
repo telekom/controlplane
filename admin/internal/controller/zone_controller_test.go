@@ -129,7 +129,6 @@ var _ = Describe("Zone Controller", func() {
 				VerifyNamespace(ctx, g, expectedNamespaceName)
 			}, timeout, interval).Should(Succeed())
 		})
-
 	})
 
 	Context("ExternalIdPolicies round-trip", func() {

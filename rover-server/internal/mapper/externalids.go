@@ -42,7 +42,7 @@ func RoverExternalIdsToScalars(ids []roverv1.ExternalId) (psiid, icto string) {
 			icto = e.Id
 		}
 	}
-	return
+	return psiid, icto
 }
 
 // ApplicationExternalIdsToScalars is the Application-CR counterpart to
@@ -57,5 +57,5 @@ func ApplicationExternalIdsToScalars(ids []applicationv1.ExternalId) (psiid, ict
 			icto = e.Id
 		}
 	}
-	return
+	return psiid, icto
 }
