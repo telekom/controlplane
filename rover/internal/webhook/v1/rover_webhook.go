@@ -130,6 +130,13 @@ func (r *RoverValidator) ValidateCreateOrUpdate(ctx context.Context, rover *rove
 		return nil, valErr.BuildError()
 	}
 
+	// Validate externalIds against the zone's policies.
+	entries := make([]externalIdEntry, len(rover.Spec.ExternalIds))
+	for i, eid := range rover.Spec.ExternalIds {
+		entries[i] = externalIdEntry{Scheme: eid.Scheme, Id: eid.Id}
+	}
+	validateExternalIds(valErr, entries, zone, field.NewPath("spec").Child("externalIds"))
+
 	// Validate permission structure: nested entries must have required fields based on parent format
 	// This validation is done here in the webhook rather than via CEL in the CRD because CEL rules with
 	// .all() iteration over the entries array would exceed the Kubernetes validation cost budget by

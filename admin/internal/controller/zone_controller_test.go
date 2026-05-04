@@ -131,6 +131,28 @@ var _ = Describe("Zone Controller", func() {
 
 			}, timeout, interval).Should(Succeed())
 		})
+
+	})
+
+	Context("ExternalIdPolicies round-trip", func() {
+		It("persists ExternalIdPolicies on the Zone spec", func() {
+			zone := NewZone("test-zone-extids", testNamespace)
+			zone.Spec.ExternalIdPolicies = []adminv1.ExternalIdPolicy{
+				{Scheme: "psi", Required: true, Pattern: `^PSI-[0-9]{6}$`},
+				{Scheme: "icto", Required: false, Pattern: `^icto-[0-9]+$`},
+			}
+			Expect(k8sClient.Create(ctx, zone)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(client.IgnoreNotFound(k8sClient.Delete(ctx, zone))).To(Succeed())
+			})
+
+			got := &adminv1.Zone{}
+			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(zone), got)).To(Succeed())
+			Expect(got.Spec.ExternalIdPolicies).To(ConsistOf(
+				adminv1.ExternalIdPolicy{Scheme: "psi", Required: true, Pattern: `^PSI-[0-9]{6}$`},
+				adminv1.ExternalIdPolicy{Scheme: "icto", Required: false, Pattern: `^icto-[0-9]+$`},
+			))
+		})
 	})
 })
 

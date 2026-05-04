@@ -115,6 +115,32 @@ type RoverSpec struct {
 	// Permissions defines role-based access control permissions for this application
 	// +kubebuilder:validation:Optional
 	Permissions []Permission `json:"permissions,omitempty"`
+
+	// ExternalIds carries business identifiers (e.g. PSI, ICTO) attached to this
+	// Rover. Each entry is tagged with a scheme. Format and presence are validated
+	// per-zone via the zone's ExternalIdPolicies.
+	// +kubebuilder:validation:Optional
+	// +listType=map
+	// +listMapKey=scheme
+	// +kubebuilder:validation:MaxItems=16
+	ExternalIds []ExternalId `json:"externalIds,omitempty"`
+}
+
+// ExternalId is a scheme-tagged business identifier.
+type ExternalId struct {
+	// Scheme names the identifier system (e.g. "psi", "icto").
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:Pattern=`^[a-z][a-z0-9]*$`
+	Scheme string `json:"scheme"`
+
+	// Id is the raw identifier value. Per-scheme format rules are applied by the
+	// zone's ExternalIdPolicies at admission time.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
+	Id string `json:"id"`
 }
 
 // Visibility defines the access scope for an API

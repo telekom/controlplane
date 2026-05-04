@@ -11,6 +11,7 @@
     Icto:           "",
     Id:             "",
     IpRestrictions: api.IpRestrictions{},
+    Psiid:          "",
     Status:         api.Status{},
     Subscriptions:  {
         {
@@ -33,6 +34,7 @@
     Icto:           "",
     Id:             "",
     IpRestrictions: api.IpRestrictions{},
+    Psiid:          "",
     Status:         api.Status{},
     Subscriptions:  nil,
     Zone:           "",
@@ -47,6 +49,7 @@
     Icto:           "",
     Id:             "",
     IpRestrictions: api.IpRestrictions{},
+    Psiid:          "",
     Status:         api.Status{},
     Subscriptions:  {
         {

@@ -696,4 +696,53 @@ var _ = Describe("Rover Controller", Ordered, func() {
 			}, timeout, interval).Should(Succeed())
 		})
 	})
+
+	Context("Rover with ExternalIds", func() {
+		It("propagates ExternalIds verbatim to the derived Application", func() {
+			spec := roverv1.RoverSpec{
+				Zone:         testEnvironment,
+				ClientSecret: "topsecret",
+				ExternalIds: []roverv1.ExternalId{
+					{Scheme: "psi", Id: "PSI-103596"},
+					{Scheme: "icto", Id: "icto-12345"},
+				},
+			}
+
+			rover := createRover(resourceName, teamNamespace, testEnvironment, spec)
+			Expect(k8sClient.Create(ctx, rover)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				application := &applicationv1.Application{}
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      resourceName,
+					Namespace: teamNamespace,
+				}, application)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(application.Spec.ExternalIds).To(ConsistOf(
+					applicationv1.ExternalId{Scheme: "psi", Id: "PSI-103596"},
+					applicationv1.ExternalId{Scheme: "icto", Id: "icto-12345"},
+				))
+			}, timeout, interval).Should(Succeed())
+
+			By("updating the Rover's ExternalIds")
+			fetched := &roverv1.Rover{}
+			Expect(k8sClient.Get(ctx, typeNamespacedName, fetched)).To(Succeed())
+			fetched.Spec.ExternalIds = []roverv1.ExternalId{
+				{Scheme: "psi", Id: "PSI-999999"},
+			}
+			Expect(k8sClient.Update(ctx, fetched)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				application := &applicationv1.Application{}
+				err := k8sClient.Get(ctx, client.ObjectKey{
+					Name:      resourceName,
+					Namespace: teamNamespace,
+				}, application)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(application.Spec.ExternalIds).To(ConsistOf(
+					applicationv1.ExternalId{Scheme: "psi", Id: "PSI-999999"},
+				))
+			}, timeout, interval).Should(Succeed())
+		})
+	})
 })

@@ -39,6 +39,7 @@ func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *rove
 		Authorization:  in.Authorization,
 		Exposures:      in.Exposures,
 		Icto:           in.Icto,
+		Psiid:          in.Psiid,
 		IpRestrictions: in.IpRestrictions,
 		Subscriptions:  in.Subscriptions,
 		Zone:           in.Zone,
@@ -72,6 +73,8 @@ func MapRover(in *api.Rover, out *roverv1.Rover) error {
 			Allow: in.IpRestrictions.Allow,
 		}
 	}
+
+	out.Spec.ExternalIds = mapper.RoverScalarsToExternalIds(in.Psiid, in.Icto)
 	return nil
 }
 

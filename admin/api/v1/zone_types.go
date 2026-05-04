@@ -81,6 +81,32 @@ type PermissionsConfig struct {
 	ConsoleUrl *string `json:"consoleUrl,omitempty"`
 }
 
+// ExternalIdPolicy configures validation for a single external identifier scheme
+// on Rovers and Applications in this zone.
+type ExternalIdPolicy struct {
+	// Scheme names the identifier system (e.g. "psi", "icto").
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:Pattern=`^[a-z][a-z0-9]*$`
+	Scheme string `json:"scheme"`
+
+	// Required acts as a per-zone feature flag controlling whether this scheme
+	// is mandatory in this zone. When true, every Rover/Application in this
+	// zone MUST carry an externalIds entry with this scheme. The id's format
+	// is always checked against Pattern whenever an entry with this scheme is
+	// supplied, regardless of Required.
+	// +kubebuilder:default=false
+	Required bool `json:"required"`
+
+	// Pattern is the ECMA 262 regex the id must match. Always enforced when an
+	// externalIds entry with this scheme is present; also drives the
+	// presence-check error when Required is true.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Pattern string `json:"pattern"`
+}
+
 // ZoneSpec defines the desired state of Zone
 type ZoneSpec struct {
 	IdentityProvider IdentityProviderConfig `json:"identityProvider"`
@@ -94,6 +120,15 @@ type ZoneSpec struct {
 	// Permissions configuration for permission service integration
 	// +kubebuilder:validation:Optional
 	Permissions *PermissionsConfig `json:"permissions,omitempty"`
+
+	// ExternalIdPolicies configures, per identifier scheme, the format and
+	// presence requirements for externalIds on Rovers and Applications bound to
+	// this zone. Empty means no enforcement for any scheme.
+	// +kubebuilder:validation:Optional
+	// +listType=map
+	// +listMapKey=scheme
+	// +kubebuilder:validation:MaxItems=16
+	ExternalIdPolicies []ExternalIdPolicy `json:"externalIdPolicies,omitempty"`
 }
 
 type Links struct {
