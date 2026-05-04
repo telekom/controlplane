@@ -45,9 +45,12 @@ const (
 	// TemplatePlaceholderResourceType can be api/event
 	TemplatePlaceholderResourceType = "resource_type"
 
-	TemplatePlaceholderStateOld = "state_old"
-	TemplatePlaceholderStateNew = "state_new"
-	TemplatePlaceholderScopes   = "scopes"
+	TemplatePlaceholderStateOld       = "state_old"
+	TemplatePlaceholderStateNew       = "state_new"
+	TemplatePlaceholderScopes         = "scopes"
+	TemplatePlaceholderExpirationDate = "expiration_date"
+	TemplatePlaceholderDaysRemaining  = "days_remaining"
+	TemplatePlaceholderReminderType   = "reminder_type"
 )
 
 const (
@@ -78,6 +81,10 @@ type NotificationData struct {
 	Scenario               NotificationScenario
 	Actor                  Actor
 	Action                 string
+	// Expiration-specific fields
+	ExpirationDate string
+	DaysRemaining  string
+	ReminderType   string
 }
 
 func extractDecider(decider *approvalv1.Decider) (map[string]any, error) {
@@ -226,6 +233,69 @@ func initializeProperties() map[string]any {
 	properties[TemplatePlaceholderStateOld] = defaultValue
 	properties[TemplatePlaceholderStateNew] = defaultValue
 	properties[TemplatePlaceholderScopes] = defaultValue
+	// Note: Expiration fields (ExpirationDate, DaysRemaining, ReminderType) are only
+	// initialized in SendReminderNotification, not for regular notifications
 
 	return properties
+}
+
+// SendReminderNotification sends an expiration reminder notification
+func SendReminderNotification(ctx context.Context, c client.Client, data *NotificationData) (*types.ObjectRef, error) {
+	properties := initializeProperties()
+
+	properties[TemplatePlaceholderEnvironment] = contextutil.EnvFromContextOrDie(ctx)
+	properties[TemplatePlaceholderStateNew] = data.StateNew
+	properties[TemplatePlaceholderStateOld] = data.StateOld
+	properties[TemplatePlaceholderExpirationDate] = data.ExpirationDate
+	properties[TemplatePlaceholderDaysRemaining] = data.DaysRemaining
+	properties[TemplatePlaceholderReminderType] = data.ReminderType
+
+	requesterMap, err := extractRequester(data.Requester)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to extract requester data")
+	}
+	for k, v := range requesterMap {
+		properties[strings.ToLower(k)] = v
+	}
+
+	deciderMap, err := extractDecider(data.Decider)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to extract decider data")
+	}
+	for k, v := range deciderMap {
+		properties[strings.ToLower(k)] = v
+	}
+
+	// Build purpose: <ownerKind>--<approvalAction>--reminder--<actor>
+	// Example: approvalexpiration--subscribe--reminder--decider
+	purposeStringBuilder := strings.Builder{}
+	purposeStringBuilder.WriteString(strings.ToLower(data.Owner.GetObjectKind().GroupVersionKind().Kind))
+	purposeStringBuilder.WriteString(DELIMITER)
+	purposeStringBuilder.WriteString(data.Action)
+	purposeStringBuilder.WriteString(DELIMITER)
+	purposeStringBuilder.WriteString("reminder")
+	purposeStringBuilder.WriteString(DELIMITER)
+	purposeStringBuilder.WriteString(string(data.Actor))
+	purpose := purposeStringBuilder.String()
+
+	// Build notification name: <purpose>--<targetName>--<hash>
+	nameStringBuilder := strings.Builder{}
+	nameStringBuilder.WriteString(purpose)
+	nameStringBuilder.WriteString(DELIMITER)
+	nameStringBuilder.WriteString(data.Target.GetName())
+	name := nameStringBuilder.String()
+
+	notificationBuilder := builder.New().
+		WithOwner(data.Owner).
+		WithSender(notificationv1.SenderTypeSystem, "ApprovalService").
+		WithDefaultChannels(ctx, data.SendToChannelNamespace).
+		WithPurpose(purpose).
+		WithName(labelutil.NormalizeNameValue(name)).
+		WithProperties(properties)
+
+	notification, err := notificationBuilder.Send(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return types.ObjectRefFromObject(notification), nil
 }

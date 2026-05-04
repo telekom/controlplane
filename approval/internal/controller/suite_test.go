@@ -24,6 +24,7 @@ import (
 	crscheme "sigs.k8s.io/controller-runtime/pkg/scheme"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/approval/internal/config"
 	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
@@ -132,6 +133,20 @@ var _ = BeforeSuite(func() {
 		Client:   k8sManager.GetClient(),
 		Scheme:   k8sManager.GetScheme(),
 		Recorder: &mock.EventRecorder{},
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	expirationConfig := &config.ExpirationConfig{
+		ExpirationPeriodMonths:       12,
+		LastMonthsWithWeeklyReminder: 2,
+		LastWeeksWithDailyReminder:   2,
+	}
+
+	err = (&ApprovalExpirationReconciler{
+		Client:           k8sManager.GetClient(),
+		Scheme:           k8sManager.GetScheme(),
+		Recorder:         &mock.EventRecorder{},
+		ExpirationConfig: expirationConfig,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

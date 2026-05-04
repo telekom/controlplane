@@ -22,6 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/approval/internal/config"
 	"github.com/telekom/controlplane/approval/internal/controller"
 	webhookv1 "github.com/telekom/controlplane/approval/internal/webhook/v1"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
@@ -79,6 +80,17 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	// Load expiration configuration
+	expirationConfig, err := config.LoadExpirationConfig()
+	if err != nil {
+		setupLog.Error(err, "unable to load expiration config")
+		os.Exit(1)
+	}
+	setupLog.Info("loaded expiration config",
+		"expirationPeriodMonths", expirationConfig.ExpirationPeriodMonths,
+		"weeklyReminderMonths", expirationConfig.LastMonthsWithWeeklyReminder,
+		"dailyReminderWeeks", expirationConfig.LastWeeksWithDailyReminder)
+
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will
 	// prevent from being vulnerable to the HTTP/2 Stream Cancellation and
@@ -133,6 +145,14 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ApprovalRequest")
+		os.Exit(1)
+	}
+	if err = (&controller.ApprovalExpirationReconciler{
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		ExpirationConfig: expirationConfig,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ApprovalExpiration")
 		os.Exit(1)
 	}
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {

@@ -241,11 +241,13 @@ func (b *approvalBuilder) Build(ctx context.Context) (finalResult ApprovalResult
 	// Approval was found
 	if approvalExists {
 		log.V(2).Info("Approval exists")
-		isDenied := b.Approval.Spec.State == v1.ApprovalStateRejected || b.Approval.Spec.State == v1.ApprovalStateSuspended
+		isDenied := b.Approval.Spec.State == v1.ApprovalStateRejected ||
+			b.Approval.Spec.State == v1.ApprovalStateSuspended ||
+			b.Approval.Spec.State == v1.ApprovalStateExpired
 
 		if isDenied {
-			log.V(1).Info("Approval is rejected or suspended and must not be provisioned")
-			b.Owner.SetCondition(newApprovalGrantedCondition(b.Approval.Spec.State, "Approval has been rejected or suspended"))
+			log.V(1).Info("Approval is rejected, suspended, or expired and must not be provisioned")
+			b.Owner.SetCondition(newApprovalGrantedCondition(b.Approval.Spec.State, "Approval has been rejected, suspended, or expired"))
 			return ApprovalResultDenied, nil
 		}
 	}

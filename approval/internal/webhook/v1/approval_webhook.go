@@ -86,6 +86,10 @@ func (a *ApprovalCustomValidator) ValidateUpdate(_ context.Context, oldObj, newO
 	// instead of Status.AvailableTransitions (which may be stale or nil before
 	// the controller has reconciled). Auto strategy uses its own FSM.
 	if stateChanged {
+		if validationErr := validateExpireTransition(newObj); validationErr != nil {
+			return warnings, validationErr
+		}
+
 		fsmDef, ok := approvalhandler.ApprovalStrategyFSM[newObj.Spec.Strategy]
 		if !ok {
 			err = apierrors.NewBadRequest("Unknown approval strategy")
@@ -123,4 +127,20 @@ func (a *ApprovalCustomValidator) ValidateDelete(_ context.Context, obj *approva
 	approvallog.Info("validate delete", "name", obj.Name)
 
 	return nil, nil
+}
+
+// validateExpireTransition blocks manual transitions to EXPIRED state (system-only action)
+func validateExpireTransition(newObj *approvalv1.Approval) error {
+	if newObj.Spec.State != approvalv1.ApprovalStateExpired {
+		return nil
+	}
+
+	// Check if this is a legitimate system transition
+	for _, decision := range newObj.Spec.Decisions {
+		if decision.Name == "System" && decision.ResultingState == approvalv1.ApprovalStateExpired {
+			return nil // Valid system transition
+		}
+	}
+
+	return apierrors.NewBadRequest("Expire action is system-only and cannot be triggered manually")
 }

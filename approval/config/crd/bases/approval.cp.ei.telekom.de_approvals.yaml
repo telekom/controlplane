@@ -222,6 +222,7 @@ spec:
                 - Granted
                 - Rejected
                 - Suspended
+                - Expired
                 type: string
               strategy:
                 default: Auto
@@ -356,6 +357,7 @@ spec:
                 - Granted
                 - Rejected
                 - Suspended
+                - Expired
                 type: string
               notificationRefs:
                 description: NotificationRefs is a reference to the notifications
