@@ -62,6 +62,32 @@ spec:
 
 Rover itself defines the primary `zone`. Failover is configured on individual API exposures/subscriptions (not as `spec.failoverZone` on Rover).
 
+## External Identifiers
+
+Rover files can carry business identifiers that tie an application back to upstream inventory systems. Today two scalar fields are supported:
+
+| Field | Description |
+| ----- | ----------- |
+| `psiid` | PSI system number identifier. Default format: `PSI-######` (six digits). |
+| `icto` | ICTO identifier. Default format: `icto-######`. |
+
+```yaml
+apiVersion: tcp.ei.telekom.de/v1
+kind: Rover
+metadata:
+  name: checkout-service
+spec:
+  zone: dataplane1
+  psiid: PSI-103596
+  icto: icto-12345
+```
+
+Whether an identifier is *required* and the exact regex applied to its value are configured **per zone** by the platform administrator. If a zone has no policy for a scheme, supplying the field is optional and unvalidated. When a zone enforces a scheme, a Rover without that field (or with a malformed value) is rejected at admission time.
+
+:::note
+`kubectl apply --dry-run=client` does not fire admission webhooks, so format errors will only surface on server-side apply.
+:::
+
 ## Next Steps
 
 - [Exposing APIs](./exposing-apis.mdx) — Publish APIs from your application

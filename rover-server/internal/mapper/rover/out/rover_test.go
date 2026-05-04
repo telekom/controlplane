@@ -8,6 +8,7 @@ import (
 	"github.com/gkampitakis/go-snaps/snaps"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 )
@@ -81,5 +82,20 @@ var _ = Describe("Rover Mapper", func() {
 			Expect(err.Error()).To(ContainSubstring("input rover is nil"))
 		})
 
+	})
+
+	Context("ExternalIds → scalars translation", func() {
+		It("projects psi and icto schemes onto scalar response fields", func() {
+			input := rover.DeepCopy()
+			input.Spec.ExternalIds = append(input.Spec.ExternalIds,
+				roverv1.ExternalId{Scheme: "psi", Id: "PSI-103596"},
+				roverv1.ExternalId{Scheme: "icto", Id: "icto-12345"},
+				roverv1.ExternalId{Scheme: "unknown", Id: "ignored"},
+			)
+			output := &api.Rover{}
+			Expect(MapRover(input, output)).To(Succeed())
+			Expect(output.Psiid).To(Equal("PSI-103596"))
+			Expect(output.Icto).To(Equal("icto-12345"))
+		})
 	})
 })

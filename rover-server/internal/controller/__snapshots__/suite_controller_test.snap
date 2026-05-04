@@ -617,7 +617,7 @@
 
 [Rover Controller Get rover status should return the status of a rover successfully - 1]
 {
- "createdAt": "2025-09-18T08:39:44Z",
+ "createdAt": "2025-09-18T10:39:44+02:00",
  "errors": [
   {
    "cause": "NoApproval",
@@ -632,7 +632,7 @@
   }
  ],
  "overallStatus": "blocked",
- "processedAt": "2025-10-08T07:16:40Z",
+ "processedAt": "2025-10-08T09:16:40+02:00",
  "processingState": "done",
  "state": "blocked"
 }
@@ -670,7 +670,7 @@
 
 [Rover Controller Create rover resource should fail to create a rover with invalid input - 1]
 {
- "detail": "multiple errors encountered: Error at \"/zone\": property \"zone\" is missing\nSchema:\n  {\n    \"properties\": {\n      \"authentication\": {\n        \"$ref\": \"#/components/schemas/Authentication\"\n      },\n      \"authorization\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/AuthorizationInfo\"\n        },\n        \"type\": \"array\"\n      },\n      \"exposures\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/Exposure\"\n        },\n        \"type\": \"array\"\n      },\n      \"icto\": {\n        \"example\": \"icto-12345\",\n        \"pattern\": \"^icto-[0-9]+$\",\n        \"type\": \"string\"\n      },\n      \"id\": {\n        \"example\": \"hub42--team2--myapp\",\n        \"readOnly\": true,\n        \"type\": \"string\"\n      },\n      \"ipRestrictions\": {\n        \"$ref\": \"#/components/schemas/IpRestrictions\"\n      },\n      \"status\": {\n        \"$ref\": \"#/components/schemas/Status\"\n      },\n      \"subscriptions\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/Subscription\"\n        },\n        \"type\": \"array\"\n      },\n      \"zone\": {\n        \"example\": \"aws\",\n        \"type\": \"string\"\n      }\n    },\n    \"required\": [\n      \"zone\"\n    ],\n    \"type\": \"object\"\n  }\n\nValue:\n  {\n    \"invalidField\": \"invalidValue\"\n  }\n",
+ "detail": "multiple errors encountered: Error at \"/zone\": property \"zone\" is missing\nSchema:\n  {\n    \"properties\": {\n      \"authentication\": {\n        \"$ref\": \"#/components/schemas/Authentication\"\n      },\n      \"authorization\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/AuthorizationInfo\"\n        },\n        \"type\": \"array\"\n      },\n      \"exposures\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/Exposure\"\n        },\n        \"type\": \"array\"\n      },\n      \"icto\": {\n        \"example\": \"icto-12345\",\n        \"pattern\": \"^icto-[0-9]+$\",\n        \"type\": \"string\"\n      },\n      \"id\": {\n        \"example\": \"hub42--team2--myapp\",\n        \"readOnly\": true,\n        \"type\": \"string\"\n      },\n      \"ipRestrictions\": {\n        \"$ref\": \"#/components/schemas/IpRestrictions\"\n      },\n      \"psiid\": {\n        \"description\": \"PSI system number identifier attached to this application\",\n        \"example\": \"PSI-103596\",\n        \"pattern\": \"^PSI-[0-9]{6}$\",\n        \"type\": \"string\"\n      },\n      \"status\": {\n        \"$ref\": \"#/components/schemas/Status\"\n      },\n      \"subscriptions\": {\n        \"items\": {\n          \"$ref\": \"#/components/schemas/Subscription\"\n        },\n        \"type\": \"array\"\n      },\n      \"zone\": {\n        \"example\": \"aws\",\n        \"type\": \"string\"\n      }\n    },\n    \"required\": [\n      \"zone\"\n    ],\n    \"type\": \"object\"\n  }\n\nValue:\n  {\n    \"invalidField\": \"invalidValue\"\n  }\n",
  "instance": "",
  "status": 400,
  "title": "Bad Request",

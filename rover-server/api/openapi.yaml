@@ -1771,6 +1771,11 @@ components:
           type: string
         observerUrl:
           type: string
+        psiid:
+          type: string
+          pattern: '^PSI-[0-9]{6}$'
+          example: PSI-103596
+          description: PSI system number identifier attached to this application
         exposures:
           type: array
           items:
@@ -2059,6 +2064,11 @@ components:
           type: string
           pattern: ^icto-[0-9]+$
           example: icto-12345
+        psiid:
+          type: string
+          pattern: ^PSI-[0-9]{6}$
+          example: PSI-103596
+          description: PSI system number identifier attached to this application
         exposures:
           type: array
           items:

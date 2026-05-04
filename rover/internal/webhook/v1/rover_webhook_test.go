@@ -1184,4 +1184,95 @@ var _ = Describe("Rover Webhook", Ordered, func() {
 		})
 	})
 
+	Context("External IDs validation", func() {
+		var (
+			zoneWithPolicies *adminv1.Zone
+		)
+
+		BeforeAll(func() {
+			zoneWithPolicies = NewZone("zone-extids", testNamespace)
+			zoneWithPolicies.Spec.ExternalIdPolicies = []adminv1.ExternalIdPolicy{
+				{Scheme: "psi", Required: true, Pattern: `^PSI-[0-9]{6}$`},
+				{Scheme: "icto", Required: false, Pattern: `^icto-[0-9]+$`},
+			}
+			CreateZone(ctx, zoneWithPolicies)
+		})
+
+		newRoverWithZone := func(zone *adminv1.Zone) *roverv1.Rover {
+			r := NewRover(zone)
+			r.Name = fmt.Sprintf("rover-extids-%d", GinkgoRandomSeed())
+			return r
+		}
+
+		It("rejects a rover missing a required externalIds scheme", func() {
+			rover := newRoverWithZone(zoneWithPolicies)
+			_, err := validator.ValidateCreate(ctx, rover)
+			assertValidationFailedWith(nil, err, `externalIds entry with scheme "psi" is required`)
+		})
+
+		It("accepts a rover with a matching required externalId", func() {
+			rover := newRoverWithZone(zoneWithPolicies)
+			rover.Spec.ExternalIds = []roverv1.ExternalId{
+				{Scheme: "psi", Id: "PSI-103596"},
+			}
+			warnings, err := validator.ValidateCreate(ctx, rover)
+			Expect(warnings).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("rejects a rover with a required scheme whose id fails the pattern", func() {
+			rover := newRoverWithZone(zoneWithPolicies)
+			rover.Spec.ExternalIds = []roverv1.ExternalId{
+				{Scheme: "psi", Id: "PSI-BAD"},
+			}
+			_, err := validator.ValidateCreate(ctx, rover)
+			assertValidationFailedWith(nil, err, `must match pattern "^PSI-[0-9]{6}$"`)
+		})
+
+		It("rejects a rover with a non-required scheme whose id fails the pattern", func() {
+			// Required=false still enforces format when the entry is supplied.
+			rover := newRoverWithZone(zoneWithPolicies)
+			rover.Spec.ExternalIds = []roverv1.ExternalId{
+				{Scheme: "psi", Id: "PSI-103596"},
+				{Scheme: "icto", Id: "not-an-icto"},
+			}
+			_, err := validator.ValidateCreate(ctx, rover)
+			assertValidationFailedWith(nil, err, `must match pattern "^icto-[0-9]+$"`)
+		})
+
+		It("accepts a rover omitting a non-required scheme", func() {
+			rover := newRoverWithZone(zoneWithPolicies)
+			rover.Spec.ExternalIds = []roverv1.ExternalId{
+				{Scheme: "psi", Id: "PSI-103596"},
+				// icto omitted; policy has Required=false so this is fine.
+			}
+			warnings, err := validator.ValidateCreate(ctx, rover)
+			Expect(warnings).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("ignores schemes with no matching zone policy", func() {
+			rover := newRoverWithZone(zoneWithPolicies)
+			rover.Spec.ExternalIds = []roverv1.ExternalId{
+				{Scheme: "psi", Id: "PSI-103596"},
+				{Scheme: "unknown", Id: "whatever"},
+			}
+			warnings, err := validator.ValidateCreate(ctx, rover)
+			Expect(warnings).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("accepts any externalIds when the zone has no policies", func() {
+			// testZone has no externalIdPolicies configured.
+			rover := NewRover(testZone)
+			rover.Name = "rover-extids-nozone"
+			rover.Spec.ExternalIds = []roverv1.ExternalId{
+				{Scheme: "psi", Id: "literally-anything"},
+			}
+			warnings, err := validator.ValidateCreate(ctx, rover)
+			Expect(warnings).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
 })

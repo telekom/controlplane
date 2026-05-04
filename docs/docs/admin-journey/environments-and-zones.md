@@ -93,6 +93,49 @@ Zones can be configured with different visibility levels:
 - **World** — The zone is accessible from outside the platform (public-facing APIs).
 - **Enterprise** — The zone is accessible only within the organization's network.
 
+### External Identifier Policies
+
+Zones can enforce format and presence rules for business identifiers attached to Rovers (and their derived Applications). Each policy names a scheme, the regex its id must match, and whether the scheme is required in this zone.
+
+```yaml
+apiVersion: admin.cp.ei.telekom.de/v1
+kind: Zone
+metadata:
+  name: dataplane1
+  namespace: dev
+spec:
+  visibility: World
+  # ... other fields ...
+  externalIdPolicies:
+    - scheme: psi
+      required: true
+      pattern: '^PSI-[0-9]{6}$'
+    - scheme: icto
+      required: false
+      pattern: '^icto-[0-9]+$'
+```
+
+**Semantics**
+
+- **Format is always enforced.** If a policy exists for a scheme and a Rover supplies a value under that scheme, the id must match `pattern`. Mismatches are rejected at admission time.
+- **`required: true`** also enforces *presence*: a Rover in this zone must carry an identifier for the scheme. Rovers without it are rejected.
+- **`required: false`** (default) leaves the identifier optional. If supplied, format is still checked; if omitted, the Rover is accepted.
+- A zone with no `externalIdPolicies` does not validate any external identifier fields — users can supply any value (or none).
+
+**Scheme → customer field mapping**
+
+Internally, identifiers are stored as scheme-tagged entries. In customer-facing `rover.yaml` files they appear as scalar fields:
+
+| Internal scheme | Customer scalar |
+| --------------- | --------------- |
+| `psi` | `psiid` |
+| `icto` | `icto` |
+
+**Operational notes**
+
+- Policy changes are **not retroactive**. Admission webhooks only fire on create/update; existing Rovers remain valid until next edit. Plan rollouts accordingly — there is no sweep job to find existing violators.
+- There is no observe-only / dry-run mode. Adding a policy immediately starts rejecting non-matching values on subsequent edits.
+
 ## Remote Organizations
 
 :::caution Planned Feature
