@@ -7,10 +7,11 @@ package application
 import (
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	commonTypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/discovery-server/internal/api"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestMapResponse(t *testing.T) {

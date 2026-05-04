@@ -8,7 +8,6 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
-
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper/status"

@@ -8,9 +8,9 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	cserver "github.com/telekom/controlplane/common-server/pkg/server"
-
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 )
 

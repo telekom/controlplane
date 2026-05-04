@@ -8,13 +8,12 @@ import (
 	"context"
 
 	"github.com/getkin/kin-openapi/openapi3filter"
+	"github.com/go-logr/logr"
+	"github.com/gofiber/fiber/v2"
 	requestValidator "github.com/oapi-codegen/fiber-middleware"
 	"github.com/pkg/errors"
 
-	"github.com/go-logr/logr"
-	"github.com/gofiber/fiber/v2"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
-
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 	"github.com/telekom/controlplane/discovery-server/internal/config"
 )

@@ -9,13 +9,13 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/require"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
-	eventv1 "github.com/telekom/controlplane/event/api/v1"
-
 	"github.com/telekom/controlplane/discovery-server/test/mocks/data"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 )
 
 const (

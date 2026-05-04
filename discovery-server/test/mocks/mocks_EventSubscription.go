@@ -7,6 +7,7 @@ package mocks
 import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/stretchr/testify/mock"
+
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	csmocks "github.com/telekom/controlplane/common-server/test/mocks"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
@@ -32,5 +33,6 @@ func ConfigureEventSubscriptionStoreMock(testing ginkgo.FullGinkgoTInterface, mo
 		mock.Anything,
 	).Return(
 		&store.ListResponse[*eventv1.EventSubscription]{
-			Items: []*eventv1.EventSubscription{eventSubscription}}, nil).Maybe()
+			Items: []*eventv1.EventSubscription{eventSubscription},
+		}, nil).Maybe()
 }

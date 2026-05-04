@@ -25,7 +25,7 @@ var _ = Describe("Controller Invalid IDs", func() {
 
 	DescribeTable("should return 404 when app name does not match resource label",
 		func(path string) {
-			req := httptest.NewRequest(http.MethodGet, path, nil)
+			req := httptest.NewRequest(http.MethodGet, path, http.NoBody)
 			resp, err := ExecuteRequest(req, teamToken)
 			ExpectStatus(resp, err, http.StatusNotFound, "application/problem+json")
 		},
@@ -43,7 +43,7 @@ var _ = Describe("Controller Invalid IDs", func() {
 
 	DescribeTable("should return 400 for malformed event type ID",
 		func(path string) {
-			req := httptest.NewRequest(http.MethodGet, path, nil)
+			req := httptest.NewRequest(http.MethodGet, path, http.NoBody)
 			resp, err := ExecuteRequest(req, teamToken)
 			ExpectStatus(resp, err, http.StatusBadRequest, "application/problem+json")
 		},

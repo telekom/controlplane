@@ -5,10 +5,10 @@
 package status
 
 import (
-	"github.com/telekom/controlplane/common/pkg/condition"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 )
 
