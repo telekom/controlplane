@@ -248,3 +248,4 @@ jobs:
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
       coverage_threshold: 66
+      lint_fail_on_issues: true
