@@ -21,8 +21,10 @@ import (
 var patternCache sync.Map
 
 func compilePattern(pattern string) (*regexp.Regexp, error) {
-	if re, ok := patternCache.Load(pattern); ok {
-		return re.(*regexp.Regexp), nil
+	if v, ok := patternCache.Load(pattern); ok {
+		if re, ok := v.(*regexp.Regexp); ok {
+			return re, nil
+		}
 	}
 	re, err := regexp.Compile(pattern)
 	if err != nil {

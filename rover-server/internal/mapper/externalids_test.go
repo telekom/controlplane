@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
-
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
 )
 
