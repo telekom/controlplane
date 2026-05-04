@@ -29,12 +29,13 @@ func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	if err := mgr.GetFieldIndexer().IndexField(
 		ctx,
 		&notificationv1.Notification{},
-		IndexFieldSpecChannelRefs,
+		IndexFieldSpecChannelRefs, // virtual field name for the index
 		func(obj client.Object) []string {
 			n, ok := obj.(*notificationv1.Notification)
 			if !ok {
 				return nil
 			}
+			// index key is "namespace/name"
 			keys := make([]string, 0, len(n.Spec.Channels))
 			for _, ch := range n.Spec.Channels {
 				keys = append(keys, fmt.Sprintf("%s/%s", ch.Namespace, ch.Name))
@@ -50,12 +51,13 @@ func RegisterIndecesOrDie(ctx context.Context, mgr ctrl.Manager) {
 	if err := mgr.GetFieldIndexer().IndexField(
 		ctx,
 		&notificationv1.Notification{},
-		IndexFieldSpecTemplateNames,
+		IndexFieldSpecTemplateNames, // virtual field name for the index
 		func(obj client.Object) []string {
 			n, ok := obj.(*notificationv1.Notification)
 			if !ok {
 				return nil
 			}
+			// index key is the constructed template name: "<purpose>--<channelType>"
 			keys := make([]string, 0, len(n.Spec.Channels))
 			for _, ch := range n.Spec.Channels {
 				parts := strings.Split(ch.Name, "--")
