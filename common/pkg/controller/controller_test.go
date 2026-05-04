@@ -9,19 +9,21 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/handler"
-	"github.com/telekom/controlplane/common/pkg/test"
-	"github.com/telekom/controlplane/common/pkg/test/mock"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/handler"
+	"github.com/telekom/controlplane/common/pkg/test"
+	"github.com/telekom/controlplane/common/pkg/test/mock"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("StampObservedGeneration", func() {
@@ -80,18 +82,15 @@ var _ = Describe("StampObservedGeneration", func() {
 })
 
 var _ = Describe("Controller", func() {
-
-	var (
-		templ = &test.TestResource{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: namespace,
-				Labels: map[string]string{
-					config.EnvironmentLabelKey: environment,
-				},
+	templ := &test.TestResource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels: map[string]string{
+				config.EnvironmentLabelKey: environment,
 			},
-		}
-	)
+		},
+	}
 
 	Context("NewController", func() {
 		It("should return a new ControllerImpl", func() {
@@ -174,9 +173,8 @@ var _ = Describe("Controller", func() {
 	})
 
 	Context("Reconciler", func() {
-
-		var timeout = 2 * time.Second
-		var interval = 200 * time.Millisecond
+		timeout := 2 * time.Second
+		interval := 200 * time.Millisecond
 
 		AfterEach(func() {
 			obj := templ.DeepCopy()
@@ -189,7 +187,6 @@ var _ = Describe("Controller", func() {
 				}, obj)
 
 				g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
-
 			}, timeout, interval).Should(Succeed())
 		})
 
@@ -205,9 +202,7 @@ var _ = Describe("Controller", func() {
 
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(obj.GetFinalizers()).To(ContainElement(config.FinalizerName))
-
 			}, timeout, interval).Should(Succeed())
-
 		})
 
 		It("should fail with missing environment", func() {
@@ -228,14 +223,12 @@ var _ = Describe("Controller", func() {
 				g.Expect(condition.Status).To(Equal(metav1.ConditionFalse))
 				g.Expect(condition.Reason).To(Equal("Blocked"))
 				g.Expect(condition.Message).To(Equal("Environment label is missing"))
-
 			}, timeout, interval).Should(Succeed())
 
 			obj.SetLabels(map[string]string{
 				config.EnvironmentLabelKey: environment,
 			})
 			Expect(k8sClient.Update(ctx, obj)).To(Succeed())
-
 		})
 
 		It("should successfully process", func() {
@@ -249,10 +242,7 @@ var _ = Describe("Controller", func() {
 				}, obj)
 
 				g.Expect(err).ToNot(HaveOccurred())
-
 			}, timeout, interval).Should(Succeed())
-
 		})
-
 	})
 })

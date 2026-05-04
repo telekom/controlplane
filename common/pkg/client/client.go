@@ -8,13 +8,14 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 type ScopedClient interface {
@@ -49,7 +50,7 @@ func NewScopedClient(c client.Client, environment string) ScopedClient {
 	}
 }
 
-func (e *scopedClientImpl) CreateOrUpdate(ctx context.Context, obj client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
+func (c *scopedClientImpl) CreateOrUpdate(ctx context.Context, obj client.Object, mutate controllerutil.MutateFn) (controllerutil.OperationResult, error) {
 	wrapMutate := func() error {
 		if err := mutate(); err != nil {
 			return err
@@ -57,16 +58,16 @@ func (e *scopedClientImpl) CreateOrUpdate(ctx context.Context, obj client.Object
 		if obj.GetLabels() == nil {
 			obj.SetLabels(map[string]string{})
 		}
-		obj.GetLabels()[config.EnvironmentLabelKey] = e.environment
+		obj.GetLabels()[config.EnvironmentLabelKey] = c.environment
 		return nil
 	}
 
-	res, err := controllerutil.CreateOrUpdate(ctx, e.Client, obj, wrapMutate)
+	res, err := controllerutil.CreateOrUpdate(ctx, c.Client, obj, wrapMutate)
 	if err != nil {
 		return res, errors.Wrapf(err, "failed to create or update object %s", obj.GetName())
 	}
-	e.setChanged(res)
-	e.setReady(obj)
+	c.setChanged(res)
+	c.setReady(obj)
 
 	return res, nil
 }

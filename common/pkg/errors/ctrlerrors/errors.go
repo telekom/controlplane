@@ -10,12 +10,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
-	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 type BlockedError interface {
@@ -80,11 +81,11 @@ func HandleError(ctx context.Context, obj types.Object, err error, recorder reco
 }
 
 func recordError(ctx context.Context, obj types.Object, err error, reason string, recorder record.EventRecorder) {
-	log := log.FromContext(ctx).WithName("controller.error-handler")
+	logger := log.FromContext(ctx).WithName("controller.error-handler")
 	if reason == "Unknown" {
-		log.Error(err, "Handling error", "reason", reason)
+		logger.Error(err, "Handling error", "reason", reason)
 	} else {
-		log.V(0).Info("Handling error", "reason", reason, "error", err.Error())
+		logger.V(0).Info("Handling error", "reason", reason, "error", err.Error())
 	}
 
 	if err != nil && recorder != nil {
@@ -92,10 +93,12 @@ func recordError(ctx context.Context, obj types.Object, err error, reason string
 	}
 }
 
-var _ error = &CtrlError{}
-var _ BlockedError = &CtrlError{}
-var _ RetryableError = &CtrlError{}
-var _ RetryableWithDelayError = &CtrlError{}
+var (
+	_ error                   = &CtrlError{}
+	_ BlockedError            = &CtrlError{}
+	_ RetryableError          = &CtrlError{}
+	_ RetryableWithDelayError = &CtrlError{}
+)
 
 type CtrlError struct {
 	msg        string

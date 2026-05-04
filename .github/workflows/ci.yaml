@@ -37,6 +37,7 @@ jobs:
       run_check_generated_files: false
       run_build_image: false
       coverage_threshold: 55
+      lint_fail_on_issues: true
 
   common-server:
     name: Common Server
@@ -94,7 +95,6 @@ jobs:
       run_check_generated_files: false
       ko_build_path: "cmd/server/server.go"
       coverage_threshold: 61
-      lint_fail_on_issues: true
 
   gateway:
     name: Gateway
