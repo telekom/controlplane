@@ -12,7 +12,21 @@ import (
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	rovermapper "github.com/telekom/controlplane/rover-server/internal/mapper/rover"
 )
+
+// oauth2TokenRequestCRDToAPI maps CRD tokenRequest values to API Oauth2TokenRequest values.
+var oauth2TokenRequestCRDToAPI = map[string]api.Oauth2TokenRequest{
+	rovermapper.TokenRequestClientSecretBasic: api.Header,
+	rovermapper.TokenRequestClientSecretPost:  api.Body,
+}
+
+func tokenRequestCRDToAPI(value string) api.Oauth2TokenRequest {
+	if mapped, ok := oauth2TokenRequestCRDToAPI[strings.ToLower(value)]; ok {
+		return mapped
+	}
+	return api.Oauth2TokenRequest(value)
+}
 
 func mapExposure(in *roverv1.Exposure, out *api.Exposure) error {
 	if in.Api != nil {
@@ -169,7 +183,7 @@ func mapExposureSecurity(in *roverv1.ApiExposure, out *api.ApiExposure) {
 	if m2m.ExternalIDP != nil {
 		oauth2 := api.Oauth2{
 			TokenEndpoint: m2m.ExternalIDP.TokenEndpoint,
-			TokenRequest:  api.Oauth2TokenRequest(m2m.ExternalIDP.TokenRequest),
+			TokenRequest:  tokenRequestCRDToAPI(m2m.ExternalIDP.TokenRequest),
 		}
 
 		if grantType := api.GrantType(m2m.ExternalIDP.GrantType); grantType != "" {

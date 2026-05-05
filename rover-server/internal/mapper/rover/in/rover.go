@@ -13,6 +13,7 @@ import (
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
+	rovermapper "github.com/telekom/controlplane/rover-server/internal/mapper/rover"
 )
 
 func MapRequest(in *api.RoverUpdateRequest, id mapper.ResourceIdInfo) (res *roverv1.Rover, err error) {
@@ -72,6 +73,7 @@ func MapRover(in *api.Rover, out *roverv1.Rover) error {
 			Allow: in.IpRestrictions.Allow,
 		}
 	}
+	mapAuthentication(in, out)
 	return nil
 }
 
@@ -142,4 +144,26 @@ func mapPermissions(in *api.Rover, out *roverv1.Rover) error {
 	}
 
 	return nil
+}
+
+// clientAuthMethodToCRD maps rover-server API enum values to rover CRD tokenRequest values.
+var clientAuthMethodToCRD = map[api.AuthenticationClientAuthMethod]string{
+	api.BASIC: rovermapper.TokenRequestClientSecretBasic,
+	api.POST:  rovermapper.TokenRequestClientSecretPost,
+}
+
+func mapAuthentication(in *api.Rover, out *roverv1.Rover) {
+	method := FuzzyMatchClientAuthMethod(string(in.Authentication.ClientAuthMethod))
+	if method == "" {
+		return
+	}
+	tokenRequest, ok := clientAuthMethodToCRD[method]
+	if !ok {
+		return
+	}
+	out.Spec.Authentication = &roverv1.RoverAuthentication{
+		M2M: &roverv1.RoverM2MAuthentication{
+			TokenRequest: tokenRequest,
+		},
+	}
 }

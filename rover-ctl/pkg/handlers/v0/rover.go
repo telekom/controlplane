@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"maps"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/rover-ctl/pkg/handlers/common"
@@ -67,8 +68,64 @@ func PatchRoverRequest(ctx context.Context, obj types.Object) error {
 		}
 	}
 
+	PatchAuthentication(spec)
+
 	obj.SetContent(spec)
 	return nil
+}
+
+// PatchAuthentication restructures spec.authentication.m2m.clientAuthMethod
+// into spec.authentication.clientAuthMethod for the rover-server API format.
+// It also normalizes "BODY"/"body" to "POST" since the server schema only accepts
+// NONE, POST, BASIC.
+func PatchAuthentication(spec map[string]any) {
+	auth, exists := spec["authentication"]
+	if !exists {
+		return
+	}
+	authMap, ok := auth.(map[string]any)
+	if !ok {
+		return
+	}
+
+	m2m, exists := authMap["m2m"]
+	if !exists {
+		return
+	}
+	m2mMap, ok := m2m.(map[string]any)
+	if !ok {
+		return
+	}
+
+	clientAuthMethod, exists := m2mMap["clientAuthMethod"]
+	if !exists {
+		return
+	}
+
+	spec["authentication"] = map[string]any{
+		"clientAuthMethod": normalizeClientAuthMethod(clientAuthMethod),
+	}
+}
+
+// normalizeClientAuthMethod maps user-friendly aliases to the API enum values.
+// "BODY"/"body" is treated as "POST" per RFC 6749.
+func normalizeClientAuthMethod(value any) any {
+	s, ok := value.(string)
+	if !ok {
+		return value
+	}
+	switch strings.ToUpper(s) {
+	case "BODY":
+		return "POST"
+	case "BASIC":
+		return "BASIC"
+	case "NONE":
+		return "NONE"
+	case "POST":
+		return "POST"
+	default:
+		return value
+	}
 }
 
 func PatchExposures(exposures []any) []map[string]any {

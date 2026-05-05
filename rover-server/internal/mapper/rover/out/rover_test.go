@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 var _ = Describe("Rover Mapper", func() {
@@ -56,6 +57,49 @@ var _ = Describe("Rover Mapper", func() {
 
 			Expect(err).To(BeNil())
 			snaps.MatchSnapshot(GinkgoT(), output)
+		})
+	})
+
+	Context("MapAuthentication", func() {
+		It("must map client_secret_basic from CRD to BASIC in API", func() {
+			input := rover.DeepCopy()
+			input.Spec.Authentication = &roverv1.RoverAuthentication{
+				M2M: &roverv1.RoverM2MAuthentication{
+					TokenRequest: "client_secret_basic",
+				},
+			}
+			output := &api.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Authentication.ClientAuthMethod).To(Equal(api.BASIC))
+		})
+
+		It("must map client_secret_post from CRD to POST in API", func() {
+			input := rover.DeepCopy()
+			input.Spec.Authentication = &roverv1.RoverAuthentication{
+				M2M: &roverv1.RoverM2MAuthentication{
+					TokenRequest: "client_secret_post",
+				},
+			}
+			output := &api.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Authentication.ClientAuthMethod).To(Equal(api.POST))
+		})
+
+		It("must not set authentication when it is nil", func() {
+			input := rover.DeepCopy()
+			input.Spec.Authentication = nil
+			output := &api.Rover{}
+
+			err := MapRover(input, output)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(output.Authentication).To(Equal(api.Authentication{}))
 		})
 	})
 

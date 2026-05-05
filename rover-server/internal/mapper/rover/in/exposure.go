@@ -15,7 +15,22 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
+	rovermapper "github.com/telekom/controlplane/rover-server/internal/mapper/rover"
 )
+
+// oauth2TokenRequestToCRD maps API tokenRequest values to CRD tokenRequest values.
+var oauth2TokenRequestToCRD = map[string]string{
+	"body":   rovermapper.TokenRequestClientSecretPost,
+	"header": rovermapper.TokenRequestClientSecretBasic,
+	"basic":  rovermapper.TokenRequestClientSecretBasic,
+}
+
+func tokenRequestAPIToCRD(value string) string {
+	if mapped, ok := oauth2TokenRequestToCRD[strings.ToLower(value)]; ok {
+		return mapped
+	}
+	return value
+}
 
 func mapExposure(in *api.Exposure, out *roverv1.Exposure) error {
 	expType, err := in.Discriminator()
@@ -134,7 +149,7 @@ func mapExposureSecurity(in api.ApiExposure, out *roverv1.ApiExposure) {
 			// external-idp
 			m2mSecurity.ExternalIDP = &roverv1.ExternalIdentityProvider{
 				TokenEndpoint: oauth2.TokenEndpoint,
-				TokenRequest:  string(oauth2.TokenRequest),
+				TokenRequest:  tokenRequestAPIToCRD(string(oauth2.TokenRequest)),
 				GrantType:     strings.ToLower(string(oauth2.GrantType)),
 			}
 			if oauth2.ClientId != "" {

@@ -69,7 +69,7 @@ var _ = Describe("Exposure Security Mapper", func() {
 			Expect(output.Security.M2M).ToNot(BeNil())
 			Expect(output.Security.M2M.ExternalIDP).ToNot(BeNil())
 			Expect(output.Security.M2M.ExternalIDP.TokenEndpoint).To(Equal("https://test.com/token"))
-			Expect(output.Security.M2M.ExternalIDP.TokenRequest).To(Equal("basic"))
+			Expect(output.Security.M2M.ExternalIDP.TokenRequest).To(Equal("client_secret_basic"))
 			Expect(output.Security.M2M.ExternalIDP.GrantType).To(Equal("client_credentials"))
 			Expect(output.Security.M2M.ExternalIDP.Client).ToNot(BeNil())
 			Expect(output.Security.M2M.ExternalIDP.Client.ClientId).To(Equal("client-id"))

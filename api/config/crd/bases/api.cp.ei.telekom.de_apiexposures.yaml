@@ -154,11 +154,11 @@ spec:
                             format: uri
                             type: string
                           tokenRequest:
-                            description: TokenRequest is the type of token request,
-                              "body" or "header"
+                            description: TokenRequest configures the token endpoint
+                              authentication method (RFC 7591)
                             enum:
-                            - body
-                            - header
+                            - client_secret_basic
+                            - client_secret_post
                             type: string
                         required:
                         - tokenEndpoint

@@ -617,7 +617,7 @@
 
 [Rover Controller Get rover status should return the status of a rover successfully - 1]
 {
- "createdAt": "2025-09-18T08:39:44Z",
+ "createdAt": "2025-09-18T10:39:44+02:00",
  "errors": [
   {
    "cause": "NoApproval",
@@ -632,7 +632,7 @@
   }
  ],
  "overallStatus": "blocked",
- "processedAt": "2025-10-08T07:16:40Z",
+ "processedAt": "2025-10-08T09:16:40+02:00",
  "processingState": "done",
  "state": "blocked"
 }
@@ -1631,5 +1631,81 @@
  "status": 403,
  "title": "Access Denied",
  "type": "Forbidden"
+}
+---
+
+[Rover Controller Update rover resource should accept clientAuthMethod BASIC as produced by rover-ctl - 1]
+{
+ "exposures": [
+  {
+   "approval": "SIMPLE",
+   "basePath": "/eni/distr/v1",
+   "type": "api",
+   "upstream": "https://httpbin.org/anything",
+   "visibility": "WORLD"
+  }
+ ],
+ "id": "eni--hyperion--rover-local-sub",
+ "name": "rover-local-sub",
+ "status": {
+  "errors": [
+   {
+    "cause": "NoApproval",
+    "message": "Approval is either rejected or suspended"
+   }
+  ],
+  "processingState": "done",
+  "state": "blocked",
+  "warnings": [
+   {
+    "message": "Atleast one sub-resource is being processed"
+   }
+  ]
+ },
+ "subscriptions": [
+  {
+   "basePath": "/eni/distr/v1",
+   "type": "api"
+  }
+ ],
+ "zone": "dataplane1"
+}
+---
+
+[Rover Controller Update rover resource should accept clientAuthMethod POST as produced by rover-ctl - 1]
+{
+ "exposures": [
+  {
+   "approval": "SIMPLE",
+   "basePath": "/eni/distr/v1",
+   "type": "api",
+   "upstream": "https://httpbin.org/anything",
+   "visibility": "WORLD"
+  }
+ ],
+ "id": "eni--hyperion--rover-local-sub",
+ "name": "rover-local-sub",
+ "status": {
+  "errors": [
+   {
+    "cause": "NoApproval",
+    "message": "Approval is either rejected or suspended"
+   }
+  ],
+  "processingState": "done",
+  "state": "blocked",
+  "warnings": [
+   {
+    "message": "Atleast one sub-resource is being processed"
+   }
+  ]
+ },
+ "subscriptions": [
+  {
+   "basePath": "/eni/distr/v1",
+   "type": "api"
+  }
+ ],
+ "zone": "dataplane1"
 }
 ---

@@ -6,6 +6,7 @@ package feature
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -146,7 +147,11 @@ func extendOauth(ctx context.Context, in plugin.OauthCredentials, providerSettin
 		in.Scopes = strings.Join(scopes, " ")
 	}
 
-	in.TokenRequest = providerSettings.TokenRequest
+	tokenRequest, err := tokenRequestToJumper(providerSettings.TokenRequest)
+	if err != nil {
+		return in, err
+	}
+	in.TokenRequest = tokenRequest
 	in.GrantType = providerSettings.GrantType
 
 	return in, nil
@@ -181,4 +186,16 @@ func extendBasic(ctx context.Context, in plugin.OauthCredentials, providerSettin
 	in.GrantType = providerSettings.GrantType
 
 	return in, nil
+}
+
+// tokenRequestToJumper converts CRD tokenRequest values to the values expected by the Jumper plugin.
+func tokenRequestToJumper(value string) (string, error) {
+	switch strings.ToLower(value) {
+	case "client_secret_basic":
+		return "header", nil
+	case "client_secret_post":
+		return "body", nil
+	default:
+		return "", fmt.Errorf("unsupported tokenRequest value %q", value)
+	}
 }

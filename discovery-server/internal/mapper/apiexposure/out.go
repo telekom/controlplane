@@ -13,6 +13,18 @@ import (
 	"github.com/telekom/controlplane/discovery-server/internal/mapper/status"
 )
 
+// tokenRequestCRDToAPI converts CRD tokenRequest values to discovery-server API enum values.
+func tokenRequestCRDToAPI(value string) api.OAuth2TokenRequest {
+	switch strings.ToLower(value) {
+	case "client_secret_basic":
+		return api.Header
+	case "client_secret_post":
+		return api.Body
+	default:
+		return api.OAuth2TokenRequest(value)
+	}
+}
+
 // MapResponse maps an ApiExposure CRD to an ApiExposureResponse.
 func MapResponse(in *apiv1.ApiExposure) api.ApiExposureResponse {
 	resp := api.ApiExposureResponse{
@@ -81,7 +93,7 @@ func mapSecurity(in *apiv1.ApiExposure, out *api.ApiExposureResponse) {
 	if m2m.ExternalIDP != nil {
 		oauth2 := api.OAuth2{
 			TokenEndpoint: m2m.ExternalIDP.TokenEndpoint,
-			TokenRequest:  api.OAuth2TokenRequest(m2m.ExternalIDP.TokenRequest),
+			TokenRequest:  tokenRequestCRDToAPI(m2m.ExternalIDP.TokenRequest),
 			GrantType:     m2m.ExternalIDP.GrantType,
 		}
 

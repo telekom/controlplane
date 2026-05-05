@@ -221,6 +221,32 @@ var _ = Describe("Rover Controller", func() {
 			responseGroup, err := ExecuteRequest(req, groupToken)
 			ExpectStatusWithBody(responseGroup, err, http.StatusForbidden, "application/problem+json")
 		})
+
+		It("should accept clientAuthMethod BASIC as produced by rover-ctl", func() {
+			body := api.RoverUpdateRequest{
+				Zone: "dataplane1",
+				Authentication: api.Authentication{
+					ClientAuthMethod: api.BASIC,
+				},
+			}
+			jsonBody, _ := json.Marshal(body)
+			req := httptest.NewRequest(http.MethodPut, "/rovers/eni--hyperion--rover-local-sub", bytes.NewReader(jsonBody))
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
+		})
+
+		It("should accept clientAuthMethod POST as produced by rover-ctl", func() {
+			body := api.RoverUpdateRequest{
+				Zone: "dataplane1",
+				Authentication: api.Authentication{
+					ClientAuthMethod: api.POST,
+				},
+			}
+			jsonBody, _ := json.Marshal(body)
+			req := httptest.NewRequest(http.MethodPut, "/rovers/eni--hyperion--rover-local-sub", bytes.NewReader(jsonBody))
+			responseGroup, err := ExecuteRequest(req, groupToken)
+			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
+		})
 	})
 
 	Context("Reset rover secret", func() {

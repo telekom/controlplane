@@ -6,6 +6,7 @@
     Spec:       v1.RoverSpec{
         Zone:           "zone",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      {
             {
@@ -51,6 +52,7 @@
     Spec:       v1.RoverSpec{
         Zone:           "",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      {
             {
@@ -85,6 +87,7 @@
     Spec:       v1.RoverSpec{
         Zone:           "",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      nil,
         Subscriptions:  {
@@ -128,6 +131,7 @@
     Spec: v1.RoverSpec{
         Zone:           "zone",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      {
             {
@@ -214,6 +218,7 @@
     Spec: v1.RoverSpec{
         Zone:           "zone",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      {
             {
@@ -275,6 +280,7 @@
     Spec: v1.RoverSpec{
         Zone:           "zone",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "supersecret",
         Exposures:      {
             {
@@ -320,6 +326,7 @@
     Spec:       v1.RoverSpec{
         Zone:           "",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      nil,
         Subscriptions:  nil,
@@ -343,6 +350,7 @@
     Spec:       v1.RoverSpec{
         Zone:           "",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      nil,
         Subscriptions:  nil,
@@ -377,6 +385,7 @@
     Spec:       v1.RoverSpec{
         Zone:           "",
         IpRestrictions: (*v1.IpRestrictions)(nil),
+        Authentication: (*v1.RoverAuthentication)(nil),
         ClientSecret:   "",
         Exposures:      nil,
         Subscriptions:  nil,

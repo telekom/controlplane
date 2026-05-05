@@ -12,6 +12,7 @@ import (
 
 	"github.com/telekom/controlplane/rover-server/internal/api"
 	"github.com/telekom/controlplane/rover-server/internal/mapper"
+	rovermapper "github.com/telekom/controlplane/rover-server/internal/mapper/rover"
 	"github.com/telekom/controlplane/rover-server/internal/mapper/status"
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 )
@@ -43,7 +44,31 @@ func MapRover(in *roverv1.Rover, out *api.Rover) error {
 	}
 
 	out.Zone = in.Spec.Zone
+	mapAuthentication(in, out)
 	return nil
+}
+
+// tokenRequestToAPI maps rover CRD tokenRequest values to rover-server API enum values.
+var tokenRequestToAPI = map[string]api.AuthenticationClientAuthMethod{
+	rovermapper.TokenRequestClientSecretBasic: api.BASIC,
+	rovermapper.TokenRequestClientSecretPost:  api.POST,
+}
+
+func mapAuthentication(in *roverv1.Rover, out *api.Rover) {
+	if in.Spec.Authentication == nil || in.Spec.Authentication.M2M == nil {
+		return
+	}
+	tokenRequest := in.Spec.Authentication.M2M.TokenRequest
+	if tokenRequest == "" {
+		return
+	}
+	method, ok := tokenRequestToAPI[tokenRequest]
+	if !ok {
+		return
+	}
+	out.Authentication = api.Authentication{
+		ClientAuthMethod: method,
+	}
 }
 
 func mapExposures(in *roverv1.Rover, out *api.Rover) error {
