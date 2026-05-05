@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/gkampitakis/go-snaps/match"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security/mock"
@@ -227,7 +226,7 @@ var _ = Describe("Rover Controller", func() {
 		It("should reset the rover secret successfully", func() {
 			req := httptest.NewRequest(http.MethodPatch, "/rovers/eni--hyperion--rover-local-sub/secret", nil)
 			responseGroup, err := ExecuteRequest(req, groupToken)
-			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json", match.Any("clientId"), match.Any("message"))
+			ExpectStatusWithBody(responseGroup, err, http.StatusAccepted, "application/json")
 		})
 
 		It("should fail to reset the secret for a non-existent rover", func() {

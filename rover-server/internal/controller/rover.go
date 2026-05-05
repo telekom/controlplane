@@ -293,8 +293,8 @@ func (r *RoverController) ResetRoverSecret(ctx context.Context, resourceId strin
 
 	// Set spec.secret to the rotate keyword; the admission webhook handles
 	// graceful vs non-graceful based on zone configuration.
-	rover.Spec.ClientSecret = secrets.KeywordRotate
-	if err := r.Store.CreateOrReplace(ctx, rover); err != nil {
+	app.Spec.Secret = secrets.KeywordRotate
+	if err := r.stores.ApplicationStore.CreateOrReplace(ctx, app); err != nil {
 		return res, err
 	}
 
