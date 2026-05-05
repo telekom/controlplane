@@ -107,10 +107,10 @@ var _ = Describe("Reset-Secret Command", func() {
 
 				// Set up mock expectations
 				mockResetHandler.EXPECT().ResetSecret(mock.AnythingOfType("*context.valueCtx"), "test-app").Return(&v0.SecretRotationStatusResponse{
-					ClientId:           "new-client-id",
-					CurrentSecretValue: "new-client-secret",
-					ProcessingState:    "done",
-					OverallStatus:      "complete",
+					ClientId:        "new-client-id",
+					ClientSecret:    "new-client-secret",
+					ProcessingState: "done",
+					OverallStatus:   "complete",
 				}, nil).Once()
 
 				// We also need to implement the Priority method since it's used by the handler registry

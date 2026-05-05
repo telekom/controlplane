@@ -114,7 +114,7 @@ var _ = Describe("GetSecretRotationStatus", func() {
 			Expect(res.OverallStatus).To(Equal(api.OverallStatusProcessing))
 			Expect(res.ProcessingState).To(Equal(api.ProcessingStateProcessing))
 			Expect(res.ClientId).To(BeEmpty())
-			Expect(res.CurrentSecretValue).To(BeEmpty())
+			Expect(res.ClientSecret).To(BeEmpty())
 		})
 
 		It("should return processing state when Ready condition is False", func() {
@@ -125,7 +125,7 @@ var _ = Describe("GetSecretRotationStatus", func() {
 			Expect(res.OverallStatus).To(Equal(api.OverallStatusProcessing))
 			Expect(res.ProcessingState).To(Equal(api.ProcessingStateProcessing))
 			Expect(res.ClientId).To(BeEmpty())
-			Expect(res.CurrentSecretValue).To(BeEmpty())
+			Expect(res.ClientSecret).To(BeEmpty())
 		})
 
 		It("should return processing state when Ready condition has stale ObservedGeneration", func() {
@@ -137,7 +137,7 @@ var _ = Describe("GetSecretRotationStatus", func() {
 			Expect(res.OverallStatus).To(Equal(api.OverallStatusProcessing))
 			Expect(res.ProcessingState).To(Equal(api.ProcessingStateProcessing))
 			Expect(res.ClientId).To(BeEmpty())
-			Expect(res.CurrentSecretValue).To(BeEmpty())
+			Expect(res.ClientSecret).To(BeEmpty())
 		})
 	})
 
@@ -151,7 +151,7 @@ var _ = Describe("GetSecretRotationStatus", func() {
 			Expect(res.OverallStatus).To(Equal(api.OverallStatusComplete))
 			Expect(res.ProcessingState).To(Equal(api.ProcessingStateDone))
 			Expect(res.ClientId).To(Equal("hyperion--rover-local-sub"))
-			Expect(res.CurrentSecretValue).To(Equal("current-secret"))
+			Expect(res.ClientSecret).To(Equal("current-secret"))
 		})
 	})
 
@@ -170,8 +170,8 @@ var _ = Describe("GetSecretRotationStatus", func() {
 			Expect(res.OverallStatus).To(Equal(api.OverallStatusProcessing))
 			Expect(res.ProcessingState).To(Equal(api.ProcessingStateProcessing))
 			Expect(res.ClientId).To(Equal("hyperion--rover-local-sub"))
-			Expect(res.CurrentSecretValue).To(Equal("current-secret"))
-			Expect(res.RotatedSecretValue).To(Equal("old-secret"))
+			Expect(res.ClientSecret).To(Equal("current-secret"))
+			Expect(res.RotatedClientSecret).To(Equal("old-secret"))
 			Expect(res.RotatedExpiresAt).ToNot(BeZero())
 		})
 	})
@@ -189,7 +189,7 @@ var _ = Describe("GetSecretRotationStatus", func() {
 			Expect(res.OverallStatus).To(Equal(api.OverallStatusComplete))
 			Expect(res.ProcessingState).To(Equal(api.ProcessingStateDone))
 			Expect(res.ClientId).To(Equal("hyperion--rover-local-sub"))
-			Expect(res.CurrentSecretValue).To(Equal("current-secret"))
+			Expect(res.ClientSecret).To(Equal("current-secret"))
 		})
 	})
 

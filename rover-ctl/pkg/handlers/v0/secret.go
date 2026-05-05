@@ -20,14 +20,14 @@ var _ types.StatusContainer = (*SecretRotationStatusResponse)(nil)
 
 // SecretRotationStatusResponse represents the response from the secret rotation status endpoint.
 type SecretRotationStatusResponse struct {
-	Gone               bool   `json:"-" yaml:"-"`
-	ClientId           string `json:"clientId" yaml:"clientId"`
-	ProcessingState    string `json:"processingState" yaml:"processingState"`
-	OverallStatus      string `json:"overallStatus" yaml:"overallStatus"`
-	CurrentSecretValue string `json:"currentSecretValue,omitempty" yaml:"currentSecretValue,omitempty"`
-	RotatedSecretValue string `json:"rotatedSecretValue,omitempty" yaml:"rotatedSecretValue,omitempty"`
-	RotatedExpiresAt   string `json:"rotatedExpiresAt,omitempty" yaml:"rotatedExpiresAt,omitempty"`
-	CurrentExpiresAt   string `json:"currentExpiresAt,omitempty" yaml:"currentExpiresAt,omitempty"`
+	Gone                bool   `json:"-" yaml:"-"`
+	ClientId            string `json:"clientId" yaml:"clientId"`
+	ProcessingState     string `json:"processingState" yaml:"processingState"`
+	OverallStatus       string `json:"overallStatus" yaml:"overallStatus"`
+	ClientSecret        string `json:"clientSecret,omitempty" yaml:"clientSecret,omitempty"`
+	RotatedClientSecret string `json:"rotatedClientSecret,omitempty" yaml:"rotatedClientSecret,omitempty"`
+	RotatedExpiresAt    string `json:"rotatedExpiresAt,omitempty" yaml:"rotatedExpiresAt,omitempty"`
+	CurrentExpiresAt    string `json:"currentExpiresAt,omitempty" yaml:"currentExpiresAt,omitempty"`
 }
 
 // GetOverallStatus implements [StatusContainer].

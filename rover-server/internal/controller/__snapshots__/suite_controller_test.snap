@@ -498,6 +498,9 @@
    "irisIssuerUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc",
    "irisTokenEndpointUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token",
    "name": "rover-local-sub",
+   "secretInfo": {
+    "clientSecret": "abcdefghijklmnop"
+   },
    "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
    "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
    "status": "blocked",
@@ -577,6 +580,9 @@
    "irisIssuerUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc",
    "irisTokenEndpointUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token",
    "name": "rover-local-sub",
+   "secretInfo": {
+    "clientSecret": "abcdefghijklmnop"
+   },
    "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
    "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
    "status": "blocked",
@@ -1011,6 +1017,9 @@
    "irisIssuerUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc",
    "irisTokenEndpointUrl": "https://iris-distcp1-dataplane1.dev.dhei.telekom.de/auth/realms/poc/protocol/openid-connect/token",
    "name": "rover-local-sub",
+   "secretInfo": {
+    "clientSecret": "abcdefghijklmnop"
+   },
    "stargateIssuerUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de:443/auth/realms/poc",
    "stargateUrl": "https://stargate-distcp1-dataplane1.dev.dhei.telekom.de/",
    "status": "blocked",
@@ -1220,7 +1229,7 @@
 [GetSecretRotationStatus HTTP endpoint integration should return 200 with correct response for a ready application - 1]
 {
  "clientId": "hyperion--rover-local-sub",
- "currentSecretValue": "abcdefghijklmnop",
+ "clientSecret": "abcdefghijklmnop",
  "overallStatus": "complete",
  "processingState": "done"
 }

@@ -366,18 +366,18 @@ func (r *RoverController) GetSecretRotationStatus(ctx context.Context, resourceI
 	}
 
 	res = api.RoverSecretRotationStatusResponse{
-		ClientId:           app.Status.ClientId,
-		ProcessingState:    processingState,
-		OverallStatus:      overallStatus,
-		CurrentSecretValue: app.Status.ClientSecret,
-		RotatedSecretValue: app.Status.RotatedClientSecret,
+		ClientId:            app.Status.ClientId,
+		ProcessingState:     processingState,
+		OverallStatus:       overallStatus,
+		ClientSecret:        app.Status.ClientSecret,
+		RotatedClientSecret: app.Status.RotatedClientSecret,
 	}
 
 	if app.Status.RotatedExpiresAt != nil {
-		res.RotatedExpiresAt = app.Status.RotatedExpiresAt.Time
+		res.RotatedExpiresAt = app.Status.RotatedExpiresAt.Time.UTC()
 	}
 	if app.Status.CurrentExpiresAt != nil {
-		res.CurrentExpiresAt = app.Status.CurrentExpiresAt.Time
+		res.CurrentExpiresAt = app.Status.CurrentExpiresAt.Time.UTC()
 	}
 
 	return res, nil

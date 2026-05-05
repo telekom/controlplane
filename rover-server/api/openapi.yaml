@@ -1582,6 +1582,8 @@ components:
           type: string
         irisClientSecret:
           type: string
+          description: "Deprecated: Use secretInfo.clientSecret instead. This field will be removed in a future version."
+          deprecated: true
         irisIssuerUrl:
           type: string
         irisTokenEndpointUrl:
@@ -1632,6 +1634,25 @@ components:
           items:
             $ref: '#/components/schemas/AuthorizationInfo'
           description: Permission rules configured for this application
+        secretInfo:
+          $ref: '#/components/schemas/SecretInfo'
+    SecretInfo:
+      type: object
+      properties:
+        clientSecret:
+          type: string
+          description: The current client secret value
+        currentExpiresAt:
+          type: string
+          format: date-time
+          description: When the current secret will expire and should be rotated
+        rotatedClientSecret:
+          type: string
+          description: The previous (rotated) client secret value, valid until rotatedExpiresAt
+        rotatedExpiresAt:
+          type: string
+          format: date-time
+          description: When the rotated (old) secret stops being accepted
     Data:
       type: object
       properties:
@@ -2009,10 +2030,10 @@ components:
           type: string
           format: date-time
           description: When the current secret will expire and should be rotated
-        currentSecretValue:
+        clientSecret:
           type: string
           description: The current (new) client secret value
-        rotatedSecretValue:
+        rotatedClientSecret:
           type: string
           description: The previous (rotated) client secret value, valid until rotatedExpiresAt
     EventScope:

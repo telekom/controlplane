@@ -6,6 +6,7 @@ package util
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
@@ -13,7 +14,7 @@ import (
 
 // FormatOutput formats an object according to the specified format
 func FormatOutput(obj any, format string) (string, error) {
-	switch format {
+	switch strings.ToLower(format) {
 	case "yaml", "yml":
 		bytes, err := yaml.MarshalWithOptions(obj, yaml.Indent(2))
 		if err != nil {

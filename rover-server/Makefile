@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+BUILD_TIME=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+VERSION=$(shell git describe --tags --always --dirty || echo 'develop')
+GIT_COMMIT=$(shell git rev-parse HEAD)
+
 .PHONY: all
 all: build
 
@@ -17,7 +21,7 @@ vet: ## Run go vet against code.
 
 .PHONY: build
 build: fmt vet ## Run go build against code.
-	go build -o bin/server cmd/server/server.go
+	go build -ldflags="-X 'main.version=$(VERSION)' -X 'main.buildTime=$(BUILD_TIME)' -X 'main.gitCommit=$(GIT_COMMIT)' -X 'main.goVersion=$(shell go version)'" -trimpath -mod=readonly -o bin/rover-server cmd/main.go
 
 # Packages to test and measure coverage for
 TEST_PACKAGES := $(shell go list ./internal/... ./pkg/... | grep -v '^./internal/api$$')

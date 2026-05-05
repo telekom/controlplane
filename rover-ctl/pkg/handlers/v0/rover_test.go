@@ -403,7 +403,7 @@ var _ = Describe("Rover Handler", func() {
 				Expect(req.Method).To(Equal(http.MethodGet))
 				Expect(req.URL.String()).To(Equal("https://api.example.com/rovers/test-group--test-team--test-rover/secret/status"))
 
-				responseBody := `{"clientId":"new-client-id","processingState":"done","overallStatus":"complete","currentSecretValue":"new-secret-value"}`
+				responseBody := `{"clientId":"new-client-id","processingState":"done","overallStatus":"complete","clientSecret":"new-secret-value"}`
 				return &http.Response{
 					StatusCode: http.StatusOK,
 					Body:       io.NopCloser(strings.NewReader(responseBody)),
@@ -421,7 +421,7 @@ var _ = Describe("Rover Handler", func() {
 			// Verify the results
 			Expect(err).NotTo(HaveOccurred())
 			Expect(status.ClientId).To(Equal("new-client-id"))
-			Expect(status.CurrentSecretValue).To(Equal("new-secret-value"))
+			Expect(status.ClientSecret).To(Equal("new-secret-value"))
 			Expect(status.OverallStatus).To(Equal("complete"))
 
 			// Verify mock expectations
