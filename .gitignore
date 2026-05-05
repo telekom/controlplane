@@ -15,13 +15,9 @@ go.work*
 # ignore test output
 gotest.log
 junit.xml
+ginkgo-junit.xml
 cover.out
 snapshots
 allure-report
 allure-results
 debug-results
-
-# ignore Claude AI files
-CLAUDE.md
-.claude
-REVIEW.md

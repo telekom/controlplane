@@ -7,9 +7,12 @@ package v1
 import (
 	"strings"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/uuid"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -17,15 +20,12 @@ import (
 	"github.com/telekom/controlplane/organization/internal/secret"
 	"github.com/telekom/controlplane/secret-manager/api"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/uuid"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-var (
-	testMember = []organizationv1.Member{{Email: "test@example.com", Name: "member"}}
-)
+var testMember = []organizationv1.Member{{Email: "test@example.com", Name: "member"}}
 
 var _ = Describe("Team Webhook", func() {
 	var (
@@ -194,9 +194,9 @@ var _ = Describe("Team Webhook", func() {
 	})
 
 	Context("When inserting an valid team against the k8s", Ordered, func() {
-		var teamObj *organizationv1.Team
+		var localTeam *organizationv1.Team
 		BeforeAll(func() {
-			teamObj = &organizationv1.Team{
+			localTeam = &organizationv1.Team{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "group-test--team-test",
 					Namespace: testNamespace,
@@ -218,32 +218,32 @@ var _ = Describe("Team Webhook", func() {
 					"clientSecret": string(uuid.NewUUID()),
 					"teamToken":    string(uuid.NewUUID()),
 				}, nil)
-			err := k8sClient.Create(ctx, teamObj)
+			err := k8sClient.Create(ctx, localTeam)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterAll(
 			func() {
 				By("Deleting the team")
-				err := k8sClient.Delete(ctx, teamObj)
+				err := k8sClient.Delete(ctx, localTeam)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 		It("should set secret", func() {
 			Eventually(func(g Gomega) {
 				By("Checking the team secret to be set")
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(teamObj), teamObj)
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(localTeam), localTeam)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(teamObj.Spec.Secret).NotTo(BeEmpty())
-				g.Expect(strings.HasPrefix(teamObj.Spec.Secret, "$<")).To(BeTrueBecause("client secret does not end with $<"))
-				g.Expect(strings.HasSuffix(teamObj.Spec.Secret, ">")).To(BeTrueBecause("client secret does not end with >"))
+				g.Expect(localTeam.Spec.Secret).NotTo(BeEmpty())
+				g.Expect(strings.HasPrefix(localTeam.Spec.Secret, "$<")).To(BeTrueBecause("client secret does not end with $<"))
+				g.Expect(strings.HasSuffix(localTeam.Spec.Secret, ">")).To(BeTrueBecause("client secret does not end with >"))
 			}, timeout, interval).Should(Succeed())
 		})
 		It("should update the secret if empty", func() {
-			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(teamObj), teamObj)
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(localTeam), localTeam)
 			Expect(err).NotTo(HaveOccurred())
 			By("Setting the secret to empty")
-			teamObj.Spec.Secret = ""
+			localTeam.Spec.Secret = ""
 
 			secretManagerMock.EXPECT().
 				UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
@@ -251,32 +251,32 @@ var _ = Describe("Team Webhook", func() {
 					"clientSecret": string(uuid.NewUUID()),
 					"teamToken":    string(uuid.NewUUID()),
 				}, nil)
-			err = k8sClient.Update(ctx, teamObj)
+			err = k8sClient.Update(ctx, localTeam)
 			Eventually(func(g Gomega) {
 				By("Checking the team secret to be set")
-				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(teamObj), teamObj)
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(localTeam), localTeam)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(teamObj.Spec.Secret).NotTo(BeEmpty())
+				g.Expect(localTeam.Spec.Secret).NotTo(BeEmpty())
 			}, timeout, interval).Should(Succeed())
 		})
 		It("should rotate the secret if rotate", func() {
-			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(teamObj), teamObj)
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(localTeam), localTeam)
 			Expect(err).NotTo(HaveOccurred())
 			By("Setting the secret to rotate")
-			teamObj.Spec.Secret = "rotate"
+			localTeam.Spec.Secret = "rotate"
 			secretManagerMock.EXPECT().
 				UpsertTeam(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(map[string]string{
 					"clientSecret": string(uuid.NewUUID()),
 					"teamToken":    string(uuid.NewUUID()),
 				}, nil)
-			err = k8sClient.Update(ctx, teamObj)
+			err = k8sClient.Update(ctx, localTeam)
 			Eventually(func(g Gomega) {
 				By("Checking the team secret to be updated")
-				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(teamObj), teamObj)
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(localTeam), localTeam)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(teamObj.Spec.Secret).NotTo(BeEmpty())
-				g.Expect(teamObj.Spec.Secret).NotTo(BeEquivalentTo("rotate"))
+				g.Expect(localTeam.Spec.Secret).NotTo(BeEmpty())
+				g.Expect(localTeam.Spec.Secret).NotTo(BeEquivalentTo("rotate"))
 			}, timeout, interval).Should(Succeed())
 		})
 	})
@@ -310,5 +310,4 @@ var _ = Describe("Team Webhook", func() {
 			Expect(err.Error()).To(ContainSubstring("Invalid value: \"here-is-a--complete-mismatch\": must be equal to 'spec.group--spec.name'"))
 		})
 	})
-
 })

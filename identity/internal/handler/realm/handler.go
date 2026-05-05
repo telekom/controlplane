@@ -8,9 +8,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
-	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
@@ -18,12 +19,18 @@ import (
 	"github.com/telekom/controlplane/identity/pkg/keycloak"
 
 	secrets "github.com/telekom/controlplane/secret-manager/api"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var _ handler.Handler[*identityv1.Realm] = &HandlerRealm{}
 
-type HandlerRealm struct{}
+type HandlerRealm struct {
+	ServiceFactory keycloak.ServiceFactory
+}
+
+// NewHandlerRealm creates a HandlerRealm with the given ClientFactory.
+func NewHandlerRealm(factory keycloak.ServiceFactory) *HandlerRealm {
+	return &HandlerRealm{ServiceFactory: factory}
+}
 
 func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Realm) error {
 	logger := log.FromContext(ctx)
@@ -34,25 +41,15 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 	identityProvider, err := identityprovider.GetIdentityProviderByName(ctx, realm.Spec.IdentityProvider)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			contextutil.RecorderFromContextOrDie(ctx).
-				Eventf(identityProvider, "Warning", "IdentityProviderNotFound",
-					"IdentityProvider '%s' not found", realm.Spec.IdentityProvider.String())
-			SetStatusBlocked(&realm.Status, realm)
-			return nil
+			return ctrlerrors.BlockedErrorf("IdentityProvider %q not found", realm.Spec.IdentityProvider.String())
 		}
 		return err
 	}
-	idpSpec := identityprovider.ObfuscateIdentityProvider(identityProvider.Spec)
-	logger.V(0).Info("Found IdentityProvider", "idp", idpSpec)
 
-	var realmStatus = MapToRealmStatus(identityProvider, realm.Name)
+	var realmStatus = mapToRealmStatus(identityProvider, realm.Name)
 	err = ValidateRealmStatus(&realmStatus)
 	if err != nil {
-		contextutil.RecorderFromContextOrDie(ctx).
-			Eventf(identityProvider, "Warning", "IdentityProviderNotValid",
-				"IdentityProvider '%s' not valid", realm.Spec.IdentityProvider.String())
-		SetStatusWaiting(&realm.Status, realm)
-		return errors.Wrap(err, "failed to validate IdentityProvider")
+		return ctrlerrors.BlockedErrorf("IdentityProvider %q is not valid: %s", realm.Spec.IdentityProvider.String(), err)
 	}
 
 	// Create a copy of the realmStatus so that we NEVER modify the original status
@@ -60,46 +57,75 @@ func (h *HandlerRealm) CreateOrUpdate(ctx context.Context, realm *identityv1.Rea
 	replacedRealmStatus := realmStatus.DeepCopy()
 	replacedRealmStatus.AdminPassword, err = secrets.Get(ctx, realmStatus.AdminPassword)
 	if err != nil {
-		return errors.Wrap(err, "failed to retrieve password from secret manager")
+		return fmt.Errorf("failed to retrieve password from secret manager: %w", err)
 	}
 
-	realmClient, err := keycloak.GetClientFor(*replacedRealmStatus)
+	realmClient, err := h.ServiceFactory.ServiceFor(*replacedRealmStatus)
 	if err != nil {
-		return errors.Wrap(err, "failed to get keycloak client")
+		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}
 
-	err = realmClient.CreateOrUpdateRealm(ctx, realm)
+	err = realmClient.CreateOrReplaceRealm(ctx, realm)
 	if err != nil {
-		return errors.Wrap(err, "failed to create or update realm")
+		return fmt.Errorf("failed to create or update realm: %w", err)
 	}
 
-	SetStatusReady(&realmStatus, realm)
-	var message = fmt.Sprintf("Realm %s is ready", realm.Name)
-	logger.V(0).Info(message)
+	// If secret rotation is configured, ensure the Keycloak realm has the
+	// corresponding client-policy profile + policy.
+	if realm.SupportsGracefulSecretRotation() {
+		logger.Info("configuring secret rotation policy for realm", "realm", realm.Name, "policy", realm.Spec.SecretRotation)
+		if err := realmClient.ConfigureSecretRotationPolicy(
+			ctx, realm.Name, realm.Spec.SecretRotation,
+		); err != nil {
+			return fmt.Errorf("failed to configure secret rotation policy: %w", err)
+		}
+	}
+
+	// Persist the computed status so that downstream controllers (e.g. client)
+	// can read IssuerUrl, AdminUrl, AdminTokenUrl, etc. from the realm status.
+	realm.Status = realmStatus
+	realm.SetCondition(condition.NewDoneProcessingCondition("Created Realm"))
+	realm.SetCondition(condition.NewReadyCondition("Ready", "Realm is ready"))
+
 	return nil
 }
 
 func (h *HandlerRealm) Delete(ctx context.Context, realm *identityv1.Realm) error {
 
 	logger := log.FromContext(ctx)
-	logger.Info("RealmHandler Delete", "realm", realm)
+	logger.Info("RealmHandler Delete", "realm", realm.Name, "namespace", realm.Namespace)
 
 	adminPassword, err := secrets.Get(ctx, realm.Status.AdminPassword)
 	if err != nil {
-		return errors.Wrap(err, "failed to retrieve password from secret manager")
+		return fmt.Errorf("failed to retrieve password from secret manager: %w", err)
 	}
 
-	realm.Status.AdminPassword = adminPassword
+	// Use a copy of the status with the resolved password so we never
+	// overwrite the original realm.Status.AdminPassword (which may be
+	// a secret-manager reference) with plaintext.
+	resolvedStatus := *realm.Status.DeepCopy()
+	resolvedStatus.AdminPassword = adminPassword
 
-	realmClient, err := keycloak.GetClientFor(realm.Status)
+	realmClient, err := h.ServiceFactory.ServiceFor(resolvedStatus)
 	if err != nil {
-		return errors.Wrap(err, "failed to get keycloak client")
+		return fmt.Errorf("failed to get keycloak client: %w", err)
 	}
 
 	err = realmClient.DeleteRealm(ctx, realm.Name)
 	if err != nil {
-		return errors.Wrap(err, "failed to delete realm")
+		return fmt.Errorf("failed to delete realm: %w", err)
 	}
 
 	return nil
+}
+
+func mapToRealmStatus(identityProvider *identityv1.IdentityProvider, realmName string) identityv1.RealmStatus {
+	return identityv1.RealmStatus{
+		IssuerUrl:     keycloak.DetermineIssuerUrlFrom(identityProvider.Spec.AdminUrl, realmName),
+		AdminClientId: identityProvider.Spec.AdminClientId,
+		AdminUserName: identityProvider.Spec.AdminUserName,
+		AdminPassword: identityProvider.Spec.AdminPassword,
+		AdminUrl:      identityProvider.Status.AdminUrl,
+		AdminTokenUrl: identityProvider.Status.AdminTokenUrl,
+	}
 }

@@ -1,0 +1,22 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: permission.cp.ei.telekom.de/v1
+kind: PermissionSet
+metadata:
+  labels:
+    app.kubernetes.io/name: permission
+    app.kubernetes.io/managed-by: kustomize
+  name: permissionset-sample
+spec:
+  permissions:
+    - role: admin
+      resource: "stargate:myapi:v1"
+      actions:
+        - read
+        - write
+    - role: viewer
+      resource: "stargate:myapi:v1"
+      actions:
+        - read

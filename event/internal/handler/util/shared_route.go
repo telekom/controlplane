@@ -8,12 +8,13 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	cclient "github.com/telekom/controlplane/common/pkg/client"
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
-	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	cclient "github.com/telekom/controlplane/common/pkg/client"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 )
 
 // DeleteRouteIfExists fetches a Route by ObjectRef and deletes it if found.

@@ -7,10 +7,6 @@ package controller
 import (
 	"context"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
-	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
-	"github.com/telekom/controlplane/pubsub/internal/handler/subscriber"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -19,6 +15,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
+	"github.com/telekom/controlplane/pubsub/internal/handler/subscriber"
 )
 
 // SubscriberReconciler reconciles a Subscriber object
@@ -66,24 +67,24 @@ func (r *SubscriberReconciler) MapPublisherToSubscriber(ctx context.Context, obj
 	}
 
 	list := &pubsubv1.SubscriberList{}
-	if err := r.Client.List(ctx, list, client.MatchingLabels{
+	if err := r.List(ctx, list, client.MatchingLabels{
 		cconfig.EnvironmentLabelKey:        publisher.Labels[cconfig.EnvironmentLabelKey],
 		cconfig.BuildLabelKey("eventtype"): publisher.Labels[cconfig.BuildLabelKey("eventtype")],
 	}); err != nil {
 		return nil
 	}
 
-	requests := make([]reconcile.Request, len(list.Items))
-	for i, subscriber := range list.Items {
-		if !subscriber.Spec.Publisher.Equals(publisher) {
+	var requests []reconcile.Request
+	for i := range list.Items {
+		if !list.Items[i].Spec.Publisher.Equals(publisher) {
 			continue
 		}
-		requests[i] = reconcile.Request{
+		requests = append(requests, reconcile.Request{
 			NamespacedName: client.ObjectKey{
-				Name:      subscriber.Name,
-				Namespace: subscriber.Namespace,
+				Name:      list.Items[i].Name,
+				Namespace: list.Items[i].Namespace,
 			},
-		}
+		})
 	}
 
 	return requests

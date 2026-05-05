@@ -10,6 +10,13 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8stypes "k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationapi "github.com/telekom/controlplane/application/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
@@ -21,12 +28,6 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/index"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8stypes "k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // GetZone retrieves a Zone object by ObjectRef and ensures it is ready.
@@ -124,9 +125,9 @@ func FindActiveEventType(ctx context.Context, eventType string) (bool, *eventv1.
 
 	// Filter to matching type and sort by creation timestamp (oldest first)
 	var candidates []eventv1.EventType
-	for _, et := range eventTypeList.Items {
-		if et.Spec.Type == eventType && et.Status.Active {
-			candidates = append(candidates, et)
+	for i := range eventTypeList.Items {
+		if eventTypeList.Items[i].Spec.Type == eventType && eventTypeList.Items[i].Status.Active {
+			candidates = append(candidates, eventTypeList.Items[i])
 		}
 	}
 
@@ -170,7 +171,7 @@ func GetApplication(ctx context.Context, ref types.ObjectRef) (*applicationapi.A
 // and returns the unique zone ObjectRefs where cross-zone SSE subscriptions exist.
 // A subscription is cross-zone if its zone differs from the exposure's zone,
 // and is SSE if its delivery type is "ServerSentEvent".
-func FindCrossZoneSSESubscriptionZones(ctx context.Context, eventType string, exposureZoneName string) ([]types.ObjectRef, error) {
+func FindCrossZoneSSESubscriptionZones(ctx context.Context, eventType, exposureZoneName string) ([]types.ObjectRef, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 
@@ -226,11 +227,11 @@ func AnyOtherEventExposureExists(ctx context.Context, eventType string, excludeU
 		return false, err
 	}
 
-	for _, exp := range candidates {
-		if exp.UID == excludeUID {
+	for i := range candidates {
+		if candidates[i].UID == excludeUID {
 			continue
 		}
-		if exp.Spec.EventType == eventType {
+		if candidates[i].Spec.EventType == eventType {
 			return true, nil
 		}
 	}
@@ -250,9 +251,9 @@ func FindEventExposures(ctx context.Context, eventType string) ([]eventv1.EventE
 	}
 
 	var exposures []eventv1.EventExposure
-	for _, exp := range exposureList.Items {
-		if exp.Spec.EventType == eventType {
-			exposures = append(exposures, exp)
+	for i := range exposureList.Items {
+		if exposureList.Items[i].Spec.EventType == eventType {
+			exposures = append(exposures, exposureList.Items[i])
 		}
 	}
 
@@ -268,9 +269,9 @@ func FindActiveEventExposure(exposures []eventv1.EventExposure) (bool, *eventv1.
 	}
 
 	var candidates []eventv1.EventExposure
-	for _, exp := range exposures {
-		if exp.Status.Active {
-			candidates = append(candidates, exp)
+	for i := range exposures {
+		if exposures[i].Status.Active {
+			candidates = append(candidates, exposures[i])
 		}
 	}
 
@@ -286,7 +287,7 @@ func FindActiveEventExposure(exposures []eventv1.EventExposure) (bool, *eventv1.
 	return true, activeExp, nil
 }
 
-func FindCrossZoneCallbackSubscriptions(ctx context.Context, eventType string, exposureZoneName string) ([]eventv1.EventSubscription, error) {
+func FindCrossZoneCallbackSubscriptions(ctx context.Context, eventType, exposureZoneName string) ([]eventv1.EventSubscription, error) {
 	c := cclient.ClientFromContextOrDie(ctx)
 	logger := log.FromContext(ctx)
 

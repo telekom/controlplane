@@ -25,7 +25,7 @@ func (c BackendConfig) Get(key string) string {
 	return c.Config[key]
 }
 
-func (c BackendConfig) GetDefault(key string, defaultValue string) string {
+func (c BackendConfig) GetDefault(key, defaultValue string) string {
 	if c.Config == nil {
 		return defaultValue
 	}
@@ -71,11 +71,11 @@ func GetConfigOrDie(filepath string) *ServerConfig {
 	if filepath == "" {
 		return DefaultConfig()
 	}
-	file, err := os.OpenFile(filepath, os.O_RDONLY, 0o644) //nolint:gosec
+	file, err := os.OpenFile(filepath, os.O_RDONLY, 0o644) //nolint:gosec // G302: config file needs standard permissions
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close() //nolint:errcheck
+	defer file.Close() //nolint:errcheck // best-effort close
 	cfg, err := ReadConfig(file)
 	if err != nil {
 		panic(err)

@@ -90,6 +90,24 @@ spec:
                 - admin
                 - url
                 type: object
+              permissions:
+                description: Permissions configuration for permission service integration
+                properties:
+                  apiBasePath:
+                    description: |-
+                      ApiBasePath is the base path for the permission service API endpoint
+                      Format: /eni/chevron/v2/permission
+                      This will be appended to the gateway URL to build the full permissions URL
+                    pattern: ^/.*
+                    type: string
+                  consoleUrl:
+                    description: ConsoleUrl is the admin UI for the permission service
+                      (optional)
+                    format: uri
+                    type: string
+                required:
+                - apiBasePath
+                type: object
               redis:
                 properties:
                   enableTLS:
@@ -338,6 +356,13 @@ spec:
                   gatewayUrl:
                     description: Url is the base URL of the default gateway of this
                       zone
+                    format: uri
+                    type: string
+                  permissionsUrl:
+                    description: |-
+                      PermissionsUrl for permission queries (dynamically built from gateway URL)
+                      Format: https://<gateway>/eni/chevron/v2/permission
+                      Applications append ?application=<clientId> when querying
                     format: uri
                     type: string
                   teamApiIssuer:

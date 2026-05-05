@@ -8,6 +8,11 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -17,12 +22,9 @@ import (
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+//nolint:dupl // parallel structure with CreateProxyVoyagerRoute; differs in naming, labels, and security
 func CreateProxyCallbackRoute(
 	ctx context.Context,
 	sourceZone *adminv1.Zone,
@@ -30,7 +32,6 @@ func CreateProxyCallbackRoute(
 	meshClient *identityv1.Client,
 	opts ...Option,
 ) (*gatewayapi.Route, error) {
-
 	options := &Options{}
 	for _, opt := range opts {
 		opt(options)
@@ -46,7 +47,7 @@ func CreateProxyCallbackRoute(
 		}
 		return nil, errors.Wrapf(err, "failed to get realm %q", sourceZone.Status.GatewayRealm.String())
 	}
-	if err := condition.EnsureReady(downstreamRealm); err != nil {
+	if err = condition.EnsureReady(downstreamRealm); err != nil {
 		return nil, ctrlerrors.BlockedErrorf("realm %q is not ready", downstreamRealm.Name)
 	}
 
@@ -58,7 +59,7 @@ func CreateProxyCallbackRoute(
 		}
 		return nil, errors.Wrapf(err, "failed to get realm %q", targetZone.Status.GatewayRealm.String())
 	}
-	if err := condition.EnsureReady(upstreamRealm); err != nil {
+	if err = condition.EnsureReady(upstreamRealm); err != nil {
 		return nil, ctrlerrors.BlockedErrorf("realm %q is not ready", upstreamRealm.Name)
 	}
 
@@ -83,10 +84,8 @@ func CreateProxyCallbackRoute(
 	upstream.IssuerUrl = meshClient.Status.IssuerUrl
 
 	mutator := func() error {
-
-		err := options.apply(ctx, route)
-		if err != nil {
-			return errors.Wrap(err, "failed to apply options to proxy callback Route")
+		if applyErr := options.apply(ctx, route); applyErr != nil {
+			return errors.Wrap(applyErr, "failed to apply options to proxy callback Route")
 		}
 
 		route.Labels = map[string]string{
@@ -127,7 +126,6 @@ func CreateCallbackRoute(
 	zone *adminv1.Zone,
 	opts ...Option,
 ) (*gatewayapi.Route, error) {
-
 	options := &Options{}
 	for _, opt := range opts {
 		opt(options)
@@ -144,7 +142,7 @@ func CreateCallbackRoute(
 		}
 		return nil, errors.Wrapf(err, "failed to get realm %q", zone.Status.GatewayRealm.String())
 	}
-	if err := condition.EnsureReady(gatewayRealm); err != nil {
+	if err = condition.EnsureReady(gatewayRealm); err != nil {
 		return nil, ctrlerrors.BlockedErrorf("realm %q is not ready", gatewayRealm.Name)
 	}
 
@@ -167,10 +165,8 @@ func CreateCallbackRoute(
 		return nil, errors.Wrap(err, "failed to create downstream for callback Route")
 	}
 	mutator := func() error {
-
-		err := options.apply(ctx, route)
-		if err != nil {
-			return errors.Wrap(err, "failed to apply options to callback Route")
+		if applyErr := options.apply(ctx, route); applyErr != nil {
+			return errors.Wrap(applyErr, "failed to apply options to callback Route")
 		}
 
 		route.Labels = map[string]string{
@@ -217,13 +213,18 @@ func CreateCallbackRoute(
 // CreateCallbackProxyRoutes creates cross-zone proxy Routes for callback delivery to remote subscribers.
 // For each target zone, a Route is created in the source zone thats points to the target callback Route
 // It is secured using OAuth2 credentials from the target zone's event service account.
+//
+//nolint:dupl // parallel structure with CreateVoyagerProxyRoutes; differs in route type and security
 func CreateCallbackProxyRoutes(
 	ctx context.Context,
-	meshConfig eventv1.MeshConfig,
+	meshConfig *eventv1.MeshConfig,
 	sourceZone *adminv1.Zone,
 	targetZones []*adminv1.Zone,
 	opts ...Option,
 ) (map[string]*gatewayapi.Route, error) {
+	if meshConfig == nil {
+		return nil, ctrlerrors.BlockedErrorf("meshConfig must not be nil")
+	}
 
 	logger := log.FromContext(ctx)
 	c := cclient.ClientFromContextOrDie(ctx)

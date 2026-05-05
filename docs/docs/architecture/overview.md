@@ -42,7 +42,7 @@ The Admin Layer is exclusively used by the administrators of the Control Plane. 
 
 #### UI Layer
 
-The UI Layer is where users interact with their configured components. Through a federated access model — set up and managed by the Admin Layer — users can view and manage the state of their resources across different environments from a single interface.
+The UI Layer is where users interact with their configured components. Through a federated access model — set up and managed by the Admin Layer — users can view and manage the state of their resources across different environments from a single interface. This layer is powered by the [ControlPlane API & Projector](./controlplane-api.mdx), which provide read-only GraphQL access to the platform state.
 
 #### Customer-Config Layer
 
@@ -99,3 +99,4 @@ Each domain is described in detail on its own page:
 | [Event](./event.mdx) | Event publishing, subscribing, and meshing |
 | [PubSub](./pubsub.mdx) | Runtime layer for publish/subscribe messaging |
 | [Secret Manager](./secret-manager.mdx) | Centralized secret storage, references, and retrieval |
+| [ControlPlane API & Projector](./controlplane-api.mdx) | Read-only external access layer (CQRS) for the UI |

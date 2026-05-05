@@ -29,7 +29,7 @@ import (
 const (
 	localhost                = "http://localhost:8443/api"
 	inCluster                = "https://file-manager.controlplane-system.svc.cluster.local/api"
-	TokenFilePath            = "/var/run/secrets/filemgr/token"
+	TokenFilePath            = "/var/run/secrets/filemgr/token" //nolint:gosec // G101: path constant, not a credential
 	uploadRequestContentType = "application/octet-stream"
 
 	CaFilePath = "/var/run/secrets/trust-bundle/trust-bundle.pem"
@@ -46,7 +46,7 @@ type DownloadApi interface {
 }
 
 type UploadApi interface {
-	UploadFile(ctx context.Context, fileId string, fileContentType string, r io.Reader) (*FileUploadResponse, error)
+	UploadFile(ctx context.Context, fileId, fileContentType string, r io.Reader) (*FileUploadResponse, error)
 }
 
 type DeleteApi interface {
@@ -106,6 +106,7 @@ func WithURL(url string) Option {
 		o.URL = url
 	}
 }
+
 func WithAccessToken(token accesstoken.AccessToken) Option {
 	return func(o *Options) {
 		o.Token = token
@@ -143,7 +144,6 @@ func New(opts ...Option) FileManager {
 			client.WithCaFilepath(CaFilePath),
 		)),
 		gen.WithRequestEditorFn(options.accessTokenReqEditor))
-
 	if err != nil {
 		log.Fatalf("Failed to create file manager client: %v", err)
 	}
@@ -162,15 +162,15 @@ func GetFileManager(opts ...Option) FileManager {
 	return api
 }
 
-func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileContentType string, r io.Reader) (*FileUploadResponse, error) {
-	log := logr.FromContextOrDiscard(ctx)
+func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId, fileContentType string, r io.Reader) (*FileUploadResponse, error) {
+	logger := logr.FromContextOrDiscard(ctx)
 
 	buf := bytes.NewBuffer(nil)
 	size, hash, err := copyAndHash(buf, r)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to copy content")
 	}
-	log.V(1).Info("Uploading file ", "fileId", fileId, "fileContentType", fileContentType, "size", size, "hash", hash)
+	logger.V(1).Info("Uploading file ", "fileId", fileId, "fileContentType", fileContentType, "size", size, "hash", hash)
 
 	params := &gen.UploadFileParams{
 		XFileContentType: &fileContentType,
@@ -180,11 +180,10 @@ func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 	}
 	// use generated client code to call the file manager server
 	response, err := f.Client.UploadFileWithBody(ctx, fileId, params, uploadRequestContentType, buf)
-
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to upload file")
 	}
-	defer response.Body.Close() //nolint:errcheck
+	defer response.Body.Close() //nolint:errcheck // best-effort close
 
 	// evaluate the response
 	switch response.StatusCode {
@@ -215,12 +214,12 @@ func (f *FileManagerAPI) UploadFile(ctx context.Context, fileId string, fileCont
 }
 
 func (f *FileManagerAPI) DownloadFile(ctx context.Context, fileId string, w io.Writer) (*FileDownloadResponse, error) {
-	log := logr.FromContextOrDiscard(ctx)
+	logger := logr.FromContextOrDiscard(ctx)
 	response, err := f.Client.DownloadFile(ctx, fileId)
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close() //nolint:errcheck
+	defer response.Body.Close() //nolint:errcheck // best-effort close
 
 	switch response.StatusCode {
 	case http.StatusOK:
@@ -228,7 +227,7 @@ func (f *FileManagerAPI) DownloadFile(ctx context.Context, fileId string, w io.W
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to copy file content")
 		}
-		log.V(1).Info("Downloaded file", "fileId", fileId, "size", size, "hash", hash)
+		logger.V(1).Info("Downloaded file", "fileId", fileId, "size", size, "hash", hash)
 
 		expectedChecksum := extractHeader(response, constants.XFileChecksum)
 		if f.ValidateChecksum && hash != expectedChecksum {
@@ -255,7 +254,7 @@ func (f *FileManagerAPI) DeleteFile(ctx context.Context, fileId string) error {
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close() //nolint:errcheck
+	defer response.Body.Close() //nolint:errcheck // best-effort close
 
 	switch response.StatusCode {
 	case http.StatusNoContent:

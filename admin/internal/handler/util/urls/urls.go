@@ -9,14 +9,15 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 )
 
-func ensureSuffix(url string) string {
-	if !strings.HasSuffix(url, "/") {
-		return url + "/"
+func ensureSuffix(rawURL string) string {
+	if !strings.HasSuffix(rawURL, "/") {
+		return rawURL + "/"
 	}
-	return url
+	return rawURL
 }
 
 func ForIdentityProviderAdminUrl(baseUrl string) string {
@@ -28,7 +29,6 @@ func ForIdentityProviderAdminUrl(baseUrl string) string {
 func ForGatewayAdminUrl(baseUrl string) string {
 	adminUrl := ensureSuffix(baseUrl)
 	return adminUrl + "admin-api"
-
 }
 
 func ForGatewayAdminIssuerUrl(baseUrl string) string {
@@ -37,7 +37,7 @@ func ForGatewayAdminIssuerUrl(baseUrl string) string {
 	return adminIssuerUrl + "auth/realms/rover"
 }
 
-func ForGatewayRealm(identityProviderBaseUrl string, realmName string) string {
+func ForGatewayRealm(identityProviderBaseUrl, realmName string) string {
 	realmIssuerUrl := ensureSuffix(identityProviderBaseUrl)
 
 	return realmIssuerUrl + "auth/realms/" + realmName
@@ -51,6 +51,6 @@ func ForRouteDownstream(gatewayBaseUrl string, config adminv1.ApiConfig) (*url.U
 	return url.Parse(raw)
 }
 
-func ForStargateLmsIssuer(gatewayBaseUrl string, realmName string) string {
+func ForStargateLmsIssuer(gatewayBaseUrl, realmName string) string {
 	return strings.TrimSuffix(gatewayBaseUrl, "/") + ":443" + "/auth/realms/" + realmName
 }

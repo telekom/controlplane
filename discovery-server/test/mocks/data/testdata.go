@@ -22,7 +22,7 @@ func ReadFile(testing ginkgo.FullGinkgoTInterface, filePath string) []byte {
 	testDataDir, err := filepath.Abs(getCurrentFileDir())
 	require.NoError(testing, err)
 	testDataFile := filepath.Join(testDataDir, filePath)
-	file, err := os.ReadFile(testDataFile)
+	file, err := os.ReadFile(testDataFile) //nolint:gosec // G304: path is constructed from runtime.Caller dir + test fixture name
 	require.NoError(testing, err)
 	return file
 }

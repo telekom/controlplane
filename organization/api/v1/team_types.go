@@ -147,6 +147,18 @@ func init() {
 	SchemeBuilder.Register(&Team{}, &TeamList{})
 }
 
+// TeamResourceName returns the canonical Team CRD name: <group>--<team>.
+func TeamResourceName(group, team string) string {
+	return group + "--" + team
+}
+
+// TeamNamespace returns the canonical per-team namespace: <environment>--<fullTeamName>,
+// where fullTeamName is the Team CRD's metadata.name (i.e. "<group>--<team>").
+// Namespaces matching this convention are parseable via FindTeamForNamespace.
+func TeamNamespace(environment, fullTeamName string) string {
+	return environment + "--" + fullTeamName
+}
+
 // FindTeamForNamespace finds the team for the given namespace.
 // The namespace must follow the naming convention <environment>--<group>--<team>.
 func FindTeamForNamespace(ctx context.Context, namespace string) (*Team, error) {
@@ -163,7 +175,7 @@ func FindTeamForNamespace(ctx context.Context, namespace string) (*Team, error) 
 	team := &Team{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: parts[0],
-			Name:      parts[1] + "--" + parts[2],
+			Name:      TeamResourceName(parts[1], parts[2]),
 		},
 	}
 

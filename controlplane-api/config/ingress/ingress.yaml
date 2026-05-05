@@ -8,7 +8,6 @@ metadata:
   name: controlplane-api-ingress
   namespace: system
 spec:
-  ingressClassName: nginx
   rules:
   - host: controlplane-api.example.com  # Example host that can be overridden via kustomize
     http:

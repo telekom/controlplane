@@ -34,6 +34,7 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
+	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
 
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 
@@ -59,6 +60,9 @@ func init() {
 	utilruntime.Must(organizationv1.AddToScheme(scheme))
 	if cconfig.FeaturePubSub.IsEnabled() {
 		utilruntime.Must(eventv1.AddToScheme(scheme))
+	}
+	if cconfig.FeaturePermission.IsEnabled() {
+		utilruntime.Must(permissionv1.AddToScheme(scheme))
 	}
 	//+kubebuilder:scaffold:scheme
 }
@@ -187,6 +191,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&controller.RoadmapReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Roadmap")
+		os.Exit(1)
+	}
+
 	if cconfig.FeaturePubSub.IsEnabled() {
 		if err = (&controller.EventSpecificationReconciler{
 			Client: mgr.GetClient(),
@@ -195,6 +207,14 @@ func main() {
 			setupLog.Error(err, "unable to create controller", "controller", "EventSpecification")
 			os.Exit(1)
 		}
+	}
+
+	if err = (&controller.ApiChangelogReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ApiChangelog")
+		os.Exit(1)
 	}
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
@@ -207,6 +227,13 @@ func main() {
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err := webhookv1.SetupApiSpecificationWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "ApiSpecification")
+			os.Exit(1)
+		}
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1.SetupApiChangelogWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "ApiChangelog")
 			os.Exit(1)
 		}
 	}

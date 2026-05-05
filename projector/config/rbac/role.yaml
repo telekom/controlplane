@@ -1,0 +1,61 @@
+# Copyright 2026 Deutsche Telekom IT GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Read-only ClusterRole for the projector.
+# The projector watches CRs from other domains and projects them into a
+# database. It never creates, updates, or deletes CRs.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: projector-manager-role
+rules:
+# admin domain
+- apiGroups:
+  - admin.cp.ei.telekom.de
+  resources:
+  - zones
+  verbs:
+  - get
+  - list
+  - watch
+# organization domain
+- apiGroups:
+  - organization.cp.ei.telekom.de
+  resources:
+  - groups
+  - teams
+  verbs:
+  - get
+  - list
+  - watch
+# application domain
+- apiGroups:
+  - application.cp.ei.telekom.de
+  resources:
+  - applications
+  verbs:
+  - get
+  - list
+  - watch
+# api domain
+- apiGroups:
+  - api.cp.ei.telekom.de
+  resources:
+  - apiexposures
+  - apisubscriptions
+  verbs:
+  - get
+  - list
+  - watch
+# approval domain
+- apiGroups:
+  - approval.cp.ei.telekom.de
+  resources:
+  - approvals
+  - approvalrequests
+  verbs:
+  - get
+  - list
+  - watch

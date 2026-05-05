@@ -12,11 +12,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/notification/internal/sender/adapter"
 
 	"github.com/go-logr/logr"
 	"github.com/go-resty/resty/v2"
+	"github.com/pkg/errors"
+
+	"github.com/telekom/controlplane/notification/internal/sender/adapter"
 )
 
 const (
@@ -87,7 +88,7 @@ type TeamsErrorResponse struct {
 
 // Send sends a notification to Microsoft Teams with retry logic and proper error handling.
 // The title parameter is ignored as MS Teams determines the title from the card content.
-func (e MsTeamsAdapter) Send(ctx context.Context, config adapter.ChatChannelConfiguration, title string, body string) error {
+func (e MsTeamsAdapter) Send(ctx context.Context, config adapter.ChatChannelConfiguration, title, body string, _ []adapter.Attachment) error {
 	log := logr.FromContextOrDiscard(ctx)
 
 	// Validate required parameters
@@ -113,7 +114,6 @@ func (e MsTeamsAdapter) Send(ctx context.Context, config adapter.ChatChannelConf
 		SetContext(ctx).
 		SetBody(body).
 		Post(webhookURL)
-
 	if err != nil {
 		log.Error(err, "HTTP request failed",
 			"webhook", webhookURL,

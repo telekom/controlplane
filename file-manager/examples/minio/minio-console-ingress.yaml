@@ -8,7 +8,6 @@ metadata:
   name: minio-console-ingress
   namespace: minio
 spec:
-  ingressClassName: nginx
   rules:
   - host: "" # todo: add host here
     http:

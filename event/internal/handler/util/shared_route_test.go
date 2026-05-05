@@ -8,19 +8,21 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	mock "github.com/stretchr/testify/mock"
-	cclient "github.com/telekom/controlplane/common/pkg/client"
-	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
-	"github.com/telekom/controlplane/event/internal/handler/util"
-	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	cclient "github.com/telekom/controlplane/common/pkg/client"
+	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	"github.com/telekom/controlplane/event/internal/handler/util"
+	gatewayapi "github.com/telekom/controlplane/gateway/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // ---------- DeleteRouteIfExists ----------
