@@ -13,8 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
-
-	crscheme "sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
 func TestTypes(t *testing.T) {
@@ -137,14 +135,12 @@ var _ = Describe("ObjectRef", func() {
 				Kind:    "Object",
 			})
 
-			err := (&crscheme.Builder{
-				GroupVersion: schema.GroupVersion{
-					Group:   "testgroup.cp.ei.telekom.de",
-					Version: "v1",
-				},
-			}).Register(&unstructured.Unstructured{}, &unstructured.UnstructuredList{}).AddToScheme(scheme.Scheme)
-
-			Expect(err).ToNot(HaveOccurred())
+			gv := schema.GroupVersion{
+				Group:   "testgroup.cp.ei.telekom.de",
+				Version: "v1",
+			}
+			scheme.Scheme.AddKnownTypes(gv, &unstructured.Unstructured{}, &unstructured.UnstructuredList{})
+			metav1.AddToGroupVersion(scheme.Scheme, gv)
 
 			newRef := TypedObjectRefFromObject(&obj, scheme.Scheme)
 			Expect(newRef.Name).To(Equal("test"))
