@@ -9,24 +9,22 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pkg/errors"
 	admissionv1 "k8s.io/api/admission/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/pkg/errors"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/controller"
 	cerrors "github.com/telekom/controlplane/common/pkg/errors"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
 	"github.com/telekom/controlplane/event/internal/handler/util"
 	secretsapi "github.com/telekom/controlplane/secret-manager/api"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
-// nolint:unused
-// log is for logging in this package.
 var log = logf.Log.WithName("eventconfig-resource")
 
 // SetupEventConfigWebhookWithManager registers the webhook for EventConfig in the manager.
@@ -102,7 +100,8 @@ func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCf
 
 	needsAdminSecret := !secretsapi.IsRef(eventCfg.Spec.Admin.Client.ClientSecret)
 	if needsAdminSecret {
-		secretValue, err := secretValueOrGenerate(eventCfg.Spec.Admin.Client.ClientSecret)
+		var secretValue string
+		secretValue, err = secretValueOrGenerate(eventCfg.Spec.Admin.Client.ClientSecret)
 		if err != nil {
 			return errors.Wrap(err, "failed to determine admin client secret value")
 		}
@@ -111,37 +110,40 @@ func (d *EventConfigCustomDefaulter) OnboardSecrets(ctx context.Context, eventCf
 
 	needsMeshSecret := !secretsapi.IsRef(eventCfg.Spec.Mesh.Client.ClientSecret)
 	if needsMeshSecret {
-		secretValue, err := secretValueOrGenerate(eventCfg.Spec.Mesh.Client.ClientSecret)
+		var secretValue string
+		secretValue, err = secretValueOrGenerate(eventCfg.Spec.Mesh.Client.ClientSecret)
 		if err != nil {
 			return errors.Wrap(err, "failed to determine mesh client secret value")
 		}
 		options = append(options, secretsapi.WithSecretValue(meshSecretPath, secretValue))
 	}
 
-	if len(options) > 1 {
-		availableSecrets, err := d.secretManager.UpsertEnvironment(ctx, envName, options...)
-		if err != nil {
-			return errors.Wrap(err, "failed to onboard secrets for EventConfig")
-		}
-		log.Info("Successfully onboarded secrets for EventConfig", "environment", envName, "secrets", len(availableSecrets))
+	if len(options) <= 1 {
+		return nil
+	}
 
-		if needsAdminSecret {
-			ref, found := secretsapi.FindSecretId(availableSecrets, adminSecretPath)
-			if !found {
-				return fmt.Errorf("admin client secret reference not found in onboarding response")
-			}
-			eventCfg.Spec.Admin.Client.ClientSecret = ref
-			log.Info("Onboarded admin client secret for EventConfig", "secretId", adminSecretPath)
-		}
+	availableSecrets, err := d.secretManager.UpsertEnvironment(ctx, envName, options...)
+	if err != nil {
+		return errors.Wrap(err, "failed to onboard secrets for EventConfig")
+	}
+	log.Info("Successfully onboarded secrets for EventConfig", "environment", envName, "secrets", len(availableSecrets))
 
-		if needsMeshSecret {
-			ref, found := secretsapi.FindSecretId(availableSecrets, meshSecretPath)
-			if !found {
-				return fmt.Errorf("mesh client secret reference not found in onboarding response")
-			}
-			eventCfg.Spec.Mesh.Client.ClientSecret = ref
-			log.Info("Onboarded mesh client secret for EventConfig", "secretId", meshSecretPath)
+	if needsAdminSecret {
+		ref, found := secretsapi.FindSecretId(availableSecrets, adminSecretPath)
+		if !found {
+			return fmt.Errorf("admin client secret reference not found in onboarding response")
 		}
+		eventCfg.Spec.Admin.Client.ClientSecret = ref
+		log.Info("Onboarded admin client secret for EventConfig", "secretId", adminSecretPath)
+	}
+
+	if needsMeshSecret {
+		ref, found := secretsapi.FindSecretId(availableSecrets, meshSecretPath)
+		if !found {
+			return fmt.Errorf("mesh client secret reference not found in onboarding response")
+		}
+		eventCfg.Spec.Mesh.Client.ClientSecret = ref
+		log.Info("Onboarded mesh client secret for EventConfig", "secretId", meshSecretPath)
 	}
 
 	return nil
@@ -179,24 +181,24 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, eventCfg *even
 			return errors.New("Secret-Manager is not configured for EventConfig webhook")
 		}
 
-		if err := d.OnboardSecrets(ctx, eventCfg); err != nil {
-			return errors.Wrap(err, "failed to onboard secrets")
+		if onboardErr := d.OnboardSecrets(ctx, eventCfg); onboardErr != nil {
+			return errors.Wrap(onboardErr, "failed to onboard secrets")
 		}
+		return nil
+	}
 
-	} else {
-		log.Info("Secret-Manager is disabled, skipping onboarding of secrets for EventConfig")
+	log.Info("Secret-Manager is disabled, skipping onboarding of secrets for EventConfig")
 
-		if adminClient.ClientSecret == "" || adminClient.ClientSecret == secretsapi.KeywordRotate {
-			adminClient.ClientSecret, err = secretsapi.GenerateSecret()
-			if err != nil {
-				return errors.Wrap(err, "failed to generate admin client secret")
-			}
+	if adminClient.ClientSecret == "" || adminClient.ClientSecret == secretsapi.KeywordRotate {
+		adminClient.ClientSecret, err = secretsapi.GenerateSecret()
+		if err != nil {
+			return errors.Wrap(err, "failed to generate admin client secret")
 		}
-		if meshClient.ClientSecret == "" || meshClient.ClientSecret == secretsapi.KeywordRotate {
-			meshClient.ClientSecret, err = secretsapi.GenerateSecret()
-			if err != nil {
-				return errors.Wrap(err, "failed to generate mesh client secret")
-			}
+	}
+	if meshClient.ClientSecret == "" || meshClient.ClientSecret == secretsapi.KeywordRotate {
+		meshClient.ClientSecret, err = secretsapi.GenerateSecret()
+		if err != nil {
+			return errors.Wrap(err, "failed to generate mesh client secret")
 		}
 	}
 
@@ -211,8 +213,7 @@ func (d *EventConfigCustomDefaulter) Default(ctx context.Context, eventCfg *even
 //
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as this struct is used only for temporary operations and does not need to be deeply copied.
-type EventConfigCustomValidator struct {
-}
+type EventConfigCustomValidator struct{}
 
 var _ admission.Validator[*eventv1.EventConfig] = &EventConfigCustomValidator{}
 
@@ -228,7 +229,6 @@ func (v *EventConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj,
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type EventConfig.
 func (v *EventConfigCustomValidator) ValidateDelete(ctx context.Context, obj *eventv1.EventConfig) (admission.Warnings, error) {
-
 	// Could check if there are any Events configured to use this EventConfig and prevent deletion if there are any, but for now we allow deletion without checks.
 	return nil, nil
 }

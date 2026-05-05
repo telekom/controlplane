@@ -7,11 +7,6 @@ package controller
 import (
 	"context"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
-	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
-	"github.com/telekom/controlplane/pubsub/internal/handler/publisher"
-	"github.com/telekom/controlplane/pubsub/internal/index"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -20,6 +15,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
+	"github.com/telekom/controlplane/pubsub/internal/handler/publisher"
+	"github.com/telekom/controlplane/pubsub/internal/index"
 )
 
 // PublisherReconciler reconciles a Publisher object
@@ -76,10 +77,10 @@ func (r *PublisherReconciler) MapEventStoreToPublisher(ctx context.Context, obj 
 	}
 
 	var requests []reconcile.Request
-	for _, publisher := range publishers.Items {
+	for i := range publishers.Items {
 		requests = append(requests, reconcile.Request{
 			NamespacedName: client.ObjectKey{
-				Name: publisher.Name,
+				Name: publishers.Items[i].Name,
 			},
 		})
 	}

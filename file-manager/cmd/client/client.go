@@ -91,12 +91,12 @@ func main() {
 
 	if filepath != "" && fileId != "" {
 		// upload file
-		file, err := os.Open(filepath)
+		file, err := os.Open(filepath) //nolint:gosec // G304: filepath comes from CLI argument
 		if err != nil {
 			fmt.Println("Error opening file:", err)
 			return
 		}
-		defer file.Close() //nolint:errcheck
+		defer file.Close() //nolint:errcheck // best-effort close
 
 		contentType, err := detectContentType(file)
 		if err != nil {
@@ -112,15 +112,19 @@ func main() {
 		return
 	}
 
-	if fileId != "" {
+	if fileId != "" { //nolint:nestif // CLI command flow with necessary nesting
 		// download file
 		w := os.Stdout
 		if outputFile != "" {
-			file, err := os.OpenFile(outputFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+			file, err := os.OpenFile(outputFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600) //nolint:gosec // G304: filepath comes from CLI argument
 			if err != nil {
 				panic(err)
 			}
-			defer file.Close() //nolint:errcheck
+			defer func() {
+				if err := file.Close(); err != nil {
+					panic(err)
+				}
+			}()
 			w = file
 		}
 		fileInfo, err := fileManager.DownloadFile(ctx, fileId, w)
@@ -145,7 +149,7 @@ func detectContentType(file *os.File) (string, error) {
 	if err != nil && err != io.EOF {
 		return "", err
 	}
-	file.Seek(0, 0) //nolint:errcheck
+	file.Seek(0, 0) //nolint:errcheck,gosec // best-effort seek for retry
 
 	contentType = http.DetectContentType(buffer)
 	return contentType, nil

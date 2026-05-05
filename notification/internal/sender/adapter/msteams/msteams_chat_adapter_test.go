@@ -7,12 +7,13 @@ package msteams
 import (
 	"context"
 	"encoding/json"
-	adapter2 "github.com/telekom/controlplane/notification/internal/sender/adapter"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	adapter2 "github.com/telekom/controlplane/notification/internal/sender/adapter"
 )
 
 // mockChatConfig is a test implementation of ChatConfiguration

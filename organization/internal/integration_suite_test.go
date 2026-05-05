@@ -13,33 +13,33 @@ import (
 	"testing"
 	"time"
 
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/test/mock"
-	"github.com/telekom/controlplane/common/pkg/types"
-	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
-	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
-	"github.com/telekom/controlplane/organization/internal/controller"
-	"github.com/telekom/controlplane/organization/internal/index"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	identityv1 "github.com/telekom/controlplane/identity/api/v1"
-	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
-	webhhookv1 "github.com/telekom/controlplane/organization/internal/webhook/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/test/mock"
+	"github.com/telekom/controlplane/common/pkg/types"
+	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
+	identityv1 "github.com/telekom/controlplane/identity/api/v1"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
+	"github.com/telekom/controlplane/organization/internal/controller"
+	"github.com/telekom/controlplane/organization/internal/index"
+	webhhookv1 "github.com/telekom/controlplane/organization/internal/webhook/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -86,7 +86,8 @@ var _ = BeforeSuite(func() {
 		BinaryAssetsDirectory: filepath.Join("..", "bin", "k8s",
 			fmt.Sprintf("%s-%s-%s", os.Getenv("ENVTEST_K8S_VERSION"), runtime.GOOS, runtime.GOARCH)),
 		WebhookInstallOptions: envtest.WebhookInstallOptions{
-			Paths: []string{filepath.Join("..", "config", "webhook")}},
+			Paths: []string{filepath.Join("..", "config", "webhook")},
+		},
 	}
 
 	var err error
@@ -164,7 +165,6 @@ var _ = BeforeSuite(func() {
 		err = k8sManager.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
-
 })
 
 var _ = AfterSuite(func() {

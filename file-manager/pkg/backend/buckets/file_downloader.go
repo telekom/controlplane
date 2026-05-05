@@ -12,6 +12,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
 )
 
@@ -41,7 +42,7 @@ func (s *BucketFileDownloader) downloadObject(ctx context.Context, path string) 
 		log.Error(err, "Failed to get file from bucket")
 		return nil, errors.Wrap(err, "failed to get file from bucket")
 	}
-	defer object.Close() //nolint:errcheck
+	defer object.Close() //nolint:errcheck // best-effort close
 
 	// Create a buffer to store the downloaded content
 	buf := new(bytes.Buffer)

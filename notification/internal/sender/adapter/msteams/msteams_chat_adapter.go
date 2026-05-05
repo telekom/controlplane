@@ -12,11 +12,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/notification/internal/sender/adapter"
 
 	"github.com/go-logr/logr"
 	"github.com/go-resty/resty/v2"
+	"github.com/pkg/errors"
+
+	"github.com/telekom/controlplane/notification/internal/sender/adapter"
 )
 
 const (
@@ -113,7 +114,6 @@ func (e MsTeamsAdapter) Send(ctx context.Context, config adapter.ChatChannelConf
 		SetContext(ctx).
 		SetBody(body).
 		Post(webhookURL)
-
 	if err != nil {
 		log.Error(err, "HTTP request failed",
 			"webhook", webhookURL,

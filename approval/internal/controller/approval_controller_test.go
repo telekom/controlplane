@@ -8,23 +8,22 @@ import (
 	"context"
 	"encoding/json"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
-	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/types"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Approval Controller", Ordered, func() {
-
 	const resourceName = "test-resource"
 
 	ctx := context.Background()
@@ -127,7 +126,6 @@ var _ = Describe("Approval Controller", Ordered, func() {
 	})
 
 	It("should successfully reconcile the created resource", func() {
-
 		Eventually(func(g Gomega) {
 			err := k8sClient.Get(ctx, typeNamespacedName, approval)
 
@@ -135,9 +133,7 @@ var _ = Describe("Approval Controller", Ordered, func() {
 			g.Expect(approval.Spec.State).To(BeEquivalentTo("Pending"))
 			g.Expect(approval.Spec.Strategy).To(BeEquivalentTo("Auto"))
 			g.Expect(approval.Spec.Requester.TeamName).To(BeEquivalentTo("test--requester"))
-
 		}, timeout, interval).Should(Succeed())
-
 	})
 
 	It("should successfully reconcile the granted approval", func() {
@@ -148,7 +144,7 @@ var _ = Describe("Approval Controller", Ordered, func() {
 			"Done", "Approved")
 
 		By("Checking the notifications")
-		var grantedApproval = &approvalv1.Approval{}
+		grantedApproval := &approvalv1.Approval{}
 		err := k8sClient.Get(ctx, typeNamespacedName, grantedApproval)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -187,7 +183,6 @@ var _ = Describe("Approval Controller", Ordered, func() {
 			metav1.ConditionFalse, metav1.ConditionFalse,
 			"Approval rejected", "Approval has been rejected",
 			"Done", "Rejected")
-
 	})
 
 	It("should successfully reconcile the suspended approval", func() {
@@ -196,7 +191,6 @@ var _ = Describe("Approval Controller", Ordered, func() {
 			metav1.ConditionTrue, metav1.ConditionTrue,
 			"Approval is suspended", "Approval is suspended",
 			"Suspended", "Suspended")
-
 	})
 
 	It("should successfully reconcile the semigranted approval", func() {
@@ -240,7 +234,6 @@ func checkApprovalStatus(typeNamespacedName types.NamespacedName, state approval
 		g.Expect(readyCondition.Reason).To(Equal(expectedReadyReason))
 		g.Expect(readyCondition.Status).To(Equal(expectedReadyStatus))
 		g.Expect(readyCondition.Message).To(Equal(expectedReadyMessage))
-
 	}, timeout, interval).Should(Succeed())
 }
 

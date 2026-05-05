@@ -15,13 +15,8 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	"github.com/telekom/controlplane/organization/internal/index"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -32,8 +27,12 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	organizationv1 "github.com/telekom/controlplane/organization/api/v1"
-	// +kubebuilder:scaffold:imports
+	"github.com/telekom/controlplane/organization/internal/index"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to

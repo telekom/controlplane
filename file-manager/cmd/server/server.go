@@ -147,7 +147,7 @@ func main() {
 	probesCtrl.Register(app, cs.ControllerOpts{})
 
 	apiGroup := app.Group("/api")
-	handler := api.NewStrictHandler(handler.NewHandler(ctrl), nil)
+	h := api.NewStrictHandler(handler.NewHandler(ctrl), nil)
 
 	if cfg.Security.Enabled {
 		opts := []k8s.KubernetesAuthOption{
@@ -163,7 +163,7 @@ func main() {
 		apiGroup.Use(k8s.NewKubernetesAuthz(opts...))
 	}
 
-	api.RegisterHandlersWithOptions(apiGroup, handler, api.FiberServerOptions{})
+	api.RegisterHandlersWithOptions(apiGroup, h, api.FiberServerOptions{})
 
 	go func() {
 		if disableTls {

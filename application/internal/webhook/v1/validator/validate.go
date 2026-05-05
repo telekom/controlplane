@@ -5,12 +5,13 @@
 package validator
 
 import (
-	applicationv1 "github.com/telekom/controlplane/application/api/v1"
-	"github.com/telekom/controlplane/common/pkg/controller"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	"github.com/telekom/controlplane/common/pkg/controller"
 )
 
 // ValidateAndGetEnv verifies that the object carries an environment label

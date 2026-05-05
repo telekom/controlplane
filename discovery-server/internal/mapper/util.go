@@ -10,9 +10,10 @@ import (
 	"regexp"
 	"strings"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -146,7 +147,7 @@ func VerifyApplicationLabel(obj client.Object, expectedAppName string) error {
 	return nil
 }
 
-func SplitTeamName(teamName string) (group string, team string) {
+func SplitTeamName(teamName string) (group, team string) {
 	parts := strings.Split(teamName, "--")
 	if len(parts) != 2 {
 		return "", teamName

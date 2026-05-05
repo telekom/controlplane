@@ -191,6 +191,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&controller.RoadmapReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Roadmap")
+		os.Exit(1)
+	}
+
 	if cconfig.FeaturePubSub.IsEnabled() {
 		if err = (&controller.EventSpecificationReconciler{
 			Client: mgr.GetClient(),
@@ -199,6 +207,14 @@ func main() {
 			setupLog.Error(err, "unable to create controller", "controller", "EventSpecification")
 			os.Exit(1)
 		}
+	}
+
+	if err = (&controller.ApiChangelogReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ApiChangelog")
+		os.Exit(1)
 	}
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
@@ -211,6 +227,13 @@ func main() {
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err := webhookv1.SetupApiSpecificationWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "ApiSpecification")
+			os.Exit(1)
+		}
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1.SetupApiChangelogWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "ApiChangelog")
 			os.Exit(1)
 		}
 	}

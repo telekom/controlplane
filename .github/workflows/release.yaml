@@ -7,19 +7,21 @@ on:
   workflow_dispatch:
 
 permissions:
-  packages: write # to be able to publish packages
-  contents: write # to be able to publish a GitHub release
-  issues: write # to be able to comment on released issues
-  pull-requests: write # to be able to comment on released pull requests
-  id-token: write # to enable use of OIDC for npm provenance
+  contents: read
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      packages: write # to be able to publish packages
+      contents: write # to be able to publish a GitHub release
+      issues: write # to be able to comment on released issues
+      pull-requests: write # to be able to comment on released pull requests
+      id-token: write # to enable use of OIDC for npm provenance
     steps:
       - name: 'Generate token'
         id: generate_token
-        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
         with:
           app-id: ${{ secrets.BOT_APP_ID }}
           private-key: ${{ secrets.BOT_PRIVATE_KEY }}
@@ -41,7 +43,7 @@ jobs:
       - uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
       - uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
       - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@e24998b8b67b290c2fa8b7c14fcfa7de2c5c9b8c # v7.1.0
+        uses: goreleaser/goreleaser-action@1a80836c5c9d9e5755a25cb59ec6f45a3b5f41a8 # v7.2.1
         with:
           install-only: true
       - name: Run Semantic Release
@@ -56,7 +58,7 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
       - name: Run GoReleaser
         if: steps.semantic_release.outputs.new_release_published == 'true'
-        uses: goreleaser/goreleaser-action@e24998b8b67b290c2fa8b7c14fcfa7de2c5c9b8c # v7.1.0
+        uses: goreleaser/goreleaser-action@1a80836c5c9d9e5755a25cb59ec6f45a3b5f41a8 # v7.2.1
         with:
           args: release --release-notes /tmp/release-notes.md --clean
         env:

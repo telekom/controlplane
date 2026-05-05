@@ -12,10 +12,9 @@ import (
 )
 
 var _ = Describe("Deprecated Endpoints", func() {
-
 	DescribeTable("should return 410 Gone for deprecated write endpoints",
 		func(method, path string) {
-			req := httptest.NewRequest(method, path, nil)
+			req := httptest.NewRequest(method, path, http.NoBody)
 			resp, err := ExecuteRequest(req, teamToken)
 			ExpectStatus(resp, err, http.StatusGone, "application/problem+json")
 		},

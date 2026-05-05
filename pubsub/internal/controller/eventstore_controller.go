@@ -7,15 +7,16 @@ package controller
 import (
 	"context"
 
-	cconfig "github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
-	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
-	"github.com/telekom/controlplane/pubsub/internal/handler/eventstore"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+
+	cconfig "github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
+	"github.com/telekom/controlplane/pubsub/internal/handler/eventstore"
 )
 
 // EventStoreReconciler reconciles a EventStore object

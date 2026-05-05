@@ -6,12 +6,14 @@ package util
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
-	"github.com/pkg/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/organization/internal/index"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func GetZoneObjWithTeamInfo(ctx context.Context) (*adminv1.Zone, error) {
@@ -21,12 +23,16 @@ func GetZoneObjWithTeamInfo(ctx context.Context) (*adminv1.Zone, error) {
 
 	err := clientFromContext.List(ctx, zoneList, client.MatchingFields{index.FieldSpecTeamApis: "true"})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to list zones")
+		return nil, fmt.Errorf("failed to list zones: %w", err)
 	}
 
 	for _, zone := range zoneList.GetItems() {
-		if zone.(*adminv1.Zone).Spec.TeamApis != nil {
-			teamApiZone = zone.(*adminv1.Zone).DeepCopy()
+		z, ok := zone.(*adminv1.Zone)
+		if !ok {
+			continue
+		}
+		if z.Spec.TeamApis != nil {
+			teamApiZone = z.DeepCopy()
 			break
 		}
 	}
