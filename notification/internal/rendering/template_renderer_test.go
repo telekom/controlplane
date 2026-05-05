@@ -9,9 +9,11 @@ import (
 	texttemplate "text/template"
 
 	sprig "github.com/go-task/slim-sprig/v3"
+
+	"github.com/telekom/controlplane/notification/internal/templatecache"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/notification/internal/templatecache"
 )
 
 func TestRendering(t *testing.T) {
@@ -28,7 +30,6 @@ func mustUnmarshal(raw string) map[string]interface{} {
 }
 
 var _ = Describe("Template Rendering", func() {
-
 	Describe("Custom template functions", func() {
 		It("should render a template with a custom greeter function", func() {
 			funcs := sprig.FuncMap()

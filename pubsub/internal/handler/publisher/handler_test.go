@@ -6,10 +6,16 @@ package publisher_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -17,13 +23,9 @@ import (
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	"github.com/telekom/controlplane/pubsub/internal/handler/publisher"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func newPublisher() *pubsubv1.Publisher {
@@ -113,11 +115,10 @@ var _ = Describe("PublisherHandler", func() {
 			err := handler.CreateOrUpdate(ctx, obj)
 
 			Expect(err).To(HaveOccurred())
-			var blockedErr ctrlerrors.BlockedError
 			Expect(err).To(BeAssignableToTypeOf(&ctrlerrors.CtrlError{}))
 			rootCause := unwrapAll(err)
-			Expect(rootCause.(ctrlerrors.BlockedError)).ToNot(BeNil())
-			_ = blockedErr
+			var blockedErr ctrlerrors.BlockedError
+			Expect(errors.As(rootCause, &blockedErr)).To(BeTrue())
 		})
 
 		It("should return BlockedError when EventStore is not ready", func() {
@@ -182,6 +183,6 @@ func unwrapAll(err error) error {
 
 // isBlockedError checks if the error implements the BlockedError interface.
 func isBlockedError(err error) bool {
-	be, ok := err.(ctrlerrors.BlockedError)
-	return ok && be.IsBlocked()
+	var be ctrlerrors.BlockedError
+	return errors.As(err, &be) && be.IsBlocked()
 }

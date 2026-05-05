@@ -6,13 +6,15 @@ package sender
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
+
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter"
 )
 
 type NotificationSender interface {
-	ProcessNotification(ctx context.Context, channel *notificationv1.NotificationChannel, subject string, body string, attachments []adapter.Attachment) error
+	ProcessNotification(ctx context.Context, channel *notificationv1.NotificationChannel, subject, body string, attachments []adapter.Attachment) error
 }
 
 var _ NotificationSender = AdapterSender{}
@@ -25,7 +27,6 @@ type AdapterSender struct {
 
 // ProcessNotification routes a rendered notification to the appropriate channel adapter.
 func (a AdapterSender) ProcessNotification(ctx context.Context, channel *notificationv1.NotificationChannel, subject, body string, attachments []adapter.Attachment) error {
-
 	var err error
 	switch nType := channel.NotificationType(); nType {
 	case notificationv1.NotificationTypeMail:

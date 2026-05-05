@@ -6,7 +6,6 @@ package controller
 
 import (
 	"context"
-	"github.com/telekom/controlplane/notification/internal/templatecache"
 	texttemplate "text/template"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,6 +18,7 @@ import (
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/internal/handler"
+	"github.com/telekom/controlplane/notification/internal/templatecache"
 )
 
 // NotificationTemplateReconciler reconciles a NotificationTemplate object

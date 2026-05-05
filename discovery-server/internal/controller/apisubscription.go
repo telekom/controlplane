@@ -10,7 +10,6 @@ import (
 
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
-
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper"
 	subscriptionmapper "github.com/telekom/controlplane/discovery-server/internal/mapper/apisubscription"
@@ -52,6 +51,7 @@ func (c *apiSubscriptionController) Get(ctx context.Context, applicationId, apiS
 	return subscriptionmapper.MapResponse(ctx, sub, c.stores), nil
 }
 
+//nolint:dupl // type-specific list methods share structure but differ in types and stores
 func (c *apiSubscriptionController) GetAll(ctx context.Context, applicationId string, params api.GetAllApiSubscriptionsParams) (*api.ApiSubscriptionListResponse, error) {
 	appInfo, err := mapper.ParseApplicationId(ctx, applicationId)
 	if err != nil {

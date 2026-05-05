@@ -10,6 +10,7 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/pkg/errors"
+
 	"github.com/telekom/controlplane/file-manager/api/constants"
 )
 

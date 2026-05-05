@@ -8,9 +8,7 @@ import "context"
 
 type contextKey string
 
-var (
-	envKey contextKey = "env"
-)
+var envKey contextKey = "env"
 
 func EnvFromContext(ctx context.Context) (string, bool) {
 	e, ok := ctx.Value(envKey).(string)

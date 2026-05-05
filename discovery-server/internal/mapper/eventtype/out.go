@@ -5,11 +5,10 @@
 package eventtype
 
 import (
-	eventv1 "github.com/telekom/controlplane/event/api/v1"
-
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper/status"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 )
 
 const (

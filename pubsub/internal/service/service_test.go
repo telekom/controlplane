@@ -140,7 +140,7 @@ var _ = Describe("configService", func() {
 
 				body, err := io.ReadAll(r.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(len(body)).To(BeNumerically(">", 0))
+				Expect(body).ToNot(BeEmpty())
 
 				w.WriteHeader(http.StatusOK)
 			}))

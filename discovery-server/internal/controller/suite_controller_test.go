@@ -11,8 +11,6 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
@@ -21,12 +19,14 @@ import (
 	csstore "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
 	csmocks "github.com/telekom/controlplane/common-server/test/mocks"
-
 	"github.com/telekom/controlplane/discovery-server/internal/config"
 	"github.com/telekom/controlplane/discovery-server/internal/server"
 	"github.com/telekom/controlplane/discovery-server/pkg/log"
 	sstore "github.com/telekom/controlplane/discovery-server/pkg/store"
 	"github.com/telekom/controlplane/discovery-server/test/mocks"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var (
@@ -78,7 +78,7 @@ var _ = BeforeSuite(func() {
 		mock.AnythingOfType("*context.valueCtx"),
 		mock.AnythingOfType("string"),
 		mock.Anything,
-	).RunAndReturn(func(_ context.Context, _ string, _ string) (*apiv1.ApiExposure, error) {
+	).RunAndReturn(func(_ context.Context, _, _ string) (*apiv1.ApiExposure, error) {
 		return apiExposure.DeepCopy(), nil
 	}).Maybe()
 	exposureSecretMock.EXPECT().List(
@@ -94,7 +94,7 @@ var _ = BeforeSuite(func() {
 		mock.AnythingOfType("*context.valueCtx"),
 		mock.AnythingOfType("string"),
 		mock.Anything,
-	).RunAndReturn(func(_ context.Context, _ string, _ string) (*apiv1.ApiSubscription, error) {
+	).RunAndReturn(func(_ context.Context, _, _ string) (*apiv1.ApiSubscription, error) {
 		return apiSubscription.DeepCopy(), nil
 	}).Maybe()
 	subscriptionSecretMock.EXPECT().List(
@@ -160,7 +160,6 @@ func ExpectStatus(response *http.Response, err error, statusCode int, contentTyp
 }
 
 func expectNoError(err error) {
-	Expect(err).To(BeNil())
 	Expect(err).ToNot(HaveOccurred())
 }
 

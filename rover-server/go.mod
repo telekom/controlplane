@@ -11,11 +11,8 @@ require (
 	github.com/telekom/controlplane/api/api v0.0.0
 	github.com/telekom/controlplane/application/api v0.0.0
 	github.com/telekom/controlplane/common v0.0.0
-	github.com/telekom/controlplane/common-server v0.0.0
 	github.com/telekom/controlplane/event/api v0.0.0
-	github.com/telekom/controlplane/file-manager v0.0.0
 	github.com/telekom/controlplane/rover/api v0.0.0
-	github.com/telekom/controlplane/secret-manager v0.0.0
 )
 
 replace (
@@ -44,6 +41,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
+	github.com/telekom/controlplane/common-server v0.0.0
+	github.com/telekom/controlplane/file-manager v0.0.0-00010101000000-000000000000
+	github.com/telekom/controlplane/secret-manager v0.0.0
 	go.uber.org/zap v1.28.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.4
 	golang.org/x/text v0.36.0
