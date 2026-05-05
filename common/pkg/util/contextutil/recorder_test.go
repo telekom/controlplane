@@ -7,17 +7,16 @@ package contextutil
 import (
 	"context"
 
+	"k8s.io/client-go/tools/events"
+
 	"github.com/telekom/controlplane/common/pkg/test/mock"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/client-go/tools/events"
 )
 
 var _ = Describe("Recorder", func() {
-
 	Context("record.EventRecorder", func() {
-
 		It("should manage the recorder in the context", func() {
 			ctx := context.Background()
 
@@ -58,7 +57,6 @@ var _ = Describe("Recorder", func() {
 	})
 
 	Context("events.EventRecorder", func() {
-
 		It("should manage the event recorder in the context", func() {
 			ctx := WithEventRecorder(context.Background(), &NoopRecorder{})
 
