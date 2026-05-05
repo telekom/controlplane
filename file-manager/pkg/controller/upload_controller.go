@@ -7,13 +7,13 @@ package controller
 import (
 	"context"
 	"io"
+	"maps"
 	"mime"
 	"path/filepath"
 	"strings"
 
-	"maps"
-
 	"github.com/go-logr/logr"
+
 	"github.com/telekom/controlplane/file-manager/api/constants"
 	"github.com/telekom/controlplane/file-manager/pkg/backend"
 	"github.com/telekom/controlplane/file-manager/pkg/backend/identifier"

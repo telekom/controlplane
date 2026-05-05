@@ -10,7 +10,6 @@ import (
 
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
-
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper"
 	exposuremapper "github.com/telekom/controlplane/discovery-server/internal/mapper/apiexposure"
@@ -121,8 +120,8 @@ func (c *apiExposureController) GetSubscriptions(ctx context.Context, applicatio
 	if err != nil {
 		return nil, err
 	}
-	if err := mapper.VerifyApplicationLabel(exposure, appInfo.AppName); err != nil {
-		return nil, err
+	if verifyErr := mapper.VerifyApplicationLabel(exposure, appInfo.AppName); verifyErr != nil {
+		return nil, verifyErr
 	}
 
 	// Fetch all subscriptions (cross-namespace — no prefix, no app label filter)

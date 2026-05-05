@@ -7,9 +7,10 @@ package contextutil
 import (
 	"context"
 
+	"github.com/telekom/controlplane/common/pkg/test/mock"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common/pkg/test/mock"
 	"k8s.io/client-go/tools/events"
 )
 

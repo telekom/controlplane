@@ -5,16 +5,19 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common/pkg/test"
-	"github.com/telekom/controlplane/common/pkg/types"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+
+	"github.com/telekom/controlplane/common/pkg/test"
+	"github.com/telekom/controlplane/common/pkg/types"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // MockNamedObject is a simple implementation of types.NamedObject for testing
@@ -38,7 +41,6 @@ func (m *MockNamedObject) GetGenerateName() string {
 var _ types.NamedObject = &MockNamedObject{}
 
 var _ = Describe("ValidationError", func() {
-
 	var (
 		valErr    *ValidationError
 		testObj   *MockNamedObject
@@ -59,7 +61,7 @@ var _ = Describe("ValidationError", func() {
 		It("should initialize with empty errors and warnings", func() {
 			Expect(valErr.HasErrors()).To(BeFalse())
 			Expect(valErr.BuildWarnings()).To(BeNil())
-			Expect(valErr.BuildError()).To(BeNil())
+			Expect(valErr.BuildError()).To(Succeed())
 
 			// Verify internal state
 			Expect(valErr.Errors).To(BeEmpty())
@@ -100,7 +102,7 @@ var _ = Describe("ValidationError", func() {
 
 	Context("BuildError", func() {
 		It("should return nil when there are no errors", func() {
-			Expect(valErr.BuildError()).To(BeNil())
+			Expect(valErr.BuildError()).To(Succeed())
 		})
 
 		It("should build a properly formatted StatusError when there are errors", func() {
@@ -108,9 +110,11 @@ var _ = Describe("ValidationError", func() {
 			valErr.AddInvalidError(field.NewPath("spec").Child("field1"), "invalid-value", "field1 is invalid")
 			valErr.AddInvalidError(field.NewPath("spec").Child("field2"), "/invalid", "field2 is invalid")
 
-			// Build the error
-			statusErr := valErr.BuildError().(*apierrors.StatusError)
-			Expect(statusErr).NotTo(BeNil())
+			// Build the error and unwrap
+			err := valErr.BuildError()
+			Expect(err).To(HaveOccurred())
+			var statusErr *apierrors.StatusError
+			Expect(errors.As(err, &statusErr)).To(BeTrue())
 
 			// Verify error details
 			Expect(statusErr.ErrStatus.Status).To(Equal(metav1.StatusFailure))
@@ -139,9 +143,11 @@ var _ = Describe("ValidationError", func() {
 			path2 := field.NewPath("spec").Child("duplicate")
 			valErr.Errors = append(valErr.Errors, field.Duplicate(path2, "duplicate value"))
 
-			// Build the error
-			statusErr := valErr.BuildError().(*apierrors.StatusError)
-			Expect(statusErr).NotTo(BeNil())
+			// Build the error and unwrap
+			err := valErr.BuildError()
+			Expect(err).To(HaveOccurred())
+			var statusErr *apierrors.StatusError
+			Expect(errors.As(err, &statusErr)).To(BeTrue())
 
 			// Verify types are preserved
 			Expect(statusErr.ErrStatus.Details.Causes).To(HaveLen(2))
@@ -211,9 +217,11 @@ var _ = Describe("ValidationError", func() {
 			// Add some errors
 			valErr.AddInvalidError(field.NewPath("spec").Child("zone"), "", "zone is required")
 
-			// Build error and verify
-			statusErr := valErr.BuildError().(*apierrors.StatusError)
-			Expect(statusErr).NotTo(BeNil())
+			// Build error and unwrap
+			err := valErr.BuildError()
+			Expect(err).To(HaveOccurred())
+			var statusErr *apierrors.StatusError
+			Expect(errors.As(err, &statusErr)).To(BeTrue())
 
 			Expect(statusErr.ErrStatus.Details.Name).To(Equal("test-object"))
 			Expect(statusErr.ErrStatus.Details.Kind).To(Equal("TestResource"))

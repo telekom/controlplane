@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"github.com/telekom/controlplane/common-server/pkg/store"
-
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 )
 
@@ -31,7 +30,7 @@ type PaginatedResult[T any] struct {
 // FetchAll retrieves every item from an ObjectStore by following cursor-based
 // pagination to completion. The caller provides the initial ListOpts (with
 // Prefix / Filters already set); this function overrides Limit and Cursor.
-func FetchAll[T store.Object](ctx context.Context, s store.ObjectStore[T], opts store.ListOpts) ([]T, error) {
+func FetchAll[T store.Object](ctx context.Context, s store.ObjectStore[T], opts store.ListOpts) ([]T, error) { //nolint:gocritic // hugeParam: opts is intentionally copied since we mutate Limit/Cursor
 	opts.Limit = fetchBatchSize
 	opts.Cursor = ""
 

@@ -10,7 +10,6 @@ import (
 
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
-
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper"
 	eventexposuremapper "github.com/telekom/controlplane/discovery-server/internal/mapper/eventexposure"
@@ -53,6 +52,7 @@ func (c *eventExposureController) Get(ctx context.Context, applicationId, eventE
 	return eventexposuremapper.MapResponse(ctx, exposure, c.stores), nil
 }
 
+//nolint:dupl // type-specific list methods share structure but differ in types and stores
 func (c *eventExposureController) GetAll(ctx context.Context, applicationId string, params api.GetAllEventExposuresParams) (*api.EventExposureListResponse, error) {
 	appInfo, err := mapper.ParseApplicationId(ctx, applicationId)
 	if err != nil {
@@ -121,8 +121,8 @@ func (c *eventExposureController) GetSubscriptions(ctx context.Context, applicat
 	if err != nil {
 		return nil, err
 	}
-	if err := mapper.VerifyApplicationLabel(exposure, appInfo.AppName); err != nil {
-		return nil, err
+	if verifyErr := mapper.VerifyApplicationLabel(exposure, appInfo.AppName); verifyErr != nil {
+		return nil, verifyErr
 	}
 
 	// Fetch all event subscriptions (cross-namespace — no prefix, no app label filter)

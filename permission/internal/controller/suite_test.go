@@ -10,9 +10,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -23,6 +20,9 @@ import (
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	pcpv1 "github.com/telekom/controlplane/permission/api/pcp/v1"
 	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	// +kubebuilder:scaffold:imports
 )
 

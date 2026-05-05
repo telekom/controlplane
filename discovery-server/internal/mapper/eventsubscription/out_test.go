@@ -9,13 +9,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/mock"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	csmocks "github.com/telekom/controlplane/common-server/test/mocks"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	sstore "github.com/telekom/controlplane/discovery-server/pkg/store"
 	eventv1 "github.com/telekom/controlplane/event/api/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 func TestMapResponse_ResolvedReferences(t *testing.T) {

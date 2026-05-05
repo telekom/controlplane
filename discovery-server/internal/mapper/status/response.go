@@ -7,10 +7,10 @@ package status
 import (
 	"time"
 
-	"github.com/telekom/controlplane/common/pkg/condition"
-	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 
+	"github.com/telekom/controlplane/common/pkg/condition"
+	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 )
 
