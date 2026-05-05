@@ -382,7 +382,7 @@ var _ = Describe("Rover Handler", func() {
 	})
 
 	Describe("PatchAuthentication", func() {
-		It("should pass through 'basic' as-is in authentication.clientAuthMethod", func() {
+		It("should normalize 'basic' to 'BASIC' in authentication.clientAuthMethod", func() {
 			obj := &types.UnstructuredObject{
 				Content: map[string]any{
 					"spec": map[string]any{
@@ -401,10 +401,10 @@ var _ = Describe("Rover Handler", func() {
 			content := obj.GetContent()
 			auth, ok := content["authentication"].(map[string]any)
 			Expect(ok).To(BeTrue())
-			Expect(auth["clientAuthMethod"]).To(Equal("basic"))
+			Expect(auth["clientAuthMethod"]).To(Equal("BASIC"))
 		})
 
-		It("should pass through 'body' as-is in authentication.clientAuthMethod", func() {
+		It("should normalize 'body' to 'POST' in authentication.clientAuthMethod", func() {
 			obj := &types.UnstructuredObject{
 				Content: map[string]any{
 					"spec": map[string]any{
@@ -423,7 +423,29 @@ var _ = Describe("Rover Handler", func() {
 			content := obj.GetContent()
 			auth, ok := content["authentication"].(map[string]any)
 			Expect(ok).To(BeTrue())
-			Expect(auth["clientAuthMethod"]).To(Equal("body"))
+			Expect(auth["clientAuthMethod"]).To(Equal("POST"))
+		})
+
+		It("should normalize 'BODY' to 'POST' in authentication.clientAuthMethod", func() {
+			obj := &types.UnstructuredObject{
+				Content: map[string]any{
+					"spec": map[string]any{
+						"authentication": map[string]any{
+							"m2m": map[string]any{
+								"clientAuthMethod": "BODY",
+							},
+						},
+					},
+				},
+			}
+
+			err := v0.PatchRoverRequest(context.Background(), obj)
+			Expect(err).NotTo(HaveOccurred())
+
+			content := obj.GetContent()
+			auth, ok := content["authentication"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(auth["clientAuthMethod"]).To(Equal("POST"))
 		})
 
 		It("should not add authentication when it is missing", func() {
