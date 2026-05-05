@@ -349,10 +349,10 @@ func (r *RoverController) GetSecretRotationStatus(ctx context.Context, resourceI
 	processingState := api.ProcessingStateDone
 	overallStatus := api.OverallStatusComplete
 	if rotationCond != nil {
-		conditionIsCurrent := rotationCond.ObservedGeneration >= app.GetGeneration()
+		isStale := rotationCond != nil && rotationCond.ObservedGeneration < app.GetGeneration()
 
 		switch {
-		case !conditionIsCurrent:
+		case isStale:
 			// Condition is stale — controller hasn't reconciled the current generation yet
 			processingState = api.ProcessingStatePending
 			overallStatus = api.OverallStatusPending

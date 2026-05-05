@@ -29,6 +29,11 @@ const (
 	PostRequestHook HandlerHookStage = "post-request"
 )
 
+var (
+	// NoBody can be used for requests that do not require a body
+	NoBody types.Object = nil
+)
+
 type HttpDoer interface {
 	Do(req *http.Request) (*http.Response, error)
 }
@@ -204,7 +209,7 @@ func (h *BaseHandler) Get(ctx context.Context, name string) (any, error) {
 	token := h.Setup(ctx)
 	url := h.GetRequestUrl(token.Group, token.Team, name)
 
-	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
+	resp, err := h.SendRequest(ctx, NoBody, http.MethodGet, url)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +261,7 @@ func (h *BaseHandler) ListWithCursor(ctx context.Context, cursor string) (*ListR
 		url += "?cursor=" + cursor
 	}
 
-	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
+	resp, err := h.SendRequest(ctx, NoBody, http.MethodGet, url)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +286,7 @@ func (h *BaseHandler) Status(ctx context.Context, name string) (types.ObjectStat
 	token := h.Setup(ctx)
 	url := h.GetRequestUrl(token.Group, token.Team, name, "status")
 
-	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
+	resp, err := h.SendRequest(ctx, NoBody, http.MethodGet, url)
 	if err != nil {
 		return nil, err
 	}
@@ -340,7 +345,7 @@ func (h *BaseHandler) InfoMany(ctx context.Context, names []string) (any, error)
 func (h *BaseHandler) execInfoRequest(ctx context.Context, url string) (any, error) {
 	h.logger.V(1).Info("Executing info request", "url", url)
 
-	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
+	resp, err := h.SendRequest(ctx, NoBody, http.MethodGet, url)
 	if err != nil {
 		return nil, err
 	}
@@ -459,7 +464,8 @@ func CheckResponseCode(resp *http.Response, expectedCodes ...int) error {
 	}
 
 	apiErr := &ApiError{}
-	if err := json.Unmarshal(body, apiErr); err != nil {
+	err = json.Unmarshal(body, apiErr)
+	if err != nil || apiErr.Title == "" {
 		return &ApiError{
 			Type:     "UnknownError",
 			Status:   resp.StatusCode,

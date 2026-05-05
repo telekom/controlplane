@@ -50,7 +50,7 @@ func (h *RoverHandler) GetSecretRotationStatus(ctx context.Context, name string)
 	token := h.Setup(ctx)
 	url := h.GetRequestUrl(token.Group, token.Team, name, "secret", "status")
 
-	resp, err := h.SendRequest(ctx, nil, http.MethodGet, url)
+	resp, err := h.SendRequest(ctx, common.NoBody, http.MethodGet, url)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (h *RoverHandler) ResetSecret(ctx context.Context, name string) (*SecretRot
 	token := h.Setup(ctx)
 	url := h.GetRequestUrl(token.Group, token.Team, name, "secret")
 
-	resp, err := h.SendRequest(ctx, nil, http.MethodPatch, url)
+	resp, err := h.SendRequest(ctx, common.NoBody, http.MethodPatch, url)
 	if err != nil {
 		return nil, err
 	}
