@@ -32,17 +32,15 @@ type ApiSpecificationHandler struct {
 
 func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *roverv1.ApiSpecification) error {
 	log := logr.FromContextOrDiscard(ctx)
+	mode := h.lookupLintingMode(ctx, apiSpec.Spec.Category)
 
 	// Linting is pending (async) — Spec.Lint is nil, wait for rover-server to fill it in.
 	if apiSpec.Spec.Lint == nil {
-		mode := h.lookupLintingMode(ctx, apiSpec.Spec.Category)
 		if mode == apiapi.LintingModeNone {
 			// No linting configured for this category — proceed normally.
 			return h.createOrUpdateApi(ctx, apiSpec)
 		}
 		if mode == apiapi.LintingModeBlock {
-			apiSpec.SetCondition(condition.NewProcessingCondition("LintingPending",
-				"OAS linting is in progress, waiting for result"))
 			apiSpec.SetCondition(condition.NewNotReadyCondition("LintingPending",
 				"API specification is being linted"))
 			return nil
@@ -53,18 +51,15 @@ func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *r
 	}
 
 	// Check if linting failed and the category config blocks on failure
-	if !apiSpec.Spec.Lint.Passed {
-		mode := h.lookupLintingMode(ctx, apiSpec.Spec.Category)
-		if mode == apiapi.LintingModeBlock {
-			msg := fmt.Sprintf("OAS linting failed: %s", apiSpec.Spec.Lint.Message)
-			if apiSpec.Spec.Lint.DashboardURL != "" {
-				msg = fmt.Sprintf("%s. View details: %s", msg, apiSpec.Spec.Lint.DashboardURL)
-			}
-			apiSpec.SetCondition(condition.NewBlockedCondition(msg))
-			apiSpec.SetCondition(condition.NewNotReadyCondition("LintingFailed",
-				"API specification did not pass linting"))
-			return nil
+	if !apiSpec.Spec.Lint.Passed && mode == apiapi.LintingModeBlock {
+		msg := fmt.Sprintf("OAS linting failed: %s", apiSpec.Spec.Lint.Message)
+		if apiSpec.Spec.Lint.DashboardURL != "" {
+			msg = fmt.Sprintf("%s. View details: %s", msg, apiSpec.Spec.Lint.DashboardURL)
 		}
+		apiSpec.SetCondition(condition.NewBlockedCondition(msg))
+		apiSpec.SetCondition(condition.NewNotReadyCondition("LintingFailed",
+			"API specification did not pass linting"))
+		return nil
 	}
 
 	return h.createOrUpdateApi(ctx, apiSpec)
