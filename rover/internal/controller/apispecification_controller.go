@@ -18,6 +18,7 @@ import (
 	apispec_handler "github.com/telekom/controlplane/rover/internal/handler/apispecification"
 
 	apiapi "github.com/telekom/controlplane/api/api/v1"
+	cclient "github.com/telekom/controlplane/common/pkg/client"
 	rover "github.com/telekom/controlplane/rover/api/v1"
 )
 
@@ -36,6 +37,7 @@ type ApiSpecificationReconciler struct {
 // +kubebuilder:rbac:groups=rover.cp.ei.telekom.de,resources=apispecifications/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=rover.cp.ei.telekom.de,resources=apispecifications/finalizers,verbs=update
 // +kubebuilder:rbac:groups=api.cp.ei.telekom.de,resources=apis,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=admin.cp.ei.telekom.de,resources=zones,verbs=get;list;watch
 
 func (r *ApiSpecificationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return r.Controller.Reconcile(ctx, req, &rover.ApiSpecification{})
@@ -44,7 +46,23 @@ func (r *ApiSpecificationReconciler) Reconcile(ctx context.Context, req ctrl.Req
 // SetupWithManager sets up the controller with the Manager.
 func (r *ApiSpecificationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Recorder = mgr.GetEventRecorderFor("apispecification-controller")
-	r.Controller = cc.NewController(&apispec_handler.ApiSpecificationHandler{}, r.Client, r.Recorder)
+
+	h := &apispec_handler.ApiSpecificationHandler{
+		GetApiCategory: func(ctx context.Context, category string) (*apiapi.ApiCategory, error) {
+			c := cclient.ClientFromContextOrDie(ctx)
+			list := &apiapi.ApiCategoryList{}
+			if err := c.List(ctx, list); err != nil {
+				return nil, err
+			}
+			found, ok := list.FindByLabelValue(category)
+			if !ok {
+				return nil, nil
+			}
+			return found, nil
+		},
+	}
+
+	r.Controller = cc.NewController(h, r.Client, r.Recorder)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&rover.ApiSpecification{}).

@@ -113,7 +113,7 @@ var _ = BeforeSuite(func() {
 	s := server.Server{
 		Config:              &config.ServerConfig{},
 		Log:                 log.Log,
-		ApiSpecifications:   NewApiSpecificationController(stores),
+		ApiSpecifications:   NewApiSpecificationController(stores, "", 0, false),
 		Rovers:              NewRoverController(stores),
 		Roadmaps:            NewRoadmapController(stores),
 		EventSpecifications: NewEventSpecificationController(stores),

@@ -6,7 +6,9 @@ package apispecification
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common/pkg/client"
@@ -21,10 +23,70 @@ import (
 
 var _ handler.Handler[*roverv1.ApiSpecification] = (*ApiSpecificationHandler)(nil)
 
-type ApiSpecificationHandler struct{}
+// ApiSpecificationHandler reconciles ApiSpecification resources.
+// Linting is performed by rover-server at upload time and stored in the CRD status fields.
+// This handler reads the lint result and gates Api resource creation accordingly.
+type ApiSpecificationHandler struct {
+	GetApiCategory func(ctx context.Context, category string) (*apiapi.ApiCategory, error)
+}
 
 func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *roverv1.ApiSpecification) error {
+	log := logr.FromContextOrDiscard(ctx)
+	mode := h.lookupLintingMode(ctx, apiSpec.Spec.Category)
 
+	// Linting is pending (async) — Spec.Lint is nil, wait for rover-server to fill it in.
+	if apiSpec.Spec.Lint == nil {
+		if mode == apiapi.LintingModeNone {
+			// No linting configured for this category — proceed normally.
+			return h.createOrUpdateApi(ctx, apiSpec)
+		}
+		if mode == apiapi.LintingModeBlock {
+			apiSpec.SetCondition(condition.NewNotReadyCondition("LintingPending",
+				"API specification is being linted"))
+			return nil
+		}
+		// warn mode: proceed without waiting for lint result
+		log.V(0).Info("Linting pending in warn mode, proceeding with Api creation")
+		return h.createOrUpdateApi(ctx, apiSpec)
+	}
+
+	// Check if linting failed and the category config blocks on failure
+	if !apiSpec.Spec.Lint.Passed && mode == apiapi.LintingModeBlock {
+		msg := fmt.Sprintf("OAS linting failed: %s", apiSpec.Spec.Lint.Message)
+		if apiSpec.Spec.Lint.DashboardURL != "" {
+			msg = fmt.Sprintf("%s. View details: %s", msg, apiSpec.Spec.Lint.DashboardURL)
+		}
+		apiSpec.SetCondition(condition.NewBlockedCondition(msg))
+		apiSpec.SetCondition(condition.NewNotReadyCondition("LintingFailed",
+			"API specification did not pass linting"))
+		return nil
+	}
+
+	return h.createOrUpdateApi(ctx, apiSpec)
+}
+
+func (h *ApiSpecificationHandler) Delete(_ context.Context, _ *roverv1.ApiSpecification) error {
+	return nil
+}
+
+// lookupLintingMode finds the ApiCategory and returns the effective linting mode.
+func (h *ApiSpecificationHandler) lookupLintingMode(ctx context.Context, category string) apiapi.LintingMode {
+	if h.GetApiCategory == nil {
+		return apiapi.LintingModeNone
+	}
+	cat, err := h.GetApiCategory(ctx, category)
+	if err != nil || cat == nil || cat.Spec.Linting == nil {
+		return apiapi.LintingModeNone
+	}
+	mode := cat.Spec.Linting.Mode
+	if mode == "" {
+		mode = apiapi.LintingModeBlock
+	}
+	return mode
+}
+
+// createOrUpdateApi contains the Api resource creation logic.
+func (h *ApiSpecificationHandler) createOrUpdateApi(ctx context.Context, apiSpec *roverv1.ApiSpecification) error {
 	c := client.ClientFromContextOrDie(ctx)
 	name := roverv1.MakeName(apiSpec)
 
@@ -66,15 +128,10 @@ func (h *ApiSpecificationHandler) CreateOrUpdate(ctx context.Context, apiSpec *r
 	if c.AnyChanged() {
 		apiSpec.SetCondition(condition.NewProcessingCondition("Provisioning", "API updated"))
 		apiSpec.SetCondition(condition.NewNotReadyCondition("Provisioning", "API is not ready"))
-
 	} else {
 		apiSpec.SetCondition(condition.NewDoneProcessingCondition("API created"))
 		apiSpec.SetCondition(condition.NewReadyCondition("Provisioned", "API is ready"))
 	}
 
-	return nil
-}
-
-func (h *ApiSpecificationHandler) Delete(ctx context.Context, obj *roverv1.ApiSpecification) error {
 	return nil
 }

@@ -63,6 +63,24 @@ type ApiSpecificationSpec struct {
 	// Oauth2Scopes contains the OAuth2 scopes extracted from security definitions/schemes
 	// +kubebuilder:validation:Optional
 	Oauth2Scopes []string `json:"scopes,omitempty"`
+
+	// Lint contains the result of the OAS linting performed by rover-server.
+	// +kubebuilder:validation:Optional
+	Lint *LintResult `json:"lint,omitempty"`
+}
+
+// LintResult holds the outcome of an external OAS linting scan.
+type LintResult struct {
+	// Passed indicates whether the spec passed linting.
+	Passed bool `json:"passed"`
+
+	// Message is a human-readable description of the lint outcome.
+	// +optional
+	Message string `json:"message,omitempty"`
+
+	// DashboardURL is a direct link to the linter dashboard for this scan.
+	// +optional
+	DashboardURL string `json:"dashboardUrl,omitempty"`
 }
 
 type ApiSpecificationStatus struct {

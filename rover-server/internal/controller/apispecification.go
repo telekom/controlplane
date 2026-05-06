@@ -9,16 +9,23 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"io"
+	"strings"
+	"sync"
+	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
 	"github.com/pkg/errors"
+	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
+	"github.com/telekom/controlplane/rover-server/internal/oaslint"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"gopkg.in/yaml.v3"
 
@@ -36,13 +43,57 @@ var _ server.ApiSpecificationController = &ApiSpecificationController{}
 type ApiSpecificationController struct {
 	stores *s.Stores
 	Store  store.ObjectStore[*roverv1.ApiSpecification]
+
+	// ListApiCategories is a function to list all ApiCategories for validation at upload time.
+	// If nil, category validation is skipped.
+	ListApiCategories func(ctx context.Context) (*apiv1.ApiCategoryList, error)
+
+	// ErrorMessage is the template message shown when linting fails.
+	ErrorMessage string
+
+	// LintAsync controls whether linting runs asynchronously (true) or synchronously (false).
+	// When false (default), linting blocks the request so a single store operation includes the result.
+	LintAsync bool
+
+	// httpClient is reused across lint requests for connection pooling and metrics.
+	httpClient oaslint.HTTPDoer
+
+	// lintWg tracks in-flight async lint goroutines for graceful shutdown.
+	lintWg sync.WaitGroup
 }
 
-func NewApiSpecificationController(stores *s.Stores) *ApiSpecificationController {
-	return &ApiSpecificationController{
-		stores: stores,
-		Store:  stores.APISpecificationStore,
+func NewApiSpecificationController(stores *s.Stores, errorMessage string, lintTimeout time.Duration, lintAsync bool) *ApiSpecificationController {
+	ctrl := &ApiSpecificationController{
+		stores:       stores,
+		Store:        stores.APISpecificationStore,
+		ErrorMessage: errorMessage,
+		LintAsync:    lintAsync,
+		httpClient: commonclient.NewHttpClientOrDie(
+			commonclient.WithClientName("oaslint"),
+			commonclient.WithClientTimeout(lintTimeout),
+			commonclient.WithSkipTlsVerify(true),
+		),
 	}
+	if stores.APICategoryStore != nil {
+		ctrl.ListApiCategories = func(ctx context.Context) (*apiv1.ApiCategoryList, error) {
+			listOpts := store.NewListOpts()
+			categoryList, err := stores.APICategoryStore.List(ctx, listOpts)
+			if err != nil {
+				return nil, err
+			}
+			result := &apiv1.ApiCategoryList{Items: make([]apiv1.ApiCategory, 0, len(categoryList.Items))}
+			for _, item := range categoryList.Items {
+				result.Items = append(result.Items, *item)
+			}
+			return result, nil
+		}
+	}
+	return ctrl
+}
+
+// Shutdown waits for all in-flight async lint operations to complete.
+func (a *ApiSpecificationController) Shutdown() {
+	a.lintWg.Wait()
 }
 
 // Create implements server.ApiSpecificationController.
@@ -50,7 +101,7 @@ func (a *ApiSpecificationController) Create(ctx context.Context, req api.ApiSpec
 	// Important Hint: This is a declarative API. The client should not create an ApiSpecification, but only use
 	// the PUT method. This is similar to how kubernetes works.
 	// The main use case for the rover API will be to enable the usage of roverctl
-	log.Infof("ApiSpecification: Create not implemented. ApiSpecification is: %+v", req)
+	logr.FromContextOrDiscard(ctx).Info("ApiSpecification: Create not implemented", "request", req)
 	return api.ApiSpecificationResponse{},
 		fiber.NewError(fiber.StatusNotImplemented, "Create not implemented")
 }
@@ -189,6 +240,14 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 		return res, err
 	}
 
+	// Fetch the ApiCategory list once for both validation and linting config lookup.
+	categoryList := a.fetchApiCategories(ctx)
+
+	// Validate the API category against the known ApiCategories.
+	if catErr := a.validateApiCategoryFromList(categoryList, apiSpec.Spec.Category); catErr != nil {
+		return res, catErr
+	}
+
 	fileAPIResp, err := a.uploadFile(ctx, specMarshaled, id)
 	if err != nil {
 		return res, err
@@ -199,6 +258,44 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 		return res, problems.BadRequest(err.Error())
 	}
 	EnsureLabelsOrDie(ctx, apiSpec)
+
+	// Look up the ApiCategory's linting config for this spec's category.
+	// If the category has a linter URL, proceed with linting.
+	var needsLint bool
+	log := logr.FromContextOrDiscard(ctx)
+	log.V(1).Info("Looking up linting config", "namespace", apiSpec.Namespace, "name", apiSpec.Name,
+		"category", apiSpec.Spec.Category, "basepath", apiSpec.Spec.BasePath)
+	lintCfg := lintingConfigFromList(categoryList, apiSpec.Spec.Category)
+	if lintCfg != nil && lintCfg.URL != "" && lintCfg.Mode != apiv1.LintingModeNone {
+		log.V(1).Info("Linting config found, checking whitelists and hash dedup", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
+		// Fetch existing object for hash dedup comparison.
+		existing, _ := a.Store.Get(ctx, apiSpec.Namespace, apiSpec.Name)
+		needsLint = a.prepareLinting(lintCfg, apiSpec, existing)
+		log.V(1).Info("prepareLinting completed", "namespace", apiSpec.Namespace, "name", apiSpec.Name, "needsLint", needsLint)
+	} else {
+		log.V(1).Info("No linting config or no URL, skipping linting", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
+	}
+
+	// Run linting synchronously (default) so the result is included in the single store write,
+	// or dispatch asynchronously if configured.
+	if needsLint {
+		if a.LintAsync {
+			// Store first, then lint in the background and patch afterwards.
+			err = a.Store.CreateOrReplace(ctx, apiSpec)
+			if err != nil {
+				return res, err
+			}
+			a.dispatchAsyncLint(ctx, apiSpec.Namespace, apiSpec.Name, lintCfg.URL, lintCfg.Ruleset, specMarshaled)
+			return a.Get(ctx, resourceId)
+		}
+		// Synchronous: lint blocks until result is available, then store once.
+		if err := a.runSyncLint(ctx, apiSpec, lintCfg.URL, lintCfg.Ruleset, specMarshaled); err != nil {
+			// Store the spec with the failed lint result so it's persisted,
+			// then return 500 to inform the client about the infrastructure error.
+			_ = a.Store.CreateOrReplace(ctx, apiSpec)
+			return res, problems.InternalServerError("Linting failed", err.Error())
+		}
+	}
 
 	err = a.Store.CreateOrReplace(ctx, apiSpec)
 	if err != nil {
@@ -225,6 +322,41 @@ func (a *ApiSpecificationController) GetStatus(ctx context.Context, resourceId s
 	}
 
 	return status.MapAPISpecificationResponse(ctx, apiSpec, a.stores)
+}
+
+// fetchApiCategories fetches all ApiCategories. Returns nil if the store is not configured.
+func (a *ApiSpecificationController) fetchApiCategories(ctx context.Context) *apiv1.ApiCategoryList {
+	if a.ListApiCategories == nil {
+		return nil
+	}
+	list, err := a.ListApiCategories(ctx)
+	if err != nil {
+		logr.FromContextOrDiscard(ctx).Info("Failed to list ApiCategories", "error", err)
+		return nil
+	}
+	return list
+}
+
+// validateApiCategoryFromList validates that the given category is a known and active ApiCategory
+// using a pre-fetched list. If the list is nil, validation is skipped.
+func (a *ApiSpecificationController) validateApiCategoryFromList(categoryList *apiv1.ApiCategoryList, category string) error {
+	if categoryList == nil {
+		return nil
+	}
+
+	found, ok := categoryList.FindByLabelValue(category)
+	if !ok {
+		allowedLabels := strings.Join(categoryList.AllowedLabelValues(), ", ")
+		return problems.BadRequest(
+			fmt.Sprintf("ApiCategory %q not found. Allowed values are: [%s]", category, allowedLabels))
+	}
+
+	if !found.Spec.Active {
+		return problems.BadRequest(
+			fmt.Sprintf("ApiCategory %q is not active", category))
+	}
+
+	return nil
 }
 
 func (a *ApiSpecificationController) uploadFile(ctx context.Context, specMarshaled []byte, id mapper.ResourceIdInfo) (*filesapi.FileUploadResponse, error) {

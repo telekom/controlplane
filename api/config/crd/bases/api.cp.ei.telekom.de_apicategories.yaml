@@ -80,14 +80,41 @@ spec:
                 minLength: 1
                 type: string
               linting:
+                description: |-
+                  Linting configures OAS specification linting for APIs in this category.
+                  If set with a URL, linting is enabled for this category.
                 properties:
-                  enabled:
-                    description: Enabled indicates whether linting is enabled for
-                      this API category.
-                    type: boolean
-                  ruleset:
-                    description: Ruleset specifies the ruleset to use for linting.
+                  mode:
+                    default: block
+                    description: |-
+                      Mode controls how linting failures affect API creation.
+                      "block" (default) prevents Api creation on failure; "warn" allows it but surfaces issues.
+                    enum:
+                    - block
+                    - warn
+                    - none
                     type: string
+                  ruleset:
+                    description: |-
+                      Ruleset is the name of the linter ruleset to apply.
+                      If set, it is passed as a query parameter to the linter API.
+                    type: string
+                  url:
+                    description: |-
+                      URL is the base URL of the external linter service.
+                      When set, linting is enabled for this category.
+                    format: uri
+                    type: string
+                  whitelistedBasepaths:
+                    description: |-
+                      WhitelistedBasepaths is a list of API basepaths that are exempt from linting.
+                      APIs whose basePath matches an entry here will skip linting even when a linter URL is configured.
+                      Each entry must start with a leading slash.
+                    items:
+                      pattern: ^/
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
                 type: object
               mustHaveGroupPrefix:
                 default: true
