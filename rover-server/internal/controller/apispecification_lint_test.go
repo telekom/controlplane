@@ -45,6 +45,20 @@ var _ = Describe("Linting helpers", func() {
 			Expect(isBasepathWhitelisted(cfg, "/eni/test/v1")).To(BeFalse())
 		})
 
+		It("should match when whitelist lacks leading slash", func() {
+			cfg := &apiv1.LintingConfig{
+				WhitelistedBasepaths: []string{"phoenix/whitelist-demo-service/v1"},
+			}
+			Expect(isBasepathWhitelisted(cfg, "/phoenix/whitelist-demo-service/v1")).To(BeTrue())
+		})
+
+		It("should match when basepath lacks leading slash", func() {
+			cfg := &apiv1.LintingConfig{
+				WhitelistedBasepaths: []string{"/phoenix/whitelist-demo-service/v1"},
+			}
+			Expect(isBasepathWhitelisted(cfg, "phoenix/whitelist-demo-service/v1")).To(BeTrue())
+		})
+
 		It("should check all entries", func() {
 			cfg := &apiv1.LintingConfig{
 				WhitelistedBasepaths: []string{"/first/v1", "/second/v2", "/eni/test/v1"},

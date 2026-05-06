@@ -271,7 +271,12 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 			return a.Get(ctx, resourceId)
 		}
 		// Synchronous: lint blocks until result is available, then store once.
-		a.runSyncLint(ctx, apiSpec, lintCfg.URL, lintCfg.Ruleset, specMarshaled)
+		if err := a.runSyncLint(ctx, apiSpec, lintCfg.URL, lintCfg.Ruleset, specMarshaled); err != nil {
+			// Store the spec with the failed lint result so it's persisted,
+			// then return 500 to inform the client about the infrastructure error.
+			_ = a.Store.CreateOrReplace(ctx, apiSpec)
+			return res, problems.InternalServerError("Linting failed", err.Error())
+		}
 	}
 
 	err = a.Store.CreateOrReplace(ctx, apiSpec)

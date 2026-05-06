@@ -53,7 +53,9 @@ func isBasepathWhitelisted(lintCfg *apiv1.LintingConfig, basepath string) bool {
 
 // runSyncLint calls the external linter synchronously and sets the lint result directly on the apiSpec.
 // This ensures the lint result is included in the same store write as the spec itself.
-func (a *ApiSpecificationController) runSyncLint(ctx context.Context, apiSpec *roverv1.ApiSpecification, linterURL, ruleset string, specBytes []byte) {
+// It returns an error for infrastructure failures (e.g. linter unreachable or auth errors)
+// which should be surfaced as 500 Internal Server Error to the client.
+func (a *ApiSpecificationController) runSyncLint(ctx context.Context, apiSpec *roverv1.ApiSpecification, linterURL, ruleset string, specBytes []byte) error {
 	log := pkglog.Log.WithName("linting")
 	var opts []oaslint.ExternalLinterOption
 	if ruleset != "" {
@@ -71,7 +73,7 @@ func (a *ApiSpecificationController) runSyncLint(ctx context.Context, apiSpec *r
 			Passed:  false,
 			Message: fmt.Sprintf("linter API error: %s", err),
 		}
-		return
+		return fmt.Errorf("linter API error: %w", err)
 	}
 
 	lintResult := &roverv1.LintResult{
@@ -87,6 +89,7 @@ func (a *ApiSpecificationController) runSyncLint(ctx context.Context, apiSpec *r
 			"reason", result.Reason, "errors", result.Errors, "warnings", result.Warnings)
 	}
 	apiSpec.Spec.Lint = lintResult
+	return nil
 }
 
 // dispatchAsyncLint runs the external linter call in a background goroutine.
