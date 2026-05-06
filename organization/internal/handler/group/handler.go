@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/handler"
@@ -29,7 +28,7 @@ func (h *GroupHandler) Delete(ctx context.Context, groupObj *organizationv1.Grou
 	teams, err := GetTeamsForGroup(ctx, groupObj)
 	if err != nil {
 		groupObj.SetCondition(condition.NewBlockedCondition("Failed to get teams for group"))
-		return errors.Wrap(err, fmt.Sprintf("failed to get teams for group %s", groupObj.GetName()))
+		return fmt.Errorf("failed to get teams for group %s: %w", groupObj.GetName(), err)
 	}
 
 	k8sClient := cclient.ClientFromContextOrDie(ctx)
@@ -37,7 +36,7 @@ func (h *GroupHandler) Delete(ctx context.Context, groupObj *organizationv1.Grou
 		err = k8sClient.Delete(ctx, team)
 		if err != nil {
 			groupObj.SetCondition(condition.NewBlockedCondition("Failed to delete team"))
-			return errors.Wrap(err, fmt.Sprintf("failed to delete team %s", team.GetName()))
+			return fmt.Errorf("failed to delete team %s: %w", team.GetName(), err)
 		}
 	}
 

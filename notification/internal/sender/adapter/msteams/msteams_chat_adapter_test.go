@@ -7,12 +7,13 @@ package msteams
 import (
 	"context"
 	"encoding/json"
-	adapter2 "github.com/telekom/controlplane/notification/internal/sender/adapter"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	adapter2 "github.com/telekom/controlplane/notification/internal/sender/adapter"
 )
 
 // mockChatConfig is a test implementation of ChatConfiguration
@@ -105,7 +106,7 @@ func TestSend_Success(t *testing.T) {
 	config := &mockChatConfig{webhookURL: server.URL}
 	body := `{"text": "Test message"}`
 
-	err := adapter.Send(context.Background(), config, "", body)
+	err := adapter.Send(context.Background(), config, "", body, nil)
 	assertNoError(t, err, "Send()")
 }
 
@@ -134,7 +135,7 @@ func TestSend_ValidationErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := adapter.Send(context.Background(), tt.config, "", tt.body)
+			err := adapter.Send(context.Background(), tt.config, "", tt.body, nil)
 
 			assertError(t, err, "Send()")
 			assertErrorContains(t, err, tt.expectErr)
@@ -184,7 +185,7 @@ func TestSend_HTTPErrors(t *testing.T) {
 			config := &mockChatConfig{webhookURL: server.URL}
 			body := `{"text": "Test"}`
 
-			err := adapter.Send(context.Background(), config, "", body)
+			err := adapter.Send(context.Background(), config, "", body, nil)
 
 			assertError(t, err, "Send()")
 			assertErrorContains(t, err, tt.expectErr)
@@ -214,7 +215,7 @@ func TestSend_MSTeamsStructuredError(t *testing.T) {
 	config := &mockChatConfig{webhookURL: server.URL}
 	body := `{"invalid": "card"}`
 
-	err := adapter.Send(context.Background(), config, "", body)
+	err := adapter.Send(context.Background(), config, "", body, nil)
 
 	assertError(t, err, "Send()")
 	if err == nil {
@@ -253,7 +254,7 @@ func TestSend_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	err := adapter.Send(ctx, config, "", body)
+	err := adapter.Send(ctx, config, "", body, nil)
 
 	assertError(t, err, "Send() with cancelled context")
 	assertErrorContains(t, err, "HTTP request failed")
@@ -272,7 +273,7 @@ func TestSend_ContextTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 
-	err := adapter.Send(ctx, config, "", body)
+	err := adapter.Send(ctx, config, "", body, nil)
 
 	assertError(t, err, "Send() with timeout")
 }
@@ -293,7 +294,7 @@ func TestSend_RetryOnServerError(t *testing.T) {
 	config := &mockChatConfig{webhookURL: server.URL}
 	body := `{"text": "Test"}`
 
-	err := adapter.Send(context.Background(), config, "", body)
+	err := adapter.Send(context.Background(), config, "", body, nil)
 
 	assertNoError(t, err, "Send() after retries")
 	assertAttempts(t, attemptCount, 3, "Retry on server error")
@@ -392,7 +393,7 @@ func TestSend_RequestBodyVerification(t *testing.T) {
 	adapter := NewMsTeamsAdapter()
 	config := &mockChatConfig{webhookURL: server.URL}
 
-	err := adapter.Send(context.Background(), config, "", expectedBody)
+	err := adapter.Send(context.Background(), config, "", expectedBody, nil)
 
 	assertNoError(t, err, "Send()")
 
@@ -415,7 +416,7 @@ func TestSend_HeadersVerification(t *testing.T) {
 	config := &mockChatConfig{webhookURL: server.URL}
 	body := `{"text": "Test"}`
 
-	err := adapter.Send(context.Background(), config, "", body)
+	err := adapter.Send(context.Background(), config, "", body, nil)
 
 	assertNoError(t, err, "Send()")
 

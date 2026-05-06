@@ -39,12 +39,16 @@ type Stores struct {
 	APIExposureStore      store.ObjectStore[*apiv1.ApiExposure]
 	APICategoryStore      store.ObjectStore[*apiv1.ApiCategory]
 
+	RoadmapStore store.ObjectStore[*roverv1.Roadmap]
+
 	EventSpecificationStore store.ObjectStore[*roverv1.EventSpecification]
 	EventTypeStore          store.ObjectStore[*eventv1.EventType]
 	EventExposureStore      store.ObjectStore[*eventv1.EventExposure]
 	EventSubscriptionStore  store.ObjectStore[*eventv1.EventSubscription]
 	ZoneStore               store.ObjectStore[*adminv1.Zone]
 	EventConfigStore        store.ObjectStore[*eventv1.EventConfig]
+
+	ApiChangelogStore store.ObjectStore[*roverv1.ApiChangelog]
 }
 
 var secretsForKinds = map[string][]string{
@@ -70,6 +74,7 @@ func NewStores(ctx context.Context, cfg *rest.Config) *Stores {
 
 	s.RoverStore = NewOrDie[*roverv1.Rover](ctx, dynamicClient, roverv1.GroupVersion.WithResource("rovers"), roverv1.GroupVersion.WithKind("Rover"))
 	s.APISpecificationStore = NewOrDie[*roverv1.ApiSpecification](ctx, dynamicClient, roverv1.GroupVersion.WithResource("apispecifications"), roverv1.GroupVersion.WithKind("ApiSpecification"))
+	s.RoadmapStore = NewOrDie[*roverv1.Roadmap](ctx, dynamicClient, roverv1.GroupVersion.WithResource("roadmaps"), roverv1.GroupVersion.WithKind("Roadmap"))
 	s.APIStore = NewOrDie[*apiv1.Api](ctx, dynamicClient, apiv1.GroupVersion.WithResource("apis"), apiv1.GroupVersion.WithKind("Api"))
 	s.ApplicationStore = NewOrDie[*applicationv1.Application](ctx, dynamicClient, applicationv1.GroupVersion.WithResource("applications"), applicationv1.GroupVersion.WithKind("Application"))
 	s.APISubscriptionStore = NewOrDie[*apiv1.ApiSubscription](ctx, dynamicClient, apiv1.GroupVersion.WithResource("apisubscriptions"), apiv1.GroupVersion.WithKind("ApiSubscription"))
@@ -89,6 +94,8 @@ func NewStores(ctx context.Context, cfg *rest.Config) *Stores {
 		s.EventSubscriptionStore = noop.NewStore[*eventv1.EventSubscription](eventv1.GroupVersion.WithResource("eventsubscriptions"), eventv1.GroupVersion.WithKind("EventSubscription"))
 		s.EventConfigStore = noop.NewStore[*eventv1.EventConfig](eventv1.GroupVersion.WithResource("eventconfigs"), eventv1.GroupVersion.WithKind("EventConfig"))
 	}
+
+	s.ApiChangelogStore = NewOrDie[*roverv1.ApiChangelog](ctx, dynamicClient, roverv1.GroupVersion.WithResource("apichangelogs"), roverv1.GroupVersion.WithKind("ApiChangelog"))
 
 	s.ZoneStore = NewOrDie[*adminv1.Zone](ctx, dynamicClient, adminv1.GroupVersion.WithResource("zones"), adminv1.GroupVersion.WithKind("Zone"))
 

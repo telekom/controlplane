@@ -53,7 +53,9 @@ func main() {
 		Log:                 log.Log,
 		ApiSpecifications:   controller.NewApiSpecificationController(stores, cfg.OasLinting.ErrorMessage, cfg.OasLinting.Timeout, cfg.OasLinting.Async),
 		Rovers:              controller.NewRoverController(stores),
+		Roadmaps:            controller.NewRoadmapController(stores),
 		EventSpecifications: controller.NewEventSpecificationController(stores),
+		ApiChangelogs:       controller.NewApiChangelogController(stores),
 	}
 
 	s.RegisterRoutes(app)

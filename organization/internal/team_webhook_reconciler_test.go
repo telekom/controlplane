@@ -11,9 +11,11 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	"github.com/telekom/controlplane/common/pkg/config"
 	"github.com/telekom/controlplane/common/pkg/types"
@@ -23,10 +25,9 @@ import (
 	"github.com/telekom/controlplane/organization/internal/secret"
 	"github.com/telekom/controlplane/secret-manager/api"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
-	"k8s.io/apimachinery/pkg/api/errors"
-	_ "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var onboardingOptions = &api.OnboardingOptions{
@@ -111,7 +112,6 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 		}
 
 		BeforeAll(func() {
-
 			secretManagerMock = fake.NewMockSecretManager(GinkgoT())
 			secret.GetSecretManager = func() api.SecretManager {
 				return secretManagerMock
@@ -137,7 +137,6 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 		})
 
 		Context("Create a single team. Happy path", Ordered, func() {
-
 			var err error
 			var team *organizationv1.Team
 			var group *organizationv1.Group
@@ -153,7 +152,7 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 
 			AfterAll(func() {
 				By("Gathering references")
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Tearing down the Teams & Groups")
@@ -173,7 +172,6 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 			})
 
 			It("should be ready and all resources created", func() {
-
 				err = k8sClient.Create(ctx, group)
 				Expect(err).NotTo(HaveOccurred())
 				secretManagerMock.EXPECT().
@@ -210,7 +208,6 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 				}, timeout, interval).Should(Succeed())
 			})
 			It("should be able to rotate the secret", func() {
-
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -249,10 +246,9 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					By("Checking new token rotation notification was created")
 					g.Expect(team.Status.NotificationsRef["token-rotated"]).NotTo(BeNil())
 					g.Expect(team.Status.NotificationsRef["token-rotated"].Name).NotTo(Equal(previousTokenRotateRef.Name))
-					var tokenNotification = &notificationv1.Notification{}
+					tokenNotification := &notificationv1.Notification{}
 					g.Expect(k8sClient.Get(ctx, team.Status.NotificationsRef["token-rotated"].K8s(), tokenNotification)).NotTo(HaveOccurred())
 					g.Expect(tokenNotification.Spec.Purpose).To(Equal("token-rotated"))
-
 				}, timeout, interval).Should(Succeed())
 			})
 			It("should watch identity clients and update team token with reconciler", func() {
@@ -278,14 +274,13 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					latestTokenReference := team.Spec.TeamToken
 					compareToken(latestTokenReference, previousTokenReference, "==", "==")
 				}, timeout, interval).Should(Succeed())
-
 			})
 			It("should be updated and return sub-resources to desired state", func() {
 				Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)).ToNot(HaveOccurred())
 
 				previousTokenReference := team.Spec.TeamToken
 				By("Making undesired changes to id-c")
-				var identityClient = &identityv1.Client{}
+				identityClient := &identityv1.Client{}
 				Expect(k8sClient.Get(ctx, team.Status.IdentityClientRef.K8s(), identityClient)).ToNot(HaveOccurred())
 				identityClient.Spec = identityv1.ClientSpec{
 					Realm:        types.ObjectRefFromObject(identityClient),
@@ -332,7 +327,6 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 					latestTokenReference := team.Spec.TeamToken
 					compareToken(latestTokenReference, previousTokenReference, "==", "==")
 				}, timeout, interval).Should(Succeed())
-
 			})
 		})
 		Context("Create a single team. Unhappy path", Ordered, func() {
@@ -374,11 +368,10 @@ var _ = Describe("Team Reconciler, Group Reconciler and Team Webhook", Ordered, 
 			})
 		})
 	})
-
 })
 
-func runAndReturnForUpsertTeam() func(ctx2 context.Context, s string, s2 string, option ...api.OnboardingOption) (map[string]string, error) {
-	return func(ctx2 context.Context, s string, s2 string, option ...api.OnboardingOption) (map[string]string, error) {
+func runAndReturnForUpsertTeam() func(ctx2 context.Context, s, s2 string, option ...api.OnboardingOption) (map[string]string, error) {
+	return func(ctx2 context.Context, s, s2 string, option ...api.OnboardingOption) (map[string]string, error) {
 		for i := range option {
 			option[i](onboardingOptions)
 		}

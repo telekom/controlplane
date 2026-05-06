@@ -37,6 +37,7 @@ jobs:
       run_check_generated_files: false
       run_build_image: false
       coverage_threshold: 55
+      lint_fail_on_issues: true
 
   common-server:
     name: Common Server
@@ -83,6 +84,7 @@ jobs:
       module: approval
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
+      lint_fail_on_issues: true
 
   file-manager:
     name: File Manager
@@ -121,6 +123,7 @@ jobs:
       module: organization
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
+      lint_fail_on_issues: true
 
   admin:
     name: Admin
@@ -140,6 +143,7 @@ jobs:
       module: application
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
+      lint_fail_on_issues: true
 
   api:
     name: Api
@@ -167,7 +171,6 @@ jobs:
       name: rover-server
       module: rover-server
       run_check_generated_files: false
-      allow_tests_failure: true
       ko_build_path: "cmd/main.go"
       coverage_threshold: 41
 
@@ -199,6 +202,7 @@ jobs:
       module: notification
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
+      lint_fail_on_issues: true
 
   event:
     name: Event
@@ -208,6 +212,7 @@ jobs:
       module: event
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
+      lint_fail_on_issues: true
 
   discovery-server:
     name: Discovery Server
@@ -217,6 +222,7 @@ jobs:
       module: discovery-server
       run_check_generated_files: false
       ko_build_path: "cmd/main.go"
+      lint_fail_on_issues: true
 
   pubsub:
     name: PubSub
@@ -226,6 +232,7 @@ jobs:
       module: pubsub
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
+      lint_fail_on_issues: true
 
   projector:
     name: Projector
@@ -245,3 +252,4 @@ jobs:
       run_check_generated_files: true
       ko_build_path: "cmd/main.go"
       coverage_threshold: 66
+      lint_fail_on_issues: true

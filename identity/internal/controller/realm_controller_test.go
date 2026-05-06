@@ -16,8 +16,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	identityv1 "github.com/telekom/controlplane/identity/api/v1"
-	identityproviderModel "github.com/telekom/controlplane/identity/internal/model/identityprovider"
-	realmModel "github.com/telekom/controlplane/identity/internal/model/realm"
+	identityproviderModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/identityprovider"
+	realmModel "github.com/telekom/controlplane/identity/internal/testutil/fixtures/realm"
 )
 
 var _ = Describe("Realm Controller", func() {

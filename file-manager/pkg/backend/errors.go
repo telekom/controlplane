@@ -164,7 +164,7 @@ func IsTooManyRequestsErr(err error) bool {
 }
 
 // ErrInvalidChecksum creates a BackendError for a checksum mismatch
-func ErrInvalidChecksum(fileId string, expected, actual string) *BackendError {
+func ErrInvalidChecksum(fileId, expected, actual string) *BackendError {
 	err := fmt.Errorf("checksum mismatch for file '%s': expected %s, got %s", fileId, expected, actual)
 	return NewBackendError(fileId, err, TypeErrInvalidChecksum)
 }
@@ -182,7 +182,7 @@ func IsInvalidChecksumErr(err error) bool {
 }
 
 // ErrInvalidContentType creates a BackendError for a content type mismatch
-func ErrInvalidContentType(fileId string, expected, actual string) *BackendError {
+func ErrInvalidContentType(fileId, expected, actual string) *BackendError {
 	err := fmt.Errorf("content type mismatch for file '%s': expected %s, got %s", fileId, expected, actual)
 	return NewBackendError(fileId, err, TypeErrInvalidContentType)
 }
@@ -218,7 +218,7 @@ func IsClientInitializationErr(err error) bool {
 }
 
 // ErrUploadFailed creates a BackendError for file upload failures
-func ErrUploadFailed(fileId string, details string) *BackendError {
+func ErrUploadFailed(fileId, details string) *BackendError {
 	err := fmt.Errorf("failed to upload file '%s': %s", fileId, details)
 	return NewBackendError(fileId, err, TypeErrUploadFailed)
 }
@@ -236,7 +236,7 @@ func IsUploadFailedErr(err error) bool {
 }
 
 // ErrDownloadFailed creates a BackendError for file download failures
-func ErrDownloadFailed(fileId string, details string) *BackendError {
+func ErrDownloadFailed(fileId, details string) *BackendError {
 	err := fmt.Errorf("failed to download file '%s': %s", fileId, details)
 	return NewBackendError(fileId, err, TypeErrDownloadFailed)
 }

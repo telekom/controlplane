@@ -8,15 +8,15 @@ import (
 	"context"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Approval Webhook", func() {
-
 	Context("When creating Approval under Defaulting Webhook", func() {
 		It("Should not modify non-Auto strategy approvals", func() {
 			defaulter := ApprovalCustomDefaulter{}
@@ -67,7 +67,7 @@ var _ = Describe("Approval Webhook", func() {
 		var validator ApprovalCustomValidator
 
 		// helper to build an Approval with the given strategy, spec state, and last state
-		makeApproval := func(strategy approvalv1.ApprovalStrategy, specState approvalv1.ApprovalState, lastState approvalv1.ApprovalState, decisions []approvalv1.Decision) *approvalv1.Approval {
+		makeApproval := func(strategy approvalv1.ApprovalStrategy, specState, lastState approvalv1.ApprovalState, decisions []approvalv1.Decision) *approvalv1.Approval {
 			return &approvalv1.Approval{
 				Spec: approvalv1.ApprovalSpec{
 					Strategy:  strategy,
@@ -280,7 +280,6 @@ var _ = Describe("Approval Webhook", func() {
 	})
 
 	Context("defaultDecisionFields via Approval defaulter", func() {
-
 		It("should populate Timestamp and ResultingState on new decisions", func() {
 			defaulter := ApprovalCustomDefaulter{}
 			before := time.Now()

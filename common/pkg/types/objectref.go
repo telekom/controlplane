@@ -121,6 +121,7 @@ func (o *TypedObjectRef) Equals(other TypedNamedObject) bool {
 		o.APIVersion == other.GetAPIVersion() &&
 		o.ObjectRef.Equals(other)
 }
+
 func (o *TypedObjectRef) DeepCopy() *TypedObjectRef {
 	return &TypedObjectRef{
 		TypeMeta:  o.TypeMeta,

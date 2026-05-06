@@ -101,8 +101,10 @@ rules:
 - apiGroups:
   - rover.cp.ei.telekom.de
   resources:
+  - apichangelogs
   - apispecifications
   - eventspecifications
+  - roadmaps
   - rovers
   verbs:
   - create
@@ -115,16 +117,20 @@ rules:
 - apiGroups:
   - rover.cp.ei.telekom.de
   resources:
+  - apichangelogs/finalizers
   - apispecifications/finalizers
   - eventspecifications/finalizers
+  - roadmaps/finalizers
   - rovers/finalizers
   verbs:
   - update
 - apiGroups:
   - rover.cp.ei.telekom.de
   resources:
+  - apichangelogs/status
   - apispecifications/status
   - eventspecifications/status
+  - roadmaps/status
   - rovers/status
   verbs:
   - get

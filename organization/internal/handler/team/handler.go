@@ -8,7 +8,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
@@ -21,14 +23,11 @@ import (
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler/namespace"
 	"github.com/telekom/controlplane/organization/internal/handler/team/handler/notification_channel"
 	"github.com/telekom/controlplane/organization/internal/secret"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var _ handler.Handler[*organizationv1.Team] = &TeamHandler{}
 
-type TeamHandler struct {
-}
+type TeamHandler struct{}
 
 type order int
 
@@ -74,7 +73,7 @@ func (h *TeamHandler) CreateOrUpdate(ctx context.Context, teamObj *organizationv
 		err = internalObjHandler[i].CreateOrUpdate(ctx, teamObj)
 		if err != nil {
 			teamObj.SetCondition(condition.NewBlockedCondition(fmt.Sprintf("Failed to handle %s", internalObjHandler[i].Identifier())))
-			return errors.Wrap(err, fmt.Sprintf("failed to handle: %s", internalObjHandler[i].Identifier()))
+			return fmt.Errorf("failed to handle: %s: %w", internalObjHandler[i].Identifier(), err)
 		}
 	}
 	teamObj.SetCondition(condition.NewDoneProcessingCondition("Created Team"))
@@ -93,13 +92,13 @@ func (h *TeamHandler) Delete(ctx context.Context, teamObj *organizationv1.Team) 
 		if err != nil {
 			if !k8sErrors.IsNotFound(err) {
 				teamObj.SetCondition(condition.NewBlockedCondition(fmt.Sprintf("Failed to delete %s", internalObjHandler[i].Identifier())))
-				return errors.Wrap(err, fmt.Sprintf("failed to delete: %s", internalObjHandler[i].Identifier()))
+				return fmt.Errorf("failed to delete: %s: %w", internalObjHandler[i].Identifier(), err)
 			}
 		}
 	}
 
 	if err := secret.GetSecretManager().DeleteTeam(ctx, contextutil.EnvFromContextOrDie(ctx), teamObj.GetName()); err != nil {
-		return errors.Wrap(err, "failed to delete team secrets from secret-manager")
+		return fmt.Errorf("failed to delete team secrets from secret-manager: %w", err)
 	}
 
 	return nil

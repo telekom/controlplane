@@ -63,9 +63,9 @@ func NewNotReadyCondition(reason, message string) metav1.Condition {
 	return condition
 }
 
-func SetToUnknown(condition metav1.Condition) metav1.Condition {
-	condition.Status = metav1.ConditionUnknown
-	condition.Reason = "Unknown"
-	condition.Message = ""
-	return condition
+func SetToUnknown(cond metav1.Condition) metav1.Condition { //nolint:gocritic // hugeParam: intentional value copy for functional transformation
+	cond.Status = metav1.ConditionUnknown
+	cond.Reason = "Unknown"
+	cond.Message = ""
+	return cond
 }

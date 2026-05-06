@@ -21,8 +21,10 @@ import (
 
 const (
 	ApiSpecificationFileName   = "apiSpecification.json"
+	ApiChangelogFileName       = "changelog.json"
 	EventSpecificationFileName = "eventSpecification.json"
 	EventSubscriptionFileName  = "eventSubscription.json"
+	RoadmapFileName            = "roadmap.json"
 	OpenApiFileName            = "openapi.yaml"
 	apiSubscriptionFileName    = "apiSubscription.json"
 	apiExposureFileName        = "apiExposure.json"
@@ -104,6 +106,15 @@ func GetApiSpecification(testing ginkgo.FullGinkgoTInterface, filePath string) *
 	return &apiSpecification
 }
 
+func GetApiChangelog(testing ginkgo.FullGinkgoTInterface, filePath string) *roverv1.ApiChangelog {
+	file := data.ReadFile(testing, filePath)
+	var changelog roverv1.ApiChangelog
+	err := json.Unmarshal(file, &changelog)
+	require.NoError(testing, err)
+
+	return &changelog
+}
+
 func GetEventSpecification(testing ginkgo.FullGinkgoTInterface, filePath string) *roverv1.EventSpecification {
 	file := data.ReadFile(testing, filePath)
 	var eventSpecification roverv1.EventSpecification
@@ -111,6 +122,15 @@ func GetEventSpecification(testing ginkgo.FullGinkgoTInterface, filePath string)
 	require.NoError(testing, err)
 
 	return &eventSpecification
+}
+
+func GetRoadmap(testing ginkgo.FullGinkgoTInterface, filePath string) *roverv1.Roadmap {
+	file := data.ReadFile(testing, filePath)
+	var roadmap roverv1.Roadmap
+	err := json.Unmarshal(file, &roadmap)
+	require.NoError(testing, err)
+
+	return &roadmap
 }
 
 func GetOpenApi(testing ginkgo.FullGinkgoTInterface, filePath string) *map[string]any {

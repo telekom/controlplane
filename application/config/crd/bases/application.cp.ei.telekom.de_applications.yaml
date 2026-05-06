@@ -76,6 +76,12 @@ spec:
                   NeedsConsumer is a flag to indicate if the application needs a Gateway consumer
                   If NeedsClient is true, the consumer will be created for the client
                 type: boolean
+              rotatedSecret:
+                description: |-
+                  RotatedSecret holds the secret-manager reference to the previous (rotated) client secret
+                  during a graceful secret rotation. This field is only set by the webhook during rotation
+                  and should not be set manually.
+                type: string
               secret:
                 description: Secret is the secret used to authenticate the application
                 minLength: 1
@@ -238,6 +244,66 @@ spec:
                   required:
                   - name
                   - namespace
+                  type: object
+                type: array
+              currentExpiresAt:
+                description: |-
+                  CurrentExpiresAt indicates when the current secret will be auto-expired.
+                  Nil when secret rotation is not configured.
+                format: date-time
+                type: string
+              rotatedClientSecret:
+                description: |-
+                  RotatedClientSecret holds the secret-manager reference to the previous client secret
+                  during a graceful secret rotation grace period. Empty when no rotation is in progress.
+                type: string
+              rotatedExpiresAt:
+                description: |-
+                  RotatedExpiresAt indicates when the rotated (old) secret stops being accepted.
+                  Nil when no rotation is in progress.
+                format: date-time
+                type: string
+              sentNotifications:
+                description: |-
+                  SentNotifications tracks all reminder notifications that have been sent for
+                  this application's secret expiry, keyed by threshold. This is used to prevent
+                  duplicate notifications and to track repeat intervals.
+                items:
+                  description: SentReminder tracks a reminder that was sent for a
+                    specific threshold.
+                  properties:
+                    ref:
+                      description: Ref is the reference to the created notification
+                        or other resource.
+                      properties:
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        uid:
+                          description: |-
+                            UID is a type that holds unique ID values, including UUIDs.  Because we
+                            don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                            intent and helps make sure that UIDs and names do not get conflated.
+                          type: string
+                      required:
+                      - name
+                      - namespace
+                      type: object
+                    sentAt:
+                      description: SentAt is when this reminder was last sent for
+                        this threshold.
+                      format: date-time
+                      type: string
+                    threshold:
+                      description: |-
+                        Threshold is the key identifying which threshold triggered this reminder.
+                        It is the string representation of the Threshold.Before duration (e.g. "720h0m0s").
+                      type: string
+                  required:
+                  - ref
+                  - sentAt
+                  - threshold
                   type: object
                 type: array
             required:

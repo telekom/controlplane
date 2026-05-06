@@ -8,12 +8,13 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var _ handler.Handler[*pubsubv1.Publisher] = &PublisherHandler{}

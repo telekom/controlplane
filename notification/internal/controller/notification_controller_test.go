@@ -8,26 +8,29 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"math/rand/v2"
+
 	"github.com/onsi/gomega/gstruct"
 	"github.com/stretchr/testify/mock"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
-	commontypes "github.com/telekom/controlplane/common/pkg/types"
-	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
-	notificationconfig "github.com/telekom/controlplane/notification/internal/config"
-	mailsender "github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
-	mailsendermock "github.com/telekom/controlplane/notification/internal/sender/adapter/mail/mock"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"math/rand/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
+	commontypes "github.com/telekom/controlplane/common/pkg/types"
+	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+	notificationconfig "github.com/telekom/controlplane/notification/internal/config"
+	"github.com/telekom/controlplane/notification/internal/sender/adapter"
+	mailsender "github.com/telekom/controlplane/notification/internal/sender/adapter/mail"
+	mailsendermock "github.com/telekom/controlplane/notification/internal/sender/adapter/mail/mock"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 const (
@@ -36,7 +39,6 @@ const (
 )
 
 var _ = Describe("Notification Controller", Ordered, func() {
-
 	Context("When reconciling a resource", func() {
 		var (
 			ctx              context.Context
@@ -55,7 +57,7 @@ var _ = Describe("Notification Controller", Ordered, func() {
 
 			By("Mocking the actual email sender")
 			mockMailSender := &mailsendermock.MockEmailSender{}
-			mockMailSender.EXPECT().Send(mock.Anything, "test.from@somewhere.test", "Team Tardis", []string{"john.doe@example.com"}, "Subject: awesomeSubject\n", "Body: awesomeBody\n").Return(nil)
+			mockMailSender.EXPECT().Send(mock.Anything, "test.from@somewhere.test", "Team Tardis", []string{"john.doe@example.com"}, "Subject: awesomeSubject\n", "Body: awesomeBody\n", []adapter.Attachment(nil)).Return(nil)
 
 			mailsender.NewSMTPSender = func(config *notificationconfig.EmailAdapterConfig) mailsender.EmailSender {
 				return mockMailSender
@@ -100,7 +102,7 @@ var _ = Describe("Notification Controller", Ordered, func() {
 					Name:      notificationName,
 					Namespace: defaultNamespace,
 				}, notification)
-				g.Expect(err).To(BeNil())
+				g.Expect(err).ToNot(HaveOccurred())
 
 				g.Expect(notification.Spec.Purpose).To(Equal(purposeName))
 				g.Expect(notification.Spec.Sender.Type).To(Equal(notificationv1.SenderTypeUser))
@@ -125,12 +127,10 @@ var _ = Describe("Notification Controller", Ordered, func() {
 				g.Expect(notification.Status.States[channelMapKey].Sent).To(BeTrue())
 				g.Expect(notification.Status.States[channelMapKey].ErrorMessage).To(BeEquivalentTo("Successfully sent"))
 			}, timeout, interval).Should(Succeed())
-
 		})
 	})
 
 	Context("When reconciling a resource and some resources are missing", func() {
-
 		var (
 			ctx              context.Context
 			notificationName string
@@ -146,7 +146,6 @@ var _ = Describe("Notification Controller", Ordered, func() {
 			notificationName = randName("notif")
 			templateName = randName(notificationPurpose + "--mail")
 			channelName = randName("eni--hyperion--mail")
-
 		})
 
 		AfterEach(func() {
@@ -174,7 +173,7 @@ var _ = Describe("Notification Controller", Ordered, func() {
 					Name:      notif.Name,
 					Namespace: defaultNamespace,
 				}, notification)
-				g.Expect(err).To(BeNil())
+				g.Expect(err).ToNot(HaveOccurred())
 
 				g.Expect(notification.Spec.Purpose).To(Equal("test-purpose"))
 				g.Expect(notification.Spec.Sender.Type).To(Equal(notificationv1.SenderTypeUser))
@@ -215,7 +214,6 @@ var _ = Describe("Notification Controller", Ordered, func() {
 				g.Expect(notification.Status.States[channelMapKey].Sent).To(BeFalse())
 				g.Expect(notification.Status.States[channelMapKey].ErrorMessage).To(BeEquivalentTo(errorMessage))
 			}, timeout, interval).Should(Succeed())
-
 		})
 	})
 
@@ -404,7 +402,7 @@ var _ = Describe("Notification Controller", Ordered, func() {
 					Name:      notificationName,
 					Namespace: defaultNamespace,
 				}, notification)
-				g.Expect(err).To(BeNil())
+				g.Expect(err).ToNot(HaveOccurred())
 
 				g.Expect(notification.Spec.Purpose).To(Equal(purposeName))
 				g.Expect(notification.Spec.Sender.Type).To(Equal(notificationv1.SenderTypeUser))
@@ -446,7 +444,7 @@ var _ = Describe("Notification Controller", Ordered, func() {
 					Name:      otherNotificatioName,
 					Namespace: defaultNamespace,
 				}, notification)
-				g.Expect(err).To(BeNil())
+				g.Expect(err).ToNot(HaveOccurred())
 
 				g.Expect(notification.Spec.Purpose).To(Equal(purposeName))
 				g.Expect(notification.Spec.Sender.Type).To(Equal(notificationv1.SenderTypeUser))
@@ -512,6 +510,7 @@ func newTestNotificationTemplate(ctx context.Context, name, namespace string) *n
 	return template
 }
 
+//nolint:unparam // namespace kept as parameter for test clarity
 func newTestNotificationChannel(ctx context.Context, name, namespace string) *notificationv1.NotificationChannel {
 	fromString := "test.from@somewhere.test"
 	channel := &notificationv1.NotificationChannel{
@@ -537,6 +536,7 @@ func newTestNotificationChannel(ctx context.Context, name, namespace string) *no
 	return channel
 }
 
+//nolint:unparam // namespace kept as parameter for test clarity
 func newTestNotification(ctx context.Context, name, namespace string, opts ...NotificationOption) *notificationv1.Notification {
 	notification := &notificationv1.Notification{
 		ObjectMeta: metav1.ObjectMeta{
@@ -552,12 +552,7 @@ func newTestNotification(ctx context.Context, name, namespace string, opts ...No
 				Type: notificationv1.SenderTypeUser,
 				Name: "John Snow",
 			},
-			Channels: []commontypes.ObjectRef{
-				//{
-				//	Name:      channelName,
-				//	Namespace: "default",
-				//},
-			},
+			Channels: []commontypes.ObjectRef{},
 			Properties: runtime.RawExtension{
 				Raw: []byte(`{"subjectValue":"awesomeSubject", "bodyValue":"awesomeBody"}`),
 			},
@@ -572,7 +567,8 @@ func newTestNotification(ctx context.Context, name, namespace string, opts ...No
 	return notification
 }
 
-func withChannel(name string, namespace string) NotificationOption {
+//nolint:unparam // namespace kept as parameter for test clarity
+func withChannel(name, namespace string) NotificationOption {
 	return func(notification *notificationv1.Notification) {
 		if notification.Spec.Channels == nil {
 			notification.Spec.Channels = []commontypes.ObjectRef{}

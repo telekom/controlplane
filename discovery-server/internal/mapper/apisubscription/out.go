@@ -9,12 +9,12 @@ import (
 	"strings"
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
+
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/store"
-
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper/status"
@@ -53,7 +53,7 @@ func mapSecurity(in *apiv1.ApiSubscription, out *api.ApiSubscriptionResponse) {
 			Password: m2m.Basic.Password,
 		}
 		out.Security = api.SubscriberSecurity{}
-		_ = out.Security.FromBasicAuth(basicAuth)
+		out.Security.FromBasicAuth(basicAuth) //nolint:errcheck,gosec // union setter only fails on JSON marshal of simple struct
 		return
 	}
 
@@ -68,7 +68,7 @@ func mapSecurity(in *apiv1.ApiSubscription, out *api.ApiSubscriptionResponse) {
 		}
 
 		out.Security = api.SubscriberSecurity{}
-		_ = out.Security.FromOAuth2(oauth2)
+		out.Security.FromOAuth2(oauth2) //nolint:errcheck,gosec // union setter only fails on JSON marshal of simple struct
 		return
 	}
 
@@ -78,7 +78,7 @@ func mapSecurity(in *apiv1.ApiSubscription, out *api.ApiSubscriptionResponse) {
 			Scopes: m2m.Scopes,
 		}
 		out.Security = api.SubscriberSecurity{}
-		_ = out.Security.FromOAuth2(oauth2)
+		out.Security.FromOAuth2(oauth2) //nolint:errcheck,gosec // union setter only fails on JSON marshal of simple struct
 	}
 }
 

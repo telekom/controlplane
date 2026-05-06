@@ -5,6 +5,7 @@
 package v1
 
 import (
+	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,6 +28,11 @@ type ApplicationSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	Secret string `json:"secret"`
+	// RotatedSecret holds the secret-manager reference to the previous (rotated) client secret
+	// during a graceful secret rotation. This field is only set by the webhook during rotation
+	// and should not be set manually.
+	// +kubebuilder:validation:Optional
+	RotatedSecret string `json:"rotatedSecret,omitempty"`
 
 	// Zone is the primary zone for the application
 	// +kubebuilder:validation:Required
@@ -69,8 +75,24 @@ type ApplicationStatus struct {
 	ClientId     string             `json:"clientId"`
 	ClientSecret string             `json:"clientSecret"`
 
+	// RotatedClientSecret holds the secret-manager reference to the previous client secret
+	// during a graceful secret rotation grace period. Empty when no rotation is in progress.
+	RotatedClientSecret string `json:"rotatedClientSecret,omitempty"`
+	// RotatedExpiresAt indicates when the rotated (old) secret stops being accepted.
+	// Nil when no rotation is in progress.
+	RotatedExpiresAt *metav1.Time `json:"rotatedExpiresAt,omitempty"`
+	// CurrentExpiresAt indicates when the current secret will be auto-expired.
+	// Nil when secret rotation is not configured.
+	CurrentExpiresAt *metav1.Time `json:"currentExpiresAt,omitempty"`
+
 	Clients   []types.ObjectRef `json:"clients,omitempty"`
 	Consumers []types.ObjectRef `json:"consumers,omitempty"`
+
+	// SentNotifications tracks all reminder notifications that have been sent for
+	// this application's secret expiry, keyed by threshold. This is used to prevent
+	// duplicate notifications and to track repeat intervals.
+	// +optional
+	SentNotifications []reminder.SentReminder `json:"sentNotifications,omitempty"`
 }
 
 // +kubebuilder:object:root=true
