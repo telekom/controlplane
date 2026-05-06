@@ -2,8 +2,25 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# Pre-built NotificationTemplate CRs for email notifications (approval,
+# onboarding, secret-rotation, etc.).
+#
+# NOTE: NotificationTemplate's spec.template field (an HTML string) clashes
+# with kustomize's images transformer, which expects a Pod template at that
+# path. Do NOT include this component in overlays that use a broad `images:`
+# block — apply it separately to the target namespace instead.
+
 apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
+
+
+namespace: controlplane # Must match environment
+
+labels:
+  - includeSelectors: true
+    pairs:
+      cp.ei.telekom.de/environment: controlplane
+      app.kubernetes.io/managed-by: kustomize
 
 resources:
   - approval--subscribe--updated--decider--mail--template.yaml
@@ -13,4 +30,6 @@ resources:
   - approvalrequest--subscribe--updated--requester--mail--template.yaml
   - onboarding-template-mail.yaml
   - team-members-changed-email-template.yaml
+  - secret-rotation-completed-email-template.yaml
+  - secret-rotation-expiring-email-template.yaml
   - token-rotated-email-template.yaml

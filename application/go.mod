@@ -13,6 +13,7 @@ require (
 	github.com/telekom/controlplane/common-server v0.0.0 // indirect
 	github.com/telekom/controlplane/gateway/api v0.0.0
 	github.com/telekom/controlplane/identity/api v0.0.0
+	github.com/telekom/controlplane/notification/api v0.0.0
 	github.com/telekom/controlplane/secret-manager v0.0.0
 )
 
@@ -23,6 +24,7 @@ replace (
 	github.com/telekom/controlplane/common-server => ../common-server
 	github.com/telekom/controlplane/gateway/api => ../gateway/api
 	github.com/telekom/controlplane/identity/api => ../identity/api
+	github.com/telekom/controlplane/notification/api => ../notification/api
 	github.com/telekom/controlplane/secret-manager => ../secret-manager
 )
 

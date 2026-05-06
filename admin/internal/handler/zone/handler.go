@@ -425,6 +425,21 @@ func createIdentityRealm(ctx context.Context, handlingContext HandlingContext, i
 				Namespace: identityProvider.Namespace,
 			},
 		}
+
+		secretRotationConfig := handlingContext.Zone.Spec.IdentityProvider.SecretRotation
+		if secretRotationConfig != nil && secretRotationConfig.Enabled {
+			identityRealm.Spec.SecretRotation = &identityapi.SecretRotationConfig{
+				GracePeriod:             secretRotationConfig.GracePeriod,
+				ExpirationPeriod:        secretRotationConfig.ExpirationPeriod,
+				RemainingRotationPeriod: secretRotationConfig.ExpirationPeriod, // same as expiration to allow rotation immediately after creation if needed
+			}
+
+			handlingContext.Zone.EnableFeature(adminv1.FeatureSecretRotation)
+		} else {
+			identityRealm.Spec.SecretRotation = nil
+			handlingContext.Zone.ManageFeature(adminv1.FeatureSecretRotation, false)
+		}
+
 		return nil
 	}
 	_, err := scopedClient.CreateOrUpdate(ctx, identityRealm, mutator)

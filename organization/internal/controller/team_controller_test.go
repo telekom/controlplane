@@ -363,10 +363,14 @@ var _ = Describe("Team Controller", Ordered, func() {
 				Expect(k8sClient.Delete(ctx, gatewayConsumer)).NotTo(HaveOccurred())
 
 				By("Modifying the team status to remove refs")
-				team.Status.IdentityClientRef = nil
-				team.Status.GatewayConsumerRef = nil
-				err = k8sClient.Status().Update(ctx, team)
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					err = k8sClient.Get(ctx, client.ObjectKeyFromObject(team), team)
+					g.Expect(err).NotTo(HaveOccurred())
+					team.Status.IdentityClientRef = nil
+					team.Status.GatewayConsumerRef = nil
+					err = k8sClient.Status().Update(ctx, team)
+					g.Expect(err).NotTo(HaveOccurred())
+				}, timeout, interval).Should(Succeed())
 
 				By("By deleting the team which points to non-existing idp-c and gw-c")
 				err := k8sClient.Delete(ctx, team)
