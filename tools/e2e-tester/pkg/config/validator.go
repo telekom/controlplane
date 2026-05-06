@@ -33,7 +33,7 @@ func init() {
 
 	// Register struct-level validators
 	validate.RegisterStructValidation(validateSnapshotterConfig, SnapshotterConfig{})
-	validate.RegisterStructValidation(validateConfig, Config{})
+	validate.RegisterStructValidation(validateConfigStructureLevel, Config{})
 	validate.RegisterStructValidation(validateSuite, Suite{})
 }
 
@@ -71,9 +71,9 @@ func validateSnapshotterConfig(sl validator.StructLevel) {
 	}
 }
 
-// validateConfig performs all Config-level validations including
+// validateConfigStructureLevel performs all Config-level validations including
 // cross-reference checks and uniqueness constraints.
-func validateConfig(sl validator.StructLevel) {
+func validateConfigStructureLevel(sl validator.StructLevel) {
 	cfg, ok := sl.Current().Interface().(Config)
 	if !ok {
 		return // Shouldn't happen, but be defensive
