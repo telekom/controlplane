@@ -121,3 +121,59 @@ func TestExecutor_CreateSnapshot(t *testing.T) {
 		t.Errorf("Expected environment to be '%s', but got '%s'", environment.Name, snapshot.Output.Environment)
 	}
 }
+
+func TestExecutor_Execute_PassesEnvironmentVariables(t *testing.T) {
+	roverCtlConfig := config.RoverCtlConfig{
+		Binary: "env",
+	}
+	environment := config.Environments{
+		Name:  "test-env",
+		Token: "test-token",
+		Variables: []config.Variable{
+			{Name: "CUSTOM_VAR", Value: "custom-value"},
+		},
+	}
+
+	executor := NewExecutor(roverCtlConfig, environment)
+
+	result, err := executor.Execute(context.Background(), "", nil)
+	if err != nil {
+		t.Fatalf("Expected no error but got: %v", err)
+	}
+
+	if !strings.Contains(result.Stdout, "ROVER_TOKEN=test-token") {
+		t.Fatalf("Expected rover token in environment, got %q", result.Stdout)
+	}
+
+	if !strings.Contains(result.Stdout, "CUSTOM_VAR=custom-value") {
+		t.Fatalf("Expected custom variable in environment, got %q", result.Stdout)
+	}
+}
+
+func TestSnapshotExecutor_Execute_PassesEnvironmentVariables(t *testing.T) {
+	snapshotterConfig := config.SnapshotterConfig{
+		Binary: "env",
+	}
+	environment := config.Environments{
+		Name:  "test-env",
+		Token: "test-token",
+		Variables: []config.Variable{
+			{Name: "CUSTOM_VAR", Value: "custom-value"},
+		},
+	}
+
+	executor := NewSnapshotExecutor(snapshotterConfig, environment)
+
+	result, err := executor.Execute(context.Background(), "", nil)
+	if err != nil {
+		t.Fatalf("Expected no error but got: %v", err)
+	}
+
+	if !strings.Contains(result.Stdout, "SNAPSHOTTER_TOKEN=test-token") {
+		t.Fatalf("Expected snapshotter token in environment, got %q", result.Stdout)
+	}
+
+	if !strings.Contains(result.Stdout, "CUSTOM_VAR=custom-value") {
+		t.Fatalf("Expected custom variable in environment, got %q", result.Stdout)
+	}
+}
