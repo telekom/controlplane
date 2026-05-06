@@ -43,6 +43,8 @@ rules:
   verbs:
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - organization.cp.ei.telekom.de
