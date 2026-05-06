@@ -42,6 +42,37 @@ spec:
           spec:
             description: ApplicationSpec defines the desired state of Application
             properties:
+              externalIds:
+                description: |-
+                  ExternalIds carries business identifiers (e.g. PSI, ICTO) propagated from
+                  the owning Rover. Each entry is tagged with a scheme. Format and presence
+                  are validated per-zone via the zone's ExternalIdPolicies.
+                items:
+                  description: ExternalId is a scheme-tagged business identifier.
+                  properties:
+                    id:
+                      description: |-
+                        Id is the raw identifier value. Per-scheme format rules are applied by the
+                        zone's ExternalIdPolicies at admission time.
+                      maxLength: 128
+                      minLength: 1
+                      type: string
+                    scheme:
+                      description: Scheme names the identifier system (e.g. "psi",
+                        "icto").
+                      maxLength: 32
+                      minLength: 1
+                      pattern: ^[a-z][a-z0-9]*$
+                      type: string
+                  required:
+                  - id
+                  - scheme
+                  type: object
+                maxItems: 16
+                type: array
+                x-kubernetes-list-map-keys:
+                - scheme
+                x-kubernetes-list-type: map
               failoverZones:
                 description: FailoverZones are the zones which can be used by the
                   application in case of a failure in the primary zone

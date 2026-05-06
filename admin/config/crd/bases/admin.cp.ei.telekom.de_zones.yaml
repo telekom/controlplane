@@ -44,6 +44,49 @@ spec:
           spec:
             description: ZoneSpec defines the desired state of Zone
             properties:
+              externalIdPolicies:
+                description: |-
+                  ExternalIdPolicies configures, per identifier scheme, the format and
+                  presence requirements for externalIds on Rovers and Applications bound to
+                  this zone. Empty means no enforcement for any scheme.
+                items:
+                  description: |-
+                    ExternalIdPolicy configures validation for a single external identifier scheme
+                    on Rovers and Applications in this zone.
+                  properties:
+                    pattern:
+                      description: |-
+                        Pattern is the ECMA 262 regex the id must match. Always enforced when an
+                        externalIds entry with this scheme is present; also drives the
+                        presence-check error when Required is true.
+                      minLength: 1
+                      type: string
+                    required:
+                      default: false
+                      description: |-
+                        Required acts as a per-zone feature flag controlling whether this scheme
+                        is mandatory in this zone. When true, every Rover/Application in this
+                        zone MUST carry an externalIds entry with this scheme. The id's format
+                        is always checked against Pattern whenever an entry with this scheme is
+                        supplied, regardless of Required.
+                      type: boolean
+                    scheme:
+                      description: Scheme names the identifier system (e.g. "psi",
+                        "icto").
+                      maxLength: 32
+                      minLength: 1
+                      pattern: ^[a-z][a-z0-9]*$
+                      type: string
+                  required:
+                  - pattern
+                  - required
+                  - scheme
+                  type: object
+                maxItems: 16
+                type: array
+                x-kubernetes-list-map-keys:
+                - scheme
+                x-kubernetes-list-type: map
               gateway:
                 properties:
                   admin:

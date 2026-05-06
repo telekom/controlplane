@@ -7,6 +7,7 @@ package status
 import (
 	"context"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -19,6 +20,14 @@ import (
 	"github.com/telekom/controlplane/rover-server/pkg/store"
 	"github.com/telekom/controlplane/rover-server/test/mocks"
 )
+
+// Pin the local time zone to UTC so JSON snapshots that contain
+// metav1.Time values render consistently across developer machines
+// (which may be in any zone) and CI (UTC). Without this, snapshots
+// round-tripped through metav1.Time carry the local zone offset.
+func init() {
+	time.Local = time.UTC
+}
 
 const (
 	mockObjectStore = true

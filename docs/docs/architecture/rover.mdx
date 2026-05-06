@@ -29,6 +29,17 @@ Users interact with the Rover domain through three paths:
 - **Identity domain** — Configures authentication settings.
 - **Approval domain** — Integrates approval requirements for exposures.
 
+## External Identifiers
+
+Rover files may carry business identifiers (`psiid`, `icto`) that tie an application back to upstream inventory systems. The flow:
+
+1. The customer submits a Rover file with scalar `psiid` / `icto` fields via Rover-CTL or the Rover Server REST API.
+2. The Rover Server translates the scalars into a scheme-tagged list on the internal Rover CR (`spec.externalIds`). The customer-facing REST surface stays scalar — `externalIds` is not exposed externally.
+3. The Rover operator propagates `spec.externalIds` verbatim onto the derived Application CR during reconciliation.
+4. On read, the Rover Server projects `externalIds` back into scalar fields for the response, so round-trips look unchanged to clients.
+
+Format and presence enforcement happens in the **admission webhook** based on per-zone `ExternalIdPolicies`. Adding a new identifier scheme (e.g. `ap`) is a translation-layer change in the Rover Server plus an admin-side policy update — no CRD change required, and no existing client breaks.
+
 ## Related Pages
 
 - [User Journey: Onboarding](../user-journey/onboarding.md)

@@ -182,4 +182,27 @@ var _ = Describe("Rover Mapper", func() {
 		})
 
 	})
+
+	Context("ExternalIds translation", func() {
+		It("packs psiid + icto scalars into the internal ExternalIds list", func() {
+			input := &api.Rover{
+				Zone:  "zone",
+				Psiid: "PSI-103596",
+				Icto:  "icto-12345",
+			}
+			output := &roverv1.Rover{}
+			Expect(MapRover(input, output)).To(Succeed())
+			Expect(output.Spec.ExternalIds).To(ConsistOf(
+				roverv1.ExternalId{Scheme: "psi", Id: "PSI-103596"},
+				roverv1.ExternalId{Scheme: "icto", Id: "icto-12345"},
+			))
+		})
+
+		It("produces no ExternalIds when all scalars are empty", func() {
+			input := &api.Rover{Zone: "zone"}
+			output := &roverv1.Rover{}
+			Expect(MapRover(input, output)).To(Succeed())
+			Expect(output.Spec.ExternalIds).To(BeNil())
+		})
+	})
 })

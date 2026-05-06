@@ -104,6 +104,15 @@ func HandleApplication(ctx context.Context, c client.JanitorClient, owner *rover
 			}
 		}
 
+		if len(owner.Spec.ExternalIds) > 0 {
+			application.Spec.ExternalIds = make([]applicationv1.ExternalId, len(owner.Spec.ExternalIds))
+			for i, eid := range owner.Spec.ExternalIds {
+				application.Spec.ExternalIds[i] = applicationv1.ExternalId{Scheme: eid.Scheme, Id: eid.Id}
+			}
+		} else {
+			application.Spec.ExternalIds = nil
+		}
+
 		return nil
 	}
 
