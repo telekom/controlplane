@@ -74,7 +74,6 @@ var _ = Describe("Contextutil", func() {
 	})
 
 	Context("ReconcileHint", func() {
-
 		It("should store and retrieve the hint from context", func() {
 			ctx := context.Background()
 			hint := &ReconcileHint{}
