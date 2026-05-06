@@ -85,18 +85,14 @@ spec:
                   If set with a URL, linting is enabled for this category.
                 properties:
                   mode:
-                    allOf:
-                    - enum:
-                      - block
-                      - warn
-                    - enum:
-                      - block
-                      - warn
-                      - none
                     default: block
                     description: |-
                       Mode controls how linting failures affect API creation.
                       "block" (default) prevents Api creation on failure; "warn" allows it but surfaces issues.
+                    enum:
+                    - block
+                    - warn
+                    - none
                     type: string
                   ruleset:
                     description: |-
@@ -113,7 +109,9 @@ spec:
                     description: |-
                       WhitelistedBasepaths is a list of API basepaths that are exempt from linting.
                       APIs whose basePath matches an entry here will skip linting even when a linter URL is configured.
+                      Each entry must start with a leading slash.
                     items:
+                      pattern: ^/
                       type: string
                     type: array
                     x-kubernetes-list-type: set
