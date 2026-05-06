@@ -51,7 +51,7 @@ func main() {
 	s := server.Server{
 		Config:              cfg,
 		Log:                 log.Log,
-		ApiSpecifications:   controller.NewApiSpecificationController(stores, cfg.OasLinting.ErrorMessage, cfg.OasLinting.Timeout),
+		ApiSpecifications:   controller.NewApiSpecificationController(stores, cfg.OasLinting.ErrorMessage, cfg.OasLinting.Timeout, cfg.OasLinting.Async),
 		Rovers:              controller.NewRoverController(stores),
 		EventSpecifications: controller.NewEventSpecificationController(stores),
 	}

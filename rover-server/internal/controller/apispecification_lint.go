@@ -18,7 +18,7 @@ import (
 )
 
 // prepareLinting checks whitelists and hash dedup synchronously.
-// It returns true if an async external linter call is needed.
+// It returns true if an external linter call is needed.
 func (a *ApiSpecificationController) prepareLinting(lintCfg *apiv1.LintingConfig, apiSpec *roverv1.ApiSpecification, existing *roverv1.ApiSpecification) bool {
 	log := pkglog.Log.WithName("linting")
 
@@ -36,7 +36,7 @@ func (a *ApiSpecificationController) prepareLinting(lintCfg *apiv1.LintingConfig
 		return false
 	}
 
-	// Clear previous result — the actual call happens asynchronously.
+	// Clear previous result — the actual linter call will follow.
 	apiSpec.Spec.Lint = nil
 	return true
 }
@@ -49,6 +49,44 @@ func isBasepathWhitelisted(lintCfg *apiv1.LintingConfig, basepath string) bool {
 		}
 	}
 	return false
+}
+
+// runSyncLint calls the external linter synchronously and sets the lint result directly on the apiSpec.
+// This ensures the lint result is included in the same store write as the spec itself.
+func (a *ApiSpecificationController) runSyncLint(ctx context.Context, apiSpec *roverv1.ApiSpecification, linterURL, ruleset string, specBytes []byte) {
+	log := pkglog.Log.WithName("linting")
+	var opts []oaslint.ExternalLinterOption
+	if ruleset != "" {
+		opts = append(opts, oaslint.WithRuleset(ruleset))
+	}
+	if a.LintTimeout > 0 {
+		opts = append(opts, oaslint.WithTimeout(a.LintTimeout))
+	}
+	linter := oaslint.NewExternalLinter(linterURL, opts...)
+
+	result, err := linter.Lint(ctx, specBytes)
+	if err != nil {
+		log.Error(err, "Sync OAS linting failed", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
+		apiSpec.Spec.Lint = &roverv1.LintResult{
+			Passed:  false,
+			Message: fmt.Sprintf("linter API error: %s", err),
+		}
+		return
+	}
+
+	lintResult := &roverv1.LintResult{
+		Passed:  result.Passed,
+		Message: result.Reason,
+	}
+	if linterURL != "" && result.LinterId != "" {
+		lintResult.DashboardURL = fmt.Sprintf("%s/scans/%s", strings.TrimRight(linterURL, "/"), result.LinterId)
+	}
+	if !result.Passed {
+		lintResult.Message = strings.ReplaceAll(a.ErrorMessage, "RULESET_NAME_PLACEHOLDER", result.Ruleset)
+		log.Info("Linting failed", "namespace", apiSpec.Namespace, "name", apiSpec.Name,
+			"reason", result.Reason, "errors", result.Errors, "warnings", result.Warnings)
+	}
+	apiSpec.Spec.Lint = lintResult
 }
 
 // dispatchAsyncLint runs the external linter call in a background goroutine.

@@ -23,6 +23,7 @@ type ServerConfig struct {
 type OasLintingConfig struct {
 	ErrorMessage string        `json:"errorMessage"`
 	Timeout      time.Duration `json:"timeout"`
+	Async        bool          `json:"async"`
 }
 
 type SecurityConfig struct {
@@ -81,7 +82,8 @@ func setDefaults() {
 
 	// OAS Linting
 	viper.SetDefault("oasLinting.errorMessage", "Linter scan result contains errors. Please visit the linter UI for details on the RULESET_NAME_PLACEHOLDER ruleset.")
-	viper.SetDefault("oasLinting.timeout", 55*time.Second)
+	viper.SetDefault("oasLinting.timeout", 0) // 0 means block indefinitely until linter responds
+	viper.SetDefault("oasLinting.async", false)
 
 	// Database
 	viper.SetDefault("database.filepath", "")        // empty string means in-memory only

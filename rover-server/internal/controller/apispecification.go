@@ -50,14 +50,19 @@ type ApiSpecificationController struct {
 
 	// LintTimeout is the HTTP client timeout for external linter calls.
 	LintTimeout time.Duration
+
+	// LintAsync controls whether linting runs asynchronously (true) or synchronously (false).
+	// When false (default), linting blocks the request so a single store operation includes the result.
+	LintAsync bool
 }
 
-func NewApiSpecificationController(stores *s.Stores, errorMessage string, lintTimeout time.Duration) *ApiSpecificationController {
+func NewApiSpecificationController(stores *s.Stores, errorMessage string, lintTimeout time.Duration, lintAsync bool) *ApiSpecificationController {
 	ctrl := &ApiSpecificationController{
 		stores:       stores,
 		Store:        stores.APISpecificationStore,
 		ErrorMessage: errorMessage,
 		LintTimeout:  lintTimeout,
+		LintAsync:    lintAsync,
 	}
 	if stores.APICategoryStore != nil {
 		ctrl.ListApiCategories = func(ctx context.Context) (*apiv1.ApiCategoryList, error) {
@@ -238,29 +243,40 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 
 	// Look up the ApiCategory's linting config for this spec's category.
 	// If the category has a linter URL, proceed with linting.
-	var needsAsyncLint bool
+	var needsLint bool
 	log := logr.FromContextOrDiscard(ctx)
 	log.V(1).Info("Looking up linting config", "namespace", apiSpec.Namespace, "name", apiSpec.Name,
 		"category", apiSpec.Spec.Category, "basepath", apiSpec.Spec.BasePath)
 	lintCfg := a.lookupLintingConfig(ctx, apiSpec.Spec.Category)
-	if lintCfg != nil && lintCfg.URL != "" {
+	if lintCfg != nil && lintCfg.URL != "" && lintCfg.Mode != apiv1.LintingModeNone {
 		log.V(1).Info("Linting config found, checking whitelists and hash dedup", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
 		// Fetch existing object for hash dedup comparison.
 		existing, _ := a.Store.Get(ctx, apiSpec.Namespace, apiSpec.Name)
-		needsAsyncLint = a.prepareLinting(lintCfg, apiSpec, existing)
-		log.V(1).Info("prepareLinting completed", "namespace", apiSpec.Namespace, "name", apiSpec.Name, "needsAsyncLint", needsAsyncLint)
+		needsLint = a.prepareLinting(lintCfg, apiSpec, existing)
+		log.V(1).Info("prepareLinting completed", "namespace", apiSpec.Namespace, "name", apiSpec.Name, "needsLint", needsLint)
 	} else {
 		log.V(1).Info("No linting config or no URL, skipping linting", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
+	}
+
+	// Run linting synchronously (default) so the result is included in the single store write,
+	// or dispatch asynchronously if configured.
+	if needsLint {
+		if a.LintAsync {
+			// Store first, then lint in the background and patch afterwards.
+			err = a.Store.CreateOrReplace(ctx, apiSpec)
+			if err != nil {
+				return res, err
+			}
+			a.dispatchAsyncLint(ctx, apiSpec.Namespace, apiSpec.Name, lintCfg.URL, lintCfg.Ruleset, specMarshaled)
+			return a.Get(ctx, resourceId)
+		}
+		// Synchronous: lint blocks until result is available, then store once.
+		a.runSyncLint(ctx, apiSpec, lintCfg.URL, lintCfg.Ruleset, specMarshaled)
 	}
 
 	err = a.Store.CreateOrReplace(ctx, apiSpec)
 	if err != nil {
 		return res, err
-	}
-
-	// Dispatch async linting if needed. The background goroutine will update the CRD spec.
-	if needsAsyncLint {
-		a.dispatchAsyncLint(ctx, apiSpec.Namespace, apiSpec.Name, lintCfg.URL, lintCfg.Ruleset, specMarshaled)
 	}
 
 	return a.Get(ctx, resourceId)
