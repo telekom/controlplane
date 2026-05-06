@@ -164,6 +164,7 @@
   },
   "type": "object",
   "required": [
+    "snapshotter",
     "roverctl",
     "environments",
     "suites"
