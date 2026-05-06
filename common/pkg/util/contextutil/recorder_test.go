@@ -7,15 +7,14 @@ package contextutil
 import (
 	"context"
 
+	"github.com/telekom/controlplane/common/pkg/test/mock"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/telekom/controlplane/common/pkg/test/mock"
 )
 
 var _ = Describe("Recorder", func() {
-
 	Context("Env", func() {
-
 		It("should manage the recorder in the context", func() {
 			ctx := context.Background()
 
@@ -37,6 +36,5 @@ var _ = Describe("Recorder", func() {
 				RecorderFromContextOrDie(ctx)
 			}).To(Panic())
 		})
-
 	})
 })

@@ -9,15 +9,15 @@ import (
 	"encoding/json"
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
+
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/store"
-	eventv1 "github.com/telekom/controlplane/event/api/v1"
-
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper/status"
 	sstore "github.com/telekom/controlplane/discovery-server/pkg/store"
+	eventv1 "github.com/telekom/controlplane/event/api/v1"
 )
 
 // MapResponse maps an EventSubscription CRD to an EventSubscriptionResponse,

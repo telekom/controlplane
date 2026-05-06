@@ -27,7 +27,7 @@ func main() {
 			log.Printf("CRD file(s) not found: %s", path)
 			continue
 		}
-		cmd := exec.Command("kubectl", "apply", "-f", path)
+		cmd := exec.Command("kubectl", "apply", "-f", path) //nolint:gosec // G204: arguments are constructed from known file paths, not user input
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			log.Fatal(err)

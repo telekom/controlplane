@@ -7,19 +7,19 @@ package controller
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	publisherhandler "github.com/telekom/controlplane/pubsub/internal/handler/publisher"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Publisher Controller", func() {

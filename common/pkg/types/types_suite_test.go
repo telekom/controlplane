@@ -13,8 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
-
-	crscheme "sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
 func TestTypes(t *testing.T) {
@@ -60,9 +58,9 @@ var _ = Describe("ObjectRef", func() {
 			obj := unstructured.Unstructured{}
 			obj.SetName("test")
 			obj.SetNamespace("test")
-			ref := ObjectRefFromObject(&obj)
-			Expect(ref.Name).To(Equal("test"))
-			Expect(ref.Namespace).To(Equal("test"))
+			newRef := ObjectRefFromObject(&obj)
+			Expect(newRef.Name).To(Equal("test"))
+			Expect(newRef.Namespace).To(Equal("test"))
 		})
 
 		It("should successfully compare", func() {
@@ -137,20 +135,18 @@ var _ = Describe("ObjectRef", func() {
 				Kind:    "Object",
 			})
 
-			err := (&crscheme.Builder{
-				GroupVersion: schema.GroupVersion{
-					Group:   "testgroup.cp.ei.telekom.de",
-					Version: "v1",
-				},
-			}).Register(&unstructured.Unstructured{}, &unstructured.UnstructuredList{}).AddToScheme(scheme.Scheme)
+			gv := schema.GroupVersion{
+				Group:   "testgroup.cp.ei.telekom.de",
+				Version: "v1",
+			}
+			scheme.Scheme.AddKnownTypes(gv, &unstructured.Unstructured{}, &unstructured.UnstructuredList{})
+			metav1.AddToGroupVersion(scheme.Scheme, gv)
 
-			Expect(err).ToNot(HaveOccurred())
-
-			ref := TypedObjectRefFromObject(&obj, scheme.Scheme)
-			Expect(ref.Name).To(Equal("test"))
-			Expect(ref.Namespace).To(Equal("test"))
-			Expect(ref.Kind).To(Equal("Object"))
-			Expect(ref.APIVersion).To(Equal("testgroup.cp.ei.telekom.de/v1"))
+			newRef := TypedObjectRefFromObject(&obj, scheme.Scheme)
+			Expect(newRef.Name).To(Equal("test"))
+			Expect(newRef.Namespace).To(Equal("test"))
+			Expect(newRef.Kind).To(Equal("Object"))
+			Expect(newRef.APIVersion).To(Equal("testgroup.cp.ei.telekom.de/v1"))
 		})
 
 		It("should successfully compare", func() {

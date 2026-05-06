@@ -7,9 +7,9 @@ package condition
 import (
 	"fmt"
 
-	"github.com/telekom/controlplane/common/pkg/types"
-
 	"k8s.io/apimachinery/pkg/api/meta"
+
+	"github.com/telekom/controlplane/common/pkg/types"
 )
 
 // EnsureReady returns an error if the provided obj is not ready
