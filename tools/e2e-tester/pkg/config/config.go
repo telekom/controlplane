@@ -6,6 +6,7 @@ package config
 
 import (
 	"fmt"
+	"path"
 	"strings"
 	"time"
 
@@ -13,33 +14,102 @@ import (
 	"go.uber.org/zap"
 )
 
+// RunPolicy defines how a test case behaves relative to prior test failures.
+type RunPolicy string
+
+const (
+	// RunPolicyRunOnSuccess - test runs when prior tests passed, skipped when prior failed.
+	RunPolicyRunOnSuccess RunPolicy = "RunOnSuccess"
+
+	// RunPolicyFailFast - test runs when prior passed, aborts suite on ERROR status.
+	RunPolicyFailFast RunPolicy = "FailFast"
+
+	// RunPolicyAlways - test always runs regardless of prior failures (for cleanup).
+	RunPolicyAlways RunPolicy = "Always"
+)
+
+// ValidRunPolicies contains all valid RunPolicy values for validation.
+var ValidRunPolicies = []RunPolicy{RunPolicyRunOnSuccess, RunPolicyFailFast, RunPolicyAlways}
+
+// IsValid checks if a RunPolicy value is valid (case-insensitive).
+func (p RunPolicy) IsValid() bool {
+	for _, valid := range ValidRunPolicies {
+		if strings.EqualFold(string(p), string(valid)) {
+			return true
+		}
+	}
+	return false
+}
+
+// Normalize returns the canonical PascalCase form of the policy.
+// Returns the input unchanged if it doesn't match any valid policy.
+func (p RunPolicy) Normalize() RunPolicy {
+	for _, valid := range ValidRunPolicies {
+		if strings.EqualFold(string(p), string(valid)) {
+			return valid
+		}
+	}
+	return p
+}
+
 type Case struct {
-	Name        string         `mapstructure:"name"`
-	Description string         `mapstructure:"description"` // Optional description of the test case purpose
-	Type        string         `mapstructure:"type"`        // Command type: "roverctl" (default) or "snapshot"
-	MustPass    bool           `mapstructure:"must_pass"`
-	Command     string         `mapstructure:"command"`
+	Name        string         `mapstructure:"name" validate:"required"`
+	Description string         `mapstructure:"description"`                                       // Optional description of the test case purpose
+	Type        string         `mapstructure:"type" validate:"omitempty,oneof=roverctl snapshot"` // Command type: "roverctl" (default) or "snapshot"
+	RunPolicy   RunPolicy      `mapstructure:"run_policy" validate:"omitempty,run_policy"`        // Execution policy: "RunOnSuccess" (default), "FailFast", "Always" (case-insensitive)
+	Command     string         `mapstructure:"command" validate:"required"`
 	Compare     bool           `mapstructure:"compare"`
-	Environment string         `mapstructure:"environment"` // Optional environment to run this case in
-	Params      map[string]any `mapstructure:"params"`      // Optional type-specific parameters for future extensibility
-	WaitBefore  time.Duration  `mapstructure:"wait_before"` // Optional wait time before executing the case
-	WaitAfter   time.Duration  `mapstructure:"wait_after"`  // Optional wait time after executing the case
-	Selector    string         `mapstructure:"selector"`    // YAML path selector for output processing
+	Environment string         `mapstructure:"environment"`                            // Optional environment to run this case in
+	Params      map[string]any `mapstructure:"params"`                                 // Optional type-specific parameters for future extensibility
+	WaitBefore  time.Duration  `mapstructure:"wait_before" validate:"omitempty,gte=0"` // Optional wait time before executing the case
+	WaitAfter   time.Duration  `mapstructure:"wait_after" validate:"omitempty,gte=0"`  // Optional wait time after executing the case
+	Selector    string         `mapstructure:"selector"`                               // YAML path selector for output processing
+}
+
+// GetRunPolicy returns the effective run policy, defaulting to RunOnSuccess if not set.
+// The returned value is always normalized to canonical PascalCase.
+func (c *Case) GetRunPolicy() RunPolicy {
+	if c.RunPolicy == "" {
+		return RunPolicyRunOnSuccess
+	}
+	return c.RunPolicy.Normalize()
+}
+
+// IsCritical returns true if this case should abort the suite on ERROR.
+func (c *Case) IsCritical() bool {
+	return c.GetRunPolicy() == RunPolicyFailFast
+}
+
+// ShouldAlwaysRun returns true if this case should run regardless of prior failures.
+func (c *Case) ShouldAlwaysRun() bool {
+	return c.GetRunPolicy() == RunPolicyAlways
+}
+
+// +schema:inline
+// SuiteContent represents the content of a test suite and is only used for schema generation
+type SuiteContent struct {
+	Description  string   `mapstructure:"description"`
+	Cases        []*Case  `mapstructure:"cases" validate:"required,min=1,dive,required"`
+	Environments []string `mapstructure:"environments"`
 }
 
 type Suite struct {
-	Name         string   `mapstructure:"name"`
+	Name         string   `mapstructure:"name" validate:"required"`
+	Filepath     string   `mapstructure:"filepath"`    // The path to the file where the suite is defined. Mutually exclusive with all other fields
 	Description  string   `mapstructure:"description"` // Optional description of the test suite purpose
-	Cases        []*Case  `mapstructure:"cases"`
+	Cases        []*Case  `mapstructure:"cases" validate:"omitempty,dive"`
 	Environments []string `mapstructure:"environments"`  // Required list of environments to run this suite in
 	SnapshotsDir string   `mapstructure:"snapshots_dir"` // Optional per-suite snapshot directory
 }
 
+// DeepCopy creates a deep copy of the Suite.
 func (s *Suite) DeepCopy() *Suite {
 	newCases := make([]*Case, len(s.Cases))
 	for i, c := range s.Cases {
-		newCase := *c
-		newCases[i] = &newCase
+		if c != nil {
+			newCase := *c
+			newCases[i] = &newCase
+		}
 	}
 
 	newEnvs := make([]string, len(s.Environments))
@@ -65,48 +135,89 @@ func (s Suite) GetName() string {
 	return s.Name
 }
 
+// IsExternal checks if the suite is defined in an external file
+func (s Suite) IsExternal() bool {
+	return s.Filepath != ""
+}
+
+// Load loads the suite from an external file if applicable
+func (s *Suite) Load(configDir string) error {
+	if !s.IsExternal() {
+		return nil
+	}
+	originalName := s.Name
+
+	filepath := s.Filepath
+	if !path.IsAbs(filepath) {
+		filepath = path.Join(configDir, s.Filepath)
+	}
+
+	zap.L().Info("Loading external suite", zap.String("file", filepath))
+	v := viper.New()
+	v.SetConfigFile(filepath)
+
+	if err := v.ReadInConfig(); err != nil {
+		return fmt.Errorf("failed to read suite file %s: %w", s.Filepath, err)
+	}
+
+	zap.L().Info("Suite file loaded", zap.String("file", v.ConfigFileUsed()))
+
+	if err := v.Unmarshal(&s); err != nil {
+		return fmt.Errorf("failed to unmarshal suite file %s: %w", s.Filepath, err)
+	}
+
+	// Restore name from root config (authoritative)
+	s.Name = originalName
+
+	// Clear the filepath after loading
+	s.Filepath = ""
+
+	return nil
+}
+
 type SnapshotterConfig struct {
-	URL    string `mapstructure:"url"`
+	URL    string `mapstructure:"url" validate:"omitempty,url"`
 	Binary string `mapstructure:"binary"`
 }
 
 type RoverCtlConfig struct {
-	DownloadURL string `mapstructure:"download_url"`
-	Binary      string `mapstructure:"binary"`
+	DownloadURL string `mapstructure:"download_url" validate:"omitempty,url"`
+	Binary      string `mapstructure:"binary" validate:"required"`
+}
+
+type Variable struct {
+	Name  string `mapstructure:"name" validate:"required"`
+	Value string `mapstructure:"value" validate:"required"`
 }
 
 type Environments struct {
-	Name  string `mapstructure:"name"`
-	Token string `mapstructure:"token"`
+	Name      string     `mapstructure:"name" validate:"required"`
+	Token     string     `mapstructure:"token" validate:"required"`
+	Variables []Variable `mapstructure:"variables" validate:"omitempty,dive"`
 }
 
+// +schema:inline
 type Config struct {
 	Snapshotter  SnapshotterConfig `mapstructure:"snapshotter"`
-	RoverCtl     RoverCtlConfig    `mapstructure:"roverctl"`
-	Environments []Environments    `mapstructure:"environments"`
-	Suites       []Suite           `mapstructure:"suites"`
+	RoverCtl     RoverCtlConfig    `mapstructure:"roverctl" validate:"required"`
+	Environments []Environments    `mapstructure:"environments" validate:"required,min=1,dive"`
+	Suites       []Suite           `mapstructure:"suites" validate:"required,min=1,dive"`
 	Verbose      bool              `mapstructure:"verbose"`
 }
 
-// Validate checks if the config is valid
+// Validate checks if the config is valid using struct validation tags
 func (c *Config) Validate() error {
-	// Validate suites
-	if len(c.Suites) == 0 {
-		return fmt.Errorf("at least one suite must be specified")
-	}
+	return ValidateConfig(c)
+}
 
-	// Validate environments
-	if len(c.Environments) == 0 {
-		return fmt.Errorf("at least one environment must be specified")
-	}
-
-	// Ensure at least one case per suite and at least one environment per suite
-	for _, suite := range c.Suites {
-		if len(suite.Cases) == 0 {
-			return fmt.Errorf("suite %s must have at least one case", suite.Name)
+func (c *Config) LoadExternalSuites(configDir string) error {
+	for i := range c.Suites {
+		if c.Suites[i].IsExternal() {
+			if err := c.Suites[i].Load(configDir); err != nil {
+				return err
+			}
 		}
 	}
-
 	return nil
 }
 
