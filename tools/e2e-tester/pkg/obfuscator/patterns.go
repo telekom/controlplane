@@ -57,9 +57,15 @@ var (
 			Replace: "trd_OBFUSCATED",
 		},
 
+		// YAML-style uid field: uid: <value>
 		{
-			Pattern: "uid.*",
-			Replace: "uid_OBFUSCATED",
+			Pattern: `\buid:\s*\S+`,
+			Replace: "uid: uid_OBFUSCATED",
+		},
+		// JSON-style uid field: "uid": "<value>"
+		{
+			Pattern: `"uid"\s*:\s*"[^"]*"`,
+			Replace: `"uid":"uid_OBFUSCATED"`,
 		},
 		{
 			Pattern: "traceId.*",
