@@ -41,7 +41,7 @@ type LintingConfig struct {
 
 	// Mode controls how linting failures affect API creation.
 	// "block" (default) prevents Api creation on failure; "warn" allows it but surfaces issues.
-	// +kubebuilder:validation:Enum=block;warn
+	// +kubebuilder:validation:Enum=block;warn;none
 	// +kubebuilder:default:=block
 	// +optional
 	Mode LintingMode `json:"mode,omitempty"`

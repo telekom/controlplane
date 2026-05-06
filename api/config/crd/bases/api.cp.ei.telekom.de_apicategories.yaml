@@ -92,6 +92,7 @@ spec:
                     - enum:
                       - block
                       - warn
+                      - none
                     default: block
                     description: |-
                       Mode controls how linting failures affect API creation.
