@@ -76,19 +76,11 @@ func (a *ApiSpecificationController) runSyncLint(ctx context.Context, apiSpec *r
 		return fmt.Errorf("linter API error: %w", err)
 	}
 
-	lintResult := &roverv1.LintResult{
-		Passed:  result.Passed,
-		Message: result.Reason,
-	}
-	if linterURL != "" && result.LinterId != "" {
-		lintResult.DashboardURL = fmt.Sprintf("%s/scans/%s", strings.TrimRight(linterURL, "/"), result.LinterId)
-	}
+	apiSpec.Spec.Lint = a.buildLintResult(result, linterURL)
 	if !result.Passed {
-		lintResult.Message = strings.ReplaceAll(a.ErrorMessage, "RULESET_NAME_PLACEHOLDER", result.Ruleset)
 		log.Info("Linting failed", "namespace", apiSpec.Namespace, "name", apiSpec.Name,
 			"reason", result.Reason, "errors", result.Errors, "warnings", result.Warnings)
 	}
-	apiSpec.Spec.Lint = lintResult
 	return nil
 }
 
@@ -110,33 +102,38 @@ func (a *ApiSpecificationController) dispatchAsyncLint(ctx context.Context, ns, 
 		result, err := linter.Lint(bgCtx, specBytes)
 		if err != nil {
 			log.Error(err, "Async OAS linting failed", "namespace", ns, "name", name)
-			a.updateLintResult(bgCtx, ns, name, linterURL, &oaslint.LintResult{
+			result = &oaslint.LintResult{
 				Passed: false,
 				Reason: fmt.Sprintf("linter API error: %s", err),
-			})
-			return
+			}
 		}
 
-		a.updateLintResult(bgCtx, ns, name, linterURL, result)
+		a.patchLintResult(bgCtx, ns, name, linterURL, result)
 	}()
 }
 
-// updateLintResult patches the ApiSpecification's Spec.Lint field with the linting result.
-func (a *ApiSpecificationController) updateLintResult(ctx context.Context, ns, name, linterURL string, result *oaslint.LintResult) {
-	log := logr.FromContextOrDiscard(ctx).WithName("linting")
-
+// buildLintResult maps an oaslint.LintResult to the CRD's roverv1.LintResult,
+// including dashboard URL and error message template substitution.
+func (a *ApiSpecificationController) buildLintResult(result *oaslint.LintResult, linterURL string) *roverv1.LintResult {
 	lintResult := &roverv1.LintResult{
 		Passed:  result.Passed,
 		Message: result.Reason,
 	}
-
-	// Build the linter dashboard URL from the linter-api base URL and the scan ID.
 	if linterURL != "" && result.LinterId != "" {
 		lintResult.DashboardURL = fmt.Sprintf("%s/scans/%s", strings.TrimRight(linterURL, "/"), result.LinterId)
 	}
-
 	if !result.Passed {
 		lintResult.Message = strings.ReplaceAll(a.ErrorMessage, "RULESET_NAME_PLACEHOLDER", result.Ruleset)
+	}
+	return lintResult
+}
+
+// patchLintResult patches the ApiSpecification's Spec.Lint field with the linting result.
+func (a *ApiSpecificationController) patchLintResult(ctx context.Context, ns, name, linterURL string, result *oaslint.LintResult) {
+	log := logr.FromContextOrDiscard(ctx).WithName("linting")
+
+	lintResult := a.buildLintResult(result, linterURL)
+	if !result.Passed {
 		log.Info("Linting failed", "namespace", ns, "name", name,
 			"reason", result.Reason, "errors", result.Errors, "warnings", result.Warnings)
 	}
@@ -150,37 +147,17 @@ func (a *ApiSpecificationController) updateLintResult(ctx context.Context, ns, n
 	}
 }
 
-// lookupLintingConfig finds the linting configuration from the ApiCategory matching the given category.
+// lintingConfigFromList finds the linting configuration from a pre-fetched ApiCategoryList.
 // Returns nil if no linting is configured for this category.
-func (a *ApiSpecificationController) lookupLintingConfig(ctx context.Context, category string) *apiv1.LintingConfig {
-	log := logr.FromContextOrDiscard(ctx).WithName("linting")
-
-	if a.ListApiCategories == nil {
-		log.V(1).Info("ListApiCategories is nil, skipping linting lookup", "category", category)
+func lintingConfigFromList(categoryList *apiv1.ApiCategoryList, category string) *apiv1.LintingConfig {
+	if categoryList == nil {
 		return nil
 	}
-
-	categoryList, err := a.ListApiCategories(ctx)
-	if err != nil {
-		log.Error(err, "Failed to list ApiCategories for linting lookup")
-		return nil
-	}
-
-	log.V(1).Info("Looking up linting config", "category", category, "categoryCount", len(categoryList.Items))
 
 	found, ok := categoryList.FindByLabelValue(category)
 	if !ok {
-		log.V(1).Info("Category not found in ApiCategory list", "category", category)
 		return nil
 	}
 
-	if found.Spec.Linting == nil {
-		log.V(1).Info("Category found but has no linting config", "category", category)
-		return nil
-	}
-
-	log.V(1).Info("Linting config resolved", "category", category,
-		"url", found.Spec.Linting.URL, "ruleset", found.Spec.Linting.Ruleset,
-		"mode", found.Spec.Linting.Mode, "whitelistedBasepaths", found.Spec.Linting.WhitelistedBasepaths)
 	return found.Spec.Linting
 }

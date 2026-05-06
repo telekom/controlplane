@@ -5,9 +5,6 @@
 package controller
 
 import (
-	"context"
-	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
@@ -134,74 +131,51 @@ var _ = Describe("Linting helpers", func() {
 		})
 	})
 
-	Describe("lookupLintingConfig", func() {
-		It("should return nil when ListApiCategories is nil", func() {
-			ctrl := &ApiSpecificationController{}
-			result := ctrl.lookupLintingConfig(context.Background(), "some-cat")
+	Describe("lintingConfigFromList", func() {
+		It("should return nil when categoryList is nil", func() {
+			result := lintingConfigFromList(nil, "some-cat")
 			Expect(result).To(BeNil())
 		})
 
 		It("should return nil when category is not found", func() {
-			ctrl := &ApiSpecificationController{
-				ListApiCategories: func(_ context.Context) (*apiv1.ApiCategoryList, error) {
-					return &apiv1.ApiCategoryList{Items: []apiv1.ApiCategory{}}, nil
-				},
-			}
-			result := ctrl.lookupLintingConfig(context.Background(), "nonexistent")
+			list := &apiv1.ApiCategoryList{Items: []apiv1.ApiCategory{}}
+			result := lintingConfigFromList(list, "nonexistent")
 			Expect(result).To(BeNil())
 		})
 
 		It("should return linting config from matching category", func() {
-			ctrl := &ApiSpecificationController{
-				ListApiCategories: func(_ context.Context) (*apiv1.ApiCategoryList, error) {
-					return &apiv1.ApiCategoryList{
-						Items: []apiv1.ApiCategory{
-							{
-								ObjectMeta: metav1.ObjectMeta{Name: "my-cat"},
-								Spec: apiv1.ApiCategorySpec{
-									LabelValue: "my-cat",
-									Linting: &apiv1.LintingConfig{
-										URL:  "https://linter.example.com",
-										Mode: apiv1.LintingModeWarn,
-									},
-								},
+			list := &apiv1.ApiCategoryList{
+				Items: []apiv1.ApiCategory{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "my-cat"},
+						Spec: apiv1.ApiCategorySpec{
+							LabelValue: "my-cat",
+							Linting: &apiv1.LintingConfig{
+								URL:  "https://linter.example.com",
+								Mode: apiv1.LintingModeWarn,
 							},
 						},
-					}, nil
+					},
 				},
 			}
-			result := ctrl.lookupLintingConfig(context.Background(), "my-cat")
+			result := lintingConfigFromList(list, "my-cat")
 			Expect(result).ToNot(BeNil())
 			Expect(result.URL).To(Equal("https://linter.example.com"))
 			Expect(result.Mode).To(Equal(apiv1.LintingModeWarn))
 		})
 
 		It("should return nil when category has no linting config", func() {
-			ctrl := &ApiSpecificationController{
-				ListApiCategories: func(_ context.Context) (*apiv1.ApiCategoryList, error) {
-					return &apiv1.ApiCategoryList{
-						Items: []apiv1.ApiCategory{
-							{
-								ObjectMeta: metav1.ObjectMeta{Name: "no-lint-cat"},
-								Spec: apiv1.ApiCategorySpec{
-									LabelValue: "no-lint-cat",
-								},
-							},
+			list := &apiv1.ApiCategoryList{
+				Items: []apiv1.ApiCategory{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "no-lint-cat"},
+						Spec: apiv1.ApiCategorySpec{
+							LabelValue: "no-lint-cat",
 						},
-					}, nil
+					},
 				},
 			}
-			result := ctrl.lookupLintingConfig(context.Background(), "no-lint-cat")
-			Expect(result).To(BeNil())
-		})
-
-		It("should return nil when ListApiCategories returns error", func() {
-			ctrl := &ApiSpecificationController{
-				ListApiCategories: func(_ context.Context) (*apiv1.ApiCategoryList, error) {
-					return nil, fmt.Errorf("store error")
-				},
-			}
-			result := ctrl.lookupLintingConfig(context.Background(), "some-cat")
+			result := lintingConfigFromList(list, "no-lint-cat")
 			Expect(result).To(BeNil())
 		})
 	})

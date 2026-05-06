@@ -225,8 +225,11 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 		return res, err
 	}
 
+	// Fetch the ApiCategory list once for both validation and linting config lookup.
+	categoryList := a.fetchApiCategories(ctx)
+
 	// Validate the API category against the known ApiCategories.
-	if catErr := a.validateApiCategory(ctx, apiSpec.Spec.Category); catErr != nil {
+	if catErr := a.validateApiCategoryFromList(categoryList, apiSpec.Spec.Category); catErr != nil {
 		return res, catErr
 	}
 
@@ -247,7 +250,7 @@ func (a *ApiSpecificationController) Update(ctx context.Context, resourceId stri
 	log := logr.FromContextOrDiscard(ctx)
 	log.V(1).Info("Looking up linting config", "namespace", apiSpec.Namespace, "name", apiSpec.Name,
 		"category", apiSpec.Spec.Category, "basepath", apiSpec.Spec.BasePath)
-	lintCfg := a.lookupLintingConfig(ctx, apiSpec.Spec.Category)
+	lintCfg := lintingConfigFromList(categoryList, apiSpec.Spec.Category)
 	if lintCfg != nil && lintCfg.URL != "" && lintCfg.Mode != apiv1.LintingModeNone {
 		log.V(1).Info("Linting config found, checking whitelists and hash dedup", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
 		// Fetch existing object for hash dedup comparison.
@@ -306,22 +309,29 @@ func (a *ApiSpecificationController) GetStatus(ctx context.Context, resourceId s
 	return status.MapAPISpecificationResponse(ctx, apiSpec, a.stores)
 }
 
-// validateApiCategory validates that the given category is a known and active ApiCategory.
-// If ListApiCategories is nil, validation is skipped.
-func (a *ApiSpecificationController) validateApiCategory(ctx context.Context, category string) error {
+// fetchApiCategories fetches all ApiCategories. Returns nil if the store is not configured.
+func (a *ApiSpecificationController) fetchApiCategories(ctx context.Context) *apiv1.ApiCategoryList {
 	if a.ListApiCategories == nil {
 		return nil
 	}
-
-	apiCategoryList, err := a.ListApiCategories(ctx)
+	list, err := a.ListApiCategories(ctx)
 	if err != nil {
-		logr.FromContextOrDiscard(ctx).Info("Failed to list ApiCategories for validation", "error", err)
+		logr.FromContextOrDiscard(ctx).Info("Failed to list ApiCategories", "error", err)
+		return nil
+	}
+	return list
+}
+
+// validateApiCategoryFromList validates that the given category is a known and active ApiCategory
+// using a pre-fetched list. If the list is nil, validation is skipped.
+func (a *ApiSpecificationController) validateApiCategoryFromList(categoryList *apiv1.ApiCategoryList, category string) error {
+	if categoryList == nil {
 		return nil
 	}
 
-	found, ok := apiCategoryList.FindByLabelValue(category)
+	found, ok := categoryList.FindByLabelValue(category)
 	if !ok {
-		allowedLabels := strings.Join(apiCategoryList.AllowedLabelValues(), ", ")
+		allowedLabels := strings.Join(categoryList.AllowedLabelValues(), ", ")
 		return problems.BadRequest(
 			fmt.Sprintf("ApiCategory %q not found. Allowed values are: [%s]", category, allowedLabels))
 	}
