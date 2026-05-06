@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -21,7 +22,6 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	crscheme "sigs.k8s.io/controller-runtime/pkg/scheme"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 	"github.com/telekom/controlplane/approval/internal/config"
@@ -66,12 +66,12 @@ var _ = BeforeSuite(func() {
 
 	ctx, cancel = context.WithCancel(context.TODO())
 
-	err = (&crscheme.Builder{
-		GroupVersion: schema.GroupVersion{
-			Group:   "testgroup.cp.ei.telekom.de",
-			Version: "v1",
-		},
-	}).Register(&test.TestResource{}, &test.TestResourceList{}).AddToScheme(scheme.Scheme)
+	gv := schema.GroupVersion{
+		Group:   "testgroup.cp.ei.telekom.de",
+		Version: "v1",
+	}
+	scheme.Scheme.AddKnownTypes(gv, &test.TestResource{}, &test.TestResourceList{})
+	metav1.AddToGroupVersion(scheme.Scheme, gv)
 
 	Expect(err).NotTo(HaveOccurred())
 

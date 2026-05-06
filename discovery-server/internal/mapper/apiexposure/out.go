@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
-
 	"github.com/telekom/controlplane/discovery-server/internal/api"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper"
 	"github.com/telekom/controlplane/discovery-server/internal/mapper/status"
@@ -75,7 +74,7 @@ func mapSecurity(in *apiv1.ApiExposure, out *api.ApiExposureResponse) {
 			Password: m2m.Basic.Password,
 		}
 		out.Security = api.SubscriberSecurity{}
-		_ = out.Security.FromBasicAuth(basicAuth)
+		out.Security.FromBasicAuth(basicAuth) //nolint:errcheck,gosec // union setter only fails on JSON marshal of simple struct
 		return
 	}
 
@@ -101,7 +100,7 @@ func mapSecurity(in *apiv1.ApiExposure, out *api.ApiExposureResponse) {
 		}
 
 		out.Security = api.SubscriberSecurity{}
-		_ = out.Security.FromOAuth2(oauth2)
+		out.Security.FromOAuth2(oauth2) //nolint:errcheck,gosec // union setter only fails on JSON marshal of simple struct
 		return
 	}
 
@@ -111,7 +110,7 @@ func mapSecurity(in *apiv1.ApiExposure, out *api.ApiExposureResponse) {
 			Scopes: m2m.Scopes,
 		}
 		out.Security = api.SubscriberSecurity{}
-		_ = out.Security.FromOAuth2(oauth2)
+		out.Security.FromOAuth2(oauth2) //nolint:errcheck,gosec // union setter only fails on JSON marshal of simple struct
 	}
 }
 
@@ -136,9 +135,9 @@ func mapTraffic(in *apiv1.ApiExposure, out *api.ApiExposureResponse) {
 	if in.Spec.Traffic.RateLimit != nil && in.Spec.Traffic.RateLimit.Provider != nil {
 		limits := in.Spec.Traffic.RateLimit.Provider.Limits
 		out.RateLimit = api.RateLimit{
-			Second:            int32(limits.Second),
-			Minute:            int32(limits.Minute),
-			Hour:              int32(limits.Hour),
+			Second:            int32(limits.Second), //nolint:gosec // G115: rate limit values are validated by kubebuilder (>=0, practically small)
+			Minute:            int32(limits.Minute), //nolint:gosec // G115: rate limit values are validated by kubebuilder (>=0, practically small)
+			Hour:              int32(limits.Hour),   //nolint:gosec // G115: rate limit values are validated by kubebuilder (>=0, practically small)
 			FaultTolerant:     in.Spec.Traffic.RateLimit.Provider.Options.FaultTolerant,
 			HideClientHeaders: in.Spec.Traffic.RateLimit.Provider.Options.HideClientHeaders,
 		}

@@ -8,9 +8,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/spf13/viper"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/spf13/viper"
 )
 
 var _ = Describe("Config Env Tests", func() {

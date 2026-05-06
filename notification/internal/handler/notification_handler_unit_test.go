@@ -9,9 +9,13 @@ import (
 	"fmt"
 	texttemplate "text/template"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	k8stypes "k8s.io/apimachinery/pkg/types"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
@@ -21,11 +25,9 @@ import (
 	handlers "github.com/telekom/controlplane/notification/internal/handler"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter"
 	"github.com/telekom/controlplane/notification/internal/templatecache"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	k8stypes "k8s.io/apimachinery/pkg/types"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // mockSender implements sender.NotificationSender for testing.
@@ -164,7 +166,6 @@ func expectGetTemplateError(fc *fakeclient.MockJanitorClient, templateName strin
 }
 
 var _ = Describe("Notification Handler - Unit Tests", func() {
-
 	var (
 		fakeClient *fakeclient.MockJanitorClient
 		ctx        context.Context

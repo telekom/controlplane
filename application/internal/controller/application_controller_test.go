@@ -13,6 +13,7 @@ import (
 
 	adminv1 "github.com/telekom/controlplane/admin/api/v1"
 	applicationv1 "github.com/telekom/controlplane/application/api/v1"
+	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/config"
 	ctypes "github.com/telekom/controlplane/common/pkg/types"
 	gatewayv1 "github.com/telekom/controlplane/gateway/api/v1"
@@ -97,6 +98,9 @@ var _ = Describe("Application Controller", func() {
 
 			Expect(k8sClient.Create(ctx, application)).To(Succeed())
 
+			// Simulate identity controller marking the primary client as Ready.
+			markIdentityClientReady(ctx, "test-my-team--test-application-1--zone-a", testNamespace)
+
 			Eventually(func(g Gomega) {
 				By("Checking if the Application is created and all conditions are set")
 				err := k8sClient.Get(ctx, client.ObjectKey{
@@ -147,6 +151,9 @@ var _ = Describe("Application Controller", func() {
 			}
 
 			Expect(k8sClient.Create(ctx, application)).To(Succeed())
+
+			// Simulate identity controller marking the primary client as Ready.
+			markIdentityClientReady(ctx, "test-my-team--test-application-2--zone-a", testNamespace)
 
 			Eventually(func(g Gomega) {
 				By("Checking if the Application is created and all conditions are set")
@@ -203,4 +210,22 @@ func CheckStatusOfConsumer(ctx context.Context, g Gomega, clientId, name, namesp
 	}, consumer)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(consumer.Spec.Name).To(Equal(clientId))
+}
+
+// markIdentityClientReady simulates the identity controller marking a client as Ready.
+// It waits for the identity client to exist, then patches its status with Ready=True.
+func markIdentityClientReady(ctx context.Context, name, namespace string) {
+	Eventually(func() error {
+		idpClient := &identityv1.Client{}
+		if err := k8sClient.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, idpClient); err != nil {
+			return err
+		}
+		idpClient.SetCondition(metav1.Condition{
+			Type:               condition.ConditionTypeReady,
+			Status:             metav1.ConditionTrue,
+			Reason:             "Ready",
+			ObservedGeneration: idpClient.GetGeneration(),
+		})
+		return k8sClient.Status().Update(ctx, idpClient)
+	}, timeout, interval).Should(Succeed())
 }

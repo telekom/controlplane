@@ -505,8 +505,9 @@ var _ = Describe("Kubernetes Onboarder", func() {
 			)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).ToNot(BeNil())
-			Expect(res.SecretRefs()).To(HaveLen(4))
+			Expect(res.SecretRefs()).To(HaveLen(5))
 			Expect(res.SecretRefs()).To(HaveKeyWithValue("clientSecret", MatchRegexp("test-env:test-team:test-app:clientSecret:.+")))
+			Expect(res.SecretRefs()).To(HaveKeyWithValue("rotatedClientSecret", MatchRegexp("test-env:test-team:test-app:rotatedClientSecret:.+")))
 			Expect(res.SecretRefs()).To(HaveKey("externalSecrets"))
 			Expect(res.SecretRefs()).To(HaveKeyWithValue("externalSecrets/key1", MatchRegexp("test-env:test-team:test-app:externalSecrets/key1:.+")))
 			Expect(res.SecretRefs()).To(HaveKeyWithValue("externalSecrets/key2/sub", MatchRegexp("test-env:test-team:test-app:externalSecrets/key2/sub:.+")))
@@ -516,8 +517,9 @@ var _ = Describe("Kubernetes Onboarder", func() {
 			err = mockK8sClient.Get(ctx, client.ObjectKey{Name: appId, Namespace: fmt.Sprintf("%s--%s", env, teamId)}, secret)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(secret).ToNot(BeNil())
-			Expect(secret.Data).To(HaveLen(2))
+			Expect(secret.Data).To(HaveLen(3))
 			Expect(secret.Data).To(HaveKey("clientSecret"))
+			Expect(secret.Data).To(HaveKey("rotatedClientSecret"))
 			b, ok := secret.Data["externalSecrets"]
 			Expect(ok).To(BeTrue())
 			var v map[string]any

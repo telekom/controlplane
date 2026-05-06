@@ -14,9 +14,10 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"gopkg.in/gomail.v2"
+
 	"github.com/telekom/controlplane/notification/internal/config"
 	"github.com/telekom/controlplane/notification/internal/sender/adapter"
-	"gopkg.in/gomail.v2"
 )
 
 var _ EmailSender = SMTPEmailSender{}
@@ -37,13 +38,13 @@ var NewSMTPSender = func(config *config.EmailAdapterConfig) EmailSender {
 func (s SMTPEmailSender) Send(ctx context.Context, from, senderName string, bcc []string, subject, body string, attachments []adapter.Attachment) error {
 	log := logr.FromContextOrDiscard(ctx)
 
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	_, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	d := gomail.NewDialer(s.config.SMTPConnection.Host, s.config.SMTPConnection.Port, s.config.SMTPConnection.User, s.config.SMTPConnection.Password)
 
 	// we are aware that the InsecureSkipVerify is set to true. communication is within cluster and this is currently acceptable
-	d.TLSConfig = &tls.Config{ServerName: s.config.SMTPConnection.Host, InsecureSkipVerify: true}
+	d.TLSConfig = &tls.Config{ServerName: s.config.SMTPConnection.Host, InsecureSkipVerify: true} //nolint:gosec // G402: intra-cluster communication, acceptable risk
 
 	m := gomail.NewMessage()
 	m.SetHeader("From", fmt.Sprintf("%s <%s>", senderName, from))

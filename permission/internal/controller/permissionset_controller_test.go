@@ -8,15 +8,6 @@ import (
 	"context"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	adminv1 "github.com/telekom/controlplane/admin/api/v1"
-	"github.com/telekom/controlplane/common/pkg/condition"
-	"github.com/telekom/controlplane/common/pkg/config"
-	cc "github.com/telekom/controlplane/common/pkg/controller"
-	pcpv1 "github.com/telekom/controlplane/permission/api/pcp/v1"
-	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
-	"github.com/telekom/controlplane/permission/internal/handler/permissionset"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -25,6 +16,17 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	adminv1 "github.com/telekom/controlplane/admin/api/v1"
+	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/config"
+	cc "github.com/telekom/controlplane/common/pkg/controller"
+	pcpv1 "github.com/telekom/controlplane/permission/api/pcp/v1"
+	permissionv1 "github.com/telekom/controlplane/permission/api/v1"
+	"github.com/telekom/controlplane/permission/internal/handler/permissionset"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 const (
@@ -262,8 +264,8 @@ var _ = Describe("PermissionSet Controller", func() {
 			externalPS := &pcpv1.PermissionSet{}
 			Eventually(func(g Gomega) {
 				psList := &pcpv1.PermissionSetList{}
-				err := k8sClient.List(ctx, psList, client.InNamespace(zoneNs.Name))
-				g.Expect(err).NotTo(HaveOccurred())
+				listErr := k8sClient.List(ctx, psList, client.InNamespace(zoneNs.Name))
+				g.Expect(listErr).NotTo(HaveOccurred())
 				g.Expect(psList.Items).To(HaveLen(1), "expected exactly one external PermissionSet in zone namespace")
 				externalPS = &psList.Items[0]
 			}, timeout, interval).Should(Succeed())
