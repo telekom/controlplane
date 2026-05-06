@@ -13,25 +13,20 @@ import (
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/rover-server/internal/oaslint"
-	pkglog "github.com/telekom/controlplane/rover-server/pkg/log"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 )
 
 // prepareLinting checks whitelists and hash dedup synchronously.
 // It returns true if an external linter call is needed.
 func (a *ApiSpecificationController) prepareLinting(lintCfg *apiv1.LintingConfig, apiSpec *roverv1.ApiSpecification, existing *roverv1.ApiSpecification) bool {
-	log := pkglog.Log.WithName("linting")
-
 	// Check basepath whitelist (category-level).
 	if isBasepathWhitelisted(lintCfg, apiSpec.Spec.BasePath) {
-		log.Info("Basepath is whitelisted, skipping linting", "basepath", apiSpec.Spec.BasePath)
 		apiSpec.Spec.Lint = &roverv1.LintResult{Passed: true, Message: fmt.Sprintf("The basepath %q is whitelisted", apiSpec.Spec.BasePath)}
 		return false
 	}
 
 	// Hash dedup: if the spec content hasn't changed and a previous lint result exists, reuse it.
 	if existing != nil && existing.Spec.Lint != nil && existing.Spec.Hash == apiSpec.Spec.Hash {
-		log.Info("Spec hash unchanged, reusing previous lint result", "passed", existing.Spec.Lint.Passed)
 		apiSpec.Spec.Lint = existing.Spec.Lint
 		return false
 	}
@@ -51,64 +46,68 @@ func isBasepathWhitelisted(lintCfg *apiv1.LintingConfig, basepath string) bool {
 	return false
 }
 
-// runSyncLint calls the external linter synchronously and sets the lint result directly on the apiSpec.
-// This ensures the lint result is included in the same store write as the spec itself.
-// It returns an error for infrastructure failures (e.g. linter unreachable or auth errors)
-// which should be surfaced as 500 Internal Server Error to the client.
-func (a *ApiSpecificationController) runSyncLint(ctx context.Context, apiSpec *roverv1.ApiSpecification, linterURL, ruleset string, specBytes []byte) error {
-	log := pkglog.Log.WithName("linting")
+// executeLint calls the external linter and returns the CRD lint result.
+// This is the single lint execution path used by both sync and async flows.
+func (a *ApiSpecificationController) executeLint(ctx context.Context, linterURL, ruleset string, specBytes []byte) (*roverv1.LintResult, error) {
 	var opts []oaslint.ExternalLinterOption
 	if ruleset != "" {
 		opts = append(opts, oaslint.WithRuleset(ruleset))
 	}
-	if a.LintTimeout > 0 {
-		opts = append(opts, oaslint.WithTimeout(a.LintTimeout))
-	}
+	opts = append(opts, oaslint.WithHTTPClient(a.httpClient))
 	linter := oaslint.NewExternalLinter(linterURL, opts...)
 
 	result, err := linter.Lint(ctx, specBytes)
 	if err != nil {
-		log.Error(err, "Sync OAS linting failed", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
-		apiSpec.Spec.Lint = &roverv1.LintResult{
+		return &roverv1.LintResult{
 			Passed:  false,
 			Message: fmt.Sprintf("linter API error: %s", err),
-		}
-		return fmt.Errorf("linter API error: %w", err)
+		}, fmt.Errorf("linter API error: %w", err)
 	}
 
-	apiSpec.Spec.Lint = a.buildLintResult(result, linterURL)
-	if !result.Passed {
-		log.Info("Linting failed", "namespace", apiSpec.Namespace, "name", apiSpec.Name,
-			"reason", result.Reason, "errors", result.Errors, "warnings", result.Warnings)
+	return a.buildLintResult(result, linterURL), nil
+}
+
+// runSyncLint calls the external linter synchronously and sets the lint result directly on the apiSpec.
+// It returns an error for infrastructure failures (e.g. linter unreachable or auth errors)
+// which should be surfaced as 500 Internal Server Error to the client.
+func (a *ApiSpecificationController) runSyncLint(ctx context.Context, apiSpec *roverv1.ApiSpecification, linterURL, ruleset string, specBytes []byte) error {
+	log := logr.FromContextOrDiscard(ctx).WithName("linting")
+
+	lintResult, err := a.executeLint(ctx, linterURL, ruleset, specBytes)
+	apiSpec.Spec.Lint = lintResult
+	if err != nil {
+		log.Error(err, "Sync OAS linting failed", "namespace", apiSpec.Namespace, "name", apiSpec.Name)
+		return err
+	}
+	if !lintResult.Passed {
+		log.Info("Linting failed", "namespace", apiSpec.Namespace, "name", apiSpec.Name, "message", lintResult.Message)
 	}
 	return nil
 }
 
-// dispatchAsyncLint runs the external linter call in a background goroutine.
-// It updates the ApiSpecification CRD spec with the lint result when done.
+// dispatchAsyncLint runs the lint call in a tracked background goroutine.
+// It updates the ApiSpecification via store patch when done.
 func (a *ApiSpecificationController) dispatchAsyncLint(ctx context.Context, ns, name, linterURL, ruleset string, specBytes []byte) {
-	// Create a detached context so the background work is not cancelled when the HTTP request ends.
 	bgCtx := context.WithoutCancel(ctx)
-	var opts []oaslint.ExternalLinterOption
-	if ruleset != "" {
-		opts = append(opts, oaslint.WithRuleset(ruleset))
-	}
-	if a.LintTimeout > 0 {
-		opts = append(opts, oaslint.WithTimeout(a.LintTimeout))
-	}
-	linter := oaslint.NewExternalLinter(linterURL, opts...)
+	a.lintWg.Add(1)
 	go func() {
-		log := pkglog.Log.WithName("linting")
-		result, err := linter.Lint(bgCtx, specBytes)
+		defer a.lintWg.Done()
+		log := logr.FromContextOrDiscard(bgCtx).WithName("linting")
+
+		lintResult, err := a.executeLint(bgCtx, linterURL, ruleset, specBytes)
 		if err != nil {
 			log.Error(err, "Async OAS linting failed", "namespace", ns, "name", name)
-			result = &oaslint.LintResult{
-				Passed: false,
-				Reason: fmt.Sprintf("linter API error: %s", err),
-			}
+		} else if !lintResult.Passed {
+			log.Info("Linting failed", "namespace", ns, "name", name, "message", lintResult.Message)
 		}
 
-		a.patchLintResult(bgCtx, ns, name, linterURL, result)
+		if _, patchErr := a.Store.Patch(bgCtx, ns, name, store.Patch{
+			Op:    store.OpReplace,
+			Path:  "/spec/lint",
+			Value: lintResult,
+		}); patchErr != nil {
+			log.Error(patchErr, "Failed to update lint result", "namespace", ns, "name", name)
+		}
 	}()
 }
 
@@ -126,25 +125,6 @@ func (a *ApiSpecificationController) buildLintResult(result *oaslint.LintResult,
 		lintResult.Message = strings.ReplaceAll(a.ErrorMessage, "RULESET_NAME_PLACEHOLDER", result.Ruleset)
 	}
 	return lintResult
-}
-
-// patchLintResult patches the ApiSpecification's Spec.Lint field with the linting result.
-func (a *ApiSpecificationController) patchLintResult(ctx context.Context, ns, name, linterURL string, result *oaslint.LintResult) {
-	log := logr.FromContextOrDiscard(ctx).WithName("linting")
-
-	lintResult := a.buildLintResult(result, linterURL)
-	if !result.Passed {
-		log.Info("Linting failed", "namespace", ns, "name", name,
-			"reason", result.Reason, "errors", result.Errors, "warnings", result.Warnings)
-	}
-
-	if _, err := a.Store.Patch(ctx, ns, name, store.Patch{
-		Op:    store.OpReplace,
-		Path:  "/spec/lint",
-		Value: lintResult,
-	}); err != nil {
-		log.Error(err, "Failed to update lint result", "namespace", ns, "name", name)
-	}
 }
 
 // lintingConfigFromList finds the linting configuration from a pre-fetched ApiCategoryList.

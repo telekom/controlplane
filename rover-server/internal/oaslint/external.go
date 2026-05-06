@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 )
 
 const (
@@ -21,19 +20,25 @@ const (
 
 var _ Linter = (*ExternalLinter)(nil)
 
+// HTTPDoer is the interface for executing HTTP requests.
+// Compatible with *http.Client and metrics-wrapped clients.
+type HTTPDoer interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 // ExternalLinter calls an external linter REST API (Atlas Linter Service compatible).
 // POST {baseURL}/api/linter/scans with the OAS spec as YAML body.
 type ExternalLinter struct {
 	baseURL string
 	ruleset string
-	client  *http.Client
+	client  HTTPDoer
 }
 
 // ExternalLinterOption configures the ExternalLinter.
 type ExternalLinterOption func(*ExternalLinter)
 
 // WithHTTPClient overrides the default HTTP client.
-func WithHTTPClient(c *http.Client) ExternalLinterOption {
+func WithHTTPClient(c HTTPDoer) ExternalLinterOption {
 	return func(l *ExternalLinter) {
 		l.client = c
 	}
@@ -43,13 +48,6 @@ func WithHTTPClient(c *http.Client) ExternalLinterOption {
 func WithRuleset(ruleset string) ExternalLinterOption {
 	return func(l *ExternalLinter) {
 		l.ruleset = ruleset
-	}
-}
-
-// WithTimeout overrides the default HTTP client timeout.
-func WithTimeout(d time.Duration) ExternalLinterOption {
-	return func(l *ExternalLinter) {
-		l.client.Timeout = d
 	}
 }
 

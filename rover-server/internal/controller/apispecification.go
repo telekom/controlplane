@@ -12,17 +12,20 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
+	commonclient "github.com/telekom/controlplane/common-server/pkg/client"
 	"github.com/telekom/controlplane/common-server/pkg/problems"
 	"github.com/telekom/controlplane/common-server/pkg/server/middleware/security"
 	"github.com/telekom/controlplane/common-server/pkg/store"
 	filesapi "github.com/telekom/controlplane/file-manager/api"
 	"github.com/telekom/controlplane/rover-server/internal/file"
+	"github.com/telekom/controlplane/rover-server/internal/oaslint"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	"gopkg.in/yaml.v3"
 
@@ -48,12 +51,15 @@ type ApiSpecificationController struct {
 	// ErrorMessage is the template message shown when linting fails.
 	ErrorMessage string
 
-	// LintTimeout is the HTTP client timeout for external linter calls.
-	LintTimeout time.Duration
-
 	// LintAsync controls whether linting runs asynchronously (true) or synchronously (false).
 	// When false (default), linting blocks the request so a single store operation includes the result.
 	LintAsync bool
+
+	// httpClient is reused across lint requests for connection pooling and metrics.
+	httpClient oaslint.HTTPDoer
+
+	// lintWg tracks in-flight async lint goroutines for graceful shutdown.
+	lintWg sync.WaitGroup
 }
 
 func NewApiSpecificationController(stores *s.Stores, errorMessage string, lintTimeout time.Duration, lintAsync bool) *ApiSpecificationController {
@@ -61,8 +67,12 @@ func NewApiSpecificationController(stores *s.Stores, errorMessage string, lintTi
 		stores:       stores,
 		Store:        stores.APISpecificationStore,
 		ErrorMessage: errorMessage,
-		LintTimeout:  lintTimeout,
 		LintAsync:    lintAsync,
+		httpClient: commonclient.NewHttpClientOrDie(
+			commonclient.WithClientName("oaslint"),
+			commonclient.WithClientTimeout(lintTimeout),
+			commonclient.WithSkipTlsVerify(true),
+		),
 	}
 	if stores.APICategoryStore != nil {
 		ctrl.ListApiCategories = func(ctx context.Context) (*apiv1.ApiCategoryList, error) {
@@ -79,6 +89,11 @@ func NewApiSpecificationController(stores *s.Stores, errorMessage string, lintTi
 		}
 	}
 	return ctrl
+}
+
+// Shutdown waits for all in-flight async lint operations to complete.
+func (a *ApiSpecificationController) Shutdown() {
+	a.lintWg.Wait()
 }
 
 // Create implements server.ApiSpecificationController.
