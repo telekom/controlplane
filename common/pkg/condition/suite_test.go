@@ -38,6 +38,44 @@ var _ = Describe("Condition Tests", func() {
 		})
 	})
 
+	Context("IsReady function", func() {
+		It("should return false when no conditions are set", func() {
+			obj := test.NewObject("fake", "default")
+
+			Expect(IsReady(obj)).To(BeFalse())
+		})
+
+		It("should return false when Ready condition is not true", func() {
+			obj := test.NewObject("fake", "default")
+			obj.Generation = 1
+			cond := NewNotReadyCondition("Pending", "not yet")
+			cond.ObservedGeneration = 1
+			obj.SetCondition(cond)
+
+			Expect(IsReady(obj)).To(BeFalse())
+		})
+
+		It("should return false when observed generation does not match", func() {
+			obj := test.NewObject("fake", "default")
+			obj.Generation = 2
+			cond := NewReadyCondition("AllGood", "ready")
+			cond.ObservedGeneration = 1
+			obj.SetCondition(cond)
+
+			Expect(IsReady(obj)).To(BeFalse())
+		})
+
+		It("should return true when Ready condition is true and generation matches", func() {
+			obj := test.NewObject("fake", "default")
+			obj.Generation = 3
+			cond := NewReadyCondition("AllGood", "ready")
+			cond.ObservedGeneration = 3
+			obj.SetCondition(cond)
+
+			Expect(IsReady(obj)).To(BeTrue())
+		})
+	})
+
 	Context("Constructor functions", func() {
 
 		It("should return a new BlockedCondition", func() {

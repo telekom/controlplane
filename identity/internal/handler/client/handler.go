@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
@@ -39,6 +40,8 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 	if client == nil {
 		return fmt.Errorf("client is nil")
 	}
+
+	logger := logr.FromContextOrDiscard(ctx)
 
 	resolvedSecret, err := secrets.Get(ctx, client.Spec.ClientSecret)
 	if err != nil {
@@ -73,15 +76,16 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 	supportsRotation := realm.SupportsGracefulSecretRotation() && client.SupportsSecretRotation()
 
 	// Determine whether forceSecretRotation was already triggered for this
-	// generation. If the SecretRotation condition is True with reason
-	// "Accepted" and its ObservedGeneration matches the current generation,
-	// a previous reconciliation already called forceSecretRotation but the
-	// subsequent PUT failed. In that case we skip the force-rotation to
-	// avoid evicting the original secret from Keycloak's rotated slot.
+	// generation. If the SecretRotation condition exists with an
+	// ObservedGeneration matching the current generation, a previous
+	// reconciliation already processed the rotation for this spec revision.
+	// We skip forceSecretRotation to avoid re-entering the Accepted state
+	// (which would cause an Accepted→Completed loop on every reconcile)
+	// and to prevent evicting the original secret from Keycloak's rotated slot.
 	skipForceRotation := false
 	if supportsRotation {
 		if cond := meta.FindStatusCondition(client.GetConditions(), identityv1.SecretRotationConditionType); cond != nil {
-			if cond.Reason == identityv1.SecretRotationReasonAccepted && cond.ObservedGeneration == client.Generation {
+			if cond.ObservedGeneration == client.Generation {
 				skipForceRotation = true
 			}
 		}
@@ -90,6 +94,7 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 		// controller persists this condition so that the next reconciliation
 		// can detect the retry and skip the destructive rotation step.
 		if !skipForceRotation {
+			logger.Info("Marking secret rotation as accepted", "client", client.Name)
 			client.SetCondition(identityv1.NewSecretRotationAcceptedCondition())
 		}
 	}
@@ -128,11 +133,18 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 				client.Status.RotatedSecretExpiresAt = nil
 			}
 			if rotationInfo.RotatedCreatedAt != nil {
-				createdAt := time.Unix(*rotationInfo.RotatedCreatedAt, 0)
-				client.SetCondition(identityv1.NewSecretRotatedCondition(createdAt))
+				// Only transition to Rotated if the condition is not already
+				// in the Rotated state. This avoids resetting LastTransitionTime
+				// on every reconciliation which would cause a status update loop.
+				existing := meta.FindStatusCondition(client.Status.Conditions, identityv1.SecretRotationConditionType)
+				if existing == nil || existing.Reason != identityv1.SecretRotationReasonRotated {
+					createdAt := time.Unix(*rotationInfo.RotatedCreatedAt, 0)
+					client.SetCondition(identityv1.NewSecretRotatedCondition(createdAt))
+				}
 			}
 
 		} else {
+			logger.Info("No rotated secret in Keycloak, clearing rotation status", "client", client.Name)
 			// No rotation in progress — clear the status fields.
 			client.Status.RotatedClientSecret = ""
 			client.Status.RotatedSecretExpiresAt = nil
@@ -140,8 +152,12 @@ func (h *HandlerClient) CreateOrUpdate(ctx context.Context, client *identityv1.C
 			// (Accepted or Rotated). Avoid setting a misleading condition
 			// on clients that were never rotated.
 			existing := meta.FindStatusCondition(client.Status.Conditions, identityv1.SecretRotationConditionType)
-			if existing != nil && (existing.Reason == identityv1.SecretRotationReasonAccepted || existing.Reason == identityv1.SecretRotationReasonRotated) {
-				client.SetCondition(identityv1.NewSecretRotationCompletedCondition())
+			if existing != nil {
+				isAccepted := existing.Reason == identityv1.SecretRotationReasonAccepted
+				isRotated := existing.Reason == identityv1.SecretRotationReasonRotated
+				if isAccepted || isRotated {
+					client.SetCondition(identityv1.NewSecretRotationCompletedCondition())
+				}
 			}
 		}
 
