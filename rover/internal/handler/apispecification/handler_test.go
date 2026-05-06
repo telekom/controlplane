@@ -10,16 +10,25 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 	apiapi "github.com/telekom/controlplane/api/api/v1"
+	cclient "github.com/telekom/controlplane/common/pkg/client"
+	fakeclient "github.com/telekom/controlplane/common/pkg/client/fake"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	roverv1 "github.com/telekom/controlplane/rover/api/v1"
 	handler "github.com/telekom/controlplane/rover/internal/handler/apispecification"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 func newApiSpec(hash, category string) *roverv1.ApiSpecification {
 	return &roverv1.ApiSpecification{
 		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-spec",
+			Namespace: "test-env--test-team",
+			UID:       "test-uid-1234",
 			Labels: map[string]string{
 				"controlplane.2/environment": "test-env",
 			},
@@ -85,6 +94,26 @@ func conditionMessage(apiSpec *roverv1.ApiSpecification, condType string) string
 	return ""
 }
 
+// setupMockClient creates a mock JanitorClient injected into context.
+// The mock expects CreateOrUpdate and returns success.
+func setupMockClient(ctx context.Context) context.Context {
+	fakeClient := fakeclient.NewMockJanitorClient(GinkgoT())
+	testScheme := runtime.NewScheme()
+	_ = roverv1.AddToScheme(testScheme)
+	_ = apiapi.AddToScheme(testScheme)
+
+	fakeClient.EXPECT().Scheme().Return(testScheme).Maybe()
+	fakeClient.EXPECT().
+		CreateOrUpdate(mock.Anything, mock.Anything, mock.Anything).
+		RunAndReturn(func(_ context.Context, _ client.Object, fn controllerutil.MutateFn) (controllerutil.OperationResult, error) {
+			_ = fn()
+			return controllerutil.OperationResultCreated, nil
+		}).Maybe()
+	fakeClient.EXPECT().AnyChanged().Return(true).Maybe()
+
+	return cclient.WithClient(ctx, fakeClient)
+}
+
 var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 	var ctx context.Context
 
@@ -93,39 +122,35 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 	})
 
 	Context("when linting is pending (Spec.Lint nil, block mode)", func() {
-		It("should set processing and not-ready conditions", func() {
+		It("should set not-ready condition", func() {
 			h := &handler.ApiSpecificationHandler{
 				GetApiCategory: getApiCategoryWith(newApiCategory("other", &apiapi.LintingConfig{
 					Mode: apiapi.LintingModeBlock,
 				})),
 			}
 			apiSpec := newApiSpec("hash1", "other")
-			// Spec.Lint is nil — linting pending
 
 			err := h.CreateOrUpdate(ctx, apiSpec)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
 			Expect(hasCondition(apiSpec, condition.ConditionTypeReady)).To(BeTrue())
-			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("linting is in progress"))
 			Expect(conditionMessage(apiSpec, condition.ConditionTypeReady)).To(ContainSubstring("being linted"))
 		})
 	})
 
 	Context("when linting is pending (Spec.Lint nil, warn mode)", func() {
 		It("should proceed with Api creation", func() {
+			mockCtx := setupMockClient(ctx)
 			h := &handler.ApiSpecificationHandler{
 				GetApiCategory: getApiCategoryWith(newApiCategory("warn-cat", &apiapi.LintingConfig{
 					Mode: apiapi.LintingModeWarn,
 				})),
 			}
 			apiSpec := newApiSpec("hash1", "warn-cat")
-			// Spec.Lint is nil — linting pending, but warn mode proceeds
 
-			Expect(func() {
-				_ = h.CreateOrUpdate(ctx, apiSpec)
-			}).To(Panic())
-			// Panicked in createOrUpdateApi means the linting gate did not block.
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeFalse())
+			err := h.CreateOrUpdate(mockCtx, apiSpec)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
+			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("API updated"))
 		})
 	})
 
@@ -181,7 +206,8 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 	})
 
 	Context("when linting failed in warn mode", func() {
-		It("should not set blocked condition", func() {
+		It("should proceed with Api creation", func() {
+			mockCtx := setupMockClient(ctx)
 			h := &handler.ApiSpecificationHandler{
 				GetApiCategory: getApiCategoryWith(newApiCategory("warn-cat", &apiapi.LintingConfig{
 					Mode: apiapi.LintingModeWarn,
@@ -190,64 +216,63 @@ var _ = Describe("ApiSpecification Handler Linting Gate", func() {
 			apiSpec := newApiSpec("hash1", "warn-cat")
 			apiSpec.Spec.Lint = &roverv1.LintResult{Passed: false, Message: "found 2 warnings"}
 
-			// CreateOrUpdate will proceed to createOrUpdateApi which requires a k8s client;
-			// we expect it to panic or error there, but the linting gate should NOT block.
-			Expect(func() {
-				_ = h.CreateOrUpdate(ctx, apiSpec)
-			}).To(Panic())
-			// If we got here (panicked in createOrUpdateApi), it means the linting gate passed through.
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeFalse(),
-				"should not have a blocked/processing condition in warn mode")
+			err := h.CreateOrUpdate(mockCtx, apiSpec)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
+			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("API updated"))
 		})
 	})
 
 	Context("when linting passed", func() {
-		It("should proceed past linting gate", func() {
+		It("should proceed with Api creation", func() {
+			mockCtx := setupMockClient(ctx)
 			h := &handler.ApiSpecificationHandler{}
 			apiSpec := newApiSpec("hash1", "other")
 			apiSpec.Spec.Lint = &roverv1.LintResult{Passed: true, Message: "no errors"}
 
-			// Will proceed to createOrUpdateApi -> panic on missing k8s client
-			Expect(func() {
-				_ = h.CreateOrUpdate(ctx, apiSpec)
-			}).To(Panic())
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeFalse())
+			err := h.CreateOrUpdate(mockCtx, apiSpec)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
+			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("API updated"))
 		})
 	})
 
 	Context("when no linting is configured (Spec.Lint nil, no category linting)", func() {
 		It("should proceed when GetApiCategory is nil", func() {
+			mockCtx := setupMockClient(ctx)
 			h := &handler.ApiSpecificationHandler{}
 			apiSpec := newApiSpec("hash1", "other")
 
-			Expect(func() {
-				_ = h.CreateOrUpdate(ctx, apiSpec)
-			}).To(Panic())
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeFalse())
+			err := h.CreateOrUpdate(mockCtx, apiSpec)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
+			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("API updated"))
 		})
 
 		It("should proceed when category has no linting config", func() {
+			mockCtx := setupMockClient(ctx)
 			h := &handler.ApiSpecificationHandler{
 				GetApiCategory: getApiCategoryNil(),
 			}
 			apiSpec := newApiSpec("hash1", "other")
 
-			Expect(func() {
-				_ = h.CreateOrUpdate(ctx, apiSpec)
-			}).To(Panic())
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeFalse())
+			err := h.CreateOrUpdate(mockCtx, apiSpec)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
+			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("API updated"))
 		})
 
 		It("should proceed when category lookup returns error", func() {
+			mockCtx := setupMockClient(ctx)
 			h := &handler.ApiSpecificationHandler{
 				GetApiCategory: getApiCategoryError(),
 			}
 			apiSpec := newApiSpec("hash1", "other")
 
-			Expect(func() {
-				_ = h.CreateOrUpdate(ctx, apiSpec)
-			}).To(Panic())
-			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeFalse())
+			err := h.CreateOrUpdate(mockCtx, apiSpec)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hasCondition(apiSpec, condition.ConditionTypeProcessing)).To(BeTrue())
+			Expect(conditionMessage(apiSpec, condition.ConditionTypeProcessing)).To(ContainSubstring("API updated"))
 		})
 	})
 
