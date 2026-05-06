@@ -332,14 +332,14 @@ func (r *Runner) Run(ctx context.Context) (*report.FinalReport, error) {
 			// Check if any critical-policy test cases had ERROR status
 			hasCriticalFailure := false
 			for _, tc := range result.Cases {
-				if tc.RunPolicy == config.RunPolicyFailFast && tc.Status == report.StatusError {
+				if tc.RunPolicy.Normalize() == config.RunPolicyFailFast && tc.Status == report.StatusError {
 					hasCriticalFailure = true
 					criticalFailures++
 					zap.L().Warn("Critical test case failed",
 						zap.String("suite", result.Name),
 						zap.String("case", tc.Name),
 						zap.String("environment", tc.Environment),
-						zap.String("run_policy", string(tc.RunPolicy)))
+						zap.String("run_policy", string(tc.RunPolicy.Normalize())))
 					break
 				}
 			}
