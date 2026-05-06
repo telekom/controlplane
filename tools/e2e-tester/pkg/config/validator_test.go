@@ -929,7 +929,7 @@ func TestSuiteLoadAbsolutePath(t *testing.T) {
 	}
 }
 
-func TestConfigLoadSuites(t *testing.T) {
+func TestConfigLoadExternalSuites(t *testing.T) {
 	cfg := &Config{
 		Snapshotter: SnapshotterConfig{Binary: "snapshotter"},
 		RoverCtl:    RoverCtlConfig{Binary: "roverctl"},
@@ -950,9 +950,9 @@ func TestConfigLoadSuites(t *testing.T) {
 		},
 	}
 
-	err := cfg.LoadSuites(".")
+	err := cfg.LoadExternalSuites(".")
 	if err != nil {
-		t.Fatalf("LoadSuites() failed: %v", err)
+		t.Fatalf("LoadExternalSuites() failed: %v", err)
 	}
 
 	// Verify external suite was loaded
@@ -969,7 +969,7 @@ func TestConfigLoadSuites(t *testing.T) {
 	}
 }
 
-func TestConfigLoadSuitesWithError(t *testing.T) {
+func TestConfigLoadExternalSuitesWithError(t *testing.T) {
 	cfg := &Config{
 		Snapshotter: SnapshotterConfig{Binary: "snapshotter"},
 		RoverCtl:    RoverCtlConfig{Binary: "roverctl"},
@@ -984,8 +984,8 @@ func TestConfigLoadSuitesWithError(t *testing.T) {
 		},
 	}
 
-	err := cfg.LoadSuites(".")
+	err := cfg.LoadExternalSuites(".")
 	if err == nil {
-		t.Fatal("LoadSuites() should fail for non-existent file")
+		t.Fatal("LoadExternalSuites() should fail for non-existent file")
 	}
 }

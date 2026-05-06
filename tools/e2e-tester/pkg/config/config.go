@@ -210,7 +210,7 @@ func (c *Config) Validate() error {
 	return ValidateConfig(c)
 }
 
-func (c *Config) LoadSuites(configDir string) error {
+func (c *Config) LoadExternalSuites(configDir string) error {
 	for i := range c.Suites {
 		if c.Suites[i].IsExternal() {
 			if err := c.Suites[i].Load(configDir); err != nil {

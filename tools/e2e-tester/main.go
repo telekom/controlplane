@@ -136,7 +136,7 @@ commands, captures outputs, and compares them with expected snapshots.`,
 			}
 
 			configDir := filepath.Dir(viper.ConfigFileUsed())
-			if err := cfg.LoadSuites(configDir); err != nil {
+			if err := cfg.LoadExternalSuites(configDir); err != nil {
 				zap.L().Fatal("Error loading test suites", zap.Error(err))
 			}
 
