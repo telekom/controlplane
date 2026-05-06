@@ -14,7 +14,6 @@ import (
 )
 
 // LintingMode controls how linting failures affect API creation.
-// +kubebuilder:validation:Enum=block;warn
 type LintingMode string
 
 const (
@@ -48,8 +47,10 @@ type LintingConfig struct {
 
 	// WhitelistedBasepaths is a list of API basepaths that are exempt from linting.
 	// APIs whose basePath matches an entry here will skip linting even when a linter URL is configured.
+	// Each entry must start with a leading slash.
 	// +optional
 	// +listType=set
+	// +kubebuilder:validation:items:Pattern=`^/`
 	WhitelistedBasepaths []string `json:"whitelistedBasepaths,omitempty"`
 }
 
