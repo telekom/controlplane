@@ -399,6 +399,68 @@ func (e GetApplicationsInfoParamsSort) Valid() bool {
 	}
 }
 
+// ApiChangelog defines model for ApiChangelog.
+type ApiChangelog struct {
+	// BasePath The API basePath
+	BasePath string `json:"basePath"`
+
+	// Items List of changelog version entries
+	Items []ApiChangelogItem `json:"items"`
+}
+
+// ApiChangelogCreateRequest defines model for ApiChangelogCreateRequest.
+type ApiChangelogCreateRequest struct {
+	// BasePath The API basePath
+	BasePath string `json:"basePath"`
+
+	// Items List of changelog version entries
+	Items []ApiChangelogItem `json:"items"`
+
+	// Team This field is only used for hub-scoped access to control the target team of the resource. For everything else, it can be ignored
+	Team string `json:"team,omitempty,omitzero"`
+}
+
+// ApiChangelogItem defines model for ApiChangelogItem.
+type ApiChangelogItem struct {
+	// Date Release date or period
+	Date string `json:"date"`
+
+	// Description Description of changes in this version
+	Description string `json:"description"`
+
+	// Version Semantic version number
+	Version string `json:"version"`
+
+	// VersionUrl Optional URL to release notes
+	VersionUrl string `json:"versionUrl,omitempty,omitzero"`
+}
+
+// ApiChangelogListResponse defines model for ApiChangelogListResponse.
+type ApiChangelogListResponse struct {
+	// UnderscoreLinks HATEOAS links for pagination
+	UnderscoreLinks Links                  `json:"_links,omitempty,omitzero"`
+	Items           []ApiChangelogResponse `json:"items,omitempty,omitzero"`
+}
+
+// ApiChangelogResponse defines model for ApiChangelogResponse.
+type ApiChangelogResponse struct {
+	// BasePath The API basePath
+	BasePath string `json:"basePath"`
+
+	// Id Unique id of this resource
+	Id string `json:"id,omitempty,omitzero"`
+
+	// Items List of changelog version entries
+	Items []ApiChangelogItem `json:"items"`
+
+	// Name Name of the changelog
+	Name   string `json:"name,omitempty,omitzero"`
+	Status Status `json:"status,omitempty,omitzero"`
+}
+
+// ApiChangelogUpdateRequest defines model for ApiChangelogUpdateRequest.
+type ApiChangelogUpdateRequest = ApiChangelog
+
 // ApiExposure defines model for ApiExposure.
 type ApiExposure struct {
 	Approval       ApprovalStrategy   `json:"approval"`
@@ -1175,6 +1237,9 @@ type TrustedTeam struct {
 // Visibility defines model for Visibility.
 type Visibility string
 
+// ApiChangelogId defines model for ApiChangelogId.
+type ApiChangelogId = string
+
 // ApiRoadmapId defines model for ApiRoadmapId.
 type ApiRoadmapId = string
 
@@ -1216,6 +1281,12 @@ type UnsupportedMediaType = Error
 
 // oAuth2ContextKey is the context key for OAuth2 security scheme
 type oAuth2ContextKey string
+
+// GetAllApiChangelogsParams defines parameters for GetAllApiChangelogs.
+type GetAllApiChangelogsParams struct {
+	// Cursor cursor for pagination
+	Cursor string `form:"cursor,omitempty" json:"cursor,omitempty,omitzero"`
+}
 
 // GetAllApiRoadmapsParams defines parameters for GetAllApiRoadmaps.
 type GetAllApiRoadmapsParams struct {
@@ -1294,6 +1365,12 @@ type GetApplicationInfoParams struct {
 	// ShallowInfo If true, the status and information of all sub-resources will be omitted in the response. Only the information about the application itself will be returned. This will significantly reduce the response size and time. Default is false.
 	ShallowInfo ShallowInfo `form:"shallowInfo,omitempty" json:"shallowInfo,omitempty,omitzero"`
 }
+
+// CreateApiChangelogJSONRequestBody defines body for CreateApiChangelog for application/json ContentType.
+type CreateApiChangelogJSONRequestBody = ApiChangelogCreateRequest
+
+// UpdateApiChangelogJSONRequestBody defines body for UpdateApiChangelog for application/json ContentType.
+type UpdateApiChangelogJSONRequestBody = ApiChangelogUpdateRequest
 
 // CreateApiRoadmapJSONRequestBody defines body for CreateApiRoadmap for application/json ContentType.
 type CreateApiRoadmapJSONRequestBody = ApiRoadmapCreateRequest

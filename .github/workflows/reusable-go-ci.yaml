@@ -91,6 +91,9 @@ on:
         description: "Image digest from the build image step"
         value: ${{ jobs.build.outputs.image_digest }}
 
+permissions:
+  contents: read
+
 jobs:
   static_checks:
     name: "Static Checks for ${{ inputs.name }}"
@@ -133,12 +136,16 @@ jobs:
         with:
           version: v2.11
           working-directory: ${{ inputs.module }}
-          args: --timeout 5m --issues-exit-code=${{ inputs.lint_fail_on_issues && '1' || '0' }} --config ../.golangci.yml
+          args: --timeout 5m --issues-exit-code=${{ inputs.lint_fail_on_issues && '1' || '0' }} --config ${{ github.workspace }}/.golangci.yml
 
   tests:
-    name: "Tests & Coverage for ${{ inputs.module }}"
+    name: "Tests & Coverage for ${{ inputs.name }}"
     if: ${{ inputs.run_tests }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     outputs:
       test_reports_artifact_id: ${{ steps.upload_test_reports_artifact_step.outputs.artifact-id }}
     steps:
@@ -260,6 +267,10 @@ jobs:
     name: "CodeQL Analysis for ${{ inputs.name }}"
     if: ${{ inputs.run_code_analysis }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
     steps:
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -283,7 +294,7 @@ jobs:
             ${{ runner.os }}-go-${{ inputs.module }}-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
+        uses: github/codeql-action/init@e46ed2cbd01164d986452f91f178727624ae40d7 # v4.35.3
         with:
           languages: go
           build-mode: manual # Set to manual as we provide a build step
@@ -304,7 +315,7 @@ jobs:
           fi
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
+        uses: github/codeql-action/analyze@e46ed2cbd01164d986452f91f178727624ae40d7 # v4.35.3
         with:
           category: "/language:go/${{ inputs.name }}"
 
@@ -313,8 +324,12 @@ jobs:
     if: ${{ inputs.run_build_image && (needs.static_checks.result != 'failure') && (needs.tests.result != 'failure') }}
     needs: [tests]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     outputs:
       image_digest: ${{ steps.build_image_ko_step.outputs.digest }}
+      repo_lower: ${{ steps.repo_lower.outputs.repo }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -343,12 +358,19 @@ jobs:
       - name: Inject slug vars
         uses: rlespinasse/github-slug-action@e6f261660910b273384c5c42b17a0217881b217a # v5.6.0
 
+      - name: Convert repository to lowercase
+        id: repo_lower
+        shell: bash
+        run: |
+          REPO_LOWER=$(echo "${{ inputs.github_repository }}/${{ inputs.name }}" | tr '[:upper:]' '[:lower:]')
+          echo "repo=${REPO_LOWER}" >> $GITHUB_OUTPUT
+
       - name: Build and Push Image with Ko
         id: build_image_ko_step
         shell: bash
         working-directory: ${{ inputs.module }}
         env:
-          KO_DOCKER_REPO: ${{ inputs.container_registry }}/${{ inputs.github_repository }}/${{ inputs.name }}
+          KO_DOCKER_REPO: ${{ inputs.container_registry }}/${{ steps.repo_lower.outputs.repo }}
           KO_CONFIG_PATH: ${{ github.workspace }}/.ko.yaml
         run: |
           if [ -z "${{ inputs.github_repository }}" ] || [ -z "${{ inputs.github_ref }}" ]; then
@@ -364,6 +386,7 @@ jobs:
           fi
 
           echo "Building with tags: $effective_tags"
+          echo "Using KO_DOCKER_REPO: ${KO_DOCKER_REPO}"
           export VERSION=$(git describe --tags --always --dirty || echo 'develop')
           export BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
@@ -371,6 +394,7 @@ jobs:
           echo "Ko output: $output"
           digest=$(echo "$output" | grep -o 'sha256:[a-f0-9]\{64\}')
           echo "digest=$digest" >> $GITHUB_OUTPUT
+          echo "image_ref=${KO_DOCKER_REPO}@${digest}" >> $GITHUB_OUTPUT
 
   image_scan:
     name: "Image Vulnerability Scan for ${{ inputs.name }}"
@@ -382,7 +406,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: ${{ inputs.container_registry }}/${{ inputs.github_repository }}/${{ inputs.name }}@${{ needs.build.outputs.image_digest }}
+          image-ref: ${{ inputs.container_registry }}/${{ needs.build.outputs.repo_lower }}@${{ needs.build.outputs.image_digest }}
           exit-code: "1"
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"

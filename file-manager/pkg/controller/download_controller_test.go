@@ -7,13 +7,13 @@ package controller_test
 import (
 	"bytes"
 	"context"
+	"io"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/telekom/controlplane/file-manager/pkg/controller"
 	"github.com/telekom/controlplane/file-manager/test/mocks"
 
-	"io"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 const (
@@ -22,10 +22,8 @@ const (
 )
 
 var _ = Describe("DownloadController", func() {
-
 	Context("Download controller", func() {
-
-		var mockedBackend = &mocks.MockFileDownloader{}
+		mockedBackend := &mocks.MockFileDownloader{}
 
 		It("Should download files", func() {
 			ctx := context.Background()
@@ -33,7 +31,7 @@ var _ = Describe("DownloadController", func() {
 
 			writer := getMockWriterWithContent("this is a test file content")
 
-			var headers = make(map[string]string)
+			headers := make(map[string]string)
 			headers[XFileContentType] = "application/yaml"
 			headers[XFileChecksum] = "thisIsATestChecksum"
 
@@ -76,9 +74,7 @@ var _ = Describe("DownloadController", func() {
 			Expect(m).To(BeNil())
 			Expect(file).To(BeNil())
 		})
-
 	})
-
 })
 
 func getMockWriterWithContent(content string) io.ReadWriter {

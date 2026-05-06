@@ -8,9 +8,10 @@ import (
 	"testing"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/telekom/controlplane/common/pkg/condition"
 	"github.com/telekom/controlplane/discovery-server/internal/api"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func cond(t, status, reason, msg string) metav1.Condition {

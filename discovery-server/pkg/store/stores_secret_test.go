@@ -8,24 +8,25 @@ import (
 	"context"
 
 	"github.com/stretchr/testify/mock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	apiv1 "github.com/telekom/controlplane/api/api/v1"
 	csstore "github.com/telekom/controlplane/common-server/pkg/store"
 	"github.com/telekom/controlplane/common-server/pkg/store/secrets"
 	csmocks "github.com/telekom/controlplane/common-server/test/mocks"
 	"github.com/telekom/controlplane/secret-manager/api/fake"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
-const secretPlaceholder = "$<test-secret-id>"
-const resolvedSecret = "super-secret-value"
+const (
+	secretPlaceholder = "$<test-secret-id>"
+	resolvedSecret    = "super-secret-value"
+)
 
 var _ = Describe("Secret Store Integration", func() {
-
 	Describe("ApiSubscription secrets", func() {
-
 		var (
 			ctx          context.Context
 			mockStore    *csmocks.MockObjectStore[*apiv1.ApiSubscription]
@@ -94,7 +95,6 @@ var _ = Describe("Secret Store Integration", func() {
 				Expect(result.Spec.Security.M2M.Basic.Password).To(Equal(resolvedSecret))
 				Expect(result.Spec.Security.M2M.Client.ClientSecret).To(Equal("plain-secret"))
 			})
-
 		})
 
 		Context("List", func() {
@@ -117,7 +117,6 @@ var _ = Describe("Secret Store Integration", func() {
 	})
 
 	Describe("ApiExposure secrets", func() {
-
 		var (
 			ctx          context.Context
 			mockStore    *csmocks.MockObjectStore[*apiv1.ApiExposure]

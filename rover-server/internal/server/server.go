@@ -59,6 +59,15 @@ type ApiRoadmapController interface {
 	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
 }
 
+type ApiChangelogController interface {
+	Create(ctx context.Context, req api.ApiChangelogCreateRequest) (api.ApiChangelogResponse, error)
+	Get(ctx context.Context, resourceId string) (api.ApiChangelogResponse, error)
+	GetAll(ctx context.Context, params api.GetAllApiChangelogsParams) (*api.ApiChangelogListResponse, error)
+	Update(ctx context.Context, resourceId string, req api.ApiChangelogUpdateRequest) (api.ApiChangelogResponse, error)
+	Delete(ctx context.Context, resourceId string) error
+	GetStatus(ctx context.Context, resourceId string) (api.ResourceStatusResponse, error)
+}
+
 var securityTemplates = map[security.ClientType]security.ComparisonTemplates{
 	security.ClientTypeTeam: {
 		ExpectedTemplate:  "{{ .B.Environment }}--{{ .B.Group }}--{{ .B.Team }}--",
@@ -84,6 +93,7 @@ type Server struct {
 	Rovers              RoverController
 	Roadmaps            ApiRoadmapController
 	EventSpecifications EventSpecificationController
+	ApiChangelogs       ApiChangelogController
 }
 
 func (s *Server) RegisterRoutes(router fiber.Router) {
@@ -168,5 +178,15 @@ func (s *Server) RegisterRoutes(router fiber.Router) {
 	router.Get("/apiroadmaps/:resourceId", checkAccess, s.GetApiRoadmap)
 	router.Put("/apiroadmaps/:resourceId", checkAccess, s.UpdateApiRoadmap)
 	router.Delete("/apiroadmaps/:resourceId", checkAccess, s.DeleteApiRoadmap)
+
+	s.Log.Info("Registering apichangelogs routes")
+
+	router.Get("/apichangelogs", checkAccess, s.GetAllApiChangelogs)
+	router.Post("/apichangelogs", checkAccess, s.CreateApiChangelog)
+	router.Get("/apichangelogs/:resourceId/status", checkAccess, s.GetApiChangelogStatus)
+
+	router.Get("/apichangelogs/:resourceId", checkAccess, s.GetApiChangelog)
+	router.Put("/apichangelogs/:resourceId", checkAccess, s.UpdateApiChangelog)
+	router.Delete("/apichangelogs/:resourceId", checkAccess, s.DeleteApiChangelog)
 
 }

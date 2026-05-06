@@ -9,6 +9,9 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	cclient "github.com/telekom/controlplane/common/pkg/client"
 	"github.com/telekom/controlplane/common/pkg/condition"
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
@@ -19,8 +22,6 @@ import (
 	pubsubv1 "github.com/telekom/controlplane/pubsub/api/v1"
 	"github.com/telekom/controlplane/pubsub/internal/handler/util"
 	"github.com/telekom/controlplane/pubsub/internal/service"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var _ handler.Handler[*pubsubv1.Subscriber] = &SubscriberHandler{}
@@ -43,9 +44,9 @@ func (h *SubscriberHandler) CreateOrUpdate(ctx context.Context, obj *pubsubv1.Su
 
 	if cconfig.FeatureFileManager.IsEnabled() {
 		buf := bytes.NewBuffer(nil)
-		res, err := getFileManager().DownloadFile(ctx, publisher.Spec.JsonSchema, buf)
-		if err != nil {
-			return errors.Wrapf(err, "failed to download JSON schema from Publisher %q", obj.Spec.Publisher.String())
+		res, dlErr := getFileManager().DownloadFile(ctx, publisher.Spec.JsonSchema, buf)
+		if dlErr != nil {
+			return errors.Wrapf(dlErr, "failed to download JSON schema from Publisher %q", obj.Spec.Publisher.String())
 		}
 		if res.ContentType != "application/json" {
 			return ctrlerrors.BlockedErrorf("Expected content type application/json for JSON schema, got %q", res.ContentType)

@@ -9,14 +9,14 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
-	"github.com/telekom/controlplane/notification/internal/rendering"
-	"github.com/telekom/controlplane/notification/internal/templatecache"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/telekom/controlplane/common/pkg/condition"
+	"github.com/telekom/controlplane/common/pkg/errors/ctrlerrors"
 	"github.com/telekom/controlplane/common/pkg/handler"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+	"github.com/telekom/controlplane/notification/internal/rendering"
+	"github.com/telekom/controlplane/notification/internal/templatecache"
 )
 
 var _ handler.Handler[*notificationv1.NotificationTemplate] = &NotificationTemplateHandler{}
@@ -79,8 +79,8 @@ func (n *NotificationTemplateHandler) validateTemplate(template *notificationv1.
 }
 
 func (n *NotificationTemplateHandler) Delete(ctx context.Context, template *notificationv1.NotificationTemplate) error {
-	log := log.FromContext(ctx)
-	log.V(1).Info("Deleting template from cache", "name", template.Name)
+	logger := log.FromContext(ctx)
+	logger.V(1).Info("Deleting template from cache", "name", template.Name)
 
 	n.Cache.Delete(template.Name)
 	return nil

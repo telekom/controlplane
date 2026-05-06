@@ -17,6 +17,7 @@ import (
 	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/types"
 	"github.com/telekom/controlplane/common/pkg/util/contextutil"
+	"github.com/telekom/controlplane/common/pkg/util/labelutil"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
 	"github.com/telekom/controlplane/notification/api/v1/builder"
 )
@@ -61,7 +62,7 @@ func sendRotationCompletedNotification(ctx context.Context, app *application.App
 		WithOwner(app).
 		WithSender(notificationv1.SenderTypeSystem, "ApplicationService").
 		WithPurpose(PurposeRotationCompleted).
-		WithName(PurposeRotationCompleted).
+		WithName(labelutil.NormalizeNameValue(fmt.Sprintf("%s--%s", PurposeRotationCompleted, app.Name))).
 		WithDefaultChannels(ctx, app.Namespace).
 		WithProperties(properties).
 		Send(ctx)
@@ -135,7 +136,7 @@ func sendSecretExpiringNotifications(ctx context.Context, app *application.Appli
 func sendSingleExpiringNotification(ctx context.Context, app *application.Application, thresholdKey string, now time.Time) (*types.ObjectRef, error) {
 	env := contextutil.EnvFromContextOrDie(ctx)
 
-	name := fmt.Sprintf("%s-%s", PurposeSecretExpiring, thresholdKey)
+	name := labelutil.NormalizeNameValue(fmt.Sprintf("%s--%s-%s", PurposeSecretExpiring, app.Name, thresholdKey))
 
 	deadline := app.Status.CurrentExpiresAt.Time
 	timeUntilExpiry := deadline.Sub(now).Round(time.Minute)

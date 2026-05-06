@@ -28,13 +28,10 @@ func newSuccessServer(t *testing.T, statusCode int, responseBody string) *httpte
 	}))
 }
 
-// newRetryServer creates a test server that fails N times before succeeding
-// Returns the server and the attempt counter (use .Load() to read)
+// newRetryServer creates a test server that fails N times before succeeding.
+// Returns the server and the attempt counter (use .Load() to read).
 //
-// successCode is always http.StatusOK in current tests, but kept as parameter
-// for flexibility and to make test intent explicit
-//
-//nolint:unparam
+//nolint:unparam // successCode kept as parameter for test flexibility even though currently always http.StatusOK
 func newRetryServer(t *testing.T, failureCode, successCode, failuresBeforeSuccess int) (*httptest.Server, *atomic.Int32) {
 	t.Helper()
 	var attemptCount atomic.Int32
@@ -50,12 +47,9 @@ func newRetryServer(t *testing.T, failureCode, successCode, failuresBeforeSucces
 	return server, &attemptCount
 }
 
-// newDelayedServer creates a test server that delays response by the given duration
+// newDelayedServer creates a test server that delays response by the given duration.
 //
-// statusCode is currently always http.StatusOK, but kept as parameter for flexibility
-// in testing different response scenarios
-//
-//nolint:unparam
+//nolint:unparam // statusCode kept as parameter for test flexibility even though currently always http.StatusOK
 func newDelayedServer(t *testing.T, delay time.Duration, statusCode int) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

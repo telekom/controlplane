@@ -101,6 +101,7 @@ rules:
 - apiGroups:
   - rover.cp.ei.telekom.de
   resources:
+  - apichangelogs
   - apispecifications
   - eventspecifications
   - roadmaps
@@ -116,6 +117,7 @@ rules:
 - apiGroups:
   - rover.cp.ei.telekom.de
   resources:
+  - apichangelogs/finalizers
   - apispecifications/finalizers
   - eventspecifications/finalizers
   - roadmaps/finalizers
@@ -125,6 +127,7 @@ rules:
 - apiGroups:
   - rover.cp.ei.telekom.de
   resources:
+  - apichangelogs/status
   - apispecifications/status
   - eventspecifications/status
   - roadmaps/status

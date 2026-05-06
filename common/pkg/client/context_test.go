@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("Context", func() {
-
 	It("should manage the client in the context", func() {
 		ctx := context.Background()
 

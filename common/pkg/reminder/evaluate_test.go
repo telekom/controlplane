@@ -7,19 +7,20 @@ package reminder
 import (
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/telekom/controlplane/common/pkg/types"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func d(h int) metav1.Duration {
 	return metav1.Duration{Duration: time.Duration(h) * time.Hour}
 }
 
-func dp(h int) *metav1.Duration {
-	d := d(h)
+func dp() *metav1.Duration {
+	d := d(24)
 	return &d
 }
 
@@ -28,7 +29,6 @@ func ref(name string) types.ObjectRef {
 }
 
 var _ = Describe("Evaluate", func() {
-
 	Context("single one-shot threshold", func() {
 		It("should fire when inside the window and never sent", func() {
 			deadline := time.Now().Add(5 * 24 * time.Hour) // 5 days out
@@ -151,7 +151,7 @@ var _ = Describe("Evaluate", func() {
 			now := time.Now()
 			deadline := now.Add(3 * 24 * time.Hour)
 			thresholds := []Threshold{
-				{Before: d(168), Repeat: dp(24)},
+				{Before: d(168), Repeat: dp()},
 			}
 			sent := []SentReminder{{
 				Threshold: d(168).Duration.String(),
@@ -167,7 +167,7 @@ var _ = Describe("Evaluate", func() {
 			now := time.Now()
 			deadline := now.Add(3 * 24 * time.Hour)
 			thresholds := []Threshold{
-				{Before: d(168), Repeat: dp(24)},
+				{Before: d(168), Repeat: dp()},
 			}
 			sent := []SentReminder{{
 				Threshold: d(168).Duration.String(),
@@ -182,7 +182,6 @@ var _ = Describe("Evaluate", func() {
 })
 
 var _ = Describe("NextRequeue", func() {
-
 	It("should return time until entering the window when not yet in window", func() {
 		now := time.Now()
 		deadline := now.Add(10 * 24 * time.Hour)
@@ -206,7 +205,7 @@ var _ = Describe("NextRequeue", func() {
 		now := time.Now()
 		deadline := now.Add(3 * 24 * time.Hour)
 		thresholds := []Threshold{
-			{Before: d(168), Repeat: dp(24)},
+			{Before: d(168), Repeat: dp()},
 		}
 		sent := []SentReminder{{
 			Threshold: d(168).Duration.String(),
@@ -244,7 +243,6 @@ var _ = Describe("NextRequeue", func() {
 })
 
 var _ = Describe("UpsertSent", func() {
-
 	It("should insert a new entry", func() {
 		entry := &SentReminder{Threshold: "168h0m0s", Ref: ref("n1"), SentAt: metav1.Now()}
 		result := UpsertSent(nil, entry)
@@ -265,12 +263,11 @@ var _ = Describe("UpsertSent", func() {
 })
 
 var _ = Describe("NextRequeue edge cases", func() {
-
 	It("should return 0 for a repeating threshold that was never sent and is in window", func() {
 		now := time.Now()
 		deadline := now.Add(3 * 24 * time.Hour)
 		thresholds := []Threshold{
-			{Before: d(168), Repeat: dp(24)},
+			{Before: d(168), Repeat: dp()},
 		}
 
 		requeue := NextRequeue(deadline, thresholds, nil, now)
@@ -281,7 +278,7 @@ var _ = Describe("NextRequeue edge cases", func() {
 		now := time.Now()
 		deadline := now.Add(3 * 24 * time.Hour)
 		thresholds := []Threshold{
-			{Before: d(168), Repeat: dp(24)},
+			{Before: d(168), Repeat: dp()},
 		}
 		sent := []SentReminder{{
 			Threshold: d(168).Duration.String(),
@@ -307,7 +304,6 @@ var _ = Describe("NextRequeue edge cases", func() {
 })
 
 var _ = Describe("SortDesc", func() {
-
 	It("should sort thresholds descending without modifying the original", func() {
 		thresholds := []Threshold{
 			{Before: d(24)},
@@ -325,7 +321,6 @@ var _ = Describe("SortDesc", func() {
 })
 
 var _ = Describe("Threshold DeepCopy", func() {
-
 	It("should deep copy a Threshold without Repeat", func() {
 		original := &Threshold{Before: d(168)}
 		copied := original.DeepCopy()
@@ -336,7 +331,7 @@ var _ = Describe("Threshold DeepCopy", func() {
 	})
 
 	It("should deep copy a Threshold with Repeat", func() {
-		original := &Threshold{Before: d(168), Repeat: dp(24)}
+		original := &Threshold{Before: d(168), Repeat: dp()}
 		copied := original.DeepCopy()
 
 		Expect(copied.Before.Duration).To(Equal(original.Before.Duration))
@@ -352,7 +347,7 @@ var _ = Describe("Threshold DeepCopy", func() {
 	})
 
 	It("should deep copy into an existing Threshold", func() {
-		original := Threshold{Before: d(168), Repeat: dp(24)}
+		original := Threshold{Before: d(168), Repeat: dp()}
 		out := Threshold{}
 		original.DeepCopyInto(&out)
 
@@ -364,7 +359,6 @@ var _ = Describe("Threshold DeepCopy", func() {
 })
 
 var _ = Describe("SentReminder DeepCopy", func() {
-
 	It("should deep copy a SentReminder", func() {
 		original := &SentReminder{
 			Threshold: "168h0m0s",

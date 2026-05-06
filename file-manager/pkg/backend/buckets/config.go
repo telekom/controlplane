@@ -13,7 +13,7 @@ import (
 
 const (
 	// BucketsBackendTokenPath per convention - /var/run/secrets/:backendName/token
-	BucketsBackendTokenPath = "/var/run/secrets/buckets/token"
+	BucketsBackendTokenPath = "/var/run/secrets/buckets/token" //nolint:gosec // G101: path constant, not a credential
 )
 
 // BucketConfig holds all configuration needed for bucket operations

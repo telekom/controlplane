@@ -6,7 +6,6 @@ package controller
 
 import (
 	"context"
-	"github.com/telekom/controlplane/notification/internal/config"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -17,6 +16,7 @@ import (
 	cconfig "github.com/telekom/controlplane/common/pkg/config"
 	cc "github.com/telekom/controlplane/common/pkg/controller"
 	notificationv1 "github.com/telekom/controlplane/notification/api/v1"
+	"github.com/telekom/controlplane/notification/internal/config"
 	"github.com/telekom/controlplane/notification/internal/handler"
 )
 
