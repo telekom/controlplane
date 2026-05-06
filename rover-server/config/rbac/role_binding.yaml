@@ -8,11 +8,11 @@ metadata:
   labels:
     app.kubernetes.io/name: rover
     app.kubernetes.io/managed-by: kustomize
-  name: server-rolebinding
+  name: rover-server-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: server-role
+  name: rover-server-role
 subjects:
 - kind: ServiceAccount
   name: rover-server
