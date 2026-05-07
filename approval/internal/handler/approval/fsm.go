@@ -10,25 +10,29 @@ import (
 )
 
 var auto = fsm.Transitions{
-	{Action: v1.ApprovalActionAllow, Src: []v1.ApprovalState{v1.ApprovalStateRejected}, Dst: v1.ApprovalStateGranted},
-	{Action: v1.ApprovalActionDeny, Src: []v1.ApprovalState{v1.ApprovalStateGranted}, Dst: v1.ApprovalStateRejected},
+	{Action: v1.ApprovalActionAllow, Src: []v1.ApprovalState{v1.ApprovalStateRejected, v1.ApprovalStateExpired}, Dst: v1.ApprovalStateGranted},
+	{Action: v1.ApprovalActionDeny, Src: []v1.ApprovalState{v1.ApprovalStateGranted, v1.ApprovalStateExpired}, Dst: v1.ApprovalStateRejected},
 	{Action: v1.ApprovalActionSuspend, Src: []v1.ApprovalState{v1.ApprovalStateGranted}, Dst: v1.ApprovalStateSuspended},
 	{Action: v1.ApprovalActionResume, Src: []v1.ApprovalState{v1.ApprovalStateSuspended}, Dst: v1.ApprovalStateGranted},
+	{Action: v1.ApprovalActionExpire, Src: []v1.ApprovalState{v1.ApprovalStateGranted, v1.ApprovalStateSuspended}, Dst: v1.ApprovalStateExpired},
 }
 
 var simple = fsm.Transitions{
-	{Action: v1.ApprovalActionAllow, Src: []v1.ApprovalState{v1.ApprovalStatePending, v1.ApprovalStateRejected}, Dst: v1.ApprovalStateGranted},
-	{Action: v1.ApprovalActionDeny, Src: []v1.ApprovalState{v1.ApprovalStatePending, v1.ApprovalStateGranted}, Dst: v1.ApprovalStateRejected},
+	{Action: v1.ApprovalActionAllow, Src: []v1.ApprovalState{v1.ApprovalStatePending, v1.ApprovalStateRejected, v1.ApprovalStateExpired}, Dst: v1.ApprovalStateGranted},
+	{Action: v1.ApprovalActionDeny, Src: []v1.ApprovalState{v1.ApprovalStatePending, v1.ApprovalStateGranted, v1.ApprovalStateExpired}, Dst: v1.ApprovalStateRejected},
 	{Action: v1.ApprovalActionSuspend, Src: []v1.ApprovalState{v1.ApprovalStateGranted}, Dst: v1.ApprovalStateSuspended},
 	{Action: v1.ApprovalActionResume, Src: []v1.ApprovalState{v1.ApprovalStateSuspended}, Dst: v1.ApprovalStateGranted},
+	{Action: v1.ApprovalActionExpire, Src: []v1.ApprovalState{v1.ApprovalStateGranted, v1.ApprovalStateSuspended}, Dst: v1.ApprovalStateExpired},
 }
 
 var fourEyes = fsm.Transitions{
 	{Action: v1.ApprovalActionAllow, Src: []v1.ApprovalState{v1.ApprovalStatePending, v1.ApprovalStateRejected}, Dst: v1.ApprovalStateSemigranted},
-	{Action: v1.ApprovalActionDeny, Src: []v1.ApprovalState{v1.ApprovalStatePending, v1.ApprovalStateGranted, v1.ApprovalStateSemigranted}, Dst: v1.ApprovalStateRejected},
 	{Action: v1.ApprovalActionAllow, Src: []v1.ApprovalState{v1.ApprovalStateSemigranted}, Dst: v1.ApprovalStateGranted},
+	{Action: v1.ApprovalActionAllow, Src: []v1.ApprovalState{v1.ApprovalStateExpired}, Dst: v1.ApprovalStateGranted},
+	{Action: v1.ApprovalActionDeny, Src: []v1.ApprovalState{v1.ApprovalStatePending, v1.ApprovalStateGranted, v1.ApprovalStateSemigranted, v1.ApprovalStateExpired}, Dst: v1.ApprovalStateRejected},
 	{Action: v1.ApprovalActionSuspend, Src: []v1.ApprovalState{v1.ApprovalStateGranted}, Dst: v1.ApprovalStateSuspended},
 	{Action: v1.ApprovalActionResume, Src: []v1.ApprovalState{v1.ApprovalStateSuspended}, Dst: v1.ApprovalStateGranted},
+	{Action: v1.ApprovalActionExpire, Src: []v1.ApprovalState{v1.ApprovalStateGranted, v1.ApprovalStateSuspended}, Dst: v1.ApprovalStateExpired},
 }
 
 var transitionMap = map[v1.ApprovalStrategy]fsm.Transitions{

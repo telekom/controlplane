@@ -24,6 +24,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
+	"github.com/telekom/controlplane/approval/internal/config"
+	"github.com/telekom/controlplane/common/pkg/reminder"
 	"github.com/telekom/controlplane/common/pkg/test"
 	"github.com/telekom/controlplane/common/pkg/test/mock"
 	"github.com/telekom/controlplane/common/pkg/test/testutil"
@@ -120,15 +122,36 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
+	// Create test expiration config (needed by ApprovalReconciler and ApprovalExpirationReconciler)
+	weeklyBefore := 30 * 24 * time.Hour
+	dailyBefore := 7 * 24 * time.Hour
+	dailyRepeat := 24 * time.Hour
+
+	expirationConfig := &config.ExpirationConfig{
+		ExpirationDuration: 12 * 30 * 24 * time.Hour, // 12 months
+		DefaultThresholds: []reminder.Threshold{
+			{Before: metav1.Duration{Duration: weeklyBefore}},
+			{Before: metav1.Duration{Duration: dailyBefore}, Repeat: &metav1.Duration{Duration: dailyRepeat}},
+		},
+	}
+
 	err = (&ApprovalReconciler{
-		Client:   k8sManager.GetClient(),
-		Scheme:   k8sManager.GetScheme(),
-		Recorder: &mock.EventRecorder{},
+		Client:           k8sManager.GetClient(),
+		Scheme:           k8sManager.GetScheme(),
+		Recorder:         &mock.EventRecorder{},
+		ExpirationConfig: expirationConfig,
 	}).SetupWithManager(k8sManager)
 
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&ApprovalRequestReconciler{
+		Client:   k8sManager.GetClient(),
+		Scheme:   k8sManager.GetScheme(),
+		Recorder: &mock.EventRecorder{},
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&ApprovalExpirationReconciler{
 		Client:   k8sManager.GetClient(),
 		Scheme:   k8sManager.GetScheme(),
 		Recorder: &mock.EventRecorder{},

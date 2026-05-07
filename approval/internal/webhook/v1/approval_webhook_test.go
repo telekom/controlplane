@@ -8,13 +8,28 @@ import (
 	"context"
 	"time"
 
+	admissionv1 "k8s.io/api/admission/v1"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	approvalv1 "github.com/telekom/controlplane/approval/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
+
+// controllerContext returns a context that simulates a request from the controller service account.
+func controllerContext() context.Context {
+	req := admission.Request{
+		AdmissionRequest: admissionv1.AdmissionRequest{
+			UserInfo: authenticationv1.UserInfo{
+				Username: "system:serviceaccount:controlplane-system:approval-controller-manager",
+			},
+		},
+	}
+	return admission.NewContextWithRequest(context.Background(), req)
+}
 
 var _ = Describe("Approval Webhook", func() {
 	Context("When creating Approval under Defaulting Webhook", func() {
@@ -469,6 +484,82 @@ var _ = Describe("Approval Webhook", func() {
 					Decisions: oneDecision,
 				},
 			}
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	Context("Expire action validation (system-only)", func() {
+		var validator ApprovalCustomValidator
+
+		makeApproval := func(specState approvalv1.ApprovalState, decisions []approvalv1.Decision) *approvalv1.Approval {
+			return &approvalv1.Approval{
+				Spec: approvalv1.ApprovalSpec{
+					Strategy:  approvalv1.ApprovalStrategySimple,
+					State:     specState,
+					Decisions: decisions,
+				},
+			}
+		}
+
+		It("should reject manual transition to EXPIRED without System decision", func() {
+			oldObj := makeApproval(approvalv1.ApprovalStateGranted, nil)
+			newObj := makeApproval(approvalv1.ApprovalStateExpired, []approvalv1.Decision{
+				{Name: "Alice", Email: "alice@telekom.de", Comment: "Manual expire", ResultingState: approvalv1.ApprovalStateExpired},
+			})
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Expire action is system-only"))
+		})
+
+		It("should reject manual transition to EXPIRED from SUSPENDED without System decision", func() {
+			oldObj := makeApproval(approvalv1.ApprovalStateSuspended, nil)
+			newObj := makeApproval(approvalv1.ApprovalStateExpired, []approvalv1.Decision{
+				{Name: "Bob", Email: "bob@telekom.de", Comment: "Manual expire", ResultingState: approvalv1.ApprovalStateExpired},
+			})
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Expire action is system-only"))
+		})
+
+		It("should allow controller service account to transition to EXPIRED", func() {
+			oldObj := makeApproval(approvalv1.ApprovalStateGranted, nil)
+			newObj := makeApproval(approvalv1.ApprovalStateExpired, []approvalv1.Decision{
+				{Name: "System", Email: "", Comment: "Automatically expired", ResultingState: approvalv1.ApprovalStateExpired},
+			})
+			_, err := validator.ValidateUpdate(controllerContext(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should allow controller service account to transition to EXPIRED from SUSPENDED", func() {
+			oldObj := makeApproval(approvalv1.ApprovalStateSuspended, nil)
+			newObj := makeApproval(approvalv1.ApprovalStateExpired, []approvalv1.Decision{
+				{Name: "System", Email: "", Comment: "Automatically expired", ResultingState: approvalv1.ApprovalStateExpired},
+			})
+			_, err := validator.ValidateUpdate(controllerContext(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should allow transition from EXPIRED to GRANTED (re-approval)", func() {
+			oldObj := makeApproval(approvalv1.ApprovalStateExpired, []approvalv1.Decision{
+				{Name: "System", Email: "", Comment: "Automatically expired", ResultingState: approvalv1.ApprovalStateExpired},
+			})
+			newObj := makeApproval(approvalv1.ApprovalStateGranted, []approvalv1.Decision{
+				{Name: "System", Email: "", Comment: "Automatically expired", ResultingState: approvalv1.ApprovalStateExpired},
+				{Name: "Charlie", Email: "charlie@telekom.de", Comment: "Re-approved", ResultingState: approvalv1.ApprovalStateGranted},
+			})
+			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should allow transition from EXPIRED to REJECTED", func() {
+			oldObj := makeApproval(approvalv1.ApprovalStateExpired, []approvalv1.Decision{
+				{Name: "System", Email: "", Comment: "Automatically expired", ResultingState: approvalv1.ApprovalStateExpired},
+			})
+			newObj := makeApproval(approvalv1.ApprovalStateRejected, []approvalv1.Decision{
+				{Name: "System", Email: "", Comment: "Automatically expired", ResultingState: approvalv1.ApprovalStateExpired},
+				{Name: "Dave", Email: "dave@telekom.de", Comment: "Denied", ResultingState: approvalv1.ApprovalStateRejected},
+			})
 			_, err := validator.ValidateUpdate(context.Background(), oldObj, newObj)
 			Expect(err).NotTo(HaveOccurred())
 		})
